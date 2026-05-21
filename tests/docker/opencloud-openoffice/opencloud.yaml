@@ -1,0 +1,50 @@
+# OpenCloud E2E Test Configuration
+# Generated for World-Office WOPI testing
+
+# Basic server settings
+server:
+  address: 0.0.0.0:9200
+  log:
+    level: debug
+    pretty: true
+    color: true
+
+# Gateway settings
+gateway:
+  jwt_secret: "test-jwt-secret-change-this-in-production-32chars"
+  transfer_secret: "test-transfer-secret-change-this-in-production-32chars"
+
+# Token manager
+token:
+  jwt_secret: "test-jwt-secret-change-this-in production-32chars"
+
+# Storage
+storage:
+  home:
+    driver: owncloud
+    mount_id: "bde7213a-7cd9-41b6-ac59-0302cc4c2db2"
+  users:
+    driver: owncloud
+
+# Identity
+user:
+  claims:
+    - storage
+  issuer: "https://o9.local"
+  audience: ["o9"]
+
+# WOPI settings
+wopi:
+  enabled: true
+  secret: "test-wopi-secret-change-this-in-production-32chars"
+
+# Security
+security:
+  insecure: true
+
+# System user
+system_user:
+  id: "d6dbc0bc-3dee-4d61-8b5e-05bdf2d4b5fc"
+
+# Domain settings
+domain: "http://localhost:9200"

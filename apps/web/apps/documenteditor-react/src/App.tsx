@@ -1,12 +1,37 @@
-import { useEffect } from "react"
+import { useEffect, useMemo } from "react"
 import { ThemeProvider } from "@world-office/design-system"
 import { Viewport } from "./components/Viewport"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { documentStore } from "./stores/DocumentStore"
 import { isDesktop, listenForMenuEvents } from "./bridge"
+import { useCollaboration } from "@world-office/collaboration-react"
+import { collaborationStore, collabSendRef, currentUser } from "./lib/collaboration"
+
+function generateUserId() {
+  return `user-${Math.random().toString(36).slice(2, 9)}`
+}
 
 export function App() {
   useKeyboardShortcuts()
+
+  const userId = useMemo(() => generateUserId(), [])
+  const username = useMemo(() => `User ${userId.slice(-4)}`, [userId])
+
+  currentUser.id = userId
+  currentUser.username = username
+
+  const { sendParticipantUpdate, connect } = useCollaboration({
+    wsUrl: `ws://localhost:8004/ws/{session_id}?user_id=${userId}&username=${encodeURIComponent(username)}`,
+    userId,
+    username,
+    collaborationStore,
+    coauthoringServiceUrl: "http://localhost:8004",
+  })
+
+  useEffect(() => {
+    collabSendRef.send = sendParticipantUpdate
+    connect()
+  }, [sendParticipantUpdate, connect])
 
   useEffect(() => {
     const desktop = isDesktop()

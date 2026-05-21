@@ -1,0 +1,18 @@
+server:
+  address: 0.0.0.0:9200
+
+gateway:
+  jwt_secret: "test-jwt-secret-change-this-in-production-32chars"
+
+token:
+  jwt_secret: "test-jwt-secret-change-this-in-production-32chars"
+
+storage:
+  users:
+    driver: owncloud
+
+user:
+  issuer: "https://o9.local"
+
+security:
+  insecure: true

@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite"
 import { documentStore } from "../../stores/DocumentStore"
+import { collaborationStore } from "../../lib/collaboration"
 import { FileTab } from "./FileTab"
 import { FormsTab } from "./FormsTab"
 import { HeaderFooterTab } from "./HeaderFooterTab"
@@ -12,6 +13,8 @@ import { CollaborationStatus } from "@world-office/collaboration-react"
 
 const ObservedToolbar = observer(function ObservedToolbar() {
   const isEditMode = documentStore.isEditMode
+  const connectionStatus = collaborationStore.connectionStatus
+  const userCount = collaborationStore.users.length
 
   return (
     <div className="de-toolbar">
@@ -26,7 +29,7 @@ const ObservedToolbar = observer(function ObservedToolbar() {
         {isEditMode && <FormsTab />}
         {isEditMode && <HeaderFooterTab />}
         <div className="de-toolbar-extra-right">
-          <CollaborationStatus state="disconnected" userCount={0} />
+          <CollaborationStatus state={connectionStatus} userCount={userCount} />
         </div>
       </div>
       <section className="de-toolbar-controls" role="tabpanel">
