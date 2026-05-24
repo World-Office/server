@@ -1,0 +1,170 @@
+# .forgejo/workflows/desktop-release.yml
+name: Desktop Build & Publish
+
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - main
+
+concurrency:
+  group: desktop-${{ forgejo.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-linux:
+    name: Build Tauri Desktop (Linux)
+    runs-on: docker://node:20-bookworm
+    steps:
+      - name: Checkout
+        uses: https://data.forgejo.org/actions/checkout@v4
+        timeout-minutes: 5
+
+      - name: Install Rust toolchain
+        uses: https://github.com/dtolnay/rust-toolchain@stable
+        timeout-minutes: 10
+
+      - name: Install system dependencies (Tauri)
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends \
+            pkg-config libssl-dev \
+            libwebkit2gtk-4.1-dev libappindicator3-dev \
+            librsvg2-dev patchelf
+        timeout-minutes: 5
+
+      - name: Setup pnpm
+        uses: https://github.com/pnpm/action-setup@v4
+        with:
+          version: 10
+        timeout-minutes: 5
+
+      - name: Setup Node.js
+        uses: https://data.forgejo.org/actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+        timeout-minutes: 5
+
+      - name: Cache Cargo registry
+        uses: https://data.forgejo.org/actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            desktop/tauri-poc/src-tauri/target
+          key: desktop-cargo-${{ hashFiles('desktop/tauri-poc/src-tauri/Cargo.lock') }}
+          restore-keys: desktop-cargo-
+        timeout-minutes: 5
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        timeout-minutes: 10
+
+      - name: Build web frontend
+        run: pnpm --filter @world-office/tauri-poc run build:web
+        timeout-minutes: 10
+
+      - name: Build Tauri application
+        run: pnpm --filter @world-office/tauri-poc run build
+        timeout-minutes: 30
+
+      - name: Upload .deb artifact
+        uses: https://data.forgejo.org/actions/upload-artifact@v4
+        with:
+          name: tauri-deb
+          path: desktop/tauri-poc/src-tauri/target/release/bundle/deb/*.deb
+        timeout-minutes: 5
+
+      - name: Upload AppImage artifact
+        uses: https://data.forgejo.org/actions/upload-artifact@v4
+        with:
+          name: tauri-appimage
+          path: desktop/tauri-poc/src-tauri/target/release/bundle/appimage/*.AppImage
+        timeout-minutes: 5
+
+      - name: Upload source tarball
+        uses: https://data.forgejo.org/actions/upload-artifact@v4
+        with:
+          name: source-tarball
+          path: |
+            !desktop/tauri-poc/src-tauri/target/
+            desktop/tauri-poc/
+        timeout-minutes: 5
+
+  release:
+    name: Create Release
+    if: startsWith(forgejo.ref, 'refs/tags/v')
+    runs-on: docker://node:20-bookworm
+    needs: [build-linux]
+    steps:
+      - name: Checkout debian-repo
+        uses: https://data.forgejo.org/actions/checkout@v4
+        with:
+          repository: world-office/debian-repo
+          ref: pages
+          token: ${{ secrets.FORGEJO_TOKEN }}
+        timeout-minutes: 5
+
+      - name: Download .deb
+        uses: https://data.forgejo.org/actions/download-artifact@v4
+        with:
+          name: tauri-deb
+          path: artifacts/deb/
+        timeout-minutes: 5
+
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.DEB_GPG_PRIVATE_KEY }}" | gpg --batch --import
+        timeout-minutes: 2
+
+      - name: Install repo management tools
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends \
+            dpkg-dev apt-utils
+        timeout-minutes: 3
+
+      - name: Publish to Debian repository
+        run: |
+          VERSION="${forgejo.ref_name#v}"
+          POOLDIR=".debian/pool/main/w/world-office"
+          mkdir -p "$POOLDIR"
+
+          # Copy .deb into pool
+          cp artifacts/deb/*.deb "$POOLDIR/world-office_${VERSION}_amd64.deb"
+
+          # Regenerate Packages
+          cd .debian
+          dpkg-scanpackages --multiversion pool/main > dists/stable/main/binary-amd64/Packages 2>/dev/null
+          gzip -9c dists/stable/main/binary-amd64/Packages > dists/stable/main/binary-amd64/Packages.gz
+
+          # Regenerate Release
+          cd dists/stable
+          apt-ftparchive release . > Release 2>/dev/null
+          gpg --batch --passphrase "${{ secrets.DEB_GPG_PASSPHRASE }}" \
+            --pinentry-mode loopback \
+            --clearsign -o InRelease Release
+          gpg --batch --passphrase "${{ secrets.DEB_GPG_PASSPHRASE }}" \
+            --pinentry-mode loopback \
+            -abs -o Release.gpg Release
+        timeout-minutes: 5
+
+      - name: Commit and push to pages branch
+        run: |
+          git config user.name "World Office Bot"
+          git config user.email "bot@world-office.org"
+          git add .debian/
+          git commit -m "chore: add world-office ${VERSION}"
+          git push origin pages
+        timeout-minutes: 5
+
+      - name: Create Forgejo release
+        uses: https://codeberg.org/forgejo/release@v2
+        with:
+          direction: upload
+          title: "World Office Desktop ${{ forgejo.ref_name }}"
+          tag: ${{ forgejo.ref_name }}
+          token: ${{ secrets.FORGEJO_TOKEN }}
+          files: |
+            artifacts/deb/*.deb
+        timeout-minutes: 10
