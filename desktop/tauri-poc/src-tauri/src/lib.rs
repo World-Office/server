@@ -4,6 +4,7 @@ mod filesystem;
 mod health;
 mod keychain;
 mod menu;
+mod plugins;
 mod print;
 mod settings;
 mod state;
@@ -37,6 +38,9 @@ pub fn run() {
             commands::reset_zoom,
             commands::toggle_fullscreen,
             health::check_backend_health,
+            plugins::get_plugins,
+            plugins::get_plugin_source,
+            plugins::toggle_plugin,
             filesystem::read_file,
             filesystem::read_file_binary,
             filesystem::write_file,
@@ -63,6 +67,7 @@ pub fn run() {
             updater::get_current_version,
         ])
         .manage(AppState::new())
+        .manage(plugins::PluginManager::new())
         .setup(|app| {
             // Set application menu
             let menu = create_app_menu(app)?;

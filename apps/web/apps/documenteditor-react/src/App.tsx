@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react"
 import { ThemeProvider } from "@world-office/design-system"
 import { Viewport } from "./components/Viewport"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
+import { usePlugins } from "./hooks/usePlugins"
 import { documentStore } from "./stores/DocumentStore"
 import { isDesktop, listenForMenuEvents } from "./bridge"
 import { useCollaboration } from "@world-office/collaboration-react"
@@ -13,6 +14,7 @@ function generateUserId() {
 
 export function App() {
   useKeyboardShortcuts()
+  usePlugins()
 
   const userId = useMemo(() => generateUserId(), [])
   const username = useMemo(() => `User ${userId.slice(-4)}`, [userId])
