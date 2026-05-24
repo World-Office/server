@@ -1,0 +1,12 @@
+{
+  "name": "@world-office/tauri-poc-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^3"
+  }
+}

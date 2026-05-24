@@ -26,6 +26,9 @@ importers:
       '@tauri-apps/plugin-dialog':
         specifier: ^2
         version: 2.7.1
+      '@world-office/collaboration-client':
+        specifier: workspace:*
+        version: link:../../../../packages/collaboration-client
       '@world-office/collaboration-react':
         specifier: workspace:*
         version: link:../../../../packages/collaboration-react
@@ -284,6 +287,12 @@ importers:
       vite:
         specifier: ^6.0.0
         version: 6.4.2(@types/node@25.6.0)(yaml@2.8.3)
+
+  desktop/tauri-poc/tests:
+    devDependencies:
+      vitest:
+        specifier: ^3
+        version: 3.2.4(@types/debug@4.1.13)(@types/node@25.6.0)(jsdom@26.1.0)(yaml@2.8.3)
 
   integrations/nextcloud:
     dependencies:

@@ -92,6 +92,31 @@ jobs:
             desktop/tauri-poc/
         timeout-minutes: 5
 
+  test-desktop:
+    name: Test Desktop
+    runs-on: docker://node:20-bookworm
+    needs: [build-linux]
+    steps:
+      - name: Checkout
+        uses: https://data.forgejo.org/actions/checkout@v4
+
+      - name: Install system deps for testing
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends \
+            xvfb libwebkit2gtk-4.1-dev
+
+      - name: Download Tauri binary
+        uses: https://data.forgejo.org/actions/download-artifact@v4
+        with:
+          name: tauri-deb
+          path: artifacts/
+
+      - name: Install and verify binary
+        run: |
+          dpkg -i artifacts/*.deb || apt-get install -f -y
+          xvfb-run world-office --version
+        timeout-minutes: 5
+
   release:
     name: Create Release
     if: startsWith(forgejo.ref, 'refs/tags/v')
