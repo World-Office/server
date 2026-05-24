@@ -3,6 +3,7 @@ import { documentStore } from "../stores/DocumentStore"
 import { DocumentHolder } from "./DocumentHolder"
 import { FileMenu } from "./FileMenu/FileMenu"
 import { LeftMenu } from "./LeftMenu/LeftMenu"
+import { OfflineBadge } from "./OfflineBadge"
 import { RightMenu } from "./RightMenu/RightMenu"
 import { StatusBar } from "./StatusBar/StatusBar"
 import { Toolbar } from "./Toolbar/Toolbar"
@@ -28,6 +29,7 @@ export function Viewport({
 
   return (
     <div className="de-viewport">
+      <OfflineBadge />
       {/* File menu panel — full-screen overlay */}
       <section
         className="de-file-menu-panel"

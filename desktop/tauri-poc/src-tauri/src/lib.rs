@@ -1,9 +1,11 @@
 mod bridge;
 mod commands;
 mod filesystem;
+mod health;
 mod keychain;
 mod menu;
 mod print;
+mod settings;
 mod state;
 mod tray;
 mod updater;
@@ -17,7 +19,12 @@ use tray::create_system_tray;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_store::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
+            settings::get_settings,
+            settings::save_settings,
+            settings::reset_settings,
+            commands::open_settings,
             commands::new_doc,
             commands::open_doc,
             commands::save_doc,
@@ -29,6 +36,7 @@ pub fn run() {
             commands::zoom_out,
             commands::reset_zoom,
             commands::toggle_fullscreen,
+            health::check_backend_health,
             filesystem::read_file,
             filesystem::read_file_binary,
             filesystem::write_file,
@@ -110,6 +118,9 @@ fn handle_menu_event(app: &tauri::AppHandle, id: &str) {
         "fullscreen" => {
             let _ = commands::toggle_fullscreen(app.clone());
             bridge::emit_menu_event(app, "fullscreen");
+        }
+        "settings" => {
+            let _ = commands::open_settings(app.clone());
         }
         "about" => {
             bridge::emit_menu_event(app, "about");
