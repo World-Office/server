@@ -101,7 +101,7 @@ jobs:
       - name: Checkout debian-repo
         uses: https://data.forgejo.org/actions/checkout@v4
         with:
-          repository: world-office/debian-repo
+          repository: graphwiz-ai/debian-repo
           ref: pages
           token: ${{ secrets.FORGEJO_TOKEN }}
         timeout-minutes: 5

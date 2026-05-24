@@ -53,11 +53,11 @@ macOS/Windows builds are not yet in CI (requires self-hosted runners). Build loc
 
 ```sh
 # One-time setup
-sudo curl -fsSL https://world-office.codeberg.page/debian/world-office.gpg \
+sudo curl -fsSL https://graphwiz-ai.codeberg.page/debian-repo/.debian/world-office.gpg \
   -o /usr/share/keyrings/world-office.gpg
 
 echo "deb [signed-by=/usr/share/keyrings/world-office.gpg] \
-  https://world-office.codeberg.page/debian stable main" \
+  https://graphwiz-ai.codeberg.page/debian-repo/.debian stable main" \
   | sudo tee /etc/apt/sources.list.d/world-office.list
 
 # Install
