@@ -1,0 +1,40 @@
+# .forgejo/workflows/release-metadata.yml
+name: Release Metadata
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  metadata:
+    name: Publish releases.json
+    runs-on: docker://node:20-bookworm
+    steps:
+      - name: Checkout desktop-releases repo
+        uses: https://data.forgejo.org/actions/checkout@v4
+        with:
+          repository: World-Office/desktop-releases
+          ref: pages
+          token: ${{ secrets.FORGEJO_TOKEN }}
+
+      - name: Generate releases.json
+        run: |
+          VERSION="${forgejo.ref_name#v}"
+          cat > releases.json <<EOF
+          {
+            "latest_version": "${VERSION}",
+            "download_url": "https://codeberg.org/World-Office/desktop-releases/releases/download/v${VERSION}/world-office_${VERSION}_amd64.deb",
+            "release_notes_url": "https://codeberg.org/World-Office/server/releases/tag/v${VERSION}",
+            "checksum": ""
+          }
+          EOF
+
+      - name: Commit and push
+        run: |
+          git config user.name "World Office Bot"
+          git config user.email "bot@world-office.org"
+          git add releases.json
+          git diff --cached --quiet || git commit -m "release v${forgejo.ref_name#v}: update releases.json"
+          git push origin pages
+        timeout-minutes: 5
