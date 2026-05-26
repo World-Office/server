@@ -13,7 +13,7 @@ mod updater;
 mod window;
 
 use menu::create_app_menu;
-use state::AppState;
+use state::{AppState, SessionState};
 use std::sync::Mutex;
 use tauri::Manager;
 use tray::create_system_tray;
@@ -68,6 +68,7 @@ pub fn run() {
             updater::get_current_version,
         ])
         .manage(AppState::new())
+        .manage(SessionState::new())
         .manage(plugins::PluginManager::new())
         .manage(Mutex::new(updater::UpdateState::new()))
         .setup(|app| {
@@ -81,6 +82,29 @@ pub fn run() {
             // Set main window title
             let window = app.get_webview_window("main").unwrap();
             window.set_title("World Office - Untitled Document")?;
+
+            let handle = app.handle();
+            let session = handle.state::<SessionState>();
+            let docs = session.get_open_documents();
+            for path in docs {
+                if handle.get_webview_window(&path).is_some() {
+                    continue;
+                }
+                let filename = std::path::Path::new(&path)
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("Document");
+                let _ = tauri::WebviewWindowBuilder::new(
+                    handle,
+                    &path,
+                    tauri::WebviewUrl::App("index.html".into()),
+                )
+                .title(filename)
+                .inner_size(800.0, 600.0)
+                .min_inner_size(400.0, 300.0)
+                .center()
+                .build();
+            }
 
             // Startup: check for updates in background
             let handle = app.handle().clone();

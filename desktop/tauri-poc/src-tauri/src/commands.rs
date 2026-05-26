@@ -1,4 +1,4 @@
-use crate::state::AppState;
+use crate::state::{AppState, SessionState};
 use crate::window;
 use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder};
 
@@ -25,6 +25,9 @@ pub fn open_doc(app: AppHandle, state: State<'_, AppState>, path: String) -> Res
         .build()
         .map_err(|e| e.to_string())?;
 
+    let session = app.state::<SessionState>();
+    session.add_document(path);
+
     Ok(())
 }
 
@@ -44,7 +47,18 @@ pub fn save_doc(
 
 #[tauri::command]
 pub fn close_doc(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
-    window::close_window(&app).map_err(|e| e.to_string())
+    let label = window::get_focused_window(&app)
+        .as_ref()
+        .map(|w| w.label().to_string());
+
+    window::close_window(&app).map_err(|e| e.to_string())?;
+
+    if let Some(lbl) = label {
+        let session = app.state::<SessionState>();
+        session.remove_document(&lbl);
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -112,5 +126,31 @@ pub fn update_window_title(app: AppHandle, title: String) -> Result<(), String> 
     if let Some(window) = window::get_focused_window(&app) {
         window.set_title(&title).map_err(|e| e.to_string())?;
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn open_settings(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("settings") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+        return Ok(());
+    }
+
+    let _ = WebviewWindowBuilder::new(
+        &app,
+        "settings",
+        WebviewUrl::App("settings.html".into()),
+    )
+    .title("Settings")
+    .inner_size(600.0, 500.0)
+    .min_inner_size(500.0, 400.0)
+    .center()
+    .resizable(true)
+    .decorations(true)
+    .build()
+    .map_err(|e| e.to_string())?;
+
     Ok(())
 }
