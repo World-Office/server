@@ -16,3 +16,16 @@ export async function listenForMenuEvents(
   })
   return unlisten
 }
+
+export async function listenForUpdateEvents(
+  callback: () => void,
+): Promise<() => void> {
+  if (!isDesktop()) {
+    return () => {}
+  }
+  const { listen } = await import("@tauri-apps/api/event")
+  const unlisten = await listen("update-available", () => {
+    callback()
+  })
+  return unlisten
+}
