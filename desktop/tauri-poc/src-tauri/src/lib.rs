@@ -14,6 +14,7 @@ mod window;
 
 use menu::create_app_menu;
 use state::AppState;
+use std::sync::Mutex;
 use tauri::Manager;
 use tray::create_system_tray;
 
@@ -68,6 +69,7 @@ pub fn run() {
         ])
         .manage(AppState::new())
         .manage(plugins::PluginManager::new())
+        .manage(Mutex::new(updater::UpdateState::new()))
         .setup(|app| {
             // Set application menu
             let menu = create_app_menu(app)?;
@@ -79,6 +81,12 @@ pub fn run() {
             // Set main window title
             let window = app.get_webview_window("main").unwrap();
             window.set_title("World Office - Untitled Document")?;
+
+            // Startup: check for updates in background
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let _ = updater::check_for_updates(handle).await;
+            });
 
             // Register menu event handler
             app.on_menu_event(move |app, event| {
@@ -134,7 +142,10 @@ fn handle_menu_event(app: &tauri::AppHandle, id: &str) {
             bridge::emit_menu_event(app, "toggle-sidebar");
         }
         "check-updates" => {
-            bridge::emit_menu_event(app, "check-updates");
+            let handle = app.clone();
+            tauri::async_runtime::spawn(async move {
+                let _ = updater::check_for_updates(handle).await;
+            });
         }
         "documentation" => {
             bridge::emit_menu_event(app, "documentation");
