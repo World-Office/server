@@ -72,6 +72,74 @@ pub async fn check_for_updates(app: AppHandle) -> Result<Option<String>, String>
     }
 }
 
+/// Platform-specific installer file name.
+#[cfg(target_os = "windows")]
+fn installer_name() -> String {
+    "world-office-update.msi".to_string()
+}
+
+#[cfg(target_os = "macos")]
+fn installer_name() -> String {
+    "world-office-update.dmg".to_string()
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+fn installer_name() -> String {
+    "world-office-update.deb".to_string()
+}
+
+/// Platform-specific install command.
+#[cfg(target_os = "windows")]
+fn run_installer(path: &std::path::Path) -> Result<(), String> {
+    let status = std::process::Command::new("msiexec")
+        .args(["/i", &path.to_string_lossy()])
+        .status()
+        .map_err(|e| format!("Failed to run installer: {}", e))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("Installation failed (exit: {:?})", status.code()))
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn run_installer(path: &std::path::Path) -> Result<(), String> {
+    // Mount DMG, copy app bundle, then eject
+    let mount_output = std::process::Command::new("hdiutil")
+        .args(["attach", "-nobrowse", &path.to_string_lossy()])
+        .output()
+        .map_err(|e| format!("Failed to mount DMG: {}", e))?;
+    if !mount_output.status.success() {
+        return Err("Failed to mount DMG installer".to_string());
+    }
+    // Assume the volume mounts under /Volumes/WorldOffice
+    let vol = std::path::Path::new("/Volumes/World Office");
+    if vol.exists() {
+        let app_src = vol.join("World Office.app");
+        let app_dst = std::path::Path::new("/Applications/World Office.app");
+        let _ = std::fs::remove_dir_all(app_dst);
+        std::fs::rename(&app_src, app_dst)
+            .map_err(|e| format!("Failed to copy app bundle: {}", e))?;
+        let _ = std::process::Command::new("hdiutil")
+            .args(["detach", vol])
+            .status();
+    }
+    Ok(())
+}
+
+#[cfg(not(any(target_os = "windows", target_os = "macos")))]
+fn run_installer(path: &std::path::Path) -> Result<(), String> {
+    let status = std::process::Command::new("pkexec")
+        .args(["dpkg", "-i", &path.to_string_lossy()])
+        .status()
+        .map_err(|e| format!("Failed to run installer: {}", e))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("Installation failed (exit: {:?})", status.code()))
+    }
+}
+
 #[tauri::command]
 pub async fn install_update(app: AppHandle) -> Result<(), String> {
     let url = {
@@ -94,19 +162,10 @@ pub async fn install_update(app: AppHandle) -> Result<(), String> {
         .await
         .map_err(|e| format!("Failed to read response: {}", e))?;
 
-    let tmp = std::env::temp_dir().join("world-office-update.deb");
+    let tmp = std::env::temp_dir().join(installer_name());
     std::fs::write(&tmp, &bytes).map_err(|e| format!("Failed to write temp file: {}", e))?;
 
     let _ = app.emit("update-downloaded", ());
 
-    let status = std::process::Command::new("pkexec")
-        .args(["dpkg", "-i", &tmp.to_string_lossy()])
-        .status()
-        .map_err(|e| format!("Failed to run installer: {}", e))?;
-
-    if status.success() {
-        Ok(())
-    } else {
-        Err("Installation failed (non-zero exit)".to_string())
-    }
+    run_installer(&tmp)
 }

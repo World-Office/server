@@ -25,4 +25,6 @@ if (existsSync(target)) {
 mkdirSync(target, { recursive: true })
 
 cpSync(webDist, target, { recursive: true })
+cpSync(resolve(__dirname, "../settings.html"), resolve(target, "settings.html"))
 console.log("Copied build output to", target)
+console.log("Copied settings.html to dist")

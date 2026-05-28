@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
+use std::env;
 
 const MAX_RECENT_FILES: usize = 10;
 const RECENT_FILES_KEY: &str = "recent_files.json";
@@ -83,13 +84,31 @@ impl SessionState {
         if !docs.contains(&path) {
             docs.push(path);
         }
-        self.save();
+        let docs_to_save = docs.clone();
+        drop(docs);
+        self.save_with_docs(docs_to_save);
     }
 
     pub fn remove_document(&self, label: &str) {
         let mut docs = self.open_documents.lock().unwrap();
         docs.retain(|d| d != label);
-        self.save();
+        let docs_to_save = docs.clone();
+        drop(docs);
+        self.save_with_docs(docs_to_save);
+    }
+
+    fn save_with_docs(&self, docs: Vec<String>) {
+        if let Some(path) = Self::session_path() {
+            if let Some(parent) = path.parent() {
+                let _ = fs::create_dir_all(parent);
+            }
+            let _ = fs::write(&path, serde_json::to_string(&docs).unwrap_or_default());
+        }
+    }
+
+    fn save(&self) {
+        let docs = self.open_documents.lock().unwrap().clone();
+        self.save_with_docs(docs);
     }
 
     pub fn get_open_documents(&self) -> Vec<String> {
@@ -109,14 +128,98 @@ impl SessionState {
             })
             .unwrap_or_default()
     }
+}
 
-    fn save(&self) {
-        if let Some(path) = Self::session_path() {
-            if let Some(parent) = path.parent() {
-                let _ = fs::create_dir_all(parent);
-            }
-            let docs = self.open_documents.lock().unwrap().clone();
-            let _ = fs::write(&path, serde_json::to_string(&docs).unwrap_or_default());
+    #[cfg(test)]
+    mod tests {
+    use super::*;
+    use std::env;
+    use std::fs;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_app_state_new() {
+        // Clear any existing recent files to ensure test isolation
+        if let Some(path) = AppState::get_storage_path() {
+            let _ = fs::remove_file(&path);
         }
+        
+        let state = AppState::new();
+        assert_eq!(state.get_recent_files().len(), 0);
+        assert_eq!(*state.window_count.lock().unwrap(), 0);
+    }
+
+    #[test]
+    fn test_add_recent_file() {
+        // Clear any existing recent files to ensure test isolation
+        if let Some(path) = AppState::get_storage_path() {
+            let _ = fs::remove_file(&path);
+        }
+        
+        let state = AppState::new();
+        state.add_recent_file("/test/path/document.docx".to_string());
+        let recent = state.get_recent_files();
+        assert_eq!(recent.len(), 1);
+        assert_eq!(recent[0], "/test/path/document.docx");
+    }
+
+    #[test]
+    fn test_recent_files_max() {
+        let state = AppState::new();
+        // Add 15 files
+        for i in 0..15 {
+            state.add_recent_file(format!("/test/path/file{}.txt", i));
+        }
+        let recent = state.get_recent_files();
+        // Should only keep last 10
+        assert_eq!(recent.len(), 10);
+        // First should be file14 (most recent)
+        assert_eq!(recent[0], "/test/path/file14.txt");
+        // Last should be file5 (least recent of kept files)
+        assert_eq!(recent[9], "/test/path/file5.txt");
+    }
+
+    #[test]
+    fn test_session_state_new() {
+        if let Some(p) = SessionState::session_path() {
+            let _ = fs::remove_file(&p);
+        }
+        let state = SessionState::new();
+        let docs = state.get_open_documents();
+        assert_eq!(docs.len(), 0);
+    }
+
+    #[test]
+    fn test_session_add_remove() {
+        if let Some(p) = SessionState::session_path() {
+            let _ = fs::remove_file(&p);
+        }
+        let state = SessionState::new();
+        state.add_document("test.doc".to_string());
+        let docs = state.get_open_documents();
+        assert_eq!(docs.len(), 1);
+        assert_eq!(docs[0], "test.doc");
+
+        state.remove_document("test.doc");
+        let docs = state.get_open_documents();
+        assert_eq!(docs.len(), 0);
+    }
+
+    #[test]
+    fn test_session_persist_and_load() {
+        let temp = env::temp_dir().join("wo-test-session.json");
+        let _ = fs::remove_file(&temp);
+        let _ = fs::create_dir_all(temp.parent().unwrap());
+
+        let data = vec!["test.doc".to_string()];
+        let json = serde_json::to_string(&data).unwrap();
+        fs::write(&temp, &json).unwrap();
+
+        let raw = fs::read_to_string(&temp).unwrap();
+        let parsed: Vec<String> = serde_json::from_str(&raw).unwrap();
+        assert_eq!(parsed.len(), 1);
+        assert_eq!(parsed[0], "test.doc");
+
+        let _ = fs::remove_file(&temp);
     }
 }

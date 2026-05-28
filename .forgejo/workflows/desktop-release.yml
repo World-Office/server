@@ -65,6 +65,14 @@ jobs:
         run: pnpm --filter @world-office/tauri-poc run build:web
         timeout-minutes: 10
 
+      - name: Run Rust unit tests
+        run: cargo test -p world-office-desktop -- --test-threads=1
+        timeout-minutes: 5
+
+      - name: Run vitest integration tests
+        run: pnpm --filter @world-office/tauri-poc-tests run test
+        timeout-minutes: 5
+
       - name: Build Tauri application
         run: pnpm --filter @world-office/tauri-poc run build
         timeout-minutes: 30
@@ -103,7 +111,24 @@ jobs:
       - name: Install system deps for testing
         run: |
           apt-get update && apt-get install -y --no-install-recommends \
-            xvfb libwebkit2gtk-4.1-dev
+            xvfb libwebkit2gtk-4.1-dev nodejs
+
+      - name: Setup pnpm
+        uses: https://github.com/pnpm/action-setup@v4
+        with:
+          version: 10
+        timeout-minutes: 5
+
+      - name: Setup Node.js
+        uses: https://data.forgejo.org/actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+        timeout-minutes: 5
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        timeout-minutes: 10
 
       - name: Download Tauri binary
         uses: https://data.forgejo.org/actions/download-artifact@v4
@@ -115,6 +140,14 @@ jobs:
         run: |
           dpkg -i artifacts/*.deb || apt-get install -f -y
           xvfb-run world-office --version
+        timeout-minutes: 5
+
+      - name: Run Rust unit tests
+        run: cargo test -p world-office-desktop -- --test-threads=1
+        timeout-minutes: 5
+
+      - name: Run vitest integration tests
+        run: pnpm --filter @world-office/tauri-poc-tests run test
         timeout-minutes: 5
 
   release:

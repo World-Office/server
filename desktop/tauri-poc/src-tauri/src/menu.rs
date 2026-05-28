@@ -46,6 +46,8 @@ pub fn create_app_menu<R: tauri::Runtime>(
         .separator()
         .item(&recent_menu)
         .separator()
+        .text("settings", "Settings")
+        .separator()
         .text("exit", "Exit")
         .build()?;
 
@@ -58,6 +60,28 @@ pub fn create_app_menu<R: tauri::Runtime>(
         .text("paste", "Paste")
         .text("select-all", "Select All")
         .build()?;
+
+    let window_menu = {
+        let mut builder = SubmenuBuilder::new(app, "Window")
+            .text("minimize", "Minimize")
+            .text("zoom-window", "Zoom")
+            .separator()
+            .text("close-window", "Close Window");
+
+        // Add dynamic list of open document windows
+        let mut first = true;
+        for w in crate::window::get_document_windows(app.handle()) {
+            if first {
+                builder = builder.separator();
+                first = false;
+            }
+            let label = w.label().to_string();
+            let title = w.title().unwrap_or_else(|_| label.clone());
+            builder = builder.text(&label, &title);
+        }
+
+        builder.build()?
+    };
 
     let view_menu = SubmenuBuilder::new(app, "View")
         .text("zoom-in", "Zoom In")
@@ -80,6 +104,7 @@ pub fn create_app_menu<R: tauri::Runtime>(
         .item(&file_menu)
         .item(&edit_menu)
         .item(&view_menu)
+        .item(&window_menu)
         .item(&help_menu)
         .build()?;
 

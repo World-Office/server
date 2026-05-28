@@ -34,6 +34,80 @@
       "icons/icon.png"
     ],
     "resources": [],
+    "fileAssociations": [
+      {
+        "ext": ["docx", "doc"],
+        "name": "word-document",
+        "description": "Word Document",
+        "mimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      },
+      {
+        "ext": ["xlsx", "xls"],
+        "name": "excel-spreadsheet",
+        "description": "Excel Spreadsheet",
+        "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      },
+      {
+        "ext": ["pptx", "ppt"],
+        "name": "powerpoint-presentation",
+        "description": "PowerPoint Presentation",
+        "mimeType": "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+      },
+      {
+        "ext": ["pdf"],
+        "name": "pdf-document",
+        "description": "PDF Document",
+        "mimeType": "application/pdf"
+      },
+      {
+        "ext": ["odt"],
+        "name": "odt-document",
+        "description": "OpenDocument Text",
+        "mimeType": "application/vnd.oasis.opendocument.text"
+      },
+      {
+        "ext": ["ods"],
+        "name": "ods-spreadsheet",
+        "description": "OpenDocument Spreadsheet",
+        "mimeType": "application/vnd.oasis.opendocument.spreadsheet"
+      },
+      {
+        "ext": ["odp"],
+        "name": "odp-presentation",
+        "description": "OpenDocument Presentation",
+        "mimeType": "application/vnd.oasis.opendocument.presentation"
+      },
+      {
+        "ext": ["rtf"],
+        "name": "rtf-document",
+        "description": "Rich Text Format",
+        "mimeType": "application/rtf"
+      },
+      {
+        "ext": ["txt"],
+        "name": "text-document",
+        "description": "Plain Text",
+        "mimeType": "text/plain"
+      },
+      {
+        "ext": ["html", "htm"],
+        "name": "html-document",
+        "description": "HTML Document",
+        "mimeType": "text/html"
+      },
+      {
+        "ext": ["epub"],
+        "name": "epub-document",
+        "description": "EPUB eBook",
+        "mimeType": "application/epub+zip"
+      },
+      {
+        "ext": ["fb2"],
+        "name": "fb2-document",
+        "description": "FictionBook",
+        "mimeType": "application/x-fictionbook+xml"
+      }
+    ],
     "copyright": "Copyright © 2026 World Office",
     "category": "Office",
     "shortDescription": "World Office — Independent Document Suite",

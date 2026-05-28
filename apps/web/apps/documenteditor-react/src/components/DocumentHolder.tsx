@@ -1,6 +1,5 @@
 import { observer } from "mobx-react-lite"
-import { useEffect, useRef } from "react"
-import { useSdkCallback } from "@world-office/sdk-bridge"
+import { useEffect, useRef, useState } from "react"
 import { createCursorUpdate } from "@world-office/collaboration-client"
 import { documentStore } from "../stores/DocumentStore"
 import { collaborationStore } from "../lib/collaboration"
@@ -12,6 +11,7 @@ const DEMO_PAGE_COUNT = 3
 const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const initialized = useRef(false)
+  const [mousePos, setMousePos] = useState<{x: number, y: number} | null>(null)
 
   // Initialize renderer once on mount
   useEffect(() => {
@@ -31,31 +31,41 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
     renderPage(documentStore.currentPage, documentStore.zoomLevel)
   }, [documentStore.currentPage, documentStore.zoomLevel])
 
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    const sender = collabSendRef.send
+    if (!sender) return
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const rect = canvas.getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+
+      if (mousePos && Math.abs(mousePos.x - x) < 5 && Math.abs(mousePos.y - y) < 5) {
+        return
+      }
+
+      setMousePos({x, y})
+
+      const update = createCursorUpdate({
+        session_id: collaborationStore.sessionId ?? "",
+        user_id: currentUser.id,
+        username: currentUser.username,
+        color: "#3498DB",
+        cursor_position: { page: documentStore.currentPage, x, y },
+      })
+      sender(update)
+    }
+
+    canvas.addEventListener("mousemove", handleMouseMove)
+    return () => canvas.removeEventListener("mousemove", handleMouseMove)
+  }, [mousePos, documentStore.currentPage])
+
   const totalPages = getTotalPages()
   const canPrev = documentStore.currentPage > 0
   const canNext = documentStore.currentPage < totalPages - 1
-
-  useSdkCallback("asc_onFocusObject", (objects) => {
-    const sender = collabSendRef.send
-    if (!sender || objects.length === 0) return
-
-    const sel = objects[0]
-    const val = sel.get_ObjectValue()
-    if (!val) return
-
-    const page = documentStore.currentPage
-    const x = 100
-    const y = 100
-
-    const update = createCursorUpdate({
-      session_id: collaborationStore.sessionId ?? "",
-      user_id: currentUser.id,
-      username: currentUser.username,
-      color: "#3498DB",
-      cursor_position: { page, x, y },
-    })
-    sender(update)
-  })
 
   const remoteCursors = Array.from(collaborationStore.remoteCursors.entries())
 

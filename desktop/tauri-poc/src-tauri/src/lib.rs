@@ -19,7 +19,7 @@ use tauri::Manager;
 use tray::create_system_tray;
 
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
@@ -72,6 +72,22 @@ pub fn run() {
         .manage(plugins::PluginManager::new())
         .manage(Mutex::new(updater::UpdateState::new()))
         .setup(|app| {
+            // Register single-instance plugin (all desktop platforms)
+            #[cfg(desktop)]
+            {
+                let _ = app.handle().plugin(
+                    tauri_plugin_single_instance::init(|app, args, _cwd| {
+                        // args[0] is program name; skip it, open any remaining file paths
+                        for arg in args.iter().skip(1) {
+                            let path = std::path::Path::new(arg);
+                            if path.exists() {
+                                let _ = commands::open_file(app, arg.clone());
+                            }
+                        }
+                    }),
+                );
+            }
+
             // Set application menu
             let menu = create_app_menu(app)?;
             app.set_menu(menu)?;
@@ -119,8 +135,36 @@ pub fn run() {
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application");
+
+    app.run(|handle, event| {
+        match event {
+            #[cfg(any(target_os = "macos", target_os = "ios"))]
+            tauri::RunEvent::Opened { urls } => {
+                for url in urls {
+                    if let Ok(path) = url.to_file_path() {
+                        let path_str = path.to_string_lossy().to_string();
+                        let _ = commands::open_file(handle, path_str);
+                    }
+                }
+            }
+            tauri::RunEvent::WindowEvent {
+                event: window_event,
+                ..
+            } => {
+                if let tauri::WindowEvent::DragDrop(drag_event) = window_event {
+                    if let tauri::DragDropEvent::Drop { paths, .. } = drag_event {
+                        for path in paths {
+                            let path_str = path.to_string_lossy().to_string();
+                            let _ = commands::open_file(handle, path_str);
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+    });
 }
 
 fn handle_menu_event(app: &tauri::AppHandle, id: &str) {
@@ -173,6 +217,42 @@ fn handle_menu_event(app: &tauri::AppHandle, id: &str) {
         }
         "documentation" => {
             bridge::emit_menu_event(app, "documentation");
+        }
+        "minimize" => {
+            if let Some(window) = window::get_focused_window(app) {
+                let _ = window.minimize();
+            }
+        }
+        "zoom-window" => {
+            if let Some(window) = window::get_focused_window(app) {
+                let maximized = window.is_maximized().unwrap_or(false);
+                if maximized {
+                    let _ = window.unmaximize();
+                } else {
+                    let _ = window.maximize();
+                }
+            }
+        }
+        "close-window" => {
+            // Close the focused document window, or hide main
+            if let Some(window) = window::get_focused_window(app) {
+                if window.label() == "main" {
+                    let _ = window.hide();
+                } else {
+                    let label = window.label().to_string();
+                    let session = app.state::<SessionState>();
+                    session.remove_document(&label);
+                    let _ = window.close();
+                }
+            }
+        }
+        // Handle Window menu document entries: focus the clicked window
+        id if app.get_webview_window(id).is_some() => {
+            if let Some(window) = app.get_webview_window(id) {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
         }
         _ if id.starts_with("recent-") => {
             let state = app.state::<AppState>();

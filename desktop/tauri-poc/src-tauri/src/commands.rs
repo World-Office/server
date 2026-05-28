@@ -1,34 +1,43 @@
 use crate::state::{AppState, SessionState};
 use crate::window;
-use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager, PhysicalPosition, State, WebviewUrl, WebviewWindowBuilder};
 
 #[tauri::command]
 pub fn new_doc(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
     window::create_new_document_window(&app).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
-pub fn open_doc(app: AppHandle, state: State<'_, AppState>, path: String) -> Result<(), String> {
-    // In a real app, you would read the file and pass content to frontend
-    state.add_recent_file(path.clone());
+pub fn open_file(app: &AppHandle, path: String) -> Result<(), String> {
+    app.state::<AppState>().add_recent_file(path.clone());
+
+    let state = app.state::<AppState>();
+    let mut window_count = state.window_count.lock().unwrap();
+    *window_count += 1;
+    let count = *window_count;
+    let offset = (count as f64) * 30.0;
+    let pos = PhysicalPosition::new(100.0 + offset, 100.0 + offset);
+    drop(window_count);
 
     let filename = std::path::Path::new(&path)
         .file_name()
         .and_then(|n| n.to_str())
         .unwrap_or("Document");
 
-    let _ = WebviewWindowBuilder::new(&app, &path, WebviewUrl::App("index.html".into()))
+    let _ = WebviewWindowBuilder::new(app, &path, WebviewUrl::App("index.html".into()))
         .title(filename)
         .inner_size(800.0, 600.0)
         .min_inner_size(400.0, 300.0)
-        .center()
+        .position(pos.x, pos.y)
         .build()
         .map_err(|e| e.to_string())?;
 
-    let session = app.state::<SessionState>();
-    session.add_document(path);
-
+    app.state::<SessionState>().add_document(path);
     Ok(())
+}
+
+#[tauri::command]
+pub fn open_doc(app: AppHandle, _state: State<'_, AppState>, path: String) -> Result<(), String> {
+    open_file(&app, path)
 }
 
 #[tauri::command]

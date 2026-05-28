@@ -1,32 +1,17 @@
+---
 # =============================================================================
-# World Office E2E Test Stack
+# World Office E2E Test Stack with OCIS
 # =============================================================================
-#
-# This Docker Compose file spins up the full integration stack for E2E testing:
-#   1. Document Server (built from World-Office/server/)
-#   2. OCIS (ownCloud Infinite Scale)
-#   3. worldoffice-opencloud Companion
-#
-# Usage:
-#   docker compose -f docker-compose.test.yml up -d
-#   docker compose -f docker-compose.test.yml logs -f
-#   docker compose -f docker-compose.test.yml down -v
-#
-# Health checks verify all services are ready before accepting traffic.
-
-version: '3.8'
 
 services:
-  # ===========================================================================
   # Document Server - WOPI Client (Editor)
-  # ===========================================================================
   documentserver:
     build:
       context: ./docker/documentserver
       dockerfile: Dockerfile
     container_name: test-documentserver
     hostname: documentserver
-    restart: "no"  # Don't auto-restart in tests
+    restart: "no"
     ports:
       - "8080:80"
     environment:
@@ -44,12 +29,10 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost/hosting/discovery"]
       interval: 10s
       timeout: 5s
-      start_period: 120s  # C++ startup is slow
-      retries: 30
+      start_period: 30s
+      retries: 15
 
-  # ===========================================================================
-  # OCIS - ownCloud Infinite Scale (WOPI Host)
-  # ===========================================================================
+  # OCIS - WOPI Host
   ocis:
     image: owncloud/ocis:5.0
     container_name: test-ocis
@@ -58,99 +41,60 @@ services:
     ports:
       - "9200:9200"
     environment:
+      # Identity (required for OCIS 5.0)
+      - OCIS_SYSTEM_USER_ID=95f7e184-878e-4d1e-a23f-10fe5b2d30ff
+
       # Domain and URLs
-      - OCIS_DOMAIN=${OCIS_DOMAIN:-localhost}
-      - OCIS_URL=${OCIS_URL:-http://localhost:9200}
-      - PROXY_TLS=${PROXY_TLS:-false}
-      
+      - OCIS_DOMAIN=localhost
+      - OCIS_URL=https://localhost:9200
+      - PROXY_TLS=false
+
       # JWT (must match Document Server)
-      - OCIS_JWT_SECRET=${OCIS_JWT_SECRET:-test_ocis_jwt_secret_placeholder}
-      
-      # Storage
-      - STORAGE_HOME_DRIVER=owncloud
-      - STORAGE_USERS_DRIVER=owncloud
-      
+      - OCIS_JWT_SECRET=test_ocis_jwt_secret_placeholder
+      - OCIS_TRANSFER_SECRET=test_transfer_secret_placeholder
+      - OCIS_MACHINE_AUTH_API_KEY=test-machine-auth-api-key
+
+      # Storage drivers (use OCIS 5.0 defaults - driver names changed from owncloud)
+
       # Authentication
       - AUTHENTICATION_HANDLERS=basic
+
+      # Demo users
       - IDM_CREATE_DEMO_USERS=true
-      
+
       # Logging
       - OCIS_LOG_LEVEL=warn
       - OCIS_LOG_PRETTY=true
-      
-      # WOPI Collaboration
+
+      # IDP issuer override (OCIS requires https:// for issuer)
+      - LIBREGRAPH_ISSUER=https://localhost:9200
+
+      # Skip certificate warnings for testing
+      - OCIS_INSECURE=true
+
+      # WOPI collaboration
       - COLLABORATION_WOPI_SRC=http://localhost:9200
       - COLLABORATION_APP_ADDR=http://documentserver:80
       - COLLABORATION_APP_NAME=World Office Document Server
     volumes:
+      - ./docker/ocis-init.yaml:/etc/ocis/ocis.yaml:ro
       - ocis-data:/var/lib/ocis
-      - ./docker/ocis/web-ui.json:/etc/ocis/web-ui.json:ro
     networks:
       - test-network
     depends_on:
       documentserver:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9200/health"]
       interval: 10s
       timeout: 5s
       start_period: 60s
-      retries: 30
-
-  # ===========================================================================
-  # Companion - Deployment Dashboard
-  # ===========================================================================
-  # NOTE: The worldoffice-opencloud companion is not yet built.
-  # Uncomment this section once the companion app is available.
-  # companion:
-  #   build:
-  #     context: ../worldoffice-opencloud
-  #     dockerfile: Dockerfile
-  #   container_name: test-companion
-  #   hostname: companion
-  #   restart: "no"
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     - PORT=3000
-  #     - NODE_ENV=test
-  #     - OCIS_DOMAIN=${OCIS_DOMAIN:-localhost}
-  #     - DOCUMENT_SERVER_DOMAIN=${DOCUMENT_SERVER_DOMAIN:-localhost}
-  #     - OCIS_JWT_SECRET=${OCIS_JWT_SECRET:-test_ocis_jwt_secret_placeholder}
-  #     - DOCUMENT_SERVER_JWT_SECRET=${DOCUMENT_SERVER_JWT_SECRET:-test_ds_jwt_secret_placeholder}
-  #     - OCIS_INTERNAL_PORT=9200
-  #     - DOCUMENT_SERVER_INTERNAL_PORT=80
-  #     - OCIS_DATA_DIR=./data/ocis
-  #     - DOCUMENT_SERVER_DATA_DIR=./data/documentserver
-  #     - ENABLE_SSL=false
-  #     - ENABLE_METRICS=false
-  #     - ENABLE_LOGS=true
-  #   volumes:
-  #     - companion-data:/app/data
-  #   networks:
-  #     - test-network
-  #   depends_on:
-  #     ocis:
-  #       condition: service_healthy
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     start_period: 30s
-  #     retries: 30
-
-# =============================================================================
-# Networks
-# =============================================================================
+      retries: 15
 
 networks:
   test-network:
     driver: bridge
     name: worldoffice-test-network
-
-# =============================================================================
-# Volumes
-# =============================================================================
 
 volumes:
   documentserver-data:
@@ -159,5 +103,3 @@ volumes:
     name: test-documentserver-logs
   ocis-data:
     name: test-ocis-data
-  companion-data:
-    name: test-companion-data
