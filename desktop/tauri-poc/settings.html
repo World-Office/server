@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>World Office — Settings</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+      background: #f5f5f5; color: #222; display: flex; height: 100vh;
+      --sidebar-width: 180px;
+    }
+    @media (prefers-color-scheme: dark) {
+      body { background: #1e1e1e; color: #e0e0e0; }
+      .sidebar { background: #252526; border-color: #333; }
+      .tab.active { background: #37373d; }
+      .form-group label { color: #ccc; }
+      input, select { background: #3c3c3c; color: #e0e0e0; border-color: #555; }
+      button { background: #0e639c; color: #fff; }
+      button.secondary { background: #3c3c3c; color: #e0e0e0; }
+      .status-bar { background: #007acc; }
+    }
+    .sidebar {
+      width: var(--sidebar-width); background: #fff; border-right: 1px solid #ddd;
+      padding: 16px 0; display: flex; flex-direction: column;
+    }
+    .tab {
+      padding: 10px 20px; cursor: pointer; font-size: 13px;
+      border: none; background: none; text-align: left; color: inherit;
+    }
+    .tab:hover { background: #e8e8e8; }
+    .tab.active { background: #e0e0e0; font-weight: 600; }
+    .content { flex: 1; padding: 24px; overflow-y: auto; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .panel h2 { margin-bottom: 20px; font-size: 18px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; margin-bottom: 4px; font-size: 13px; font-weight: 500; }
+    .form-group input, .form-group select {
+      width: 100%; padding: 8px 10px; font-size: 13px; border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    .form-group input[type="checkbox"] { width: auto; }
+    .form-row { display: flex; gap: 16px; }
+    .form-row .form-group { flex: 1; }
+    .actions { display: flex; gap: 8px; justify-content: flex-end; padding: 16px 24px; border-top: 1px solid #ddd; }
+    button {
+      padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;
+      font-size: 13px;
+    }
+    button.primary { background: #007acc; color: #fff; }
+    button.secondary { background: #e0e0e0; color: #333; }
+    button.primary:hover { background: #005999; }
+    .update-banner {
+      display: none; align-items: center; gap: 10px;
+      padding: 8px 16px; background: #d4edda; color: #155724;
+      font-size: 13px; border-bottom: 1px solid #c3e6cb;
+    }
+    .update-banner.warning { background: #fff3cd; color: #856404; border-color: #ffeeba; }
+    .update-banner .btn-sm {
+      padding: 2px 10px; border: 1px solid currentColor; border-radius: 3px;
+      background: transparent; cursor: pointer; font-size: 12px; color: inherit;
+    }
+    .update-banner .btn-sm:hover { background: rgba(0,0,0,0.05); }
+    .update-banner .close { margin-left: auto; cursor: pointer; opacity: 0.6; }
+    @media (prefers-color-scheme: dark) {
+      .update-banner { background: #1e3a2f; color: #a3d9a5; border-color: #2a5a3a; }
+      .update-banner.warning { background: #3a351e; color: #e6d583; border-color: #5a4a2a; }
+    }
+    .status-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 24px;
+      background: #007acc; color: #fff; font-size: 12px;
+      display: flex; align-items: center; padding: 0 12px;
+    }
+    .status-bar .msg { flex: 1; }
+    .status-bar .saved { opacity: 0.8; }
+  </style>
+</head>
+<body>
+  <div class="sidebar" id="sidebar"></div>
+  <div style="flex:1;display:flex;flex-direction:column">
+    <div class="update-banner" id="update-banner">
+      <span id="update-msg">Update available</span>
+      <button class="btn-sm" id="btn-update-install">Download &amp; Install</button>
+      <span class="close" id="btn-update-dismiss">&times;</span>
+    </div>
+    <div class="content" id="content">
+      <div class="panel active" id="panel-general">
+        <h2>General</h2>
+        <div class="form-group">
+          <label>Data directory</label>
+          <input type="text" id="data-directory" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Language</label>
+            <select id="language">
+              <option value="en">English</option>
+              <option value="de">Deutsch</option>
+              <option value="fr">Français</option>
+              <option value="es">Español</option>
+            </select>
+          </div>
+          <div class="form-group" style="display:flex;align-items:center;padding-top:20px">
+            <label><input type="checkbox" id="auto-start" /> Auto-start at login</label>
+          </div>
+        </div>
+        <div class="form-group" style="padding-top:12px;border-top:1px solid #ddd">
+          <label>Updates</label>
+          <div style="font-size:13px;color:#888;margin-bottom:8px" id="version-info">Version 0.1.0</div>
+          <button class="secondary" id="btn-check-updates">Check for Updates</button>
+        </div>
+      </div>
+      <div class="panel" id="panel-editor">
+        <h2>Editor</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Default format</label>
+            <select id="default-format">
+              <option value="docx">DOCX</option>
+              <option value="odt">ODT</option>
+              <option value="txt">TXT</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Autosave interval (seconds)</label>
+            <input type="number" id="autosave-interval" min="10" max="600" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label><input type="checkbox" id="spellcheck" /> Enable spellcheck</label>
+        </div>
+      </div>
+      <div class="panel" id="panel-network">
+        <h2>Network</h2>
+        <div class="form-group">
+          <label>Server URL</label>
+          <input type="text" id="server-url" placeholder="http://localhost:8004" />
+        </div>
+        <div class="form-group">
+          <label>Proxy URL (optional)</label>
+          <input type="text" id="proxy-url" placeholder="http://proxy:8080" />
+        </div>
+      </div>
+      <div class="panel" id="panel-appearance">
+        <h2>Appearance</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Theme</label>
+            <select id="theme">
+              <option value="system">System</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Font size</label>
+            <input type="number" id="font-size" min="10" max="24" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Toolbar layout</label>
+          <select id="toolbar-layout">
+            <option value="default">Default</option>
+            <option value="compact">Compact</option>
+            <option value="expanded">Expanded</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="secondary" id="btn-reset">Reset to Defaults</button>
+      <button class="secondary" id="btn-cancel">Cancel</button>
+      <button class="primary" id="btn-save">Save</button>
+    </div>
+  </div>
+  <div class="status-bar" id="status-bar"><span class="msg" id="status-msg">Ready</span></div>
+
+  <script type="module">
+    const { invoke } = window.__TAURI__?.core || {};
+
+    const TABS = ['general', 'editor', 'network', 'appearance'];
+    let originalSettings = null;
+
+    const sidebar = document.getElementById('sidebar');
+    TABS.forEach((tab, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'tab' + (i === 0 ? ' active' : '');
+      btn.textContent = tab.charAt(0).toUpperCase() + tab.slice(1);
+      btn.onclick = () => switchTab(tab);
+      sidebar.appendChild(btn);
+    });
+
+    function switchTab(name) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelector(`.tab:nth-child(${TABS.indexOf(name) + 1})`).classList.add('active');
+      document.getElementById(`panel-${name}`).classList.add('active');
+    }
+
+    function setStatus(msg, isSaved = false) {
+      document.getElementById('status-msg').textContent = msg;
+      document.querySelector('.saved')?.remove();
+      if (isSaved) {
+        const el = document.createElement('span');
+        el.className = 'saved';
+        el.textContent = ' \u2713 Saved';
+        document.getElementById('status-msg').appendChild(el);
+      }
+    }
+
+    function loadSettings(settings) {
+      originalSettings = JSON.parse(JSON.stringify(settings));
+      document.getElementById('data-directory').value = settings.general.data_directory;
+      document.getElementById('language').value = settings.general.language;
+      document.getElementById('auto-start').checked = settings.general.auto_start;
+      document.getElementById('default-format').value = settings.editor.default_format;
+      document.getElementById('autosave-interval').value = settings.editor.autosave_interval;
+      document.getElementById('spellcheck').checked = settings.editor.spellcheck;
+      document.getElementById('server-url').value = settings.network.server_url;
+      document.getElementById('proxy-url').value = settings.network.proxy_url;
+      document.getElementById('theme').value = settings.appearance.theme;
+      document.getElementById('font-size').value = settings.appearance.font_size;
+      document.getElementById('toolbar-layout').value = settings.appearance.toolbar_layout;
+    }
+
+    function collectSettings() {
+      return {
+        general: {
+          data_directory: document.getElementById('data-directory').value,
+          language: document.getElementById('language').value,
+          auto_start: document.getElementById('auto-start').checked,
+        },
+        editor: {
+          default_format: document.getElementById('default-format').value,
+          autosave_interval: parseInt(document.getElementById('autosave-interval').value) || 60,
+          spellcheck: document.getElementById('spellcheck').checked,
+        },
+        network: {
+          server_url: document.getElementById('server-url').value,
+          proxy_url: document.getElementById('proxy-url').value,
+        },
+        appearance: {
+          theme: document.getElementById('theme').value,
+          font_size: parseInt(document.getElementById('font-size').value) || 14,
+          toolbar_layout: document.getElementById('toolbar-layout').value,
+        },
+      };
+    }
+
+    if (invoke) {
+      invoke('get_settings').then(loadSettings).catch(e => {
+        setStatus('Error loading settings: ' + e);
+      });
+    }
+
+    document.getElementById('btn-save').onclick = async () => {
+      setStatus('Saving...');
+      try {
+        const settings = collectSettings();
+        if (invoke) {
+          await invoke('save_settings', { settings });
+          originalSettings = JSON.parse(JSON.stringify(settings));
+          setStatus('Settings saved', true);
+        }
+      } catch (e) {
+        setStatus('Error: ' + e);
+      }
+    };
+
+    document.getElementById('btn-cancel').onclick = () => {
+      if (originalSettings) loadSettings(originalSettings);
+      window.close();
+    };
+
+    document.getElementById('btn-reset').onclick = async () => {
+      if (!confirm('Reset all settings to defaults?')) return;
+      setStatus('Resetting...');
+      try {
+        if (invoke) {
+          const defaults = await invoke('reset_settings');
+          loadSettings(defaults);
+          setStatus('Settings reset to defaults', true);
+        }
+      } catch (e) {
+        setStatus('Error: ' + e);
+      }
+    };
+
+    // --- Update notification ---
+    const banner = document.getElementById('update-banner');
+    const updateMsg = document.getElementById('update-msg');
+    const dismissBtn = document.getElementById('btn-update-dismiss');
+    const installBtn = document.getElementById('btn-update-install');
+    let updateVersion = null;
+
+    function showBanner(msg, isWarning) {
+      updateMsg.textContent = msg;
+      banner.className = 'update-banner' + (isWarning ? ' warning' : '');
+      banner.style.display = 'flex';
+    }
+    function hideBanner() { banner.style.display = 'none'; }
+
+    const { listen } = window.__TAURI__?.event || {};
+    if (listen) {
+      listen('update-available', (event) => {
+        const release = event.payload;
+        updateVersion = release.latest_version;
+        showBanner('Update v' + release.latest_version + ' available');
+      });
+      listen('update-downloaded', () => {
+        showBanner('Update downloaded — installing...', false);
+      });
+    }
+
+    if (invoke) {
+      invoke('get_current_version').then(v => {
+        document.getElementById('version-info').textContent = 'Version ' + v;
+      }).catch(() => {});
+    }
+
+    document.getElementById('btn-check-updates').onclick = async () => {
+      if (!invoke) return;
+      setStatus('Checking for updates...');
+      hideBanner();
+      try {
+        const result = await invoke('check_for_updates');
+        if (result) {
+          setStatus('Update v' + result + ' available');
+        } else {
+          setStatus('You have the latest version');
+        }
+      } catch (e) {
+        setStatus('Update check failed: ' + e);
+      }
+    };
+
+    dismissBtn.onclick = hideBanner;
+
+    installBtn.onclick = async () => {
+      if (!invoke) return;
+      setStatus('Downloading update...');
+      try {
+        await invoke('install_update');
+        setStatus('Update installed');
+      } catch (e) {
+        showBanner('Installation failed: ' + e, true);
+        setStatus('Update failed');
+      }
+    };
+  </script>
+</body>
+</html>

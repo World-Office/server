@@ -4,7 +4,7 @@ import { resolve, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const root = resolve(__dirname, "../..")
+const root = resolve(__dirname, "../../..")
 const webDist = resolve(root, "apps/web/apps/documenteditor-react/dist")
 const target = resolve(__dirname, "../dist")
 

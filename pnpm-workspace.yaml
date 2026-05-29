@@ -6,4 +6,5 @@ packages:
   - "apps-web-enterprise/*"
   - "integrations/*"
   - "tools/*"
+  - "desktop/tauri-poc"
   - "desktop/tauri-poc/tests"
