@@ -4,8 +4,9 @@ import { resolve } from "path"
 import { existsSync } from "fs"
 
 const APP_PATH = resolve(__dirname, "../src-tauri/target/release/world-office-desktop")
+const HAS_DISPLAY = !!(process.env.DISPLAY || process.env.WAYLAND_DISPLAY)
 
-if (!existsSync(APP_PATH)) {
+if (!existsSync(APP_PATH) || !HAS_DISPLAY) {
   describe.skip("Desktop App", () => {
     // Placeholder test to keep the describe block valid
     it("should be skipped", () => {

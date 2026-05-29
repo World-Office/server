@@ -165,6 +165,9 @@ impl SessionState {
 
     #[test]
     fn test_recent_files_max() {
+        if let Some(path) = AppState::get_storage_path() {
+            let _ = fs::remove_file(&path);
+        }
         let state = AppState::new();
         // Add 15 files
         for i in 0..15 {

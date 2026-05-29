@@ -14,7 +14,7 @@ describe("File Associations", () => {
     expect(tauriConf.bundle.active).toBe(true)
   })
 
-  it("should have Office as bundle category", () => {
-    expect(tauriConf.bundle.category).toBe("Office")
+  it("should have Utility as bundle category", () => {
+    expect(tauriConf.bundle.category).toBe("Utility")
   })
 })
