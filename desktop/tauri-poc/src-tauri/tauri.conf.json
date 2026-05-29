@@ -29,7 +29,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis", "deb", "rpm", "dmg", "app"],
+    "targets": ["nsis", "deb", "rpm", "dmg", "app", "appimage"],
     "icon": [
       "icons/icon.png"
     ],
@@ -109,7 +109,7 @@
       }
     ],
     "copyright": "Copyright © 2026 World Office",
-    "category": "Office",
+    "category": "Utility",
     "shortDescription": "World Office — Independent Document Suite",
     "longDescription": "World Office is a modern, open-source office suite supporting DOCX, XLSX, PPTX, PDF, ODF, and more.",
     "linux": {

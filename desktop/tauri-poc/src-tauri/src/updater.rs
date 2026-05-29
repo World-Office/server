@@ -1,5 +1,6 @@
 use semver::Version;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
 use std::sync::Mutex;
 use tauri::{AppHandle, Emitter, Manager};
 
@@ -17,6 +18,7 @@ pub struct ReleaseInfo {
 pub struct UpdateState {
     pub latest_version: Option<String>,
     pub download_url: Option<String>,
+    pub checksum: Option<String>,
 }
 
 impl UpdateState {
@@ -24,6 +26,7 @@ impl UpdateState {
         Self {
             latest_version: None,
             download_url: None,
+            checksum: None,
         }
     }
 }
@@ -61,6 +64,7 @@ pub async fn check_for_updates(app: AppHandle) -> Result<Option<String>, String>
         let mut st = state.lock().unwrap();
         st.latest_version = Some(release.latest_version.clone());
         st.download_url = Some(release.download_url.clone());
+        st.checksum = Some(release.checksum.clone());
     }
 
     if latest > current {
@@ -142,12 +146,15 @@ fn run_installer(path: &std::path::Path) -> Result<(), String> {
 
 #[tauri::command]
 pub async fn install_update(app: AppHandle) -> Result<(), String> {
-    let url = {
+    let (url, expected_checksum) = {
         let state = app.state::<Mutex<UpdateState>>();
         let st = state.lock().unwrap();
-        st.download_url
+        let url = st
+            .download_url
             .clone()
-            .ok_or_else(|| "No pending update".to_string())?
+            .ok_or_else(|| "No pending update".to_string())?;
+        let chk = st.checksum.clone().unwrap_or_default();
+        (url, chk)
     };
 
     let client = reqwest::Client::new();
@@ -161,6 +168,17 @@ pub async fn install_update(app: AppHandle) -> Result<(), String> {
         .bytes()
         .await
         .map_err(|e| format!("Failed to read response: {}", e))?;
+
+    // Verify SHA256 checksum
+    if !expected_checksum.is_empty() {
+        let actual = format!("{:x}", Sha256::digest(&bytes));
+        if actual != expected_checksum.to_lowercase() {
+            return Err(format!(
+                "Checksum mismatch: expected {}, got {}",
+                expected_checksum, actual
+            ));
+        }
+    }
 
     let tmp = std::env::temp_dir().join(installer_name());
     std::fs::write(&tmp, &bytes).map_err(|e| format!("Failed to write temp file: {}", e))?;
