@@ -8,7 +8,7 @@ on:
 jobs:
   cargo-audit:
     name: Rust Dependency Audit
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -42,7 +42,7 @@ jobs:
 
   npm-audit:
     name: NPM Dependency Audit
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4

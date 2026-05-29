@@ -9,7 +9,7 @@ on:
 jobs:
   build-core:
     name: Build Rust Crates (Release)
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -47,7 +47,7 @@ jobs:
 
   build-web:
     name: Build Web Apps
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -85,7 +85,7 @@ jobs:
 
   create-release:
     name: Create Release
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     needs: [build-core, build-web]
     steps:
       - name: Checkout

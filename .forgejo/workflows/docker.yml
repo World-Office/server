@@ -12,7 +12,7 @@ env:
 jobs:
   build-services:
     name: Build ${{ matrix.service }}
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     strategy:
       matrix:
         include:

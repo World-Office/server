@@ -9,7 +9,7 @@ on:
 jobs:
   metadata:
     name: Publish releases.json
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     steps:
       - name: Checkout desktop-releases repo
         uses: https://data.forgejo.org/actions/checkout@v4

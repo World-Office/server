@@ -12,7 +12,7 @@ env:
 jobs:
   build-wasm-x2t:
     name: Build wo-x2t-wasm
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -45,7 +45,7 @@ jobs:
 
   build-wasm-renderer:
     name: Build wo-renderer-wasm
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4

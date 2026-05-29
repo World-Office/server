@@ -15,7 +15,7 @@ concurrency:
 jobs:
   build-linux:
     name: Build Tauri Desktop (Linux)
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -102,7 +102,7 @@ jobs:
 
   test-desktop:
     name: Test Desktop
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     needs: [build-linux]
     steps:
       - name: Checkout
@@ -153,7 +153,7 @@ jobs:
   release:
     name: Create Release
     if: startsWith(forgejo.ref, 'refs/tags/v')
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     needs: [build-linux]
     steps:
       - name: Checkout debian-repo

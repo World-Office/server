@@ -13,7 +13,7 @@ env:
 jobs:
   lint-rust:
     name: Rust Lint
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -54,7 +54,7 @@ jobs:
 
   test-rust:
     name: Rust Test (nightly)
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -85,7 +85,7 @@ jobs:
 
   lint-ts:
     name: TypeScript Lint
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -114,7 +114,7 @@ jobs:
 
   typecheck-ts:
     name: TypeScript Typecheck
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -143,7 +143,7 @@ jobs:
 
   build-ts:
     name: TypeScript Build
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -172,7 +172,7 @@ jobs:
 
   build-rust:
     name: Rust Build Check
-    runs-on: docker://node:20-bookworm
+    runs-on: codeberg-medium
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
