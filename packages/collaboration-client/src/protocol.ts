@@ -77,12 +77,30 @@ export interface ParticipantUpdate {
 }
 
 /**
+ * A comment event broadcast over WebSocket (added/deleted/resolved).
+ * Matches server CommentEventData struct.
+ */
+export interface CommentEventData {
+  type: "added" | "deleted" | "resolved"
+  comment_id: string
+  document_id: string
+  parent_id: string | null
+  author_id: string
+  author_name: string
+  text: string
+  resolved: boolean
+  mentions: string
+  created_at: string
+}
+
+/**
   * Client-to-server WebSocket message envelope.
   * Matches server WsMessage enum with serde @serde(tag = "type", rename_all = "snake_case").
   */
 export type WsMessage =
   | { type: "edit"; operation: EditOperation }
   | { type: "participant_update"; update: ParticipantUpdate }
+  | { type: "comment_event"; data: CommentEventData }
 
 /**
  * Initial state sent to a new WebSocket client upon connect, containing
@@ -100,6 +118,7 @@ export type ServerMessage =
   | { type: "edit"; operation: EditOperation }
   | { type: "participant_update"; update: ParticipantUpdate }
   | { type: "initial_state"; state: InitialState }
+  | { type: "comment_event"; data: CommentEventData }
 
 // ── Server REST Responses ──
 
@@ -185,6 +204,9 @@ export function parseServerMessage(json: string): ServerMessage | null {
   }
   if (obj.type === "initial_state" && typeof obj.state === "object") {
     return { type: "initial_state", state: obj.state as InitialState }
+  }
+  if (obj.type === "comment_event" && typeof obj.data === "object") {
+    return { type: "comment_event", data: obj.data as CommentEventData }
   }
 
   return null

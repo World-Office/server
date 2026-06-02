@@ -13,6 +13,7 @@ import {
   type EditOperation,
   type ParticipantUpdate,
   type InitialState,
+  type CommentEventData,
   type WsMessage,
   createInsertOp,
   createDeleteOp,
@@ -30,6 +31,7 @@ export interface WebSocketManagerEvents {
   operation: (op: EditOperation) => void
   participantUpdate: (update: ParticipantUpdate) => void
   initialState: (state: InitialState) => void
+  commentEvent: (data: CommentEventData) => void
   stateChange: (state: ConnectionState) => void
 }
 
@@ -208,6 +210,17 @@ export class WebSocketManager {
     }
   }
 
+  /** Broadcast a comment event to other participants. */
+  sendCommentEvent(data: CommentEventData): void {
+    const msg: WsMessage = { type: "comment_event", data }
+    const json = JSON.stringify(msg)
+    if (this.ws && this.ws.readyState === WS_OPEN) {
+      this.ws.send(json)
+    } else {
+      this.messageQueue.push(json)
+    }
+  }
+
   /** Send a raw EditOperation. */
   send(op: EditOperation): void {
     const json = JSON.stringify(op)
@@ -231,6 +244,10 @@ export class WebSocketManager {
       this.emit("participantUpdate", serverMsg.update)
     } else if (serverMsg.type === "initial_state") {
       this.emit("initialState", serverMsg.state)
+    } else if (serverMsg.type === "comment_event") {
+      // Skip our own comment events (echo from server)
+      if (serverMsg.data.author_id === this.userId) return
+      this.emit("commentEvent", serverMsg.data)
     }
   }
 
