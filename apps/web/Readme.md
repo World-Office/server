@@ -57,42 +57,9 @@ The variables seem to be a bit haphazard in approach. There is some structure, b
 
 Importing is via relative paths.
 
-#### Document Editor
+#### Document, Spreadsheet, Presentation, PDF, Visio Editors
 
-```shell
-apps/documenteditor/embed/resources/less/
-apps/documenteditor/forms/resources/less/
-apps/documenteditor/main/resources/less/
-apps/documenteditor/mobile/src/less/
-```
-
-#### Spreadsheet Editor
-
-```shell
-apps/spreadsheeteditor/main/resources/less/
-apps/spreadsheeteditor/mobile/src/less/
-```
-
-#### Presentation Editor
-
-```shell
-apps/presentationeditor/embed/resources/less/
-apps/presentationeditor/main/resources/less/
-apps/presentationeditor/mobile/src/less/
-```
-
-#### PDF Editor
-
-```shell
-apps/pdfeditor/main/resources/less/
-```
-
-
-#### Visio Editor
-
-```shell
-apps/visioeditor/main/resources/less/
-```
+These editors share styling from the `apps/common/` less directory. Individual editor-specific LESS files (if any) are co-located with their React components in `apps/*-react/`.
 
 
 Each directory has a range of LESS files broken down by area, eg slider, search, buttons etc - too many to list here, but should be helpful in finding the correct place to make style changes
@@ -159,13 +126,6 @@ SRC_ROOT
 #### `BUILD_ROOT`
 
 Several JSON files define build instructions and previously contained hard-coded relative paths, for example:
-
-```shell
-build/common.json
-build/presentationeditor.json
-build/documenteditor.json
-...
-```
 
 
 These paths have been replaced with the `$BUILD_ROOT` variable. During the build process, `$BUILD_ROOT` is resolved to the actual build root directory, allowing the same configuration to work regardless of where the project is built or deployed.
