@@ -20,6 +20,7 @@ const config = {
   companionUrl: process.env.COMPANION_URL || "http://localhost:3000",
   coauthoringServiceUrl: process.env.COAUTHORING_SERVICE_URL || "http://localhost:8004",
   coauthoringServiceWs: process.env.COAUTHORING_SERVICE_WS || "ws://localhost:8004",
+  storageServiceUrl: process.env.STORAGE_SERVICE_URL || "http://localhost:8002",
 
   // Internal URLs (for container-to-container communication)
   documentServerInternalUrl: process.env.DOCUMENT_SERVER_INTERNAL_URL || "http://documentserver:80",
