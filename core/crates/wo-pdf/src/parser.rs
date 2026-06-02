@@ -802,7 +802,7 @@ impl PdfParser {
                 if let Some(PdfValue::Integer(r)) =
                     self.get_dict_entry("/Rotate", &page_obj.entries)
                 {
-                    page.rotation = (r % 360).unsigned_abs();
+                    page.rotation = ((r % 360) as i64).abs() as u32;
                 }
 
                 // Extract text from content stream
