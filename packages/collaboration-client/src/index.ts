@@ -2,30 +2,34 @@ export {
   type EditOperation,
   type InsertOperation,
   type DeleteOperation,
+  type ParticipantUpdate,
+  type InitialState,
   type CursorPosition,
   type Selection,
   type Participant,
-  type ParticipantUpdate,
-  type ParticipantEvent,
-  type InitialState,
+  type WsMessage,
   type ServerMessage,
-  type CreateSessionResponse,
-  type JoinSessionResponse,
-  type EditorSession,
-  parseMessage,
-  parseServerMessage,
+  type CommentEventData,
   createInsertOp,
   createDeleteOp,
   createCursorUpdate,
   createSelectionUpdate,
+  parseServerMessage,
   isRemoteMessage,
 } from "./protocol"
 
-export { BackoffStrategy, createBackoffStrategy } from "./reconnection"
-export type { BackoffOptions } from "./reconnection"
+export {
+  WebSocketManager,
+  type WebSocketManagerEvents,
+  type WebSocketManagerOptions,
+  type ConnectionState,
+} from "./client"
 
-export { AuthClient } from "./auth"
-export type { AuthClientOptions, CreateSessionParams, AuthTokens, SessionInfo, RefreshResult } from "./auth"
+export {
+  AuthClient,
+  type AuthClientOptions,
+} from "./auth"
 
-export { WebSocketManager } from "./client"
-export type { WebSocketManagerOptions, WebSocketManagerEvents, ConnectionState } from "./client"
+export {
+  BackoffStrategy,
+} from "./reconnection"

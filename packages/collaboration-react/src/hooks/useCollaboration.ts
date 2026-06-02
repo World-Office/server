@@ -5,6 +5,7 @@ import {
   type EditOperation,
   type ParticipantUpdate,
   type InitialState,
+  type CommentEventData,
   createSelectionUpdate,
   type Selection,
 } from "@world-office/collaboration-client"
@@ -25,6 +26,7 @@ export interface UseCollaborationOptions {
   onRemoteOperation?: (op: EditOperation) => void
   onParticipantUpdate?: (update: ParticipantUpdate) => void
   onInitialState?: (state: InitialState) => void
+  onCommentEvent?: (data: CommentEventData) => void
 }
 
 export interface UseCollaborationResult {
@@ -35,6 +37,7 @@ export interface UseCollaborationResult {
   sendDelete: (position: number, length: number) => void
   sendParticipantUpdate: (update: ParticipantUpdate) => void
   sendSelectionUpdate: (selection: Selection) => void
+  sendCommentEvent: (data: CommentEventData) => void
 }
 
 export function useCollaboration(options: UseCollaborationOptions): UseCollaborationResult {
@@ -49,6 +52,7 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
     onRemoteOperation,
     onParticipantUpdate,
     onInitialState,
+    onCommentEvent,
   } = options
 
   const managerRef = useRef<WebSocketManager | null>(null)
@@ -120,6 +124,37 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
             }
           }
           onInitialState?.(state)
+        })
+
+        manager.on("commentEvent", (data: CommentEventData) => {
+          if (data.type === "added") {
+            if (data.parent_id) {
+              // Reply to an existing parent comment
+              collaborationStore?.addReply(data.parent_id, {
+                id: data.comment_id,
+                userId: data.author_id,
+                userName: data.author_name,
+                text: data.text,
+                timestamp: Date.parse(data.created_at),
+                resolved: data.resolved,
+                replies: [],
+              })
+            } else {
+              // New top-level comment
+              collaborationStore?.addComment({
+                id: data.comment_id,
+                userId: data.author_id,
+                userName: data.author_name,
+                text: data.text,
+                timestamp: Date.parse(data.created_at),
+                resolved: data.resolved,
+                replies: [],
+              })
+            }
+          } else if (data.type === "resolved") {
+            collaborationStore?.resolveComment(data.comment_id)
+          }
+          onCommentEvent?.(data)
         })
 
         managerRef.current = manager
@@ -203,6 +238,10 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
     managerRef.current?.sendParticipantUpdate(update)
   }, [])
 
+  const sendCommentEvent = useCallback((data: CommentEventData) => {
+    managerRef.current?.sendCommentEvent(data)
+  }, [])
+
   useEffect(() => {
     return () => {
       managerRef.current?.disconnect()
@@ -218,5 +257,6 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
     sendDelete,
     sendParticipantUpdate,
     sendSelectionUpdate,
+    sendCommentEvent,
   }
 }
