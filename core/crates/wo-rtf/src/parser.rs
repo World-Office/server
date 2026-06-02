@@ -830,19 +830,17 @@ mod tests {
     fn count_variant(inlines: &[RtfInline], variant: &str) -> usize {
         let mut count = 0;
         for inline in inlines {
-            let matches = match (variant, inline) {
-                ("bold", RtfInline::Bold { .. }) => true,
-                ("italic", RtfInline::Italic { .. }) => true,
-                ("underline", RtfInline::Underline { .. }) => true,
-                ("strike", RtfInline::Strikethrough { .. }) => true,
-                ("super", RtfInline::Superscript { .. }) => true,
-                ("sub", RtfInline::Subscript { .. }) => true,
-                ("font", RtfInline::Font { .. }) => true,
-                ("fontsize", RtfInline::FontSize { .. }) => true,
-                ("color", RtfInline::Color { .. }) => true,
-                _ => false,
-            };
-            if matches {
+            if matches!((variant, inline),
+                ("bold", RtfInline::Bold { .. }) |
+                ("italic", RtfInline::Italic { .. }) |
+                ("underline", RtfInline::Underline { .. }) |
+                ("strike", RtfInline::Strikethrough { .. }) |
+                ("super", RtfInline::Superscript { .. }) |
+                ("sub", RtfInline::Subscript { .. }) |
+                ("font", RtfInline::Font { .. }) |
+                ("fontsize", RtfInline::FontSize { .. }) |
+                ("color", RtfInline::Color { .. })
+            ) {
                 count += 1;
             }
             // Recurse into nested content
@@ -889,7 +887,7 @@ mod tests {
         let rtf = r#"{\rtf1\ansi{\fonttbl{\f0\fswiss Arial;}{\f1\fmodern Times New Roman;}}}"#;
         let parser = RtfParser::new();
         let doc = parser.parse(rtf.as_bytes()).unwrap();
-        assert!(doc.fonts.len() >= 1);
+        assert!(!doc.fonts.is_empty());
         assert_eq!(doc.fonts[0].index, 0);
     }
 

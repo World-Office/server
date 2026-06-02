@@ -995,8 +995,8 @@ mod tests {
         let (r, g, b, _) = c.get_pixel(5, 5);
         // 50% red over white: r ≈ 255, g ≈ 128, b ≈ 128
         assert!(r >= 250);
-        assert!(g >= 125 && g <= 130);
-        assert!(b >= 125 && b <= 130);
+        assert!((125..=130).contains(&g));
+        assert!((125..=130).contains(&b));
     }
 
     #[test]

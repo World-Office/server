@@ -802,7 +802,7 @@ impl PdfParser {
                 if let Some(PdfValue::Integer(r)) =
                     self.get_dict_entry("/Rotate", &page_obj.entries)
                 {
-                    page.rotation = (r % 360).abs() as u32;
+                    page.rotation = (r % 360).unsigned_abs();
                 }
 
                 // Extract text from content stream
@@ -1287,7 +1287,7 @@ impl PdfParser {
                 if let Some(method_val) = after_cfm.split_whitespace().next() {
                     encryption.method = method_val.to_string();
                 }
-            } else if search_region.find("/CF").is_some() {
+            } else if search_region.contains("/CF") {
                 // Check for /CF dictionary with method info
                 encryption.method = "Custom".to_string();
             }
@@ -1315,7 +1315,7 @@ impl PdfParser {
 
     fn detect_encryption_bytes(&self, data: &[u8]) -> Option<PdfEncryption> {
         // Check for /Encrypt reference
-        if !find_subsequence(data, b"/Encrypt").is_some() {
+        if find_subsequence(data, b"/Encrypt").is_none() {
             return None;
         }
 

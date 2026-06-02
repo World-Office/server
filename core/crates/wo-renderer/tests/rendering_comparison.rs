@@ -578,7 +578,6 @@ fn test_negative_rect_position() {
     canvas.fill_rect(-10.0, -10.0, 20.0, 20.0);
 
     let pixels = canvas.to_rgba_bytes();
-    let width = 100;
 
     // Pixel at (0, 0) should be filled (clipped to visible area)
     let idx = 0;  // pixel at (0, 0)

@@ -193,7 +193,7 @@ mod tests {
         let lib = FontLibrary::empty();
         // Should return synthetic glyph IDs
         assert_eq!(lib.glyph_id('A'), 65); // 'A' as u32 % 65536
-        assert_eq!(lib.glyph_id('世'), 19990 & 65535);
+        assert_eq!(lib.glyph_id('世'), 19990);
     }
 
     #[test]
