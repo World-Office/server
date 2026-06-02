@@ -1536,10 +1536,8 @@ impl PdfParser {
             keywords: get_string("/Keywords"),
             creator: get_string("/Creator"),
             producer: get_string("/Producer"),
-            creation_date: get_string("/CreationDate")
-                .map(|s| decode_date(&s))
-                .flatten(),
-            modification_date: get_string("/ModDate").map(|s| decode_date(&s)).flatten(),
+            creation_date: get_string("/CreationDate").and_then(|s| decode_date(&s)),
+            modification_date: get_string("/ModDate").and_then(|s| decode_date(&s)),
         }
     }
 

@@ -13,11 +13,10 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 
-/// WebDAV HTTP server
-///
-/// This server implements the WebDAV protocol over HTTP, supporting standard
-/// file operations like listing, creating, reading, updating, and deleting
-/// files and directories.
+// WebDAV HTTP server
+// This server implements the WebDAV protocol over HTTP, supporting standard
+// file operations like listing, creating, reading, updating, and deleting
+// files and directories.
 pub struct WebDavServer<S: WebDavStorage> {
     /// Server host address
     host: String,
@@ -31,9 +30,7 @@ pub struct WebDavServer<S: WebDavStorage> {
 
 impl<S: WebDavStorage + 'static> WebDavServer<S> {
     /// Create a new WebDAV server with local filesystem storage
-    ///
     /// # Arguments
-    ///
     /// * `host` - Host address to bind to
     /// * `port` - Port to listen on
     /// * `base_dir` - Base directory for file storage
@@ -53,7 +50,6 @@ impl<S: WebDavStorage + 'static> WebDavServer<S> {
     }
 
     /// Run WebDAV server
-    ///
     /// This starts HTTP server and listens for incoming connections.
     /// The server will run until returned handle is dropped or an error occurs.
     pub async fn run(&self) -> Result<(), anyhow::Error> {
@@ -104,7 +100,7 @@ impl<S: WebDavStorage + 'static> WebDavServer<S> {
     }
 }
 
-/// Handle OPTIONS request
+// Handle OPTIONS request
 pub async fn options_handler() -> impl axum::response::IntoResponse {
     (
         axum::http::StatusCode::OK,
@@ -116,63 +112,3 @@ pub async fn options_handler() -> impl axum::response::IntoResponse {
     )
 }
 
-/// Create a WebDAV server with local filesystem storage
-///
-/// # Arguments
-///
-/// * `host` - Host address to bind to
-/// * `port` - Port to listen on
-/// * `base_dir` - Base directory for file storage
-/// * `realm` - Authentication realm (optional)
-///
-/// # Example
-///
-/// ```no_run
-/// use wo_webdav::server::create_local_server;
-///
-/// #[tokio::main]
-/// async fn main() -> anyhow::Result<()> {
-///     let server = create_local_server(
-///         "127.0.0.1".to_string(),
-///         8080,
-///         "/tmp/webdav".into(),
-///         "WebDAV".to_string(),
-///     )?;
-///
-///     server.run().await?;
-///     Ok(())
-/// }
-/// ```
-// TODO: Implement LocalStorage struct
-/*
-pub fn create_local_server(
-    host: String,
-    port: u16,
-    base_dir: PathBuf,
-    realm: String,
-) -> Result<WebDavServer<LocalStorage>, anyhow::Error> {
-    let storage = LocalStorage::new(base_dir)?;
-    WebDavServer::new(host, port, storage, realm)
-}
-*/
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /*
-    #[tokio::test]
-    async fn test_create_local_server() {
-        let server = create_local_server(
-            "127.0.0.1".to_string(),
-            8080,
-            std::path::PathBuf::from("/tmp/test"),
-            "Test Realm".to_string(),
-        );
-
-        assert_eq!(server.host, "127.0.0.1");
-        assert_eq!(server.port, 8080);
-        assert_eq!(server.realm, "Test Realm");
-    }
-    */
-}

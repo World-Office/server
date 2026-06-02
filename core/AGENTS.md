@@ -94,7 +94,6 @@ cargo test -p wo-docserver
 - NEVER add format parsers without implementing `FormatRoundtrip` + roundtrip tests
 - NEVER test WASM crates with `cargo test` — use `wasm-pack test` or browser runtime
 - NEVER push without `cargo test -p wo-{changed-crate}`
-- wo-webdav is excluded from CI clippy/check (work in progress)
 
 ## NOTES
 

@@ -210,7 +210,7 @@ mod tests {
         let roundtrip = X2tRoundtrip::new();
         assert!(roundtrip.input().is_none());
         assert!(roundtrip.result().is_none());
-        assert_eq!(roundtrip.router().is_supported("rtf", "txt"), true);
+        assert!(roundtrip.router().is_supported("rtf", "txt"));
     }
 
     #[test]
