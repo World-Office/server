@@ -22,7 +22,7 @@ Each implements `FormatRoundtrip` from `wo-common/test_harness.rs`. Structure: `
 | wo-html | 1,682 | HTML import/export | |
 | wo-msbinary | 1,817 | OLE compound→JSON | |
 | wo-epub | 1,876 | EPUB (ZIP-based) | |
-| wo-pdf | 2,014 | PDF read/write | ⚠️ rustc ICE |
+| wo-pdf | 2,014 | PDF read/write |
 | wo-djvu | 894 | DjVu | |
 | wo-txt | 882 | Plain text | |
 | wo-unicode | 1,040 | Encoding (ICU) | |
@@ -42,7 +42,7 @@ Each implements `FormatRoundtrip` from `wo-common/test_harness.rs`. Structure: `
 | wo-x2t | 8,954 | Conversion orchestrator — 27 native converters, chain support |
 | wo-docx-renderer | 2,004 | DOCX→PDF rendering pipeline |
 | wo-wopi | 1,013 | WOPI server (axum: CheckFileInfo/GetFile/PutFile) |
-| wo-webdav | 2,119 | WebDAV server (axum: PROPFIND/MKCOL/PUT/DELETE/LOCK) |
+| wo-webdav | 2,119 | WebDAV server (axum) |
 
 ## INFRASTRUCTURE (3 crates)
 

@@ -22,7 +22,7 @@ core/
     ├── wo-fb2/              # FictionBook 2.0 parser+serializer (2,784 lines)
     ├── wo-docx-renderer/    # DOCX→PDF pipeline (2,004 lines)
     ├── wo-webdav/           # WebDAV server (axum, 2,119 lines)
-    ├── wo-pdf/              # PDF read/write (2,014 lines) ⚠️ ICE in some rustc
+    ├── wo-pdf/              # PDF read/write (2,014 lines)
     ├── wo-rtf/              # RTF parser+serializer (2,032 lines)
     ├── wo-msbinary/         # OLE compound document→JSON (1,817 lines)
     ├── wo-hwp/              # Korean HWP parser (1,454 lines)
@@ -94,8 +94,7 @@ cargo test -p wo-docserver
 - NEVER add format parsers without implementing `FormatRoundtrip` + roundtrip tests
 - NEVER test WASM crates with `cargo test` — use `wasm-pack test` or browser runtime
 - NEVER push without `cargo test -p wo-{changed-crate}`
-- wo-pdf triggers rustc ICE — CI excludes it from clippy/check
-- wo-webdav excluded from CI clippy/check (work in progress)
+- wo-webdav is excluded from CI clippy/check (work in progress)
 
 ## NOTES
 

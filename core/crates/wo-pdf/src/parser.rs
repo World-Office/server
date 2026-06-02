@@ -191,6 +191,7 @@ impl PdfParser {
         (0, 0) // Default: no info object
     }
 
+    #[allow(dead_code)]
     fn parse_ref(text: &str) -> Option<(u32, u32)> {
         let trimmed = text.trim_start();
         let mut parts = trimmed.split_whitespace();
@@ -337,6 +338,7 @@ impl PdfParser {
         }
     }
 
+    #[allow(dead_code)]
     fn find_endobj(text: &str, start: usize) -> usize {
         // Find "endobj" after start
         if let Some(pos) = text[start..].find("endobj") {
@@ -355,6 +357,7 @@ impl PdfParser {
         }
     }
 
+    #[allow(dead_code)]
     fn parse_object_content(
         &self,
         content: &str,
@@ -1206,6 +1209,7 @@ impl PdfParser {
         (String::from_utf8_lossy(&result).to_string(), i)
     }
 
+    #[allow(dead_code)]
     fn detect_xref_type(&self, text: &str) -> XrefType {
         let has_classic = text.contains("/Type") && text.contains("xref");
         let has_stream = text.contains("/Type") && text.contains("/XRef");
@@ -1232,6 +1236,7 @@ impl PdfParser {
         }
     }
 
+    #[allow(dead_code)]
     fn detect_encryption(&self, text: &str) -> Option<PdfEncryption> {
         // Check for /Encrypt reference
         if !text.contains("/Encrypt") {
