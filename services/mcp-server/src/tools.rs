@@ -95,6 +95,53 @@ impl McpTools {
                     "required": ["file_id", "snapshot_id"]
                 }))),
             ),
+            // ── Comment tools ──
+            Tool::new(
+                "list_comments",
+                "List all comments for a document, including replies and resolution status",
+                Arc::new(object(json!({
+                    "type": "object",
+                    "properties": {
+                        "document_id": { "type": "string", "description": "Document ID" }
+                    },
+                    "required": ["document_id"]
+                }))),
+            ),
+            Tool::new(
+                "add_comment",
+                "Add a comment to a document. The text can include @agent_name mentions.",
+                Arc::new(object(json!({
+                    "type": "object",
+                    "properties": {
+                        "document_id": { "type": "string", "description": "Document ID" },
+                        "text": { "type": "string", "description": "Comment text. Use @agent_name to mention other agents." },
+                        "author_name": { "type": "string", "description": "Display name of the comment author" }
+                    },
+                    "required": ["document_id", "text", "author_name"]
+                }))),
+            ),
+            Tool::new(
+                "resolve_comment",
+                "Mark a comment as resolved",
+                Arc::new(object(json!({
+                    "type": "object",
+                    "properties": {
+                        "comment_id": { "type": "string", "description": "Comment ID" }
+                    },
+                    "required": ["comment_id"]
+                }))),
+            ),
+            Tool::new(
+                "list_mentions",
+                "List all comments that mention a specific agent name",
+                Arc::new(object(json!({
+                    "type": "object",
+                    "properties": {
+                        "agent_name": { "type": "string", "description": "Agent name (without @ prefix)" }
+                    },
+                    "required": ["agent_name"]
+                }))),
+            ),
         ]
     }
 
@@ -123,8 +170,10 @@ impl ServerHandler for McpTools {
                 ..Default::default()
             },
             instructions: Some(
-                "Read and write World Office documents with automatic version snapshots"
-                    .to_string(),
+                "Read, write, and manage World Office documents with automatic version snapshots. "
+                    .to_string()
+                    + "Comment on documents with @agent mentions and resolve threads. "
+                    + "Agents can check their @mentions to discover when they've been referenced.",
             ),
         }
     }
@@ -237,6 +286,53 @@ impl ServerHandler for McpTools {
                     Ok(_) => Ok(CallToolResult::success(vec![Content::text(
                         json!({ "status": "success" }).to_string(),
                     )])),
+                    Err(e) => Ok(Self::error_result(e.to_string())),
+                }
+            }
+            // ── Comment tool handlers ──
+            "list_comments" => {
+                let doc_id = Self::get_arg(&request.arguments, "document_id").ok_or_else(|| {
+                    ErrorData::invalid_params("Missing required parameter: document_id", None)
+                })?;
+                match self.client.list_comments(doc_id).await {
+                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(data.to_string())])),
+                    Err(e) => Ok(Self::error_result(e.to_string())),
+                }
+            }
+            "add_comment" => {
+                let doc_id = Self::get_arg(&request.arguments, "document_id").ok_or_else(|| {
+                    ErrorData::invalid_params("Missing required parameter: document_id", None)
+                })?;
+                let text = Self::get_arg(&request.arguments, "text").ok_or_else(|| {
+                    ErrorData::invalid_params("Missing required parameter: text", None)
+                })?;
+                let author_name = Self::get_arg(&request.arguments, "author_name").ok_or_else(|| {
+                    ErrorData::invalid_params("Missing required parameter: author_name", None)
+                })?;
+                // Use the agent name as author_id (agents don't have user accounts)
+                let author_id = author_name.to_string();
+                match self.client.add_comment(doc_id, &author_id, author_name, text).await {
+                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(data.to_string())])),
+                    Err(e) => Ok(Self::error_result(e.to_string())),
+                }
+            }
+            "resolve_comment" => {
+                let comment_id = Self::get_arg(&request.arguments, "comment_id").ok_or_else(|| {
+                    ErrorData::invalid_params("Missing required parameter: comment_id", None)
+                })?;
+                match self.client.resolve_comment(comment_id).await {
+                    Ok(_) => Ok(CallToolResult::success(vec![Content::text(
+                        json!({ "status": "success" }).to_string(),
+                    )])),
+                    Err(e) => Ok(Self::error_result(e.to_string())),
+                }
+            }
+            "list_mentions" => {
+                let agent_name = Self::get_arg(&request.arguments, "agent_name").ok_or_else(|| {
+                    ErrorData::invalid_params("Missing required parameter: agent_name", None)
+                })?;
+                match self.client.list_mentions(agent_name).await {
+                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(data.to_string())])),
                     Err(e) => Ok(Self::error_result(e.to_string())),
                 }
             }

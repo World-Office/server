@@ -354,4 +354,134 @@ impl StorageClient {
         tracing::info!(file_id, snapshot_id, "snapshot restored to file");
         Ok(())
     }
+
+    // ── Comment API methods ──
+
+    /// List comments for a document.
+    pub async fn list_comments(&self, document_id: &str) -> Result<serde_json::Value> {
+        let resp = self
+            .http
+            .get(format!("{}/documents/{document_id}/comments", self.base_url))
+            .send()
+            .await?;
+
+        let status = resp.status().as_u16();
+        if !resp.status().is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            tracing::error!(status, %body, document_id, "list_comments failed");
+            return Err(StorageClientError::Status { status, body });
+        }
+
+        let data: serde_json::Value = resp.json().await?;
+        Ok(data)
+    }
+
+    /// Add a top-level comment to a document. Returns the created comment JSON.
+    pub async fn add_comment(
+        &self,
+        document_id: &str,
+        author_id: &str,
+        author_name: &str,
+        text: &str,
+    ) -> Result<serde_json::Value> {
+        let body = serde_json::json!({
+            "document_id": document_id,
+            "author_id": author_id,
+            "author_name": author_name,
+            "text": text
+        });
+
+        let resp = self
+            .http
+            .post(format!("{}/documents/{document_id}/comments", self.base_url))
+            .json(&body)
+            .send()
+            .await?;
+
+        let status = resp.status().as_u16();
+        if !resp.status().is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            tracing::error!(status, %body, document_id, "add_comment failed");
+            return Err(StorageClientError::Status { status, body });
+        }
+
+        let data: serde_json::Value = resp.json().await?;
+        Ok(data)
+    }
+
+    /// Add a reply to an existing comment.
+    pub async fn add_reply(
+        &self,
+        document_id: &str,
+        parent_id: &str,
+        author_id: &str,
+        author_name: &str,
+        text: &str,
+    ) -> Result<serde_json::Value> {
+        let body = serde_json::json!({
+            "document_id": document_id,
+            "parent_id": parent_id,
+            "author_id": author_id,
+            "author_name": author_name,
+            "text": text
+        });
+
+        let resp = self
+            .http
+            .post(format!(
+                "{}/documents/{document_id}/comments/{parent_id}/reply",
+                self.base_url
+            ))
+            .json(&body)
+            .send()
+            .await?;
+
+        let status = resp.status().as_u16();
+        if !resp.status().is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            tracing::error!(status, %body, document_id, parent_id, "add_reply failed");
+            return Err(StorageClientError::Status { status, body });
+        }
+
+        let data: serde_json::Value = resp.json().await?;
+        Ok(data)
+    }
+
+    /// Resolve a comment by id.
+    pub async fn resolve_comment(&self, comment_id: &str) -> Result<()> {
+        let resp = self
+            .http
+            .post(format!("{}/comments/{comment_id}/resolve", self.base_url))
+            .send()
+            .await?;
+
+        let status = resp.status().as_u16();
+        if !resp.status().is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            tracing::error!(status, %body, comment_id, "resolve_comment failed");
+            return Err(StorageClientError::Status { status, body });
+        }
+
+        tracing::info!(comment_id, "comment resolved");
+        Ok(())
+    }
+
+    /// List mentions for a specific agent name.
+    pub async fn list_mentions(&self, agent_name: &str) -> Result<serde_json::Value> {
+        let resp = self
+            .http
+            .get(format!("{}/mentions/{agent_name}", self.base_url))
+            .send()
+            .await?;
+
+        let status = resp.status().as_u16();
+        if !resp.status().is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            tracing::error!(status, %body, agent_name, "list_mentions failed");
+            return Err(StorageClientError::Status { status, body });
+        }
+
+        let data: serde_json::Value = resp.json().await?;
+        Ok(data)
+    }
 }
