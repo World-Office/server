@@ -20,6 +20,20 @@ pub struct Snapshot {
     pub created_at: String,
 }
 
+/// A comment on a document.
+#[derive(Debug, Clone)]
+pub struct StoredComment {
+    pub id: String,
+    pub document_id: String,
+    pub parent_id: Option<String>,
+    pub author_id: String,
+    pub author_name: String,
+    pub text: String,
+    pub resolved: bool,
+    pub mentions: String, // JSON array of mentioned agent names
+    pub created_at: String,
+}
+
 /// SQLite-backed store for [`StoredFile`] metadata.
 pub struct StorageRepository {
     conn: Connection,
@@ -63,7 +77,20 @@ impl StorageRepository {
                 created_at   TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_snapshots_file_id ON snapshots(file_id);
-            CREATE INDEX IF NOT EXISTS idx_snapshots_content_hash ON snapshots(content_hash);",
+            CREATE INDEX IF NOT EXISTS idx_snapshots_content_hash ON snapshots(content_hash);
+            CREATE TABLE IF NOT EXISTS comments (
+                id           TEXT PRIMARY KEY,
+                document_id  TEXT NOT NULL,
+                parent_id    TEXT,
+                author_id    TEXT NOT NULL,
+                author_name  TEXT NOT NULL,
+                text         TEXT NOT NULL,
+                resolved     INTEGER NOT NULL DEFAULT 0,
+                mentions     TEXT NOT NULL DEFAULT '[]',
+                created_at   TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_comments_document_id ON comments(document_id);
+            CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON comments(parent_id);",
         )?;
         Ok(())
     }
@@ -232,6 +259,89 @@ impl StorageRepository {
         )?;
         Ok(())
     }
+
+    /// Insert a comment. Returns the comment id.
+    pub fn insert_comment(
+        &mut self,
+        document_id: &str,
+        parent_id: Option<&str>,
+        author_id: &str,
+        author_name: &str,
+        text: &str,
+        mentions: &str,
+    ) -> Result<String, rusqlite::Error> {
+        let id = uuid::Uuid::new_v4().to_string();
+        let created_at = chrono::Utc::now().to_rfc3339();
+        self.conn.execute(
+            "INSERT INTO comments (id, document_id, parent_id, author_id, author_name, text, resolved, mentions, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, 0, ?7, ?8)",
+            rusqlite::params![id, document_id, parent_id, author_id, author_name, text, mentions, created_at],
+        )?;
+        Ok(id)
+    }
+
+    /// List comments for a document (top-level only, not replies).
+    pub fn list_comments(&self, document_id: &str) -> Result<Vec<StoredComment>, rusqlite::Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, document_id, parent_id, author_id, author_name, text, resolved, mentions, created_at
+             FROM comments WHERE document_id = ?1 AND parent_id IS NULL
+             ORDER BY created_at DESC",
+        )?;
+        let rows = stmt.query_map(rusqlite::params![document_id], row_to_comment)?;
+        rows.collect::<Result<Vec<_>, _>>()
+    }
+
+    /// List replies to a specific comment.
+    pub fn list_replies(&self, parent_id: &str) -> Result<Vec<StoredComment>, rusqlite::Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, document_id, parent_id, author_id, author_name, text, resolved, mentions, created_at
+             FROM comments WHERE parent_id = ?1 ORDER BY created_at ASC",
+        )?;
+        let rows = stmt.query_map(rusqlite::params![parent_id], row_to_comment)?;
+        rows.collect::<Result<Vec<_>, _>>()
+    }
+
+    /// Get a single comment by id.
+    pub fn get_comment(&self, id: &str) -> Result<Option<StoredComment>, rusqlite::Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, document_id, parent_id, author_id, author_name, text, resolved, mentions, created_at
+             FROM comments WHERE id = ?1",
+        )?;
+        let mut rows = stmt.query(rusqlite::params![id])?;
+        match rows.next()? {
+            Some(row) => Ok(Some(row_to_comment(row)?)),
+            None => Ok(None),
+        }
+    }
+
+    /// Resolve a comment (set resolved = true).
+    pub fn resolve_comment(&mut self, id: &str) -> Result<bool, rusqlite::Error> {
+        let affected = self.conn.execute(
+            "UPDATE comments SET resolved = 1 WHERE id = ?1",
+            rusqlite::params![id],
+        )?;
+        Ok(affected > 0)
+    }
+
+    /// Delete a comment by id (cascading — replies depend on foreign key enforcement).
+    pub fn delete_comment(&mut self, id: &str) -> Result<bool, rusqlite::Error> {
+        let affected = self
+            .conn
+            .execute("DELETE FROM comments WHERE id = ?1", rusqlite::params![id])?;
+        Ok(affected > 0)
+    }
+
+    /// List mentions for a given agent name across all documents.
+    pub fn list_mentions(&self, agent_name: &str) -> Result<Vec<StoredComment>, rusqlite::Error> {
+        let pattern = format!("%\"{}\"%", agent_name);
+        let mut stmt = self.conn.prepare(
+            "SELECT id, document_id, parent_id, author_id, author_name, text, resolved, mentions, created_at
+             FROM comments WHERE mentions LIKE ?1 AND resolved = 0
+             ORDER BY created_at DESC",
+        )?;
+        let rows = stmt.query_map(rusqlite::params![pattern], row_to_comment)?;
+        rows.collect::<Result<Vec<_>, _>>()
+    }
 }
 
 fn row_to_stored_file(row: &rusqlite::Row<'_>) -> Result<StoredFile, rusqlite::Error> {
@@ -242,6 +352,20 @@ fn row_to_stored_file(row: &rusqlite::Row<'_>) -> Result<StoredFile, rusqlite::E
         size: row.get::<_, i64>(3)? as usize,
         created_at: row.get(5)?,
         storage_path: row.get(4)?,
+    })
+}
+
+fn row_to_comment(row: &rusqlite::Row<'_>) -> Result<StoredComment, rusqlite::Error> {
+    Ok(StoredComment {
+        id: row.get(0)?,
+        document_id: row.get(1)?,
+        parent_id: row.get(2)?,
+        author_id: row.get(3)?,
+        author_name: row.get(4)?,
+        text: row.get(5)?,
+        resolved: row.get::<_, i64>(6)? != 0,
+        mentions: row.get(7)?,
+        created_at: row.get(8)?,
     })
 }
 
@@ -408,5 +532,122 @@ mod tests {
         let mut repo = StorageRepository::new_in_memory().unwrap();
         repo.insert(&make_file("f5")).unwrap();
         repo.touch("f5").unwrap();
+    }
+
+    // ── Comment Tests ──
+
+    #[test]
+    fn insert_and_list_comments() {
+        let mut repo = StorageRepository::new_in_memory().unwrap();
+        let doc_id = "doc-1";
+        repo.insert_comment(doc_id, None, "user-1", "Alice", "Great document!", "[]")
+            .unwrap();
+        repo.insert_comment(doc_id, None, "user-2", "Bob", "I agree", "[\"alice\"]")
+            .unwrap();
+        let comments = repo.list_comments(doc_id).unwrap();
+        assert_eq!(comments.len(), 2);
+        // Newest first
+        assert_eq!(comments[0].author_name, "Bob");
+        assert_eq!(comments[1].author_name, "Alice");
+    }
+
+    #[test]
+    fn insert_and_list_replies() {
+        let mut repo = StorageRepository::new_in_memory().unwrap();
+        let parent_id = repo
+            .insert_comment("doc-1", None, "user-1", "Alice", "First!", "[]")
+            .unwrap();
+        let reply_id = repo
+            .insert_comment("doc-1", Some(&parent_id), "user-2", "Bob", "Reply!", "[]")
+            .unwrap();
+        let replies = repo.list_replies(&parent_id).unwrap();
+        assert_eq!(replies.len(), 1);
+        assert_eq!(replies[0].id, reply_id);
+    }
+
+    #[test]
+    fn get_comment_by_id() {
+        let mut repo = StorageRepository::new_in_memory().unwrap();
+        let id = repo
+            .insert_comment("doc-1", None, "user-1", "Alice", "hello", "[]")
+            .unwrap();
+        let c = repo.get_comment(&id).unwrap().unwrap();
+        assert_eq!(c.text, "hello");
+        assert_eq!(c.author_name, "Alice");
+    }
+
+    #[test]
+    fn get_missing_comment_returns_none() {
+        let repo = StorageRepository::new_in_memory().unwrap();
+        assert!(repo.get_comment("nope").unwrap().is_none());
+    }
+
+    #[test]
+    fn resolve_comment() {
+        let mut repo = StorageRepository::new_in_memory().unwrap();
+        let id = repo
+            .insert_comment("doc-1", None, "user-1", "Alice", "fix this", "[]")
+            .unwrap();
+        assert!(!repo.get_comment(&id).unwrap().unwrap().resolved);
+        let resolved = repo.resolve_comment(&id).unwrap();
+        assert!(resolved);
+        assert!(repo.get_comment(&id).unwrap().unwrap().resolved);
+    }
+
+    #[test]
+    fn delete_comment() {
+        let mut repo = StorageRepository::new_in_memory().unwrap();
+        let id = repo
+            .insert_comment("doc-1", None, "user-1", "Alice", "delete me", "[]")
+            .unwrap();
+        assert!(repo.get_comment(&id).unwrap().is_some());
+        let deleted = repo.delete_comment(&id).unwrap();
+        assert!(deleted);
+        assert!(repo.get_comment(&id).unwrap().is_none());
+    }
+
+    #[test]
+    fn list_mentions_finds_mentioned_agent() {
+        let mut repo = StorageRepository::new_in_memory().unwrap();
+        repo.insert_comment(
+            "doc-1",
+            None,
+            "user-1",
+            "Alice",
+            "Hey @agent1 check this",
+            "[\"agent1\"]",
+        )
+        .unwrap();
+        repo.insert_comment("doc-2", None, "user-2", "Bob", "No mention here", "[]")
+            .unwrap();
+        repo.insert_comment(
+            "doc-1",
+            None,
+            "user-1",
+            "Alice",
+            "@agent1 also here",
+            "[\"agent1\"]",
+        )
+        .unwrap();
+        let mentions = repo.list_mentions("agent1").unwrap();
+        assert_eq!(mentions.len(), 2);
+    }
+
+    #[test]
+    fn list_mentions_excludes_resolved() {
+        let mut repo = StorageRepository::new_in_memory().unwrap();
+        let id = repo
+            .insert_comment(
+                "doc-1",
+                None,
+                "user-1",
+                "Alice",
+                "@agent1 fix pls",
+                "[\"agent1\"]",
+            )
+            .unwrap();
+        repo.resolve_comment(&id).unwrap();
+        let mentions = repo.list_mentions("agent1").unwrap();
+        assert_eq!(mentions.len(), 0);
     }
 }

@@ -1,7 +1,7 @@
 //! storage-service — World-Office document storage microservice binary.
 
-use storage_service::{app, AppState, repository::StorageRepository};
 use std::sync::Arc;
+use storage_service::{AppState, app, repository::StorageRepository};
 use tokio::sync::Mutex;
 
 #[tokio::main]
@@ -12,11 +12,9 @@ async fn main() {
         .unwrap_or_else(|_| "./data".into())
         .into();
 
-    let db_path = std::env::var("STORAGE_DB_PATH")
-        .unwrap_or_else(|_| "./data/files.db".into());
+    let db_path = std::env::var("STORAGE_DB_PATH").unwrap_or_else(|_| "./data/files.db".into());
 
-    let repo = StorageRepository::new(&db_path)
-        .expect("failed to open storage database");
+    let repo = StorageRepository::new(&db_path).expect("failed to open storage database");
 
     let state = Arc::new(AppState {
         repo: Arc::new(Mutex::new(repo)),
@@ -31,7 +29,12 @@ async fn main() {
         .parse()
         .unwrap_or(8002);
 
-    tracing::info!("storage-service v{} starting on {}:{}", env!("CARGO_PKG_VERSION"), addr, port);
+    tracing::info!(
+        "storage-service v{} starting on {}:{}",
+        env!("CARGO_PKG_VERSION"),
+        addr,
+        port
+    );
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", addr, port))
         .await

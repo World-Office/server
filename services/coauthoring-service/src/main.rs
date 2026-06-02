@@ -100,6 +100,22 @@ struct InitialState {
     participants: Vec<Participant>,
 }
 
+/// A comment event broadcast over WebSocket (added/updated/deleted/resolved).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CommentEventData {
+    #[serde(rename = "type")]
+    pub event_type: String, // "added", "deleted", "resolved"
+    pub comment_id: String,
+    pub document_id: String,
+    pub parent_id: Option<String>,
+    pub author_id: String,
+    pub author_name: String,
+    pub text: String,
+    pub resolved: bool,
+    pub mentions: String,
+    pub created_at: String,
+}
+
 /// The top-level WebSocket message enum.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -107,6 +123,7 @@ enum WsMessage {
     Edit { operation: EditOperation },
     ParticipantUpdate { update: ParticipantUpdate },
     InitialStateMsg { state: InitialState },
+    CommentEvent { data: CommentEventData },
 }
 
 /// A collaborative document backed by diamond-types CRDT.
@@ -725,6 +742,15 @@ async fn handle_ws(
                     WsMessage::ParticipantUpdate { update } => {
                         if let Some(ref tx) = presence_tx {
                             if let Ok(json) = serde_json::to_string(&WsMessage::ParticipantUpdate { update }) {
+                                let _ = tx.send(json);
+                            }
+                        }
+                    }
+                    WsMessage::CommentEvent { data } => {
+                        // Broadcast comment events to all session participants via edit channel
+                        let channels = state.edit_channels.lock().await;
+                        if let Some(tx) = channels.get(&session_id) {
+                            if let Ok(json) = serde_json::to_string(&WsMessage::CommentEvent { data }) {
                                 let _ = tx.send(json);
                             }
                         }
