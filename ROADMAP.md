@@ -13,26 +13,18 @@
 - [x] Phase 4: Web UI migration (all phases 4A-4G)
 - [x] History cleanup — removed ~15k old C++ files, replaced all branding
 
-## In Progress
+## Completed
 
-- [ ] MCP Server + Version Snapshots — plan at `.sisyphus/plans/2026-04-19-mcp-server-version-snapshots.md`
-  - stdio transport MCP server (rmcp Rust SDK)
-  - 7 tools: list/read/write/create documents + snapshot management
-  - Version snapshots in storage-service SQLite
-  - Auto-snapshot before every MCP write
-  - Agent attribution tracking
-
-## Tier 2 — Near Future
-
-### Comments with @agent Mentions
-- Unified comment system across documents
-- @agent mention support (agents can be @mentioned in comments)
-- Comment threads with reply chains
-
-### Cross-document ContentLink
-- Link content between documents (embed cells, ranges, charts)
-- Live updates when linked content changes
-- Circular reference detection
+- [x] MCP Server + Version Snapshots
+- [x] Comments with @agent Mentions
+  - Unified comment system across documents
+  - @agent mention support (agents can be @mentioned in comments)
+  - Comment threads with reply chains
+- [x] Cross-document ContentLink
+  - REST API in storage-service (create/list/resolve/delete)
+  - MCP server tools (create_contentlink, list_contentlinks, resolve_contentlink)
+  - React ContentLink panel in document editor
+  - Content preview via lazy resolution
 
 ## Tier 3 — Future
 
