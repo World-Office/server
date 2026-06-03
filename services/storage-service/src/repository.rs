@@ -34,6 +34,20 @@ pub struct StoredComment {
     pub created_at: String,
 }
 
+/// A cross-document content link (reference).
+#[derive(Debug, Clone)]
+pub struct StoredContentLink {
+    pub id: String,
+    pub source_document_id: String,
+    pub source_document_name: String,
+    pub target_document_id: String,
+    pub target_document_name: String,
+    pub display_text: String,
+    pub resolved_content: String,
+    pub resolved_at: Option<String>,
+    pub created_at: String,
+}
+
 /// SQLite-backed store for [`StoredFile`] metadata.
 pub struct StorageRepository {
     conn: Connection,
@@ -90,7 +104,20 @@ impl StorageRepository {
                 created_at   TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS idx_comments_document_id ON comments(document_id);
-            CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON comments(parent_id);",
+            CREATE INDEX IF NOT EXISTS idx_comments_parent_id ON comments(parent_id);
+            CREATE TABLE IF NOT EXISTS content_links (
+                id                  TEXT PRIMARY KEY,
+                source_document_id  TEXT NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+                source_document_name TEXT NOT NULL,
+                target_document_id  TEXT NOT NULL REFERENCES files(id) ON DELETE CASCADE,
+                target_document_name TEXT NOT NULL,
+                display_text        TEXT NOT NULL DEFAULT '',
+                resolved_content    TEXT NOT NULL DEFAULT '',
+                resolved_at         TEXT,
+                created_at          TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_content_links_source ON content_links(source_document_id);
+            CREATE INDEX IF NOT EXISTS idx_content_links_target ON content_links(target_document_id);",
         )?;
         Ok(())
     }
@@ -342,6 +369,73 @@ impl StorageRepository {
         let rows = stmt.query_map(rusqlite::params![pattern], row_to_comment)?;
         rows.collect::<Result<Vec<_>, _>>()
     }
+
+    // ── ContentLink methods ──
+
+    pub fn insert_content_link(
+        &mut self,
+        source_document_id: &str,
+        source_document_name: &str,
+        target_document_id: &str,
+        target_document_name: &str,
+        display_text: &str,
+    ) -> Result<String, rusqlite::Error> {
+        let id = uuid::Uuid::new_v4().to_string();
+        let created_at = chrono::Utc::now().to_rfc3339();
+        self.conn.execute(
+            "INSERT INTO content_links (id, source_document_id, source_document_name, target_document_id, target_document_name, display_text, resolved_content, resolved_at, created_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, '', NULL, ?7)",
+            rusqlite::params![id, source_document_id, source_document_name, target_document_id, target_document_name, display_text, created_at],
+        )?;
+        Ok(id)
+    }
+
+    pub fn get_content_link(&self, id: &str) -> Result<Option<StoredContentLink>, rusqlite::Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, source_document_id, source_document_name, target_document_id, target_document_name, display_text, resolved_content, resolved_at, created_at
+             FROM content_links WHERE id = ?1",
+        )?;
+        let mut rows = stmt.query(rusqlite::params![id])?;
+        match rows.next()? {
+            Some(row) => Ok(Some(row_to_content_link(row)?)),
+            None => Ok(None),
+        }
+    }
+
+    pub fn list_content_links_by_target(&self, document_id: &str) -> Result<Vec<StoredContentLink>, rusqlite::Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, source_document_id, source_document_name, target_document_id, target_document_name, display_text, resolved_content, resolved_at, created_at
+             FROM content_links WHERE target_document_id = ?1 ORDER BY created_at DESC",
+        )?;
+        let rows = stmt.query_map(rusqlite::params![document_id], row_to_content_link)?;
+        rows.collect::<Result<Vec<_>, _>>()
+    }
+
+    pub fn list_content_links_by_source(&self, document_id: &str) -> Result<Vec<StoredContentLink>, rusqlite::Error> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, source_document_id, source_document_name, target_document_id, target_document_name, display_text, resolved_content, resolved_at, created_at
+             FROM content_links WHERE source_document_id = ?1 ORDER BY created_at DESC",
+        )?;
+        let rows = stmt.query_map(rusqlite::params![document_id], row_to_content_link)?;
+        rows.collect::<Result<Vec<_>, _>>()
+    }
+
+    pub fn delete_content_link(&mut self, id: &str) -> Result<bool, rusqlite::Error> {
+        let affected = self.conn.execute(
+            "DELETE FROM content_links WHERE id = ?1",
+            rusqlite::params![id],
+        )?;
+        Ok(affected > 0)
+    }
+
+    pub fn update_resolved_content(&mut self, id: &str, content: &str) -> Result<bool, rusqlite::Error> {
+        let now = chrono::Utc::now().to_rfc3339();
+        let affected = self.conn.execute(
+            "UPDATE content_links SET resolved_content = ?1, resolved_at = ?2 WHERE id = ?3",
+            rusqlite::params![content, now, id],
+        )?;
+        Ok(affected > 0)
+    }
 }
 
 fn row_to_stored_file(row: &rusqlite::Row<'_>) -> Result<StoredFile, rusqlite::Error> {
@@ -365,6 +459,20 @@ fn row_to_comment(row: &rusqlite::Row<'_>) -> Result<StoredComment, rusqlite::Er
         text: row.get(5)?,
         resolved: row.get::<_, i64>(6)? != 0,
         mentions: row.get(7)?,
+        created_at: row.get(8)?,
+    })
+}
+
+fn row_to_content_link(row: &rusqlite::Row<'_>) -> Result<StoredContentLink, rusqlite::Error> {
+    Ok(StoredContentLink {
+        id: row.get(0)?,
+        source_document_id: row.get(1)?,
+        source_document_name: row.get(2)?,
+        target_document_id: row.get(3)?,
+        target_document_name: row.get(4)?,
+        display_text: row.get(5)?,
+        resolved_content: row.get(6)?,
+        resolved_at: row.get(7)?,
         created_at: row.get(8)?,
     })
 }
