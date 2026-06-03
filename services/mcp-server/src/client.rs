@@ -484,4 +484,78 @@ impl StorageClient {
         let data: serde_json::Value = resp.json().await?;
         Ok(data)
     }
+
+    // ── ContentLink client methods ──
+
+    pub async fn create_content_link(
+        &self,
+        target_document_id: &str,
+        source_document_id: &str,
+        source_document_name: &str,
+        target_document_name: &str,
+        display_text: &str,
+    ) -> Result<serde_json::Value> {
+        let body = serde_json::json!({
+            "source_document_id": source_document_id,
+            "source_document_name": source_document_name,
+            "target_document_name": target_document_name,
+            "display_text": display_text,
+        });
+
+        let resp = self
+            .http
+            .post(format!(
+                "{}/documents/{target_document_id}/content-links",
+                self.base_url
+            ))
+            .json(&body)
+            .send()
+            .await?;
+
+        let status = resp.status().as_u16();
+        if !resp.status().is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            tracing::error!(status, %body, target_document_id, "create_content_link failed");
+            return Err(StorageClientError::Status { status, body });
+        }
+
+        let data: serde_json::Value = resp.json().await?;
+        Ok(data)
+    }
+
+    pub async fn list_content_links(&self, document_id: &str) -> Result<serde_json::Value> {
+        let resp = self
+            .http
+            .get(format!("{}/documents/{document_id}/content-links", self.base_url))
+            .send()
+            .await?;
+
+        let status = resp.status().as_u16();
+        if !resp.status().is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            tracing::error!(status, %body, document_id, "list_content_links failed");
+            return Err(StorageClientError::Status { status, body });
+        }
+
+        let data: serde_json::Value = resp.json().await?;
+        Ok(data)
+    }
+
+    pub async fn resolve_content_link(&self, link_id: &str) -> Result<serde_json::Value> {
+        let resp = self
+            .http
+            .post(format!("{}/content-links/{link_id}/resolve", self.base_url))
+            .send()
+            .await?;
+
+        let status = resp.status().as_u16();
+        if !resp.status().is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            tracing::error!(status, %body, link_id, "resolve_content_link failed");
+            return Err(StorageClientError::Status { status, body });
+        }
+
+        let data: serde_json::Value = resp.json().await?;
+        Ok(data)
+    }
 }
