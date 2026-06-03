@@ -457,6 +457,36 @@ pub struct CreateCommentRequest {
     pub mentions: Option<String>,
 }
 
+/// Create content link request.
+#[derive(Debug, Deserialize)]
+pub struct CreateContentLinkRequest {
+    pub source_document_id: String,
+    pub source_document_name: String,
+    pub target_document_name: String,
+    pub display_text: Option<String>,
+}
+
+/// Content link response.
+#[derive(Debug, Serialize)]
+pub struct ContentLinkResponse {
+    pub id: String,
+    pub source_document_id: String,
+    pub source_document_name: String,
+    pub target_document_id: String,
+    pub target_document_name: String,
+    pub display_text: String,
+    pub resolved_content: String,
+    pub resolved_at: Option<String>,
+    pub created_at: String,
+}
+
+/// Content link list response.
+#[derive(Debug, Serialize)]
+pub struct ContentLinkListResponse {
+    pub content_links: Vec<ContentLinkResponse>,
+    pub count: usize,
+}
+
 /// Add reply request.
 #[derive(Debug, Deserialize)]
 pub struct AddReplyRequest {
@@ -1041,6 +1071,174 @@ pub async fn list_mentions(
     }
 }
 
+pub async fn create_content_link(
+    State(state): State<Arc<AppState>>,
+    Path(target_document_id): Path<String>,
+    Json(payload): Json<CreateContentLinkRequest>,
+) -> Result<(StatusCode, Json<ContentLinkResponse>), (StatusCode, Json<ErrorResponse>)> {
+    let source_name = {
+        let repo = state.repo.lock().await;
+        match repo.get(&payload.source_document_id) {
+            Ok(Some(file)) => file.name,
+            Ok(None) => {
+                return Err((StatusCode::NOT_FOUND, Json(ErrorResponse {
+                    error: format!("Source document {} not found", payload.source_document_id),
+                    code: 404,
+                })));
+            }
+            Err(e) => return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse {
+                error: format!("Failed to verify source: {}", e), code: 500,
+            }))),
+        }
+    };
+
+    let display_text = payload.display_text.unwrap_or_else(|| source_name.clone());
+    let mut repo = state.repo.lock().await;
+
+    match repo.insert_content_link(
+        &payload.source_document_id,
+        &payload.source_document_name,
+        &target_document_id,
+        &payload.target_document_name,
+        &display_text,
+    ) {
+        Ok(id) => {
+            let created_at = chrono::Utc::now().to_rfc3339();
+            tracing::info!(content_link_id = %id, target = %target_document_id, source = %payload.source_document_id, "content link created");
+            Ok((StatusCode::CREATED, Json(ContentLinkResponse {
+                id, source_document_id: payload.source_document_id,
+                source_document_name: payload.source_document_name,
+                target_document_id, target_document_name: payload.target_document_name,
+                display_text, resolved_content: String::new(),
+                resolved_at: None, created_at,
+            })))
+        }
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse {
+            error: format!("Failed to create content link: {}", e), code: 500,
+        }))),
+    }
+}
+
+pub async fn list_content_links(
+    State(state): State<Arc<AppState>>,
+    Path(document_id): Path<String>,
+) -> Result<Json<ContentLinkListResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let repo = state.repo.lock().await;
+    let links = repo.list_content_links_by_target(&document_id).map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse {
+            error: format!("Failed to list content links: {}", e), code: 500,
+        }))
+    })?;
+    let responses: Vec<ContentLinkResponse> = links.into_iter().map(|l| ContentLinkResponse {
+        id: l.id, source_document_id: l.source_document_id,
+        source_document_name: l.source_document_name,
+        target_document_id: l.target_document_id,
+        target_document_name: l.target_document_name,
+        display_text: l.display_text, resolved_content: l.resolved_content,
+        resolved_at: l.resolved_at, created_at: l.created_at,
+    }).collect();
+    let count = responses.len();
+    Ok(Json(ContentLinkListResponse { content_links: responses, count }))
+}
+
+pub async fn resolve_content_link(
+    State(state): State<Arc<AppState>>,
+    Path(link_id): Path<String>,
+) -> Result<Json<ContentLinkResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let link = {
+        let repo = state.repo.lock().await;
+        match repo.get_content_link(&link_id) {
+            Ok(Some(l)) => l,
+            Ok(None) => return Err((StatusCode::NOT_FOUND, Json(ErrorResponse {
+                error: format!("Content link {} not found", link_id), code: 404,
+            }))),
+            Err(e) => return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse {
+                error: format!("Failed to get content link: {}", e), code: 500,
+            }))),
+        }
+    };
+
+    let (content, _content_type) = {
+        let repo = state.repo.lock().await;
+        match repo.get(&link.source_document_id) {
+            Ok(Some(file)) => {
+                let data = tokio::fs::read_to_string(&file.storage_path).await
+                    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse {
+                        error: format!("Failed to read source document: {}", e), code: 500,
+                    })))?;
+                (data, file.content_type.clone())
+            }
+            Ok(None) => return Err((StatusCode::NOT_FOUND, Json(ErrorResponse {
+                error: format!("Source document {} not found", link.source_document_id), code: 404,
+            }))),
+            Err(e) => return Err((StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse {
+                error: format!("Failed to get source: {}", e), code: 500,
+            }))),
+        }
+    };
+
+    let preview = if content.len() > 500 {
+        format!("{}...", &content[..500])
+    } else {
+        content.clone()
+    };
+
+    let mut repo = state.repo.lock().await;
+    repo.update_resolved_content(&link_id, &preview).map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse {
+            error: format!("Failed to update resolved content: {}", e), code: 500,
+        }))
+    })?;
+
+    let resolved_at = Some(chrono::Utc::now().to_rfc3339());
+    Ok(Json(ContentLinkResponse {
+        id: link.id, source_document_id: link.source_document_id,
+        source_document_name: link.source_document_name,
+        target_document_id: link.target_document_id,
+        target_document_name: link.target_document_name,
+        display_text: link.display_text, resolved_content: preview,
+        resolved_at, created_at: link.created_at,
+    }))
+}
+
+pub async fn list_outbound_content_links(
+    State(state): State<Arc<AppState>>,
+    Path(document_id): Path<String>,
+) -> Result<Json<ContentLinkListResponse>, (StatusCode, Json<ErrorResponse>)> {
+    let repo = state.repo.lock().await;
+    let links = repo.list_content_links_by_source(&document_id).map_err(|e| {
+        (StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse {
+            error: format!("Failed to list outbound links: {}", e), code: 500,
+        }))
+    })?;
+    let responses: Vec<ContentLinkResponse> = links.into_iter().map(|l| ContentLinkResponse {
+        id: l.id, source_document_id: l.source_document_id,
+        source_document_name: l.source_document_name,
+        target_document_id: l.target_document_id,
+        target_document_name: l.target_document_name,
+        display_text: l.display_text, resolved_content: l.resolved_content,
+        resolved_at: l.resolved_at, created_at: l.created_at,
+    }).collect();
+    let count = responses.len();
+    Ok(Json(ContentLinkListResponse { content_links: responses, count }))
+}
+
+pub async fn delete_content_link(
+    State(state): State<Arc<AppState>>,
+    Path(link_id): Path<String>,
+) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
+    let mut repo = state.repo.lock().await;
+    match repo.delete_content_link(&link_id) {
+        Ok(true) => Ok(Json(serde_json::json!({"deleted": true, "id": link_id}))),
+        Ok(false) => Err((StatusCode::NOT_FOUND, Json(ErrorResponse {
+            error: format!("Content link {} not found", link_id), code: 404,
+        }))),
+        Err(e) => Err((StatusCode::INTERNAL_SERVER_ERROR, Json(ErrorResponse {
+            error: format!("Failed to delete content link: {}", e), code: 500,
+        }))),
+    }
+}
+
 /// Build the full application router.
 pub fn app(state: Arc<AppState>) -> Router {
     Router::new()
@@ -1062,5 +1260,9 @@ pub fn app(state: Arc<AppState>) -> Router {
         .route("/comments/{comment_id}/resolve", post(resolve_comment))
         .route("/comments/{comment_id}", delete(delete_comment))
         .route("/mentions/{agent_name}", get(list_mentions))
+        .route("/documents/{document_id}/content-links", get(list_content_links).post(create_content_link))
+        .route("/documents/{document_id}/outbound-content-links", get(list_outbound_content_links))
+        .route("/content-links/{link_id}", delete(delete_content_link))
+        .route("/content-links/{link_id}/resolve", post(resolve_content_link))
         .with_state(state)
 }
