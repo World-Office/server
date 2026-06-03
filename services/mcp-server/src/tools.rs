@@ -142,6 +142,44 @@ impl McpTools {
                     "required": ["agent_name"]
                 }))),
             ),
+            // ── ContentLink tools ──
+            Tool::new(
+                "create_contentlink",
+                "Create a cross-document content link. Embeds a live reference from the target document to content in a source document. The resolved content stays in sync as the source document changes.",
+                Arc::new(object(json!({
+                    "type": "object",
+                    "properties": {
+                        "target_document_id": { "type": "string", "description": "ID of the document to add the reference to" },
+                        "source_document_id": { "type": "string", "description": "ID of the document whose content to reference" },
+                        "source_document_name": { "type": "string", "description": "Human-readable name of the source document" },
+                        "target_document_name": { "type": "string", "description": "Human-readable name of the target document" },
+                        "display_text": { "type": "string", "description": "Optional display text for the link. Defaults to source document name." }
+                    },
+                    "required": ["target_document_id", "source_document_id", "source_document_name", "target_document_name"]
+                }))),
+            ),
+            Tool::new(
+                "list_contentlinks",
+                "List all content links (cross-document references) for a document, including resolved content previews",
+                Arc::new(object(json!({
+                    "type": "object",
+                    "properties": {
+                        "document_id": { "type": "string", "description": "Document ID" }
+                    },
+                    "required": ["document_id"]
+                }))),
+            ),
+            Tool::new(
+                "resolve_contentlink",
+                "Re-fetch and cache the resolved content for a content link. Useful when the source document has been updated.",
+                Arc::new(object(json!({
+                    "type": "object",
+                    "properties": {
+                        "link_id": { "type": "string", "description": "Content link ID" }
+                    },
+                    "required": ["link_id"]
+                }))),
+            ),
         ]
     }
 
@@ -173,7 +211,8 @@ impl ServerHandler for McpTools {
                 "Read, write, and manage World Office documents with automatic version snapshots. "
                     .to_string()
                     + "Comment on documents with @agent mentions and resolve threads. "
-                    + "Agents can check their @mentions to discover when they've been referenced.",
+                    + "Agents can check their @mentions to discover when they've been referenced. "
+                    + "Create cross-document content links to embed live references between documents.",
             ),
         }
     }
@@ -332,6 +371,45 @@ impl ServerHandler for McpTools {
                     ErrorData::invalid_params("Missing required parameter: agent_name", None)
                 })?;
                 match self.client.list_mentions(agent_name).await {
+                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(data.to_string())])),
+                    Err(e) => Ok(Self::error_result(e.to_string())),
+                }
+            }
+            // ── ContentLink tool handlers ──
+            "create_contentlink" => {
+                let target_doc_id = Self::get_arg(&request.arguments, "target_document_id").ok_or_else(|| {
+                    ErrorData::invalid_params("Missing required: target_document_id", None)
+                })?;
+                let source_doc_id = Self::get_arg(&request.arguments, "source_document_id").ok_or_else(|| {
+                    ErrorData::invalid_params("Missing required: source_document_id", None)
+                })?;
+                let source_name = Self::get_arg(&request.arguments, "source_document_name").ok_or_else(|| {
+                    ErrorData::invalid_params("Missing required: source_document_name", None)
+                })?;
+                let target_name = Self::get_arg(&request.arguments, "target_document_name").ok_or_else(|| {
+                    ErrorData::invalid_params("Missing required: target_document_name", None)
+                })?;
+                let display_text = Self::get_arg(&request.arguments, "display_text").unwrap_or(source_name);
+
+                match self.client.create_content_link(target_doc_id, source_doc_id, source_name, target_name, display_text).await {
+                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(data.to_string())])),
+                    Err(e) => Ok(Self::error_result(e.to_string())),
+                }
+            }
+            "list_contentlinks" => {
+                let doc_id = Self::get_arg(&request.arguments, "document_id").ok_or_else(|| {
+                    ErrorData::invalid_params("Missing required: document_id", None)
+                })?;
+                match self.client.list_content_links(doc_id).await {
+                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(data.to_string())])),
+                    Err(e) => Ok(Self::error_result(e.to_string())),
+                }
+            }
+            "resolve_contentlink" => {
+                let link_id = Self::get_arg(&request.arguments, "link_id").ok_or_else(|| {
+                    ErrorData::invalid_params("Missing required: link_id", None)
+                })?;
+                match self.client.resolve_content_link(link_id).await {
                     Ok(data) => Ok(CallToolResult::success(vec![Content::text(data.to_string())])),
                     Err(e) => Ok(Self::error_result(e.to_string())),
                 }
