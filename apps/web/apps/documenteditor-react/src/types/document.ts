@@ -88,6 +88,7 @@ export type FileMenuAction =
 export type LeftMenuAction =
   | "search"
   | "comments"
+  | "contentlinks"
   | "chat"
   | "navigation"
   | "thumbnails"
