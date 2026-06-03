@@ -603,3 +603,117 @@ async fn health_check_returns_ok() {
     assert_eq!(json["status"], "ok");
     assert_eq!(json["service"], "storage-service");
 }
+
+// ── Content Link CRUD ─────────────────────────────────────────────────────
+
+#[tokio::test]
+async fn test_content_link_crud() {
+    let state = create_test_state();
+
+    // Create a source document via API
+    let router1 = app(state.clone());
+    let src_resp = router1
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/files")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({
+                        "name": "source-doc.txt",
+                        "content_type": "text/plain",
+                        "data": encode_b64(b"Hello from source document!")
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(src_resp.status(), StatusCode::CREATED);
+    let src_body = body_json(src_resp).await;
+    let src_id = src_body["file"]["id"].as_str().unwrap().to_string();
+
+    // Create a target document
+    let router2 = app(state.clone());
+    let tgt_resp = router2
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/files")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({
+                        "name": "target-doc.txt",
+                        "content_type": "text/plain",
+                        "data": encode_b64(b"Target content")
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(tgt_resp.status(), StatusCode::CREATED);
+    let tgt_body = body_json(tgt_resp).await;
+    let tgt_id = tgt_body["file"]["id"].as_str().unwrap().to_string();
+
+    // Create content link
+    let router3 = app(state.clone());
+    let cl_resp = router3
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/documents/{}/content-links", tgt_id))
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    serde_json::json!({
+                        "source_document_id": src_id,
+                        "source_document_name": "Source Document",
+                        "target_document_name": "Target Document",
+                        "display_text": "See source doc"
+                    })
+                    .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(cl_resp.status(), StatusCode::CREATED);
+    let cl_data = body_json(cl_resp).await;
+    let cl_id = cl_data["id"].as_str().unwrap().to_string();
+    assert_eq!(cl_data["source_document_id"], src_id);
+    assert_eq!(cl_data["target_document_id"], tgt_id);
+
+    // List content links for target
+    let router4 = app(state.clone());
+    let list_resp = router4
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri(format!("/documents/{}/content-links", tgt_id))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(list_resp.status(), StatusCode::OK);
+    let list_data = body_json(list_resp).await;
+    assert_eq!(list_data["count"], 1);
+
+    // Delete content link
+    let router5 = app(state);
+    let del_resp = router5
+        .oneshot(
+            Request::builder()
+                .method("DELETE")
+                .uri(format!("/content-links/{}", cl_id))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(del_resp.status(), StatusCode::OK);
+    let del_data = body_json(del_resp).await;
+    assert_eq!(del_data["deleted"], true);
+}
