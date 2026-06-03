@@ -3,10 +3,12 @@ import type { JSX } from "react"
 import { documentStore } from "../../stores/DocumentStore"
 import type { LeftMenuAction } from "../../types/document"
 import { LeftMenuButton } from "./LeftMenuButton"
+import { ContentLinkPanel } from "./ContentLinkPanel"
 
 const BUTTONS: Array<{ action: LeftMenuAction; title: string; icon: string }> = [
   { action: "search", title: "Search", icon: "🔍" },
   { action: "comments", title: "Comments", icon: "💬" },
+  { action: "contentlinks", title: "Content Links", icon: "🔗" },
   { action: "chat", title: "Chat", icon: "💬" },
   { action: "navigation", title: "Navigation", icon: "☰" },
   { action: "thumbnails", title: "Thumbnails", icon: "📄" },
@@ -30,6 +32,9 @@ function LeftMenuInner(): JSX.Element {
         ))}
       </div>
       <div className="de-left-panel-side">
+        <ContentLinkPanel
+          style={{ display: documentStore.activeLeftPanel === "contentlinks" ? "flex" : "none" }}
+        />
         <div
           className="de-left-panel-chat"
           style={{ display: documentStore.activeLeftPanel === "chat" ? "block" : "none" }}

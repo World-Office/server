@@ -5,6 +5,7 @@ import "./styles/document.css"
 import "./styles/toolbar.css"
 import "./styles/statusbar.css"
 import "./styles/leftmenu.css"
+import "./styles/contentlink.css"
 import "./styles/rightmenu.css"
 import "./styles/filemenu.css"
 
