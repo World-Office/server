@@ -45,8 +45,15 @@ function ZoomControls(): JSX.Element {
   )
 }
 
+const SLIDE_SIZE_LABELS: Record<string, string> = {
+  widescreen: "Widescreen 13.33 × 7.5 in",
+  screen4x3: "Standard 10 × 7.5 in",
+  standard: "Standard 10 × 7.5 in",
+  custom: "Custom",
+}
+
 const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
-  const { totalSlides, currentSlide } = presentationStore
+  const { totalSlides, currentSlide, slideSize } = presentationStore
 
   return (
     <div className="prese-statusbar">
@@ -80,6 +87,13 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
         <button type="button" className="prese-statusbar-btn" title="Slideshow">
           ▶
         </button>
+      </div>
+
+      <div className="prese-statusbar-separator" />
+
+      {/* Slide size indicator */}
+      <div className="prese-statusbar-tools">
+        <span className="prese-statusbar-label">{SLIDE_SIZE_LABELS[slideSize] ?? "Custom"}</span>
       </div>
 
       <div className="prese-statusbar-separator" />
