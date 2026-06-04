@@ -1,4 +1,10 @@
 import type { JSX } from "react"
+import { presentationStore } from "../../../stores/PresentationStore"
+
+function handleCreateBlank(): void {
+  presentationStore.setFileMenuOpen(false)
+  presentationStore.resetToDefaults()
+}
 
 export function CreateNewPanel({ visible }: { visible: boolean }): JSX.Element {
   return (
@@ -8,7 +14,14 @@ export function CreateNewPanel({ visible }: { visible: boolean }): JSX.Element {
     >
       <div className="prese-file-menu-header">Create New</div>
       <div className="prese-file-menu-formats">
-        {["Blank", "Office Open", "Template", "Content", "Education", "Business", "Calendar"].map(
+        <button
+          type="button"
+          className="prese-file-menu-format-btn"
+          onClick={handleCreateBlank}
+        >
+          Blank Presentation
+        </button>
+        {["Office Open", "Template", "Content", "Education", "Business", "Calendar"].map(
           (format) => (
             <button
               key={format}

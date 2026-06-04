@@ -239,6 +239,59 @@ export class PresentationStore {
     this.languageCode = code
   }
 
+  /* ── Serialization ── */
+
+  toJSON(): string {
+    const data = {
+      version: 1,
+      slideSize: this.slideSize,
+      themeType: this.themeType,
+      slides: this.slides.map((s) => ({
+        id: s.id,
+        title: s.title,
+        layout: s.layout,
+        notes: s.notes,
+      })),
+    }
+    return JSON.stringify(data, null, 2)
+  }
+
+  fromJSON(json: string): void {
+    try {
+      const data = JSON.parse(json)
+      if (!data.slides || !Array.isArray(data.slides)) {
+        throw new Error("Invalid presentation data")
+      }
+      this.slideSize = data.slideSize ?? "standard"
+      this.themeType = data.themeType ?? "builtin"
+      this.slides = data.slides.map(
+        (s: { id?: string; title: string; layout: string; notes?: string }) => ({
+          id: s.id ?? crypto.randomUUID(),
+          title: s.title ?? "Untitled",
+          layout: (s.layout as SlideLayout) ?? "blank",
+          notes: s.notes ?? "",
+        }),
+      )
+      this.totalSlides = this.slides.length
+      this.currentSlide = 0
+    } catch (e) {
+      console.error("Failed to load presentation:", e)
+    }
+  }
+
+  resetToDefaults(): void {
+    this.slides = [
+      { id: crypto.randomUUID(), title: "Title Slide", layout: "title" as SlideLayout, notes: "" },
+      { id: crypto.randomUUID(), title: "Overview", layout: "content" as SlideLayout, notes: "" },
+      { id: crypto.randomUUID(), title: "Key Points", layout: "blank" as SlideLayout, notes: "" },
+    ]
+    this.totalSlides = this.slides.length
+    this.currentSlide = 0
+    this.slideSize = "standard"
+    this.themeType = "builtin"
+    this.document = null
+  }
+
   setCompactToolbar(compact: boolean): void {
     this.isCompactToolbar = compact
     setStorageItem("compact-toolbar", compact ? "true" : "false")

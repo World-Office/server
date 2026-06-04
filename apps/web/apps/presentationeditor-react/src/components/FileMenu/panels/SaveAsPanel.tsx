@@ -1,4 +1,16 @@
 import type { JSX } from "react"
+import { presentationStore } from "../../../stores/PresentationStore"
+
+function downloadJSON(): void {
+  const json = presentationStore.toJSON()
+  const blob = new Blob([json], { type: "application/json" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = "presentation.json"
+  a.click()
+  URL.revokeObjectURL(url)
+}
 
 export function SaveAsPanel({ visible }: { visible: boolean }): JSX.Element {
   return (
@@ -20,6 +32,19 @@ export function SaveAsPanel({ visible }: { visible: boolean }): JSX.Element {
             </button>
           ),
         )}
+      </div>
+
+      <div className="prese-file-menu-header" style={{ marginTop: "16px" }}>
+        Save as JSON
+      </div>
+      <div className="prese-file-menu-formats">
+        <button
+          type="button"
+          className="prese-file-menu-format-btn"
+          onClick={downloadJSON}
+        >
+          JSON
+        </button>
       </div>
     </div>
   )
