@@ -232,4 +232,140 @@ mod tests {
         let result = rt.parse(b"not a valid DOCX file");
         assert!(result.is_err());
     }
+
+    // --- PPTX roundtrip tests ---
+
+    fn create_minimal_pptx() -> Vec<u8> {
+        let mut buf = Vec::new();
+        {
+            let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+
+            // [Content_Types].xml
+            zip.start_file("[Content_Types].xml", SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+  <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
+</Types>"#,
+            )
+            .unwrap();
+
+            // _rels/.rels
+            zip.start_file("_rels/.rels", SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>"#,
+            )
+            .unwrap();
+
+            // ppt/presentation.xml
+            zip.start_file("ppt/presentation.xml", SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+                xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:sldSz cx="9144000" cy="6858000"/>
+  <p:sldIdLst>
+    <p:sldId id="256" r:id="rId1"/>
+  </p:sldIdLst>
+</p:presentation>"#,
+            )
+            .unwrap();
+
+            // ppt/_rels/presentation.xml.rels
+            zip.start_file(
+                "ppt/_rels/presentation.xml.rels",
+                SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
+</Relationships>"#,
+            )
+            .unwrap();
+
+            // ppt/slides/slide1.xml
+            zip.start_file("ppt/slides/slide1.xml", SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <p:spTree>
+    <p:nvGrpSpPr>
+      <p:cNvPr id="1" name=""/>
+      <p:cNvGrpSpPr/>
+      <p:nvPr/>
+    </p:nvGrpSpPr>
+    <p:grpSpPr/>
+    <p:sp>
+      <p:nvSpPr>
+        <p:cNvPr id="2" name="TextBox"/>
+        <p:nvPr/>
+      </p:nvSpPr>
+      <p:spPr>
+        <a:xfrm>
+          <a:off x="100" y="100"/>
+          <a:ext cx="5000000" cy="500000"/>
+        </a:xfrm>
+      </p:spPr>
+      <p:txBody>
+        <a:bodyPr/>
+        <a:lstStyle/>
+        <a:p>
+          <a:r>
+            <a:t>PPTX Roundtrip</a:t>
+          </a:r>
+        </a:p>
+      </p:txBody>
+    </p:sp>
+  </p:spTree>
+</p:sld>"#,
+            )
+            .unwrap();
+
+            zip.finish().unwrap();
+        }
+        buf
+    }
+
+    #[test]
+    fn test_pptx_roundtrip_parse_json() {
+        let rt = OoxmlRoundtrip::new();
+        let input = create_minimal_pptx();
+
+        rt.parse(&input).expect("PPTX parse should succeed");
+
+        let output = rt.serialize().expect("serialize should succeed");
+        let json: serde_json::Value =
+            serde_json::from_slice(&output).expect("output should be valid JSON");
+
+        assert_eq!(json["format"], "pptx");
+        assert_eq!(json["main_part"], "ppt/presentation.xml");
+        assert!(json["body"].is_null() || json["body"].is_object());
+    }
+
+    #[test]
+    fn test_pptx_roundtrip_slide_count() {
+        let rt = OoxmlRoundtrip::new();
+        let input = create_minimal_pptx();
+
+        rt.parse(&input).expect("PPTX parse should succeed");
+
+        let output = rt.serialize().expect("serialize should succeed");
+        let json: serde_json::Value =
+            serde_json::from_slice(&output).expect("output should be valid JSON");
+
+        assert_eq!(json["part_count"], 1);
+    }
 }

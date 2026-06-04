@@ -284,6 +284,456 @@ impl OoxmlParser {
 
     const W_NS: &str = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
 
+    // --- PPTX namespaces ---
+
+    const P_NS: &str = "http://schemas.openxmlformats.org/presentationml/2006/main";
+    const A_NS: &str = "http://schemas.openxmlformats.org/drawingml/2006/main";
+    #[allow(dead_code)]
+    const R_NS: &str =
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+
+    /// Parse PPTX presentation from ppt/presentation.xml.
+    pub fn parse_pptx(
+        &self,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    ) -> Result<Option<PptxPresentation>> {
+        if archive.by_name("ppt/presentation.xml").is_err() {
+            return Ok(None);
+        }
+        let xml = self.read_zip_entry(archive, "ppt/presentation.xml")?;
+        let doc = XmlDoc::parse(&xml).map_err(|e| CoreError::Parse {
+            format: "ooxml".into(),
+            message: format!("Invalid presentation.xml: {}", e),
+        })?;
+
+        let pres_elem = doc
+            .descendants()
+            .find(|n| n.has_tag_name("presentation") && n.tag_name().namespace() == Some(Self::P_NS));
+        let Some(pres_elem) = pres_elem else {
+            return Ok(Some(PptxPresentation {
+                slide_size: SlideSize::widescreen(),
+                slides: Vec::new(),
+                core_properties: CoreProperties::default(),
+            }));
+        };
+
+        let slide_size = self.parse_slide_size(&pres_elem);
+
+        // Build slide ID → relationship mapping from presentation.xml
+        let mut slides_by_id: Vec<(u32, String)> = Vec::new();
+        for sld_id in pres_elem.descendants() {
+            if sld_id.has_tag_name("sldId")
+                && sld_id.tag_name().namespace() == Some(Self::P_NS)
+            {
+                let id: u32 = sld_id
+                    .attribute("id")
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(0);
+                let rid = sld_id.attribute("r:id").unwrap_or("");
+                slides_by_id.push((id, rid.to_string()));
+            }
+        }
+
+        // Read ppt/_rels/presentation.xml.rels to resolve slide paths
+        let slides = self.parse_pptx_slides(archive, &slides_by_id, &[]);
+
+        let core_xml = self.read_zip_entry(archive, "docProps/core.xml").unwrap_or_default();
+        let core_properties = self.parse_core_properties(&core_xml).unwrap_or_default();
+
+        Ok(Some(PptxPresentation {
+            slide_size,
+            slides,
+            core_properties,
+        }))
+    }
+
+    fn parse_slide_size(&self, pres_elem: &roxmltree::Node) -> SlideSize {
+        for child in pres_elem.children() {
+            if child.has_tag_name("sldSz") && child.tag_name().namespace() == Some(Self::P_NS) {
+                let cx: i64 = child.attribute("cx").and_then(|v| v.parse().ok()).unwrap_or(12192000);
+                let cy: i64 = child.attribute("cy").and_then(|v| v.parse().ok()).unwrap_or(6858000);
+                return SlideSize { cx, cy };
+            }
+        }
+        SlideSize::widescreen()
+    }
+
+    fn parse_pptx_slides(
+        &self,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+        slide_ids: &[(u32, String)],
+        _rels: &[(String, String)],
+    ) -> Vec<Slide> {
+        // Map slide index → entry name for all ppt/slides/slide*.xml entries
+        let mut slide_entries: Vec<(u32, String)> = Vec::new();
+        for i in 0..archive.len() {
+            if let Ok(entry) = archive.by_index(i) {
+                let name = entry.name().to_string();
+                if name.starts_with("ppt/slides/slide") && name.ends_with(".xml") {
+                    let idx: u32 = name
+                        .trim_start_matches("ppt/slides/slide")
+                        .trim_end_matches(".xml")
+                        .parse()
+                        .unwrap_or(0);
+                    slide_entries.push((idx, name));
+                }
+            }
+        }
+        // Sort by slide index
+        slide_entries.sort_by_key(|(idx, _)| *idx);
+
+        let mut slides = Vec::new();
+        for (expected_id, _) in slide_ids {
+            // Find slide with matching order
+            let slide_idx = slides.len();
+            let entry = slide_entries.get(slide_idx);
+
+            let (xml, slide_idx_from_name) = if let Some((_entry_idx, entry_name)) = entry {
+                let Ok(x) = self.read_zip_entry(archive, entry_name) else {
+                    continue;
+                };
+                (x, *_entry_idx)
+            } else {
+                // No more slides in ZIP
+                break;
+            };
+
+            let Ok(slide_doc) = XmlDoc::parse(&xml) else {
+                continue;
+            };
+
+            let slide_elem = slide_doc.descendants().find(|n| {
+                (n.has_tag_name("sld") || n.has_tag_name("slide"))
+                    && n.tag_name().namespace() == Some(Self::P_NS)
+            });
+
+            let Some(slide_elem) = slide_elem else {
+                continue;
+            };
+
+            let name = slide_elem
+                .attribute("name")
+                .unwrap_or(&format!("Slide {}", slide_idx_from_name))
+                .to_string();
+
+            let shapes = self.parse_pptx_shapes(slide_elem);
+            let notes = self.parse_pptx_notes(archive, *expected_id);
+
+            slides.push(Slide {
+                id: *expected_id,
+                name,
+                shapes,
+                notes,
+            });
+        }
+        slides
+    }
+
+    fn parse_pptx_shapes(&self, slide_elem: roxmltree::Node) -> Vec<SlideShape> {
+        let mut shapes = Vec::new();
+        for sp_tree in slide_elem.descendants() {
+            let is_sp_tree = sp_tree.has_tag_name("spTree")
+                && sp_tree.tag_name().namespace() == Some(Self::P_NS);
+            if !is_sp_tree {
+                continue;
+            }
+            for child in sp_tree.children() {
+                if !child.is_element() {
+                    continue;
+                }
+                let local = child.tag_name().name();
+                let ns = child.tag_name().namespace();
+                match (ns, local) {
+                    (Some(ns), "sp") if ns == Self::P_NS => {
+                        if let Some(shape) = self.parse_pptx_shape_from_sp(&child) {
+                            shapes.push(shape);
+                        }
+                    }
+                    (Some(ns), "pic") if ns == Self::P_NS => {
+                        if let Some(pic) = self.parse_pptx_picture(&child) {
+                            shapes.push(SlideShape::Picture(pic));
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        shapes
+    }
+
+    fn parse_pptx_shape_from_sp(
+        &self,
+        sp: &roxmltree::Node,
+    ) -> Option<SlideShape> {
+        let id = sp.attribute("id").unwrap_or("0").to_string();
+
+        // Detect shape type: ph (placeholder), sp (auto-shape/textbox)
+        let is_placeholder = sp
+            .descendants()
+            .any(|n| n.has_tag_name("ph") && n.tag_name().namespace() == Some(Self::P_NS));
+
+        let bounds = self.parse_pptx_bounds(sp);
+        let text_body = self.parse_pptx_text_body(sp);
+
+        if is_placeholder {
+            let ph_type = sp
+                .descendants()
+                .find(|n| n.has_tag_name("ph"))
+                .and_then(|n| n.attribute("type"))
+                .unwrap_or("body")
+                .to_string();
+            Some(SlideShape::Placeholder(PlaceholderShape {
+                id,
+                bounds,
+                placeholder_type: ph_type,
+                text_body,
+            }))
+        } else {
+            Some(SlideShape::TextBox(TextBoxShape {
+                id,
+                bounds,
+                text_body: text_body.unwrap_or(TextBody {
+                    paragraphs: Vec::new(),
+                }),
+            }))
+        }
+    }
+
+    fn parse_pptx_bounds(&self, sp: &roxmltree::Node) -> Bounds {
+        // Find <a:xfrm> or <p:xfrm> with <a:off> and <a:ext>
+        let xfrm = sp
+            .descendants()
+            .find(|n| n.has_tag_name("xfrm") && n.tag_name().namespace() == Some(Self::A_NS))
+            .or_else(|| {
+                sp.descendants()
+                    .find(|n| n.has_tag_name("xfrm") && n.tag_name().namespace() == Some(Self::P_NS))
+            });
+
+        let Some(xfrm) = xfrm else {
+            return Bounds { x: 0, y: 0, cx: 0, cy: 0 };
+        };
+
+        let mut off = (0i64, 0i64);
+        let mut ext = (0i64, 0i64);
+
+        for child in xfrm.children() {
+            if !child.is_element() {
+                continue;
+            }
+            let local = child.tag_name().name();
+            match local {
+                "off" => {
+                    off = (
+                        child.attribute("x").and_then(|v| v.parse().ok()).unwrap_or(0),
+                        child.attribute("y").and_then(|v| v.parse().ok()).unwrap_or(0),
+                    );
+                }
+                "ext" => {
+                    ext = (
+                        child.attribute("cx").and_then(|v| v.parse().ok()).unwrap_or(0),
+                        child.attribute("cy").and_then(|v| v.parse().ok()).unwrap_or(0),
+                    );
+                }
+                _ => {}
+            }
+        }
+
+        Bounds {
+            x: off.0,
+            y: off.1,
+            cx: ext.0,
+            cy: ext.1,
+        }
+    }
+
+    fn parse_pptx_text_body(&self, sp: &roxmltree::Node) -> Option<TextBody> {
+        let tx_body = sp
+            .descendants()
+            .find(|n| n.has_tag_name("txBody") && n.tag_name().namespace() == Some(Self::P_NS))
+            .or_else(|| {
+                sp.descendants()
+                    .find(|n| n.has_tag_name("txBody") && n.tag_name().namespace() == Some(Self::A_NS))
+            });
+
+        let Some(tx_body) = tx_body else {
+            return None;
+        };
+
+        let mut paragraphs = Vec::new();
+
+        // Process direct child <a:p> elements
+        for p_node in tx_body.children() {
+            if !p_node.is_element() {
+                continue;
+            }
+            if !(p_node.has_tag_name("p") && p_node.tag_name().namespace() == Some(Self::A_NS)) {
+                continue;
+            }
+
+            let mut runs = Vec::new();
+            for r_node in p_node.children() {
+                if !r_node.is_element() {
+                    continue;
+                }
+                if r_node.has_tag_name("r") && r_node.tag_name().namespace() == Some(Self::A_NS) {
+                    if let Some(run) = self.parse_pptx_run(r_node) {
+                        runs.push(run);
+                    }
+                }
+            }
+
+            // Handle <a:br> (line break) as an empty run
+            for r_node in p_node.children() {
+                if !r_node.is_element() {
+                    continue;
+                }
+                if r_node.has_tag_name("br") && r_node.tag_name().namespace() == Some(Self::A_NS) {
+                    if runs.iter().any(|r: &DocxRun| r.text == "\n") {
+                        continue;
+                    }
+                    runs.push(DocxRun {
+                        text: "\n".to_string(),
+                        ..Default::default()
+                    });
+                }
+            }
+
+            paragraphs.push(DocxParagraph {
+                style_id: None,
+                properties: DocxParagraphProperties::default(),
+                runs,
+            });
+        }
+
+        if paragraphs.is_empty() {
+            return None;
+        }
+
+        Some(TextBody { paragraphs })
+    }
+
+    fn parse_pptx_run(&self, r_node: roxmltree::Node) -> Option<DocxRun> {
+        let mut text = String::new();
+        let mut bold = false;
+        let mut italic = false;
+        let mut underline = None;
+        let mut font_size = None;
+        let mut font = None;
+        let mut color = None;
+
+        for child in r_node.children() {
+            if !child.is_element() {
+                if let Some(t) = child.text() {
+                    text.push_str(t);
+                }
+                continue;
+            }
+            match child.tag_name().name() {
+                "t" => {
+                    if let Some(t) = child.text() {
+                        text.push_str(t);
+                    }
+                }
+                "rPr" => {
+                    bold = child.attribute("b").map(|v| v == "1").unwrap_or(false);
+                    italic = child.attribute("i").map(|v| v == "1").unwrap_or(false);
+                    // sz in centipoints (hundredths of a point)
+                    font_size = child.attribute("sz").and_then(|v| v.parse::<u32>().ok()).map(|v| v / 100);
+                    font = child
+                        .children()
+                        .find(|n| n.is_element() && n.has_tag_name("latin"))
+                        .and_then(|n| n.attribute("typeface"))
+                        .map(|s| s.to_string());
+                    underline = child.attribute("u").map(|s| {
+                        if s == "sng" || s == "dbl" {
+                            UnderlineType::Single
+                        } else {
+                            UnderlineType::Single
+                        }
+                    });
+                    color = child
+                        .children()
+                        .find(|n| {
+                            n.is_element()
+                                && (n.has_tag_name("solidFill") || n.has_tag_name("srgbClr"))
+                        })
+                        .and_then(|n| {
+                            n.descendants()
+                                .find(|m| m.has_tag_name("srgbClr"))
+                                .and_then(|m| m.attribute("val"))
+                                .map(|s| s.to_string())
+                        });
+                }
+                _ => {}
+            }
+        }
+
+        if text.is_empty() && !r_node.descendants().any(|n| n.has_tag_name("t")) {
+            // Collect text from <a:t> descendants
+            for t_node in r_node.descendants() {
+                if t_node.has_tag_name("t") {
+                    if let Some(t) = t_node.text() {
+                        text.push_str(t);
+                    }
+                }
+            }
+        }
+
+        if text.is_empty() {
+            return None;
+        }
+
+        Some(DocxRun {
+            text,
+            bold,
+            italic,
+            underline,
+            font_size,
+            font,
+            color,
+            ..Default::default()
+        })
+    }
+
+    fn parse_pptx_picture(&self, pic: &roxmltree::Node) -> Option<PictureShape> {
+        let id = pic.attribute("id").unwrap_or("0").to_string();
+        let name = pic
+            .descendants()
+            .find(|n| n.has_tag_name("cNvPr") && n.tag_name().namespace() == Some(Self::P_NS))
+            .and_then(|n| n.attribute("name"))
+            .unwrap_or("Picture")
+            .to_string();
+
+        let bounds = self.parse_pptx_bounds(pic);
+
+        // Find image relationship reference
+        let _blip_fill = pic.descendants().find(|n| {
+            n.has_tag_name("blipFill")
+                && (n.tag_name().namespace() == Some(Self::P_NS)
+                    || n.tag_name().namespace() == Some(Self::A_NS))
+        });
+
+        // Try to get image extension and data from relationship
+        let (image_extension, image_data) = (String::new(), Vec::new());
+
+        Some(PictureShape {
+            id,
+            bounds,
+            name,
+            image_extension,
+            image_data,
+        })
+    }
+
+    fn parse_pptx_notes(
+        &self,
+        _archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+        _slide_id: u32,
+    ) -> Option<String> {
+        // Notes parsing is a future enhancement — return None for now
+        None
+    }
+
     /// Parse DOCX body from word/document.xml.
     pub fn parse_docx_body(
         &self,
@@ -1206,5 +1656,217 @@ mod tests {
         let doc = parser.parse(&docx).unwrap();
         let body = doc.body.unwrap();
         assert_eq!(body.paragraphs[0].style_id.as_deref(), Some("Heading1"));
+    }
+
+    // --- PPTX test helpers ---
+
+    fn make_minimal_pptx() -> Vec<u8> {
+        let mut buf = Vec::new();
+        {
+            let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+
+            // [Content_Types].xml
+            zip.start_file(
+                "[Content_Types].xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+  <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
+  <Override PartName="/ppt/slides/slide2.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
+</Types>"#,
+            )
+            .unwrap();
+
+            // _rels/.rels
+            zip.start_file(
+                "_rels/.rels",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>"#,
+            )
+            .unwrap();
+
+            // ppt/_rels/presentation.xml.rels
+            zip.start_file(
+                "ppt/_rels/presentation.xml.rels",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide2.xml"/>
+</Relationships>"#,
+            )
+            .unwrap();
+
+            // ppt/presentation.xml
+            zip.start_file(
+                "ppt/presentation.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:sldSz cx="12192000" cy="6858000"/>
+  <p:sldIdLst>
+    <p:sldId id="256" r:id="rId1"/>
+    <p:sldId id="257" r:id="rId2"/>
+  </p:sldIdLst>
+</p:presentation>"#,
+            )
+            .unwrap();
+
+            // ppt/slides/slide1.xml - with text
+            zip.start_file(
+                "ppt/slides/slide1.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Title Slide">
+  <p:spTree>
+    <p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr>
+    <p:sp>
+      <p:nvSpPr><p:cNvPr id="2" name="Title 1"/><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr>
+      <p:spPr><a:xfrm><a:off x="457200" y="1371600"/><a:ext cx="8229600" cy="1701800"/></a:xfrm></p:spPr>
+      <p:txBody>
+        <a:bodyPr/>
+        <a:p>
+          <a:r><a:rPr sz="4400" b="1"/><a:t>Hello World</a:t></a:r>
+        </a:p>
+      </p:txBody>
+    </p:sp>
+  </p:spTree>
+</p:sld>"#,
+            )
+            .unwrap();
+
+            // ppt/slides/slide2.xml - empty
+            zip.start_file(
+                "ppt/slides/slide2.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Blank Slide">
+  <p:spTree>
+    <p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr>
+  </p:spTree>
+</p:sld>"#,
+            )
+            .unwrap();
+
+            zip.finish().unwrap();
+        }
+        buf
+    }
+
+    #[test]
+    fn test_parse_pptx() {
+        let pptx = make_minimal_pptx();
+        let parser = OoxmlParser::new();
+        let data = pptx.as_slice();
+        let cursor = std::io::Cursor::new(data);
+        let mut archive = zip::ZipArchive::new(cursor).unwrap();
+        let pres = parser.parse_pptx(&mut archive).unwrap().unwrap();
+
+        assert_eq!(pres.slides.len(), 2);
+        assert_eq!(pres.slides[0].id, 256);
+        assert_eq!(pres.slides[0].name, "Title Slide");
+        assert_eq!(pres.slides[1].name, "Blank Slide");
+
+        assert_eq!(pres.slide_size.cx, 12192000);
+        assert_eq!(pres.slide_size.cy, 6858000);
+
+        assert_eq!(pres.slides[0].shapes.len(), 1);
+
+        match &pres.slides[0].shapes[0] {
+            SlideShape::Placeholder(ph) => {
+                assert_eq!(ph.placeholder_type, "title");
+                assert!(ph.text_body.is_some());
+                let tb = ph.text_body.as_ref().unwrap();
+                assert_eq!(tb.paragraphs.len(), 1);
+                assert_eq!(tb.paragraphs[0].runs.len(), 1);
+                assert_eq!(tb.paragraphs[0].runs[0].text, "Hello World");
+                assert_eq!(tb.paragraphs[0].runs[0].font_size, Some(44));
+                assert!(tb.paragraphs[0].runs[0].bold);
+            }
+            _ => panic!("Expected placeholder shape"),
+        }
+
+        assert!(pres.slides[1].shapes.is_empty());
+    }
+
+    #[test]
+    fn test_parse_pptx_count_slides() {
+        let pptx = make_minimal_pptx();
+        let parser = OoxmlParser::new();
+        let doc = parser.parse(pptx.as_slice()).unwrap();
+        assert_eq!(doc.part_count, 2);
+    }
+
+    #[test]
+    fn test_pptx_detect_from_content_types() {
+        let pptx = make_minimal_pptx();
+        let parser = OoxmlParser::new();
+        let doc = parser.parse(pptx.as_slice()).unwrap();
+        assert_eq!(doc.format, OoxmlFormat::Pptx);
+    }
+
+    #[test]
+    fn test_parse_pptx_slide_size_standard() {
+
+        // We need to build a new PPTX with standard slide size
+        let mut buf = Vec::new();
+        {
+            let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+
+            zip.start_file("[Content_Types].xml", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+</Types>"#).unwrap();
+
+            zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>"#).unwrap();
+
+            zip.start_file("ppt/presentation.xml", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+  <p:sldSz cx="9144000" cy="6858000"/>
+</p:presentation>"#).unwrap();
+
+            zip.finish().unwrap();
+        }
+
+        let parser = OoxmlParser::new();
+        let data2 = buf.as_slice();
+        let cursor2 = std::io::Cursor::new(data2);
+        let mut archive2 = zip::ZipArchive::new(cursor2).unwrap();
+        let pres = parser.parse_pptx(&mut archive2).unwrap().unwrap();
+
+        assert_eq!(pres.slide_size.cx, 9144000);
+        assert_eq!(pres.slide_size.cy, 6858000);
     }
 }

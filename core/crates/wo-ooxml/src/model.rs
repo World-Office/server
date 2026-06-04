@@ -161,7 +161,7 @@ pub enum LineSpacingRule {
 }
 
 /// A run of text with formatting.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DocxRun {
     pub text: String,
     pub bold: bool,
@@ -285,4 +285,92 @@ pub struct DocxCharacterStyle {
 pub struct DocxTableStyle {
     pub style_id: String,
     pub name: Option<String>,
+}
+
+// --- PPTX Presentation Model ---
+
+/// A parsed PPTX presentation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PptxPresentation {
+    pub slide_size: SlideSize,
+    pub slides: Vec<Slide>,
+    pub core_properties: CoreProperties,
+}
+
+/// A single slide in the presentation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Slide {
+    pub id: u32,
+    pub name: String,
+    pub shapes: Vec<SlideShape>,
+    pub notes: Option<String>,
+}
+
+/// Shape types that can appear on a slide.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SlideShape {
+    TextBox(TextBoxShape),
+    Picture(PictureShape),
+    Placeholder(PlaceholderShape),
+}
+
+/// A text box shape on a slide.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TextBoxShape {
+    pub id: String,
+    pub bounds: Bounds,
+    pub text_body: TextBody,
+}
+
+/// An image shape on a slide.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PictureShape {
+    pub id: String,
+    pub bounds: Bounds,
+    pub name: String,
+    pub image_extension: String,
+    pub image_data: Vec<u8>,
+}
+
+/// A placeholder shape (title, subtitle, content).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PlaceholderShape {
+    pub id: String,
+    pub bounds: Bounds,
+    pub placeholder_type: String,
+    pub text_body: Option<TextBody>,
+}
+
+/// 2D bounds in EMU units (1/914400 inch).
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Bounds {
+    pub x: i64,
+    pub y: i64,
+    pub cx: i64,
+    pub cy: i64,
+}
+
+/// Text content for a shape.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TextBody {
+    pub paragraphs: Vec<DocxParagraph>,
+}
+
+/// Slide dimensions.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct SlideSize {
+    pub cx: i64,
+    pub cy: i64,
+}
+
+impl SlideSize {
+    /// Standard 4:3 slide size (10 × 7.5 inches in EMU).
+    pub fn standard() -> Self {
+        Self { cx: 9144000, cy: 6858000 }
+    }
+
+    /// Widescreen 16:9 slide size (13.33 × 7.5 inches in EMU).
+    pub fn widescreen() -> Self {
+        Self { cx: 12192000, cy: 6858000 }
+    }
 }
