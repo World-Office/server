@@ -55,6 +55,282 @@ impl OoxmlSerializer {
         Ok(result.into_inner())
     }
 
+    /// Serialize a PptxPresentation to PPTX bytes (ZIP archive).
+    pub fn serialize_pptx(&self, pres: &PptxPresentation) -> Result<Vec<u8>, anyhow::Error> {
+        let buf = Cursor::new(Vec::new());
+        let mut zip = zip::ZipWriter::new(buf);
+
+        let options = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated);
+
+        // 1. [Content_Types].xml
+        let content_types = self.build_pptx_content_types(pres);
+        zip.start_file("[Content_Types].xml", options)?;
+        zip.write_all(content_types.as_bytes())?;
+
+        // 2. _rels/.rels
+        let rels = self.build_pptx_root_rels();
+        zip.start_file("_rels/.rels", options)?;
+        zip.write_all(rels.as_bytes())?;
+
+        // 3. ppt/presentation.xml
+        let pres_xml = self.build_presentation_xml(pres);
+        zip.start_file("ppt/presentation.xml", options)?;
+        zip.write_all(pres_xml.as_bytes())?;
+
+        // 4. ppt/_rels/presentation.xml.rels
+        let pres_rels = self.build_pptx_pres_rels(pres);
+        zip.start_file("ppt/_rels/presentation.xml.rels", options)?;
+        zip.write_all(pres_rels.as_bytes())?;
+
+        // 5. Each slide
+        for (i, slide) in pres.slides.iter().enumerate() {
+            let slide_path = format!("ppt/slides/slide{}.xml", i + 1);
+            let slide_xml = self.build_slide_xml(slide);
+            zip.start_file(&slide_path, options)?;
+            zip.write_all(slide_xml.as_bytes())?;
+        }
+
+        // 6. docProps/core.xml
+        let core_xml = self.build_core_properties(&pres.core_properties);
+        zip.start_file("docProps/core.xml", options)?;
+        zip.write_all(core_xml.as_bytes())?;
+
+        let result = zip.finish()?;
+        Ok(result.into_inner())
+    }
+
+    fn build_pptx_content_types(&self, pres: &PptxPresentation) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>"#,
+        );
+        for i in 1..=pres.slides.len() {
+            xml.push_str(&format!(
+                r#"
+  <Override PartName="/ppt/slides/slide{}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>"#,
+                i
+            ));
+        }
+        xml.push_str("\n</Types>");
+        xml
+    }
+
+    fn build_pptx_root_rels(&self) -> String {
+        String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>"#,
+        )
+    }
+
+    fn build_pptx_pres_rels(&self, pres: &PptxPresentation) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">"#,
+        );
+        for i in 1..=pres.slides.len() {
+            xml.push_str(&format!(
+                r#"
+  <Relationship Id="rId{}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide{}.xml"/>"#,
+                i, i
+            ));
+        }
+        xml.push_str("\n</Relationships>");
+        xml
+    }
+
+    fn build_presentation_xml(&self, pres: &PptxPresentation) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+                xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">"#,
+        );
+
+        // Slide size
+        xml.push_str(&format!(
+            r#"
+  <p:sldSz cx="{}" cy="{}"/>"#,
+            pres.slide_size.cx, pres.slide_size.cy
+        ));
+
+        // Slide ID list
+        xml.push_str("\n  <p:sldIdLst>");
+        for (i, slide) in pres.slides.iter().enumerate() {
+            xml.push_str(&format!(
+                r#"
+    <p:sldId id="{}" r:id="rId{}"/>"#,
+                slide.id, i + 1
+            ));
+        }
+        xml.push_str("\n  </p:sldIdLst>\n</p:presentation>");
+        xml
+    }
+
+    fn build_slide_xml(&self, slide: &Slide) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">"#,
+        );
+
+        // spTree
+        xml.push_str("\n  <p:spTree>");
+        xml.push_str(r#"
+    <p:nvGrpSpPr>
+      <p:cNvPr id="1" name=""/>
+      <p:cNvGrpSpPr/>
+      <p:nvPr/>
+    </p:nvGrpSpPr>
+    <p:grpSpPr/>"#);
+
+        for shape in &slide.shapes {
+            match shape {
+                SlideShape::TextBox(tb) => {
+                    self.serialize_textbox_shape(&mut xml, tb);
+                }
+                SlideShape::Placeholder(ph) => {
+                    self.serialize_placeholder_shape(&mut xml, ph);
+                }
+                SlideShape::Picture(pic) => {
+                    self.serialize_picture_shape(&mut xml, pic);
+                }
+            }
+        }
+
+        xml.push_str("\n  </p:spTree>\n</p:sld>");
+        xml
+    }
+
+    fn serialize_textbox_shape(&self, xml: &mut String, tb: &TextBoxShape) {
+        xml.push_str(&format!(
+            r#"
+    <p:sp>
+      <p:nvSpPr>
+        <p:cNvPr id="{}" name="TextBox"/>
+        <p:nvPr/>
+      </p:nvSpPr>
+      <p:spPr>
+        <a:xfrm>
+          <a:off x="{}" y="{}"/>
+          <a:ext cx="{}" cy="{}"/>
+        </a:xfrm>
+      </p:spPr>"#,
+            tb.id, tb.bounds.x, tb.bounds.y, tb.bounds.cx, tb.bounds.cy,
+        ));
+        self.serialize_text_body(xml, &tb.text_body);
+        xml.push_str("\n    </p:sp>");
+    }
+
+    fn serialize_placeholder_shape(&self, xml: &mut String, ph: &PlaceholderShape) {
+        xml.push_str(&format!(
+            r#"
+    <p:sp>
+      <p:nvSpPr>
+        <p:cNvPr id="{}" name="Placeholder"/>
+        <p:nvPr>
+          <p:ph type="{}"/>
+        </p:nvPr>
+      </p:nvSpPr>
+      <p:spPr>
+        <a:xfrm>
+          <a:off x="{}" y="{}"/>
+          <a:ext cx="{}" cy="{}"/>
+        </a:xfrm>
+      </p:spPr>"#,
+            ph.id,
+            ph.placeholder_type,
+            ph.bounds.x,
+            ph.bounds.y,
+            ph.bounds.cx,
+            ph.bounds.cy,
+        ));
+        if let Some(ref tb) = ph.text_body {
+            self.serialize_text_body(xml, tb);
+        }
+        xml.push_str("\n    </p:sp>");
+    }
+
+    fn serialize_picture_shape(&self, xml: &mut String, pic: &PictureShape) {
+        xml.push_str(&format!(
+            r#"
+    <p:pic>
+      <p:nvPicPr>
+        <p:cNvPr id="{}" name="{}"/>
+        <p:nvPr/>
+      </p:nvPicPr>
+      <p:blipFill/>
+      <p:spPr>
+        <a:xfrm>
+          <a:off x="{}" y="{}"/>
+          <a:ext cx="{}" cy="{}"/>
+        </a:xfrm>
+      </p:spPr>
+    </p:pic>"#,
+            pic.id, pic.name, pic.bounds.x, pic.bounds.y, pic.bounds.cx, pic.bounds.cy,
+        ));
+    }
+
+    fn serialize_text_body(&self, xml: &mut String, tb: &TextBody) {
+        xml.push_str("\n      <p:txBody>");
+        xml.push_str(r#"
+        <a:bodyPr/>
+        <a:lstStyle/>"#);
+
+        for para in &tb.paragraphs {
+            xml.push_str("\n        <a:p>");
+            for run in &para.runs {
+                if run.text == "\n" {
+                    xml.push_str("\n          <a:br/>");
+                    continue;
+                }
+                xml.push_str("\n          <a:r>");
+                let has_rpr = run.bold
+                    || run.italic
+                    || run.underline.is_some()
+                    || run.font_size.is_some()
+                    || run.font.is_some()
+                    || run.color.is_some();
+                if has_rpr {
+                    xml.push_str("\n            <a:rPr");
+                    if run.bold {
+                        xml.push_str(" b=\"1\"");
+                    }
+                    if run.italic {
+                        xml.push_str(" i=\"1\"");
+                    }
+                    if let Some(sz) = run.font_size {
+                        xml.push_str(&format!(" sz=\"{}\"", sz * 100));
+                    }
+                    if let Some(ref u) = run.underline {
+                        let val = match u {
+                            UnderlineType::Single => "sng",
+                            _ => "sng",
+                        };
+                        xml.push_str(&format!(" u=\"{}\"", val));
+                    }
+                    if let Some(ref f) = run.font {
+                        xml.push_str(&format!("><a:latin typeface=\"{}\"/></a:rPr>", escape_xml(f)));
+                    } else {
+                        xml.push_str("/>");
+                    }
+                }
+                xml.push_str(&format!("\n            <a:t>{}</a:t>", escape_xml(&run.text)));
+                if has_rpr {
+                    xml.push_str("\n          </a:r>");
+                } else {
+                    xml.push_str("\n          </a:r>");
+                }
+            }
+            xml.push_str("\n        </a:p>");
+        }
+        xml.push_str("\n      </p:txBody>");
+    }
+
     fn build_content_types(&self, _doc: &OoxmlDocument) -> String {
         r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
@@ -1074,6 +1350,360 @@ mod tests {
         assert_eq!(escape_xml("a\"b"), "a&quot;b");
         assert_eq!(escape_xml("a'b"), "a&apos;b");
         assert_eq!(escape_xml("plain"), "plain");
+    }
+
+    // --- PPTX serializer tests ---
+
+    fn make_single_slide_presentation() -> PptxPresentation {
+        PptxPresentation {
+            slide_size: SlideSize::standard(),
+            core_properties: CoreProperties::default(),
+            slides: vec![Slide {
+                id: 256,
+                name: "Slide1".to_string(),
+                notes: None,
+                shapes: vec![SlideShape::TextBox(TextBoxShape {
+                    id: "2".to_string(),
+                    bounds: Bounds { x: 100, y: 100, cx: 5000000, cy: 500000 },
+                    text_body: TextBody {
+                        paragraphs: vec![DocxParagraph {
+                            style_id: None,
+                            properties: DocxParagraphProperties::default(),
+                            runs: vec![DocxRun {
+                                text: "Hello PPTX".to_string(),
+                                ..DocxRun::default()
+                            }],
+                        }],
+                    },
+                })],
+            }],
+        }
+    }
+
+    #[test]
+    fn test_serialize_minimal_pptx() {
+        let pres = make_single_slide_presentation();
+        let ser = OoxmlSerializer::new();
+        let bytes = ser.serialize_pptx(&pres).unwrap();
+
+        assert!(bytes.len() > 4);
+        assert_eq!(bytes[0], 0x50);
+        assert_eq!(bytes[1], 0x4B);
+
+        let entries = zip_entry_names(&bytes);
+        assert!(entries.contains(&"[Content_Types].xml".to_string()));
+        assert!(entries.contains(&"_rels/.rels".to_string()));
+        assert!(entries.contains(&"ppt/presentation.xml".to_string()));
+        assert!(entries.contains(&"ppt/_rels/presentation.xml.rels".to_string()));
+        assert!(entries.contains(&"ppt/slides/slide1.xml".to_string()));
+        assert!(entries.contains(&"docProps/core.xml".to_string()));
+
+        let slide_xml = read_zip_entry(&bytes, "ppt/slides/slide1.xml");
+        assert!(slide_xml.contains("Hello PPTX"));
+        assert!(slide_xml.contains("<p:sp>"));
+        assert!(slide_xml.contains("<p:txBody>"));
+        assert!(slide_xml.contains("<a:t>"));
+        assert!(slide_xml.contains("<p:sld"));
+    }
+
+    #[test]
+    fn test_serialize_pptx_multiple_slides() {
+        let pres = PptxPresentation {
+            slide_size: SlideSize::widescreen(),
+            core_properties: CoreProperties::default(),
+            slides: vec![
+                Slide {
+                    id: 256,
+                    name: "Slide1".to_string(),
+                    notes: None,
+                    shapes: vec![SlideShape::TextBox(TextBoxShape {
+                        id: "2".to_string(),
+                        bounds: Bounds { x: 0, y: 0, cx: 9144000, cy: 6858000 },
+                        text_body: TextBody {
+                            paragraphs: vec![DocxParagraph {
+                                style_id: None,
+                                properties: DocxParagraphProperties::default(),
+                                runs: vec![DocxRun {
+                                    text: "Slide One".to_string(),
+                                    ..DocxRun::default()
+                                }],
+                            }],
+                        },
+                    })],
+                },
+                Slide {
+                    id: 257,
+                    name: "Slide2".to_string(),
+                    notes: None,
+                    shapes: vec![SlideShape::TextBox(TextBoxShape {
+                        id: "3".to_string(),
+                        bounds: Bounds { x: 0, y: 0, cx: 9144000, cy: 6858000 },
+                        text_body: TextBody {
+                            paragraphs: vec![DocxParagraph {
+                                style_id: None,
+                                properties: DocxParagraphProperties::default(),
+                                runs: vec![DocxRun {
+                                    text: "Slide Two".to_string(),
+                                    ..DocxRun::default()
+                                }],
+                            }],
+                        },
+                    })],
+                },
+            ],
+        };
+        let ser = OoxmlSerializer::new();
+        let bytes = ser.serialize_pptx(&pres).unwrap();
+
+        let entries = zip_entry_names(&bytes);
+        assert!(entries.contains(&"ppt/slides/slide1.xml".to_string()));
+        assert!(entries.contains(&"ppt/slides/slide2.xml".to_string()));
+
+        let slide1 = read_zip_entry(&bytes, "ppt/slides/slide1.xml");
+        let slide2 = read_zip_entry(&bytes, "ppt/slides/slide2.xml");
+        assert!(slide1.contains("Slide One"));
+        assert!(slide2.contains("Slide Two"));
+
+        let pres_xml = read_zip_entry(&bytes, "ppt/presentation.xml");
+        assert!(pres_xml.contains("rId1"));
+        assert!(pres_xml.contains("rId2"));
+
+        let pres_rels = read_zip_entry(&bytes, "ppt/_rels/presentation.xml.rels");
+        assert!(pres_rels.contains("slides/slide1.xml"));
+        assert!(pres_rels.contains("slides/slide2.xml"));
+    }
+
+    #[test]
+    fn test_serialize_pptx_slide_size() {
+        // Standard 4:3
+        let pres = PptxPresentation {
+            slide_size: SlideSize::standard(),
+            ..PptxPresentation {
+                slides: vec![Slide {
+                    id: 256,
+                    name: "S1".to_string(),
+                    notes: None,
+                    shapes: vec![],
+                }],
+                core_properties: CoreProperties::default(),
+                slide_size: SlideSize::standard(),
+            }
+        };
+        let ser = OoxmlSerializer::new();
+        let bytes = ser.serialize_pptx(&pres).unwrap();
+        let pres_xml = read_zip_entry(&bytes, "ppt/presentation.xml");
+        assert!(pres_xml.contains("cx=\"9144000\""));
+        assert!(pres_xml.contains("cy=\"6858000\""));
+
+        // Widescreen 16:9
+        let pres_ws = PptxPresentation {
+            slide_size: SlideSize::widescreen(),
+            ..PptxPresentation {
+                slides: vec![Slide {
+                    id: 256,
+                    name: "S1".to_string(),
+                    notes: None,
+                    shapes: vec![],
+                }],
+                core_properties: CoreProperties::default(),
+                slide_size: SlideSize::widescreen(),
+            }
+        };
+        let bytes = ser.serialize_pptx(&pres_ws).unwrap();
+        let pres_xml = read_zip_entry(&bytes, "ppt/presentation.xml");
+        assert!(pres_xml.contains("cx=\"12192000\""));
+        assert!(pres_xml.contains("cy=\"6858000\""));
+    }
+
+    #[test]
+    fn test_serialize_pptx_placeholder() {
+        let pres = PptxPresentation {
+            slide_size: SlideSize::standard(),
+            core_properties: CoreProperties::default(),
+            slides: vec![Slide {
+                id: 256,
+                name: "Slide1".to_string(),
+                notes: None,
+                shapes: vec![SlideShape::Placeholder(PlaceholderShape {
+                    id: "3".to_string(),
+                    bounds: Bounds { x: 100, y: 100, cx: 5000000, cy: 500000 },
+                    placeholder_type: "title".to_string(),
+                    text_body: Some(TextBody {
+                        paragraphs: vec![DocxParagraph {
+                            style_id: None,
+                            properties: DocxParagraphProperties::default(),
+                            runs: vec![DocxRun {
+                                text: "Title Placeholder".to_string(),
+                                ..DocxRun::default()
+                            }],
+                        }],
+                    }),
+                })],
+            }],
+        };
+        let ser = OoxmlSerializer::new();
+        let bytes = ser.serialize_pptx(&pres).unwrap();
+        let slide_xml = read_zip_entry(&bytes, "ppt/slides/slide1.xml");
+
+        assert!(slide_xml.contains("<p:ph type=\"title\"/>"));
+        assert!(slide_xml.contains("Title Placeholder"));
+        assert!(slide_xml.contains("<a:t>"));
+    }
+
+    #[test]
+    fn test_serialize_pptx_picture() {
+        let pres = PptxPresentation {
+            slide_size: SlideSize::standard(),
+            core_properties: CoreProperties::default(),
+            slides: vec![Slide {
+                id: 256,
+                name: "Slide1".to_string(),
+                notes: None,
+                shapes: vec![SlideShape::Picture(PictureShape {
+                    id: "4".to_string(),
+                    bounds: Bounds { x: 500000, y: 500000, cx: 2000000, cy: 1500000 },
+                    name: "Photo.png".to_string(),
+                    image_extension: "png".to_string(),
+                    image_data: vec![],
+                })],
+            }],
+        };
+        let ser = OoxmlSerializer::new();
+        let bytes = ser.serialize_pptx(&pres).unwrap();
+        let slide_xml = read_zip_entry(&bytes, "ppt/slides/slide1.xml");
+
+        assert!(slide_xml.contains("<p:pic>"));
+        assert!(slide_xml.contains("Photo.png"));
+        assert!(slide_xml.contains("<p:blipFill/>"));
+    }
+
+    #[test]
+    fn test_serialize_pptx_formatted_text() {
+        let pres = PptxPresentation {
+            slide_size: SlideSize::standard(),
+            core_properties: CoreProperties::default(),
+            slides: vec![Slide {
+                id: 256,
+                name: "Slide1".to_string(),
+                notes: None,
+                shapes: vec![SlideShape::TextBox(TextBoxShape {
+                    id: "2".to_string(),
+                    bounds: Bounds { x: 100, y: 100, cx: 5000000, cy: 500000 },
+                    text_body: TextBody {
+                        paragraphs: vec![DocxParagraph {
+                            style_id: None,
+                            properties: DocxParagraphProperties::default(),
+                            runs: vec![
+                                DocxRun {
+                                    text: "Bold ".to_string(),
+                                    bold: true,
+                                    italic: false,
+                                    underline: None,
+                                    strikethrough: false,
+                                    double_strikethrough: false,
+                                    font: Some("Arial".to_string()),
+                                    font_size: Some(24),
+                                    font_size_cs: None,
+                                    color: Some("FF0000".to_string()),
+                                    highlight: None,
+                                    vertical_alignment: None,
+                                    small_caps: false,
+                                    all_caps: false,
+                                },
+                                DocxRun {
+                                    text: "Italic".to_string(),
+                                    bold: false,
+                                    italic: true,
+                                    underline: Some(UnderlineType::Single),
+                                    ..DocxRun::default()
+                                },
+                                DocxRun {
+                                    text: "\n".to_string(),
+                                    ..DocxRun::default()
+                                },
+                                DocxRun {
+                                    text: "New line".to_string(),
+                                    ..DocxRun::default()
+                                },
+                            ],
+                        }],
+                    },
+                })],
+            }],
+        };
+        let ser = OoxmlSerializer::new();
+        let bytes = ser.serialize_pptx(&pres).unwrap();
+        let slide_xml = read_zip_entry(&bytes, "ppt/slides/slide1.xml");
+
+        assert!(slide_xml.contains("b=\"1\""));
+        assert!(slide_xml.contains("i=\"1\""));
+        assert!(slide_xml.contains("u=\"sng\""));
+        assert!(slide_xml.contains("Arial"));
+        assert!(slide_xml.contains("<a:br/>"));
+        assert!(slide_xml.contains("Bold"));
+        assert!(slide_xml.contains("Italic"));
+        assert!(slide_xml.contains("New line"));
+    }
+
+    #[test]
+    fn test_serialize_pptx_core_properties() {
+        let pres = PptxPresentation {
+            slide_size: SlideSize::standard(),
+            core_properties: CoreProperties {
+                title: Some("PPTX Test".to_string()),
+                creator: Some("Author".to_string()),
+                subject: Some("Test".to_string()),
+                ..CoreProperties::default()
+            },
+            slides: vec![Slide {
+                id: 256,
+                name: "Slide1".to_string(),
+                notes: None,
+                shapes: vec![],
+            }],
+        };
+        let ser = OoxmlSerializer::new();
+        let bytes = ser.serialize_pptx(&pres).unwrap();
+        let core = read_zip_entry(&bytes, "docProps/core.xml");
+
+        assert!(core.contains("PPTX Test"));
+        assert!(core.contains("Author"));
+        assert!(core.contains("Test"));
+    }
+
+    #[test]
+    fn test_serialize_pptx_content_types() {
+        let pres = make_single_slide_presentation();
+        let ser = OoxmlSerializer::new();
+        let bytes = ser.serialize_pptx(&pres).unwrap();
+
+        let ct = read_zip_entry(&bytes, "[Content_Types].xml");
+        assert!(ct.contains("presentationml.presentation.main+xml"));
+        assert!(ct.contains("presentationml.slide+xml"));
+        assert!(ct.contains("/ppt/presentation.xml"));
+        assert!(ct.contains("/ppt/slides/slide1.xml"));
+    }
+
+    #[test]
+    fn test_serialize_pptx_empty_slide() {
+        let pres = PptxPresentation {
+            slide_size: SlideSize::standard(),
+            core_properties: CoreProperties::default(),
+            slides: vec![Slide {
+                id: 256,
+                name: "Empty".to_string(),
+                notes: None,
+                shapes: vec![],
+            }],
+        };
+        let ser = OoxmlSerializer::new();
+        let bytes = ser.serialize_pptx(&pres).unwrap();
+
+        let slide_xml = read_zip_entry(&bytes, "ppt/slides/slide1.xml");
+        assert!(slide_xml.contains("<p:spTree>"));
+        assert!(slide_xml.contains("</p:spTree>"));
+        assert!(slide_xml.contains("<p:sld"));
+        assert!(slide_xml.contains("</p:sld>"));
     }
 
     #[test]

@@ -10,7 +10,10 @@ pub mod parser;
 pub mod roundtrip;
 pub mod serializer;
 
-pub use model::{OoxmlDocument, OoxmlFormat};
+pub use model::{
+    Bounds, OoxmlDocument, OoxmlFormat, PictureShape, PlaceholderShape, PptxPresentation, Slide,
+    SlideShape, SlideSize, TextBody, TextBoxShape,
+};
 pub use parser::OoxmlParser;
 pub use roundtrip::OoxmlRoundtrip;
 pub use serializer::OoxmlSerializer;
