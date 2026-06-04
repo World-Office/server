@@ -7,6 +7,7 @@ import "./styles/statusbar.css"
 import "./styles/leftmenu.css"
 import "./styles/rightmenu.css"
 import "./styles/filemenu.css"
+import "./styles/canvas.css"
 
 const root = document.getElementById("root")
 if (!root) throw new Error("Root element not found")
