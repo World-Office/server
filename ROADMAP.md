@@ -29,9 +29,15 @@
 ## Tier 3 — Future
 
 ### Slides Editor
-- Presentation creation and editing
-- Slide layouts, transitions, speaker notes
-- Import/export (PPTX, ODP)
+- ✅ **MVP (2026-06):** Slide manager, text + image content editing, basic PPTX roundtrip, speaker notes
+- ❐ Theme & master slide support
+- ❐ Animations & transitions (timing, entrance/exit/motion, animation pane)
+- ❐ Charts & tables on slides
+- ❐ Presenter view (full-screen, next preview, speaker notes, timer)
+- ❐ Shapes & SmartArt
+- ❐ PPTX full roundtrip (100% OOXML schema coverage)
+- ❐ ODP import/export
+- ❐ Realtime coauthoring for presentations
 
 ### Flowchart Editor
 - Visual flowchart/diagram editor
