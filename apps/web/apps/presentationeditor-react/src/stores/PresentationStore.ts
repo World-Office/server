@@ -6,13 +6,20 @@ import type {
   PresentationMode,
   PresentationTab,
   RightMenuPanel,
-  SlideInfo,
+  SlideLayout,
   SlideSize,
   StartAnimation,
   ThemeType,
   TransitionEffect,
   ZoomLevel,
 } from "../types/presentation"
+
+export interface SlideData {
+  id: string
+  title: string
+  layout: SlideLayout
+  notes: string
+}
 import { ZOOM_LEVELS } from "../types/presentation"
 
 const STORAGE_PREFIX = "prese-"
@@ -53,7 +60,7 @@ export class PresentationStore {
   /* Slide navigation */
   currentSlide = 0
   totalSlides = 0
-  slides: SlideInfo[] = []
+  slides: SlideData[] = []
 
   /* File menu */
   activeFileMenuPanel: string | null = null
@@ -74,6 +81,13 @@ export class PresentationStore {
 
   constructor() {
     makeAutoObservable(this)
+    // Seed demo slides
+    this.slides = [
+      { id: crypto.randomUUID(), title: "Title Slide", layout: "title" as SlideLayout, notes: "" },
+      { id: crypto.randomUUID(), title: "Overview", layout: "content" as SlideLayout, notes: "" },
+      { id: crypto.randomUUID(), title: "Key Points", layout: "blank" as SlideLayout, notes: "" },
+    ]
+    this.totalSlides = this.slides.length
   }
 
   /* ── Actions ── */
@@ -184,7 +198,7 @@ export class PresentationStore {
     this.totalSlides = count
   }
 
-  setSlides(slides: SlideInfo[]): void {
+  setSlides(slides: SlideData[]): void {
     this.slides = slides
     this.totalSlides = slides.length
   }
@@ -233,6 +247,71 @@ export class PresentationStore {
   setCompactStatusbar(compact: boolean): void {
     this.isCompactStatusbar = compact
     setStorageItem("compact-statusbar", compact ? "true" : "")
+  }
+
+  /* ── Slide CRUD ── */
+
+  addSlide(): void {
+    const newSlide: SlideData = {
+      id: crypto.randomUUID(),
+      title: `Slide ${this.slides.length + 1}`,
+      layout: "blank",
+      notes: "",
+    }
+    const insertIndex = this.currentSlide + 1
+    this.slides.splice(insertIndex, 0, newSlide)
+    this.totalSlides = this.slides.length
+    this.currentSlide = insertIndex
+  }
+
+  deleteSlide(index: number): void {
+    if (this.slides.length <= 1) return
+    this.slides.splice(index, 1)
+    this.totalSlides = this.slides.length
+    if (this.currentSlide >= this.totalSlides) {
+      this.currentSlide = this.totalSlides - 1
+    }
+  }
+
+  duplicateSlide(index: number): void {
+    const source = this.slides[index]
+    if (!source) return
+    const clone: SlideData = {
+      id: crypto.randomUUID(),
+      title: `${source.title} (copy)`,
+      layout: source.layout,
+      notes: source.notes,
+    }
+    this.slides.splice(index + 1, 0, clone)
+    this.totalSlides = this.slides.length
+    this.currentSlide = index + 1
+  }
+
+  reorderSlides(fromIndex: number, toIndex: number): void {
+    const [moved] = this.slides.splice(fromIndex, 1)
+    this.slides.splice(toIndex, 0, moved)
+    this.currentSlide = toIndex
+  }
+
+  setSlideTitle(index: number, title: string): void {
+    const slide = this.slides[index]
+    if (slide) {
+      slide.title = title
+    }
+  }
+
+  setSlideLayout(index: number, layout: SlideLayout): void {
+    const slide = this.slides[index]
+    if (slide) {
+      slide.layout = layout
+    }
+  }
+
+  setSlideNotes(index: number, notes: string): void {
+    const slide = this.slides[index]
+    if (slide) {
+      slide.notes = notes
+    }
   }
 }
 
