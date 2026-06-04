@@ -3,6 +3,7 @@ import type { JSX } from "react"
 import { presentationStore } from "../../stores/PresentationStore"
 import type { LeftMenuAction } from "../../types/presentation"
 import { LeftMenuButton } from "./LeftMenuButton"
+import { SlideThumbnails } from "../SlideThumbnails"
 
 const BUTTONS: Array<{ action: LeftMenuAction; title: string; icon: string }> = [
   { action: "search", title: "Search", icon: "🔍" },
@@ -34,6 +35,7 @@ function LeftMenuInner(): JSX.Element {
         ))}
       </div>
       <div className="prese-left-panel-side">
+        {presentationStore.activeLeftPanel === "slides" && <SlideThumbnails />}
         <div
           className="prese-left-panel-chat"
           style={{ display: presentationStore.activeLeftPanel === "chat" ? "block" : "none" }}
