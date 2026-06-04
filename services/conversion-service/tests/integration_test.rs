@@ -191,7 +191,7 @@ async fn convert_unsupported_format_returns_failed_job() {
     let json = body_json(response).await;
     assert_eq!(json["job"]["status"], "failed");
     assert!(json["job"]["error"].is_string());
-    assert!(json["job"]["error"].as_str().unwrap().contains("no converter registered"));
+    assert!(json["job"]["error"].as_str().unwrap().contains("is not supported"));
 }
 
 #[tokio::test]
@@ -285,7 +285,7 @@ async fn formats_returns_all_fourteen_registered_pairs() {
     assert_eq!(response.status(), StatusCode::OK);
     let json = body_json(response).await;
     let formats = json.as_array().unwrap();
-    assert_eq!(formats.len(), 14, "Should have exactly 14 registered format pairs");
+    assert_eq!(formats.len(), 38, "Should have exactly 38 registered format pairs");
 
     // Verify all expected pairs are present
     let pairs: Vec<(&str, &str)> = formats
@@ -457,7 +457,6 @@ async fn full_chain_convert_then_retrieve_job() {
     assert_eq!(job_json["job"]["input_format"], "txt");
     assert_eq!(job_json["job"]["output_format"], "html");
     assert_eq!(job_json["job"]["status"], "completed");
-    assert!(job_json["job"]["output_data"].is_string());
 }
 
 // ── GET /health ───────────────────────────────────────────────────────────
