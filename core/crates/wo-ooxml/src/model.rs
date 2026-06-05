@@ -294,6 +294,8 @@ pub struct DocxTableStyle {
 pub struct PptxPresentation {
     pub slide_size: SlideSize,
     pub slides: Vec<Slide>,
+    pub slide_masters: Vec<SlideMaster>,
+    pub theme: Option<Theme>,
     pub core_properties: CoreProperties,
 }
 
@@ -373,4 +375,226 @@ impl SlideSize {
     pub fn widescreen() -> Self {
         Self { cx: 12192000, cy: 6858000 }
     }
+}
+
+// --- PPTX Theme Model ---
+
+/// A theme (from ppt/theme/theme*.xml) defining colors, fonts, effects.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Theme {
+    pub name: String,
+    pub color_scheme: ColorScheme,
+    pub font_scheme: FontScheme,
+    pub format_scheme: Option<String>,
+}
+
+impl Default for Theme {
+    fn default() -> Self {
+        Self {
+            name: "Default Theme".to_string(),
+            color_scheme: ColorScheme::default(),
+            font_scheme: FontScheme::default(),
+            format_scheme: None,
+        }
+    }
+}
+
+/// Color scheme from a theme (a:clrScheme).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ColorScheme {
+    pub name: String,
+    /// 12 theme colors: dark1, light1, dark2, light2, accent1-6, hlink, folHlink
+    pub colors: Vec<ThemeColor>,
+}
+
+impl Default for ColorScheme {
+    fn default() -> Self {
+        Self {
+            name: "Default".to_string(),
+            colors: vec![
+                ThemeColor { name: "dark1".to_string(), color: "000000".to_string() },
+                ThemeColor { name: "light1".to_string(), color: "FFFFFF".to_string() },
+                ThemeColor { name: "dark2".to_string(), color: "44546A".to_string() },
+                ThemeColor { name: "light2".to_string(), color: "E7E6E6".to_string() },
+                ThemeColor { name: "accent1".to_string(), color: "4472C4".to_string() },
+                ThemeColor { name: "accent2".to_string(), color: "ED7D31".to_string() },
+                ThemeColor { name: "accent3".to_string(), color: "A5A5A5".to_string() },
+                ThemeColor { name: "accent4".to_string(), color: "FFC000".to_string() },
+                ThemeColor { name: "accent5".to_string(), color: "5B9BD5".to_string() },
+                ThemeColor { name: "accent6".to_string(), color: "70AD47".to_string() },
+                ThemeColor { name: "hlink".to_string(), color: "0563C1".to_string() },
+                ThemeColor { name: "folHlink".to_string(), color: "954F72".to_string() },
+            ],
+        }
+    }
+}
+
+/// A single theme color entry.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ThemeColor {
+    pub name: String,
+    pub color: String,
+}
+
+/// Font scheme from a theme (a:fontScheme).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FontScheme {
+    pub name: String,
+    pub major_font: ThemeFont,
+    pub minor_font: ThemeFont,
+}
+
+impl Default for FontScheme {
+    fn default() -> Self {
+        Self {
+            name: "Default".to_string(),
+            major_font: ThemeFont {
+                latin: Some("Calibri Light".to_string()),
+                east_asian: None,
+                complex_script: None,
+            },
+            minor_font: ThemeFont {
+                latin: Some("Calibri".to_string()),
+                east_asian: None,
+                complex_script: None,
+            },
+        }
+    }
+}
+
+/// Font definition for a theme font slot (major/minor).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ThemeFont {
+    pub latin: Option<String>,
+    pub east_asian: Option<String>,
+    pub complex_script: Option<String>,
+}
+
+/// A slide master (from ppt/slideMasters/slideMaster*.xml).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SlideMaster {
+    pub id: u32,
+    pub name: String,
+    pub slide_layouts: Vec<SlideLayout>,
+}
+
+/// A slide layout (from ppt/slideLayouts/slideLayout*.xml).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SlideLayout {
+    pub id: u32,
+    pub name: String,
+    pub layout_type: String,
+    pub shapes: Vec<SlideShape>,
+    pub placeholder_types: Vec<String>,
+}
+
+// --- Built-in Theme Presets (for frontend) ---
+
+/// A built-in theme preset that can be applied to a presentation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ThemePreset {
+    pub name: String,
+    pub description: String,
+    pub color_scheme: ColorScheme,
+    pub font_scheme: FontScheme,
+}
+
+/// Built-in Office themes matching PowerPoint defaults.
+pub fn builtin_theme_presets() -> Vec<ThemePreset> {
+    vec![
+        ThemePreset {
+            name: "Office".to_string(),
+            description: "Default Office theme".to_string(),
+            color_scheme: ColorScheme::default(),
+            font_scheme: FontScheme::default(),
+        },
+        ThemePreset {
+            name: "Ion".to_string(),
+            description: "Clean and modern".to_string(),
+            color_scheme: ColorScheme {
+                name: "Ion".to_string(),
+                colors: vec![
+                    ThemeColor { name: "dark1".to_string(), color: "2E4053".to_string() },
+                    ThemeColor { name: "light1".to_string(), color: "FFFFFF".to_string() },
+                    ThemeColor { name: "dark2".to_string(), color: "1B2631".to_string() },
+                    ThemeColor { name: "light2".to_string(), color: "F2F3F4".to_string() },
+                    ThemeColor { name: "accent1".to_string(), color: "5DADE2".to_string() },
+                    ThemeColor { name: "accent2".to_string(), color: "48C9B0".to_string() },
+                    ThemeColor { name: "accent3".to_string(), color: "F5B041".to_string() },
+                    ThemeColor { name: "accent4".to_string(), color: "EC7063".to_string() },
+                    ThemeColor { name: "accent5".to_string(), color: "AF7AC5".to_string() },
+                    ThemeColor { name: "accent6".to_string(), color: "85C1E9".to_string() },
+                    ThemeColor { name: "hlink".to_string(), color: "1A5276".to_string() },
+                    ThemeColor { name: "folHlink".to_string(), color: "7D3C98".to_string() },
+                ],
+            },
+            font_scheme: FontScheme::default(),
+        },
+        ThemePreset {
+            name: "Retro".to_string(),
+            description: "Vintage paper tones".to_string(),
+            color_scheme: ColorScheme {
+                name: "Retro".to_string(),
+                colors: vec![
+                    ThemeColor { name: "dark1".to_string(), color: "3E2723".to_string() },
+                    ThemeColor { name: "light1".to_string(), color: "FEF9E7".to_string() },
+                    ThemeColor { name: "dark2".to_string(), color: "4E342E".to_string() },
+                    ThemeColor { name: "light2".to_string(), color: "F8F0D5".to_string() },
+                    ThemeColor { name: "accent1".to_string(), color: "BF360C".to_string() },
+                    ThemeColor { name: "accent2".to_string(), color: "F57F17".to_string() },
+                    ThemeColor { name: "accent3".to_string(), color: "558B2F".to_string() },
+                    ThemeColor { name: "accent4".to_string(), color: "1565C0".to_string() },
+                    ThemeColor { name: "accent5".to_string(), color: "6A1B9A".to_string() },
+                    ThemeColor { name: "accent6".to_string(), color: "D84315".to_string() },
+                    ThemeColor { name: "hlink".to_string(), color: "0039CB".to_string() },
+                    ThemeColor { name: "folHlink".to_string(), color: "7B1FA2".to_string() },
+                ],
+            },
+            font_scheme: FontScheme::default(),
+        },
+        ThemePreset {
+            name: "Ocean".to_string(),
+            description: "Deep blue tones".to_string(),
+            color_scheme: ColorScheme {
+                name: "Ocean".to_string(),
+                colors: vec![
+                    ThemeColor { name: "dark1".to_string(), color: "0B2545".to_string() },
+                    ThemeColor { name: "light1".to_string(), color: "F0F8FF".to_string() },
+                    ThemeColor { name: "dark2".to_string(), color: "1A3A5C".to_string() },
+                    ThemeColor { name: "light2".to_string(), color: "D6E4F0".to_string() },
+                    ThemeColor { name: "accent1".to_string(), color: "0077B6".to_string() },
+                    ThemeColor { name: "accent2".to_string(), color: "00B4D8".to_string() },
+                    ThemeColor { name: "accent3".to_string(), color: "90E0EF".to_string() },
+                    ThemeColor { name: "accent4".to_string(), color: "03045E".to_string() },
+                    ThemeColor { name: "accent5".to_string(), color: "48CAE4".to_string() },
+                    ThemeColor { name: "accent6".to_string(), color: "023E8A".to_string() },
+                    ThemeColor { name: "hlink".to_string(), color: "0096C7".to_string() },
+                    ThemeColor { name: "folHlink".to_string(), color: "5E548E".to_string() },
+                ],
+            },
+            font_scheme: FontScheme::default(),
+        },
+        ThemePreset {
+            name: "Forest".to_string(),
+            description: "Natural green palette".to_string(),
+            color_scheme: ColorScheme {
+                name: "Forest".to_string(),
+                colors: vec![
+                    ThemeColor { name: "dark1".to_string(), color: "1B4332".to_string() },
+                    ThemeColor { name: "light1".to_string(), color: "F0FFF0".to_string() },
+                    ThemeColor { name: "dark2".to_string(), color: "2D6A4F".to_string() },
+                    ThemeColor { name: "light2".to_string(), color: "D8F3DC".to_string() },
+                    ThemeColor { name: "accent1".to_string(), color: "40916C".to_string() },
+                    ThemeColor { name: "accent2".to_string(), color: "52B788".to_string() },
+                    ThemeColor { name: "accent3".to_string(), color: "95D5B2".to_string() },
+                    ThemeColor { name: "accent4".to_string(), color: "74C69D".to_string() },
+                    ThemeColor { name: "accent5".to_string(), color: "1B4332".to_string() },
+                    ThemeColor { name: "accent6".to_string(), color: "B7E4C7".to_string() },
+                    ThemeColor { name: "hlink".to_string(), color: "2D6A4F".to_string() },
+                    ThemeColor { name: "folHlink".to_string(), color: "1B4332".to_string() },
+                ],
+            },
+            font_scheme: FontScheme::default(),
+        },
+    ]
 }

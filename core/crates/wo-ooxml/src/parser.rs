@@ -313,6 +313,8 @@ impl OoxmlParser {
             return Ok(Some(PptxPresentation {
                 slide_size: SlideSize::widescreen(),
                 slides: Vec::new(),
+                slide_masters: Vec::new(),
+                theme: None,
                 core_properties: CoreProperties::default(),
             }));
         };
@@ -337,12 +339,17 @@ impl OoxmlParser {
         // Read ppt/_rels/presentation.xml.rels to resolve slide paths
         let slides = self.parse_pptx_slides(archive, &slides_by_id, &[]);
 
+        let themes = self.parse_pptx_themes(archive);
+        let slide_masters = self.parse_pptx_slide_masters(archive);
+
         let core_xml = self.read_zip_entry(archive, "docProps/core.xml").unwrap_or_default();
         let core_properties = self.parse_core_properties(&core_xml).unwrap_or_default();
 
         Ok(Some(PptxPresentation {
             slide_size,
             slides,
+            slide_masters,
+            theme: themes.into_iter().next(),
             core_properties,
         }))
     }
@@ -1308,6 +1315,203 @@ impl OoxmlParser {
 
         props
     }
+
+    // --- PPTX Theme Parsing ---
+
+    /// Parse all themes from ppt/theme/theme*.xml in the archive.
+    pub fn parse_pptx_themes(
+        &self,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    ) -> Vec<Theme> {
+        let mut themes = Vec::new();
+
+        let theme_names: Vec<String> = (0..archive.len())
+            .filter_map(|i| {
+                archive.by_index(i).ok().and_then(|e| {
+                    let name = e.name().to_string();
+                    if name.starts_with("ppt/theme/theme") && name.ends_with(".xml") {
+                        Some(name)
+                    } else {
+                        None
+                    }
+                })
+            })
+            .collect();
+
+        for name in &theme_names {
+            if let Ok(xml) = self.read_zip_entry(archive, name) {
+                if let Some(theme) = self.parse_single_theme(&xml, name) {
+                    themes.push(theme);
+                }
+            }
+        }
+
+        themes
+    }
+
+    fn parse_single_theme(&self, xml: &str, _path: &str) -> Option<Theme> {
+        let doc = XmlDoc::parse(xml).ok()?;
+        let root = doc.root_element();
+
+        let name = root.attribute("name").unwrap_or("").to_string();
+
+        let mut color_scheme = ColorScheme::default();
+        let mut font_scheme = FontScheme::default();
+
+        for child in root.descendants() {
+            let local = child.tag_name().name();
+            let ns = child.tag_name().namespace();
+
+            match (ns, local) {
+                (Some("http://schemas.openxmlformats.org/drawingml/2006/main"), "clrScheme") => {
+                    color_scheme = self.parse_color_scheme(&child);
+                }
+                (Some("http://schemas.openxmlformats.org/drawingml/2006/main"), "fontScheme") => {
+                    font_scheme = self.parse_font_scheme(&child);
+                }
+                _ => {}
+            }
+        }
+
+        Some(Theme {
+            name: if name.is_empty() { "Theme".to_string() } else { name },
+            color_scheme,
+            font_scheme,
+            format_scheme: None,
+        })
+    }
+
+    fn parse_color_scheme(&self, clr_scheme_node: &roxmltree::Node) -> ColorScheme {
+        let name = clr_scheme_node.attribute("name").unwrap_or("").to_string();
+        let mut colors = Vec::new();
+
+        for child in clr_scheme_node.children() {
+            if !child.is_element() {
+                continue;
+            }
+            let local = child.tag_name().name();
+            // Color slot names: dark1, light1, dark2, light2, accent1-6, hlink, folHlink
+            let color = child
+                .descendants()
+                .find(|n| n.has_tag_name("srgbClr") || n.has_tag_name("sysClr"))
+                .and_then(|n| n.attribute("val"))
+                .map(|v| v.to_string())
+                .unwrap_or_default();
+
+            if !local.is_empty() && !color.is_empty() {
+                colors.push(ThemeColor {
+                    name: local.to_string(),
+                    color,
+                });
+            }
+        }
+
+        ColorScheme { name, colors }
+    }
+
+    fn parse_font_scheme(&self, font_scheme_node: &roxmltree::Node) -> FontScheme {
+        let name = font_scheme_node.attribute("name").unwrap_or("").to_string();
+        let mut major_font = ThemeFont {
+            latin: None,
+            east_asian: None,
+            complex_script: None,
+        };
+        let mut minor_font = ThemeFont {
+            latin: None,
+            east_asian: None,
+            complex_script: None,
+        };
+
+        for child in font_scheme_node.children() {
+            if !child.is_element() {
+                continue;
+            }
+            match child.tag_name().name() {
+                "majorFont" => major_font = self.parse_theme_font(&child),
+                "minorFont" => minor_font = self.parse_theme_font(&child),
+                _ => {}
+            }
+        }
+
+        FontScheme { name, major_font, minor_font }
+    }
+
+    fn parse_theme_font(&self, font_node: &roxmltree::Node) -> ThemeFont {
+        let mut tf = ThemeFont {
+            latin: None,
+            east_asian: None,
+            complex_script: None,
+        };
+
+        for child in font_node.children() {
+            if !child.is_element() {
+                continue;
+            }
+            match child.tag_name().name() {
+                "latin" => {
+                    tf.latin = child.attribute("typeface").map(|s| s.to_string());
+                }
+                "ea" => {
+                    tf.east_asian = child.attribute("typeface").map(|s| s.to_string());
+                }
+                "cs" => {
+                    tf.complex_script = child.attribute("typeface").map(|s| s.to_string());
+                }
+                _ => {}
+            }
+        }
+
+        tf
+    }
+
+    // --- PPTX Slide Master / Layout Parsing ---
+
+    /// Parse slide masters from ppt/slideMasters/slideMaster*.xml.
+    pub fn parse_pptx_slide_masters(
+        &self,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    ) -> Vec<SlideMaster> {
+        let mut masters = Vec::new();
+
+        let master_names: Vec<String> = (0..archive.len())
+            .filter_map(|i| {
+                archive.by_index(i).ok().and_then(|e| {
+                    let name = e.name().to_string();
+                    if name.starts_with("ppt/slideMasters/slideMaster") && name.ends_with(".xml") {
+                        Some(name)
+                    } else {
+                        None
+                    }
+                })
+            })
+            .collect();
+
+        for name in &master_names {
+            if let Ok(xml) = self.read_zip_entry(archive, name) {
+                if let Some(master) = self.parse_single_slide_master(&xml, name) {
+                    masters.push(master);
+                }
+            }
+        }
+
+        masters
+    }
+
+    fn parse_single_slide_master(&self, xml: &str, _path: &str) -> Option<SlideMaster> {
+        let doc = XmlDoc::parse(xml).ok()?;
+
+        let name = doc
+            .root_element()
+            .attribute("name")
+            .unwrap_or("Slide Master")
+            .to_string();
+
+        Some(SlideMaster {
+            id: 1,
+            name,
+            slide_layouts: Vec::new(), // Layouts resolved via relationships
+        })
+    }
 }
 
 impl Default for OoxmlParser {
@@ -1777,6 +1981,151 @@ mod tests {
         buf
     }
 
+    fn make_minimal_pptx_with_theme() -> Vec<u8> {
+        let mut buf = Vec::new();
+        {
+            let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+
+            // [Content_Types].xml
+            zip.start_file(
+                "[Content_Types].xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+  <Override PartName="/ppt/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>
+  <Override PartName="/ppt/slideMasters/slideMaster1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slideMaster+xml"/>
+  <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
+</Types>"#,
+            )
+            .unwrap();
+
+            // _rels/.rels
+            zip.start_file(
+                "_rels/.rels",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>"#,
+            )
+            .unwrap();
+
+            // ppt/_rels/presentation.xml.rels
+            zip.start_file(
+                "ppt/_rels/presentation.xml.rels",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster" Target="slideMasters/slideMaster1.xml"/>
+</Relationships>"#,
+            )
+            .unwrap();
+
+            // ppt/presentation.xml
+            zip.start_file(
+                "ppt/presentation.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:sldSz cx="12192000" cy="6858000"/>
+  <p:sldIdLst>
+    <p:sldId id="256" r:id="rId1"/>
+  </p:sldIdLst>
+</p:presentation>"#,
+            )
+            .unwrap();
+
+            // ppt/theme/theme1.xml
+            zip.start_file(
+                "ppt/theme/theme1.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="Office Theme">
+  <a:themeElements>
+    <a:clrScheme name="Default">
+      <a:dk1><a:srgbClr val="000000"/></a:dk1>
+      <a:lt1><a:srgbClr val="FFFFFF"/></a:lt1>
+      <a:dk2><a:srgbClr val="44546A"/></a:dk2>
+      <a:lt2><a:srgbClr val="E7E6E6"/></a:lt2>
+      <a:accent1><a:srgbClr val="4472C4"/></a:accent1>
+      <a:accent2><a:srgbClr val="ED7D31"/></a:accent2>
+      <a:accent3><a:srgbClr val="A5A5A5"/></a:accent3>
+      <a:accent4><a:srgbClr val="FFC000"/></a:accent4>
+      <a:accent5><a:srgbClr val="5B9BD5"/></a:accent5>
+      <a:accent6><a:srgbClr val="70AD47"/></a:accent6>
+      <a:hlink><a:srgbClr val="0563C1"/></a:hlink>
+      <a:folHlink><a:srgbClr val="954F72"/></a:folHlink>
+    </a:clrScheme>
+    <a:fontScheme name="Default">
+      <a:majorFont><a:latin typeface="Calibri Light"/></a:majorFont>
+      <a:minorFont><a:latin typeface="Calibri"/></a:minorFont>
+    </a:fontScheme>
+    <a:fmtScheme name="Default"/>
+  </a:themeElements>
+</a:theme>"#,
+            )
+            .unwrap();
+
+            // ppt/slideMasters/slideMaster1.xml
+            zip.start_file(
+                "ppt/slideMasters/slideMaster1.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+  <p:cSld>
+    <p:spTree>
+      <p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr>
+      <p:grpSpPr/>
+    </p:spTree>
+  </p:cSld>
+</p:sldMaster>"#,
+            )
+            .unwrap();
+
+            // ppt/slides/slide1.xml
+            zip.start_file(
+                "ppt/slides/slide1.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" name="Slide 1">
+  <p:spTree>
+    <p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr>
+  </p:spTree>
+</p:sld>"#,
+            )
+            .unwrap();
+
+            zip.finish().unwrap();
+        }
+        buf
+    }
+
     #[test]
     fn test_parse_pptx() {
         let pptx = make_minimal_pptx();
@@ -1868,5 +2217,26 @@ mod tests {
 
         assert_eq!(pres.slide_size.cx, 9144000);
         assert_eq!(pres.slide_size.cy, 6858000);
+    }
+
+    #[test]
+    fn test_parse_pptx_with_theme() {
+        let pptx = make_minimal_pptx_with_theme();
+        let parser = OoxmlParser::new();
+        let data = pptx.as_slice();
+        let cursor = std::io::Cursor::new(data);
+        let mut archive = zip::ZipArchive::new(cursor).unwrap();
+        let pres = parser.parse_pptx(&mut archive).unwrap().unwrap();
+
+        // Theme should be parsed
+        let theme = pres.theme.expect("Theme should be Some");
+        assert_eq!(theme.name, "Office Theme");
+        assert_eq!(theme.color_scheme.colors.len(), 12);
+        assert_eq!(theme.font_scheme.major_font.latin.as_deref(), Some("Calibri Light"));
+        assert_eq!(theme.font_scheme.minor_font.latin.as_deref(), Some("Calibri"));
+
+        // Slide masters should be parsed
+        assert!(!pres.slide_masters.is_empty(), "Should have at least one slide master");
+        assert!(pres.slides.len() == 1);
     }
 }

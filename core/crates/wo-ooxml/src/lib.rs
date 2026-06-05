@@ -11,9 +11,11 @@ pub mod roundtrip;
 pub mod serializer;
 
 pub use model::{
-    Bounds, OoxmlDocument, OoxmlFormat, PictureShape, PlaceholderShape, PptxPresentation, Slide,
-    SlideShape, SlideSize, TextBody, TextBoxShape,
+    Bounds, ColorScheme, FontScheme, OoxmlDocument, OoxmlFormat, PictureShape, PlaceholderShape,
+    PptxPresentation, Slide, SlideLayout, SlideMaster, SlideShape, SlideSize, TextBody, TextBoxShape,
+    Theme, ThemeColor, ThemeFont, ThemePreset,
 };
+pub use model::builtin_theme_presets;
 pub use parser::OoxmlParser;
 pub use roundtrip::OoxmlRoundtrip;
 pub use serializer::OoxmlSerializer;
