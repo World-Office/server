@@ -100,6 +100,8 @@ export type RightMenuPanel =
   | "chart"
   | "shape"
   | "textart"
+  | "animation"
+  | "animation"
 
 export type TransitionEffect =
   | "none"
@@ -224,6 +226,20 @@ export interface ThemeFont {
   latin?: string
   eastAsian?: string
   complexScript?: string
+}
+
+export type AdvanceMode = "click" | "after"
+
+export type AnimationCategory = "none" | "entrance" | "emphasis" | "exit" | "motion"
+
+export interface AnimationData {
+  id: string
+  effect: AnimationEffect
+  category: AnimationCategory
+  target: string
+  start: StartAnimation
+  duration: number
+  delay: number
 }
 
 export type TextDirection = "ltr" | "rtl"

@@ -3,6 +3,7 @@ import type { JSX } from "react"
 import { presentationStore } from "../../stores/PresentationStore"
 import type { RightMenuPanel } from "../../types/presentation"
 import { RightMenuButton } from "./RightMenuButton"
+import { AnimationPanel } from "./AnimationPanel"
 
 const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> = [
   { action: "paragraph", title: "Paragraph", icon: "¶" },
@@ -12,9 +13,23 @@ const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> = 
   { action: "chart", title: "Chart", icon: "📊" },
   { action: "shape", title: "Shape", icon: "⬡" },
   { action: "textart", title: "TextArt", icon: "Aa" },
+  { action: "animation", title: "Animation Pane", icon: "▶" },
 ]
 
+const PANELS: Record<RightMenuPanel, JSX.Element> = {
+  paragraph: <div />,
+  table: <div />,
+  image: <div />,
+  slide: <div />,
+  chart: <div />,
+  shape: <div />,
+  textart: <div />,
+  animation: <AnimationPanel />,
+}
+
 function RightMenuInner(): JSX.Element {
+  const { activeRightPanel, toggleRightPanel } = presentationStore
+
   return (
     <div
       className="prese-right-menu"
@@ -29,12 +44,14 @@ function RightMenuInner(): JSX.Element {
             action={action}
             title={title}
             icon={icon}
-            active={presentationStore.activeRightPanel === action}
-            onClick={() => presentationStore.toggleRightPanel(action)}
+            active={activeRightPanel === action}
+            onClick={() => toggleRightPanel(action)}
           />
         ))}
       </div>
-      <div className="prese-right-panel-side" />
+      <div className="prese-right-panel-side">
+        {activeRightPanel && PANELS[activeRightPanel]}
+      </div>
     </div>
   )
 }

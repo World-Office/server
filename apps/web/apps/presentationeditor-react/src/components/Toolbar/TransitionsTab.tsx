@@ -1,6 +1,61 @@
 import { observer } from "mobx-react-lite"
+import { presentationStore } from "../../stores/PresentationStore"
+import type { TransitionEffect } from "../../types/presentation"
+
+function TransitionBtn({
+  active,
+  title,
+  onClick,
+  children,
+}: {
+  active: boolean
+  title: string
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      className={`prese-transitionstab-btn${active ? " active" : ""}`}
+      title={title}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  )
+}
 
 const ObservedTransitionsTab = observer(function ObservedTransitionsTab() {
+  const { currentSlide, transitionDuration, transitionSoundEnabled, advanceMode, advanceTiming } =
+    presentationStore
+  const trans = presentationStore.getEffectiveTransition(currentSlide)
+  const activeEffect = trans.effect
+
+  const durationOpts: { label: string; value: number; title: string }[] = [
+    { label: "Very Fast", value: 0.1, title: "Very Fast (0.1s)" },
+    { label: "Fast", value: 0.25, title: "Fast (0.25s)" },
+    { label: "Normal", value: 0.5, title: "Normal (0.5s)" },
+    { label: "Slow", value: 1, title: "Slow (1s)" },
+    { label: "Very Slow", value: 2, title: "Very Slow (2s)" },
+  ]
+
+  const effects: { label: string; value: TransitionEffect }[] = [
+    { label: "None", value: "none" },
+    { label: "Fade", value: "fade" },
+    { label: "Push", value: "push" },
+    { label: "Wipe", value: "wipe" },
+    { label: "Split", value: "split" },
+    { label: "Reveal", value: "reveal" },
+    { label: "Checker", value: "checker" },
+    { label: "Zoom", value: "zoom" },
+    { label: "Morph", value: "morp" },
+    { label: "Circle", value: "circle" },
+    { label: "Uncover", value: "uncover" },
+    { label: "Cover", value: "cover" },
+  ]
+
+  const afterTimings = [0, 2, 3, 5, 10]
+
   return (
     <section
       className="prese-transitionstab-panel"
@@ -14,133 +69,133 @@ const ObservedTransitionsTab = observer(function ObservedTransitionsTab() {
           <span className="prese-transitionstab-label">Transition to This Slide</span>
         </div>
         <div className="prese-transitionstab-elset">
-          <button type="button" className="prese-transitionstab-btn" title="No Transition">
+          <TransitionBtn
+            active={activeEffect === "none"}
+            title="No Transition"
+            onClick={() => presentationStore.setSlideTransition(currentSlide, "none")}
+          >
             None
-          </button>
+          </TransitionBtn>
         </div>
       </div>
       <div className="prese-transitiontab-separator" />
 
+      {/* Effect */}
       <div className="prese-transitionstab-group">
         <div className="prese-transitionstab-elset">
           <span className="prese-transitionstab-label">Effect</span>
         </div>
         <div className="prese-transitionstab-elset">
-          <button type="button" className="prese-transitionstab-btn" title="Fade">
-            Fade
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="Push">
-            Push
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="Wipe">
-            Wipe
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="Split">
-            Split
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="Reveal">
-            Reveal
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="Checker">
-            Checker
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="Zoom">
-            Zoom
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="Morph">
-            Morph
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="Circle">
-            Circle
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="Uncover">
-            Uncover
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="Cover">
-            Cover
-          </button>
+          {effects.slice(1).map((e) => (
+            <TransitionBtn
+              key={e.value}
+              active={activeEffect === e.value}
+              title={e.label}
+              onClick={() => presentationStore.setSlideTransition(currentSlide, e.value)}
+            >
+              {e.label}
+            </TransitionBtn>
+          ))}
         </div>
       </div>
 
       <div className="prese-transitiontab-separator" />
 
+      {/* Duration */}
       <div className="prese-transitionstab-group">
         <div className="prese-transitionstab-elset">
           <span className="prese-transitionstab-label">Duration</span>
         </div>
         <div className="prese-transitionstab-elset">
-          <button type="button" className="prese-transitionstab-btn" title="Very Fast (0.1s)">
-            Very Fast
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="Fast (0.25s)">
-            Fast
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="Normal (0.5s)">
-            Normal
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="Slow (1s)">
-            Slow
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="Very Slow (2s)">
-            Very Slow
-          </button>
+          {durationOpts.map((d) => (
+            <TransitionBtn
+              key={d.value}
+              active={transitionDuration === d.value}
+              title={d.title}
+              onClick={() => presentationStore.setTransitionDuration(d.value)}
+            >
+              {d.label}
+            </TransitionBtn>
+          ))}
         </div>
       </div>
 
       <div className="prese-transitiontab-separator" />
 
+      {/* Sound */}
       <div className="prese-transitionstab-group">
         <div className="prese-transitionstab-elset">
           <span className="prese-transitionstab-label">Sound</span>
         </div>
         <div className="prese-transitionstab-elset">
-          <button type="button" className="prese-transitionstab-btn" title="No Sound">
+          <TransitionBtn
+            active={!transitionSoundEnabled}
+            title="No Sound"
+            onClick={() => presentationStore.setTransitionSoundEnabled(false)}
+          >
             No Sound
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="Sound">
+          </TransitionBtn>
+          <TransitionBtn
+            active={transitionSoundEnabled}
+            title="Sound"
+            onClick={() => presentationStore.setTransitionSoundEnabled(true)}
+          >
             Sound
-          </button>
+          </TransitionBtn>
         </div>
       </div>
 
       <div className="prese-transitiontab-separator" />
 
+      {/* Advance Slide */}
       <div className="prese-transitionstab-group">
         <div className="prese-transitionstab-elset">
           <span className="prese-transitionstab-label">Advance Slide</span>
         </div>
         <div className="prese-transitionstab-elset">
-          <button type="button" className="prese-transitionstab-btn" title="On Mouse Click">
+          <TransitionBtn
+            active={advanceMode === "click"}
+            title="On Mouse Click"
+            onClick={() => presentationStore.setAdvanceMode("click")}
+          >
             On Mouse Click
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="After">
+          </TransitionBtn>
+          <TransitionBtn
+            active={advanceMode === "after"}
+            title="After"
+            onClick={() => presentationStore.setAdvanceMode("after")}
+          >
             After
-          </button>
+          </TransitionBtn>
         </div>
         <div className="prese-transitionstab-elset">
-          <button type="button" className="prese-transitionstab-btn" title="After (0s)">
-            0s
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="After (2s)">
-            2s
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="After (3s)">
-            3s
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="After (5s)">
-            5s
-          </button>
-          <button type="button" className="prese-transitionstab-btn" title="After (10s)">
-            10s
-          </button>
+          {afterTimings.map((t) => (
+            <TransitionBtn
+              key={t}
+              active={advanceMode === "after" && advanceTiming === t}
+              title={`After (${t}s)`}
+              onClick={() => {
+                presentationStore.setAdvanceMode("after")
+                presentationStore.setAdvanceTiming(t)
+              }}
+            >
+              {t}s
+            </TransitionBtn>
+          ))}
         </div>
       </div>
 
       <div className="prese-transitiontab-separator" />
 
+      {/* Apply to All */}
       <div className="prese-transitionstab-group">
         <div className="prese-transitionstab-elset">
-          <button type="button" className="prese-transitionstab-btn" title="Apply to All Slides">
+          <button
+            type="button"
+            className="prese-transitionstab-btn"
+            title="Apply to All Slides"
+            onClick={() => presentationStore.applyTransitionToAll()}
+          >
             Apply to All
           </button>
         </div>

@@ -130,3 +130,204 @@
   height: 100%;
   background-color: var(--wo-prese-doc-bg);
 }
+
+/* Transition badge on slide thumbnails */
+.prese-slide-thumb-transition {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 10px;
+  color: var(--wo-prese-accent, #4472c4);
+  pointer-events: none;
+  line-height: 1;
+}
+
+/* Right panel */
+.prese-right-panel {
+  width: 260px;
+  height: 100%;
+  background: var(--wo-prese-bg-pane, #ffffff);
+  border-left: 1px solid var(--wo-prese-border, #e0e0e0);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.prese-right-panel-side {
+  overflow: hidden;
+  height: 100%;
+}
+
+.prese-right-panel-header {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--wo-prese-border, #e0e0e0);
+  flex-shrink: 0;
+}
+
+.prese-right-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.prese-right-panel-empty {
+  color: var(--wo-prese-text-secondary, #666666);
+  font-size: 12px;
+  padding: 16px 8px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* Animation Pane */
+.prese-animation-pane-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prese-animation-pane-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--wo-prese-border, #e0e0e0);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.prese-animation-pane-order {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wo-prese-accent, #4472c4);
+  color: #ffffff;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.prese-animation-pane-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}
+
+.prese-animation-pane-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.prese-animation-pane-name {
+  font-weight: 500;
+  text-transform: capitalize;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prese-animation-pane-timing {
+  font-size: 10px;
+  color: var(--wo-prese-text-secondary, #666666);
+}
+
+.prese-animation-pane-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.prese-animation-pane-btn {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 3px;
+  font-size: 11px;
+  color: var(--wo-prese-text-primary, #333333);
+}
+
+.prese-animation-pane-btn:hover {
+  background: var(--wo-prese-bg-toolbar, #f0f0f0);
+  border-color: var(--wo-prese-border, #e0e0e0);
+}
+
+.prese-animation-pane-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.prese-animation-pane-btn-danger:hover {
+  color: #d32f2f;
+}
+
+.prese-animation-pane-btn-danger {
+  color: #999;
+}
+
+/* Animation preview keyframes */
+@keyframes prese-anim-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes prese-anim-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes prese-anim-appear {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes prese-anim-fly-in {
+  from { transform: translateY(60px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes prese-anim-zoom-in {
+  from { transform: scale(0.3); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes prese-anim-bounce {
+  0%, to { transform: translateY(0); }
+  40% { transform: translateY(-20px); }
+  60% { transform: translateY(-10px); }
+}
+@keyframes prese-anim-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes prese-anim-shake {
+  0%, to { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+@keyframes prese-anim-wipe {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+@keyframes prese-anim-grow {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+
+.prese-anim-fade { animation: prese-anim-fade-in 1s ease both; }
+.prese-anim-fade.prese-anim-exit { animation: prese-anim-fade-out 1s ease both; }
+.prese-anim-appear { animation: prese-anim-appear 0.5s ease both; }
+.prese-anim-fly-in { animation: prese-anim-fly-in 0.6s ease both; }
+.prese-anim-float-in { animation: prese-anim-fly-in 0.8s ease both; }
+.prese-anim-zoom { animation: prese-anim-zoom-in 0.5s ease both; }
+.prese-anim-bounce { animation: prese-anim-bounce 0.8s ease both; }
+.prese-anim-spin { animation: prese-anim-spin 0.6s ease both; }
+.prese-anim-swing { animation: prese-anim-shake 0.5s ease both; }
+.prese-anim-wipe { animation: prese-anim-wipe 0.5s ease both; }
+.prese-anim-grow-and-turn { animation: prese-anim-grow 0.5s ease both; }
+.prese-anim-float-out { animation: prese-anim-fade-out 0.5s ease both; }
+.prese-anim-path { animation: prese-anim-fly-in 0.8s ease both; }

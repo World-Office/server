@@ -425,12 +425,17 @@ impl OoxmlParser {
 
             let shapes = self.parse_pptx_shapes(slide_elem);
             let notes = self.parse_pptx_notes(archive, *expected_id);
+            let transition = self.parse_pptx_transition(slide_elem);
+            let timing_raw = self.parse_pptx_timing_raw(&xml);
 
             slides.push(Slide {
                 id: *expected_id,
                 name,
                 shapes,
                 notes,
+                transition,
+                animations: Vec::new(),
+                timing_raw,
             });
         }
         slides
@@ -466,6 +471,80 @@ impl OoxmlParser {
             }
         }
         shapes
+    }
+
+    fn parse_pptx_transition(&self, slide_elem: roxmltree::Node) -> Option<SlideTransition> {
+        let transition = slide_elem.descendants().find(|n| {
+            n.has_tag_name("transition") && n.tag_name().namespace() == Some(Self::P_NS)
+        })?;
+        let dur_attr = transition.attribute("dur").and_then(|v| v.parse::<f64>().ok());
+        let adv_click = transition.attribute("advClick");
+
+        let effect = transition.children()
+            .find(|c| c.is_element() && c.tag_name().namespace() == Some(Self::P_NS))
+            .and_then(|c| {
+                let name = c.tag_name().name();
+                Some(match name {
+                    "fade" => TransitionEffect::Fade,
+                    "push" => TransitionEffect::Push,
+                    "wipe" => TransitionEffect::Wipe,
+                    "split" => TransitionEffect::Split,
+                    "reveal" => TransitionEffect::Reveal,
+                    "checker" => TransitionEffect::Checker,
+                    "zoom" => TransitionEffect::Zoom,
+                    "morph" => TransitionEffect::Morph,
+                    "circle" => TransitionEffect::Circle,
+                    "uncover" => TransitionEffect::Uncover,
+                    "cover" => TransitionEffect::Cover,
+                    "flash" => TransitionEffect::Flash,
+                    "random" => TransitionEffect::Random,
+                    "shred" => TransitionEffect::Shred,
+                    "wedge" => TransitionEffect::Wedge,
+                    "wheel" => TransitionEffect::Wheel,
+                    "flythrough" => TransitionEffect::Flythrough,
+                    "excite" => TransitionEffect::Excite,
+                    "dissolve" => TransitionEffect::Dissolve,
+                    "newsflash" => TransitionEffect::Newsflash,
+                    "bars" => TransitionEffect::Bars,
+                    "contract" => TransitionEffect::Contract,
+                    "rotate" => TransitionEffect::Rotate,
+                    "blast" => TransitionEffect::Blast,
+                    "center" => TransitionEffect::Center,
+                    "shape" => TransitionEffect::Shape,
+                    "zoomIn" => TransitionEffect::ZoomIn,
+                    "zoomOut" => TransitionEffect::ZoomOut,
+                    "coverIn" => TransitionEffect::CoverIn,
+                    "coverUp" => TransitionEffect::CoverUp,
+                    "coverLeft" => TransitionEffect::CoverLeft,
+                    "coverRight" => TransitionEffect::CoverRight,
+                    "pullIn" => TransitionEffect::PullIn,
+                    "pullUp" => TransitionEffect::PullUp,
+                    "pullLeft" => TransitionEffect::PullLeft,
+                    "pullRight" => TransitionEffect::PullRight,
+                    _ => TransitionEffect::None,
+                })
+            })
+            .unwrap_or(TransitionEffect::None);
+
+        Some(SlideTransition {
+            effect,
+            duration: dur_attr.map(|d| d / 1000.0).unwrap_or(1.0),
+            advance_mode: if adv_click == Some("1") || adv_click.is_none() {
+                AdvanceMode::Manual
+            } else {
+                AdvanceMode::Timed
+            },
+            advance_timing: 0.0,
+        })
+    }
+
+    fn parse_pptx_timing_raw(&self, xml: &str) -> Option<String> {
+        let doc = XmlDoc::parse(xml).ok()?;
+        let node = doc.descendants().find(|n| {
+            n.has_tag_name("timing") && n.tag_name().namespace() == Some(Self::P_NS)
+        })?;
+        let range = node.range();
+        Some(xml[range.start..range.end].to_string())
     }
 
     fn parse_pptx_shape_from_sp(

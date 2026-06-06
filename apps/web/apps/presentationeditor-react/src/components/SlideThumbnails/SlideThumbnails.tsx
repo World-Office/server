@@ -66,6 +66,15 @@ const ObservedSlideThumbnails = observer(function ObservedSlideThumbnails(): JSX
           >
             <div className="prese-slide-thumb-preview">
               <div className="prese-slide-thumb-label">{index + 1}</div>
+              {slide.transitionEffect && slide.transitionEffect !== "none" && (
+                <span
+                  className="prese-slide-thumb-transition"
+                  title={`Transition: ${slide.transitionEffect}`}
+                  aria-label={`Transition: ${slide.transitionEffect}`}
+                >
+                  ✦
+                </span>
+              )}
             </div>
             <div className="prese-slide-thumb-title">{slide.title || `Slide ${index + 1}`}</div>
           </div>

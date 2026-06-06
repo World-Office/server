@@ -1,6 +1,100 @@
 import { observer } from "mobx-react-lite"
+import { presentationStore } from "../../stores/PresentationStore"
+import type { AnimationCategory, AnimationEffect, StartAnimation } from "../../types/presentation"
+
+const CATEGORIES: { key: AnimationCategory; label: string }[] = [
+  { key: "none", label: "None" },
+  { key: "entrance", label: "Entrance" },
+  { key: "emphasis", label: "Emphasis" },
+  { key: "exit", label: "Exit" },
+  { key: "motion", label: "Motion Paths" },
+]
+
+const STARTS: { key: StartAnimation; label: string }[] = [
+  { key: "onClick", label: "Start: On Click" },
+  { key: "withPrevious", label: "Start: With Previous" },
+  { key: "afterPrevious", label: "Start: After Previous" },
+]
+
+const DURATIONS: { value: number; label: string }[] = [
+  { value: 0.5, label: "Fast" },
+  { value: 1, label: "Normal" },
+  { value: 2, label: "Slow" },
+  { value: 5, label: "Very Slow" },
+]
+
+const DELAYS: { value: number; label: string }[] = [
+  { value: 0, label: "0s" },
+  { value: 0.25, label: "0.25s" },
+  { value: 0.5, label: "0.5s" },
+  { value: 1, label: "1s" },
+]
+
+const CATEGORY_EFFECTS: Record<AnimationCategory, AnimationEffect> = {
+  none: "none",
+  entrance: "fade",
+  emphasis: "growAndTurn",
+  exit: "fade",
+  motion: "path",
+}
 
 const ObservedAnimationTab = observer(function ObservedAnimationTab() {
+  const {
+    animationCategory,
+    animationStart,
+    animationDuration,
+    animationDelay,
+    currentSlide,
+    slides,
+    isPreviewPlaying,
+    setAnimationCategory,
+    setAnimationEffect,
+    setAnimationStart,
+    setAnimationDuration,
+    setAnimationDelay,
+    addAnimation,
+    moveAnimationEarlier,
+    moveAnimationLater,
+    startPreview,
+    stopPreview,
+  } = presentationStore
+
+  const slideAnims = slides[currentSlide]?.animations ?? []
+  const hasAnimations = slideAnims.length > 0
+
+  const handleCategoryClick = (cat: AnimationCategory) => {
+    setAnimationCategory(cat)
+    if (cat !== "none") {
+      const effect = CATEGORY_EFFECTS[cat]
+      setAnimationEffect(effect)
+      addAnimation(currentSlide, effect, cat)
+    }
+  }
+
+  const handleStartClick = (start: StartAnimation) => {
+    setAnimationStart(start)
+    if (hasAnimations && slideAnims.length > 0) {
+      const lastIdx = slideAnims.length - 1
+      presentationStore.updateAnimationTiming(currentSlide, slideAnims[lastIdx].id, start, animationDuration, animationDelay)
+    }
+  }
+
+  const handleDurationClick = (duration: number) => {
+    setAnimationDuration(duration)
+    if (hasAnimations && slideAnims.length > 0) {
+      const lastIdx = slideAnims.length - 1
+      presentationStore.updateAnimationTiming(currentSlide, slideAnims[lastIdx].id, animationStart, duration, animationDelay)
+    }
+  }
+
+  const handleDelayClick = (delay: number) => {
+    setAnimationDelay(delay)
+    if (hasAnimations && slideAnims.length > 0) {
+      const lastIdx = slideAnims.length - 1
+      presentationStore.updateAnimationTiming(currentSlide, slideAnims[lastIdx].id, animationStart, animationDuration, delay)
+    }
+  }
+
   return (
     <section
       className="prese-animationtab-panel"
@@ -8,70 +102,59 @@ const ObservedAnimationTab = observer(function ObservedAnimationTab() {
       role="tabpanel"
       aria-labelledby="animation"
     >
-      {/* Animations */}
       <div className="prese-animationtab-group">
         <div className="prese-animationtab-elset">
           <span className="prese-animationtab-label">Animations</span>
         </div>
-        <div className="prese-animationtab-elset">
-          <button type="button" className="prese-animationtab-btn" title="None">
-            None
-          </button>
-        </div>
+        {CATEGORIES.map((cat) => (
+          <div key={cat.key} className="prese-animationtab-elset">
+            <button
+              type="button"
+              className={`prese-animationtab-btn${animationCategory === cat.key ? " active" : ""}`}
+              title={cat.label}
+              onClick={() => handleCategoryClick(cat.key)}
+            >
+              {cat.label}
+            </button>
+          </div>
+        ))}
       </div>
 
       <div className="prese-animationtab-separator" />
 
-      <div className="prese-animationtab-group">
-        <div className="prese-animationtab-elset">
-          <button type="button" className="prese-animationtab-btn" title="Entrance">
-            Entrance
-          </button>
-        </div>
-        <div className="prese-animationtab-elset">
-          <button type="button" className="prese-animationtab-btn" title="Emphasis">
-            Emphasis
-          </button>
-        </div>
-        <div className="prese-animationtab-elset">
-          <button type="button" className="prese-animationtab-btn" title="Exit">
-            Exit
-          </button>
-        </div>
-        <div className="prese-animationtab-elset">
-          <button type="button" className="prese-animationtab-btn" title="Motion Paths">
-            Motion Paths
-          </button>
-        </div>
-        <div className="prese-animationtab-elset">
-          <button type="button" className="prese-animationtab-btn" title="More...">
-            More...
-          </button>
-        </div>
-      </div>
+      {hasAnimations && (
+        <>
+          <div className="prese-animationtab-group">
+            <div className="prese-animationtab-elset">
+              <span className="prese-animationtab-label">Preview</span>
+            </div>
+            <div className="prese-animationtab-elset">
+              <button
+                type="button"
+                className={`prese-animationtab-btn${isPreviewPlaying ? " active" : ""}`}
+                title={isPreviewPlaying ? "Stop Preview" : "Preview Animation"}
+                onClick={() => (isPreviewPlaying ? stopPreview() : startPreview())}
+              >
+                {isPreviewPlaying ? "Stop" : "Preview"}
+              </button>
+            </div>
+          </div>
 
-      <div className="prese-animationtab-separator" />
+          <div className="prese-animationtab-separator" />
+        </>
+      )}
 
-      <div className="prese-animationtab-group">
-        <div className="prese-animationtab-elset">
-          <span className="prese-animationtab-label">Preview</span>
-        </div>
-        <div className="prese-animationtab-elset">
-          <button type="button" className="prese-animationtab-btn" title="Preview Animation">
-            Preview
-          </button>
-        </div>
-      </div>
-
-      <div className="prese-animationtab-separator" />
-
-      {/* Advanced Animation */}
       <div className="prese-animationtab-group">
         <div className="prese-animationtab-elset">
           <span className="prese-animationtab-label">Advanced Animation</span>
         </div>
         <div className="prese-animationtab-elset">
-          <button type="button" className="prese-animationtab-btn" title="Animation Pane">
+          <button
+            type="button"
+            className="prese-animationtab-btn"
+            title="Animation Pane"
+            onClick={() => presentationStore.setActiveRightPanel("animation")}
+          >
             Animation Pane
           </button>
         </div>
@@ -79,26 +162,22 @@ const ObservedAnimationTab = observer(function ObservedAnimationTab() {
 
       <div className="prese-animationtab-separator" />
 
-      {/* Timing */}
       <div className="prese-animationtab-group">
         <div className="prese-animationtab-elset">
           <span className="prese-animationtab-label">Timing</span>
         </div>
-        <div className="prese-animationtab-elset">
-          <button type="button" className="prese-animationtab-btn" title="Start: On Click">
-            Start: On Click
-          </button>
-        </div>
-        <div className="prese-animationtab-elset">
-          <button type="button" className="prese-animationtab-btn" title="Start: With Previous">
-            Start: With Previous
-          </button>
-        </div>
-        <div className="prese-animationtab-elset">
-          <button type="button" className="prese-animationtab-btn" title="Start: After Previous">
-            Start: After Previous
-          </button>
-        </div>
+        {STARTS.map((s) => (
+          <div key={s.key} className="prese-animationtab-elset">
+            <button
+              type="button"
+              className={`prese-animationtab-btn${animationStart === s.key ? " active" : ""}`}
+              title={s.label}
+              onClick={() => handleStartClick(s.key)}
+            >
+              {s.label}
+            </button>
+          </div>
+        ))}
       </div>
 
       <div className="prese-animationtab-separator" />
@@ -108,18 +187,17 @@ const ObservedAnimationTab = observer(function ObservedAnimationTab() {
           <span className="prese-animationtab-label">Duration</span>
         </div>
         <div className="prese-animationtab-elset">
-          <button type="button" className="prese-animationtab-btn" title="Fast (0.5s)">
-            Fast
-          </button>
-          <button type="button" className="prese-animationtab-btn" title="Normal (1s)">
-            Normal
-          </button>
-          <button type="button" className="prese-animationtab-btn" title="Slow (2s)">
-            Slow
-          </button>
-          <button type="button" className="prese-animationtab-btn" title="Very Slow (5s)">
-            Very Slow
-          </button>
+          {DURATIONS.map((d) => (
+            <button
+              key={d.value}
+              type="button"
+              className={`prese-animationtab-btn${animationDuration === d.value ? " active" : ""}`}
+              title={`${d.label} (${d.value}s)`}
+              onClick={() => handleDurationClick(d.value)}
+            >
+              {d.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -130,36 +208,50 @@ const ObservedAnimationTab = observer(function ObservedAnimationTab() {
           <span className="prese-animationtab-label">Delay</span>
         </div>
         <div className="prese-animationtab-elset">
-          <button type="button" className="prese-animationtab-btn" title="0s">
-            0s
-          </button>
-          <button type="button" className="prese-animationtab-btn" title="0.25s">
-            0.25s
-          </button>
-          <button type="button" className="prese-animationtab-btn" title="0.5s">
-            0.5s
-          </button>
-          <button type="button" className="prese-animationtab-btn" title="1s">
-            1s
-          </button>
+          {DELAYS.map((d) => (
+            <button
+              key={d.value}
+              type="button"
+              className={`prese-animationtab-btn${animationDelay === d.value ? " active" : ""}`}
+              title={`${d.label}`}
+              onClick={() => handleDelayClick(d.value)}
+            >
+              {d.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="prese-animationtab-separator" />
-
-      <div className="prese-animationtab-group">
-        <div className="prese-animationtab-elset">
-          <span className="prese-animationtab-label">Reorder</span>
-        </div>
-        <div className="prese-animationtab-elset">
-          <button type="button" className="prese-animationtab-btn" title="Move Earlier">
-            Move Earlier
-          </button>
-          <button type="button" className="prese-animationtab-btn" title="Move Later">
-            Move Later
-          </button>
-        </div>
-      </div>
+      {hasAnimations && (
+        <>
+          <div className="prese-animationtab-separator" />
+          <div className="prese-animationtab-group">
+            <div className="prese-animationtab-elset">
+              <span className="prese-animationtab-label">Reorder</span>
+            </div>
+            <div className="prese-animationtab-elset">
+              <button
+                type="button"
+                className="prese-animationtab-btn"
+                title="Move Earlier"
+                onClick={() => moveAnimationEarlier(currentSlide, slideAnims.length - 1)}
+              >
+                Move Earlier
+              </button>
+            </div>
+            <div className="prese-animationtab-elset">
+              <button
+                type="button"
+                className="prese-animationtab-btn"
+                title="Move Later"
+                onClick={() => moveAnimationLater(currentSlide, 0)}
+              >
+                Move Later
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </section>
   )
 })
