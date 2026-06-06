@@ -193,4 +193,37 @@ export type SlideSize = "screen4x3" | "widescreen" | "standard" | "custom"
 
 export type ThemeType = "builtin" | "custom"
 
+export interface Theme {
+  name: string
+  colorScheme: ColorScheme
+  fontScheme: FontScheme
+  formatScheme?: string
+}
+
+export interface ThemePreset extends Theme {
+  description: string
+}
+
+export interface ColorScheme {
+  name: string
+  colors: ThemeColor[]
+}
+
+export interface ThemeColor {
+  name: string
+  color: string
+}
+
+export interface FontScheme {
+  name: string
+  majorFont: ThemeFont
+  minorFont: ThemeFont
+}
+
+export interface ThemeFont {
+  latin?: string
+  eastAsian?: string
+  complexScript?: string
+}
+
 export type TextDirection = "ltr" | "rtl"

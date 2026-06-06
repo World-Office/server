@@ -1,10 +1,12 @@
 import { ThemeProvider } from "@world-office/design-system"
 import { Viewport } from "./components/Viewport"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
+import { useTheme } from "./hooks/useTheme"
 import { presentationStore } from "./stores/PresentationStore"
 
 export function App() {
   useKeyboardShortcuts()
+  useTheme()
 
   return (
     <ThemeProvider>
