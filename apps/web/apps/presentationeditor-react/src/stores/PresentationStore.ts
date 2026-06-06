@@ -9,10 +9,12 @@ import type {
   SlideLayout,
   SlideSize,
   StartAnimation,
+  Theme,
   ThemeType,
   TransitionEffect,
   ZoomLevel,
 } from "../types/presentation"
+import { DEFAULT_THEME } from "../lib/themes"
 
 export interface SlideData {
   id: string
@@ -75,6 +77,7 @@ export class PresentationStore {
   /* Slide settings */
   slideSize: SlideSize = "standard"
   themeType: ThemeType = "builtin"
+  theme: Theme = DEFAULT_THEME
 
   /* Language */
   languageCode = "en-US"
@@ -235,6 +238,10 @@ export class PresentationStore {
     this.themeType = type
   }
 
+  setTheme(theme: Theme): void {
+    this.theme = theme
+  }
+
   setLanguageCode(code: string): void {
     this.languageCode = code
   }
@@ -246,6 +253,7 @@ export class PresentationStore {
       version: 1,
       slideSize: this.slideSize,
       themeType: this.themeType,
+      theme: this.theme,
       slides: this.slides.map((s) => ({
         id: s.id,
         title: s.title,
@@ -264,6 +272,7 @@ export class PresentationStore {
       }
       this.slideSize = data.slideSize ?? "standard"
       this.themeType = data.themeType ?? "builtin"
+      this.theme = data.theme ?? DEFAULT_THEME
       this.slides = data.slides.map(
         (s: { id?: string; title: string; layout: string; notes?: string }) => ({
           id: s.id ?? crypto.randomUUID(),
@@ -289,6 +298,7 @@ export class PresentationStore {
     this.currentSlide = 0
     this.slideSize = "standard"
     this.themeType = "builtin"
+    this.theme = DEFAULT_THEME
     this.document = null
   }
 

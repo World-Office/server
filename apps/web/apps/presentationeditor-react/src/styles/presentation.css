@@ -16,15 +16,22 @@
   --wo-prese-bg-pane: #ffffff;
   --wo-prese-bg-toolbar: var(--wo-color-bg-toolbar, #f0f0f0);
   --wo-prese-bg-statusbar: var(--wo-color-bg-statusbar, #e8e8e8);
-  --wo-prese-bg-page: #ffffff;
+  --wo-prese-bg-page: var(--wo-prese-color-light1, #ffffff);
   --wo-prese-bg-page-active: #ffffff;
   --wo-prese-bg-page-overlay: rgba(68, 71, 150, 1);
-  --wo-prese-text-primary: var(--wo-color-text-primary, #333333);
-  --wo-prese-text-secondary: var(--wo-color-text-secondary, #666666);
+  --wo-prese-text-primary: var(--wo-prese-color-dark1, #333333);
+  --wo-prese-text-secondary: var(--wo-prese-color-dark2, #666666);
   --wo-prese-border: var(--wo-color-border, #e0e0e0);
-  --wo-prese-accent: var(--wo-color-accent, #4472c4);
-  --wo-prese-accent-hover: var(--wo-color-accent-hover, #355d9e);
-  --wo-prese-font: var(--wo-font-family, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif);
+  --wo-prese-accent: var(--wo-prese-color-accent1, #4472c4);
+  --wo-prese-accent-hover: var(--wo-prese-color-accent2, #355d9e);
+  --wo-prese-font: var(--wo-prese-font-minor, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif);
+
+  --wo-prese-color-dark1: #000000;
+  --wo-prese-color-light1: #FFFFFF;
+  --wo-prese-color-accent1: #4472C4;
+  --wo-prese-color-accent2: #ED7D31;
+  --wo-prese-font-major: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+  --wo-prese-font-minor: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .viewport-ref {
