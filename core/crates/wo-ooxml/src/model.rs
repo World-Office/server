@@ -306,6 +306,109 @@ pub struct Slide {
     pub name: String,
     pub shapes: Vec<SlideShape>,
     pub notes: Option<String>,
+    #[serde(default)]
+    pub transition: Option<SlideTransition>,
+    #[serde(default)]
+    pub animations: Vec<AnimationData>,
+    #[serde(default)]
+    pub timing_raw: Option<String>,
+}
+
+/// Transition effect types for PPTX slides.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum TransitionEffect {
+    None,
+    Fade,
+    Push,
+    Wipe,
+    Split,
+    Reveal,
+    Checker,
+    Zoom,
+    Morph,
+    Circle,
+    Uncover,
+    Cover,
+    Flash,
+    Random,
+    Shred,
+    Wedge,
+    Wheel,
+    Flythrough,
+    Excite,
+    Dissolve,
+    Newsflash,
+    Bars,
+    Contract,
+    Rotate,
+    Blast,
+    Center,
+    Shape,
+    ZoomIn,
+    ZoomOut,
+    CoverIn,
+    CoverUp,
+    CoverLeft,
+    CoverRight,
+    PullIn,
+    PullUp,
+    PullLeft,
+    PullRight,
+}
+
+impl Default for TransitionEffect {
+    fn default() -> Self { Self::None }
+}
+
+/// Per-slide transition settings.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SlideTransition {
+    #[serde(default)]
+    pub effect: TransitionEffect,
+    #[serde(default)]
+    pub duration: f64,
+    #[serde(default)]
+    pub advance_mode: AdvanceMode,
+    #[serde(default)]
+    pub advance_timing: f64,
+}
+
+impl Default for SlideTransition {
+    fn default() -> Self {
+        Self {
+            effect: TransitionEffect::None,
+            duration: 1.0,
+            advance_mode: AdvanceMode::Manual,
+            advance_timing: 0.0,
+        }
+    }
+}
+
+/// How the slide advances to the next.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum AdvanceMode {
+    Manual,
+    Timed,
+}
+
+impl Default for AdvanceMode {
+    fn default() -> Self { Self::Manual }
+}
+
+/// Animation data for a single shape on a slide.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AnimationData {
+    pub id: String,
+    #[serde(default)]
+    pub effect: String,
+    #[serde(default)]
+    pub category: String,
+    #[serde(default)]
+    pub start: String,
+    #[serde(default)]
+    pub duration: f64,
+    #[serde(default)]
+    pub delay: f64,
 }
 
 /// Shape types that can appear on a slide.

@@ -246,7 +246,92 @@ impl OoxmlSerializer {
             }
         }
 
-        xml.push_str("\n  </p:spTree>\n</p:sld>");
+        xml.push_str("\n  </p:spTree>");
+
+        // Transition
+        if let Some(trans) = &slide.transition {
+            if trans.effect != TransitionEffect::None {
+                let effect_name = match trans.effect {
+                    TransitionEffect::None => "",
+                    TransitionEffect::Fade => "p:fade",
+                    TransitionEffect::Push => "p:push",
+                    TransitionEffect::Wipe => "p:wipe",
+                    TransitionEffect::Split => "p:split",
+                    TransitionEffect::Reveal => "p:reveal",
+                    TransitionEffect::Checker => "p:checker",
+                    TransitionEffect::Zoom => "p:zoom",
+                    TransitionEffect::Morph => "p:morph",
+                    TransitionEffect::Circle => "p:circle",
+                    TransitionEffect::Uncover => "p:uncover",
+                    TransitionEffect::Cover => "p:cover",
+                    TransitionEffect::Flash => "p:flash",
+                    TransitionEffect::Random => "p:random",
+                    TransitionEffect::Shred => "p:shred",
+                    TransitionEffect::Wedge => "p:wedge",
+                    TransitionEffect::Wheel => "p:wheel",
+                    TransitionEffect::Flythrough => "p:flyThrough",
+                    TransitionEffect::Excite => "p:excite",
+                    TransitionEffect::Dissolve => "p:dissolve",
+                    TransitionEffect::Newsflash => "p:newsflash",
+                    TransitionEffect::Bars => "p:bars",
+                    TransitionEffect::Contract => "p:contract",
+                    TransitionEffect::Rotate => "p:rotate",
+                    TransitionEffect::Blast => "p:blast",
+                    TransitionEffect::Center => "p:center",
+                    TransitionEffect::Shape => "p:shape",
+                    TransitionEffect::ZoomIn => "p:zoomIn",
+                    TransitionEffect::ZoomOut => "p:zoomOut",
+                    TransitionEffect::CoverIn => "p:coverIn",
+                    TransitionEffect::CoverUp => "p:coverUp",
+                    TransitionEffect::CoverLeft => "p:coverLeft",
+                    TransitionEffect::CoverRight => "p:coverRight",
+                    TransitionEffect::PullIn => "p:pullIn",
+                    TransitionEffect::PullUp => "p:pullUp",
+                    TransitionEffect::PullLeft => "p:pullLeft",
+                    TransitionEffect::PullRight => "p:pullRight",
+                };
+                let dur_ms = (trans.duration * 1000.0) as u64;
+                let adv_click = if trans.advance_mode == AdvanceMode::Manual { "1" } else { "0" };
+                xml.push_str(&format!(
+                    r#"
+  <p:transition dur="{}" advClick="{}">
+    <{}/>
+  </p:transition>"#,
+                    dur_ms, adv_click, effect_name
+                ));
+            }
+        }
+
+        // Timing (animations)
+        if !slide.animations.is_empty() {
+            xml.push_str(r#"
+  <p:timing>
+    <p:tnLst>
+      <p:par>
+        <p:cTn id="1" dur="indefinite" restart="never" nodeType="tmRoot"/>
+      </p:par>
+    </p:tnLst>"#);
+            for anim in &slide.animations {
+                let anim_dur = format!("{}", (anim.duration * 1000.0) as u64);
+                let anim_delay = format!("{}", (anim.delay * 1000.0) as u64);
+                xml.push_str(&format!(r#"
+    <p:childTnLst>
+      <p:par>
+        <p:cTn id="{}" dur="{}" restart="always">
+          <p:stCondLst>
+            <p:cond delay="{}"/>
+          </p:stCondLst>
+          <p:effect/>
+        </p:cTn>
+      </p:par>
+    </p:childTnLst>"#, anim.id, anim_dur, anim_delay));
+            }
+            xml.push_str("\n  </p:timing>");
+        } else if let Some(timing_raw) = &slide.timing_raw {
+            xml.push_str(&format!("\n  {}", timing_raw));
+        }
+
+        xml.push_str("\n</p:sld>");
         xml
     }
 
@@ -1514,6 +1599,9 @@ mod tests {
                         id: 256,
                         name: "Slide1".to_string(),
                         notes: None,
+                        transition: None,
+                        animations: vec![],
+                        timing_raw: None,
                         shapes: vec![SlideShape::TextBox(TextBoxShape {
                             id: "2".to_string(),
                             bounds: Bounds { x: 100, y: 100, cx: 5000000, cy: 500000 },
@@ -1570,7 +1658,10 @@ mod tests {
                             id: 256,
                             name: "Slide1".to_string(),
                             notes: None,
-                            shapes: vec![SlideShape::TextBox(TextBoxShape {
+                            transition: None,
+                        animations: vec![],
+                        timing_raw: None,
+                        shapes: vec![SlideShape::TextBox(TextBoxShape {
                                 id: "2".to_string(),
                                 bounds: Bounds { x: 0, y: 0, cx: 9144000, cy: 6858000 },
                                 text_body: TextBody {
@@ -1589,7 +1680,10 @@ mod tests {
                             id: 257,
                             name: "Slide2".to_string(),
                             notes: None,
-                            shapes: vec![SlideShape::TextBox(TextBoxShape {
+                            transition: None,
+                        animations: vec![],
+                        timing_raw: None,
+                        shapes: vec![SlideShape::TextBox(TextBoxShape {
                                 id: "3".to_string(),
                                 bounds: Bounds { x: 0, y: 0, cx: 9144000, cy: 6858000 },
                                 text_body: TextBody {
@@ -1640,6 +1734,9 @@ mod tests {
                     id: 256,
                     name: "S1".to_string(),
                     notes: None,
+                    transition: None,
+                    animations: vec![],
+                    timing_raw: None,
                     shapes: vec![],
                 }],
                 slide_masters: Vec::new(),
@@ -1662,6 +1759,9 @@ mod tests {
                     id: 256,
                     name: "S1".to_string(),
                     notes: None,
+                    transition: None,
+                    animations: vec![],
+                    timing_raw: None,
                     shapes: vec![],
                 }],
                 slide_masters: Vec::new(),
@@ -1684,6 +1784,9 @@ mod tests {
                         id: 256,
                         name: "Slide1".to_string(),
                         notes: None,
+                        transition: None,
+                        animations: vec![],
+                        timing_raw: None,
                         shapes: vec![SlideShape::Placeholder(PlaceholderShape {
                             id: "3".to_string(),
                             bounds: Bounds { x: 100, y: 100, cx: 5000000, cy: 500000 },
@@ -1721,6 +1824,9 @@ mod tests {
                         id: 256,
                         name: "Slide1".to_string(),
                         notes: None,
+                        transition: None,
+                        animations: vec![],
+                        timing_raw: None,
                         shapes: vec![SlideShape::Picture(PictureShape {
                             id: "4".to_string(),
                             bounds: Bounds { x: 500000, y: 500000, cx: 2000000, cy: 1500000 },
@@ -1750,6 +1856,9 @@ mod tests {
                         id: 256,
                         name: "Slide1".to_string(),
                         notes: None,
+                        transition: None,
+                        animations: vec![],
+                        timing_raw: None,
                         shapes: vec![SlideShape::TextBox(TextBoxShape {
                             id: "2".to_string(),
                             bounds: Bounds { x: 100, y: 100, cx: 5000000, cy: 500000 },
@@ -1820,6 +1929,9 @@ mod tests {
                         id: 256,
                         name: "Slide1".to_string(),
                         notes: None,
+                        transition: None,
+                        animations: vec![],
+                        timing_raw: None,
                         shapes: vec![],
                     }],
                     slide_masters: Vec::new(),
@@ -1861,6 +1973,9 @@ mod tests {
                         id: 256,
                         name: "Empty".to_string(),
                         notes: None,
+                        transition: None,
+                        animations: vec![],
+                        timing_raw: None,
                         shapes: vec![],
                     }],
                     slide_masters: Vec::new(),
@@ -1915,14 +2030,17 @@ mod tests {
         };
         let pres = PptxPresentation {
             slide_size: SlideSize::widescreen(),
-            slides: vec![Slide {
-                id: 256,
-                name: "Slide 1".to_string(),
-                shapes: vec![],
-                notes: None,
-            }],
-            slide_masters: Vec::new(),
-            theme: Some(theme),
+                slides: vec![Slide {
+                    id: 256,
+                    name: "Slide 1".to_string(),
+                    transition: None,
+                    animations: vec![],
+                    timing_raw: None,
+                    shapes: vec![],
+                    notes: None,
+                }],
+                slide_masters: Vec::new(),
+                theme: Some(theme),
             core_properties: CoreProperties::default(),
         };
         let ser = OoxmlSerializer::new();

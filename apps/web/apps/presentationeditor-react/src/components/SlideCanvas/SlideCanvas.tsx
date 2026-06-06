@@ -3,7 +3,7 @@ import type { JSX } from "react"
 import { presentationStore } from "../../stores/PresentationStore"
 
 const ObservedSlideCanvas = observer(function ObservedSlideCanvas(): JSX.Element {
-  const { slides, currentSlide, zoomLevel, slideSize } = presentationStore
+  const { slides, currentSlide, zoomLevel, slideSize, isPreviewPlaying, previewStep } = presentationStore
   const slide = slides[currentSlide]
   if (!slide) return <div className="prese-canvas-empty">No slides</div>
 
@@ -14,15 +14,22 @@ const ObservedSlideCanvas = observer(function ObservedSlideCanvas(): JSX.Element
   const canvasWidth = baseWidth * scale
   const canvasHeight = baseHeight * scale
 
+  const previewAnim = isPreviewPlaying && slide.animations?.[previewStep]
+  const previewClass = previewAnim
+    ? `prese-canvas-slide prese-anim-${previewAnim.effect}`
+    : "prese-canvas-slide"
+
   return (
     <div className="prese-canvas-container">
       <div
-        className="prese-canvas-slide"
+        className={previewClass}
         style={{
           width: `${canvasWidth}px`,
           height: `${canvasHeight}px`,
           transform: `scale(${scale})`,
           transformOrigin: "top left",
+          animationDuration: previewAnim ? `${previewAnim.duration}s` : undefined,
+          animationDelay: previewAnim ? `${previewAnim.delay}s` : undefined,
         }}
       >
         <div className="prese-canvas-background" />

@@ -1,5 +1,8 @@
 import { makeAutoObservable } from "mobx"
 import type {
+  AdvanceMode,
+  AnimationCategory,
+  AnimationData,
   AnimationEffect,
   LeftMenuAction,
   PresentationDocument,
@@ -21,6 +24,12 @@ export interface SlideData {
   title: string
   layout: SlideLayout
   notes: string
+  transitionEffect?: TransitionEffect
+  transitionDuration?: number
+  transitionSoundEnabled?: boolean
+  advanceMode?: AdvanceMode
+  advanceTiming?: number
+  animations?: AnimationData[]
 }
 import { ZOOM_LEVELS } from "../types/presentation"
 
@@ -71,8 +80,17 @@ export class PresentationStore {
   transitionEffect: TransitionEffect = "none"
   transitionDuration = 0.5
   transitionSoundEnabled = false
+  advanceMode: AdvanceMode = "click"
+  advanceTiming = 3
   animationEffect: AnimationEffect = "none"
   animationStart: StartAnimation = "onClick"
+  animationCategory: AnimationCategory = "none"
+  animationDuration = 1
+  animationDelay = 0
+
+  /* Preview playback */
+  isPreviewPlaying = false
+  previewStep = 0
 
   /* Slide settings */
   slideSize: SlideSize = "standard"
@@ -222,12 +240,144 @@ export class PresentationStore {
     this.transitionSoundEnabled = enabled
   }
 
+  setAdvanceMode(mode: AdvanceMode): void {
+    this.advanceMode = mode
+  }
+
+  setAdvanceTiming(seconds: number): void {
+    this.advanceTiming = seconds
+  }
+
+  setSlideTransition(index: number, effect: TransitionEffect): void {
+    const slide = this.slides[index]
+    if (!slide) return
+    this.transitionEffect = effect
+    slide.transitionEffect = effect
+  }
+
+  getEffectiveTransition(index: number): {
+    effect: TransitionEffect
+    duration: number
+    soundEnabled: boolean
+    advanceMode: AdvanceMode
+    advanceTiming: number
+  } {
+    const slide = this.slides[index]
+    return {
+      effect: slide?.transitionEffect ?? this.transitionEffect,
+      duration: slide?.transitionDuration ?? this.transitionDuration,
+      soundEnabled: slide?.transitionSoundEnabled ?? this.transitionSoundEnabled,
+      advanceMode: (slide?.advanceMode as AdvanceMode) ?? this.advanceMode,
+      advanceTiming: slide?.advanceTiming ?? this.advanceTiming,
+    }
+  }
+
+  applyTransitionToAll(): void {
+    const effect = this.transitionEffect
+    const duration = this.transitionDuration
+    const sound = this.transitionSoundEnabled
+    const advMode = this.advanceMode
+    const advTiming = this.advanceTiming
+    for (const slide of this.slides) {
+      slide.transitionEffect = effect
+      slide.transitionDuration = duration
+      slide.transitionSoundEnabled = sound
+      slide.advanceMode = advMode
+      slide.advanceTiming = advTiming
+    }
+  }
+
   setAnimationEffect(effect: AnimationEffect): void {
     this.animationEffect = effect
   }
 
   setAnimationStart(start: StartAnimation): void {
     this.animationStart = start
+  }
+
+  setAnimationCategory(category: AnimationCategory): void {
+    this.animationCategory = category
+  }
+
+  setAnimationDuration(duration: number): void {
+    this.animationDuration = duration
+  }
+
+  setAnimationDelay(delay: number): void {
+    this.animationDelay = delay
+  }
+
+  addAnimation(index: number, effect: AnimationEffect, category: AnimationCategory): void {
+    const slide = this.slides[index]
+    if (!slide) return
+    const anim: AnimationData = {
+      id: crypto.randomUUID(),
+      effect,
+      category,
+      target: "all",
+      start: this.animationStart,
+      duration: this.animationDuration,
+      delay: this.animationDelay,
+    }
+    if (!slide.animations) slide.animations = []
+    slide.animations.push(anim)
+  }
+
+  removeAnimation(slideIndex: number, animId: string): void {
+    const slide = this.slides[slideIndex]
+    if (!slide?.animations) return
+    slide.animations = slide.animations.filter((a) => a.id !== animId)
+  }
+
+  moveAnimationEarlier(slideIndex: number, animIndex: number): void {
+    const slide = this.slides[slideIndex]
+    if (!slide?.animations || animIndex <= 0) return
+    ;[slide.animations[animIndex], slide.animations[animIndex - 1]] = [
+      slide.animations[animIndex - 1],
+      slide.animations[animIndex],
+    ]
+  }
+
+  moveAnimationLater(slideIndex: number, animIndex: number): void {
+    const slide = this.slides[slideIndex]
+    if (!slide?.animations || animIndex >= slide.animations.length - 1) return
+    ;[slide.animations[animIndex], slide.animations[animIndex + 1]] = [
+      slide.animations[animIndex + 1],
+      slide.animations[animIndex],
+    ]
+  }
+
+  setAnimationTarget(slideIndex: number, animId: string, target: string): void {
+    const anim = this.slides[slideIndex]?.animations?.find((a) => a.id === animId)
+    if (anim) anim.target = target
+  }
+
+  startPreview(): void {
+    this.isPreviewPlaying = true
+    this.previewStep = 0
+  }
+
+  stopPreview(): void {
+    this.isPreviewPlaying = false
+    this.previewStep = 0
+  }
+
+  nextPreviewStep(): void {
+    const anims = this.slides[this.currentSlide]?.animations
+    if (!anims || this.previewStep >= anims.length - 1) {
+      this.stopPreview()
+      return
+    }
+    this.previewStep++
+  }
+
+  updateAnimationTiming(slideIndex: number, animId: string, start: StartAnimation, duration: number, delay: number): void {
+    const anim = this.slides[slideIndex]?.animations?.find((a) => a.id === animId)
+    if (anim) {
+      anim.start = start
+      anim.duration = duration
+      anim.delay = delay
+    }
   }
 
   setSlideSize(size: SlideSize): void {
@@ -250,7 +400,7 @@ export class PresentationStore {
 
   toJSON(): string {
     const data = {
-      version: 1,
+      version: 2,
       slideSize: this.slideSize,
       themeType: this.themeType,
       theme: this.theme,
@@ -259,6 +409,12 @@ export class PresentationStore {
         title: s.title,
         layout: s.layout,
         notes: s.notes,
+        transitionEffect: s.transitionEffect,
+        transitionDuration: s.transitionDuration,
+        transitionSoundEnabled: s.transitionSoundEnabled,
+        advanceMode: s.advanceMode,
+        advanceTiming: s.advanceTiming,
+        animations: s.animations,
       })),
     }
     return JSON.stringify(data, null, 2)
@@ -274,11 +430,17 @@ export class PresentationStore {
       this.themeType = data.themeType ?? "builtin"
       this.theme = data.theme ?? DEFAULT_THEME
       this.slides = data.slides.map(
-        (s: { id?: string; title: string; layout: string; notes?: string }) => ({
+        (s: { id?: string; title: string; layout: string; notes?: string; transitionEffect?: string; transitionDuration?: number; transitionSoundEnabled?: boolean; advanceMode?: string; advanceTiming?: number; animations?: AnimationData[] }) => ({
           id: s.id ?? crypto.randomUUID(),
           title: s.title ?? "Untitled",
           layout: (s.layout as SlideLayout) ?? "blank",
           notes: s.notes ?? "",
+          transitionEffect: s.transitionEffect as TransitionEffect,
+          transitionDuration: s.transitionDuration,
+          transitionSoundEnabled: s.transitionSoundEnabled,
+          advanceMode: s.advanceMode as AdvanceMode,
+          advanceTiming: s.advanceTiming,
+          animations: s.animations,
         }),
       )
       this.totalSlides = this.slides.length
@@ -299,6 +461,16 @@ export class PresentationStore {
     this.slideSize = "standard"
     this.themeType = "builtin"
     this.theme = DEFAULT_THEME
+    this.transitionEffect = "none"
+    this.transitionDuration = 0.5
+    this.transitionSoundEnabled = false
+    this.advanceMode = "click"
+    this.advanceTiming = 3
+    this.animationEffect = "none"
+    this.animationStart = "onClick"
+    this.animationCategory = "none"
+    this.animationDuration = 1
+    this.animationDelay = 0
     this.document = null
   }
 
@@ -320,6 +492,12 @@ export class PresentationStore {
       title: `Slide ${this.slides.length + 1}`,
       layout: "blank",
       notes: "",
+      transitionEffect: undefined,
+      transitionDuration: undefined,
+      transitionSoundEnabled: undefined,
+      advanceMode: undefined,
+      advanceTiming: undefined,
+      animations: undefined,
     }
     const insertIndex = this.currentSlide + 1
     this.slides.splice(insertIndex, 0, newSlide)
@@ -344,6 +522,12 @@ export class PresentationStore {
       title: `${source.title} (copy)`,
       layout: source.layout,
       notes: source.notes,
+      transitionEffect: source.transitionEffect,
+      transitionDuration: source.transitionDuration,
+      transitionSoundEnabled: source.transitionSoundEnabled,
+      advanceMode: source.advanceMode,
+      advanceTiming: source.advanceTiming,
+      animations: source.animations?.map((a) => ({ ...a, id: crypto.randomUUID() })),
     }
     this.slides.splice(index + 1, 0, clone)
     this.totalSlides = this.slides.length
