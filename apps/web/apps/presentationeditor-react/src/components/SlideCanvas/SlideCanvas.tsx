@@ -1,7 +1,7 @@
 import { observer } from "mobx-react-lite"
 import { useRef, useCallback, useEffect, type JSX } from "react"
 import { presentationStore } from "../../stores/PresentationStore"
-import type { ChartData, ShapeData, TableData, TableCell, TableRow } from "../../types/presentation"
+import type { ChartData, ShapeData, TableData } from "../../types/presentation"
 
 const HANDLE_SIZE = 8
 
@@ -178,18 +178,6 @@ function renderChartSvg(chart: ChartData, width: number, height: number): JSX.El
   }
 
   return elements
-}
-
-function getSampleTable(rows: number, columns: number): TableData {
-  const cells: TableRow[] = []
-  for (let ri = 0; ri < rows; ri++) {
-    const row: TableCell[] = []
-    for (let ci = 0; ci < columns; ci++) {
-      row.push({ text: ri === 0 ? `Header ${ci + 1}` : "" })
-    }
-    cells.push({ cells: row })
-  }
-  return { rows, columns, headerRow: true, cells }
 }
 
 function renderTableSvg(table: TableData, width: number, height: number): JSX.Element[] {
