@@ -243,6 +243,9 @@ impl OoxmlSerializer {
                 SlideShape::Picture(pic) => {
                     self.serialize_picture_shape(&mut xml, pic);
                 }
+                SlideShape::Table(table) => {
+                    self.serialize_table_shape(&mut xml, table);
+                }
             }
         }
 
@@ -402,6 +405,136 @@ impl OoxmlSerializer {
     </p:pic>"#,
             pic.id, pic.name, pic.bounds.x, pic.bounds.y, pic.bounds.cx, pic.bounds.cy,
         ));
+    }
+
+    fn serialize_table_shape(&self, xml: &mut String, table: &TableShape) {
+        xml.push_str(&format!(
+            r#"
+    <p:tbl>
+      <p:spPr>
+        <a:xfrm>
+          <a:off x="{}" y="{}"/>
+          <a:ext cx="{}" cy="{}"/>
+        </a:xfrm>
+      </p:spPr>
+      <p:tblGrid>"#,
+            table.bounds.x, table.bounds.y, table.bounds.cx, table.bounds.cy,
+        ));
+        for col in &table.columns {
+            xml.push_str(&format!(
+                r#"
+        <p:gridCol w="{}"/>"#,
+                col.width,
+            ));
+        }
+        xml.push_str(r#"
+      </p:tblGrid>"#);
+
+        for row in &table.rows {
+            xml.push_str(&format!(
+                r#"
+      <p:tr h="{}">"#,
+                row.height,
+            ));
+            for cell in &row.cells {
+                xml.push_str(r#"
+        <p:tc>"#);
+                // Cell text body 
+                xml.push_str(r#"
+          <p:txBody>
+            <a:bodyPr/>
+            <a:lstStyle/>"#);
+                if cell.text_body.paragraphs.is_empty() {
+                    xml.push_str(r#"
+            <a:p/>"#);
+                } else {
+                    for para in &cell.text_body.paragraphs {
+                        xml.push_str(r#"
+            <a:p>"#);
+                        for run in &para.runs {
+                            if run.text == "\n" {
+                                xml.push_str(r#"
+              <a:br/>"#);
+                            } else {
+                                xml.push_str(&format!(
+                                    r#"
+              <a:r>
+                <a:t xml:space="preserve">{}</a:t>
+              </a:r>"#,
+                                    // Escape XML special chars
+                                    run.text
+                                        .replace('&', "&amp;")
+                                        .replace('<', "&lt;")
+                                        .replace('>', "&gt;")
+                                        .replace('"', "&quot;")
+                                ));
+                            }
+                        }
+                        xml.push_str(r#"
+            </a:p>"#);
+                    }
+                }
+                xml.push_str(r#"
+          </p:txBody>"#);
+
+                // Cell properties
+                let mut cell_props = String::new();
+                if let Some(ref fill) = cell.fill_color {
+                    cell_props.push_str(&format!(
+                        r#"
+            <a:solidFill>
+              <a:srgbClr val="{}"/>
+            </a:solidFill>"#,
+                        fill,
+                    ));
+                }
+                if let Some(rs) = cell.row_span {
+                    cell_props.push_str(&format!(r#" rowSpan="{}""#, rs));
+                }
+                if let Some(cs) = cell.col_span {
+                    cell_props.push_str(&format!(r#" gridSpan="{}""#, cs));
+                }
+                if cell_props.is_empty() {
+                    xml.push_str(r#"
+          <p:tcPr/>"#);
+                } else {
+                    // Determine if we have inline properties or attributes
+                    if cell.row_span.is_some() || cell.col_span.is_some() {
+                        xml.push_str(&format!(
+                            r#"
+          <p:tcPr{}"#,
+                            if cell.fill_color.is_some() { ">" } else { "/>" },
+                        ));
+                        if cell.fill_color.is_some() {
+                            xml.push_str(&format!(
+                                r#"
+            <a:solidFill>
+              <a:srgbClr val="{}"/>
+            </a:solidFill>
+          </p:tcPr>"#,
+                                cell.fill_color.as_ref().unwrap(),
+                            ));
+                        }
+                    } else if cell.fill_color.is_some() {
+                        xml.push_str(&format!(
+                            r#"
+          <p:tcPr>
+            <a:solidFill>
+              <a:srgbClr val="{}"/>
+            </a:solidFill>
+          </p:tcPr>"#,
+                            cell.fill_color.as_ref().unwrap(),
+                        ));
+                    }
+                }
+                xml.push_str(r#"
+        </p:tc>"#);
+            }
+            xml.push_str(r#"
+      </p:tr>"#);
+        }
+        xml.push_str(r#"
+    </p:tbl>"#);
     }
 
     fn serialize_text_body(&self, xml: &mut String, tb: &TextBody) {

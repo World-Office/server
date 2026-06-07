@@ -466,6 +466,11 @@ impl OoxmlParser {
                             shapes.push(SlideShape::Picture(pic));
                         }
                     }
+                    (Some(ns), "tbl") if ns == Self::P_NS => {
+                        if let Some(table) = self.parse_pptx_table(&child) {
+                            shapes.push(SlideShape::Table(table));
+                        }
+                    }
                     _ => {}
                 }
             }
@@ -583,6 +588,66 @@ impl OoxmlParser {
                 }),
             }))
         }
+    }
+
+    fn parse_pptx_table(&self, tbl: &roxmltree::Node) -> Option<TableShape> {
+        let bounds = self.parse_pptx_bounds(tbl);
+
+        let mut columns = Vec::new();
+        let mut rows = Vec::new();
+
+        // Parse grid columns <p:tblGrid><p:gridCol w="..."/>
+        if let Some(grid) = tbl.children().find(|c| {
+            c.is_element() && c.has_tag_name("tblGrid") && c.tag_name().namespace() == Some(Self::P_NS)
+        }) {
+            for col in grid.children() {
+                if !col.is_element() { continue; }
+                if col.has_tag_name("gridCol") && col.tag_name().namespace() == Some(Self::P_NS) {
+                    let width = col.attribute("w").and_then(|v| v.parse().ok()).unwrap_or(0);
+                    columns.push(TableColumn { width });
+                }
+            }
+        }
+
+        // Parse rows <p:tr h="...">
+        for tr in tbl.children() {
+            if !tr.is_element() { continue; }
+            if !tr.has_tag_name("tr") || tr.tag_name().namespace() != Some(Self::P_NS) { continue; }
+            let height = tr.attribute("h").and_then(|v| v.parse().ok()).unwrap_or(0);
+            let mut cells = Vec::new();
+
+            for tc in tr.children() {
+                if !tc.is_element() { continue; }
+                if !tc.has_tag_name("tc") || tc.tag_name().namespace() != Some(Self::P_NS) { continue; }
+
+                // Parse cell text body <p:txBody> (or <a:txBody>)
+                let text_body = self.parse_pptx_text_body(&tc).unwrap_or(TextBody {
+                    paragraphs: Vec::new(),
+                });
+
+                // Parse cell properties for row/col span
+                let row_span = tc.attribute("rowSpan").and_then(|v| v.parse().ok());
+                let col_span = tc.attribute("gridSpan").and_then(|v| v.parse().ok());
+
+                // Parse fill color from tcPr -> solidFill -> srgbClr
+                let fill_color = tc.descendants()
+                    .find(|n| n.has_tag_name("srgbClr") && n.tag_name().namespace() == Some(Self::A_NS))
+                    .and_then(|n| n.attribute("val"))
+                    .map(|s| s.to_string());
+
+                cells.push(TableCell {
+                    text_body,
+                    row_span,
+                    col_span,
+                    fill_color,
+                });
+            }
+
+            rows.push(TableRow { height, cells });
+        }
+
+        let id = tbl.attribute("id").unwrap_or("0").to_string();
+        Some(TableShape { id, bounds, columns, rows })
     }
 
     fn parse_pptx_bounds(&self, sp: &roxmltree::Node) -> Bounds {

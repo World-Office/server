@@ -417,6 +417,38 @@ pub enum SlideShape {
     TextBox(TextBoxShape),
     Picture(PictureShape),
     Placeholder(PlaceholderShape),
+    Table(TableShape),
+}
+
+/// A table shape on a slide.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TableShape {
+    pub id: String,
+    pub bounds: Bounds,
+    pub columns: Vec<TableColumn>,
+    pub rows: Vec<TableRow>,
+}
+
+/// A column definition in a table.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TableColumn {
+    pub width: i64,
+}
+
+/// A row in a table.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TableRow {
+    pub height: i64,
+    pub cells: Vec<TableCell>,
+}
+
+/// A single cell in a table.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TableCell {
+    pub text_body: TextBody,
+    pub row_span: Option<i64>,
+    pub col_span: Option<i64>,
+    pub fill_color: Option<String>,
 }
 
 /// A text box shape on a slide.

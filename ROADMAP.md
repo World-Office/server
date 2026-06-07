@@ -30,11 +30,12 @@
 
 ### Slides Editor
 - ✅ **MVP (2026-06):** Slide manager, text + image content editing, basic PPTX roundtrip, speaker notes
-- ❐ Theme & master slide support
-- ❐ Animations & transitions (timing, entrance/exit/motion, animation pane)
-- ❐ Charts & tables on slides
-- ❐ Presenter view (full-screen, next preview, speaker notes, timer)
-- ❐ Shapes & SmartArt
+- ✅ **Theme & master slide support** — full-stack Rust + React with 5 built-in presets
+- ✅ **Animations & transitions** — TransitionsTab, AnimationTab, animation pane, CSS preview
+- ✅ **Charts on slides** — bar, column, line, pie, doughnut SVG rendering with ChartTypePicker
+- ✅ **Presenter view** — full-screen mode, keyboard nav, speaker notes, next preview, timer
+- ✅ **Shapes & SmartArt** — 8 shape types, drag-move, resize handles, arrange, gallery picker
+- ✅ **Tables on slides** — TableData types, SVG rendering, TablePicker popup, InsertTab wiring
 - ❐ PPTX full roundtrip (100% OOXML schema coverage)
 - ❐ ODP import/export
 - ❐ Realtime coauthoring for presentations
