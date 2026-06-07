@@ -1,6 +1,7 @@
 import { observer } from "mobx-react-lite"
 import { ShapesGallery } from "./ShapesGallery"
 import { ChartTypePicker } from "./ChartTypePicker"
+import { TablePicker } from "./TablePicker"
 import { presentationStore } from "../../stores/PresentationStore"
 
 function addTextBox() {
@@ -48,9 +49,7 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
       {/* Tables */}
       <div className="prese-inserttab-group">
         <div className="prese-inserttab-elset">
-          <button type="button" className="prese-inserttab-btn" title="Table">
-            Table
-          </button>
+          <TablePicker />
         </div>
       </div>
 
