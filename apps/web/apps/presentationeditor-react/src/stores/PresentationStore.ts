@@ -97,6 +97,39 @@ export class PresentationStore {
   themeType: ThemeType = "builtin"
   theme: Theme = DEFAULT_THEME
 
+  /* Presenter view */
+  isPresenting = false
+  presentStep = 0
+
+  startPresentation(): void {
+    this.isPresenting = true
+    this.presentStep = this.currentSlide
+  }
+
+  endPresentation(): void {
+    this.isPresenting = false
+    this.presentStep = 0
+  }
+
+  nextSlide(): void {
+    const total = this.totalSlides
+    if (this.presentStep < total - 1) {
+      this.presentStep++
+      if (this.presentStep !== this.currentSlide) {
+        this.currentSlide = this.presentStep
+      }
+    }
+  }
+
+  prevSlide(): void {
+    if (this.presentStep > 0) {
+      this.presentStep--
+      if (this.presentStep !== this.currentSlide) {
+        this.currentSlide = this.presentStep
+      }
+    }
+  }
+
   /* Language */
   languageCode = "en-US"
 
