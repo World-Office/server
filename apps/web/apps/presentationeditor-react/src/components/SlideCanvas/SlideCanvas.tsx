@@ -1,7 +1,7 @@
 import { observer } from "mobx-react-lite"
 import { useRef, useCallback, useEffect, type JSX } from "react"
 import { presentationStore } from "../../stores/PresentationStore"
-import type { ChartData, ShapeData, TableData } from "../../types/presentation"
+import type { ChartData, ConnectorData, ShapeData, TableData } from "../../types/presentation"
 
 const HANDLE_SIZE = 8
 
@@ -230,6 +230,45 @@ function renderTableSvg(table: TableData, width: number, height: number): JSX.El
   return elements
 }
 
+function renderConnectorSvg(connector: ConnectorData, width: number, height: number, stroke: string, strokeWidth: number): JSX.Element {
+  const { connectorType, hasStartArrow, hasEndArrow, startX, startY, endX, endY } = connector
+  const arrowSize = Math.max(8, strokeWidth * 4)
+
+  const markerId = `conn-arrow-${connectorType}-${stroke.replace("#", "")}-${strokeWidth}`
+  const markerEnd = hasEndArrow ? `url(#${markerId})` : undefined
+  const markerStart = hasStartArrow ? `url(#${markerId}-start)` : undefined
+
+  let pathD: string
+  if (connectorType === "straight") {
+    pathD = `M${startX},${startY} L${endX},${endY}`
+  } else if (connectorType === "bent") {
+    const midX = (startX + endX) / 2
+    pathD = `M${startX},${startY} L${midX},${startY} L${midX},${endY} L${endX},${endY}`
+  } else {
+    const cpx = (startX + endX) / 2
+    const cpy = (startY + endY) / 2
+    pathD = `M${startX},${startY} Q${cpx},${startY} ${cpx},${cpy} Q${cpx},${endY} ${endX},${endY}`
+  }
+
+  return (
+    <svg width={width} height={height} style={{ overflow: "visible" }}>
+      <defs>
+        {hasEndArrow && (
+          <marker id={markerId} markerWidth={arrowSize} markerHeight={arrowSize} refX={arrowSize} refY={arrowSize / 2} orient="auto">
+            <path d={`M0,0 L${arrowSize},${arrowSize / 2} L0,${arrowSize}`} fill={stroke} />
+          </marker>
+        )}
+        {hasStartArrow && (
+          <marker id={`${markerId}-start`} markerWidth={arrowSize} markerHeight={arrowSize} refX={0} refY={arrowSize / 2} orient="auto">
+            <path d={`M${arrowSize},0 L0,${arrowSize / 2} L${arrowSize},${arrowSize}`} fill={stroke} />
+          </marker>
+        )}
+      </defs>
+      <path d={pathD} stroke={stroke} strokeWidth={strokeWidth} fill="none" markerEnd={markerEnd} markerStart={markerStart} />
+    </svg>
+  )
+}
+
 function renderShape(
   shape: ShapeData,
   isSelected: boolean,
@@ -353,6 +392,16 @@ function renderShape(
         {isSelected && renderResizeHandles(shape.id, onResizeStart)}
       </div>
       return arrowEl
+    case "connector":
+      if (shape.connector) {
+        return (
+          <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
+            {renderConnectorSvg(shape.connector, shape.width, shape.height, coreProps.stroke, coreProps.strokeWidth || 2)}
+            {isSelected && renderResizeHandles(shape.id, onResizeStart)}
+          </div>
+        )
+      }
+      return null
     case "textbox":
       const tbEl = <div key={shape.id} style={{
         ...style,

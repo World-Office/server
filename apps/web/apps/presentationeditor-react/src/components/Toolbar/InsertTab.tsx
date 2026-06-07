@@ -4,6 +4,10 @@ import { ChartTypePicker } from "./ChartTypePicker"
 import { TablePicker } from "./TablePicker"
 import { presentationStore } from "../../stores/PresentationStore"
 
+function addConnector(type: string) {
+  presentationStore.addConnectorToSlide(presentationStore.currentSlide, type)
+}
+
 function addTextBox() {
   const slideIndex = presentationStore.currentSlide
   const slide = presentationStore.slides[slideIndex]
@@ -59,6 +63,17 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
       <div className="prese-inserttab-group">
         <div className="prese-inserttab-elset">
           <ShapesGallery />
+          <div className="prese-inserttab-btn-group" title="Connector">
+            <button type="button" className="prese-inserttab-btn" onClick={() => addConnector("straight")}>
+              ──
+            </button>
+            <button type="button" className="prese-inserttab-btn" onClick={() => addConnector("bent")}>
+              ┐
+            </button>
+            <button type="button" className="prese-inserttab-btn" onClick={() => addConnector("curved")}>
+              ⌒
+            </button>
+          </div>
           <ChartTypePicker />
           <button type="button" className="prese-inserttab-btn" title="Icons">
             Icons
