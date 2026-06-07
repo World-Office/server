@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite"
 import { ShapesGallery } from "./ShapesGallery"
+import { ChartTypePicker } from "./ChartTypePicker"
 import { presentationStore } from "../../stores/PresentationStore"
 
 function addTextBox() {
@@ -59,6 +60,7 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
       <div className="prese-inserttab-group">
         <div className="prese-inserttab-elset">
           <ShapesGallery />
+          <ChartTypePicker />
           <button type="button" className="prese-inserttab-btn" title="Icons">
             Icons
           </button>
