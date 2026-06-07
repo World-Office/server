@@ -1,7 +1,7 @@
 import { observer } from "mobx-react-lite"
 import { useRef, useCallback, useEffect, type JSX } from "react"
 import { presentationStore } from "../../stores/PresentationStore"
-import type { ShapeData } from "../../types/presentation"
+import type { ChartData, ShapeData } from "../../types/presentation"
 
 const HANDLE_SIZE = 8
 
@@ -15,6 +15,170 @@ const RESIZE_HANDLES = [
   { name: "sw", cursor: "sw-resize", x: -4, y: "calc(100% - 4px)" },
   { name: "w", cursor: "w-resize", x: -4, y: "50%" },
 ]
+
+const CHART_COLORS = ["#4472C4", "#ED7D31", "#A5A5A5", "#FFC000", "#5B9BD5", "#70AD47", "#264478", "#9B57A0"]
+
+function renderChartSvg(chart: ChartData, width: number, height: number): JSX.Element[] {
+  const elements: JSX.Element[] = []
+  const pad = { top: 20, right: 20, bottom: 40, left: 50 }
+  const chartW = width - pad.left - pad.right
+  const chartH = height - pad.top - pad.bottom
+
+  if (chart.title) {
+    elements.push(
+      <text key="title" x={width / 2} y={16} textAnchor="middle" fontSize={14} fontWeight="bold" fill="#333">
+        {chart.title}
+      </text>,
+    )
+  }
+
+  const allValues = chart.series.flatMap((s) => s.values)
+  const maxVal = Math.max(...allValues, 1)
+  const minVal = Math.min(...allValues, 0)
+
+  if (chart.type === "column" || chart.type === "bar") {
+    const isBar = chart.type === "bar"
+    const groupCount = chart.labels.length
+    const seriesCount = chart.series.length
+    const totalGap = 4
+    const itemSize = isBar
+      ? Math.max(8, (chartH - groupCount * totalGap) / groupCount / seriesCount)
+      : Math.max(8, (chartW - groupCount * totalGap) / groupCount / seriesCount)
+
+    chart.labels.forEach((label, li) => {
+      chart.series.forEach((series, si) => {
+        const val = series.values[li] || 0
+        const color = series.color || CHART_COLORS[si % CHART_COLORS.length]
+        const frac = (val - minVal) / (maxVal - minVal)
+
+        if (isBar) {
+          const barH = Math.max(2, itemSize - 1)
+          const barW = Math.max(1, frac * chartW)
+          const y = pad.top + li * seriesCount * itemSize + si * itemSize
+          elements.push(
+            <rect key={`bar-${li}-${si}`} x={pad.left} y={y} width={barW} height={barH} fill={color} rx={1} />,
+          )
+          if (si === 0) {
+            elements.push(
+              <text key={`lb-${li}`} x={pad.left - 4} y={y + barH / 2 + 4} textAnchor="end" fontSize={10} fill="#666">
+                {label}
+              </text>,
+            )
+          }
+        } else {
+          const barW = Math.max(2, itemSize - 1)
+          const barH = Math.max(1, frac * chartH)
+          const x = pad.left + li * seriesCount * itemSize + si * itemSize
+          const y = pad.top + chartH - barH
+          elements.push(
+            <rect key={`col-${li}-${si}`} x={x} y={y} width={barW} height={barH} fill={color} rx={1} />,
+          )
+          if (si === 0) {
+            elements.push(
+              <text key={`lb-${li}`} x={x + barW / 2} y={pad.top + chartH + 14} textAnchor="middle" fontSize={10} fill="#666">
+                {label}
+              </text>,
+            )
+          }
+        }
+      })
+    })
+  }
+
+  if (chart.type === "line") {
+    const pointCount = chart.labels.length
+    chart.series.forEach((series, si) => {
+      const pts = series.values.map((val, vi) => ({
+        x: pad.left + (vi / Math.max(pointCount - 1, 1)) * chartW,
+        y: pad.top + chartH - ((val - minVal) / (maxVal - minVal)) * chartH,
+      }))
+      const color = series.color || CHART_COLORS[si % CHART_COLORS.length]
+      const d = pts.map((p, pi) => `${pi === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ")
+      elements.push(
+        <path key={`line-${si}`} d={d} stroke={color} strokeWidth={2} fill="none" />,
+      )
+      pts.forEach((p, pi) => {
+        elements.push(
+          <circle key={`pt-${si}-${pi}`} cx={p.x} cy={p.y} r={3} fill={color} />,
+        )
+      })
+    })
+    chart.labels.forEach((label, li) => {
+      const x = pad.left + (li / Math.max(pointCount - 1, 1)) * chartW
+      elements.push(
+        <text key={`lb-${li}`} x={x} y={pad.top + chartH + 14} textAnchor="middle" fontSize={10} fill="#666">
+          {label}
+        </text>,
+      )
+    })
+  }
+
+  if (chart.type === "pie" || chart.type === "doughnut") {
+    const cx = width / 2
+    const cy = height / 2 + 8
+    const radius = Math.min(chartW, chartH) / 2 - 4
+    const total = chart.series.reduce((sum, s) => sum + s.values.reduce((a, b) => a + b, 0), 0) || 1
+    const holeR = chart.type === "doughnut" ? radius * 0.55 : 0
+    let currentAngle = -Math.PI / 2
+
+    chart.series.forEach((series, si) => {
+      series.values.forEach((val, vi) => {
+        if (val <= 0) return
+        const sliceAngle = (val / total) * Math.PI * 2
+        const color = series.color || CHART_COLORS[(si + vi) % CHART_COLORS.length]
+        const startX = cx + radius * Math.cos(currentAngle)
+        const startY = cy + radius * Math.sin(currentAngle)
+        const endX = cx + radius * Math.cos(currentAngle + sliceAngle)
+        const endY = cy + radius * Math.sin(currentAngle + sliceAngle)
+        const largeArc = sliceAngle > Math.PI ? 1 : 0
+        const d = [
+          `M${cx + holeR * Math.cos(currentAngle)},${cy + holeR * Math.sin(currentAngle)}`,
+          `L${startX},${startY}`,
+          `A${radius},${radius} 0 ${largeArc} 1 ${endX},${endY}`,
+          `L${cx + holeR * Math.cos(currentAngle + sliceAngle)},${cy + holeR * Math.sin(currentAngle + sliceAngle)}`,
+          `A${holeR},${holeR} 0 ${largeArc} 0 ${cx + holeR * Math.cos(currentAngle)},${cy + holeR * Math.sin(currentAngle)}`,
+          "Z",
+        ].join(" ")
+
+        elements.push(
+          <path key={`pie-${si}-${vi}`} d={d} fill={color} stroke="#fff" strokeWidth={1} />,
+        )
+
+        if (sliceAngle > 0.3) {
+          const labelAngle = currentAngle + sliceAngle / 2
+          const lr = radius * 0.7
+          const lx = cx + lr * Math.cos(labelAngle)
+          const ly = cy + lr * Math.sin(labelAngle)
+          elements.push(
+            <text key={`pv-${si}-${vi}`} x={lx} y={ly} textAnchor="middle" dominantBaseline="central" fontSize={11} fill="#fff" fontWeight="bold">
+              {Math.round((val / total) * 100)}%
+            </text>,
+          )
+        }
+        currentAngle += sliceAngle
+      })
+    })
+
+    if (chart.series.length === 1) {
+      chart.labels.forEach((label, li) => {
+        const val = chart.series[0].values[li] || 0
+        if (val <= 0) return
+        const sliceAngle = (val / total) * Math.PI * 2
+        const labelAngle = currentAngle - sliceAngle + sliceAngle / 2
+        const lr = radius + 14
+        const lx = cx + lr * Math.cos(labelAngle)
+        const ly = cy + lr * Math.sin(labelAngle)
+        elements.push(
+          <text key={`plb-${li}`} x={lx} y={ly} textAnchor="middle" dominantBaseline="central" fontSize={10} fill="#666">
+            {label}
+          </text>,
+        )
+      })
+    }
+  }
+
+  return elements
+}
 
 function renderShape(
   shape: ShapeData,
@@ -50,6 +214,18 @@ function renderShape(
     e.stopPropagation()
     presentationStore.selectShape(shape.id)
     onDragStart(e, shape.id)
+  }
+
+  if (shape.chart) {
+    const chartSvg = renderChartSvg(shape.chart, shape.width, shape.height)
+    return (
+      <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
+        <svg width={shape.width} height={shape.height}>
+          {chartSvg}
+        </svg>
+        {isSelected && renderResizeHandles(shape.id, onResizeStart)}
+      </div>
+    )
   }
 
   switch (shape.type) {

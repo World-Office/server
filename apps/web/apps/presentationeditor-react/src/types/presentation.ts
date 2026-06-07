@@ -252,13 +252,29 @@ export interface ShapeData {
   width: number
   height: number
   rotation: number
-  fillColor: string
-  strokeColor: string
-  strokeWidth: number
+  zIndex: number
+  fillColor?: string
+  strokeColor?: string
+  strokeWidth?: number
   text?: string
   fontSize?: number
   fontColor?: string
-  zIndex: number
+  chart?: ChartData
+}
+
+export type ChartType = "bar" | "column" | "line" | "pie" | "doughnut"
+
+export interface ChartSeries {
+  name: string
+  values: number[]
+  color?: string
+}
+
+export interface ChartData {
+  type: ChartType
+  title?: string
+  labels: string[]
+  series: ChartSeries[]
 }
 
 export type TextDirection = "ltr" | "rtl"

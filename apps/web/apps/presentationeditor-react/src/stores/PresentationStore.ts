@@ -17,7 +17,7 @@ import type {
   TransitionEffect,
   ZoomLevel,
 } from "../types/presentation"
-import type { ShapeData } from "../types/presentation"
+import type { ChartData, ChartType, ShapeData } from "../types/presentation"
 import { DEFAULT_THEME } from "../lib/themes"
 
 export interface SlideData {
@@ -109,6 +109,35 @@ export class PresentationStore {
       slide.shapes.push(shape)
       this.selectedShapeId = shape.id
     }
+  }
+
+  addChartToSlide(slideIndex: number, chartType: string): void {
+    const slide = this.slides[slideIndex]
+    if (!slide) return
+    const existing = slide.shapes?.length || 0
+    const chartData: ChartData = {
+      type: chartType as ChartType,
+      title: undefined,
+      labels: ["A", "B", "C", "D"],
+      series: [{ name: "Series 1", values: [30, 45, 25, 60] }],
+    }
+    const chartShape: ShapeData = {
+      id: `chart-${Date.now()}`,
+      type: "rect",
+      x: 50 + existing * 20,
+      y: 50 + existing * 20,
+      width: 400,
+      height: 300,
+      zIndex: existing,
+      fillColor: "#ffffff",
+      strokeColor: "#cccccc",
+      strokeWidth: 1,
+      rotation: 0,
+      chart: chartData,
+    }
+    if (!slide.shapes) slide.shapes = []
+    slide.shapes.push(chartShape)
+    this.selectedShapeId = chartShape.id
   }
 
   updateShape(slideIndex: number, shapeId: string, updates: Partial<ShapeData>): void {
