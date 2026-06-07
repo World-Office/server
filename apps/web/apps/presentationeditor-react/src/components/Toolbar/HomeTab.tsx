@@ -1,8 +1,22 @@
+import { useState, useRef, useEffect } from "react"
 import { observer } from "mobx-react-lite"
 import { presentationStore } from "../../stores/PresentationStore"
 import { ZOOM_LEVELS } from "../../types/presentation"
 
 const ObservedHomeTab = observer(function ObservedHomeTab() {
+  const [arrangeOpen, setArrangeOpen] = useState(false)
+  const arrangeRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!arrangeOpen) return
+    const handler = (e: MouseEvent) => {
+      if (arrangeRef.current && !arrangeRef.current.contains(e.target as Node)) {
+        setArrangeOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [arrangeOpen])
   function goToFirstSlide() {
     presentationStore.setCurrentSlide(0)
   }
@@ -187,14 +201,87 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
             Shapes
           </button>
         </div>
-        <div className="prese-hometab-elset">
-          <button type="button" className="prese-hometab-btn" title="Arrange">
-            Arrange
+        <div className="prese-hometab-elset" ref={arrangeRef} style={{ position: "relative" }}>
+          <button
+            type="button"
+            className="prese-hometab-btn"
+            title="Arrange"
+            onClick={() => setArrangeOpen(!arrangeOpen)}
+          >
+            Arrange ▾
           </button>
+          {arrangeOpen && (
+            <div
+              className="prese-hometab-arrange-dropdown"
+              style={{
+                position: "absolute",
+                top: "100%",
+                left: 0,
+                zIndex: 2000,
+                background: "white",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                minWidth: 140,
+                padding: "4px 0",
+              }}
+            >
+              <button
+                type="button"
+                className="prese-hometab-arrange-item"
+                style={{ display: "block", width: "100%", padding: "6px 12px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: 13 }}
+                onClick={() => { presentationStore.bringForward(presentationStore.currentSlide, presentationStore.selectedShapeId!); setArrangeOpen(false) }}
+                disabled={!presentationStore.selectedShapeId}
+              >
+                Bring Forward
+              </button>
+              <button
+                type="button"
+                className="prese-hometab-arrange-item"
+                style={{ display: "block", width: "100%", padding: "6px 12px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: 13 }}
+                onClick={() => { presentationStore.sendBackward(presentationStore.currentSlide, presentationStore.selectedShapeId!); setArrangeOpen(false) }}
+                disabled={!presentationStore.selectedShapeId}
+              >
+                Send Backward
+              </button>
+              <div style={{ height: 1, background: "#e0e0e0", margin: "4px 0" }} />
+              <button
+                type="button"
+                className="prese-hometab-arrange-item"
+                style={{ display: "block", width: "100%", padding: "6px 12px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: 13 }}
+                onClick={() => { presentationStore.bringToFront(presentationStore.currentSlide, presentationStore.selectedShapeId!); setArrangeOpen(false) }}
+                disabled={!presentationStore.selectedShapeId}
+              >
+                Bring to Front
+              </button>
+              <button
+                type="button"
+                className="prese-hometab-arrange-item"
+                style={{ display: "block", width: "100%", padding: "6px 12px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: 13 }}
+                onClick={() => { presentationStore.sendToBack(presentationStore.currentSlide, presentationStore.selectedShapeId!); setArrangeOpen(false) }}
+                disabled={!presentationStore.selectedShapeId}
+              >
+                Send to Back
+              </button>
+            </div>
+          )}
         </div>
         <div className="prese-hometab-elset">
           <button type="button" className="prese-hometab-btn" title="Quick Styles">
             Quick Styles
+          </button>
+        </div>
+      </div>
+
+      <div className="prese-hometab-group">
+        <div className="prese-hometab-elset">
+          <button
+            type="button"
+            className="prese-hometab-btn"
+            onClick={() => presentationStore.startPresentation()}
+            title="Start Slide Show (F5)"
+          >
+            ▶ Start Slide Show
           </button>
         </div>
       </div>

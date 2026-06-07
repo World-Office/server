@@ -1,8 +1,8 @@
 import { makeAutoObservable } from "mobx"
 import type {
   AdvanceMode,
-  AnimationCategory,
   AnimationData,
+  AnimationCategory,
   AnimationEffect,
   LeftMenuAction,
   PresentationDocument,
@@ -17,6 +17,7 @@ import type {
   TransitionEffect,
   ZoomLevel,
 } from "../types/presentation"
+import type { ShapeData } from "../types/presentation"
 import { DEFAULT_THEME } from "../lib/themes"
 
 export interface SlideData {
@@ -30,6 +31,7 @@ export interface SlideData {
   advanceMode?: AdvanceMode
   advanceTiming?: number
   animations?: AnimationData[]
+  shapes: ShapeData[]
 }
 import { ZOOM_LEVELS } from "../types/presentation"
 
@@ -97,6 +99,103 @@ export class PresentationStore {
   themeType: ThemeType = "builtin"
   theme: Theme = DEFAULT_THEME
 
+  /* Shape selection */
+  selectedShapeId: string | null = null
+
+  addShape(slideIndex: number, shape: ShapeData): void {
+    const slide = this.slides[slideIndex]
+    if (slide) {
+      if (!slide.shapes) slide.shapes = []
+      slide.shapes.push(shape)
+      this.selectedShapeId = shape.id
+    }
+  }
+
+  updateShape(slideIndex: number, shapeId: string, updates: Partial<ShapeData>): void {
+    const slide = this.slides[slideIndex]
+    if (slide?.shapes) {
+      const idx = slide.shapes.findIndex((s) => s.id === shapeId)
+      if (idx !== -1) {
+        Object.assign(slide.shapes[idx], updates)
+      }
+    }
+  }
+
+  removeShape(slideIndex: number, shapeId: string): void {
+    const slide = this.slides[slideIndex]
+    if (slide?.shapes) {
+      slide.shapes = slide.shapes.filter((s) => s.id !== shapeId)
+      if (this.selectedShapeId === shapeId) {
+        this.selectedShapeId = null
+      }
+    }
+  }
+
+  moveShape(slideIndex: number, shapeId: string, x: number, y: number): void {
+    const slide = this.slides[slideIndex]
+    if (slide?.shapes) {
+      const shape = slide.shapes.find((s) => s.id === shapeId)
+      if (shape) {
+        shape.x = x
+        shape.y = y
+      }
+    }
+  }
+
+  selectShape(shapeId: string | null): void {
+    this.selectedShapeId = shapeId
+  }
+
+  deselectShape(): void {
+    this.selectedShapeId = null
+  }
+
+  bringForward(slideIndex: number, shapeId: string): void {
+    const slide = this.slides[slideIndex]
+    if (!slide?.shapes) return
+    const idx = slide.shapes.findIndex((s) => s.id === shapeId)
+    if (idx < slide.shapes.length - 1) {
+      const a = slide.shapes[idx], b = slide.shapes[idx + 1]
+      const tmp = a.zIndex; a.zIndex = b.zIndex; b.zIndex = tmp
+      slide.shapes[idx] = b; slide.shapes[idx + 1] = a
+    }
+  }
+
+  sendBackward(slideIndex: number, shapeId: string): void {
+    const slide = this.slides[slideIndex]
+    if (!slide?.shapes) return
+    const idx = slide.shapes.findIndex((s) => s.id === shapeId)
+    if (idx > 0) {
+      const a = slide.shapes[idx], b = slide.shapes[idx - 1]
+      const tmp = a.zIndex; a.zIndex = b.zIndex; b.zIndex = tmp
+      slide.shapes[idx] = b; slide.shapes[idx - 1] = a
+    }
+  }
+
+  bringToFront(slideIndex: number, shapeId: string): void {
+    const slide = this.slides[slideIndex]
+    if (!slide?.shapes) return
+    const idx = slide.shapes.findIndex((s) => s.id === shapeId)
+    if (idx >= 0) {
+      const [shape] = slide.shapes.splice(idx, 1)
+      const maxZ = Math.max(...slide.shapes.map((s) => s.zIndex), 0)
+      shape.zIndex = maxZ + 1
+      slide.shapes.push(shape)
+    }
+  }
+
+  sendToBack(slideIndex: number, shapeId: string): void {
+    const slide = this.slides[slideIndex]
+    if (!slide?.shapes) return
+    const idx = slide.shapes.findIndex((s) => s.id === shapeId)
+    if (idx >= 0) {
+      const [shape] = slide.shapes.splice(idx, 1)
+      const minZ = Math.min(...slide.shapes.map((s) => s.zIndex), 0)
+      shape.zIndex = minZ - 1
+      slide.shapes.unshift(shape)
+    }
+  }
+
   /* Presenter view */
   isPresenting = false
   presentStep = 0
@@ -137,9 +236,9 @@ export class PresentationStore {
     makeAutoObservable(this)
     // Seed demo slides
     this.slides = [
-      { id: crypto.randomUUID(), title: "Title Slide", layout: "title" as SlideLayout, notes: "" },
-      { id: crypto.randomUUID(), title: "Overview", layout: "content" as SlideLayout, notes: "" },
-      { id: crypto.randomUUID(), title: "Key Points", layout: "blank" as SlideLayout, notes: "" },
+      { id: crypto.randomUUID(), title: "Title Slide", layout: "title" as SlideLayout, notes: "", shapes: [] },
+      { id: crypto.randomUUID(), title: "Overview", layout: "content" as SlideLayout, notes: "", shapes: [] },
+      { id: crypto.randomUUID(), title: "Key Points", layout: "blank" as SlideLayout, notes: "", shapes: [] },
     ]
     this.totalSlides = this.slides.length
   }
@@ -448,6 +547,7 @@ export class PresentationStore {
         advanceMode: s.advanceMode,
         advanceTiming: s.advanceTiming,
         animations: s.animations,
+        shapes: s.shapes ?? [],
       })),
     }
     return JSON.stringify(data, null, 2)
@@ -463,7 +563,7 @@ export class PresentationStore {
       this.themeType = data.themeType ?? "builtin"
       this.theme = data.theme ?? DEFAULT_THEME
       this.slides = data.slides.map(
-        (s: { id?: string; title: string; layout: string; notes?: string; transitionEffect?: string; transitionDuration?: number; transitionSoundEnabled?: boolean; advanceMode?: string; advanceTiming?: number; animations?: AnimationData[] }) => ({
+        (s: { id?: string; title: string; layout: string; notes?: string; transitionEffect?: string; transitionDuration?: number; transitionSoundEnabled?: boolean; advanceMode?: string; advanceTiming?: number; animations?: AnimationData[]; shapes?: ShapeData[] }) => ({
           id: s.id ?? crypto.randomUUID(),
           title: s.title ?? "Untitled",
           layout: (s.layout as SlideLayout) ?? "blank",
@@ -474,6 +574,7 @@ export class PresentationStore {
           advanceMode: s.advanceMode as AdvanceMode,
           advanceTiming: s.advanceTiming,
           animations: s.animations,
+          shapes: s.shapes ?? [],
         }),
       )
       this.totalSlides = this.slides.length
@@ -485,9 +586,9 @@ export class PresentationStore {
 
   resetToDefaults(): void {
     this.slides = [
-      { id: crypto.randomUUID(), title: "Title Slide", layout: "title" as SlideLayout, notes: "" },
-      { id: crypto.randomUUID(), title: "Overview", layout: "content" as SlideLayout, notes: "" },
-      { id: crypto.randomUUID(), title: "Key Points", layout: "blank" as SlideLayout, notes: "" },
+      { id: crypto.randomUUID(), title: "Title Slide", layout: "title" as SlideLayout, notes: "", shapes: [] },
+      { id: crypto.randomUUID(), title: "Overview", layout: "content" as SlideLayout, notes: "", shapes: [] },
+      { id: crypto.randomUUID(), title: "Key Points", layout: "blank" as SlideLayout, notes: "", shapes: [] },
     ]
     this.totalSlides = this.slides.length
     this.currentSlide = 0
@@ -531,6 +632,7 @@ export class PresentationStore {
       advanceMode: undefined,
       advanceTiming: undefined,
       animations: undefined,
+      shapes: [],
     }
     const insertIndex = this.currentSlide + 1
     this.slides.splice(insertIndex, 0, newSlide)
@@ -561,6 +663,7 @@ export class PresentationStore {
       advanceMode: source.advanceMode,
       advanceTiming: source.advanceTiming,
       animations: source.animations?.map((a) => ({ ...a, id: crypto.randomUUID() })),
+      shapes: source.shapes?.map((s) => ({ ...s, id: crypto.randomUUID() })),
     }
     this.slides.splice(index + 1, 0, clone)
     this.totalSlides = this.slides.length
