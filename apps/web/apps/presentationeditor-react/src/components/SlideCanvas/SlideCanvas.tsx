@@ -1,7 +1,7 @@
 import { observer } from "mobx-react-lite"
 import { useRef, useCallback, useEffect, type JSX } from "react"
 import { presentationStore } from "../../stores/PresentationStore"
-import type { ChartData, ShapeData } from "../../types/presentation"
+import type { ChartData, ShapeData, TableData, TableCell, TableRow } from "../../types/presentation"
 
 const HANDLE_SIZE = 8
 
@@ -180,6 +180,68 @@ function renderChartSvg(chart: ChartData, width: number, height: number): JSX.El
   return elements
 }
 
+function getSampleTable(rows: number, columns: number): TableData {
+  const cells: TableRow[] = []
+  for (let ri = 0; ri < rows; ri++) {
+    const row: TableCell[] = []
+    for (let ci = 0; ci < columns; ci++) {
+      row.push({ text: ri === 0 ? `Header ${ci + 1}` : "" })
+    }
+    cells.push({ cells: row })
+  }
+  return { rows, columns, headerRow: true, cells }
+}
+
+function renderTableSvg(table: TableData, width: number, height: number): JSX.Element[] {
+  const elements: JSX.Element[] = []
+  const numRows = Math.max(table.rows, 1)
+  const numCols = Math.max(table.columns, 1)
+  const colWidth = width / numCols
+  const rowHeight = height / numRows
+  const headerBg = "#4472C4"
+  const headerFg = "#ffffff"
+  const borderColor = "#ccc"
+
+  for (let ri = 0; ri < numRows; ri++) {
+    for (let ci = 0; ci < numCols; ci++) {
+      const x = ci * colWidth
+      const y = ri * rowHeight
+      const cellText = table.cells?.[ri]?.cells?.[ci]?.text ?? ""
+      const isHeader = table.headerRow && ri === 0
+
+      elements.push(
+        <rect
+          key={`bg-${ri}-${ci}`}
+          x={x}
+          y={y}
+          width={colWidth}
+          height={rowHeight}
+          fill={isHeader ? headerBg : "white"}
+          stroke={borderColor}
+          strokeWidth={0.5}
+        />,
+      )
+
+      elements.push(
+        <text
+          key={`txt-${ri}-${ci}`}
+          x={x + colWidth / 2}
+          y={y + rowHeight / 2}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fontSize={11}
+          fill={isHeader ? headerFg : "#333"}
+          fontWeight={isHeader ? "bold" : "normal"}
+        >
+          {cellText || (isHeader ? `Header ${ci + 1}` : "")}
+        </text>,
+      )
+    }
+  }
+
+  return elements
+}
+
 function renderShape(
   shape: ShapeData,
   isSelected: boolean,
@@ -222,6 +284,18 @@ function renderShape(
       <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
         <svg width={shape.width} height={shape.height}>
           {chartSvg}
+        </svg>
+        {isSelected && renderResizeHandles(shape.id, onResizeStart)}
+      </div>
+    )
+  }
+
+  if (shape.table) {
+    const tableSvg = renderTableSvg(shape.table, shape.width, shape.height)
+    return (
+      <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
+        <svg width={shape.width} height={shape.height}>
+          {tableSvg}
         </svg>
         {isSelected && renderResizeHandles(shape.id, onResizeStart)}
       </div>
