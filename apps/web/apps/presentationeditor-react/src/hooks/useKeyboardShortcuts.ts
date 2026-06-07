@@ -30,9 +30,25 @@ export function useKeyboardShortcuts(): void {
         }
       }
 
+      if (e.key === "F5" && !presentationStore.isPresenting) {
+        e.preventDefault()
+        presentationStore.startPresentation()
+        return
+      }
+
+      if (e.key === "F5" && presentationStore.isPresenting) {
+        e.preventDefault()
+        return
+      }
+
+      if (e.key === "Escape" && presentationStore.isPresenting) {
+        return // handled by SlidePresenter
+      }
+
       switch (e.key) {
         case "ArrowLeft":
         case "PageUp":
+          if (presentationStore.isPresenting) return // handled by SlidePresenter
           e.preventDefault()
           if (currentSlide > 0) presentationStore.setCurrentSlide(currentSlide - 1)
           break
@@ -51,8 +67,14 @@ export function useKeyboardShortcuts(): void {
           break
         case "Delete":
         case "Backspace": {
-          e.preventDefault()
-          presentationStore.deleteSlide(currentSlide)
+          const selId = presentationStore.selectedShapeId
+          if (selId) {
+            e.preventDefault()
+            presentationStore.removeShape(presentationStore.currentSlide, selId)
+          } else {
+            e.preventDefault()
+            presentationStore.deleteSlide(currentSlide)
+          }
           break
         }
       }

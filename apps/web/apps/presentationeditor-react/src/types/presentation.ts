@@ -242,4 +242,23 @@ export interface AnimationData {
   delay: number
 }
 
+export type ShapeType = "rect" | "roundedRect" | "ellipse" | "triangle" | "diamond" | "line" | "arrow" | "connector" | "textbox"
+
+export interface ShapeData {
+  id: string
+  type: ShapeType
+  x: number
+  y: number
+  width: number
+  height: number
+  rotation: number
+  fillColor: string
+  strokeColor: string
+  strokeWidth: number
+  text?: string
+  fontSize?: number
+  fontColor?: string
+  zIndex: number
+}
+
 export type TextDirection = "ltr" | "rtl"

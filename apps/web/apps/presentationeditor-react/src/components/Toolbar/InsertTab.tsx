@@ -1,4 +1,29 @@
 import { observer } from "mobx-react-lite"
+import { ShapesGallery } from "./ShapesGallery"
+import { presentationStore } from "../../stores/PresentationStore"
+
+function addTextBox() {
+  const slideIndex = presentationStore.currentSlide
+  const slide = presentationStore.slides[slideIndex]
+  if (!slide) return
+  const existing = slide.shapes?.length || 0
+  presentationStore.addShape(slideIndex, {
+    id: `textbox-${Date.now()}`,
+    type: "textbox",
+    x: 50 + existing * 30,
+    y: 50 + existing * 20,
+    width: 200,
+    height: 60,
+    zIndex: existing,
+    fillColor: "transparent",
+    strokeColor: "transparent",
+    strokeWidth: 0,
+    rotation: 0,
+    text: "Text",
+    fontSize: 18,
+    fontColor: "#333333",
+  })
+}
 
 const ObservedInsertTab = observer(function ObservedInsertTab() {
   return (
@@ -33,9 +58,7 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
       {/* Illustrations */}
       <div className="prese-inserttab-group">
         <div className="prese-inserttab-elset">
-          <button type="button" className="prese-inserttab-btn" title="Shapes">
-            Shapes
-          </button>
+          <ShapesGallery />
           <button type="button" className="prese-inserttab-btn" title="Icons">
             Icons
           </button>
@@ -78,7 +101,12 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
       {/* Text */}
       <div className="prese-inserttab-group">
         <div className="prese-inserttab-elset">
-          <button type="button" className="prese-inserttab-btn" title="Text Box">
+          <button
+            type="button"
+            className="prese-inserttab-btn"
+            title="Text Box"
+            onClick={addTextBox}
+          >
             Text Box
           </button>
         </div>

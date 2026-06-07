@@ -274,6 +274,142 @@
   color: #999;
 }
 
+/* Presenter View */
+.prese-presenter-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #111;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  outline: none;
+  overflow: hidden;
+}
+.prese-presenter-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  flex: 1;
+  justify-content: center;
+}
+.prese-presenter-slide {
+  width: 720px;
+  max-height: 540px;
+  background: var(--wo-prese-bg-page, #fff);
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  padding: 40px 60px;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+.prese-presenter-slide-title {
+  font-family: var(--wo-prese-font-major), sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--wo-prese-text-primary, #333);
+  margin-bottom: 16px;
+}
+.prese-presenter-slide-content {
+  font-family: var(--wo-prese-font-minor), sans-serif;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--wo-prese-text-secondary, #666);
+}
+.prese-presenter-notes-panel {
+  width: 720px;
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+  padding: 16px 24px;
+}
+.prese-presenter-notes-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #888;
+  margin-bottom: 8px;
+}
+.prese-presenter-notes-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #ccc;
+  white-space: pre-wrap;
+}
+.prese-presenter-next {
+  position: fixed;
+  right: 32px;
+  bottom: 80px;
+  width: 260px;
+}
+.prese-presenter-next-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #666;
+  margin-bottom: 8px;
+}
+.prese-presenter-next-slide {
+  background: rgba(0,0,0,0.4);
+  border-radius: 6px;
+  padding: 16px;
+}
+.prese-presenter-next-title {
+  font-family: var(--wo-prese-font-major), sans-serif;
+  font-size: 16px;
+  color: #ddd;
+  margin-bottom: 8px;
+}
+.prese-presenter-next-notes {
+  font-size: 12px;
+  color: #888;
+  white-space: pre-wrap;
+}
+.prese-presenter-controls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 12px 24px;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(8px);
+}
+.prese-presenter-timer {
+  position: absolute;
+  left: 24px;
+  font-family: monospace;
+  font-size: 16px;
+  color: #aaa;
+}
+.prese-presenter-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #ddd;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.prese-presenter-btn:hover { background: rgba(255,255,255,0.1); }
+.prese-presenter-btn:disabled { opacity: 0.3; cursor: default; }
+.prese-presenter-btn-esc {
+  border-color: rgba(255,80,80,0.3);
+  color: #ff6666;
+}
+.prese-presenter-btn-esc:hover {
+  background: rgba(255,80,80,0.15);
+}
+.prese-presenter-counter {
+  color: #888;
+  font-size: 13px;
+}
+
 /* Animation preview keyframes */
 @keyframes prese-anim-fade-in {
   from { opacity: 0; }
@@ -331,3 +467,99 @@
 .prese-anim-grow-and-turn { animation: prese-anim-grow 0.5s ease both; }
 .prese-anim-float-out { animation: prese-anim-fade-out 0.5s ease both; }
 .prese-anim-path { animation: prese-anim-fly-in 0.8s ease both; }
+
+/* Presenter view overlay */
+.prese-presenter-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: #1a1a1a;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: none;
+}
+.prese-presenter-overlay:hover {
+  cursor: default;
+}
+.prese-presenter-slide {
+  width: 80vw;
+  max-width: 1024px;
+  aspect-ratio: 16 / 9;
+  background: var(--wo-prese-bg-page, #fff);
+  color: var(--wo-prese-text-primary, #333);
+  border-radius: 8px;
+  padding: 48px 64px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  overflow: auto;
+}
+.prese-presenter-slide-title {
+  font-family: var(--wo-prese-font-major, "Segoe UI", sans-serif);
+  font-size: 2.5rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+  line-height: 1.3;
+}
+.prese-presenter-slide-content {
+  flex: 1;
+  font-family: var(--wo-prese-font-minor, "Segoe UI", sans-serif);
+  font-size: 1.2rem;
+  line-height: 1.6;
+}
+.prese-presenter-notes {
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #f5f5f5;
+  border-left: 4px solid var(--wo-prese-accent, #4472c4);
+  border-radius: 4px;
+  font-size: 0.95rem;
+  color: #555;
+}
+.prese-presenter-controls {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(0,0,0,0.75);
+  padding: 12px 24px;
+  border-radius: 24px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.prese-presenter-overlay:hover .prese-presenter-controls {
+  opacity: 1;
+}
+.prese-presenter-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.3);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.prese-presenter-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.15);
+}
+.prese-presenter-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.prese-presenter-btn-esc {
+  margin-left: 8px;
+  border-color: rgba(255,80,80,0.4);
+  color: #ff6b6b;
+}
+.prese-presenter-counter {
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.7);
+  min-width: 60px;
+  text-align: center;
+}
