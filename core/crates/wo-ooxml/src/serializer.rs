@@ -243,9 +243,12 @@ impl OoxmlSerializer {
                 SlideShape::Picture(pic) => {
                     self.serialize_picture_shape(&mut xml, pic);
                 }
-                SlideShape::Table(table) => {
-                    self.serialize_table_shape(&mut xml, table);
-                }
+            SlideShape::Table(table) => {
+                self.serialize_table_shape(&mut xml, table);
+            }
+            SlideShape::Connector(conn) => {
+                self.serialize_connector_shape(&mut xml, conn);
+            }
             }
         }
 
@@ -535,6 +538,40 @@ impl OoxmlSerializer {
         }
         xml.push_str(r#"
     </p:tbl>"#);
+    }
+
+    fn serialize_connector_shape(&self, xml: &mut String, conn: &ConnectorShape) {
+        let prst = conn.connector_type.to_string();
+        xml.push_str(&format!(
+            r#"
+    <p:cxnSp>
+      <p:nvCxnSpPr>
+        <p:cNvPr id="{}" name="Connector"/>
+        <p:cNvCxnSpPr/>
+        <p:nvPr/>
+      </p:nvCxnSpPr>
+      <p:spPr>
+        <a:xfrm>
+          <a:off x="{}" y="{}"/>
+          <a:ext cx="{}" cy="{}"/>
+        </a:xfrm>
+        <a:prstGeom prst="{}"/>
+        <a:ln w="{}">"#,
+            conn.id, conn.bounds.x, conn.bounds.y, conn.bounds.cx, conn.bounds.cy, prst,
+            conn.line_width.unwrap_or(6350),
+        ));
+        if conn.has_start_arrow {
+            xml.push_str(r#"
+          <a:tailEnd type="triangle"/>"#);
+        }
+        if conn.has_end_arrow {
+            xml.push_str(r#"
+          <a:headEnd type="triangle"/>"#);
+        }
+        xml.push_str(r#"
+        </a:ln>
+      </p:spPr>
+    </p:cxnSp>"#);
     }
 
     fn serialize_text_body(&self, xml: &mut String, tb: &TextBody) {

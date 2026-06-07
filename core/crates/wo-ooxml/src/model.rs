@@ -418,6 +418,7 @@ pub enum SlideShape {
     Picture(PictureShape),
     Placeholder(PlaceholderShape),
     Table(TableShape),
+    Connector(ConnectorShape),
 }
 
 /// A table shape on a slide.
@@ -476,6 +477,64 @@ pub struct PlaceholderShape {
     pub bounds: Bounds,
     pub placeholder_type: String,
     pub text_body: Option<TextBody>,
+}
+
+/// A connector/cxnSp shape — line with optional arrowheads connecting shapes.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ConnectorShape {
+    pub id: String,
+    pub bounds: Bounds,
+    pub connector_type: ConnectorShapeType,
+    pub line_width: Option<i64>,
+    pub has_start_arrow: bool,
+    pub has_end_arrow: bool,
+}
+
+/// Predefined geometry for connector shapes.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ConnectorShapeType {
+    Straight,
+    Bent1,
+    Bent2,
+    Bent3,
+    Bent4,
+    Curved1,
+    Curved2,
+    Curved3,
+    Curved4,
+}
+
+impl std::fmt::Display for ConnectorShapeType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ConnectorShapeType::Straight => write!(f, "straightConnector1"),
+            ConnectorShapeType::Bent1 => write!(f, "bentConnector2"),
+            ConnectorShapeType::Bent2 => write!(f, "bentConnector3"),
+            ConnectorShapeType::Bent3 => write!(f, "bentConnector4"),
+            ConnectorShapeType::Bent4 => write!(f, "bentConnector5"),
+            ConnectorShapeType::Curved1 => write!(f, "curvedConnector2"),
+            ConnectorShapeType::Curved2 => write!(f, "curvedConnector3"),
+            ConnectorShapeType::Curved3 => write!(f, "curvedConnector4"),
+            ConnectorShapeType::Curved4 => write!(f, "curvedConnector5"),
+        }
+    }
+}
+
+impl ConnectorShapeType {
+    pub fn from_str(s: &str) -> Self {
+        match s {
+            "straightConnector1" => ConnectorShapeType::Straight,
+            "bentConnector2" => ConnectorShapeType::Bent1,
+            "bentConnector3" => ConnectorShapeType::Bent2,
+            "bentConnector4" => ConnectorShapeType::Bent3,
+            "bentConnector5" => ConnectorShapeType::Bent4,
+            "curvedConnector2" => ConnectorShapeType::Curved1,
+            "curvedConnector3" => ConnectorShapeType::Curved2,
+            "curvedConnector4" => ConnectorShapeType::Curved3,
+            "curvedConnector5" => ConnectorShapeType::Curved4,
+            _ => ConnectorShapeType::Straight,
+        }
+    }
 }
 
 /// 2D bounds in EMU units (1/914400 inch).

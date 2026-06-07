@@ -471,6 +471,11 @@ impl OoxmlParser {
                             shapes.push(SlideShape::Table(table));
                         }
                     }
+                    (Some(ns), "cxnSp") if ns == Self::P_NS => {
+                        if let Some(conn) = self.parse_pptx_connector(&child) {
+                            shapes.push(SlideShape::Connector(conn));
+                        }
+                    }
                     _ => {}
                 }
             }
@@ -873,6 +878,33 @@ impl OoxmlParser {
             name,
             image_extension,
             image_data,
+        })
+    }
+
+    fn parse_pptx_connector(&self, cxn: &roxmltree::Node) -> Option<ConnectorShape> {
+        let bounds = self.parse_pptx_bounds(cxn);
+        let id = cxn.descendants().find(|n| n.has_tag_name("cNvPr"))?
+            .attribute("id").unwrap_or("0").to_string();
+
+        let prst = cxn.descendants().find(|n| n.has_tag_name("prstGeom"))
+            .and_then(|g| g.attribute("prst"))
+            .unwrap_or("straightConnector1");
+        let connector_type = ConnectorShapeType::from_str(prst);
+
+        let line_width = cxn.descendants().find(|n| n.has_tag_name("ln"))
+            .and_then(|n| n.attribute("w"))
+            .and_then(|v| v.parse::<i64>().ok());
+
+        let has_end_arrow = cxn.descendants().any(|n| n.has_tag_name("headEnd"));
+        let has_start_arrow = cxn.descendants().any(|n| n.has_tag_name("tailEnd"));
+
+        Some(ConnectorShape {
+            id,
+            bounds,
+            connector_type,
+            line_width,
+            has_start_arrow,
+            has_end_arrow,
         })
     }
 
