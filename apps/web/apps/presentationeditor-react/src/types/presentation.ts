@@ -244,6 +244,18 @@ export interface AnimationData {
 
 export type ShapeType = "rect" | "roundedRect" | "ellipse" | "triangle" | "diamond" | "line" | "arrow" | "connector" | "textbox"
 
+export type ConnectorType = "straight" | "bent" | "curved"
+
+export interface ConnectorData {
+  connectorType: ConnectorType
+  hasStartArrow: boolean
+  hasEndArrow: boolean
+  startX: number
+  startY: number
+  endX: number
+  endY: number
+}
+
 export interface ShapeData {
   id: string
   type: ShapeType
@@ -261,6 +273,7 @@ export interface ShapeData {
   fontColor?: string
   chart?: ChartData
   table?: TableData
+  connector?: ConnectorData
 }
 
 export type ChartType = "bar" | "column" | "line" | "pie" | "doughnut"

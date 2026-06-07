@@ -17,7 +17,7 @@ import type {
   TransitionEffect,
   ZoomLevel,
 } from "../types/presentation"
-import type { ChartData, ChartType, ShapeData } from "../types/presentation"
+import type { ChartData, ChartType, ConnectorData, ShapeData } from "../types/presentation"
 import { DEFAULT_THEME } from "../lib/themes"
 
 export interface SlideData {
@@ -138,6 +138,37 @@ export class PresentationStore {
     if (!slide.shapes) slide.shapes = []
     slide.shapes.push(chartShape)
     this.selectedShapeId = chartShape.id
+  }
+
+  addConnectorToSlide(slideIndex: number, connectorType: string): void {
+    const slide = this.slides[slideIndex]
+    if (!slide) return
+    const existing = slide.shapes?.length || 0
+    const connectorData: ConnectorData = {
+      connectorType: connectorType as ConnectorData["connectorType"],
+      hasStartArrow: false,
+      hasEndArrow: true,
+      startX: 20,
+      startY: 20,
+      endX: 180,
+      endY: 120,
+    }
+    const connectorShape: ShapeData = {
+      id: `connector-${Date.now()}`,
+      type: "connector",
+      x: 50 + existing * 20,
+      y: 50 + existing * 20,
+      width: 200,
+      height: 140,
+      rotation: 0,
+      zIndex: existing,
+      strokeColor: "#333333",
+      strokeWidth: 2,
+      connector: connectorData,
+    }
+    if (!slide.shapes) slide.shapes = []
+    slide.shapes.push(connectorShape)
+    this.selectedShapeId = connectorShape.id
   }
 
   updateShape(slideIndex: number, shapeId: string, updates: Partial<ShapeData>): void {
