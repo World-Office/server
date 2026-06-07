@@ -260,6 +260,7 @@ export interface ShapeData {
   fontSize?: number
   fontColor?: string
   chart?: ChartData
+  table?: TableData
 }
 
 export type ChartType = "bar" | "column" | "line" | "pie" | "doughnut"
@@ -275,6 +276,24 @@ export interface ChartData {
   title?: string
   labels: string[]
   series: ChartSeries[]
+}
+
+export interface TableData {
+  rows: number
+  columns: number
+  headerRow: boolean
+  cells: TableRow[]
+  columnWidths?: number[]
+}
+
+export interface TableRow {
+  cells: TableCell[]
+}
+
+export interface TableCell {
+  text: string
+  colSpan?: number
+  rowSpan?: number
 }
 
 export type TextDirection = "ltr" | "rtl"
