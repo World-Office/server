@@ -1,7 +1,7 @@
 import { observer } from "mobx-react-lite"
 import { useRef, useCallback, useEffect, type JSX } from "react"
 import { presentationStore } from "../../stores/PresentationStore"
-import type { ChartData, ConnectorData, ShapeData, TableData } from "../../types/presentation"
+import type { ChartData, ConnectorData, ShapeData, TableData, GradientFill, ShadowEffect } from "../../types/presentation"
 
 const HANDLE_SIZE = 8
 
@@ -269,12 +269,52 @@ function renderConnectorSvg(connector: ConnectorData, width: number, height: num
   )
 }
 
+function renderGradientSvg(gradient: GradientFill, id: string): JSX.Element | null {
+  if (!gradient.stops.length) return null
+  const gradId = `grad-${id}`
+  if (gradient.kind === "linear") {
+    const angle = gradient.angle || 0
+    const rad = (angle * Math.PI) / 180
+    const x1 = 0.5 - 0.5 * Math.cos(rad + Math.PI)
+    const y1 = 0.5 - 0.5 * Math.sin(rad + Math.PI)
+    const x2 = 0.5 + 0.5 * Math.cos(rad + Math.PI)
+    const y2 = 0.5 + 0.5 * Math.sin(rad + Math.PI)
+    return (
+      <linearGradient id={gradId} x1={x1} y1={y1} x2={x2} y2={y2}>
+        {gradient.stops.map((s, i) => (
+          <stop key={i} offset={`${s.position * 100}%`} stopColor={s.color} />
+        ))}
+      </linearGradient>
+    )
+  }
+  return (
+    <radialGradient id={gradId}>
+      {gradient.stops.map((s, i) => (
+        <stop key={i} offset={`${s.position * 100}%`} stopColor={s.color} />
+      ))}
+    </radialGradient>
+  )
+}
+
+function shadowToFilter(shadow: ShadowEffect, id: string): JSX.Element {
+  const filterId = `shadow-${id}`
+  const blur = shadow.blurRadius > 0 ? Math.max(1, shadow.blurRadius / 100) : 2
+  return (
+    <filter id={filterId} x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx={shadow.dx / 100} dy={shadow.dy / 100} stdDeviation={blur} floodColor={shadow.color || "#000"} floodOpacity={shadow.opacity || 0.5} />
+    </filter>
+  )
+}
+
 function renderShape(
   shape: ShapeData,
   isSelected: boolean,
   onDragStart: (e: React.MouseEvent, shapeId: string) => void,
   onResizeStart: (e: React.MouseEvent, shapeId: string, handle: string) => void,
 ): JSX.Element | null {
+  const hasGradient = !!shape.gradientFill?.stops?.length
+  const hasShadow = !!shape.shadow
+
   const style: React.CSSProperties = {
     position: "absolute",
     left: `${shape.x}px`,
@@ -289,14 +329,16 @@ function renderShape(
     transform: shape.rotation ? `rotate(${shape.rotation}deg)` : undefined,
   }
 
+  const fillValue = hasGradient ? `url(#grad-${shape.id})` : shape.fillColor || "transparent"
   const coreProps = {
     x: 0,
     y: 0,
     width: shape.width,
     height: shape.height,
-    fill: shape.fillColor || "transparent",
+    fill: fillValue,
     stroke: shape.strokeColor || "#333",
     strokeWidth: shape.strokeWidth || 1,
+    filter: hasShadow ? `url(#shadow-${shape.id})` : undefined,
   }
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -329,10 +371,18 @@ function renderShape(
     )
   }
 
+  const defsEl = (hasGradient || hasShadow) ? (
+    <defs>
+      {hasGradient && renderGradientSvg(shape.gradientFill!, shape.id)}
+      {hasShadow && shadowToFilter(shape.shadow!, shape.id)}
+    </defs>
+  ) : undefined
+
   switch (shape.type) {
     case "rect":
       const el = <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
         <svg width={shape.width} height={shape.height}>
+          {defsEl}
           <rect {...coreProps} rx={0} />
           {shape.text && <text x={shape.width/2} y={shape.height/2} textAnchor="middle" dominantBaseline="central" fill={shape.fontColor || "#333"} fontSize={shape.fontSize || 14}>{shape.text}</text>}
         </svg>
@@ -342,6 +392,7 @@ function renderShape(
     case "roundedRect":
       const roundedEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
         <svg width={shape.width} height={shape.height}>
+          {defsEl}
           <rect {...coreProps} rx={8} />
           {shape.text && <text x={shape.width/2} y={shape.height/2} textAnchor="middle" dominantBaseline="central" fill={shape.fontColor || "#333"} fontSize={shape.fontSize || 14}>{shape.text}</text>}
         </svg>
@@ -351,6 +402,7 @@ function renderShape(
     case "ellipse":
       const ellipseEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
         <svg width={shape.width} height={shape.height}>
+          {defsEl}
           <ellipse cx={shape.width/2} cy={shape.height/2} rx={shape.width/2} ry={shape.height/2} fill={coreProps.fill} stroke={coreProps.stroke} strokeWidth={coreProps.strokeWidth} />
           {shape.text && <text x={shape.width/2} y={shape.height/2} textAnchor="middle" dominantBaseline="central" fill={shape.fontColor || "#333"} fontSize={shape.fontSize || 14}>{shape.text}</text>}
         </svg>
@@ -360,6 +412,7 @@ function renderShape(
     case "triangle":
       const triEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
         <svg width={shape.width} height={shape.height}>
+          {defsEl}
           <polygon points={`${shape.width/2},0 ${shape.width},${shape.height} 0,${shape.height}`} fill={coreProps.fill} stroke={coreProps.stroke} strokeWidth={coreProps.strokeWidth} />
           {shape.text && <text x={shape.width/2} y={shape.height/2} textAnchor="middle" dominantBaseline="central" fill={shape.fontColor || "#333"} fontSize={shape.fontSize || 14}>{shape.text}</text>}
         </svg>
@@ -369,6 +422,7 @@ function renderShape(
     case "diamond":
       const diamEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
         <svg width={shape.width} height={shape.height}>
+          {defsEl}
           <polygon points={`${shape.width/2},0 ${shape.width},${shape.height/2} ${shape.width/2},${shape.height} 0,${shape.height/2}`} fill={coreProps.fill} stroke={coreProps.stroke} strokeWidth={coreProps.strokeWidth} />
           {shape.text && <text x={shape.width/2} y={shape.height/2} textAnchor="middle" dominantBaseline="central" fill={shape.fontColor || "#333"} fontSize={shape.fontSize || 14}>{shape.text}</text>}
         </svg>
@@ -378,6 +432,7 @@ function renderShape(
     case "line":
       const lineEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
         <svg width={shape.width} height={shape.height}>
+          {defsEl}
           <line x1={0} y1={0} x2={shape.width} y2={shape.height} stroke={coreProps.stroke} strokeWidth={coreProps.strokeWidth || 2} />
         </svg>
         {isSelected && renderResizeHandles(shape.id, onResizeStart)}
@@ -386,7 +441,11 @@ function renderShape(
     case "arrow":
       const arrowEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
         <svg width={shape.width} height={shape.height}>
-          <defs><marker id={`arrow-${shape.id}`} markerWidth={10} markerHeight={10} refX={9} refY={3} orient="auto"><path d="M0,0 L10,3 L0,6" fill={coreProps.stroke} /></marker></defs>
+          <defs>
+            <marker id={`arrow-${shape.id}`} markerWidth={10} markerHeight={10} refX={9} refY={3} orient="auto"><path d="M0,0 L10,3 L0,6" fill={coreProps.stroke} /></marker>
+            {hasGradient && renderGradientSvg(shape.gradientFill!, shape.id)}
+            {hasShadow && shadowToFilter(shape.shadow!, shape.id)}
+          </defs>
           <line x1={0} y1={shape.height/2} x2={shape.width - 5} y2={shape.height/2} stroke={coreProps.stroke} strokeWidth={coreProps.strokeWidth || 2} markerEnd={`url(#arrow-${shape.id})`} />
         </svg>
         {isSelected && renderResizeHandles(shape.id, onResizeStart)}
