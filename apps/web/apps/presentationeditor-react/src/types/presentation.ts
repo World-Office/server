@@ -246,6 +246,27 @@ export type ShapeType = "rect" | "roundedRect" | "ellipse" | "triangle" | "diamo
 
 export type ConnectorType = "straight" | "bent" | "curved"
 
+export interface GradientStop {
+  position: number
+  color: string
+}
+
+export type GradientKind = "linear" | "radial"
+
+export interface GradientFill {
+  kind: GradientKind
+  stops: GradientStop[]
+  angle: number
+}
+
+export interface ShadowEffect {
+  dx: number
+  dy: number
+  blurRadius: number
+  color: string
+  opacity: number
+}
+
 export interface ConnectorData {
   connectorType: ConnectorType
   hasStartArrow: boolean
@@ -274,6 +295,8 @@ export interface ShapeData {
   chart?: ChartData
   table?: TableData
   connector?: ConnectorData
+  gradientFill?: GradientFill
+  shadow?: ShadowEffect
 }
 
 export type ChartType = "bar" | "column" | "line" | "pie" | "doughnut"
