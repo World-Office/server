@@ -570,6 +570,8 @@ impl OoxmlParser {
 
         let bounds = self.parse_pptx_bounds(sp);
         let text_body = self.parse_pptx_text_body(sp);
+        let fill = self.parse_pptx_fill(sp);
+        let effect = self.parse_pptx_effect_list(sp);
 
         if is_placeholder {
             let ph_type = sp
@@ -583,6 +585,8 @@ impl OoxmlParser {
                 bounds,
                 placeholder_type: ph_type,
                 text_body,
+                fill,
+                effect,
             }))
         } else {
             Some(SlideShape::TextBox(TextBoxShape {
@@ -591,6 +595,8 @@ impl OoxmlParser {
                 text_body: text_body.unwrap_or(TextBody {
                     paragraphs: Vec::new(),
                 }),
+                fill,
+                effect,
             }))
         }
     }
@@ -851,6 +857,79 @@ impl OoxmlParser {
         })
     }
 
+    fn parse_pptx_fill(&self, sp_elem: &roxmltree::Node) -> Option<Fill> {
+        let sp_pr = sp_elem.descendants().find(|n| {
+            n.has_tag_name("spPr") && n.tag_name().namespace() == Some(Self::A_NS)
+        })?;
+        if let Some(grad) = sp_pr.descendants().find(|n| n.has_tag_name("gradFill")) {
+            let kind = if grad.descendants().any(|n| n.has_tag_name("lin")) {
+                GradientKind::Linear
+            } else {
+                GradientKind::Radial
+            };
+            let angle = grad.descendants()
+                .find(|n| n.has_tag_name("lin"))
+                .and_then(|n| n.attribute("ang"))
+                .and_then(|v| v.parse::<f64>().ok())
+                .map(|v| v as f64 / 60000.0)
+                .unwrap_or(0.0);
+            let stops: Vec<GradientStop> = grad.descendants()
+                .filter(|n| n.has_tag_name("gs") && n.tag_name().namespace() == Some(Self::A_NS))
+                .filter_map(|gs| {
+                    let pos = gs.attribute("pos")?.parse::<f64>().ok()? / 1000.0;
+                    let color = gs.descendants()
+                        .find(|n| n.has_tag_name("srgbClr"))
+                        .and_then(|n| n.attribute("val"))?
+                        .to_string();
+                    Some(GradientStop { position: pos, color })
+                })
+                .collect();
+            if !stops.is_empty() {
+                return Some(Fill::Gradient(GradientFill { kind, stops, angle }));
+            }
+        }
+        if let Some(solid) = sp_pr.descendants().find(|n| n.has_tag_name("solidFill")) {
+            if let Some(color) = solid.descendants()
+                .find(|n| n.has_tag_name("srgbClr"))
+                .and_then(|n| n.attribute("val"))
+            {
+                return Some(Fill::Solid(format!("#{}", color)));
+            }
+        }
+        None
+    }
+
+    fn parse_pptx_effect_list(&self, sp_elem: &roxmltree::Node) -> Option<EffectList> {
+        let sp_pr = sp_elem.descendants().find(|n| {
+            n.has_tag_name("spPr") && n.tag_name().namespace() == Some(Self::A_NS)
+        })?;
+        let shadow = sp_pr.descendants()
+            .find(|n| n.has_tag_name("outerShdw"))
+            .map(|shdw| {
+                let dx = shdw.attribute("dx").and_then(|v| v.parse().ok()).unwrap_or(0);
+                let dy = shdw.attribute("dy").and_then(|v| v.parse().ok()).unwrap_or(0);
+                let blur_radius = shdw.attribute("blurRad").and_then(|v| v.parse().ok()).unwrap_or(0);
+                let color = shdw.descendants()
+                    .find(|n| n.has_tag_name("srgbClr"))
+                    .and_then(|n| n.attribute("val"))
+                    .unwrap_or("000000")
+                    .to_string();
+                let opacity = shdw.descendants()
+                    .find(|n| n.has_tag_name("srgbClr"))
+                    .and_then(|n| n.attribute("lastClr")
+                        .or_else(|| n.attribute("alpha")))
+                    .and_then(|v| v.parse::<f64>().ok())
+                    .map(|a| a / 1000.0)
+                    .unwrap_or(1.0);
+                ShadowEffect { dx, dy, blur_radius, color, opacity }
+            });
+        if shadow.is_some() {
+            Some(EffectList { shadow })
+        } else {
+            None
+        }
+    }
+
     fn parse_pptx_picture(&self, pic: &roxmltree::Node) -> Option<PictureShape> {
         let id = pic.attribute("id").unwrap_or("0").to_string();
         let name = pic
@@ -869,6 +948,8 @@ impl OoxmlParser {
                     || n.tag_name().namespace() == Some(Self::A_NS))
         });
 
+        let effect = self.parse_pptx_effect_list(pic);
+
         // Try to get image extension and data from relationship
         let (image_extension, image_data) = (String::new(), Vec::new());
 
@@ -878,6 +959,7 @@ impl OoxmlParser {
             name,
             image_extension,
             image_data,
+            effect,
         })
     }
 
@@ -897,6 +979,8 @@ impl OoxmlParser {
 
         let has_end_arrow = cxn.descendants().any(|n| n.has_tag_name("headEnd"));
         let has_start_arrow = cxn.descendants().any(|n| n.has_tag_name("tailEnd"));
+        let fill = self.parse_pptx_fill(cxn);
+        let effect = self.parse_pptx_effect_list(cxn);
 
         Some(ConnectorShape {
             id,
@@ -905,6 +989,8 @@ impl OoxmlParser {
             line_width,
             has_start_arrow,
             has_end_arrow,
+            fill,
+            effect,
         })
     }
 

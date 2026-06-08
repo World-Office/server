@@ -341,6 +341,76 @@ impl OoxmlSerializer {
         xml
     }
 
+    fn serialize_fill(&self, xml: &mut String, fill: &Option<Fill>) {
+        if let Some(ref f) = fill {
+            match f {
+                Fill::Solid(color) => {
+                    let c = color.trim_start_matches('#');
+                    xml.push_str(&format!(
+                        r#"
+        <a:solidFill>
+          <a:srgbClr val="{}"/>
+        </a:solidFill>"#,
+                        c
+                    ));
+                }
+                Fill::Gradient(grad) => {
+                    xml.push_str(r#"
+        <a:gradFill>"#);
+                    if matches!(grad.kind, GradientKind::Linear) {
+                        let ang = (grad.angle * 60000.0) as i64;
+                        xml.push_str(&format!(
+                            r#"
+          <a:lin ang="{}" scaled="0"/>"#,
+                            ang
+                        ));
+                    } else {
+                        xml.push_str(r#"
+          <a:path path="circle">
+            <a:fillToRect l="50000" t="50000" r="50000" b="50000"/>
+          </a:path>"#);
+                    }
+                    xml.push_str(r#"
+          <a:gsLst>"#);
+                    for stop in &grad.stops {
+                        let pos = (stop.position * 1000.0) as i64;
+                        let c = stop.color.trim_start_matches('#');
+                        xml.push_str(&format!(
+                            r#"
+            <a:gs pos="{}">
+              <a:srgbClr val="{}"/>
+            </a:gs>"#,
+                            pos, c,
+                        ));
+                    }
+                    xml.push_str(r#"
+          </a:gsLst>
+        </a:gradFill>"#);
+                }
+            }
+        }
+    }
+
+    fn serialize_effect_list(&self, xml: &mut String, effect: &Option<EffectList>) {
+        if let Some(ref el) = effect {
+            if let Some(ref shadow) = el.shadow {
+                let c = shadow.color.trim_start_matches('#');
+                let alpha = (shadow.opacity * 1000.0) as i64;
+                xml.push_str(&format!(
+                    r#"
+        <a:effectLst>
+          <a:outerShdw blurRad="{}" dx="{}" dy="{}" algn="tl">
+            <a:srgbClr val="{}">
+              <a:alpha val="{}"/>
+            </a:srgbClr>
+          </a:outerShdw>
+        </a:effectLst>"#,
+                    shadow.blur_radius, shadow.dx, shadow.dy, c, alpha,
+                ));
+            }
+        }
+    }
+
     fn serialize_textbox_shape(&self, xml: &mut String, tb: &TextBoxShape) {
         xml.push_str(&format!(
             r#"
@@ -353,10 +423,13 @@ impl OoxmlSerializer {
         <a:xfrm>
           <a:off x="{}" y="{}"/>
           <a:ext cx="{}" cy="{}"/>
-        </a:xfrm>
-      </p:spPr>"#,
+        </a:xfrm>"#,
             tb.id, tb.bounds.x, tb.bounds.y, tb.bounds.cx, tb.bounds.cy,
         ));
+        self.serialize_fill(xml, &tb.fill);
+        self.serialize_effect_list(xml, &tb.effect);
+        xml.push_str(r#"
+      </p:spPr>"#);
         self.serialize_text_body(xml, &tb.text_body);
         xml.push_str("\n    </p:sp>");
     }
@@ -375,8 +448,7 @@ impl OoxmlSerializer {
         <a:xfrm>
           <a:off x="{}" y="{}"/>
           <a:ext cx="{}" cy="{}"/>
-        </a:xfrm>
-      </p:spPr>"#,
+        </a:xfrm>"#,
             ph.id,
             ph.placeholder_type,
             ph.bounds.x,
@@ -384,6 +456,10 @@ impl OoxmlSerializer {
             ph.bounds.cx,
             ph.bounds.cy,
         ));
+        self.serialize_fill(xml, &ph.fill);
+        self.serialize_effect_list(xml, &ph.effect);
+        xml.push_str(r#"
+      </p:spPr>"#);
         if let Some(ref tb) = ph.text_body {
             self.serialize_text_body(xml, tb);
         }
@@ -403,11 +479,13 @@ impl OoxmlSerializer {
         <a:xfrm>
           <a:off x="{}" y="{}"/>
           <a:ext cx="{}" cy="{}"/>
-        </a:xfrm>
-      </p:spPr>
-    </p:pic>"#,
+        </a:xfrm>"#,
             pic.id, pic.name, pic.bounds.x, pic.bounds.y, pic.bounds.cx, pic.bounds.cy,
         ));
+        self.serialize_effect_list(xml, &pic.effect);
+        xml.push_str(r#"
+      </p:spPr>
+    </p:pic>"#);
     }
 
     fn serialize_table_shape(&self, xml: &mut String, table: &TableShape) {
@@ -569,7 +647,10 @@ impl OoxmlSerializer {
           <a:headEnd type="triangle"/>"#);
         }
         xml.push_str(r#"
-        </a:ln>
+        </a:ln>"#);
+        self.serialize_fill(xml, &conn.fill);
+        self.serialize_effect_list(xml, &conn.effect);
+        xml.push_str(r#"
       </p:spPr>
     </p:cxnSp>"#);
     }
@@ -1773,21 +1854,23 @@ mod tests {
                         animations: vec![],
                         timing_raw: None,
                         shapes: vec![SlideShape::TextBox(TextBoxShape {
-                            id: "2".to_string(),
-                            bounds: Bounds { x: 100, y: 100, cx: 5000000, cy: 500000 },
-                            text_body: TextBody {
-                                paragraphs: vec![DocxParagraph {
-                                    style_id: None,
-                                    properties: DocxParagraphProperties::default(),
-                                    runs: vec![DocxRun {
-                                        text: "Hello PPTX".to_string(),
-                                        ..DocxRun::default()
-                                    }],
-                                }],
-                            },
-                        })],
-                    }],
-                    slide_masters: Vec::new(),
+                             id: "2".to_string(),
+                             bounds: Bounds { x: 100, y: 100, cx: 5000000, cy: 500000 },
+                             text_body: TextBody {
+                                 paragraphs: vec![DocxParagraph {
+                                     style_id: None,
+                                     properties: DocxParagraphProperties::default(),
+                                     runs: vec![DocxRun {
+                                         text: "Hello PPTX".to_string(),
+                                         ..DocxRun::default()
+                                     }],
+                                 }],
+                             },
+                             fill: None,
+                             effect: None,
+                         })],
+                     }],
+                     slide_masters: Vec::new(),
                     theme: None,
                     core_properties: CoreProperties::default(),
                 }
@@ -1832,41 +1915,45 @@ mod tests {
                         animations: vec![],
                         timing_raw: None,
                         shapes: vec![SlideShape::TextBox(TextBoxShape {
-                                id: "2".to_string(),
-                                bounds: Bounds { x: 0, y: 0, cx: 9144000, cy: 6858000 },
-                                text_body: TextBody {
-                                    paragraphs: vec![DocxParagraph {
-                                        style_id: None,
-                                        properties: DocxParagraphProperties::default(),
-                                        runs: vec![DocxRun {
-                                            text: "Slide One".to_string(),
-                                            ..DocxRun::default()
-                                        }],
-                                    }],
-                                },
-                            })],
-                        },
-                        Slide {
-                            id: 257,
-                            name: "Slide2".to_string(),
-                            notes: None,
-                            transition: None,
-                        animations: vec![],
-                        timing_raw: None,
-                        shapes: vec![SlideShape::TextBox(TextBoxShape {
-                                id: "3".to_string(),
-                                bounds: Bounds { x: 0, y: 0, cx: 9144000, cy: 6858000 },
-                                text_body: TextBody {
-                                    paragraphs: vec![DocxParagraph {
-                                        style_id: None,
-                                        properties: DocxParagraphProperties::default(),
-                                        runs: vec![DocxRun {
-                                            text: "Slide Two".to_string(),
-                                            ..DocxRun::default()
-                                        }],
-                                    }],
-                                },
-                            })],
+                                 id: "2".to_string(),
+                                 bounds: Bounds { x: 0, y: 0, cx: 9144000, cy: 6858000 },
+                                 text_body: TextBody {
+                                     paragraphs: vec![DocxParagraph {
+                                         style_id: None,
+                                         properties: DocxParagraphProperties::default(),
+                                         runs: vec![DocxRun {
+                                             text: "Slide One".to_string(),
+                                             ..DocxRun::default()
+                                         }],
+                                     }],
+                                 },
+                                 fill: None,
+                                 effect: None,
+                             })],
+                         },
+                         Slide {
+                             id: 257,
+                             name: "Slide2".to_string(),
+                             notes: None,
+                             transition: None,
+                         animations: vec![],
+                         timing_raw: None,
+                         shapes: vec![SlideShape::TextBox(TextBoxShape {
+                                 id: "3".to_string(),
+                                 bounds: Bounds { x: 0, y: 0, cx: 9144000, cy: 6858000 },
+                                 text_body: TextBody {
+                                     paragraphs: vec![DocxParagraph {
+                                         style_id: None,
+                                         properties: DocxParagraphProperties::default(),
+                                         runs: vec![DocxRun {
+                                             text: "Slide Two".to_string(),
+                                             ..DocxRun::default()
+                                         }],
+                                     }],
+                                 },
+                                 fill: None,
+                                 effect: None,
+                             })],
                         },
                     ],
                     slide_masters: Vec::new(),
@@ -1958,20 +2045,22 @@ mod tests {
                         animations: vec![],
                         timing_raw: None,
                         shapes: vec![SlideShape::Placeholder(PlaceholderShape {
-                            id: "3".to_string(),
-                            bounds: Bounds { x: 100, y: 100, cx: 5000000, cy: 500000 },
-                            placeholder_type: "title".to_string(),
-                            text_body: Some(TextBody {
-                                paragraphs: vec![DocxParagraph {
-                                    style_id: None,
-                                    properties: DocxParagraphProperties::default(),
-                                    runs: vec![DocxRun {
-                                        text: "Title Placeholder".to_string(),
-                                        ..DocxRun::default()
-                                    }],
-                                }],
-                            }),
-                        })],
+                             id: "3".to_string(),
+                             bounds: Bounds { x: 100, y: 100, cx: 5000000, cy: 500000 },
+                             placeholder_type: "title".to_string(),
+                             text_body: Some(TextBody {
+                                 paragraphs: vec![DocxParagraph {
+                                     style_id: None,
+                                     properties: DocxParagraphProperties::default(),
+                                     runs: vec![DocxRun {
+                                         text: "Title Placeholder".to_string(),
+                                         ..DocxRun::default()
+                                     }],
+                                 }],
+                             }),
+                             fill: None,
+                             effect: None,
+                         })],
                     }],
                     slide_masters: Vec::new(),
                     theme: None,
@@ -1998,12 +2087,13 @@ mod tests {
                         animations: vec![],
                         timing_raw: None,
                         shapes: vec![SlideShape::Picture(PictureShape {
-                            id: "4".to_string(),
-                            bounds: Bounds { x: 500000, y: 500000, cx: 2000000, cy: 1500000 },
-                            name: "Photo.png".to_string(),
-                            image_extension: "png".to_string(),
-                            image_data: vec![],
-                        })],
+                             id: "4".to_string(),
+                             bounds: Bounds { x: 500000, y: 500000, cx: 2000000, cy: 1500000 },
+                             name: "Photo.png".to_string(),
+                             image_extension: "png".to_string(),
+                             image_data: vec![],
+                             effect: None,
+                         })],
                     }],
                     slide_masters: Vec::new(),
                     theme: None,
@@ -2030,52 +2120,69 @@ mod tests {
                         animations: vec![],
                         timing_raw: None,
                         shapes: vec![SlideShape::TextBox(TextBoxShape {
-                            id: "2".to_string(),
-                            bounds: Bounds { x: 100, y: 100, cx: 5000000, cy: 500000 },
-                            text_body: TextBody {
-                                paragraphs: vec![DocxParagraph {
-                                    style_id: None,
-                                    properties: DocxParagraphProperties::default(),
-                                    runs: vec![
-                                        DocxRun {
-                                            text: "Bold ".to_string(),
-                                            bold: true,
-                                            italic: false,
-                                            underline: None,
-                                            strikethrough: false,
-                                            double_strikethrough: false,
-                                            font: Some("Arial".to_string()),
-                                            font_size: Some(24),
-                                            font_size_cs: None,
-                                            color: Some("FF0000".to_string()),
-                                            highlight: None,
-                                            vertical_alignment: None,
-                                            small_caps: false,
-                                            all_caps: false,
-                                        },
-                                        DocxRun {
-                                            text: "Italic".to_string(),
-                                            bold: false,
-                                            italic: true,
-                                            underline: Some(UnderlineType::Single),
-                                            ..DocxRun::default()
-                                        },
-                                        DocxRun {
-                                            text: "\n".to_string(),
-                                            ..DocxRun::default()
-                                        },
-                                        DocxRun {
-                                            text: "New line".to_string(),
-                                            ..DocxRun::default()
-                                        },
-                                    ],
-                                }],
-                            },
-                        })],
-                    }],
-                    slide_masters: Vec::new(),
-                    theme: None,
-                    core_properties: CoreProperties::default(),
+                             id: "2".to_string(),
+                             bounds: Bounds { x: 100, y: 100, cx: 5000000, cy: 500000 },
+                             text_body: TextBody {
+                                 paragraphs: vec![DocxParagraph {
+                                     style_id: None,
+                                     properties: DocxParagraphProperties::default(),
+                                     runs: vec![
+                                         DocxRun {
+                                             text: "Bold ".to_string(),
+                                             bold: true,
+                                             italic: false,
+                                             underline: None,
+                                             strikethrough: false,
+                                             double_strikethrough: false,
+                                             font: Some("Arial".to_string()),
+                                             font_size: Some(24),
+                                             font_size_cs: None,
+                                             color: Some("FF0000".to_string()),
+                                             highlight: None,
+                                             vertical_alignment: None,
+                                             small_caps: false,
+                                             all_caps: false,
+                                         },
+                                         DocxRun {
+                                             text: "Italic".to_string(),
+                                             bold: false,
+                                             italic: true,
+                                             underline: Some(UnderlineType::Single),
+                                             ..DocxRun::default()
+                                         },
+                                         DocxRun {
+                                             text: "Underline ".to_string(),
+                                             bold: false,
+                                             italic: false,
+                                             underline: Some(UnderlineType::Single),
+                                             ..DocxRun::default()
+                                         },
+                                          DocxRun {
+                                              text: "Strikethrough".to_string(),
+                                              bold: false,
+                                              italic: false,
+                                              underline: None,
+                                              strikethrough: true,
+                                              ..DocxRun::default()
+                                          },
+                                          DocxRun {
+                                              text: "\n".to_string(),
+                                              ..DocxRun::default()
+                                          },
+                                          DocxRun {
+                                              text: "New line".to_string(),
+                                              ..DocxRun::default()
+                                          },
+                                      ],
+                                 }],
+                             },
+                             fill: None,
+                             effect: None,
+                         })],
+                     }],
+                      slide_masters: Vec::new(),
+                      theme: None,
+                      core_properties: CoreProperties::default(),
                 };
         let ser = OoxmlSerializer::new();
         let bytes = ser.serialize_pptx(&pres).unwrap();

@@ -458,6 +458,10 @@ pub struct TextBoxShape {
     pub id: String,
     pub bounds: Bounds,
     pub text_body: TextBody,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fill: Option<Fill>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub effect: Option<EffectList>,
 }
 
 /// An image shape on a slide.
@@ -468,6 +472,8 @@ pub struct PictureShape {
     pub name: String,
     pub image_extension: String,
     pub image_data: Vec<u8>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub effect: Option<EffectList>,
 }
 
 /// A placeholder shape (title, subtitle, content).
@@ -477,6 +483,10 @@ pub struct PlaceholderShape {
     pub bounds: Bounds,
     pub placeholder_type: String,
     pub text_body: Option<TextBody>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fill: Option<Fill>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub effect: Option<EffectList>,
 }
 
 /// A connector/cxnSp shape — line with optional arrowheads connecting shapes.
@@ -488,6 +498,10 @@ pub struct ConnectorShape {
     pub line_width: Option<i64>,
     pub has_start_arrow: bool,
     pub has_end_arrow: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fill: Option<Fill>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub effect: Option<EffectList>,
 }
 
 /// Predefined geometry for connector shapes.
@@ -535,6 +549,66 @@ impl ConnectorShapeType {
             _ => ConnectorShapeType::Straight,
         }
     }
+}
+
+/// Fill type for a shape — solid color or gradient.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Fill {
+    /// Solid color fill (#RRGGBB or named).
+    Solid(String),
+    /// Gradient fill with stops and angle.
+    Gradient(GradientFill),
+}
+
+/// A gradient fill definition.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GradientFill {
+    /// Linear or radial gradient.
+    pub kind: GradientKind,
+    /// Color stops (position 0.0–1.0, hex color).
+    pub stops: Vec<GradientStop>,
+    /// Rotation angle in degrees (0 = left→right).
+    pub angle: f64,
+}
+
+/// Kind of gradient.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum GradientKind {
+    /// Linear gradient along an angle.
+    Linear,
+    /// Radial gradient from center outward.
+    Radial,
+}
+
+/// A single color stop in a gradient.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GradientStop {
+    /// Position 0.0–1.0.
+    pub position: f64,
+    /// Hex color (#RRGGBB).
+    pub color: String,
+}
+
+/// Shadow effect applied to a shape.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShadowEffect {
+    /// Horizontal offset in EMU.
+    pub dx: i64,
+    /// Vertical offset in EMU.
+    pub dy: i64,
+    /// Blur radius in EMU.
+    pub blur_radius: i64,
+    /// Shadow color (#RRGGBB).
+    pub color: String,
+    /// Opacity 0.0–1.0.
+    pub opacity: f64,
+}
+
+/// List of visual effects applied to a shape.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct EffectList {
+    /// Outer shadow effect.
+    pub shadow: Option<ShadowEffect>,
 }
 
 /// 2D bounds in EMU units (1/914400 inch).
