@@ -11,10 +11,11 @@ pub mod roundtrip;
 pub mod serializer;
 
 pub use model::{
-    Bounds, ColorScheme, FontScheme, OoxmlDocument, OoxmlFormat, PictureShape, PlaceholderShape,
-PptxPresentation, Slide, SlideLayout, SlideMaster, SlideShape, SlideSize, TableCell, TableColumn,
-TableRow, TableShape, TextBody, TextBoxShape, Theme, ThemeColor, ThemeFont, ThemePreset,
-ConnectorShape, ConnectorShapeType,
+    Bounds, ColorScheme, Fill, FontScheme, GradientFill, GradientKind, GradientStop,
+    OoxmlDocument, OoxmlFormat, PictureShape, PlaceholderShape, PptxPresentation, ShadowEffect,
+    Slide, SlideLayout, SlideMaster, SlideShape, SlideSize, TableCell, TableColumn, TableRow,
+    TableShape, TextBody, TextBoxShape, Theme, ThemeColor, ThemeFont, ThemePreset,
+    ConnectorShape, ConnectorShapeType, EffectList,
 };
 pub use model::builtin_theme_presets;
 pub use parser::OoxmlParser;
