@@ -19,9 +19,10 @@ use crate::converters::{
     HtmlToDocxConverter, HtmlToEpubConverter, HtmlToFb2Converter, HtmlToOdtConverter,
     HtmlToRtfConverter, HtmlToTxtConverter, HwpToDocxConverter, HwpToTxtConverter,
     OdtToDocxConverter, OdtToHtmlConverter, OdtToTxtConverter, OfdToDocxConverter,
-    OfdToHtmlConverter, OfdToTxtConverter, RtfToDocxConverter, RtfToHtmlConverter,
-    RtfToTxtConverter, TxtToDocxConverter, TxtToEpubConverter, TxtToFb2Converter,
-    TxtToHtmlConverter, TxtToOdtConverter, TxtToRtfConverter, XpsToDocxConverter,
+    OfdToHtmlConverter, OfdToTxtConverter, PptxToWoPresentationConverter,
+    RtfToDocxConverter, RtfToHtmlConverter, RtfToTxtConverter, TxtToDocxConverter,
+    TxtToEpubConverter, TxtToFb2Converter, TxtToHtmlConverter, TxtToOdtConverter,
+    TxtToRtfConverter, WoPresentationToPptxConverter, XpsToDocxConverter,
     XpsToHtmlConverter, XpsToTxtConverter,
 };
 use crate::model::{ConversionOutput, ConversionResult, ConversionStatus};
@@ -88,6 +89,8 @@ impl ConversionRouter {
         registry.register(HwpToDocxConverter);
         registry.register(DjvuToDocxConverter);
         registry.register(DocxToXpsConverter);
+        registry.register(WoPresentationToPptxConverter);
+        registry.register(PptxToWoPresentationConverter);
         Self { registry }
     }
 
@@ -474,10 +477,13 @@ mod tests {
         assert!(pairs.contains(&("hwp", "docx")));
         assert!(pairs.contains(&("djvu", "docx")));
         assert!(pairs.contains(&("docx", "xps")));
+        // Presentation format converters
+        assert!(pairs.contains(&("wo-presentation", "pptx")));
+        assert!(pairs.contains(&("pptx", "wo-presentation")));
         assert_eq!(
             pairs.len(),
-            38,
-            "expected 38 registered converters, got {}",
+            40,
+            "expected 40 registered converters, got {}",
             pairs.len()
         );
     }

@@ -10,6 +10,8 @@ thiserror = { workspace = true }
 serde = { workspace = true }
 wo-common = { path = "../wo-common" }
 serde_json = { workspace = true }
+base64 = { workspace = true }
+zip = { workspace = true }
 wo-rtf = { path = "../wo-rtf" }
 wo-html = { path = "../wo-html" }
 wo-txt = { path = "../wo-txt" }

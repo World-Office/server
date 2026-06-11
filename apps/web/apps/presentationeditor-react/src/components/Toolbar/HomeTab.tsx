@@ -40,13 +40,13 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
       {/* Clipboard */}
       <div className="prese-hometab-group">
         <div className="prese-hometab-elset">
-          <button type="button" className="prese-hometab-btn" onClick={() => {}} title="Cut">
+          <button type="button" className="prese-hometab-btn" onClick={() => presentationStore.cutShape()} title="Cut" disabled={presentationStore.selectedShapeIds.length === 0}>
             Cut
           </button>
-          <button type="button" className="prese-hometab-btn" onClick={() => {}} title="Copy">
+          <button type="button" className="prese-hometab-btn" onClick={() => presentationStore.copyShape()} title="Copy" disabled={presentationStore.selectedShapeIds.length === 0}>
             Copy
           </button>
-          <button type="button" className="prese-hometab-btn" onClick={() => {}} title="Paste">
+          <button type="button" className="prese-hometab-btn" onClick={() => presentationStore.pasteShape()} title="Paste" disabled={presentationStore.clipboardShapes.length === 0}>
             Paste
           </button>
           <button
@@ -230,8 +230,8 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
                 type="button"
                 className="prese-hometab-arrange-item"
                 style={{ display: "block", width: "100%", padding: "6px 12px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: 13 }}
-                onClick={() => { presentationStore.bringForward(presentationStore.currentSlide, presentationStore.selectedShapeId!); setArrangeOpen(false) }}
-                disabled={!presentationStore.selectedShapeId}
+                onClick={() => { presentationStore.bringForwardSelected(); setArrangeOpen(false) }}
+                disabled={presentationStore.selectedShapeIds.length === 0}
               >
                 Bring Forward
               </button>
@@ -239,8 +239,8 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
                 type="button"
                 className="prese-hometab-arrange-item"
                 style={{ display: "block", width: "100%", padding: "6px 12px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: 13 }}
-                onClick={() => { presentationStore.sendBackward(presentationStore.currentSlide, presentationStore.selectedShapeId!); setArrangeOpen(false) }}
-                disabled={!presentationStore.selectedShapeId}
+                onClick={() => { presentationStore.sendBackwardSelected(); setArrangeOpen(false) }}
+                disabled={presentationStore.selectedShapeIds.length === 0}
               >
                 Send Backward
               </button>
@@ -249,8 +249,8 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
                 type="button"
                 className="prese-hometab-arrange-item"
                 style={{ display: "block", width: "100%", padding: "6px 12px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: 13 }}
-                onClick={() => { presentationStore.bringToFront(presentationStore.currentSlide, presentationStore.selectedShapeId!); setArrangeOpen(false) }}
-                disabled={!presentationStore.selectedShapeId}
+                onClick={() => { presentationStore.bringToFrontSelected(); setArrangeOpen(false) }}
+                disabled={presentationStore.selectedShapeIds.length === 0}
               >
                 Bring to Front
               </button>
@@ -258,10 +258,42 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
                 type="button"
                 className="prese-hometab-arrange-item"
                 style={{ display: "block", width: "100%", padding: "6px 12px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: 13 }}
-                onClick={() => { presentationStore.sendToBack(presentationStore.currentSlide, presentationStore.selectedShapeId!); setArrangeOpen(false) }}
-                disabled={!presentationStore.selectedShapeId}
+                onClick={() => { presentationStore.sendToBackSelected(); setArrangeOpen(false) }}
+                disabled={presentationStore.selectedShapeIds.length === 0}
               >
                 Send to Back
+              </button>
+              <div style={{ height: 1, background: "#e0e0e0", margin: "4px 0" }} />
+              {(["left","center","right","top","middle","bottom"] as const).map((align) => (
+                <button
+                  key={align}
+                  type="button"
+                  className="prese-hometab-arrange-item"
+                  style={{ display: "block", width: "100%", padding: "6px 12px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: 13 }}
+                  onClick={() => { presentationStore.alignSelectedShapes(align); setArrangeOpen(false) }}
+                  disabled={presentationStore.selectedShapeIds.length === 0}
+                >
+                  Align {align.charAt(0).toUpperCase() + align.slice(1)}
+                </button>
+              ))}
+              <div style={{ height: 1, background: "#e0e0e0", margin: "4px 0" }} />
+              <button
+                type="button"
+                className="prese-hometab-arrange-item"
+                style={{ display: "block", width: "100%", padding: "6px 12px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: 13 }}
+                onClick={() => { presentationStore.groupSelected(); setArrangeOpen(false) }}
+                disabled={presentationStore.selectedShapeIds.length < 2}
+              >
+                Group
+              </button>
+              <button
+                type="button"
+                className="prese-hometab-arrange-item"
+                style={{ display: "block", width: "100%", padding: "6px 12px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: 13 }}
+                onClick={() => { presentationStore.ungroupSelected(); setArrangeOpen(false) }}
+                disabled={presentationStore.selectedShapeIds.length === 0}
+              >
+                Ungroup
               </button>
             </div>
           )}
@@ -269,6 +301,11 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
         <div className="prese-hometab-elset">
           <button type="button" className="prese-hometab-btn" title="Quick Styles">
             Quick Styles
+          </button>
+        </div>
+        <div className="prese-hometab-elset">
+          <button type="button" className="prese-hometab-btn" onClick={() => presentationStore.selectAllShapes()} title="Select All (Ctrl+A)">
+            Select All
           </button>
         </div>
       </div>

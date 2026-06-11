@@ -1,9 +1,10 @@
 import { observer } from "mobx-react-lite"
-import { useRef, useCallback, useEffect, type JSX } from "react"
+import { useRef, useCallback, useEffect, useState, type JSX } from "react"
 import { presentationStore } from "../../stores/PresentationStore"
 import type { ChartData, ConnectorData, ShapeData, TableData, GradientFill, ShadowEffect } from "../../types/presentation"
 
 const HANDLE_SIZE = 8
+const ROTATION_HANDLE_OFFSET = 24
 
 const RESIZE_HANDLES = [
   { name: "nw", cursor: "nw-resize", x: -4, y: -4 },
@@ -311,6 +312,8 @@ function renderShape(
   isSelected: boolean,
   onDragStart: (e: React.MouseEvent, shapeId: string) => void,
   onResizeStart: (e: React.MouseEvent, shapeId: string, handle: string) => void,
+  onDoubleClick?: (shapeId: string) => void,
+  onRotateStart?: (e: React.MouseEvent, shapeId: string) => void,
 ): JSX.Element | null {
   const hasGradient = !!shape.gradientFill?.stops?.length
   const hasShadow = !!shape.shadow
@@ -343,18 +346,28 @@ function renderShape(
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.stopPropagation()
-    presentationStore.selectShape(shape.id)
+    if (e.shiftKey) {
+      presentationStore.toggleShapeSelection(shape.id)
+    } else if (!isSelected) {
+      presentationStore.selectShape(shape.id)
+    }
     onDragStart(e, shape.id)
+  }
+
+  const handleShapeDoubleClick = (e: React.MouseEvent, shapeId: string): void => {
+    e.stopPropagation()
+    onDoubleClick?.(shapeId)
   }
 
   if (shape.chart) {
     const chartSvg = renderChartSvg(shape.chart, shape.width, shape.height)
     return (
-      <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
+      <div key={shape.id} style={style} onMouseDown={handleMouseDown} onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}>
         <svg width={shape.width} height={shape.height}>
           {chartSvg}
         </svg>
         {isSelected && renderResizeHandles(shape.id, onResizeStart)}
+        {isSelected && renderRotationHandle(shape.id, shape.width, onRotateStart)}
       </div>
     )
   }
@@ -362,11 +375,12 @@ function renderShape(
   if (shape.table) {
     const tableSvg = renderTableSvg(shape.table, shape.width, shape.height)
     return (
-      <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
+      <div key={shape.id} style={style} onMouseDown={handleMouseDown} onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}>
         <svg width={shape.width} height={shape.height}>
           {tableSvg}
         </svg>
         {isSelected && renderResizeHandles(shape.id, onResizeStart)}
+        {isSelected && renderRotationHandle(shape.id, shape.width, onRotateStart)}
       </div>
     )
   }
@@ -380,66 +394,72 @@ function renderShape(
 
   switch (shape.type) {
     case "rect":
-      const el = <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
+      const el = <div key={shape.id} style={style} onMouseDown={handleMouseDown} onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}>
         <svg width={shape.width} height={shape.height}>
           {defsEl}
           <rect {...coreProps} rx={0} />
           {shape.text && <text x={shape.width/2} y={shape.height/2} textAnchor="middle" dominantBaseline="central" fill={shape.fontColor || "#333"} fontSize={shape.fontSize || 14}>{shape.text}</text>}
         </svg>
         {isSelected && renderResizeHandles(shape.id, onResizeStart)}
+        {isSelected && renderRotationHandle(shape.id, shape.width, onRotateStart)}
       </div>
       return el
     case "roundedRect":
-      const roundedEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
+      const roundedEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown} onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}>
         <svg width={shape.width} height={shape.height}>
           {defsEl}
           <rect {...coreProps} rx={8} />
           {shape.text && <text x={shape.width/2} y={shape.height/2} textAnchor="middle" dominantBaseline="central" fill={shape.fontColor || "#333"} fontSize={shape.fontSize || 14}>{shape.text}</text>}
         </svg>
         {isSelected && renderResizeHandles(shape.id, onResizeStart)}
+        {isSelected && renderRotationHandle(shape.id, shape.width, onRotateStart)}
       </div>
       return roundedEl
     case "ellipse":
-      const ellipseEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
+      const ellipseEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown} onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}>
         <svg width={shape.width} height={shape.height}>
           {defsEl}
           <ellipse cx={shape.width/2} cy={shape.height/2} rx={shape.width/2} ry={shape.height/2} fill={coreProps.fill} stroke={coreProps.stroke} strokeWidth={coreProps.strokeWidth} />
           {shape.text && <text x={shape.width/2} y={shape.height/2} textAnchor="middle" dominantBaseline="central" fill={shape.fontColor || "#333"} fontSize={shape.fontSize || 14}>{shape.text}</text>}
         </svg>
         {isSelected && renderResizeHandles(shape.id, onResizeStart)}
+        {isSelected && renderRotationHandle(shape.id, shape.width, onRotateStart)}
       </div>
       return ellipseEl
     case "triangle":
-      const triEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
+      const triEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown} onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}>
         <svg width={shape.width} height={shape.height}>
           {defsEl}
           <polygon points={`${shape.width/2},0 ${shape.width},${shape.height} 0,${shape.height}`} fill={coreProps.fill} stroke={coreProps.stroke} strokeWidth={coreProps.strokeWidth} />
           {shape.text && <text x={shape.width/2} y={shape.height/2} textAnchor="middle" dominantBaseline="central" fill={shape.fontColor || "#333"} fontSize={shape.fontSize || 14}>{shape.text}</text>}
         </svg>
         {isSelected && renderResizeHandles(shape.id, onResizeStart)}
+        {isSelected && renderRotationHandle(shape.id, shape.width, onRotateStart)}
       </div>
       return triEl
     case "diamond":
-      const diamEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
+      const diamEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown} onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}>
         <svg width={shape.width} height={shape.height}>
           {defsEl}
           <polygon points={`${shape.width/2},0 ${shape.width},${shape.height/2} ${shape.width/2},${shape.height} 0,${shape.height/2}`} fill={coreProps.fill} stroke={coreProps.stroke} strokeWidth={coreProps.strokeWidth} />
           {shape.text && <text x={shape.width/2} y={shape.height/2} textAnchor="middle" dominantBaseline="central" fill={shape.fontColor || "#333"} fontSize={shape.fontSize || 14}>{shape.text}</text>}
         </svg>
         {isSelected && renderResizeHandles(shape.id, onResizeStart)}
+        {isSelected && renderRotationHandle(shape.id, shape.width, onRotateStart)}
       </div>
       return diamEl
     case "line":
-      const lineEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
+      const lineEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown} onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}>
         <svg width={shape.width} height={shape.height}>
           {defsEl}
           <line x1={0} y1={0} x2={shape.width} y2={shape.height} stroke={coreProps.stroke} strokeWidth={coreProps.strokeWidth || 2} />
         </svg>
         {isSelected && renderResizeHandles(shape.id, onResizeStart)}
+        {isSelected && renderRotationHandle(shape.id, shape.width, onRotateStart)}
       </div>
       return lineEl
     case "arrow":
-      const arrowEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
+      const arrowEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown} onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}>
         <svg width={shape.width} height={shape.height}>
           <defs>
             <marker id={`arrow-${shape.id}`} markerWidth={10} markerHeight={10} refX={9} refY={3} orient="auto"><path d="M0,0 L10,3 L0,6" fill={coreProps.stroke} /></marker>
@@ -449,14 +469,16 @@ function renderShape(
           <line x1={0} y1={shape.height/2} x2={shape.width - 5} y2={shape.height/2} stroke={coreProps.stroke} strokeWidth={coreProps.strokeWidth || 2} markerEnd={`url(#arrow-${shape.id})`} />
         </svg>
         {isSelected && renderResizeHandles(shape.id, onResizeStart)}
+        {isSelected && renderRotationHandle(shape.id, shape.width, onRotateStart)}
       </div>
       return arrowEl
     case "connector":
       if (shape.connector) {
         return (
-          <div key={shape.id} style={style} onMouseDown={handleMouseDown}>
+          <div key={shape.id} style={style} onMouseDown={handleMouseDown} onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}>
             {renderConnectorSvg(shape.connector, shape.width, shape.height, coreProps.stroke, coreProps.strokeWidth || 2)}
             {isSelected && renderResizeHandles(shape.id, onResizeStart)}
+            {isSelected && renderRotationHandle(shape.id, shape.width, onRotateStart)}
           </div>
         )
       }
@@ -468,7 +490,7 @@ function renderShape(
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: shape.fillColor || "transparent",
-      }} onMouseDown={handleMouseDown}>
+      }} onMouseDown={handleMouseDown} onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}>
         <span style={{
           color: shape.fontColor || "#333",
           fontSize: shape.fontSize || 14,
@@ -476,8 +498,21 @@ function renderShape(
           userSelect: "none",
         }}>{shape.text || "Text"}</span>
         {isSelected && renderResizeHandles(shape.id, onResizeStart)}
+        {isSelected && renderRotationHandle(shape.id, shape.width, onRotateStart)}
       </div>
       return tbEl
+    case "image":
+      const imgEl = <div key={shape.id} style={style} onMouseDown={handleMouseDown} onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}>
+        <img
+          src={shape.imageData?.src}
+          alt={shape.imageData?.alt || ""}
+          style={{ width: "100%", height: "100%", objectFit: "contain", pointerEvents: "none" }}
+          draggable={false}
+        />
+        {isSelected && renderResizeHandles(shape.id, onResizeStart)}
+        {isSelected && renderRotationHandle(shape.id, shape.width, onRotateStart)}
+      </div>
+      return imgEl
     default:
       return null
   }
@@ -516,18 +551,179 @@ function renderResizeHandles(
   )
 }
 
+function renderRotationHandle(shapeId: string, _width: number, onRotateStart?: (e: React.MouseEvent, shapeId: string) => void): JSX.Element {
+  const top = -ROTATION_HANDLE_OFFSET
+  return (
+    <>
+      <div
+        style={{
+          position: "absolute",
+          left: `calc(50% - 0.5px)`,
+          top: -(ROTATION_HANDLE_OFFSET - HANDLE_SIZE / 2),
+          width: 1,
+          height: ROTATION_HANDLE_OFFSET - HANDLE_SIZE / 2,
+          backgroundColor: "var(--wo-prese-accent)",
+          pointerEvents: "none",
+          zIndex: 1000,
+        }}
+      />
+      <div
+        className="prese-canvas-rotate-handle"
+        data-shape-id={shapeId}
+        style={{
+          position: "absolute",
+          left: "50%",
+          top,
+          width: HANDLE_SIZE + 4,
+          height: HANDLE_SIZE + 4,
+          marginLeft: -(HANDLE_SIZE + 4) / 2,
+          marginTop: -(HANDLE_SIZE + 4) / 2,
+          backgroundColor: "white",
+          border: "2px solid var(--wo-prese-accent)",
+          borderRadius: "50%",
+          cursor: "grab",
+          zIndex: 1001,
+        }}
+        onMouseDown={(e) => {
+          e.stopPropagation()
+          onRotateStart?.(e, shapeId)
+        }}
+      />
+    </>
+  )
+}
+
+function InlineEditOverlay({ shape, initialText, onSave, onCancel, onUpdate }: {
+  shape: ShapeData | undefined
+  initialText: string
+  onSave: () => void
+  onCancel: () => void
+  onUpdate: (t: string) => void
+}): JSX.Element | null {
+  const ref = useRef<HTMLDivElement>(null)
+  const [mounted, setMounted] = useState(false)
+
+  // Set initial content and focus on mount
+  useEffect(() => {
+    if (ref.current && !mounted) {
+      ref.current.textContent = initialText
+      ref.current.focus()
+      // Place cursor at end
+      const sel = window.getSelection()
+      const range = document.createRange()
+      range.selectNodeContents(ref.current)
+      range.collapse(false)
+      sel?.removeAllRanges()
+      sel?.addRange(range)
+      setMounted(true)
+    }
+  }, [initialText, mounted])
+
+  if (!shape) return null
+
+  return (
+    <div
+      className="prese-canvas-inline-edit"
+      style={{
+        position: "absolute",
+        left: shape.x,
+        top: shape.y,
+        width: shape.width,
+        height: shape.height,
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        pointerEvents: "auto",
+      }}
+    >
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        className="prese-canvas-inline-edit-field"
+        style={{
+          width: "100%",
+          height: "100%",
+          outline: "2px solid var(--wo-prese-accent, #4a90d9)",
+          outlineOffset: "-1px",
+          backgroundColor: "rgba(255,255,255,0.95)",
+          color: shape.fontColor || "#333",
+          fontSize: shape.fontSize || 14,
+          textAlign: "center",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "4px",
+          boxSizing: "border-box",
+          cursor: "text",
+          overflow: "hidden",
+          borderRadius: "2px",
+        }}
+        onBlur={onSave}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            e.preventDefault()
+            onCancel()
+          }
+        }}
+        onInput={(e) => {
+          onUpdate(e.currentTarget.textContent || "")
+        }}
+      />
+    </div>
+  )
+}
+
 const ObservedSlideCanvas = observer(function ObservedSlideCanvas(): JSX.Element {
-  const dragRef = useRef<{ shapeId: string; startX: number; startY: number; origX: number; origY: number } | null>(null)
+  interface DragState {
+    shapeIds: string[]
+    startX: number
+    startY: number
+    origins: Array<{ id: string; x: number; y: number }>
+  }
+  const dragRef = useRef<DragState | null>(null)
   const resizeRef = useRef<{ shapeId: string; handle: string; startX: number; startY: number; origX: number; origY: number; origW: number; origH: number } | null>(null)
+  const rotateRef = useRef<{ shapeId: string; startX: number; startY: number; origAngle: number; cx: number; cy: number } | null>(null)
   const onDragStart = useCallback((e: React.MouseEvent, shapeId: string) => {
+    const slide = presentationStore.slides[presentationStore.currentSlide]
+    // Determine which shapes to drag: if the clicked shape is part of multi-selection, drag all selected
+    const selectedSet = new Set(presentationStore.selectedShapeIds)
+    const shapeIds = selectedSet.has(shapeId) ? presentationStore.selectedShapeIds : [shapeId]
+    const origins = shapeIds
+      .map((id) => {
+        const s = slide?.shapes?.find((sh) => sh.id === id)
+        return s ? { id, x: s.x, y: s.y } : null
+      })
+      .filter((o): o is { id: string; x: number; y: number } => o !== null)
+    dragRef.current = {
+      shapeIds,
+      startX: e.clientX,
+      startY: e.clientY,
+      origins,
+    }
+  }, [])
+
+  const handleInlineDoubleClick = useCallback((shapeId: string) => {
+    presentationStore.startInlineEdit(shapeId)
+  }, [])
+
+  const onRotateStart = useCallback((e: React.MouseEvent, shapeId: string) => {
     const shape = presentationStore.slides[presentationStore.currentSlide]?.shapes?.find((s) => s.id === shapeId)
     if (!shape) return
-    dragRef.current = {
+    const slideEl = e.currentTarget.closest('[class*="prese-canvas-slide"]') as HTMLElement | null
+    if (!slideEl) return
+    const slideRect = slideEl.getBoundingClientRect()
+    const scale = presentationStore.zoomLevel / 100
+    const cx = slideRect.left + (shape.x + shape.width / 2) * scale
+    const cy = slideRect.top + (shape.y + shape.height / 2) * scale
+    rotateRef.current = {
       shapeId,
       startX: e.clientX,
       startY: e.clientY,
-      origX: shape.x,
-      origY: shape.y,
+      origAngle: shape.rotation || 0,
+      cx,
+      cy,
     }
   }, [])
 
@@ -548,10 +744,12 @@ const ObservedSlideCanvas = observer(function ObservedSlideCanvas(): JSX.Element
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (dragRef.current) {
-      const { shapeId, startX, startY, origX, origY } = dragRef.current
+      const { origins, startX, startY } = dragRef.current
       const dx = (e.clientX - startX) / (presentationStore.zoomLevel / 100)
       const dy = (e.clientY - startY) / (presentationStore.zoomLevel / 100)
-      presentationStore.moveShape(presentationStore.currentSlide, shapeId, Math.round(origX + dx), Math.round(origY + dy))
+      // Use moveShapes for transient drag (no snapshot) — snapshot pushed on mouseup
+      const shapeIds = origins.map((o) => o.id)
+      presentationStore.moveShapes(presentationStore.currentSlide, shapeIds, dx, dy)
     }
     if (resizeRef.current) {
       const { shapeId, handle, startX, startY, origX, origY, origW, origH } = resizeRef.current
@@ -564,11 +762,35 @@ const ObservedSlideCanvas = observer(function ObservedSlideCanvas(): JSX.Element
       if (handle.includes("n")) { newY = origY + dy; newH = Math.max(20, origH - dy) }
       presentationStore.updateShape(presentationStore.currentSlide, shapeId, { x: Math.round(newX), y: Math.round(newY), width: Math.round(newW), height: Math.round(newH) })
     }
+    if (rotateRef.current) {
+      const { shapeId, startX, startY, origAngle, cx, cy } = rotateRef.current
+      const angle = Math.atan2(e.clientY - cy, e.clientX - cx) * (180 / Math.PI)
+      // Account for the initial drag angle so we rotate relative to original position
+      const startAngle = Math.atan2(startY - cy, startX - cx) * (180 / Math.PI)
+      const deltaAngle = angle - startAngle
+      const newAngle = ((origAngle + deltaAngle) % 360 + 360) % 360
+      presentationStore.updateShape(presentationStore.currentSlide, shapeId, { rotation: Math.round(newAngle) })
+    }
   }, [])
 
   const handleMouseUp = useCallback(() => {
+    if (dragRef.current && dragRef.current.origins.length > 0) {
+      // Push a single snapshot after transient multi-drag ends
+      const { shapeIds } = dragRef.current
+      const slide = presentationStore.slides[presentationStore.currentSlide]
+      if (slide) {
+        // Use the first shape's move to trigger a snapshot (moveShape pushes snapshot)
+        if (shapeIds.length > 0) {
+          const first = slide.shapes.find((s) => s.id === shapeIds[0])
+          if (first) {
+            presentationStore.moveShape(presentationStore.currentSlide, shapeIds[0], first.x, first.y)
+          }
+        }
+      }
+    }
     dragRef.current = null
     resizeRef.current = null
+    rotateRef.current = null
   }, [])
 
   useEffect(() => {
@@ -580,7 +802,7 @@ const ObservedSlideCanvas = observer(function ObservedSlideCanvas(): JSX.Element
     }
   }, [handleMouseMove, handleMouseUp])
 
-  const { slides, currentSlide, zoomLevel, slideSize, isPreviewPlaying, previewStep, selectedShapeId } = presentationStore
+  const { slides, currentSlide, zoomLevel, slideSize, isPreviewPlaying, previewStep, selectedShapeIds, editingShapeId } = presentationStore
   const slide = slides[currentSlide]
   if (!slide) return <div className="prese-canvas-empty">No slides</div>
 
@@ -598,7 +820,7 @@ const ObservedSlideCanvas = observer(function ObservedSlideCanvas(): JSX.Element
 
   const handleCanvasClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains("prese-canvas-background")) {
-      presentationStore.deselectShape()
+      presentationStore.deselectAllShapes()
     }
   }
 
@@ -679,7 +901,16 @@ const ObservedSlideCanvas = observer(function ObservedSlideCanvas(): JSX.Element
           </div>
         )}
 
-        {slide.shapes?.map((shape) => renderShape(shape, shape.id === selectedShapeId, onDragStart, onResizeStartCB))}
+        {slide.shapes?.map((shape) => renderShape(shape, selectedShapeIds.includes(shape.id), onDragStart, onResizeStartCB, handleInlineDoubleClick, onRotateStart))}
+
+        {/* Inline text editing overlay */}
+        {editingShapeId && <InlineEditOverlay
+          shape={slide.shapes?.find((s) => s.id === editingShapeId)}
+          initialText={presentationStore.inlineEditText}
+          onSave={() => presentationStore.endInlineEdit()}
+          onCancel={() => { presentationStore.editingShapeId = null; presentationStore.inlineEditText = "" }}
+          onUpdate={(t) => presentationStore.updateInlineText(t)}
+        />}
 
         {slide.notes && (
           <div className="prese-canvas-notes-indicator" title={slide.notes}>

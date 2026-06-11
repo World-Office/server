@@ -427,6 +427,7 @@ impl OoxmlParser {
             let notes = self.parse_pptx_notes(archive, *expected_id);
             let transition = self.parse_pptx_transition(slide_elem);
             let timing_raw = self.parse_pptx_timing_raw(&xml);
+            let animations = self.parse_pptx_animations(slide_elem);
 
             slides.push(Slide {
                 id: *expected_id,
@@ -434,7 +435,7 @@ impl OoxmlParser {
                 shapes,
                 notes,
                 transition,
-                animations: Vec::new(),
+                animations,
                 timing_raw,
             });
         }
@@ -489,6 +490,7 @@ impl OoxmlParser {
         })?;
         let dur_attr = transition.attribute("dur").and_then(|v| v.parse::<f64>().ok());
         let adv_click = transition.attribute("advClick");
+        let adv_tm = transition.attribute("advTm").and_then(|v| v.parse::<f64>().ok());
 
         let effect = transition.children()
             .find(|c| c.is_element() && c.tag_name().namespace() == Some(Self::P_NS))
@@ -544,7 +546,7 @@ impl OoxmlParser {
             } else {
                 AdvanceMode::Timed
             },
-            advance_timing: 0.0,
+            advance_timing: adv_tm.map(|d| d / 1000.0).unwrap_or(0.0),
         })
     }
 
@@ -555,6 +557,123 @@ impl OoxmlParser {
         })?;
         let range = node.range();
         Some(xml[range.start..range.end].to_string())
+    }
+
+    /// Parse `<p:timing>` into `AnimationData` entries.
+    fn parse_pptx_animations(&self, slide_elem: roxmltree::Node) -> Vec<AnimationData> {
+        let mut anims = Vec::new();
+        let timing = slide_elem.descendants().find(|n| {
+            n.has_tag_name("timing") && n.tag_name().namespace() == Some(Self::P_NS)
+        });
+        let timing = match timing {
+            Some(t) => t,
+            None => return anims,
+        };
+
+        // Walk only <p:cTn> elements that directly contain <p:tLst> (actual animation data).
+        // This excludes the timing root (tmRoot) and intermediate grouping cTn elements.
+        for ctn in timing.descendants().filter(|n| {
+            let is_cTn = n.has_tag_name("cTn")
+                && n.tag_name().namespace() == Some(Self::P_NS);
+            if !is_cTn { return false; }
+            n.children().any(|ch| {
+                ch.has_tag_name("tLst") && ch.tag_name().namespace() == Some(Self::P_NS)
+            })
+        }) {
+            let id = ctn.attribute("id").unwrap_or("0").to_string();
+            let dur_raw = ctn.attribute("dur").unwrap_or("0");
+            let dur_sec = dur_raw
+                .trim_end_matches("ms")
+                .parse::<f64>()
+                .ok()
+                .map(|v| v / 1000.0)
+                .unwrap_or(0.0);
+
+            // Determine start type from condition trigger
+            //   evt="onClick" → onClick
+            //   evt="onBegin" + delay=0 → withPrevious
+            //   evt="onBegin" + delay>0 → afterPrevious
+            //   no <p:cond> → withPrevious (default for subsequent animations)
+            let (start, cond_delay_ms) = ctn
+                .descendants()
+                .find(|n| {
+                    n.has_tag_name("cond") && n.tag_name().namespace() == Some(Self::P_NS)
+                })
+                .map(|c| {
+                    let evt = c.attribute("evt").unwrap_or("");
+                    let delay_str = c.attribute("delay").unwrap_or("0");
+                    match evt {
+                        "onClick" => ("onClick", delay_str.to_string()),
+                        "onBegin" => {
+                            if delay_str == "0" || delay_str.is_empty() {
+                                ("withPrevious", delay_str.to_string())
+                            } else {
+                                ("afterPrevious", delay_str.to_string())
+                            }
+                        }
+                        _ => ("onClick", delay_str.to_string()),
+                    }
+                })
+                .unwrap_or(("withPrevious", "0".to_string()));
+            let start = start.to_string();
+
+            // Parse delay from cond attribute (already fetched above)
+            let delay_sec = cond_delay_ms
+                .trim_end_matches("ms")
+                .parse::<f64>()
+                .ok()
+                .map(|v| v / 1000.0)
+                .unwrap_or(0.0);
+
+            // Extract target and effect from <p:effect>, <p:animEffect>, etc.
+            let (target, effect) = self.extract_anim_target_and_effect(&ctn);
+
+            // Derive animation category from the effect filter name.
+            //   "fadeIn", "flyIn", "zoomIn", ... → "entrance"
+            //   "fadeOut", "flyOut", "zoomOut", ... → "exit"
+            //   "spin", "growShrink", other → "emphasis"
+            let category = {
+                let e = effect.trim();
+                if e.ends_with("In") { "entrance" }
+                else if e.ends_with("Out") { "exit" }
+                else { "emphasis" }
+            };
+
+            anims.push(AnimationData {
+                id,
+                effect,
+                category: category.to_string(),
+                target,
+                start,
+                duration: dur_sec,
+                delay: delay_sec,
+            });
+        }
+        anims
+    }
+
+    /// Extract target shape ID and effect name from a `<p:cTn>` animation node.
+    fn extract_anim_target_and_effect(
+        &self,
+        ctn: &roxmltree::Node,
+    ) -> (String, String) {
+        // Check for <p:effect ref="..." filter="...">
+        if let Some(effect) = ctn.descendants().find(|n| {
+            n.has_tag_name("effect") && n.tag_name().namespace() == Some(Self::P_NS)
+        }) {
+            let target = effect.attribute("ref").unwrap_or("").to_string();
+            let filter = effect.attribute("filter").unwrap_or("").to_string();
+            return (target, filter);
+        }
+        // Check for <p:animEffect>
+        if let Some(anim_effect) = ctn.descendants().find(|n| {
+            n.has_tag_name("animEffect") && n.tag_name().namespace() == Some(Self::P_NS)
+        }) {
+            let target = anim_effect.attribute("ref").unwrap_or("").to_string();
+            let transition = anim_effect.attribute("transition").unwrap_or("").to_string();
+            return (target, transition);
+        }
+        (String::new(), String::new())
     }
 
     fn parse_pptx_shape_from_sp(
@@ -2500,5 +2619,172 @@ mod tests {
         // Slide masters should be parsed
         assert!(!pres.slide_masters.is_empty(), "Should have at least one slide master");
         assert!(pres.slides.len() == 1);
+    }
+
+    #[test]
+    fn test_parse_pptx_transition_and_animations() {
+        let mut buf = Vec::new();
+        {
+            let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+            zip.start_file("[Content_Types].xml", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+  <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
+</Types>"#).unwrap();
+
+            zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>"#).unwrap();
+
+            zip.start_file("ppt/presentation.xml", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+                xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:sldSz cx="9144000" cy="6858000"/>
+  <p:sldIdLst>
+    <p:sldId id="256" r:id="rId1"/>
+  </p:sldIdLst>
+</p:presentation>"#).unwrap();
+
+            zip.start_file("ppt/_rels/presentation.xml.rels", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
+</Relationships>"#).unwrap();
+
+            zip.start_file("ppt/slides/slide1.xml", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+  <p:cSld>
+    <p:spTree>
+      <p:nvGrpSpPr>
+        <p:cNvPr id="1" name=""/>
+        <p:cNvGrpSpPr/>
+        <p:nvPr/>
+      </p:nvGrpSpPr>
+      <p:grpSpPr/>
+      <p:sp>
+        <p:nvSpPr>
+          <p:cNvPr id="2" name="TextBox"/>
+          <p:nvPr/>
+        </p:nvSpPr>
+        <p:spPr>
+          <a:xfrm>
+            <a:off x="100" y="100"/>
+            <a:ext cx="5000000" cy="500000"/>
+          </a:xfrm>
+        </p:spPr>
+        <p:txBody>
+          <a:bodyPr/>
+          <a:lstStyle/>
+          <a:p>
+            <a:r>
+              <a:t>Animated</a:t>
+            </a:r>
+          </a:p>
+        </p:txBody>
+      </p:sp>
+    </p:spTree>
+  </p:cSld>
+  <p:transition dur="500" advClick="1" advTm="3000">
+    <p:fade/>
+  </p:transition>
+  <p:timing>
+    <p:tnLst>
+      <p:par>
+        <p:cTn id="1" dur="indefinite" restart="never" nodeType="tmRoot"/>
+      </p:par>
+    </p:tnLst>
+    <p:childTnLst>
+      <p:par>
+        <p:cTn id="2" dur="500" restart="always">
+          <p:stCondLst>
+            <p:cond evt="onClick" delay="0"/>
+          </p:stCondLst>
+          <p:childTnLst>
+            <p:par>
+              <p:cTn id="3" dur="500" restart="always">
+                <p:stCondLst>
+                  <p:cond evt="onClick" delay="0"/>
+                </p:stCondLst>
+                <p:childTnLst>
+                  <p:par>
+                    <p:cTn id="4" dur="500">
+                      <p:stCondLst>
+                        <p:cond evt="onBegin" delay="0"/>
+                      </p:stCondLst>
+                      <p:tLst>
+                        <p:tL>
+                          <p:effect ref="2" filter="fadeIn"/>
+                        </p:tL>
+                      </p:tLst>
+                    </p:cTn>
+                  </p:par>
+                  <p:par>
+                    <p:cTn id="5" dur="300">
+                      <p:stCondLst>
+                        <p:cond evt="onBegin" delay="1000"/>
+                      </p:stCondLst>
+                      <p:tLst>
+                        <p:tL>
+                          <p:effect ref="2" filter="flyOut"/>
+                        </p:tL>
+                      </p:tLst>
+                    </p:cTn>
+                  </p:par>
+                </p:childTnLst>
+              </p:cTn>
+            </p:par>
+          </p:childTnLst>
+        </p:cTn>
+      </p:par>
+    </p:childTnLst>
+  </p:timing>
+</p:sld>"#).unwrap();
+            zip.finish().unwrap();
+        }
+
+        let parser = OoxmlParser::new();
+        let data = buf.as_slice();
+        let cursor = std::io::Cursor::new(data);
+        let mut archive = zip::ZipArchive::new(cursor).unwrap();
+        let pres = parser.parse_pptx(&mut archive).unwrap().unwrap();
+
+        assert_eq!(pres.slides.len(), 1);
+        let slide = &pres.slides[0];
+
+        // Verify transition
+        let trans = slide.transition.as_ref().expect("Should have transition");
+        assert_eq!(trans.effect, TransitionEffect::Fade);
+        assert_eq!(trans.duration, 0.5);
+        assert_eq!(trans.advance_mode, AdvanceMode::Manual);
+        assert_eq!(trans.advance_timing, 3.0);
+
+        // Verify animations — only top-level <p:cTn> with <p:tLst> are counted
+        assert_eq!(slide.animations.len(), 2, "Should have 2 animations");
+
+        // First anim: fadeIn, onClick, withPrevious (evt=onBegin, delay=0)
+        let a0 = &slide.animations[0];
+        assert_eq!(a0.target, "2");
+        assert_eq!(a0.effect, "fadeIn");
+        assert_eq!(a0.category, "entrance");
+        assert_eq!(a0.start, "withPrevious");
+        assert_eq!(a0.duration, 0.5);
+        assert_eq!(a0.delay, 0.0);
+
+        // Second anim: flyOut, afterPrevious (evt=onBegin, delay=1000)
+        let a1 = &slide.animations[1];
+        assert_eq!(a1.target, "2");
+        assert_eq!(a1.effect, "flyOut");
+        assert_eq!(a1.category, "exit");
+        assert_eq!(a1.start, "afterPrevious");
+        assert_eq!(a1.duration, 0.3);
+        assert_eq!(a1.delay, 1.0);
     }
 }

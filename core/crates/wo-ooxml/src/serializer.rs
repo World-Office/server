@@ -300,11 +300,16 @@ impl OoxmlSerializer {
                 let adv_click = if trans.advance_mode == AdvanceMode::Manual { "1" } else { "0" };
                 xml.push_str(&format!(
                     r#"
-  <p:transition dur="{}" advClick="{}">
-    <{}/>
-  </p:transition>"#,
-                    dur_ms, adv_click, effect_name
+  <p:transition dur="{}" advClick="{}""#,
+                    dur_ms, adv_click,
                 ));
+                if trans.advance_timing > 0.0 {
+                    let adv_tm_ms = (trans.advance_timing * 1000.0) as u64;
+                    xml.push_str(&format!(r#" advTm="{}""#, adv_tm_ms));
+                }
+                xml.push_str(&format!(r#">
+    <{}/>
+  </p:transition>"#, effect_name));
             }
         }
 
@@ -318,19 +323,42 @@ impl OoxmlSerializer {
       </p:par>
     </p:tnLst>"#);
             for anim in &slide.animations {
-                let anim_dur = format!("{}", (anim.duration * 1000.0) as u64);
-                let anim_delay = format!("{}", (anim.delay * 1000.0) as u64);
-                xml.push_str(&format!(r#"
-    <p:childTnLst>
+                let anim_dur = (anim.duration * 1000.0) as u64;
+                let anim_delay = (anim.delay * 1000.0) as u64;
+                // Map start type to OOXML cond evt attribute
+                //   "onClick" → evt="onClick", delay=0
+                //   "withPrevious" → evt="onBegin", delay=0
+                //   "afterPrevious" → evt="onBegin", delay=<delay_ms>
+                //   default → evt="onClick", delay=0
+                let evt_attr = match anim.start.as_str() {
+                    "withPrevious" => "onBegin",
+                    "afterPrevious" => "onBegin",
+                    _ => "onClick",
+                };
+                let mut xml_anim = format!(
+                    r#"    <p:childTnLst>
       <p:par>
         <p:cTn id="{}" dur="{}" restart="always">
           <p:stCondLst>
-            <p:cond delay="{}"/>
+            <p:cond evt="{}" delay="{}"/>
           </p:stCondLst>
-          <p:effect/>
-        </p:cTn>
+"#,
+                    anim.id, anim_dur, evt_attr, anim_delay,
+                );
+                if anim.target.is_empty() && anim.effect.is_empty() {
+                    xml_anim.push_str("          <p:effect/>\n");
+                } else {
+                    xml_anim.push_str(&format!(
+                        "          <p:effect ref=\"{}\" filter=\"{}\"/>\n",
+                        anim.target, anim.effect,
+                    ));
+                }
+                xml_anim.push_str(
+                    "        </p:cTn>
       </p:par>
-    </p:childTnLst>"#, anim.id, anim_dur, anim_delay));
+    </p:childTnLst>",
+                );
+                xml.push_str(&xml_anim);
             }
             xml.push_str("\n  </p:timing>");
         } else if let Some(timing_raw) = &slide.timing_raw {
@@ -2240,6 +2268,84 @@ mod tests {
         assert!(ct.contains("presentationml.slide+xml"));
         assert!(ct.contains("/ppt/presentation.xml"));
         assert!(ct.contains("/ppt/slides/slide1.xml"));
+    }
+
+    #[test]
+    fn test_serialize_pptx_transition_and_animation() {
+        let pres = PptxPresentation {
+            slide_size: SlideSize::standard(),
+            slides: vec![Slide {
+                id: 256,
+                name: "Animated".to_string(),
+                notes: None,
+                transition: Some(SlideTransition {
+                    effect: TransitionEffect::Fade,
+                    duration: 0.5,
+                    advance_mode: AdvanceMode::Timed,
+                    advance_timing: 3.0,
+                }),
+                animations: vec![
+                    AnimationData {
+                        id: "1".to_string(),
+                        effect: "fadeIn".to_string(),
+                        category: "entrance".to_string(),
+                        target: "2".to_string(),
+                        start: "onClick".to_string(),
+                        duration: 0.5,
+                        delay: 0.0,
+                    },
+                    AnimationData {
+                        id: "2".to_string(),
+                        effect: "flyOut".to_string(),
+                        category: "exit".to_string(),
+                        target: "2".to_string(),
+                        start: "afterPrevious".to_string(),
+                        duration: 0.3,
+                        delay: 1.0,
+                    },
+                ],
+                timing_raw: None,
+                shapes: vec![SlideShape::TextBox(TextBoxShape {
+                    id: "2".to_string(),
+                    bounds: Bounds { x: 100, y: 100, cx: 5000000, cy: 500000 },
+                    text_body: TextBody {
+                        paragraphs: vec![DocxParagraph {
+                            style_id: None,
+                            properties: DocxParagraphProperties::default(),
+                            runs: vec![DocxRun {
+                                text: "Animated".to_string(),
+                                ..DocxRun::default()
+                            }],
+                        }],
+                    },
+                    fill: None,
+                    effect: None,
+                })],
+            }],
+            slide_masters: Vec::new(),
+            theme: None,
+            core_properties: CoreProperties::default(),
+        };
+        let ser = OoxmlSerializer::new();
+        let bytes = ser.serialize_pptx(&pres).unwrap();
+
+        let slide_xml = read_zip_entry(&bytes, "ppt/slides/slide1.xml");
+        // Must contain transition with fade effect, dur, advClick, advTm
+        assert!(slide_xml.contains("<p:transition"));
+        assert!(slide_xml.contains("dur=\"500\""));
+        // advClick="0" because advance_mode is Timed
+        assert!(slide_xml.contains("advClick=\"0\""));
+        assert!(slide_xml.contains("advTm=\"3000\""));
+        assert!(slide_xml.contains("<p:fade/>"));
+
+        // Must contain timing with two animations
+        assert!(slide_xml.contains("<p:timing>"));
+        // First anim: onClick
+        assert!(slide_xml.contains(r#"<p:cond evt="onClick" delay="0"/>"#));
+        // Second anim: afterPrevious → evt="onBegin" with delay
+        assert!(slide_xml.contains(r#"<p:cond evt="onBegin" delay="1000"/>"#));
+        assert!(slide_xml.contains(r#"<p:effect ref="2" filter="fadeIn"/>"#));
+        assert!(slide_xml.contains(r#"<p:effect ref="2" filter="flyOut"/>"#));
     }
 
     #[test]

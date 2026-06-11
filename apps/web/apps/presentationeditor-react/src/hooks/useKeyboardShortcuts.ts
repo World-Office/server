@@ -8,6 +8,16 @@ export function useKeyboardShortcuts(): void {
       const isCtrl = e.ctrlKey || e.metaKey
 
       if (isCtrl) {
+        if (e.key === "z" || e.key === "Z") {
+          if (e.shiftKey) {
+            e.preventDefault()
+            presentationStore.redo()
+          } else {
+            e.preventDefault()
+            presentationStore.undo()
+          }
+          return
+        }
         if (e.key === "=" || e.key === "+") {
           e.preventDefault()
           presentationStore.zoomIn()
@@ -26,6 +36,11 @@ export function useKeyboardShortcuts(): void {
         if (e.key === "n" || e.key === "N") {
           e.preventDefault()
           presentationStore.addSlide()
+          return
+        }
+        if (e.key === "a" || e.key === "A") {
+          e.preventDefault()
+          presentationStore.selectAllShapes()
           return
         }
       }
@@ -67,10 +82,9 @@ export function useKeyboardShortcuts(): void {
           break
         case "Delete":
         case "Backspace": {
-          const selId = presentationStore.selectedShapeId
-          if (selId) {
+          if (presentationStore.selectedShapeIds.length > 0) {
             e.preventDefault()
-            presentationStore.removeShape(presentationStore.currentSlide, selId)
+            presentationStore.removeSelectedShapes()
           } else {
             e.preventDefault()
             presentationStore.deleteSlide(currentSlide)

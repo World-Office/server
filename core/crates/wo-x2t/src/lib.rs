@@ -7,6 +7,7 @@ pub mod converter;
 pub mod converters;
 pub mod error;
 pub mod model;
+pub mod presentation_model;
 pub mod roundtrip;
 pub mod router;
 

@@ -42,7 +42,7 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
       {/* Slides */}
       <div className="prese-inserttab-group">
         <div className="prese-inserttab-elset">
-          <button type="button" className="prese-inserttab-btn" title="New Slide">
+          <button type="button" className="prese-inserttab-btn" title="New Slide" onClick={() => presentationStore.addSlide()}>
             New Slide
           </button>
         </div>
@@ -89,7 +89,25 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
       {/* Images */}
       <div className="prese-inserttab-group">
         <div className="prese-inserttab-elset">
-          <button type="button" className="prese-inserttab-btn" title="Pictures">
+          <input
+            type="file"
+            accept="image/*"
+            id="prese-image-picker"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) {
+                presentationStore.addImageToSlide(presentationStore.currentSlide, file)
+              }
+              e.target.value = ""
+            }}
+          />
+          <button
+            type="button"
+            className="prese-inserttab-btn"
+            title="Pictures"
+            onClick={() => document.getElementById("prese-image-picker")?.click()}
+          >
             Pictures
           </button>
           <button type="button" className="prese-inserttab-btn" title="Online Pictures">
