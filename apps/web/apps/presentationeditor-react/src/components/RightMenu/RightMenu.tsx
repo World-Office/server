@@ -4,6 +4,8 @@ import { presentationStore } from "../../stores/PresentationStore"
 import type { RightMenuPanel } from "../../types/presentation"
 import { RightMenuButton } from "./RightMenuButton"
 import { AnimationPanel } from "./AnimationPanel"
+import { SlidePanel } from "./SlidePanel"
+import { ShapePanel } from "./ShapePanel"
 
 const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> = [
   { action: "paragraph", title: "Paragraph", icon: "¶" },
@@ -20,9 +22,9 @@ const PANELS: Record<RightMenuPanel, JSX.Element> = {
   paragraph: <div />,
   table: <div />,
   image: <div />,
-  slide: <div />,
+  slide: <SlidePanel />,
   chart: <div />,
-  shape: <div />,
+  shape: <ShapePanel />,
   textart: <div />,
   animation: <AnimationPanel />,
 }

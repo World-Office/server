@@ -242,7 +242,7 @@ export interface AnimationData {
   delay: number
 }
 
-export type ShapeType = "rect" | "roundedRect" | "ellipse" | "triangle" | "diamond" | "line" | "arrow" | "connector" | "textbox"
+export type ShapeType = "rect" | "roundedRect" | "ellipse" | "triangle" | "diamond" | "line" | "arrow" | "connector" | "textbox" | "image"
 
 export type ConnectorType = "straight" | "bent" | "curved"
 
@@ -277,6 +277,15 @@ export interface ConnectorData {
   endY: number
 }
 
+export interface ImageData {
+  src: string
+  alt?: string
+}
+
+export interface GroupData {
+  shapeIds: string[]
+}
+
 export interface ShapeData {
   id: string
   type: ShapeType
@@ -297,6 +306,8 @@ export interface ShapeData {
   connector?: ConnectorData
   gradientFill?: GradientFill
   shadow?: ShadowEffect
+  imageData?: ImageData
+  groupId?: string
 }
 
 export type ChartType = "bar" | "column" | "line" | "pie" | "doughnut"

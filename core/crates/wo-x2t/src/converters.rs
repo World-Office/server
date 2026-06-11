@@ -20,7 +20,7 @@ use wo_html::model::{
 };
 use wo_html::{HtmlParser, HtmlSerializer};
 use wo_odf::OdfParser;
-use wo_ooxml::OoxmlParser;
+
 use wo_rtf::model::{RtfBlock, RtfDocument, RtfFont, RtfInline};
 use wo_rtf::{RtfParser, RtfSerializer};
 use wo_txt::parser::TxtDocument;
@@ -47,10 +47,17 @@ use wo_odf::model::{
 };
 use wo_odf::OdfSerializer;
 use wo_ooxml::model::{
-    CoreProperties, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, DocxTable,
-    DocxTableCell, DocxTableRow, OoxmlDocument, OoxmlFormat, UnderlineType,
+    AdvanceMode, AnimationData as OoxmlAnimData, Bounds, ConnectorShape, ConnectorShapeType,
+    CoreProperties, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun,
+    DocxTable, DocxTableCell, DocxTableRow, Fill, OoxmlDocument, OoxmlFormat, PictureShape,
+    PptxPresentation, Slide, SlideShape, SlideSize, SlideTransition, TextBody as OoxmlTextBody,
+    TextBoxShape, TransitionEffect, UnderlineType,
 };
-use wo_ooxml::OoxmlSerializer;
+use wo_ooxml::{OoxmlParser, OoxmlSerializer};
+
+use crate::presentation_model::{
+    WoAnimationData, WoImageData, WoPresentation, WoShapeData, WoSlide,
+};
 
 // ── Converter structs ────────────────────────────────────────────────
 
@@ -5240,6 +5247,585 @@ fn docx_to_xps(doc: &OoxmlDocument) -> wo_xps::model::XpsDocument {
     }
 }
 
+// ── Presentation format converters (WoPresentation ↔ PPTX) ──────────
+//
+// These converters bridge the frontend JSON presentation format
+// with the OOXML PPTX format via the wo-ooxml PptxPresentation model.
+
+/// Canvas logical width used by the frontend (all slide sizes).
+const CANVAS_WIDTH: f64 = 960.0;
+
+/// Canvas logical heights by slide size name.
+fn canvas_height(slide_size: &str) -> f64 {
+    match slide_size {
+        "standard" => 720.0,
+        _ => 540.0, // widescreen / default
+    }
+}
+
+/// Convert a frontend pixel coordinate to OOXML EMU.
+fn px_to_emu(px: f64, canvas_dim: f64, slide_dim: i64) -> i64 {
+    (px * slide_dim as f64 / canvas_dim) as i64
+}
+
+/// Convert OOXML EMU back to frontend pixel coordinate.
+fn emu_to_px(emu: i64, canvas_dim: f64, slide_dim: i64) -> f64 {
+    if slide_dim == 0 {
+        return 0.0;
+    }
+    emu as f64 * canvas_dim / slide_dim as f64
+}
+
+/// Parse a data URL of the form `data:image/png;base64,<data>`.
+fn parse_data_url(url: &str) -> (String, Vec<u8>) {
+    if let Some(rest) = url.strip_prefix("data:") {
+        if let Some(comma_pos) = rest.find(',') {
+            let header = &rest[..comma_pos];
+            let b64_data = &rest[comma_pos + 1..];
+            // Determine extension from MIME type
+            let ext = if header.contains("png") {
+                "png"
+            } else if header.contains("jpeg") || header.contains("jpg") {
+                "jpg"
+            } else if header.contains("gif") {
+                "gif"
+            } else if header.contains("bmp") {
+                "bmp"
+            } else if header.contains("webp") {
+                "webp"
+            } else {
+                "png" // fallback
+            };
+            let decoded = base64::Engine::decode(
+                &base64::engine::general_purpose::STANDARD,
+                b64_data,
+            )
+            .unwrap_or_default();
+            return (ext.to_string(), decoded);
+        }
+    }
+    ("png".to_string(), Vec::new())
+}
+
+/// Encode raw image data into a data URL.
+fn encode_data_url(ext: &str, data: &[u8]) -> String {
+    let mime = match ext {
+        "jpg" | "jpeg" => "image/jpeg",
+        "gif" => "image/gif",
+        "bmp" => "image/bmp",
+        "webp" => "image/webp",
+        _ => "image/png",
+    };
+    let b64 = base64::Engine::encode(
+        &base64::engine::general_purpose::STANDARD,
+        data,
+    );
+    format!("data:{};base64,{}", mime, b64)
+}
+
+/// Convert a frontend WoShapeData to an OOXML SlideShape.
+fn wo_shape_to_slide_shape(
+    shape: &WoShapeData,
+    slide_size: &SlideSize,
+    slide_size_name: &str,
+) -> SlideShape {
+    let cw = CANVAS_WIDTH;
+    let ch = canvas_height(slide_size_name);
+
+    let bounds = Bounds {
+        x: px_to_emu(shape.x, cw, slide_size.cx),
+        y: px_to_emu(shape.y, ch, slide_size.cy),
+        cx: px_to_emu(shape.width, cw, slide_size.cx),
+        cy: px_to_emu(shape.height, ch, slide_size.cy),
+    };
+
+    match shape.shape_type.as_str() {
+        "image" => {
+            // Build PictureShape from imageData
+            let (image_extension, image_data) = shape
+                .image_data
+                .as_ref()
+                .map(|img| parse_data_url(&img.src))
+                .unwrap_or_else(|| ("png".to_string(), Vec::new()));
+
+            SlideShape::Picture(PictureShape {
+                id: shape.id.clone(),
+                bounds,
+                name: shape.image_data.as_ref()
+                    .and_then(|img| img.alt.clone())
+                    .unwrap_or_else(|| "Image".to_string()),
+                image_extension,
+                image_data,
+                effect: None,
+            })
+        }
+        "line" | "arrow" | "connector" => {
+            let ctype = if shape.shape_type == "connector" {
+                ConnectorShapeType::Straight
+            } else {
+                ConnectorShapeType::Straight
+            };
+            SlideShape::Connector(ConnectorShape {
+                id: shape.id.clone(),
+                bounds,
+                connector_type: ctype,
+                line_width: shape
+                    .stroke_width
+                    .map(|w| px_to_emu(w, cw, slide_size.cx)),
+                has_start_arrow: shape.shape_type == "arrow",
+                has_end_arrow: shape.shape_type == "arrow" || shape.shape_type == "line",
+                fill: shape.fill_color.as_ref().map(|c| {
+                    Fill::Solid(c.trim_start_matches('#').to_string())
+                }),
+                effect: None,
+            })
+        }
+        _ => {
+            // TextBox or rectangle/ellipse/etc.
+            let text_body = if let Some(ref text) = shape.text {
+                OoxmlTextBody {
+                    paragraphs: vec![DocxParagraph {
+                        style_id: None,
+                        properties: DocxParagraphProperties::default(),
+                        runs: vec![DocxRun {
+                            text: text.clone(),
+                            font_size: shape.font_size.map(|fs| (fs * 100.0) as u32),
+                            color: shape.font_color.as_ref().map(|fc| fc.trim_start_matches('#').to_string()),
+                            ..DocxRun::default()
+                        }],
+                    }],
+                }
+            } else {
+                OoxmlTextBody {
+                    paragraphs: vec![DocxParagraph {
+                        style_id: None,
+                        properties: DocxParagraphProperties::default(),
+                        runs: vec![],
+                    }],
+                }
+            };
+
+            let fill = shape.fill_color.as_ref().map(|c| {
+                Fill::Solid(c.trim_start_matches('#').to_string())
+            });
+
+            SlideShape::TextBox(TextBoxShape {
+                id: shape.id.clone(),
+                bounds,
+                text_body,
+                fill,
+                effect: None,
+            })
+        }
+    }
+}
+
+/// Convert an OOXML SlideShape back to a frontend WoShapeData.
+fn slide_shape_to_wo_shape(
+    shape: &SlideShape,
+    slide_size: &SlideSize,
+    slide_size_name: &str,
+) -> WoShapeData {
+    let cw = CANVAS_WIDTH;
+    let ch = canvas_height(slide_size_name);
+
+    let (id, bounds, shape_type, fill_color, text, font_size, font_color, stroke_width,
+         _has_arrow_start, _has_arrow_end, image_data) = match shape {
+        SlideShape::TextBox(tb) => {
+            let (txt, fs, fc) = extract_text_info(&tb.text_body);
+            (
+                tb.id.clone(),
+                tb.bounds,
+                "textbox".to_string(),
+                tb.fill.as_ref().and_then(|f| match f {
+                    Fill::Solid(c) => Some(format!("#{}", c)),
+                    _ => None,
+                }),
+                txt,
+                fs,
+                fc,
+                None,
+                false,
+                false,
+                None,
+            )
+        }
+        SlideShape::Picture(pic) => {
+            let img_data = if pic.image_data.is_empty() {
+                None
+            } else {
+                Some(WoImageData {
+                    src: encode_data_url(&pic.image_extension, &pic.image_data),
+                    alt: Some(pic.name.clone()),
+                })
+            };
+            (
+                pic.id.clone(),
+                pic.bounds,
+                "image".to_string(),
+                None,
+                None,
+                None,
+                None,
+                None,
+                false,
+                false,
+                img_data,
+            )
+        }
+        SlideShape::Placeholder(ph) => {
+            let (txt, fs, fc) = ph.text_body.as_ref()
+                .map(|tb| extract_text_info(tb))
+                .unwrap_or((None, None, None));
+            (
+                ph.id.clone(),
+                ph.bounds,
+                "textbox".to_string(),
+                ph.fill.as_ref().and_then(|f| match f {
+                    Fill::Solid(c) => Some(format!("#{}", c)),
+                    _ => None,
+                }),
+                txt,
+                fs,
+                fc,
+                None,
+                false,
+                false,
+                None,
+            )
+        }
+        SlideShape::Connector(conn) => {
+            let stype = if conn.has_start_arrow && conn.has_end_arrow {
+                "arrow"
+            } else {
+                "connector"
+            };
+            let sw = conn.line_width.map(|w| emu_to_px(w, cw, slide_size.cx));
+            (
+                conn.id.clone(),
+                conn.bounds,
+                stype.to_string(),
+                conn.fill.as_ref().and_then(|f| match f {
+                    Fill::Solid(c) => Some(format!("#{}", c)),
+                    _ => None,
+                }),
+                None,
+                None,
+                None,
+                sw,
+                conn.has_start_arrow,
+                conn.has_end_arrow,
+                None,
+            )
+        }
+        SlideShape::Table(table) => {
+            // Tables are exported as textbox for now — minimal lossy conversion
+            (
+                table.id.clone(),
+                table.bounds,
+                "textbox".to_string(),
+                None,
+                Some(format!("<table> {} cols, {} rows", table.columns.len(), table.rows.len())),
+                None,
+                None,
+                None,
+                false,
+                false,
+                None,
+            )
+        }
+    };
+
+    WoShapeData {
+        id,
+        shape_type,
+        x: emu_to_px(bounds.x, cw, slide_size.cx),
+        y: emu_to_px(bounds.y, ch, slide_size.cy),
+        width: emu_to_px(bounds.cx, cw, slide_size.cx),
+        height: emu_to_px(bounds.cy, ch, slide_size.cy),
+        rotation: 0.0,
+        z_index: 0,
+        fill_color,
+        stroke_color: None,
+        stroke_width,
+        text,
+        font_size,
+        font_color,
+        image_data,
+        group_id: None,
+        connector: None,
+        chart: None,
+        gradient_fill: None,
+        shadow: None,
+    }
+}
+
+/// Extract text info from an OOXML TextBody.
+fn extract_text_info(
+    tb: &OoxmlTextBody,
+) -> (Option<String>, Option<f64>, Option<String>) {
+    let mut text_parts: Vec<&str> = Vec::new();
+    let mut font_size: Option<f64> = None;
+    let mut font_color: Option<String> = None;
+
+    for para in &tb.paragraphs {
+        for run in &para.runs {
+            if !run.text.is_empty() {
+                text_parts.push(&run.text);
+            }
+            if font_size.is_none() {
+                font_size = run.font_size.map(|s| s as f64 / 100.0);
+            }
+            if font_color.is_none() {
+                font_color = run
+                    .color
+                    .as_ref()
+                    .map(|c| format!("#{}", c));
+            }
+        }
+    }
+
+    let text = if text_parts.is_empty() {
+        None
+    } else {
+        Some(text_parts.join(""))
+    };
+
+    (text, font_size, font_color)
+}
+
+/// Map frontend transition effect string to OOXML TransitionEffect.
+fn wo_transition_to_ooxml(effect: &str) -> TransitionEffect {
+    match effect {
+        "fade" => TransitionEffect::Fade,
+        "push" => TransitionEffect::Push,
+        "wipe" => TransitionEffect::Wipe,
+        "split" => TransitionEffect::Split,
+        "reveal" => TransitionEffect::Reveal,
+        "zoom" => TransitionEffect::Zoom,
+        "morph" => TransitionEffect::Morph,
+        "dissolve" => TransitionEffect::Dissolve,
+        "wheel" => TransitionEffect::Wheel,
+        "random" => TransitionEffect::Random,
+        _ => TransitionEffect::Fade,
+    }
+}
+
+/// Map OOXML TransitionEffect back to frontend string.
+fn ooxml_transition_to_wo(effect: &TransitionEffect) -> String {
+    match effect {
+        TransitionEffect::None => String::new(),
+        TransitionEffect::Fade => "fade".to_string(),
+        TransitionEffect::Push => "push".to_string(),
+        TransitionEffect::Wipe => "wipe".to_string(),
+        TransitionEffect::Split => "split".to_string(),
+        TransitionEffect::Reveal => "reveal".to_string(),
+        TransitionEffect::Zoom => "zoom".to_string(),
+        TransitionEffect::Morph => "morph".to_string(),
+        TransitionEffect::Dissolve => "dissolve".to_string(),
+        TransitionEffect::Wheel => "wheel".to_string(),
+        TransitionEffect::Random => "random".to_string(),
+        _ => "fade".to_string(),
+    }
+}
+
+/// Converts frontend WoPresentation JSON → PPTX bytes.
+pub struct WoPresentationToPptxConverter;
+
+impl FormatConverter for WoPresentationToPptxConverter {
+    fn source_format(&self) -> &str {
+        "wo-presentation"
+    }
+    fn target_format(&self) -> &str {
+        "pptx"
+    }
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        let wo: WoPresentation = serde_json::from_slice(data)
+            .map_err(|e| ConversionError::Parse(format!("Invalid WoPresentation JSON: {}", e)))?;
+
+        let slide_size_name = if wo.slide_size == "standard" {
+            "standard"
+        } else {
+            "widescreen"
+        };
+        let slide_size = match slide_size_name {
+            "standard" => SlideSize::standard(),
+            _ => SlideSize::widescreen(),
+        };
+
+        let slides: Vec<Slide> = wo
+            .slides
+            .iter()
+            .map(|ws| {
+                let _shape_count = ws.shapes.len();
+                let shapes: Vec<SlideShape> = ws
+                    .shapes
+                    .iter()
+                    .map(|s| wo_shape_to_slide_shape(s, &slide_size, slide_size_name))
+                    .collect();
+
+                let transition = ws.transition_effect.as_ref().map(|eff| {
+                    SlideTransition {
+                        effect: wo_transition_to_ooxml(eff),
+                        duration: ws.transition_duration.unwrap_or(0.5),
+                        advance_mode: match ws.advance_mode.as_deref() {
+                            Some("timed") => AdvanceMode::Timed,
+                            _ => AdvanceMode::Manual,
+                        },
+                        advance_timing: ws.advance_timing.unwrap_or(0.0),
+                    }
+                });
+
+                let animations: Vec<OoxmlAnimData> = ws
+                    .animations
+                    .iter()
+                    .map(|a| OoxmlAnimData {
+                        id: a.id.clone(),
+                        effect: a.effect.clone(),
+                        category: a.category.clone(),
+                        target: a.target.clone(),
+                        start: a.start.clone(),
+                        duration: a.duration,
+                        delay: a.delay,
+                    })
+                    .collect();
+
+                // Parse slide id — if it's not a number, use index + 1
+                let slide_id: u32 = ws.id.parse().unwrap_or(0);
+
+                Slide {
+                    id: slide_id,
+                    name: ws.title.clone(),
+                    shapes,
+                    notes: ws.notes.clone(),
+                    transition,
+                    animations,
+                    timing_raw: None,
+                }
+            })
+            .collect();
+
+        let pptx = PptxPresentation {
+            slide_size,
+            slides,
+            slide_masters: Vec::new(),
+            theme: None,
+            core_properties: CoreProperties::default(),
+        };
+
+        let serializer = OoxmlSerializer::new();
+        serializer
+            .serialize_pptx(&pptx)
+            .map_err(|e| ConversionError::Serialize(e.to_string()))
+    }
+}
+
+/// Converts PPTX bytes → frontend WoPresentation JSON.
+pub struct PptxToWoPresentationConverter;
+
+impl FormatConverter for PptxToWoPresentationConverter {
+    fn source_format(&self) -> &str {
+        "pptx"
+    }
+    fn target_format(&self) -> &str {
+        "wo-presentation"
+    }
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        use std::io::Cursor;
+        use zip::ZipArchive;
+
+        let cursor = Cursor::new(data);
+        let mut archive = ZipArchive::new(cursor)
+            .map_err(|e| ConversionError::Parse(format!("Invalid PPTX zip: {}", e)))?;
+
+        let parser = OoxmlParser::new();
+        let pptx = parser
+            .parse_pptx(&mut archive)
+            .map_err(|e| ConversionError::Parse(e.to_string()))?
+            .ok_or_else(|| {
+                ConversionError::Parse("Not a valid PPTX file".to_string())
+            })?;
+
+        let slide_size_name = if pptx.slide_size.cx <= 10000000 {
+            "standard"
+        } else {
+            "widescreen"
+        };
+
+        let slides: Vec<WoSlide> = pptx
+            .slides
+            .iter()
+            .map(|slide| {
+                let shapes: Vec<WoShapeData> = slide
+                    .shapes
+                    .iter()
+                    .map(|s| slide_shape_to_wo_shape(s, &pptx.slide_size, slide_size_name))
+                    .collect();
+
+                let (transition_effect, transition_duration, advance_mode, advance_timing) =
+                    slide.transition.as_ref().map_or(
+                        (None, None, None, None),
+                        |t| {
+                            let eff = ooxml_transition_to_wo(&t.effect);
+                            (
+                                Some(eff),
+                                Some(t.duration),
+                                match t.advance_mode {
+                                    AdvanceMode::Timed => Some("timed".to_string()),
+                                    AdvanceMode::Manual => Some("click".to_string()),
+                                },
+                                if t.advance_timing > 0.0 {
+                                    Some(t.advance_timing)
+                                } else {
+                                    None
+                                },
+                            )
+                        },
+                    );
+
+                let animations: Vec<WoAnimationData> = slide
+                    .animations
+                    .iter()
+                    .map(|a| WoAnimationData {
+                        id: a.id.clone(),
+                        effect: a.effect.clone(),
+                        category: a.category.clone(),
+                        target: a.target.clone(),
+                        start: a.start.clone(),
+                        duration: a.duration,
+                        delay: a.delay,
+                    })
+                    .collect();
+
+                WoSlide {
+                    id: slide.id.to_string(),
+                    title: slide.name.clone(),
+                    layout: "blank".to_string(),
+                    notes: slide.notes.clone(),
+                    transition_effect,
+                    transition_duration,
+                    transition_sound_enabled: None,
+                    advance_mode,
+                    advance_timing,
+                    animations,
+                    shapes,
+                }
+            })
+            .collect();
+
+        let wo = WoPresentation {
+            version: 3,
+            slide_size: slide_size_name.to_string(),
+            theme_type: "builtin".to_string(),
+            theme: None,
+            slides,
+        };
+
+        serde_json::to_vec_pretty(&wo)
+            .map_err(|e| ConversionError::Serialize(e.to_string()))
+    }
+}
+
 // ── Tests ────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -7724,5 +8310,16 @@ mod tests {
         let docx_xps = DocxToXpsConverter;
         assert_eq!(docx_xps.source_format(), "docx");
         assert_eq!(docx_xps.target_format(), "xps");
+    }
+
+    #[test]
+    fn test_presentation_converter_format_strings() {
+        let wo_pptx = WoPresentationToPptxConverter;
+        assert_eq!(wo_pptx.source_format(), "wo-presentation");
+        assert_eq!(wo_pptx.target_format(), "pptx");
+
+        let pptx_wo = PptxToWoPresentationConverter;
+        assert_eq!(pptx_wo.source_format(), "pptx");
+        assert_eq!(pptx_wo.target_format(), "wo-presentation");
     }
 }

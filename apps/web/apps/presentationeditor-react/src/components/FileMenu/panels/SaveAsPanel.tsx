@@ -1,5 +1,6 @@
 import type { JSX } from "react"
 import { presentationStore } from "../../../stores/PresentationStore"
+import { exportToPPTX } from "../../../lib/export-service"
 
 function downloadJSON(): void {
   const json = presentationStore.toJSON()
@@ -26,7 +27,13 @@ export function SaveAsPanel({ visible }: { visible: boolean }): JSX.Element {
               key={format}
               type="button"
               className="prese-file-menu-format-btn"
-              onClick={() => {}}
+              onClick={() => {
+                if (format === "PPTX") {
+                  exportToPPTX()
+                } else {
+                  alert(`Export to ${format} coming soon`)
+                }
+              }}
             >
               {format}
             </button>

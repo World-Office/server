@@ -403,6 +403,9 @@ pub struct AnimationData {
     pub effect: String,
     #[serde(default)]
     pub category: String,
+    /// The ID of the target shape (shape `id` field).
+    #[serde(default)]
+    pub target: String,
     #[serde(default)]
     pub start: String,
     #[serde(default)]

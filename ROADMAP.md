@@ -35,8 +35,14 @@
 - ✅ **Charts on slides** — bar, column, line, pie, doughnut SVG rendering with ChartTypePicker
 - ✅ **Presenter view** — full-screen mode, keyboard nav, speaker notes, next preview, timer
 - ✅ **Shapes & SmartArt** — 8 shape types, drag-move, resize handles, arrange, gallery picker
+- ✅ **Shape Properties Panel (SS5)** — fill, stroke, position (x/y/w/h), font controls (family/size/bold/italic), Delete button
+- ✅ **Undo/Redo (SS5)** — full history stack with 25 snapshot points across all mutation methods, Ctrl+Z/Ctrl+Shift+Z keyboard shortcuts
+- ✅ **Inline text editing (SS6)** — double-click to edit shapes, contentEditable overlay, auto-focus with cursor at end, Escape to cancel, blur auto-save, MobX auto-sync to Shape Panel
+- ✅ **Clipboard (SS6)** — copy/cut/paste shapes with 30px offset on paste, HomeTab button wiring
+- ✅ **Shape Rotation Handle (SS7)** — drag-to-rotate circle + connecting line on all 11 shape types, atan2-based angle delta, canvas transform
+- ✅ **Shape Alignment Tools (SS7)** — 6-axis alignment (left/center/right/top/middle/bottom) in HomeTab Arrange dropdown, getSlideDimensions() helper
 - ✅ **Tables on slides** — TableData types, SVG rendering, TablePicker popup, InsertTab wiring
-- ❐ PPTX full roundtrip (100% OOXML schema coverage)
+- ✅ **PPTX full roundtrip (SS8b)** — WoPresentation↔PptxPresentation converter mit Coordinate-Mapping, Base64-Image-Encoding, Shape-Type-Mapping, Transition-Effect-Mapping, 216 Tests
 - ❐ ODP import/export
 - ❐ Realtime coauthoring for presentations
 
@@ -49,3 +55,14 @@
 - XLSX spreadsheet editing
 - PPTX presentation editing
 - Enhanced ODF spreadsheet/presentation support
+
+## Codebase Hardening
+
+### HTML Serializer Escaping
+- ❐ **wo-html: Escape attribute values** — `"` → `&quot;`, `&` → `&amp;` in allen Attribut-Outputs (`format!(" ...=\"{}\"", v)`)
+- ❐ **wo-html: Escape text content** — `<` → `&lt;`, `>` → `&gt;`, `&` → `&amp;` in allen Text- und `InlineElement::Text`-Ausgaben
+- ❐ **wo-html: Escape inline code** — `InlineElement::Code { content }` roh im Text, Escaping fehlt
+- ❐ **wo-html: Escape `<pre>` und `<style>` content** — beide raw, `</pre>` o.`</style>` im Content bricht HTML
+- ❐ **wo-html: Escape Link/Image href/src** — `"` im URL bricht `href="..."` / `src="..."`
+- ❐ **wo-html: Roundtrip-Tests mit Sonderzeichen** — Test-Corpus mit `"`, `<`, `>`, `&` in Texten und Attributen
+- ❐ **Audit aller anderen Serializer** (wo-rtf, wo-fb2, wo-odf, wo-ooxml, wo-epub) auf fehlendes Escaping
