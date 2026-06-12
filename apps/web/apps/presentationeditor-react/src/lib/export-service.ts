@@ -55,7 +55,7 @@ export async function exportToPPTX(): Promise<void> {
     if (!outputB64) throw new Error("No output data in conversion response")
 
     const bytes = base64Decode(outputB64)
-    const blob = new Blob([bytes], {
+    const blob = new Blob([bytes as unknown as BlobPart], {
       type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     })
     downloadBlob(blob, "presentation.pptx")

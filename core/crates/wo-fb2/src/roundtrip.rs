@@ -1,11 +1,7 @@
 //! Roundtrip implementation for FB2 format.
 //!
 //! Provides FormatRoundtrip trait implementation for testing
-//! parse-serialize cycles using JSON as the serialization target.
-//!
-//! Since FB2 has no format-specific serializer yet, we serialize
-//! the parsed model to JSON to verify that the parser produces a
-//! complete, serializable model.
+//! parse-serialize cycles using the native FB2 serializer.
 
 use std::cell::RefCell;
 
@@ -13,6 +9,7 @@ use wo_common::test_harness::FormatRoundtrip;
 
 use crate::model::Fb2Document;
 use crate::parser::Fb2Parser;
+use crate::serializer::Fb2Serializer;
 
 /// Roundtrip handler for FB2 format.
 ///
@@ -48,7 +45,11 @@ impl FormatRoundtrip for Fb2Roundtrip {
     fn serialize(&self) -> Result<Vec<u8>, String> {
         let doc = self.doc.borrow();
         let doc = doc.as_ref().ok_or("No document parsed")?;
-        serde_json::to_vec_pretty(doc).map_err(|e| format!("JSON serialize failed: {e}"))
+        let serializer = Fb2Serializer::new();
+        let xml = serializer
+            .serialize(doc)
+            .map_err(|e| format!("FB2 serialize failed: {e}"))?;
+        Ok(xml.into_bytes())
     }
 }
 
@@ -82,8 +83,11 @@ mod tests {
         // Verify parse succeeds and serialization works
         rt.parse(input.as_bytes()).expect("parse should succeed");
         let output = rt.serialize().expect("serialize should succeed");
-        // Output should be valid JSON
-        let _json: serde_json::Value =
-            serde_json::from_slice(&output).expect("output should be valid JSON");
+        // Output should be valid FB2 XML
+        let output_str = String::from_utf8_lossy(&output);
+        assert!(output_str.starts_with("<?xml version=\"1.0\" encoding=\"utf-8\"?>"));
+        assert!(output_str.contains("<FictionBook xmlns=\"http://www.gribuser.ru/xml/fictionbook/2.0\""));
+        assert!(output_str.contains("<title-info>"));
+        assert!(output_str.contains("<book-title>Test Book</book-title>"));
     }
 }

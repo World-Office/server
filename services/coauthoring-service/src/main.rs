@@ -104,6 +104,8 @@ enum ParticipantEvent {
 struct InitialState {
     crdt_bytes: Vec<u8>,
     participants: Vec<Participant>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    presentation_state: Option<PresentationState>,
 }
 
 /// A comment event broadcast over WebSocket (added/updated/deleted/resolved).
@@ -122,6 +124,49 @@ pub struct CommentEventData {
     pub created_at: String,
 }
 
+/// A presentation-level shape operation for real-time coauthoring.
+/// Operations are broadcast to all session participants and applied
+/// last-writer-wins (no CRDT merge — shapes are ID-based).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "action", rename_all = "snake_case")]
+pub enum PresentationOp {
+    ShapeAdd { slide_index: u32, shape: ShapePayload },
+    ShapeDelete { slide_index: u32, shape_id: String },
+    ShapeModify { slide_index: u32, shape_id: String, properties: serde_json::Value },
+    ShapeMove { slide_index: u32, shape_id: String, x: f64, y: f64 },
+    SlideAdd { after_index: u32 },
+    SlideDelete { slide_index: u32 },
+    SlideReorder { from_index: u32, to_index: u32 },
+}
+
+/// Payload for a shape being added or updated in a presentation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ShapePayload {
+    pub id: String,
+    #[serde(rename = "type")]
+    pub shape_type: String,
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+    pub rotation: f64,
+    pub z_index: i32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fill_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stroke_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub stroke_width: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_size: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image_src: Option<String>,
+}
+
 /// The top-level WebSocket message enum.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -130,6 +175,7 @@ enum WsMessage {
     ParticipantUpdate { update: ParticipantUpdate },
     InitialStateMsg { state: InitialState },
     CommentEvent { data: CommentEventData },
+    PresentationOp { session_id: String, user_id: String, operation: PresentationOp },
 }
 
 /// A collaborative document backed by diamond-types CRDT.
@@ -214,6 +260,31 @@ impl Document {
         // Update the branch to include the newly merged operations
         let version = self.crdt.oplog.local_version_ref().to_vec();
         self.crdt.branch.merge(&self.crdt.oplog, &version);
+    }
+}
+
+/// In-memory presentation state for shape-level coauthoring.
+/// Used for late-joining participants to receive current state.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct PresentationState {
+    pub slides: Vec<SlideState>,
+}
+
+/// A single slide in a presentation's collaborative state.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SlideState {
+    /// Shape map: shape_id -> JSON value with all properties.
+    pub shapes: HashMap<String, serde_json::Value>,
+    /// Ordered shape IDs for z-order rendering.
+    pub shape_order: Vec<String>,
+}
+
+impl Default for SlideState {
+    fn default() -> Self {
+        Self {
+            shapes: HashMap::new(),
+            shape_order: Vec::new(),
+        }
     }
 }
 
@@ -345,6 +416,10 @@ struct AppState {
     presence_channels: Arc<Mutex<HashMap<String, broadcast::Sender<String>>>>,
     /// Collaborative documents per session, backed by diamond-types CRDT.
     documents: Arc<Mutex<HashMap<String, Document>>>,
+    /// In-memory presentation state per session for shape-level coauthoring.
+    presentation_state: Arc<Mutex<HashMap<String, PresentationState>>>,
+    /// Broadcast channels per session for presentation operations (shape add/delete/modify).
+    presentation_channels: Arc<Mutex<HashMap<String, broadcast::Sender<String>>>>,
 }
 
 /// Health check response.
@@ -455,6 +530,19 @@ async fn create_session(
     {
         let mut docs = state.documents.lock().await;
         docs.insert(session_id.clone(), Document::new());
+    }
+
+    // Create ephemeral presentation broadcast channel for this session
+    let (presentation_tx, _) = broadcast::channel::<String>(256);
+    {
+        let mut pchannels = state.presentation_channels.lock().await;
+        pchannels.insert(session_id.clone(), presentation_tx);
+    }
+
+    // Initialize presentation state (will be populated as operations arrive)
+    {
+        let mut pstate = state.presentation_state.lock().await;
+        pstate.insert(session_id.clone(), PresentationState::default());
     }
 
     tracing::info!(
@@ -643,6 +731,23 @@ async fn handle_ws(
         }
     };
 
+    let presentation_rx = {
+        let channels = state.presentation_channels.lock().await;
+        channels.get(&session_id).map(|tx| tx.subscribe())
+    };
+
+    let presentation_rx = match presentation_rx {
+        Some(rx) => rx,
+        None => {
+            let _ = socket
+                .send(Message::Text(
+                    format!(r#"{{"error":"Session {} not found"}}"#, session_id).into(),
+                ))
+                .await;
+            return;
+        }
+    };
+
     tracing::info!(session_id = %session_id, user_id = %user_id, "WebSocket connected");
 
     let (mut ws_sender, mut ws_receiver) = socket.split();
@@ -673,10 +778,15 @@ async fn handle_ws(
         let participants = repo.get(&session_id).ok().flatten()
             .map(|s| s.participants.clone())
             .unwrap_or_default();
+        let pres_state = {
+            let pstate = state.presentation_state.lock().await;
+            pstate.get(&session_id).cloned()
+        };
         WsMessage::InitialStateMsg {
             state: InitialState {
                 crdt_bytes: doc_bytes.unwrap_or_default(),
                 participants,
+                presentation_state: pres_state,
             },
         }
     };
@@ -719,10 +829,20 @@ async fn handle_ws(
     });
 
     // Forward edit broadcasts to the shared outgoing channel
+    let out_tx_edit = out_tx.clone();
     let recv_edit = tokio::spawn(async move {
         let mut edit_rx = edit_rx;
         while let Ok(text) = edit_rx.recv().await {
-            let _ = out_tx.send(text).await;
+            let _ = out_tx_edit.send(text).await;
+        }
+    });
+
+    // Forward presentation op broadcasts to the shared outgoing channel
+    let out_tx_presentation = out_tx.clone();
+    let _recv_presentation = tokio::spawn(async move {
+        let mut presentation_rx = presentation_rx;
+        while let Ok(text) = presentation_rx.recv().await {
+            let _ = out_tx_presentation.send(text).await;
         }
     });
 
@@ -760,6 +880,20 @@ async fn handle_ws(
                             if let Ok(json) = serde_json::to_string(&WsMessage::CommentEvent { data }) {
                                 let _ = tx.send(json);
                             }
+                        }
+                    }
+                    WsMessage::PresentationOp { session_id: _, user_id: _, operation } => {
+                        // Update server-side presentation state
+                        {
+                            let mut pstate = state.presentation_state.lock().await;
+                            if let Some(ps) = pstate.get_mut(&session_id) {
+                                apply_presentation_op(ps, &operation);
+                            }
+                        }
+                        // Broadcast to all participants via presentation channel
+                        let channels = state.presentation_channels.lock().await;
+                        if let Some(tx) = channels.get(&session_id) {
+                            let _ = tx.send(text.to_string());
                         }
                     }
                 }
@@ -834,6 +968,8 @@ async fn main() {
         edit_channels: Arc::new(Mutex::new(HashMap::new())),
         presence_channels: Arc::new(Mutex::new(HashMap::new())),
         documents: Arc::new(Mutex::new(HashMap::new())),
+        presentation_state: Arc::new(Mutex::new(HashMap::new())),
+        presentation_channels: Arc::new(Mutex::new(HashMap::new())),
     });
     let app = app(state);
 
@@ -849,6 +985,72 @@ async fn main() {
         .await
         .expect("failed to bind");
     axum::serve(listener, app).await.expect("server error");
+}
+
+fn apply_presentation_op(state: &mut PresentationState, op: &PresentationOp) {
+    match op {
+        PresentationOp::ShapeAdd { slide_index, shape } => {
+            let idx = *slide_index as usize;
+            while state.slides.len() <= idx {
+                state.slides.push(SlideState::default());
+            }
+            let slide = &mut state.slides[idx];
+            let id = shape.id.clone();
+            if let Ok(val) = serde_json::to_value(shape) {
+                slide.shapes.insert(id.clone(), val);
+                if !slide.shape_order.contains(&id) {
+                    slide.shape_order.push(id);
+                }
+            }
+        }
+        PresentationOp::ShapeDelete { slide_index, shape_id } => {
+            if let Some(slide) = state.slides.get_mut(*slide_index as usize) {
+                slide.shapes.remove(shape_id);
+                slide.shape_order.retain(|id| id != shape_id);
+            }
+        }
+        PresentationOp::ShapeModify { slide_index, shape_id, properties } => {
+            if let Some(slide) = state.slides.get_mut(*slide_index as usize) {
+                if let Some(existing) = slide.shapes.get_mut(shape_id) {
+                    if let serde_json::Value::Object(map) = existing {
+                        if let serde_json::Value::Object(props) = properties {
+                            for (k, v) in props.clone() {
+                                map.insert(k, v);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        PresentationOp::ShapeMove { slide_index, shape_id, x, y } => {
+            if let Some(slide) = state.slides.get_mut(*slide_index as usize) {
+                if let Some(existing) = slide.shapes.get_mut(shape_id) {
+                    if let serde_json::Value::Object(map) = existing {
+                        map.insert("x".to_string(), serde_json::json!(x));
+                        map.insert("y".to_string(), serde_json::json!(y));
+                    }
+                }
+            }
+        }
+        PresentationOp::SlideAdd { after_index } => {
+            let idx = (*after_index as usize).min(state.slides.len());
+            state.slides.insert(idx, SlideState::default());
+        }
+        PresentationOp::SlideDelete { slide_index } => {
+            let idx = *slide_index as usize;
+            if idx < state.slides.len() {
+                state.slides.remove(idx);
+            }
+        }
+        PresentationOp::SlideReorder { from_index, to_index } => {
+            let from = *from_index as usize;
+            let to = (*to_index as usize).min(state.slides.len().saturating_sub(1));
+            if from < state.slides.len() && to < state.slides.len() && from != to {
+                let slide = state.slides.remove(from);
+                state.slides.insert(to, slide);
+            }
+        }
+    }
 }
 
 #[cfg(test)]

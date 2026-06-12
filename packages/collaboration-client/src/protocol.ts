@@ -32,6 +32,40 @@ export interface Participant {
   selection: Selection | null
 }
 
+// ── Presentation Operation ──
+
+export interface ShapePayload {
+  id: string
+  type: string
+  x: number
+  y: number
+  width: number
+  height: number
+  rotation: number
+  z_index: number
+  fill_color?: string | null
+  stroke_color?: string | null
+  stroke_width?: number | null
+  text?: string | null
+  font_size?: number | null
+  font_color?: string | null
+  image_data?: {
+    src: string
+    width: number
+    height: number
+  } | null
+  group_id?: string | null
+}
+
+export type PresentationOperation =
+  | { action: "shape_add"; slide_index: number; shape: ShapePayload }
+  | { action: "shape_delete"; slide_index: number; shape_id: string }
+  | { action: "shape_modify"; slide_index: number; shape_id: string; properties: Record<string, unknown> }
+  | { action: "shape_move"; slide_index: number; shape_id: string; x: number; y: number }
+  | { action: "slide_add"; after_index: number }
+  | { action: "slide_delete"; slide_index: number }
+  | { action: "slide_reorder"; from_index: number; to_index: number }
+
 // ── Edit Operation ──
 
 /** Discriminated union for client-to-server edit messages. */
@@ -101,6 +135,7 @@ export type WsMessage =
   | { type: "edit"; operation: EditOperation }
   | { type: "participant_update"; update: ParticipantUpdate }
   | { type: "comment_event"; data: CommentEventData }
+  | { type: "presentation_op"; operation: PresentationOperation }
 
 /**
  * Initial state sent to a new WebSocket client upon connect, containing
@@ -109,6 +144,7 @@ export type WsMessage =
 export interface InitialState {
   crdt_bytes: Uint8Array
   participants: Participant[]
+  presentation_state?: PresentationStateData
 }
 
 /**
@@ -119,6 +155,15 @@ export type ServerMessage =
   | { type: "participant_update"; update: ParticipantUpdate }
   | { type: "initial_state"; state: InitialState }
   | { type: "comment_event"; data: CommentEventData }
+  | { type: "presentation_op"; operation: PresentationOperation }
+  | { type: "presentation_state"; state: PresentationStateData }
+
+export interface PresentationStateData {
+  slides: Array<{
+    shapes: Record<string, ShapePayload>
+    order: string[]
+  }>
+}
 
 // ── Server REST Responses ──
 
@@ -207,6 +252,12 @@ export function parseServerMessage(json: string): ServerMessage | null {
   }
   if (obj.type === "comment_event" && typeof obj.data === "object") {
     return { type: "comment_event", data: obj.data as CommentEventData }
+  }
+  if (obj.type === "presentation_op" && typeof obj.operation === "object") {
+    return { type: "presentation_op", operation: obj.operation as PresentationOperation }
+  }
+  if (obj.type === "presentation_state" && typeof obj.state === "object") {
+    return { type: "presentation_state", state: obj.state as PresentationStateData }
   }
 
   return null

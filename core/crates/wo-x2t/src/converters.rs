@@ -5826,6 +5826,352 @@ impl FormatConverter for PptxToWoPresentationConverter {
     }
 }
 
+// ── ODP Converters ─────────────────────────────────────────────────
+
+use wo_odf::model::{
+    OdpImageRef, OdpShape, OdpShapeType, OdpTransition, OdfContent as OdpContent,
+    OdfDocument as OdpDocument, OdfType as OdpType, OdfMetadata as OdpMetadata,
+    PresentationSlide as OdpPresentationSlide,
+};
+
+/// Converts frontend WoPresentation JSON → ODP bytes.
+pub struct WoPresentationToOdpConverter;
+
+impl FormatConverter for WoPresentationToOdpConverter {
+    fn source_format(&self) -> &str {
+        "wo-presentation"
+    }
+    fn target_format(&self) -> &str {
+        "odp"
+    }
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        let wo: WoPresentation = serde_json::from_slice(data)
+            .map_err(|e| ConversionError::Parse(format!("Invalid WoPresentation JSON: {}", e)))?;
+
+        let is_widescreen = wo.slide_size == "widescreen";
+        let slides: Vec<OdpPresentationSlide> = wo
+            .slides
+            .iter()
+            .enumerate()
+            .map(|(slide_idx, ws)| wo_slide_to_odp_slide(ws, slide_idx, is_widescreen))
+            .collect();
+
+        let odf_doc = OdpDocument {
+            doc_type: OdpType::Presentation,
+            version: "1.2".to_string(),
+            metadata: OdpMetadata {
+                title: None,
+                creator: None,
+                subject: None,
+                description: None,
+                keywords: None,
+                language: None,
+                date: None,
+                modified: None,
+                generator: Some("World-Office".to_string()),
+                category: None,
+            },
+            content: OdpContent::Presentation { slides },
+            manifest: Vec::new(),
+            fonts: Vec::new(),
+            styles: Vec::new(),
+        };
+
+        OdfSerializer::new()
+            .serialize(&odf_doc)
+            .map_err(|e| ConversionError::Serialize(e.to_string()))
+    }
+}
+
+/// Converts ODP bytes → frontend WoPresentation JSON.
+pub struct OdpToWoPresentationConverter;
+
+impl FormatConverter for OdpToWoPresentationConverter {
+    fn source_format(&self) -> &str {
+        "odp"
+    }
+    fn target_format(&self) -> &str {
+        "wo-presentation"
+    }
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        let odf_doc = OdfParser::new()
+            .parse(data)
+            .map_err(|e| ConversionError::Parse(e.to_string()))?;
+
+        let odf_slides = match &odf_doc.content {
+            OdpContent::Presentation { slides } => slides,
+            _ => {
+                return Err(ConversionError::Parse(
+                    "Not an ODP presentation".to_string(),
+                ))
+            }
+        };
+
+        let is_widescreen = odf_slides.first().map_or(false, |s| {
+            // Heuristic: if first slide's y coordinates suggest 16:9
+            s.shapes.first().map_or(false, |sh| {
+                let y_cm = parse_cm(&sh.y);
+                y_cm > 0.0 && y_cm < 14.0 // widescreen typically has smaller y values
+            })
+        });
+
+        let slides: Vec<WoSlide> = odf_slides
+            .iter()
+            .map(|slide| odf_slide_to_wo_slide(slide, is_widescreen))
+            .collect();
+
+        let wo = WoPresentation {
+            version: 3,
+            slide_size: if is_widescreen { "widescreen".to_string() } else { "standard".to_string() },
+            theme_type: "builtin".to_string(),
+            theme: None,
+            slides,
+        };
+
+        serde_json::to_vec_pretty(&wo)
+            .map_err(|e| ConversionError::Serialize(e.to_string()))
+    }
+}
+
+// ── ODP Conversion Helpers ─────────────────────────────────────────
+
+fn wo_slide_to_odp_slide(ws: &WoSlide, slide_idx: usize, is_widescreen: bool) -> OdpPresentationSlide {
+    let shapes: Vec<OdpShape> = ws
+        .shapes
+        .iter()
+        .enumerate()
+        .map(|(shape_idx, s)| wo_shape_to_odp_shape(s, slide_idx, shape_idx, is_widescreen))
+        .collect();
+
+    let transition = ws.transition_effect.as_ref().map(|eff| OdpTransition {
+        type_name: Some(eff.clone()),
+        duration: ws.transition_duration.map(|d| format!("{}ms", (d * 1000.0) as u32)),
+        direction: None,
+        speed: None,
+    });
+
+    OdpPresentationSlide {
+        name: Some(if ws.title.is_empty() { format!("Slide {}", slide_idx + 1) } else { ws.title.clone() }),
+        text_content: String::new(),
+        notes: ws.notes.clone(),
+        shapes,
+        transition,
+        slide_layout: Some("blank".to_string()),
+    }
+}
+
+fn wo_shape_to_odp_shape(
+    s: &WoShapeData,
+    slide_idx: usize,
+    shape_idx: usize,
+    is_widescreen: bool,
+) -> OdpShape {
+    let shape_type = match s.shape_type.as_str() {
+        "rect" => OdpShapeType::Rect,
+        "ellipse" => OdpShapeType::Ellipse,
+        "line" | "arrow" => OdpShapeType::Line,
+        "connector" => OdpShapeType::Connector,
+        "image" => OdpShapeType::Image,
+        "textbox" => OdpShapeType::TextBox,
+        _ => OdpShapeType::Rect,
+    };
+
+    let image_ref = s.image_data.as_ref().map(|img| {
+        let (raw_data, ext) = data_url_to_bytes(&img.src);
+        OdpImageRef {
+            href: format!("Pictures/slide{}_{}.{}", slide_idx + 1, shape_idx + 1, ext),
+            name: img.alt.clone(),
+            data: raw_data,
+            content_type: Some(match ext.as_str() {
+                "png" => "image/png".to_string(),
+                "jpg" | "jpeg" => "image/jpeg".to_string(),
+                "gif" => "image/gif".to_string(),
+                "svg" => "image/svg+xml".to_string(),
+                _ => "application/octet-stream".to_string(),
+            }),
+        }
+    });
+
+    OdpShape {
+        id: Some(s.id.clone()),
+        shape_type,
+        x: px_to_cm_x(s.x),
+        y: px_to_cm_y(s.y, is_widescreen),
+        width: px_to_cm_w(s.width),
+        height: px_to_cm_h(s.height, is_widescreen),
+        z_index: Some(s.z_index),
+        rotation: if s.rotation != 0.0 {
+            Some(format!("rotate({})", s.rotation))
+        } else {
+            None
+        },
+        fill_color: s.fill_color.clone(),
+        stroke_color: s.stroke_color.clone(),
+        stroke_width: s.stroke_width.map(|w| format!("{}pt", w)),
+        text_content: s.text.clone(),
+        image_ref,
+        style_name: None,
+    }
+}
+
+fn odf_slide_to_wo_slide(slide: &OdpPresentationSlide, is_widescreen: bool) -> WoSlide {
+    let shapes: Vec<WoShapeData> = slide
+        .shapes
+        .iter()
+        .map(|s| odp_shape_to_wo_shape(s, is_widescreen))
+        .collect();
+
+    let (transition_effect, transition_duration) = slide.transition.as_ref().map_or(
+        (None, None),
+        |t| {
+            let eff = t.type_name.clone();
+            let dur = t.duration.as_ref().and_then(|d| {
+                d.trim_end_matches("ms").parse::<f64>().ok().map(|ms| ms / 1000.0)
+            });
+            (eff, dur)
+        },
+    );
+
+    WoSlide {
+        id: slide.name.clone().unwrap_or_default(),
+        title: slide.name.clone().unwrap_or_default(),
+        layout: "blank".to_string(),
+        notes: slide.notes.clone(),
+        transition_effect,
+        transition_duration,
+        transition_sound_enabled: None,
+        advance_mode: None,
+        advance_timing: None,
+        animations: Vec::new(),
+        shapes,
+    }
+}
+
+fn odp_shape_to_wo_shape(s: &OdpShape, is_widescreen: bool) -> WoShapeData {
+    let shape_type = match s.shape_type {
+        OdpShapeType::Rect => "rect".to_string(),
+        OdpShapeType::Ellipse => "ellipse".to_string(),
+        OdpShapeType::Line => "line".to_string(),
+        OdpShapeType::Connector => "connector".to_string(),
+        OdpShapeType::Image => "image".to_string(),
+        OdpShapeType::TextBox => "textbox".to_string(),
+        OdpShapeType::CustomShape => "rect".to_string(),
+    };
+
+    let rotation = s.rotation.as_ref().map_or(0.0, |r| {
+        if r.starts_with("rotate(") {
+            r.trim_start_matches("rotate(")
+                .trim_end_matches(')')
+                .parse::<f64>()
+                .unwrap_or(0.0)
+        } else {
+            0.0
+        }
+    });
+
+    let image_data = s.image_ref.as_ref().map(|img| {
+        let data_url = img.data.as_ref().map_or_else(
+            || String::new(),
+            |raw| bytes_to_data_url(raw, img.content_type.as_deref().unwrap_or("image/png")),
+        );
+        WoImageData {
+            src: data_url,
+            alt: img.name.clone(),
+        }
+    });
+
+    WoShapeData {
+        id: s.id.clone().unwrap_or_default(),
+        shape_type,
+        x: cm_str_to_px_x(&s.x),
+        y: cm_str_to_px_y(&s.y, is_widescreen),
+        width: cm_str_to_px_w(&s.width),
+        height: cm_str_to_px_h(&s.height, is_widescreen),
+        rotation,
+        z_index: s.z_index.unwrap_or(0),
+        fill_color: s.fill_color.clone(),
+        stroke_color: s.stroke_color.clone(),
+        stroke_width: s.stroke_width.as_ref().and_then(|w| {
+            w.trim_end_matches("pt").parse::<f64>().ok()
+        }),
+        text: s.text_content.clone(),
+        font_size: None,
+        font_color: None,
+        image_data,
+        group_id: None,
+        connector: None,
+        chart: None,
+        gradient_fill: None,
+        shadow: None,
+    }
+}
+
+// ── Coordinate Helpers ────────────────────────────────────────────
+// ODP standard slide: 25.4cm × 19.05cm (4:3) or 25.4cm × 14.2875cm (16:9)
+// Frontend canvas: 960×720 (standard 4:3) or 960×540 (widescreen 16:9)
+
+const PX_TO_CM_X: f64 = 25.4 / 960.0;
+const PX_TO_CM_H_4_3: f64 = 19.05 / 720.0;
+const PX_TO_CM_H_16_9: f64 = 14.2875 / 540.0;
+
+fn px_to_cm_x(px: f64) -> String {
+    format!("{:.4}cm", px * PX_TO_CM_X)
+}
+fn px_to_cm_y(px: f64, ws: bool) -> String {
+    if ws { format!("{:.4}cm", px * PX_TO_CM_H_16_9) } else { format!("{:.4}cm", px * PX_TO_CM_H_4_3) }
+}
+fn px_to_cm_w(px: f64) -> String { px_to_cm_x(px) }
+fn px_to_cm_h(px: f64, ws: bool) -> String { px_to_cm_y(px, ws) }
+
+fn parse_cm(s: &str) -> f64 {
+    s.trim_end_matches("cm").trim().parse().unwrap_or(0.0)
+}
+
+fn cm_str_to_px_x(cm_str: &str) -> f64 {
+    parse_cm(cm_str) / PX_TO_CM_X
+}
+fn cm_str_to_px_y(cm_str: &str, ws: bool) -> f64 {
+    let cm = parse_cm(cm_str);
+    if ws { cm / PX_TO_CM_H_16_9 } else { cm / PX_TO_CM_H_4_3 }
+}
+fn cm_str_to_px_w(cm_str: &str) -> f64 { cm_str_to_px_x(cm_str) }
+fn cm_str_to_px_h(cm_str: &str, ws: bool) -> f64 { cm_str_to_px_y(cm_str, ws) }
+
+// ── Image Data URL Helpers ──────────────────────────────────────────
+
+fn data_url_to_bytes(data_url: &str) -> (Option<Vec<u8>>, String) {
+    // Format: data:image/png;base64,iVBOR...
+    if let Some(rest) = data_url.strip_prefix("data:") {
+        let parts: Vec<&str> = rest.splitn(2, ',').collect();
+        if parts.len() == 2 {
+            let mime = parts[0].split(';').next().unwrap_or("image/png");
+            let ext = match mime {
+                "image/png" => "png",
+                "image/jpeg" | "image/jpg" => "jpg",
+                "image/gif" => "gif",
+                "image/svg+xml" => "svg",
+                "image/webp" => "webp",
+                _ => "png",
+            };
+            if let Ok(decoded) = base64::Engine::decode(
+                &base64::engine::general_purpose::STANDARD,
+                parts[1],
+            ) {
+                return (Some(decoded), ext.to_string());
+            }
+        }
+    }
+    (None, "png".to_string())
+}
+
+fn bytes_to_data_url(data: &[u8], content_type: &str) -> String {
+    let b64 = base64::Engine::encode(
+        &base64::engine::general_purpose::STANDARD,
+        data,
+    );
+    format!("data:{};base64,{}", content_type, b64)
+}
+
 // ── Tests ────────────────────────────────────────────────────────────
 
 #[cfg(test)]

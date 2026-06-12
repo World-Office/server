@@ -172,6 +172,12 @@ pub struct PresentationSlide {
     pub text_content: String,
     /// Notes text.
     pub notes: Option<String>,
+    /// Shapes on this slide (ODP-specific).
+    pub shapes: Vec<OdpShape>,
+    /// Slide transition effect.
+    pub transition: Option<OdpTransition>,
+    /// Reference to a slide layout.
+    pub slide_layout: Option<String>,
 }
 
 /// A manifest entry from META-INF/manifest.xml.
@@ -268,4 +274,53 @@ pub struct OdfPageLayout {
     pub margin_left: Option<String>,
     pub margin_right: Option<String>,
     pub orientation: Option<String>,
+}
+
+/// ODP shape types.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum OdpShapeType {
+    Rect,
+    Ellipse,
+    Line,
+    Connector,
+    TextBox,
+    Image,
+    CustomShape,
+}
+
+/// A shape on an ODP slide.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OdpShape {
+    pub id: Option<String>,
+    pub shape_type: OdpShapeType,
+    pub x: String,
+    pub y: String,
+    pub width: String,
+    pub height: String,
+    pub z_index: Option<i32>,
+    pub rotation: Option<String>,
+    pub fill_color: Option<String>,
+    pub stroke_color: Option<String>,
+    pub stroke_width: Option<String>,
+    pub text_content: Option<String>,
+    pub image_ref: Option<OdpImageRef>,
+    pub style_name: Option<String>,
+}
+
+/// Reference to an image within ODP.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OdpImageRef {
+    pub href: String,
+    pub name: Option<String>,
+    pub data: Option<Vec<u8>>,
+    pub content_type: Option<String>,
+}
+
+/// Slide transition effect.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OdpTransition {
+    pub type_name: Option<String>,
+    pub duration: Option<String>,
+    pub direction: Option<String>,
+    pub speed: Option<String>,
 }
