@@ -10,6 +10,9 @@ export {
   type WsMessage,
   type ServerMessage,
   type CommentEventData,
+  type PresentationOperation,
+  type ShapePayload,
+  type PresentationStateData,
   createInsertOp,
   createDeleteOp,
   createCursorUpdate,
@@ -30,6 +33,4 @@ export {
   type AuthClientOptions,
 } from "./auth"
 
-export {
-  BackoffStrategy,
-} from "./reconnection"
+export { BackoffStrategy } from "./reconnection"

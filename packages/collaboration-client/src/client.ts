@@ -10,15 +10,17 @@
  */
 
 import {
-  type EditOperation,
-  type ParticipantUpdate,
-  type InitialState,
   type CommentEventData,
+  type EditOperation,
+  type InitialState,
+  type ParticipantUpdate,
+  type PresentationOperation,
+  type PresentationStateData,
   type WsMessage,
-  createInsertOp,
   createDeleteOp,
-  parseServerMessage,
+  createInsertOp,
   isRemoteMessage,
+  parseServerMessage,
 } from "./protocol"
 import { BackoffStrategy } from "./reconnection"
 
@@ -32,6 +34,8 @@ export interface WebSocketManagerEvents {
   participantUpdate: (update: ParticipantUpdate) => void
   initialState: (state: InitialState) => void
   commentEvent: (data: CommentEventData) => void
+  presentationOp: (op: PresentationOperation, userId: string) => void
+  presentationState: (state: PresentationStateData) => void
   stateChange: (state: ConnectionState) => void
 }
 
@@ -48,7 +52,6 @@ export interface WebSocketManagerOptions {
 /** WebSocket readyState constants (avoid reliance on browser-only WebSocket global). */
 const WS_CONNECTING = 0
 const WS_OPEN = 1
-
 
 type EventCallback = (...args: unknown[]) => void
 
@@ -114,7 +117,7 @@ export class WebSocketManager {
     const set = this.listeners.get(event)
     if (!set) return
     for (const fn of set) {
-      fn(...args as unknown[])
+      fn(...(args as unknown[]))
     }
   }
 
@@ -210,9 +213,31 @@ export class WebSocketManager {
     }
   }
 
+  /** Broadcast a presentation operation to other participants. */
+  sendPresentationOp(operation: PresentationOperation): void {
+    const msg: WsMessage = { type: "presentation_op", operation }
+    const json = JSON.stringify(msg)
+    if (this.ws && this.ws.readyState === WS_OPEN) {
+      this.ws.send(json)
+    } else {
+      this.messageQueue.push(json)
+    }
+  }
+
   /** Broadcast a comment event to other participants. */
   sendCommentEvent(data: CommentEventData): void {
     const msg: WsMessage = { type: "comment_event", data }
+    const json = JSON.stringify(msg)
+    if (this.ws && this.ws.readyState === WS_OPEN) {
+      this.ws.send(json)
+    } else {
+      this.messageQueue.push(json)
+    }
+  }
+
+  /** Broadcast a cursor update to other participants. */
+  sendCursorEvent(data: ParticipantUpdate): void {
+    const msg: WsMessage = { type: "participant_update", update: data }
     const json = JSON.stringify(msg)
     if (this.ws && this.ws.readyState === WS_OPEN) {
       this.ws.send(json)
@@ -248,6 +273,12 @@ export class WebSocketManager {
       // Skip our own comment events (echo from server)
       if (serverMsg.data.author_id === this.userId) return
       this.emit("commentEvent", serverMsg.data)
+    } else if (serverMsg.type === "presentation_op") {
+      const op = serverMsg.operation
+      const userId = "user_id" in op ? ((op as { user_id?: string }).user_id ?? "") : ""
+      this.emit("presentationOp", op, userId)
+    } else if (serverMsg.type === "presentation_state") {
+      this.emit("presentationState", serverMsg.state)
     }
   }
 

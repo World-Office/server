@@ -1,11 +1,7 @@
 //! Roundtrip implementation for EPUB format.
 //!
 //! Provides FormatRoundtrip trait implementation for testing
-//! parse-serialize cycles using JSON as the serialization target.
-//!
-//! Since EPUB has no format-specific serializer yet, we serialize
-//! the parsed model to JSON to verify that the parser produces a
-//! complete, serializable model.
+//! parse-serialize cycles using the native EPUB serializer.
 
 use std::cell::RefCell;
 
@@ -13,6 +9,7 @@ use wo_common::test_harness::FormatRoundtrip;
 
 use crate::model::EpubDocument;
 use crate::parser::EpubParser;
+use crate::serializer::EpubSerializer;
 
 /// Roundtrip handler for EPUB format.
 ///
@@ -48,7 +45,10 @@ impl FormatRoundtrip for EpubRoundtrip {
     fn serialize(&self) -> Result<Vec<u8>, String> {
         let doc = self.doc.borrow();
         let doc = doc.as_ref().ok_or("No document parsed")?;
-        serde_json::to_vec_pretty(doc).map_err(|e| format!("JSON serialize failed: {e}"))
+        let serializer = EpubSerializer::new();
+        serializer
+            .serialize(doc)
+            .map_err(|e| format!("EPUB serialize failed: {e}"))
     }
 }
 
@@ -119,12 +119,11 @@ mod tests {
         // Verify parse succeeds and serialization works
         rt.parse(&input).expect("parse should succeed");
         let output = rt.serialize().expect("serialize should succeed");
-        // Output should be valid JSON
-        let _json: serde_json::Value =
-            serde_json::from_slice(&output).expect("output should be valid JSON");
-        // Verify the document structure is captured
-        let doc_json: serde_json::Value = serde_json::from_slice(&output).unwrap();
-        assert!(doc_json["version"].is_string());
-        assert!(doc_json["metadata"].is_object());
+        // Output should be valid EPUB ZIP
+        use zip::ZipArchive;
+        let cursor = std::io::Cursor::new(&output);
+        let mut archive = ZipArchive::new(cursor).expect("output should be valid ZIP");
+        assert!(archive.by_name("mimetype").is_ok());
+        assert!(archive.file_names().any(|n| n == "META-INF/container.xml" || n == "OEBPS/content.opf"));
     }
 }

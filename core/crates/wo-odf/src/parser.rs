@@ -26,6 +26,7 @@ const MANIFEST_NS: &str = "urn:oasis:names:tc:opendocument:xmlns:manifest:1.0";
 const DRAW_NS: &str = "urn:oasis:names:tc:opendocument:xmlns:drawing:1.0";
 const SVG_NS: &str = "urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0";
 const XLINK_NS: &str = "http://www.w3.org/1999/xlink";
+const PRESENTATION_NS: &str = "urn:oasis:names:tc:opendocument:xmlns:presentation:1.0";
 
 /// ODF parser.
 pub struct OdfParser;
@@ -75,7 +76,7 @@ impl OdfParser {
         };
 
         // Parse document body
-        let content = self.parse_content(&content_doc, &doc_type)?;
+        let content = self.parse_content(&content_doc, &doc_type, &mut archive)?;
 
         Ok(OdfDocument {
             doc_type,
@@ -266,16 +267,21 @@ impl OdfParser {
         meta
     }
 
-    fn parse_content(&self, doc: &XmlDoc, doc_type: &OdfType) -> Result<OdfContent> {
+    fn parse_content(
+        &self,
+        doc: &XmlDoc,
+        doc_type: &OdfType,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    ) -> Result<OdfContent> {
         match doc_type {
-            OdfType::Text => self.parse_text_content(doc),
-            OdfType::Spreadsheet => self.parse_spreadsheet_content(doc),
-            OdfType::Presentation => self.parse_presentation_content(doc),
+            OdfType::Text => self.parse_text_content(doc, archive),
+            OdfType::Spreadsheet => self.parse_spreadsheet_content(doc, archive),
+            OdfType::Presentation => self.parse_presentation_content(doc, archive),
             _ => Ok(OdfContent::Generic),
         }
     }
 
-    fn parse_text_content(&self, doc: &XmlDoc) -> Result<OdfContent> {
+    fn parse_text_content(&self, doc: &XmlDoc, _archive: &mut zip::ZipArchive<Cursor<&[u8]>>) -> Result<OdfContent> {
         let mut content = Vec::new();
         let mut sections = Vec::new();
 
@@ -595,7 +601,7 @@ impl OdfParser {
         }
     }
 
-    fn parse_spreadsheet_content(&self, doc: &XmlDoc) -> Result<OdfContent> {
+    fn parse_spreadsheet_content(&self, doc: &XmlDoc, _archive: &mut zip::ZipArchive<Cursor<&[u8]>>) -> Result<OdfContent> {
         let mut sheets = Vec::new();
 
         for node in doc.descendants() {
@@ -698,23 +704,219 @@ impl OdfParser {
         Ok(OdfContent::Spreadsheet { sheets })
     }
 
-    fn parse_presentation_content(&self, doc: &XmlDoc) -> Result<OdfContent> {
+    fn parse_presentation_content(
+        &self,
+        doc: &XmlDoc,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    ) -> Result<OdfContent> {
         let mut slides = Vec::new();
 
-        // ODP slides are <draw:page> elements
-        for node in doc.descendants() {
-            if node.has_tag_name((DRAW_NS, "page")) {
-                let name = node.attribute((DRAW_NS, "name")).map(|s| s.to_string());
-                let text_content = Self::collect_text(node);
+        for page_node in doc.descendants() {
+            if page_node.has_tag_name((DRAW_NS, "page")) {
+                let name = page_node.attribute((DRAW_NS, "name")).map(|s| s.to_string());
+                let shapes = self.parse_odp_shapes(page_node, archive);
+                let notes = self.parse_odp_notes(page_node);
+                let transition = self.parse_odp_transition(page_node);
+
                 slides.push(PresentationSlide {
                     name,
-                    text_content,
-                    notes: None,
+                    text_content: Self::collect_text(page_node),
+                    notes,
+                    shapes,
+                    transition,
+                    slide_layout: page_node
+                        .attribute((DRAW_NS, "presentation-page-layout-name"))
+                        .map(|s| s.to_string()),
                 });
             }
         }
 
         Ok(OdfContent::Presentation { slides })
+    }
+
+    /// Parse shapes from a draw:page element.
+    fn parse_odp_shapes(
+        &self,
+        page_node: roxmltree::Node<'_, '_>,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    ) -> Vec<OdpShape> {
+        let mut shapes = Vec::new();
+        for child in page_node.children() {
+            if !child.is_element() {
+                continue;
+            }
+            if let Some(shape) = self.parse_odp_shape(child, archive) {
+                shapes.push(shape);
+            }
+        }
+        shapes
+    }
+
+    /// Parse a single ODP shape element.
+    fn parse_odp_shape(
+        &self,
+        node: roxmltree::Node<'_, '_>,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    ) -> Option<OdpShape> {
+        let ns = node.tag_name().namespace()?;
+        if ns != DRAW_NS {
+            return None;
+        }
+
+        let tag = node.tag_name().name();
+        let shape_type = match tag {
+            "rect" => OdpShapeType::Rect,
+            "ellipse" | "circle" => OdpShapeType::Ellipse,
+            "line" => OdpShapeType::Line,
+            "connector" => OdpShapeType::Connector,
+            "text-box" => OdpShapeType::TextBox,
+            "frame" => OdpShapeType::Image,
+            "custom-shape" => OdpShapeType::CustomShape,
+            _ => return None,
+        };
+
+        let x = node.attribute((SVG_NS, "x")).unwrap_or("0cm").to_string();
+        let y = node.attribute((SVG_NS, "y")).unwrap_or("0cm").to_string();
+        let width = node.attribute((SVG_NS, "width")).unwrap_or("0cm").to_string();
+        let height = node.attribute((SVG_NS, "height")).unwrap_or("0cm").to_string();
+
+        let z_index = node
+            .attribute((DRAW_NS, "z-index"))
+            .and_then(|z| z.parse::<i32>().ok());
+        let rotation = Self::parse_odp_transform(node);
+        let style_name = node.attribute((DRAW_NS, "style-name")).map(|s| s.to_string());
+        let text_content = self.collect_odp_text(node);
+
+        let image_ref = if shape_type == OdpShapeType::Image {
+            self.parse_frame_image(node, archive)
+        } else {
+            None
+        };
+
+        Some(OdpShape {
+            id: node
+                .attribute((DRAW_NS, "id"))
+                .or_else(|| node.attribute("xml:id"))
+                .map(|s| s.to_string()),
+            shape_type,
+            x,
+            y,
+            width,
+            height,
+            z_index,
+            rotation,
+            fill_color: None,
+            stroke_color: None,
+            stroke_width: None,
+            text_content,
+            image_ref,
+            style_name,
+        })
+    }
+
+    /// Parse image reference from a draw:frame → draw:image chain.
+    fn parse_frame_image(
+        &self,
+        frame_node: roxmltree::Node<'_, '_>,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    ) -> Option<OdpImageRef> {
+        for child in frame_node.children() {
+            if child.has_tag_name((DRAW_NS, "image")) {
+                let href = child.attribute((XLINK_NS, "href"))?;
+                let data = self.read_zip_binary(archive, href);
+                let name = child.attribute((DRAW_NS, "name")).map(|s| s.to_string());
+                let content_type = href.rsplit('.').next().map(|ext| {
+                    match ext.to_lowercase().as_str() {
+                        "png" => "image/png",
+                        "jpg" | "jpeg" => "image/jpeg",
+                        "gif" => "image/gif",
+                        "svg" => "image/svg+xml",
+                        "webp" => "image/webp",
+                        _ => "application/octet-stream",
+                    }
+                    .to_string()
+                });
+                return Some(OdpImageRef {
+                    href: href.to_string(),
+                    name,
+                    data,
+                    content_type,
+                });
+            }
+        }
+        None
+    }
+
+    /// Read binary data from a ZIP entry.
+    fn read_zip_binary(
+        &self,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+        path: &str,
+    ) -> Option<Vec<u8>> {
+        let mut file = archive.by_name(path).ok()?;
+        let mut buf = Vec::new();
+        std::io::Read::read_to_end(&mut file, &mut buf).ok()?;
+        Some(buf)
+    }
+
+    /// Parse presentation:notes from a draw:page.
+    fn parse_odp_notes(&self, page_node: roxmltree::Node<'_, '_>) -> Option<String> {
+        for child in page_node.children() {
+            if child.has_tag_name((PRESENTATION_NS, "notes")) {
+                return Some(Self::collect_text(child));
+            }
+        }
+        None
+    }
+
+    /// Parse presentation:transition from a draw:page.
+    fn parse_odp_transition(&self, page_node: roxmltree::Node<'_, '_>) -> Option<OdpTransition> {
+        for child in page_node.children() {
+            if child.has_tag_name((PRESENTATION_NS, "transition")) {
+                return Some(OdpTransition {
+                    type_name: child
+                        .attribute((PRESENTATION_NS, "type-name"))
+                        .map(|s| s.to_string()),
+                    duration: child
+                        .attribute((PRESENTATION_NS, "duration"))
+                        .map(|s| s.to_string()),
+                    direction: child
+                        .attribute((PRESENTATION_NS, "direction"))
+                        .map(|s| s.to_string()),
+                    speed: child
+                        .attribute((PRESENTATION_NS, "speed"))
+                        .map(|s| s.to_string()),
+                });
+            }
+        }
+        None
+    }
+
+    /// Collect text from text:p elements inside a shape node.
+    fn collect_odp_text(&self, node: roxmltree::Node<'_, '_>) -> Option<String> {
+        let mut texts = Vec::new();
+        for child in node.descendants() {
+            if child.has_tag_name((TEXT_NS, "p")) {
+                if let Some(t) = child.text() {
+                    let trimmed = t.trim();
+                    if !trimmed.is_empty() {
+                        texts.push(trimmed.to_string());
+                    }
+                }
+            }
+        }
+        if texts.is_empty() {
+            None
+        } else {
+            Some(texts.join("\n"))
+        }
+    }
+
+    /// Parse SVG transform attribute for rotation.
+    fn parse_odp_transform(node: roxmltree::Node<'_, '_>) -> Option<String> {
+        node.attribute("transform")
+            .map(|s| s.to_string())
+            .or_else(|| node.attribute((DRAW_NS, "transform")).map(|s| s.to_string()))
     }
 
     fn parse_styles_xml(&self, xml: &str) -> Result<(Vec<OdfFontFace>, Vec<OdfStyle>)> {

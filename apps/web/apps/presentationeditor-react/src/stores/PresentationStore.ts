@@ -266,6 +266,7 @@ export class PresentationStore {
       if (!slide.shapes) slide.shapes = []
       slide.shapes.push(shape)
       this.selectedShapeIds = [shape.id]
+      this.notifyCollaboration("shape_add", { slide_index: slideIndex, shape })
     }
   }
 
@@ -334,10 +335,8 @@ export class PresentationStore {
   updateShape(slideIndex: number, shapeId: string, updates: Partial<ShapeData>): void {
     this.pushSnapshot()
     if (updates.groupId === undefined && updates.imageData === undefined) {
-      // Also update grouped shapes with same delta if position/size is changing
       this.applyShapeUpdates(slideIndex, shapeId, updates)
     } else {
-      // Direct field assignment (groupId, imageData) — no group propagation
       const slide = this.slides[slideIndex]
       if (slide?.shapes) {
         const idx = slide.shapes.findIndex((s) => s.id === shapeId)
@@ -346,6 +345,7 @@ export class PresentationStore {
         }
       }
     }
+    this.notifyCollaboration("shape_modify", { slide_index: slideIndex, shape_id: shapeId, properties: updates as Record<string, unknown> })
   }
 
   private applyShapeUpdates(slideIndex: number, shapeId: string, updates: Partial<ShapeData>): void {
@@ -383,6 +383,7 @@ export class PresentationStore {
     if (slide?.shapes) {
       slide.shapes = slide.shapes.filter((s) => s.id !== shapeId)
       this.selectedShapeIds = this.selectedShapeIds.filter((id) => id !== shapeId)
+      this.notifyCollaboration("shape_delete", { slide_index: slideIndex, shape_id: shapeId })
     }
   }
 
@@ -393,6 +394,9 @@ export class PresentationStore {
     const idsToRemove = new Set(this.selectedShapeIds)
     slide.shapes = slide.shapes.filter((s) => !idsToRemove.has(s.id))
     this.selectedShapeIds = []
+    for (const id of idsToRemove) {
+      this.notifyCollaboration("shape_delete", { slide_index: this.currentSlide, shape_id: id })
+    }
   }
 
   moveShape(slideIndex: number, shapeId: string, x: number, y: number): void {
@@ -405,7 +409,6 @@ export class PresentationStore {
         const dy = y - shape.y
         shape.x = x
         shape.y = y
-        // Move grouped shapes together
         if (shape.groupId) {
           for (const member of slide.shapes) {
             if (member.id !== shapeId && member.groupId === shape.groupId) {
@@ -414,6 +417,7 @@ export class PresentationStore {
             }
           }
         }
+        this.notifyCollaboration("shape_move", { slide_index: slideIndex, shape_id: shapeId, x, y })
       }
     }
   }
@@ -647,6 +651,33 @@ export class PresentationStore {
       }
     }
   }
+
+  private onMutation: ((action: string, data: Record<string, unknown>) => void) | null = null
+  private onCursorMove: ((page: number, x: number, y: number) => void) | null = null
+
+  registerMutationCallback(cb: (action: string, data: Record<string, unknown>) => void): void {
+    this.onMutation = cb
+  }
+
+  registerCursorSendCallback(cb: (page: number, x: number, y: number) => void): void {
+    this.onCursorMove = cb
+  }
+
+  private notifyCollaboration(action: string, data: Record<string, unknown>): void {
+    this.onMutation?.(action, data)
+  }
+
+  notifyCursorMove(): void {
+    this.onCursorMove?.(this.currentSlide, this.lastCursorX ?? 0, this.lastCursorY ?? 0)
+  }
+
+  updateRemoteCursor(userId: string, username: string, color: string, x: number, y: number, page: number): void {
+    this.remoteCursors.set(userId, { userId, username, color, x, y, page })
+  }
+
+  lastCursorX: number | null = null
+  lastCursorY: number | null = null
+  remoteCursors: Map<string, { userId: string; username: string; color: string; x: number; y: number; page: number }> = new Map()
 
   /* Language */
   languageCode = "en-US"
@@ -966,6 +997,7 @@ export class PresentationStore {
     const groupId = crypto.randomUUID()
     for (const shape of selected) {
       shape.groupId = groupId
+      this.notifyCollaboration("shape_modify", { slide_index: this.currentSlide, shape_id: shape.id, properties: { groupId } })
     }
   }
 
@@ -982,6 +1014,7 @@ export class PresentationStore {
     for (const shape of slide.shapes) {
       if (shape.groupId && groupIdsToClear.has(shape.groupId)) {
         shape.groupId = undefined
+        this.notifyCollaboration("shape_modify", { slide_index: this.currentSlide, shape_id: shape.id, properties: { groupId: null } })
       }
     }
   }
@@ -1018,6 +1051,7 @@ export class PresentationStore {
       }
       slide.shapes.push(newShape)
       this.selectedShapeIds = [newShape.id]
+      this.notifyCollaboration("shape_add", { slide_index: slideIndex, shape: newShape })
     }
     reader.readAsDataURL(file)
   }
@@ -1135,6 +1169,7 @@ export class PresentationStore {
     this.slides.splice(insertIndex, 0, newSlide)
     this.totalSlides = this.slides.length
     this.currentSlide = insertIndex
+    this.notifyCollaboration("slide_add", { after_index: insertIndex - 1 })
   }
 
   deleteSlide(index: number): void {
@@ -1145,6 +1180,7 @@ export class PresentationStore {
     if (this.currentSlide >= this.totalSlides) {
       this.currentSlide = this.totalSlides - 1
     }
+    this.notifyCollaboration("slide_delete", { slide_index: index })
   }
 
   duplicateSlide(index: number): void {
@@ -1174,6 +1210,7 @@ export class PresentationStore {
     const [moved] = this.slides.splice(fromIndex, 1)
     this.slides.splice(toIndex, 0, moved)
     this.currentSlide = toIndex
+    this.notifyCollaboration("slide_reorder", { from_index: fromIndex, to_index: toIndex })
   }
 
   setSlideTitle(index: number, title: string): void {
@@ -1197,6 +1234,83 @@ export class PresentationStore {
     const slide = this.slides[index]
     if (slide) {
       slide.notes = notes
+    }
+  }
+
+  applyRemoteOp(action: string, data: Record<string, unknown>): void {
+    const slideIndex = data.slide_index as number | undefined
+    switch (action) {
+      case "shape_add": {
+        const shape = data.shape as ShapeData
+        if (typeof slideIndex === "number" && this.slides[slideIndex]) {
+          if (!this.slides[slideIndex].shapes) this.slides[slideIndex].shapes = []
+          // Idempotent: skip if shape already exists (avoids duplicates on echo)
+          if (!this.slides[slideIndex].shapes.some((s) => s.id === shape.id)) {
+            this.slides[slideIndex].shapes.push(shape)
+          }
+        }
+        break
+      }
+      case "shape_delete": {
+        const shapeId = data.shape_id as string
+        if (typeof slideIndex === "number" && this.slides[slideIndex]?.shapes) {
+          this.slides[slideIndex].shapes = this.slides[slideIndex].shapes.filter((s) => s.id !== shapeId)
+        }
+        break
+      }
+      case "shape_modify": {
+        const sid = data.shape_id as string
+        const properties = data.properties as Record<string, unknown>
+        if (typeof slideIndex === "number" && this.slides[slideIndex]?.shapes) {
+          const shape = this.slides[slideIndex].shapes.find((s) => s.id === sid)
+          if (shape) {
+            Object.assign(shape, properties)
+          }
+        }
+        break
+      }
+      case "shape_move": {
+        const moveId = data.shape_id as string
+        const mx = data.x as number
+        const my = data.y as number
+        if (typeof slideIndex === "number" && this.slides[slideIndex]?.shapes) {
+          const shape = this.slides[slideIndex].shapes.find((s) => s.id === moveId)
+          if (shape) {
+            shape.x = mx
+            shape.y = my
+          }
+        }
+        break
+      }
+      case "slide_add": {
+        const afterIndex = data.after_index as number
+        const newSlide: SlideData = {
+          id: crypto.randomUUID(),
+          title: `Slide ${this.slides.length + 1}`,
+          layout: "blank",
+          notes: "",
+          shapes: [],
+        }
+        this.slides.splice(afterIndex + 1, 0, newSlide)
+        this.totalSlides = this.slides.length
+        break
+      }
+      case "slide_delete": {
+        const delIndex = data.slide_index as number
+        if (this.slides.length > 1) {
+          this.slides.splice(delIndex, 1)
+          this.totalSlides = this.slides.length
+          if (this.currentSlide >= this.totalSlides) this.currentSlide = this.totalSlides - 1
+        }
+        break
+      }
+      case "slide_reorder": {
+        const fromIdx = data.from_index as number
+        const toIdx = data.to_index as number
+        const [moved] = this.slides.splice(fromIdx, 1)
+        this.slides.splice(toIdx, 0, moved)
+        break
+      }
     }
   }
 }

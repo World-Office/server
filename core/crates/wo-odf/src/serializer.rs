@@ -36,7 +36,27 @@ impl OdfSerializer {
         let content_xml = build_content_xml(doc);
         writer.add_file("content.xml", content_xml.as_bytes())?;
 
-        // 4. styles.xml (empty but valid)
+        // 4. Image files (ODP) — write embedded images to Pictures/
+        if let OdfContent::Presentation { slides } = &doc.content {
+            for slide in slides {
+                for shape in &slide.shapes {
+                    if let Some(img) = &shape.image_ref {
+                        let image_path = if img.href.starts_with("Pictures/") {
+                            img.href.clone()
+                        } else if img.href.starts_with('/') {
+                            format!("Pictures/{}", &img.href[1..])
+                        } else {
+                            format!("Pictures/{}", img.href)
+                        };
+                        if let Some(data) = &img.data {
+                            writer.add_file(&image_path, data)?;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 5. styles.xml (empty but valid)
         let styles_xml = build_styles_xml(doc);
         writer.add_file("styles.xml", styles_xml.as_bytes())?;
 
@@ -138,6 +158,37 @@ fn build_manifest(doc: &OdfDocument) -> String {
         }
     }
 
+    // Add ODP image file entries
+    if let OdfContent::Presentation { slides } = &doc.content {
+        let mut seen_paths: Vec<&str> = existing_paths.clone();
+        for slide in slides {
+            for shape in &slide.shapes {
+                if let Some(img) = &shape.image_ref {
+                    let img_path = if img.href.starts_with("Pictures/") {
+                        img.href.as_str()
+                    } else if img.href.starts_with('/') {
+                        continue;
+                    } else {
+                        continue;
+                    };
+                    if !seen_paths.contains(&img_path) {
+                        let media_type = img
+                            .content_type
+                            .as_deref()
+                            .unwrap_or("application/octet-stream");
+                        writeln!(
+                            xml,
+                            " <manifest:file-entry manifest:full-path=\"{}\" manifest:media-type=\"{}\"/>",
+                            img_path, media_type
+                        )
+                        .unwrap();
+                        seen_paths.push(img_path);
+                    }
+                }
+            }
+        }
+    }
+
     xml.push_str("</manifest:manifest>");
     xml
 }
@@ -165,6 +216,9 @@ fn build_content_xml(doc: &OdfDocument) -> String {
          xmlns:style=\"urn:oasis:names:tc:opendocument:xmlns:style:1.0\" \
          xmlns:fo=\"urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0\" \
          xmlns:svg=\"urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0\" \
+         xmlns:draw=\"urn:oasis:names:tc:opendocument:xmlns:drawing:1.0\" \
+         xmlns:presentation=\"urn:oasis:names:tc:opendocument:xmlns:presentation:1.0\" \
+         xmlns:xlink=\"http://www.w3.org/1999/xlink\" \
          office:version=\"{}\">",
         doc.version
     )
@@ -181,10 +235,18 @@ fn build_content_xml(doc: &OdfDocument) -> String {
     xml.push_str(" <office:body>\n");
     writeln!(xml, "  <office:{}>", office_element).unwrap();
 
-    if let OdfContent::Text { content, .. } = &doc.content {
-        for item in content {
-            serialize_text_content(item, &mut xml, 3);
+    match &doc.content {
+        OdfContent::Text { content, .. } => {
+            for item in content {
+                serialize_text_content(item, &mut xml, 3);
+            }
         }
+        OdfContent::Presentation { slides } => {
+            for slide in slides {
+                serialize_odp_slide(slide, &mut xml, 3);
+            }
+        }
+        _ => {}
     }
 
     writeln!(xml, "  </office:{}>", office_element).unwrap();
@@ -387,6 +449,140 @@ fn serialize_text_content(item: &OdfTextContent, xml: &mut String, indent: usize
             writeln!(xml, "{}<text:p>[image]</text:p>", pad).unwrap();
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// ODP slide and shape serialization
+// ---------------------------------------------------------------------------
+
+fn serialize_odp_slide(slide: &PresentationSlide, xml: &mut String, indent: usize) {
+    let pad = " ".repeat(indent);
+    write!(xml, "{}<draw:page", pad).unwrap();
+    if let Some(name) = &slide.name {
+        write!(xml, " draw:name=\"{}\"", escape_xml(name)).unwrap();
+    }
+    if let Some(layout) = &slide.slide_layout {
+        write!(
+            xml,
+            " draw:presentation-page-layout-name=\"{}\"",
+            escape_xml(layout)
+        )
+        .unwrap();
+    }
+    writeln!(xml, ">").unwrap();
+
+    // Shapes
+    for shape in &slide.shapes {
+        serialize_odp_shape(shape, xml, indent + 1);
+    }
+
+    // Transition
+    if let Some(transition) = &slide.transition {
+        serialize_odp_transition(transition, xml, indent + 1);
+    }
+
+    // Notes
+    if let Some(notes) = &slide.notes {
+        if !notes.is_empty() {
+            serialize_odp_notes(notes, xml, indent + 1);
+        }
+    }
+
+    writeln!(xml, "{}</draw:page>", pad).unwrap();
+}
+
+fn serialize_odp_shape(shape: &OdpShape, xml: &mut String, indent: usize) {
+    let pad = " ".repeat(indent);
+    let tag = match shape.shape_type {
+        OdpShapeType::Rect => "draw:rect",
+        OdpShapeType::Ellipse => "draw:ellipse",
+        OdpShapeType::Line | OdpShapeType::Connector => "draw:line",
+        OdpShapeType::TextBox => "draw:text-box",
+        OdpShapeType::Image => "draw:frame",
+        OdpShapeType::CustomShape => "draw:custom-shape",
+    };
+
+    write!(xml, "{}<{}", pad, tag).unwrap();
+    if let Some(id) = &shape.id {
+        write!(xml, " draw:id=\"{}\"", escape_xml(id)).unwrap();
+    }
+    write!(xml, " svg:x=\"{}\"", escape_xml(&shape.x)).unwrap();
+    write!(xml, " svg:y=\"{}\"", escape_xml(&shape.y)).unwrap();
+    write!(xml, " svg:width=\"{}\"", escape_xml(&shape.width)).unwrap();
+    write!(xml, " svg:height=\"{}\"", escape_xml(&shape.height)).unwrap();
+    if let Some(z) = shape.z_index {
+        write!(xml, " draw:z-index=\"{}\"", z).unwrap();
+    }
+    if let Some(style) = &shape.style_name {
+        write!(xml, " draw:style-name=\"{}\"", escape_xml(style)).unwrap();
+    }
+
+    // For Image shapes, we emit draw:frame with draw:image inside
+    if shape.shape_type == OdpShapeType::Image {
+        writeln!(xml, ">").unwrap();
+        if let Some(img) = &shape.image_ref {
+            let img_pad = " ".repeat(indent + 1);
+            write!(xml, "{}<draw:image", img_pad).unwrap();
+            if let Some(name) = &img.name {
+                write!(xml, " draw:name=\"{}\"", escape_xml(name)).unwrap();
+            }
+            write!(xml, " xlink:href=\"{}\"", escape_xml(&img.href)).unwrap();
+            if let Some(_ct) = &img.content_type {
+                write!(xml, " xlink:type=\"simple\" xlink:show=\"embed\" xlink:actuate=\"onLoad\"").unwrap();
+            }
+            writeln!(xml, "/>").unwrap();
+        }
+        write!(xml, "{}</{}>", pad, tag).unwrap();
+    } else if let Some(text) = &shape.text_content {
+        // For shapes with text content
+        writeln!(xml, ">").unwrap();
+        // In ODP, text in shapes goes as text:p inside
+        let text_pad = " ".repeat(indent + 1);
+        writeln!(
+            xml,
+            "{}<text:p>{}</text:p>",
+            text_pad,
+            escape_xml(text)
+        )
+        .unwrap();
+        write!(xml, "{}</{}>", pad, tag).unwrap();
+    } else {
+        writeln!(xml, "/>").unwrap();
+        return;
+    }
+    writeln!(xml).unwrap();
+}
+
+fn serialize_odp_transition(transition: &OdpTransition, xml: &mut String, indent: usize) {
+    let pad = " ".repeat(indent);
+    write!(xml, "{}<presentation:transition", pad).unwrap();
+    if let Some(t) = &transition.type_name {
+        write!(xml, " presentation:type-name=\"{}\"", escape_xml(t)).unwrap();
+    }
+    if let Some(d) = &transition.duration {
+        write!(xml, " presentation:duration=\"{}\"", escape_xml(d)).unwrap();
+    }
+    if let Some(dir) = &transition.direction {
+        write!(xml, " presentation:direction=\"{}\"", escape_xml(dir)).unwrap();
+    }
+    if let Some(speed) = &transition.speed {
+        write!(xml, " presentation:speed=\"{}\"", escape_xml(speed)).unwrap();
+    }
+    writeln!(xml, "/>").unwrap();
+}
+
+fn serialize_odp_notes(notes: &str, xml: &mut String, indent: usize) {
+    let pad = " ".repeat(indent);
+    writeln!(xml, "{}<presentation:notes>", pad).unwrap();
+    let text_pad = " ".repeat(indent + 1);
+    writeln!(
+        xml,
+        "{}<text:p>{}</text:p>",
+        text_pad,
+        escape_xml(notes)
+    )
+    .unwrap();
+    writeln!(xml, "{}</presentation:notes>", pad).unwrap();
 }
 
 // ---------------------------------------------------------------------------

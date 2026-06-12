@@ -1,5 +1,10 @@
 export { useCollaboration } from "./hooks/useCollaboration"
 export type { UseCollaborationOptions, UseCollaborationResult } from "./hooks/useCollaboration"
+export { usePresentationCollaboration } from "./hooks/usePresentationCollaboration"
+export type {
+  UsePresentationCollaborationOptions,
+  UsePresentationCollaborationResult,
+} from "./hooks/usePresentationCollaboration"
 export { useConnectionStatus } from "./hooks/useConnectionStatus"
 export type { ConnectionStatusInfo } from "./hooks/useConnectionStatus"
 export { useCollaboratorPresence } from "./hooks/useCollaboratorPresence"
