@@ -14,6 +14,11 @@ import { CollaborativeCursors } from "../CollaborativeCursors";
 const HANDLE_SIZE = 8;
 const ROTATION_HANDLE_OFFSET = 24;
 
+/** Convert camelCase effect name to kebab-case CSS class suffix */
+function effectToCssClass(effect: string): string {
+	return effect.replace(/([A-Z])/g, "-$1").toLowerCase();
+}
+
 const RESIZE_HANDLES = [
 	{ name: "nw", cursor: "nw-resize", x: -4, y: -4 },
 	{ name: "n", cursor: "n-resize", x: "50%", y: -4 },
@@ -1346,6 +1351,16 @@ const ObservedSlideCanvas = observer(
 			editingShapeId,
 		} = presentationStore;
 		const slide = slides[currentSlide];
+		useEffect(() => {
+			if (!slide || !isPreviewPlaying) return;
+			const anim = slide.animations?.[previewStep];
+			if (!anim) return;
+			const delay = (anim.duration + anim.delay) * 1000;
+			const timer = setTimeout(() => {
+				presentationStore.nextPreviewStep();
+			}, delay);
+			return () => clearTimeout(timer);
+		}, [isPreviewPlaying, previewStep, slide, slide?.animations]);
 		if (!slide) return <div className="prese-canvas-empty">No slides</div>;
 
 		const aspectRatio = slideSize === "widescreen" ? 16 / 9 : 4 / 3;
@@ -1356,8 +1371,16 @@ const ObservedSlideCanvas = observer(
 		const canvasHeight = baseHeight * scale;
 
 		const previewAnim = isPreviewPlaying && slide.animations?.[previewStep];
+		const previewAnimClass = previewAnim
+			? `prese-anim-${effectToCssClass(previewAnim.effect)}`
+			: "";
+		const previewExitClass =
+			previewStep > 0 &&
+			slide.animations?.[previewStep - 1]?.category === "exit"
+				? "prese-anim-exit"
+				: "";
 		const previewClass = previewAnim
-			? `prese-canvas-slide prese-anim-${previewAnim.effect}`
+			? `prese-canvas-slide ${previewAnimClass} ${previewExitClass}`.trim()
 			: "prese-canvas-slide";
 
 		const handleCanvasClick = (e: React.MouseEvent) => {

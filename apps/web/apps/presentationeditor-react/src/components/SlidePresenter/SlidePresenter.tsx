@@ -788,6 +788,7 @@ const ObservedSlidePresenter = observer(
 		const [elapsed, setElapsed] = useState(0);
 		const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 		const containerRef = useRef<HTMLDivElement | null>(null);
+		const wheelTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 		useEffect(() => {
 			if (!isPresenting) return;
@@ -836,6 +837,18 @@ const ObservedSlidePresenter = observer(
 			}
 		};
 
+		const handleWheel = (e: React.WheelEvent) => {
+			if (wheelTimerRef.current) return;
+			wheelTimerRef.current = setTimeout(() => {
+				wheelTimerRef.current = null;
+			}, 500);
+			if (e.deltaY > 0) {
+				nextSlide();
+			} else {
+				prevSlide();
+			}
+		};
+
 		const svgDefs: JSX.Element[] = [];
 		const shapeElements = slide.shapes?.map((shape) =>
 			renderPresenterShape(shape, svgDefs),
@@ -845,6 +858,7 @@ const ObservedSlidePresenter = observer(
 			<div
 				className="prese-presenter-overlay"
 				onKeyDown={handleKeyDown}
+				onWheel={handleWheel}
 				ref={containerRef}
 			>
 				<div className="prese-presenter-main">
