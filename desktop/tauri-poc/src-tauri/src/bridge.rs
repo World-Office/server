@@ -16,6 +16,7 @@ pub fn emit_menu_event(app: &AppHandle, action: &str) {
     }
 }
 
+#[allow(dead_code)]
 pub fn emit_menu_event_to_window(app: &AppHandle, window_label: &str, action: &str) {
     let payload = MenuEventPayload {
         action: action.to_string(),

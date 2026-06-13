@@ -45,7 +45,14 @@ const SHAPES: ShapeOption[] = [
 		type: "rect",
 		label: "Rectangle",
 		icon: (
-			<svg width="32" height="32" viewBox="0 0 32 32">
+			<svg
+				width="32"
+				height="32"
+				viewBox="0 0 32 32"
+				role="img"
+				aria-label="Rectangle"
+			>
+				<title>Rectangle</title>
 				<rect
 					x="4"
 					y="8"
@@ -62,7 +69,14 @@ const SHAPES: ShapeOption[] = [
 		type: "roundedRect",
 		label: "Rounded Rectangle",
 		icon: (
-			<svg width="32" height="32" viewBox="0 0 32 32">
+			<svg
+				width="32"
+				height="32"
+				viewBox="0 0 32 32"
+				role="img"
+				aria-label="Rounded Rectangle"
+			>
+				<title>Rounded Rectangle</title>
 				<rect
 					x="4"
 					y="8"
@@ -80,7 +94,14 @@ const SHAPES: ShapeOption[] = [
 		type: "ellipse",
 		label: "Ellipse",
 		icon: (
-			<svg width="32" height="32" viewBox="0 0 32 32">
+			<svg
+				width="32"
+				height="32"
+				viewBox="0 0 32 32"
+				role="img"
+				aria-label="Ellipse"
+			>
+				<title>Ellipse</title>
 				<ellipse
 					cx="16"
 					cy="16"
@@ -97,7 +118,14 @@ const SHAPES: ShapeOption[] = [
 		type: "triangle",
 		label: "Triangle",
 		icon: (
-			<svg width="32" height="32" viewBox="0 0 32 32">
+			<svg
+				width="32"
+				height="32"
+				viewBox="0 0 32 32"
+				role="img"
+				aria-label="Triangle"
+			>
+				<title>Triangle</title>
 				<polygon
 					points="16,5 29,27 3,27"
 					fill="#4472C4"
@@ -111,7 +139,14 @@ const SHAPES: ShapeOption[] = [
 		type: "diamond",
 		label: "Diamond",
 		icon: (
-			<svg width="32" height="32" viewBox="0 0 32 32">
+			<svg
+				width="32"
+				height="32"
+				viewBox="0 0 32 32"
+				role="img"
+				aria-label="Diamond"
+			>
+				<title>Diamond</title>
 				<polygon
 					points="16,4 28,16 16,28 4,16"
 					fill="#4472C4"
@@ -125,7 +160,14 @@ const SHAPES: ShapeOption[] = [
 		type: "line",
 		label: "Line",
 		icon: (
-			<svg width="32" height="32" viewBox="0 0 32 32">
+			<svg
+				width="32"
+				height="32"
+				viewBox="0 0 32 32"
+				role="img"
+				aria-label="Line"
+			>
+				<title>Line</title>
 				<line x1="4" y1="16" x2="28" y2="16" stroke="#333" strokeWidth="2" />
 			</svg>
 		),
@@ -134,7 +176,14 @@ const SHAPES: ShapeOption[] = [
 		type: "arrow",
 		label: "Arrow",
 		icon: (
-			<svg width="32" height="32" viewBox="0 0 32 32">
+			<svg
+				width="32"
+				height="32"
+				viewBox="0 0 32 32"
+				role="img"
+				aria-label="Arrow"
+			>
+				<title>Arrow</title>
 				<defs>
 					<marker
 						id="sg-arr"
@@ -163,7 +212,14 @@ const SHAPES: ShapeOption[] = [
 		type: "textbox",
 		label: "Text Box",
 		icon: (
-			<svg width="32" height="32" viewBox="0 0 32 32">
+			<svg
+				width="32"
+				height="32"
+				viewBox="0 0 32 32"
+				role="img"
+				aria-label="Text Box"
+			>
+				<title>Text Box</title>
 				<rect
 					x="4"
 					y="8"

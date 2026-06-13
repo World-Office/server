@@ -8,7 +8,14 @@ const chartTypes: { type: ChartType; label: string; icon: JSX.Element }[] = [
 		type: "bar",
 		label: "Bar",
 		icon: (
-			<svg width="32" height="24" viewBox="0 0 32 24">
+			<svg
+				width="32"
+				height="24"
+				viewBox="0 0 32 24"
+				role="img"
+				aria-label="Bar chart"
+			>
+				<title>Bar chart</title>
 				<rect x="4" y="12" width="5" height="10" fill="#4472C4" rx="1" />
 				<rect x="11" y="8" width="5" height="14" fill="#ED7D31" rx="1" />
 				<rect x="18" y="5" width="5" height="17" fill="#A5A5A5" rx="1" />
@@ -20,7 +27,14 @@ const chartTypes: { type: ChartType; label: string; icon: JSX.Element }[] = [
 		type: "column",
 		label: "Column",
 		icon: (
-			<svg width="32" height="24" viewBox="0 0 32 24">
+			<svg
+				width="32"
+				height="24"
+				viewBox="0 0 32 24"
+				role="img"
+				aria-label="Column chart"
+			>
+				<title>Column chart</title>
 				<rect x="3" y="10" width="5" height="12" fill="#4472C4" rx="1" />
 				<rect x="10" y="6" width="5" height="16" fill="#ED7D31" rx="1" />
 				<rect x="17" y="3" width="5" height="19" fill="#A5A5A5" rx="1" />
@@ -32,7 +46,14 @@ const chartTypes: { type: ChartType; label: string; icon: JSX.Element }[] = [
 		type: "line",
 		label: "Line",
 		icon: (
-			<svg width="32" height="24" viewBox="0 0 32 24">
+			<svg
+				width="32"
+				height="24"
+				viewBox="0 0 32 24"
+				role="img"
+				aria-label="Line chart"
+			>
+				<title>Line chart</title>
 				<polyline
 					points="3,18 10,12 17,6 24,10 29,15"
 					fill="none"
@@ -51,7 +72,14 @@ const chartTypes: { type: ChartType; label: string; icon: JSX.Element }[] = [
 		type: "pie",
 		label: "Pie",
 		icon: (
-			<svg width="32" height="24" viewBox="0 0 32 24">
+			<svg
+				width="32"
+				height="24"
+				viewBox="0 0 32 24"
+				role="img"
+				aria-label="Pie chart"
+			>
+				<title>Pie chart</title>
 				<circle cx="16" cy="12" r="10" fill="#E8E8E8" />
 				<path d="M16,12 L16,2 A10,10 0 0,1 22.9,16.4 Z" fill="#4472C4" />
 				<path d="M16,12 L22.9,16.4 A10,10 0 0,1 12.1,21.6 Z" fill="#ED7D31" />
@@ -63,7 +91,14 @@ const chartTypes: { type: ChartType; label: string; icon: JSX.Element }[] = [
 		type: "doughnut",
 		label: "Doughnut",
 		icon: (
-			<svg width="32" height="24" viewBox="0 0 32 24">
+			<svg
+				width="32"
+				height="24"
+				viewBox="0 0 32 24"
+				role="img"
+				aria-label="Doughnut chart"
+			>
+				<title>Doughnut chart</title>
 				<circle cx="16" cy="12" r="10" fill="#E8E8E8" />
 				<circle cx="16" cy="12" r="4" fill="white" />
 			</svg>

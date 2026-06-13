@@ -604,13 +604,12 @@ export class PresentationStore {
 	bringToFrontSelected(): void {
 		this.applyZOrderToSelected(() => {
 			const slide = this.slides[this.currentSlide];
-			const idx = slide.shapes.findIndex(
-				(s) =>
-					s.id ===
-					[...this.selectedShapeIds].find((id) =>
-						slide.shapes.some((sh) => sh.id === id),
-					)!,
+			const firstId = [...this.selectedShapeIds].find((id) =>
+				slide.shapes.some((sh) => sh.id === id),
 			);
+			const idx = firstId
+				? slide.shapes.findIndex((s) => s.id === firstId)
+				: -1;
 			// Actually just bring each to front one by one is simpler
 			void idx;
 		});

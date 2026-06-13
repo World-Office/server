@@ -5,7 +5,7 @@ const WINDOW_OFFSET: f64 = 30.0;
 const WINDOW_WIDTH: f64 = 800.0;
 const WINDOW_HEIGHT: f64 = 600.0;
 
-fn cascade_position(app: &AppHandle, index: usize) -> PhysicalPosition<f64> {
+fn cascade_position(_app: &AppHandle, index: usize) -> PhysicalPosition<f64> {
     let offset = (index as f64) * WINDOW_OFFSET;
     PhysicalPosition::new(100.0 + offset, 100.0 + offset)
 }
@@ -50,6 +50,7 @@ pub fn close_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn get_document_title(app: &AppHandle, label: &str) -> String {
     if let Some(window) = app.get_webview_window(label) {
         window

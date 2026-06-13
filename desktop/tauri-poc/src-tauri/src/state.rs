@@ -1,8 +1,6 @@
-use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
-use std::env;
 
 const MAX_RECENT_FILES: usize = 10;
 const RECENT_FILES_KEY: &str = "recent_files.json";
@@ -106,6 +104,7 @@ impl SessionState {
         }
     }
 
+    #[allow(dead_code)]
     fn save(&self) {
         let docs = self.open_documents.lock().unwrap().clone();
         self.save_with_docs(docs);

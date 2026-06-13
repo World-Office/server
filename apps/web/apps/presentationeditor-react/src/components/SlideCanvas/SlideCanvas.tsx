@@ -95,7 +95,7 @@ function renderChartSvg(
 					const y = pad.top + li * seriesCount * itemSize + si * itemSize;
 					elements.push(
 						<rect
-							key={`bar-${li}-${si}`}
+							key={`bar-${label}-${series.name}`}
 							x={pad.left}
 							y={y}
 							width={barW}
@@ -107,7 +107,7 @@ function renderChartSvg(
 					if (si === 0) {
 						elements.push(
 							<text
-								key={`lb-${li}`}
+								key={`lb-${label}`}
 								x={pad.left - 4}
 								y={y + barH / 2 + 4}
 								textAnchor="end"
@@ -125,7 +125,7 @@ function renderChartSvg(
 					const y = pad.top + chartH - barH;
 					elements.push(
 						<rect
-							key={`col-${li}-${si}`}
+							key={`col-${label}-${series.name}`}
 							x={x}
 							y={y}
 							width={barW}
@@ -137,7 +137,7 @@ function renderChartSvg(
 					if (si === 0) {
 						elements.push(
 							<text
-								key={`lb-${li}`}
+								key={`lb-${label}`}
 								x={x + barW / 2}
 								y={pad.top + chartH + 14}
 								textAnchor="middle"
@@ -166,7 +166,7 @@ function renderChartSvg(
 				.join(" ");
 			elements.push(
 				<path
-					key={`line-${si}`}
+					key={`line-${series.name}`}
 					d={d}
 					stroke={color}
 					strokeWidth={2}
@@ -176,7 +176,7 @@ function renderChartSvg(
 			pts.forEach((p, pi) => {
 				elements.push(
 					<circle
-						key={`pt-${si}-${pi}`}
+						key={`pt-${series.name}-${chart.labels[pi]}`}
 						cx={p.x}
 						cy={p.y}
 						r={3}
@@ -189,7 +189,7 @@ function renderChartSvg(
 			const x = pad.left + (li / Math.max(pointCount - 1, 1)) * chartW;
 			elements.push(
 				<text
-					key={`lb-${li}`}
+					key={`lb-${label}`}
 					x={x}
 					y={pad.top + chartH + 14}
 					textAnchor="middle"
@@ -236,7 +236,7 @@ function renderChartSvg(
 
 				elements.push(
 					<path
-						key={`pie-${si}-${vi}`}
+						key={`pie-${series.name}-${chart.labels[vi]}`}
 						d={d}
 						fill={color}
 						stroke="#fff"
@@ -251,7 +251,7 @@ function renderChartSvg(
 					const ly = cy + lr * Math.sin(labelAngle);
 					elements.push(
 						<text
-							key={`pv-${si}-${vi}`}
+							key={`pv-${series.name}-${chart.labels[vi]}`}
 							x={lx}
 							y={ly}
 							textAnchor="middle"
@@ -279,7 +279,7 @@ function renderChartSvg(
 				const ly = cy + lr * Math.sin(labelAngle);
 				elements.push(
 					<text
-						key={`plb-${li}`}
+						key={`plb-${label}`}
 						x={lx}
 						y={ly}
 						textAnchor="middle"
@@ -386,7 +386,14 @@ function renderConnectorSvg(
 	}
 
 	return (
-		<svg width={width} height={height} style={{ overflow: "visible" }}>
+		<svg
+			width={width}
+			height={height}
+			style={{ overflow: "visible" }}
+			role="img"
+			aria-label="Connector"
+		>
+			<title>Connector</title>
 			<defs>
 				{hasEndArrow && (
 					<marker
@@ -446,16 +453,24 @@ function renderGradientSvg(
 		const y2 = 0.5 + 0.5 * Math.sin(rad + Math.PI);
 		return (
 			<linearGradient id={gradId} x1={x1} y1={y1} x2={x2} y2={y2}>
-				{gradient.stops.map((s, i) => (
-					<stop key={i} offset={`${s.position * 100}%`} stopColor={s.color} />
+				{gradient.stops.map((s) => (
+					<stop
+						key={`stop-${s.position}-${s.color}`}
+						offset={`${s.position * 100}%`}
+						stopColor={s.color}
+					/>
 				))}
 			</linearGradient>
 		);
 	}
 	return (
 		<radialGradient id={gradId}>
-			{gradient.stops.map((s, i) => (
-				<stop key={i} offset={`${s.position * 100}%`} stopColor={s.color} />
+			{gradient.stops.map((s) => (
+				<stop
+					key={`stop-${s.position}-${s.color}`}
+					offset={`${s.position * 100}%`}
+					stopColor={s.color}
+				/>
 			))}
 		</radialGradient>
 	);
@@ -543,7 +558,13 @@ function renderShape(
 				onMouseDown={handleMouseDown}
 				onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}
 			>
-				<svg width={shape.width} height={shape.height}>
+				<svg
+					width={shape.width}
+					height={shape.height}
+					role="img"
+					aria-label="Chart"
+				>
+					<title>Chart</title>
 					{chartSvg}
 				</svg>
 				{isSelected && renderResizeHandles(shape.id, onResizeStart)}
@@ -562,7 +583,13 @@ function renderShape(
 				onMouseDown={handleMouseDown}
 				onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}
 			>
-				<svg width={shape.width} height={shape.height}>
+				<svg
+					width={shape.width}
+					height={shape.height}
+					role="img"
+					aria-label="Table"
+				>
+					<title>Table</title>
 					{tableSvg}
 				</svg>
 				{isSelected && renderResizeHandles(shape.id, onResizeStart)}
@@ -575,8 +602,10 @@ function renderShape(
 	const defsEl =
 		hasGradient || hasShadow ? (
 			<defs>
-				{hasGradient && renderGradientSvg(shape.gradientFill!, shape.id)}
-				{hasShadow && shadowToFilter(shape.shadow!, shape.id)}
+				{hasGradient &&
+					shape.gradientFill &&
+					renderGradientSvg(shape.gradientFill, shape.id)}
+				{hasShadow && shape.shadow && shadowToFilter(shape.shadow, shape.id)}
 			</defs>
 		) : undefined;
 
@@ -589,7 +618,13 @@ function renderShape(
 					onMouseDown={handleMouseDown}
 					onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}
 				>
-					<svg width={shape.width} height={shape.height}>
+					<svg
+						width={shape.width}
+						height={shape.height}
+						role="img"
+						aria-label="Rectangle"
+					>
+						<title>Rectangle</title>
 						{defsEl}
 						<rect {...coreProps} rx={0} />
 						{shape.text && (
@@ -620,7 +655,13 @@ function renderShape(
 					onMouseDown={handleMouseDown}
 					onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}
 				>
-					<svg width={shape.width} height={shape.height}>
+					<svg
+						width={shape.width}
+						height={shape.height}
+						role="img"
+						aria-label="Rounded Rectangle"
+					>
+						<title>Rounded Rectangle</title>
 						{defsEl}
 						<rect {...coreProps} rx={8} />
 						{shape.text && (
@@ -651,7 +692,13 @@ function renderShape(
 					onMouseDown={handleMouseDown}
 					onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}
 				>
-					<svg width={shape.width} height={shape.height}>
+					<svg
+						width={shape.width}
+						height={shape.height}
+						role="img"
+						aria-label="Ellipse"
+					>
+						<title>Ellipse</title>
 						{defsEl}
 						<ellipse
 							cx={shape.width / 2}
@@ -690,7 +737,13 @@ function renderShape(
 					onMouseDown={handleMouseDown}
 					onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}
 				>
-					<svg width={shape.width} height={shape.height}>
+					<svg
+						width={shape.width}
+						height={shape.height}
+						role="img"
+						aria-label="Triangle"
+					>
+						<title>Triangle</title>
 						{defsEl}
 						<polygon
 							points={`${shape.width / 2},0 ${shape.width},${shape.height} 0,${shape.height}`}
@@ -726,7 +779,13 @@ function renderShape(
 					onMouseDown={handleMouseDown}
 					onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}
 				>
-					<svg width={shape.width} height={shape.height}>
+					<svg
+						width={shape.width}
+						height={shape.height}
+						role="img"
+						aria-label="Diamond"
+					>
+						<title>Diamond</title>
 						{defsEl}
 						<polygon
 							points={`${shape.width / 2},0 ${shape.width},${shape.height / 2} ${shape.width / 2},${shape.height} 0,${shape.height / 2}`}
@@ -762,7 +821,13 @@ function renderShape(
 					onMouseDown={handleMouseDown}
 					onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}
 				>
-					<svg width={shape.width} height={shape.height}>
+					<svg
+						width={shape.width}
+						height={shape.height}
+						role="img"
+						aria-label="Line"
+					>
+						<title>Line</title>
 						{defsEl}
 						<line
 							x1={0}
@@ -788,7 +853,13 @@ function renderShape(
 					onMouseDown={handleMouseDown}
 					onDoubleClick={(e) => handleShapeDoubleClick(e, shape.id)}
 				>
-					<svg width={shape.width} height={shape.height}>
+					<svg
+						width={shape.width}
+						height={shape.height}
+						role="img"
+						aria-label="Arrow"
+					>
+						<title>Arrow</title>
 						<defs>
 							<marker
 								id={`arrow-${shape.id}`}
@@ -800,8 +871,12 @@ function renderShape(
 							>
 								<path d="M0,0 L10,3 L0,6" fill={coreProps.stroke} />
 							</marker>
-							{hasGradient && renderGradientSvg(shape.gradientFill!, shape.id)}
-							{hasShadow && shadowToFilter(shape.shadow!, shape.id)}
+							{hasGradient &&
+								shape.gradientFill &&
+								renderGradientSvg(shape.gradientFill, shape.id)}
+							{hasShadow &&
+								shape.shadow &&
+								shadowToFilter(shape.shadow, shape.id)}
 						</defs>
 						<line
 							x1={0}
@@ -1294,6 +1369,13 @@ const ObservedSlideCanvas = observer(
 			}
 		};
 
+		const handleCanvasKeyDown = (e: React.KeyboardEvent) => {
+			if (e.key === "Enter" || e.key === " ") {
+				e.preventDefault();
+				presentationStore.deselectAllShapes();
+			}
+		};
+
 		const handlePointerMove = useCallback(
 			(e: React.PointerEvent) => {
 				if (e.pointerType !== "mouse") return;
@@ -1331,6 +1413,7 @@ const ObservedSlideCanvas = observer(
 						animationDelay: previewAnim ? `${previewAnim.delay}s` : undefined,
 					}}
 					onClick={handleCanvasClick}
+					onKeyDown={handleCanvasKeyDown}
 					onPointerMove={handlePointerMove}
 					onPointerLeave={handlePointerLeave}
 				>
