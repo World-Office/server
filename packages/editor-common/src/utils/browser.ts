@@ -3,8 +3,7 @@
  * Modern browser detection only — IE detection removed.
  */
 
-const userAgent =
-  typeof navigator !== "undefined" ? navigator.userAgent.toLowerCase() : ""
+const userAgent = typeof navigator !== "undefined" ? navigator.userAgent.toLowerCase() : ""
 const check = (regex: RegExp): boolean => regex.test(userAgent)
 
 /**

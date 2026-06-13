@@ -4,17 +4,17 @@
 //! and routing to backend microservices.
 
 use axum::{
+    Json, Router,
     body::Body,
     extract::{Request, State},
     http::{HeaderValue, StatusCode},
     middleware::{self, Next},
     response::Response,
     routing::get,
-    Json, Router,
 };
 use bytes::Bytes;
 use http_body_util::BodyExt;
-use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
+use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
 
 /// Service route configuration.
@@ -61,11 +61,7 @@ struct ErrorResponse {
 }
 
 /// Routes that bypass JWT authentication.
-const PUBLIC_PATHS: &[&str] = &[
-    "/health",
-    "/auth/login",
-    "/auth/register",
-];
+const PUBLIC_PATHS: &[&str] = &["/health", "/auth/login", "/auth/register"];
 
 /// JWT authentication middleware.
 async fn auth_middleware(
@@ -110,7 +106,8 @@ async fn auth_middleware(
             // Inject user info into request headers for downstream services
             req.headers_mut().insert(
                 "x-user-id",
-                HeaderValue::from_str(&token_data.claims.sub).unwrap_or_else(|_| HeaderValue::from_static("")),
+                HeaderValue::from_str(&token_data.claims.sub)
+                    .unwrap_or_else(|_| HeaderValue::from_static("")),
             );
             req.headers_mut().insert(
                 "x-username",
@@ -119,7 +116,8 @@ async fn auth_middleware(
             );
             req.headers_mut().insert(
                 "x-user-role",
-                HeaderValue::from_str(&token_data.claims.role).unwrap_or_else(|_| HeaderValue::from_static("")),
+                HeaderValue::from_str(&token_data.claims.role)
+                    .unwrap_or_else(|_| HeaderValue::from_static("")),
             );
             Ok(next.run(req).await)
         }
@@ -149,33 +147,40 @@ async fn proxy_handler(
         .routes
         .iter()
         .find(|r| path.starts_with(r.path_prefix))
-        .ok_or_else(|| (
-            StatusCode::NOT_FOUND,
-            Json(ErrorResponse {
-                error: format!("No upstream route for {}", path),
-                code: 404,
-            }),
-        ))?;
+        .ok_or_else(|| {
+            (
+                StatusCode::NOT_FOUND,
+                Json(ErrorResponse {
+                    error: format!("No upstream route for {}", path),
+                    code: 404,
+                }),
+            )
+        })?;
 
     // Build upstream URL
     let upstream_path = if route.strip_prefix {
-        path.strip_prefix(route.path_prefix)
-            .unwrap_or(path)
+        path.strip_prefix(route.path_prefix).unwrap_or(path)
     } else {
         path
     };
 
-    let url = format!("{}{}{}", route.upstream, upstream_path, req.uri().query().map(|q| format!("?{}", q)).unwrap_or_default());
+    let url = format!(
+        "{}{}{}",
+        route.upstream,
+        upstream_path,
+        req.uri()
+            .query()
+            .map(|q| format!("?{}", q))
+            .unwrap_or_default()
+    );
 
     tracing::debug!(method = %method, url = %url, "proxying request");
 
     // Build the proxied request
-    let mut upstream_req = state
-        .http_client
-        .request(
-            reqwest::Method::from_bytes(method.as_str().as_bytes()).unwrap_or(reqwest::Method::GET),
-            &url,
-        );
+    let mut upstream_req = state.http_client.request(
+        reqwest::Method::from_bytes(method.as_str().as_bytes()).unwrap_or(reqwest::Method::GET),
+        &url,
+    );
 
     // Forward headers
     for (name, value) in req.headers().iter() {
@@ -227,29 +232,30 @@ async fn proxy_handler(
     // Forward response headers
     for (name, value) in headers.iter() {
         let header_name = name.as_str();
-        if matches!(
-            header_name,
-            "transfer-encoding" | "connection" | "upgrade"
-        ) {
+        if matches!(header_name, "transfer-encoding" | "connection" | "upgrade") {
             continue;
         }
         response = response.header(name, value);
     }
 
-    response
-        .body(body)
-        .map_err(|e| (
+    response.body(body).map_err(|e| {
+        (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(ErrorResponse {
                 error: format!("Failed to build response: {}", e),
                 code: 500,
             }),
-        ))
+        )
+    })
 }
 
 /// GET /health — gateway health check with route listing.
 async fn health(State(state): State<AppState>) -> Json<HealthResponse> {
-    let routes: Vec<String> = state.routes.iter().map(|r| format!("{} → {}", r.path_prefix, r.upstream)).collect();
+    let routes: Vec<String> = state
+        .routes
+        .iter()
+        .map(|r| format!("{} → {}", r.path_prefix, r.upstream))
+        .collect();
 
     Json(HealthResponse {
         status: "ok",
@@ -265,7 +271,10 @@ fn build_routes(state: AppState) -> Router {
         .fallback(proxy_handler);
 
     // Add JWT auth middleware
-    router = router.layer(middleware::from_fn_with_state(state.clone(), auth_middleware));
+    router = router.layer(middleware::from_fn_with_state(
+        state.clone(),
+        auth_middleware,
+    ));
 
     router.with_state(state)
 }
@@ -274,22 +283,63 @@ fn build_routes(state: AppState) -> Router {
 async fn main() {
     tracing_subscriber::fmt::init();
 
-    let jwt_secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "dev-secret-change-in-production".into());
+    let jwt_secret =
+        std::env::var("JWT_SECRET").unwrap_or_else(|_| "dev-secret-change-in-production".into());
 
-    let identity_url = std::env::var("IDENTITY_SERVICE_URL").unwrap_or_else(|_| "http://127.0.0.1:8001".into());
-    let storage_url = std::env::var("STORAGE_SERVICE_URL").unwrap_or_else(|_| "http://127.0.0.1:8002".into());
-    let conversion_url = std::env::var("CONVERSION_SERVICE_URL").unwrap_or_else(|_| "http://127.0.0.1:8003".into());
-    let coauthoring_url = std::env::var("COAUTHORING_SERVICE_URL").unwrap_or_else(|_| "http://127.0.0.1:8004".into());
-    let session_url = std::env::var("SESSION_SERVICE_URL").unwrap_or_else(|_| "http://127.0.0.1:8005".into());
+    let identity_url =
+        std::env::var("IDENTITY_SERVICE_URL").unwrap_or_else(|_| "http://127.0.0.1:8001".into());
+    let storage_url =
+        std::env::var("STORAGE_SERVICE_URL").unwrap_or_else(|_| "http://127.0.0.1:8002".into());
+    let conversion_url =
+        std::env::var("CONVERSION_SERVICE_URL").unwrap_or_else(|_| "http://127.0.0.1:8003".into());
+    let coauthoring_url =
+        std::env::var("COAUTHORING_SERVICE_URL").unwrap_or_else(|_| "http://127.0.0.1:8004".into());
+    let session_url =
+        std::env::var("SESSION_SERVICE_URL").unwrap_or_else(|_| "http://127.0.0.1:8005".into());
 
     let routes = vec![
-        ServiceRoute { path_prefix: "/auth", upstream: identity_url, strip_prefix: false, requires_auth: false },
-        ServiceRoute { path_prefix: "/files", upstream: storage_url.clone(), strip_prefix: false, requires_auth: true },
-        ServiceRoute { path_prefix: "/api/storage", upstream: storage_url, strip_prefix: true, requires_auth: true },
-        ServiceRoute { path_prefix: "/convert", upstream: conversion_url.clone(), strip_prefix: false, requires_auth: true },
-        ServiceRoute { path_prefix: "/jobs", upstream: conversion_url, strip_prefix: false, requires_auth: true },
-        ServiceRoute { path_prefix: "/sessions", upstream: coauthoring_url, strip_prefix: false, requires_auth: true },
-        ServiceRoute { path_prefix: "/api/sessions", upstream: session_url, strip_prefix: true, requires_auth: true },
+        ServiceRoute {
+            path_prefix: "/auth",
+            upstream: identity_url,
+            strip_prefix: false,
+            requires_auth: false,
+        },
+        ServiceRoute {
+            path_prefix: "/files",
+            upstream: storage_url.clone(),
+            strip_prefix: false,
+            requires_auth: true,
+        },
+        ServiceRoute {
+            path_prefix: "/api/storage",
+            upstream: storage_url,
+            strip_prefix: true,
+            requires_auth: true,
+        },
+        ServiceRoute {
+            path_prefix: "/convert",
+            upstream: conversion_url.clone(),
+            strip_prefix: false,
+            requires_auth: true,
+        },
+        ServiceRoute {
+            path_prefix: "/jobs",
+            upstream: conversion_url,
+            strip_prefix: false,
+            requires_auth: true,
+        },
+        ServiceRoute {
+            path_prefix: "/sessions",
+            upstream: coauthoring_url,
+            strip_prefix: false,
+            requires_auth: true,
+        },
+        ServiceRoute {
+            path_prefix: "/api/sessions",
+            upstream: session_url,
+            strip_prefix: true,
+            requires_auth: true,
+        },
     ];
 
     let state = AppState {
@@ -306,7 +356,12 @@ async fn main() {
         .parse()
         .unwrap_or(8080);
 
-    tracing::info!("api-gateway v{} starting on {}:{}", env!("CARGO_PKG_VERSION"), addr, port);
+    tracing::info!(
+        "api-gateway v{} starting on {}:{}",
+        env!("CARGO_PKG_VERSION"),
+        addr,
+        port
+    );
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", addr, port))
         .await

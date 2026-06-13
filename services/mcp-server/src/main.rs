@@ -2,8 +2,8 @@ pub mod client;
 pub mod snapshots;
 pub mod tools;
 
-use rmcp::transport::stdio;
 use rmcp::ServiceExt;
+use rmcp::transport::stdio;
 use tools::McpTools;
 
 #[tokio::main]

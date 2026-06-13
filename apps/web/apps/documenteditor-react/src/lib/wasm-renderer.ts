@@ -62,7 +62,12 @@ function drawPage(pageIndex: number): void {
   // Margins guide (very subtle)
   ctx.strokeStyle = "rgba(0, 0, 0, 0.03)"
   ctx.lineWidth = 0.5
-  ctx.strokeRect(MARGIN_PT, MARGIN_PT, PAGE_WIDTH_PT - 2 * MARGIN_PT, PAGE_HEIGHT_PT - 2 * MARGIN_PT)
+  ctx.strokeRect(
+    MARGIN_PT,
+    MARGIN_PT,
+    PAGE_WIDTH_PT - 2 * MARGIN_PT,
+    PAGE_HEIGHT_PT - 2 * MARGIN_PT,
+  )
 
   // Draw simulated document content
   const rng = seededRandom(pageIndex * 1000 + 42)
@@ -130,7 +135,11 @@ function drawPage(pageIndex: number): void {
   ctx.fillStyle = "#888888"
   ctx.font = "9pt 'Segoe UI', 'Helvetica Neue', Arial, sans-serif"
   ctx.textAlign = "center"
-  ctx.fillText(`${pageIndex + 1} / ${totalPages}`, PAGE_WIDTH_PT / 2, PAGE_HEIGHT_PT - MARGIN_PT / 2 + 10)
+  ctx.fillText(
+    `${pageIndex + 1} / ${totalPages}`,
+    PAGE_WIDTH_PT / 2,
+    PAGE_HEIGHT_PT - MARGIN_PT / 2 + 10,
+  )
   ctx.textAlign = "start"
 
   // Page border

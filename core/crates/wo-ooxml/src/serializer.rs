@@ -208,7 +208,8 @@ impl OoxmlSerializer {
             xml.push_str(&format!(
                 r#"
     <p:sldId id="{}" r:id="rId{}"/>"#,
-                slide.id, i + 1
+                slide.id,
+                i + 1
             ));
         }
         xml.push_str("\n  </p:sldIdLst>\n</p:presentation>");
@@ -224,13 +225,15 @@ impl OoxmlSerializer {
 
         // spTree
         xml.push_str("\n  <p:spTree>");
-        xml.push_str(r#"
+        xml.push_str(
+            r#"
     <p:nvGrpSpPr>
       <p:cNvPr id="1" name=""/>
       <p:cNvGrpSpPr/>
       <p:nvPr/>
     </p:nvGrpSpPr>
-    <p:grpSpPr/>"#);
+    <p:grpSpPr/>"#,
+        );
 
         for shape in &slide.shapes {
             match shape {
@@ -243,12 +246,12 @@ impl OoxmlSerializer {
                 SlideShape::Picture(pic) => {
                     self.serialize_picture_shape(&mut xml, pic);
                 }
-            SlideShape::Table(table) => {
-                self.serialize_table_shape(&mut xml, table);
-            }
-            SlideShape::Connector(conn) => {
-                self.serialize_connector_shape(&mut xml, conn);
-            }
+                SlideShape::Table(table) => {
+                    self.serialize_table_shape(&mut xml, table);
+                }
+                SlideShape::Connector(conn) => {
+                    self.serialize_connector_shape(&mut xml, conn);
+                }
             }
         }
 
@@ -297,7 +300,11 @@ impl OoxmlSerializer {
                     TransitionEffect::PullRight => "p:pullRight",
                 };
                 let dur_ms = (trans.duration * 1000.0) as u64;
-                let adv_click = if trans.advance_mode == AdvanceMode::Manual { "1" } else { "0" };
+                let adv_click = if trans.advance_mode == AdvanceMode::Manual {
+                    "1"
+                } else {
+                    "0"
+                };
                 xml.push_str(&format!(
                     r#"
   <p:transition dur="{}" advClick="{}""#,
@@ -307,21 +314,26 @@ impl OoxmlSerializer {
                     let adv_tm_ms = (trans.advance_timing * 1000.0) as u64;
                     xml.push_str(&format!(r#" advTm="{}""#, adv_tm_ms));
                 }
-                xml.push_str(&format!(r#">
+                xml.push_str(&format!(
+                    r#">
     <{}/>
-  </p:transition>"#, effect_name));
+  </p:transition>"#,
+                    effect_name
+                ));
             }
         }
 
         // Timing (animations)
         if !slide.animations.is_empty() {
-            xml.push_str(r#"
+            xml.push_str(
+                r#"
   <p:timing>
     <p:tnLst>
       <p:par>
         <p:cTn id="1" dur="indefinite" restart="never" nodeType="tmRoot"/>
       </p:par>
-    </p:tnLst>"#);
+    </p:tnLst>"#,
+            );
             for anim in &slide.animations {
                 let anim_dur = (anim.duration * 1000.0) as u64;
                 let anim_delay = (anim.delay * 1000.0) as u64;
@@ -383,8 +395,10 @@ impl OoxmlSerializer {
                     ));
                 }
                 Fill::Gradient(grad) => {
-                    xml.push_str(r#"
-        <a:gradFill>"#);
+                    xml.push_str(
+                        r#"
+        <a:gradFill>"#,
+                    );
                     if matches!(grad.kind, GradientKind::Linear) {
                         let ang = (grad.angle * 60000.0) as i64;
                         xml.push_str(&format!(
@@ -393,13 +407,17 @@ impl OoxmlSerializer {
                             ang
                         ));
                     } else {
-                        xml.push_str(r#"
+                        xml.push_str(
+                            r#"
           <a:path path="circle">
             <a:fillToRect l="50000" t="50000" r="50000" b="50000"/>
-          </a:path>"#);
+          </a:path>"#,
+                        );
                     }
-                    xml.push_str(r#"
-          <a:gsLst>"#);
+                    xml.push_str(
+                        r#"
+          <a:gsLst>"#,
+                    );
                     for stop in &grad.stops {
                         let pos = (stop.position * 1000.0) as i64;
                         let c = stop.color.trim_start_matches('#');
@@ -411,9 +429,11 @@ impl OoxmlSerializer {
                             pos, c,
                         ));
                     }
-                    xml.push_str(r#"
+                    xml.push_str(
+                        r#"
           </a:gsLst>
-        </a:gradFill>"#);
+        </a:gradFill>"#,
+                    );
                 }
             }
         }
@@ -456,8 +476,10 @@ impl OoxmlSerializer {
         ));
         self.serialize_fill(xml, &tb.fill);
         self.serialize_effect_list(xml, &tb.effect);
-        xml.push_str(r#"
-      </p:spPr>"#);
+        xml.push_str(
+            r#"
+      </p:spPr>"#,
+        );
         self.serialize_text_body(xml, &tb.text_body);
         xml.push_str("\n    </p:sp>");
     }
@@ -477,17 +499,14 @@ impl OoxmlSerializer {
           <a:off x="{}" y="{}"/>
           <a:ext cx="{}" cy="{}"/>
         </a:xfrm>"#,
-            ph.id,
-            ph.placeholder_type,
-            ph.bounds.x,
-            ph.bounds.y,
-            ph.bounds.cx,
-            ph.bounds.cy,
+            ph.id, ph.placeholder_type, ph.bounds.x, ph.bounds.y, ph.bounds.cx, ph.bounds.cy,
         ));
         self.serialize_fill(xml, &ph.fill);
         self.serialize_effect_list(xml, &ph.effect);
-        xml.push_str(r#"
-      </p:spPr>"#);
+        xml.push_str(
+            r#"
+      </p:spPr>"#,
+        );
         if let Some(ref tb) = ph.text_body {
             self.serialize_text_body(xml, tb);
         }
@@ -511,9 +530,11 @@ impl OoxmlSerializer {
             pic.id, pic.name, pic.bounds.x, pic.bounds.y, pic.bounds.cx, pic.bounds.cy,
         ));
         self.serialize_effect_list(xml, &pic.effect);
-        xml.push_str(r#"
+        xml.push_str(
+            r#"
       </p:spPr>
-    </p:pic>"#);
+    </p:pic>"#,
+        );
     }
 
     fn serialize_table_shape(&self, xml: &mut String, table: &TableShape) {
@@ -536,8 +557,10 @@ impl OoxmlSerializer {
                 col.width,
             ));
         }
-        xml.push_str(r#"
-      </p:tblGrid>"#);
+        xml.push_str(
+            r#"
+      </p:tblGrid>"#,
+        );
 
         for row in &table.rows {
             xml.push_str(&format!(
@@ -546,24 +569,34 @@ impl OoxmlSerializer {
                 row.height,
             ));
             for cell in &row.cells {
-                xml.push_str(r#"
-        <p:tc>"#);
-                // Cell text body 
-                xml.push_str(r#"
+                xml.push_str(
+                    r#"
+        <p:tc>"#,
+                );
+                // Cell text body
+                xml.push_str(
+                    r#"
           <p:txBody>
             <a:bodyPr/>
-            <a:lstStyle/>"#);
+            <a:lstStyle/>"#,
+                );
                 if cell.text_body.paragraphs.is_empty() {
-                    xml.push_str(r#"
-            <a:p/>"#);
+                    xml.push_str(
+                        r#"
+            <a:p/>"#,
+                    );
                 } else {
                     for para in &cell.text_body.paragraphs {
-                        xml.push_str(r#"
-            <a:p>"#);
+                        xml.push_str(
+                            r#"
+            <a:p>"#,
+                        );
                         for run in &para.runs {
                             if run.text == "\n" {
-                                xml.push_str(r#"
-              <a:br/>"#);
+                                xml.push_str(
+                                    r#"
+              <a:br/>"#,
+                                );
                             } else {
                                 xml.push_str(&format!(
                                     r#"
@@ -579,12 +612,16 @@ impl OoxmlSerializer {
                                 ));
                             }
                         }
-                        xml.push_str(r#"
-            </a:p>"#);
+                        xml.push_str(
+                            r#"
+            </a:p>"#,
+                        );
                     }
                 }
-                xml.push_str(r#"
-          </p:txBody>"#);
+                xml.push_str(
+                    r#"
+          </p:txBody>"#,
+                );
 
                 // Cell properties
                 let mut cell_props = String::new();
@@ -604,8 +641,10 @@ impl OoxmlSerializer {
                     cell_props.push_str(&format!(r#" gridSpan="{}""#, cs));
                 }
                 if cell_props.is_empty() {
-                    xml.push_str(r#"
-          <p:tcPr/>"#);
+                    xml.push_str(
+                        r#"
+          <p:tcPr/>"#,
+                    );
                 } else {
                     // Determine if we have inline properties or attributes
                     if cell.row_span.is_some() || cell.col_span.is_some() {
@@ -636,14 +675,20 @@ impl OoxmlSerializer {
                         ));
                     }
                 }
-                xml.push_str(r#"
-        </p:tc>"#);
+                xml.push_str(
+                    r#"
+        </p:tc>"#,
+                );
             }
-            xml.push_str(r#"
-      </p:tr>"#);
+            xml.push_str(
+                r#"
+      </p:tr>"#,
+            );
         }
-        xml.push_str(r#"
-    </p:tbl>"#);
+        xml.push_str(
+            r#"
+    </p:tbl>"#,
+        );
     }
 
     fn serialize_connector_shape(&self, xml: &mut String, conn: &ConnectorShape) {
@@ -663,31 +708,46 @@ impl OoxmlSerializer {
         </a:xfrm>
         <a:prstGeom prst="{}"/>
         <a:ln w="{}">"#,
-            conn.id, conn.bounds.x, conn.bounds.y, conn.bounds.cx, conn.bounds.cy, prst,
+            conn.id,
+            conn.bounds.x,
+            conn.bounds.y,
+            conn.bounds.cx,
+            conn.bounds.cy,
+            prst,
             conn.line_width.unwrap_or(6350),
         ));
         if conn.has_start_arrow {
-            xml.push_str(r#"
-          <a:tailEnd type="triangle"/>"#);
+            xml.push_str(
+                r#"
+          <a:tailEnd type="triangle"/>"#,
+            );
         }
         if conn.has_end_arrow {
-            xml.push_str(r#"
-          <a:headEnd type="triangle"/>"#);
+            xml.push_str(
+                r#"
+          <a:headEnd type="triangle"/>"#,
+            );
         }
-        xml.push_str(r#"
-        </a:ln>"#);
+        xml.push_str(
+            r#"
+        </a:ln>"#,
+        );
         self.serialize_fill(xml, &conn.fill);
         self.serialize_effect_list(xml, &conn.effect);
-        xml.push_str(r#"
+        xml.push_str(
+            r#"
       </p:spPr>
-    </p:cxnSp>"#);
+    </p:cxnSp>"#,
+        );
     }
 
     fn serialize_text_body(&self, xml: &mut String, tb: &TextBody) {
         xml.push_str("\n      <p:txBody>");
-        xml.push_str(r#"
+        xml.push_str(
+            r#"
         <a:bodyPr/>
-        <a:lstStyle/>"#);
+        <a:lstStyle/>"#,
+        );
 
         for para in &tb.paragraphs {
             xml.push_str("\n        <a:p>");
@@ -722,17 +782,19 @@ impl OoxmlSerializer {
                         xml.push_str(&format!(" u=\"{}\"", val));
                     }
                     if let Some(ref f) = run.font {
-                        xml.push_str(&format!("><a:latin typeface=\"{}\"/></a:rPr>", escape_xml(f)));
+                        xml.push_str(&format!(
+                            "><a:latin typeface=\"{}\"/></a:rPr>",
+                            escape_xml(f)
+                        ));
                     } else {
                         xml.push_str("/>");
                     }
                 }
-                xml.push_str(&format!("\n            <a:t>{}</a:t>", escape_xml(&run.text)));
-                if has_rpr {
-                    xml.push_str("\n          </a:r>");
-                } else {
-                    xml.push_str("\n          </a:r>");
-                }
+                xml.push_str(&format!(
+                    "\n            <a:t>{}</a:t>",
+                    escape_xml(&run.text)
+                ));
+                xml.push_str("\n          </a:r>");
             }
             xml.push_str("\n        </a:p>");
         }
@@ -1275,7 +1337,8 @@ impl OoxmlSerializer {
         xml.push_str("\n    </a:fontScheme>");
 
         // Format scheme (placeholder)
-        xml.push_str(r#"
+        xml.push_str(
+            r#"
     <a:fmtScheme name="none">
       <a:fillStyleLst>
         <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
@@ -1297,7 +1360,8 @@ impl OoxmlSerializer {
         <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
         <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
       </a:bgFillStyleLst>
-    </a:fmtScheme>"#);
+    </a:fmtScheme>"#,
+        );
 
         xml.push_str("\n  </a:themeElements>\n</a:theme>");
         xml
@@ -1332,8 +1396,7 @@ impl OoxmlSerializer {
     }
 
     fn build_slide_master_xml(&self, _master: &SlideMaster) -> String {
-        let xml = String::from(
-            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sldMaster xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
              xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
              xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
@@ -1343,9 +1406,8 @@ impl OoxmlSerializer {
       <p:grpSpPr/>
     </p:spTree>
   </p:cSld>
-</p:sldMaster>"#,
-        );
-        xml
+</p:sldMaster>"#
+            .to_string()
     }
 }
 
@@ -1873,35 +1935,40 @@ mod tests {
 
     fn make_single_slide_presentation() -> PptxPresentation {
         PptxPresentation {
-                    slide_size: SlideSize::standard(),
-                    slides: vec![Slide {
-                        id: 256,
-                        name: "Slide1".to_string(),
-                        notes: None,
-                        transition: None,
-                        animations: vec![],
-                        timing_raw: None,
-                        shapes: vec![SlideShape::TextBox(TextBoxShape {
-                             id: "2".to_string(),
-                             bounds: Bounds { x: 100, y: 100, cx: 5000000, cy: 500000 },
-                             text_body: TextBody {
-                                 paragraphs: vec![DocxParagraph {
-                                     style_id: None,
-                                     properties: DocxParagraphProperties::default(),
-                                     runs: vec![DocxRun {
-                                         text: "Hello PPTX".to_string(),
-                                         ..DocxRun::default()
-                                     }],
-                                 }],
-                             },
-                             fill: None,
-                             effect: None,
-                         })],
-                     }],
-                     slide_masters: Vec::new(),
-                    theme: None,
-                    core_properties: CoreProperties::default(),
-                }
+            slide_size: SlideSize::standard(),
+            slides: vec![Slide {
+                id: 256,
+                name: "Slide1".to_string(),
+                notes: None,
+                transition: None,
+                animations: vec![],
+                timing_raw: None,
+                shapes: vec![SlideShape::TextBox(TextBoxShape {
+                    id: "2".to_string(),
+                    bounds: Bounds {
+                        x: 100,
+                        y: 100,
+                        cx: 5000000,
+                        cy: 500000,
+                    },
+                    text_body: TextBody {
+                        paragraphs: vec![DocxParagraph {
+                            style_id: None,
+                            properties: DocxParagraphProperties::default(),
+                            runs: vec![DocxRun {
+                                text: "Hello PPTX".to_string(),
+                                ..DocxRun::default()
+                            }],
+                        }],
+                    },
+                    fill: None,
+                    effect: None,
+                })],
+            }],
+            slide_masters: Vec::new(),
+            theme: None,
+            core_properties: CoreProperties::default(),
+        }
     }
 
     #[test]
@@ -1933,61 +2000,71 @@ mod tests {
     #[test]
     fn test_serialize_pptx_multiple_slides() {
         let pres = PptxPresentation {
-                    slide_size: SlideSize::widescreen(),
-                    slides: vec![
-                        Slide {
-                            id: 256,
-                            name: "Slide1".to_string(),
-                            notes: None,
-                            transition: None,
-                        animations: vec![],
-                        timing_raw: None,
-                        shapes: vec![SlideShape::TextBox(TextBoxShape {
-                                 id: "2".to_string(),
-                                 bounds: Bounds { x: 0, y: 0, cx: 9144000, cy: 6858000 },
-                                 text_body: TextBody {
-                                     paragraphs: vec![DocxParagraph {
-                                         style_id: None,
-                                         properties: DocxParagraphProperties::default(),
-                                         runs: vec![DocxRun {
-                                             text: "Slide One".to_string(),
-                                             ..DocxRun::default()
-                                         }],
-                                     }],
-                                 },
-                                 fill: None,
-                                 effect: None,
-                             })],
-                         },
-                         Slide {
-                             id: 257,
-                             name: "Slide2".to_string(),
-                             notes: None,
-                             transition: None,
-                         animations: vec![],
-                         timing_raw: None,
-                         shapes: vec![SlideShape::TextBox(TextBoxShape {
-                                 id: "3".to_string(),
-                                 bounds: Bounds { x: 0, y: 0, cx: 9144000, cy: 6858000 },
-                                 text_body: TextBody {
-                                     paragraphs: vec![DocxParagraph {
-                                         style_id: None,
-                                         properties: DocxParagraphProperties::default(),
-                                         runs: vec![DocxRun {
-                                             text: "Slide Two".to_string(),
-                                             ..DocxRun::default()
-                                         }],
-                                     }],
-                                 },
-                                 fill: None,
-                                 effect: None,
-                             })],
+            slide_size: SlideSize::widescreen(),
+            slides: vec![
+                Slide {
+                    id: 256,
+                    name: "Slide1".to_string(),
+                    notes: None,
+                    transition: None,
+                    animations: vec![],
+                    timing_raw: None,
+                    shapes: vec![SlideShape::TextBox(TextBoxShape {
+                        id: "2".to_string(),
+                        bounds: Bounds {
+                            x: 0,
+                            y: 0,
+                            cx: 9144000,
+                            cy: 6858000,
                         },
-                    ],
-                    slide_masters: Vec::new(),
-                    theme: None,
-                    core_properties: CoreProperties::default(),
-                };
+                        text_body: TextBody {
+                            paragraphs: vec![DocxParagraph {
+                                style_id: None,
+                                properties: DocxParagraphProperties::default(),
+                                runs: vec![DocxRun {
+                                    text: "Slide One".to_string(),
+                                    ..DocxRun::default()
+                                }],
+                            }],
+                        },
+                        fill: None,
+                        effect: None,
+                    })],
+                },
+                Slide {
+                    id: 257,
+                    name: "Slide2".to_string(),
+                    notes: None,
+                    transition: None,
+                    animations: vec![],
+                    timing_raw: None,
+                    shapes: vec![SlideShape::TextBox(TextBoxShape {
+                        id: "3".to_string(),
+                        bounds: Bounds {
+                            x: 0,
+                            y: 0,
+                            cx: 9144000,
+                            cy: 6858000,
+                        },
+                        text_body: TextBody {
+                            paragraphs: vec![DocxParagraph {
+                                style_id: None,
+                                properties: DocxParagraphProperties::default(),
+                                runs: vec![DocxRun {
+                                    text: "Slide Two".to_string(),
+                                    ..DocxRun::default()
+                                }],
+                            }],
+                        },
+                        fill: None,
+                        effect: None,
+                    })],
+                },
+            ],
+            slide_masters: Vec::new(),
+            theme: None,
+            core_properties: CoreProperties::default(),
+        };
         let ser = OoxmlSerializer::new();
         let bytes = ser.serialize_pptx(&pres).unwrap();
 
@@ -2064,36 +2141,41 @@ mod tests {
     #[test]
     fn test_serialize_pptx_placeholder() {
         let pres = PptxPresentation {
-                    slide_size: SlideSize::standard(),
-                    slides: vec![Slide {
-                        id: 256,
-                        name: "Slide1".to_string(),
-                        notes: None,
-                        transition: None,
-                        animations: vec![],
-                        timing_raw: None,
-                        shapes: vec![SlideShape::Placeholder(PlaceholderShape {
-                             id: "3".to_string(),
-                             bounds: Bounds { x: 100, y: 100, cx: 5000000, cy: 500000 },
-                             placeholder_type: "title".to_string(),
-                             text_body: Some(TextBody {
-                                 paragraphs: vec![DocxParagraph {
-                                     style_id: None,
-                                     properties: DocxParagraphProperties::default(),
-                                     runs: vec![DocxRun {
-                                         text: "Title Placeholder".to_string(),
-                                         ..DocxRun::default()
-                                     }],
-                                 }],
-                             }),
-                             fill: None,
-                             effect: None,
-                         })],
-                    }],
-                    slide_masters: Vec::new(),
-                    theme: None,
-                    core_properties: CoreProperties::default(),
-                };
+            slide_size: SlideSize::standard(),
+            slides: vec![Slide {
+                id: 256,
+                name: "Slide1".to_string(),
+                notes: None,
+                transition: None,
+                animations: vec![],
+                timing_raw: None,
+                shapes: vec![SlideShape::Placeholder(PlaceholderShape {
+                    id: "3".to_string(),
+                    bounds: Bounds {
+                        x: 100,
+                        y: 100,
+                        cx: 5000000,
+                        cy: 500000,
+                    },
+                    placeholder_type: "title".to_string(),
+                    text_body: Some(TextBody {
+                        paragraphs: vec![DocxParagraph {
+                            style_id: None,
+                            properties: DocxParagraphProperties::default(),
+                            runs: vec![DocxRun {
+                                text: "Title Placeholder".to_string(),
+                                ..DocxRun::default()
+                            }],
+                        }],
+                    }),
+                    fill: None,
+                    effect: None,
+                })],
+            }],
+            slide_masters: Vec::new(),
+            theme: None,
+            core_properties: CoreProperties::default(),
+        };
         let ser = OoxmlSerializer::new();
         let bytes = ser.serialize_pptx(&pres).unwrap();
         let slide_xml = read_zip_entry(&bytes, "ppt/slides/slide1.xml");
@@ -2106,27 +2188,32 @@ mod tests {
     #[test]
     fn test_serialize_pptx_picture() {
         let pres = PptxPresentation {
-                    slide_size: SlideSize::standard(),
-                    slides: vec![Slide {
-                        id: 256,
-                        name: "Slide1".to_string(),
-                        notes: None,
-                        transition: None,
-                        animations: vec![],
-                        timing_raw: None,
-                        shapes: vec![SlideShape::Picture(PictureShape {
-                             id: "4".to_string(),
-                             bounds: Bounds { x: 500000, y: 500000, cx: 2000000, cy: 1500000 },
-                             name: "Photo.png".to_string(),
-                             image_extension: "png".to_string(),
-                             image_data: vec![],
-                             effect: None,
-                         })],
-                    }],
-                    slide_masters: Vec::new(),
-                    theme: None,
-                    core_properties: CoreProperties::default(),
-                };
+            slide_size: SlideSize::standard(),
+            slides: vec![Slide {
+                id: 256,
+                name: "Slide1".to_string(),
+                notes: None,
+                transition: None,
+                animations: vec![],
+                timing_raw: None,
+                shapes: vec![SlideShape::Picture(PictureShape {
+                    id: "4".to_string(),
+                    bounds: Bounds {
+                        x: 500000,
+                        y: 500000,
+                        cx: 2000000,
+                        cy: 1500000,
+                    },
+                    name: "Photo.png".to_string(),
+                    image_extension: "png".to_string(),
+                    image_data: vec![],
+                    effect: None,
+                })],
+            }],
+            slide_masters: Vec::new(),
+            theme: None,
+            core_properties: CoreProperties::default(),
+        };
         let ser = OoxmlSerializer::new();
         let bytes = ser.serialize_pptx(&pres).unwrap();
         let slide_xml = read_zip_entry(&bytes, "ppt/slides/slide1.xml");
@@ -2139,79 +2226,84 @@ mod tests {
     #[test]
     fn test_serialize_pptx_formatted_text() {
         let pres = PptxPresentation {
-                    slide_size: SlideSize::standard(),
-                    slides: vec![Slide {
-                        id: 256,
-                        name: "Slide1".to_string(),
-                        notes: None,
-                        transition: None,
-                        animations: vec![],
-                        timing_raw: None,
-                        shapes: vec![SlideShape::TextBox(TextBoxShape {
-                             id: "2".to_string(),
-                             bounds: Bounds { x: 100, y: 100, cx: 5000000, cy: 500000 },
-                             text_body: TextBody {
-                                 paragraphs: vec![DocxParagraph {
-                                     style_id: None,
-                                     properties: DocxParagraphProperties::default(),
-                                     runs: vec![
-                                         DocxRun {
-                                             text: "Bold ".to_string(),
-                                             bold: true,
-                                             italic: false,
-                                             underline: None,
-                                             strikethrough: false,
-                                             double_strikethrough: false,
-                                             font: Some("Arial".to_string()),
-                                             font_size: Some(24),
-                                             font_size_cs: None,
-                                             color: Some("FF0000".to_string()),
-                                             highlight: None,
-                                             vertical_alignment: None,
-                                             small_caps: false,
-                                             all_caps: false,
-                                         },
-                                         DocxRun {
-                                             text: "Italic".to_string(),
-                                             bold: false,
-                                             italic: true,
-                                             underline: Some(UnderlineType::Single),
-                                             ..DocxRun::default()
-                                         },
-                                         DocxRun {
-                                             text: "Underline ".to_string(),
-                                             bold: false,
-                                             italic: false,
-                                             underline: Some(UnderlineType::Single),
-                                             ..DocxRun::default()
-                                         },
-                                          DocxRun {
-                                              text: "Strikethrough".to_string(),
-                                              bold: false,
-                                              italic: false,
-                                              underline: None,
-                                              strikethrough: true,
-                                              ..DocxRun::default()
-                                          },
-                                          DocxRun {
-                                              text: "\n".to_string(),
-                                              ..DocxRun::default()
-                                          },
-                                          DocxRun {
-                                              text: "New line".to_string(),
-                                              ..DocxRun::default()
-                                          },
-                                      ],
-                                 }],
-                             },
-                             fill: None,
-                             effect: None,
-                         })],
-                     }],
-                      slide_masters: Vec::new(),
-                      theme: None,
-                      core_properties: CoreProperties::default(),
-                };
+            slide_size: SlideSize::standard(),
+            slides: vec![Slide {
+                id: 256,
+                name: "Slide1".to_string(),
+                notes: None,
+                transition: None,
+                animations: vec![],
+                timing_raw: None,
+                shapes: vec![SlideShape::TextBox(TextBoxShape {
+                    id: "2".to_string(),
+                    bounds: Bounds {
+                        x: 100,
+                        y: 100,
+                        cx: 5000000,
+                        cy: 500000,
+                    },
+                    text_body: TextBody {
+                        paragraphs: vec![DocxParagraph {
+                            style_id: None,
+                            properties: DocxParagraphProperties::default(),
+                            runs: vec![
+                                DocxRun {
+                                    text: "Bold ".to_string(),
+                                    bold: true,
+                                    italic: false,
+                                    underline: None,
+                                    strikethrough: false,
+                                    double_strikethrough: false,
+                                    font: Some("Arial".to_string()),
+                                    font_size: Some(24),
+                                    font_size_cs: None,
+                                    color: Some("FF0000".to_string()),
+                                    highlight: None,
+                                    vertical_alignment: None,
+                                    small_caps: false,
+                                    all_caps: false,
+                                },
+                                DocxRun {
+                                    text: "Italic".to_string(),
+                                    bold: false,
+                                    italic: true,
+                                    underline: Some(UnderlineType::Single),
+                                    ..DocxRun::default()
+                                },
+                                DocxRun {
+                                    text: "Underline ".to_string(),
+                                    bold: false,
+                                    italic: false,
+                                    underline: Some(UnderlineType::Single),
+                                    ..DocxRun::default()
+                                },
+                                DocxRun {
+                                    text: "Strikethrough".to_string(),
+                                    bold: false,
+                                    italic: false,
+                                    underline: None,
+                                    strikethrough: true,
+                                    ..DocxRun::default()
+                                },
+                                DocxRun {
+                                    text: "\n".to_string(),
+                                    ..DocxRun::default()
+                                },
+                                DocxRun {
+                                    text: "New line".to_string(),
+                                    ..DocxRun::default()
+                                },
+                            ],
+                        }],
+                    },
+                    fill: None,
+                    effect: None,
+                })],
+            }],
+            slide_masters: Vec::new(),
+            theme: None,
+            core_properties: CoreProperties::default(),
+        };
         let ser = OoxmlSerializer::new();
         let bytes = ser.serialize_pptx(&pres).unwrap();
         let slide_xml = read_zip_entry(&bytes, "ppt/slides/slide1.xml");
@@ -2229,25 +2321,25 @@ mod tests {
     #[test]
     fn test_serialize_pptx_core_properties() {
         let pres = PptxPresentation {
-                    slide_size: SlideSize::standard(),
-                    slides: vec![Slide {
-                        id: 256,
-                        name: "Slide1".to_string(),
-                        notes: None,
-                        transition: None,
-                        animations: vec![],
-                        timing_raw: None,
-                        shapes: vec![],
-                    }],
-                    slide_masters: Vec::new(),
-                    theme: None,
-                    core_properties: CoreProperties {
-                        title: Some("PPTX Test".to_string()),
-                        creator: Some("Author".to_string()),
-                        subject: Some("Test".to_string()),
-                        ..CoreProperties::default()
-                    },
-                };
+            slide_size: SlideSize::standard(),
+            slides: vec![Slide {
+                id: 256,
+                name: "Slide1".to_string(),
+                notes: None,
+                transition: None,
+                animations: vec![],
+                timing_raw: None,
+                shapes: vec![],
+            }],
+            slide_masters: Vec::new(),
+            theme: None,
+            core_properties: CoreProperties {
+                title: Some("PPTX Test".to_string()),
+                creator: Some("Author".to_string()),
+                subject: Some("Test".to_string()),
+                ..CoreProperties::default()
+            },
+        };
         let ser = OoxmlSerializer::new();
         let bytes = ser.serialize_pptx(&pres).unwrap();
         let core = read_zip_entry(&bytes, "docProps/core.xml");
@@ -2307,7 +2399,12 @@ mod tests {
                 timing_raw: None,
                 shapes: vec![SlideShape::TextBox(TextBoxShape {
                     id: "2".to_string(),
-                    bounds: Bounds { x: 100, y: 100, cx: 5000000, cy: 500000 },
+                    bounds: Bounds {
+                        x: 100,
+                        y: 100,
+                        cx: 5000000,
+                        cy: 500000,
+                    },
                     text_body: TextBody {
                         paragraphs: vec![DocxParagraph {
                             style_id: None,
@@ -2351,20 +2448,20 @@ mod tests {
     #[test]
     fn test_serialize_pptx_empty_slide() {
         let pres = PptxPresentation {
-                    slide_size: SlideSize::standard(),
-                    slides: vec![Slide {
-                        id: 256,
-                        name: "Empty".to_string(),
-                        notes: None,
-                        transition: None,
-                        animations: vec![],
-                        timing_raw: None,
-                        shapes: vec![],
-                    }],
-                    slide_masters: Vec::new(),
-                    theme: None,
-                    core_properties: CoreProperties::default(),
-                };
+            slide_size: SlideSize::standard(),
+            slides: vec![Slide {
+                id: 256,
+                name: "Empty".to_string(),
+                notes: None,
+                transition: None,
+                animations: vec![],
+                timing_raw: None,
+                shapes: vec![],
+            }],
+            slide_masters: Vec::new(),
+            theme: None,
+            core_properties: CoreProperties::default(),
+        };
         let ser = OoxmlSerializer::new();
         let bytes = ser.serialize_pptx(&pres).unwrap();
 
@@ -2382,18 +2479,54 @@ mod tests {
             color_scheme: ColorScheme {
                 name: "Default".to_string(),
                 colors: vec![
-                    ThemeColor { name: "dark1".to_string(), color: "000000".to_string() },
-                    ThemeColor { name: "light1".to_string(), color: "FFFFFF".to_string() },
-                    ThemeColor { name: "dark2".to_string(), color: "44546A".to_string() },
-                    ThemeColor { name: "light2".to_string(), color: "E7E6E6".to_string() },
-                    ThemeColor { name: "accent1".to_string(), color: "4472C4".to_string() },
-                    ThemeColor { name: "accent2".to_string(), color: "ED7D31".to_string() },
-                    ThemeColor { name: "accent3".to_string(), color: "A5A5A5".to_string() },
-                    ThemeColor { name: "accent4".to_string(), color: "FFC000".to_string() },
-                    ThemeColor { name: "accent5".to_string(), color: "5B9BD5".to_string() },
-                    ThemeColor { name: "accent6".to_string(), color: "70AD47".to_string() },
-                    ThemeColor { name: "hlink".to_string(), color: "0563C1".to_string() },
-                    ThemeColor { name: "folHlink".to_string(), color: "954F72".to_string() },
+                    ThemeColor {
+                        name: "dark1".to_string(),
+                        color: "000000".to_string(),
+                    },
+                    ThemeColor {
+                        name: "light1".to_string(),
+                        color: "FFFFFF".to_string(),
+                    },
+                    ThemeColor {
+                        name: "dark2".to_string(),
+                        color: "44546A".to_string(),
+                    },
+                    ThemeColor {
+                        name: "light2".to_string(),
+                        color: "E7E6E6".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent1".to_string(),
+                        color: "4472C4".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent2".to_string(),
+                        color: "ED7D31".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent3".to_string(),
+                        color: "A5A5A5".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent4".to_string(),
+                        color: "FFC000".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent5".to_string(),
+                        color: "5B9BD5".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent6".to_string(),
+                        color: "70AD47".to_string(),
+                    },
+                    ThemeColor {
+                        name: "hlink".to_string(),
+                        color: "0563C1".to_string(),
+                    },
+                    ThemeColor {
+                        name: "folHlink".to_string(),
+                        color: "954F72".to_string(),
+                    },
                 ],
             },
             font_scheme: FontScheme {
@@ -2413,17 +2546,17 @@ mod tests {
         };
         let pres = PptxPresentation {
             slide_size: SlideSize::widescreen(),
-                slides: vec![Slide {
-                    id: 256,
-                    name: "Slide 1".to_string(),
-                    transition: None,
-                    animations: vec![],
-                    timing_raw: None,
-                    shapes: vec![],
-                    notes: None,
-                }],
-                slide_masters: Vec::new(),
-                theme: Some(theme),
+            slides: vec![Slide {
+                id: 256,
+                name: "Slide 1".to_string(),
+                transition: None,
+                animations: vec![],
+                timing_raw: None,
+                shapes: vec![],
+                notes: None,
+            }],
+            slide_masters: Vec::new(),
+            theme: Some(theme),
             core_properties: CoreProperties::default(),
         };
         let ser = OoxmlSerializer::new();

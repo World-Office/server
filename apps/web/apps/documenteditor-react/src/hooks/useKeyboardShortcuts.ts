@@ -1,6 +1,6 @@
 import { useEffect } from "react"
+import { openFile, saveFileToPath } from "../bridge/file-operations"
 import { documentStore } from "../stores/DocumentStore"
-import { saveFileToPath, openFile } from "../bridge/file-operations"
 
 export function useKeyboardShortcuts(): void {
   useEffect(() => {

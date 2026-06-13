@@ -124,6 +124,8 @@ mod tests {
         let cursor = std::io::Cursor::new(&output);
         let mut archive = ZipArchive::new(cursor).expect("output should be valid ZIP");
         assert!(archive.by_name("mimetype").is_ok());
-        assert!(archive.file_names().any(|n| n == "META-INF/container.xml" || n == "OEBPS/content.opf"));
+        assert!(archive
+            .file_names()
+            .any(|n| n == "META-INF/container.xml" || n == "OEBPS/content.opf"));
     }
 }

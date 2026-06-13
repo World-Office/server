@@ -402,7 +402,10 @@ impl StorageRepository {
         }
     }
 
-    pub fn list_content_links_by_target(&self, document_id: &str) -> Result<Vec<StoredContentLink>, rusqlite::Error> {
+    pub fn list_content_links_by_target(
+        &self,
+        document_id: &str,
+    ) -> Result<Vec<StoredContentLink>, rusqlite::Error> {
         let mut stmt = self.conn.prepare(
             "SELECT id, source_document_id, source_document_name, target_document_id, target_document_name, display_text, resolved_content, resolved_at, created_at
              FROM content_links WHERE target_document_id = ?1 ORDER BY created_at DESC",
@@ -411,7 +414,10 @@ impl StorageRepository {
         rows.collect::<Result<Vec<_>, _>>()
     }
 
-    pub fn list_content_links_by_source(&self, document_id: &str) -> Result<Vec<StoredContentLink>, rusqlite::Error> {
+    pub fn list_content_links_by_source(
+        &self,
+        document_id: &str,
+    ) -> Result<Vec<StoredContentLink>, rusqlite::Error> {
         let mut stmt = self.conn.prepare(
             "SELECT id, source_document_id, source_document_name, target_document_id, target_document_name, display_text, resolved_content, resolved_at, created_at
              FROM content_links WHERE source_document_id = ?1 ORDER BY created_at DESC",
@@ -428,7 +434,11 @@ impl StorageRepository {
         Ok(affected > 0)
     }
 
-    pub fn update_resolved_content(&mut self, id: &str, content: &str) -> Result<bool, rusqlite::Error> {
+    pub fn update_resolved_content(
+        &mut self,
+        id: &str,
+        content: &str,
+    ) -> Result<bool, rusqlite::Error> {
         let now = chrono::Utc::now().to_rfc3339();
         let affected = self.conn.execute(
             "UPDATE content_links SET resolved_content = ?1, resolved_at = ?2 WHERE id = ?3",

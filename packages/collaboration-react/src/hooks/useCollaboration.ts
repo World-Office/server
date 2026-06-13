@@ -1,16 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from "react"
 import {
-  WebSocketManager,
+  type CommentEventData,
   type ConnectionState,
   type EditOperation,
-  type ParticipantUpdate,
   type InitialState,
-  type CommentEventData,
-  createSelectionUpdate,
+  type ParticipantUpdate,
   type Selection,
+  WebSocketManager,
+  createSelectionUpdate,
 } from "@world-office/collaboration-client"
 import { AuthClient } from "@world-office/collaboration-client"
 import type { CollaborationStore } from "@world-office/editor-stores"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 export interface UseCollaborationOptions {
   wsUrl: string
@@ -162,7 +162,15 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
       }
       return managerRef.current
     },
-    [wsUrl, userId, collaborationStore, onRemoteOperation, onParticipantUpdate, onInitialState],
+    [
+      wsUrl,
+      userId,
+      collaborationStore,
+      onRemoteOperation,
+      onParticipantUpdate,
+      onInitialState,
+      onCommentEvent,
+    ],
   )
 
   const connect = useCallback(async () => {
@@ -220,19 +228,22 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
     managerRef.current?.sendDelete(position, length)
   }, [])
 
-  const sendSelectionUpdate = useCallback((selection: Selection) => {
-    const manager = managerRef.current
-    if (!manager) return
+  const sendSelectionUpdate = useCallback(
+    (selection: Selection) => {
+      const manager = managerRef.current
+      if (!manager) return
 
-    const update = createSelectionUpdate({
-      session_id: "", // Will be derived from session context in future
-      user_id: userId,
-      username: username,
-      color: "", // Will be looked up in future
-      selection,
-    })
-    manager.sendParticipantUpdate(update)
-  }, [userId, username])
+      const update = createSelectionUpdate({
+        session_id: "", // Will be derived from session context in future
+        user_id: userId,
+        username: username,
+        color: "", // Will be looked up in future
+        selection,
+      })
+      manager.sendParticipantUpdate(update)
+    },
+    [userId, username],
+  )
 
   const sendParticipantUpdate = useCallback((update: ParticipantUpdate) => {
     managerRef.current?.sendParticipantUpdate(update)

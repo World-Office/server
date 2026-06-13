@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCollaboration } from "@world-office/collaboration-react"
 import { ThemeProvider } from "@world-office/design-system"
+import { useEffect, useMemo, useState } from "react"
+import { isDesktop, listenForMenuEvents, listenForUpdateEvents } from "./bridge"
 import { Viewport } from "./components/Viewport"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { usePlugins } from "./hooks/usePlugins"
+import { collabSendRef, collaborationStore, currentUser } from "./lib/collaboration"
 import { documentStore } from "./stores/DocumentStore"
-import { isDesktop, listenForMenuEvents, listenForUpdateEvents } from "./bridge"
-import { useCollaboration } from "@world-office/collaboration-react"
-import { collaborationStore, collabSendRef, currentUser } from "./lib/collaboration"
 
 function generateUserId() {
   return `user-${Math.random().toString(36).slice(2, 9)}`
@@ -78,7 +78,9 @@ export function App() {
       unlisten = fn
     })
 
-    return () => { unlisten?.() }
+    return () => {
+      unlisten?.()
+    }
   }, [])
 
   useEffect(() => {
@@ -91,21 +93,46 @@ export function App() {
       unlisten = fn
     })
 
-    return () => { unlisten?.() }
+    return () => {
+      unlisten?.()
+    }
   }, [])
 
   return (
     <ThemeProvider>
       {updateAvailable && (
-        <div style={{
-          position: "fixed", top: 4, left: "50%", transform: "translateX(-50%)",
-          zIndex: 10000, background: "#2ecc71", color: "#fff",
-          padding: "6px 16px", borderRadius: 4, fontSize: 13,
-          display: "flex", alignItems: "center", gap: 8,
-        }}>
+        <div
+          style={{
+            position: "fixed",
+            top: 4,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 10000,
+            background: "#2ecc71",
+            color: "#fff",
+            padding: "6px 16px",
+            borderRadius: 4,
+            fontSize: 13,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
           <span>&#9650;</span> Update available
-          <button onClick={() => setUpdateAvailable(false)}
-            style={{ marginLeft: 8, cursor: "pointer", background: "transparent", color: "#fff", border: "1px solid #fff", borderRadius: 2, padding: "1px 6px", fontSize: 12 }}>
+          <button
+            type="button"
+            onClick={() => setUpdateAvailable(false)}
+            style={{
+              marginLeft: 8,
+              cursor: "pointer",
+              background: "transparent",
+              color: "#fff",
+              border: "1px solid #fff",
+              borderRadius: 2,
+              padding: "1px 6px",
+              fontSize: 12,
+            }}
+          >
             Dismiss
           </button>
         </div>

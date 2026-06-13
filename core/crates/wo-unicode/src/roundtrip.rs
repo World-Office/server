@@ -161,7 +161,7 @@ mod tests {
         let text = "Hello, World! 🌍";
 
         let input = text.as_bytes();
-        rt.parse(&input).expect("parse should succeed");
+        rt.parse(input).expect("parse should succeed");
         let output = rt.serialize().expect("serialize should succeed");
 
         assert_eq!(input, output);

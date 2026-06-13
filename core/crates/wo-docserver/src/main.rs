@@ -17,10 +17,7 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let config = DocServerConfig::from_env();
-    let addr: SocketAddr = config
-        .bind_addr()
-        .parse()
-        .expect("Invalid bind address");
+    let addr: SocketAddr = config.bind_addr().parse().expect("Invalid bind address");
 
     let app = create_app(config.clone());
 

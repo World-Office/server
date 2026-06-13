@@ -1,5 +1,5 @@
-import { documentStore } from "../../stores/DocumentStore"
 import { openFile } from "../../bridge/file-operations"
+import { documentStore } from "../../stores/DocumentStore"
 import type { FileMenuAction } from "../../types/document"
 
 interface FileMenuItemsProps {
@@ -79,7 +79,10 @@ export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
         tabIndex={0}
         onClick={handleBack}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleBack() }
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault()
+            handleBack()
+          }
         }}
       >
         <span className="de-file-menu-item-icon">←</span>

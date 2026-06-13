@@ -802,7 +802,7 @@ impl PdfParser {
                 if let Some(PdfValue::Integer(r)) =
                     self.get_dict_entry("/Rotate", &page_obj.entries)
                 {
-                    page.rotation = ((r % 360) as i64).abs() as u32;
+                    page.rotation = (r % 360).unsigned_abs() as u32;
                 }
 
                 // Extract text from content stream
@@ -1315,9 +1315,7 @@ impl PdfParser {
 
     fn detect_encryption_bytes(&self, data: &[u8]) -> Option<PdfEncryption> {
         // Check for /Encrypt reference
-        if find_subsequence(data, b"/Encrypt").is_none() {
-            return None;
-        }
+        find_subsequence(data, b"/Encrypt")?;
 
         // Default encrypted document
         let mut encryption = PdfEncryption {

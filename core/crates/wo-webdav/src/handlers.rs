@@ -10,7 +10,7 @@ use axum::{
     body::Bytes,
     extract::{Path, State},
     http::{
-        header::{self, HeaderMap, HeaderValue, HeaderName},
+        header::{self, HeaderMap, HeaderName, HeaderValue},
         StatusCode,
     },
     response::{IntoResponse, Response},
@@ -65,11 +65,10 @@ pub async fn propfind_handler<S: WebDavStorage>(
     let depth = Depth::from_header(headers.get("Depth"));
 
     // Check if resource exists
-    let exists = state.storage.exists(&path).await
-        .map_err(|e| {
-            eprintln!("Error checking existence: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    let exists = state.storage.exists(&path).await.map_err(|e| {
+        eprintln!("Error checking existence: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     if !exists {
         return Err(StatusCode::NOT_FOUND);
@@ -103,17 +102,17 @@ pub async fn propfind_handler<S: WebDavStorage>(
     }
 
     // Convert to XML
-    let xml = multistatus.to_xml()
-        .map_err(|e| {
-            eprintln!("Error serializing multistatus: {:?}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?;
+    let xml = multistatus.to_xml().map_err(|e| {
+        eprintln!("Error serializing multistatus: {:?}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
     Ok((
         StatusCode::MULTI_STATUS,
         [(header::CONTENT_TYPE, "application/xml; charset=utf-8")],
         xml,
-    ).into_response())
+    )
+        .into_response())
 }
 
 /// Handle PROPFIND for a single resource
@@ -124,11 +123,7 @@ async fn handle_propfind_resource<S: WebDavStorage>(
     let info = state.storage.get_resource(path).await?;
 
     let prop = if info.is_collection {
-        Prop::for_collection(
-            info.path.clone(),
-            info.modified,
-            info.etag,
-        )
+        Prop::for_collection(info.path.clone(), info.modified, info.etag)
     } else {
         Prop::for_file(
             info.path.clone(),
@@ -149,11 +144,7 @@ async fn handle_propfind_child<S: WebDavStorage>(
     info: &crate::storage::ResourceInfo,
 ) -> anyhow::Result<DavResponse> {
     let prop = if info.is_collection {
-        Prop::for_collection(
-            info.path.clone(),
-            info.modified,
-            info.etag.clone(),
-        )
+        Prop::for_collection(info.path.clone(), info.modified, info.etag.clone())
     } else {
         Prop::for_file(
             info.path.clone(),
@@ -209,7 +200,9 @@ pub async fn put_handler<S: WebDavStorage>(
     }
 
     // Check if parent exists
-    let parent_path = path.rsplit('/').nth(1)
+    let parent_path = path
+        .rsplit('/')
+        .nth(1)
         .map(|p| format!("/{}", p))
         .unwrap_or_else(|| "/".to_string());
 
@@ -229,7 +222,11 @@ pub async fn put_handler<S: WebDavStorage>(
 
     // Return 201 Created if new, 200 OK if existing
     let exists_before = headers.get("If-Match").is_none();
-    Ok(if exists_before { StatusCode::CREATED } else { StatusCode::NO_CONTENT })
+    Ok(if exists_before {
+        StatusCode::CREATED
+    } else {
+        StatusCode::NO_CONTENT
+    })
 }
 
 /// Handle DELETE request - delete resource
@@ -300,7 +297,8 @@ pub async fn get_handler<S: WebDavStorage>(
             StatusCode::OK,
             [(header::CONTENT_TYPE, "text/html; charset=utf-8")],
             html,
-        ).into_response());
+        )
+            .into_response());
     }
 
     // Return file content
@@ -320,7 +318,8 @@ pub async fn get_handler<S: WebDavStorage>(
             (header::ETAG, info.etag.clone()),
         ],
         data,
-    ).into_response())
+    )
+        .into_response())
 }
 
 /// Handle HEAD request - get metadata without content
@@ -356,7 +355,8 @@ pub async fn head_handler<S: WebDavStorage>(
             (header::LAST_MODIFIED, info.modified.to_rfc2822()),
         ],
         (),
-    ).into_response())
+    )
+        .into_response())
 }
 
 /// Handle MOVE request - move/rename resource
@@ -368,8 +368,7 @@ pub async fn move_handler<S: WebDavStorage>(
     let path = decode_path(&path);
 
     // Get destination
-    let destination = match headers.get("Destination")
-        .and_then(|v| v.to_str().ok()) {
+    let destination = match headers.get("Destination").and_then(|v| v.to_str().ok()) {
         Some(d) => d,
         None => return Err(StatusCode::BAD_REQUEST),
     };
@@ -402,13 +401,18 @@ pub async fn move_handler<S: WebDavStorage>(
     }
 
     // Check overwrite header
-    let overwrite = headers.get("Overwrite")
+    let overwrite = headers
+        .get("Overwrite")
         .and_then(|v| v.to_str().ok())
         .map(|v| v.to_uppercase() == "T")
         .unwrap_or(false);
 
     // Move resource
-    match state.storage.move_resource(&path, &dest_path, overwrite).await {
+    match state
+        .storage
+        .move_resource(&path, &dest_path, overwrite)
+        .await
+    {
         Ok(_) => Ok(StatusCode::CREATED),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
@@ -423,8 +427,7 @@ pub async fn copy_handler<S: WebDavStorage>(
     let path = decode_path(&path);
 
     // Get destination
-    let destination = match headers.get("Destination")
-        .and_then(|v| v.to_str().ok()) {
+    let destination = match headers.get("Destination").and_then(|v| v.to_str().ok()) {
         Some(d) => d,
         None => return Err(StatusCode::BAD_REQUEST),
     };
@@ -450,13 +453,18 @@ pub async fn copy_handler<S: WebDavStorage>(
     }
 
     // Check overwrite header
-    let overwrite = headers.get("Overwrite")
+    let overwrite = headers
+        .get("Overwrite")
         .and_then(|v| v.to_str().ok())
         .map(|v| v.to_uppercase() == "T")
         .unwrap_or(false);
 
     // Copy resource
-    match state.storage.copy_resource(&path, &dest_path, overwrite).await {
+    match state
+        .storage
+        .copy_resource(&path, &dest_path, overwrite)
+        .await
+    {
         Ok(_) => Ok(StatusCode::CREATED),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
     }
@@ -482,7 +490,8 @@ pub async fn lock_handler<S: WebDavStorage>(
     }
 
     // Get depth header
-    let depth = match headers.get("Depth")
+    let depth = match headers
+        .get("Depth")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("0")
     {
@@ -492,7 +501,8 @@ pub async fn lock_handler<S: WebDavStorage>(
     };
 
     // Get timeout header
-    let timeout = headers.get("Timeout")
+    let timeout = headers
+        .get("Timeout")
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.strip_prefix("Second-"))
         .and_then(|s| s.parse::<u32>().ok());
@@ -501,7 +511,11 @@ pub async fn lock_handler<S: WebDavStorage>(
     let owner = "anonymous".to_string();
 
     // Acquire lock
-    let token = match state.storage.lock_resource(&path, owner.clone(), depth, timeout).await {
+    let token = match state
+        .storage
+        .lock_resource(&path, owner.clone(), depth, timeout)
+        .await
+    {
         Ok(t) => t,
         Err(_) => return Err(StatusCode::INTERNAL_SERVER_ERROR),
     };
@@ -528,9 +542,7 @@ pub async fn lock_handler<S: WebDavStorage>(
         </D:activelock>
     </D:lockdiscovery>
 </D:prop>"#,
-        depth_str,
-        owner,
-        lock_token
+        depth_str, owner, lock_token
     );
 
     Ok((
@@ -540,7 +552,8 @@ pub async fn lock_handler<S: WebDavStorage>(
             (HeaderName::from_static("Lock-Token"), lock_token.as_str()),
         ],
         response_body,
-    ).into_response())
+    )
+        .into_response())
 }
 
 /// Handle UNLOCK request - release lock on resource
@@ -552,14 +565,16 @@ pub async fn unlock_handler<S: WebDavStorage>(
     let path = decode_path(&path);
 
     // Get lock token
-    let lock_token = match headers.get("Lock-Token")
+    let lock_token = match headers
+        .get("Lock-Token")
         .and_then(|v| v.to_str().ok())
         .and_then(|v| v.strip_prefix("<"))
         .and_then(|v| v.strip_suffix(">"))
-        .and_then(|v| v.strip_prefix("urn:uuid:")) {
-            Some(t) => t,
-            None => return Err(StatusCode::BAD_REQUEST),
-        };
+        .and_then(|v| v.strip_prefix("urn:uuid:"))
+    {
+        Some(t) => t,
+        None => return Err(StatusCode::BAD_REQUEST),
+    };
 
     // Release lock
     match state.storage.unlock_resource(&path, lock_token).await {
@@ -581,39 +596,44 @@ fn generate_directory_listing(path: &str, children: &[crate::storage::ResourceIn
     let _parent_path = if path == "/" {
         String::new()
     } else {
-        path.rsplit('/').nth(1)
+        path.rsplit('/')
+            .nth(1)
             .map(|p| format!("/{}", p))
             .unwrap_or_else(|| "/".to_string())
     };
 
-    let rows = children.iter().map(|child| {
-        let icon = if child.is_collection { "📁" } else { "📄" };
-        let href = if child.path.starts_with('/') {
-            child.path.clone()
-        } else {
-            format!("/{}", child.path)
-        };
-        let modified = child.modified.format("%Y-%m-%d %H:%M");
-        let size = if child.is_collection {
-            "-".to_string()
-        } else {
-            format_size(child.size)
-        };
+    let rows = children
+        .iter()
+        .map(|child| {
+            let icon = if child.is_collection { "📁" } else { "📄" };
+            let href = if child.path.starts_with('/') {
+                child.path.clone()
+            } else {
+                format!("/{}", child.path)
+            };
+            let modified = child.modified.format("%Y-%m-%d %H:%M");
+            let size = if child.is_collection {
+                "-".to_string()
+            } else {
+                format_size(child.size)
+            };
 
-        format!(
-            r#"<tr>
+            format!(
+                r#"<tr>
             <td class="icon">{}</td>
             <td class="name"><a href="{}">{}</a></td>
             <td class="modified">{}</td>
             <td class="size">{}</td>
         </tr>"#,
-            icon,
-            href,
-            child.path.split('/').next_back().unwrap_or(&child.path),
-            modified,
-            size
-        )
-    }).collect::<Vec<_>>().join("\n");
+                icon,
+                href,
+                child.path.split('/').next_back().unwrap_or(&child.path),
+                modified,
+                size
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
 
     format!(
         r#"<!DOCTYPE html>
@@ -691,9 +711,18 @@ mod tests {
 
     #[test]
     fn test_depth_from_header() {
-        assert_eq!(Depth::from_header(Some(&HeaderValue::from_static("0"))), Depth::Zero);
-        assert_eq!(Depth::from_header(Some(&HeaderValue::from_static("1"))), Depth::One);
-        assert_eq!(Depth::from_header(Some(&HeaderValue::from_static("infinity"))), Depth::Infinity);
+        assert_eq!(
+            Depth::from_header(Some(&HeaderValue::from_static("0"))),
+            Depth::Zero
+        );
+        assert_eq!(
+            Depth::from_header(Some(&HeaderValue::from_static("1"))),
+            Depth::One
+        );
+        assert_eq!(
+            Depth::from_header(Some(&HeaderValue::from_static("infinity"))),
+            Depth::Infinity
+        );
         assert_eq!(Depth::from_header(None), Depth::Infinity);
     }
 }

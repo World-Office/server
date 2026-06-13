@@ -4,12 +4,12 @@
 //! and integration with external identity providers.
 
 use axum::{
+    Json, Router,
     extract::State,
     http::StatusCode,
     routing::{get, post},
-    Json, Router,
 };
-use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -377,7 +377,8 @@ fn app(state: Arc<AppState>) -> Router {
 async fn main() {
     tracing_subscriber::fmt::init();
 
-    let jwt_secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "dev-secret-change-in-production".into());
+    let jwt_secret =
+        std::env::var("JWT_SECRET").unwrap_or_else(|_| "dev-secret-change-in-production".into());
 
     let users_repo = UserRepository::new_in_memory().expect("failed to create user repository");
     let state = Arc::new(AppState {
@@ -392,9 +393,16 @@ async fn main() {
         .parse()
         .unwrap_or(8001);
 
-    tracing::info!("identity-service v{} starting on {}:{}", env!("CARGO_PKG_VERSION"), addr, port);
+    tracing::info!(
+        "identity-service v{} starting on {}:{}",
+        env!("CARGO_PKG_VERSION"),
+        addr,
+        port
+    );
 
-    let listener = tokio::net::TcpListener::bind(format!("{}:{}", addr, port)).await.expect("failed to bind");
+    let listener = tokio::net::TcpListener::bind(format!("{}:{}", addr, port))
+        .await
+        .expect("failed to bind");
     axum::serve(listener, app).await.expect("server error");
 }
 
@@ -441,7 +449,9 @@ mod tests {
                     .method("POST")
                     .uri("/auth/register")
                     .header("content-type", "application/json")
-                    .body(Body::from(r#"{"username":"testuser","password":"pass123"}"#))
+                    .body(Body::from(
+                        r#"{"username":"testuser","password":"pass123"}"#,
+                    ))
                     .unwrap(),
             )
             .await
@@ -456,7 +466,9 @@ mod tests {
                     .method("POST")
                     .uri("/auth/login")
                     .header("content-type", "application/json")
-                    .body(Body::from(r#"{"username":"testuser","password":"pass123"}"#))
+                    .body(Body::from(
+                        r#"{"username":"testuser","password":"pass123"}"#,
+                    ))
                     .unwrap(),
             )
             .await
@@ -526,7 +538,9 @@ mod tests {
                     .method("POST")
                     .uri("/auth/register")
                     .header("content-type", "application/json")
-                    .body(Body::from(r#"{"username":"testuser2","password":"correct"}"#))
+                    .body(Body::from(
+                        r#"{"username":"testuser2","password":"correct"}"#,
+                    ))
                     .unwrap(),
             )
             .await
@@ -609,7 +623,10 @@ mod tests {
         assert!(repo.exists("charlie").unwrap());
 
         repo.conn
-            .execute("DELETE FROM users WHERE username = ?1", rusqlite::params!["charlie"])
+            .execute(
+                "DELETE FROM users WHERE username = ?1",
+                rusqlite::params!["charlie"],
+            )
             .unwrap();
         assert!(!repo.exists("charlie").unwrap());
     }
@@ -629,7 +646,10 @@ mod tests {
             repo.insert(&user).unwrap();
         }
 
-        let mut stmt = repo.conn.prepare("SELECT username FROM users ORDER BY username").unwrap();
+        let mut stmt = repo
+            .conn
+            .prepare("SELECT username FROM users ORDER BY username")
+            .unwrap();
         let names: Vec<String> = stmt
             .query_map([], |row| row.get(0))
             .unwrap()
@@ -659,7 +679,14 @@ mod tests {
             .execute(
                 "INSERT INTO users (id, username, email, password_hash, role, created_at)
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-                rusqlite::params!["u1", "persist_user", "p@ex.com", "hash123", "user", "2026-01-01T00:00:00Z"],
+                rusqlite::params![
+                    "u1",
+                    "persist_user",
+                    "p@ex.com",
+                    "hash123",
+                    "user",
+                    "2026-01-01T00:00:00Z"
+                ],
             )
             .unwrap();
 

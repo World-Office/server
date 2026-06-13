@@ -4,13 +4,13 @@
 //! Accepts file content as base64, performs real conversion, returns result.
 
 use axum::{
+    Json, Router,
     extract::{Path, State},
     http::StatusCode,
     routing::{get, post},
-    Json, Router,
 };
 use chrono::Utc;
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -242,40 +242,34 @@ pub async fn submit_conversion(
     }
 
     // Decode base64 data
-    let file_data = match base64::Engine::decode(
-        &base64::engine::general_purpose::STANDARD,
-        &payload.data,
-    ) {
-        Ok(data) => data,
-        Err(e) => {
-            return Err((
-                StatusCode::BAD_REQUEST,
-                Json(ErrorResponse {
-                    error: format!("Invalid base64 data: {}", e),
-                    code: 400,
-                }),
-            ));
-        }
-    };
+    let file_data =
+        match base64::Engine::decode(&base64::engine::general_purpose::STANDARD, &payload.data) {
+            Ok(data) => data,
+            Err(e) => {
+                return Err((
+                    StatusCode::BAD_REQUEST,
+                    Json(ErrorResponse {
+                        error: format!("Invalid base64 data: {}", e),
+                        code: 400,
+                    }),
+                ));
+            }
+        };
 
     let job_id = Uuid::new_v4().to_string();
     let created_at = Utc::now().to_rfc3339();
     let input_size = file_data.len();
 
     // Perform actual conversion via wo-x2t
-    let result = state.router.convert(
-        &payload.input_format,
-        &payload.output_format,
-        &file_data,
-    );
+    let result = state
+        .router
+        .convert(&payload.input_format, &payload.output_format, &file_data);
 
     let job = match result.status {
         wo_x2t::ConversionStatus::Success | wo_x2t::ConversionStatus::PartialSuccess => {
             let output = result.output.unwrap();
-            let output_b64 = base64::Engine::encode(
-                &base64::engine::general_purpose::STANDARD,
-                &output.data,
-            );
+            let output_b64 =
+                base64::Engine::encode(&base64::engine::general_purpose::STANDARD, &output.data);
             ConversionJob {
                 id: job_id.clone(),
                 input_format: payload.input_format,
@@ -364,9 +358,7 @@ pub async fn get_job_status(
 }
 
 /// GET /jobs — list all conversion jobs.
-pub async fn list_jobs(
-    State(state): State<Arc<AppState>>,
-) -> Json<Vec<ConversionJob>> {
+pub async fn list_jobs(State(state): State<Arc<AppState>>) -> Json<Vec<ConversionJob>> {
     let repo = state.jobs.lock().await;
     let all = repo.list().unwrap_or_default();
     Json(all)
@@ -382,9 +374,7 @@ pub async fn health() -> Json<HealthResponse> {
 }
 
 /// GET /formats — list supported conversion format pairs.
-pub async fn supported_formats(
-    State(state): State<Arc<AppState>>,
-) -> Json<Vec<FormatPair>> {
+pub async fn supported_formats(State(state): State<Arc<AppState>>) -> Json<Vec<FormatPair>> {
     let pairs = state
         .router
         .registry()

@@ -2,8 +2,8 @@ import { observer } from "mobx-react-lite"
 import type { JSX } from "react"
 import { documentStore } from "../../stores/DocumentStore"
 import type { LeftMenuAction } from "../../types/document"
-import { LeftMenuButton } from "./LeftMenuButton"
 import { ContentLinkPanel } from "./ContentLinkPanel"
+import { LeftMenuButton } from "./LeftMenuButton"
 
 const BUTTONS: Array<{ action: LeftMenuAction; title: string; icon: string }> = [
   { action: "search", title: "Search", icon: "🔍" },

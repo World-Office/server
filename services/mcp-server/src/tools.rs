@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
 use crate::client::StorageClient;
+use rmcp::ServerHandler;
 use rmcp::model::*;
 use rmcp::service::RequestContext;
-use rmcp::ServerHandler;
-use serde_json::{json, Map, Value};
+use serde_json::{Map, Value, json};
 
 pub struct McpTools {
     client: StorageClient,
@@ -218,7 +218,9 @@ impl ServerHandler for McpTools {
     }
 
     fn get_tool(&self, name: &str) -> Option<Tool> {
-        Self::tool_definitions().into_iter().find(|t| t.name == name)
+        Self::tool_definitions()
+            .into_iter()
+            .find(|t| t.name == name)
     }
 
     async fn list_tools(
@@ -242,7 +244,9 @@ impl ServerHandler for McpTools {
             "list_documents" => match self.client.list_files().await {
                 Ok(files) => {
                     let data = json!(files);
-                    Ok(CallToolResult::success(vec![Content::text(data.to_string())]))
+                    Ok(CallToolResult::success(vec![Content::text(
+                        data.to_string(),
+                    )]))
                 }
                 Err(e) => Ok(Self::error_result(e.to_string())),
             },
@@ -253,7 +257,9 @@ impl ServerHandler for McpTools {
                 match self.client.get_file(id).await {
                     Ok(file) => {
                         let data = json!(file);
-                        Ok(CallToolResult::success(vec![Content::text(data.to_string())]))
+                        Ok(CallToolResult::success(vec![Content::text(
+                            data.to_string(),
+                        )]))
                     }
                     Err(e) => Ok(Self::error_result(e.to_string())),
                 }
@@ -265,7 +271,9 @@ impl ServerHandler for McpTools {
                 match self.client.read_content(id).await {
                     Ok(content) => {
                         let data = json!({ "content": content });
-                        Ok(CallToolResult::success(vec![Content::text(data.to_string())]))
+                        Ok(CallToolResult::success(vec![Content::text(
+                            data.to_string(),
+                        )]))
                     }
                     Err(e) => Ok(Self::error_result(e.to_string())),
                 }
@@ -278,7 +286,9 @@ impl ServerHandler for McpTools {
                 match self.client.create_file(name, content).await {
                     Ok(id) => {
                         let data = json!({ "id": id });
-                        Ok(CallToolResult::success(vec![Content::text(data.to_string())]))
+                        Ok(CallToolResult::success(vec![Content::text(
+                            data.to_string(),
+                        )]))
                     }
                     Err(e) => Ok(Self::error_result(e.to_string())),
                 }
@@ -292,8 +302,7 @@ impl ServerHandler for McpTools {
                 })?;
                 match self.client.write_file(id, content).await {
                     Ok(_) => {
-                        let _ =
-                            crate::snapshots::auto_snapshot(&self.client, id, content).await;
+                        let _ = crate::snapshots::auto_snapshot(&self.client, id, content).await;
                         Ok(CallToolResult::success(vec![Content::text(
                             json!({ "status": "success" }).to_string(),
                         )]))
@@ -308,7 +317,9 @@ impl ServerHandler for McpTools {
                 match self.client.list_snapshots(id).await {
                     Ok(snapshots) => {
                         let data = json!(snapshots);
-                        Ok(CallToolResult::success(vec![Content::text(data.to_string())]))
+                        Ok(CallToolResult::success(vec![Content::text(
+                            data.to_string(),
+                        )]))
                     }
                     Err(e) => Ok(Self::error_result(e.to_string())),
                 }
@@ -334,7 +345,9 @@ impl ServerHandler for McpTools {
                     ErrorData::invalid_params("Missing required parameter: document_id", None)
                 })?;
                 match self.client.list_comments(doc_id).await {
-                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(data.to_string())])),
+                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(
+                        data.to_string(),
+                    )])),
                     Err(e) => Ok(Self::error_result(e.to_string())),
                 }
             }
@@ -345,20 +358,28 @@ impl ServerHandler for McpTools {
                 let text = Self::get_arg(&request.arguments, "text").ok_or_else(|| {
                     ErrorData::invalid_params("Missing required parameter: text", None)
                 })?;
-                let author_name = Self::get_arg(&request.arguments, "author_name").ok_or_else(|| {
-                    ErrorData::invalid_params("Missing required parameter: author_name", None)
-                })?;
+                let author_name =
+                    Self::get_arg(&request.arguments, "author_name").ok_or_else(|| {
+                        ErrorData::invalid_params("Missing required parameter: author_name", None)
+                    })?;
                 // Use the agent name as author_id (agents don't have user accounts)
                 let author_id = author_name.to_string();
-                match self.client.add_comment(doc_id, &author_id, author_name, text).await {
-                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(data.to_string())])),
+                match self
+                    .client
+                    .add_comment(doc_id, &author_id, author_name, text)
+                    .await
+                {
+                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(
+                        data.to_string(),
+                    )])),
                     Err(e) => Ok(Self::error_result(e.to_string())),
                 }
             }
             "resolve_comment" => {
-                let comment_id = Self::get_arg(&request.arguments, "comment_id").ok_or_else(|| {
-                    ErrorData::invalid_params("Missing required parameter: comment_id", None)
-                })?;
+                let comment_id =
+                    Self::get_arg(&request.arguments, "comment_id").ok_or_else(|| {
+                        ErrorData::invalid_params("Missing required parameter: comment_id", None)
+                    })?;
                 match self.client.resolve_comment(comment_id).await {
                     Ok(_) => Ok(CallToolResult::success(vec![Content::text(
                         json!({ "status": "success" }).to_string(),
@@ -367,32 +388,52 @@ impl ServerHandler for McpTools {
                 }
             }
             "list_mentions" => {
-                let agent_name = Self::get_arg(&request.arguments, "agent_name").ok_or_else(|| {
-                    ErrorData::invalid_params("Missing required parameter: agent_name", None)
-                })?;
+                let agent_name =
+                    Self::get_arg(&request.arguments, "agent_name").ok_or_else(|| {
+                        ErrorData::invalid_params("Missing required parameter: agent_name", None)
+                    })?;
                 match self.client.list_mentions(agent_name).await {
-                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(data.to_string())])),
+                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(
+                        data.to_string(),
+                    )])),
                     Err(e) => Ok(Self::error_result(e.to_string())),
                 }
             }
             // ── ContentLink tool handlers ──
             "create_contentlink" => {
-                let target_doc_id = Self::get_arg(&request.arguments, "target_document_id").ok_or_else(|| {
-                    ErrorData::invalid_params("Missing required: target_document_id", None)
-                })?;
-                let source_doc_id = Self::get_arg(&request.arguments, "source_document_id").ok_or_else(|| {
-                    ErrorData::invalid_params("Missing required: source_document_id", None)
-                })?;
-                let source_name = Self::get_arg(&request.arguments, "source_document_name").ok_or_else(|| {
-                    ErrorData::invalid_params("Missing required: source_document_name", None)
-                })?;
-                let target_name = Self::get_arg(&request.arguments, "target_document_name").ok_or_else(|| {
-                    ErrorData::invalid_params("Missing required: target_document_name", None)
-                })?;
-                let display_text = Self::get_arg(&request.arguments, "display_text").unwrap_or(source_name);
+                let target_doc_id = Self::get_arg(&request.arguments, "target_document_id")
+                    .ok_or_else(|| {
+                        ErrorData::invalid_params("Missing required: target_document_id", None)
+                    })?;
+                let source_doc_id = Self::get_arg(&request.arguments, "source_document_id")
+                    .ok_or_else(|| {
+                        ErrorData::invalid_params("Missing required: source_document_id", None)
+                    })?;
+                let source_name = Self::get_arg(&request.arguments, "source_document_name")
+                    .ok_or_else(|| {
+                        ErrorData::invalid_params("Missing required: source_document_name", None)
+                    })?;
+                let target_name = Self::get_arg(&request.arguments, "target_document_name")
+                    .ok_or_else(|| {
+                        ErrorData::invalid_params("Missing required: target_document_name", None)
+                    })?;
+                let display_text =
+                    Self::get_arg(&request.arguments, "display_text").unwrap_or(source_name);
 
-                match self.client.create_content_link(target_doc_id, source_doc_id, source_name, target_name, display_text).await {
-                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(data.to_string())])),
+                match self
+                    .client
+                    .create_content_link(
+                        target_doc_id,
+                        source_doc_id,
+                        source_name,
+                        target_name,
+                        display_text,
+                    )
+                    .await
+                {
+                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(
+                        data.to_string(),
+                    )])),
                     Err(e) => Ok(Self::error_result(e.to_string())),
                 }
             }
@@ -401,16 +442,19 @@ impl ServerHandler for McpTools {
                     ErrorData::invalid_params("Missing required: document_id", None)
                 })?;
                 match self.client.list_content_links(doc_id).await {
-                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(data.to_string())])),
+                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(
+                        data.to_string(),
+                    )])),
                     Err(e) => Ok(Self::error_result(e.to_string())),
                 }
             }
             "resolve_contentlink" => {
-                let link_id = Self::get_arg(&request.arguments, "link_id").ok_or_else(|| {
-                    ErrorData::invalid_params("Missing required: link_id", None)
-                })?;
+                let link_id = Self::get_arg(&request.arguments, "link_id")
+                    .ok_or_else(|| ErrorData::invalid_params("Missing required: link_id", None))?;
                 match self.client.resolve_content_link(link_id).await {
-                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(data.to_string())])),
+                    Ok(data) => Ok(CallToolResult::success(vec![Content::text(
+                        data.to_string(),
+                    )])),
                     Err(e) => Ok(Self::error_result(e.to_string())),
                 }
             }

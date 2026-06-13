@@ -153,7 +153,6 @@
     var oop = window.require("ace/lib/oop")
 
     var Sender = () => {}
-
     ;(function () {
       oop.implement(this, EventEmitter)
 
@@ -505,7 +504,6 @@ ace.define("ace/range", ["require", "exports", "module"], (require, exports, mod
       column: endColumn,
     }
   }
-
   ;(function () {
     this.isEqual = function (range) {
       return (
@@ -737,7 +735,6 @@ ace.define(
       if (typeof column == "undefined") this.setPosition(row.row, row.column)
       else this.setPosition(row, column)
     })
-
     ;(function () {
       oop.implement(this, EventEmitter)
       this.getPosition = function () {
@@ -883,7 +880,6 @@ ace.define(
         this.insert({ row: 0, column: 0 }, text)
       }
     }
-
     ;(function () {
       oop.implement(this, EventEmitter)
       this.setValue = function (text) {
@@ -1206,7 +1202,6 @@ ace.define(
         this.onUpdate()
       })
     })
-
     ;(function () {
       this.$timeout = 500
 
@@ -11092,7 +11087,6 @@ ace.define(
     })
 
     oop.inherits(Worker, Mirror)
-
     ;(function () {
       this.setOptions = function (options) {
         this.context = options.context
@@ -15988,7 +15982,6 @@ ace.define(
                   }
                 }
               }
-
               ;((x) => {
                 x.nud = function () {
                   var b, f, i, p, t, g, nextVal
@@ -16914,7 +16907,6 @@ ace.define(
                 }
                 return this
               }).exps = true
-
               ;(() => {
                 var x = stmt("do", function () {
                   funct["(breakage)"] += 1
@@ -17164,7 +17156,6 @@ ace.define(
 
                 return this
               }).exps = true
-
               ;((x) => {
                 x.exps = true
                 x.lbp = 25
@@ -21501,7 +21492,6 @@ ace.define(
     })
 
     oop.inherits(JavaScriptWorker, Mirror)
-
     ;(function () {
       this.setOptions = function (options) {
         this.options = options || {

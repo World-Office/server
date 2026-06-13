@@ -1160,7 +1160,7 @@ mod tests {
             .unwrap();
 
         let children = doc.children_of(root_idx);
-        assert!(children.len() >= 1);
+        assert!(!children.is_empty());
     }
 
     #[test]
@@ -1297,6 +1297,6 @@ mod tests {
         assert!(streams.iter().any(|s| s.contains("SummaryInformation")));
 
         let stream = doc.read_stream_by_name("\x05SummaryInformation").unwrap();
-        assert!(stream.len() > 0);
+        assert!(!stream.is_empty());
     }
 }

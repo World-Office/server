@@ -5,7 +5,7 @@
  * and emits scaling events via the notification center.
  */
 
-import { notificationCenter, type ControllerEvents } from "../core/event-bus"
+import { type ControllerEvents, notificationCenter } from "../core/event-bus"
 
 /** Maps body class names to pixel ratio values */
 const SCALING_MAP: Record<string, number> = {
@@ -29,10 +29,7 @@ function getScalingClassFromClassList(classList: string): string {
 let currentScalingClass = getScalingClassFromClassList(document.body.className)
 
 /** Handles body class mutations and emits scaling events */
-function handleBodyMutation(
-  _records: MutationRecord[],
-  _observer: MutationObserver,
-): void {
+function handleBodyMutation(_records: MutationRecord[], _observer: MutationObserver): void {
   const newScalingClass = getScalingClassFromClassList(document.body.className)
   if (newScalingClass !== currentScalingClass) {
     notificationCenter.emit("app:scaling", {

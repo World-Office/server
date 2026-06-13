@@ -35,7 +35,7 @@ const internalSettings = {
   tabBackground: undefined as TabBackground | undefined,
 }
 
-let features: FeatureConfig = {
+const features: FeatureConfig = {
   canChangeStyle: true,
   canChangeBackground: true,
 }
@@ -97,14 +97,10 @@ function refreshBackground(): void {
 
 /** Sets the tab style */
 function setStyle(style?: TabStyle): void {
-  if (style) {
-    localStorage.setItem(STORAGE_TAB_STYLE, style)
-    internalSettings.tabStyle = style
-  } else {
-    style = getDefaultTabStyle()
-    internalSettings.tabStyle = style
-  }
-  notificationCenter.emit("tabstyle:changed", style)
+  const resolvedStyle = style || getDefaultTabStyle()
+  localStorage.setItem(STORAGE_TAB_STYLE, resolvedStyle)
+  internalSettings.tabStyle = resolvedStyle
+  notificationCenter.emit("tabstyle:changed", resolvedStyle)
 }
 
 /** Sets the tab background */

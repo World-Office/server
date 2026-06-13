@@ -22,7 +22,17 @@ export function RecentFilesPanel({ visible }: { visible: boolean }) {
   async function handleOpenFile(path: string): Promise<void> {
     if (!isDesktop()) return
     const { invoke } = await import("@tauri-apps/api/core")
-    const binaryExtensions = new Set(["docx", "odt", "doc", "pdf", "xlsx", "pptx", "epub", "fb2", "rtf"])
+    const binaryExtensions = new Set([
+      "docx",
+      "odt",
+      "doc",
+      "pdf",
+      "xlsx",
+      "pptx",
+      "epub",
+      "fb2",
+      "rtf",
+    ])
     const ext = path.split(".").pop()?.toLowerCase() ?? ""
     const isBinary = binaryExtensions.has(ext)
     if (isBinary) {
@@ -41,7 +51,10 @@ export function RecentFilesPanel({ visible }: { visible: boolean }) {
   }
 
   return (
-    <div className="de-file-menu-content-box" style={{ display: visible ? "block" : "none", padding: "0 0 0 20px" }}>
+    <div
+      className="de-file-menu-content-box"
+      style={{ display: visible ? "block" : "none", padding: "0 0 0 20px" }}
+    >
       <div className="de-file-menu-header">Recent Files</div>
       <div className="de-file-menu-body">
         <p className="de-file-menu-instruction">Choose a recent document from the list to open.</p>
@@ -49,7 +62,12 @@ export function RecentFilesPanel({ visible }: { visible: boolean }) {
       {recentFiles.length > 0 && (
         <div className="de-file-menu-list">
           {recentFiles.map((file) => (
-            <button key={file.path} type="button" className="de-file-menu-item" onClick={() => handleOpenFile(file.path)}>
+            <button
+              key={file.path}
+              type="button"
+              className="de-file-menu-item"
+              onClick={() => handleOpenFile(file.path)}
+            >
               <span className="de-file-menu-item-title">{file.name}</span>
               <span className="de-file-menu-item-date">{file.path}</span>
             </button>
@@ -62,7 +80,9 @@ export function RecentFilesPanel({ visible }: { visible: boolean }) {
         </div>
       )}
       <div className="de-file-menu-footer">
-        <button type="button" onClick={handleCancel}>Cancel</button>
+        <button type="button" onClick={handleCancel}>
+          Cancel
+        </button>
       </div>
     </div>
   )

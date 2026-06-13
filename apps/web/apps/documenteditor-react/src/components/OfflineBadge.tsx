@@ -8,7 +8,7 @@ declare global {
   }
 }
 
-import { useState, useEffect, type ReactNode } from "react"
+import { type ReactNode, useEffect, useState } from "react"
 
 export function OfflineBadge(): ReactNode {
   const [isOnline, setIsOnline] = useState(navigator.onLine)

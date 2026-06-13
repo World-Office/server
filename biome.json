@@ -19,6 +19,27 @@
       "recommended": true
     }
   },
+  "overrides": [
+    {
+      "include": ["apps/web/apps/presentationeditor-react/**"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noSvgWithoutTitle": "warn",
+            "useKeyWithClickEvents": "warn",
+            "useSemanticElements": "warn",
+            "useButtonType": "warn"
+          },
+          "suspicious": {
+            "noArrayIndexKey": "warn"
+          },
+          "style": {
+            "noNonNullAssertion": "warn"
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": {
       "quoteStyle": "double",

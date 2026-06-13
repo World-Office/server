@@ -830,16 +830,17 @@ mod tests {
     fn count_variant(inlines: &[RtfInline], variant: &str) -> usize {
         let mut count = 0;
         for inline in inlines {
-            if matches!((variant, inline),
-                ("bold", RtfInline::Bold { .. }) |
-                ("italic", RtfInline::Italic { .. }) |
-                ("underline", RtfInline::Underline { .. }) |
-                ("strike", RtfInline::Strikethrough { .. }) |
-                ("super", RtfInline::Superscript { .. }) |
-                ("sub", RtfInline::Subscript { .. }) |
-                ("font", RtfInline::Font { .. }) |
-                ("fontsize", RtfInline::FontSize { .. }) |
-                ("color", RtfInline::Color { .. })
+            if matches!(
+                (variant, inline),
+                ("bold", RtfInline::Bold { .. })
+                    | ("italic", RtfInline::Italic { .. })
+                    | ("underline", RtfInline::Underline { .. })
+                    | ("strike", RtfInline::Strikethrough { .. })
+                    | ("super", RtfInline::Superscript { .. })
+                    | ("sub", RtfInline::Subscript { .. })
+                    | ("font", RtfInline::Font { .. })
+                    | ("fontsize", RtfInline::FontSize { .. })
+                    | ("color", RtfInline::Color { .. })
             ) {
                 count += 1;
             }

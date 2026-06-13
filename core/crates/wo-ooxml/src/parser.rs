@@ -289,8 +289,7 @@ impl OoxmlParser {
     const P_NS: &str = "http://schemas.openxmlformats.org/presentationml/2006/main";
     const A_NS: &str = "http://schemas.openxmlformats.org/drawingml/2006/main";
     #[allow(dead_code)]
-    const R_NS: &str =
-        "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+    const R_NS: &str = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 
     /// Parse PPTX presentation from ppt/presentation.xml.
     pub fn parse_pptx(
@@ -306,9 +305,9 @@ impl OoxmlParser {
             message: format!("Invalid presentation.xml: {}", e),
         })?;
 
-        let pres_elem = doc
-            .descendants()
-            .find(|n| n.has_tag_name("presentation") && n.tag_name().namespace() == Some(Self::P_NS));
+        let pres_elem = doc.descendants().find(|n| {
+            n.has_tag_name("presentation") && n.tag_name().namespace() == Some(Self::P_NS)
+        });
         let Some(pres_elem) = pres_elem else {
             return Ok(Some(PptxPresentation {
                 slide_size: SlideSize::widescreen(),
@@ -324,9 +323,7 @@ impl OoxmlParser {
         // Build slide ID → relationship mapping from presentation.xml
         let mut slides_by_id: Vec<(u32, String)> = Vec::new();
         for sld_id in pres_elem.descendants() {
-            if sld_id.has_tag_name("sldId")
-                && sld_id.tag_name().namespace() == Some(Self::P_NS)
-            {
+            if sld_id.has_tag_name("sldId") && sld_id.tag_name().namespace() == Some(Self::P_NS) {
                 let id: u32 = sld_id
                     .attribute("id")
                     .and_then(|v| v.parse().ok())
@@ -342,7 +339,9 @@ impl OoxmlParser {
         let themes = self.parse_pptx_themes(archive);
         let slide_masters = self.parse_pptx_slide_masters(archive);
 
-        let core_xml = self.read_zip_entry(archive, "docProps/core.xml").unwrap_or_default();
+        let core_xml = self
+            .read_zip_entry(archive, "docProps/core.xml")
+            .unwrap_or_default();
         let core_properties = self.parse_core_properties(&core_xml).unwrap_or_default();
 
         Ok(Some(PptxPresentation {
@@ -357,8 +356,14 @@ impl OoxmlParser {
     fn parse_slide_size(&self, pres_elem: &roxmltree::Node) -> SlideSize {
         for child in pres_elem.children() {
             if child.has_tag_name("sldSz") && child.tag_name().namespace() == Some(Self::P_NS) {
-                let cx: i64 = child.attribute("cx").and_then(|v| v.parse().ok()).unwrap_or(12192000);
-                let cy: i64 = child.attribute("cy").and_then(|v| v.parse().ok()).unwrap_or(6858000);
+                let cx: i64 = child
+                    .attribute("cx")
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(12192000);
+                let cy: i64 = child
+                    .attribute("cy")
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(6858000);
                 return SlideSize { cx, cy };
             }
         }
@@ -488,15 +493,20 @@ impl OoxmlParser {
         let transition = slide_elem.descendants().find(|n| {
             n.has_tag_name("transition") && n.tag_name().namespace() == Some(Self::P_NS)
         })?;
-        let dur_attr = transition.attribute("dur").and_then(|v| v.parse::<f64>().ok());
+        let dur_attr = transition
+            .attribute("dur")
+            .and_then(|v| v.parse::<f64>().ok());
         let adv_click = transition.attribute("advClick");
-        let adv_tm = transition.attribute("advTm").and_then(|v| v.parse::<f64>().ok());
+        let adv_tm = transition
+            .attribute("advTm")
+            .and_then(|v| v.parse::<f64>().ok());
 
-        let effect = transition.children()
+        let effect = transition
+            .children()
             .find(|c| c.is_element() && c.tag_name().namespace() == Some(Self::P_NS))
-            .and_then(|c| {
+            .map(|c| {
                 let name = c.tag_name().name();
-                Some(match name {
+                match name {
                     "fade" => TransitionEffect::Fade,
                     "push" => TransitionEffect::Push,
                     "wipe" => TransitionEffect::Wipe,
@@ -534,7 +544,7 @@ impl OoxmlParser {
                     "pullLeft" => TransitionEffect::PullLeft,
                     "pullRight" => TransitionEffect::PullRight,
                     _ => TransitionEffect::None,
-                })
+                }
             })
             .unwrap_or(TransitionEffect::None);
 
@@ -552,9 +562,9 @@ impl OoxmlParser {
 
     fn parse_pptx_timing_raw(&self, xml: &str) -> Option<String> {
         let doc = XmlDoc::parse(xml).ok()?;
-        let node = doc.descendants().find(|n| {
-            n.has_tag_name("timing") && n.tag_name().namespace() == Some(Self::P_NS)
-        })?;
+        let node = doc
+            .descendants()
+            .find(|n| n.has_tag_name("timing") && n.tag_name().namespace() == Some(Self::P_NS))?;
         let range = node.range();
         Some(xml[range.start..range.end].to_string())
     }
@@ -562,9 +572,9 @@ impl OoxmlParser {
     /// Parse `<p:timing>` into `AnimationData` entries.
     fn parse_pptx_animations(&self, slide_elem: roxmltree::Node) -> Vec<AnimationData> {
         let mut anims = Vec::new();
-        let timing = slide_elem.descendants().find(|n| {
-            n.has_tag_name("timing") && n.tag_name().namespace() == Some(Self::P_NS)
-        });
+        let timing = slide_elem
+            .descendants()
+            .find(|n| n.has_tag_name("timing") && n.tag_name().namespace() == Some(Self::P_NS));
         let timing = match timing {
             Some(t) => t,
             None => return anims,
@@ -573,12 +583,12 @@ impl OoxmlParser {
         // Walk only <p:cTn> elements that directly contain <p:tLst> (actual animation data).
         // This excludes the timing root (tmRoot) and intermediate grouping cTn elements.
         for ctn in timing.descendants().filter(|n| {
-            let is_cTn = n.has_tag_name("cTn")
-                && n.tag_name().namespace() == Some(Self::P_NS);
-            if !is_cTn { return false; }
-            n.children().any(|ch| {
-                ch.has_tag_name("tLst") && ch.tag_name().namespace() == Some(Self::P_NS)
-            })
+            let is_c_tn = n.has_tag_name("cTn") && n.tag_name().namespace() == Some(Self::P_NS);
+            if !is_c_tn {
+                return false;
+            }
+            n.children()
+                .any(|ch| ch.has_tag_name("tLst") && ch.tag_name().namespace() == Some(Self::P_NS))
         }) {
             let id = ctn.attribute("id").unwrap_or("0").to_string();
             let dur_raw = ctn.attribute("dur").unwrap_or("0");
@@ -596,9 +606,7 @@ impl OoxmlParser {
             //   no <p:cond> → withPrevious (default for subsequent animations)
             let (start, cond_delay_ms) = ctn
                 .descendants()
-                .find(|n| {
-                    n.has_tag_name("cond") && n.tag_name().namespace() == Some(Self::P_NS)
-                })
+                .find(|n| n.has_tag_name("cond") && n.tag_name().namespace() == Some(Self::P_NS))
                 .map(|c| {
                     let evt = c.attribute("evt").unwrap_or("");
                     let delay_str = c.attribute("delay").unwrap_or("0");
@@ -634,9 +642,13 @@ impl OoxmlParser {
             //   "spin", "growShrink", other → "emphasis"
             let category = {
                 let e = effect.trim();
-                if e.ends_with("In") { "entrance" }
-                else if e.ends_with("Out") { "exit" }
-                else { "emphasis" }
+                if e.ends_with("In") {
+                    "entrance"
+                } else if e.ends_with("Out") {
+                    "exit"
+                } else {
+                    "emphasis"
+                }
             };
 
             anims.push(AnimationData {
@@ -653,33 +665,32 @@ impl OoxmlParser {
     }
 
     /// Extract target shape ID and effect name from a `<p:cTn>` animation node.
-    fn extract_anim_target_and_effect(
-        &self,
-        ctn: &roxmltree::Node,
-    ) -> (String, String) {
+    fn extract_anim_target_and_effect(&self, ctn: &roxmltree::Node) -> (String, String) {
         // Check for <p:effect ref="..." filter="...">
-        if let Some(effect) = ctn.descendants().find(|n| {
-            n.has_tag_name("effect") && n.tag_name().namespace() == Some(Self::P_NS)
-        }) {
+        if let Some(effect) = ctn
+            .descendants()
+            .find(|n| n.has_tag_name("effect") && n.tag_name().namespace() == Some(Self::P_NS))
+        {
             let target = effect.attribute("ref").unwrap_or("").to_string();
             let filter = effect.attribute("filter").unwrap_or("").to_string();
             return (target, filter);
         }
         // Check for <p:animEffect>
-        if let Some(anim_effect) = ctn.descendants().find(|n| {
-            n.has_tag_name("animEffect") && n.tag_name().namespace() == Some(Self::P_NS)
-        }) {
+        if let Some(anim_effect) = ctn
+            .descendants()
+            .find(|n| n.has_tag_name("animEffect") && n.tag_name().namespace() == Some(Self::P_NS))
+        {
             let target = anim_effect.attribute("ref").unwrap_or("").to_string();
-            let transition = anim_effect.attribute("transition").unwrap_or("").to_string();
+            let transition = anim_effect
+                .attribute("transition")
+                .unwrap_or("")
+                .to_string();
             return (target, transition);
         }
         (String::new(), String::new())
     }
 
-    fn parse_pptx_shape_from_sp(
-        &self,
-        sp: &roxmltree::Node,
-    ) -> Option<SlideShape> {
+    fn parse_pptx_shape_from_sp(&self, sp: &roxmltree::Node) -> Option<SlideShape> {
         let id = sp.attribute("id").unwrap_or("0").to_string();
 
         // Detect shape type: ph (placeholder), sp (auto-shape/textbox)
@@ -728,10 +739,14 @@ impl OoxmlParser {
 
         // Parse grid columns <p:tblGrid><p:gridCol w="..."/>
         if let Some(grid) = tbl.children().find(|c| {
-            c.is_element() && c.has_tag_name("tblGrid") && c.tag_name().namespace() == Some(Self::P_NS)
+            c.is_element()
+                && c.has_tag_name("tblGrid")
+                && c.tag_name().namespace() == Some(Self::P_NS)
         }) {
             for col in grid.children() {
-                if !col.is_element() { continue; }
+                if !col.is_element() {
+                    continue;
+                }
                 if col.has_tag_name("gridCol") && col.tag_name().namespace() == Some(Self::P_NS) {
                     let width = col.attribute("w").and_then(|v| v.parse().ok()).unwrap_or(0);
                     columns.push(TableColumn { width });
@@ -741,14 +756,22 @@ impl OoxmlParser {
 
         // Parse rows <p:tr h="...">
         for tr in tbl.children() {
-            if !tr.is_element() { continue; }
-            if !tr.has_tag_name("tr") || tr.tag_name().namespace() != Some(Self::P_NS) { continue; }
+            if !tr.is_element() {
+                continue;
+            }
+            if !tr.has_tag_name("tr") || tr.tag_name().namespace() != Some(Self::P_NS) {
+                continue;
+            }
             let height = tr.attribute("h").and_then(|v| v.parse().ok()).unwrap_or(0);
             let mut cells = Vec::new();
 
             for tc in tr.children() {
-                if !tc.is_element() { continue; }
-                if !tc.has_tag_name("tc") || tc.tag_name().namespace() != Some(Self::P_NS) { continue; }
+                if !tc.is_element() {
+                    continue;
+                }
+                if !tc.has_tag_name("tc") || tc.tag_name().namespace() != Some(Self::P_NS) {
+                    continue;
+                }
 
                 // Parse cell text body <p:txBody> (or <a:txBody>)
                 let text_body = self.parse_pptx_text_body(&tc).unwrap_or(TextBody {
@@ -760,8 +783,11 @@ impl OoxmlParser {
                 let col_span = tc.attribute("gridSpan").and_then(|v| v.parse().ok());
 
                 // Parse fill color from tcPr -> solidFill -> srgbClr
-                let fill_color = tc.descendants()
-                    .find(|n| n.has_tag_name("srgbClr") && n.tag_name().namespace() == Some(Self::A_NS))
+                let fill_color = tc
+                    .descendants()
+                    .find(|n| {
+                        n.has_tag_name("srgbClr") && n.tag_name().namespace() == Some(Self::A_NS)
+                    })
                     .and_then(|n| n.attribute("val"))
                     .map(|s| s.to_string());
 
@@ -777,7 +803,12 @@ impl OoxmlParser {
         }
 
         let id = tbl.attribute("id").unwrap_or("0").to_string();
-        Some(TableShape { id, bounds, columns, rows })
+        Some(TableShape {
+            id,
+            bounds,
+            columns,
+            rows,
+        })
     }
 
     fn parse_pptx_bounds(&self, sp: &roxmltree::Node) -> Bounds {
@@ -786,12 +817,18 @@ impl OoxmlParser {
             .descendants()
             .find(|n| n.has_tag_name("xfrm") && n.tag_name().namespace() == Some(Self::A_NS))
             .or_else(|| {
-                sp.descendants()
-                    .find(|n| n.has_tag_name("xfrm") && n.tag_name().namespace() == Some(Self::P_NS))
+                sp.descendants().find(|n| {
+                    n.has_tag_name("xfrm") && n.tag_name().namespace() == Some(Self::P_NS)
+                })
             });
 
         let Some(xfrm) = xfrm else {
-            return Bounds { x: 0, y: 0, cx: 0, cy: 0 };
+            return Bounds {
+                x: 0,
+                y: 0,
+                cx: 0,
+                cy: 0,
+            };
         };
 
         let mut off = (0i64, 0i64);
@@ -805,14 +842,26 @@ impl OoxmlParser {
             match local {
                 "off" => {
                     off = (
-                        child.attribute("x").and_then(|v| v.parse().ok()).unwrap_or(0),
-                        child.attribute("y").and_then(|v| v.parse().ok()).unwrap_or(0),
+                        child
+                            .attribute("x")
+                            .and_then(|v| v.parse().ok())
+                            .unwrap_or(0),
+                        child
+                            .attribute("y")
+                            .and_then(|v| v.parse().ok())
+                            .unwrap_or(0),
                     );
                 }
                 "ext" => {
                     ext = (
-                        child.attribute("cx").and_then(|v| v.parse().ok()).unwrap_or(0),
-                        child.attribute("cy").and_then(|v| v.parse().ok()).unwrap_or(0),
+                        child
+                            .attribute("cx")
+                            .and_then(|v| v.parse().ok())
+                            .unwrap_or(0),
+                        child
+                            .attribute("cy")
+                            .and_then(|v| v.parse().ok())
+                            .unwrap_or(0),
                     );
                 }
                 _ => {}
@@ -832,13 +881,12 @@ impl OoxmlParser {
             .descendants()
             .find(|n| n.has_tag_name("txBody") && n.tag_name().namespace() == Some(Self::P_NS))
             .or_else(|| {
-                sp.descendants()
-                    .find(|n| n.has_tag_name("txBody") && n.tag_name().namespace() == Some(Self::A_NS))
+                sp.descendants().find(|n| {
+                    n.has_tag_name("txBody") && n.tag_name().namespace() == Some(Self::A_NS)
+                })
             });
 
-        let Some(tx_body) = tx_body else {
-            return None;
-        };
+        let tx_body = tx_body?;
 
         let mut paragraphs = Vec::new();
 
@@ -919,19 +967,16 @@ impl OoxmlParser {
                     bold = child.attribute("b").map(|v| v == "1").unwrap_or(false);
                     italic = child.attribute("i").map(|v| v == "1").unwrap_or(false);
                     // sz in centipoints (hundredths of a point)
-                    font_size = child.attribute("sz").and_then(|v| v.parse::<u32>().ok()).map(|v| v / 100);
+                    font_size = child
+                        .attribute("sz")
+                        .and_then(|v| v.parse::<u32>().ok())
+                        .map(|v| v / 100);
                     font = child
                         .children()
                         .find(|n| n.is_element() && n.has_tag_name("latin"))
                         .and_then(|n| n.attribute("typeface"))
                         .map(|s| s.to_string());
-                    underline = child.attribute("u").map(|s| {
-                        if s == "sng" || s == "dbl" {
-                            UnderlineType::Single
-                        } else {
-                            UnderlineType::Single
-                        }
-                    });
+                    underline = child.attribute("u").map(|_| UnderlineType::Single);
                     color = child
                         .children()
                         .find(|n| {
@@ -977,30 +1022,36 @@ impl OoxmlParser {
     }
 
     fn parse_pptx_fill(&self, sp_elem: &roxmltree::Node) -> Option<Fill> {
-        let sp_pr = sp_elem.descendants().find(|n| {
-            n.has_tag_name("spPr") && n.tag_name().namespace() == Some(Self::A_NS)
-        })?;
+        let sp_pr = sp_elem
+            .descendants()
+            .find(|n| n.has_tag_name("spPr") && n.tag_name().namespace() == Some(Self::A_NS))?;
         if let Some(grad) = sp_pr.descendants().find(|n| n.has_tag_name("gradFill")) {
             let kind = if grad.descendants().any(|n| n.has_tag_name("lin")) {
                 GradientKind::Linear
             } else {
                 GradientKind::Radial
             };
-            let angle = grad.descendants()
+            let angle = grad
+                .descendants()
                 .find(|n| n.has_tag_name("lin"))
                 .and_then(|n| n.attribute("ang"))
                 .and_then(|v| v.parse::<f64>().ok())
-                .map(|v| v as f64 / 60000.0)
+                .map(|v| v / 60000.0)
                 .unwrap_or(0.0);
-            let stops: Vec<GradientStop> = grad.descendants()
+            let stops: Vec<GradientStop> = grad
+                .descendants()
                 .filter(|n| n.has_tag_name("gs") && n.tag_name().namespace() == Some(Self::A_NS))
                 .filter_map(|gs| {
                     let pos = gs.attribute("pos")?.parse::<f64>().ok()? / 1000.0;
-                    let color = gs.descendants()
+                    let color = gs
+                        .descendants()
                         .find(|n| n.has_tag_name("srgbClr"))
                         .and_then(|n| n.attribute("val"))?
                         .to_string();
-                    Some(GradientStop { position: pos, color })
+                    Some(GradientStop {
+                        position: pos,
+                        color,
+                    })
                 })
                 .collect();
             if !stops.is_empty() {
@@ -1008,7 +1059,8 @@ impl OoxmlParser {
             }
         }
         if let Some(solid) = sp_pr.descendants().find(|n| n.has_tag_name("solidFill")) {
-            if let Some(color) = solid.descendants()
+            if let Some(color) = solid
+                .descendants()
                 .find(|n| n.has_tag_name("srgbClr"))
                 .and_then(|n| n.attribute("val"))
             {
@@ -1019,28 +1071,45 @@ impl OoxmlParser {
     }
 
     fn parse_pptx_effect_list(&self, sp_elem: &roxmltree::Node) -> Option<EffectList> {
-        let sp_pr = sp_elem.descendants().find(|n| {
-            n.has_tag_name("spPr") && n.tag_name().namespace() == Some(Self::A_NS)
-        })?;
-        let shadow = sp_pr.descendants()
+        let sp_pr = sp_elem
+            .descendants()
+            .find(|n| n.has_tag_name("spPr") && n.tag_name().namespace() == Some(Self::A_NS))?;
+        let shadow = sp_pr
+            .descendants()
             .find(|n| n.has_tag_name("outerShdw"))
             .map(|shdw| {
-                let dx = shdw.attribute("dx").and_then(|v| v.parse().ok()).unwrap_or(0);
-                let dy = shdw.attribute("dy").and_then(|v| v.parse().ok()).unwrap_or(0);
-                let blur_radius = shdw.attribute("blurRad").and_then(|v| v.parse().ok()).unwrap_or(0);
-                let color = shdw.descendants()
+                let dx = shdw
+                    .attribute("dx")
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(0);
+                let dy = shdw
+                    .attribute("dy")
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(0);
+                let blur_radius = shdw
+                    .attribute("blurRad")
+                    .and_then(|v| v.parse().ok())
+                    .unwrap_or(0);
+                let color = shdw
+                    .descendants()
                     .find(|n| n.has_tag_name("srgbClr"))
                     .and_then(|n| n.attribute("val"))
                     .unwrap_or("000000")
                     .to_string();
-                let opacity = shdw.descendants()
+                let opacity = shdw
+                    .descendants()
                     .find(|n| n.has_tag_name("srgbClr"))
-                    .and_then(|n| n.attribute("lastClr")
-                        .or_else(|| n.attribute("alpha")))
+                    .and_then(|n| n.attribute("lastClr").or_else(|| n.attribute("alpha")))
                     .and_then(|v| v.parse::<f64>().ok())
                     .map(|a| a / 1000.0)
                     .unwrap_or(1.0);
-                ShadowEffect { dx, dy, blur_radius, color, opacity }
+                ShadowEffect {
+                    dx,
+                    dy,
+                    blur_radius,
+                    color,
+                    opacity,
+                }
             });
         if shadow.is_some() {
             Some(EffectList { shadow })
@@ -1084,15 +1153,23 @@ impl OoxmlParser {
 
     fn parse_pptx_connector(&self, cxn: &roxmltree::Node) -> Option<ConnectorShape> {
         let bounds = self.parse_pptx_bounds(cxn);
-        let id = cxn.descendants().find(|n| n.has_tag_name("cNvPr"))?
-            .attribute("id").unwrap_or("0").to_string();
+        let id = cxn
+            .descendants()
+            .find(|n| n.has_tag_name("cNvPr"))?
+            .attribute("id")
+            .unwrap_or("0")
+            .to_string();
 
-        let prst = cxn.descendants().find(|n| n.has_tag_name("prstGeom"))
+        let prst = cxn
+            .descendants()
+            .find(|n| n.has_tag_name("prstGeom"))
             .and_then(|g| g.attribute("prst"))
             .unwrap_or("straightConnector1");
-        let connector_type = ConnectorShapeType::from_str(prst);
+        let connector_type = ConnectorShapeType::from_name(prst);
 
-        let line_width = cxn.descendants().find(|n| n.has_tag_name("ln"))
+        let line_width = cxn
+            .descendants()
+            .find(|n| n.has_tag_name("ln"))
             .and_then(|n| n.attribute("w"))
             .and_then(|v| v.parse::<i64>().ok());
 
@@ -1700,10 +1777,7 @@ impl OoxmlParser {
     // --- PPTX Theme Parsing ---
 
     /// Parse all themes from ppt/theme/theme*.xml in the archive.
-    pub fn parse_pptx_themes(
-        &self,
-        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
-    ) -> Vec<Theme> {
+    pub fn parse_pptx_themes(&self, archive: &mut zip::ZipArchive<Cursor<&[u8]>>) -> Vec<Theme> {
         let mut themes = Vec::new();
 
         let theme_names: Vec<String> = (0..archive.len())
@@ -1755,7 +1829,11 @@ impl OoxmlParser {
         }
 
         Some(Theme {
-            name: if name.is_empty() { "Theme".to_string() } else { name },
+            name: if name.is_empty() {
+                "Theme".to_string()
+            } else {
+                name
+            },
             color_scheme,
             font_scheme,
             format_scheme: None,
@@ -1814,7 +1892,11 @@ impl OoxmlParser {
             }
         }
 
-        FontScheme { name, major_font, minor_font }
+        FontScheme {
+            name,
+            major_font,
+            minor_font,
+        }
     }
 
     fn parse_theme_font(&self, font_node: &roxmltree::Node) -> ThemeFont {
@@ -2269,11 +2351,8 @@ mod tests {
             .unwrap();
 
             // _rels/.rels
-            zip.start_file(
-                "_rels/.rels",
-                zip::write::SimpleFileOptions::default(),
-            )
-            .unwrap();
+            zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default())
+                .unwrap();
             zip.write_all(
                 br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -2387,11 +2466,8 @@ mod tests {
             .unwrap();
 
             // _rels/.rels
-            zip.start_file(
-                "_rels/.rels",
-                zip::write::SimpleFileOptions::default(),
-            )
-            .unwrap();
+            zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default())
+                .unwrap();
             zip.write_all(
                 br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -2561,13 +2637,16 @@ mod tests {
 
     #[test]
     fn test_parse_pptx_slide_size_standard() {
-
         // We need to build a new PPTX with standard slide size
         let mut buf = Vec::new();
         {
             let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
 
-            zip.start_file("[Content_Types].xml", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.start_file(
+                "[Content_Types].xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
             zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
@@ -2575,17 +2654,25 @@ mod tests {
   <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
 </Types>"#).unwrap();
 
-            zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default())
+                .unwrap();
             zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
 </Relationships>"#).unwrap();
 
-            zip.start_file("ppt/presentation.xml", zip::write::SimpleFileOptions::default()).unwrap();
-            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            zip.start_file(
+                "ppt/presentation.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
   <p:sldSz cx="9144000" cy="6858000"/>
-</p:presentation>"#).unwrap();
+</p:presentation>"#,
+            )
+            .unwrap();
 
             zip.finish().unwrap();
         }
@@ -2613,11 +2700,20 @@ mod tests {
         let theme = pres.theme.expect("Theme should be Some");
         assert_eq!(theme.name, "Office Theme");
         assert_eq!(theme.color_scheme.colors.len(), 12);
-        assert_eq!(theme.font_scheme.major_font.latin.as_deref(), Some("Calibri Light"));
-        assert_eq!(theme.font_scheme.minor_font.latin.as_deref(), Some("Calibri"));
+        assert_eq!(
+            theme.font_scheme.major_font.latin.as_deref(),
+            Some("Calibri Light")
+        );
+        assert_eq!(
+            theme.font_scheme.minor_font.latin.as_deref(),
+            Some("Calibri")
+        );
 
         // Slide masters should be parsed
-        assert!(!pres.slide_masters.is_empty(), "Should have at least one slide master");
+        assert!(
+            !pres.slide_masters.is_empty(),
+            "Should have at least one slide master"
+        );
         assert!(pres.slides.len() == 1);
     }
 
@@ -2626,7 +2722,11 @@ mod tests {
         let mut buf = Vec::new();
         {
             let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
-            zip.start_file("[Content_Types].xml", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.start_file(
+                "[Content_Types].xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
             zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
@@ -2635,30 +2735,47 @@ mod tests {
   <Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
 </Types>"#).unwrap();
 
-            zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default())
+                .unwrap();
             zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
 </Relationships>"#).unwrap();
 
-            zip.start_file("ppt/presentation.xml", zip::write::SimpleFileOptions::default()).unwrap();
-            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            zip.start_file(
+                "ppt/presentation.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
                 xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <p:sldSz cx="9144000" cy="6858000"/>
   <p:sldIdLst>
     <p:sldId id="256" r:id="rId1"/>
   </p:sldIdLst>
-</p:presentation>"#).unwrap();
+</p:presentation>"#,
+            )
+            .unwrap();
 
-            zip.start_file("ppt/_rels/presentation.xml.rels", zip::write::SimpleFileOptions::default()).unwrap();
+            zip.start_file(
+                "ppt/_rels/presentation.xml.rels",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
             zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
 </Relationships>"#).unwrap();
 
-            zip.start_file("ppt/slides/slide1.xml", zip::write::SimpleFileOptions::default()).unwrap();
-            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+            zip.start_file(
+                "ppt/slides/slide1.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
        xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
   <p:cSld>
@@ -2746,7 +2863,9 @@ mod tests {
       </p:par>
     </p:childTnLst>
   </p:timing>
-</p:sld>"#).unwrap();
+</p:sld>"#,
+            )
+            .unwrap();
             zip.finish().unwrap();
         }
 

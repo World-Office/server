@@ -7,14 +7,14 @@ pub async fn auto_snapshot(
     new_content: &str,
 ) -> Result<String, StorageClientError> {
     let content_bytes = new_content.as_bytes();
-    
+
     let mut hasher = Sha256::new();
     hasher.update(content_bytes);
     let hash_bytes = hasher.finalize();
     let hash = hex::encode(hash_bytes);
 
     let snapshots = client.list_snapshots(file_id).await?;
-    
+
     if snapshots.iter().any(|s| s.content_hash == hash) {
         tracing::info!(
             file_id = %file_id,

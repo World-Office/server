@@ -86,7 +86,8 @@ mod tests {
         // Output should be valid FB2 XML
         let output_str = String::from_utf8_lossy(&output);
         assert!(output_str.starts_with("<?xml version=\"1.0\" encoding=\"utf-8\"?>"));
-        assert!(output_str.contains("<FictionBook xmlns=\"http://www.gribuser.ru/xml/fictionbook/2.0\""));
+        assert!(output_str
+            .contains("<FictionBook xmlns=\"http://www.gribuser.ru/xml/fictionbook/2.0\""));
         assert!(output_str.contains("<title-info>"));
         assert!(output_str.contains("<book-title>Test Book</book-title>"));
     }

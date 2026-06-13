@@ -1,6 +1,6 @@
 // Storage backend for WOPI server
 
-use crate::{WopiError, Result};
+use crate::{Result, WopiError};
 use async_trait::async_trait;
 use std::path::{Path, PathBuf};
 use tokio::fs;
@@ -67,8 +67,8 @@ impl FileSystemStorage {
 
     /// Calculate SHA256 hash of content.
     fn calculate_sha256(content: &[u8]) -> String {
-        use sha2::{Digest, Sha256};
         use base64::prelude::*;
+        use sha2::{Digest, Sha256};
         let mut hasher = Sha256::new();
         hasher.update(content);
         let result = hasher.finalize();
@@ -80,7 +80,7 @@ impl FileSystemStorage {
 impl StorageBackend for FileSystemStorage {
     async fn read_file(&self, file_id: &str) -> Result<Vec<u8>> {
         let path = self.get_file_path(file_id);
-        
+
         if !path.exists() {
             return Err(WopiError::FileNotFound(file_id.to_string()));
         }
@@ -89,13 +89,13 @@ impl StorageBackend for FileSystemStorage {
         let metadata = file.metadata().await?;
         let mut buffer = vec![0; metadata.len() as usize];
         file.read_exact(&mut buffer).await?;
-        
+
         Ok(buffer)
     }
 
     async fn write_file(&self, file_id: &str, content: &[u8]) -> Result<String> {
         let path = self.get_file_path(file_id);
-        
+
         // Ensure parent directory exists
         if let Some(parent) = path.parent() {
             if !parent.exists() {
@@ -117,15 +117,19 @@ impl StorageBackend for FileSystemStorage {
 
     async fn get_file_info(&self, file_id: &str) -> Result<FileMetadata> {
         let path = self.get_file_path(file_id);
-        
+
         if !path.exists() {
             return Err(WopiError::FileNotFound(file_id.to_string()));
         }
 
         let metadata = fs::metadata(&path).await?;
         let is_directory = metadata.is_dir();
-        let size = if is_directory { 0 } else { metadata.len() as i64 };
-        
+        let size = if is_directory {
+            0
+        } else {
+            metadata.len() as i64
+        };
+
         let name = path
             .file_name()
             .and_then(|n| n.to_str())
@@ -153,7 +157,7 @@ impl StorageBackend for FileSystemStorage {
 
     async fn list_files(&self, path: &str) -> Result<Vec<FileMetadata>> {
         let full_path = self.base_path.join(path);
-        
+
         if !full_path.exists() {
             return Err(WopiError::FileNotFound(path.to_string()));
         }
@@ -163,14 +167,15 @@ impl StorageBackend for FileSystemStorage {
 
         while let Some(entry) = dir.next_entry().await? {
             let metadata = entry.metadata().await?;
-            let name = entry
-                .file_name()
-                .to_string_lossy()
-                .to_string();
-            
+            let name = entry.file_name().to_string_lossy().to_string();
+
             let is_directory = metadata.is_dir();
-            let size = if is_directory { 0 } else { metadata.len() as i64 };
-            
+            let size = if is_directory {
+                0
+            } else {
+                metadata.len() as i64
+            };
+
             let modified = metadata.modified()?;
             let version = format!("{:?}", modified);
 
@@ -195,7 +200,7 @@ impl StorageBackend for FileSystemStorage {
 
     async fn delete_file(&self, file_id: &str) -> Result<()> {
         let path = self.get_file_path(file_id);
-        
+
         if !path.exists() {
             return Err(WopiError::FileNotFound(file_id.to_string()));
         }
@@ -211,7 +216,7 @@ impl StorageBackend for FileSystemStorage {
 
     async fn rename_file(&self, file_id: &str, new_name: &str) -> Result<()> {
         let old_path = self.get_file_path(file_id);
-        
+
         if !old_path.exists() {
             return Err(WopiError::FileNotFound(file_id.to_string()));
         }
@@ -241,7 +246,7 @@ mod tests {
         let content = b"Hello, World!";
         let file_id = "test.txt";
         let version = storage.write_file(file_id, content).await.unwrap();
-        
+
         assert!(!version.is_empty());
 
         // Read the file

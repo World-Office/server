@@ -54,7 +54,7 @@ class ScreenReaderHelper implements IScreenReaderHelper {
     if (enabled) {
       if (!this._elem) {
         // Try to find existing aria-live element
-        const existing = document.querySelector('div[aria-live]')
+        const existing = document.querySelector("div[aria-live]")
         if (existing) {
           this._elem = existing as HTMLDivElement
         } else {

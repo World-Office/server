@@ -14,7 +14,10 @@
     "providers": {},
     "version": 3,
     "timeout": "5m",
-    "allowedCorsOrigins": ["https://world-office.github.io", "https://world-office-plugins.github.io"],
+    "allowedCorsOrigins": [
+      "https://world-office.github.io",
+      "https://world-office-plugins.github.io"
+    ],
     "proxy": ""
   },
   "log": {

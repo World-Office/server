@@ -1,7 +1,7 @@
 import { observer } from "mobx-react-lite"
 import { useEffect, useRef } from "react"
-import { pdfStore } from "../stores/PdfStore"
 import { getTotalPages, init, renderPage, setTotalPages } from "../lib/wasm-renderer"
+import { pdfStore } from "../stores/PdfStore"
 
 const DEMO_PAGE_COUNT = 5
 
@@ -22,19 +22,32 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
   }, [])
 
   // Re-render when page or zoom changes
+  const { currentPage, zoomLevel } = pdfStore
   useEffect(() => {
     if (!initialized.current) return
-    renderPage(pdfStore.currentPage, pdfStore.zoomLevel)
-  }, [pdfStore.currentPage, pdfStore.zoomLevel])
+    renderPage(currentPage, zoomLevel)
+  }, [currentPage, zoomLevel])
 
   const totalPages = getTotalPages()
   const canPrev = pdfStore.currentPage > 0
   const canNext = pdfStore.currentPage < totalPages - 1
 
   return (
-    <div className="pdf-document-holder" style={{ display: "flex", flexDirection: "column", alignItems: "center", overflow: "auto", height: "100%", backgroundColor: "#404040" }}>
+    <div
+      className="pdf-document-holder"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        overflow: "auto",
+        height: "100%",
+        backgroundColor: "#404040",
+      }}
+    >
       {/* Canvas container with shadow */}
-      <div style={{ margin: "16px auto", flexShrink: 0, display: "flex", justifyContent: "center" }}>
+      <div
+        style={{ margin: "16px auto", flexShrink: 0, display: "flex", justifyContent: "center" }}
+      >
         <canvas
           ref={canvasRef}
           className="pdf-document-canvas"
@@ -43,7 +56,16 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
       </div>
 
       {/* Page navigation controls */}
-      <div className="pdf-page-nav" style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 16px", flexShrink: 0 }}>
+      <div
+        className="pdf-page-nav"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          padding: "8px 16px",
+          flexShrink: 0,
+        }}
+      >
         <button
           type="button"
           className="pdf-page-nav-btn"

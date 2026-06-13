@@ -10,14 +10,14 @@ pub mod parser;
 pub mod roundtrip;
 pub mod serializer;
 
-pub use model::{
-    Bounds, ColorScheme, Fill, FontScheme, GradientFill, GradientKind, GradientStop,
-    OoxmlDocument, OoxmlFormat, PictureShape, PlaceholderShape, PptxPresentation, ShadowEffect,
-    Slide, SlideLayout, SlideMaster, SlideShape, SlideSize, TableCell, TableColumn, TableRow,
-    TableShape, TextBody, TextBoxShape, Theme, ThemeColor, ThemeFont, ThemePreset,
-    ConnectorShape, ConnectorShapeType, EffectList,
-};
 pub use model::builtin_theme_presets;
+pub use model::{
+    Bounds, ColorScheme, ConnectorShape, ConnectorShapeType, EffectList, Fill, FontScheme,
+    GradientFill, GradientKind, GradientStop, OoxmlDocument, OoxmlFormat, PictureShape,
+    PlaceholderShape, PptxPresentation, ShadowEffect, Slide, SlideLayout, SlideMaster, SlideShape,
+    SlideSize, TableCell, TableColumn, TableRow, TableShape, TextBody, TextBoxShape, Theme,
+    ThemeColor, ThemeFont, ThemePreset,
+};
 pub use parser::OoxmlParser;
 pub use roundtrip::OoxmlRoundtrip;
 pub use serializer::OoxmlSerializer;

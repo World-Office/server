@@ -4,22 +4,21 @@
 // for remote file management. It provides a WebDAV server with support for
 // PROPFIND, PROPPATCH, GET, PUT, DELETE, MKCOL, COPY, MOVE, LOCK, and UNLOCK operations.
 
-pub mod server;
-pub mod handlers;
-pub mod models;
-pub mod lock;
 pub mod fs;
+pub mod handlers;
+pub mod lock;
+pub mod models;
+pub mod server;
 pub mod storage;
 
-pub use server::WebDavServer;
-pub use fs::{FileSystem, DavResource};
-pub use lock::{LockManager, LockInfo};
-pub use storage::{WebDavStorage, ResourceInfo, LockDepth};
+pub use fs::{DavResource, FileSystem};
+pub use lock::{LockInfo, LockManager};
 pub use models::{
-    MultiStatus, PropStat, Prop, DavResponse,
-    LockType, LockScope, ActiveLock, LockToken, Owner,
-    PropFind, LockInfo as WebDavLockInfo,
+    ActiveLock, DavResponse, LockInfo as WebDavLockInfo, LockScope, LockToken, LockType,
+    MultiStatus, Owner, Prop, PropFind, PropStat,
 };
+pub use server::WebDavServer;
+pub use storage::{LockDepth, ResourceInfo, WebDavStorage};
 
 /// Result type for WebDAV operations.
 pub type Result<T> = std::result::Result<T, WebDavError>;

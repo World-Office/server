@@ -8,7 +8,9 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
       ? documentStore.filePath.replace(/\.[^.]+$/, `.${format.toLowerCase()}`)
       : `Untitled.${format.toLowerCase()}`
     const content = ""
-    const isBinary = ["docx", "odt", "doc", "pdf", "epub", "fb2", "rtf"].includes(format.toLowerCase())
+    const isBinary = ["docx", "odt", "doc", "pdf", "epub", "fb2", "rtf"].includes(
+      format.toLowerCase(),
+    )
     const result = await saveFile(content, {
       defaultPath: defaultName,
       filters: [{ name: `${format} Document`, extensions: [format.toLowerCase()] }],
@@ -31,8 +33,29 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
         {documentStore.isDesktop ? "Save as" : "Download as"}
       </div>
       <div className="de-file-menu-formats">
-        {["DOCX", "PDF", "ODT", "DOTX", "DOCM", "PDFA", "OTT", "MD", "RTF", "TXT", "FB2", "EPUB", "HTML", "JPG", "PNG"].map((format) => (
-          <button key={format} type="button" className="de-file-menu-format-btn" onClick={() => handleSaveAs(format)}>
+        {[
+          "DOCX",
+          "PDF",
+          "ODT",
+          "DOTX",
+          "DOCM",
+          "PDFA",
+          "OTT",
+          "MD",
+          "RTF",
+          "TXT",
+          "FB2",
+          "EPUB",
+          "HTML",
+          "JPG",
+          "PNG",
+        ].map((format) => (
+          <button
+            key={format}
+            type="button"
+            className="de-file-menu-format-btn"
+            onClick={() => handleSaveAs(format)}
+          >
             {format}
           </button>
         ))}

@@ -135,7 +135,9 @@ function deriveSchemaForScope(schema, scope) {
 
   const derived = prune(schema)
   if (derived && typeof derived === "object") {
-    derived.$id = derived.$id ? `${derived.$id}:${scope}` : `urn:world-office:config:derived:${scope}`
+    derived.$id = derived.$id
+      ? `${derived.$id}:${scope}`
+      : `urn:world-office:config:derived:${scope}`
   }
   return derived
 }

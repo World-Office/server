@@ -1,4 +1,4 @@
-use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
+use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -63,7 +63,7 @@ struct SnapshotListResponse {
 }
 
 mod base64_bytes {
-    use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
+    use base64::{Engine, engine::general_purpose::STANDARD as BASE64};
     use serde::{Deserialize, Deserializer, Serializer};
 
     #[allow(dead_code)]
@@ -361,7 +361,10 @@ impl StorageClient {
     pub async fn list_comments(&self, document_id: &str) -> Result<serde_json::Value> {
         let resp = self
             .http
-            .get(format!("{}/documents/{document_id}/comments", self.base_url))
+            .get(format!(
+                "{}/documents/{document_id}/comments",
+                self.base_url
+            ))
             .send()
             .await?;
 
@@ -393,7 +396,10 @@ impl StorageClient {
 
         let resp = self
             .http
-            .post(format!("{}/documents/{document_id}/comments", self.base_url))
+            .post(format!(
+                "{}/documents/{document_id}/comments",
+                self.base_url
+            ))
             .json(&body)
             .send()
             .await?;
@@ -526,7 +532,10 @@ impl StorageClient {
     pub async fn list_content_links(&self, document_id: &str) -> Result<serde_json::Value> {
         let resp = self
             .http
-            .get(format!("{}/documents/{document_id}/content-links", self.base_url))
+            .get(format!(
+                "{}/documents/{document_id}/content-links",
+                self.base_url
+            ))
             .send()
             .await?;
 

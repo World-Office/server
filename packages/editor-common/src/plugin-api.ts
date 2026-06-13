@@ -25,18 +25,14 @@ export function getPluginAPI(): PluginAPIConfig {
     pluginAPI = {
       toolbar: {
         addButton(config) {
-          window.dispatchEvent(
-            new CustomEvent("plugin-add-button", { detail: config }),
-          )
+          window.dispatchEvent(new CustomEvent("plugin-add-button", { detail: config }))
         },
       },
       editor: {
         on(event, callback) {
-          const handler = (e: Event) =>
-            callback((e as CustomEvent).detail)
+          const handler = (e: Event) => callback((e as CustomEvent).detail)
           window.addEventListener(`plugin-event:${event}`, handler)
-          return () =>
-            window.removeEventListener(`plugin-event:${event}`, handler)
+          return () => window.removeEventListener(`plugin-event:${event}`, handler)
         },
         getDocument() {
           return {}
@@ -52,10 +48,7 @@ export function getPluginAPI(): PluginAPIConfig {
   return pluginAPI
 }
 
-export function sandboxExecutePlugin(
-  source: string,
-  api: PluginAPIConfig,
-): void {
+export function sandboxExecutePlugin(source: string, api: PluginAPIConfig): void {
   try {
     const fn = new Function("api", source)
     fn(api)

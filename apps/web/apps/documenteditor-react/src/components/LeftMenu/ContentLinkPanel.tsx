@@ -24,9 +24,7 @@ interface ContentLinkPanelProps {
 const STORAGE_API = "http://localhost:8002"
 
 function currentDocId(): string {
-  return documentStore.filePath
-    ? documentStore.filePath.split("/").pop() ?? "doc-1"
-    : "doc-1"
+  return documentStore.filePath ? (documentStore.filePath.split("/").pop() ?? "doc-1") : "doc-1"
 }
 
 async function fetchInboundLinks(docId: string): Promise<ContentLink[]> {
@@ -83,10 +81,7 @@ function ContentLinkPanelInner({ style }: ContentLinkPanelProps): JSX.Element {
   const loadLinks = useCallback(async () => {
     setLoading(true)
     try {
-      const [inb, outb] = await Promise.all([
-        fetchInboundLinks(docId),
-        fetchOutboundLinks(docId),
-      ])
+      const [inb, outb] = await Promise.all([fetchInboundLinks(docId), fetchOutboundLinks(docId)])
       setInbound(inb)
       setOutbound(outb)
     } catch {
@@ -147,17 +142,23 @@ function ContentLinkPanelInner({ style }: ContentLinkPanelProps): JSX.Element {
 
       {/* Create link form */}
       <div className="de-contentlink-create">
-        <label className="de-contentlink-label">Link to document ID</label>
+        <label className="de-contentlink-label" htmlFor="de-contentlink-input">
+          Link to document ID
+        </label>
         <div className="de-contentlink-create-row">
           <input
+            id="de-contentlink-input"
             className="de-contentlink-input"
             type="text"
             placeholder="Document ID..."
             value={targetId}
             onChange={(e) => setTargetId(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleCreate() }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleCreate()
+            }}
           />
           <button
+            type="button"
             className="de-contentlink-btn de-contentlink-btn-primary"
             disabled={creating || !targetId.trim()}
             onClick={handleCreate}
@@ -179,9 +180,7 @@ function ContentLinkPanelInner({ style }: ContentLinkPanelProps): JSX.Element {
 
         {!loading && outbound.length > 0 && (
           <section className="de-contentlink-section">
-            <h4 className="de-contentlink-section-title">
-              Outbound ({outbound.length})
-            </h4>
+            <h4 className="de-contentlink-section-title">Outbound ({outbound.length})</h4>
             <ul className="de-contentlink-list">
               {outbound.map((link) => (
                 <li key={link.id} className="de-contentlink-item">
@@ -192,6 +191,7 @@ function ContentLinkPanelInner({ style }: ContentLinkPanelProps): JSX.Element {
                     <div className="de-contentlink-item-actions">
                       {!link.resolved_content && (
                         <button
+                          type="button"
                           className="de-contentlink-btn de-contentlink-btn-sm"
                           title="Resolve content"
                           onClick={() => handleResolve(link.id)}
@@ -200,6 +200,7 @@ function ContentLinkPanelInner({ style }: ContentLinkPanelProps): JSX.Element {
                         </button>
                       )}
                       <button
+                        type="button"
                         className="de-contentlink-btn de-contentlink-btn-sm de-contentlink-btn-danger"
                         title="Delete link"
                         onClick={() => handleDelete(link.id)}
@@ -209,9 +210,7 @@ function ContentLinkPanelInner({ style }: ContentLinkPanelProps): JSX.Element {
                     </div>
                   </div>
                   {link.resolved_content && (
-                    <p className="de-contentlink-preview">
-                      {link.resolved_content}
-                    </p>
+                    <p className="de-contentlink-preview">{link.resolved_content}</p>
                   )}
                 </li>
               ))}
@@ -221,9 +220,7 @@ function ContentLinkPanelInner({ style }: ContentLinkPanelProps): JSX.Element {
 
         {!loading && inbound.length > 0 && (
           <section className="de-contentlink-section">
-            <h4 className="de-contentlink-section-title">
-              Inbound ({inbound.length})
-            </h4>
+            <h4 className="de-contentlink-section-title">Inbound ({inbound.length})</h4>
             <ul className="de-contentlink-list">
               {inbound.map((link) => (
                 <li key={link.id} className="de-contentlink-item">

@@ -508,7 +508,7 @@ mod tests {
     // --- 18. Default trait ---
     #[test]
     fn test_default_trait() {
-        let _ = HwpSerializer::default();
+        let _ = HwpSerializer;
     }
 
     // --- 19. DocInfo takes priority over metadata ---

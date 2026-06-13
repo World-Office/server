@@ -195,10 +195,7 @@ impl LockManager {
     }
 
     /// Get lock information for a resource.
-    pub async fn get_lock(
-        &self,
-        resource_path: &str,
-    ) -> Option<LockInfo> {
+    pub async fn get_lock(&self, resource_path: &str) -> Option<LockInfo> {
         let locks = self.locks.read().await;
         locks.get(resource_path).cloned()
     }
@@ -241,7 +238,13 @@ mod tests {
         let manager = LockManager::new();
 
         let lock = manager
-            .acquire_lock("/test.txt".to_string(), LockScope::Exclusive, LockType::Write, None, None)
+            .acquire_lock(
+                "/test.txt".to_string(),
+                LockScope::Exclusive,
+                LockType::Write,
+                None,
+                None,
+            )
             .await
             .unwrap();
 
@@ -255,7 +258,13 @@ mod tests {
         let manager = LockManager::new();
 
         let lock = manager
-            .acquire_lock("/test.txt".to_string(), LockScope::Exclusive, LockType::Write, None, None)
+            .acquire_lock(
+                "/test.txt".to_string(),
+                LockScope::Exclusive,
+                LockType::Write,
+                None,
+                None,
+            )
             .await
             .unwrap();
 

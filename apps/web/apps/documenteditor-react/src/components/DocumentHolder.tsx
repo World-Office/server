@@ -1,19 +1,20 @@
+import { createCursorUpdate } from "@world-office/collaboration-client"
 import { observer } from "mobx-react-lite"
 import { useEffect, useRef, useState } from "react"
-import { createCursorUpdate } from "@world-office/collaboration-client"
-import { documentStore } from "../stores/DocumentStore"
 import { collaborationStore } from "../lib/collaboration"
 import { collabSendRef, currentUser } from "../lib/collaboration"
 import { getTotalPages, init, renderPage, setTotalPages } from "../lib/wasm-renderer"
+import { documentStore } from "../stores/DocumentStore"
 
 const DEMO_PAGE_COUNT = 3
 
 const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const initialized = useRef(false)
-  const [mousePos, setMousePos] = useState<{x: number, y: number} | null>(null)
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null)
+  const { currentPage, zoomLevel } = documentStore
 
-  // Initialize renderer once on mount
+  // Initialize renderer once on mount (captures store values at mount time)
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas || initialized.current) return
@@ -28,8 +29,8 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
   // Re-render when page or zoom changes
   useEffect(() => {
     if (!initialized.current) return
-    renderPage(documentStore.currentPage, documentStore.zoomLevel)
-  }, [documentStore.currentPage, documentStore.zoomLevel])
+    renderPage(currentPage, zoomLevel)
+  }, [currentPage, zoomLevel])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -47,21 +48,21 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
         return
       }
 
-      setMousePos({x, y})
+      setMousePos({ x, y })
 
       const update = createCursorUpdate({
         session_id: collaborationStore.sessionId ?? "",
         user_id: currentUser.id,
         username: currentUser.username,
         color: "#3498DB",
-        cursor_position: { page: documentStore.currentPage, x, y },
+        cursor_position: { page: currentPage, x, y },
       })
       sender(update)
     }
 
     canvas.addEventListener("mousemove", handleMouseMove)
     return () => canvas.removeEventListener("mousemove", handleMouseMove)
-  }, [mousePos, documentStore.currentPage])
+  }, [mousePos, currentPage])
 
   const totalPages = getTotalPages()
   const canPrev = documentStore.currentPage > 0
@@ -70,15 +71,33 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
   const remoteCursors = Array.from(collaborationStore.remoteCursors.entries())
 
   return (
-    <div className="de-document-holder" style={{ display: "flex", flexDirection: "column", alignItems: "center", overflow: "auto", height: "100%", backgroundColor: "#e8e8e8" }}>
+    <div
+      className="de-document-holder"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        overflow: "auto",
+        height: "100%",
+        backgroundColor: "#e8e8e8",
+      }}
+    >
       {/* Canvas container with shadow */}
-      <div style={{ margin: "16px auto", flexShrink: 0, display: "flex", justifyContent: "center", position: "relative" }}>
+      <div
+        style={{
+          margin: "16px auto",
+          flexShrink: 0,
+          display: "flex",
+          justifyContent: "center",
+          position: "relative",
+        }}
+      >
         <canvas
           ref={canvasRef}
           className="de-document-canvas"
           style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1)" }}
         />
-        
+
         {remoteCursors.map(([uid, cursor]) => {
           const user = collaborationStore.users.find((u) => u.id === uid)
           return (
@@ -91,23 +110,27 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
                 pointerEvents: "none",
               }}
             >
-              <div style={{
-                width: 2,
-                height: 16,
-                backgroundColor: user?.color ?? "#3498DB",
-                position: "absolute",
-              }} />
-              <div style={{
-                position: "absolute",
-                top: -18,
-                left: 2,
-                backgroundColor: user?.color ?? "#3498DB",
-                color: "#fff",
-                fontSize: 10,
-                padding: "1px 4px",
-                borderRadius: 3,
-                whiteSpace: "nowrap",
-              }}>
+              <div
+                style={{
+                  width: 2,
+                  height: 16,
+                  backgroundColor: user?.color ?? "#3498DB",
+                  position: "absolute",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  top: -18,
+                  left: 2,
+                  backgroundColor: user?.color ?? "#3498DB",
+                  color: "#fff",
+                  fontSize: 10,
+                  padding: "1px 4px",
+                  borderRadius: 3,
+                  whiteSpace: "nowrap",
+                }}
+              >
                 {user?.name ?? uid}
               </div>
             </div>
@@ -116,7 +139,16 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
       </div>
 
       {/* Page navigation controls */}
-      <div className="de-page-nav" style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 16px", flexShrink: 0 }}>
+      <div
+        className="de-page-nav"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          padding: "8px 16px",
+          flexShrink: 0,
+        }}
+      >
         <button
           type="button"
           className="de-page-nav-btn"

@@ -1,122 +1,122 @@
 /* Status Bar */
 
 .prese-statusbar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  height: var(--wo-prese-statusbar-height);
-  padding: 0 2px 0;
-  z-index: 500;
-  background-color: var(--wo-prese-bg-statusbar);
-  border-top: 1px solid var(--wo-prese-border);
-  font-size: 12px;
-  color: var(--wo-prese-text-secondary);
-  user-select: none;
+	position: relative;
+	display: flex;
+	align-items: center;
+	height: var(--wo-prese-statusbar-height);
+	padding: 0 2px 0;
+	z-index: 500;
+	background-color: var(--wo-prese-bg-statusbar);
+	border-top: 1px solid var(--wo-prese-border);
+	font-size: 12px;
+	color: var(--wo-prese-text-secondary);
+	user-select: none;
 }
 
 .prese-statusbar.no-compact {
-  height: var(--wo-prese-statusbar-height-expanded);
+	height: var(--wo-prese-statusbar-height-expanded);
 }
 
 /* Slide navigation */
 .prese-statusbar-slide-nav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 8px;
-  height: 100%;
-  flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 0 8px;
+	height: 100%;
+	flex-shrink: 0;
 }
 
 /* Page navigation */
 .prese-statusbar-page-nav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 8px;
-  height: 100%;
-  flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 0 8px;
+	height: 100%;
+	flex-shrink: 0;
 }
 
 .prese-statusbar-page-label {
-  font-size: 12px;
-  white-space: nowrap;
-  cursor: default;
-  color: var(--wo-prese-text-secondary);
+	font-size: 12px;
+	white-space: nowrap;
+	cursor: default;
+	color: var(--wo-prese-text-secondary);
 }
 
 /* Tool buttons */
 .prese-statusbar-tools {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 8px;
-  height: 100%;
-  flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 0 8px;
+	height: 100%;
+	flex-shrink: 0;
 }
 
 /* Zoom controls */
 .prese-statusbar-zoom-box {
-  position: absolute;
-  right: 0;
-  height: var(--wo-prese-statusbar-height);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 10px;
-  flex-shrink: 0;
+	position: absolute;
+	right: 0;
+	height: var(--wo-prese-statusbar-height);
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 0 10px;
+	flex-shrink: 0;
 }
 
 .prese-statusbar-no-compact .prese-statusbar-zoom-box {
-  height: var(--wo-prese-statusbar-height-expanded);
+	height: var(--wo-prese-statusbar-height-expanded);
 }
 
 /* Separator */
 .prese-statusbar-separator {
-  width: 1px;
-  height: 100%;
-  background-color: var(--wo-prese-border);
+	width: 1px;
+	height: 100%;
+	background-color: var(--wo-prese-border);
 }
 
 /* Button */
 .prese-statusbar-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 3px;
-  background: transparent;
-  color: var(--wo-prese-text-primary);
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.15s;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	border: none;
+	border-radius: 3px;
+	background: transparent;
+	color: var(--wo-prese-text-primary);
+	font-size: 14px;
+	cursor: pointer;
+	transition: background-color 0.15s;
 }
 
 .prese-statusbar-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
 }
 
 .prese-statusbar-btn.active {
-  background-color: var(--wo-prese-accent);
-  color: #ffffff;
+	background-color: var(--wo-prese-accent);
+	color: #ffffff;
 }
 
 .prese-statusbar-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
+	opacity: 0.4;
+	cursor: default;
 }
 
 /* Zoom label */
 .prese-statusbar-zoom-label {
-  display: inline-flex;
-  align-items: center;
-  padding: 0 4px;
+	display: inline-flex;
+	align-items: center;
+	padding: 0 4px;
 }
 
 .prese-statusbar-label {
-  font-size: 12px;
-  white-space: nowrap;
-  cursor: default;
+	font-size: 12px;
+	white-space: nowrap;
+	cursor: default;
 }

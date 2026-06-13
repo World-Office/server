@@ -150,13 +150,13 @@ fn test_fill_white_rect() {
     let pixels = canvas.to_rgba_bytes();
 
     // All pixels should be white
-    for i in 0..pixels.len() {
+    for (i, &pixel) in pixels.iter().enumerate() {
         let pixel_idx = i / 4;
         let channel = i % 4;
         if channel < 3 {
             // R, G, B
             assert_eq!(
-                pixels[i], 255,
+                pixel, 255,
                 "Pixel {} channel {} should be white",
                 pixel_idx, channel
             );
@@ -181,7 +181,7 @@ fn test_fill_black_rect() {
     assert_eq!(pixels[idx + 3], 255, "A should be 255");
 
     // Pixel outside filled area should still be white
-    let idx = 0;  // pixel at (0, 0)
+    let idx = 0; // pixel at (0, 0)
     assert_eq!(pixels[idx], 255, "R should be 255");
     assert_eq!(pixels[idx + 1], 255, "G should be 255");
     assert_eq!(pixels[idx + 2], 255, "B should be 255");
@@ -580,7 +580,7 @@ fn test_negative_rect_position() {
     let pixels = canvas.to_rgba_bytes();
 
     // Pixel at (0, 0) should be filled (clipped to visible area)
-    let idx = 0;  // pixel at (0, 0)
+    let idx = 0; // pixel at (0, 0)
     assert_eq!(
         pixels[idx + 1],
         255,
@@ -754,7 +754,7 @@ fn test_clear_rect() {
     assert_eq!(pixels[idx1 + 3], 0, "Cleared area should be transparent");
 
     // Outside cleared area should still be magenta
-    let idx2 = 0;  // pixel at (0, 0)
+    let idx2 = 0; // pixel at (0, 0)
     assert!(
         pixels[idx2] > 200 && pixels[idx2 + 2] > 200,
         "Outside area should be magenta"

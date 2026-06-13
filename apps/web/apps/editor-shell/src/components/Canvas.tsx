@@ -28,7 +28,10 @@ export function Canvas({ children }: CanvasProps) {
   }, [showCanvas])
 
   return (
-    <div className="canvas-container" style={{ overflow: "auto", height: "100%", backgroundColor: "#e8e8e8" }}>
+    <div
+      className="canvas-container"
+      style={{ overflow: "auto", height: "100%", backgroundColor: "#e8e8e8" }}
+    >
       {showCanvas ? (
         <div style={{ margin: "16px auto", display: "flex", justifyContent: "center" }}>
           <canvas

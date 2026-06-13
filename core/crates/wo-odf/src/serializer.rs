@@ -166,8 +166,6 @@ fn build_manifest(doc: &OdfDocument) -> String {
                 if let Some(img) = &shape.image_ref {
                     let img_path = if img.href.starts_with("Pictures/") {
                         img.href.as_str()
-                    } else if img.href.starts_with('/') {
-                        continue;
                     } else {
                         continue;
                     };
@@ -528,7 +526,11 @@ fn serialize_odp_shape(shape: &OdpShape, xml: &mut String, indent: usize) {
             }
             write!(xml, " xlink:href=\"{}\"", escape_xml(&img.href)).unwrap();
             if let Some(_ct) = &img.content_type {
-                write!(xml, " xlink:type=\"simple\" xlink:show=\"embed\" xlink:actuate=\"onLoad\"").unwrap();
+                write!(
+                    xml,
+                    " xlink:type=\"simple\" xlink:show=\"embed\" xlink:actuate=\"onLoad\""
+                )
+                .unwrap();
             }
             writeln!(xml, "/>").unwrap();
         }
@@ -538,13 +540,7 @@ fn serialize_odp_shape(shape: &OdpShape, xml: &mut String, indent: usize) {
         writeln!(xml, ">").unwrap();
         // In ODP, text in shapes goes as text:p inside
         let text_pad = " ".repeat(indent + 1);
-        writeln!(
-            xml,
-            "{}<text:p>{}</text:p>",
-            text_pad,
-            escape_xml(text)
-        )
-        .unwrap();
+        writeln!(xml, "{}<text:p>{}</text:p>", text_pad, escape_xml(text)).unwrap();
         write!(xml, "{}</{}>", pad, tag).unwrap();
     } else {
         writeln!(xml, "/>").unwrap();
@@ -575,13 +571,7 @@ fn serialize_odp_notes(notes: &str, xml: &mut String, indent: usize) {
     let pad = " ".repeat(indent);
     writeln!(xml, "{}<presentation:notes>", pad).unwrap();
     let text_pad = " ".repeat(indent + 1);
-    writeln!(
-        xml,
-        "{}<text:p>{}</text:p>",
-        text_pad,
-        escape_xml(notes)
-    )
-    .unwrap();
+    writeln!(xml, "{}<text:p>{}</text:p>", text_pad, escape_xml(notes)).unwrap();
     writeln!(xml, "{}</presentation:notes>", pad).unwrap();
 }
 
