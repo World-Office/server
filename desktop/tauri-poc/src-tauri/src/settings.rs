@@ -108,6 +108,7 @@ pub async fn save_settings(app: AppHandle, settings: AppSettings) -> Result<(), 
     Ok(())
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginSettings {
     pub plugins: Vec<String>,

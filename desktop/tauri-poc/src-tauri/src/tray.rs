@@ -32,7 +32,7 @@ pub fn create_system_tray(
 
     let tray = TrayIconBuilder::with_id("main-tray")
         .menu(&tray_menu)
-        .menu_on_left_click(true)
+        .show_menu_on_left_click(true)
         .on_menu_event(move |app, event| match event.id().as_ref() {
             "show-window" => {
                 if let Some(window) = window::get_focused_window(app) {

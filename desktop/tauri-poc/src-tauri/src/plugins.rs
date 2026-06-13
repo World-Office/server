@@ -24,6 +24,7 @@ struct PluginManifest {
     author: Option<String>,
 }
 
+#[allow(dead_code)]
 struct PluginSettings {
     plugin_dir: PathBuf,
     settings_path: PathBuf,

@@ -57,12 +57,11 @@ const ObservedSlideThumbnails = observer(
 
 				<div className="prese-slide-thumbnails-list">
 					{slides.map((slide, index) => (
-						<div
+						<button
+							type="button"
 							key={slide.id}
 							className={`prese-slide-thumb-item ${index === currentSlide ? "active" : ""}`}
 							onClick={() => presentationStore.setCurrentSlide(index)}
-							role="button"
-							tabIndex={0}
 							aria-label={`Slide ${index + 1}: ${slide.title || "Untitled"}`}
 						>
 							<div className="prese-slide-thumb-preview">
@@ -81,7 +80,7 @@ const ObservedSlideThumbnails = observer(
 							<div className="prese-slide-thumb-title">
 								{slide.title || `Slide ${index + 1}`}
 							</div>
-						</div>
+						</button>
 					))}
 				</div>
 			</div>

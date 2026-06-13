@@ -76,7 +76,7 @@ app.use(function (req, res) {
 });
 
 // ── Global error handler ──────────────────────────────────────────────
-app.use(function (err, req, res, next) {
+app.use(function (err, req, res, _next) {
   console.error('[error]', err.message || err);
   res.status(err.status || 500).render('error', {
     title: 'Error',

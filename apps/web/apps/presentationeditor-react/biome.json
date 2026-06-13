@@ -3,19 +3,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
-      "a11y": {
-        "noSvgWithoutTitle": "warn",
-        "useKeyWithClickEvents": "warn",
-        "useSemanticElements": "warn",
-        "useButtonType": "warn"
-      },
-      "suspicious": {
-        "noArrayIndexKey": "warn"
-      },
-      "style": {
-        "noNonNullAssertion": "warn"
-      }
+      "recommended": true
     }
   }
 }

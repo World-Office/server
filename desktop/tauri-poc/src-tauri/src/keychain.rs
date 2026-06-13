@@ -60,7 +60,7 @@ pub async fn delete_credential(
 
 #[tauri::command]
 pub async fn list_credentials(service: String) -> Result<Vec<CredentialEntry>, String> {
-    let service_name = format!("{}{}", SERVICE_PREFIX, service);
+    let _service_name = format!("{}{}", SERVICE_PREFIX, service);
 
     // The keyring crate doesn't have a direct "list" function
     // For now, return an empty list as this is a placeholder

@@ -75,7 +75,7 @@ function renderChartSvg(
 					const y = pad.top + li * seriesCount * itemSize + si * itemSize;
 					elements.push(
 						<rect
-							key={`bar-${li}-${si}`}
+							key={`bar-${label}-${series.name}`}
 							x={pad.left}
 							y={y}
 							width={barW}
@@ -87,7 +87,7 @@ function renderChartSvg(
 					if (si === 0) {
 						elements.push(
 							<text
-								key={`lb-${li}`}
+								key={`lb-${label}`}
 								x={pad.left - 4}
 								y={y + barH / 2 + 4}
 								textAnchor="end"
@@ -105,7 +105,7 @@ function renderChartSvg(
 					const y = pad.top + chartH - barH;
 					elements.push(
 						<rect
-							key={`col-${li}-${si}`}
+							key={`col-${label}-${series.name}`}
 							x={x}
 							y={y}
 							width={barW}
@@ -117,7 +117,7 @@ function renderChartSvg(
 					if (si === 0) {
 						elements.push(
 							<text
-								key={`lb-${li}`}
+								key={`lb-${label}`}
 								x={x + barW / 2}
 								y={pad.top + chartH + 14}
 								textAnchor="middle"
@@ -146,7 +146,7 @@ function renderChartSvg(
 				.join(" ");
 			elements.push(
 				<path
-					key={`line-${si}`}
+					key={`line-${series.name}`}
 					d={d}
 					stroke={color}
 					strokeWidth={2}
@@ -156,7 +156,7 @@ function renderChartSvg(
 			pts.forEach((p, pi) => {
 				elements.push(
 					<circle
-						key={`pt-${si}-${pi}`}
+						key={`pt-${series.name}-${chart.labels[pi]}`}
 						cx={p.x}
 						cy={p.y}
 						r={3}
@@ -169,7 +169,7 @@ function renderChartSvg(
 			const x = pad.left + (li / Math.max(pointCount - 1, 1)) * chartW;
 			elements.push(
 				<text
-					key={`lb-${li}`}
+					key={`lb-${label}`}
 					x={x}
 					y={pad.top + chartH + 14}
 					textAnchor="middle"
@@ -214,7 +214,7 @@ function renderChartSvg(
 				].join(" ");
 				elements.push(
 					<path
-						key={`pie-${si}-${vi}`}
+						key={`pie-${series.name}-${chart.labels[vi]}`}
 						d={d}
 						fill={color}
 						stroke="#fff"
@@ -226,7 +226,7 @@ function renderChartSvg(
 					const lr = radius * 0.7;
 					elements.push(
 						<text
-							key={`pv-${si}-${vi}`}
+							key={`pv-${series.name}-${chart.labels[vi]}`}
 							x={cx + lr * Math.cos(labelAngle)}
 							y={cy + lr * Math.sin(labelAngle)}
 							textAnchor="middle"
@@ -333,7 +333,10 @@ function renderConnectorSvg(
 				left: 0,
 				pointerEvents: "none",
 			}}
+			role="img"
+			aria-label="Connector"
 		>
+			<title>Connector</title>
 			<defs>
 				{connector.hasEndArrow && (
 					<marker
@@ -393,16 +396,24 @@ function renderGradientSvg(
 		const y2 = 0.5 + 0.5 * Math.sin(rad + Math.PI);
 		return (
 			<linearGradient id={gradId} x1={x1} y1={y1} x2={x2} y2={y2}>
-				{gradient.stops.map((s, i) => (
-					<stop key={i} offset={`${s.position * 100}%`} stopColor={s.color} />
+				{gradient.stops.map((s) => (
+					<stop
+						key={`stop-${s.position}-${s.color}`}
+						offset={`${s.position * 100}%`}
+						stopColor={s.color}
+					/>
 				))}
 			</linearGradient>
 		);
 	}
 	return (
 		<radialGradient id={gradId}>
-			{gradient.stops.map((s, i) => (
-				<stop key={i} offset={`${s.position * 100}%`} stopColor={s.color} />
+			{gradient.stops.map((s) => (
+				<stop
+					key={`stop-${s.position}-${s.color}`}
+					offset={`${s.position * 100}%`}
+					stopColor={s.color}
+				/>
 			))}
 		</radialGradient>
 	);
@@ -461,7 +472,13 @@ function renderPresenterShape(
 		const chartSvg = renderChartSvg(shape.chart, shape.width, shape.height);
 		return (
 			<div key={shape.id} style={wrapperStyle}>
-				<svg width={shape.width} height={shape.height}>
+				<svg
+					width={shape.width}
+					height={shape.height}
+					role="img"
+					aria-label="Chart"
+				>
+					<title>Chart</title>
 					{chartSvg}
 				</svg>
 			</div>
@@ -472,7 +489,13 @@ function renderPresenterShape(
 		const tableSvg = renderTableSvg(shape.table, shape.width, shape.height);
 		return (
 			<div key={shape.id} style={wrapperStyle}>
-				<svg width={shape.width} height={shape.height}>
+				<svg
+					width={shape.width}
+					height={shape.height}
+					role="img"
+					aria-label="Table"
+				>
+					<title>Table</title>
 					{tableSvg}
 				</svg>
 			</div>
@@ -483,7 +506,13 @@ function renderPresenterShape(
 		case "rect":
 			return (
 				<div key={shape.id} style={wrapperStyle}>
-					<svg width={shape.width} height={shape.height}>
+					<svg
+						width={shape.width}
+						height={shape.height}
+						role="img"
+						aria-label="Rectangle"
+					>
+						<title>Rectangle</title>
 						<rect
 							x={0}
 							y={0}
@@ -513,7 +542,13 @@ function renderPresenterShape(
 		case "roundedRect":
 			return (
 				<div key={shape.id} style={wrapperStyle}>
-					<svg width={shape.width} height={shape.height}>
+					<svg
+						width={shape.width}
+						height={shape.height}
+						role="img"
+						aria-label="Rounded Rectangle"
+					>
+						<title>Rounded Rectangle</title>
 						<rect
 							x={0}
 							y={0}
@@ -543,7 +578,13 @@ function renderPresenterShape(
 		case "ellipse":
 			return (
 				<div key={shape.id} style={wrapperStyle}>
-					<svg width={shape.width} height={shape.height}>
+					<svg
+						width={shape.width}
+						height={shape.height}
+						role="img"
+						aria-label="Ellipse"
+					>
+						<title>Ellipse</title>
 						<ellipse
 							cx={shape.width / 2}
 							cy={shape.height / 2}
@@ -572,7 +613,13 @@ function renderPresenterShape(
 		case "triangle":
 			return (
 				<div key={shape.id} style={wrapperStyle}>
-					<svg width={shape.width} height={shape.height}>
+					<svg
+						width={shape.width}
+						height={shape.height}
+						role="img"
+						aria-label="Triangle"
+					>
+						<title>Triangle</title>
 						<polygon
 							points={`${shape.width / 2},0 ${shape.width},${shape.height} 0,${shape.height}`}
 							fill={fillValue}
@@ -598,7 +645,13 @@ function renderPresenterShape(
 		case "diamond":
 			return (
 				<div key={shape.id} style={wrapperStyle}>
-					<svg width={shape.width} height={shape.height}>
+					<svg
+						width={shape.width}
+						height={shape.height}
+						role="img"
+						aria-label="Diamond"
+					>
+						<title>Diamond</title>
 						<polygon
 							points={`${shape.width / 2},0 ${shape.width},${shape.height / 2} ${shape.width / 2},${shape.height} 0,${shape.height / 2}`}
 							fill={fillValue}
@@ -624,7 +677,13 @@ function renderPresenterShape(
 		case "line":
 			return (
 				<div key={shape.id} style={wrapperStyle}>
-					<svg width={shape.width} height={shape.height}>
+					<svg
+						width={shape.width}
+						height={shape.height}
+						role="img"
+						aria-label="Line"
+					>
+						<title>Line</title>
 						<line
 							x1={0}
 							y1={0}
@@ -640,7 +699,13 @@ function renderPresenterShape(
 		case "arrow":
 			return (
 				<div key={shape.id} style={wrapperStyle}>
-					<svg width={shape.width} height={shape.height}>
+					<svg
+						width={shape.width}
+						height={shape.height}
+						role="img"
+						aria-label="Arrow"
+					>
+						<title>Arrow</title>
 						<defs>
 							<marker
 								id={`parrow-${shape.id}`}
@@ -737,7 +802,7 @@ const ObservedSlidePresenter = observer(
 			if (isPresenting && containerRef.current) {
 				containerRef.current.focus();
 			}
-		}, [presentStep, isPresenting]);
+		}, [isPresenting]);
 
 		if (!isPresenting) return <></>;
 
@@ -851,7 +916,10 @@ const ObservedSlidePresenter = observer(
 								pointerEvents: "none",
 								zIndex: 1,
 							}}
+							role="img"
+							aria-label="Shape gradients and shadows"
 						>
+							<title>Shape gradients and shadows</title>
 							<defs>{svgDefs}</defs>
 						</svg>
 
@@ -888,6 +956,7 @@ const ObservedSlidePresenter = observer(
 				<div className="prese-presenter-controls">
 					<div className="prese-presenter-timer">{timeStr}</div>
 					<button
+						type="button"
 						className="prese-presenter-btn"
 						onClick={prevSlide}
 						disabled={presentStep === 0}
@@ -898,6 +967,7 @@ const ObservedSlidePresenter = observer(
 						{presentStep + 1} / {slides.length}
 					</span>
 					<button
+						type="button"
 						className="prese-presenter-btn"
 						onClick={nextSlide}
 						disabled={presentStep >= slides.length - 1}
@@ -905,6 +975,7 @@ const ObservedSlidePresenter = observer(
 						Next ▶
 					</button>
 					<button
+						type="button"
 						className="prese-presenter-btn prese-presenter-btn-esc"
 						onClick={endPresentation}
 					>

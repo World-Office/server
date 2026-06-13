@@ -95,7 +95,10 @@ const ObservedTablePicker = observer(function ObservedTablePicker() {
 							const active = col < hoverCols && row < hoverRows;
 							return (
 								<div
-									key={i}
+									key={`${row}-${col}`}
+									role="button"
+									tabIndex={0}
+									aria-label={`Insert ${row + 1} by ${col + 1} table`}
 									style={{
 										width: "16px",
 										height: "16px",
@@ -108,6 +111,12 @@ const ObservedTablePicker = observer(function ObservedTablePicker() {
 										setHoverRows(row + 1);
 									}}
 									onClick={() => insertTable(row + 1, col + 1)}
+									onKeyDown={(e) => {
+										if (e.key === "Enter" || e.key === " ") {
+											e.preventDefault();
+											insertTable(row + 1, col + 1);
+										}
+									}}
 								/>
 							);
 						})}

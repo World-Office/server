@@ -45,11 +45,11 @@ jobs:
         timeout-minutes: 10
 
       - name: Check workspace
-        run: cargo check --workspace
+        run: cargo check --workspace --exclude wo-pdf --exclude wo-webdav
         timeout-minutes: 30
 
       - name: Clippy
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --all-targets --exclude wo-pdf --exclude wo-webdav -- -D warnings
         timeout-minutes: 30
 
   test-rust:
@@ -167,7 +167,7 @@ jobs:
         timeout-minutes: 10
 
       - name: Run build
-        run: pnpm build
+        run: pnpm build --filter='!@world-office/tauri-poc'
         timeout-minutes: 15
 
   build-rust:

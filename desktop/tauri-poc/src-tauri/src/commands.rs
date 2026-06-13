@@ -3,7 +3,7 @@ use crate::window;
 use tauri::{AppHandle, Manager, PhysicalPosition, State, WebviewUrl, WebviewWindowBuilder};
 
 #[tauri::command]
-pub fn new_doc(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+pub fn new_doc(app: AppHandle, _state: State<'_, AppState>) -> Result<(), String> {
     window::create_new_document_window(&app).map_err(|e| e.to_string())
 }
 
@@ -42,10 +42,10 @@ pub fn open_doc(app: AppHandle, _state: State<'_, AppState>, path: String) -> Re
 
 #[tauri::command]
 pub fn save_doc(
-    app: AppHandle,
+    _app: AppHandle,
     state: State<'_, AppState>,
     path: Option<String>,
-    content: String,
+    _content: String,
 ) -> Result<(), String> {
     // In a real app, you would write the content to disk
     if let Some(path) = path {
@@ -55,7 +55,7 @@ pub fn save_doc(
 }
 
 #[tauri::command]
-pub fn close_doc(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
+pub fn close_doc(app: AppHandle, _state: State<'_, AppState>) -> Result<(), String> {
     let label = window::get_focused_window(&app)
         .as_ref()
         .map(|w| w.label().to_string());
