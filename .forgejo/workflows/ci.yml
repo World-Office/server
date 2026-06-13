@@ -49,7 +49,7 @@ jobs:
         timeout-minutes: 30
 
       - name: Clippy
-        run: cargo clippy --all-targets --exclude wo-pdf --exclude wo-webdav -- -D warnings
+        run: cargo clippy --workspace --all-targets --exclude wo-pdf --exclude wo-webdav -- -D warnings
         timeout-minutes: 30
 
   test-rust:
@@ -198,5 +198,5 @@ jobs:
         timeout-minutes: 5
 
       - name: Check all targets
-        run: cargo check --all-targets --exclude wo-pdf --exclude wo-webdav
+        run: cargo check --workspace --all-targets --exclude wo-pdf --exclude wo-webdav
         timeout-minutes: 30
