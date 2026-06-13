@@ -5,7 +5,7 @@
  * Migrated from: apps/web/apps/common/main/lib/controller/Themes.js
  */
 
-import { notificationCenter, type ControllerEvents } from "../core/event-bus"
+import { type ControllerEvents, notificationCenter } from "../core/event-bus"
 import * as desktop from "./desktop"
 
 // ---------------------------------------------------------------------------
@@ -578,7 +578,9 @@ function applyTheme(id: string): void {
   document.body.classList.add(themeId, `theme-type-${themeRecord.type}`)
 
   // Handle icon base URL and classes
-  let iconsBaseUrl = getComputedStyle(document.body).getPropertyValue("--sprite-button-icons-base-url")
+  let iconsBaseUrl = getComputedStyle(document.body).getPropertyValue(
+    "--sprite-button-icons-base-url",
+  )
   if (themeRecord.icons) {
     if (themeRecord.icons.basepath) {
       iconsBaseUrl = themeRecord.icons.basepath
@@ -713,8 +715,7 @@ export function init(editorApi: {
   api.asc_setSkin(skinObj)
 
   // Set initial content dark mode
-  const isContentDark =
-    themesMap[themeId]?.type === "dark" && ut.iscontentdark
+  const isContentDark = themesMap[themeId]?.type === "dark" && ut.iscontentdark
   if (api.asc_setContentDarkMode) {
     api.asc_setContentDarkMode(isContentDark)
   }

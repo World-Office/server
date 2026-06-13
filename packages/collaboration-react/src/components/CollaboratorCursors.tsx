@@ -14,7 +14,10 @@ export function CollaboratorCursors({
   if (cursors.size === 0) return null
 
   return (
-    <div className={`wo-collaborator-cursors ${className ?? ""}`} style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}>
+    <div
+      className={`wo-collaborator-cursors ${className ?? ""}`}
+      style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden" }}
+    >
       {Array.from(cursors.entries()).map(([userId, cursor]) => {
         const color = userColors.get(userId) ?? "#999"
         const name = userNames.get(userId) ?? "Unknown"
@@ -32,7 +35,15 @@ export function CollaboratorCursors({
             }}
           >
             {/* Cursor caret */}
-            <svg width="16" height="20" viewBox="0 0 16 20" fill="none" style={{ display: "block" }}>
+            <svg
+              width="16"
+              height="20"
+              viewBox="0 0 16 20"
+              fill="none"
+              aria-label={`${name} cursor`}
+              role="img"
+              style={{ display: "block" }}
+            >
               <path d="M0 0L16 12L8 12L4 20L0 0Z" fill={color} />
             </svg>
             {/* Name label */}

@@ -48,10 +48,10 @@ use wo_odf::model::{
 use wo_odf::OdfSerializer;
 use wo_ooxml::model::{
     AdvanceMode, AnimationData as OoxmlAnimData, Bounds, ConnectorShape, ConnectorShapeType,
-    CoreProperties, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun,
-    DocxTable, DocxTableCell, DocxTableRow, Fill, OoxmlDocument, OoxmlFormat, PictureShape,
-    PptxPresentation, Slide, SlideShape, SlideSize, SlideTransition, TextBody as OoxmlTextBody,
-    TextBoxShape, TransitionEffect, UnderlineType,
+    CoreProperties, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, DocxTable,
+    DocxTableCell, DocxTableRow, Fill, OoxmlDocument, OoxmlFormat, PictureShape, PptxPresentation,
+    Slide, SlideShape, SlideSize, SlideTransition, TextBody as OoxmlTextBody, TextBoxShape,
+    TransitionEffect, UnderlineType,
 };
 use wo_ooxml::{OoxmlParser, OoxmlSerializer};
 
@@ -5296,11 +5296,9 @@ fn parse_data_url(url: &str) -> (String, Vec<u8>) {
             } else {
                 "png" // fallback
             };
-            let decoded = base64::Engine::decode(
-                &base64::engine::general_purpose::STANDARD,
-                b64_data,
-            )
-            .unwrap_or_default();
+            let decoded =
+                base64::Engine::decode(&base64::engine::general_purpose::STANDARD, b64_data)
+                    .unwrap_or_default();
             return (ext.to_string(), decoded);
         }
     }
@@ -5316,10 +5314,7 @@ fn encode_data_url(ext: &str, data: &[u8]) -> String {
         "webp" => "image/webp",
         _ => "image/png",
     };
-    let b64 = base64::Engine::encode(
-        &base64::engine::general_purpose::STANDARD,
-        data,
-    );
+    let b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, data);
     format!("data:{};base64,{}", mime, b64)
 }
 
@@ -5351,7 +5346,9 @@ fn wo_shape_to_slide_shape(
             SlideShape::Picture(PictureShape {
                 id: shape.id.clone(),
                 bounds,
-                name: shape.image_data.as_ref()
+                name: shape
+                    .image_data
+                    .as_ref()
                     .and_then(|img| img.alt.clone())
                     .unwrap_or_else(|| "Image".to_string()),
                 image_extension,
@@ -5360,23 +5357,18 @@ fn wo_shape_to_slide_shape(
             })
         }
         "line" | "arrow" | "connector" => {
-            let ctype = if shape.shape_type == "connector" {
-                ConnectorShapeType::Straight
-            } else {
-                ConnectorShapeType::Straight
-            };
+            let ctype = ConnectorShapeType::Straight;
             SlideShape::Connector(ConnectorShape {
                 id: shape.id.clone(),
                 bounds,
                 connector_type: ctype,
-                line_width: shape
-                    .stroke_width
-                    .map(|w| px_to_emu(w, cw, slide_size.cx)),
+                line_width: shape.stroke_width.map(|w| px_to_emu(w, cw, slide_size.cx)),
                 has_start_arrow: shape.shape_type == "arrow",
                 has_end_arrow: shape.shape_type == "arrow" || shape.shape_type == "line",
-                fill: shape.fill_color.as_ref().map(|c| {
-                    Fill::Solid(c.trim_start_matches('#').to_string())
-                }),
+                fill: shape
+                    .fill_color
+                    .as_ref()
+                    .map(|c| Fill::Solid(c.trim_start_matches('#').to_string())),
                 effect: None,
             })
         }
@@ -5390,7 +5382,10 @@ fn wo_shape_to_slide_shape(
                         runs: vec![DocxRun {
                             text: text.clone(),
                             font_size: shape.font_size.map(|fs| (fs * 100.0) as u32),
-                            color: shape.font_color.as_ref().map(|fc| fc.trim_start_matches('#').to_string()),
+                            color: shape
+                                .font_color
+                                .as_ref()
+                                .map(|fc| fc.trim_start_matches('#').to_string()),
                             ..DocxRun::default()
                         }],
                     }],
@@ -5405,9 +5400,10 @@ fn wo_shape_to_slide_shape(
                 }
             };
 
-            let fill = shape.fill_color.as_ref().map(|c| {
-                Fill::Solid(c.trim_start_matches('#').to_string())
-            });
+            let fill = shape
+                .fill_color
+                .as_ref()
+                .map(|c| Fill::Solid(c.trim_start_matches('#').to_string()));
 
             SlideShape::TextBox(TextBoxShape {
                 id: shape.id.clone(),
@@ -5429,8 +5425,19 @@ fn slide_shape_to_wo_shape(
     let cw = CANVAS_WIDTH;
     let ch = canvas_height(slide_size_name);
 
-    let (id, bounds, shape_type, fill_color, text, font_size, font_color, stroke_width,
-         _has_arrow_start, _has_arrow_end, image_data) = match shape {
+    let (
+        id,
+        bounds,
+        shape_type,
+        fill_color,
+        text,
+        font_size,
+        font_color,
+        stroke_width,
+        _has_arrow_start,
+        _has_arrow_end,
+        image_data,
+    ) = match shape {
         SlideShape::TextBox(tb) => {
             let (txt, fs, fc) = extract_text_info(&tb.text_body);
             (
@@ -5474,8 +5481,10 @@ fn slide_shape_to_wo_shape(
             )
         }
         SlideShape::Placeholder(ph) => {
-            let (txt, fs, fc) = ph.text_body.as_ref()
-                .map(|tb| extract_text_info(tb))
+            let (txt, fs, fc) = ph
+                .text_body
+                .as_ref()
+                .map(extract_text_info)
                 .unwrap_or((None, None, None));
             (
                 ph.id.clone(),
@@ -5525,7 +5534,11 @@ fn slide_shape_to_wo_shape(
                 table.bounds,
                 "textbox".to_string(),
                 None,
-                Some(format!("<table> {} cols, {} rows", table.columns.len(), table.rows.len())),
+                Some(format!(
+                    "<table> {} cols, {} rows",
+                    table.columns.len(),
+                    table.rows.len()
+                )),
                 None,
                 None,
                 None,
@@ -5561,9 +5574,7 @@ fn slide_shape_to_wo_shape(
 }
 
 /// Extract text info from an OOXML TextBody.
-fn extract_text_info(
-    tb: &OoxmlTextBody,
-) -> (Option<String>, Option<f64>, Option<String>) {
+fn extract_text_info(tb: &OoxmlTextBody) -> (Option<String>, Option<f64>, Option<String>) {
     let mut text_parts: Vec<&str> = Vec::new();
     let mut font_size: Option<f64> = None;
     let mut font_color: Option<String> = None;
@@ -5577,10 +5588,7 @@ fn extract_text_info(
                 font_size = run.font_size.map(|s| s as f64 / 100.0);
             }
             if font_color.is_none() {
-                font_color = run
-                    .color
-                    .as_ref()
-                    .map(|c| format!("#{}", c));
+                font_color = run.color.as_ref().map(|c| format!("#{}", c));
             }
         }
     }
@@ -5664,16 +5672,14 @@ impl FormatConverter for WoPresentationToPptxConverter {
                     .map(|s| wo_shape_to_slide_shape(s, &slide_size, slide_size_name))
                     .collect();
 
-                let transition = ws.transition_effect.as_ref().map(|eff| {
-                    SlideTransition {
-                        effect: wo_transition_to_ooxml(eff),
-                        duration: ws.transition_duration.unwrap_or(0.5),
-                        advance_mode: match ws.advance_mode.as_deref() {
-                            Some("timed") => AdvanceMode::Timed,
-                            _ => AdvanceMode::Manual,
-                        },
-                        advance_timing: ws.advance_timing.unwrap_or(0.0),
-                    }
+                let transition = ws.transition_effect.as_ref().map(|eff| SlideTransition {
+                    effect: wo_transition_to_ooxml(eff),
+                    duration: ws.transition_duration.unwrap_or(0.5),
+                    advance_mode: match ws.advance_mode.as_deref() {
+                        Some("timed") => AdvanceMode::Timed,
+                        _ => AdvanceMode::Manual,
+                    },
+                    advance_timing: ws.advance_timing.unwrap_or(0.0),
                 });
 
                 let animations: Vec<OoxmlAnimData> = ws
@@ -5742,9 +5748,7 @@ impl FormatConverter for PptxToWoPresentationConverter {
         let pptx = parser
             .parse_pptx(&mut archive)
             .map_err(|e| ConversionError::Parse(e.to_string()))?
-            .ok_or_else(|| {
-                ConversionError::Parse("Not a valid PPTX file".to_string())
-            })?;
+            .ok_or_else(|| ConversionError::Parse("Not a valid PPTX file".to_string()))?;
 
         let slide_size_name = if pptx.slide_size.cx <= 10000000 {
             "standard"
@@ -5762,26 +5766,25 @@ impl FormatConverter for PptxToWoPresentationConverter {
                     .map(|s| slide_shape_to_wo_shape(s, &pptx.slide_size, slide_size_name))
                     .collect();
 
-                let (transition_effect, transition_duration, advance_mode, advance_timing) =
-                    slide.transition.as_ref().map_or(
-                        (None, None, None, None),
-                        |t| {
-                            let eff = ooxml_transition_to_wo(&t.effect);
-                            (
-                                Some(eff),
-                                Some(t.duration),
-                                match t.advance_mode {
-                                    AdvanceMode::Timed => Some("timed".to_string()),
-                                    AdvanceMode::Manual => Some("click".to_string()),
-                                },
-                                if t.advance_timing > 0.0 {
-                                    Some(t.advance_timing)
-                                } else {
-                                    None
-                                },
-                            )
-                        },
-                    );
+                let (transition_effect, transition_duration, advance_mode, advance_timing) = slide
+                    .transition
+                    .as_ref()
+                    .map_or((None, None, None, None), |t| {
+                        let eff = ooxml_transition_to_wo(&t.effect);
+                        (
+                            Some(eff),
+                            Some(t.duration),
+                            match t.advance_mode {
+                                AdvanceMode::Timed => Some("timed".to_string()),
+                                AdvanceMode::Manual => Some("click".to_string()),
+                            },
+                            if t.advance_timing > 0.0 {
+                                Some(t.advance_timing)
+                            } else {
+                                None
+                            },
+                        )
+                    });
 
                 let animations: Vec<WoAnimationData> = slide
                     .animations
@@ -5821,16 +5824,15 @@ impl FormatConverter for PptxToWoPresentationConverter {
             slides,
         };
 
-        serde_json::to_vec_pretty(&wo)
-            .map_err(|e| ConversionError::Serialize(e.to_string()))
+        serde_json::to_vec_pretty(&wo).map_err(|e| ConversionError::Serialize(e.to_string()))
     }
 }
 
 // ── ODP Converters ─────────────────────────────────────────────────
 
 use wo_odf::model::{
-    OdpImageRef, OdpShape, OdpShapeType, OdpTransition, OdfContent as OdpContent,
-    OdfDocument as OdpDocument, OdfType as OdpType, OdfMetadata as OdpMetadata,
+    OdfContent as OdpContent, OdfDocument as OdpDocument, OdfMetadata as OdpMetadata,
+    OdfType as OdpType, OdpImageRef, OdpShape, OdpShapeType, OdpTransition,
     PresentationSlide as OdpPresentationSlide,
 };
 
@@ -5907,9 +5909,9 @@ impl FormatConverter for OdpToWoPresentationConverter {
             }
         };
 
-        let is_widescreen = odf_slides.first().map_or(false, |s| {
+        let is_widescreen = odf_slides.first().is_some_and(|s| {
             // Heuristic: if first slide's y coordinates suggest 16:9
-            s.shapes.first().map_or(false, |sh| {
+            s.shapes.first().is_some_and(|sh| {
                 let y_cm = parse_cm(&sh.y);
                 y_cm > 0.0 && y_cm < 14.0 // widescreen typically has smaller y values
             })
@@ -5922,20 +5924,27 @@ impl FormatConverter for OdpToWoPresentationConverter {
 
         let wo = WoPresentation {
             version: 3,
-            slide_size: if is_widescreen { "widescreen".to_string() } else { "standard".to_string() },
+            slide_size: if is_widescreen {
+                "widescreen".to_string()
+            } else {
+                "standard".to_string()
+            },
             theme_type: "builtin".to_string(),
             theme: None,
             slides,
         };
 
-        serde_json::to_vec_pretty(&wo)
-            .map_err(|e| ConversionError::Serialize(e.to_string()))
+        serde_json::to_vec_pretty(&wo).map_err(|e| ConversionError::Serialize(e.to_string()))
     }
 }
 
 // ── ODP Conversion Helpers ─────────────────────────────────────────
 
-fn wo_slide_to_odp_slide(ws: &WoSlide, slide_idx: usize, is_widescreen: bool) -> OdpPresentationSlide {
+fn wo_slide_to_odp_slide(
+    ws: &WoSlide,
+    slide_idx: usize,
+    is_widescreen: bool,
+) -> OdpPresentationSlide {
     let shapes: Vec<OdpShape> = ws
         .shapes
         .iter()
@@ -5945,13 +5954,19 @@ fn wo_slide_to_odp_slide(ws: &WoSlide, slide_idx: usize, is_widescreen: bool) ->
 
     let transition = ws.transition_effect.as_ref().map(|eff| OdpTransition {
         type_name: Some(eff.clone()),
-        duration: ws.transition_duration.map(|d| format!("{}ms", (d * 1000.0) as u32)),
+        duration: ws
+            .transition_duration
+            .map(|d| format!("{}ms", (d * 1000.0) as u32)),
         direction: None,
         speed: None,
     });
 
     OdpPresentationSlide {
-        name: Some(if ws.title.is_empty() { format!("Slide {}", slide_idx + 1) } else { ws.title.clone() }),
+        name: Some(if ws.title.is_empty() {
+            format!("Slide {}", slide_idx + 1)
+        } else {
+            ws.title.clone()
+        }),
         text_content: String::new(),
         notes: ws.notes.clone(),
         shapes,
@@ -6021,16 +6036,17 @@ fn odf_slide_to_wo_slide(slide: &OdpPresentationSlide, is_widescreen: bool) -> W
         .map(|s| odp_shape_to_wo_shape(s, is_widescreen))
         .collect();
 
-    let (transition_effect, transition_duration) = slide.transition.as_ref().map_or(
-        (None, None),
-        |t| {
+    let (transition_effect, transition_duration) =
+        slide.transition.as_ref().map_or((None, None), |t| {
             let eff = t.type_name.clone();
             let dur = t.duration.as_ref().and_then(|d| {
-                d.trim_end_matches("ms").parse::<f64>().ok().map(|ms| ms / 1000.0)
+                d.trim_end_matches("ms")
+                    .parse::<f64>()
+                    .ok()
+                    .map(|ms| ms / 1000.0)
             });
             (eff, dur)
-        },
-    );
+        });
 
     WoSlide {
         id: slide.name.clone().unwrap_or_default(),
@@ -6070,10 +6086,9 @@ fn odp_shape_to_wo_shape(s: &OdpShape, is_widescreen: bool) -> WoShapeData {
     });
 
     let image_data = s.image_ref.as_ref().map(|img| {
-        let data_url = img.data.as_ref().map_or_else(
-            || String::new(),
-            |raw| bytes_to_data_url(raw, img.content_type.as_deref().unwrap_or("image/png")),
-        );
+        let data_url = img.data.as_ref().map_or_else(String::new, |raw| {
+            bytes_to_data_url(raw, img.content_type.as_deref().unwrap_or("image/png"))
+        });
         WoImageData {
             src: data_url,
             alt: img.name.clone(),
@@ -6091,9 +6106,10 @@ fn odp_shape_to_wo_shape(s: &OdpShape, is_widescreen: bool) -> WoShapeData {
         z_index: s.z_index.unwrap_or(0),
         fill_color: s.fill_color.clone(),
         stroke_color: s.stroke_color.clone(),
-        stroke_width: s.stroke_width.as_ref().and_then(|w| {
-            w.trim_end_matches("pt").parse::<f64>().ok()
-        }),
+        stroke_width: s
+            .stroke_width
+            .as_ref()
+            .and_then(|w| w.trim_end_matches("pt").parse::<f64>().ok()),
         text: s.text_content.clone(),
         font_size: None,
         font_color: None,
@@ -6118,10 +6134,18 @@ fn px_to_cm_x(px: f64) -> String {
     format!("{:.4}cm", px * PX_TO_CM_X)
 }
 fn px_to_cm_y(px: f64, ws: bool) -> String {
-    if ws { format!("{:.4}cm", px * PX_TO_CM_H_16_9) } else { format!("{:.4}cm", px * PX_TO_CM_H_4_3) }
+    if ws {
+        format!("{:.4}cm", px * PX_TO_CM_H_16_9)
+    } else {
+        format!("{:.4}cm", px * PX_TO_CM_H_4_3)
+    }
 }
-fn px_to_cm_w(px: f64) -> String { px_to_cm_x(px) }
-fn px_to_cm_h(px: f64, ws: bool) -> String { px_to_cm_y(px, ws) }
+fn px_to_cm_w(px: f64) -> String {
+    px_to_cm_x(px)
+}
+fn px_to_cm_h(px: f64, ws: bool) -> String {
+    px_to_cm_y(px, ws)
+}
 
 fn parse_cm(s: &str) -> f64 {
     s.trim_end_matches("cm").trim().parse().unwrap_or(0.0)
@@ -6132,10 +6156,18 @@ fn cm_str_to_px_x(cm_str: &str) -> f64 {
 }
 fn cm_str_to_px_y(cm_str: &str, ws: bool) -> f64 {
     let cm = parse_cm(cm_str);
-    if ws { cm / PX_TO_CM_H_16_9 } else { cm / PX_TO_CM_H_4_3 }
+    if ws {
+        cm / PX_TO_CM_H_16_9
+    } else {
+        cm / PX_TO_CM_H_4_3
+    }
 }
-fn cm_str_to_px_w(cm_str: &str) -> f64 { cm_str_to_px_x(cm_str) }
-fn cm_str_to_px_h(cm_str: &str, ws: bool) -> f64 { cm_str_to_px_y(cm_str, ws) }
+fn cm_str_to_px_w(cm_str: &str) -> f64 {
+    cm_str_to_px_x(cm_str)
+}
+fn cm_str_to_px_h(cm_str: &str, ws: bool) -> f64 {
+    cm_str_to_px_y(cm_str, ws)
+}
 
 // ── Image Data URL Helpers ──────────────────────────────────────────
 
@@ -6153,10 +6185,9 @@ fn data_url_to_bytes(data_url: &str) -> (Option<Vec<u8>>, String) {
                 "image/webp" => "webp",
                 _ => "png",
             };
-            if let Ok(decoded) = base64::Engine::decode(
-                &base64::engine::general_purpose::STANDARD,
-                parts[1],
-            ) {
+            if let Ok(decoded) =
+                base64::Engine::decode(&base64::engine::general_purpose::STANDARD, parts[1])
+            {
                 return (Some(decoded), ext.to_string());
             }
         }
@@ -6165,10 +6196,7 @@ fn data_url_to_bytes(data_url: &str) -> (Option<Vec<u8>>, String) {
 }
 
 fn bytes_to_data_url(data: &[u8], content_type: &str) -> String {
-    let b64 = base64::Engine::encode(
-        &base64::engine::general_purpose::STANDARD,
-        data,
-    );
+    let b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, data);
     format!("data:{};base64,{}", content_type, b64)
 }
 

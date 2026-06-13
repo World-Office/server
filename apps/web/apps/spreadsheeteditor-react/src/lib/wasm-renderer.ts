@@ -157,12 +157,22 @@ function drawSheet(): void {
   // Header border (thicker)
   ctx.strokeStyle = "#b0b0b0"
   ctx.lineWidth = 1
-  ctx.strokeRect(0, 0, HEADER_WIDTH + TOTAL_COLS * CELL_WIDTH, HEADER_HEIGHT + TOTAL_ROWS * CELL_HEIGHT)
+  ctx.strokeRect(
+    0,
+    0,
+    HEADER_WIDTH + TOTAL_COLS * CELL_WIDTH,
+    HEADER_HEIGHT + TOTAL_ROWS * CELL_HEIGHT,
+  )
 
   // Active cell highlight (B2)
   ctx.strokeStyle = "#4285f4"
   ctx.lineWidth = 2
-  ctx.strokeRect(HEADER_WIDTH + 1 * CELL_WIDTH, HEADER_HEIGHT + 1 * CELL_HEIGHT, CELL_WIDTH, CELL_HEIGHT)
+  ctx.strokeRect(
+    HEADER_WIDTH + 1 * CELL_WIDTH,
+    HEADER_HEIGHT + 1 * CELL_HEIGHT,
+    CELL_WIDTH,
+    CELL_HEIGHT,
+  )
 
   // Selection range highlight (B2:D4)
   ctx.fillStyle = "rgba(66, 133, 244, 0.08)"

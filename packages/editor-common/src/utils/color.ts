@@ -36,8 +36,8 @@ export class RGBColor {
         process: (bits: RegExpExecArray) => {
           const rgb: { r: number; g: number; b: number } = { r: 0, g: 0, b: 0 }
           const h = Math.round(Number.parseFloat(bits[1]))
-          const s = Math.round(Number.parseFloat(bits[2]) * 255 / 100)
-          const v = Math.round(Number.parseFloat(bits[3]) * 255 / 100)
+          const s = Math.round((Number.parseFloat(bits[2]) * 255) / 100)
+          const v = Math.round((Number.parseFloat(bits[3]) * 255) / 100)
           if (s === 0) {
             rgb.r = rgb.g = rgb.b = v
           } else {
@@ -45,10 +45,7 @@ export class RGBColor {
             const t2 = ((255 - s) * v) / 255
             const t3 = ((t1 - t2) * (h % 60)) / 60
 
-            if (h === 360) {
-              // biome-ignore lint/suspicious/noAssignInExpressions: HSB conversion logic
-              // biome-ignore lint/style/useCollapsedElseIf: HSB conversion logic
-            } else if (h < 60) {
+            if (h === 360 || h < 60) {
               rgb.r = t1
               rgb.b = t2
               rgb.g = t2 + t3
@@ -78,11 +75,7 @@ export class RGBColor {
               rgb.b = 0
             }
           }
-          return [
-            Math.round(rgb.r),
-            Math.round(rgb.g),
-            Math.round(rgb.b),
-          ]
+          return [Math.round(rgb.r), Math.round(rgb.g), Math.round(rgb.b)]
         },
       },
       {
@@ -198,11 +191,7 @@ export class RGBColor {
    */
   isDark(): boolean {
     return (
-      Math.sqrt(
-        0.299 * this.r * this.r +
-          0.587 * this.g * this.g +
-          0.114 * this.b * this.b,
-      ) < 140
+      Math.sqrt(0.299 * this.r * this.r + 0.587 * this.g * this.g + 0.114 * this.b * this.b) < 140
     )
   }
 }
@@ -261,7 +250,11 @@ export function hexToRgb(hexInput: string): { r: number; g: number; b: number } 
 /**
  * Convert HSB to RGB.
  */
-export function hsbToRgb(h: number, s: number, b: number): {
+export function hsbToRgb(
+  h: number,
+  s: number,
+  b: number,
+): {
   r: number
   g: number
   b: number
@@ -353,7 +346,5 @@ export function rgbToHsb(r: number, g: number, b: number): HSBColor {
  * Check if a color is dark based on RGB values.
  */
 export function isDark(r: number, g: number, b: number): boolean {
-  return (
-    Math.sqrt(0.299 * r * r + 0.587 * g * g + 0.114 * b * b) < 140
-  )
+  return Math.sqrt(0.299 * r * r + 0.587 * g * g + 0.114 * b * b) < 140
 }

@@ -760,8 +760,10 @@ mod tests {
         let engine = LayoutEngine::new(&default_config());
 
         // Create a paragraph with page_break_before
-        let mut props2 = DocxParagraphProperties::default();
-        props2.page_break_before = true;
+        let props2 = DocxParagraphProperties {
+            page_break_before: true,
+            ..Default::default()
+        };
 
         let body = DocxBody {
             paragraphs: vec![

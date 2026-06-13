@@ -131,7 +131,11 @@ pub fn render_page(
             .unwrap_or(0.0);
         let indent_first = if let Some(first) = para.properties.indent_first_line {
             Some(first as f32 / 20.0)
-        } else { para.properties.indent_hanging.map(|hanging| -(hanging as f32 / 20.0)) };
+        } else {
+            para.properties
+                .indent_hanging
+                .map(|hanging| -(hanging as f32 / 20.0))
+        };
 
         // Determine default font size from runs (half-points → points)
         let default_font_size: f32 = para

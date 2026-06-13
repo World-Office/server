@@ -511,7 +511,6 @@ ace.define("js_beautify", ["require", "exports", "module"], (require, exports, m
       return k
     }
   }
-
   ;(() => {
     function mergeOpts(allOptions, targetType) {
       var finalOpts = {}

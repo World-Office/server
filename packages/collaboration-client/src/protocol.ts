@@ -60,7 +60,12 @@ export interface ShapePayload {
 export type PresentationOperation =
   | { action: "shape_add"; slide_index: number; shape: ShapePayload }
   | { action: "shape_delete"; slide_index: number; shape_id: string }
-  | { action: "shape_modify"; slide_index: number; shape_id: string; properties: Record<string, unknown> }
+  | {
+      action: "shape_modify"
+      slide_index: number
+      shape_id: string
+      properties: Record<string, unknown>
+    }
   | { action: "shape_move"; slide_index: number; shape_id: string; x: number; y: number }
   | { action: "slide_add"; after_index: number }
   | { action: "slide_delete"; slide_index: number }
@@ -128,9 +133,9 @@ export interface CommentEventData {
 }
 
 /**
-  * Client-to-server WebSocket message envelope.
-  * Matches server WsMessage enum with serde @serde(tag = "type", rename_all = "snake_case").
-  */
+ * Client-to-server WebSocket message envelope.
+ * Matches server WsMessage enum with serde @serde(tag = "type", rename_all = "snake_case").
+ */
 export type WsMessage =
   | { type: "edit"; operation: EditOperation }
   | { type: "participant_update"; update: ParticipantUpdate }

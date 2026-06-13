@@ -56,7 +56,10 @@ export class CollaborationStore {
     this.remoteCursors.delete(userId)
   }
 
-  updateRemoteSelection(userId: string, selection: { page: number; start: number; end: number }): void {
+  updateRemoteSelection(
+    userId: string,
+    selection: { page: number; start: number; end: number },
+  ): void {
     this.remoteSelections.set(userId, selection)
   }
 

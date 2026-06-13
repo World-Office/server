@@ -1,15 +1,3 @@
-/**
- * Comments E2E Tests
- *
- * Tests the full comment lifecycle through the storage-service REST API:
- * - Creating comments with @agent mentions
- * - Listing comments with threaded replies
- * - Adding replies
- * - Resolving comments
- * - Mention discovery via /mentions/{agent_name}
- */
-"use strict"
-
 const { describe, test, expect, beforeAll } = require("@jest/globals")
 const axios = require("axios")
 const config = require("../../setup")
@@ -65,11 +53,9 @@ describe("Comments API", () => {
         author_name: "E2E User",
         text: `This needs review cc @${agentName}`,
       }
-      const response = await axios.post(
-        `${SS_URL}/documents/${documentId}/comments`,
-        body,
-        { timeout: 10000 },
-      )
+      const response = await axios.post(`${SS_URL}/documents/${documentId}/comments`, body, {
+        timeout: 10000,
+      })
       expect(response.status).toBe(201)
       expect(response.data).toHaveProperty("id")
       expect(response.data).toHaveProperty("document_id", documentId)
@@ -89,27 +75,26 @@ describe("Comments API", () => {
         author_name: "E2E User",
         text: "Just a note",
       }
-      const response = await axios.post(
-        `${SS_URL}/documents/${documentId}/comments`,
-        body,
-        { timeout: 10000 },
-      )
+      const response = await axios.post(`${SS_URL}/documents/${documentId}/comments`, body, {
+        timeout: 10000,
+      })
       expect(response.status).toBe(201)
       expect(JSON.parse(response.data.mentions)).toEqual([])
     })
 
     test("3. GET /documents/{id}/comments — list top-level comments with threaded replies", async () => {
-      const response = await axios.get(
-        `${SS_URL}/documents/${documentId}/comments`,
-        { timeout: 10000 },
-      )
+      const response = await axios.get(`${SS_URL}/documents/${documentId}/comments`, {
+        timeout: 10000,
+      })
       expect(response.status).toBe(200)
       expect(response.data).toHaveProperty("comments")
       expect(Array.isArray(response.data.comments)).toBe(true)
       expect(response.data.comments.length).toBeGreaterThanOrEqual(2)
       expect(response.data).toHaveProperty("count")
       expect(response.data.count).toBeGreaterThanOrEqual(2)
-      console.log(`📋 ${response.data.comments.length} top-level comments, total: ${response.data.count}`)
+      console.log(
+        `📋 ${response.data.comments.length} top-level comments, total: ${response.data.count}`,
+      )
     })
 
     test("4. POST /comments/{id}/replies — add a reply to the first comment", async () => {
@@ -118,11 +103,9 @@ describe("Comments API", () => {
         author_name: "Reviewer Bot",
         text: "Looks good, approved!",
       }
-      const response = await axios.post(
-        `${SS_URL}/comments/${topCommentId}/replies`,
-        body,
-        { timeout: 10000 },
-      )
+      const response = await axios.post(`${SS_URL}/comments/${topCommentId}/replies`, body, {
+        timeout: 10000,
+      })
       expect(response.status).toBe(201)
       expect(response.data.parent_id).toBe(topCommentId)
       expect(response.data.author_name).toBe("Reviewer Bot")
@@ -131,10 +114,9 @@ describe("Comments API", () => {
     })
 
     test("5. GET /documents/{id}/comments — reply appears nested under parent", async () => {
-      const response = await axios.get(
-        `${SS_URL}/documents/${documentId}/comments`,
-        { timeout: 10000 },
-      )
+      const response = await axios.get(`${SS_URL}/documents/${documentId}/comments`, {
+        timeout: 10000,
+      })
       expect(response.status).toBe(200)
       const parentComment = response.data.comments.find((c) => c.id === topCommentId)
       expect(parentComment).toBeDefined()
@@ -156,52 +138,43 @@ describe("Comments API", () => {
       console.log(`✅ Comment ${topCommentId} resolved`)
 
       // Verify it's resolved
-      const listResponse = await axios.get(
-        `${SS_URL}/documents/${documentId}/comments`,
-        { timeout: 10000 },
-      )
+      const listResponse = await axios.get(`${SS_URL}/documents/${documentId}/comments`, {
+        timeout: 10000,
+      })
       const resolvedComment = listResponse.data.comments.find((c) => c.id === topCommentId)
       expect(resolvedComment.resolved).toBe(true)
     })
 
     test("7. GET /comments/{id}/replies — verify replies are still accessible", async () => {
       // Replies to a resolved comment should still exist
-      const response = await axios.get(
-        `${SS_URL}/documents/${documentId}/comments`,
-        { timeout: 10000 },
-      )
+      const response = await axios.get(`${SS_URL}/documents/${documentId}/comments`, {
+        timeout: 10000,
+      })
       const parentComment = response.data.comments.find((c) => c.id === topCommentId)
       expect(parentComment.replies.length).toBeGreaterThanOrEqual(1)
     })
 
     test("8. GET /mentions/{agent_name} — list comments mentioning the agent", async () => {
-      const response = await axios.get(
-        `${SS_URL}/mentions/${agentName}`,
-        { timeout: 10000 },
-      )
+      const response = await axios.get(`${SS_URL}/mentions/${agentName}`, { timeout: 10000 })
       expect(response.status).toBe(200)
       expect(response.data).toHaveProperty("comments")
       expect(Array.isArray(response.data.comments)).toBe(true)
       // The comment was resolved, so it should no longer appear in unresolved mentions
       // But we can check the mention was parsed
-      console.log(`📢 Mentions for @${agentName}: ${response.data.comments.length} unresolved comments`)
+      console.log(
+        `📢 Mentions for @${agentName}: ${response.data.comments.length} unresolved comments`,
+      )
     })
 
     test("9. GET /mentions/{non_existent_agent} — returns empty array", async () => {
-      const response = await axios.get(
-        `${SS_URL}/mentions/no-one-here`,
-        { timeout: 10000 },
-      )
+      const response = await axios.get(`${SS_URL}/mentions/no-one-here`, { timeout: 10000 })
       expect(response.status).toBe(200)
       expect(response.data.comments).toEqual([])
       expect(response.data.count).toBe(0)
     })
 
     test("10. Cleanup: delete the test document", async () => {
-      const response = await axios.delete(
-        `${SS_URL}/files/${documentId}`,
-        { timeout: 10000 },
-      )
+      const response = await axios.delete(`${SS_URL}/files/${documentId}`, { timeout: 10000 })
       expect(response.status).toBe(200)
       console.log(`🗑️ Deleted test document: ${documentId}`)
     })

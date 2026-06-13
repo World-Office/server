@@ -1,5 +1,5 @@
-import { useMemo } from "react"
 import type { CollabUser } from "@world-office/editor-stores"
+import { useMemo } from "react"
 
 export interface PresenceInfo {
   users: CollabUser[]
@@ -13,10 +13,7 @@ export interface PresenceInfo {
  * Derives presence information from CollaborationStore users.
  * Pure computation — no side effects.
  */
-export function useCollaboratorPresence(
-  users: CollabUser[],
-  isConnected: boolean,
-): PresenceInfo {
+export function useCollaboratorPresence(users: CollabUser[], isConnected: boolean): PresenceInfo {
   return useMemo(() => {
     const currentUser = users.find((u) => u.isCurrentUser) ?? null
     const otherUsers = users.filter((u) => !u.isCurrentUser)

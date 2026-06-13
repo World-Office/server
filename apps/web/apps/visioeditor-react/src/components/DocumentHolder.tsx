@@ -1,7 +1,7 @@
 import { observer } from "mobx-react-lite"
 import { useEffect, useRef } from "react"
-import { visioStore } from "../stores/VisioStore"
 import { init, renderPage } from "../lib/wasm-renderer"
+import { visioStore } from "../stores/VisioStore"
 
 const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -18,15 +18,28 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
   }, [])
 
   // Re-render when page or zoom changes
+  const { currentPageIndex, zoomLevel } = visioStore
   useEffect(() => {
     if (!initialized.current) return
-    renderPage(visioStore.currentPageIndex, visioStore.zoomLevel)
-  }, [visioStore.currentPageIndex, visioStore.zoomLevel])
+    renderPage(currentPageIndex, zoomLevel)
+  }, [currentPageIndex, zoomLevel])
 
   return (
-    <div className="visio-document-holder" style={{ display: "flex", flexDirection: "column", alignItems: "center", overflow: "auto", height: "100%", backgroundColor: "#e8e8e8" }}>
+    <div
+      className="visio-document-holder"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        overflow: "auto",
+        height: "100%",
+        backgroundColor: "#e8e8e8",
+      }}
+    >
       {/* Canvas container with shadow */}
-      <div style={{ margin: "16px auto", flexShrink: 0, display: "flex", justifyContent: "center" }}>
+      <div
+        style={{ margin: "16px auto", flexShrink: 0, display: "flex", justifyContent: "center" }}
+      >
         <canvas
           ref={canvasRef}
           className="visio-document-canvas"

@@ -17,9 +17,7 @@ export async function listenForMenuEvents(
   return unlisten
 }
 
-export async function listenForUpdateEvents(
-  callback: () => void,
-): Promise<() => void> {
+export async function listenForUpdateEvents(callback: () => void): Promise<() => void> {
   if (!isDesktop()) {
     return () => {}
   }

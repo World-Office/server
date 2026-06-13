@@ -97,7 +97,7 @@ export interface ControllerEvents {
   "fonts:select": unknown
   "fonts:change": unknown
   "fonts:load": unknown
-  "sethistorydata": unknown
+  sethistorydata: unknown
   "mentions:setusers": { type: string; users: unknown[] }
   "hints:show": { visible: boolean; level?: number }
   "hints:clear": undefined

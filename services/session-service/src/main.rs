@@ -4,14 +4,14 @@
 //! and connection management for editor instances.
 
 use axum::{
+    Json, Router,
     extract::{Path, State},
     http::StatusCode,
     routing::{get, post},
-    Json, Router,
 };
 use chrono::Utc;
-use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
-use rusqlite::{params, Connection};
+use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
+use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -111,7 +111,11 @@ impl SessionRepository {
         access_token: &str,
         refresh_token: &str,
     ) -> Result<(), rusqlite::Error> {
-        let revoked = if session.state == SessionState::Revoked { 1 } else { 0 };
+        let revoked = if session.state == SessionState::Revoked {
+            1
+        } else {
+            0
+        };
         self.conn.execute(
             "INSERT INTO sessions (id, user_id, username, state, created_at, last_activity, expires_at, access_token, refresh_token, revoked, metadata)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
@@ -168,7 +172,11 @@ impl SessionRepository {
         state: &SessionState,
         last_activity: &str,
     ) -> Result<bool, rusqlite::Error> {
-        let revoked = if *state == SessionState::Revoked { 1 } else { 0 };
+        let revoked = if *state == SessionState::Revoked {
+            1
+        } else {
+            0
+        };
         let count = self.conn.execute(
             "UPDATE sessions SET state = ?1, last_activity = ?2, revoked = ?3 WHERE id = ?4",
             params![state.as_str(), last_activity, revoked, id],
@@ -178,7 +186,9 @@ impl SessionRepository {
 
     /// Delete a session by ID.
     fn delete(&self, id: &str) -> Result<bool, rusqlite::Error> {
-        let count = self.conn.execute("DELETE FROM sessions WHERE id = ?1", params![id])?;
+        let count = self
+            .conn
+            .execute("DELETE FROM sessions WHERE id = ?1", params![id])?;
         Ok(count > 0)
     }
 
@@ -369,20 +379,22 @@ async fn refresh_session(
     State(state): State<Arc<AppState>>,
     Json(payload): Json<RefreshRequest>,
 ) -> Result<Json<RefreshResponse>, (StatusCode, Json<ErrorResponse>)> {
-    use jsonwebtoken::{decode, DecodingKey, Validation};
+    use jsonwebtoken::{DecodingKey, Validation, decode};
 
     let token_data = decode::<SessionClaims>(
         &payload.refresh_token,
         &DecodingKey::from_secret(state.jwt_secret.as_bytes()),
         &Validation::new(Algorithm::HS256),
     )
-    .map_err(|_| (
-        StatusCode::UNAUTHORIZED,
-        Json(ErrorResponse {
-            error: "Invalid or expired refresh token".into(),
-            code: 401,
-        }),
-    ))?;
+    .map_err(|_| {
+        (
+            StatusCode::UNAUTHORIZED,
+            Json(ErrorResponse {
+                error: "Invalid or expired refresh token".into(),
+                code: 401,
+            }),
+        )
+    })?;
 
     let claims = token_data.claims;
 
@@ -572,15 +584,15 @@ fn app(state: Arc<AppState>) -> Router {
 async fn main() {
     tracing_subscriber::fmt::init();
 
-    let jwt_secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "dev-secret-change-in-production".into());
+    let jwt_secret =
+        std::env::var("JWT_SECRET").unwrap_or_else(|_| "dev-secret-change-in-production".into());
     let session_ttl: i64 = std::env::var("SESSION_TTL_SECONDS")
         .unwrap_or_else(|_| "86400".into())
         .parse()
         .unwrap_or(86400);
 
     let db_path = std::env::var("DATABASE_PATH").unwrap_or_else(|_| "sessions.db".into());
-    let repo = SessionRepository::new_file(&db_path)
-        .expect("failed to open session database");
+    let repo = SessionRepository::new_file(&db_path).expect("failed to open session database");
 
     let state = Arc::new(AppState {
         sessions: Arc::new(Mutex::new(repo)),
@@ -595,7 +607,12 @@ async fn main() {
         .parse()
         .unwrap_or(8005);
 
-    tracing::info!("session-service v{} starting on {}:{}", env!("CARGO_PKG_VERSION"), addr, port);
+    tracing::info!(
+        "session-service v{} starting on {}:{}",
+        env!("CARGO_PKG_VERSION"),
+        addr,
+        port
+    );
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", addr, port))
         .await
@@ -693,7 +710,8 @@ mod tests {
     fn test_persistence_across_restarts() {
         // Insert data
         let repo = fresh_repo();
-        repo.insert(&sample_session("persist-1"), "atk", "rtk").unwrap();
+        repo.insert(&sample_session("persist-1"), "atk", "rtk")
+            .unwrap();
 
         // Simulate restart: create a new in-memory repo — data won't persist in :memory:
         // but we verify the table schema works by re-initializing on same connection.
@@ -714,7 +732,8 @@ mod tests {
         // First connection: insert
         {
             let repo = SessionRepository::new_file(path_str).unwrap();
-            repo.insert(&sample_session("file-sess"), "atk", "rtk").unwrap();
+            repo.insert(&sample_session("file-sess"), "atk", "rtk")
+                .unwrap();
         }
 
         // Second connection (simulating restart): read

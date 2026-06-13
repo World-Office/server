@@ -22,7 +22,7 @@ export class BackoffStrategy {
   constructor(options: BackoffOptions = {}) {
     this.baseDelay = options.baseDelay ?? 1000
     this.maxDelay = options.maxDelay ?? 30000
-    this.maxRetries = options.maxRetries ?? Infinity
+    this.maxRetries = options.maxRetries ?? Number.POSITIVE_INFINITY
   }
 
   get retryCount(): number {
@@ -37,7 +37,7 @@ export class BackoffStrategy {
       return -1
     }
 
-    const exponential = this.baseDelay * Math.pow(2, this._retryCount)
+    const exponential = this.baseDelay * 2 ** this._retryCount
     const capped = Math.min(exponential, this.maxDelay)
 
     this._retryCount++

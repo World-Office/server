@@ -3,12 +3,10 @@
 //! This module provides the WebDavServer struct which runs an HTTP server
 //! supporting WebDAV protocol methods.
 
-use crate::handlers::{
-    delete_handler, get_handler, put_handler, WebDavState,
-};
+use crate::handlers::{delete_handler, get_handler, put_handler, WebDavState};
 use crate::storage::WebDavStorage;
 use anyhow::Result;
-use axum::{Router, routing::get};
+use axum::{routing::get, Router};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -35,12 +33,7 @@ impl<S: WebDavStorage + 'static> WebDavServer<S> {
     /// * `port` - Port to listen on
     /// * `base_dir` - Base directory for file storage
     /// * `realm` - Authentication realm
-    pub fn new(
-        host: String,
-        port: u16,
-        storage: S,
-        realm: String,
-    ) -> Result<Self, anyhow::Error> {
+    pub fn new(host: String, port: u16, storage: S, realm: String) -> Result<Self, anyhow::Error> {
         Ok(Self {
             host,
             port,
@@ -111,4 +104,3 @@ pub async fn options_handler() -> impl axum::response::IntoResponse {
         ],
     )
 }
-

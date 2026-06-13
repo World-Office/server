@@ -1,462 +1,462 @@
 /* Toolbar */
 
 .prese-toolbar {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background-color: var(--wo-prese-bg-toolbar);
-  border-bottom: 1px solid var(--wo-prese-border);
-  user-select: none;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	background-color: var(--wo-prese-bg-toolbar);
+	border-bottom: 1px solid var(--wo-prese-border);
+	user-select: none;
 }
 
 .prese-toolbar-tabs {
-  display: flex;
-  align-items: center;
-  height: 100%;
-  padding: 0 8px;
-  gap: 2px;
+	display: flex;
+	align-items: center;
+	height: 100%;
+	padding: 0 8px;
+	gap: 2px;
 }
 
 .prese-toolbar-extra-left,
 .prese-toolbar-extra-right {
-  flex: 1;
+	flex: 1;
 }
 
 .prese-toolbar-controls {
-  display: none;
-  overflow: hidden;
+	display: none;
+	overflow: hidden;
 }
 
 .prese-toolbar-static {
-  display: none;
+	display: none;
 }
 
 .prese-toolbar-panels {
-  display: none;
+	display: none;
 }
 
 /* Tab button */
 .prese-toolbar-tab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 28px;
-  padding: 0 12px;
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--wo-prese-text-secondary);
-  font-size: 12px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-  white-space: nowrap;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 28px;
+	padding: 0 12px;
+	border: none;
+	border-bottom: 2px solid transparent;
+	background: transparent;
+	color: var(--wo-prese-text-secondary);
+	font-size: 12px;
+	cursor: pointer;
+	transition: color 0.15s, border-color 0.15s;
+	white-space: nowrap;
 }
 
 .prese-toolbar-tab:hover {
-  color: var(--wo-prese-text-primary);
+	color: var(--wo-prese-text-primary);
 }
 
 .prese-toolbar-tab.active {
-  color: var(--wo-prese-accent);
-  border-bottom-color: var(--wo-prese-accent);
-  font-weight: 600;
+	color: var(--wo-prese-accent);
+	border-bottom-color: var(--wo-prese-accent);
+	font-weight: 600;
 }
 
 /* HomeTab */
 .prese-hometab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 12px 16px;
 }
 
 .prese-hometab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .prese-hometab-elset {
-  display: flex;
-  align-items: center;
+	display: flex;
+	align-items: center;
 }
 
 .prese-hometab-label {
-  font-size: 11px;
-  color: var(--wo-prese-text-secondary);
-  text-align: center;
-  margin-top: 2px;
+	font-size: 11px;
+	color: var(--wo-prese-text-secondary);
+	text-align: center;
+	margin-top: 2px;
 }
 
 .prese-hometab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-prese-border);
-  border-radius: 3px;
-  background-color: var(--wo-prese-bg-pane);
-  color: var(--wo-prese-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
+	display: inline-flex;
+	align-items: center;
+	height: 28px;
+	padding: 0 12px;
+	border: 1px solid var(--wo-prese-border);
+	border-radius: 3px;
+	background-color: var(--wo-prese-bg-pane);
+	color: var(--wo-prese-text-primary);
+	font-size: 12px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background-color 0.15s, border-color 0.15s;
 }
 
 .prese-hometab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-prese-border);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	border-color: var(--wo-prese-border);
 }
 
 .prese-hometab-btn.active {
-  background-color: var(--wo-prese-accent);
-  color: #ffffff;
-  border-color: var(--wo-prese-accent);
+	background-color: var(--wo-prese-accent);
+	color: #ffffff;
+	border-color: var(--wo-prese-accent);
 }
 
 .prese-hometab-zoom-select {
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--wo-prese-border);
-  border-radius: 3px;
-  background-color: var(--wo-prese-bg-pane);
-  font-size: 12px;
-  color: var(--wo-prese-text-primary);
-  cursor: pointer;
+	height: 28px;
+	padding: 0 8px;
+	border: 1px solid var(--wo-prese-border);
+	border-radius: 3px;
+	background-color: var(--wo-prese-bg-pane);
+	font-size: 12px;
+	color: var(--wo-prese-text-primary);
+	cursor: pointer;
 }
 
 .prese-hometab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-prese-border);
+	width: 100%;
+	height: 1px;
+	background-color: var(--wo-prese-border);
 }
 
 /* DesignTab */
 .prese-designtab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 12px 16px;
 }
 
 .prese-designtab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .prese-designtab-elset {
-  display: flex;
-  align-items: center;
+	display: flex;
+	align-items: center;
 }
 
 .prese-designtab-label {
-  font-size: 11px;
-  color: var(--wo-prese-text-secondary);
-  text-align: center;
-  margin-top: 2px;
+	font-size: 11px;
+	color: var(--wo-prese-text-secondary);
+	text-align: center;
+	margin-top: 2px;
 }
 
 .prese-designtab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-prese-border);
-  border-radius: 3px;
-  background-color: var(--wo-prese-bg-pane);
-  color: var(--wo-prese-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
+	display: inline-flex;
+	align-items: center;
+	height: 28px;
+	padding: 0 12px;
+	border: 1px solid var(--wo-prese-border);
+	border-radius: 3px;
+	background-color: var(--wo-prese-bg-pane);
+	color: var(--wo-prese-text-primary);
+	font-size: 12px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background-color 0.15s, border-color 0.15s;
 }
 
 .prese-designtab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-prese-border);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	border-color: var(--wo-prese-border);
 }
 
 .prese-designtab-btn.active {
-  background-color: var(--wo-prese-accent);
-  color: #ffffff;
-  border-color: var(--wo-prese-accent);
+	background-color: var(--wo-prese-accent);
+	color: #ffffff;
+	border-color: var(--wo-prese-accent);
 }
 
 .prese-designtab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-prese-border);
+	width: 100%;
+	height: 1px;
+	background-color: var(--wo-prese-border);
 }
 
 /* TransitionsTab */
 .prese-transitionstab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 12px 16px;
 }
 
 .prese-transitionstab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .prese-transitionstab-elset {
-  display: flex;
-  align-items: center;
+	display: flex;
+	align-items: center;
 }
 
 .prese-transitionstab-label {
-  font-size: 11px;
-  color: var(--wo-prese-text-secondary);
-  text-align: center;
-  margin-top: 2px;
+	font-size: 11px;
+	color: var(--wo-prese-text-secondary);
+	text-align: center;
+	margin-top: 2px;
 }
 
 .prese-transitionstab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-prese-border);
-  border-radius: 3px;
-  background-color: var(--wo-prese-bg-pane);
-  color: var(--wo-prese-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
+	display: inline-flex;
+	align-items: center;
+	height: 28px;
+	padding: 0 12px;
+	border: 1px solid var(--wo-prese-border);
+	border-radius: 3px;
+	background-color: var(--wo-prese-bg-pane);
+	color: var(--wo-prese-text-primary);
+	font-size: 12px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background-color 0.15s, border-color 0.15s;
 }
 
 .prese-transitionstab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-prese-border);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	border-color: var(--wo-prese-border);
 }
 
 .prese-transitionstab-btn.active {
-  background-color: var(--wo-prese-accent);
-  color: #ffffff;
-  border-color: var(--wo-prese-accent);
+	background-color: var(--wo-prese-accent);
+	color: #ffffff;
+	border-color: var(--wo-prese-accent);
 }
 
 .prese-transitionstab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-prese-border);
+	width: 100%;
+	height: 1px;
+	background-color: var(--wo-prese-border);
 }
 
 /* AnimationTab */
 .prese-animationtab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 12px 16px;
 }
 
 .prese-animationtab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .prese-animationtab-elset {
-  display: flex;
-  align-items: center;
+	display: flex;
+	align-items: center;
 }
 
 .prese-animationtab-label {
-  font-size: 11px;
-  color: var(--wo-prese-text-secondary);
-  text-align: center;
-  margin-top: 2px;
+	font-size: 11px;
+	color: var(--wo-prese-text-secondary);
+	text-align: center;
+	margin-top: 2px;
 }
 
 .prese-animationtab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-prese-border);
-  border-radius: 3px;
-  background-color: var(--wo-prese-bg-pane);
-  color: var(--wo-prese-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
+	display: inline-flex;
+	align-items: center;
+	height: 28px;
+	padding: 0 12px;
+	border: 1px solid var(--wo-prese-border);
+	border-radius: 3px;
+	background-color: var(--wo-prese-bg-pane);
+	color: var(--wo-prese-text-primary);
+	font-size: 12px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background-color 0.15s, border-color 0.15s;
 }
 
 .prese-animationtab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-prese-border);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	border-color: var(--wo-prese-border);
 }
 
 .prese-animationtab-btn.active {
-  background-color: var(--wo-prese-accent);
-  color: #ffffff;
-  border-color: var(--wo-prese-accent);
+	background-color: var(--wo-prese-accent);
+	color: #ffffff;
+	border-color: var(--wo-prese-accent);
 }
 
 .prese-animationtab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-prese-border);
+	width: 100%;
+	height: 1px;
+	background-color: var(--wo-prese-border);
 }
 
 /* InsertTab */
 .prese-inserttab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 12px 16px;
 }
 
 .prese-inserttab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .prese-inserttab-elset {
-  display: flex;
-  align-items: center;
+	display: flex;
+	align-items: center;
 }
 
 .prese-inserttab-label {
-  font-size: 11px;
-  color: var(--wo-prese-text-secondary);
-  text-align: center;
-  margin-top: 2px;
+	font-size: 11px;
+	color: var(--wo-prese-text-secondary);
+	text-align: center;
+	margin-top: 2px;
 }
 
 .prese-inserttab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-prese-border);
-  border-radius: 3px;
-  background-color: var(--wo-prese-bg-pane);
-  color: var(--wo-prese-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
+	display: inline-flex;
+	align-items: center;
+	height: 28px;
+	padding: 0 12px;
+	border: 1px solid var(--wo-prese-border);
+	border-radius: 3px;
+	background-color: var(--wo-prese-bg-pane);
+	color: var(--wo-prese-text-primary);
+	font-size: 12px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background-color 0.15s, border-color 0.15s;
 }
 
 .prese-inserttab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-prese-border);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	border-color: var(--wo-prese-border);
 }
 
 .prese-inserttab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-prese-border);
+	width: 100%;
+	height: 1px;
+	background-color: var(--wo-prese-border);
 }
 
 /* ViewTab */
 .prese-viewtab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 12px 16px;
 }
 
 .prese-viewtab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .prese-viewtab-elset {
-  display: flex;
-  align-items: center;
+	display: flex;
+	align-items: center;
 }
 
 .prese-viewtab-label {
-  font-size: 11px;
-  color: var(--wo-prese-text-secondary);
-  text-align: center;
-  margin-top: 2px;
+	font-size: 11px;
+	color: var(--wo-prese-text-secondary);
+	text-align: center;
+	margin-top: 2px;
 }
 
 .prese-viewtab-zoom-select {
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--wo-prese-border);
-  border-radius: 3px;
-  background-color: var(--wo-prese-bg-pane);
-  font-size: 12px;
-  color: var(--wo-prese-text-primary);
-  cursor: pointer;
+	height: 28px;
+	padding: 0 8px;
+	border: 1px solid var(--wo-prese-border);
+	border-radius: 3px;
+	background-color: var(--wo-prese-bg-pane);
+	font-size: 12px;
+	color: var(--wo-prese-text-primary);
+	cursor: pointer;
 }
 
 .prese-viewtab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-prese-border);
-  border-radius: 3px;
-  background-color: var(--wo-prese-bg-pane);
-  color: var(--wo-prese-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
+	display: inline-flex;
+	align-items: center;
+	height: 28px;
+	padding: 0 12px;
+	border: 1px solid var(--wo-prese-border);
+	border-radius: 3px;
+	background-color: var(--wo-prese-bg-pane);
+	color: var(--wo-prese-text-primary);
+	font-size: 12px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background-color 0.15s, border-color 0.15s;
 }
 
 .prese-viewtab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-prese-border);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	border-color: var(--wo-prese-border);
 }
 
 .prese-viewtab-btn.active {
-  background-color: var(--wo-prese-accent);
-  color: #ffffff;
-  border-color: var(--wo-prese-accent);
+	background-color: var(--wo-prese-accent);
+	color: #ffffff;
+	border-color: var(--wo-prese-accent);
 }
 
 .prese-viewtab-btn-theme {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-prese-border);
-  border-radius: 3px;
-  background-color: var(--wo-prese-bg-pane);
-  color: var(--wo-prese-text-primary);
-  font-size: 12px;
-  cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	height: 28px;
+	padding: 0 12px;
+	border: 1px solid var(--wo-prese-border);
+	border-radius: 3px;
+	background-color: var(--wo-prese-bg-pane);
+	color: var(--wo-prese-text-primary);
+	font-size: 12px;
+	cursor: pointer;
 }
 
 .prese-viewtab-btn-theme:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
 }
 
 .prese-viewtab-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--wo-prese-text-primary);
-  cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	color: var(--wo-prese-text-primary);
+	cursor: pointer;
 }
 
 .prese-viewtab-checkbox input[type="checkbox"] {
-  margin: 0;
-  cursor: pointer;
+	margin: 0;
+	cursor: pointer;
 }
 
 .prese-viewtab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-prese-border);
+	width: 100%;
+	height: 1px;
+	background-color: var(--wo-prese-border);
 }
 
 .prese-viewtab-separator-theme {
-  margin: 4px 0;
+	margin: 4px 0;
 }

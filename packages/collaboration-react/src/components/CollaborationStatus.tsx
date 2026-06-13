@@ -7,15 +7,12 @@ export interface CollaborationStatusProps {
   className?: string
 }
 
-
-
 export function CollaborationStatus({ state, userCount, className }: CollaborationStatusProps) {
   const status = useConnectionStatus(state)
 
   return (
-    <div
+    <output
       className={`wo-collaboration-status ${className ?? ""}`}
-      role="status"
       aria-label={`Collaboration: ${status.label}`}
       style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12, lineHeight: 1 }}
     >
@@ -49,6 +46,6 @@ export function CollaborationStatus({ state, userCount, className }: Collaborati
           {userCount}
         </span>
       )}
-    </div>
+    </output>
   )
 }

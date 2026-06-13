@@ -1,4 +1,4 @@
-import { useState, useRef, type KeyboardEvent, type ChangeEvent } from "react"
+import { type ChangeEvent, type KeyboardEvent, useRef, useState } from "react"
 
 export interface CommentInputProps {
   onSubmit: (text: string) => void
@@ -33,9 +33,10 @@ export function CommentInput({
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   const mentionQuery = extractMention(text, cursorPos)
-  const matchingAgents = mentionQuery !== null
-    ? agentNames.filter((n) => n.toLowerCase().startsWith(mentionQuery.toLowerCase()))
-    : []
+  const matchingAgents =
+    mentionQuery !== null
+      ? agentNames.filter((n) => n.toLowerCase().startsWith(mentionQuery.toLowerCase()))
+      : []
 
   function handleChange(e: ChangeEvent<HTMLTextAreaElement>) {
     setText(e.target.value)
@@ -94,8 +95,12 @@ export function CommentInput({
                 textAlign: "left",
                 fontSize: 13,
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#f0f0f0")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "#f0f0f0"
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "transparent"
+              }}
             >
               @{agent}
             </button>

@@ -110,7 +110,7 @@ class LocalStorage implements ILocalStorage {
 
   getItemAsInt(name: string, defValue?: number): number {
     const value = this.getItem(name)
-    return value !== null ? Number.parseInt(value, 10) : defValue ?? 0
+    return value !== null ? Number.parseInt(value, 10) : (defValue ?? 0)
   }
 
   getBool(name: string, defValue?: boolean): boolean {

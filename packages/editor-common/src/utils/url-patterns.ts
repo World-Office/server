@@ -69,5 +69,4 @@ export const URL_RE =
  * Domain pattern (simple).
  * Matches: example.com, subdomain.example.com
  */
-export const DOMAIN_RE =
-  /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/
+export const DOMAIN_RE = /^([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/

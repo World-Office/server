@@ -63,12 +63,7 @@ impl WopiClient {
     }
 
     /// PUT file contents to the WOPI host.
-    pub async fn put_file(
-        &self,
-        file_id: &str,
-        access_token: &str,
-        data: Vec<u8>,
-    ) -> Result<()> {
+    pub async fn put_file(&self, file_id: &str, access_token: &str, data: Vec<u8>) -> Result<()> {
         let url = format!(
             "{}/wopi/files/{}/contents?access_token={}",
             self.wopi_host_url, file_id, access_token

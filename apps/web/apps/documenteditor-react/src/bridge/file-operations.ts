@@ -28,7 +28,17 @@ export async function openFile(
   if (!selectedPath) return null
   const path = selectedPath as string
   const name = path.split(/[/\\]/).pop() ?? "Untitled"
-  const binaryExtensions = new Set(["docx", "odt", "doc", "pdf", "xlsx", "pptx", "epub", "fb2", "rtf"])
+  const binaryExtensions = new Set([
+    "docx",
+    "odt",
+    "doc",
+    "pdf",
+    "xlsx",
+    "pptx",
+    "epub",
+    "fb2",
+    "rtf",
+  ])
   const ext = name.split(".").pop()?.toLowerCase() ?? ""
   const isBinary = binaryExtensions.has(ext)
   const content = isBinary

@@ -28,7 +28,6 @@ ace.define(
       this.snippetMap = {}
       this.snippetNameMap = {}
     }
-
     ;(function () {
       oop.implement(this, EventEmitter)
 
@@ -1344,7 +1343,6 @@ ace.define(
 
       this.tooltipTimer = lang.delayedCall(this.updateDocTooltip.bind(this), 50)
     }
-
     ;(function () {
       this.$init = function () {
         this.popup = new AcePopup(document.body || document.documentElement)

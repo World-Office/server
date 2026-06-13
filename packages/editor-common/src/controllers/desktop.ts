@@ -51,17 +51,17 @@ const FILE_SPREADSHEET = 0x0100
 const FILE_CROSSPLATFORM = 0x0200
 
 /** Controller state */
-let config: DesktopConfig = { version: "" }
+const config: DesktopConfig = { version: "" }
 let nativeDesktop: NativeDesktop | null = null
-let helpUrl: string | null = null
-let recents: RecentFile[] = []
+const helpUrl: string | null = null
+const recents: RecentFile[] = []
 
 /** Initialize the Desktop controller */
 export function init(opts: Partial<DesktopConfig>): void {
   Object.assign(config, opts)
 
   const windowObj = window as unknown
-  const desktopObj = (windowObj as { desktop?: NativeDesktop; AscDesktopEditor?: NativeDesktop })
+  const desktopObj = windowObj as { desktop?: NativeDesktop; AscDesktopEditor?: NativeDesktop }
   const desktopValue = desktopObj.desktop || desktopObj.AscDesktopEditor
 
   if (config.isDesktopApp && desktopValue) {
@@ -80,7 +80,8 @@ export function init(opts: Partial<DesktopConfig>): void {
 /** Sets up the native message handler for desktop commands */
 function setupNativeMessageHandler(): void {
   const windowObj = window as unknown
-  const handler = (windowObj as { on_native_message: (cmd: string, param: string) => void }).on_native_message
+  const handler = (windowObj as { on_native_message: (cmd: string, param: string) => void })
+    .on_native_message
 
   // Process initial messages
   const cmdObj = (windowObj as { native_message_cmd?: Record<string, unknown> }).native_message_cmd
@@ -97,7 +98,10 @@ function setupEventListeners(): void {
   notificationCenter.on("uitheme:changed", (name: string, caller?: string) => {
     if (caller !== "native" && nativeDesktop) {
       const themeType = name === "theme-system" ? "system" : name
-      nativeDesktop.execCommand("uitheme:changed", JSON.stringify({ name: themeType, type: themeType }))
+      nativeDesktop.execCommand(
+        "uitheme:changed",
+        JSON.stringify({ name: themeType, type: themeType }),
+      )
     }
   })
 

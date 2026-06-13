@@ -4,20 +4,16 @@
 // for Microsoft Office Online integration. It provides a WOPI server with core endpoints
 // for CheckFileInfo, GetFile, PutFile, Lock, and Unlock operations.
 
-pub mod server;
 pub mod handlers;
 pub mod models;
+pub mod server;
 pub mod storage;
 
-pub use server::WopiServer;
-pub use storage::{StorageBackend, FileSystemStorage};
 pub use models::{
-    CheckFileInfoResponse,
-    LockInfo,
-    PutFileResponse,
-    FileLockRequest,
-    FileUnlockRequest,
+    CheckFileInfoResponse, FileLockRequest, FileUnlockRequest, LockInfo, PutFileResponse,
 };
+pub use server::WopiServer;
+pub use storage::{FileSystemStorage, StorageBackend};
 
 /// Result type for WOPI operations.
 pub type Result<T> = std::result::Result<T, WopiError>;
@@ -59,7 +55,9 @@ impl axum::response::IntoResponse for WopiError {
             WopiError::LockConflict(msg) => (axum::http::StatusCode::CONFLICT, msg),
             WopiError::InvalidRequest(msg) => (axum::http::StatusCode::BAD_REQUEST, msg),
             WopiError::Io(e) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
-            WopiError::Serialization(e) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+            WopiError::Serialization(e) => {
+                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+            }
             WopiError::Storage(msg) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, msg),
         };
         (status, message).into_response()

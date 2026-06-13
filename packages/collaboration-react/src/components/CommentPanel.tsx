@@ -1,5 +1,5 @@
-import { useState } from "react"
 import type { CollabComment } from "@world-office/editor-stores"
+import { useState } from "react"
 import { CommentInput } from "./CommentInput"
 import { CommentThread } from "./CommentThread"
 

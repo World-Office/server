@@ -2,10 +2,10 @@
 
 use crate::{models::Prop, Result, WebDavError};
 use chrono::{DateTime, Utc};
+use sha2::Sha256;
 use std::path::{Path, PathBuf};
 use tokio::fs;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use sha2::Sha256;
 
 /// WebDAV resource information.
 #[derive(Debug, Clone)]
@@ -40,7 +40,9 @@ impl DavResource {
                 self.display_name.clone(),
                 self.content_length.unwrap_or(0),
                 self.last_modified,
-                self.content_type.clone().unwrap_or_else(|| "application/octet-stream".to_string()),
+                self.content_type
+                    .clone()
+                    .unwrap_or_else(|| "application/octet-stream".to_string()),
                 self.etag.clone(),
             )
         }
@@ -58,11 +60,11 @@ impl FileSystem {
     /// Create a new file system backend.
     pub fn new(base_path: impl AsRef<Path>) -> Result<Self> {
         let base_path = base_path.as_ref().to_path_buf();
-        
+
         if !base_path.exists() {
             std::fs::create_dir_all(&base_path)?;
         }
-        
+
         Ok(Self { base_path })
     }
 
@@ -77,14 +79,14 @@ impl FileSystem {
     /// Generate ETag for a resource.
     async fn generate_etag(&self, path: &Path) -> Result<String> {
         use sha2::Digest;
-        
+
         let metadata = fs::metadata(path).await?;
         let modified = metadata.modified()?;
-        
+
         let mut hasher = Sha256::new();
         hasher.update(format!("{:?}-{:?}", path, modified).as_bytes());
         let result = hasher.finalize();
-        
+
         Ok(hex::encode(result))
     }
 
@@ -113,7 +115,7 @@ impl FileSystem {
     /// Get a resource by path.
     pub async fn get_resource(&self, resource_path: &str) -> Result<DavResource> {
         let full_path = self.get_full_path(resource_path);
-        
+
         if !full_path.exists() {
             return Err(WebDavError::NotFound(resource_path.to_string()));
         }
@@ -125,14 +127,17 @@ impl FileSystem {
             .and_then(|n| n.to_str())
             .unwrap_or("")
             .to_string();
-        
+
         let last_modified: DateTime<Utc> = metadata.modified()?.into();
         let etag = self.generate_etag(&full_path).await?;
-        
+
         let (content_length, content_type) = if is_collection {
             (None, Some("httpd/unix-directory".to_string()))
         } else {
-            (Some(metadata.len()), Some(self.detect_content_type(&full_path)))
+            (
+                Some(metadata.len()),
+                Some(self.detect_content_type(&full_path)),
+            )
         };
 
         Ok(DavResource {
@@ -149,7 +154,7 @@ impl FileSystem {
     /// List resources in a collection.
     pub async fn list_collection(&self, resource_path: &str) -> Result<Vec<DavResource>> {
         let full_path = self.get_full_path(resource_path);
-        
+
         if !full_path.exists() {
             return Err(WebDavError::NotFound(resource_path.to_string()));
         }
@@ -163,23 +168,24 @@ impl FileSystem {
 
         let mut resources = Vec::new();
         let mut dir = fs::read_dir(&full_path).await?;
-        
+
         while let Some(entry) = dir.next_entry().await? {
             let metadata = entry.metadata().await?;
             let is_collection = metadata.is_dir();
-            let display_name = entry
-                .file_name()
-                .to_str()
-                .unwrap_or("")
-                .to_string();
-            
+            let display_name = entry.file_name().to_str().unwrap_or("").to_string();
+
             let last_modified: DateTime<Utc> = metadata.modified()?.into();
-            let etag = self.generate_etag(&full_path.join(display_name.as_str())).await?;
-            
+            let etag = self
+                .generate_etag(&full_path.join(display_name.as_str()))
+                .await?;
+
             let (content_length, content_type) = if is_collection {
                 (None, Some("httpd/unix-directory".to_string()))
             } else {
-                (Some(metadata.len()), Some(self.detect_content_type(&full_path.join(display_name.as_str()))))
+                (
+                    Some(metadata.len()),
+                    Some(self.detect_content_type(&full_path.join(display_name.as_str()))),
+                )
             };
 
             resources.push(DavResource {
@@ -192,14 +198,14 @@ impl FileSystem {
                 etag,
             });
         }
-        
+
         Ok(resources)
     }
 
     /// Read file content.
     pub async fn read_file(&self, resource_path: &str) -> Result<Vec<u8>> {
         let full_path = self.get_full_path(resource_path);
-        
+
         if !full_path.exists() {
             return Err(WebDavError::NotFound(resource_path.to_string()));
         }
@@ -215,32 +221,32 @@ impl FileSystem {
         let metadata = file.metadata().await?;
         let mut buffer = vec![0; metadata.len() as usize];
         file.read_exact(&mut buffer).await?;
-        
+
         Ok(buffer)
     }
 
     /// Write file content.
     pub async fn write_file(&self, resource_path: &str, content: &[u8]) -> Result<()> {
         let full_path = self.get_full_path(resource_path);
-        
+
         // Ensure parent directory exists
         if let Some(parent) = full_path.parent() {
             if !parent.exists() {
                 std::fs::create_dir_all(parent)?;
             }
         }
-        
+
         let mut file = fs::File::create(&full_path).await?;
         file.write_all(content).await?;
         file.flush().await?;
-        
+
         Ok(())
     }
 
     /// Create a collection (directory).
     pub async fn create_collection(&self, resource_path: &str) -> Result<()> {
         let full_path = self.get_full_path(resource_path);
-        
+
         if full_path.exists() {
             return Err(WebDavError::InvalidRequest(format!(
                 "{} already exists",
@@ -249,14 +255,14 @@ impl FileSystem {
         }
 
         fs::create_dir_all(&full_path).await?;
-        
+
         Ok(())
     }
 
     /// Delete a resource.
     pub async fn delete_resource(&self, resource_path: &str) -> Result<()> {
         let full_path = self.get_full_path(resource_path);
-        
+
         if !full_path.exists() {
             return Err(WebDavError::NotFound(resource_path.to_string()));
         }
@@ -266,7 +272,7 @@ impl FileSystem {
         } else {
             fs::remove_file(&full_path).await?;
         }
-        
+
         Ok(())
     }
 
@@ -274,7 +280,7 @@ impl FileSystem {
     pub async fn copy_resource(&self, source_path: &str, dest_path: &str) -> Result<()> {
         let full_source = self.get_full_path(source_path);
         let full_dest = self.get_full_path(dest_path);
-        
+
         if !full_source.exists() {
             return Err(WebDavError::NotFound(source_path.to_string()));
         }
@@ -299,7 +305,7 @@ impl FileSystem {
         } else {
             fs::copy(&full_source, &full_dest).await?;
         }
-        
+
         Ok(())
     }
 
@@ -307,7 +313,7 @@ impl FileSystem {
     pub async fn move_resource(&self, source_path: &str, dest_path: &str) -> Result<()> {
         let full_source = self.get_full_path(source_path);
         let full_dest = self.get_full_path(dest_path);
-        
+
         if !full_source.exists() {
             return Err(WebDavError::NotFound(source_path.to_string()));
         }
@@ -327,31 +333,33 @@ impl FileSystem {
         }
 
         fs::rename(&full_source, &full_dest).await?;
-        
+
         Ok(())
     }
 }
 
 /// Recursively copy a directory (synchronous helper).
-    fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
-        for entry in std::fs::read_dir(src)? {
-            let entry = entry?;
-            let name = entry.file_name();
-            let name_str = name.to_str().ok_or_else(|| std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid filename"))?;
-            let src_path = src.join(name_str);
-            let dst_path = dst.join(name_str);
+fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
+    for entry in std::fs::read_dir(src)? {
+        let entry = entry?;
+        let name = entry.file_name();
+        let name_str = name.to_str().ok_or_else(|| {
+            std::io::Error::new(std::io::ErrorKind::InvalidData, "Invalid filename")
+        })?;
+        let src_path = src.join(name_str);
+        let dst_path = dst.join(name_str);
 
-            let file_type = entry.file_type()?;
+        let file_type = entry.file_type()?;
 
-            if file_type.is_dir() {
-                std::fs::create_dir_all(&dst_path)?;
-                copy_dir_recursive(&src_path, &dst_path)?;
-            } else {
-                std::fs::copy(&src_path, &dst_path)?;
-            }
+        if file_type.is_dir() {
+            std::fs::create_dir_all(&dst_path)?;
+            copy_dir_recursive(&src_path, &dst_path)?;
+        } else {
+            std::fs::copy(&src_path, &dst_path)?;
         }
-        Ok(())
     }
+    Ok(())
+}
 
 #[cfg(test)]
 mod tests {
@@ -366,7 +374,9 @@ mod tests {
         fs.create_collection("/testdir").await.unwrap();
 
         // Write file
-        fs.write_file("/testdir/test.txt", b"Hello, World!").await.unwrap();
+        fs.write_file("/testdir/test.txt", b"Hello, World!")
+            .await
+            .unwrap();
 
         // Read file
         let content = fs.read_file("/testdir/test.txt").await.unwrap();
@@ -383,6 +393,8 @@ mod tests {
         fs.copy_resource("/testdir", "/testdir-copy").await.unwrap();
 
         // Move resource
-        fs.move_resource("/testdir-copy", "/testdir-moved").await.unwrap();
+        fs.move_resource("/testdir-copy", "/testdir-moved")
+            .await
+            .unwrap();
     }
 }

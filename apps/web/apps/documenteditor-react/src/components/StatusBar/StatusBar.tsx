@@ -112,7 +112,8 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
       {documentStore.isDesktop && (
         <div className="de-statusbar-tools">
           <span className="de-statusbar-label" title={documentStore.filePath ?? undefined}>
-            {documentStore.fileName}{documentStore.isDirty ? " \u2022" : ""}
+            {documentStore.fileName}
+            {documentStore.isDirty ? " \u2022" : ""}
           </span>
         </div>
       )}

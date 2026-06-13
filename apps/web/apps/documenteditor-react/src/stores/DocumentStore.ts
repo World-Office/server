@@ -224,7 +224,7 @@ export class DocumentStore {
 
   setFilePath(path: string | null): void {
     this.filePath = path
-    this.fileName = path ? path.split(/[/\\]/).pop() ?? "Untitled Document" : "Untitled Document"
+    this.fileName = path ? (path.split(/[/\\]/).pop() ?? "Untitled Document") : "Untitled Document"
   }
 
   setDirty(dirty: boolean): void {

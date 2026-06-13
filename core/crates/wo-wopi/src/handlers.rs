@@ -2,8 +2,7 @@
 
 use crate::{
     models::{
-        CheckFileInfoResponse, FileLockRequest, FileUnlockRequest,
-        PutFileResponse, WopiOverride,
+        CheckFileInfoResponse, FileLockRequest, FileUnlockRequest, PutFileResponse, WopiOverride,
     },
     storage::StorageBackend,
     Result, WopiError,
@@ -212,7 +211,10 @@ pub async fn wopi_operation<S: StorageBackend>(
             "Operation {:?} not yet implemented",
             op
         ))),
-        Err(e) => Err(WopiError::InvalidRequest(format!("Invalid WOPI override: {}", e))),
+        Err(e) => Err(WopiError::InvalidRequest(format!(
+            "Invalid WOPI override: {}",
+            e
+        ))),
     }
 }
 
@@ -225,7 +227,9 @@ pub fn handle_wopi_error(err: WopiError) -> (axum::http::StatusCode, String) {
         WopiError::LockConflict(msg) => (axum::http::StatusCode::CONFLICT, msg),
         WopiError::InvalidRequest(msg) => (axum::http::StatusCode::BAD_REQUEST, msg),
         WopiError::Io(e) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
-        WopiError::Serialization(e) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string()),
+        WopiError::Serialization(e) => {
+            (axum::http::StatusCode::INTERNAL_SERVER_ERROR, e.to_string())
+        }
         WopiError::Storage(msg) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, msg),
     }
 }

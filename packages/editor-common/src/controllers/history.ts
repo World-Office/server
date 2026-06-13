@@ -21,11 +21,7 @@
  *   - "mentions:setusers" — user avatar updates
  */
 
-import {
-  notificationCenter,
-  createEventBus,
-  type EventBus,
-} from "../core/event-bus"
+import { type EventBus, createEventBus, notificationCenter } from "../core/event-bus"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -162,20 +158,18 @@ function hasCollapsed(): boolean {
  * updates the store, and emits the `revision-select` event so the editor
  * API can display the revision.
  */
-function onSetHistoryData(
-  opts: {
-    data: {
-      error?: string
-      version?: number
-      changesUrl?: string
-      previous?: { url?: string; fileType?: string; key?: string }
-      url?: string
-      fileType?: string
-      key?: string
-      token?: string
-    } | null
-  },
-): void {
+function onSetHistoryData(opts: {
+  data: {
+    error?: string
+    version?: number
+    changesUrl?: string
+    previous?: { url?: string; fileType?: string; key?: string }
+    url?: string
+    fileType?: string
+    key?: string
+    token?: string
+  } | null
+}): void {
   if (!canUseHistory) return
 
   if (timerId) {
@@ -184,9 +178,7 @@ function onSetHistoryData(
   }
 
   if (!opts.data || opts.data.error) {
-    const message = opts.data?.error
-      ? opts.data.error
-      : "Failed to load version history"
+    const message = opts.data?.error ? opts.data.error : "Failed to load version history"
     historyBus.emit("error", { title: "History Error", message })
     return
   }
@@ -201,18 +193,9 @@ function onSetHistoryData(
   const matched = findRevisions(version)
   const urlGetTime = new Date()
 
-  const diff =
-    !data.previous || currentChangeId === undefined
-      ? null
-      : (data.changesUrl ?? null)
-  const url =
-    !isEmpty(diff) && data.previous
-      ? (data.previous.url ?? "")
-      : (data.url ?? "")
-  const fileType =
-    !isEmpty(diff) && data.previous
-      ? data.previous.fileType
-      : data.fileType
+  const diff = !data.previous || currentChangeId === undefined ? null : (data.changesUrl ?? null)
+  const url = !isEmpty(diff) && data.previous ? (data.previous.url ?? "") : (data.url ?? "")
+  const fileType = !isEmpty(diff) && data.previous ? data.previous.fileType : data.fileType
   const docId = data.key || currentDocId
   const docIdPrev = data.previous?.key || currentDocIdPrev
   const token = data.token
@@ -258,10 +241,7 @@ function onSetHistoryData(
 /**
  * Updates avatar URLs on revision records when user info becomes available.
  */
-function avatarsUpdate(
-  type: string,
-  users: Array<{ id: string; image?: string }>,
-): void {
+function avatarsUpdate(type: string, users: Array<{ id: string; image?: string }>): void {
   if (type !== "info") return
   if (!users || users.length === 0) return
 
@@ -286,14 +266,8 @@ export const historyBus: EventBus<HistoryEvents> = createEventBus<HistoryEvents>
  * Call this once during application startup.
  */
 export function init(): void {
-  notificationCenter.on(
-    "sethistorydata",
-    onSetHistoryData as (...args: unknown[]) => void,
-  )
-  notificationCenter.on(
-    "mentions:setusers",
-    avatarsUpdate as (...args: unknown[]) => void,
-  )
+  notificationCenter.on("sethistorydata", onSetHistoryData as (...args: unknown[]) => void)
+  notificationCenter.on("mentions:setusers", avatarsUpdate as (...args: unknown[]) => void)
 }
 
 /**
@@ -351,10 +325,7 @@ export function requestHistoryData(revision: number): void {
  * a data request is emitted. Otherwise a `revision-select` event is emitted
  * immediately with all metadata so the editor API can render it.
  */
-export function selectRevision(
-  record: HistoryRevision,
-  fromButtonClick?: boolean,
-): void {
+export function selectRevision(record: HistoryRevision, fromButtonClick?: boolean): void {
   // Handle restore button click
   if (fromButtonClick && !record.hasParent) {
     historyBus.emit("restore", {
@@ -392,10 +363,7 @@ export function selectRevision(
   currentDateCreated = record.created
   currentDocumentSha256 = record.documentSha256
 
-  if (
-    isEmpty(url) ||
-    urlGetTime.getTime() - (record.urlGetTime?.getTime() ?? 0) > 5 * 60000
-  ) {
+  if (isEmpty(url) || urlGetTime.getTime() - (record.urlGetTime?.getTime() ?? 0) > 5 * 60000) {
     if (!timerId) {
       timerId = setTimeout(() => {
         timerId = 0
@@ -469,9 +437,7 @@ export function toggleHighlightDeleted(show: boolean): void {
  * and re-selects the parent revision.
  */
 export function onHashError(): void {
-  revisions = revisions.filter(
-    (r) => !(r.revision === currentRev && r.level === 1),
-  )
+  revisions = revisions.filter((r) => !(r.revision === currentRev && r.level === 1))
 
   const rec = revisions.find((r) => r.revision === currentRev)
   if (rec) {

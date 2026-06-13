@@ -1,7 +1,7 @@
 import { observer } from "mobx-react-lite"
 import { useEffect, useRef } from "react"
-import { spreadsheetStore } from "../stores/SpreadsheetStore"
 import { init, renderPage } from "../lib/wasm-renderer"
+import { spreadsheetStore } from "../stores/SpreadsheetStore"
 
 const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -18,15 +18,28 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
   }, [])
 
   // Re-render when zoom changes
+  const { zoomLevel } = spreadsheetStore
   useEffect(() => {
     if (!initialized.current) return
-    renderPage(0, spreadsheetStore.zoomLevel)
-  }, [spreadsheetStore.zoomLevel])
+    renderPage(0, zoomLevel)
+  }, [zoomLevel])
 
   return (
-    <div className="se-document-holder" style={{ display: "flex", flexDirection: "column", alignItems: "center", overflow: "auto", height: "100%", backgroundColor: "#e8e8e8" }}>
+    <div
+      className="se-document-holder"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        overflow: "auto",
+        height: "100%",
+        backgroundColor: "#e8e8e8",
+      }}
+    >
       {/* Canvas container with shadow */}
-      <div style={{ margin: "16px auto", flexShrink: 0, display: "flex", justifyContent: "center" }}>
+      <div
+        style={{ margin: "16px auto", flexShrink: 0, display: "flex", justifyContent: "center" }}
+      >
         <canvas
           ref={canvasRef}
           className="se-document-canvas"

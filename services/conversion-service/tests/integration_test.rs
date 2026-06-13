@@ -83,13 +83,13 @@ async fn convert_txt_to_html_output_contains_input_text() {
 
     let json = body_json(response).await;
     let output_b64 = json["job"]["output_data"].as_str().unwrap();
-    let output_bytes = base64::Engine::decode(
-        &base64::engine::general_purpose::STANDARD,
-        output_b64,
-    )
-    .unwrap();
+    let output_bytes =
+        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, output_b64).unwrap();
     let html = String::from_utf8(output_bytes).unwrap();
-    assert!(html.contains("Hello World"), "HTML output should contain input text");
+    assert!(
+        html.contains("Hello World"),
+        "HTML output should contain input text"
+    );
 }
 
 #[tokio::test]
@@ -122,13 +122,13 @@ async fn convert_rtf_to_txt_extracts_text() {
     assert_eq!(json["job"]["status"], "completed");
 
     let output_b64 = json["job"]["output_data"].as_str().unwrap();
-    let output_bytes = base64::Engine::decode(
-        &base64::engine::general_purpose::STANDARD,
-        output_b64,
-    )
-    .unwrap();
+    let output_bytes =
+        base64::Engine::decode(&base64::engine::general_purpose::STANDARD, output_b64).unwrap();
     let text = String::from_utf8(output_bytes).unwrap();
-    assert!(text.contains("Hello RTF"), "RTF→TXT should extract text content");
+    assert!(
+        text.contains("Hello RTF"),
+        "RTF→TXT should extract text content"
+    );
 }
 
 #[tokio::test]
@@ -191,7 +191,12 @@ async fn convert_unsupported_format_returns_failed_job() {
     let json = body_json(response).await;
     assert_eq!(json["job"]["status"], "failed");
     assert!(json["job"]["error"].is_string());
-    assert!(json["job"]["error"].as_str().unwrap().contains("is not supported"));
+    assert!(
+        json["job"]["error"]
+            .as_str()
+            .unwrap()
+            .contains("is not supported")
+    );
 }
 
 #[tokio::test]
@@ -285,7 +290,11 @@ async fn formats_returns_all_fourteen_registered_pairs() {
     assert_eq!(response.status(), StatusCode::OK);
     let json = body_json(response).await;
     let formats = json.as_array().unwrap();
-    assert_eq!(formats.len(), 38, "Should have exactly 38 registered format pairs");
+    assert_eq!(
+        formats.len(),
+        38,
+        "Should have exactly 38 registered format pairs"
+    );
 
     // Verify all expected pairs are present
     let pairs: Vec<(&str, &str)> = formats

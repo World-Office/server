@@ -58,7 +58,6 @@ ace.define(
       }
     })
     oop.inherits(FoldMode, BaseFoldMode)
-
     ;(function () {
       this.foldingStartMarker = /(\{|\[)[^\}\]]*$|^\s*(\/\*)/
       this.foldingStopMarker = /^[^\[\{]*(\}|\])|^[\s\*]*(\*\/)/
@@ -192,7 +191,6 @@ ace.define(
       this.foldingRules = new FoldMode()
     }
     oop.inherits(Mode, TextMode)
-
     ;(function () {
       this.$id = "ace/mode/mipsassembler"
     }).call(Mode.prototype)

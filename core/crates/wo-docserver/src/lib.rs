@@ -16,8 +16,8 @@ use axum::{
 };
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use serde::{Deserialize, Serialize};
-use wopi::WopiClient;
 use wo_x2t::ConversionRouter;
+use wopi::WopiClient;
 
 use crate::config::DocServerConfig;
 
@@ -64,7 +64,9 @@ impl IntoResponse for AppError {
             AppError::BadRequest(msg) => (axum::http::StatusCode::BAD_REQUEST, msg.clone()),
             AppError::Unauthorized(msg) => (axum::http::StatusCode::UNAUTHORIZED, msg.clone()),
             AppError::NotFound(msg) => (axum::http::StatusCode::NOT_FOUND, msg.clone()),
-            AppError::Conversion(msg) => (axum::http::StatusCode::INTERNAL_SERVER_ERROR, msg.clone()),
+            AppError::Conversion(msg) => {
+                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, msg.clone())
+            }
             AppError::Wopi(e) => {
                 tracing::error!("WOPI proxy error: {e}");
                 (
@@ -122,9 +124,7 @@ async fn health_handler() -> &'static str {
 /// The OCIS WOPI host provides this endpoint which lists all supported WOPI
 /// actions and URL templates. We proxy through the docserver so that E2E
 /// health checks (which target the docserver) still pass when OCIS is available.
-async fn discovery_handler(
-    State(state): State<AppState>,
-) -> Result<String, AppError> {
+async fn discovery_handler(State(state): State<AppState>) -> Result<String, AppError> {
     let discovery = state
         .wopi_client
         .get_discovery()
@@ -140,8 +140,7 @@ async fn hosting_wopi_handler(State(state): State<AppState>) -> axum::response::
 <p>Editor UI dir: <code>{}</code></p>
 <p>WOPI host: <code>{}</code></p>
 </body></html>"#,
-        state.config.editor_ui_dir,
-        state.config.wopi_host_url
+        state.config.editor_ui_dir, state.config.wopi_host_url
     );
     axum::response::Html(stub).into_response()
 }
@@ -153,9 +152,8 @@ async fn wopi_check_file_info(
     Query(params): Query<TokenQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
     // Validate JWT
-    let _claims =
-        WopiClient::validate_token(&params.access_token, &state.config.jwt_secret)
-            .map_err(|e| AppError::Unauthorized(e.to_string()))?;
+    let _claims = WopiClient::validate_token(&params.access_token, &state.config.jwt_secret)
+        .map_err(|e| AppError::Unauthorized(e.to_string()))?;
 
     let info = state
         .wopi_client
@@ -170,9 +168,8 @@ async fn wopi_get_file(
     Path(file_id): Path<String>,
     Query(params): Query<TokenQuery>,
 ) -> Result<axum::body::Bytes, AppError> {
-    let _claims =
-        WopiClient::validate_token(&params.access_token, &state.config.jwt_secret)
-            .map_err(|e| AppError::Unauthorized(e.to_string()))?;
+    let _claims = WopiClient::validate_token(&params.access_token, &state.config.jwt_secret)
+        .map_err(|e| AppError::Unauthorized(e.to_string()))?;
 
     let data = state
         .wopi_client
@@ -188,9 +185,8 @@ async fn wopi_put_file(
     Query(params): Query<TokenQuery>,
     body: axum::body::Bytes,
 ) -> Result<(), AppError> {
-    let _claims =
-        WopiClient::validate_token(&params.access_token, &state.config.jwt_secret)
-            .map_err(|e| AppError::Unauthorized(e.to_string()))?;
+    let _claims = WopiClient::validate_token(&params.access_token, &state.config.jwt_secret)
+        .map_err(|e| AppError::Unauthorized(e.to_string()))?;
 
     state
         .wopi_client
@@ -245,9 +241,7 @@ async fn conversion_convert(
 }
 
 /// GET /api/conversion/formats  —  list supported conversion pairs
-async fn conversion_formats(
-    State(state): State<AppState>,
-) -> Json<FormatsResponse> {
+async fn conversion_formats(State(state): State<AppState>) -> Json<FormatsResponse> {
     let pairs = state
         .conversion_router
         .registry()
@@ -268,14 +262,8 @@ pub fn create_app(config: DocServerConfig) -> Router {
     let mut app = Router::new()
         .route("/health", get(health_handler))
         .route("/hosting/discovery", get(discovery_handler))
-        .route(
-            "/hosting/wopi",
-            get(hosting_wopi_handler),
-        )
-        .route(
-            "/wopi/files/{file_id}",
-            get(wopi_check_file_info),
-        )
+        .route("/hosting/wopi", get(hosting_wopi_handler))
+        .route("/wopi/files/{file_id}", get(wopi_check_file_info))
         .route(
             "/wopi/files/{file_id}/contents",
             get(wopi_get_file).post(wopi_put_file),
@@ -284,12 +272,12 @@ pub fn create_app(config: DocServerConfig) -> Router {
         .route("/api/conversion/formats", get(conversion_formats))
         .with_state(state);
 
-// Serve editor UI if the directory exists, otherwise fall back to landing page
-        if let Some(serve_dir) = static_files::editor_ui_service(&config.editor_ui_dir) {
-            app = app.fallback_service(serve_dir);
-        } else {
-            app = app.route("/", get(static_files::landing_page_handler));
-        }
+    // Serve editor UI if the directory exists, otherwise fall back to landing page
+    if let Some(serve_dir) = static_files::editor_ui_service(&config.editor_ui_dir) {
+        app = app.fallback_service(serve_dir);
+    } else {
+        app = app.route("/", get(static_files::landing_page_handler));
+    }
 
     app
 }
@@ -318,7 +306,12 @@ mod tests {
     async fn test_health_endpoint() {
         let app = create_app(test_config());
         let resp = app
-            .oneshot(Request::builder().uri("/health").body(Body::empty()).unwrap())
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
             .await
             .unwrap();
 
@@ -352,8 +345,7 @@ mod tests {
 
         // Should be 400 (missing query parameter) or 401
         assert!(
-            resp.status() == StatusCode::BAD_REQUEST
-                || resp.status() == StatusCode::UNAUTHORIZED
+            resp.status() == StatusCode::BAD_REQUEST || resp.status() == StatusCode::UNAUTHORIZED
         );
     }
 

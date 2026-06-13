@@ -326,7 +326,6 @@ ace.define(
     var Range = require("../range").Range
 
     var MatchingBraceOutdent = () => {}
-
     ;(function () {
       this.checkOutdent = (line, input) => {
         if (!/^\s+$/.test(line)) return false
@@ -381,7 +380,6 @@ ace.define(
       this.$outdent = new MatchingBraceOutdent()
     }
     oop.inherits(Mode, TextMode)
-
     ;(function () {
       this.lineCommentStart = "--"
       this.blockComment = { start: "/-", end: "-/" }

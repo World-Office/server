@@ -1,5 +1,5 @@
-import { useState } from "react"
 import type { CollabComment } from "@world-office/editor-stores"
+import { useState } from "react"
 import { CommentInput } from "./CommentInput"
 
 export interface CommentThreadProps {
@@ -40,18 +40,21 @@ export function CommentThread({
       }}
     >
       {/* Comment header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 4,
+        }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontWeight: 600, fontSize: 13 }}>{comment.userName}</span>
-          {isCurrentUser && (
-            <span style={{ fontSize: 11, color: "#888" }}>(you)</span>
-          )}
+          {isCurrentUser && <span style={{ fontSize: 11, color: "#888" }}>(you)</span>}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontSize: 11, color: "#999" }}>{formatTime(comment.timestamp)}</span>
-          {comment.resolved && (
-            <span style={{ fontSize: 11, color: "#8bc34a" }}>Resolved</span>
-          )}
+          {comment.resolved && <span style={{ fontSize: 11, color: "#8bc34a" }}>Resolved</span>}
         </div>
       </div>
 
@@ -59,10 +62,12 @@ export function CommentThread({
       <p style={{ margin: 0, fontSize: 13, lineHeight: 1.4, whiteSpace: "pre-wrap" }}>
         {comment.text.split(/(@\w+)/g).map((part, i) =>
           part.startsWith("@") ? (
-            <span key={i} style={{ color: "#1976d2", fontWeight: 500 }}>{part}</span>
+            <span key={`${i}-${part}`} style={{ color: "#1976d2", fontWeight: 500 }}>
+              {part}
+            </span>
           ) : (
             part
-          )
+          ),
         )}
       </p>
 
@@ -120,7 +125,9 @@ export function CommentThread({
 
       {/* Nested replies */}
       {comment.replies.length > 0 && (
-        <div style={{ marginTop: 8, marginLeft: 12, borderLeft: "1px solid #e0e0e0", paddingLeft: 8 }}>
+        <div
+          style={{ marginTop: 8, marginLeft: 12, borderLeft: "1px solid #e0e0e0", paddingLeft: 8 }}
+        >
           {comment.replies.map((reply) => (
             <CommentThread
               key={reply.id}

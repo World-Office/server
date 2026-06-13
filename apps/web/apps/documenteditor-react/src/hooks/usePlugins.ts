@@ -1,8 +1,5 @@
+import { getPluginAPI, sandboxExecutePlugin } from "@world-office/editor-common"
 import { useEffect } from "react"
-import {
-  getPluginAPI,
-  sandboxExecutePlugin,
-} from "@world-office/editor-common"
 
 interface Plugin {
   id: string

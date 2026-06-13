@@ -6,7 +6,7 @@ interface StatusBarProps {
 
 export function StatusBar({ zoom = 100, page, pageCount }: StatusBarProps) {
   return (
-    <div className="statusbar-container" role="status">
+    <output className="statusbar-container">
       <div className="statusbar-left">
         {page !== undefined && pageCount !== undefined && (
           <span>
@@ -17,6 +17,6 @@ export function StatusBar({ zoom = 100, page, pageCount }: StatusBarProps) {
       <div className="statusbar-right">
         <span>{zoom}%</span>
       </div>
-    </div>
+    </output>
   )
 }

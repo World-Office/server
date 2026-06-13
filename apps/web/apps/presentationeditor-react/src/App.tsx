@@ -1,26 +1,26 @@
-import { ThemeProvider } from "@world-office/design-system"
-import { Viewport } from "./components/Viewport"
-import { SlidePresenter } from "./components/SlidePresenter/SlidePresenter"
-import { PresentationCollaborationProvider } from "./components/PresentationCollaborationProvider"
-import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
-import { useTheme } from "./hooks/useTheme"
-import { presentationStore } from "./stores/PresentationStore"
+import { ThemeProvider } from "@world-office/design-system";
+import { PresentationCollaborationProvider } from "./components/PresentationCollaborationProvider";
+import { SlidePresenter } from "./components/SlidePresenter/SlidePresenter";
+import { Viewport } from "./components/Viewport";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { useTheme } from "./hooks/useTheme";
+import { presentationStore } from "./stores/PresentationStore";
 
 export function App() {
-  useKeyboardShortcuts()
-  useTheme()
+	useKeyboardShortcuts();
+	useTheme();
 
-  return (
-    <ThemeProvider>
-      <PresentationCollaborationProvider />
-      {presentationStore.isPresenting && <SlidePresenter />}
-      <Viewport
-        toolbarVisible={presentationStore.toolbarVisible}
-        statusbarVisible={presentationStore.statusbarVisible}
-        leftMenuVisible={presentationStore.leftMenuVisible}
-        rightMenuVisible={presentationStore.rightMenuVisible}
-        isCompactToolbar={presentationStore.isCompactToolbar}
-      />
-    </ThemeProvider>
-  )
+	return (
+		<ThemeProvider>
+			<PresentationCollaborationProvider />
+			{presentationStore.isPresenting && <SlidePresenter />}
+			<Viewport
+				toolbarVisible={presentationStore.toolbarVisible}
+				statusbarVisible={presentationStore.statusbarVisible}
+				leftMenuVisible={presentationStore.leftMenuVisible}
+				rightMenuVisible={presentationStore.rightMenuVisible}
+				isCompactToolbar={presentationStore.isCompactToolbar}
+			/>
+		</ThemeProvider>
+	);
 }

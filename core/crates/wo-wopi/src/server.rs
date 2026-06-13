@@ -1,13 +1,8 @@
 // Axum-based WOPI HTTP server
 
-use crate::handlers::{
-    check_file_info, get_file, put_file, WopiState,
-};
+use crate::handlers::{check_file_info, get_file, put_file, WopiState};
 use crate::storage::StorageBackend;
-use axum::{
-    routing::get,
-    Router,
-};
+use axum::{routing::get, Router};
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::TcpListener;
@@ -64,7 +59,10 @@ impl<S: StorageBackend + 'static> WopiServer<S> {
         Router::new()
             // WOPI endpoints
             .route("/wopi/files/:file_id", get(check_file_info))
-            .route("/wopi/files/:file_id/contents", get(get_file).post(put_file))
+            .route(
+                "/wopi/files/:file_id/contents",
+                get(get_file).post(put_file),
+            )
             // Health check endpoint
             .route("/health", get(health_check))
             .with_state(self.state.clone())
@@ -140,7 +138,9 @@ mod tests {
         let _state = server.state();
 
         // Test state contains access_tokens HashMap
-        let state = Arc::try_unwrap(server.state).ok().expect("Arc should have single owner");
+        let state = Arc::try_unwrap(server.state)
+            .ok()
+            .expect("Arc should have single owner");
         assert!(state.access_tokens.is_empty());
     }
 }

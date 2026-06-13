@@ -596,8 +596,10 @@ mod tests {
     #[test]
     fn test_set_config() {
         let mut pipeline = DocxRenderPipeline::default();
-        let mut config = RenderConfig::default();
-        config.dpi = 300;
+        let config = RenderConfig {
+            dpi: 300,
+            ..Default::default()
+        };
         pipeline.set_config(config);
         assert_eq!(pipeline.config().dpi, 300);
     }

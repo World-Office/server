@@ -1,6 +1,7 @@
+import { CollaborationStatus } from "@world-office/collaboration-react"
 import { observer } from "mobx-react-lite"
-import { documentStore } from "../../stores/DocumentStore"
 import { collaborationStore } from "../../lib/collaboration"
+import { documentStore } from "../../stores/DocumentStore"
 import { FileTab } from "./FileTab"
 import { FormsTab } from "./FormsTab"
 import { HeaderFooterTab } from "./HeaderFooterTab"
@@ -9,7 +10,6 @@ import { InsertTab } from "./InsertTab"
 import { LayoutTab } from "./LayoutTab"
 import { ReferencesTab } from "./ReferencesTab"
 import { ViewTab } from "./ViewTab"
-import { CollaborationStatus } from "@world-office/collaboration-react"
 
 const ObservedToolbar = observer(function ObservedToolbar() {
   const isEditMode = documentStore.isEditMode

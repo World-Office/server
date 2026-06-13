@@ -32,10 +32,7 @@ export const PLATFORM_KEYS = {
  * @param args - Values to replace placeholders with (array or spread)
  * @returns Formatted string
  */
-export function format(
-  formatStr: string,
-  ...args: (string | number)[]
-): string {
+export function format(formatStr: string, ...args: (string | number)[]): string {
   const values: (string | number)[] = args.length === 1 && Array.isArray(args[0]) ? args[0] : args
   return formatStr.replace(/\{(\d+)\}/g, (_match, index) => {
     return String(values[index] ?? "")
@@ -86,9 +83,7 @@ export function ellipsis(value: string, len: number, word = false): string {
   if (word) {
     const truncated = value.slice(0, len - 2)
     const separators = [" ", ".", "!", "?"]
-    const lastSeparatorIndex = Math.max(
-      ...separators.map((sep) => truncated.lastIndexOf(sep)),
-    )
+    const lastSeparatorIndex = Math.max(...separators.map((sep) => truncated.lastIndexOf(sep)))
 
     if (lastSeparatorIndex !== -1 && lastSeparatorIndex >= len - 15) {
       return `${truncated.slice(0, lastSeparatorIndex)}...`

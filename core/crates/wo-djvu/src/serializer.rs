@@ -370,7 +370,7 @@ mod tests {
     // --- 15. Default trait ---
     #[test]
     fn test_default_trait() {
-        let _ = DjvuSerializer::default();
+        let _ = DjvuSerializer;
     }
 
     // --- 16. Parse version helper ---

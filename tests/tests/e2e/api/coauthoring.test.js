@@ -17,7 +17,7 @@ const CS_URL = config.coauthoringServiceUrl
 const CS_WS = config.coauthoringServiceWs
 
 let serviceAvailable = false
-let wsMock = null
+const wsMock = null
 
 beforeAll(async () => {
   try {
@@ -50,11 +50,9 @@ describe("Coauthoring Service", () => {
     })
 
     test("POST /sessions/{id}/join adds participant", async () => {
-      const response = await axios.post(
-        `${CS_URL}/sessions/${sessionId}/join`,
-        testUser,
-        { timeout: 10000 },
-      )
+      const response = await axios.post(`${CS_URL}/sessions/${sessionId}/join`, testUser, {
+        timeout: 10000,
+      })
       expect(response.status).toBe(200)
       expect(response.data).toHaveProperty("session_id", sessionId)
       expect(response.data).toHaveProperty("participants")
@@ -178,7 +176,9 @@ describe("Coauthoring Service", () => {
 
       // Connect first WS and set up message handler
       const firstWs = await new Promise((resolve, reject) => {
-        const ws = new WebSocket(`${CS_WS}/ws/${sessionId}?user_id=cursor-user-1&username=Cursor+User+1`)
+        const ws = new WebSocket(
+          `${CS_WS}/ws/${sessionId}?user_id=cursor-user-1&username=Cursor+User+1`,
+        )
         let settled = false
         const timeout = setTimeout(() => {
           if (!settled) {
@@ -237,7 +237,11 @@ describe("Coauthoring Service", () => {
         firstWs.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data)
-            if (data.type === "participant_update" && data.update?.event === "cursor_moved" && data.update?.user_id === "cursor-user-2") {
+            if (
+              data.type === "participant_update" &&
+              data.update?.event === "cursor_moved" &&
+              data.update?.user_id === "cursor-user-2"
+            ) {
               if (!settled) {
                 settled = true
                 clearTimeout(timeout)

@@ -130,7 +130,11 @@ function drawPage(pageIndex: number): void {
   ctx.fillStyle = "#888888"
   ctx.font = "9pt 'Segoe UI', Arial, sans-serif"
   ctx.textAlign = "center"
-  ctx.fillText(`${pageIndex + 1} / ${state.totalPages}`, PAGE_WIDTH_PT / 2, PAGE_HEIGHT_PT - MARGIN_PT / 2 + 10)
+  ctx.fillText(
+    `${pageIndex + 1} / ${state.totalPages}`,
+    PAGE_WIDTH_PT / 2,
+    PAGE_HEIGHT_PT - MARGIN_PT / 2 + 10,
+  )
   ctx.textAlign = "start"
 
   // Page border

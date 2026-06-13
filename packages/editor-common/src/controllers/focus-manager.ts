@@ -5,7 +5,7 @@
  * and manages tab indexes across multiple windows.
  */
 
-import { notificationCenter, type ControllerEvents } from "../core/event-bus"
+import { type ControllerEvents, notificationCenter } from "../core/event-bus"
 
 /** Focusable field registration data */
 export interface FocusableField {
@@ -39,12 +39,13 @@ function register(fields: FocusableField | FocusableField[]): FocusableField[] {
   for (const field of inputFields) {
     if (!field) continue
 
-    const item: FocusableField = field.cmp && typeof field.selector === "string"
-      ? { ...field }
-      : {
-          cmp: field.cmp,
-          selector: ".form-control",
-        }
+    const item: FocusableField =
+      field.cmp && typeof field.selector === "string"
+        ? { ...field }
+        : {
+            cmp: field.cmp,
+            selector: ".form-control",
+          }
 
     // Get element and set tabindex
     const $el = (item.cmp.$el || item.cmp.el) as { find?: (selector: string) => unknown }
@@ -132,7 +133,11 @@ function updateTabIndexes(increment: boolean, winIndex: number): void {
 }
 
 /** Inserts fields into a window at specific index */
-function insert(e: { cid: string }, fields: FocusableField | FocusableField[], index?: number): number {
+function insert(
+  e: { cid: string },
+  fields: FocusableField | FocusableField[],
+  index?: number,
+): number {
   if (!e?.cid) return 0
 
   if (windows[e.cid]) {

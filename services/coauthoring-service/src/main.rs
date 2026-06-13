@@ -10,23 +10,25 @@
 // TODO: Update crate edition from 2015 to 2024 to enable async/await syntax
 // Currently blocked by edition compatibility issues. Once edition is updated,
 // remove the clippy::allow directives below.
-#![allow(clippy::collapsible_if_let)]
 #![allow(clippy::let_underscore_future)]
 
 use axum::{
-    extract::{Path, State, WebSocketUpgrade, ws::{Message, WebSocket}},
+    Json, Router,
+    extract::{
+        Path, State, WebSocketUpgrade,
+        ws::{Message, WebSocket},
+    },
     http::StatusCode,
     routing::{get, post},
-    Json, Router,
 };
 use chrono::Utc;
-use diamond_types::list::{encoding::EncodeOptions, ListCRDT};
+use diamond_types::list::{ListCRDT, encoding::EncodeOptions};
 use futures_util::{SinkExt, StreamExt};
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::{broadcast, Mutex};
+use tokio::sync::{Mutex, broadcast};
 
 /// A connected editor session.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -130,13 +132,35 @@ pub struct CommentEventData {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "snake_case")]
 pub enum PresentationOp {
-    ShapeAdd { slide_index: u32, shape: ShapePayload },
-    ShapeDelete { slide_index: u32, shape_id: String },
-    ShapeModify { slide_index: u32, shape_id: String, properties: serde_json::Value },
-    ShapeMove { slide_index: u32, shape_id: String, x: f64, y: f64 },
-    SlideAdd { after_index: u32 },
-    SlideDelete { slide_index: u32 },
-    SlideReorder { from_index: u32, to_index: u32 },
+    ShapeAdd {
+        slide_index: u32,
+        shape: ShapePayload,
+    },
+    ShapeDelete {
+        slide_index: u32,
+        shape_id: String,
+    },
+    ShapeModify {
+        slide_index: u32,
+        shape_id: String,
+        properties: serde_json::Value,
+    },
+    ShapeMove {
+        slide_index: u32,
+        shape_id: String,
+        x: f64,
+        y: f64,
+    },
+    SlideAdd {
+        after_index: u32,
+    },
+    SlideDelete {
+        slide_index: u32,
+    },
+    SlideReorder {
+        from_index: u32,
+        to_index: u32,
+    },
 }
 
 /// Payload for a shape being added or updated in a presentation.
@@ -171,11 +195,23 @@ pub struct ShapePayload {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 enum WsMessage {
-    Edit { operation: EditOperation },
-    ParticipantUpdate { update: ParticipantUpdate },
-    InitialStateMsg { state: InitialState },
-    CommentEvent { data: CommentEventData },
-    PresentationOp { session_id: String, user_id: String, operation: PresentationOp },
+    Edit {
+        operation: EditOperation,
+    },
+    ParticipantUpdate {
+        update: ParticipantUpdate,
+    },
+    InitialStateMsg {
+        state: InitialState,
+    },
+    CommentEvent {
+        data: CommentEventData,
+    },
+    PresentationOp {
+        session_id: String,
+        user_id: String,
+        operation: PresentationOp,
+    },
 }
 
 /// A collaborative document backed by diamond-types CRDT.
@@ -271,21 +307,12 @@ pub struct PresentationState {
 }
 
 /// A single slide in a presentation's collaborative state.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SlideState {
     /// Shape map: shape_id -> JSON value with all properties.
     pub shapes: HashMap<String, serde_json::Value>,
     /// Ordered shape IDs for z-order rendering.
     pub shape_order: Vec<String>,
-}
-
-impl Default for SlideState {
-    fn default() -> Self {
-        Self {
-            shapes: HashMap::new(),
-            shape_order: Vec::new(),
-        }
-    }
 }
 
 /// SQLite-backed session repository for co-authoring sessions.
@@ -327,8 +354,8 @@ impl SessionRepository {
 
     /// Insert a new session into the database.
     fn insert(&self, session: &EditorSession) -> Result<(), rusqlite::Error> {
-        let participants_json = serde_json::to_string(&session.participants)
-            .unwrap_or_else(|_| "[]".to_string());
+        let participants_json =
+            serde_json::to_string(&session.participants).unwrap_or_else(|_| "[]".to_string());
         self.conn.execute(
             "INSERT INTO editor_sessions (id, document_id, created_at, last_activity, participants)
              VALUES (?1, ?2, ?3, ?4, ?5)",
@@ -374,8 +401,8 @@ impl SessionRepository {
 
     /// Update a session (e.g., after a participant joins).
     fn update(&self, session: &EditorSession) -> Result<bool, rusqlite::Error> {
-        let participants_json = serde_json::to_string(&session.participants)
-            .unwrap_or_else(|_| "[]".to_string());
+        let participants_json =
+            serde_json::to_string(&session.participants).unwrap_or_else(|_| "[]".to_string());
         let count = self.conn.execute(
             "UPDATE editor_sessions SET last_activity = ?1, participants = ?2 WHERE id = ?3",
             params![session.last_activity, participants_json, session.session_id],
@@ -385,10 +412,9 @@ impl SessionRepository {
 
     /// Delete a session by ID.
     fn delete(&self, id: &str) -> Result<bool, rusqlite::Error> {
-        let count = self.conn.execute(
-            "DELETE FROM editor_sessions WHERE id = ?1",
-            params![id],
-        )?;
+        let count = self
+            .conn
+            .execute("DELETE FROM editor_sessions WHERE id = ?1", params![id])?;
         Ok(count > 0)
     }
 
@@ -468,8 +494,7 @@ struct ErrorResponse {
 
 /// Preset editor colors for participant differentiation.
 const EDITOR_COLORS: &[&str] = &[
-    "#E74C3C", "#3498DB", "#2ECC71", "#F39C12",
-    "#9B59B6", "#1ABC9C", "#E67E22", "#34495E",
+    "#E74C3C", "#3498DB", "#2ECC71", "#F39C12", "#9B59B6", "#1ABC9C", "#E67E22", "#34495E",
 ];
 
 /// POST /sessions — create a new co-authoring session.
@@ -566,23 +591,26 @@ async fn join_session(
 ) -> Result<Json<JoinSessionResponse>, (StatusCode, Json<ErrorResponse>)> {
     let mut session = {
         let repo = state.sessions.lock().await;
-        repo.get(&session_id).map_err(|e| {
-            tracing::error!(error = %e, "database error getting session");
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                Json(ErrorResponse {
-                    error: "Internal server error".into(),
-                    code: 500,
-                }),
-            )
-        })?
-        .ok_or_else(|| (
-            StatusCode::NOT_FOUND,
-            Json(ErrorResponse {
-                error: format!("Session {} not found", session_id),
-                code: 404,
-            }),
-        ))?
+        repo.get(&session_id)
+            .map_err(|e| {
+                tracing::error!(error = %e, "database error getting session");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(ErrorResponse {
+                        error: "Internal server error".into(),
+                        code: 500,
+                    }),
+                )
+            })?
+            .ok_or_else(|| {
+                (
+                    StatusCode::NOT_FOUND,
+                    Json(ErrorResponse {
+                        error: format!("Session {} not found", session_id),
+                        code: 404,
+                    }),
+                )
+            })?
     };
 
     let color_index = session.participants.len() % EDITOR_COLORS.len();
@@ -684,8 +712,14 @@ async fn ws_upgrade(
     axum::extract::Query(params): axum::extract::Query<std::collections::HashMap<String, String>>,
     ws: WebSocketUpgrade,
 ) -> impl axum::response::IntoResponse {
-    let user_id = params.get("user_id").cloned().unwrap_or_else(|| "anonymous".to_string());
-    let username = params.get("username").cloned().unwrap_or_else(|| "Anonymous".to_string());
+    let user_id = params
+        .get("user_id")
+        .cloned()
+        .unwrap_or_else(|| "anonymous".to_string());
+    let username = params
+        .get("username")
+        .cloned()
+        .unwrap_or_else(|| "Anonymous".to_string());
     ws.on_upgrade(move |socket| handle_ws(socket, state, session_id, user_id, username))
 }
 
@@ -765,17 +799,26 @@ async fn handle_ws(
         repo.get(&session_id)
             .ok()
             .flatten()
-            .and_then(|s| s.participants.iter().find(|p| p.user_id == user_id).map(|p| p.color.clone()))
+            .and_then(|s| {
+                s.participants
+                    .iter()
+                    .find(|p| p.user_id == user_id)
+                    .map(|p| p.color.clone())
+            })
             .unwrap_or_else(|| "#E74C3C".to_string())
     };
 
     let initial_state = {
         let doc_bytes = {
             let docs = state.documents.lock().await;
-            docs.get(&session_id).map(|doc| doc.crdt.oplog.encode(EncodeOptions::default()))
+            docs.get(&session_id)
+                .map(|doc| doc.crdt.oplog.encode(EncodeOptions::default()))
         };
         let repo = state.sessions.lock().await;
-        let participants = repo.get(&session_id).ok().flatten()
+        let participants = repo
+            .get(&session_id)
+            .ok()
+            .flatten()
             .map(|s| s.participants.clone())
             .unwrap_or_default();
         let pres_state = {
@@ -802,11 +845,10 @@ async fn handle_ws(
         cursor_position: None,
         selection: None,
     };
-    #[allow(clippy::collapsible_if_let)]
-    if let Some(ref tx) = presence_tx {
-        if let Ok(json) = serde_json::to_string(&WsMessage::ParticipantUpdate { update: joined }) {
-            let _ = tx.send(json);
-        }
+    if let Some(ref tx) = presence_tx
+        && let Ok(json) = serde_json::to_string(&WsMessage::ParticipantUpdate { update: joined })
+    {
+        let _ = tx.send(json);
     }
 
     // Forward all outgoing messages to the WebSocket
@@ -860,29 +902,37 @@ async fn handle_ws(
                                 false
                             }
                         };
-                        if !applied { continue; }
+                        if !applied {
+                            continue;
+                        }
                         let channels = state.edit_channels.lock().await;
                         if let Some(tx) = channels.get(&session_id) {
                             let _ = tx.send(text.to_string());
                         }
                     }
                     WsMessage::ParticipantUpdate { update } => {
-                        if let Some(ref tx) = presence_tx {
-                            if let Ok(json) = serde_json::to_string(&WsMessage::ParticipantUpdate { update }) {
-                                let _ = tx.send(json);
-                            }
+                        if let Some(ref tx) = presence_tx
+                            && let Ok(json) =
+                                serde_json::to_string(&WsMessage::ParticipantUpdate { update })
+                        {
+                            let _ = tx.send(json);
                         }
                     }
                     WsMessage::CommentEvent { data } => {
                         // Broadcast comment events to all session participants via edit channel
                         let channels = state.edit_channels.lock().await;
-                        if let Some(tx) = channels.get(&session_id) {
-                            if let Ok(json) = serde_json::to_string(&WsMessage::CommentEvent { data }) {
-                                let _ = tx.send(json);
-                            }
+                        if let Some(tx) = channels.get(&session_id)
+                            && let Ok(json) =
+                                serde_json::to_string(&WsMessage::CommentEvent { data })
+                        {
+                            let _ = tx.send(json);
                         }
                     }
-                    WsMessage::PresentationOp { session_id: _, user_id: _, operation } => {
+                    WsMessage::PresentationOp {
+                        session_id: _,
+                        user_id: _,
+                        operation,
+                    } => {
                         // Update server-side presentation state
                         {
                             let mut pstate = state.presentation_state.lock().await;
@@ -906,7 +956,9 @@ async fn handle_ws(
                         false
                     }
                 };
-                if !applied { continue; }
+                if !applied {
+                    continue;
+                }
                 let channels = state.edit_channels.lock().await;
                 if let Some(tx) = channels.get(&session_id) {
                     let _ = tx.send(text.to_string());
@@ -923,10 +975,10 @@ async fn handle_ws(
         cursor_position: None,
         selection: None,
     };
-    if let Some(ref tx) = presence_tx {
-        if let Ok(json) = serde_json::to_string(&WsMessage::ParticipantUpdate { update: left }) {
-            let _ = tx.send(json);
-        }
+    if let Some(ref tx) = presence_tx
+        && let Ok(json) = serde_json::to_string(&WsMessage::ParticipantUpdate { update: left })
+    {
+        let _ = tx.send(json);
     }
 
     recv_presence.abort();
@@ -958,10 +1010,9 @@ fn app(state: Arc<AppState>) -> Router {
 async fn main() {
     tracing_subscriber::fmt::init();
 
-    let db_path = std::env::var("DATABASE_PATH")
-        .unwrap_or_else(|_| "coauthoring_sessions.db".into());
-    let repo = SessionRepository::new_file(&db_path)
-        .expect("failed to open coauthoring database");
+    let db_path =
+        std::env::var("DATABASE_PATH").unwrap_or_else(|_| "coauthoring_sessions.db".into());
+    let repo = SessionRepository::new_file(&db_path).expect("failed to open coauthoring database");
 
     let state = Arc::new(AppState {
         sessions: Arc::new(Mutex::new(repo)),
@@ -979,7 +1030,12 @@ async fn main() {
         .parse()
         .unwrap_or(8004);
 
-    tracing::info!("coauthoring-service v{} starting on {}:{}", env!("CARGO_PKG_VERSION"), addr, port);
+    tracing::info!(
+        "coauthoring-service v{} starting on {}:{}",
+        env!("CARGO_PKG_VERSION"),
+        addr,
+        port
+    );
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", addr, port))
         .await
@@ -1003,33 +1059,40 @@ fn apply_presentation_op(state: &mut PresentationState, op: &PresentationOp) {
                 }
             }
         }
-        PresentationOp::ShapeDelete { slide_index, shape_id } => {
+        PresentationOp::ShapeDelete {
+            slide_index,
+            shape_id,
+        } => {
             if let Some(slide) = state.slides.get_mut(*slide_index as usize) {
                 slide.shapes.remove(shape_id);
                 slide.shape_order.retain(|id| id != shape_id);
             }
         }
-        PresentationOp::ShapeModify { slide_index, shape_id, properties } => {
-            if let Some(slide) = state.slides.get_mut(*slide_index as usize) {
-                if let Some(existing) = slide.shapes.get_mut(shape_id) {
-                    if let serde_json::Value::Object(map) = existing {
-                        if let serde_json::Value::Object(props) = properties {
-                            for (k, v) in props.clone() {
-                                map.insert(k, v);
-                            }
-                        }
-                    }
+        PresentationOp::ShapeModify {
+            slide_index,
+            shape_id,
+            properties,
+        } => {
+            if let Some(slide) = state.slides.get_mut(*slide_index as usize)
+                && let Some(serde_json::Value::Object(map)) = slide.shapes.get_mut(shape_id)
+                && let serde_json::Value::Object(props) = properties
+            {
+                for (k, v) in props.clone() {
+                    map.insert(k, v);
                 }
             }
         }
-        PresentationOp::ShapeMove { slide_index, shape_id, x, y } => {
-            if let Some(slide) = state.slides.get_mut(*slide_index as usize) {
-                if let Some(existing) = slide.shapes.get_mut(shape_id) {
-                    if let serde_json::Value::Object(map) = existing {
-                        map.insert("x".to_string(), serde_json::json!(x));
-                        map.insert("y".to_string(), serde_json::json!(y));
-                    }
-                }
+        PresentationOp::ShapeMove {
+            slide_index,
+            shape_id,
+            x,
+            y,
+        } => {
+            if let Some(slide) = state.slides.get_mut(*slide_index as usize)
+                && let Some(serde_json::Value::Object(map)) = slide.shapes.get_mut(shape_id)
+            {
+                map.insert("x".to_string(), serde_json::json!(x));
+                map.insert("y".to_string(), serde_json::json!(y));
             }
         }
         PresentationOp::SlideAdd { after_index } => {
@@ -1042,7 +1105,10 @@ fn apply_presentation_op(state: &mut PresentationState, op: &PresentationOp) {
                 state.slides.remove(idx);
             }
         }
-        PresentationOp::SlideReorder { from_index, to_index } => {
+        PresentationOp::SlideReorder {
+            from_index,
+            to_index,
+        } => {
             let from = *from_index as usize;
             let to = (*to_index as usize).min(state.slides.len().saturating_sub(1));
             if from < state.slides.len() && to < state.slides.len() && from != to {
@@ -1069,15 +1135,13 @@ mod tests {
             document_id: "doc-123".to_string(),
             created_at: "2026-04-17T00:00:00+00:00".to_string(),
             last_activity: "2026-04-17T00:00:00+00:00".to_string(),
-            participants: vec![
-                Participant {
-                    user_id: "user-1".to_string(),
-                    username: "alice".to_string(),
-                    color: "#E74C3C".to_string(),
-                    cursor_position: None,
-                    selection: None,
-                },
-            ],
+            participants: vec![Participant {
+                user_id: "user-1".to_string(),
+                username: "alice".to_string(),
+                color: "#E74C3C".to_string(),
+                cursor_position: None,
+                selection: None,
+            }],
         }
     }
 
@@ -1220,7 +1284,13 @@ mod tests {
     // --- diamond-types integration tests ---
 
     /// Helper: create a sample EditOperation.
-    fn sample_edit(user_id: &str, op_type: &str, position: u64, length: u64, content: Option<&str>) -> EditOperation {
+    fn sample_edit(
+        user_id: &str,
+        op_type: &str,
+        position: u64,
+        length: u64,
+        content: Option<&str>,
+    ) -> EditOperation {
         EditOperation {
             session_id: "sess-1".to_string(),
             user_id: user_id.to_string(),
@@ -1244,32 +1314,39 @@ mod tests {
     #[test]
     fn test_document_multiple_inserts() {
         let mut doc = Document::new();
-        doc.apply_edit(&sample_edit("alice", "insert", 0, 0, Some("Hello"))).unwrap();
-        doc.apply_edit(&sample_edit("alice", "insert", 5, 0, Some(" world"))).unwrap();
+        doc.apply_edit(&sample_edit("alice", "insert", 0, 0, Some("Hello")))
+            .unwrap();
+        doc.apply_edit(&sample_edit("alice", "insert", 5, 0, Some(" world")))
+            .unwrap();
         assert_eq!(doc.text(), "Hello world");
     }
 
     #[test]
     fn test_document_delete() {
         let mut doc = Document::new();
-        doc.apply_edit(&sample_edit("alice", "insert", 0, 0, Some("Hello world"))).unwrap();
-        doc.apply_edit(&sample_edit("alice", "delete", 5, 6, None)).unwrap();
+        doc.apply_edit(&sample_edit("alice", "insert", 0, 0, Some("Hello world")))
+            .unwrap();
+        doc.apply_edit(&sample_edit("alice", "delete", 5, 6, None))
+            .unwrap();
         assert_eq!(doc.text(), "Hello");
     }
 
     #[test]
     fn test_document_delete_middle() {
         let mut doc = Document::new();
-        doc.apply_edit(&sample_edit("alice", "insert", 0, 0, Some("abcdef"))).unwrap();
+        doc.apply_edit(&sample_edit("alice", "insert", 0, 0, Some("abcdef")))
+            .unwrap();
         // Delete "bc" (position 1, length 2)
-        doc.apply_edit(&sample_edit("alice", "delete", 1, 2, None)).unwrap();
+        doc.apply_edit(&sample_edit("alice", "delete", 1, 2, None))
+            .unwrap();
         assert_eq!(doc.text(), "adef");
     }
 
     #[test]
     fn test_document_format_is_noop() {
         let mut doc = Document::new();
-        doc.apply_edit(&sample_edit("alice", "insert", 0, 0, Some("Hello"))).unwrap();
+        doc.apply_edit(&sample_edit("alice", "insert", 0, 0, Some("Hello")))
+            .unwrap();
         // Format ops should be no-ops in plain text v1
         let fmt_op = EditOperation {
             op_type: "format".to_string(),
@@ -1319,7 +1396,8 @@ mod tests {
         let mut doc2 = Document::new();
 
         // Both start from the same initial state
-        doc1.apply_edit(&sample_edit("alice", "insert", 0, 0, Some("S"))).unwrap();
+        doc1.apply_edit(&sample_edit("alice", "insert", 0, 0, Some("S")))
+            .unwrap();
         doc1.merge_from(&doc2);
         doc2.merge_from(&doc1);
 
@@ -1328,8 +1406,10 @@ mod tests {
         assert_eq!(doc2.text(), "S");
 
         // Concurrent edits: both insert at position 1 (after "S")
-        doc1.apply_edit(&sample_edit("alice", "insert", 1, 0, Some("aaa"))).unwrap();
-        doc2.apply_edit(&sample_edit("bob", "insert", 1, 0, Some("bbb"))).unwrap();
+        doc1.apply_edit(&sample_edit("alice", "insert", 1, 0, Some("aaa")))
+            .unwrap();
+        doc2.apply_edit(&sample_edit("bob", "insert", 1, 0, Some("bbb")))
+            .unwrap();
 
         // Before merge, each has its own content
         assert_eq!(doc1.text(), "Saaa");
@@ -1348,11 +1428,12 @@ mod tests {
             merged.contains("bbb"),
             "merged text '{merged}' must contain 'bbb'"
         );
-        assert_eq!(merged.len(), 7, "merged text should be 7 chars: S + aaa + bbb");
-        assert!(
-            merged.starts_with('S'),
-            "merged text should start with 'S'"
+        assert_eq!(
+            merged.len(),
+            7,
+            "merged text should be 7 chars: S + aaa + bbb"
         );
+        assert!(merged.starts_with('S'), "merged text should start with 'S'");
     }
 
     /// Three-way concurrent edit: three clients each insert at the same position.
@@ -1363,7 +1444,8 @@ mod tests {
         let mut doc3 = Document::new();
 
         // Shared initial content
-        doc1.apply_edit(&sample_edit("alice", "insert", 0, 0, Some("X"))).unwrap();
+        doc1.apply_edit(&sample_edit("alice", "insert", 0, 0, Some("X")))
+            .unwrap();
         doc2.merge_from(&doc1);
         doc3.merge_from(&doc1);
 
@@ -1372,16 +1454,23 @@ mod tests {
         assert_eq!(doc3.text(), "X");
 
         // All three insert at position 1 (after "X") concurrently
-        doc1.apply_edit(&sample_edit("alice", "insert", 1, 0, Some("A"))).unwrap();
-        doc2.apply_edit(&sample_edit("bob", "insert", 1, 0, Some("B"))).unwrap();
-        doc3.apply_edit(&sample_edit("carol", "insert", 1, 0, Some("C"))).unwrap();
+        doc1.apply_edit(&sample_edit("alice", "insert", 1, 0, Some("A")))
+            .unwrap();
+        doc2.apply_edit(&sample_edit("bob", "insert", 1, 0, Some("B")))
+            .unwrap();
+        doc3.apply_edit(&sample_edit("carol", "insert", 1, 0, Some("C")))
+            .unwrap();
 
         // Merge all three together
         doc1.merge_from(&doc2);
         doc1.merge_from(&doc3);
 
         let merged = doc1.text();
-        assert_eq!(merged.len(), 4, "merged text should be 4 chars: X + A + B + C");
+        assert_eq!(
+            merged.len(),
+            4,
+            "merged text should be 4 chars: X + A + B + C"
+        );
         assert!(merged.contains('X'));
         assert!(merged.contains('A'));
         assert!(merged.contains('B'));
@@ -1395,17 +1484,20 @@ mod tests {
         let mut doc2 = Document::new();
 
         // Shared initial: "abcde"
-        doc1.apply_edit(&sample_edit("alice", "insert", 0, 0, Some("abcde"))).unwrap();
+        doc1.apply_edit(&sample_edit("alice", "insert", 0, 0, Some("abcde")))
+            .unwrap();
         doc2.merge_from(&doc1);
 
         assert_eq!(doc1.text(), "abcde");
         assert_eq!(doc2.text(), "abcde");
 
         // Client 1 inserts "X" at position 2 -> "abXcde"
-        doc1.apply_edit(&sample_edit("alice", "insert", 2, 0, Some("X"))).unwrap();
+        doc1.apply_edit(&sample_edit("alice", "insert", 2, 0, Some("X")))
+            .unwrap();
 
         // Client 2 deletes "bcd" (positions 1..4) -> "ae"
-        doc2.apply_edit(&sample_edit("bob", "delete", 1, 3, None)).unwrap();
+        doc2.apply_edit(&sample_edit("bob", "delete", 1, 3, None))
+            .unwrap();
 
         // Merge
         doc1.merge_from(&doc2);

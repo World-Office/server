@@ -170,8 +170,8 @@ mod tests {
         let input = buf.clone();
         rt.parse(&input).expect("parse should succeed");
         let output = rt.serialize().expect("serialize should succeed");
-        use zip::ZipArchive;
         use std::io::Read;
+        use zip::ZipArchive;
         let cursor = std::io::Cursor::new(&output);
         let mut archive = ZipArchive::new(cursor).expect("valid ZIP");
         assert!(archive.by_name("[Content_Types].xml").is_ok());
@@ -226,8 +226,8 @@ mod tests {
         rt.parse(&buf).expect("parse should succeed");
         let output = rt.serialize().expect("serialize should succeed");
 
-        use zip::ZipArchive;
         use std::io::Read;
+        use zip::ZipArchive;
         let cursor = std::io::Cursor::new(&output);
         let mut archive = ZipArchive::new(cursor).expect("valid ZIP");
 
@@ -417,7 +417,8 @@ mod tests {
 </Types>"#,
             ).unwrap();
 
-            zip.start_file("_rels/.rels", SimpleFileOptions::default()).unwrap();
+            zip.start_file("_rels/.rels", SimpleFileOptions::default())
+                .unwrap();
             zip.write_all(
                 br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -425,7 +426,8 @@ mod tests {
 </Relationships>"#,
             ).unwrap();
 
-            zip.start_file("ppt/presentation.xml", SimpleFileOptions::default()).unwrap();
+            zip.start_file("ppt/presentation.xml", SimpleFileOptions::default())
+                .unwrap();
             zip.write_all(
                 br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
@@ -435,9 +437,14 @@ mod tests {
     <p:sldId id="256" r:id="rId1"/>
   </p:sldIdLst>
 </p:presentation>"#,
-            ).unwrap();
+            )
+            .unwrap();
 
-            zip.start_file("ppt/_rels/presentation.xml.rels", SimpleFileOptions::default()).unwrap();
+            zip.start_file(
+                "ppt/_rels/presentation.xml.rels",
+                SimpleFileOptions::default(),
+            )
+            .unwrap();
             zip.write_all(
                 br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -445,7 +452,8 @@ mod tests {
 </Relationships>"#,
             ).unwrap();
 
-            zip.start_file("ppt/slides/slide1.xml", SimpleFileOptions::default()).unwrap();
+            zip.start_file("ppt/slides/slide1.xml", SimpleFileOptions::default())
+                .unwrap();
             zip.write_all(
                 br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
@@ -554,7 +562,8 @@ mod tests {
     </p:childTnLst>
   </p:timing>
 </p:sld>"#,
-            ).unwrap();
+            )
+            .unwrap();
 
             zip.finish().unwrap();
         }
@@ -569,7 +578,8 @@ mod tests {
         let rt = OoxmlRoundtrip::new();
         let input = create_pptx_with_transition_and_animation();
 
-        rt.parse(&input).expect("PPTX with transition+animations should parse");
+        rt.parse(&input)
+            .expect("PPTX with transition+animations should parse");
         let output = rt.serialize().expect("serialize should succeed");
 
         use zip::ZipArchive;

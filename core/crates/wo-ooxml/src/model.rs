@@ -315,8 +315,9 @@ pub struct Slide {
 }
 
 /// Transition effect types for PPTX slides.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub enum TransitionEffect {
+    #[default]
     None,
     Fade,
     Push,
@@ -356,10 +357,6 @@ pub enum TransitionEffect {
     PullRight,
 }
 
-impl Default for TransitionEffect {
-    fn default() -> Self { Self::None }
-}
-
 /// Per-slide transition settings.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SlideTransition {
@@ -385,14 +382,11 @@ impl Default for SlideTransition {
 }
 
 /// How the slide advances to the next.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub enum AdvanceMode {
+    #[default]
     Manual,
     Timed,
-}
-
-impl Default for AdvanceMode {
-    fn default() -> Self { Self::Manual }
 }
 
 /// Animation data for a single shape on a slide.
@@ -538,7 +532,7 @@ impl std::fmt::Display for ConnectorShapeType {
 }
 
 impl ConnectorShapeType {
-    pub fn from_str(s: &str) -> Self {
+    pub fn from_name(s: &str) -> Self {
         match s {
             "straightConnector1" => ConnectorShapeType::Straight,
             "bentConnector2" => ConnectorShapeType::Bent1,
@@ -639,12 +633,18 @@ pub struct SlideSize {
 impl SlideSize {
     /// Standard 4:3 slide size (10 × 7.5 inches in EMU).
     pub fn standard() -> Self {
-        Self { cx: 9144000, cy: 6858000 }
+        Self {
+            cx: 9144000,
+            cy: 6858000,
+        }
     }
 
     /// Widescreen 16:9 slide size (13.33 × 7.5 inches in EMU).
     pub fn widescreen() -> Self {
-        Self { cx: 12192000, cy: 6858000 }
+        Self {
+            cx: 12192000,
+            cy: 6858000,
+        }
     }
 }
 
@@ -683,18 +683,54 @@ impl Default for ColorScheme {
         Self {
             name: "Default".to_string(),
             colors: vec![
-                ThemeColor { name: "dark1".to_string(), color: "000000".to_string() },
-                ThemeColor { name: "light1".to_string(), color: "FFFFFF".to_string() },
-                ThemeColor { name: "dark2".to_string(), color: "44546A".to_string() },
-                ThemeColor { name: "light2".to_string(), color: "E7E6E6".to_string() },
-                ThemeColor { name: "accent1".to_string(), color: "4472C4".to_string() },
-                ThemeColor { name: "accent2".to_string(), color: "ED7D31".to_string() },
-                ThemeColor { name: "accent3".to_string(), color: "A5A5A5".to_string() },
-                ThemeColor { name: "accent4".to_string(), color: "FFC000".to_string() },
-                ThemeColor { name: "accent5".to_string(), color: "5B9BD5".to_string() },
-                ThemeColor { name: "accent6".to_string(), color: "70AD47".to_string() },
-                ThemeColor { name: "hlink".to_string(), color: "0563C1".to_string() },
-                ThemeColor { name: "folHlink".to_string(), color: "954F72".to_string() },
+                ThemeColor {
+                    name: "dark1".to_string(),
+                    color: "000000".to_string(),
+                },
+                ThemeColor {
+                    name: "light1".to_string(),
+                    color: "FFFFFF".to_string(),
+                },
+                ThemeColor {
+                    name: "dark2".to_string(),
+                    color: "44546A".to_string(),
+                },
+                ThemeColor {
+                    name: "light2".to_string(),
+                    color: "E7E6E6".to_string(),
+                },
+                ThemeColor {
+                    name: "accent1".to_string(),
+                    color: "4472C4".to_string(),
+                },
+                ThemeColor {
+                    name: "accent2".to_string(),
+                    color: "ED7D31".to_string(),
+                },
+                ThemeColor {
+                    name: "accent3".to_string(),
+                    color: "A5A5A5".to_string(),
+                },
+                ThemeColor {
+                    name: "accent4".to_string(),
+                    color: "FFC000".to_string(),
+                },
+                ThemeColor {
+                    name: "accent5".to_string(),
+                    color: "5B9BD5".to_string(),
+                },
+                ThemeColor {
+                    name: "accent6".to_string(),
+                    color: "70AD47".to_string(),
+                },
+                ThemeColor {
+                    name: "hlink".to_string(),
+                    color: "0563C1".to_string(),
+                },
+                ThemeColor {
+                    name: "folHlink".to_string(),
+                    color: "954F72".to_string(),
+                },
             ],
         }
     }
@@ -785,18 +821,54 @@ pub fn builtin_theme_presets() -> Vec<ThemePreset> {
             color_scheme: ColorScheme {
                 name: "Ion".to_string(),
                 colors: vec![
-                    ThemeColor { name: "dark1".to_string(), color: "2E4053".to_string() },
-                    ThemeColor { name: "light1".to_string(), color: "FFFFFF".to_string() },
-                    ThemeColor { name: "dark2".to_string(), color: "1B2631".to_string() },
-                    ThemeColor { name: "light2".to_string(), color: "F2F3F4".to_string() },
-                    ThemeColor { name: "accent1".to_string(), color: "5DADE2".to_string() },
-                    ThemeColor { name: "accent2".to_string(), color: "48C9B0".to_string() },
-                    ThemeColor { name: "accent3".to_string(), color: "F5B041".to_string() },
-                    ThemeColor { name: "accent4".to_string(), color: "EC7063".to_string() },
-                    ThemeColor { name: "accent5".to_string(), color: "AF7AC5".to_string() },
-                    ThemeColor { name: "accent6".to_string(), color: "85C1E9".to_string() },
-                    ThemeColor { name: "hlink".to_string(), color: "1A5276".to_string() },
-                    ThemeColor { name: "folHlink".to_string(), color: "7D3C98".to_string() },
+                    ThemeColor {
+                        name: "dark1".to_string(),
+                        color: "2E4053".to_string(),
+                    },
+                    ThemeColor {
+                        name: "light1".to_string(),
+                        color: "FFFFFF".to_string(),
+                    },
+                    ThemeColor {
+                        name: "dark2".to_string(),
+                        color: "1B2631".to_string(),
+                    },
+                    ThemeColor {
+                        name: "light2".to_string(),
+                        color: "F2F3F4".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent1".to_string(),
+                        color: "5DADE2".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent2".to_string(),
+                        color: "48C9B0".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent3".to_string(),
+                        color: "F5B041".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent4".to_string(),
+                        color: "EC7063".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent5".to_string(),
+                        color: "AF7AC5".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent6".to_string(),
+                        color: "85C1E9".to_string(),
+                    },
+                    ThemeColor {
+                        name: "hlink".to_string(),
+                        color: "1A5276".to_string(),
+                    },
+                    ThemeColor {
+                        name: "folHlink".to_string(),
+                        color: "7D3C98".to_string(),
+                    },
                 ],
             },
             font_scheme: FontScheme::default(),
@@ -807,18 +879,54 @@ pub fn builtin_theme_presets() -> Vec<ThemePreset> {
             color_scheme: ColorScheme {
                 name: "Retro".to_string(),
                 colors: vec![
-                    ThemeColor { name: "dark1".to_string(), color: "3E2723".to_string() },
-                    ThemeColor { name: "light1".to_string(), color: "FEF9E7".to_string() },
-                    ThemeColor { name: "dark2".to_string(), color: "4E342E".to_string() },
-                    ThemeColor { name: "light2".to_string(), color: "F8F0D5".to_string() },
-                    ThemeColor { name: "accent1".to_string(), color: "BF360C".to_string() },
-                    ThemeColor { name: "accent2".to_string(), color: "F57F17".to_string() },
-                    ThemeColor { name: "accent3".to_string(), color: "558B2F".to_string() },
-                    ThemeColor { name: "accent4".to_string(), color: "1565C0".to_string() },
-                    ThemeColor { name: "accent5".to_string(), color: "6A1B9A".to_string() },
-                    ThemeColor { name: "accent6".to_string(), color: "D84315".to_string() },
-                    ThemeColor { name: "hlink".to_string(), color: "0039CB".to_string() },
-                    ThemeColor { name: "folHlink".to_string(), color: "7B1FA2".to_string() },
+                    ThemeColor {
+                        name: "dark1".to_string(),
+                        color: "3E2723".to_string(),
+                    },
+                    ThemeColor {
+                        name: "light1".to_string(),
+                        color: "FEF9E7".to_string(),
+                    },
+                    ThemeColor {
+                        name: "dark2".to_string(),
+                        color: "4E342E".to_string(),
+                    },
+                    ThemeColor {
+                        name: "light2".to_string(),
+                        color: "F8F0D5".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent1".to_string(),
+                        color: "BF360C".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent2".to_string(),
+                        color: "F57F17".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent3".to_string(),
+                        color: "558B2F".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent4".to_string(),
+                        color: "1565C0".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent5".to_string(),
+                        color: "6A1B9A".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent6".to_string(),
+                        color: "D84315".to_string(),
+                    },
+                    ThemeColor {
+                        name: "hlink".to_string(),
+                        color: "0039CB".to_string(),
+                    },
+                    ThemeColor {
+                        name: "folHlink".to_string(),
+                        color: "7B1FA2".to_string(),
+                    },
                 ],
             },
             font_scheme: FontScheme::default(),
@@ -829,18 +937,54 @@ pub fn builtin_theme_presets() -> Vec<ThemePreset> {
             color_scheme: ColorScheme {
                 name: "Ocean".to_string(),
                 colors: vec![
-                    ThemeColor { name: "dark1".to_string(), color: "0B2545".to_string() },
-                    ThemeColor { name: "light1".to_string(), color: "F0F8FF".to_string() },
-                    ThemeColor { name: "dark2".to_string(), color: "1A3A5C".to_string() },
-                    ThemeColor { name: "light2".to_string(), color: "D6E4F0".to_string() },
-                    ThemeColor { name: "accent1".to_string(), color: "0077B6".to_string() },
-                    ThemeColor { name: "accent2".to_string(), color: "00B4D8".to_string() },
-                    ThemeColor { name: "accent3".to_string(), color: "90E0EF".to_string() },
-                    ThemeColor { name: "accent4".to_string(), color: "03045E".to_string() },
-                    ThemeColor { name: "accent5".to_string(), color: "48CAE4".to_string() },
-                    ThemeColor { name: "accent6".to_string(), color: "023E8A".to_string() },
-                    ThemeColor { name: "hlink".to_string(), color: "0096C7".to_string() },
-                    ThemeColor { name: "folHlink".to_string(), color: "5E548E".to_string() },
+                    ThemeColor {
+                        name: "dark1".to_string(),
+                        color: "0B2545".to_string(),
+                    },
+                    ThemeColor {
+                        name: "light1".to_string(),
+                        color: "F0F8FF".to_string(),
+                    },
+                    ThemeColor {
+                        name: "dark2".to_string(),
+                        color: "1A3A5C".to_string(),
+                    },
+                    ThemeColor {
+                        name: "light2".to_string(),
+                        color: "D6E4F0".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent1".to_string(),
+                        color: "0077B6".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent2".to_string(),
+                        color: "00B4D8".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent3".to_string(),
+                        color: "90E0EF".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent4".to_string(),
+                        color: "03045E".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent5".to_string(),
+                        color: "48CAE4".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent6".to_string(),
+                        color: "023E8A".to_string(),
+                    },
+                    ThemeColor {
+                        name: "hlink".to_string(),
+                        color: "0096C7".to_string(),
+                    },
+                    ThemeColor {
+                        name: "folHlink".to_string(),
+                        color: "5E548E".to_string(),
+                    },
                 ],
             },
             font_scheme: FontScheme::default(),
@@ -851,18 +995,54 @@ pub fn builtin_theme_presets() -> Vec<ThemePreset> {
             color_scheme: ColorScheme {
                 name: "Forest".to_string(),
                 colors: vec![
-                    ThemeColor { name: "dark1".to_string(), color: "1B4332".to_string() },
-                    ThemeColor { name: "light1".to_string(), color: "F0FFF0".to_string() },
-                    ThemeColor { name: "dark2".to_string(), color: "2D6A4F".to_string() },
-                    ThemeColor { name: "light2".to_string(), color: "D8F3DC".to_string() },
-                    ThemeColor { name: "accent1".to_string(), color: "40916C".to_string() },
-                    ThemeColor { name: "accent2".to_string(), color: "52B788".to_string() },
-                    ThemeColor { name: "accent3".to_string(), color: "95D5B2".to_string() },
-                    ThemeColor { name: "accent4".to_string(), color: "74C69D".to_string() },
-                    ThemeColor { name: "accent5".to_string(), color: "1B4332".to_string() },
-                    ThemeColor { name: "accent6".to_string(), color: "B7E4C7".to_string() },
-                    ThemeColor { name: "hlink".to_string(), color: "2D6A4F".to_string() },
-                    ThemeColor { name: "folHlink".to_string(), color: "1B4332".to_string() },
+                    ThemeColor {
+                        name: "dark1".to_string(),
+                        color: "1B4332".to_string(),
+                    },
+                    ThemeColor {
+                        name: "light1".to_string(),
+                        color: "F0FFF0".to_string(),
+                    },
+                    ThemeColor {
+                        name: "dark2".to_string(),
+                        color: "2D6A4F".to_string(),
+                    },
+                    ThemeColor {
+                        name: "light2".to_string(),
+                        color: "D8F3DC".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent1".to_string(),
+                        color: "40916C".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent2".to_string(),
+                        color: "52B788".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent3".to_string(),
+                        color: "95D5B2".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent4".to_string(),
+                        color: "74C69D".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent5".to_string(),
+                        color: "1B4332".to_string(),
+                    },
+                    ThemeColor {
+                        name: "accent6".to_string(),
+                        color: "B7E4C7".to_string(),
+                    },
+                    ThemeColor {
+                        name: "hlink".to_string(),
+                        color: "2D6A4F".to_string(),
+                    },
+                    ThemeColor {
+                        name: "folHlink".to_string(),
+                        color: "1B4332".to_string(),
+                    },
                 ],
             },
             font_scheme: FontScheme::default(),

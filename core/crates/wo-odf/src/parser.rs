@@ -281,7 +281,11 @@ impl OdfParser {
         }
     }
 
-    fn parse_text_content(&self, doc: &XmlDoc, _archive: &mut zip::ZipArchive<Cursor<&[u8]>>) -> Result<OdfContent> {
+    fn parse_text_content(
+        &self,
+        doc: &XmlDoc,
+        _archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    ) -> Result<OdfContent> {
         let mut content = Vec::new();
         let mut sections = Vec::new();
 
@@ -601,7 +605,11 @@ impl OdfParser {
         }
     }
 
-    fn parse_spreadsheet_content(&self, doc: &XmlDoc, _archive: &mut zip::ZipArchive<Cursor<&[u8]>>) -> Result<OdfContent> {
+    fn parse_spreadsheet_content(
+        &self,
+        doc: &XmlDoc,
+        _archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    ) -> Result<OdfContent> {
         let mut sheets = Vec::new();
 
         for node in doc.descendants() {
@@ -713,7 +721,9 @@ impl OdfParser {
 
         for page_node in doc.descendants() {
             if page_node.has_tag_name((DRAW_NS, "page")) {
-                let name = page_node.attribute((DRAW_NS, "name")).map(|s| s.to_string());
+                let name = page_node
+                    .attribute((DRAW_NS, "name"))
+                    .map(|s| s.to_string());
                 let shapes = self.parse_odp_shapes(page_node, archive);
                 let notes = self.parse_odp_notes(page_node);
                 let transition = self.parse_odp_transition(page_node);
@@ -777,14 +787,22 @@ impl OdfParser {
 
         let x = node.attribute((SVG_NS, "x")).unwrap_or("0cm").to_string();
         let y = node.attribute((SVG_NS, "y")).unwrap_or("0cm").to_string();
-        let width = node.attribute((SVG_NS, "width")).unwrap_or("0cm").to_string();
-        let height = node.attribute((SVG_NS, "height")).unwrap_or("0cm").to_string();
+        let width = node
+            .attribute((SVG_NS, "width"))
+            .unwrap_or("0cm")
+            .to_string();
+        let height = node
+            .attribute((SVG_NS, "height"))
+            .unwrap_or("0cm")
+            .to_string();
 
         let z_index = node
             .attribute((DRAW_NS, "z-index"))
             .and_then(|z| z.parse::<i32>().ok());
         let rotation = Self::parse_odp_transform(node);
-        let style_name = node.attribute((DRAW_NS, "style-name")).map(|s| s.to_string());
+        let style_name = node
+            .attribute((DRAW_NS, "style-name"))
+            .map(|s| s.to_string());
         let text_content = self.collect_odp_text(node);
 
         let image_ref = if shape_type == OdpShapeType::Image {
@@ -916,7 +934,10 @@ impl OdfParser {
     fn parse_odp_transform(node: roxmltree::Node<'_, '_>) -> Option<String> {
         node.attribute("transform")
             .map(|s| s.to_string())
-            .or_else(|| node.attribute((DRAW_NS, "transform")).map(|s| s.to_string()))
+            .or_else(|| {
+                node.attribute((DRAW_NS, "transform"))
+                    .map(|s| s.to_string())
+            })
     }
 
     fn parse_styles_xml(&self, xml: &str) -> Result<(Vec<OdfFontFace>, Vec<OdfStyle>)> {

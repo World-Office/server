@@ -60,7 +60,14 @@ const CONNECTORS: Connector[] = [
   { from: { x: 720, y: 370 }, to: { x: 580, y: 445 } },
 ]
 
-function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+function drawRoundedRect(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+): void {
   ctx.beginPath()
   ctx.moveTo(x + r, y)
   ctx.lineTo(x + w - r, y)
@@ -74,7 +81,13 @@ function drawRoundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w:
   ctx.closePath()
 }
 
-function drawDiamond(ctx: CanvasRenderingContext2D, cx: number, cy: number, w: number, h: number): void {
+function drawDiamond(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  w: number,
+  h: number,
+): void {
   ctx.beginPath()
   ctx.moveTo(cx, cy - h / 2)
   ctx.lineTo(cx + w / 2, cy)
@@ -117,9 +130,15 @@ function drawDiagram(): void {
     const arrowLen = 8
     ctx.beginPath()
     ctx.moveTo(conn.to.x, conn.to.y)
-    ctx.lineTo(conn.to.x - arrowLen * Math.cos(angle - 0.4), conn.to.y - arrowLen * Math.sin(angle - 0.4))
+    ctx.lineTo(
+      conn.to.x - arrowLen * Math.cos(angle - 0.4),
+      conn.to.y - arrowLen * Math.sin(angle - 0.4),
+    )
     ctx.moveTo(conn.to.x, conn.to.y)
-    ctx.lineTo(conn.to.x - arrowLen * Math.cos(angle + 0.4), conn.to.y - arrowLen * Math.sin(angle + 0.4))
+    ctx.lineTo(
+      conn.to.x - arrowLen * Math.cos(angle + 0.4),
+      conn.to.y - arrowLen * Math.sin(angle + 0.4),
+    )
     ctx.stroke()
 
     // Connector label
@@ -148,7 +167,15 @@ function drawDiagram(): void {
         break
       case "ellipse":
         ctx.beginPath()
-        ctx.ellipse(shape.x + shape.w / 2 + 2, shape.y + shape.h / 2 + 2, shape.w / 2, shape.h / 2, 0, 0, Math.PI * 2)
+        ctx.ellipse(
+          shape.x + shape.w / 2 + 2,
+          shape.y + shape.h / 2 + 2,
+          shape.w / 2,
+          shape.h / 2,
+          0,
+          0,
+          Math.PI * 2,
+        )
         ctx.fill()
         break
       case "rounded":
@@ -169,7 +196,15 @@ function drawDiagram(): void {
         break
       case "ellipse":
         ctx.beginPath()
-        ctx.ellipse(shape.x + shape.w / 2, shape.y + shape.h / 2, shape.w / 2, shape.h / 2, 0, 0, Math.PI * 2)
+        ctx.ellipse(
+          shape.x + shape.w / 2,
+          shape.y + shape.h / 2,
+          shape.w / 2,
+          shape.h / 2,
+          0,
+          0,
+          Math.PI * 2,
+        )
         ctx.fill()
         break
       case "rounded":
@@ -191,7 +226,15 @@ function drawDiagram(): void {
         break
       case "ellipse":
         ctx.beginPath()
-        ctx.ellipse(shape.x + shape.w / 2, shape.y + shape.h / 2, shape.w / 2, shape.h / 2, 0, 0, Math.PI * 2)
+        ctx.ellipse(
+          shape.x + shape.w / 2,
+          shape.y + shape.h / 2,
+          shape.w / 2,
+          shape.h / 2,
+          0,
+          0,
+          Math.PI * 2,
+        )
         ctx.stroke()
         break
       case "rounded":

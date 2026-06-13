@@ -1,6 +1,6 @@
 //! conversion-service — World-Office document conversion microservice binary.
 
-use conversion_service::{app, AppState, ConversionRouter, JobRepository};
+use conversion_service::{AppState, ConversionRouter, JobRepository, app};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -23,7 +23,12 @@ async fn main() {
         .parse()
         .unwrap_or(8003);
 
-    tracing::info!("conversion-service v{} starting on {}:{}", env!("CARGO_PKG_VERSION"), addr, port);
+    tracing::info!(
+        "conversion-service v{} starting on {}:{}",
+        env!("CARGO_PKG_VERSION"),
+        addr,
+        port
+    );
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", addr, port))
         .await

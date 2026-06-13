@@ -1,61 +1,62 @@
-import { observer } from "mobx-react-lite"
-import type { JSX } from "react"
-import { presentationStore } from "../../stores/PresentationStore"
-import type { RightMenuPanel } from "../../types/presentation"
-import { RightMenuButton } from "./RightMenuButton"
-import { AnimationPanel } from "./AnimationPanel"
-import { SlidePanel } from "./SlidePanel"
-import { ShapePanel } from "./ShapePanel"
+import { observer } from "mobx-react-lite";
+import type { JSX } from "react";
+import { presentationStore } from "../../stores/PresentationStore";
+import type { RightMenuPanel } from "../../types/presentation";
+import { AnimationPanel } from "./AnimationPanel";
+import { RightMenuButton } from "./RightMenuButton";
+import { ShapePanel } from "./ShapePanel";
+import { SlidePanel } from "./SlidePanel";
 
-const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> = [
-  { action: "paragraph", title: "Paragraph", icon: "¶" },
-  { action: "table", title: "Table", icon: "⊞" },
-  { action: "image", title: "Image", icon: "🖼" },
-  { action: "slide", title: "Slide", icon: "📄" },
-  { action: "chart", title: "Chart", icon: "📊" },
-  { action: "shape", title: "Shape", icon: "⬡" },
-  { action: "textart", title: "TextArt", icon: "Aa" },
-  { action: "animation", title: "Animation Pane", icon: "▶" },
-]
+const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> =
+	[
+		{ action: "paragraph", title: "Paragraph", icon: "¶" },
+		{ action: "table", title: "Table", icon: "⊞" },
+		{ action: "image", title: "Image", icon: "🖼" },
+		{ action: "slide", title: "Slide", icon: "📄" },
+		{ action: "chart", title: "Chart", icon: "📊" },
+		{ action: "shape", title: "Shape", icon: "⬡" },
+		{ action: "textart", title: "TextArt", icon: "Aa" },
+		{ action: "animation", title: "Animation Pane", icon: "▶" },
+	];
 
 const PANELS: Record<RightMenuPanel, JSX.Element> = {
-  paragraph: <div />,
-  table: <div />,
-  image: <div />,
-  slide: <SlidePanel />,
-  chart: <div />,
-  shape: <ShapePanel />,
-  textart: <div />,
-  animation: <AnimationPanel />,
-}
+	paragraph: <div />,
+	table: <div />,
+	image: <div />,
+	slide: <SlidePanel />,
+	chart: <div />,
+	shape: <ShapePanel />,
+	textart: <div />,
+	animation: <AnimationPanel />,
+};
 
 function RightMenuInner(): JSX.Element {
-  const { activeRightPanel, toggleRightPanel } = presentationStore
+	const { activeRightPanel, toggleRightPanel } = presentationStore;
 
-  return (
-    <div
-      className="prese-right-menu"
-      role="menubar"
-      aria-orientation="vertical"
-      aria-label="Right menu"
-    >
-      <div className="prese-right-menu-btns">
-        {BUTTONS.map(({ action, title, icon }) => (
-          <RightMenuButton
-            key={action}
-            action={action}
-            title={title}
-            icon={icon}
-            active={activeRightPanel === action}
-            onClick={() => toggleRightPanel(action)}
-          />
-        ))}
-      </div>
-      <div className="prese-right-panel-side">
-        {activeRightPanel && PANELS[activeRightPanel]}
-      </div>
-    </div>
-  )
+	return (
+		<div
+			className="prese-right-menu"
+			role="menubar"
+			aria-orientation="vertical"
+			aria-label="Right menu"
+		>
+			<div className="prese-right-menu-btns">
+				{BUTTONS.map(({ action, title, icon }) => (
+					<RightMenuButton
+						key={action}
+						action={action}
+						title={title}
+						icon={icon}
+						active={activeRightPanel === action}
+						onClick={() => toggleRightPanel(action)}
+					/>
+				))}
+			</div>
+			<div className="prese-right-panel-side">
+				{activeRightPanel && PANELS[activeRightPanel]}
+			</div>
+		</div>
+	);
 }
 
-export const RightMenu = observer(RightMenuInner)
+export const RightMenu = observer(RightMenuInner);
