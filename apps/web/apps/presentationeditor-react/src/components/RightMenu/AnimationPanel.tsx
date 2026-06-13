@@ -16,6 +16,8 @@ const ObservedAnimationPanel = observer(function ObservedAnimationPanel() {
 		removeAnimation,
 		moveAnimationEarlier,
 		moveAnimationLater,
+		isPreviewPlaying,
+		previewStep,
 	} = presentationStore;
 	const slide = slides[currentSlide];
 	const anims = slide?.animations ?? [];
@@ -40,7 +42,10 @@ const ObservedAnimationPanel = observer(function ObservedAnimationPanel() {
 			<div className="prese-right-panel-body">
 				<div className="prese-animation-pane-list">
 					{anims.map((anim: AnimationData, idx: number) => (
-						<div key={anim.id} className="prese-animation-pane-item">
+						<div
+							key={anim.id}
+							className={`prese-animation-pane-item${isPreviewPlaying && idx === previewStep ? " prese-animation-pane-item-active" : ""}`}
+						>
 							<div className="prese-animation-pane-order">{idx + 1}</div>
 							<div className="prese-animation-pane-icon" title={anim.category}>
 								{CATEGORY_ICONS[anim.category] ?? "•"}

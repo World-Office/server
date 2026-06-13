@@ -205,6 +205,16 @@
 	font-size: 12px;
 }
 
+.prese-animation-pane-item-active {
+	border-color: var(--wo-prese-accent, #4472c4);
+	background: color-mix(
+		in srgb,
+		var(--wo-prese-accent, #4472c4) 8%,
+		transparent
+	);
+	box-shadow: inset 2px 0 0 0 var(--wo-prese-accent, #4472c4);
+}
+
 .prese-animation-pane-order {
 	width: 20px;
 	height: 20px;
