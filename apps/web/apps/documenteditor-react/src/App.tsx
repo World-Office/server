@@ -5,6 +5,7 @@ import { isDesktop, listenForMenuEvents, listenForUpdateEvents } from "./bridge"
 import { Viewport } from "./components/Viewport"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { usePlugins } from "./hooks/usePlugins"
+import { useDocumentLoader } from "@world-office/wopi-client"
 import { collabSendRef, collaborationStore, currentUser } from "./lib/collaboration"
 import { documentStore } from "./stores/DocumentStore"
 
@@ -15,6 +16,17 @@ function generateUserId() {
 export function App() {
   useKeyboardShortcuts()
   usePlugins()
+
+  const loadState = useDocumentLoader({
+    onLoad: () => documentStore.detectAndLoadWopi(),
+    isLoading: documentStore.isLoading,
+    isError: documentStore.loadError !== null,
+    isReady: documentStore.isDocReady,
+  })
+  const retry = () => {
+    documentStore.loadError = null
+    documentStore.detectAndLoadWopi()
+  }
 
   const [updateAvailable, setUpdateAvailable] = useState(false)
 
@@ -97,6 +109,64 @@ export function App() {
       unlisten?.()
     }
   }, [])
+
+  if (loadState === "loading") {
+    return (
+      <ThemeProvider>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100vh",
+            flexDirection: "column",
+            gap: 16,
+            fontFamily: "system-ui, sans-serif",
+            color: "#666",
+          }}
+        >
+          <div>Loading document…</div>
+        </div>
+      </ThemeProvider>
+    )
+  }
+
+  if (loadState === "error") {
+    return (
+      <ThemeProvider>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100vh",
+            flexDirection: "column",
+            gap: 16,
+            fontFamily: "system-ui, sans-serif",
+            color: "#c00",
+          }}
+        >
+          <p>Failed to load document.</p>
+          <p style={{ fontSize: 13, color: "#888" }}>{documentStore.loadError}</p>
+          <button
+            type="button"
+            onClick={retry}
+            style={{
+              padding: "8px 24px",
+              cursor: "pointer",
+              background: "#2ecc71",
+              color: "#fff",
+              border: "none",
+              borderRadius: 4,
+              fontSize: 14,
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      </ThemeProvider>
+    )
+  }
 
   return (
     <ThemeProvider>

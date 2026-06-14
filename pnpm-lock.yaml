@@ -47,6 +47,9 @@ importers:
       '@world-office/sdk-bridge':
         specifier: workspace:*
         version: link:../../../../packages/sdk-bridge
+      '@world-office/wopi-client':
+        specifier: workspace:*
+        version: link:../../../../packages/wopi-client
       mobx:
         specifier: ^6.13.0
         version: 6.15.0
@@ -121,6 +124,9 @@ importers:
       '@world-office/sdk-bridge':
         specifier: workspace:*
         version: link:../../../../packages/sdk-bridge
+      '@world-office/wopi-client':
+        specifier: workspace:*
+        version: link:../../../../packages/wopi-client
       mobx:
         specifier: ^6.13.0
         version: 6.15.0
@@ -216,6 +222,9 @@ importers:
       '@world-office/sdk-bridge':
         specifier: workspace:*
         version: link:../../../../packages/sdk-bridge
+      '@world-office/wopi-client':
+        specifier: workspace:*
+        version: link:../../../../packages/wopi-client
       mobx:
         specifier: ^6.13.0
         version: 6.15.0

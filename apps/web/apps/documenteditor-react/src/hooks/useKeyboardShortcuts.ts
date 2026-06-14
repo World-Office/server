@@ -29,6 +29,10 @@ export function useKeyboardShortcuts(): void {
     }
 
     async function handleSave(): Promise<void> {
+      if (documentStore.wopiConnection) {
+        await documentStore.saveToWopi().catch(console.error)
+        return
+      }
       if (!documentStore.isDesktop) return
       if (documentStore.filePath) {
         const content = ""
