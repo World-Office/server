@@ -1,17 +1,15 @@
 import { observer } from "mobx-react-lite"
 import { useRef, useState, useCallback, useEffect, useMemo } from "react"
 import { flowchartStore } from "../stores/FlowchartStore"
-import type { FlowchartNode, FlowchartEdge } from "../types/visio"
+import type { FlowchartNode, FlowchartEdge, FlowchartDocument } from "../types/visio"
+import { PropertiesPanel } from "./PropertiesPanel"
+import { ContextMenu, type ContextMenuState } from "./ContextMenu"
 import styles from "./FlowchartCanvas.module.css"
-
-/* ─── Types ─── */
 
 interface Point {
   x: number
   y: number
 }
-
-/* ─── Helpers ─── */
 
 function getNodeCenter(node: FlowchartNode): Point {
   return { x: node.x + node.width / 2, y: node.y + node.height / 2 }
@@ -26,23 +24,6 @@ function getEdgeEndpoint(
   if (anchor === "left") return { x: node.x, y: node.y + node.height / 2 }
   if (anchor === "right") return { x: node.x + node.width, y: node.y + node.height / 2 }
   return getNodeCenter(node)
-}
-
-function getNearestSide(node: FlowchartNode, target: Point): Point {
-  const cx = node.x + node.width / 2
-  const cy = node.y + node.height / 2
-  const dx = target.x - cx
-  const dy = target.y - cy
-  const adx = Math.abs(dx)
-  const ady = Math.abs(dy)
-  if (adx >= ady) {
-    return dx >= 0
-      ? { x: node.x + node.width, y: cy }
-      : { x: node.x, y: cy }
-  }
-  return dy >= 0
-    ? { x: cx, y: node.y + node.height }
-    : { x: cx, y: node.y }
 }
 
 function orthogonalPath(src: Point, tgt: Point): string {
@@ -84,6 +65,50 @@ interface ShapeRendererProps {
  * The shapeType is widened to string because the runtime store
  * supports more shapes than the TypeScript type declares.
  */
+/* ── Resize handles ── */
+
+const HANDLE_SIZE = 8
+
+function ResizeHandles({ node }: { node: FlowchartNode }): React.JSX.Element {
+  const { x, y, width: w, height: h } = node
+  const hs = HANDLE_SIZE
+  const hh = hs / 2
+  const handleFill = "#ffffff"
+  const handleStroke = "#4472c4"
+  const handleMouseDown = (e: React.MouseEvent, handleId: string) => {
+    e.stopPropagation()
+    flowchartStore.startResize(node.id, handleId)
+  }
+  const handles = [
+    { id: "nw", cx: x, cy: y },
+    { id: "n", cx: x + w / 2, cy: y },
+    { id: "ne", cx: x + w, cy: y },
+    { id: "w", cx: x, cy: y + h / 2 },
+    { id: "e", cx: x + w, cy: y + h / 2 },
+    { id: "sw", cx: x, cy: y + h },
+    { id: "s", cx: x + w / 2, cy: y + h },
+    { id: "se", cx: x + w, cy: y + h },
+  ]
+  return (
+    <g>
+      {handles.map((hndl) => (
+        <rect
+          key={hndl.id}
+          x={hndl.cx - hh}
+          y={hndl.cy - hh}
+          width={hs}
+          height={hs}
+          fill={handleFill}
+          stroke={handleStroke}
+          strokeWidth={1.5}
+          style={{ cursor: `${hndl.id}-resize` }}
+          onMouseDown={(e) => handleMouseDown(e, hndl.id)}
+        />
+      ))}
+    </g>
+  )
+}
+
 function renderShapeBody({ node, isSelected, isHighlightTarget }: ShapeRendererProps): React.JSX.Element {
   const { x, y, width: w, height: h, fillColor, strokeColor } = node
   // strokeWidth is not in the FlowchartNode type but IS set by the store at runtime
@@ -376,6 +401,7 @@ const FlowchartNodeRenderer = observer(function FlowchartNodeRenderer({
 
   return (
     <g
+      data-node-id={nodeId}
       className={groupClass}
       onMouseDown={(e) => onMouseDown(nodeId, e)}
       onMouseUp={(e) => onNodeMouseUp(nodeId, e)}
@@ -431,6 +457,10 @@ const FlowchartNodeRenderer = observer(function FlowchartNodeRenderer({
   )
 })
 
+/* ── Arrowhead markers ── */
+
+const ARROW_COLOR = "#333333"
+
 /* ─── Edge component ─── */
 
 interface EdgeRendererProps {
@@ -462,10 +492,17 @@ const FlowchartEdgeRenderer = observer(function FlowchartEdgeRenderer({
 }: EdgeRendererProps) {
   const src = getEdgeEndpoint(sourceNode, edge.sourceAnchor)
   const tgt = getEdgeEndpoint(targetNode, edge.targetAnchor)
+  const strokeColor = edge.strokeColor || "#333333"
+  const strokeWidth = edge.strokeWidth || 2
+  const isDashed = edge.strokeStyle === "dashed"
+  const isDotted = edge.strokeStyle === "dotted"
   const edgeClass = `${styles.edgeLine}${isSelected ? ` ${styles.selected}` : ""}`
   const d = orthogonalPath(src, tgt)
   const midX = (src.x + tgt.x) / 2
   const midY = (src.y + tgt.y) / 2
+  const ah = edge.arrowheadType || "arrow"
+  const markerEnd = ah !== "none" ? `url(#ah-${ah})` : undefined
+  const dashArray = isDashed ? "8 4" : isDotted ? "4 4" : undefined
 
   return (
     <g>
@@ -482,6 +519,10 @@ const FlowchartEdgeRenderer = observer(function FlowchartEdgeRenderer({
         className={edgeClass}
         d={d}
         fill="none"
+        stroke={isSelected ? undefined : strokeColor}
+        strokeWidth={isSelected ? 3 : strokeWidth}
+        strokeDasharray={dashArray}
+        markerEnd={markerEnd}
         onMouseDown={(e) => onMouseDown(edge.id, e)}
         onDoubleClick={(e) => onDoubleClick(edge.id, e)}
       />
@@ -624,6 +665,8 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
     x1: number; y1: number; x2: number; y2: number
   } | null>(null)
 
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
+
   const panStartRef = useRef<Point>({ x: 0, y: 0 })
   const panOffsetStartRef = useRef<Point>({ x: 0, y: 0 })
   const rubberBandStartRef = useRef<Point>({ x: 0, y: 0 })
@@ -750,6 +793,33 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
     [doc.edges],
   )
 
+  /* ── SVG-level right-click → context menu ── */
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      const target = e.target as SVGElement
+      // Check if the click was on a node group
+      const nodeGroup = target.closest("[data-node-id]")
+      if (nodeGroup) {
+        const nodeId = nodeGroup.getAttribute("data-node-id")
+        if (nodeId) {
+          if (!store.selectedNodeIds.includes(nodeId)) {
+            store.selectNode(nodeId)
+          }
+          setContextMenu({ x: e.clientX, y: e.clientY, type: "node", nodeId })
+          return
+        }
+      }
+      setContextMenu({ x: e.clientX, y: e.clientY, type: "background" })
+    },
+    [store],
+  )
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu(null)
+  }, [])
+
   /* ── SVG-level mousedown ── */
   const handleSVGMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -804,6 +874,20 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
         return
       }
 
+      if (store.isResizing && store.resizeNodeId && store.resizeStartNode) {
+        const svgPoint2 = getSVGPoint(e)
+        const start = store.resizeStartNode
+        const handle = store.resizeHandle || ""
+        let nx = start.x, ny = start.y, nw = start.width, nh = start.height
+        const snap = (v: number) => store.snapToGridEnabled ? Math.round(v / store.gridSize) * store.gridSize : v
+        if (handle.includes("w")) { nx = snap(Math.min(svgPoint2.x, start.x + start.width - 30)); nw = start.x + start.width - nx }
+        if (handle.includes("e")) { nw = Math.max(30, svgPoint2.x - start.x) }
+        if (handle.includes("n")) { ny = snap(Math.min(svgPoint2.y, start.y + start.height - 30)); nh = start.y + start.height - ny }
+        if (handle.includes("s")) { nh = Math.max(30, svgPoint2.y - start.y) }
+        store.resizeTo(store.resizeNodeId, nx, ny, Math.round(nw), Math.round(nh))
+        return
+      }
+
       if (store.connectSourceId) {
         connectMouseRef.current = svgPoint
         setConnectMousePos({ ...svgPoint })
@@ -827,6 +911,9 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
   /* ── SVG-level mouseup ── */
   const handleSVGMouseUp = useCallback(
     () => {
+      if (store.isResizing) {
+        store.endResize()
+      }
       if (store.isDragging) {
         store.endDrag()
       }
@@ -849,6 +936,7 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
 
   useEffect(() => {
     const handler = () => {
+      if (store.isResizing) { store.endResize() }
       if (store.isDragging) store.endDrag()
       if (isPanning) setIsPanning(false)
       if (isRubberBanding && rubberBandRect) {
@@ -915,10 +1003,24 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
     }
   }
 
+  /* ── Zoom-to-fit via custom event ── */
+  useEffect(() => {
+    const handler = () => {
+      const container = containerRef.current
+      if (!container) return
+      const rect = container.getBoundingClientRect()
+      const result = store.zoomToFit(rect.width, rect.height)
+      store.canvasOffset = { x: result.offsetX, y: result.offsetY }
+    }
+    window.addEventListener("fc-zoom-fit", handler)
+    return () => window.removeEventListener("fc-zoom-fit", handler)
+  }, [store])
+
   /* ── Set data attributes on node groups for background detection ── */
-  // We use data-node-id on each <g> so isBackgroundTarget can skip them.
 
   const gs = store.gridSize > 1 ? store.gridSize : 0
+
+  const hasSingleSelection = store.selectedNodeIds.length === 1 || store.selectedEdgeIds.length === 1
 
   return (
     <div ref={containerRef} className={styles.container}>
@@ -931,6 +1033,7 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
         onMouseMove={handleSVGMouseMove}
         onMouseUp={handleSVGMouseUp}
         onMouseLeave={handleSVGMouseUp}
+        onContextMenu={handleContextMenu}
       >
         <defs>
           {gs > 0 && (
@@ -943,6 +1046,18 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
               <circle cx={gs / 2} cy={gs / 2} r={0.5} fill="#ccc" opacity={0.5} />
             </pattern>
           )}
+          <marker id="ah-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 Z" fill={ARROW_COLOR} />
+          </marker>
+          <marker id="ah-triangle" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 Z" fill={ARROW_COLOR} />
+          </marker>
+          <marker id="ah-hollow-triangle" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 Z" fill="white" stroke={ARROW_COLOR} strokeWidth="1" />
+          </marker>
+          <marker id="ah-diamond" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="10" markerHeight="10" orient="auto-start-reverse">
+            <path d="M 5 0 L 10 5 L 5 10 L 0 5 Z" fill={ARROW_COLOR} />
+          </marker>
         </defs>
 
         <rect
@@ -1012,26 +1127,35 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
 
         {/* Nodes layer */}
         {doc.nodes.map((node) => (
-          <FlowchartNodeRenderer
-            key={node.id}
-            node={node}
-            isSelected={store.selectedNodeIds.includes(node.id)}
-            isConnectSource={store.connectSourceId === node.id}
-            isConnectTarget={
-              store.connectSourceId !== null && store.connectSourceId !== node.id
-            }
-            isEditing={editingNodeId === node.id}
-            editValue={editingNodeId === node.id ? editValue : ""}
-            onMouseDown={handleNodeMouseDown}
-            onDoubleClick={handleNodeDoubleClick}
-            onConnectorMouseDown={handleConnectorMouseDown}
-            onNodeMouseUp={handleNodeMouseUp}
-            onEditChange={handleEditChange}
-            onEditBlur={handleEditBlur}
-            onEditKeyDown={handleEditKeyDown}
-          />
+          <g key={node.id}>
+            <FlowchartNodeRenderer
+              node={node}
+              isSelected={store.selectedNodeIds.includes(node.id)}
+              isConnectSource={store.connectSourceId === node.id}
+              isConnectTarget={
+                store.connectSourceId !== null && store.connectSourceId !== node.id
+              }
+              isEditing={editingNodeId === node.id}
+              editValue={editingNodeId === node.id ? editValue : ""}
+              onMouseDown={handleNodeMouseDown}
+              onDoubleClick={handleNodeDoubleClick}
+              onConnectorMouseDown={handleConnectorMouseDown}
+              onNodeMouseUp={handleNodeMouseUp}
+              onEditChange={handleEditChange}
+              onEditBlur={handleEditBlur}
+              onEditKeyDown={handleEditKeyDown}
+            />
+            {store.selectedNodeIds.includes(node.id) && (
+              <ResizeHandles node={node} />
+            )}
+          </g>
         ))}
       </svg>
+
+      {hasSingleSelection && <PropertiesPanel />}
+      {contextMenu && (
+        <ContextMenu state={contextMenu} onClose={closeContextMenu} />
+      )}
     </div>
   )
 })
