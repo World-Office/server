@@ -29,7 +29,8 @@ function generateWebUIConfig() {
             'odt', 'fodt', 'ott', 'rtf',
             'ods', 'fods', 'ots',
             'odp', 'fodp', 'otp',
-            'docx', 'xlsx', 'pptx'
+            'docx', 'xlsx', 'pptx',
+            'vsdx', 'vssx', 'vstx', 'vsdm', 'vssm', 'vstm'
           ],
           handler: {
             url: `${config.OCIS_WOPI_SRC}/wopi`,
