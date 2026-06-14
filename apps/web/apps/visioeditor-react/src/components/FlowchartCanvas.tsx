@@ -557,7 +557,7 @@ const FlowchartEdgeRenderer = observer(function FlowchartEdgeRenderer({
   )
 })
 
-export function exportFlowchartAsSvg(doc: FlowchartDocument, filename?: string): void {
+function generateSvgXml(doc: FlowchartDocument): string {
   const pad = 40
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
   for (const n of doc.nodes) {
@@ -629,6 +629,11 @@ export function exportFlowchartAsSvg(doc: FlowchartDocument, filename?: string):
   }
 
   svg += "</svg>"
+  return svg
+}
+
+export function exportFlowchartAsSvg(doc: FlowchartDocument, filename?: string): void {
+  const svg = generateSvgXml(doc)
   const blob = new Blob([svg], { type: "image/svg+xml" })
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
@@ -636,6 +641,46 @@ export function exportFlowchartAsSvg(doc: FlowchartDocument, filename?: string):
   a.download = filename || "flowchart.svg"
   a.click()
   URL.revokeObjectURL(url)
+}
+
+export function exportFlowchartAsPng(doc: FlowchartDocument, filename?: string, scale = 2): void {
+  const svg = generateSvgXml(doc)
+  const img = new Image()
+  const blob = new Blob([svg], { type: "image/svg+xml" })
+  const url = URL.createObjectURL(blob)
+  img.onload = () => {
+    const cvs = document.createElement("canvas")
+    cvs.width = img.naturalWidth * scale
+    cvs.height = img.naturalHeight * scale
+    const ctx = cvs.getContext("2d")!
+    ctx.scale(scale, scale)
+    ctx.drawImage(img, 0, 0)
+    URL.revokeObjectURL(url)
+    cvs.toBlob((pngBlob) => {
+      if (!pngBlob) return
+      const pngUrl = URL.createObjectURL(pngBlob)
+      const a = document.createElement("a")
+      a.href = pngUrl
+      a.download = filename || "flowchart.png"
+      a.click()
+      URL.revokeObjectURL(pngUrl)
+    }, "image/png")
+  }
+  img.src = url
+}
+
+export function exportFlowchartAsPdf(doc: FlowchartDocument, filename?: string): void {
+  const svg = generateSvgXml(doc)
+  const title = filename?.replace(/\.pdf$/i, "") || "flowchart"
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeXml(title)}</title>
+<style>body{margin:0;display:flex;justify-content:center;align-items:flex-start;min-height:100vh}
+svg{max-width:100%;height:auto}@media print{body{margin:0}svg{max-width:100%;height:auto}}</style></head>
+<body>${svg}</body></html>`
+  const w = window.open("", "_blank")
+  if (!w) return
+  w.document.write(html)
+  w.document.title = title
+  w.document.close()
 }
 
 function escapeXml(s: string): string {
