@@ -2,6 +2,7 @@ import type { JSX } from "react"
 import { visioStore } from "../../stores/VisioStore"
 import { flowchartStore } from "../../stores/FlowchartStore"
 import { ZOOM_LEVELS } from "../../types/visio"
+import { exportFlowchartAsSvg } from "../FlowchartCanvas"
 
 export function ViewTab(): JSX.Element {
   return (
@@ -71,6 +72,32 @@ export function ViewTab(): JSX.Element {
       </div>
 
       <div className="visio-viewtab-separator" />
+
+      <div className="visio-viewtab-group">
+        <div className="visio-viewtab-elset">
+          <button
+            type="button"
+            className={`visio-viewtab-btn${visioStore.editorMode === "flowchart" ? "" : " hidden"}`}
+            onClick={() => exportFlowchartAsSvg(flowchartStore.document)}
+            title="Export flowchart as SVG (Ctrl+Shift+E)"
+            style={{ display: visioStore.editorMode === "flowchart" ? undefined : "none" }}
+          >
+            Export SVG
+          </button>
+        </div>
+        <div className="visio-viewtab-elset">
+          <label className="visio-viewtab-checkbox" style={{ display: visioStore.editorMode === "flowchart" ? undefined : "none" }}>
+            <input
+              type="checkbox"
+              checked={flowchartStore.snapToGridEnabled}
+              onChange={() => flowchartStore.toggleSnapToGrid()}
+            />
+            Snap to Grid
+          </label>
+        </div>
+      </div>
+
+      <div className="visio-viewtab-separator" style={{ display: visioStore.editorMode === "flowchart" ? undefined : "none" }} />
 
       <div className="visio-viewtab-group">
         <button type="button" className="visio-viewtab-btn-theme" title="Interface theme">
