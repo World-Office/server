@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type JSX } from "react"
-import { flowchartStore } from "../stores/FlowchartStore"
-import { exportFlowchartAsSvg } from "./FlowchartCanvas"
+import { flowchartStore, THEMES } from "../stores/FlowchartStore"
+import { exportFlowchartAsSvg, exportFlowchartAsPng, exportFlowchartAsPdf } from "./FlowchartCanvas"
 
 export interface ContextMenuState {
   x: number
@@ -46,6 +46,20 @@ export function ContextMenu({ state, onClose }: ContextMenuProps): JSX.Element {
 
   const store = flowchartStore
   const multiSelected = store.selectedNodeIds.length >= 2
+
+  if (submenu === "theme") {
+    return (
+      <div ref={ref} className="fc-context-menu" style={{ left: state.x, top: state.y }}>
+        {THEMES.map((t) => (
+          <button key={t.id} className="fc-context-item" onClick={() => run(() => store.applyTheme(t.id))}>
+            {store.currentThemeId === t.id ? "\u2713 " : ""}{t.name}
+          </button>
+        ))}
+        <div className="fc-context-sep" />
+        <button className="fc-context-item" onClick={() => setSubmenu(null)}>Back</button>
+      </div>
+    )
+  }
 
   if (submenu === "align") {
     return (
@@ -100,7 +114,12 @@ export function ContextMenu({ state, onClose }: ContextMenuProps): JSX.Element {
       {state.type === "background" && (
         <>
           <button className="fc-context-item" disabled={!store.clipboard} onClick={() => run(() => store.paste())}>Paste</button>
+          <div className="fc-context-sep" />
+          <button className="fc-context-item" onClick={() => setSubmenu("theme")}>Theme &rarr;</button>
+          <div className="fc-context-sep" />
           <button className="fc-context-item" onClick={() => run(() => exportFlowchartAsSvg(store.document))}>Export SVG</button>
+          <button className="fc-context-item" onClick={() => run(() => exportFlowchartAsPng(store.document))}>Export PNG</button>
+          <button className="fc-context-item" onClick={() => run(() => exportFlowchartAsPdf(store.document))}>Export PDF</button>
           <div className="fc-context-sep" />
           <button className="fc-context-item" onClick={() => run(() => store.autoLayout())}>Auto Layout</button>
           <div className="fc-context-sep" />
