@@ -408,7 +408,13 @@ interface EdgeRendererProps {
   sourceNode: FlowchartNode
   targetNode: FlowchartNode
   isSelected: boolean
+  isEditing: boolean
+  editValue: string
   onMouseDown: (edgeId: string, e: React.MouseEvent) => void
+  onDoubleClick: (edgeId: string, e: React.MouseEvent) => void
+  onEditChange: (value: string) => void
+  onEditBlur: () => void
+  onEditKeyDown: (e: React.KeyboardEvent) => void
 }
 
 const FlowchartEdgeRenderer = observer(function FlowchartEdgeRenderer({
@@ -416,11 +422,19 @@ const FlowchartEdgeRenderer = observer(function FlowchartEdgeRenderer({
   sourceNode,
   targetNode,
   isSelected,
+  isEditing,
+  editValue,
   onMouseDown,
+  onDoubleClick,
+  onEditChange,
+  onEditBlur,
+  onEditKeyDown,
 }: EdgeRendererProps) {
   const src = getEdgeEndpoint(sourceNode, edge.sourceAnchor)
   const tgt = getEdgeEndpoint(targetNode, edge.targetAnchor)
   const edgeClass = `${styles.edgeLine}${isSelected ? ` ${styles.selected}` : ""}`
+  const midX = (src.x + tgt.x) / 2
+  const midY = (src.y + tgt.y) / 2
 
   return (
     <g>
@@ -431,23 +445,41 @@ const FlowchartEdgeRenderer = observer(function FlowchartEdgeRenderer({
         strokeWidth={12}
         style={{ cursor: "pointer" }}
         onMouseDown={(e) => onMouseDown(edge.id, e)}
+        onDoubleClick={(e) => onDoubleClick(edge.id, e)}
       />
       {/* Visible edge line */}
       <line
         className={edgeClass}
         x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
         onMouseDown={(e) => onMouseDown(edge.id, e)}
+        onDoubleClick={(e) => onDoubleClick(edge.id, e)}
       />
-      {/* Edge label at midpoint */}
-      {edge.label && (
+      {isEditing ? (
+        <foreignObject
+          x={midX - 60}
+          y={midY - 14}
+          width={120}
+          height={28}
+        >
+          <input
+            className={styles.editInput}
+            style={{ fontSize: 12, textAlign: "center" }}
+            value={editValue}
+            onChange={(e) => onEditChange(e.target.value)}
+            onBlur={onEditBlur}
+            onKeyDown={onEditKeyDown}
+            autoFocus
+          />
+        </foreignObject>
+      ) : edge.label ? (
         <text
           className={styles.edgeLabel}
-          x={(src.x + tgt.x) / 2}
-          y={(src.y + tgt.y) / 2 - 8}
+          x={midX}
+          y={midY - 8}
         >
           {edge.label}
         </text>
-      )}
+      ) : null}
     </g>
   )
 })
@@ -467,6 +499,7 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
     height: 600,
   })
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null)
+  const [editingEdgeId, setEditingEdgeId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState("")
   const [connectMousePos, setConnectMousePos] = useState<Point | null>(null)
   const [isPanning, setIsPanning] = useState(false)
@@ -582,6 +615,18 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
     [store],
   )
 
+  const handleEdgeDoubleClick = useCallback(
+    (edgeId: string, e: React.MouseEvent) => {
+      e.stopPropagation()
+      const edge = doc.edges.find((ed) => ed.id === edgeId)
+      if (!edge) return
+      setEditingNodeId(null)
+      setEditingEdgeId(edgeId)
+      setEditValue(edge.label ?? "")
+    },
+    [doc.edges],
+  )
+
   /* ── SVG-level mousedown (background click, pan start, connect cancel) ── */
   const handleSVGMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -677,11 +722,16 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
       store.setNodeLabel(editingNodeId, editValue)
       setEditingNodeId(null)
       setEditValue("")
+    } else if (editingEdgeId !== null) {
+      store.setEdgeLabel(editingEdgeId, editValue)
+      setEditingEdgeId(null)
+      setEditValue("")
     }
-  }, [editingNodeId, editValue, store])
+  }, [editingNodeId, editingEdgeId, editValue, store])
 
   const cancelEdit = useCallback(() => {
     setEditingNodeId(null)
+    setEditingEdgeId(null)
     setEditValue("")
   }, [])
 
@@ -749,7 +799,13 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
               sourceNode={srcNode}
               targetNode={tgtNode}
               isSelected={store.selectedEdgeIds.includes(edge.id)}
+              isEditing={editingEdgeId === edge.id}
+              editValue={editingEdgeId === edge.id ? editValue : ""}
               onMouseDown={handleEdgeMouseDown}
+              onDoubleClick={handleEdgeDoubleClick}
+              onEditChange={handleEditChange}
+              onEditBlur={handleEditBlur}
+              onEditKeyDown={handleEditKeyDown}
             />
           )
         })}

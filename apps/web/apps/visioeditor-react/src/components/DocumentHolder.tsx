@@ -2,8 +2,9 @@ import { observer } from "mobx-react-lite"
 import { useEffect, useRef } from "react"
 import { init, renderPage } from "../lib/wasm-renderer"
 import { visioStore } from "../stores/VisioStore"
+import { FlowchartCanvas } from "./FlowchartCanvas"
 
-const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
+function VsdxCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const initialized = useRef(false)
 
@@ -48,6 +49,13 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
       </div>
     </div>
   )
+}
+
+const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
+  if (visioStore.editorMode === "flowchart") {
+    return <FlowchartCanvas />
+  }
+  return <VsdxCanvas />
 })
 
 export { ObservedDocumentHolder as DocumentHolder }
