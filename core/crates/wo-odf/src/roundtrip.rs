@@ -257,4 +257,81 @@ mod tests {
         content.read_to_string(&mut content_str).unwrap();
         assert!(content_str.contains("Test paragraph"));
     }
+
+    #[test]
+    fn test_roundtrip_odp_with_styled_shapes() {
+        let rt = OdfRoundtrip::new();
+
+        let mut writer = ArchiveWriter::new().unwrap();
+        writer
+            .add_file_with_compression(
+                "mimetype",
+                b"application/vnd.oasis.opendocument.presentation",
+                CompressionMethod::Stored,
+            )
+            .unwrap();
+        writer
+            .add_file(
+                "content.xml",
+                br##"<?xml version="1.0" encoding="UTF-8"?>
+<office:document-content
+  xmlns:office="urn:oasis:names:tc:opendocument:xmlns:office:1.0"
+  xmlns:draw="urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"
+  xmlns:svg="urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0"
+  xmlns:style="urn:oasis:names:tc:opendocument:xmlns:style:1.0"
+  xmlns:text="urn:oasis:names:tc:opendocument:xmlns:text:1.0"
+  office:version="1.2">
+  <office:automatic-styles>
+    <style:style style:name="gr1" style:family="graphic">
+      <style:graphic-properties draw:fill-color="#FF0000" draw:stroke-color="#00FF00" svg:stroke-width="2pt"/>
+    </style:style>
+  </office:automatic-styles>
+  <office:body>
+    <office:presentation>
+      <draw:page draw:name="Slide1">
+        <draw:rect draw:style-name="gr1" svg:x="1cm" svg:y="1cm" svg:width="10cm" svg:height="5cm"/>
+      </draw:page>
+    </office:presentation>
+  </office:body>
+</office:document-content>"##.as_ref(),
+            )
+            .unwrap();
+        writer
+            .add_file(
+                "META-INF/manifest.xml",
+                br#"<?xml version="1.0" encoding="UTF-8"?>
+<manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.2">
+ <manifest:file-entry manifest:full-path="/" manifest:version="1.2"/>
+ <manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/>
+</manifest:manifest>"#.as_ref(),
+            )
+            .unwrap();
+	let input = writer.finish().unwrap();
+
+	rt.parse(&input).unwrap();
+	let doc = rt.doc.borrow();
+	let doc = doc.as_ref().unwrap();
+	if let OdfContent::Presentation { slides } = &doc.content {
+            assert_eq!(slides.len(), 1);
+            assert_eq!(slides[0].shapes.len(), 1);
+            let shape = &slides[0].shapes[0];
+            assert_eq!(
+                shape.fill_color.as_deref(),
+                Some("#FF0000"),
+                "fill_color not resolved from automatic style"
+            );
+            assert_eq!(
+                shape.stroke_color.as_deref(),
+                Some("#00FF00"),
+                "stroke_color not resolved from automatic style"
+            );
+            assert_eq!(
+                shape.stroke_width.as_deref(),
+                Some("2pt"),
+                "stroke_width not resolved from automatic style"
+            );
+        } else {
+            panic!("Expected ODP presentation content");
+        }
+    }
 }

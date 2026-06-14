@@ -75,8 +75,15 @@ impl OdfParser {
             self.extract_metadata_from_content(&content_doc)
         };
 
-        // Parse document body
-        let content = self.parse_content(&content_doc, &doc_type, &mut archive)?;
+		// Parse auto styles from content.xml office:automatic-styles (ODP shapes reference these)
+		let auto_styles = self.parse_auto_styles(&content_doc);
+		let all_styles: Vec<OdfStyle> = styles
+			.into_iter()
+			.chain(auto_styles)
+			.collect();
+
+		// Parse document body
+		let content = self.parse_content(&content_doc, &doc_type, &mut archive, &all_styles)?;
 
         Ok(OdfDocument {
             doc_type,
@@ -85,7 +92,7 @@ impl OdfParser {
             content,
             manifest,
             fonts,
-            styles,
+            styles: all_styles,
         })
     }
 
@@ -272,11 +279,12 @@ impl OdfParser {
         doc: &XmlDoc,
         doc_type: &OdfType,
         archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+        styles: &[OdfStyle],
     ) -> Result<OdfContent> {
         match doc_type {
             OdfType::Text => self.parse_text_content(doc, archive),
             OdfType::Spreadsheet => self.parse_spreadsheet_content(doc, archive),
-            OdfType::Presentation => self.parse_presentation_content(doc, archive),
+            OdfType::Presentation => self.parse_presentation_content(doc, archive, styles),
             _ => Ok(OdfContent::Generic),
         }
     }
@@ -716,6 +724,7 @@ impl OdfParser {
         &self,
         doc: &XmlDoc,
         archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+        styles: &[OdfStyle],
     ) -> Result<OdfContent> {
         let mut slides = Vec::new();
 
@@ -724,7 +733,7 @@ impl OdfParser {
                 let name = page_node
                     .attribute((DRAW_NS, "name"))
                     .map(|s| s.to_string());
-                let shapes = self.parse_odp_shapes(page_node, archive);
+                let shapes = self.parse_odp_shapes(page_node, archive, styles);
                 let notes = self.parse_odp_notes(page_node);
                 let transition = self.parse_odp_transition(page_node);
 
@@ -749,13 +758,14 @@ impl OdfParser {
         &self,
         page_node: roxmltree::Node<'_, '_>,
         archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+        styles: &[OdfStyle],
     ) -> Vec<OdpShape> {
         let mut shapes = Vec::new();
         for child in page_node.children() {
             if !child.is_element() {
                 continue;
             }
-            if let Some(shape) = self.parse_odp_shape(child, archive) {
+            if let Some(shape) = self.parse_odp_shape(child, archive, styles) {
                 shapes.push(shape);
             }
         }
@@ -767,6 +777,7 @@ impl OdfParser {
         &self,
         node: roxmltree::Node<'_, '_>,
         archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+        styles: &[OdfStyle],
     ) -> Option<OdpShape> {
         let ns = node.tag_name().namespace()?;
         if ns != DRAW_NS {
@@ -823,9 +834,15 @@ impl OdfParser {
             height,
             z_index,
             rotation,
-            fill_color: None,
-            stroke_color: None,
-            stroke_width: None,
+            fill_color: style_name.as_ref().and_then(|sn| {
+                Self::resolve_style_property(styles, sn, "graphic-properties:fill-color")
+            }),
+            stroke_color: style_name.as_ref().and_then(|sn| {
+                Self::resolve_style_property(styles, sn, "graphic-properties:stroke-color")
+            }),
+            stroke_width: style_name.as_ref().and_then(|sn| {
+                Self::resolve_style_property(styles, sn, "graphic-properties:stroke-width")
+            }),
             text_content,
             image_ref,
             style_name,
@@ -979,6 +996,7 @@ impl OdfParser {
                     for child in node.children() {
                         if child.has_tag_name((STYLE_NS, "text-properties"))
                             || child.has_tag_name((STYLE_NS, "paragraph-properties"))
+                            || child.has_tag_name((STYLE_NS, "graphic-properties"))
                         {
                             for attr in child.attributes() {
                                 let key = format!("{}:{}", child.tag_name().name(), attr.name());
@@ -998,10 +1016,79 @@ impl OdfParser {
             }
         }
 
-        Ok((fonts, styles))
+	Ok((fonts, styles))
     }
 
-    /// Parse ODF and convert to a generic Document.
+    fn parse_auto_styles(&self, doc: &XmlDoc) -> Vec<OdfStyle> {
+	let mut styles = Vec::new();
+	for node in doc.descendants() {
+	    if node.has_tag_name((OFFICE_NS, "automatic-styles")) {
+		for child in node.children() {
+		    if child.has_tag_name((STYLE_NS, "style")) {
+			let style_name = child
+			    .attribute((STYLE_NS, "name"))
+			    .unwrap_or("")
+			    .to_string();
+			if style_name.is_empty() {
+			    continue;
+			}
+			let family = child
+			    .attribute((STYLE_NS, "family"))
+			    .map(|s| s.to_string());
+			let parent = child
+			    .attribute((STYLE_NS, "parent-style-name"))
+			    .map(|s| s.to_string());
+			let mut properties = Vec::new();
+			for prop_child in child.children() {
+			    if prop_child.has_tag_name((STYLE_NS, "graphic-properties"))
+				|| prop_child.has_tag_name((STYLE_NS, "text-properties"))
+				|| prop_child.has_tag_name((STYLE_NS, "paragraph-properties"))
+			    {
+				for attr in prop_child.attributes() {
+				    let key = format!(
+					"{}:{}",
+					prop_child.tag_name().name(),
+					attr.name()
+				    );
+				    properties.push((key, attr.value().to_string()));
+				}
+			    }
+			}
+			styles.push(OdfStyle {
+			    name: style_name,
+			    family,
+			    parent,
+			    display_name: None,
+			    properties,
+			});
+		    }
+		}
+	    }
+	}
+	styles
+    }
+
+    fn resolve_style_property(
+	styles: &[OdfStyle],
+	style_name: &str,
+	prop_key: &str,
+    ) -> Option<String> {
+	let style = styles.iter().find(|s| s.name == style_name)?;
+	if let Some(val) = style
+	    .properties
+	    .iter()
+	    .find(|(k, _)| k == prop_key)
+	    .map(|(_, v)| v.clone())
+	{
+	    return Some(val);
+	}
+	if let Some(parent_name) = &style.parent {
+	    Self::resolve_style_property(styles, parent_name, prop_key)
+	} else {
+	    None
+	}
+    }
+
     pub fn parse_to_document(&self, data: &[u8]) -> Result<Document> {
         let odf = self.parse(data)?;
 
