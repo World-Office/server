@@ -1609,7 +1609,10 @@ export class PresentationStore {
 		}
 	}
 
-	setSlideBackground(index: number, background: SlideBackground | undefined): void {
+	setSlideBackground(
+		index: number,
+		background: SlideBackground | undefined,
+	): void {
 		this.pushSnapshot();
 		const slide = this.slides[index];
 		if (slide) {

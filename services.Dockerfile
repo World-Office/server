@@ -54,11 +54,12 @@ WORKDIR /app
 COPY --from=builder --chown=worldoffice:worldoffice /app/target/release/${SERVICE_NAME} /usr/local/bin/${SERVICE_NAME}
 
 # Create data directories for the service.
-RUN mkdir -p /var/lib/worldoffice /var/log/worldoffice && \
+RUN mkdir -p /var/lib/worldoffice/data /var/lib/worldoffice/logs /var/log/worldoffice && \
     chown -R worldoffice:worldoffice /var/lib/worldoffice /var/log/worldoffice
 
-# Switch to the non-root user.
+# Switch to the non-root user and a writable working directory.
 USER worldoffice
+WORKDIR /var/lib/worldoffice
 
 EXPOSE 8000
 
