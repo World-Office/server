@@ -376,6 +376,209 @@ export class FlowchartStore {
 		return { offsetX, offsetY, scale }
 	}
 
+	/* ── Alignment ── */
+
+	alignLeft(): void {
+		if (this.selectedNodeIds.length < 2) return
+		this.pushHistory()
+		const minX = Math.min(...this.selectedNodeIds.map((id) => this.document.nodes.find((n) => n.id === id)?.x ?? Infinity))
+		for (const id of this.selectedNodeIds) {
+			const n = this.document.nodes.find((nd) => nd.id === id)
+			if (n) n.x = minX
+		}
+	}
+
+	alignRight(): void {
+		if (this.selectedNodeIds.length < 2) return
+		this.pushHistory()
+		const maxR = Math.max(...this.selectedNodeIds.map((id) => {
+			const n = this.document.nodes.find((nd) => nd.id === id)
+			return n ? n.x + n.width : -Infinity
+		}))
+		for (const id of this.selectedNodeIds) {
+			const n = this.document.nodes.find((nd) => nd.id === id)
+			if (n) n.x = maxR - n.width
+		}
+	}
+
+	alignTop(): void {
+		if (this.selectedNodeIds.length < 2) return
+		this.pushHistory()
+		const minY = Math.min(...this.selectedNodeIds.map((id) => this.document.nodes.find((n) => n.id === id)?.y ?? Infinity))
+		for (const id of this.selectedNodeIds) {
+			const n = this.document.nodes.find((nd) => nd.id === id)
+			if (n) n.y = minY
+		}
+	}
+
+	alignBottom(): void {
+		if (this.selectedNodeIds.length < 2) return
+		this.pushHistory()
+		const maxB = Math.max(...this.selectedNodeIds.map((id) => {
+			const n = this.document.nodes.find((nd) => nd.id === id)
+			return n ? n.y + n.height : -Infinity
+		}))
+		for (const id of this.selectedNodeIds) {
+			const n = this.document.nodes.find((nd) => nd.id === id)
+			if (n) n.y = maxB - n.height
+		}
+	}
+
+	alignCenter(): void {
+		if (this.selectedNodeIds.length < 2) return
+		this.pushHistory()
+		const nodes = this.selectedNodeIds.map((id) => this.document.nodes.find((n) => n.id === id)).filter(Boolean) as FlowchartNode[]
+		const avgX = nodes.reduce((s, n) => s + n.x + n.width / 2, 0) / nodes.length
+		for (const n of nodes) n.x = avgX - n.width / 2
+	}
+
+	alignMiddle(): void {
+		if (this.selectedNodeIds.length < 2) return
+		this.pushHistory()
+		const nodes = this.selectedNodeIds.map((id) => this.document.nodes.find((n) => n.id === id)).filter(Boolean) as FlowchartNode[]
+		const avgY = nodes.reduce((s, n) => s + n.y + n.height / 2, 0) / nodes.length
+		for (const n of nodes) n.y = avgY - n.height / 2
+	}
+
+	distributeHorizontally(): void {
+		if (this.selectedNodeIds.length < 3) return
+		this.pushHistory()
+		const nodes = this.selectedNodeIds.map((id) => this.document.nodes.find((n) => n.id === id)).filter(Boolean) as FlowchartNode[]
+		const sorted = [...nodes].sort((a, b) => (a.x + a.width / 2) - (b.x + b.width / 2))
+		const minX = sorted[0].x
+		const maxX = sorted[sorted.length - 1].x + sorted[sorted.length - 1].width
+		const totalW = sorted.reduce((s, n) => s + n.width, 0)
+		const gap = (maxX - minX - totalW) / (sorted.length - 1)
+		let cx = sorted[0].x
+		for (let i = 1; i < sorted.length - 1; i++) {
+			cx += sorted[i - 1].width + gap
+			sorted[i].x = cx
+		}
+	}
+
+	distributeVertically(): void {
+		if (this.selectedNodeIds.length < 3) return
+		this.pushHistory()
+		const nodes = this.selectedNodeIds.map((id) => this.document.nodes.find((n) => n.id === id)).filter(Boolean) as FlowchartNode[]
+		const sorted = [...nodes].sort((a, b) => (a.y + a.height / 2) - (b.y + b.height / 2))
+		const minY = sorted[0].y
+		const maxY = sorted[sorted.length - 1].y + sorted[sorted.length - 1].height
+		const totalH = sorted.reduce((s, n) => s + n.height, 0)
+		const gap = (maxY - minY - totalH) / (sorted.length - 1)
+		let cy = sorted[0].y
+		for (let i = 1; i < sorted.length - 1; i++) {
+			cy += sorted[i - 1].height + gap
+			sorted[i].y = cy
+		}
+	}
+
+	makeEqualWidth(): void {
+		if (this.selectedNodeIds.length < 2) return
+		this.pushHistory()
+		const nodes = this.selectedNodeIds.map((id) => this.document.nodes.find((n) => n.id === id)).filter(Boolean) as FlowchartNode[]
+		const maxW = Math.max(...nodes.map((n) => n.width))
+		for (const n of nodes) n.width = maxW
+	}
+
+	makeEqualHeight(): void {
+		if (this.selectedNodeIds.length < 2) return
+		this.pushHistory()
+		const nodes = this.selectedNodeIds.map((id) => this.document.nodes.find((n) => n.id === id)).filter(Boolean) as FlowchartNode[]
+		const maxH = Math.max(...nodes.map((n) => n.height))
+		for (const n of nodes) n.height = maxH
+	}
+
+	/* ── Auto layout (layered/Dagre-style) ── */
+
+	autoLayout(): void {
+		if (this.document.nodes.length === 0) return
+		this.pushHistory()
+		const nodes = this.document.nodes
+		const edges = this.document.edges
+		const nodeSet = new Set(nodes.map((n) => n.id))
+		const adj = new Map<string, string[]>()
+		const inDeg = new Map<string, number>()
+		for (const n of nodes) { adj.set(n.id, []); inDeg.set(n.id, 0) }
+		for (const e of edges) {
+			if (nodeSet.has(e.sourceId) && nodeSet.has(e.targetId)) {
+				adj.get(e.sourceId)!.push(e.targetId)
+				inDeg.set(e.targetId, (inDeg.get(e.targetId) || 0) + 1)
+			}
+		}
+
+		// Assign layers via topological sort (Kahn's)
+		const layers: string[][] = []
+		let queue = [...inDeg.entries()].filter(([, d]) => d === 0).map(([id]) => id)
+		const visited = new Set<string>()
+		while (queue.length > 0) {
+			layers.push([...queue])
+			const next: string[] = []
+			for (const id of queue) {
+				visited.add(id)
+				for (const tgt of adj.get(id) || []) {
+					if (!visited.has(tgt)) {
+						inDeg.set(tgt, (inDeg.get(tgt) || 1) - 1)
+						if (inDeg.get(tgt) === 0) next.push(tgt)
+					}
+				}
+			}
+			queue = next
+		}
+
+		// Any remaining nodes (cycles, isolated) go to last layer
+		const remaining = nodes.filter((n) => !visited.has(n.id)).map((n) => n.id)
+		if (remaining.length > 0) layers.push(remaining)
+
+		if (layers.length === 0) return
+
+		const nodeMap = new Map(nodes.map((n) => [n.id, n]))
+		const layerGap = 80
+		const nodeGap = 40
+		const pad = 60
+
+		// Compute max width per layer for column alignment
+		for (let li = 0; li < layers.length; li++) {
+			const layerNodes = layers[li].map((id) => nodeMap.get(id)).filter(Boolean) as FlowchartNode[]
+			const maxH = Math.max(...layerNodes.map((n) => n.height))
+			const totalW = layerNodes.reduce((s, n) => s + n.width, 0)
+			const gap = layerNodes.length > 1 ? nodeGap : 0
+			const startX = (totalW + gap * (layerNodes.length - 1)) / -2
+
+			// Sort nodes within layer (prefer connected from previous layer)
+			const prevLayer = li > 0 ? layers[li - 1] : []
+			layerNodes.sort((a, b) => {
+				const aPrev = prevLayer.filter((pid) => adj.get(pid)?.includes(a.id)).length
+				const bPrev = prevLayer.filter((pid) => adj.get(pid)?.includes(b.id)).length
+				return bPrev - aPrev
+			})
+
+			let cx = startX
+			for (const n of layerNodes) {
+				// Compute index in layer
+				const idx = layers[li].indexOf(n.id)
+				const prevW = layerNodes.slice(0, idx).reduce((s, nn) => s + nn.width, 0)
+				n.x = cx + prevW + (idx > 0 ? gap * idx : 0)
+				n.y = li * (maxH + layerGap) + pad
+			}
+		}
+
+		// Center everything
+		const allNodes = nodes
+		let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity
+		for (const n of allNodes) {
+			if (n.x < minX) minX = n.x
+			if (n.x + n.width > maxX) maxX = n.x + n.width
+			if (n.y < minY) minY = n.y
+			if (n.y + n.height > maxY) maxY = n.y + n.height
+		}
+		const cx2 = 400 - (minX + maxX) / 2
+		const cy2 = 200 - (minY + maxY) / 2
+		for (const n of allNodes) { n.x += cx2; n.y += cy2 }
+
+		this.selectedNodeIds = []
+		this.selectedEdgeIds = []
+	}
+
 	/* ── Document ── */
 
 	clear(): void {
