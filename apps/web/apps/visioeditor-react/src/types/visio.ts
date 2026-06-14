@@ -116,6 +116,8 @@ export interface FlowchartNode {
   fontWeight?: "normal" | "bold"
 }
 
+export type ArrowheadType = "none" | "arrow" | "triangle" | "hollow-triangle" | "diamond"
+
 export interface FlowchartEdge {
   id: string
   sourceId: string
@@ -126,6 +128,7 @@ export interface FlowchartEdge {
   strokeStyle?: "solid" | "dashed" | "dotted"
   sourceAnchor?: "top" | "right" | "bottom" | "left"
   targetAnchor?: "top" | "right" | "bottom" | "left"
+  arrowheadType?: ArrowheadType
 }
 
 export interface FlowchartDocument {
