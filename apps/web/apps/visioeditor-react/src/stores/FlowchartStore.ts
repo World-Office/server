@@ -8,7 +8,7 @@ function genId(): string {
 }
 
 function cloneDoc(doc: FlowchartDocument): FlowchartDocument {
-	return toJS(doc, { recurseEverything: true }) as FlowchartDocument
+	return structuredClone(toJS(doc)) as FlowchartDocument
 }
 
 export class FlowchartStore {
