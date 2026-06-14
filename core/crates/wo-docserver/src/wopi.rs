@@ -103,6 +103,12 @@ impl WopiClient {
       <action name="edit" ext="docx" urlsrc="http://localhost:8080/hosting/wopi/word/edit"/>
       <action name="edit" ext="xlsx" urlsrc="http://localhost:8080/hosting/wopi/sheet/edit"/>
       <action name="edit" ext="pptx" urlsrc="http://localhost:8080/hosting/wopi/slide/edit"/>
+      <action name="edit" ext="vsdx" urlsrc="http://localhost:8080/hosting/wopi/diagram/edit"/>
+      <action name="view" ext="vssx" urlsrc="http://localhost:8080/hosting/wopi/diagram/view"/>
+      <action name="view" ext="vstx" urlsrc="http://localhost:8080/hosting/wopi/diagram/view"/>
+      <action name="view" ext="vsdm" urlsrc="http://localhost:8080/hosting/wopi/diagram/view"/>
+      <action name="view" ext="vssm" urlsrc="http://localhost:8080/hosting/wopi/diagram/view"/>
+      <action name="view" ext="vstm" urlsrc="http://localhost:8080/hosting/wopi/diagram/view"/>
     </app>
   </net-zone>
 </wopi-discovery>
