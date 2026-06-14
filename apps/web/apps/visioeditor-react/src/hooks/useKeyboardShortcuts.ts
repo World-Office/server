@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { visioStore } from "../stores/VisioStore"
 import { flowchartStore } from "../stores/FlowchartStore"
 import { exportFlowchartAsSvg } from "../components/FlowchartCanvas"
@@ -9,6 +9,9 @@ function isEditingText(): boolean {
 }
 
 export function useKeyboardShortcuts(): void {
+  // Debounce save to avoid rapid Ctrl+S spamming
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent): void {
       const mod = e.ctrlKey || e.metaKey
@@ -77,6 +80,16 @@ export function useKeyboardShortcuts(): void {
       if (mod && shift && (e.key === "g" || e.key === "G")) {
         e.preventDefault()
         flowchartStore.toggleSnapToGrid()
+        return
+      }
+      if (mod && !shift && (e.key === "s" || e.key === "S")) {
+        e.preventDefault()
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+        saveTimerRef.current = setTimeout(() => {
+          visioStore.save().catch(() => {
+            // save errors are logged inside save()
+          })
+        }, 200)
         return
       }
       if (e.key === "Delete" || e.key === "Backspace") {
