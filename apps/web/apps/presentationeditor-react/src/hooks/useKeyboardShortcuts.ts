@@ -8,6 +8,13 @@ export function useKeyboardShortcuts(): void {
 			const isCtrl = e.ctrlKey || e.metaKey;
 
 			if (isCtrl) {
+				if (e.key === "s" || e.key === "S") {
+					if (!e.shiftKey) {
+						e.preventDefault();
+						presentationStore.save();
+					}
+					return;
+				}
 				if (e.key === "z" || e.key === "Z") {
 					if (e.shiftKey) {
 						e.preventDefault();
