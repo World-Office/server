@@ -42,6 +42,7 @@ export function useDocumentLoader(): LoadState {
         fileType: "vsdx",
         info: { sheetCount: 1, width: 1200, height: 800 },
       }
+      visioStore.setEditorMode("flowchart")
       visioStore.isModified = false
     }
   }, [])
