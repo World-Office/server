@@ -285,6 +285,97 @@ export class FlowchartStore {
 		this.snapToGridEnabled = !this.snapToGridEnabled
 	}
 
+	/* ── Resize ── */
+
+	isResizing = false
+	resizeNodeId: string | null = null
+	resizeHandle: string | null = null
+	resizeStartNode: { x: number; y: number; width: number; height: number } | null = null
+
+	startResize(nodeId: string, handle: string): void {
+		const node = this.document.nodes.find((n) => n.id === nodeId)
+		if (!node) return
+		this.isResizing = true
+		this.resizeNodeId = nodeId
+		this.resizeHandle = handle
+		this.resizeStartNode = { x: node.x, y: node.y, width: node.width, height: node.height }
+	}
+
+	resizeTo(nodeId: string, x: number, y: number, width: number, height: number): void {
+		const node = this.document.nodes.find((n) => n.id === nodeId)
+		if (node) {
+			const min = 30
+			node.x = x
+			node.y = y
+			node.width = Math.max(min, width)
+			node.height = Math.max(min, height)
+		}
+	}
+
+	endResize(): void {
+		if (this.isResizing) this.pushHistory()
+		this.isResizing = false
+		this.resizeNodeId = null
+		this.resizeHandle = null
+		this.resizeStartNode = null
+	}
+
+	/* ── Layer ordering ── */
+
+	bringForward(): void {
+		const idx = this.document.nodes.findIndex((n) => n.id === this.selectedNodeIds[0])
+		if (idx < this.document.nodes.length - 1) {
+			const arr = this.document.nodes
+			;[arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]]
+		}
+	}
+
+	sendBackward(): void {
+		const idx = this.document.nodes.findIndex((n) => n.id === this.selectedNodeIds[0])
+		if (idx > 0) {
+			const arr = this.document.nodes
+			;[arr[idx], arr[idx - 1]] = [arr[idx - 1], arr[idx]]
+		}
+	}
+
+	bringToFront(): void {
+		const idx = this.document.nodes.findIndex((n) => n.id === this.selectedNodeIds[0])
+		if (idx >= 0 && idx < this.document.nodes.length - 1) {
+			const node = this.document.nodes.splice(idx, 1)[0]
+			this.document.nodes.push(node)
+		}
+	}
+
+	sendToBack(): void {
+		const idx = this.document.nodes.findIndex((n) => n.id === this.selectedNodeIds[0])
+		if (idx > 0) {
+			const node = this.document.nodes.splice(idx, 1)[0]
+			this.document.nodes.unshift(node)
+		}
+	}
+
+	/* ── Zoom to fit ── */
+
+	zoomToFit(containerWidth: number, containerHeight: number): { offsetX: number; offsetY: number; scale: number } {
+		if (this.document.nodes.length === 0) return { offsetX: 0, offsetY: 0, scale: 1 }
+		let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+		for (const n of this.document.nodes) {
+			if (n.x < minX) minX = n.x
+			if (n.y < minY) minY = n.y
+			if (n.x + n.width > maxX) maxX = n.x + n.width
+			if (n.y + n.height > maxY) maxY = n.y + n.height
+		}
+		const pad = 40
+		const contentW = maxX - minX + pad * 2
+		const contentH = maxY - minY + pad * 2
+		const scaleX = containerWidth / contentW
+		const scaleY = containerHeight / contentH
+		const scale = Math.min(scaleX, scaleY, 2)
+		const offsetX = minX - pad - (containerWidth / scale - contentW) / 2
+		const offsetY = minY - pad - (containerHeight / scale - contentH) / 2
+		return { offsetX, offsetY, scale }
+	}
+
 	/* ── Document ── */
 
 	clear(): void {

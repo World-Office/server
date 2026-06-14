@@ -27,7 +27,11 @@ export function useKeyboardShortcuts(): void {
         }
         if (e.key === "0") {
           e.preventDefault()
-          visioStore.setZoomLevel(100)
+          if (visioStore.editorMode === "flowchart") {
+            window.dispatchEvent(new CustomEvent("fc-zoom-fit"))
+          } else {
+            visioStore.setZoomLevel(100)
+          }
           return
         }
       }
@@ -83,6 +87,20 @@ export function useKeyboardShortcuts(): void {
         for (const nodeId of flowchartStore.selectedNodeIds) {
           flowchartStore.removeNode(nodeId)
         }
+        return
+      }
+      if (mod && shift && e.key === "ArrowUp") {
+        e.preventDefault()
+        flowchartStore.bringForward()
+        return
+      }
+      if (mod && shift && e.key === "ArrowDown") {
+        e.preventDefault()
+        flowchartStore.sendBackward()
+        return
+      }
+      if (e.key === "Escape") {
+        flowchartStore.clearSelection()
         return
       }
     }
