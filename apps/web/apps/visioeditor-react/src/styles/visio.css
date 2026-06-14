@@ -115,3 +115,153 @@
   height: 100%;
   background-color: var(--wo-visio-doc-bg);
 }
+
+/* ── Properties panel (flowchart mode) ── */
+
+.fc-props-panel {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 220px;
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  z-index: 10;
+  padding: 8px 12px;
+  font-size: 12px;
+  user-select: none;
+}
+
+.fc-props-header {
+  font-weight: 600;
+  font-size: 13px;
+  color: #333;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.fc-props-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fc-props-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  color: #666;
+}
+
+.fc-props-input {
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 3px 6px;
+  font-size: 12px;
+  outline: none;
+  background: #fafafa;
+}
+.fc-props-input:focus {
+  border-color: #4472c4;
+  background: #fff;
+}
+
+.fc-props-narrow {
+  width: 60px;
+}
+
+.fc-props-color {
+  width: 32px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.fc-props-row {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.fc-props-row > .fc-props-label {
+  flex: 1;
+}
+
+.fc-props-check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #666;
+  white-space: nowrap;
+}
+
+.fc-props-check input {
+  margin: 0;
+}
+
+.fc-props-select {
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 2px 4px;
+  font-size: 12px;
+  outline: none;
+  background: #fafafa;
+}
+.fc-props-select:focus {
+  border-color: #4472c4;
+}
+
+/* ── Context menu (flowchart mode) ── */
+
+.fc-context-menu {
+  position: fixed;
+  z-index: 1000;
+  min-width: 160px;
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  padding: 4px 0;
+  font-size: 12px;
+  user-select: none;
+}
+
+.fc-context-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  color: #333;
+  cursor: pointer;
+  font-size: 12px;
+}
+.fc-context-item:hover {
+  background: #f0f4fa;
+}
+.fc-context-item:disabled {
+  color: #bbb;
+  cursor: default;
+}
+
+.fc-context-sep {
+  height: 1px;
+  background: #e8e8e8;
+  margin: 4px 0;
+}
+
+.fc-context-danger {
+  color: #d32f2f;
+}
+.fc-context-danger:hover {
+  background: #fef2f2;
+}
