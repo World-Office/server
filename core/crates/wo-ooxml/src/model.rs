@@ -302,16 +302,22 @@ pub struct PptxPresentation {
 /// A single slide in the presentation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Slide {
-    pub id: u32,
-    pub name: String,
-    pub shapes: Vec<SlideShape>,
-    pub notes: Option<String>,
-    #[serde(default)]
-    pub transition: Option<SlideTransition>,
-    #[serde(default)]
-    pub animations: Vec<AnimationData>,
-    #[serde(default)]
-    pub timing_raw: Option<String>,
+	pub id: u32,
+	pub name: String,
+	/// ID of the slide layout this slide uses.
+	#[serde(default)]
+	pub layout_id: Option<String>,
+	/// ID of the slide master this slide inherits from.
+	#[serde(default)]
+	pub master_id: Option<String>,
+	pub shapes: Vec<SlideShape>,
+	pub notes: Option<String>,
+	#[serde(default)]
+	pub transition: Option<SlideTransition>,
+	#[serde(default)]
+	pub animations: Vec<AnimationData>,
+	#[serde(default)]
+	pub timing_raw: Option<String>,
 }
 
 /// Transition effect types for PPTX slides.
@@ -411,11 +417,13 @@ pub struct AnimationData {
 /// Shape types that can appear on a slide.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SlideShape {
-    TextBox(TextBoxShape),
-    Picture(PictureShape),
-    Placeholder(PlaceholderShape),
-    Table(TableShape),
-    Connector(ConnectorShape),
+	TextBox(TextBoxShape),
+	Picture(PictureShape),
+	Placeholder(PlaceholderShape),
+	Table(TableShape),
+	Connector(ConnectorShape),
+	Chart(ChartShape),
+	SmartArt(SmartArtShape),
 }
 
 /// A table shape on a slide.
@@ -528,7 +536,24 @@ impl std::fmt::Display for ConnectorShapeType {
             ConnectorShapeType::Curved3 => write!(f, "curvedConnector4"),
             ConnectorShapeType::Curved4 => write!(f, "curvedConnector5"),
         }
-    }
+	}
+}
+
+/// A chart shape on a slide — STUB for future implementation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChartShape {
+	pub id: String,
+	pub bounds: Bounds,
+	pub chart_type: String,
+}
+
+/// A SmartArt diagram shape on a slide — STUB for future implementation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SmartArtShape {
+	pub id: String,
+	pub bounds: Bounds,
+	pub diagram_type: String,
+	pub data_layout: String,
 }
 
 impl ConnectorShapeType {
@@ -589,23 +614,68 @@ pub struct GradientStop {
 /// Shadow effect applied to a shape.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ShadowEffect {
-    /// Horizontal offset in EMU.
-    pub dx: i64,
-    /// Vertical offset in EMU.
-    pub dy: i64,
-    /// Blur radius in EMU.
-    pub blur_radius: i64,
-    /// Shadow color (#RRGGBB).
-    pub color: String,
-    /// Opacity 0.0–1.0.
-    pub opacity: f64,
+	/// Horizontal offset in EMU.
+	pub dx: i64,
+	/// Vertical offset in EMU.
+	pub dy: i64,
+	/// Blur radius in EMU.
+	pub blur_radius: i64,
+	/// Shadow color (#RRGGBB).
+	pub color: String,
+	/// Opacity 0.0–1.0.
+	pub opacity: f64,
+}
+
+/// Glow effect applied to a shape.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GlowEffect {
+	/// Blur radius in EMU.
+	pub radius: i64,
+	/// Glow color (#RRGGBB).
+	pub color: String,
+	/// Opacity 0.0–1.0.
+	pub opacity: f64,
+}
+
+/// Reflection effect applied to a shape.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReflectionEffect {
+	/// Blur radius in EMU.
+	pub blur_radius: i64,
+	/// Start opacity 0.0–1.0.
+	pub start_opacity: f64,
+	/// End position 0.0–1.0 (relative to shape height).
+	pub end_pos: f64,
+	/// Fade direction (mirror vs fade).
+	pub direction: ReflectionDirection,
+}
+
+/// Reflection direction.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ReflectionDirection {
+	/// Mirror reflection.
+	#[serde(rename = "mirror")]
+	Mirror,
+	/// Fade downwards.
+	#[serde(rename = "fade")]
+	Fade,
 }
 
 /// List of visual effects applied to a shape.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct EffectList {
-    /// Outer shadow effect.
-    pub shadow: Option<ShadowEffect>,
+	/// Outer shadow effect.
+	pub shadow: Option<ShadowEffect>,
+	/// Glow effect.
+	pub glow: Option<GlowEffect>,
+	/// Reflection effect.
+	pub reflection: Option<ReflectionEffect>,
+}
+
+impl Default for ReflectionDirection {
+	fn default() -> Self {
+		Self::Mirror
+	}
 }
 
 /// 2D bounds in EMU units (1/914400 inch).

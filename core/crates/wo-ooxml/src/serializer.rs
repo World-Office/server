@@ -205,12 +205,15 @@ impl OoxmlSerializer {
         // Slide ID list
         xml.push_str("\n  <p:sldIdLst>");
         for (i, slide) in pres.slides.iter().enumerate() {
-            xml.push_str(&format!(
-                r#"
-    <p:sldId id="{}" r:id="rId{}"/>"#,
-                slide.id,
-                i + 1
-            ));
+            let mut attrs = format!(r#"id="{}" r:id="rId{}""#, slide.id, i + 1);
+            if let Some(ref layout_id) = slide.layout_id {
+                attrs.push_str(&format!(r#" sldLayoutId="{}""#, layout_id));
+            }
+            if let Some(ref master_id) = slide.master_id {
+                attrs.push_str(&format!(r#" sldMasterId="{}""#, master_id));
+            }
+            xml.push_str(&format!(r#"
+    <p:sldId {}/>"#, attrs));
         }
         xml.push_str("\n  </p:sldIdLst>\n</p:presentation>");
         xml
@@ -220,8 +223,16 @@ impl OoxmlSerializer {
         let mut xml = String::from(
             r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
-       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">"#,
+       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main""#,
         );
+        
+        if let Some(ref layout_id) = slide.layout_id {
+            xml.push_str(&format!(r#" sldLayoutId="{}""#, layout_id));
+        }
+        if let Some(ref master_id) = slide.master_id {
+            xml.push_str(&format!(r#" sldMasterId="{}""#, master_id));
+        }
+        xml.push_str(">");
 
         // spTree
         xml.push_str("\n  <p:spTree>");
@@ -251,6 +262,46 @@ impl OoxmlSerializer {
                 }
                 SlideShape::Connector(conn) => {
                     self.serialize_connector_shape(&mut xml, conn);
+                }
+                SlideShape::Chart(_chart) => {
+                    // STUB for future implementation
+                    xml.push_str(r#"
+    <p:graphicFrame>
+      <p:nvGraphicFramePr>
+        <p:cNvPr id="chart-stub" name="Chart"/>
+        <p:cNvGraphicFramePr/>
+        <p:nvPr/>
+      </p:nvGraphicFramePr>
+      <p:xfrm>
+        <a:off x="0" y="0"/>
+        <a:ext cx="0" cy="0"/>
+      </p:xfrm>
+      <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+        <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart">
+          <c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"/>
+        </a:graphicData>
+      </a:graphic>
+    </p:graphicFrame>"#);
+                }
+                SlideShape::SmartArt(_smartart) => {
+                    // STUB for future implementation
+                    xml.push_str(r#"
+    <p:graphicFrame>
+      <p:nvGraphicFramePr>
+        <p:cNvPr id="smartart-stub" name="SmartArt"/>
+        <p:cNvGraphicFramePr/>
+        <p:nvPr/>
+      </p:nvGraphicFramePr>
+      <p:xfrm>
+        <a:off x="0" y="0"/>
+        <a:ext cx="0" cy="0"/>
+      </p:xfrm>
+      <a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
+        <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/diagram">
+          <dgm:relIds xmlns:dgm="http://schemas.openxmlformats.org/drawingml/2006/diagram"/>
+        </a:graphicData>
+      </a:graphic>
+    </p:graphicFrame>"#);
                 }
             }
         }
@@ -439,25 +490,56 @@ impl OoxmlSerializer {
         }
     }
 
-    fn serialize_effect_list(&self, xml: &mut String, effect: &Option<EffectList>) {
-        if let Some(ref el) = effect {
-            if let Some(ref shadow) = el.shadow {
-                let c = shadow.color.trim_start_matches('#');
-                let alpha = (shadow.opacity * 1000.0) as i64;
-                xml.push_str(&format!(
-                    r#"
-        <a:effectLst>
-          <a:outerShdw blurRad="{}" dx="{}" dy="{}" algn="tl">
-            <a:srgbClr val="{}">
-              <a:alpha val="{}"/>
-            </a:srgbClr>
-          </a:outerShdw>
-        </a:effectLst>"#,
-                    shadow.blur_radius, shadow.dx, shadow.dy, c, alpha,
-                ));
-            }
-        }
-    }
+	fn serialize_effect_list(&self, xml: &mut String, effect: &Option<EffectList>) {
+		if let Some(ref el) = effect {
+			let mut has_effect = false;
+			xml.push_str("\n        <a:effectLst>");
+			if let Some(ref shadow) = el.shadow {
+				let c = shadow.color.trim_start_matches('#');
+				let alpha = (shadow.opacity * 1000.0) as i64;
+				xml.push_str(&format!(
+					r#"
+		  <a:outerShdw blurRad="{}" dx="{}" dy="{}" algn="tl">
+			<a:srgbClr val="{}">
+			  <a:alpha val="{}"/>
+			</a:srgbClr>
+		  </a:outerShdw>"#,
+					shadow.blur_radius, shadow.dx, shadow.dy, c, alpha,
+				));
+				has_effect = true;
+			}
+			if let Some(ref glow) = el.glow {
+				let c = glow.color.trim_start_matches('#');
+				let alpha = (glow.opacity * 1000.0) as i64;
+				xml.push_str(&format!(
+					r#"
+		  <a:glow rad="{}">
+			<a:srgbClr val="{}">
+			  <a:alpha val="{}"/>
+			</a:srgbClr>
+		  </a:glow>"#,
+					glow.radius, c, alpha,
+				));
+				has_effect = true;
+			}
+			if let Some(ref refl) = el.reflection {
+				let alpha = (refl.start_opacity * 1000.0) as i64;
+				let pos = (refl.end_pos * 1000.0) as i64;
+				let dir = if refl.direction == ReflectionDirection::Fade {
+					"fade"
+				} else {
+					"mirror"
+				};
+				xml.push_str(&format!(
+					r#"
+		  <a:reflection blurRad="{}" stA="{}" pos="{}" dir="{}"/>"#,
+					refl.blur_radius, alpha, pos, dir,
+				));
+				has_effect = true;
+			}
+			xml.push_str("\n        </a:effectLst>");
+		}
+	}
 
     fn serialize_textbox_shape(&self, xml: &mut String, tb: &TextBoxShape) {
         xml.push_str(&format!(
@@ -1940,6 +2022,8 @@ mod tests {
                 id: 256,
                 name: "Slide1".to_string(),
                 notes: None,
+                layout_id: None,
+                master_id: None,
                 transition: None,
                 animations: vec![],
                 timing_raw: None,
@@ -2005,6 +2089,8 @@ mod tests {
                 Slide {
                     id: 256,
                     name: "Slide1".to_string(),
+                    layout_id: None,
+                    master_id: None,
                     notes: None,
                     transition: None,
                     animations: vec![],
@@ -2034,6 +2120,8 @@ mod tests {
                 Slide {
                     id: 257,
                     name: "Slide2".to_string(),
+                    layout_id: None,
+                    master_id: None,
                     notes: None,
                     transition: None,
                     animations: vec![],
@@ -2095,6 +2183,8 @@ mod tests {
                 slides: vec![Slide {
                     id: 256,
                     name: "S1".to_string(),
+                    layout_id: None,
+                    master_id: None,
                     notes: None,
                     transition: None,
                     animations: vec![],
@@ -2120,6 +2210,8 @@ mod tests {
                 slides: vec![Slide {
                     id: 256,
                     name: "S1".to_string(),
+                    layout_id: None,
+                    master_id: None,
                     notes: None,
                     transition: None,
                     animations: vec![],
@@ -2146,6 +2238,8 @@ mod tests {
                 id: 256,
                 name: "Slide1".to_string(),
                 notes: None,
+                layout_id: None,
+                master_id: None,
                 transition: None,
                 animations: vec![],
                 timing_raw: None,
@@ -2193,6 +2287,8 @@ mod tests {
                 id: 256,
                 name: "Slide1".to_string(),
                 notes: None,
+                layout_id: None,
+                master_id: None,
                 transition: None,
                 animations: vec![],
                 timing_raw: None,
@@ -2231,6 +2327,8 @@ mod tests {
                 id: 256,
                 name: "Slide1".to_string(),
                 notes: None,
+                layout_id: None,
+                master_id: None,
                 transition: None,
                 animations: vec![],
                 timing_raw: None,
@@ -2326,6 +2424,8 @@ mod tests {
                 id: 256,
                 name: "Slide1".to_string(),
                 notes: None,
+                layout_id: None,
+                master_id: None,
                 transition: None,
                 animations: vec![],
                 timing_raw: None,
@@ -2369,6 +2469,8 @@ mod tests {
             slides: vec![Slide {
                 id: 256,
                 name: "Animated".to_string(),
+                layout_id: None,
+                master_id: None,
                 notes: None,
                 transition: Some(SlideTransition {
                     effect: TransitionEffect::Fade,
@@ -2453,6 +2555,8 @@ mod tests {
                 id: 256,
                 name: "Empty".to_string(),
                 notes: None,
+                layout_id: None,
+                master_id: None,
                 transition: None,
                 animations: vec![],
                 timing_raw: None,
@@ -2552,8 +2656,10 @@ mod tests {
                 transition: None,
                 animations: vec![],
                 timing_raw: None,
-                shapes: vec![],
-                notes: None,
+        shapes: vec![],
+        layout_id: None,
+        master_id: None,
+        notes: None,
             }],
             slide_masters: Vec::new(),
             theme: Some(theme),
