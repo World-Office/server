@@ -10,6 +10,7 @@ import type {
 	PresentationMode,
 	PresentationTab,
 	RightMenuPanel,
+	SlideBackground,
 	SlideLayout,
 	SlideSize,
 	StartAnimation,
@@ -37,6 +38,7 @@ export interface SlideData {
 	advanceTiming?: number;
 	animations?: AnimationData[];
 	shapes: ShapeData[];
+	background?: SlideBackground;
 }
 import { ZOOM_LEVELS } from "../types/presentation";
 
@@ -1604,6 +1606,14 @@ export class PresentationStore {
 		const slide = this.slides[index];
 		if (slide) {
 			slide.notes = notes;
+		}
+	}
+
+	setSlideBackground(index: number, background: SlideBackground | undefined): void {
+		this.pushSnapshot();
+		const slide = this.slides[index];
+		if (slide) {
+			slide.background = background;
 		}
 	}
 

@@ -1,0 +1,37 @@
+# Not needed for Rust microservice builds
+.git/
+.gitignore
+.gitattributes
+.github/
+.forgejo/
+
+# Build artifacts
+target/
+node_modules/
+.turbo/
+.vite/
+
+# Source not needed for Rust microservices
+apps/
+assets/
+desktop/
+docs/
+integrations/
+packages/
+tests/
+
+# IDE/editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Data files
+*.db
+test_bytes.txt
+test_simple.txt
+*.pdf
+*.png
+*.jpg

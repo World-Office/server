@@ -446,6 +446,7 @@ impl OoxmlParser {
 		transition,
 		animations,
 		timing_raw,
+		background: None,
 	});
         }
         slides

@@ -318,6 +318,27 @@ pub struct Slide {
 	pub animations: Vec<AnimationData>,
 	#[serde(default)]
 	pub timing_raw: Option<String>,
+	#[serde(default)]
+	pub background: Option<SlideBackground>,
+}
+
+/// Background for a slide (solid, gradient, or image).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SlideBackground {
+	pub background_type: SlideBackgroundType,
+	pub color: Option<String>,
+	pub gradient_stops: Option<Vec<GradientStop>>,
+	pub gradient_angle: Option<f64>,
+	pub image_data: Option<Vec<u8>>,
+}
+
+/// Background type.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SlideBackgroundType {
+	None,
+	Solid,
+	Gradient,
+	Image,
 }
 
 /// Transition effect types for PPTX slides.

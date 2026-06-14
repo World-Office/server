@@ -5547,6 +5547,37 @@ fn slide_shape_to_wo_shape(
                 None,
             )
         }
+        SlideShape::Chart(chart) => {
+            (
+                chart.id.clone(),
+                chart.bounds,
+                "chart".to_string(),
+                None,
+                Some(format!("[Chart: {}]", chart.chart_type)),
+                None,
+                None,
+                None,
+                false,
+                false,
+                None,
+            )
+        }
+        SlideShape::SmartArt(smart) => {
+            // SmartArt is exported as a placeholder shape
+            (
+                smart.id.clone(),
+                smart.bounds,
+                "smartart".to_string(),
+                None,
+                Some("[SmartArt]".to_string()),
+                None,
+                None,
+                None,
+                false,
+                false,
+                None,
+            )
+        }
     };
 
     WoShapeData {
@@ -5702,8 +5733,11 @@ impl FormatConverter for WoPresentationToPptxConverter {
                 Slide {
                     id: slide_id,
                     name: ws.title.clone(),
+                    layout_id: None,
+                    master_id: None,
                     shapes,
                     notes: ws.notes.clone(),
+                    background: None,
                     transition,
                     animations,
                     timing_raw: None,
