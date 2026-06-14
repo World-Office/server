@@ -4,6 +4,7 @@ import { flowchartStore } from "../stores/FlowchartStore"
 import type { FlowchartNode, FlowchartEdge, FlowchartDocument } from "../types/visio"
 import { PropertiesPanel } from "./PropertiesPanel"
 import { ContextMenu, type ContextMenuState } from "./ContextMenu"
+import { MiniMap } from "./MiniMap"
 import styles from "./FlowchartCanvas.module.css"
 
 interface Point {
@@ -1156,6 +1157,7 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
       {contextMenu && (
         <ContextMenu state={contextMenu} onClose={closeContextMenu} />
       )}
+      <MiniMap containerWidth={containerSize.width} containerHeight={containerSize.height} />
     </div>
   )
 })
