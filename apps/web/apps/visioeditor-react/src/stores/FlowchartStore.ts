@@ -1,9 +1,14 @@
 import { makeAutoObservable } from "mobx"
+import { toJS } from "mobx"
 import type { FlowchartDocument, FlowchartNode, FlowchartEdge, FlowchartShapeType } from "../types/visio"
 
 let nextId = 1
 function genId(): string {
 	return `fc-${nextId++}`
+}
+
+function cloneDoc(doc: FlowchartDocument): FlowchartDocument {
+	return toJS(doc, { recurseEverything: true }) as FlowchartDocument
 }
 
 export class FlowchartStore {
@@ -15,19 +20,65 @@ export class FlowchartStore {
 	connectSourceId: string | null = null
 	canvasOffset = { x: 0, y: 0 }
 
+	/* Undo/redo */
+	history: FlowchartDocument[] = []
+	future: FlowchartDocument[] = []
+	maxHistory = 50
+
+	/* Clipboard */
+	clipboard: { nodes: FlowchartNode[]; edges: FlowchartEdge[] } | null = null
+
+	/* Grid */
+	gridSize = 20
+	snapToGridEnabled = true
+
 	constructor() {
 		makeAutoObservable(this)
+	}
+
+	/* ── Helpers ── */
+
+	private snap(v: number): number {
+		if (!this.snapToGridEnabled || this.gridSize <= 1) return v
+		return Math.round(v / this.gridSize) * this.gridSize
+	}
+
+	private pushHistory(): void {
+		this.history.push(cloneDoc(this.document))
+		if (this.history.length > this.maxHistory) {
+			this.history.shift()
+		}
+		this.future = []
+	}
+
+	/* ── Undo / Redo ── */
+
+	undo(): void {
+		if (this.history.length === 0) return
+		this.future.push(cloneDoc(this.document))
+		const prev = this.history.pop()!
+		this.document = prev
+		this.clearSelection()
+	}
+
+	redo(): void {
+		if (this.future.length === 0) return
+		this.history.push(cloneDoc(this.document))
+		const next = this.future.pop()!
+		this.document = next
+		this.clearSelection()
 	}
 
 	/* ── Node operations ── */
 
 	addNode(shapeType: FlowchartShapeType, x: number, y: number, label?: string): FlowchartNode {
+		this.pushHistory()
 		const dims = getShapeDimensions(shapeType)
 		const node: FlowchartNode = {
 			id: genId(),
 			shapeType,
-			x,
-			y,
+			x: this.snap(x),
+			y: this.snap(y),
 			width: dims.width,
 			height: dims.height,
 			label: label ?? getDefaultLabel(shapeType),
@@ -41,6 +92,7 @@ export class FlowchartStore {
 	}
 
 	removeNode(nodeId: string): void {
+		this.pushHistory()
 		this.document.nodes = this.document.nodes.filter((n) => n.id !== nodeId)
 		this.document.edges = this.document.edges.filter(
 			(e) => e.sourceId !== nodeId && e.targetId !== nodeId,
@@ -49,6 +101,7 @@ export class FlowchartStore {
 	}
 
 	updateNode(nodeId: string, patch: Partial<FlowchartNode>): void {
+		this.pushHistory()
 		const node = this.document.nodes.find((n) => n.id === nodeId)
 		if (node) Object.assign(node, patch)
 	}
@@ -56,20 +109,24 @@ export class FlowchartStore {
 	moveNode(nodeId: string, dx: number, dy: number): void {
 		const node = this.document.nodes.find((n) => n.id === nodeId)
 		if (node) {
-			node.x += dx
-			node.y += dy
+			const nx = node.x + dx
+			const ny = node.y + dy
+			node.x = this.snap(nx)
+			node.y = this.snap(ny)
 		}
 	}
 
-  setNodeLabel(nodeId: string, label: string): void {
-    const node = this.document.nodes.find((n) => n.id === nodeId)
-    if (node) node.label = label
-  }
+	setNodeLabel(nodeId: string, label: string): void {
+		this.pushHistory()
+		const node = this.document.nodes.find((n) => n.id === nodeId)
+		if (node) node.label = label
+	}
 
-  setEdgeLabel(edgeId: string, label: string): void {
-    const edge = this.document.edges.find((e) => e.id === edgeId)
-    if (edge) edge.label = label
-  }
+	setEdgeLabel(edgeId: string, label: string): void {
+		this.pushHistory()
+		const edge = this.document.edges.find((e) => e.id === edgeId)
+		if (edge) edge.label = label
+	}
 
 	/* ── Edge operations ── */
 
@@ -83,6 +140,7 @@ export class FlowchartStore {
 
 	finishConnect(targetId: string): FlowchartEdge | null {
 		if (!this.connectSourceId || this.connectSourceId === targetId) return null
+		this.pushHistory()
 		const edge: FlowchartEdge = {
 			id: genId(),
 			sourceId: this.connectSourceId,
@@ -98,6 +156,7 @@ export class FlowchartStore {
 	}
 
 	removeEdge(edgeId: string): void {
+		this.pushHistory()
 		this.document.edges = this.document.edges.filter((e) => e.id !== edgeId)
 		this.selectedEdgeIds = this.selectedEdgeIds.filter((id) => id !== edgeId)
 	}
@@ -127,6 +186,21 @@ export class FlowchartStore {
 		this.selectedEdgeIds = []
 	}
 
+	selectNodesInRect(x1: number, y1: number, x2: number, y2: number): void {
+		const minX = Math.min(x1, x2)
+		const minY = Math.min(y1, y2)
+		const maxX = Math.max(x1, x2)
+		const maxY = Math.max(y1, y2)
+		this.selectedNodeIds = this.document.nodes
+			.filter(
+				(n) =>
+					n.x < maxX && n.x + n.width > minX &&
+					n.y < maxY && n.y + n.height > minY,
+			)
+			.map((n) => n.id)
+		this.selectedEdgeIds = []
+	}
+
 	/* ── Drag ── */
 
 	startDrag(nodeId: string): void {
@@ -135,6 +209,9 @@ export class FlowchartStore {
 	}
 
 	endDrag(): void {
+		if (this.isDragging) {
+			this.pushHistory()
+		}
 		this.isDragging = false
 		this.dragNodeId = null
 	}
@@ -145,9 +222,73 @@ export class FlowchartStore {
 		this.canvasOffset = { x, y }
 	}
 
+	/* ── Copy / Paste / Duplicate ── */
+
+	copySelection(): void {
+		const selectedNodes = this.document.nodes.filter((n) =>
+			this.selectedNodeIds.includes(n.id),
+		)
+		if (selectedNodes.length === 0) return
+		const selectedIds = new Set(selectedNodes.map((n) => n.id))
+		const connectedEdges = this.document.edges.filter(
+			(e) => selectedIds.has(e.sourceId) && selectedIds.has(e.targetId),
+		)
+		this.clipboard = { nodes: toJS(selectedNodes) as FlowchartNode[], edges: toJS(connectedEdges) as FlowchartEdge[] }
+	}
+
+	cutSelection(): void {
+		this.copySelection()
+		this.pushHistory()
+		for (const nodeId of [...this.selectedNodeIds]) {
+			this.removeNode(nodeId)
+		}
+	}
+
+	paste(): void {
+		if (!this.clipboard || this.clipboard.nodes.length === 0) return
+		this.pushHistory()
+		const idMap = new Map<string, string>()
+		const offset = 20
+		const pastedIds: string[] = []
+		for (const src of this.clipboard.nodes) {
+			const newId = genId()
+			idMap.set(src.id, newId)
+			const node: FlowchartNode = { ...src, id: newId, x: src.x + offset, y: src.y + offset }
+			this.document.nodes.push(node)
+			pastedIds.push(newId)
+		}
+		for (const src of this.clipboard.edges) {
+			const newSource = idMap.get(src.sourceId)
+			const newTarget = idMap.get(src.targetId)
+			if (newSource && newTarget) {
+				const edge: FlowchartEdge = { ...src, id: genId(), sourceId: newSource, targetId: newTarget }
+				this.document.edges.push(edge)
+			}
+		}
+		this.selectedNodeIds = pastedIds
+		this.selectedEdgeIds = []
+	}
+
+	duplicateSelection(): void {
+		if (this.selectedNodeIds.length === 0) return
+		this.copySelection()
+		this.paste()
+	}
+
+	/* ── Grid ── */
+
+	setGridSize(size: number): void {
+		this.gridSize = Math.max(1, size)
+	}
+
+	toggleSnapToGrid(): void {
+		this.snapToGridEnabled = !this.snapToGridEnabled
+	}
+
 	/* ── Document ── */
 
 	clear(): void {
+		this.pushHistory()
 		this.document = { nodes: [], edges: [] }
 		this.selectedNodeIds = []
 		this.selectedEdgeIds = []

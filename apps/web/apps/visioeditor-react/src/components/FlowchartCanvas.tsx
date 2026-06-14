@@ -28,6 +28,36 @@ function getEdgeEndpoint(
   return getNodeCenter(node)
 }
 
+function getNearestSide(node: FlowchartNode, target: Point): Point {
+  const cx = node.x + node.width / 2
+  const cy = node.y + node.height / 2
+  const dx = target.x - cx
+  const dy = target.y - cy
+  const adx = Math.abs(dx)
+  const ady = Math.abs(dy)
+  if (adx >= ady) {
+    return dx >= 0
+      ? { x: node.x + node.width, y: cy }
+      : { x: node.x, y: cy }
+  }
+  return dy >= 0
+    ? { x: cx, y: node.y + node.height }
+    : { x: cx, y: node.y }
+}
+
+function orthogonalPath(src: Point, tgt: Point): string {
+  const dx = tgt.x - src.x
+  const dy = tgt.y - src.y
+  const adx = Math.abs(dx)
+  const ady = Math.abs(dy)
+  if (adx >= ady) {
+    const midX = (src.x + tgt.x) / 2
+    return `M ${src.x},${src.y} L ${midX},${src.y} L ${midX},${tgt.y} L ${tgt.x},${tgt.y}`
+  }
+  const midY = (src.y + tgt.y) / 2
+  return `M ${src.x},${src.y} L ${src.x},${midY} L ${tgt.x},${midY} L ${tgt.x},${tgt.y}`
+}
+
 /** Convert a mouse event (clientX/Y) to SVG canvas coordinates. */
 function eventToSVGPoint(
   e: React.MouseEvent | MouseEvent,
@@ -433,24 +463,25 @@ const FlowchartEdgeRenderer = observer(function FlowchartEdgeRenderer({
   const src = getEdgeEndpoint(sourceNode, edge.sourceAnchor)
   const tgt = getEdgeEndpoint(targetNode, edge.targetAnchor)
   const edgeClass = `${styles.edgeLine}${isSelected ? ` ${styles.selected}` : ""}`
+  const d = orthogonalPath(src, tgt)
   const midX = (src.x + tgt.x) / 2
   const midY = (src.y + tgt.y) / 2
 
   return (
     <g>
-      {/* Invisible wide hit area for easier edge clicking */}
-      <line
-        x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
+      <path
+        d={d}
+        fill="none"
         stroke="transparent"
-        strokeWidth={12}
+        strokeWidth={14}
         style={{ cursor: "pointer" }}
         onMouseDown={(e) => onMouseDown(edge.id, e)}
         onDoubleClick={(e) => onDoubleClick(edge.id, e)}
       />
-      {/* Visible edge line */}
-      <line
+      <path
         className={edgeClass}
-        x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
+        d={d}
+        fill="none"
         onMouseDown={(e) => onMouseDown(edge.id, e)}
         onDoubleClick={(e) => onDoubleClick(edge.id, e)}
       />
@@ -484,6 +515,91 @@ const FlowchartEdgeRenderer = observer(function FlowchartEdgeRenderer({
   )
 })
 
+export function exportFlowchartAsSvg(doc: FlowchartDocument, filename?: string): void {
+  const pad = 40
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  for (const n of doc.nodes) {
+    if (n.x < minX) minX = n.x
+    if (n.y < minY) minY = n.y
+    if (n.x + n.width > maxX) maxX = n.x + n.width
+    if (n.y + n.height > maxY) maxY = n.y + n.height
+  }
+  if (!isFinite(minX)) { minX = 0; minY = 0; maxX = 800; maxY = 600 }
+  const w = maxX - minX + pad * 2
+  const h = maxY - minY + pad * 2
+
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX - pad} ${minY - pad} ${w} ${h}" width="${w}" height="${h}">`
+  svg += `<rect width="100%" height="100%" fill="white"/>`
+
+  for (const edge of doc.edges) {
+    const src = doc.nodes.find((n) => n.id === edge.sourceId)
+    const tgt = doc.nodes.find((n) => n.id === edge.targetId)
+    if (!src || !tgt) continue
+    const sp = getEdgeEndpoint(src, edge.sourceAnchor)
+    const tp = getEdgeEndpoint(tgt, edge.targetAnchor)
+    const d = orthogonalPath(sp, tp)
+    const color = edge.strokeColor || "#333"
+    svg += `<path d="${d}" fill="none" stroke="${color}" stroke-width="${edge.strokeWidth || 2}"/>`
+    if (edge.label) {
+      const mx = (sp.x + tp.x) / 2
+      const my = (sp.y + tp.y) / 2
+      svg += `<text x="${mx}" y="${my - 8}" text-anchor="middle" font-size="12" fill="#333">${escapeXml(edge.label)}</text>`
+    }
+  }
+
+  for (const node of doc.nodes) {
+    const { x, y, width: nw, height: nh, label, fillColor, strokeColor, strokeWidth, fontSize } = node
+    const cx = x + nw / 2
+    const cy = y + nh / 2
+    const fill = fillColor || "white"
+    const sColor = strokeColor || "#333"
+    const sWidth = strokeWidth || 2
+
+    let shape = ""
+    switch (node.shapeType) {
+      case "start-end":
+      case "terminator":
+        shape = `<rect x="${x}" y="${y}" width="${nw}" height="${nh}" rx="${25}" ry="${25}" fill="${fill}" stroke="${sColor}" stroke-width="${sWidth}"/>`
+        break
+      case "process":
+        shape = `<rect x="${x}" y="${y}" width="${nw}" height="${nh}" fill="${fill}" stroke="${sColor}" stroke-width="${sWidth}"/>`
+        break
+      case "decision":
+      case "condition":
+        shape = `<polygon points="${cx},${y} ${x + nw},${cy} ${cx},${y + nh} ${x},${cy}" fill="${fill}" stroke="${sColor}" stroke-width="${sWidth}"/>`
+        break
+      case "input-output":
+      case "data": {
+        const off = Math.min(nw * 0.15, nh * 0.4)
+        shape = `<polygon points="${x + off},${y} ${x + nw},${y} ${x + nw - off},${y + nh} ${x},${y + nh}" fill="${fill}" stroke="${sColor}" stroke-width="${sWidth}"/>`
+        break
+      }
+      case "connector":
+        shape = `<ellipse cx="${cx}" cy="${cy}" rx="${nw / 2}" ry="${nh / 2}" fill="${fill}" stroke="${sColor}" stroke-width="${sWidth}"/>`
+        break
+      default:
+        shape = `<rect x="${x}" y="${y}" width="${nw}" height="${nh}" fill="${fill}" stroke="${sColor}" stroke-width="${sWidth}"/>`
+    }
+    svg += shape
+    if (label) {
+      svg += `<text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central" font-size="${fontSize || 14}" fill="#333">${escapeXml(label)}</text>`
+    }
+  }
+
+  svg += "</svg>"
+  const blob = new Blob([svg], { type: "image/svg+xml" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = filename || "flowchart.svg"
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+function escapeXml(s: string): string {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+}
+
 /* ─── Main component ─── */
 
 export const FlowchartCanvas = observer(function FlowchartCanvas() {
@@ -503,9 +619,16 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
   const [editValue, setEditValue] = useState("")
   const [connectMousePos, setConnectMousePos] = useState<Point | null>(null)
   const [isPanning, setIsPanning] = useState(false)
+  const [isRubberBanding, setIsRubberBanding] = useState(false)
+  const [rubberBandRect, setRubberBandRect] = useState<{
+    x1: number; y1: number; x2: number; y2: number
+  } | null>(null)
 
   const panStartRef = useRef<Point>({ x: 0, y: 0 })
   const panOffsetStartRef = useRef<Point>({ x: 0, y: 0 })
+  const rubberBandStartRef = useRef<Point>({ x: 0, y: 0 })
+  const hasDragged = useRef(false)
+  const DRAG_THRESHOLD = 4
 
   /* ── Store ── */
   const store = flowchartStore
@@ -627,12 +750,11 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
     [doc.edges],
   )
 
-  /* ── SVG-level mousedown (background click, pan start, connect cancel) ── */
+  /* ── SVG-level mousedown ── */
   const handleSVGMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (!isBackgroundTarget(e.target)) return
 
-      // Middle-click pan
       if (e.button === 1) {
         e.preventDefault()
         setIsPanning(true)
@@ -641,24 +763,27 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
         return
       }
 
-      // Left-click on background -> clear selection + cancel connect
       if (e.button === 0) {
-        store.clearSelection()
         if (store.connectSourceId) {
           store.cancelConnect()
           setConnectMousePos(null)
+          return
         }
+        hasDragged.current = false
+        const pt = getSVGPoint(e)
+        rubberBandStartRef.current = pt
+        setIsRubberBanding(true)
+        setRubberBandRect({ x1: pt.x, y1: pt.y, x2: pt.x, y2: pt.y })
       }
     },
     [store, getSVGPoint, isBackgroundTarget],
   )
 
-  /* ── SVG-level mousemove (drag, pan, connect preview) ── */
+  /* ── SVG-level mousemove ── */
   const handleSVGMouseMove = useCallback(
     (e: React.MouseEvent) => {
       const svgPoint = getSVGPoint(e)
 
-      // Panning
       if (isPanning) {
         const dx = svgPoint.x - panStartRef.current.x
         const dy = svgPoint.y - panStartRef.current.y
@@ -669,7 +794,6 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
         return
       }
 
-      // Dragging a node
       if (store.isDragging && store.dragNodeId) {
         const dx = svgPoint.x - dragLastPos.current.x
         const dy = svgPoint.y - dragLastPos.current.y
@@ -680,13 +804,24 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
         return
       }
 
-      // Connection preview line
       if (store.connectSourceId) {
         connectMouseRef.current = svgPoint
         setConnectMousePos({ ...svgPoint })
+        return
+      }
+
+      if (isRubberBanding && rubberBandRect) {
+        const dx = svgPoint.x - rubberBandStartRef.current.x
+        const dy = svgPoint.y - rubberBandStartRef.current.y
+        if (!hasDragged.current && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+          hasDragged.current = true
+        }
+        setRubberBandRect((prev) =>
+          prev ? { ...prev, x2: svgPoint.x, y2: svgPoint.y } : prev,
+        )
       }
     },
-    [store, getSVGPoint, isPanning],
+    [store, getSVGPoint, isPanning, isRubberBanding, rubberBandRect],
   )
 
   /* ── SVG-level mouseup ── */
@@ -698,19 +833,36 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
       if (isPanning) {
         setIsPanning(false)
       }
+      if (isRubberBanding && rubberBandRect) {
+        setIsRubberBanding(false)
+        if (hasDragged.current) {
+          store.selectNodesInRect(rubberBandRect.x1, rubberBandRect.y1, rubberBandRect.x2, rubberBandRect.y2)
+        } else {
+          store.clearSelection()
+        }
+        setRubberBandRect(null)
+        hasDragged.current = false
+      }
     },
-    [store, isPanning],
+    [store, isPanning, isRubberBanding, rubberBandRect],
   )
 
-  /* ── Global mouseup — catches mouse released outside the SVG ── */
   useEffect(() => {
     const handler = () => {
       if (store.isDragging) store.endDrag()
       if (isPanning) setIsPanning(false)
+      if (isRubberBanding && rubberBandRect) {
+        setIsRubberBanding(false)
+        if (hasDragged.current) {
+          store.selectNodesInRect(rubberBandRect.x1, rubberBandRect.y1, rubberBandRect.x2, rubberBandRect.y2)
+        }
+        setRubberBandRect(null)
+        hasDragged.current = false
+      }
     }
     window.addEventListener("mouseup", handler)
     return () => window.removeEventListener("mouseup", handler)
-  }, [store, isPanning])
+  }, [store, isPanning, isRubberBanding, rubberBandRect])
 
   /* ── Inline editing ── */
   const handleEditChange = useCallback((value: string) => {
@@ -766,6 +918,8 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
   /* ── Set data attributes on node groups for background detection ── */
   // We use data-node-id on each <g> so isBackgroundTarget can skip them.
 
+  const gs = store.gridSize > 1 ? store.gridSize : 0
+
   return (
     <div ref={containerRef} className={styles.container}>
       <svg
@@ -778,7 +932,19 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
         onMouseUp={handleSVGMouseUp}
         onMouseLeave={handleSVGMouseUp}
       >
-        {/* Canvas background — huge rect so it always catches clicks */}
+        <defs>
+          {gs > 0 && (
+            <pattern
+              id="fc-grid"
+              width={gs}
+              height={gs}
+              patternUnits="userSpaceOnUse"
+            >
+              <circle cx={gs / 2} cy={gs / 2} r={0.5} fill="#ccc" opacity={0.5} />
+            </pattern>
+          )}
+        </defs>
+
         <rect
           className={styles.canvasBackground}
           x={-20000}
@@ -787,7 +953,30 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
           height={40000}
         />
 
-        {/* Edges layer (rendered behind nodes) */}
+        {gs > 0 && (
+          <rect
+            x={-20000}
+            y={-20000}
+            width={40000}
+            height={40000}
+            fill="url(#fc-grid)"
+            pointerEvents="none"
+          />
+        )}
+
+        {rubberBandRect && (
+          <rect
+            x={Math.min(rubberBandRect.x1, rubberBandRect.x2)}
+            y={Math.min(rubberBandRect.y1, rubberBandRect.y2)}
+            width={Math.abs(rubberBandRect.x2 - rubberBandRect.x1)}
+            height={Math.abs(rubberBandRect.y2 - rubberBandRect.y1)}
+            fill="rgba(66,133,244,0.08)"
+            stroke="#4285f4"
+            strokeWidth={1}
+            strokeDasharray="4 2"
+          />
+        )}
+
         {doc.edges.map((edge) => {
           const srcNode = nodeMap.get(edge.sourceId)
           const tgtNode = nodeMap.get(edge.targetId)
