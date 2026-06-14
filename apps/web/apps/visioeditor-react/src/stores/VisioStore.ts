@@ -1,5 +1,5 @@
 import { makeAutoObservable } from "mobx"
-import type { LeftMenuAction, PageTab, VisioDocument, VisioMode, ZoomLevel } from "../types/visio"
+import type { EditorMode, LeftMenuAction, PageTab, VisioDocument, VisioMode, ZoomLevel } from "../types/visio"
 import { ZOOM_LEVELS } from "../types/visio"
 
 const STORAGE_PREFIX = "ve-"
@@ -8,6 +8,17 @@ export class VisioStore {
   mode: VisioMode | null = null
   document: VisioDocument | null = null
   isDocReady = false
+
+  /* Editor mode */
+  editorMode: EditorMode = "vsdx"
+
+  setEditorMode(mode: EditorMode): void {
+    this.editorMode = mode
+  }
+
+  toggleEditorMode(): void {
+    this.editorMode = this.editorMode === "vsdx" ? "flowchart" : "vsdx"
+  }
 
   /* Toolbar */
   activeTab: "file" | "view" | null = null

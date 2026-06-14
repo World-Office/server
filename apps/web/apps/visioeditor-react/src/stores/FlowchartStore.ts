@@ -61,10 +61,15 @@ export class FlowchartStore {
 		}
 	}
 
-	setNodeLabel(nodeId: string, label: string): void {
-		const node = this.document.nodes.find((n) => n.id === nodeId)
-		if (node) node.label = label
-	}
+  setNodeLabel(nodeId: string, label: string): void {
+    const node = this.document.nodes.find((n) => n.id === nodeId)
+    if (node) node.label = label
+  }
+
+  setEdgeLabel(edgeId: string, label: string): void {
+    const edge = this.document.edges.find((e) => e.id === edgeId)
+    if (edge) edge.label = label
+  }
 
 	/* ── Edge operations ── */
 

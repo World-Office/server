@@ -1,5 +1,6 @@
 import type { JSX } from "react"
 import { visioStore } from "../../stores/VisioStore"
+import { flowchartStore } from "../../stores/FlowchartStore"
 import { ZOOM_LEVELS } from "../../types/visio"
 
 export function ViewTab(): JSX.Element {
@@ -43,6 +44,29 @@ export function ViewTab(): JSX.Element {
           >
             Fit to Width
           </button>
+        </div>
+      </div>
+
+      <div className="visio-viewtab-separator" />
+
+      <div className="visio-viewtab-group">
+        <div className="visio-viewtab-elset">
+          <button
+            type="button"
+            className={`visio-viewtab-btn${visioStore.editorMode === "flowchart" ? " active" : ""}`}
+            onClick={() => {
+              visioStore.toggleEditorMode()
+              if (visioStore.editorMode === "flowchart") {
+                flowchartStore.clear()
+              }
+            }}
+            title="Switch between VSDX view and flowchart editor"
+          >
+            {visioStore.editorMode === "flowchart" ? "▦ Flowchart" : "▢ Diagram"}
+          </button>
+        </div>
+        <div className="visio-viewtab-elset">
+          <span className="visio-viewtab-label">Editor Mode</span>
         </div>
       </div>
 
