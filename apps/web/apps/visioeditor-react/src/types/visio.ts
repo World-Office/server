@@ -78,4 +78,56 @@ export type FileMenuAction =
   | "external-help"
   | "suggest"
 
-export type LeftMenuAction = "thumbs" | "chat" | "support" | "about"
+export type LeftMenuAction = "thumbs" | "chat" | "support" | "about" | "shapes"
+
+export type FlowchartShapeType =
+  | "start-end"
+  | "terminator"
+  | "process"
+  | "decision"
+  | "condition"
+  | "input-output"
+  | "data"
+  | "document"
+  | "subprocess"
+  | "connector"
+  | "manual-input"
+  | "display"
+  | "predefined-process"
+  | "stored-data"
+  | "delay"
+  | "preparation"
+  | "loop-limit"
+
+export interface FlowchartNode {
+  id: string
+  shapeType: FlowchartShapeType
+  label: string
+  x: number
+  y: number
+  width: number
+  height: number
+  fillColor: string
+  strokeColor: string
+  strokeWidth?: number
+  fontSize: number
+  fontWeight?: "normal" | "bold"
+}
+
+export interface FlowchartEdge {
+  id: string
+  sourceId: string
+  targetId: string
+  label: string
+  strokeColor?: string
+  strokeWidth?: number
+  strokeStyle?: "solid" | "dashed" | "dotted"
+  sourceAnchor?: "top" | "right" | "bottom" | "left"
+  targetAnchor?: "top" | "right" | "bottom" | "left"
+}
+
+export interface FlowchartDocument {
+  nodes: FlowchartNode[]
+  edges: FlowchartEdge[]
+  viewBox?: { x: number; y: number; width: number; height: number }
+}
