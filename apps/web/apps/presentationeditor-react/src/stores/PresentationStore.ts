@@ -1,4 +1,5 @@
 import { makeAutoObservable } from "mobx";
+import { detectWopiParams, WopiClient } from "@world-office/wopi-client";
 import { DEFAULT_THEME } from "../lib/themes";
 import type {
 	AdvanceMode,
@@ -48,6 +49,113 @@ export class PresentationStore {
 	mode: PresentationMode | null = null;
 	document: PresentationDocument | null = null;
 	isDocReady = false;
+	isLoading = false;
+	isLoadingError: string | null = null;
+	isSaving = false;
+	isModified = false;
+
+	/* WOPI document connection */
+	wopiFileId: string | null = null;
+	wopiAccessToken: string | null = null;
+	docserverBase = "";
+
+	markModified(): void {
+		this.isModified = true;
+	}
+
+	clearModified(): void {
+		this.isModified = false;
+	}
+
+	detectWopiParams(): boolean {
+		const conn = detectWopiParams();
+		if (!conn) return false;
+		this.wopiFileId = conn.wopiFileId;
+		this.wopiAccessToken = conn.wopiAccessToken;
+		this.docserverBase = conn.docserverBase;
+		return true;
+	}
+
+	async loadFromWopi(): Promise<void> {
+		this.isLoading = true;
+		this.isLoadingError = null;
+		try {
+			const conn = {
+				wopiFileId: this.wopiFileId!,
+				wopiAccessToken: this.wopiAccessToken!,
+				docserverBase: this.docserverBase,
+			};
+			const { info, content } = await WopiClient.loadDocument(conn);
+
+			this.document = {
+				title: info.BaseFileName ?? "Untitled",
+				fileType: (info.BaseFileName?.split(".").pop() ?? "pptx") as "pptx" | "odp",
+				info: { author: info.OwnerId, modified: info.Version },
+			};
+
+			try {
+				const text = await content.text();
+				this.fromJSON(text);
+			} catch {
+				this.resetToDefaults();
+			}
+
+			this.isDocReady = true;
+			this.isModified = false;
+		} catch (err) {
+			this.isLoadingError =
+				err instanceof Error ? err.message : "Failed to load document";
+		} finally {
+			this.isLoading = false;
+		}
+	}
+
+	async saveToWopi(): Promise<void> {
+		if (!this.wopiFileId || !this.wopiAccessToken) {
+			this.exportAsDownload();
+			return;
+		}
+		this.isSaving = true;
+		try {
+			const conn = {
+				wopiFileId: this.wopiFileId,
+				wopiAccessToken: this.wopiAccessToken,
+				docserverBase: this.docserverBase,
+			};
+			await WopiClient.putFile(conn, this.buildDocumentBlob());
+			this.isModified = false;
+		} catch (err) {
+			throw err;
+		} finally {
+			this.isSaving = false;
+		}
+	}
+
+	buildDocumentBlob(): Blob {
+		return new Blob([this.toJSON()], { type: "application/json" });
+	}
+
+	async save(): Promise<void> {
+		this.markModified();
+		try {
+			await this.saveToWopi();
+		} catch (err) {
+			console.error("Save failed:", err);
+		}
+	}
+
+	exportAsDownload(): void {
+		const blob = this.buildDocumentBlob();
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		const baseName = this.document?.title?.replace(/\.[^.]+$/, "");
+		a.download = (baseName ? baseName + ".wo-presentation" : "presentation.wo-presentation");
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+	}
 
 	/* Toolbar */
 	activeTab: PresentationTab | null = null;
