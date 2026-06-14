@@ -419,30 +419,34 @@ impl OoxmlParser {
                     && n.tag_name().namespace() == Some(Self::P_NS)
             });
 
-            let Some(slide_elem) = slide_elem else {
-                continue;
-            };
+	let Some(slide_elem) = slide_elem else {
+		continue;
+	};
 
-            let name = slide_elem
-                .attribute("name")
-                .unwrap_or(&format!("Slide {}", slide_idx_from_name))
-                .to_string();
+	let name = slide_elem
+		.attribute("name")
+		.unwrap_or(&format!("Slide {}", slide_idx_from_name))
+		.to_string();
+	let layout_id = slide_elem.attribute("sldLayoutId").map(String::from);
+	let master_id = slide_elem.attribute("sldMasterId").map(String::from);
 
-            let shapes = self.parse_pptx_shapes(slide_elem);
-            let notes = self.parse_pptx_notes(archive, *expected_id);
-            let transition = self.parse_pptx_transition(slide_elem);
-            let timing_raw = self.parse_pptx_timing_raw(&xml);
-            let animations = self.parse_pptx_animations(slide_elem);
+	let shapes = self.parse_pptx_shapes(slide_elem);
+	let notes = self.parse_pptx_notes(archive, *expected_id);
+	let transition = self.parse_pptx_transition(slide_elem);
+	let timing_raw = self.parse_pptx_timing_raw(&xml);
+	let animations = self.parse_pptx_animations(slide_elem);
 
-            slides.push(Slide {
-                id: *expected_id,
-                name,
-                shapes,
-                notes,
-                transition,
-                animations,
-                timing_raw,
-            });
+	slides.push(Slide {
+		id: *expected_id,
+		name,
+		layout_id,
+		master_id,
+		shapes,
+		notes,
+		transition,
+		animations,
+		timing_raw,
+	});
         }
         slides
     }
@@ -1070,53 +1074,114 @@ impl OoxmlParser {
         None
     }
 
-    fn parse_pptx_effect_list(&self, sp_elem: &roxmltree::Node) -> Option<EffectList> {
-        let sp_pr = sp_elem
-            .descendants()
-            .find(|n| n.has_tag_name("spPr") && n.tag_name().namespace() == Some(Self::A_NS))?;
-        let shadow = sp_pr
-            .descendants()
-            .find(|n| n.has_tag_name("outerShdw"))
-            .map(|shdw| {
-                let dx = shdw
-                    .attribute("dx")
-                    .and_then(|v| v.parse().ok())
-                    .unwrap_or(0);
-                let dy = shdw
-                    .attribute("dy")
-                    .and_then(|v| v.parse().ok())
-                    .unwrap_or(0);
-                let blur_radius = shdw
-                    .attribute("blurRad")
-                    .and_then(|v| v.parse().ok())
-                    .unwrap_or(0);
-                let color = shdw
-                    .descendants()
-                    .find(|n| n.has_tag_name("srgbClr"))
-                    .and_then(|n| n.attribute("val"))
-                    .unwrap_or("000000")
-                    .to_string();
-                let opacity = shdw
-                    .descendants()
-                    .find(|n| n.has_tag_name("srgbClr"))
-                    .and_then(|n| n.attribute("lastClr").or_else(|| n.attribute("alpha")))
-                    .and_then(|v| v.parse::<f64>().ok())
-                    .map(|a| a / 1000.0)
-                    .unwrap_or(1.0);
-                ShadowEffect {
-                    dx,
-                    dy,
-                    blur_radius,
-                    color,
-                    opacity,
-                }
-            });
-        if shadow.is_some() {
-            Some(EffectList { shadow })
-        } else {
-            None
-        }
-    }
+	fn parse_pptx_effect_list(&self, sp_elem: &roxmltree::Node) -> Option<EffectList> {
+		let sp_pr = sp_elem
+			.descendants()
+			.find(|n| n.has_tag_name("spPr") && n.tag_name().namespace() == Some(Self::A_NS))?;
+		let shadow = sp_pr
+			.descendants()
+			.find(|n| n.has_tag_name("outerShdw"))
+			.map(|shdw| {
+				let dx = shdw
+					.attribute("dx")
+					.and_then(|v| v.parse().ok())
+					.unwrap_or(0);
+				let dy = shdw
+					.attribute("dy")
+					.and_then(|v| v.parse().ok())
+					.unwrap_or(0);
+				let blur_radius = shdw
+					.attribute("blurRad")
+					.and_then(|v| v.parse().ok())
+					.unwrap_or(0);
+				let color = shdw
+					.descendants()
+					.find(|n| n.has_tag_name("srgbClr"))
+					.and_then(|n| n.attribute("val"))
+					.unwrap_or("000000")
+					.to_string();
+				let opacity = shdw
+					.descendants()
+					.find(|n| n.has_tag_name("srgbClr"))
+					.and_then(|n| n.attribute("lastClr").or_else(|| n.attribute("alpha")))
+					.and_then(|v| v.parse::<f64>().ok())
+					.map(|a| a / 1000.0)
+					.unwrap_or(1.0);
+				ShadowEffect {
+					dx,
+					dy,
+					blur_radius,
+					color,
+					opacity,
+				}
+			});
+		let glow = sp_pr
+			.descendants()
+			.find(|n| n.has_tag_name("glow"))
+			.map(|glow| {
+				let radius = glow
+					.attribute("rad")
+					.and_then(|v| v.parse().ok())
+					.unwrap_or(0);
+				let color = glow
+					.descendants()
+					.find(|n| n.has_tag_name("srgbClr"))
+					.and_then(|n| n.attribute("val"))
+					.unwrap_or("000000")
+					.to_string();
+				let opacity = glow
+					.descendants()
+					.find(|n| n.has_tag_name("srgbClr"))
+					.and_then(|n| n.attribute("lastClr").or_else(|| n.attribute("alpha")))
+					.and_then(|v| v.parse::<f64>().ok())
+					.map(|a| a / 1000.0)
+					.unwrap_or(1.0);
+				GlowEffect {
+					radius,
+					color,
+					opacity,
+				}
+			});
+		let reflection = sp_pr
+			.descendants()
+			.find(|n| n.has_tag_name("reflection"))
+			.map(|refl| {
+				let blur_radius = refl
+					.attribute("blurRad")
+					.and_then(|v| v.parse().ok())
+					.unwrap_or(0);
+				let start_opacity = refl
+					.attribute("stA")
+					.and_then(|v| v.parse::<f64>().ok())
+					.map(|a| a / 1000.0)
+					.unwrap_or(1.0);
+				let end_pos = refl
+					.attribute("pos")
+					.and_then(|v| v.parse::<f64>().ok())
+					.map(|a| a / 1000.0)
+					.unwrap_or(0.0);
+                let direction = if refl.attribute("dir").as_deref() == Some("fade") {
+                    ReflectionDirection::Fade
+                } else {
+                    ReflectionDirection::Mirror
+                };
+				ReflectionEffect {
+					blur_radius,
+					start_opacity,
+					end_pos,
+					direction,
+				}
+			});
+		if shadow.is_some() || glow.is_some() || reflection.is_some() {
+			Some(EffectList {
+				shadow,
+				glow,
+				reflection,
+			})
+		} else {
+			None
+		}
+	}
 
     fn parse_pptx_picture(&self, pic: &roxmltree::Node) -> Option<PictureShape> {
         let id = pic.attribute("id").unwrap_or("0").to_string();

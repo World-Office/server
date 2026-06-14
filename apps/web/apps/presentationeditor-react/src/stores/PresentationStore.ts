@@ -601,6 +601,185 @@ export class PresentationStore {
 		});
 	}
 
+	/* Alignment tools */
+	alignLeft(): void {
+		this.pushSnapshot();
+		const slide = this.slides[this.currentSlide];
+		if (!slide?.shapes || this.selectedShapeIds.length === 0) return;
+
+		if (this.selectedShapeIds.length === 1) {
+			const shape = slide.shapes.find((s) => s.id === this.selectedShapeIds[0]);
+			if (shape) {
+				shape.x = 0;
+			}
+		} else {
+			const minX = Math.min(
+				...this.selectedShapeIds.map(
+					(id) =>
+						slide.shapes.find((s) => s.id === id)?.x ??
+						Number.POSITIVE_INFINITY,
+				),
+			);
+			for (const id of this.selectedShapeIds) {
+				const shape = slide.shapes.find((s) => s.id === id);
+				if (shape) {
+					shape.x = minX;
+				}
+			}
+		}
+	}
+
+	alignCenter(): void {
+		this.pushSnapshot();
+		const slide = this.slides[this.currentSlide];
+		if (!slide?.shapes || this.selectedShapeIds.length === 0) return;
+
+		const slideSize = this.slideSize;
+		const slideWidth = slideSize === "widescreen" ? 960 : 800;
+
+		if (this.selectedShapeIds.length === 1) {
+			const shape = slide.shapes.find((s) => s.id === this.selectedShapeIds[0]);
+			if (shape) {
+				shape.x = slideWidth / 2 - shape.width / 2;
+			}
+		} else {
+			const centerX = Math.max(
+				...this.selectedShapeIds.map(
+					(id) =>
+						(slide.shapes.find((s) => s.id === id)?.x ?? 0) +
+						(slide.shapes.find((s) => s.id === id)?.width ?? 0) / 2,
+				),
+			);
+			for (const id of this.selectedShapeIds) {
+				const shape = slide.shapes.find((s) => s.id === id);
+				if (shape) {
+					const shapeCenterX = shape.x + shape.width / 2;
+					shape.x = shape.x + (centerX - shapeCenterX);
+				}
+			}
+		}
+	}
+
+	alignRight(): void {
+		this.pushSnapshot();
+		const slide = this.slides[this.currentSlide];
+		if (!slide?.shapes || this.selectedShapeIds.length === 0) return;
+
+		const slideSize = this.slideSize;
+		const slideWidth = slideSize === "widescreen" ? 960 : 800;
+
+		if (this.selectedShapeIds.length === 1) {
+			const shape = slide.shapes.find((s) => s.id === this.selectedShapeIds[0]);
+			if (shape) {
+				shape.x = slideWidth - shape.width;
+			}
+		} else {
+			const maxRight = Math.max(
+				...this.selectedShapeIds.map(
+					(id) =>
+						(slide.shapes.find((s) => s.id === id)?.x ?? 0) +
+						(slide.shapes.find((s) => s.id === id)?.width ?? 0),
+				),
+			);
+			for (const id of this.selectedShapeIds) {
+				const shape = slide.shapes.find((s) => s.id === id);
+				if (shape) {
+					const shapeRight = shape.x + shape.width;
+					shape.x = shape.x + (maxRight - shapeRight);
+				}
+			}
+		}
+	}
+
+	alignTop(): void {
+		this.pushSnapshot();
+		const slide = this.slides[this.currentSlide];
+		if (!slide?.shapes || this.selectedShapeIds.length === 0) return;
+
+		if (this.selectedShapeIds.length === 1) {
+			const shape = slide.shapes.find((s) => s.id === this.selectedShapeIds[0]);
+			if (shape) {
+				shape.y = 0;
+			}
+		} else {
+			const minY = Math.min(
+				...this.selectedShapeIds.map(
+					(id) =>
+						slide.shapes.find((s) => s.id === id)?.y ??
+						Number.POSITIVE_INFINITY,
+				),
+			);
+			for (const id of this.selectedShapeIds) {
+				const shape = slide.shapes.find((s) => s.id === id);
+				if (shape) {
+					shape.y = minY;
+				}
+			}
+		}
+	}
+
+	alignMiddle(): void {
+		this.pushSnapshot();
+		const slide = this.slides[this.currentSlide];
+		if (!slide?.shapes || this.selectedShapeIds.length === 0) return;
+
+		const slideSize = this.slideSize;
+		const slideHeight = slideSize === "widescreen" ? 540 : 600;
+
+		if (this.selectedShapeIds.length === 1) {
+			const shape = slide.shapes.find((s) => s.id === this.selectedShapeIds[0]);
+			if (shape) {
+				shape.y = slideHeight / 2 - shape.height / 2;
+			}
+		} else {
+			const centerY = Math.max(
+				...this.selectedShapeIds.map(
+					(id) =>
+						(slide.shapes.find((s) => s.id === id)?.y ?? 0) +
+						(slide.shapes.find((s) => s.id === id)?.height ?? 0) / 2,
+				),
+			);
+			for (const id of this.selectedShapeIds) {
+				const shape = slide.shapes.find((s) => s.id === id);
+				if (shape) {
+					const shapeCenterY = shape.y + shape.height / 2;
+					shape.y = shape.y + (centerY - shapeCenterY);
+				}
+			}
+		}
+	}
+
+	alignBottom(): void {
+		this.pushSnapshot();
+		const slide = this.slides[this.currentSlide];
+		if (!slide?.shapes || this.selectedShapeIds.length === 0) return;
+
+		const slideSize = this.slideSize;
+		const slideHeight = slideSize === "widescreen" ? 540 : 600;
+
+		if (this.selectedShapeIds.length === 1) {
+			const shape = slide.shapes.find((s) => s.id === this.selectedShapeIds[0]);
+			if (shape) {
+				shape.y = slideHeight - shape.height;
+			}
+		} else {
+			const maxBottom = Math.max(
+				...this.selectedShapeIds.map(
+					(id) =>
+						(slide.shapes.find((s) => s.id === id)?.y ?? 0) +
+						(slide.shapes.find((s) => s.id === id)?.height ?? 0),
+				),
+			);
+			for (const id of this.selectedShapeIds) {
+				const shape = slide.shapes.find((s) => s.id === id);
+				if (shape) {
+					const shapeBottom = shape.y + shape.height;
+					shape.y = shape.y + (maxBottom - shapeBottom);
+				}
+			}
+		}
+	}
+
 	bringToFrontSelected(): void {
 		this.applyZOrderToSelected(() => {
 			const slide = this.slides[this.currentSlide];

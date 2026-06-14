@@ -218,6 +218,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 						type="button"
 						className="prese-hometab-btn"
 						title="Align Left"
+						onClick={() => presentationStore.alignLeft()}
 					>
 						Align Left
 					</button>
@@ -225,6 +226,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 						type="button"
 						className="prese-hometab-btn"
 						title="Align Center"
+						onClick={() => presentationStore.alignCenter()}
 					>
 						Align Center
 					</button>
@@ -232,8 +234,35 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 						type="button"
 						className="prese-hometab-btn"
 						title="Align Right"
+						onClick={() => presentationStore.alignRight()}
 					>
 						Align Right
+					</button>
+				</div>
+				<div className="prese-hometab-elset">
+					<button
+						type="button"
+						className="prese-hometab-btn"
+						title="Align Top"
+						onClick={() => presentationStore.alignTop()}
+					>
+						Align Top
+					</button>
+					<button
+						type="button"
+						className="prese-hometab-btn"
+						title="Align Middle"
+						onClick={() => presentationStore.alignMiddle()}
+					>
+						Align Middle
+					</button>
+					<button
+						type="button"
+						className="prese-hometab-btn"
+						title="Align Bottom"
+						onClick={() => presentationStore.alignBottom()}
+					>
+						Align Bottom
 					</button>
 				</div>
 				<div className="prese-hometab-elset">
