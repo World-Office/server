@@ -5,6 +5,22 @@ import { PageTabs } from "./PageTabs"
 import { SheetList } from "./SheetList"
 import { ZoomControls } from "./ZoomControls"
 
+function SaveIndicator(): JSX.Element {
+  let label = ""
+  let cls = "visio-save-indicator"
+  if (visioStore.isSaving) {
+    label = "Saving..."
+    cls += " saving"
+  } else if (visioStore.isModified) {
+    label = "Unsaved changes"
+    cls += " modified"
+  } else if (visioStore.isDocReady) {
+    label = "Saved"
+  }
+  if (!label) return <span />
+  return <span className={cls}>{label}</span>
+}
+
 const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
   const isCompact = visioStore.isCompactStatusbar
 
@@ -39,7 +55,9 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
         <SheetList />
       </div>
 
-      <div className="visio-statusbar-zoom-box">
+        <div className="visio-statusbar-zoom-box">
+        <div className="visio-statusbar-separator" />
+        <SaveIndicator />
         <div className="visio-statusbar-separator" />
         <ZoomControls />
       </div>
