@@ -5,15 +5,24 @@ export function useKeyboardShortcuts(): void {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent): void {
       if (e.ctrlKey || e.metaKey) {
-        if (e.key === "=" || e.key === "+") {
-          e.preventDefault()
-          pdfStore.zoomIn()
-        } else if (e.key === "-") {
-          e.preventDefault()
-          pdfStore.zoomOut()
-        } else if (e.key === "0") {
-          e.preventDefault()
-          pdfStore.setZoomLevel(100)
+        switch (e.key) {
+          case "=":
+          case "+":
+            e.preventDefault()
+            pdfStore.zoomIn()
+            break
+          case "-":
+            e.preventDefault()
+            pdfStore.zoomOut()
+            break
+          case "0":
+            e.preventDefault()
+            pdfStore.setZoomLevel(100)
+            break
+          case "s":
+            e.preventDefault()
+            pdfStore.saveToWopi()
+            break
         }
       }
     }

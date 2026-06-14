@@ -11,6 +11,8 @@ import type {
   ZoomLevel,
 } from "../types/pdf"
 import { ZOOM_LEVELS } from "../types/pdf"
+import { WopiClient, detectWopiParams } from "@world-office/wopi-client"
+import type { WopiConnection, WopiFileInfo } from "@world-office/wopi-client"
 
 const STORAGE_PREFIX = "pe-"
 
@@ -75,6 +77,15 @@ export class PdfStore {
 
   /* Comments */
   commentCount = 0
+
+  /* WOPI */
+  isModified = false
+  isSaving = false
+  isLoading = false
+  isLoadingError: string | null = null
+  wopiFileInfo: WopiFileInfo | null = null
+  wopiConnection: WopiConnection | null = null
+  lastLoadedContent: Blob | null = null
 
   constructor() {
     makeAutoObservable(this)
@@ -221,6 +232,73 @@ export class PdfStore {
   setCompactStatusbar(compact: boolean): void {
     this.isCompactStatusbar = compact
     setStorageItem("compact-statusbar", compact ? "true" : "")
+  }
+
+  /* ── WOPI ── */
+
+  async detectAndLoadWopi(): Promise<void> {
+    const params = detectWopiParams()
+    if (params) {
+      this.wopiConnection = params
+      await this.loadFromWopi(params)
+    } else {
+      this.isLoading = false
+      this.isDocReady = true
+    }
+  }
+
+  async loadFromWopi(conn: WopiConnection): Promise<void> {
+    this.isLoading = true
+    this.isLoadingError = null
+    try {
+      const { info, content } = await WopiClient.loadDocument(conn)
+      this.wopiFileInfo = info
+      this.lastLoadedContent = content
+      this.document = {
+        title: info.BaseFileName || "Untitled",
+        fileType: "pdf",
+      }
+      this.isDocReady = true
+    } catch (err) {
+      this.isLoadingError = err instanceof Error ? err.message : "Failed to load document"
+    } finally {
+      this.isLoading = false
+    }
+  }
+
+  async saveToWopi(): Promise<void> {
+    if (!this.wopiConnection || !this.isModified) return
+    if (!this.wopiFileInfo?.UserCanWrite) {
+      this.exportAsDownload()
+      return
+    }
+    this.isSaving = true
+    try {
+      const blob = await this.buildDocumentBlob()
+      await WopiClient.putFile(this.wopiConnection, blob)
+      this.isModified = false
+    } catch {
+      this.exportAsDownload()
+    } finally {
+      this.isSaving = false
+    }
+  }
+
+  buildDocumentBlob(): Blob {
+    if (this.lastLoadedContent) {
+      return this.lastLoadedContent
+    }
+    return new Blob(["PDF placeholder"], { type: "application/pdf" })
+  }
+
+  exportAsDownload(): void {
+    const blob = this.buildDocumentBlob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = this.document?.title || "document.pdf"
+    a.click()
+    URL.revokeObjectURL(url)
   }
 }
 
