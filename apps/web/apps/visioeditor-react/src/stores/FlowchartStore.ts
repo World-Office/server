@@ -1,6 +1,6 @@
 import { makeAutoObservable } from "mobx"
 import { toJS } from "mobx"
-import type { FlowchartDocument, FlowchartNode, FlowchartEdge, FlowchartShapeType } from "../types/visio"
+import type { FlowchartDocument, FlowchartNode, FlowchartEdge, FlowchartShapeType, ArrowheadType } from "../types/visio"
 
 let nextId = 1
 function genId(): string {
@@ -130,6 +130,22 @@ export class FlowchartStore {
 	}
 
 	/* ── Edge operations ── */
+
+	addEdge(sourceId: string, targetId: string): FlowchartEdge {
+		this.pushHistory()
+		const edge: FlowchartEdge = {
+			id: genId(),
+			sourceId,
+			targetId,
+			label: "",
+			strokeColor: "#333333",
+			strokeWidth: 2,
+			strokeStyle: "solid",
+		}
+		this.document.edges.push(edge)
+		this.autoAnchorEdge(edge.id)
+		return edge
+	}
 
 	startConnect(sourceId: string): void {
 		this.connectSourceId = sourceId
@@ -660,6 +676,43 @@ export class FlowchartStore {
 		this.document = { nodes: [], edges: [] }
 		this.selectedNodeIds = []
 		this.selectedEdgeIds = []
+	}
+
+	/**
+	 * Serialize the flowchart document to a JSON-serializable object
+	 * that can be stored in WOPI / saved to the backend.
+	 */
+	toJSON(): FlowchartDocument {
+		return toJS(this.document, { recurseEverything: true }) as FlowchartDocument
+	}
+
+	/**
+	 * Deserialize a JSON object into the store, replacing the current
+	 * document and resetting history.
+	 */
+	fromJSON(json: FlowchartDocument): void {
+		this.history = []
+		this.future = []
+		this.document = {
+			nodes: json.nodes.map((n) => ({
+				...n,
+				fillColor: n.fillColor ?? "#ffffff",
+				strokeColor: n.strokeColor ?? "#333333",
+				strokeWidth: n.strokeWidth ?? 2,
+				fontSize: n.fontSize ?? 14,
+				fontWeight: n.fontWeight ?? "normal",
+			})),
+			edges: json.edges.map((e) => ({
+				...e,
+				strokeColor: e.strokeColor ?? "#333333",
+				strokeWidth: e.strokeWidth ?? 2,
+				strokeStyle: e.strokeStyle ?? "solid",
+				arrowheadType: (e.arrowheadType ?? "arrow") as ArrowheadType,
+			})),
+		}
+		this.clearSelection()
+		this.canvasOffset = { x: 0, y: 0 }
+		this.currentThemeId = "default"
 	}
 }
 
