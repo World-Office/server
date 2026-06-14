@@ -1,0 +1,792 @@
+import { observer } from "mobx-react-lite"
+import { useRef, useState, useCallback, useEffect, useMemo } from "react"
+import { flowchartStore } from "../stores/FlowchartStore"
+import type { FlowchartNode, FlowchartEdge } from "../types/visio"
+import styles from "./FlowchartCanvas.module.css"
+
+/* ─── Types ─── */
+
+interface Point {
+  x: number
+  y: number
+}
+
+/* ─── Helpers ─── */
+
+function getNodeCenter(node: FlowchartNode): Point {
+  return { x: node.x + node.width / 2, y: node.y + node.height / 2 }
+}
+
+function getEdgeEndpoint(
+  node: FlowchartNode,
+  anchor: string | undefined,
+): Point {
+  if (anchor === "top") return { x: node.x + node.width / 2, y: node.y }
+  if (anchor === "bottom") return { x: node.x + node.width / 2, y: node.y + node.height }
+  if (anchor === "left") return { x: node.x, y: node.y + node.height / 2 }
+  if (anchor === "right") return { x: node.x + node.width, y: node.y + node.height / 2 }
+  return getNodeCenter(node)
+}
+
+/** Convert a mouse event (clientX/Y) to SVG canvas coordinates. */
+function eventToSVGPoint(
+  e: React.MouseEvent | MouseEvent,
+  svg: SVGSVGElement,
+): Point {
+  const pt = svg.createSVGPoint()
+  pt.x = e.clientX
+  pt.y = e.clientY
+  const ctm = svg.getScreenCTM()!.inverse()
+  const svgPt = pt.matrixTransform(ctm)
+  return { x: svgPt.x, y: svgPt.y }
+}
+
+/* ─── Shape renderer ─── */
+
+interface ShapeRendererProps {
+  node: FlowchartNode
+  isSelected: boolean
+  isHighlightTarget: boolean
+}
+
+/**
+ * Returns SVG primitive(s) for the flowchart shape body.
+ * The shapeType is widened to string because the runtime store
+ * supports more shapes than the TypeScript type declares.
+ */
+function renderShapeBody({ node, isSelected, isHighlightTarget }: ShapeRendererProps): React.JSX.Element {
+  const { x, y, width: w, height: h, fillColor, strokeColor } = node
+  // strokeWidth is not in the FlowchartNode type but IS set by the store at runtime
+  const strokeWidth = (node as any).strokeWidth
+  const cx = x + w / 2
+  const cy = y + h / 2
+  const shapeType = node.shapeType as string
+
+  const isSel = isSelected
+  const isHL = !isSel && isHighlightTarget
+
+  const classNames = [
+    styles.shapeBody,
+    isSel ? styles.selected : "",
+    isHL ? styles.connectTargetHighlight : "",
+  ]
+    .filter(Boolean)
+    .join(" ")
+
+  const fill = fillColor || "#ffffff"
+  const stroke = isSel ? undefined : strokeColor || "#333333"
+  const sw = isSel ? 3 : strokeWidth || 2
+
+  switch (shapeType) {
+    /* ── Rounded rectangle (start-end / terminator) ── */
+    case "start-end":
+    case "terminator":
+      return (
+        <rect
+          className={classNames}
+          x={x} y={y} width={w} height={h}
+          rx={25} ry={25}
+          fill={fill} stroke={stroke} strokeWidth={sw}
+        />
+      )
+
+    /* ── Plain rectangle (process) ── */
+    case "process":
+      return (
+        <rect
+          className={classNames}
+          x={x} y={y} width={w} height={h}
+          fill={fill} stroke={stroke} strokeWidth={sw}
+        />
+      )
+
+    /* ── Diamond (decision / condition) ── */
+    case "decision":
+    case "condition":
+      return (
+        <polygon
+          className={classNames}
+          points={`${cx},${y} ${x + w},${cy} ${cx},${y + h} ${x},${cy}`}
+          fill={fill} stroke={stroke} strokeWidth={sw}
+        />
+      )
+
+    /* ── Parallelogram (input-output / data) ── */
+    case "input-output":
+    case "data": {
+      const offset = Math.min(w * 0.15, h * 0.4)
+      return (
+        <polygon
+          className={classNames}
+          points={`${x + offset},${y} ${x + w},${y} ${x + w - offset},${y + h} ${x},${y + h}`}
+          fill={fill} stroke={stroke} strokeWidth={sw}
+        />
+      )
+    }
+
+    /* ── Document (rect with wavy bottom) ── */
+    case "document": {
+      const waveAmp = 8
+      const bot = y + h
+      return (
+        <path
+          className={classNames}
+          d={`
+            M ${x},${y}
+            L ${x + w},${y}
+            L ${x + w},${bot - waveAmp}
+            Q ${x + w * 0.75},${bot + waveAmp} ${x + w * 0.5},${bot}
+            Q ${x + w * 0.25},${bot - waveAmp} ${x},${bot - waveAmp}
+            Z
+          `}
+          fill={fill} stroke={stroke} strokeWidth={sw}
+        />
+      )
+    }
+
+    /* ── Subprocess (rect with double vertical lines) ── */
+    case "subprocess": {
+      const gap = 6
+      return (
+        <g>
+          <rect
+            className={classNames}
+            x={x} y={y} width={w} height={h}
+            fill={fill} stroke={stroke} strokeWidth={sw}
+          />
+          <line className={styles.subprocessLine} x1={x + gap} y1={y + 4} x2={x + gap} y2={y + h - 4} />
+          <line className={styles.subprocessLine} x1={x + gap + 3} y1={y + 4} x2={x + gap + 3} y2={y + h - 4} />
+        </g>
+      )
+    }
+
+    /* ── Connector (circle) ── */
+    case "connector":
+      return (
+        <ellipse
+          className={classNames}
+          cx={cx} cy={cy} rx={w / 2} ry={h / 2}
+          fill={fill} stroke={stroke} strokeWidth={sw}
+        />
+      )
+
+    /* ── Manual-input (rect with angled top-right) ── */
+    case "manual-input": {
+      const cutX = Math.min(12, w * 0.2)
+      return (
+        <polygon
+          className={classNames}
+          points={`${x},${y} ${x + w - cutX},${y} ${x + w},${y + cutX} ${x + w},${y + h} ${x},${y + h}`}
+          fill={fill} stroke={stroke} strokeWidth={sw}
+        />
+      )
+    }
+
+    /* ── Display (rect with angled top) ── */
+    case "display": {
+      const slant = Math.min(10, h * 0.15)
+      return (
+        <polygon
+          className={classNames}
+          points={`${x},${y + slant} ${x + w},${y} ${x + w},${y + h} ${x},${y + h}`}
+          fill={fill} stroke={stroke} strokeWidth={sw}
+        />
+      )
+    }
+
+    /* ── Predefined-process (rect with vertical lines at each side) ── */
+    case "predefined-process": {
+      const gap = 6
+      return (
+        <g>
+          <rect
+            className={classNames}
+            x={x} y={y} width={w} height={h}
+            fill={fill} stroke={stroke} strokeWidth={sw}
+          />
+          <line className={styles.subprocessLine} x1={x + gap} y1={y + 4} x2={x + gap} y2={y + h - 4} />
+          <line className={styles.subprocessLine} x1={x + w - gap} y1={y + 4} x2={x + w - gap} y2={y + h - 4} />
+        </g>
+      )
+    }
+
+    /* ── Stored-data (cylinder) ── */
+    case "stored-data": {
+      const topRy = Math.min(h * 0.22, 16)
+      const bodyTop = y + topRy
+      const bodyH = h - 2 * topRy
+      const botY = bodyTop + bodyH
+      return (
+        <g>
+          {/* Bottom arc */}
+          <path
+            className={classNames}
+            d={`M ${x},${botY} A ${w / 2},${topRy} 0 0,0 ${x + w},${botY}`}
+            fill={fill} stroke={stroke} strokeWidth={sw}
+          />
+          {/* Body rect (fill only — sides drawn as lines) */}
+          <rect x={x} y={bodyTop} width={w} height={bodyH} fill={fill} />
+          {/* Side lines */}
+          <line
+            x1={x} y1={bodyTop} x2={x} y2={botY}
+            stroke={stroke} strokeWidth={sw}
+            className={styles.subprocessLine}
+          />
+          <line
+            x1={x + w} y1={bodyTop} x2={x + w} y2={botY}
+            stroke={stroke} strokeWidth={sw}
+            className={styles.subprocessLine}
+          />
+          {/* Top ellipse drawn last so it covers the rect's top edge */}
+          <ellipse
+            className={classNames}
+            cx={cx} cy={bodyTop} rx={w / 2} ry={topRy}
+            fill={fill} stroke={stroke} strokeWidth={sw}
+          />
+        </g>
+      )
+    }
+
+    /* ── Hexagon (delay / preparation) ── */
+    case "delay":
+    case "preparation": {
+      const indentX = Math.min(w * 0.25, 30)
+      return (
+        <polygon
+          className={classNames}
+          points={`
+            ${x + indentX},${y}
+            ${x + w - indentX},${y}
+            ${x + w},${cy}
+            ${x + w - indentX},${y + h}
+            ${x + indentX},${y + h}
+            ${x},${cy}
+          `}
+          fill={fill} stroke={stroke} strokeWidth={sw}
+        />
+      )
+    }
+
+    /* ── Pentagon (loop-limit) ── */
+    case "loop-limit": {
+      const topInset = Math.min(h * 0.35, 24)
+      return (
+        <polygon
+          className={classNames}
+          points={`
+            ${cx},${y}
+            ${x + w},${y + topInset}
+            ${x + w * 0.82},${y + h}
+            ${x + w * 0.18},${y + h}
+            ${x},${y + topInset}
+          `}
+          fill={fill} stroke={stroke} strokeWidth={sw}
+        />
+      )
+    }
+
+    /* ── Fallback ― plain rect ── */
+    default:
+      return (
+        <rect
+          className={classNames}
+          x={x} y={y} width={w} height={h}
+          fill={fill} stroke={stroke} strokeWidth={sw}
+        />
+      )
+  }
+}
+
+/* ─── Node component ─── */
+
+interface NodeRendererProps {
+  node: FlowchartNode
+  isSelected: boolean
+  isConnectSource: boolean
+  isConnectTarget: boolean
+  isEditing: boolean
+  editValue: string
+  onMouseDown: (nodeId: string, e: React.MouseEvent) => void
+  onDoubleClick: (nodeId: string, e: React.MouseEvent) => void
+  onConnectorMouseDown: (nodeId: string, e: React.MouseEvent) => void
+  onNodeMouseUp: (nodeId: string, e: React.MouseEvent) => void
+  onEditChange: (value: string) => void
+  onEditBlur: () => void
+  onEditKeyDown: (e: React.KeyboardEvent) => void
+}
+
+const FlowchartNodeRenderer = observer(function FlowchartNodeRenderer({
+  node,
+  isSelected,
+  isConnectSource,
+  isConnectTarget,
+  isEditing,
+  editValue,
+  onMouseDown,
+  onDoubleClick,
+  onConnectorMouseDown,
+  onNodeMouseUp,
+  onEditChange,
+  onEditBlur,
+  onEditKeyDown,
+}: NodeRendererProps) {
+  const { id: nodeId, x, y, width: w, height: h, label, fontSize } = node
+
+  const groupClass = [
+    styles.nodeGroup,
+    isConnectSource ? styles.connectSource : "",
+    isConnectTarget ? styles.connectTarget : "",
+  ]
+    .filter(Boolean)
+    .join(" ")
+
+  const dotR = 5
+  const dotCX = x + w / 2
+  const dotCY = y + h
+
+  return (
+    <g
+      className={groupClass}
+      onMouseDown={(e) => onMouseDown(nodeId, e)}
+      onMouseUp={(e) => onNodeMouseUp(nodeId, e)}
+      onDoubleClick={(e) => onDoubleClick(nodeId, e)}
+    >
+      {/* Shape body */}
+      {renderShapeBody({
+        node,
+        isSelected,
+        isHighlightTarget: isConnectTarget,
+      })}
+
+      {/* Label */}
+      <text
+        className={styles.nodeLabel}
+        x={x + w / 2}
+        y={y + h / 2}
+        fontSize={fontSize || 14}
+      >
+        {label}
+      </text>
+
+      {/* Inline editing overlay */}
+      {isEditing && (
+        <foreignObject
+          className={styles.editForeignObject}
+          x={x}
+          y={y}
+          width={w}
+          height={h}
+        >
+          <input
+            className={styles.editInput}
+            style={{ fontSize: fontSize || 14 }}
+            value={editValue}
+            onChange={(e) => onEditChange(e.target.value)}
+            onBlur={onEditBlur}
+            onKeyDown={onEditKeyDown}
+            autoFocus
+          />
+        </foreignObject>
+      )}
+
+      {/* Connector dot at bottom center */}
+      <circle
+        className={`${styles.connectorDot}${isConnectSource ? ` ${styles.active}` : ""}`}
+        cx={dotCX}
+        cy={dotCY}
+        r={dotR}
+        onMouseDown={(e) => onConnectorMouseDown(nodeId, e)}
+      />
+    </g>
+  )
+})
+
+/* ─── Edge component ─── */
+
+interface EdgeRendererProps {
+  edge: FlowchartEdge
+  sourceNode: FlowchartNode
+  targetNode: FlowchartNode
+  isSelected: boolean
+  onMouseDown: (edgeId: string, e: React.MouseEvent) => void
+}
+
+const FlowchartEdgeRenderer = observer(function FlowchartEdgeRenderer({
+  edge,
+  sourceNode,
+  targetNode,
+  isSelected,
+  onMouseDown,
+}: EdgeRendererProps) {
+  const src = getEdgeEndpoint(sourceNode, edge.sourceAnchor)
+  const tgt = getEdgeEndpoint(targetNode, edge.targetAnchor)
+  const edgeClass = `${styles.edgeLine}${isSelected ? ` ${styles.selected}` : ""}`
+
+  return (
+    <g>
+      {/* Invisible wide hit area for easier edge clicking */}
+      <line
+        x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
+        stroke="transparent"
+        strokeWidth={12}
+        style={{ cursor: "pointer" }}
+        onMouseDown={(e) => onMouseDown(edge.id, e)}
+      />
+      {/* Visible edge line */}
+      <line
+        className={edgeClass}
+        x1={src.x} y1={src.y} x2={tgt.x} y2={tgt.y}
+        onMouseDown={(e) => onMouseDown(edge.id, e)}
+      />
+      {/* Edge label at midpoint */}
+      {edge.label && (
+        <text
+          className={styles.edgeLabel}
+          x={(src.x + tgt.x) / 2}
+          y={(src.y + tgt.y) / 2 - 8}
+        >
+          {edge.label}
+        </text>
+      )}
+    </g>
+  )
+})
+
+/* ─── Main component ─── */
+
+export const FlowchartCanvas = observer(function FlowchartCanvas() {
+  /* ── Refs ── */
+  const svgRef = useRef<SVGSVGElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const dragLastPos = useRef<Point>({ x: 0, y: 0 })
+  const connectMouseRef = useRef<Point>({ x: 0, y: 0 })
+
+  /* ── State ── */
+  const [containerSize, setContainerSize] = useState<{ width: number; height: number }>({
+    width: 800,
+    height: 600,
+  })
+  const [editingNodeId, setEditingNodeId] = useState<string | null>(null)
+  const [editValue, setEditValue] = useState("")
+  const [connectMousePos, setConnectMousePos] = useState<Point | null>(null)
+  const [isPanning, setIsPanning] = useState(false)
+
+  const panStartRef = useRef<Point>({ x: 0, y: 0 })
+  const panOffsetStartRef = useRef<Point>({ x: 0, y: 0 })
+
+  /* ── Store ── */
+  const store = flowchartStore
+  const { document: doc } = store
+
+  /* ── Node lookup map ── */
+  const nodeMap = useMemo(() => {
+    const map = new Map<string, FlowchartNode>()
+    for (const node of doc.nodes) {
+      map.set(node.id, node)
+    }
+    return map
+  }, [doc.nodes])
+
+  /* ── ResizeObserver — keep SVG viewBox in sync with container ── */
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect
+        if (width > 0 && height > 0) {
+          setContainerSize({ width, height })
+        }
+      }
+    })
+    ro.observe(container)
+    return () => ro.disconnect()
+  }, [])
+
+  /* ── Convert a browser mouse event to SVG canvas coordinates ── */
+  const getSVGPoint = useCallback(
+    (e: React.MouseEvent | MouseEvent): Point => {
+      const svg = svgRef.current
+      if (!svg) return { x: 0, y: 0 }
+      return eventToSVGPoint(e, svg)
+    },
+    [],
+  )
+
+  /* ── Check whether a mouse event hit the canvas background ── */
+  const isBackgroundTarget = useCallback((target: EventTarget): boolean => {
+    const el = target as SVGElement
+    if (el === svgRef.current) return true
+    // CSS-module class check
+    if (el.classList.contains(styles.canvasBackground)) return true
+    // Without CSS-module hashed lookup, fall back to tag+role heuristics
+    if (el.tagName === "rect" && !el.closest("[data-node-id]")) return true
+    return false
+  }, [])
+
+  /* ── mousedown on a node: start drag + select ── */
+  const handleNodeMouseDown = useCallback(
+    (nodeId: string, e: React.MouseEvent) => {
+      if (e.button !== 0) return                  // left button only
+      if (store.connectSourceId) return            // in connect mode — no dragging
+      e.stopPropagation()
+      store.startDrag(nodeId)
+      store.selectNode(nodeId)
+      dragLastPos.current = getSVGPoint(e)
+    },
+    [store, getSVGPoint],
+  )
+
+  /* ── mousedown on a connector dot: start connection ── */
+  const handleConnectorMouseDown = useCallback(
+    (nodeId: string, e: React.MouseEvent) => {
+      e.stopPropagation()
+      store.startConnect(nodeId)
+      const pt = getSVGPoint(e)
+      connectMouseRef.current = pt
+      setConnectMousePos({ ...pt })
+    },
+    [store, getSVGPoint],
+  )
+
+  /* ── mouseup on a node: finish connection if in connect mode ── */
+  const handleNodeMouseUp = useCallback(
+    (nodeId: string, e: React.MouseEvent) => {
+      if (store.connectSourceId && store.connectSourceId !== nodeId) {
+        e.stopPropagation()
+        store.finishConnect(nodeId)
+        setConnectMousePos(null)
+      }
+    },
+    [store],
+  )
+
+  /* ── double-click on a node: enter inline label editing ── */
+  const handleNodeDoubleClick = useCallback(
+    (nodeId: string, e: React.MouseEvent) => {
+      e.stopPropagation()
+      const node = doc.nodes.find((n) => n.id === nodeId)
+      if (!node) return
+      setEditingNodeId(nodeId)
+      setEditValue(node.label)
+    },
+    [doc.nodes],
+  )
+
+  /* ── mousedown on an edge: select it ── */
+  const handleEdgeMouseDown = useCallback(
+    (edgeId: string, e: React.MouseEvent) => {
+      e.stopPropagation()
+      store.selectEdge(edgeId)
+    },
+    [store],
+  )
+
+  /* ── SVG-level mousedown (background click, pan start, connect cancel) ── */
+  const handleSVGMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isBackgroundTarget(e.target)) return
+
+      // Middle-click pan
+      if (e.button === 1) {
+        e.preventDefault()
+        setIsPanning(true)
+        panStartRef.current = getSVGPoint(e)
+        panOffsetStartRef.current = { ...store.canvasOffset }
+        return
+      }
+
+      // Left-click on background -> clear selection + cancel connect
+      if (e.button === 0) {
+        store.clearSelection()
+        if (store.connectSourceId) {
+          store.cancelConnect()
+          setConnectMousePos(null)
+        }
+      }
+    },
+    [store, getSVGPoint, isBackgroundTarget],
+  )
+
+  /* ── SVG-level mousemove (drag, pan, connect preview) ── */
+  const handleSVGMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      const svgPoint = getSVGPoint(e)
+
+      // Panning
+      if (isPanning) {
+        const dx = svgPoint.x - panStartRef.current.x
+        const dy = svgPoint.y - panStartRef.current.y
+        store.setCanvasOffset(
+          panOffsetStartRef.current.x - dx,
+          panOffsetStartRef.current.y - dy,
+        )
+        return
+      }
+
+      // Dragging a node
+      if (store.isDragging && store.dragNodeId) {
+        const dx = svgPoint.x - dragLastPos.current.x
+        const dy = svgPoint.y - dragLastPos.current.y
+        if (dx !== 0 || dy !== 0) {
+          store.moveNode(store.dragNodeId, dx, dy)
+          dragLastPos.current = svgPoint
+        }
+        return
+      }
+
+      // Connection preview line
+      if (store.connectSourceId) {
+        connectMouseRef.current = svgPoint
+        setConnectMousePos({ ...svgPoint })
+      }
+    },
+    [store, getSVGPoint, isPanning],
+  )
+
+  /* ── SVG-level mouseup ── */
+  const handleSVGMouseUp = useCallback(
+    () => {
+      if (store.isDragging) {
+        store.endDrag()
+      }
+      if (isPanning) {
+        setIsPanning(false)
+      }
+    },
+    [store, isPanning],
+  )
+
+  /* ── Global mouseup — catches mouse released outside the SVG ── */
+  useEffect(() => {
+    const handler = () => {
+      if (store.isDragging) store.endDrag()
+      if (isPanning) setIsPanning(false)
+    }
+    window.addEventListener("mouseup", handler)
+    return () => window.removeEventListener("mouseup", handler)
+  }, [store, isPanning])
+
+  /* ── Inline editing ── */
+  const handleEditChange = useCallback((value: string) => {
+    setEditValue(value)
+  }, [])
+
+  const saveEdit = useCallback(() => {
+    if (editingNodeId !== null) {
+      store.setNodeLabel(editingNodeId, editValue)
+      setEditingNodeId(null)
+      setEditValue("")
+    }
+  }, [editingNodeId, editValue, store])
+
+  const cancelEdit = useCallback(() => {
+    setEditingNodeId(null)
+    setEditValue("")
+  }, [])
+
+  const handleEditBlur = useCallback(() => { saveEdit() }, [saveEdit])
+
+  const handleEditKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        e.preventDefault()
+        saveEdit()
+      }
+      if (e.key === "Escape") {
+        e.preventDefault()
+        cancelEdit()
+      }
+    },
+    [saveEdit, cancelEdit],
+  )
+
+  /* ── ViewBox ── */
+  const viewBox = `${store.canvasOffset.x} ${store.canvasOffset.y} ${containerSize.width} ${containerSize.height}`
+
+  /* ── Source node position for temp connection line ── */
+  let sourceNodeCenter: Point | null = null
+  if (store.connectSourceId) {
+    const srcNode = nodeMap.get(store.connectSourceId)
+    if (srcNode) {
+      sourceNodeCenter = getNodeCenter(srcNode)
+    }
+  }
+
+  /* ── Set data attributes on node groups for background detection ── */
+  // We use data-node-id on each <g> so isBackgroundTarget can skip them.
+
+  return (
+    <div ref={containerRef} className={styles.container}>
+      <svg
+        ref={svgRef}
+        className={`${styles.svg}${isPanning ? ` ${styles.panning}` : ""}`}
+        viewBox={viewBox}
+        preserveAspectRatio="xMidYMid meet"
+        onMouseDown={handleSVGMouseDown}
+        onMouseMove={handleSVGMouseMove}
+        onMouseUp={handleSVGMouseUp}
+        onMouseLeave={handleSVGMouseUp}
+      >
+        {/* Canvas background — huge rect so it always catches clicks */}
+        <rect
+          className={styles.canvasBackground}
+          x={-20000}
+          y={-20000}
+          width={40000}
+          height={40000}
+        />
+
+        {/* Edges layer (rendered behind nodes) */}
+        {doc.edges.map((edge) => {
+          const srcNode = nodeMap.get(edge.sourceId)
+          const tgtNode = nodeMap.get(edge.targetId)
+          if (!srcNode || !tgtNode) return null
+          return (
+            <FlowchartEdgeRenderer
+              key={edge.id}
+              edge={edge}
+              sourceNode={srcNode}
+              targetNode={tgtNode}
+              isSelected={store.selectedEdgeIds.includes(edge.id)}
+              onMouseDown={handleEdgeMouseDown}
+            />
+          )
+        })}
+
+        {/* Temporary connection line (from source node to cursor) */}
+        {store.connectSourceId && connectMousePos && sourceNodeCenter && (
+          <line
+            className={styles.tempConnection}
+            x1={sourceNodeCenter.x}
+            y1={sourceNodeCenter.y}
+            x2={connectMousePos.x}
+            y2={connectMousePos.y}
+          />
+        )}
+
+        {/* Nodes layer */}
+        {doc.nodes.map((node) => (
+          <FlowchartNodeRenderer
+            key={node.id}
+            node={node}
+            isSelected={store.selectedNodeIds.includes(node.id)}
+            isConnectSource={store.connectSourceId === node.id}
+            isConnectTarget={
+              store.connectSourceId !== null && store.connectSourceId !== node.id
+            }
+            isEditing={editingNodeId === node.id}
+            editValue={editingNodeId === node.id ? editValue : ""}
+            onMouseDown={handleNodeMouseDown}
+            onDoubleClick={handleNodeDoubleClick}
+            onConnectorMouseDown={handleConnectorMouseDown}
+            onNodeMouseUp={handleNodeMouseUp}
+            onEditChange={handleEditChange}
+            onEditBlur={handleEditBlur}
+            onEditKeyDown={handleEditKeyDown}
+          />
+        ))}
+      </svg>
+    </div>
+  )
+})
