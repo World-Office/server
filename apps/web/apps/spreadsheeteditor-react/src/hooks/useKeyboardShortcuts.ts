@@ -14,6 +14,9 @@ export function useKeyboardShortcuts(): void {
         } else if (e.key === "0") {
           e.preventDefault()
           spreadsheetStore.setZoomLevel(100)
+        } else if (e.key === "s") {
+          e.preventDefault()
+          spreadsheetStore.saveToWopi()
         }
       }
     }
