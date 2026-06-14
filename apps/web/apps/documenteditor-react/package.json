@@ -23,6 +23,7 @@
     "@world-office/i18n": "workspace:*",
     "@world-office/collaboration-react": "workspace:*",
     "@world-office/collaboration-client": "workspace:*",
+    "@world-office/wopi-client": "workspace:*",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "^2"
   },

@@ -9,6 +9,12 @@ import type {
   ZoomLevel,
 } from "../types/document"
 import { ZOOM_LEVELS } from "../types/document"
+import {
+  WopiClient,
+  detectWopiParams,
+  type WopiConnection,
+  type WopiFileInfo,
+} from "@world-office/wopi-client"
 
 const STORAGE_PREFIX = "de-"
 
@@ -16,6 +22,15 @@ export class DocumentStore {
   mode: DocumentMode | null = null
   document: DocumentDocument | null = null
   isDocReady = false
+
+  /* WOPI */
+  isModified = false
+  isSaving = false
+  isLoading = false
+  loadError: string | null = null
+  wopiFileInfo: WopiFileInfo | null = null
+  lastLoadedContent: Blob | null = null
+  wopiConnection: WopiConnection | null = null
 
   /* Toolbar */
   activeTab: DocumentTab | null = null
@@ -73,6 +88,11 @@ export class DocumentStore {
 
   constructor() {
     makeAutoObservable(this)
+    const params = detectWopiParams()
+    if (params) {
+      this.wopiConnection = params
+      this.detectAndLoadWopi()
+    }
   }
 
   /* ── Actions ── */
@@ -233,6 +253,75 @@ export class DocumentStore {
 
   markSaved(): void {
     this.isDirty = false
+  }
+
+  /* ── WOPI ── */
+
+  async detectAndLoadWopi(): Promise<void> {
+    if (!this.wopiConnection) {
+      const params = detectWopiParams()
+      if (!params) return
+      this.wopiConnection = params
+    }
+    await this.loadFromWopi(this.wopiConnection)
+  }
+
+  async loadFromWopi(conn: WopiConnection): Promise<void> {
+    this.isLoading = true
+    this.loadError = null
+    try {
+      const { info, content } = await WopiClient.loadDocument(conn)
+      this.wopiFileInfo = info
+      this.lastLoadedContent = content
+      this.fileName = info.BaseFileName ?? "Untitled Document"
+      this.filePath = conn.wopiFileId
+      this.setDocument({
+        title: this.fileName,
+        fileType: this.fileName.split(".").pop() ?? "docx",
+      })
+      this.isDocReady = true
+    } catch (err) {
+      this.loadError = err instanceof Error ? err.message : String(err)
+    } finally {
+      this.isLoading = false
+    }
+  }
+
+  async saveToWopi(): Promise<void> {
+    if (!this.wopiConnection) return
+    if (!this.isModified && !this.isDirty) return
+    this.isSaving = true
+    try {
+      const blob = this.buildDocumentBlob()
+      await WopiClient.putFile(this.wopiConnection, blob)
+      this.isModified = false
+      this.isDirty = false
+      this.lastLoadedContent = blob
+    } catch (err) {
+      console.error("WOPI save failed, falling back to download", err)
+      this.exportAsDownload()
+    } finally {
+      this.isSaving = false
+    }
+  }
+
+  buildDocumentBlob(): Blob {
+    if (this.lastLoadedContent && !this.isModified && !this.isDirty) {
+      return this.lastLoadedContent
+    }
+    return new Blob(["<document serialization placeholder>"], {
+      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    })
+  }
+
+  exportAsDownload(): void {
+    const blob = this.buildDocumentBlob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = this.fileName || "document.docx"
+    a.click()
+    URL.revokeObjectURL(url)
   }
 }
 
