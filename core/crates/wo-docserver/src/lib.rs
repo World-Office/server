@@ -133,16 +133,64 @@ async fn discovery_handler(State(state): State<AppState>) -> Result<String, AppE
     Ok(discovery)
 }
 
-async fn hosting_wopi_handler(State(state): State<AppState>) -> axum::response::Response {
-    let stub = format!(
-        r#"<!DOCTYPE html><html><head><title>World Office Editor</title></head>
-<body><h1>World Office Document Server</h1>
-<p>Editor UI dir: <code>{}</code></p>
-<p>WOPI host: <code>{}</code></p>
-</body></html>"#,
-        state.config.editor_ui_dir, state.config.wopi_host_url
+/// Map editor type from WOPI route path to the editor's dev/static URL.
+fn editor_base_url(editor_type: &str) -> Option<&'static str> {
+    match editor_type {
+        "word" => Some("http://localhost:3006"),
+        "sheet" => Some("http://localhost:3007"),
+        "slide" => Some("http://localhost:3005"),
+        "diagram" => Some("http://localhost:3003"),
+        "pdf" => Some("http://localhost:3004"),
+        _ => None,
+    }
+}
+
+/// GET /hosting/wopi/{editor_type}/{action}
+///
+/// Serves a minimal HTML shell that loads the correct React editor app
+/// with WOPI access_token and file_id passed through from URL query params.
+async fn hosting_wopi_handler(
+    State(_state): State<AppState>,
+    Path(path): Path<String>,
+) -> axum::response::Response {
+    let editor_type = path.split('/').next().unwrap_or(&path);
+    let Some(base) = editor_base_url(editor_type) else {
+        return (axum::http::StatusCode::NOT_FOUND, editor_type.to_string()).into_response();
+    };
+
+    let html = format!(
+        r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>World Office – {editor}</title>
+  <script>
+    (function() {{
+      var params = new URLSearchParams(location.search);
+      var token = params.get('access_token');
+      var fileId = params.get('file_id');
+      if (token && fileId) {{
+        window.__WORLD_OFFICE_CONFIG__ = {{
+          accessToken: token,
+          fileId: fileId,
+          fileType: '{editor_ext}'
+        }};
+      }}
+      var editorUrl = '{editor_base}/?' + location.search.slice(1);
+      window.location.replace(editorUrl);
+    }})();
+  </script>
+</head>
+<body>
+  <p>Redirecting to {editor} editor…</p>
+</body>
+</html>"#,
+        editor = editor_type,
+        editor_base = base,
+        editor_ext = editor_type,
     );
-    axum::response::Html(stub).into_response()
+    axum::response::Html(html).into_response()
 }
 
 /// GET /wopi/files/:file_id  →  proxy CheckFileInfo to OCIS
@@ -262,7 +310,7 @@ pub fn create_app(config: DocServerConfig) -> Router {
     let mut app = Router::new()
         .route("/health", get(health_handler))
         .route("/hosting/discovery", get(discovery_handler))
-        .route("/hosting/wopi", get(hosting_wopi_handler))
+        .route("/hosting/wopi/{*path}", get(hosting_wopi_handler))
         .route("/wopi/files/{file_id}", get(wopi_check_file_info))
         .route(
             "/wopi/files/{file_id}/contents",

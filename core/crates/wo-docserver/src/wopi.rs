@@ -100,15 +100,31 @@ impl WopiClient {
 <wopi-discovery>
   <net-zone name="external-http">
     <app name="World Office Document Server" href="http://localhost:8080">
+      <!-- Word / Document -->
       <action name="edit" ext="docx" urlsrc="http://localhost:8080/hosting/wopi/word/edit"/>
+      <action name="edit" ext="odt" urlsrc="http://localhost:8080/hosting/wopi/word/edit"/>
+      <action name="edit" ext="fodt" urlsrc="http://localhost:8080/hosting/wopi/word/edit"/>
+      <action name="view" ext="ott" urlsrc="http://localhost:8080/hosting/wopi/word/edit"/>
+      <action name="edit" ext="rtf" urlsrc="http://localhost:8080/hosting/wopi/word/edit"/>
+      <!-- Spreadsheet -->
       <action name="edit" ext="xlsx" urlsrc="http://localhost:8080/hosting/wopi/sheet/edit"/>
+      <action name="edit" ext="ods" urlsrc="http://localhost:8080/hosting/wopi/sheet/edit"/>
+      <action name="edit" ext="fods" urlsrc="http://localhost:8080/hosting/wopi/sheet/edit"/>
+      <action name="view" ext="ots" urlsrc="http://localhost:8080/hosting/wopi/sheet/edit"/>
+      <!-- Presentation -->
       <action name="edit" ext="pptx" urlsrc="http://localhost:8080/hosting/wopi/slide/edit"/>
+      <action name="edit" ext="odp" urlsrc="http://localhost:8080/hosting/wopi/slide/edit"/>
+      <action name="edit" ext="fodp" urlsrc="http://localhost:8080/hosting/wopi/slide/edit"/>
+      <action name="view" ext="otp" urlsrc="http://localhost:8080/hosting/wopi/slide/edit"/>
+      <!-- Diagram / Visio -->
       <action name="edit" ext="vsdx" urlsrc="http://localhost:8080/hosting/wopi/diagram/edit"/>
       <action name="view" ext="vssx" urlsrc="http://localhost:8080/hosting/wopi/diagram/view"/>
       <action name="view" ext="vstx" urlsrc="http://localhost:8080/hosting/wopi/diagram/view"/>
       <action name="view" ext="vsdm" urlsrc="http://localhost:8080/hosting/wopi/diagram/view"/>
       <action name="view" ext="vssm" urlsrc="http://localhost:8080/hosting/wopi/diagram/view"/>
       <action name="view" ext="vstm" urlsrc="http://localhost:8080/hosting/wopi/diagram/view"/>
+      <!-- PDF -->
+      <action name="view" ext="pdf" urlsrc="http://localhost:8080/hosting/wopi/pdf/view"/>
     </app>
   </net-zone>
 </wopi-discovery>
