@@ -113,6 +113,7 @@ export class FlowchartStore {
 			const ny = node.y + dy
 			node.x = this.snap(nx)
 			node.y = this.snap(ny)
+			this.reRouteEdges(nodeId)
 		}
 	}
 
@@ -152,6 +153,7 @@ export class FlowchartStore {
 		}
 		this.document.edges.push(edge)
 		this.connectSourceId = null
+		this.autoAnchorEdge(edge.id)
 		return edge
 	}
 
@@ -159,6 +161,47 @@ export class FlowchartStore {
 		this.pushHistory()
 		this.document.edges = this.document.edges.filter((e) => e.id !== edgeId)
 		this.selectedEdgeIds = this.selectedEdgeIds.filter((id) => id !== edgeId)
+	}
+
+	/* ── Smart edge routing ── */
+
+	/**
+	 * Pick the best sourceAnchor/targetAnchor for an edge based on
+	 * the relative positions of its source and target nodes.
+	 */
+	autoAnchorEdge(edgeId: string): void {
+		const edge = this.document.edges.find((e) => e.id === edgeId)
+		if (!edge) return
+		const src = this.document.nodes.find((n) => n.id === edge.sourceId)
+		const tgt = this.document.nodes.find((n) => n.id === edge.targetId)
+		if (!src || !tgt) return
+
+		const srcCX = src.x + src.width / 2
+		const srcCY = src.y + src.height / 2
+		const tgtCX = tgt.x + tgt.width / 2
+		const tgtCY = tgt.y + tgt.height / 2
+		const dx = tgtCX - srcCX
+		const dy = tgtCY - srcCY
+		const adx = Math.abs(dx)
+		const ady = Math.abs(dy)
+
+		// Determine best anchor: if nodes are more horizontal, use left/right; more vertical, use top/bottom
+		if (adx >= ady) {
+			edge.sourceAnchor = dx > 0 ? "right" : "left"
+			edge.targetAnchor = dx > 0 ? "left" : "right"
+		} else {
+			edge.sourceAnchor = dy > 0 ? "bottom" : "top"
+			edge.targetAnchor = dy > 0 ? "top" : "bottom"
+		}
+	}
+
+	/** Re-route all edges connected to the given node. */
+	reRouteEdges(nodeId: string): void {
+		for (const edge of this.document.edges) {
+			if (edge.sourceId === nodeId || edge.targetId === nodeId) {
+				this.autoAnchorEdge(edge.id)
+			}
+		}
 	}
 
 	/* ── Selection ── */
@@ -211,6 +254,9 @@ export class FlowchartStore {
 	endDrag(): void {
 		if (this.isDragging) {
 			this.pushHistory()
+			if (this.dragNodeId) {
+				this.reRouteEdges(this.dragNodeId)
+			}
 		}
 		this.isDragging = false
 		this.dragNodeId = null
@@ -488,6 +534,34 @@ export class FlowchartStore {
 		for (const n of nodes) n.height = maxH
 	}
 
+	/* ── Theme ── */
+
+	currentThemeId: string = "default"
+
+	applyTheme(themeId: string): void {
+		const theme = THEMES.find((t) => t.id === themeId)
+		if (!theme) return
+		this.pushHistory()
+		this.currentThemeId = themeId
+		for (const node of this.document.nodes) {
+			if (node.shapeType === "decision" || node.shapeType === "condition") {
+				node.fillColor = theme.decisionFill
+			} else if (node.shapeType === "start-end" || node.shapeType === "terminator") {
+				node.fillColor = theme.startEndFill
+			} else if (node.shapeType === "input-output" || node.shapeType === "data") {
+				node.fillColor = theme.inputOutputFill
+			} else {
+				node.fillColor = theme.nodeFill
+			}
+			node.strokeColor = theme.nodeStroke
+			node.fontSize = theme.nodeFontSize
+		}
+		for (const edge of this.document.edges) {
+			edge.strokeColor = theme.edgeStroke
+			edge.strokeWidth = theme.edgeStrokeWidth
+		}
+	}
+
 	/* ── Auto layout (layered/Dagre-style) ── */
 
 	autoLayout(): void {
@@ -588,6 +662,18 @@ export class FlowchartStore {
 		this.selectedEdgeIds = []
 	}
 }
+
+/* ── Themes ── */
+
+export const THEMES = [
+  { id: "default", name: "Default", nodeFill: "#ffffff", nodeStroke: "#333333", nodeFontSize: 14, edgeStroke: "#333333", edgeStrokeWidth: 2, decisionFill: "#ffffff", startEndFill: "#ffffff", inputOutputFill: "#ffffff" },
+  { id: "modern", name: "Modern", nodeFill: "#e8f0fe", nodeStroke: "#1a73e8", nodeFontSize: 14, edgeStroke: "#1a73e8", edgeStrokeWidth: 2, decisionFill: "#fce8e6", startEndFill: "#e6f4ea", inputOutputFill: "#fef7e0" },
+  { id: "warm", name: "Warm", nodeFill: "#fef3e8", nodeStroke: "#e37400", nodeFontSize: 14, edgeStroke: "#e37400", edgeStrokeWidth: 2, decisionFill: "#fce4ec", startEndFill: "#fff3e0", inputOutputFill: "#e8f5e9" },
+  { id: "cool", name: "Cool", nodeFill: "#e0f7fa", nodeStroke: "#00897b", nodeFontSize: 14, edgeStroke: "#00897b", edgeStrokeWidth: 2, decisionFill: "#e1f5fe", startEndFill: "#e0f2f1", inputOutputFill: "#f3e5f5" },
+  { id: "monochrome", name: "Monochrome", nodeFill: "#f5f5f5", nodeStroke: "#616161", nodeFontSize: 14, edgeStroke: "#616161", edgeStrokeWidth: 2, decisionFill: "#eeeeee", startEndFill: "#fafafa", inputOutputFill: "#e0e0e0" },
+  { id: "forest", name: "Forest", nodeFill: "#e8f5e9", nodeStroke: "#2e7d32", nodeFontSize: 14, edgeStroke: "#2e7d32", edgeStrokeWidth: 2, decisionFill: "#f1f8e9", startEndFill: "#e8f5e9", inputOutputFill: "#fff8e1" },
+  { id: "ocean", name: "Ocean", nodeFill: "#e3f2fd", nodeStroke: "#0d47a1", nodeFontSize: 14, edgeStroke: "#0d47a1", edgeStrokeWidth: 2, decisionFill: "#e8eaf6", startEndFill: "#e3f2fd", inputOutputFill: "#e0f7fa" },
+]
 
 /* ── Helpers ── */
 

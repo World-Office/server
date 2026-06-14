@@ -136,3 +136,16 @@ export interface FlowchartDocument {
   edges: FlowchartEdge[]
   viewBox?: { x: number; y: number; width: number; height: number }
 }
+
+export interface FlowchartTheme {
+  id: string
+  name: string
+  nodeFill: string
+  nodeStroke: string
+  nodeFontSize: number
+  edgeStroke: string
+  edgeStrokeWidth: number
+  decisionFill: string
+  startEndFill: string
+  inputOutputFill: string
+}
