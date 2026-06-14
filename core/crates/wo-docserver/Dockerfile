@@ -6,13 +6,19 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Build the Rust binary
 # ---------------------------------------------------------------------------
-FROM rust:1.84-bookworm AS builder
+FROM rust:bookworm AS builder
 
 WORKDIR /app
 
-# Copy the entire workspace — Cargo requires all workspace members to be present
-# for dependency resolution, even when building a single crate with -p.
+# Copy the workspace Cargo.toml and all member directories — Cargo requires
+# all workspace members to be present for dependency resolution, even when
+# building a single crate with -p.
+COPY Cargo.toml ./
+COPY Cargo.lock ./
 COPY core/ ./core/
+COPY services/ ./services/
+COPY core-enterprise/ ./core-enterprise/
+COPY services-enterprise/ ./services-enterprise/
 
 # Build only the wo-docserver binary in release mode.
 # CARGO_TARGET_DIR is set to /app/target to avoid polluting the source tree.

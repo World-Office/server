@@ -9,16 +9,21 @@
 # ---------------------------------------------------------------------------
 # Stage 1: Build the Rust binary
 # ---------------------------------------------------------------------------
-FROM rust:1.84-bookworm AS builder
+FROM rust:bookworm AS builder
 
 ARG SERVICE_NAME
 
 WORKDIR /app
 
-# Copy the entire workspace — Cargo requires all workspace members to be present
-# for dependency resolution, even when building a single crate with -p.
+# Copy the workspace root Cargo.toml and all member directories — Cargo requires
+# all workspace members to be present for dependency resolution, even when
+# building a single crate with -p.
+COPY Cargo.toml ./
+COPY Cargo.lock ./
 COPY core/ ./core/
 COPY services/ ./services/
+COPY core-enterprise/ ./core-enterprise/
+COPY services-enterprise/ ./services-enterprise/
 
 # Build only the selected service binary in release mode.
 # CARGO_TARGET_DIR is set to /app/target to avoid polluting the source tree.
@@ -31,6 +36,7 @@ RUN cargo build --release -p "${SERVICE_NAME}"
 FROM debian:bookworm-slim AS runtime
 
 ARG SERVICE_NAME
+ENV SERVICE_NAME=${SERVICE_NAME}
 
 # Install runtime dependencies: curl for the HEALTHCHECK, ca-certificates for
 # HTTPS outbound requests (WOPI callbacks, reqwest).
@@ -59,4 +65,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-ENTRYPOINT ["${SERVICE_NAME}"]
+ENTRYPOINT ["sh", "-c", "exec /usr/local/bin/${SERVICE_NAME} \"$@\"", "--"]

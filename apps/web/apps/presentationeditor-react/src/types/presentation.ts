@@ -377,3 +377,20 @@ export interface TableCell {
 }
 
 export type TextDirection = "ltr" | "rtl";
+
+export type SlideBackgroundType = "none" | "solid" | "gradient" | "image";
+
+export interface SlideBackground {
+	type: SlideBackgroundType;
+	color?: string; // hex for solid or gradient stops
+	gradientStops?: Array<{ position: number; color: string }>;
+	gradientAngle?: number; // 0-360 degrees for linear gradient
+	imageData?: string; // base64 or URL
+}
+
+export interface BackgroundTemplate {
+	id: string;
+	name: string;
+	preview: string; // thumbnail URL or base64
+	background: SlideBackground;
+}
