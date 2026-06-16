@@ -5,14 +5,18 @@ import { collaborationStore } from "../lib/collaboration"
 import { collabSendRef, currentUser } from "../lib/collaboration"
 import { getTotalPages, init, renderPage, setTotalPages } from "../lib/wasm-renderer"
 import { documentStore } from "../stores/DocumentStore"
+import { WopiClient } from "@world-office/wopi-client"
 
 const DEMO_PAGE_COUNT = 3
 
 const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const svgRef = useRef<HTMLDivElement>(null)
   const initialized = useRef(false)
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null)
-  const { currentPage, zoomLevel } = documentStore
+  const [svgContent, setSvgContent] = useState<string | null>(null)
+  const [isSvgLoading, setIsSvgLoading] = useState(false)
+  const { currentPage, zoomLevel, format } = documentStore
 
   // Initialize renderer once on mount (captures store values at mount time)
   useEffect(() => {
@@ -31,6 +35,34 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
     if (!initialized.current) return
     renderPage(currentPage, zoomLevel)
   }, [currentPage, zoomLevel])
+
+  useEffect(() => {
+    if (format !== "svg" || !documentStore.isDocReady || !documentStore.wopiConnection?.wopiFileId) return
+
+    setIsSvgLoading(true)
+    setSvgContent(null)
+
+    const loadSvg = async () => {
+      try {
+        const conn = documentStore.wopiConnection
+        if (!conn) return
+        const { content } = await WopiClient.loadDocument({
+          wopiFileId: conn.wopiFileId!,
+          wopiAccessToken: conn.wopiAccessToken!,
+          docserverBase: conn.docserverBase,
+          format: "svg",
+        })
+        const text = await content.text()
+        setSvgContent(text)
+      } catch (err) {
+        console.error("Failed to load SVG:", err)
+      } finally {
+        setIsSvgLoading(false)
+      }
+    }
+
+    loadSvg()
+  }, [format, documentStore.isDocReady, documentStore.wopiConnection])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -92,11 +124,30 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
           position: "relative",
         }}
       >
-        <canvas
-          ref={canvasRef}
-          className="de-document-canvas"
-          style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1)" }}
-        />
+        {format === "svg" ? (
+          svgContent ? (
+            <div
+              ref={svgRef}
+              dangerouslySetInnerHTML={{ __html: svgContent }}
+              style={{
+                boxShadow: "0 2px 8px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1)",
+                width: "100%",
+                maxWidth: "100%",
+                overflow: "auto",
+              }}
+            />
+          ) : (
+            <div style={{ padding: "40px", color: "#666" }}>
+              {isSvgLoading ? "Loading SVG..." : "Failed to load SVG"}
+            </div>
+          )
+        ) : (
+          <canvas
+            ref={canvasRef}
+            className="de-document-canvas"
+            style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1)" }}
+          />
+        )}
 
         {remoteCursors.map(([uid, cursor]) => {
           const user = collaborationStore.users.find((u) => u.id === uid)
