@@ -1,6 +1,7 @@
 import { observer } from "mobx-react-lite";
 import { type JSX, useCallback, useEffect, useRef, useState } from "react";
 import { presentationStore } from "../../stores/PresentationStore";
+import { WopiClient } from "@world-office/wopi-client";
 import type {
 	ChartData,
 	ConnectorData,
@@ -1179,6 +1180,9 @@ const ObservedSlideCanvas = observer(
 			cx: number;
 			cy: number;
 		} | null>(null);
+		const svgRef = useRef<HTMLDivElement>(null);
+		const [svgContent, setSvgContent] = useState<string | null>(null);
+		const [isSvgLoading, setIsSvgLoading] = useState(false);
 		const onDragStart = useCallback((e: React.MouseEvent, shapeId: string) => {
 			const slide = presentationStore.slides[presentationStore.currentSlide];
 			// Determine which shapes to drag: if the clicked shape is part of multi-selection, drag all selected
@@ -1351,6 +1355,32 @@ const ObservedSlideCanvas = observer(
 			editingShapeId,
 		} = presentationStore;
 		const slide = slides[currentSlide];
+
+	const bgStyle = slide?.background
+		? (() => {
+				const bg = slide.background!;
+				if (bg.type === "none") return {};
+				if (bg.type === "solid")
+					return { backgroundColor: bg.color || "#ffffff" };
+				if (bg.type === "gradient" && bg.gradientStops?.length) {
+					const stops = bg.gradientStops
+						.map((s) => `${s.color} ${s.position * 100}%`)
+						.join(", ");
+					return {
+						background: `linear-gradient(${bg.gradientAngle || 0}deg, ${stops})`,
+					};
+				}
+				if (bg.type === "image" && bg.imageData) {
+					return {
+						backgroundImage: `url(${bg.imageData})`,
+						backgroundSize: "cover",
+						backgroundPosition: "center",
+					};
+				}
+				return {};
+		  })()
+		: {};
+
 		useEffect(() => {
 			if (!slide || !isPreviewPlaying) return;
 			const anim = slide.animations?.[previewStep];
@@ -1361,6 +1391,42 @@ const ObservedSlideCanvas = observer(
 			}, delay);
 			return () => clearTimeout(timer);
 		}, [isPreviewPlaying, previewStep, slide, slide?.animations]);
+
+		// Load SVG when format=svg is requested
+		useEffect(() => {
+			if (presentationStore.format !== "svg" || !presentationStore.isDocReady || !presentationStore.wopiFileId) return;
+
+			setIsSvgLoading(true);
+			setSvgContent(null);
+
+			const loadSvg = async () => {
+				try {
+					const conn = presentationStore.wopiFileId && presentationStore.wopiAccessToken && presentationStore.docserverBase
+						? {
+							wopiFileId: presentationStore.wopiFileId,
+							wopiAccessToken: presentationStore.wopiAccessToken,
+							docserverBase: presentationStore.docserverBase,
+						}
+						: null;
+					if (!conn) return;
+					const { content } = await WopiClient.loadDocument({
+						wopiFileId: conn.wopiFileId!,
+						wopiAccessToken: conn.wopiAccessToken!,
+						docserverBase: conn.docserverBase,
+						format: "svg",
+					});
+					const text = await content.text();
+					setSvgContent(text);
+				} catch (err) {
+					console.error("Failed to load SVG:", err);
+				} finally {
+					setIsSvgLoading(false);
+				}
+			};
+
+			loadSvg();
+		}, [presentationStore.format, presentationStore.isDocReady, presentationStore.wopiFileId, presentationStore.wopiAccessToken, presentationStore.docserverBase]);
+
 		if (!slide) return <div className="prese-canvas-empty">No slides</div>;
 
 		const aspectRatio = slideSize === "widescreen" ? 16 / 9 : 4 / 3;
@@ -1440,7 +1506,7 @@ const ObservedSlideCanvas = observer(
 					onPointerMove={handlePointerMove}
 					onPointerLeave={handlePointerLeave}
 				>
-					<div className="prese-canvas-background" />
+					<div className="prese-canvas-background" style={bgStyle} />
 
 					{slide.layout === "title" && (
 						<div className="prese-canvas-placeholder prese-canvas-placeholder-title">
@@ -1503,15 +1569,40 @@ const ObservedSlideCanvas = observer(
 						</div>
 					)}
 
-					{slide.shapes?.map((shape) =>
-						renderShape(
-							shape,
-							selectedShapeIds.includes(shape.id),
-							onDragStart,
-							onResizeStartCB,
-							handleInlineDoubleClick,
-							onRotateStart,
-						),
+					{presentationStore.format === "svg" ? (
+						<div
+							className="prese-canvas-slide"
+							style={{
+								width: `${canvasWidth}px`,
+								height: `${canvasHeight}px`,
+							}}
+						>
+							{isSvgLoading ? (
+								<div className="prese-canvas-empty">Loading SVG...</div>
+							) : svgContent ? (
+								<div
+									ref={svgRef}
+									dangerouslySetInnerHTML={{ __html: svgContent }}
+									style={{
+										width: "100%",
+										height: "100%",
+									}}
+								/>
+							) : (
+								<div className="prese-canvas-empty">No SVG content</div>
+							)}
+						</div>
+					) : (
+						slide.shapes?.map((shape) =>
+							renderShape(
+								shape,
+								selectedShapeIds.includes(shape.id),
+								onDragStart,
+								onResizeStartCB,
+								handleInlineDoubleClick,
+								onRotateStart,
+							),
+						)
 					)}
 
 					{/* Inline text editing overlay */}

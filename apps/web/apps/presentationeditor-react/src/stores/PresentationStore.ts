@@ -58,6 +58,7 @@ export class PresentationStore {
 	wopiFileId: string | null = null;
 	wopiAccessToken: string | null = null;
 	docserverBase = "";
+	format: "native" | "svg" = "native";
 
 	markModified(): void {
 		this.isModified = true;
@@ -890,6 +891,51 @@ export class PresentationStore {
 		}
 	}
 
+	/* Distribute tools — require 3+ selected shapes */
+	distributeHorizontally(): void {
+		this.pushSnapshot();
+		const slide = this.slides[this.currentSlide];
+		if (!slide?.shapes || this.selectedShapeIds.length < 3) return;
+
+		const shapes = this.selectedShapeIds
+			.map((id) => slide.shapes.find((s) => s.id === id))
+			.filter((s): s is ShapeData => !!s)
+			.sort((a, b) => a.x - b.x);
+
+		const minX = shapes[0].x;
+		const maxRight = shapes[shapes.length - 1].x + shapes[shapes.length - 1].width;
+		const totalWidth = shapes.reduce((sum, s) => sum + s.width, 0);
+		const gap = (maxRight - minX - totalWidth) / (shapes.length - 1);
+
+		let currentX = minX;
+		for (const s of shapes) {
+			s.x = Math.round(currentX);
+			currentX += s.width + gap;
+		}
+	}
+
+	distributeVertically(): void {
+		this.pushSnapshot();
+		const slide = this.slides[this.currentSlide];
+		if (!slide?.shapes || this.selectedShapeIds.length < 3) return;
+
+		const shapes = this.selectedShapeIds
+			.map((id) => slide.shapes.find((s) => s.id === id))
+			.filter((s): s is ShapeData => !!s)
+			.sort((a, b) => a.y - b.y);
+
+		const minY = shapes[0].y;
+		const maxBottom = shapes[shapes.length - 1].y + shapes[shapes.length - 1].height;
+		const totalHeight = shapes.reduce((sum, s) => sum + s.height, 0);
+		const gap = (maxBottom - minY - totalHeight) / (shapes.length - 1);
+
+		let currentY = minY;
+		for (const s of shapes) {
+			s.y = Math.round(currentY);
+			currentY += s.height + gap;
+		}
+	}
+
 	bringToFrontSelected(): void {
 		this.applyZOrderToSelected(() => {
 			const slide = this.slides[this.currentSlide];
@@ -1238,6 +1284,10 @@ export class PresentationStore {
 
 	setAdvanceMode(mode: AdvanceMode): void {
 		this.advanceMode = mode;
+	}
+
+	setFormat(format: "native" | "svg"): void {
+		this.format = format;
 	}
 
 	setAdvanceTiming(seconds: number): void {
