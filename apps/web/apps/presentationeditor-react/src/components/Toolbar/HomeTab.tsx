@@ -269,6 +269,24 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 					<button
 						type="button"
 						className="prese-hometab-btn"
+						title="Distribute Horizontally"
+						onClick={() => presentationStore.distributeHorizontally()}
+					>
+						Distribute H
+					</button>
+					<button
+						type="button"
+						className="prese-hometab-btn"
+						title="Distribute Vertically"
+						onClick={() => presentationStore.distributeVertically()}
+					>
+						Distribute V
+					</button>
+				</div>
+				<div className="prese-hometab-elset">
+					<button
+						type="button"
+						className="prese-hometab-btn"
 						title="Decrease Indent"
 					>
 						Decrease Indent
