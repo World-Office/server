@@ -15,7 +15,14 @@ use axum::{
 };
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
+use wo_x2t::ConversionRouter;
+
+/// Shared conversion router instance (cached after first use).
+fn conversion_router() -> &'static ConversionRouter {
+    static ROUTER: OnceLock<ConversionRouter> = OnceLock::new();
+    ROUTER.get_or_init(ConversionRouter::new)
+}
 
 /// State shared by all WOPI handlers.
 #[derive(Clone)]
@@ -54,6 +61,13 @@ impl<S: StorageBackend> WopiState<S> {
 pub struct WopiQueryParams {
     /// Access token for authentication
     access_token: String,
+    /// Output format (e.g., "svg", "pdf", "html")
+    #[serde(default = "default_format")]
+    format: String,
+}
+
+fn default_format() -> String {
+    "native".to_string()
 }
 
 /// CheckFileInfo handler.
@@ -99,7 +113,58 @@ pub async fn get_file<S: StorageBackend>(
     // Read file content
     let content = state.storage.read_file(&file_id).await?;
 
-    Ok(Body::from(content))
+    // Convert to requested format if needed
+    let output = if params.format == "svg" {
+        // Determine source format from file extension
+        let source_format = infer_format(&file_id)?;
+
+        // Convert to SVG using the shared conversion router
+        let result = conversion_router().convert(&source_format, "svg", &content);
+        match result.status {
+            wo_x2t::ConversionStatus::Success | wo_x2t::ConversionStatus::PartialSuccess => {
+                result
+                    .output
+                    .ok_or_else(|| {
+                        WopiError::InvalidRequest("SVG conversion produced no output".to_string())
+                    })?
+                    .data
+            }
+            _ => {
+                let err_msg = result
+                    .error
+                    .unwrap_or_else(|| "Unknown conversion error".to_string());
+                return Err(WopiError::InvalidRequest(format!(
+                    "SVG conversion failed: {}",
+                    err_msg
+                )));
+            }
+        }
+    } else {
+        // Return native format
+        content
+    };
+
+    Ok(Body::from(output))
+}
+
+/// Infer source format from file ID (e.g., "document.docx" -> "docx")
+fn infer_format(file_id: &str) -> Result<String> {
+    let ext = file_id
+        .rsplit('.')
+        .next()
+        .ok_or_else(|| WopiError::InvalidRequest("No file extension".to_string()))?;
+
+    match ext.to_lowercase().as_str() {
+        "docx" => Ok("docx".to_string()),
+        "pptx" => Ok("pptx".to_string()),
+        "xlsx" => Ok("xlsx".to_string()),
+        "odt" => Ok("odt".to_string()),
+        "ods" => Ok("ods".to_string()),
+        "odp" => Ok("odp".to_string()),
+        "vsdx" => Ok("vsdx".to_string()),
+        "pdf" => Ok("pdf".to_string()),
+        _ => Err(WopiError::InvalidRequest(format!("Unsupported format: {}", ext))),
+    }
 }
 
 /// PutFile handler.
