@@ -25,7 +25,10 @@ export class WopiClient {
    * Call GetFile to download document content as a Blob.
    */
   static async getFile(conn: WopiConnection): Promise<Blob> {
-    const url = `${conn.docserverBase}/wopi/files/${conn.wopiFileId}/contents`
+    let url = `${conn.docserverBase}/wopi/files/${conn.wopiFileId}/contents`
+    if (conn.format) {
+      url += `?format=${encodeURIComponent(conn.format)}`
+    }
     const res = await fetch(url, { headers: authHeaders(conn.wopiAccessToken) })
     if (!res.ok) {
       throw new Error(`WOPI GetFile failed: ${res.status}`)
