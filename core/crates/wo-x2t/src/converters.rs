@@ -8730,4 +8730,48 @@ mod tests {
         assert_eq!(pptx_wo.source_format(), "pptx");
         assert_eq!(pptx_wo.target_format(), "wo-presentation");
     }
+
+    #[test]
+    fn test_odp_roundtrip() {
+        let wo_json = r#"{
+            "version": 1,
+            "slideSize": "widescreen",
+            "themeType": "default",
+            "slides": [{
+                "id": "slide1",
+                "title": "Test Slide",
+                "layout": "title",
+                "shapes": [{
+                    "id": "shape1",
+                    "type": "textbox",
+                    "x": 1.0, "y": 1.0, "width": 10.0, "height": 5.0,
+                    "rotation": 0.0, "zIndex": 1,
+                    "text": "Hello ODP World!"
+                }]
+            }]
+        }"#;
+
+        let wo_odp = WoPresentationToOdpConverter;
+        let odp_bytes = wo_odp.convert(wo_json.as_bytes()).expect("WoPresentation→ODP should succeed");
+        assert!(!odp_bytes.is_empty());
+        assert_eq!(&odp_bytes[..4], b"PK\x03\x04");
+
+        use std::io::Read;
+        let cursor = std::io::Cursor::new(&odp_bytes);
+        let mut archive = zip::ZipArchive::new(cursor).expect("ODP must be readable as ZIP");
+        let mut mimetype = String::new();
+        archive.by_name("mimetype").unwrap().read_to_string(&mut mimetype).unwrap();
+        assert_eq!(mimetype.trim(), "application/vnd.oasis.opendocument.presentation");
+
+        let mut content = String::new();
+        archive.by_name("content.xml").unwrap().read_to_string(&mut content).unwrap();
+        assert!(content.contains("draw:page"));
+        assert!(content.contains("Hello ODP World!"));
+
+        let odp_wo = OdpToWoPresentationConverter;
+        let wo_bytes = odp_wo.convert(&odp_bytes).expect("ODP→WoPresentation should succeed");
+        let wo_output = String::from_utf8(wo_bytes).expect("Output must be valid UTF-8");
+        assert!(wo_output.contains("Hello ODP World!"));
+        assert!(wo_output.contains("textbox"));
+    }
 }
