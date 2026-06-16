@@ -3,6 +3,7 @@ export interface WopiConnection {
   wopiFileId: string
   wopiAccessToken: string
   docserverBase: string
+  format?: string
 }
 
 /** Response from WOPI CheckFileInfo endpoint */
