@@ -19,6 +19,7 @@ export class VisioStore {
   wopiFileId: string | null = null
   wopiAccessToken: string | null = null
   docserverBase: string = ""
+  format: "native" | "svg" = "native"
 
   markModified(): void {
     this.isModified = true
@@ -35,6 +36,10 @@ export class VisioStore {
     this.wopiAccessToken = conn.wopiAccessToken
     this.docserverBase = conn.docserverBase
     return true
+  }
+
+  setFormat(format: "native" | "svg"): void {
+    this.format = format
   }
 
   async loadFromWopi(): Promise<void> {

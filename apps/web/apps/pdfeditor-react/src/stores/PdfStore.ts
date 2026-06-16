@@ -20,6 +20,7 @@ export class PdfStore {
   mode: PdfMode | null = null
   document: PdfDocument | null = null
   isDocReady = false
+  format: "native" | "svg" = "native"
 
   /* Toolbar */
   activeTab: PdfTab | null = null
@@ -104,6 +105,10 @@ export class PdfStore {
 
   setDocReady(ready: boolean): void {
     this.isDocReady = ready
+  }
+
+  setFormat(format: "native" | "svg"): void {
+    this.format = format
   }
 
   setActiveTab(tab: PdfTab | null): void {
