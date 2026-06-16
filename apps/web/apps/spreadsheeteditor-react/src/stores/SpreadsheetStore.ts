@@ -56,6 +56,7 @@ export class SpreadsheetStore {
   activeCell = { row: 0, col: 0 }
   selectionRange = { startRow: 0, startCol: 0, endRow: 0, endCol: 0 }
   cellInfo: { value?: string; formula?: string; format?: string } = {}
+  format: "native" | "svg" = "native"
 
   /* Statistics */
   statistics = { average: 0, count: 0, min: 0, max: 0, sum: 0 }
@@ -227,6 +228,10 @@ export class SpreadsheetStore {
 
   setCellInfo(info: { value?: string; formula?: string; format?: string }): void {
     this.cellInfo = info
+  }
+
+  setFormat(format: "native" | "svg"): void {
+    this.format = format
   }
 
   setFormulaInput(value: string): void {

@@ -85,6 +85,7 @@ export class DocumentStore {
   filePath: string | null = null
   fileName = "Untitled Document"
   isDirty = false
+  format: "native" | "svg" = "native"
 
   constructor() {
     makeAutoObservable(this)
@@ -322,6 +323,10 @@ export class DocumentStore {
     a.download = this.fileName || "document.docx"
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  setFormat(format: "native" | "svg"): void {
+    this.format = format
   }
 }
 
