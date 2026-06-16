@@ -47,7 +47,7 @@
 - ✅ **Slide Backgrounds (SS10)** — None/solid/gradient/image background types, color pickers, gradient angle slider in DesignTab
 - ✅ **Tables on slides** — TableData types, SVG rendering, TablePicker popup, InsertTab wiring
 - ✅ **PPTX full roundtrip (SS8b)** — WoPresentation↔PptxPresentation converter mit Coordinate-Mapping, Base64-Image-Encoding, Shape-Type-Mapping, Transition-Effect-Mapping, 216 Tests
-- ❐ ODP import/export
+- ✅ **ODP import/export (SS8c)** — WoPresentation↔ODP converter, valid ZIP with correct mimetype, draw:page/shape serialization, roundtrip verified
 - ❐ Realtime coauthoring for presentations
 
 ### Flowchart Editor
