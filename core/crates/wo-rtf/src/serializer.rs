@@ -33,7 +33,7 @@ impl RtfSerializer {
                     out.push_str(&charset.replace("cp", ""));
                 }
                 out.push(' ');
-                out.push_str(&font.name);
+                out.push_str(&escape_rtf_text(&font.name));
                 out.push_str(";}");
             }
             out.push_str("}\n");
@@ -59,12 +59,12 @@ impl RtfSerializer {
             out.push_str("{\\info");
             if let Some(ref title) = info.title {
                 out.push_str("{\\title ");
-                out.push_str(title);
+                out.push_str(&escape_rtf_text(title));
                 out.push('}');
             }
             if let Some(ref author) = info.author {
                 out.push_str("{\\author ");
-                out.push_str(author);
+                out.push_str(&escape_rtf_text(author));
                 out.push('}');
             }
             out.push_str("}\n");

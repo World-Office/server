@@ -80,10 +80,10 @@ impl OdfSerializer {
                 for text_content in content {
                     match text_content {
                         OdfTextContent::Paragraph(paragraph) => {
-                            svg.push_str(&format!("  <text x=\"0\" y=\"0\">{}</text>\n", paragraph.text));
+                            svg.push_str(&format!("  <text x=\"0\" y=\"0\">{}</text>\n", escape_xml(&paragraph.text)));
                         }
                         OdfTextContent::Heading(heading) => {
-                            svg.push_str(&format!("  <text x=\"0\" y=\"0\" font-size=\"{}\">{}</text>\n", heading.level * 10, heading.text));
+                            svg.push_str(&format!("  <text x=\"0\" y=\"0\" font-size=\"{}\">{}</text>\n", heading.level * 10, escape_xml(&heading.text)));
                         }
                         _ => {}
                     }
@@ -98,7 +98,7 @@ impl OdfSerializer {
                             let y = cell.row * 50;
                             svg.push_str(&format!("    <rect x=\"{}\" y=\"{}\" width=\"100\" height=\"50\" ", x, y));
                             svg.push_str("stroke=\"black\" fill=\"white\" />\n");
-                            svg.push_str(&format!("      <text x=\"{}\" y=\"{}\">{}</text>\n", x + 10, y + 30, cell.text));
+                            svg.push_str(&format!("      <text x=\"{}\" y=\"{}\">{}</text>\n", x + 10, y + 30, escape_xml(&cell.text)));
                         }
                     }
                     svg.push_str("  </g>\n");
@@ -117,7 +117,7 @@ impl OdfSerializer {
                                 let height: i32 = shape.height.parse().unwrap_or(50);
                                 svg.push_str(&format!("    <rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" ", x, y, width, height));
                                 svg.push_str("stroke=\"black\" fill=\"white\" />\n");
-                                svg.push_str(&format!("      <text x=\"{}\" y=\"{}\">{}</text>\n", x + 5, y + 30, slide.text_content));
+                                svg.push_str(&format!("      <text x=\"{}\" y=\"{}\">{}</text>\n", x + 5, y + 30, escape_xml(&slide.text_content)));
                             }
                             _ => {
                                 let x: i32 = shape.x.parse().unwrap_or(0);
