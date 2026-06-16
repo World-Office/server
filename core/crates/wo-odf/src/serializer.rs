@@ -67,6 +67,79 @@ impl OdfSerializer {
         let bytes = writer.finish()?;
         Ok(bytes)
     }
+
+    /// Serialize the document to SVG bytes.
+    pub fn serialize_svg(&self, doc: &OdfDocument) -> Result<Vec<u8>, anyhow::Error> {
+        let mut svg = String::new();
+        svg.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        svg.push_str("<svg xmlns=\"http://www.w3.org/2000/svg\" ");
+        svg.push_str("xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n");
+
+        match &doc.content {
+            OdfContent::Text { content, .. } => {
+                for text_content in content {
+                    match text_content {
+                        OdfTextContent::Paragraph(paragraph) => {
+                            svg.push_str(&format!("  <text x=\"0\" y=\"0\">{}</text>\n", paragraph.text));
+                        }
+                        OdfTextContent::Heading(heading) => {
+                            svg.push_str(&format!("  <text x=\"0\" y=\"0\" font-size=\"{}\">{}</text>\n", heading.level * 10, heading.text));
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            OdfContent::Spreadsheet { sheets } => {
+                for sheet in sheets {
+                    svg.push_str("  <g transform=\"translate(0,0)\">\n");
+                    for row in &sheet.rows {
+                        for cell in &row.cells {
+                            let x = cell.column * 100;
+                            let y = cell.row * 50;
+                            svg.push_str(&format!("    <rect x=\"{}\" y=\"{}\" width=\"100\" height=\"50\" ", x, y));
+                            svg.push_str("stroke=\"black\" fill=\"white\" />\n");
+                            svg.push_str(&format!("      <text x=\"{}\" y=\"{}\">{}</text>\n", x + 10, y + 30, cell.text));
+                        }
+                    }
+                    svg.push_str("  </g>\n");
+                }
+            }
+            OdfContent::Presentation { slides } => {
+                for (slide_idx, slide) in slides.iter().enumerate() {
+                    svg.push_str(&format!("  <!-- Slide {} -->\n", slide_idx + 1));
+                    svg.push_str("  <g transform=\"translate(0,0)\">\n");
+                    for shape in &slide.shapes {
+                        match shape.shape_type {
+                            OdpShapeType::TextBox => {
+                                let x: i32 = shape.x.parse().unwrap_or(0);
+                                let y: i32 = shape.y.parse().unwrap_or(0);
+                                let width: i32 = shape.width.parse().unwrap_or(100);
+                                let height: i32 = shape.height.parse().unwrap_or(50);
+                                svg.push_str(&format!("    <rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" ", x, y, width, height));
+                                svg.push_str("stroke=\"black\" fill=\"white\" />\n");
+                                svg.push_str(&format!("      <text x=\"{}\" y=\"{}\">{}</text>\n", x + 5, y + 30, slide.text_content));
+                            }
+                            _ => {
+                                let x: i32 = shape.x.parse().unwrap_or(0);
+                                let y: i32 = shape.y.parse().unwrap_or(0);
+                                let width: i32 = shape.width.parse().unwrap_or(100);
+                                let height: i32 = shape.height.parse().unwrap_or(50);
+                                svg.push_str(&format!("    <rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" ", x, y, width, height));
+                                svg.push_str("stroke=\"black\" fill=\"none\" />\n");
+                            }
+                        }
+                    }
+                    svg.push_str("  </g>\n");
+                }
+            }
+            _ => {
+                svg.push_str("  <!-- Content type not yet supported in SVG export -->\n");
+            }
+        }
+
+        svg.push_str("</svg>\n");
+        Ok(svg.into_bytes())
+    }
 }
 
 impl Default for OdfSerializer {
@@ -254,7 +327,6 @@ fn build_content_xml(doc: &OdfDocument) -> String {
 }
 
 /// Collect auto-styles from spans (bold, italic, underline) and emit style elements.
-/// Returns the number of styles generated.
 fn collect_auto_styles(content: &[OdfTextContent], xml: &mut String, idx: &mut u32) {
     for item in content {
         match item {
