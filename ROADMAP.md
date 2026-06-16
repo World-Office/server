@@ -41,6 +41,10 @@
 - ✅ **Clipboard (SS6)** — copy/cut/paste shapes with 30px offset on paste, HomeTab button wiring
 - ✅ **Shape Rotation Handle (SS7)** — drag-to-rotate circle + connecting line on all 11 shape types, atan2-based angle delta, canvas transform
 - ✅ **Shape Alignment Tools (SS7)** — 6-axis alignment (left/center/right/top/middle/bottom) in HomeTab Arrange dropdown, getSlideDimensions() helper
+- ✅ **Distribute Tools (SS7)** — Distribute Horizontally/Vertically for 3+ selected shapes, even equal gap calculation
+- ✅ **Multi-Select & Shape Grouping (SS8a)** — Shift-click multi-select (selectedShapeIds), Ctrl+A select-all, shape grouping/ungrouping, multi-drag
+- ✅ **Image Upload (SS8a)** — Insert images from file via InsertTab Pictures button, image shape type with sizing/rotation handles
+- ✅ **Slide Backgrounds (SS10)** — None/solid/gradient/image background types, color pickers, gradient angle slider in DesignTab
 - ✅ **Tables on slides** — TableData types, SVG rendering, TablePicker popup, InsertTab wiring
 - ✅ **PPTX full roundtrip (SS8b)** — WoPresentation↔PptxPresentation converter mit Coordinate-Mapping, Base64-Image-Encoding, Shape-Type-Mapping, Transition-Effect-Mapping, 216 Tests
 - ❐ ODP import/export
