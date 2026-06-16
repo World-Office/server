@@ -1,11 +1,15 @@
 import { observer } from "mobx-react-lite"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { init, renderPage } from "../lib/wasm-renderer"
+import { WopiClient } from "@world-office/wopi-client"
 import { spreadsheetStore } from "../stores/SpreadsheetStore"
 
 const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const svgRef = useRef<HTMLDivElement>(null)
   const initialized = useRef(false)
+  const [svgContent, setSvgContent] = useState<string | null>(null)
+  const [isSvgLoading, setIsSvgLoading] = useState(false)
 
   // Initialize renderer once on mount
   useEffect(() => {
@@ -24,6 +28,35 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
     renderPage(0, zoomLevel)
   }, [zoomLevel])
 
+  // Load SVG when format=svg is requested
+  useEffect(() => {
+    if (spreadsheetStore.format !== "svg" || !spreadsheetStore.isDocReady || !spreadsheetStore.wopiConnection) return
+
+    setIsSvgLoading(true)
+    setSvgContent(null)
+
+    const loadSvg = async () => {
+      try {
+        const conn = spreadsheetStore.wopiConnection
+        if (!conn) return
+        const { content } = await WopiClient.loadDocument({
+          wopiFileId: conn.wopiFileId,
+          wopiAccessToken: conn.wopiAccessToken,
+          docserverBase: conn.docserverBase,
+          format: "svg",
+        })
+        const text = await content.text()
+        setSvgContent(text)
+      } catch (err) {
+        console.error("Failed to load SVG:", err)
+      } finally {
+        setIsSvgLoading(false)
+      }
+    }
+
+    loadSvg()
+  }, [spreadsheetStore.format, spreadsheetStore.isDocReady, spreadsheetStore.wopiConnection])
+
   return (
     <div
       className="se-document-holder"
@@ -36,16 +69,38 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
         backgroundColor: "#e8e8e8",
       }}
     >
-      {/* Canvas container with shadow */}
-      <div
-        style={{ margin: "16px auto", flexShrink: 0, display: "flex", justifyContent: "center" }}
-      >
-        <canvas
-          ref={canvasRef}
-          className="se-document-canvas"
-          style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1)" }}
-        />
-      </div>
+      {spreadsheetStore.format === "svg" ? (
+        <div
+          style={{ margin: "16px auto", flexShrink: 0, display: "flex", justifyContent: "center" }}
+        >
+          {isSvgLoading ? (
+            <div className="se-document-canvas">Loading SVG...</div>
+          ) : svgContent ? (
+            <div
+              ref={svgRef}
+              className="se-document-canvas"
+              style={{
+                boxShadow: "0 2px 8px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1)",
+                width: "100%",
+                height: "100%",
+              }}
+              dangerouslySetInnerHTML={{ __html: svgContent }}
+            />
+          ) : (
+            <div className="se-document-canvas">No SVG content</div>
+          )}
+        </div>
+      ) : (
+        <div
+          style={{ margin: "16px auto", flexShrink: 0, display: "flex", justifyContent: "center" }}
+        >
+          <canvas
+            ref={canvasRef}
+            className="se-document-canvas"
+            style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1)" }}
+          />
+        </div>
+      )}
     </div>
   )
 })
