@@ -63,10 +63,10 @@
 ## Codebase Hardening
 
 ### HTML Serializer Escaping
-- ❐ **wo-html: Escape attribute values** — `"` → `&quot;`, `&` → `&amp;` in allen Attribut-Outputs (`format!(" ...=\"{}\"", v)`)
-- ❐ **wo-html: Escape text content** — `<` → `&lt;`, `>` → `&gt;`, `&` → `&amp;` in allen Text- und `InlineElement::Text`-Ausgaben
-- ❐ **wo-html: Escape inline code** — `InlineElement::Code { content }` roh im Text, Escaping fehlt
-- ❐ **wo-html: Escape `<pre>` und `<style>` content** — beide raw, `</pre>` o.`</style>` im Content bricht HTML
-- ❐ **wo-html: Escape Link/Image href/src** — `"` im URL bricht `href="..."` / `src="..."`
-- ❐ **wo-html: Roundtrip-Tests mit Sonderzeichen** — Test-Corpus mit `"`, `<`, `>`, `&` in Texten und Attributen
-- ❐ **Audit aller anderen Serializer** (wo-rtf, wo-fb2, wo-odf, wo-ooxml, wo-epub) auf fehlendes Escaping
+- ✅ **wo-html: Escape attribute values** — `"` → `&quot;`, `&` → `&amp;` in allen Attribut-Outputs (`format!(" ...=\"{}\"", v)`)
+- ✅ **wo-html: Escape text content** — `<` → `&lt;`, `>` → `&gt;`, `&` → `&amp;` in allen Text- und `InlineElement::Text`-Ausgaben
+- ✅ **wo-html: Escape inline code** — `InlineElement::Code { content }` via `escape_text()`
+- ✅ **wo-html: Escape `<pre>` und `<style>` content** — beide via `escape_text()`
+- ✅ **wo-html: Escape Link/Image href/src** — via `escape_attr()`
+- ✅ **wo-html: Roundtrip-Tests mit Sonderzeichen** — 39 Tests inkl. Sonderzeichen-Corpus
+- ✅ **Audit aller anderen Serializer** (wo-rtf, wo-fb2, wo-odf, wo-ooxml, wo-epub) — wo-rtf fixed 3 unescaped spots, wo-odf fixed 4 unescaped spots in serialize_svg(), rest already properly escaped
