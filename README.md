@@ -174,7 +174,7 @@ The `apps/web/` directory contains the document editing frontend. Individual edi
 
 documenteditor, documenteditor-react, spreadsheeteditor, spreadsheeteditor-react, presentationeditor, presentationeditor-react, pdfeditor, pdfeditor-react, visioeditor, visioeditor-react
 
-The **presentation editor** includes a full slides editor with: shape drawing (8 types), drag-move/resize/rotate, inline text editing, undo/redo, clipboard, shape properties panel (fill, stroke, position, font), shape alignment (6-axis), z-order arrange, tables, charts (bar/column/line/pie/doughnut), connectors, animations & transitions, presenter view, and zoom controls. Built with React + MobX.
+The **presentation editor** includes a full slides editor with: shape drawing (8 types), drag-move/resize/rotate, inline text editing, undo/redo, clipboard, shape properties panel (fill, stroke, position, font), multi-select & shape grouping, image upload, distribute tools, shape alignment (6-axis), z-order arrange, rotation handle, tables, charts (bar/column/line/pie/doughnut), connectors, slide backgrounds (solid/gradient/image), animations & transitions, presenter view, and zoom controls. Built with React + MobX.
 
 Shared packages live in `packages/` under the `@world-office` namespace: `editor-common`, `editor-stores`, `design-system`, `collaboration-client`, `collaboration-react`, `sdk-bridge`, `i18n`, `eslint-config`, `tsconfig`.
 
