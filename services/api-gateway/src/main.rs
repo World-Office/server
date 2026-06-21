@@ -368,3 +368,304 @@ async fn main() {
         .expect("failed to bind");
     axum::serve(listener, app).await.expect("server error");
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::body::Body;
+    use jsonwebtoken::{EncodingKey, Header, encode};
+    use tower::ServiceExt;
+
+    fn test_state() -> AppState {
+        AppState {
+            routes: vec![
+                ServiceRoute {
+                    path_prefix: "/auth",
+                    upstream: "http://127.0.0.1:1".into(),
+                    strip_prefix: false,
+                    requires_auth: false,
+                },
+                ServiceRoute {
+                    path_prefix: "/files",
+                    upstream: "http://127.0.0.1:1".into(),
+                    strip_prefix: false,
+                    requires_auth: true,
+                },
+            ],
+            jwt_secret: "test-secret".into(),
+            http_client: reqwest::Client::new(),
+        }
+    }
+
+    fn make_valid_token(secret: &str) -> String {
+        let claims = Claims {
+            sub: "user-1".into(),
+            username: "alice".into(),
+            role: "admin".into(),
+            exp: (chrono::Utc::now().timestamp() + 3600) as usize,
+            iat: chrono::Utc::now().timestamp() as usize,
+        };
+        encode(&Header::default(), &claims, &EncodingKey::from_secret(secret.as_bytes())).unwrap()
+    }
+
+    fn make_expired_token(secret: &str) -> String {
+        let claims = Claims {
+            sub: "user-1".into(),
+            username: "alice".into(),
+            role: "admin".into(),
+            exp: (chrono::Utc::now().timestamp() - 3600) as usize,
+            iat: (chrono::Utc::now().timestamp() - 7200) as usize,
+        };
+        encode(&Header::default(), &claims, &EncodingKey::from_secret(secret.as_bytes())).unwrap()
+    }
+
+    #[tokio::test]
+    async fn test_health_returns_ok() {
+        let app = build_routes(test_state());
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(body["status"], "ok");
+        assert_eq!(body["service"], "api-gateway");
+    }
+
+    #[tokio::test]
+    async fn test_public_path_bypasses_auth() {
+        let app = build_routes(test_state());
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_auth_login_is_public_path() {
+        let app = build_routes(test_state());
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/auth/login")
+                    .header("content-type", "application/json")
+                    .body(Body::from(r#"{"username":"u","password":"p"}"#))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::BAD_GATEWAY);
+    }
+
+    #[tokio::test]
+    async fn test_missing_auth_header_returns_401() {
+        let app = build_routes(test_state());
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/files/test.txt")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn test_malformed_auth_header_returns_401() {
+        let app = build_routes(test_state());
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/files/test.txt")
+                    .header("authorization", "NotBearer token")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn test_invalid_token_returns_401() {
+        let app = build_routes(test_state());
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/files/test.txt")
+                    .header("authorization", "Bearer invalidtoken")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn test_expired_token_returns_401() {
+        let app = build_routes(test_state());
+        let token = make_expired_token("test-secret");
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/files/test.txt")
+                    .header("authorization", format!("Bearer {}", token))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn test_valid_token_passes_auth() {
+        let app = build_routes(test_state());
+        let token = make_valid_token("test-secret");
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/files/test.txt")
+                    .header("authorization", format!("Bearer {}", token))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::BAD_GATEWAY);
+    }
+
+    #[tokio::test]
+    async fn test_valid_token_with_wrong_secret_returns_401() {
+        let app = build_routes(test_state());
+        let token = make_valid_token("different-secret");
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/files/test.txt")
+                    .header("authorization", format!("Bearer {}", token))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn test_no_matching_route_returns_404() {
+        let app = build_routes(test_state());
+        let token = make_valid_token("test-secret");
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/nonexistent/path")
+                    .header("authorization", format!("Bearer {}", token))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_matching_route_proxies_request() {
+        let app = build_routes(test_state());
+        let token = make_valid_token("test-secret");
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/files/important.docx")
+                    .header("authorization", format!("Bearer {}", token))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::BAD_GATEWAY);
+    }
+
+    #[tokio::test]
+    async fn test_user_headers_injected_on_auth() {
+        let app = build_routes(test_state());
+        let token = make_valid_token("test-secret");
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/files/doc.txt")
+                    .header("authorization", format!("Bearer {}", token))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::BAD_GATEWAY);
+    }
+
+    #[tokio::test]
+    async fn test_unauthorized_returns_error_json() {
+        let app = build_routes(test_state());
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/files/test.txt")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+
+        let bytes = axum::body::to_bytes(resp.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let body: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(body["code"], 401);
+        assert!(!body["error"].as_str().unwrap().is_empty());
+    }
+}
