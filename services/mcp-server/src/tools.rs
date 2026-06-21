@@ -465,3 +465,174 @@ impl ServerHandler for McpTools {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tool_definitions_returns_14_tools() {
+        assert_eq!(McpTools::tool_definitions().len(), 14);
+    }
+
+    #[test]
+    fn tool_names_are_correct() {
+        let tools = McpTools::tool_definitions();
+        let names: Vec<&str> = tools.iter().map(|t| t.name.as_ref()).collect();
+        assert_eq!(
+            names,
+            vec![
+                "list_documents",
+                "get_document_info",
+                "read_document",
+                "create_document",
+                "write_document",
+                "list_snapshots",
+                "restore_snapshot",
+                "list_comments",
+                "add_comment",
+                "resolve_comment",
+                "list_mentions",
+                "create_contentlink",
+                "list_contentlinks",
+                "resolve_contentlink",
+            ]
+        );
+    }
+
+    #[test]
+    fn write_document_requires_id_and_content() {
+        let tools = McpTools::tool_definitions();
+        let t = tools
+            .iter()
+            .find(|t| t.name.as_ref() == "write_document")
+            .unwrap();
+        let required: Vec<&str> = t
+            .input_schema
+            .get("required")
+            .and_then(|v| v.as_array())
+            .unwrap()
+            .iter()
+            .map(|v| v.as_str().unwrap())
+            .collect();
+        assert_eq!(required, vec!["id", "content"]);
+    }
+
+    #[test]
+    fn add_comment_requires_document_id_text_author_name() {
+        let tools = McpTools::tool_definitions();
+        let t = tools
+            .iter()
+            .find(|t| t.name.as_ref() == "add_comment")
+            .unwrap();
+        let required: Vec<&str> = t
+            .input_schema
+            .get("required")
+            .and_then(|v| v.as_array())
+            .unwrap()
+            .iter()
+            .map(|v| v.as_str().unwrap())
+            .collect();
+        assert_eq!(required, vec!["document_id", "text", "author_name"]);
+    }
+
+    #[test]
+    fn create_contentlink_requires_four_params() {
+        let tools = McpTools::tool_definitions();
+        let t = tools
+            .iter()
+            .find(|t| t.name.as_ref() == "create_contentlink")
+            .unwrap();
+        let required: Vec<&str> = t
+            .input_schema
+            .get("required")
+            .and_then(|v| v.as_array())
+            .unwrap()
+            .iter()
+            .map(|v| v.as_str().unwrap())
+            .collect();
+        assert_eq!(
+            required,
+            vec![
+                "target_document_id",
+                "source_document_id",
+                "source_document_name",
+                "target_document_name",
+            ]
+        );
+    }
+
+    #[test]
+    fn list_documents_has_no_required_params() {
+        let tools = McpTools::tool_definitions();
+        let t = tools
+            .iter()
+            .find(|t| t.name.as_ref() == "list_documents")
+            .unwrap();
+        let required: Vec<serde_json::Value> = t
+            .input_schema
+            .get("required")
+            .and_then(|v| v.as_array())
+            .unwrap()
+            .to_vec();
+        assert!(required.is_empty());
+    }
+
+    #[test]
+    fn get_arg_returns_some_for_present_key() {
+        let mut map = Map::new();
+        map.insert("key".into(), Value::String("val".into()));
+        assert_eq!(McpTools::get_arg(&Some(map), "key"), Some("val"));
+    }
+
+    #[test]
+    fn get_arg_returns_none_for_missing_key() {
+        let mut map = Map::new();
+        map.insert("a".into(), Value::String("b".into()));
+        assert_eq!(McpTools::get_arg(&Some(map), "missing"), None);
+    }
+
+    #[test]
+    fn get_arg_returns_none_when_args_is_none() {
+        assert_eq!(McpTools::get_arg(&None, "key"), None);
+    }
+
+    #[test]
+    fn error_result_sets_is_error() {
+        let result = McpTools::error_result("fail".into());
+        assert_eq!(result.is_error, Some(true));
+    }
+
+    #[test]
+    fn error_result_contains_message() {
+        let result = McpTools::error_result("something went wrong".into());
+        let json = serde_json::to_value(&result).unwrap();
+        assert_eq!(json["content"][0]["text"], "something went wrong");
+    }
+
+    #[test]
+    fn server_info_contains_correct_metadata() {
+        let client = crate::client::StorageClient::new("http://localhost:9999".into());
+        let handler = McpTools::new(client);
+        let info = handler.get_info();
+        assert_eq!(info.server_info.name, "World Office MCP Server");
+        assert_eq!(info.server_info.version, "0.1.0");
+        assert!(info.instructions.is_some());
+    }
+
+    #[test]
+    fn get_tool_returns_matching_tool() {
+        let client = crate::client::StorageClient::new("http://localhost:9999".into());
+        let handler = McpTools::new(client);
+        let tool = handler.get_tool("list_documents");
+        assert!(tool.is_some());
+        assert_eq!(tool.unwrap().name.as_ref(), "list_documents");
+    }
+
+    #[test]
+    fn get_tool_returns_none_for_unknown() {
+        let client = crate::client::StorageClient::new("http://localhost:9999".into());
+        let handler = McpTools::new(client);
+        assert!(handler.get_tool("nonexistent_tool").is_none());
+    }
+}
