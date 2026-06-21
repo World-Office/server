@@ -308,4 +308,225 @@ mod tests {
         // Empty document with BOM should just be the BOM
         assert_eq!(output, vec![0xEF, 0xBB, 0xBF]);
     }
+
+    #[test]
+    fn test_serialize_single_line_no_trailing_newline() {
+        let serializer = TxtSerializer::with_options(SerializeOptions {
+            write_bom: false,
+            ..Default::default()
+        });
+        let doc = TxtDocument {
+            lines: vec!["hello".to_string()],
+            encoding: Encoding::Utf8,
+            had_bom: false,
+        };
+        let output = serializer.serialize(&doc).unwrap();
+        assert_eq!(output, b"hello", "single line should not have trailing newline");
+    }
+
+    #[test]
+    fn test_serialize_utf16be() {
+        let parser = TxtParser::new();
+        let serializer = TxtSerializer::with_options(SerializeOptions::utf16be());
+
+        let input = b"hello\nworld";
+        let doc = parser.parse(input).unwrap();
+        let output = serializer.serialize(&doc).unwrap();
+
+        // Output should have UTF-16 BE BOM
+        assert!(output.starts_with(&[0xFE, 0xFF]));
+
+        // Re-parse should work
+        let doc2 = parser.parse(&output).unwrap();
+        assert_eq!(doc2.lines, doc.lines);
+        assert_eq!(doc2.encoding, Encoding::Utf16Be);
+    }
+
+    #[test]
+    fn test_serialize_utf16le_no_bom() {
+        let parser = TxtParser::new();
+        let serializer = TxtSerializer::with_options(SerializeOptions {
+            encoding: Encoding::Utf16Le,
+            write_bom: false,
+            ..Default::default()
+        });
+
+        let doc = parser.parse(b"hello").unwrap();
+        let output = serializer.serialize(&doc).unwrap();
+
+        // No BOM
+        assert!(!output.starts_with(&[0xFF, 0xFE]));
+        // Leading byte should be 'h' in UTF-16LE
+        assert_eq!(output[0], b'h');
+    }
+
+    #[test]
+    fn test_serialize_cr_ending() {
+        let serializer = TxtSerializer::with_options(SerializeOptions {
+            line_ending: LineEnding::Cr,
+            write_bom: false,
+            ..Default::default()
+        });
+
+        let doc = TxtDocument {
+            lines: vec!["a".to_string(), "b".to_string()],
+            encoding: Encoding::Utf8,
+            had_bom: false,
+        };
+        let output = serializer.serialize(&doc).unwrap();
+        assert_eq!(output, b"a\rb", "cr line ending between lines");
+    }
+
+    #[test]
+    fn test_serialize_utf16le_cr_ending() {
+        let serializer = TxtSerializer::with_options(SerializeOptions {
+            encoding: Encoding::Utf16Le,
+            line_ending: LineEnding::Cr,
+            write_bom: false,
+            ..Default::default()
+        });
+
+        let doc = TxtDocument {
+            lines: vec!["x".to_string(), "y".to_string()],
+            encoding: Encoding::Utf8,
+            had_bom: false,
+        };
+        let output = serializer.serialize(&doc).unwrap();
+        // 0x000D = CR in UTF-16LE
+        assert!(output.windows(2).any(|w| w == [0x0D, 0x00]), "CR in utf-16le output");
+        assert!(!output.windows(2).any(|w| w == [0x0A, 0x00]), "no LF");
+    }
+
+    #[test]
+    fn test_serialize_utf16be_cr_ending() {
+        let serializer = TxtSerializer::with_options(SerializeOptions {
+            encoding: Encoding::Utf16Be,
+            line_ending: LineEnding::Cr,
+            write_bom: false,
+            ..Default::default()
+        });
+
+        let doc = TxtDocument {
+            lines: vec!["a".to_string(), "b".to_string()],
+            encoding: Encoding::Utf8,
+            had_bom: false,
+        };
+        let output = serializer.serialize(&doc).unwrap();
+        // 0x000D = CR in UTF-16BE
+        assert!(output.windows(2).any(|w| w == [0x00, 0x0D]), "CR in utf-16be output");
+    }
+
+    #[test]
+    fn test_serialize_utf16be_lf_ending() {
+        let serializer = TxtSerializer::with_options(SerializeOptions {
+            encoding: Encoding::Utf16Be,
+            line_ending: LineEnding::Lf,
+            write_bom: false,
+            ..Default::default()
+        });
+
+        let doc = TxtDocument {
+            lines: vec!["a".to_string(), "b".to_string()],
+            encoding: Encoding::Utf8,
+            had_bom: false,
+        };
+        let output = serializer.serialize(&doc).unwrap();
+        assert!(output.windows(2).any(|w| w == [0x00, 0x0A]), "LF in utf-16be output");
+    }
+
+    #[test]
+    fn test_serialize_utf16be_crlf_ending() {
+        let serializer = TxtSerializer::with_options(SerializeOptions {
+            encoding: Encoding::Utf16Be,
+            line_ending: LineEnding::Crlf,
+            write_bom: false,
+            ..Default::default()
+        });
+
+        let doc = TxtDocument {
+            lines: vec!["a".to_string(), "b".to_string()],
+            encoding: Encoding::Utf8,
+            had_bom: false,
+        };
+        let output = serializer.serialize(&doc).unwrap();
+        assert!(output.windows(4).any(|w| w == [0x00, 0x0D, 0x00, 0x0A]), "CRLF in utf-16be");
+    }
+
+    #[test]
+    fn test_serialize_utf8_no_bom() {
+        let serializer = TxtSerializer::with_options(SerializeOptions::utf8_no_bom());
+        let doc = TxtDocument {
+            lines: vec!["hello".to_string()],
+            encoding: Encoding::Utf8,
+            had_bom: false,
+        };
+        let output = serializer.serialize(&doc).unwrap();
+        assert!(!output.starts_with(&[0xEF, 0xBB, 0xBF]), "no BOM");
+        assert_eq!(output, b"hello");
+    }
+
+    #[test]
+    fn test_serialize_fallback_encoding() {
+        // Windows1252 encoding should fall back to UTF-8
+        let serializer = TxtSerializer::with_options(SerializeOptions {
+            encoding: Encoding::Windows1252,
+            write_bom: false,
+            ..Default::default()
+        });
+        let doc = TxtDocument {
+            lines: vec!["text".to_string()],
+            encoding: Encoding::Utf8,
+            had_bom: false,
+        };
+        let output = serializer.serialize(&doc).unwrap();
+        assert_eq!(output, b"text", "fallback encoding should produce UTF-8");
+    }
+
+    #[test]
+    fn test_serializer_default() {
+        let s1 = TxtSerializer::new();
+        let s2: TxtSerializer = Default::default();
+        let doc = TxtDocument {
+            lines: vec!["test".to_string()],
+            encoding: Encoding::Utf8,
+            had_bom: false,
+        };
+        let output1 = s1.serialize(&doc).unwrap();
+        let output2 = s2.serialize(&doc).unwrap();
+        assert_eq!(output1, output2, "Default should match new()");
+    }
+
+    #[test]
+    fn test_utf16le_crlf_ending() {
+        let serializer = TxtSerializer::with_options(SerializeOptions {
+            encoding: Encoding::Utf16Le,
+            line_ending: LineEnding::Crlf,
+            write_bom: false,
+            ..Default::default()
+        });
+        let doc = TxtDocument {
+            lines: vec!["a".to_string(), "b".to_string()],
+            encoding: Encoding::Utf8,
+            had_bom: false,
+        };
+        let output = serializer.serialize(&doc).unwrap();
+        assert!(output.windows(4).any(|w| w == [0x0D, 0x00, 0x0A, 0x00]), "CRLF in utf-16le");
+    }
+
+    #[test]
+    fn test_utf16le_lf_ending() {
+        let serializer = TxtSerializer::with_options(SerializeOptions {
+            encoding: Encoding::Utf16Le,
+            line_ending: LineEnding::Lf,
+            write_bom: false,
+            ..Default::default()
+        });
+        let doc = TxtDocument {
+            lines: vec!["a".to_string(), "b".to_string()],
+            encoding: Encoding::Utf8,
+            had_bom: false,
+        };
+        let output = serializer.serialize(&doc).unwrap();
+        assert!(output.windows(2).any(|w| w == [0x0A, 0x00]), "LF in utf-16le");
+    }
 }
