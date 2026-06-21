@@ -158,7 +158,7 @@ export interface InitialState {
 export type ServerMessage =
   | { type: "edit"; operation: EditOperation }
   | { type: "participant_update"; update: ParticipantUpdate }
-  | { type: "initial_state"; state: InitialState }
+  | { type: "initial_state_msg"; state: InitialState }
   | { type: "comment_event"; data: CommentEventData }
   | { type: "presentation_op"; operation: PresentationOperation }
   | { type: "presentation_state"; state: PresentationStateData }
@@ -166,7 +166,7 @@ export type ServerMessage =
 export interface PresentationStateData {
   slides: Array<{
     shapes: Record<string, ShapePayload>
-    order: string[]
+    shape_order: string[]
   }>
 }
 
@@ -252,8 +252,8 @@ export function parseServerMessage(json: string): ServerMessage | null {
   if (obj.type === "participant_update" && typeof obj.update === "object") {
     return { type: "participant_update", update: obj.update as ParticipantUpdate }
   }
-  if (obj.type === "initial_state" && typeof obj.state === "object") {
-    return { type: "initial_state", state: obj.state as InitialState }
+  if (obj.type === "initial_state_msg" && typeof obj.state === "object") {
+    return { type: "initial_state_msg", state: obj.state as InitialState }
   }
   if (obj.type === "comment_event" && typeof obj.data === "object") {
     return { type: "comment_event", data: obj.data as CommentEventData }

@@ -1,10 +1,10 @@
 import {
   type ConnectionState,
+  type ParticipantUpdate,
   type PresentationOperation,
   type PresentationStateData,
   WebSocketManager,
 } from "@world-office/collaboration-client"
-import { AuthClient } from "@world-office/collaboration-client"
 import { useCallback, useEffect, useRef, useState } from "react"
 
 export interface UsePresentationCollaborationOptions {
@@ -12,10 +12,11 @@ export interface UsePresentationCollaborationOptions {
   userId: string
   username: string
   sessionId?: string
-  sessionServiceUrl?: string
   coauthoringServiceUrl?: string
   onPresentationOp?: (op: PresentationOperation, userId: string) => void
   onPresentationState?: (state: PresentationStateData) => void
+  onParticipantUpdate?: (update: ParticipantUpdate) => void
+  onSessionJoined?: (participants: Array<{ user_id: string; username: string; color: string }>, myUserId: string) => void
 }
 
 export interface UsePresentationCollaborationResult {
@@ -23,6 +24,7 @@ export interface UsePresentationCollaborationResult {
   connect: () => void
   disconnect: () => void
   sendPresentationOp: (op: PresentationOperation) => void
+  sendCursorEvent: (update: ParticipantUpdate) => void
 }
 
 export function usePresentationCollaboration(
@@ -33,18 +35,28 @@ export function usePresentationCollaboration(
     userId,
     username,
     sessionId: preCreatedSessionId,
-    sessionServiceUrl = "http://localhost:8001",
     coauthoringServiceUrl = "http://localhost:8004",
-    onPresentationOp,
-    onPresentationState,
   } = options
 
+  // Use refs for callbacks to avoid stale closures in event handlers
+  const callbacksRef = useRef({
+    onPresentationOp: options.onPresentationOp,
+    onPresentationState: options.onPresentationState,
+    onParticipantUpdate: options.onParticipantUpdate,
+    onSessionJoined: options.onSessionJoined,
+  })
+  callbacksRef.current = {
+    onPresentationOp: options.onPresentationOp,
+    onPresentationState: options.onPresentationState,
+    onParticipantUpdate: options.onParticipantUpdate,
+    onSessionJoined: options.onSessionJoined,
+  }
+
   const managerRef = useRef<WebSocketManager | null>(null)
-  const tokenRef = useRef<string | null>(null)
   const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected")
 
   const getOrCreateManager = useCallback(
-    (resolvedSessionId: string, token: string): WebSocketManager => {
+    (resolvedSessionId: string): WebSocketManager => {
       const url = wsUrl.replace("{session_id}", resolvedSessionId)
       if (!managerRef.current || managerRef.current.state === "disconnected") {
         const manager = new WebSocketManager({
@@ -58,23 +70,30 @@ export function usePresentationCollaboration(
         })
 
         manager.on("presentationOp", (op: PresentationOperation, opUserId: string) => {
-          onPresentationOp?.(op, opUserId)
+          callbacksRef.current.onPresentationOp?.(op, opUserId)
         })
 
         manager.on("presentationState", (state: PresentationStateData) => {
-          onPresentationState?.(state)
+          callbacksRef.current.onPresentationState?.(state)
+        })
+
+        manager.on("participantUpdate", (update: ParticipantUpdate) => {
+          callbacksRef.current.onParticipantUpdate?.(update)
         })
 
         managerRef.current = manager
-        tokenRef.current = token
       }
       return managerRef.current
     },
-    [wsUrl, userId, onPresentationOp, onPresentationState],
+    [wsUrl, userId],
   )
 
   const connect = useCallback(async () => {
     try {
+      // Disconnect any existing connection before reconnecting
+      managerRef.current?.disconnect()
+      managerRef.current = null
+
       let resolvedSessionId = preCreatedSessionId
 
       if (!resolvedSessionId) {
@@ -88,20 +107,20 @@ export function usePresentationCollaboration(
         resolvedSessionId = data.session_id
       }
 
-      const authClient = new AuthClient({ baseUrl: sessionServiceUrl })
-      const { accessToken } = await authClient.createSession({ userId, username })
-
-      await fetch(`${coauthoringServiceUrl}/sessions/${resolvedSessionId}/join`, {
+      const joinResp = await fetch(`${coauthoringServiceUrl}/sessions/${resolvedSessionId}/join`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, username }),
       })
+      if (!joinResp.ok) throw new Error("Failed to join session")
 
-      const manager = getOrCreateManager(resolvedSessionId, accessToken)
-      manager.connect(accessToken)
+      const joinData = (await joinResp.json()) as {
+        participants: Array<{ user_id: string; username: string; color: string }>
+      }
+      callbacksRef.current.onSessionJoined?.(joinData.participants ?? [], userId)
+
+      const manager = getOrCreateManager(resolvedSessionId)
+      manager.connect()
     } catch (err) {
       console.error("[usePresentationCollaboration] connect failed:", err)
     }
@@ -109,7 +128,6 @@ export function usePresentationCollaboration(
     preCreatedSessionId,
     userId,
     username,
-    sessionServiceUrl,
     coauthoringServiceUrl,
     getOrCreateManager,
   ])
@@ -117,11 +135,14 @@ export function usePresentationCollaboration(
   const disconnect = useCallback(() => {
     managerRef.current?.disconnect()
     managerRef.current = null
-    tokenRef.current = null
   }, [])
 
   const sendPresentationOp = useCallback((op: PresentationOperation) => {
     managerRef.current?.sendPresentationOp(op)
+  }, [])
+
+  const sendCursorEvent = useCallback((update: ParticipantUpdate) => {
+    managerRef.current?.sendCursorEvent(update)
   }, [])
 
   useEffect(() => {
@@ -136,5 +157,6 @@ export function usePresentationCollaboration(
     connect,
     disconnect,
     sendPresentationOp,
+    sendCursorEvent,
   }
 }
