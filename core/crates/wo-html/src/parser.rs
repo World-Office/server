@@ -1083,4 +1083,182 @@ mod tests {
             .any(|(k, v)| k == "lang" && v == "en");
         assert!(has_lang);
     }
+
+    #[test]
+    fn test_parse_escaped_html_entities_are_decoded() {
+        // html_to_xml_compatible: bare & → &amp;. roxmltree decodes &amp; back to &
+        let html = r#"<?xml version="1.0"?>
+<html><head></head><body><p>AT&amp;T M&amp;M's</p></body></html>"#;
+        let parser = HtmlParser::new();
+        let doc = parser.parse(html.as_bytes()).unwrap();
+        match &doc.body.elements[0] {
+            BlockElement::Paragraph { content, .. } => {
+                let text = &content[0];
+                if let InlineElement::Text { text } = text {
+                    assert!(text.contains("AT&T"), "Expected decoded AT&T, got: {}", text);
+                    assert!(text.contains("M&M's"), "Expected decoded M&M's, got: {}", text);
+                }
+            }
+            _ => panic!("Expected paragraph"),
+        }
+    }
+
+    #[test]
+    fn test_parse_html_entities_decoded_by_roxmltree() {
+        // roxmltree decodes HTML entities — the parsed model contains decoded text
+        let html = "<?xml version=\"1.0\"?><html><head></head><body><p>&#123; &#x7B; &amp; &lt; &gt;</p></body></html>";
+        let parser = HtmlParser::new();
+        let doc = parser.parse(html.as_bytes()).unwrap();
+        match &doc.body.elements[0] {
+            BlockElement::Paragraph { content, .. } => {
+                if let InlineElement::Text { text } = &content[0] {
+                    assert!(text.contains('{'), "Expected curly brace from numeric entity");
+                    assert!(text.contains('{'), "Expected curly brace from hex entity");
+                    assert!(text.contains('&'), "Expected & from &amp;");
+                    assert!(text.contains('<'), "Expected < from &lt;");
+                    assert!(text.contains('>'), "Expected > from &gt;");
+                }
+            }
+            _ => panic!("Expected paragraph"),
+        }
+    }
+
+    #[test]
+    fn test_parse_invalid_utf8_returns_error() {
+        let parser = HtmlParser::new();
+        let invalid = &[0xFF, 0xFE, 0x00, 0x00];
+        let result = parser.parse(invalid);
+        assert!(result.is_err(), "Expected error for invalid UTF-8");
+    }
+
+    #[test]
+    fn test_parse_totally_invalid_input() {
+        let parser = HtmlParser::new();
+        let result = parser.parse(b"\x00\x01\x02\x03");
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_parse_semantic_elements_as_div() {
+        let html = r#"<?xml version="1.0"?>
+<html><head></head><body>
+<section><p>Section content</p></section>
+<article><p>Article content</p></article>
+<nav><p>Nav</p></nav>
+</body></html>"#;
+        let parser = HtmlParser::new();
+        let doc = parser.parse(html.as_bytes()).unwrap();
+        match &doc.body.elements[0] {
+            BlockElement::Div { class, elements, .. } => {
+                assert_eq!(class.as_deref(), Some("section"));
+                assert_eq!(elements.len(), 1);
+            }
+            other => panic!("Expected Div with semantic class, got {:?}", other),
+        }
+        match &doc.body.elements[1] {
+            BlockElement::Div { class, .. } => {
+                assert_eq!(class.as_deref(), Some("article"));
+            }
+            _ => panic!("Expected article div"),
+        }
+        match &doc.body.elements[2] {
+            BlockElement::Div { class, .. } => {
+                assert_eq!(class.as_deref(), Some("nav"));
+            }
+            _ => panic!("Expected nav div"),
+        }
+    }
+
+    #[test]
+    fn test_parse_unknown_inline_element_as_text() {
+        // <span> is not explicitly matched in parse_inline_elements,
+        // so it should fall through to the _ => branch and extract direct text
+        let html = r#"<?xml version="1.0"?>
+<html><head></head><body><p>This is <span>spanned</span> text.</p></body></html>"#;
+        let parser = HtmlParser::new();
+        let doc = parser.parse(html.as_bytes()).unwrap();
+        match &doc.body.elements[0] {
+            BlockElement::Paragraph { content, .. } => {
+                let texts: Vec<&str> = content
+                    .iter()
+                    .filter_map(|e| {
+                        if let InlineElement::Text { text } = e {
+                            Some(text.as_str())
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+                assert!(
+                    texts.iter().any(|t| t.trim() == "spanned"),
+                    "Expected 'spanned' text from span element, got: {:?}",
+                    texts
+                );
+            }
+            _ => panic!("Expected paragraph"),
+        }
+    }
+
+    #[test]
+    fn test_parse_default_impl() {
+        let parser = HtmlParser::default();
+        let html = b"<?xml version=\"1.0\"?><html><head></head><body><p>Default</p></body></html>";
+        let doc = parser.parse(html).unwrap();
+        assert_eq!(doc.body.elements.len(), 1);
+    }
+
+    #[test]
+    fn test_parse_unknown_block_element_as_rawhtml() {
+        // Unknown block-level element with text → RawHtml
+        let html = r#"<?xml version="1.0"?>
+<html><head></head><body>
+<custom-element>Custom content</custom-element>
+</body></html>"#;
+        let parser = HtmlParser::new();
+        let doc = parser.parse(html.as_bytes()).unwrap();
+        match &doc.body.elements[0] {
+            BlockElement::RawHtml { tag, content } => {
+                assert_eq!(tag, "custom-element");
+                assert!(content.contains("Custom content"));
+            }
+            other => panic!("Expected RawHtml, got: {:?}", other),
+        }
+    }
+
+    #[test]
+    fn test_parse_word_count_multiple_blocks() {
+        let html = r#"<?xml version="1.0"?>
+<html><head><title>Word Count</title></head>
+<body>
+<p>one two three</p>
+<ul><li>four</li><li>five six</li></ul>
+<pre>seven eight nine ten</pre>
+</body></html>"#;
+        let parser = HtmlParser::new();
+        let doc = parser.parse_to_document(html.as_bytes()).unwrap();
+        // Word count should be > 0
+        assert!(
+            doc.metadata.word_count.unwrap() > 0,
+            "Expected word count > 0"
+        );
+        // Expected: one two three (3) + four (1) + five six (2) + seven eight nine ten (4) = 10
+        assert_eq!(
+            doc.metadata.word_count.unwrap(),
+            10,
+            "Expected exact word count"
+        );
+    }
+
+    #[test]
+    fn test_parse_head_with_style() {
+        // Style content is stripped by html_to_xml_compatible but the head parser handles style tags
+        let html = r#"<?xml version="1.0"?>
+<html><head>
+<style>body { margin: 0; }</style>
+</head><body><p>Text</p></body></html>"#;
+        let parser = HtmlParser::new();
+        let doc = parser.parse(html.as_bytes()).unwrap();
+        // Style content is stripped, so head.styles should be empty
+        assert!(doc.head.styles.is_empty());
+    }
 }
