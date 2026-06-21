@@ -1,32 +1,52 @@
 import {
-	WebSocketManager,
-	createCursorUpdate,
-} from "@world-office/collaboration-client";
+	usePresentationCollaboration,
+} from "@world-office/collaboration-react";
 import type {
 	PresentationOperation,
 	PresentationStateData,
 	ShapePayload,
 } from "@world-office/collaboration-client";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { presentationStore } from "../stores/PresentationStore";
 import type { ShapeData, SlideLayout } from "../types/presentation";
+import {
+	COAUTHORING_API_URL,
+	COAUTHORING_WS_URL,
+} from "../lib/collaboration-config";
 
-const WS_URL = "ws://localhost:8004/ws/{session_id}";
-const COAUTHORING_URL = "http://localhost:8004";
+const SESSION_STORAGE_KEY = "prese-collab-session";
+
+function getOrCreateUser(): { id: string; name: string } {
+	const stored = sessionStorage.getItem("prese-collab-user");
+	if (stored) {
+		try {
+			return JSON.parse(stored) as { id: string; name: string };
+		} catch {
+			/* ignore */
+		}
+	}
+	const user = {
+		id: `user-${crypto.randomUUID().slice(0, 8)}`,
+		name: `User-${Math.random().toString(36).slice(2, 6)}`,
+	};
+	sessionStorage.setItem("prese-collab-user", JSON.stringify(user));
+	return user;
+}
 
 export function PresentationCollaborationProvider(): null {
-	const managerRef = useRef<WebSocketManager | null>(null);
+	const user = getOrCreateUser();
 
-	useEffect(() => {
-		const userId = `user-${Date.now()}`;
-		const username = "User";
-
-		function handlePresentationOp(op: PresentationOperation): void {
+	const collab = usePresentationCollaboration({
+		wsUrl: COAUTHORING_WS_URL,
+		userId: user.id,
+		username: user.name,
+		sessionId: sessionStorage.getItem(SESSION_STORAGE_KEY) ?? undefined,
+		coauthoringServiceUrl: COAUTHORING_API_URL,
+		onPresentationOp(op: PresentationOperation) {
 			const { action, ...rest } = op;
 			presentationStore.applyRemoteOp(action, rest as Record<string, unknown>);
-		}
-
-		function handlePresentationState(state: PresentationStateData): void {
+		},
+		onPresentationState(state: PresentationStateData) {
 			const slides = state.slides.map((slide, index) => {
 				const shapes: ShapeData[] = slide.order
 					.map((shapeId) => slide.shapes[shapeId])
@@ -69,90 +89,60 @@ export function PresentationCollaborationProvider(): null {
 				};
 			});
 			presentationStore.setSlides(slides);
-		}
-
-		async function init(): Promise<void> {
-			try {
-				const createResp = await fetch(`${COAUTHORING_URL}/sessions`, {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ document_id: "presentation-doc" }),
-				});
-				if (!createResp.ok) throw new Error("Failed to create session");
-				const sessionData = (await createResp.json()) as { session_id: string };
-				const sessionId = sessionData.session_id;
-
-				const joinResp = await fetch(
-					`${COAUTHORING_URL}/sessions/${sessionId}/join`,
-					{
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({ user_id: userId, username }),
-					},
+		},
+		onParticipantUpdate(update) {
+			if (update.event === "cursor_moved" && update.cursor_position) {
+				presentationStore.updateRemoteCursor(
+					update.user_id,
+					update.username,
+					update.color,
+					update.cursor_position.x,
+					update.cursor_position.y,
+					update.cursor_position.page,
 				);
-				if (!joinResp.ok) throw new Error("Failed to join session");
-
-				const url = WS_URL.replace("{session_id}", sessionId);
-				const manager = new WebSocketManager({
-					url,
-					userId,
-					autoReconnect: true,
-				});
-
-				manager.on("presentationOp", (op: PresentationOperation) => {
-					handlePresentationOp(op);
-				});
-				manager.on("presentationState", (state: PresentationStateData) => {
-					handlePresentationState(state);
-				});
-
-				manager.on("participantUpdate", (update) => {
-					if (update.event === "cursor_moved" && update.cursor_position) {
-						presentationStore.updateRemoteCursor(
-							update.user_id,
-							update.username,
-							update.color,
-							update.cursor_position.x,
-							update.cursor_position.y,
-							update.cursor_position.page,
-						);
-					}
-				});
-
-				manager.connect();
-				managerRef.current = manager;
-
-				presentationStore.registerCursorSendCallback((page, x, y) => {
-					const cursorUpdate = createCursorUpdate({
-						session_id: sessionId,
-						user_id: userId,
-						username,
-						color: "#4472C4",
-						cursor_position: { page, x, y },
-					});
-					manager.sendCursorEvent(cursorUpdate);
-				});
-
-				presentationStore.registerMutationCallback(
-					(action: string, data: Record<string, unknown>) => {
-						const payload: Record<string, unknown> = { action, ...data };
-						manager.sendPresentationOp(
-							payload as unknown as PresentationOperation,
-						);
-					},
-				);
-			} catch (err) {
-				console.error("[CollaborationProvider] init failed:", err);
 			}
+		},
+		onSessionJoined(participants, myUserId) {
+			const me = participants.find((p) => p.user_id === myUserId);
+			if (me) {
+				presentationStore.currentUserColor = me.color;
+			}
+		},
+	});
+
+	useEffect(() => {
+		presentationStore.currentUserId = user.id;
+		presentationStore.connectionState = collab.connectionState;
+		if (collab.connectionState === "connected") {
+			presentationStore.connectionError = null;
 		}
+	}, [user.id, collab.connectionState]);
 
-		init();
+	useEffect(() => {
+		presentationStore.registerCursorSendCallback((page, x, y) => {
+			collab.sendCursorEvent({
+				event: "cursor_moved",
+				user_id: user.id,
+				username: user.name,
+				color: presentationStore.currentUserColor ?? "#E74C3C",
+				cursor_position: { page, x, y },
+			});
+		});
 
-		return () => {
-			managerRef.current?.disconnect();
-			managerRef.current = null;
-		};
+		presentationStore.registerMutationCallback(
+			(action: string, data: Record<string, unknown>) => {
+				const payload: Record<string, unknown> = { action, ...data };
+				collab.sendPresentationOp(
+					payload as unknown as PresentationOperation,
+				);
+			},
+		);
 	}, []);
+
+	useEffect(() => {
+		presentationStore.connectionError = null;
+		collab.connect();
+	}, [presentationStore.retrySignal]);
 
 	return null;
 }
