@@ -1,3 +1,4 @@
+import { CollaborationStatus, CollaboratorList } from "@world-office/collaboration-react";
 import { observer } from "mobx-react-lite";
 import type { JSX } from "react";
 import { presentationStore } from "../../stores/PresentationStore";
@@ -61,6 +62,40 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
 
 	return (
 		<div className="prese-statusbar">
+			{/* Collaboration status */}
+			<CollaborationStatus
+				state={presentationStore.connectionState}
+				userCount={presentationStore.remoteCursors.size}
+			/>
+			{presentationStore.connectionError && (
+				<>
+					<span
+						className="prese-statusbar-collab-error"
+						title={presentationStore.connectionError}
+						style={{
+							color: "#e74c3c",
+							fontSize: 11,
+							marginLeft: 8,
+							cursor: "help",
+						}}
+					>
+						⚠ {presentationStore.connectionError}
+					</span>
+					<button
+						type="button"
+						className="prese-statusbar-btn"
+						style={{ marginLeft: 4, fontSize: 11 }}
+						title="Retry collaboration connection"
+						onClick={() => presentationStore.requestRetry()}
+					>
+						↻ Retry
+					</button>
+				</>
+			)}
+			{presentationStore.connectionState === "connected" && (
+				<CollaboratorList users={presentationStore.collaborators} />
+			)}
+
 			{/* Slide navigation */}
 			<div className="prese-statusbar-slide-nav">
 				<button

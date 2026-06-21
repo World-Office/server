@@ -20,6 +20,7 @@ import type {
 	TransitionEffect,
 	ZoomLevel,
 } from "../types/presentation";
+import type { CollabUser } from "@world-office/editor-stores";
 import type {
 	ChartData,
 	ChartType,
@@ -1120,6 +1121,26 @@ export class PresentationStore {
 			page: number;
 		}
 	> = new Map();
+
+	/* Collaboration */
+	currentUserId: string | null = null;
+	currentUserColor: string | null = null;
+	connectionState: "disconnected" | "connecting" | "connected" | "reconnecting" = "disconnected";
+	connectionError: string | null = null;
+	retrySignal = 0;
+
+	requestRetry(): void {
+		this.retrySignal += 1;
+	}
+
+	get collaborators(): CollabUser[] {
+		return Array.from(this.remoteCursors.values()).map((c) => ({
+			id: c.userId,
+			name: c.username,
+			color: c.color,
+			isCurrentUser: c.userId === this.currentUserId,
+		}));
+	}
 
 	/* Language */
 	languageCode = "en-US";

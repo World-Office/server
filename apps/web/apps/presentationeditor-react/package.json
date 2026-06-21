@@ -21,7 +21,8 @@
     "@world-office/editor-stores": "workspace:*",
     "@world-office/sdk-bridge": "workspace:*",
     "@world-office/i18n": "workspace:*",
-    "@world-office/collaboration-client": "workspace:*"
+    "@world-office/collaboration-client": "workspace:*",
+    "@world-office/collaboration-react": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
