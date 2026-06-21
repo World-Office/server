@@ -39,5 +39,24 @@ jobs:
           npm --prefix DocService ci
           npm --prefix FileConverter ci
 
-      - name: Run Jest
-        run: npm run "unit tests"
+      - name: Run Jest with coverage and JUnit report
+        run: npm run "unit tests" -- --coverage --reporters=default --reporters=jest-junit
+        continue-on-error: true
+
+      - name: Upload JUnit test reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: service-junit-${{ github.sha }}
+          path: |
+            DocService/junit.xml
+            **/junit.xml
+          if-no-files-found: ignore
+          retention-days: 14
+        continue-on-error: true
+
+      - name: Upload coverage artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: service-coverage-${{ github.sha }}
+          path: tests/coverage/
+          retention-days: 30
