@@ -53,6 +53,8 @@ mod tests {
     #[test]
     fn test_config_from_env_defaults() {
         // Ensure JWT_SECRET is set so from_env() doesn't panic
+        env::remove_var("DOCSERVER_PORT");
+        env::remove_var("PORT");
         env::set_var("JWT_SECRET", "test-secret-for-unit-tests");
         let config = DocServerConfig::from_env();
         assert_eq!(config.host, "0.0.0.0");

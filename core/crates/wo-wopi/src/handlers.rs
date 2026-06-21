@@ -303,26 +303,358 @@ pub fn handle_wopi_error(err: WopiError) -> (axum::http::StatusCode, String) {
 mod tests {
     use super::*;
     use crate::storage::FileSystemStorage;
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+        routing::{get, post},
+        Router,
+    };
+    use std::sync::Arc;
     use tempfile::TempDir;
+    use tower::ServiceExt;
 
-    #[tokio::test]
-    async fn test_check_file_info() {
+    // ---------------------------------------------------------------------------
+    // WopiState tests
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn test_wopi_state_new_has_empty_tokens() {
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+        let state = WopiState::new(storage);
+        assert!(state.access_tokens.is_empty());
+    }
+
+    #[test]
+    fn test_wopi_state_add_and_validate_token() {
         let temp_dir = TempDir::new().unwrap();
         let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
         let mut state = WopiState::new(storage);
 
-        // Add a test file
-        state
-            .storage
-            .write_file("test.txt", b"Hello, World!")
-            .await
+        state.add_token("tok1".to_string(), "user_a".to_string());
+        assert_eq!(state.validate_token("tok1").unwrap(), "user_a");
+    }
+
+    #[test]
+    fn test_wopi_state_validate_token_invalid() {
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+        let state = WopiState::new(storage);
+
+        let err = state.validate_token("bad").unwrap_err();
+        assert!(matches!(err, WopiError::InvalidToken(_)));
+    }
+
+    // ---------------------------------------------------------------------------
+    // infer_format tests
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn test_infer_format_supported() {
+        for (file_id, expected) in &[
+            ("doc.docx", "docx"),
+            ("pres.pptx", "pptx"),
+            ("sheet.xlsx", "xlsx"),
+            ("text.odt", "odt"),
+            ("spreadsheet.ods", "ods"),
+            ("slides.odp", "odp"),
+            ("diagram.vsdx", "vsdx"),
+            ("doc.pdf", "pdf"),
+        ] {
+            assert_eq!(infer_format(file_id).unwrap(), *expected, "mismatch for {file_id}");
+        }
+    }
+
+    #[test]
+    fn test_infer_format_case_insensitive() {
+        assert_eq!(infer_format("FILE.DOCX").unwrap(), "docx");
+        assert_eq!(infer_format("file.PPTX").unwrap(), "pptx");
+        assert_eq!(infer_format("file.PDF").unwrap(), "pdf");
+    }
+
+    #[test]
+    fn test_infer_format_no_extension() {
+        let err = infer_format("noext").unwrap_err();
+        assert!(matches!(err, WopiError::InvalidRequest(_)));
+    }
+
+    #[test]
+    fn test_infer_format_unsupported() {
+        let err = infer_format("file.xyz").unwrap_err();
+        assert!(matches!(err, WopiError::InvalidRequest(_)));
+    }
+
+    // ---------------------------------------------------------------------------
+    // default_format tests
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn test_default_format_is_native() {
+        assert_eq!(default_format(), "native");
+    }
+
+    // ---------------------------------------------------------------------------
+    // handle_wopi_error tests
+    // ---------------------------------------------------------------------------
+
+    #[test]
+    fn test_handle_wopi_error_maps_to_correct_status() {
+        let cases: Vec<(WopiError, StatusCode)> = vec![
+            (WopiError::FileNotFound("x".into()), StatusCode::NOT_FOUND),
+            (WopiError::AccessDenied("x".into()), StatusCode::FORBIDDEN),
+            (WopiError::InvalidToken("x".into()), StatusCode::UNAUTHORIZED),
+            (WopiError::LockConflict("x".into()), StatusCode::CONFLICT),
+            (WopiError::InvalidRequest("x".into()), StatusCode::BAD_REQUEST),
+        ];
+        for (err, expected_status) in cases {
+            let (status, _) = handle_wopi_error(err);
+            assert_eq!(status, expected_status);
+        }
+    }
+
+    #[test]
+    fn test_handle_wopi_error_io_is_500() {
+        let err = WopiError::Io(std::io::Error::new(std::io::ErrorKind::Other, "disk full"));
+        let (status, msg) = handle_wopi_error(err);
+        assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(msg, "disk full");
+    }
+
+    #[test]
+    fn test_handle_wopi_error_serialization_is_500() {
+        // Invalid JSON to trigger a serde error
+        let err = WopiError::Serialization(serde_json::from_str::<serde_json::Value>("").unwrap_err());
+        let (status, _) = handle_wopi_error(err);
+        assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+    }
+
+    #[test]
+    fn test_handle_wopi_error_storage_is_500() {
+        let err = WopiError::Storage("db error".into());
+        let (status, msg) = handle_wopi_error(err);
+        assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
+        assert_eq!(msg, "db error");
+    }
+
+    // ---------------------------------------------------------------------------
+    // check_file_info handler integration test
+    // ---------------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn test_check_file_info_handler_success() {
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+        storage.write_file("doc.txt", b"hello").await.unwrap();
+
+        let mut state = WopiState::new(storage);
+        state.add_token("valid".to_string(), "user42".to_string());
+
+        let app = Router::new()
+            .route("/wopi/files/{file_id}", get(check_file_info::<FileSystemStorage>))
+            .with_state(Arc::new(state));
+
+        let req = Request::builder()
+            .uri("/wopi/files/doc.txt?access_token=valid")
+            .body(Body::empty())
             .unwrap();
 
-        state.add_token("test_token".to_string(), "user1".to_string());
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
 
-        // This would require running the actual handler through axum test setup
-        // For now, we just test the underlying logic
-        let user_id = state.validate_token("test_token").unwrap();
-        assert_eq!(user_id, "user1");
+        let body = axum::body::to_bytes(res.into_body(), 10_000).await.unwrap();
+        let info: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        assert_eq!(info["BaseFileName"], "doc.txt");
+        assert_eq!(info["Size"], 5);
+        assert_eq!(info["UserId"], "user42");
+    }
+
+    #[tokio::test]
+    async fn test_check_file_info_invalid_token() {
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+        let state = WopiState::new(storage);
+
+        let app = Router::new()
+            .route("/wopi/files/{file_id}", get(check_file_info::<FileSystemStorage>))
+            .with_state(Arc::new(state));
+
+        let req = Request::builder()
+            .uri("/wopi/files/doc.txt?access_token=bogus")
+            .body(Body::empty())
+            .unwrap();
+
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn test_check_file_info_file_not_found() {
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+        let mut state = WopiState::new(storage);
+        state.add_token("t".to_string(), "u1".to_string());
+
+        let app = Router::new()
+            .route("/wopi/files/{file_id}", get(check_file_info::<FileSystemStorage>))
+            .with_state(Arc::new(state));
+
+        let req = Request::builder()
+            .uri("/wopi/files/missing.txt?access_token=t")
+            .body(Body::empty())
+            .unwrap();
+
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
+    }
+
+    // ---------------------------------------------------------------------------
+    // get_file handler integration test
+    // ---------------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn test_get_file_handler_success() {
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+        storage.write_file("doc.txt", b"hello world").await.unwrap();
+
+        let mut state = WopiState::new(storage);
+        state.add_token("t".to_string(), "u1".to_string());
+
+        let app = Router::new()
+            .route("/wopi/files/{file_id}/contents", get(get_file::<FileSystemStorage>))
+            .with_state(Arc::new(state));
+
+        let req = Request::builder()
+            .uri("/wopi/files/doc.txt/contents?access_token=t")
+            .body(Body::empty())
+            .unwrap();
+
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+
+        let body = axum::body::to_bytes(res.into_body(), 10_000).await.unwrap();
+        assert_eq!(&body[..], b"hello world");
+    }
+
+    #[tokio::test]
+    async fn test_get_file_handler_invalid_token() {
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+        let state = WopiState::new(storage);
+
+        let app = Router::new()
+            .route("/wopi/files/{file_id}/contents", get(get_file::<FileSystemStorage>))
+            .with_state(Arc::new(state));
+
+        let req = Request::builder()
+            .uri("/wopi/files/doc.txt/contents?access_token=bogus")
+            .body(Body::empty())
+            .unwrap();
+
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+    }
+
+    #[tokio::test]
+    async fn test_get_file_handler_not_found() {
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+        let mut state = WopiState::new(storage);
+        state.add_token("t".to_string(), "u1".to_string());
+
+        let app = Router::new()
+            .route("/wopi/files/{file_id}/contents", get(get_file::<FileSystemStorage>))
+            .with_state(Arc::new(state));
+
+        let req = Request::builder()
+            .uri("/wopi/files/missing.txt/contents?access_token=t")
+            .body(Body::empty())
+            .unwrap();
+
+        let res = app.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
+    }
+
+    // ---------------------------------------------------------------------------
+    // put_file handler integration test
+    // ---------------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn test_storage_write_and_verify() {
+        // Test the core storage write logic that put_file relies on
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+
+        let content = b"new content";
+        let version = storage.write_file("testdoc", content).await.unwrap();
+        assert!(!version.is_empty());
+
+        let read_back = storage.read_file("testdoc").await.unwrap();
+        assert_eq!(read_back, content);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Storage-level tests (to cover delete_file, rename_file, list_files)
+    // ---------------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn test_storage_list_files() {
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+        storage.write_file("a.txt", b"aaa").await.unwrap();
+        storage.write_file("b.txt", b"bbb").await.unwrap();
+
+        let files = storage.list_files(".").await.unwrap();
+        assert!(!files.is_empty());
+        assert!(files.iter().any(|f| f.name == "a.txt"));
+    }
+
+    #[tokio::test]
+    async fn test_storage_list_files_not_found() {
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+        let err = storage.list_files("nonexistent").await.unwrap_err();
+        assert!(matches!(err, WopiError::FileNotFound(_)));
+    }
+
+    #[tokio::test]
+    async fn test_storage_delete_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+        storage.write_file("del.txt", b"x").await.unwrap();
+
+        storage.delete_file("del.txt").await.unwrap();
+        let err = storage.read_file("del.txt").await.unwrap_err();
+        assert!(matches!(err, WopiError::FileNotFound(_)));
+    }
+
+    #[tokio::test]
+    async fn test_storage_delete_not_found() {
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+        let err = storage.delete_file("ghost.txt").await.unwrap_err();
+        assert!(matches!(err, WopiError::FileNotFound(_)));
+    }
+
+    #[tokio::test]
+    async fn test_storage_rename_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+        storage.write_file("old.txt", b"x").await.unwrap();
+
+        storage.rename_file("old.txt", "new.txt").await.unwrap();
+        // Old file should be gone
+        assert!(storage.read_file("old.txt").await.is_err());
+        // New file should exist
+        let data = storage.read_file("new.txt").await.unwrap();
+        assert_eq!(data, b"x");
+    }
+
+    #[tokio::test]
+    async fn test_storage_rename_not_found() {
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+        let err = storage.rename_file("ghost.txt", "x.txt").await.unwrap_err();
+        assert!(matches!(err, WopiError::FileNotFound(_)));
     }
 }

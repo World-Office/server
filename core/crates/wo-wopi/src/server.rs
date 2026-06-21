@@ -58,9 +58,9 @@ impl<S: StorageBackend + 'static> WopiServer<S> {
     pub fn build_router(&self) -> Router {
         Router::new()
             // WOPI endpoints
-            .route("/wopi/files/:file_id", get(check_file_info))
+            .route("/wopi/files/{file_id}", get(check_file_info))
             .route(
-                "/wopi/files/:file_id/contents",
+                "/wopi/files/{file_id}/contents",
                 get(get_file).post(put_file),
             )
             // Health check endpoint
@@ -102,7 +102,11 @@ async fn health_check() -> &'static str {
 mod tests {
     use super::*;
     use crate::storage::FileSystemStorage;
+    use axum::body::Body;
+    use axum::http::{Method, Request, StatusCode};
+    use std::sync::Arc;
     use tempfile::TempDir;
+    use tower::ServiceExt;
 
     #[test]
     fn test_wopi_server_creation() {
@@ -134,13 +138,77 @@ mod tests {
         let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
         let server = WopiServer::new(storage);
 
-        // Test accessing state
         let _state = server.state();
 
-        // Test state contains access_tokens HashMap
         let state = Arc::try_unwrap(server.state)
             .ok()
             .expect("Arc should have single owner");
         assert!(state.access_tokens.is_empty());
+    }
+
+    #[test]
+    fn test_health_check_returns_healthy() {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let response = health_check().await;
+            assert_eq!(response, "WOPI server is healthy");
+        });
+    }
+
+    #[tokio::test]
+    async fn test_build_router_has_wopi_routes() {
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+        storage.write_file("doc.txt", b"hello").await.unwrap();
+
+        let server = WopiServer::new(storage);
+        let router = server.build_router();
+
+        // Test health endpoint
+        let req = Request::builder()
+            .uri("/health")
+            .body(Body::empty())
+            .unwrap();
+        let res = router.clone().oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn test_build_router_wopi_endpoint_missing_token_returns_400() {
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+        let server = WopiServer::new(storage);
+        let router = server.build_router();
+
+        // No query params at all should produce 400 (missing access_token query param)
+        let req = Request::builder()
+            .uri("/wopi/files/doc.txt")
+            .body(Body::empty())
+            .unwrap();
+        let res = router.oneshot(req).await.unwrap();
+        // 400 because access_token is required but missing
+        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+    }
+
+    #[tokio::test]
+    async fn test_build_router_health_check() {
+        let temp_dir = TempDir::new().unwrap();
+        let storage = FileSystemStorage::new(temp_dir.path()).unwrap();
+        let server = WopiServer::new(storage);
+        let router = server.build_router();
+
+        let req = Request::builder()
+            .uri("/health")
+            .body(Body::empty())
+            .unwrap();
+        let res = router.oneshot(req).await.unwrap();
+        assert_eq!(res.status(), StatusCode::OK);
+    }
+
+    #[test]
+    fn test_wopi_server_config_default() {
+        let config = WopiServerConfig::default();
+        assert_eq!(config.bind_address, "127.0.0.1");
+        assert_eq!(config.port, 3000);
     }
 }
