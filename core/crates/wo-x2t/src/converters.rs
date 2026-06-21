@@ -6241,6 +6241,10 @@ mod tests {
     use super::*;
     use std::io::Write;
     use wo_epub::is_epub_file;
+    use wo_html::model::ListItem;
+    use wo_ooxml::model::VerticalAlignment;
+    use wo_fb2::model::{Author, Stanza, TitleElement};
+    use wo_rtf::model::{RtfTableCell, RtfTableRow};
 
     // ── RtfToTxt ─────────────────────────────────────────────────────
 
@@ -8774,4 +8778,2680 @@ mod tests {
         assert!(wo_output.contains("Hello ODP World!"));
         assert!(wo_output.contains("textbox"));
     }
+
+    // ── Section B: html_to_ooxml / html_inlines_to_docx_runs ────────────
+
+    #[test]
+    fn test_html_to_ooxml_heading_levels() {
+        let html = HtmlDocument {
+            doc_type: None,
+            html_attributes: vec![],
+            head: HtmlHead::default(),
+            body: HtmlBody {
+                elements: vec![
+                    BlockElement::Heading { level: 1, content: vec![InlineElement::Text { text: "H1 Title".into() }], id: None },
+                    BlockElement::Heading { level: 2, content: vec![InlineElement::Text { text: "H2 Title".into() }], id: None },
+                    BlockElement::Heading { level: 6, content: vec![InlineElement::Text { text: "H6 Title".into() }], id: None },
+                ],
+            },
+        };
+        let ooxml = html_to_ooxml(&html);
+        let body = ooxml.body.as_ref().unwrap();
+        assert_eq!(body.paragraphs.len(), 3);
+        assert_eq!(body.paragraphs[0].runs[0].text, "H1 Title");
+        assert!(body.paragraphs[0].runs[0].bold);
+        assert_eq!(body.paragraphs[0].runs[0].font_size, Some(36));
+        assert_eq!(body.paragraphs[1].runs[0].font_size, Some(32));
+        assert_eq!(body.paragraphs[2].runs[0].font_size, Some(18));
+    }
+
+    #[test]
+    fn test_html_to_ooxml_table() {
+        let html = HtmlDocument {
+            doc_type: None,
+            html_attributes: vec![],
+            head: HtmlHead::default(),
+            body: HtmlBody {
+                elements: vec![BlockElement::Table {
+                    rows: vec![
+                        TableRow { cells: vec![
+                            TableCell { content: vec![InlineElement::Text { text: "A1".into() }], colspan: 1, rowspan: 1 },
+                            TableCell { content: vec![InlineElement::Text { text: "B1".into() }], colspan: 2, rowspan: 1 },
+                        ], is_header: true },
+                        TableRow { cells: vec![
+                            TableCell { content: vec![InlineElement::Text { text: "A2".into() }], colspan: 1, rowspan: 2 },
+                            TableCell { content: vec![InlineElement::Text { text: "B2".into() }], colspan: 1, rowspan: 1 },
+                        ], is_header: false },
+                    ],
+                    id: None,
+                }],
+            },
+        };
+        let ooxml = html_to_ooxml(&html);
+        let body = ooxml.body.as_ref().unwrap();
+        assert_eq!(body.tables.len(), 1);
+        assert_eq!(body.tables[0].rows.len(), 2);
+        assert!(body.tables[0].rows[0].is_header);
+        assert!(!body.tables[0].rows[1].is_header);
+        assert_eq!(body.tables[0].rows[0].cells[0].paragraphs[0].runs[0].text, "A1");
+        assert_eq!(body.tables[0].rows[0].cells[1].column_span, 2);
+        assert_eq!(body.tables[0].rows[1].cells[0].row_span, 2);
+    }
+
+    #[test]
+    fn test_html_to_ooxml_lists() {
+        let html = HtmlDocument {
+            doc_type: None,
+            html_attributes: vec![],
+            head: HtmlHead::default(),
+            body: HtmlBody {
+                elements: vec![
+                    BlockElement::UnorderedList {
+                        items: vec![
+                            ListItem { content: vec![InlineElement::Text { text: "UL Item 1".into() }] },
+                            ListItem { content: vec![InlineElement::Text { text: "UL Item 2".into() }] },
+                        ],
+                        id: None,
+                    },
+                    BlockElement::OrderedList {
+                        items: vec![
+                            ListItem { content: vec![InlineElement::Text { text: "OL Item".into() }] },
+                        ],
+                        id: None,
+                        start: Some(5),
+                    },
+                ],
+            },
+        };
+        let ooxml = html_to_ooxml(&html);
+        let body = ooxml.body.as_ref().unwrap();
+        assert_eq!(body.paragraphs.len(), 3);
+        assert!(body.paragraphs[0].runs[0].text.contains("UL Item 1"));
+        assert!(body.paragraphs[0].properties.indent_left == Some(720));
+        assert!(body.paragraphs[2].runs[0].text.contains("5."));
+    }
+
+    #[test]
+    fn test_html_to_ooxml_div_and_blockquote() {
+        let html = HtmlDocument {
+            doc_type: None,
+            html_attributes: vec![],
+            head: HtmlHead::default(),
+            body: HtmlBody {
+                elements: vec![
+                    BlockElement::Div {
+                        elements: vec![BlockElement::Paragraph { content: vec![InlineElement::Text { text: "div text".into() }], id: None }],
+                        id: None,
+                        class: None,
+                    },
+                    BlockElement::Blockquote {
+                        elements: vec![BlockElement::Paragraph { content: vec![InlineElement::Text { text: "quote text".into() }], id: None }],
+                        id: None,
+                    },
+                ],
+            },
+        };
+        let ooxml = html_to_ooxml(&html);
+        let body = ooxml.body.as_ref().unwrap();
+        assert_eq!(body.paragraphs.len(), 2);
+        assert_eq!(body.paragraphs[0].runs[0].text, "div text");
+        assert_eq!(body.paragraphs[1].runs[0].text, "quote text");
+    }
+
+    #[test]
+    fn test_html_to_ooxml_pre_and_hr() {
+        let html = HtmlDocument {
+            doc_type: None,
+            html_attributes: vec![],
+            head: HtmlHead::default(),
+            body: HtmlBody {
+                elements: vec![
+                    BlockElement::Pre { content: "pre line 1\npre line 2".into(), id: None },
+                    BlockElement::HorizontalRule,
+                ],
+            },
+        };
+        let ooxml = html_to_ooxml(&html);
+        let body = ooxml.body.as_ref().unwrap();
+        assert_eq!(body.paragraphs.len(), 3);
+        assert_eq!(body.paragraphs[0].runs[0].text, "pre line 1");
+        assert_eq!(body.paragraphs[1].runs[0].text, "pre line 2");
+        assert_eq!(body.paragraphs[2].runs[0].text.len(), 72);
+        assert_eq!(body.paragraphs[2].runs[0].text.chars().next().unwrap(), '\u{2500}');
+    }
+
+    #[test]
+    fn test_html_to_ooxml_raw_html() {
+        let html = HtmlDocument {
+            doc_type: None,
+            html_attributes: vec![],
+            head: HtmlHead::default(),
+            body: HtmlBody {
+                elements: vec![
+                    BlockElement::RawHtml { tag: "div".into(), content: "  raw content  ".into() },
+                    BlockElement::RawHtml { tag: "style".into(), content: "   ".into() },
+                ],
+            },
+        };
+        let ooxml = html_to_ooxml(&html);
+        let body = ooxml.body.as_ref().unwrap();
+        assert_eq!(body.paragraphs.len(), 1);
+        assert_eq!(body.paragraphs[0].runs[0].text, "raw content");
+    }
+
+    #[test]
+    fn test_html_inlines_to_docx_runs_all_variants() {
+        let inlines = vec![
+            InlineElement::Text { text: "plain ".into() },
+            InlineElement::Bold { content: vec![InlineElement::Text { text: "bold".into() }] },
+            InlineElement::Italic { content: vec![InlineElement::Text { text: " italic".into() }] },
+            InlineElement::Underline { content: vec![InlineElement::Text { text: " underline".into() }] },
+            InlineElement::Strikethrough { content: vec![InlineElement::Text { text: " strike".into() }] },
+            InlineElement::Subscript { content: vec![InlineElement::Text { text: " sub".into() }] },
+            InlineElement::Superscript { content: vec![InlineElement::Text { text: " super".into() }] },
+            InlineElement::Code { content: " code".into() },
+            InlineElement::Link { href: "https://example.com".into(), title: None, content: vec![InlineElement::Text { text: "link".into() }] },
+            InlineElement::Image { src: "img.png".into(), alt: Some("alt text".into()), title: None },
+            InlineElement::LineBreak,
+            InlineElement::Text { text: "end".into() },
+        ];
+        let runs = html_inlines_to_docx_runs(&inlines);
+        assert_eq!(runs.len(), 11);         assert!(!runs[0].bold);
+        assert_eq!(runs[0].text, "plain ");
+        assert!(runs[1].bold);
+        assert_eq!(runs[1].text, "bold");
+        assert!(runs[2].italic);
+        assert_eq!(runs[2].text, " italic");
+        assert_eq!(runs[3].underline, Some(UnderlineType::Single));
+        assert_eq!(runs[3].text, " underline");
+        assert!(runs[4].strikethrough);
+        assert_eq!(runs[4].text, " strike");
+        assert_eq!(runs[5].vertical_alignment, Some(VerticalAlignment::Subscript));
+        assert_eq!(runs[6].vertical_alignment, Some(VerticalAlignment::Superscript));
+        assert_eq!(runs[7].font, Some("Courier New".to_string()));
+        assert!(runs[8].text.contains("link"));
+        assert!(runs[8].text.contains("https://example.com"));
+        assert_eq!(runs[9].text, "alt text\n");
+        assert!(runs[10].text.contains("end"));
+    }
+
+    #[test]
+    fn test_html_inlines_to_docx_runs_empty_text_skipped() {
+        let inlines = vec![
+            InlineElement::Text { text: "".into() },
+            InlineElement::Image { src: "img.png".into(), alt: None, title: None },
+            InlineElement::Bold { content: vec![] },
+        ];
+        let runs = html_inlines_to_docx_runs(&inlines);
+        assert!(runs.is_empty());
+    }
+
+    #[test]
+    fn test_html_inlines_to_docx_runs_linebreak_appends() {
+        let inlines = vec![
+            InlineElement::Text { text: "line1".into() },
+            InlineElement::LineBreak,
+            InlineElement::Text { text: "line2".into() },
+        ];
+        let runs = html_inlines_to_docx_runs(&inlines);
+        assert_eq!(runs.len(), 2);
+        assert_eq!(runs[0].text, "line1\n");
+    }
+
+    // ── Section B: html_to_odf / html_blocks_to_odf_content / html_inlines_to_odf_spans ──
+
+    #[test]
+    fn test_html_to_odf_metadata() {
+        let html = HtmlDocument {
+            doc_type: None,
+            html_attributes: vec![],
+            head: HtmlHead::default(),
+            body: HtmlBody { elements: vec![
+                BlockElement::Heading { level: 1, content: vec![InlineElement::Text { text: "Title".into() }], id: None },
+            ]},
+        };
+        let odf = html_to_odf(&html);
+        assert_eq!(odf.doc_type, OdfType::Text);
+        assert_eq!(odf.version, "1.2");
+    }
+
+    #[test]
+    fn test_html_blocks_to_odf_content_all_variants() {
+        let elements = vec![
+            BlockElement::Heading { level: 1, content: vec![InlineElement::Text { text: "H1".into() }], id: None },
+            BlockElement::Paragraph { content: vec![InlineElement::Text { text: "para".into() }], id: None },
+            BlockElement::UnorderedList {
+                items: vec![ListItem { content: vec![InlineElement::Text { text: "ul item".into() }] }],
+                id: None,
+            },
+            BlockElement::OrderedList {
+                items: vec![ListItem { content: vec![InlineElement::Text { text: "ol item".into() }] }],
+                id: None,
+                start: None,
+            },
+            BlockElement::Table {
+                rows: vec![TableRow { cells: vec![TableCell { content: vec![InlineElement::Text { text: "cell".into() }], colspan: 2, rowspan: 1 }], is_header: false }],
+                id: None,
+            },
+            BlockElement::HorizontalRule,
+            BlockElement::Pre { content: "pre text".into(), id: None },
+            BlockElement::Div { elements: vec![BlockElement::Paragraph { content: vec![InlineElement::Text { text: "div text".into() }], id: None }], id: None, class: None },
+            BlockElement::Blockquote { elements: vec![BlockElement::Paragraph { content: vec![InlineElement::Text { text: "bq text".into() }], id: None }], id: None },
+            BlockElement::RawHtml { tag: "div".into(), content: "raw".into() },
+            BlockElement::RawHtml { tag: "style".into(), content: "  ".into() },
+        ];
+        let content = html_blocks_to_odf_content(&elements);
+        assert_eq!(content.len(), 10);
+
+        // Heading
+        match &content[0] {
+            OdfTextContent::Heading(h) => { assert_eq!(h.text, "H1"); assert_eq!(h.level, 1); }
+            _ => panic!("expected Heading"),
+        }
+
+        match &content[1] {
+            OdfTextContent::Paragraph(p) => assert_eq!(p.text, "para"),
+            _ => panic!("expected Paragraph"),
+        }
+
+        match &content[2] {
+            OdfTextContent::List(l) => {
+                assert_eq!(l.list_type, OdfListType::Unordered);
+                assert_eq!(l.items.len(), 1);
+            }
+            _ => panic!("expected List"),
+        }
+
+        match &content[3] {
+            OdfTextContent::List(l) => {
+                assert_eq!(l.list_type, OdfListType::Ordered);
+            }
+            _ => panic!("expected List"),
+        }
+
+        match &content[4] {
+            OdfTextContent::Table(t) => {
+                assert_eq!(t.rows.len(), 1);
+                assert_eq!(t.rows[0].cells[0].text, "cell");
+                assert_eq!(t.rows[0].cells[0].col_span, 2);
+            }
+            _ => panic!("expected Table"),
+        }
+
+        match &content[5] {
+            OdfTextContent::Paragraph(p) => assert!(p.text.contains('\u{2500}')),
+            _ => panic!("expected Paragraph"),
+        }
+
+        match &content[6] {
+            OdfTextContent::Paragraph(p) => assert_eq!(p.text, "pre text"),
+            _ => panic!("expected Paragraph"),
+        }
+
+        match &content[7] {
+            OdfTextContent::Paragraph(p) => assert_eq!(p.text, "div text"),
+            _ => panic!("expected Paragraph"),
+        }
+
+        match &content[8] {
+            OdfTextContent::Paragraph(p) => assert_eq!(p.text, "bq text"),
+            _ => panic!("expected Paragraph"),
+        }
+
+        // RawHtml (non-empty)
+        match &content[9] {
+            OdfTextContent::Paragraph(p) => assert_eq!(p.text, "raw"),
+            _ => panic!("expected Paragraph"),
+        }
+    }
+
+    #[test]
+    fn test_html_blocks_to_odf_content_empty_paragraph_skipped() {
+        let elements = vec![
+            BlockElement::Paragraph { content: vec![InlineElement::Text { text: "real".into() }], id: None },
+        ];
+        let content = html_blocks_to_odf_content(&elements);
+        assert_eq!(content.len(), 1);
+        match &content[0] {
+            OdfTextContent::Paragraph(p) => assert_eq!(p.text, "real"),
+            _ => panic!("expected Paragraph"),
+        }
+    }
+
+    #[test]
+    fn test_html_inlines_to_odf_spans_all_variants() {
+        let inlines = vec![
+            InlineElement::Text { text: "text ".into() },
+            InlineElement::Bold { content: vec![InlineElement::Text { text: "bold".into() }] },
+            InlineElement::Italic { content: vec![InlineElement::Text { text: " italic".into() }] },
+            InlineElement::Underline { content: vec![InlineElement::Text { text: " underline".into() }] },
+            InlineElement::Strikethrough { content: vec![InlineElement::Text { text: " strike".into() }] },
+            InlineElement::Link { href: "https://ex.com".into(), title: None, content: vec![InlineElement::Text { text: "link".into() }] },
+            InlineElement::Code { content: " code".into() },
+            InlineElement::Image { src: "img.png".into(), alt: Some("img alt".into()), title: None },
+            InlineElement::Superscript { content: vec![InlineElement::Text { text: " super".into() }] },
+            InlineElement::Subscript { content: vec![InlineElement::Text { text: " sub".into() }] },
+            InlineElement::LineBreak,
+            InlineElement::Text { text: "end".into() },
+        ];
+        let spans = html_inlines_to_odf_spans(&inlines);
+        assert_eq!(spans.len(), 11);
+
+        assert!(!spans[0].bold);
+        assert_eq!(spans[0].text, "text ");
+        assert!(spans[1].bold);
+        assert!(!spans[1].italic);
+        assert_eq!(spans[1].text, "bold");
+        assert!(spans[2].italic);
+        assert_eq!(spans[2].text, " italic");
+        assert!(spans[3].underline);
+        assert_eq!(spans[3].text, " underline");
+        assert!(!spans[4].bold && !spans[4].italic && !spans[4].underline);
+        assert_eq!(spans[4].text, " strike");
+        assert!(spans[5].underline);
+        assert!(spans[5].text.contains("link"));
+        assert!(spans[5].text.contains("https://ex.com"));
+        assert_eq!(spans[6].text, " code");
+        assert_eq!(spans[7].text, "img alt");
+        assert_eq!(spans[8].text, " super");
+        assert_eq!(spans[9].text, " sub\n");
+        assert_eq!(spans[10].text, "end");
+    }
+
+    #[test]
+    fn test_html_inlines_to_odf_spans_empty_skipped() {
+        let spans = html_inlines_to_odf_spans(&[
+            InlineElement::Text { text: "".into() },
+            InlineElement::Image { src: "img.png".into(), alt: None, title: None },
+        ]);
+        assert!(spans.is_empty());
+    }
+
+    // ── docx_to_odf ────────────────────────────────────────────────────
+
+    #[test]
+    fn test_docx_to_odf_table_and_metadata() {
+        let doc = OoxmlDocument {
+            format: OoxmlFormat::Docx,
+            version: "1.0".to_string(),
+            content_types: vec![],
+            main_part: Some("word/document.xml".to_string()),
+            shared_strings: vec![],
+            part_count: 1,
+            core_properties: CoreProperties {
+                title: Some("Doc Title".into()),
+                creator: Some("Author".into()),
+                subject: Some("Subject".into()),
+                description: Some("Desc".into()),
+                ..Default::default()
+            },
+            relationships: vec![],
+            body: Some(DocxBody {
+                paragraphs: vec![],
+                tables: vec![DocxTable {
+                    rows: vec![DocxTableRow {
+                        cells: vec![
+                            DocxTableCell { paragraphs: vec![DocxParagraph { style_id: None, properties: Default::default(), runs: vec![DocxRun { text: "Cell A1".into(), bold: false, italic: false, underline: None, strikethrough: false, double_strikethrough: false, font: None, font_size: None, font_size_cs: None, color: None, highlight: None, vertical_alignment: None, small_caps: false, all_caps: false }] }], column_span: 1, row_span: 1, width: None, shading: None },
+                            DocxTableCell { paragraphs: vec![DocxParagraph { style_id: None, properties: Default::default(), runs: vec![DocxRun { text: "Cell B1".into(), bold: false, italic: false, underline: None, strikethrough: false, double_strikethrough: false, font: None, font_size: None, font_size_cs: None, color: None, highlight: None, vertical_alignment: None, small_caps: false, all_caps: false }] }], column_span: 2, row_span: 1, width: None, shading: None },
+                        ],
+                        height: None,
+                        is_header: true,
+                    }],
+                    properties: Default::default(),
+                }],
+            }),
+        };
+        let odf = docx_to_odf(&doc);
+        assert_eq!(odf.metadata.title, Some("Doc Title".into()));
+        assert_eq!(odf.metadata.creator, Some("Author".into()));
+        assert_eq!(odf.metadata.subject, Some("Subject".into()));
+        assert_eq!(odf.metadata.description, Some("Desc".into()));
+
+        match &odf.content {
+            OdfContent::Text { content, .. } => {
+                assert_eq!(content.len(), 1);
+                match &content[0] {
+                    OdfTextContent::Table(t) => {
+                        assert_eq!(t.rows.len(), 1);
+                        assert_eq!(t.rows[0].cells[0].text, "Cell A1");
+                        assert_eq!(t.rows[0].cells[1].col_span, 2);
+                    }
+                    _ => panic!("expected Table"),
+                }
+            }
+            _ => panic!("expected Text content"),
+        }
+    }
+
+    #[test]
+    fn test_docx_to_odf_heading() {
+        let doc = OoxmlDocument {
+            format: OoxmlFormat::Docx,
+            version: "1.0".to_string(),
+            content_types: vec![],
+            main_part: Some("word/document.xml".to_string()),
+            shared_strings: vec![],
+            part_count: 1,
+            core_properties: CoreProperties::default(),
+            relationships: vec![],
+            body: Some(DocxBody {
+                paragraphs: vec![
+                    DocxParagraph {
+                        style_id: Some("Heading1".into()),
+                        properties: DocxParagraphProperties::default(),
+                        runs: vec![DocxRun { text: "Chapter".into(), bold: true, italic: false, underline: None, strikethrough: false, double_strikethrough: false, font: None, font_size: None, font_size_cs: None, color: None, highlight: None, vertical_alignment: None, small_caps: false, all_caps: false }],
+                    },
+                    DocxParagraph {
+                        style_id: None,
+                        properties: DocxParagraphProperties::default(),
+                        runs: vec![DocxRun { text: "Body text".into(), bold: false, italic: false, underline: None, strikethrough: false, double_strikethrough: false, font: None, font_size: None, font_size_cs: None, color: None, highlight: None, vertical_alignment: None, small_caps: false, all_caps: false }],
+                    },
+                ],
+                tables: vec![],
+            }),
+        };
+        let odf = docx_to_odf(&doc);
+        match &odf.content {
+            OdfContent::Text { content, .. } => {
+                assert_eq!(content.len(), 2);
+                match &content[0] {
+                    OdfTextContent::Heading(h) => {
+                        assert_eq!(h.text, "Chapter");
+                        assert_eq!(h.level, 1);
+                    }
+                    _ => panic!("expected Heading"),
+                }
+                match &content[1] {
+                    OdfTextContent::Paragraph(p) => assert_eq!(p.text, "Body text"),
+                    _ => panic!("expected Paragraph"),
+                }
+            }
+            _ => panic!("expected Text content"),
+        }
+    }
+
+    // ── odf_to_ooxml ────────────────────────────────────────────────────
+
+    #[test]
+    fn test_odf_to_ooxml_table_list_heading() {
+        let odf = OdfDocument {
+            doc_type: OdfType::Text,
+            version: "1.2".to_string(),
+            metadata: OdfMetadata {
+                title: Some("ODF Doc".into()),
+                creator: Some("Creator".into()),
+                ..Default::default()
+            },
+            content: OdfContent::Text {
+                content: vec![
+                    OdfTextContent::Heading(TextHeading { text: "Title".into(), level: 2, style_name: None }),
+                    OdfTextContent::List(OdfList {
+                        list_style_name: None,
+                        items: vec![
+                            OdfListItem { content: vec![OdfTextContent::Paragraph(TextParagraph { text: "Item 1".into(), style_name: None, spans: vec![] })], nesting_level: 0 },
+                            OdfListItem { content: vec![OdfTextContent::Paragraph(TextParagraph { text: "Item 2".into(), style_name: None, spans: vec![] })], nesting_level: 0 },
+                        ],
+                        list_type: OdfListType::Ordered,
+                        continue_numbering: false,
+                        start_value: None,
+                    }),
+                    OdfTextContent::Table(OdfTable {
+                        name: None,
+                        rows: vec![OdfTableRow {
+                            cells: vec![
+                                OdfTableCell { text: "X1".into(), row_span: 1, col_span: 1, cell_type: CellType::String, value: None },
+                                OdfTableCell { text: "Y1".into(), row_span: 2, col_span: 1, cell_type: CellType::String, value: None },
+                            ],
+                        }],
+                        num_columns: 2,
+                    }),
+                ],
+                page_layouts: vec![],
+                sections: vec![],
+            },
+            manifest: vec![],
+            fonts: vec![],
+            styles: vec![],
+        };
+        let ooxml = odf_to_ooxml(&odf);
+        assert_eq!(ooxml.core_properties.title, Some("ODF Doc".into()));
+        assert_eq!(ooxml.core_properties.creator, Some("Creator".into()));
+
+        let body = ooxml.body.as_ref().unwrap();
+        assert_eq!(body.paragraphs.len(), 3);
+        assert_eq!(body.paragraphs[0].style_id, Some("Heading2".into()));
+        assert!(body.paragraphs[0].runs[0].bold);
+        assert_eq!(body.paragraphs[0].runs[0].font_size, Some(32));
+
+        assert!(body.paragraphs[1].runs[0].text.contains("1."));
+        assert!(body.paragraphs[1].runs[0].text.contains("Item 1"));
+        assert!(body.paragraphs[2].runs[0].text.contains("2."));
+        assert!(body.paragraphs[2].runs[0].text.contains("Item 2"));
+
+        assert_eq!(body.tables.len(), 1);
+        assert_eq!(body.tables[0].rows[0].cells[0].paragraphs[0].runs[0].text, "X1");
+        assert_eq!(body.tables[0].rows[0].cells[1].row_span, 2);
+    }
+
+    #[test]
+    fn test_odf_to_ooxml_text_spans_with_styles() {
+        let odf = OdfDocument {
+            doc_type: OdfType::Text,
+            version: "1.2".to_string(),
+            metadata: OdfMetadata::default(),
+            content: OdfContent::Text {
+                content: vec![OdfTextContent::Paragraph(TextParagraph {
+                    text: "styled".into(),
+                    style_name: None,
+                    spans: vec![
+                        TextSpan { text: "bold".into(), style_name: None, bold: true, italic: false, underline: false },
+                        TextSpan { text: " italic".into(), style_name: None, bold: false, italic: true, underline: false },
+                        TextSpan { text: " underlined".into(), style_name: None, bold: false, italic: false, underline: true },
+                    ],
+                })],
+                page_layouts: vec![],
+                sections: vec![],
+            },
+            manifest: vec![],
+            fonts: vec![],
+            styles: vec![],
+        };
+        let ooxml = odf_to_ooxml(&odf);
+        let body = ooxml.body.as_ref().unwrap();
+        assert_eq!(body.paragraphs.len(), 1);
+        let runs = &body.paragraphs[0].runs;
+        assert_eq!(runs.len(), 3);
+        assert!(runs[0].bold);
+        assert!(!runs[0].italic);
+        assert!(runs[1].italic);
+        assert!(!runs[1].bold);
+        assert_eq!(runs[2].underline, Some(UnderlineType::Single));
+    }
+
+    #[test]
+    fn test_odf_to_ooxml_unordered_list_and_empty_para() {
+        let odf = OdfDocument {
+            doc_type: OdfType::Text,
+            version: "1.2".to_string(),
+            metadata: OdfMetadata::default(),
+            content: OdfContent::Text {
+                content: vec![
+                    OdfTextContent::Paragraph(TextParagraph { text: "".into(), style_name: None, spans: vec![] }),
+                    OdfTextContent::List(OdfList {
+                        list_style_name: None,
+                        items: vec![OdfListItem { content: vec![OdfTextContent::Paragraph(TextParagraph { text: "Bullet".into(), style_name: None, spans: vec![] })], nesting_level: 0 }],
+                        list_type: OdfListType::Unordered,
+                        continue_numbering: false,
+                        start_value: None,
+                    }),
+                ],
+                page_layouts: vec![],
+                sections: vec![],
+            },
+            manifest: vec![],
+            fonts: vec![],
+            styles: vec![],
+        };
+        let ooxml = odf_to_ooxml(&odf);
+        let body = ooxml.body.as_ref().unwrap();
+        // Empty paragraph is skipped, only list item remains
+        assert_eq!(body.paragraphs.len(), 1);
+        assert!(body.paragraphs[0].runs[0].text.contains('\u{2022}'));
+        assert!(body.paragraphs[0].runs[0].text.contains("Bullet"));
+    }
+
+    // ── rtf_to_ooxml ────────────────────────────────────────────────────
+
+    #[test]
+    fn test_rtf_to_ooxml_bold_italic_underline() {
+        let rtf_doc = RtfDocument {
+            version: 1,
+            ansi_codepage: None,
+            info: None,
+            fonts: vec![],
+            colors: vec![],
+            body: vec![
+                RtfBlock::Paragraph { content: vec![
+                    RtfInline::Text { text: "normal ".into() },
+                    RtfInline::Bold { content: vec![RtfInline::Text { text: "bold".into() }] },
+                    RtfInline::Italic { content: vec![RtfInline::Text { text: " italic".into() }] },
+                    RtfInline::Underline { content: vec![RtfInline::Text { text: " underline".into() }] },
+                ], alignment: None, indent_left: None, indent_first: None },
+            ],
+        };
+        let ooxml = rtf_to_ooxml(&rtf_doc);
+        let body = ooxml.body.as_ref().unwrap();
+        assert_eq!(body.paragraphs.len(), 1);
+        let runs = &body.paragraphs[0].runs;
+        assert_eq!(runs.len(), 4);
+        assert!(!runs[0].bold); // normal
+        assert!(runs[1].bold);  // bold
+        assert!(runs[2].italic); // italic
+        assert_eq!(runs[3].underline, Some(UnderlineType::Single)); // underline
+    }
+
+    #[test]
+    fn test_rtf_to_ooxml_table() {
+        let rtf_doc = RtfDocument {
+            version: 1,
+            ansi_codepage: None,
+            info: None,
+            fonts: vec![],
+            colors: vec![],
+            body: vec![RtfBlock::Table {
+                rows: vec![wo_rtf::model::RtfTableRow {
+                    cells: vec![
+                        wo_rtf::model::RtfTableCell { content: vec![RtfInline::Text { text: "Cell1".into() }], width: None },
+                        wo_rtf::model::RtfTableCell { content: vec![RtfInline::Text { text: "Cell2".into() }], width: Some(100) },
+                    ],
+                }],
+            }],
+        };
+        let ooxml = rtf_to_ooxml(&rtf_doc);
+        let body = ooxml.body.as_ref().unwrap();
+        // The table placeholder paragraph should be filtered out (no runs)
+        assert!(body.paragraphs.is_empty());
+        // The table should exist
+        assert_eq!(body.tables.len(), 1);
+        assert_eq!(body.tables[0].rows[0].cells[0].paragraphs[0].runs[0].text, "Cell1");
+        assert_eq!(body.tables[0].rows[0].cells[1].width, Some(100));
+    }
+
+    // ── rtf_inlines_to_docx_runs ────────────────────────────────────────
+
+    #[test]
+    fn test_rtf_inlines_to_docx_runs_all_variants() {
+        let inlines = vec![
+            RtfInline::Text { text: "text ".into() },
+            RtfInline::Bold { content: vec![RtfInline::Text { text: "bold".into() }] },
+            RtfInline::Italic { content: vec![RtfInline::Text { text: " italic".into() }] },
+            RtfInline::Underline { content: vec![RtfInline::Text { text: " und".into() }] },
+            RtfInline::Strikethrough { content: vec![RtfInline::Text { text: " strike".into() }] },
+            RtfInline::Superscript { content: vec![RtfInline::Text { text: " super".into() }] },
+            RtfInline::Subscript { content: vec![RtfInline::Text { text: " sub".into() }] },
+            RtfInline::Font { index: 0, content: vec![RtfInline::Text { text: " font".into() }] },
+            RtfInline::FontSize { half_points: 24, content: vec![RtfInline::Text { text: " size".into() }] },
+            RtfInline::Color { index: 1, content: vec![RtfInline::Text { text: " color".into() }] },
+            RtfInline::LineBreak,
+            RtfInline::PageBreak,
+            RtfInline::Tab,
+            RtfInline::Text { text: "end".into() },
+        ];
+        let runs = rtf_inlines_to_docx_runs(&inlines);
+        assert_eq!(runs.len(), 11);
+
+        assert!(!runs[0].bold);
+        assert_eq!(runs[0].text, "text ");
+
+        assert!(runs[1].bold);
+        assert_eq!(runs[1].text, "bold");
+
+        assert!(runs[2].italic);
+        assert_eq!(runs[2].text, " italic");
+
+        assert_eq!(runs[3].underline, Some(UnderlineType::Single));
+        assert_eq!(runs[3].text, " und");
+
+        assert!(runs[4].strikethrough);
+        assert_eq!(runs[4].text, " strike");
+
+        assert_eq!(runs[5].vertical_alignment, Some(VerticalAlignment::Superscript));
+        assert_eq!(runs[6].vertical_alignment, Some(VerticalAlignment::Subscript));
+
+        assert_eq!(runs[7].text, " font");
+        assert_eq!(runs[8].text, " size");
+        assert_eq!(runs[9].text, " color\n");
+
+        assert_eq!(runs[10].text, "end");
+    }
+
+    #[test]
+    fn test_rtf_inlines_to_docx_runs_empty_text_skipped() {
+        let runs = rtf_inlines_to_docx_runs(&[
+            RtfInline::Text { text: "".into() },
+        ]);
+        assert!(runs.is_empty());
+    }
+
+    #[test]
+    fn test_rtf_inlines_to_docx_runs_linebreak_no_prior() {
+        let runs = rtf_inlines_to_docx_runs(&[
+            RtfInline::LineBreak,
+            RtfInline::Text { text: "after".into() },
+        ]);
+        assert_eq!(runs.len(), 1);
+        assert_eq!(runs[0].text, "after");
+    }
+
+    // ── html_to_ooxml empty paragraph skip ──────────────────────────────
+
+    #[test]
+    fn test_html_to_ooxml_paragraph_empty_inlines() {
+        let paragraph_with_empty_inlines = BlockElement::Paragraph {
+            content: vec![InlineElement::Bold { content: vec![] }],
+            id: None,
+        };
+        let html = HtmlDocument {
+            doc_type: None,
+            html_attributes: vec![],
+            head: HtmlHead::default(),
+            body: HtmlBody { elements: vec![paragraph_with_empty_inlines] },
+        };
+        let ooxml = html_to_ooxml(&html);
+        let body = ooxml.body.as_ref().unwrap();
+        assert!(body.paragraphs.is_empty());
+    }
+
+    #[test]
+    fn test_html_to_odf_empty_paragraph() {
+        let elements = vec![BlockElement::Paragraph {
+            content: vec![InlineElement::Text { text: "".into() }],
+            id: None,
+        }];
+        let content = html_blocks_to_odf_content(&elements);
+        assert_eq!(content.len(), 1);
+        match &content[0] {
+            OdfTextContent::Paragraph(p) => assert_eq!(p.text, ""),
+            _ => panic!("expected Paragraph"),
+        }
+    }
+
+    // ── Section A1: html_elements_to_fb2 ──────────────────────────────
+
+    #[test]
+    fn test_html_elements_to_fb2_heading_empty_text() {
+        let result = html_elements_to_fb2(&[BlockElement::Heading {
+            level: 1,
+            content: vec![],
+            id: None,
+        }]);
+        assert!(result.is_empty(), "heading with empty text should produce no output");
+    }
+
+    #[test]
+    fn test_html_elements_to_fb2_paragraph_empty_formatting() {
+        let result = html_elements_to_fb2(&[BlockElement::Paragraph {
+            content: vec![InlineElement::Text { text: String::new() }],
+            id: None,
+        }]);
+        assert!(result.is_empty(), "paragraph with empty text should produce no output");
+    }
+
+    #[test]
+    fn test_html_elements_to_fb2_div_nested_paragraphs() {
+        let result = html_elements_to_fb2(&[BlockElement::Div {
+            elements: vec![BlockElement::Paragraph {
+                content: vec![InlineElement::Text {
+                    text: "inner div text".into(),
+                }],
+                id: None,
+            }],
+            id: None,
+            class: None,
+        }]);
+        assert_eq!(result.len(), 1, "div should produce one paragraph");
+        if let ContentElement::Paragraph { content, .. } = &result[0] {
+            assert_eq!(content[0].text, "inner div text");
+        } else {
+            panic!("expected Paragraph, got {:?}", result[0]);
+        }
+    }
+
+    #[test]
+    fn test_html_elements_to_fb2_blockquote_nested() {
+        let result = html_elements_to_fb2(&[BlockElement::Blockquote {
+            elements: vec![BlockElement::Paragraph {
+                content: vec![InlineElement::Text {
+                    text: "quote text".into(),
+                }],
+                id: None,
+            }],
+            id: None,
+        }]);
+        assert_eq!(result.len(), 1, "blockquote should produce one paragraph");
+        if let ContentElement::Paragraph { content, .. } = &result[0] {
+            assert_eq!(content[0].text, "quote text");
+        } else {
+            panic!("expected Paragraph, got {:?}", result[0]);
+        }
+    }
+
+    #[test]
+    fn test_html_elements_to_fb2_pre_empty_content() {
+        let result = html_elements_to_fb2(&[BlockElement::Pre {
+            content: String::new(),
+            id: None,
+        }]);
+        assert!(result.is_empty(), "pre with empty content should produce no output");
+    }
+
+    #[test]
+    fn test_html_elements_to_fb2_pre_with_content() {
+        let result = html_elements_to_fb2(&[BlockElement::Pre {
+            content: "code snippet".into(),
+            id: None,
+        }]);
+        assert_eq!(result.len(), 1);
+        if let ContentElement::Paragraph { content, .. } = &result[0] {
+            assert_eq!(content[0].style, TextStyle::Code);
+            assert_eq!(content[0].text, "code snippet");
+        } else {
+            panic!("expected Paragraph, got {:?}", result[0]);
+        }
+    }
+
+    #[test]
+    fn test_html_elements_to_fb2_list_items() {
+        let items = vec![
+            wo_html::model::ListItem {
+                content: vec![InlineElement::Text {
+                    text: "item one".into(),
+                }],
+            },
+            wo_html::model::ListItem {
+                content: vec![],
+            },
+        ];
+        let ul = html_elements_to_fb2(&[BlockElement::UnorderedList {
+            items: items.clone(),
+            id: None,
+        }]);
+        assert_eq!(ul.len(), 1, "non-empty list item should be included, empty skipped");
+        let ol = html_elements_to_fb2(&[BlockElement::OrderedList {
+            items,
+            id: None,
+            start: None,
+        }]);
+        assert_eq!(ol.len(), 1);
+        if let ContentElement::Paragraph { content, .. } = &ol[0] {
+            assert_eq!(content[0].text, "item one");
+        }
+    }
+
+    #[test]
+    fn test_html_elements_to_fb2_table() {
+        let result = html_elements_to_fb2(&[BlockElement::Table {
+            rows: vec![wo_html::model::TableRow {
+                cells: vec![wo_html::model::TableCell {
+                    content: vec![InlineElement::Text {
+                        text: "cell data".into(),
+                    }],
+                    colspan: 1,
+                    rowspan: 1,
+                }],
+                is_header: false,
+            }],
+            id: None,
+        }]);
+        assert_eq!(result.len(), 1);
+        if let ContentElement::Paragraph { content, .. } = &result[0] {
+            assert_eq!(content[0].text, "cell data");
+        } else {
+            panic!("expected Paragraph, got {:?}", result[0]);
+        }
+    }
+
+    #[test]
+    fn test_html_elements_to_fb2_horizontal_rule() {
+        let result = html_elements_to_fb2(&[BlockElement::HorizontalRule]);
+        assert_eq!(result.len(), 1);
+        assert!(matches!(result[0], ContentElement::EmptyLine));
+    }
+
+    #[test]
+    fn test_html_elements_to_fb2_raw_html() {
+        let result = html_elements_to_fb2(&[BlockElement::RawHtml {
+            tag: "div".into(),
+            content: "<p>raw</p>".into(),
+        }]);
+        assert!(result.is_empty(), "RawHtml should be skipped");
+    }
+
+    #[test]
+    fn test_html_elements_to_fb2_mixed() {
+        let result = html_elements_to_fb2(&[
+            BlockElement::Heading {
+                level: 2,
+                content: vec![InlineElement::Text {
+                    text: "heading".into(),
+                }],
+                id: None,
+            },
+            BlockElement::HorizontalRule,
+            BlockElement::RawHtml {
+                tag: "div".into(),
+                content: "raw".into(),
+            },
+        ]);
+        assert_eq!(result.len(), 2, "heading + hr should produce 2 elements");
+        assert!(matches!(result[0], ContentElement::Paragraph { .. }));
+        assert!(matches!(result[1], ContentElement::EmptyLine));
+    }
+
+    // ── Section A2: inline_elements_to_formatting ─────────────────────
+
+    #[test]
+    fn test_inline_elements_to_formatting_empty_text() {
+        let result = inline_elements_to_formatting(&[InlineElement::Text {
+            text: String::new(),
+        }]);
+        assert!(result.is_empty(), "empty text should produce no formatting");
+    }
+
+    #[test]
+    fn test_inline_elements_to_formatting_bold_nested() {
+        let result = inline_elements_to_formatting(&[InlineElement::Bold {
+            content: vec![InlineElement::Text {
+                text: "bold text".into(),
+            }],
+        }]);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].style, TextStyle::Strong);
+        assert_eq!(result[0].text, "bold text");
+    }
+
+    #[test]
+    fn test_inline_elements_to_formatting_italic_nested() {
+        let result = inline_elements_to_formatting(&[InlineElement::Italic {
+            content: vec![InlineElement::Text {
+                text: "italic text".into(),
+            }],
+        }]);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].style, TextStyle::Emphasis);
+    }
+
+    #[test]
+    fn test_inline_elements_to_formatting_strikethrough_nested() {
+        let result = inline_elements_to_formatting(&[InlineElement::Strikethrough {
+            content: vec![InlineElement::Text {
+                text: "struck".into(),
+            }],
+        }]);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].style, TextStyle::Strikethrough);
+    }
+
+    #[test]
+    fn test_inline_elements_to_formatting_underline_nested() {
+        let result = inline_elements_to_formatting(&[InlineElement::Underline {
+            content: vec![InlineElement::Text {
+                text: "underlined".into(),
+            }],
+        }]);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].text, "underlined");
+    }
+
+    #[test]
+    fn test_inline_elements_to_formatting_subscript_nested() {
+        let result = inline_elements_to_formatting(&[InlineElement::Subscript {
+            content: vec![InlineElement::Text {
+                text: "sub".into(),
+            }],
+        }]);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].style, TextStyle::Subscript);
+    }
+
+    #[test]
+    fn test_inline_elements_to_formatting_superscript_nested() {
+        let result = inline_elements_to_formatting(&[InlineElement::Superscript {
+            content: vec![InlineElement::Text {
+                text: "super".into(),
+            }],
+        }]);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].style, TextStyle::Superscript);
+    }
+
+    #[test]
+    fn test_inline_elements_to_formatting_code_empty() {
+        let result = inline_elements_to_formatting(&[InlineElement::Code {
+            content: String::new(),
+        }]);
+        assert!(result.is_empty(), "empty code should produce no output");
+    }
+
+    #[test]
+    fn test_inline_elements_to_formatting_code_nonempty() {
+        let result = inline_elements_to_formatting(&[InlineElement::Code {
+            content: "mono".into(),
+        }]);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].style, TextStyle::Code);
+        assert_eq!(result[0].text, "mono");
+    }
+
+    #[test]
+    fn test_inline_elements_to_formatting_link_empty_content() {
+        let result = inline_elements_to_formatting(&[InlineElement::Link {
+            href: "http://example.com".into(),
+            title: None,
+            content: vec![],
+        }]);
+        assert!(result.is_empty(), "link with empty content should produce no output");
+    }
+
+    #[test]
+    fn test_inline_elements_to_formatting_link_with_content() {
+        let result = inline_elements_to_formatting(&[InlineElement::Link {
+            href: "http://example.com".into(),
+            title: Some("Example".into()),
+            content: vec![InlineElement::Text {
+                text: "click me".into(),
+            }],
+        }]);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].text, "click me");
+        assert_eq!(result[0].href, Some("http://example.com".into()));
+        assert_eq!(result[0].title, Some("Example".into()));
+    }
+
+    #[test]
+    fn test_inline_elements_to_formatting_image_with_alt() {
+        let result = inline_elements_to_formatting(&[InlineElement::Image {
+            src: "img.png".into(),
+            alt: Some("alt text".into()),
+            title: None,
+        }]);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].text, "alt text");
+    }
+
+    #[test]
+    fn test_inline_elements_to_formatting_image_no_alt() {
+        let result = inline_elements_to_formatting(&[InlineElement::Image {
+            src: "img.png".into(),
+            alt: None,
+            title: None,
+        }]);
+        assert!(result.is_empty(), "image without alt should produce no output");
+    }
+
+    #[test]
+    fn test_inline_elements_to_formatting_image_empty_alt() {
+        let result = inline_elements_to_formatting(&[InlineElement::Image {
+            src: "img.png".into(),
+            alt: Some(String::new()),
+            title: None,
+        }]);
+        assert!(result.is_empty(), "image with empty alt should produce no output");
+    }
+
+    #[test]
+    fn test_inline_elements_to_formatting_line_break() {
+        let result = inline_elements_to_formatting(&[InlineElement::LineBreak]);
+        assert!(result.is_empty(), "LineBreak should produce no output");
+    }
+
+    #[test]
+    fn test_inline_elements_to_formatting_nested_bold_italic() {
+        let result = inline_elements_to_formatting(&[InlineElement::Bold {
+            content: vec![InlineElement::Italic {
+                content: vec![InlineElement::Text {
+                    text: "bolditalic".into(),
+                }],
+            }],
+        }]);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].style, TextStyle::Strong);
+        assert_eq!(result[0].text, "bolditalic");
+    }
+
+    // ── Section A3: extract_inline_text ────────────────────────────────
+
+    #[test]
+    fn test_extract_inline_text_all_variants() {
+        let result = extract_inline_text(&[
+            InlineElement::Text { text: "Hello ".into() },
+            InlineElement::Bold {
+                content: vec![InlineElement::Text { text: "bold".into() }],
+            },
+            InlineElement::Italic {
+                content: vec![InlineElement::Text { text: " italic".into() }],
+            },
+            InlineElement::Underline {
+                content: vec![InlineElement::Text { text: " underline".into() }],
+            },
+            InlineElement::Strikethrough {
+                content: vec![InlineElement::Text { text: " strike".into() }],
+            },
+            InlineElement::Subscript {
+                content: vec![InlineElement::Text { text: " sub".into() }],
+            },
+            InlineElement::Superscript {
+                content: vec![InlineElement::Text { text: " super".into() }],
+            },
+            InlineElement::Code { content: " code".into() },
+            InlineElement::Link {
+                href: "http://x.com".into(),
+                title: None,
+                content: vec![InlineElement::Text { text: " link".into() }],
+            },
+            InlineElement::Image {
+                src: "i.png".into(),
+                alt: Some(" img".into()),
+                title: None,
+            },
+            InlineElement::Image {
+                src: "i.png".into(),
+                alt: None,
+                title: None,
+            },
+            InlineElement::LineBreak,
+            InlineElement::Text { text: " end".into() },
+        ]);
+        assert_eq!(result, "Hello bold italic underline strike sub super code link img  end");
+    }
+
+    #[test]
+    fn test_extract_inline_text_nested_multilevel() {
+        let result = extract_inline_text(&[InlineElement::Bold {
+            content: vec![InlineElement::Italic {
+                content: vec![InlineElement::Text {
+                    text: "nested text".into(),
+                }],
+            }],
+        }]);
+        assert_eq!(result, "nested text");
+    }
+
+    #[test]
+    fn test_extract_inline_text_linebreak_as_space() {
+        let result = extract_inline_text(&[
+            InlineElement::Text { text: "a".into() },
+            InlineElement::LineBreak,
+            InlineElement::Text { text: "b".into() },
+        ]);
+        assert_eq!(result, "a b");
+    }
+
+    #[test]
+    fn test_extract_inline_text_image_no_alt_skipped() {
+        let result = extract_inline_text(&[InlineElement::Image {
+            src: "x.png".into(),
+            alt: None,
+            title: None,
+        }]);
+        assert_eq!(result, "", "image with no alt should contribute nothing");
+    }
+
+    // ── Section A4: extract_rtf_text ──────────────────────────────────
+
+    #[test]
+    fn test_extract_rtf_text_all_variants() {
+        let result = extract_rtf_text(&[
+            RtfInline::Text { text: "Hello ".into() },
+            RtfInline::Bold {
+                content: vec![RtfInline::Text { text: "bold".into() }],
+            },
+            RtfInline::Italic {
+                content: vec![RtfInline::Text { text: " italic".into() }],
+            },
+            RtfInline::Underline {
+                content: vec![RtfInline::Text { text: " underline".into() }],
+            },
+            RtfInline::Strikethrough {
+                content: vec![RtfInline::Text { text: " strike".into() }],
+            },
+            RtfInline::Superscript {
+                content: vec![RtfInline::Text { text: " super".into() }],
+            },
+            RtfInline::Subscript {
+                content: vec![RtfInline::Text { text: " sub".into() }],
+            },
+            RtfInline::Font {
+                index: 0,
+                content: vec![RtfInline::Text { text: " font".into() }],
+            },
+            RtfInline::FontSize {
+                half_points: 24,
+                content: vec![RtfInline::Text { text: " size".into() }],
+            },
+            RtfInline::Color {
+                index: 1,
+                content: vec![RtfInline::Text { text: " color".into() }],
+            },
+            RtfInline::LineBreak,
+            RtfInline::PageBreak,
+            RtfInline::Tab,
+            RtfInline::Text { text: " end".into() },
+        ]);
+        assert!(result.contains("Hello bold italic underline strike super sub font size color"));
+        assert!(result.contains("end"));
+        assert!(result.contains('\n'), "LineBreak should produce newline");
+        assert!(
+            result.contains("\n\n"),
+            "PageBreak should produce double newline"
+        );
+        assert!(result.contains('\t'), "Tab should produce tab");
+    }
+
+    #[test]
+    fn test_extract_rtf_text_font_fontsize_color_nested() {
+        let result = extract_rtf_text(&[RtfInline::Font {
+            index: 0,
+            content: vec![RtfInline::FontSize {
+                half_points: 24,
+                content: vec![RtfInline::Color {
+                    index: 1,
+                    content: vec![RtfInline::Text {
+                        text: "styled".into(),
+                    }],
+                }],
+            }],
+        }]);
+        assert_eq!(result, "styled");
+    }
+
+    #[test]
+    fn test_extract_rtf_text_linebreak_pagebreak_tab() {
+        let result = extract_rtf_text(&[
+            RtfInline::Text { text: "a".into() },
+            RtfInline::LineBreak,
+            RtfInline::Text { text: "b".into() },
+            RtfInline::PageBreak,
+            RtfInline::Text { text: "c".into() },
+            RtfInline::Tab,
+            RtfInline::Text { text: "d".into() },
+        ]);
+        assert_eq!(result, "a\nb\n\nc\td");
+    }
+
+    // ── Section A5: rtf_blocks_to_text_lines ──────────────────────────
+
+    #[test]
+    fn test_rtf_blocks_to_text_lines_paragraph() {
+        let lines = rtf_blocks_to_text_lines(&[RtfBlock::Paragraph {
+            content: vec![RtfInline::Text {
+                text: "line1".into(),
+            }],
+            alignment: None,
+            indent_left: None,
+            indent_first: None,
+        }]);
+        assert_eq!(lines, vec!["line1"]);
+    }
+
+    #[test]
+    fn test_rtf_blocks_to_text_lines_table() {
+        let lines = rtf_blocks_to_text_lines(&[RtfBlock::Table {
+            rows: vec![RtfTableRow {
+                cells: vec![
+                    RtfTableCell {
+                        content: vec![RtfInline::Text {
+                            text: "a".into(),
+                        }],
+                        width: None,
+                    },
+                    RtfTableCell {
+                        content: vec![RtfInline::Text {
+                            text: "b".into(),
+                        }],
+                        width: None,
+                    },
+                ],
+            }],
+        }]);
+        assert_eq!(lines, vec!["a\tb"]);
+    }
+
+    #[test]
+    fn test_rtf_blocks_to_text_lines_linebreak_splits_paragraph() {
+        let lines = rtf_blocks_to_text_lines(&[RtfBlock::Paragraph {
+            content: vec![
+                RtfInline::Text {
+                    text: "part1".into(),
+                },
+                RtfInline::LineBreak,
+                RtfInline::Text {
+                    text: "part2".into(),
+                },
+            ],
+            alignment: None,
+            indent_left: None,
+            indent_first: None,
+        }]);
+        assert_eq!(lines, vec!["part1", "part2"]);
+    }
+
+    // ── Section A6: rtf_to_html_inlines ───────────────────────────────
+
+    #[test]
+    fn test_rtf_to_html_inlines_all_variants() {
+        let result = rtf_to_html_inlines(&[
+            RtfInline::Text { text: "plain".into() },
+            RtfInline::Bold {
+                content: vec![RtfInline::Text { text: "b".into() }],
+            },
+            RtfInline::Italic {
+                content: vec![RtfInline::Text { text: "i".into() }],
+            },
+            RtfInline::Underline {
+                content: vec![RtfInline::Text { text: "u".into() }],
+            },
+            RtfInline::Strikethrough {
+                content: vec![RtfInline::Text { text: "s".into() }],
+            },
+            RtfInline::Superscript {
+                content: vec![RtfInline::Text { text: "sup".into() }],
+            },
+            RtfInline::Subscript {
+                content: vec![RtfInline::Text { text: "sub".into() }],
+            },
+            RtfInline::Font {
+                index: 0,
+                content: vec![RtfInline::Text {
+                    text: "font".into(),
+                }],
+            },
+            RtfInline::FontSize {
+                half_points: 24,
+                content: vec![RtfInline::Text {
+                    text: "size".into(),
+                }],
+            },
+            RtfInline::Color {
+                index: 1,
+                content: vec![RtfInline::Text {
+                    text: "color".into(),
+                }],
+            },
+            RtfInline::LineBreak,
+            RtfInline::PageBreak,
+            RtfInline::Tab,
+        ]);
+        assert_eq!(result.len(), 11);
+        assert!(matches!(result[0], InlineElement::Text { .. }));
+        assert!(matches!(result[1], InlineElement::Bold { .. }));
+        assert!(matches!(result[2], InlineElement::Italic { .. }));
+        assert!(matches!(result[3], InlineElement::Underline { .. }));
+        assert!(matches!(result[4], InlineElement::Strikethrough { .. }));
+        assert!(matches!(result[5], InlineElement::Superscript { .. }));
+        assert!(matches!(result[6], InlineElement::Subscript { .. }));
+        assert!(matches!(result[7], InlineElement::Text { .. }));
+        assert!(matches!(result[8], InlineElement::Text { .. }));
+        assert!(matches!(result[9], InlineElement::Text { .. }));
+        assert!(matches!(result[10], InlineElement::LineBreak));
+    }
+
+    #[test]
+    fn test_rtf_to_html_inlines_empty_formatting_skipped() {
+        let result = rtf_to_html_inlines(&[
+            RtfInline::Bold {
+                content: vec![],
+            },
+            RtfInline::Italic {
+                content: vec![],
+            },
+            RtfInline::Underline {
+                content: vec![],
+            },
+            RtfInline::Strikethrough {
+                content: vec![],
+            },
+            RtfInline::Superscript {
+                content: vec![],
+            },
+            RtfInline::Subscript {
+                content: vec![],
+            },
+        ]);
+        assert!(result.is_empty(), "empty formatting should be skipped");
+    }
+
+    #[test]
+    fn test_rtf_to_html_inlines_font_extends_nested() {
+        let result = rtf_to_html_inlines(&[RtfInline::Font {
+            index: 0,
+            content: vec![
+                RtfInline::Bold {
+                    content: vec![RtfInline::Text {
+                        text: "nested".into(),
+                    }],
+                },
+                RtfInline::Text {
+                    text: "plain".into(),
+                },
+            ],
+        }]);
+        assert_eq!(result.len(), 2);
+        assert!(matches!(result[0], InlineElement::Bold { .. }));
+        assert!(matches!(result[1], InlineElement::Text { .. }));
+    }
+
+    // ── Section A7: rtf_blocks_to_html_blocks ─────────────────────────
+
+    #[test]
+    fn test_rtf_blocks_to_html_blocks_paragraph() {
+        let result = rtf_blocks_to_html_blocks(&[RtfBlock::Paragraph {
+            content: vec![RtfInline::Text {
+                text: "hello".into(),
+            }],
+            alignment: None,
+            indent_left: None,
+            indent_first: None,
+        }]);
+        assert_eq!(result.len(), 1);
+        assert!(matches!(result[0], BlockElement::Paragraph { .. }));
+    }
+
+    #[test]
+    fn test_rtf_blocks_to_html_blocks_table() {
+        let result = rtf_blocks_to_html_blocks(&[RtfBlock::Table {
+            rows: vec![RtfTableRow {
+                cells: vec![RtfTableCell {
+                    content: vec![RtfInline::Text {
+                        text: "cell".into(),
+                    }],
+                    width: None,
+                }],
+            }],
+        }]);
+        assert_eq!(result.len(), 1);
+        match &result[0] {
+            BlockElement::Table { rows, .. } => {
+                assert_eq!(rows.len(), 1);
+                assert_eq!(rows[0].cells.len(), 1);
+            }
+            other => panic!("expected Table, got {:?}", other),
+        }
+    }
+
+    // ── Section A8: html_inlines_to_rtf_inlines ───────────────────────
+
+    #[test]
+    fn test_html_inlines_to_rtf_inlines_all_variants() {
+        let result = html_inlines_to_rtf_inlines(&[
+            InlineElement::Text { text: "t".into() },
+            InlineElement::Bold {
+                content: vec![InlineElement::Text { text: "b".into() }],
+            },
+            InlineElement::Italic {
+                content: vec![InlineElement::Text { text: "i".into() }],
+            },
+            InlineElement::Underline {
+                content: vec![InlineElement::Text { text: "u".into() }],
+            },
+            InlineElement::Strikethrough {
+                content: vec![InlineElement::Text { text: "s".into() }],
+            },
+            InlineElement::Superscript {
+                content: vec![InlineElement::Text { text: "sup".into() }],
+            },
+            InlineElement::Subscript {
+                content: vec![InlineElement::Text { text: "sub".into() }],
+            },
+            InlineElement::Code { content: "c".into() },
+            InlineElement::Link {
+                href: "http://x.com".into(),
+                title: None,
+                content: vec![InlineElement::Text {
+                    text: "l".into(),
+                }],
+            },
+            InlineElement::Image {
+                src: "x.png".into(),
+                alt: Some("alt".into()),
+                title: None,
+            },
+            InlineElement::Image {
+                src: "x.png".into(),
+                alt: None,
+                title: None,
+            },
+            InlineElement::LineBreak,
+        ]);
+        assert_eq!(result.len(), 11);
+        assert!(matches!(result[0], RtfInline::Text { .. }));
+        assert!(matches!(result[1], RtfInline::Bold { .. }));
+        assert!(matches!(result[2], RtfInline::Italic { .. }));
+        assert!(matches!(result[3], RtfInline::Underline { .. }));
+        assert!(matches!(result[4], RtfInline::Strikethrough { .. }));
+        assert!(matches!(result[5], RtfInline::Superscript { .. }));
+        assert!(matches!(result[6], RtfInline::Subscript { .. }));
+        assert!(matches!(result[7], RtfInline::Text { .. }));
+        assert!(matches!(result[8], RtfInline::Text { .. }));
+        assert!(matches!(result[9], RtfInline::Text { .. }));
+        assert!(matches!(result[10], RtfInline::LineBreak));
+    }
+
+    #[test]
+    fn test_html_inlines_to_rtf_inlines_empty_skipped() {
+        let result = html_inlines_to_rtf_inlines(&[
+            InlineElement::Text { text: String::new() },
+            InlineElement::Bold { content: vec![] },
+            InlineElement::Italic { content: vec![] },
+            InlineElement::Underline { content: vec![] },
+            InlineElement::Strikethrough { content: vec![] },
+            InlineElement::Superscript { content: vec![] },
+            InlineElement::Subscript { content: vec![] },
+            InlineElement::Code {
+                content: String::new(),
+            },
+            InlineElement::Image {
+                src: "x.png".into(),
+                alt: Some(String::new()),
+                title: None,
+            },
+        ]);
+        assert!(result.is_empty(), "empty elements should be skipped");
+    }
+
+    #[test]
+    fn test_html_inlines_to_rtf_inlines_link_propagates_content() {
+        let result = html_inlines_to_rtf_inlines(&[InlineElement::Link {
+            href: "http://x.com".into(),
+            title: Some("title".into()),
+            content: vec![
+                InlineElement::Bold {
+                    content: vec![InlineElement::Text {
+                        text: "bold in link".into(),
+                    }],
+                },
+                InlineElement::Text {
+                    text: " plain in link".into(),
+                },
+            ],
+        }]);
+        assert_eq!(result.len(), 2);
+        assert!(matches!(result[0], RtfInline::Bold { .. }));
+        assert!(matches!(result[1], RtfInline::Text { .. }));
+    }
+
+    // ── Section A9: html_blocks_to_rtf_blocks ─────────────────────────
+
+    #[test]
+    fn test_html_blocks_to_rtf_blocks_headings_all_levels() {
+        for level in 1..=6u8 {
+            let result = html_blocks_to_rtf_blocks(&[BlockElement::Heading {
+                level,
+                content: vec![InlineElement::Text {
+                    text: format!("h{level} text"),
+                }],
+                id: None,
+            }]);
+            assert_eq!(result.len(), 1, "heading level {level} should produce output");
+            match &result[0] {
+                RtfBlock::Paragraph { content, .. } => {
+                    assert!(
+                        matches!(&content[0], RtfInline::FontSize { .. }),
+                        "heading should wrap in FontSize, got {content:?}"
+                    );
+                }
+                other => panic!("expected Paragraph, got {other:?}"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_html_blocks_to_rtf_blocks_heading_default_level() {
+        // level > 6 maps to level 6 (18 half-points)
+        let result = html_blocks_to_rtf_blocks(&[BlockElement::Heading {
+            level: 7u8,
+            content: vec![InlineElement::Text {
+                text: "deep heading".into(),
+            }],
+            id: None,
+        }]);
+        assert_eq!(result.len(), 1);
+    }
+
+    #[test]
+    fn test_html_blocks_to_rtf_blocks_paragraph_empty_inlines() {
+        let result = html_blocks_to_rtf_blocks(&[BlockElement::Paragraph {
+            content: vec![],
+            id: None,
+        }]);
+        assert!(result.is_empty(), "paragraph with empty inlines should be skipped");
+    }
+
+    #[test]
+    fn test_html_blocks_to_rtf_blocks_div_and_blockquote() {
+        let result = html_blocks_to_rtf_blocks(&[
+            BlockElement::Div {
+                elements: vec![BlockElement::Paragraph {
+                    content: vec![InlineElement::Text {
+                        text: "div content".into(),
+                    }],
+                    id: None,
+                }],
+                id: None,
+                class: None,
+            },
+            BlockElement::Blockquote {
+                elements: vec![BlockElement::Paragraph {
+                    content: vec![InlineElement::Text {
+                        text: "quote content".into(),
+                    }],
+                    id: None,
+                }],
+                id: None,
+            },
+        ]);
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn test_html_blocks_to_rtf_blocks_unordered_list() {
+        let result = html_blocks_to_rtf_blocks(&[BlockElement::UnorderedList {
+            items: vec![
+                wo_html::model::ListItem {
+                    content: vec![InlineElement::Text {
+                        text: "item1".into(),
+                    }],
+                },
+                wo_html::model::ListItem {
+                    content: vec![InlineElement::Text {
+                        text: "item2".into(),
+                    }],
+                },
+            ],
+            id: None,
+        }]);
+        assert_eq!(result.len(), 2);
+        for block in &result {
+            match block {
+                RtfBlock::Paragraph { content, indent_left, indent_first, .. } => {
+                    assert_eq!(*indent_left, Some(720));
+                    assert_eq!(*indent_first, Some(-360));
+                    let text = format!("{:?}", content[0]);
+                    assert!(text.contains("\\bullet "));
+                }
+                other => panic!("expected Paragraph, got {other:?}"),
+            }
+        }
+    }
+
+    #[test]
+    fn test_html_blocks_to_rtf_blocks_ordered_list_with_start() {
+        let result = html_blocks_to_rtf_blocks(&[BlockElement::OrderedList {
+            items: vec![
+                wo_html::model::ListItem {
+                    content: vec![InlineElement::Text {
+                        text: "first".into(),
+                    }],
+                },
+            ],
+            id: None,
+            start: Some(5),
+        }]);
+        assert_eq!(result.len(), 1);
+        match &result[0] {
+            RtfBlock::Paragraph { content, .. } => {
+                let text = format!("{:?}", content);
+                assert!(text.contains("5"), "ordered list starting at 5 should contain '5'");
+            }
+            other => panic!("expected Paragraph, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_html_blocks_to_rtf_blocks_table() {
+        let result = html_blocks_to_rtf_blocks(&[BlockElement::Table {
+            rows: vec![wo_html::model::TableRow {
+                cells: vec![wo_html::model::TableCell {
+                    content: vec![InlineElement::Text {
+                        text: "a".into(),
+                    }],
+                    colspan: 1,
+                    rowspan: 1,
+                }],
+                is_header: false,
+            }],
+            id: None,
+        }]);
+        assert_eq!(result.len(), 1);
+        assert!(matches!(result[0], RtfBlock::Table { .. }));
+        if let RtfBlock::Table { rows } = &result[0] {
+            assert_eq!(rows.len(), 1);
+            assert_eq!(rows[0].cells.len(), 1);
+        }
+    }
+
+    #[test]
+    fn test_html_blocks_to_rtf_blocks_pre_multiline() {
+        let result = html_blocks_to_rtf_blocks(&[BlockElement::Pre {
+            content: "line1\nline2\nline3".into(),
+            id: None,
+        }]);
+        assert_eq!(result.len(), 3, "multi-line pre should produce one paragraph per line");
+    }
+
+    #[test]
+    fn test_html_blocks_to_rtf_blocks_horizontal_rule() {
+        let result = html_blocks_to_rtf_blocks(&[BlockElement::HorizontalRule]);
+        assert_eq!(result.len(), 1);
+        match &result[0] {
+            RtfBlock::Paragraph { content, alignment, .. } => {
+                assert_eq!(*alignment, Some(wo_rtf::model::RtfAlignment::Center));
+                assert!(format!("{:?}", content).contains("emdash"));
+            }
+            other => panic!("expected Paragraph, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_html_blocks_to_rtf_blocks_raw_html_nonempty() {
+        let result = html_blocks_to_rtf_blocks(&[BlockElement::RawHtml {
+            tag: "div".into(),
+            content: "  raw content  ".into(),
+        }]);
+        assert_eq!(result.len(), 1);
+        match &result[0] {
+            RtfBlock::Paragraph { content, .. } => {
+                assert!(format!("{:?}", content).contains("raw content"));
+            }
+            other => panic!("expected Paragraph, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_html_blocks_to_rtf_blocks_raw_html_empty_trimmed() {
+        let result = html_blocks_to_rtf_blocks(&[BlockElement::RawHtml {
+            tag: "div".into(),
+            content: "   ".into(),
+        }]);
+        assert!(result.is_empty(), "whitespace-only RawHtml should be skipped");
+    }
+
+    #[test]
+    fn test_html_blocks_to_rtf_blocks_heading_empty_inlines() {
+        let result = html_blocks_to_rtf_blocks(&[BlockElement::Heading {
+            level: 1,
+            content: vec![],
+            id: None,
+        }]);
+        assert!(result.is_empty(), "heading with empty inlines should be skipped");
+    }
+
+    // ── Section A10: extract_html_text ────────────────────────────────
+
+    #[test]
+    fn test_extract_html_text_all_variants() {
+        let result = extract_html_text(&[
+            InlineElement::Text { text: "Hello ".into() },
+            InlineElement::Bold {
+                content: vec![InlineElement::Text { text: "bold".into() }],
+            },
+            InlineElement::Italic {
+                content: vec![InlineElement::Text { text: " italic".into() }],
+            },
+            InlineElement::Underline {
+                content: vec![InlineElement::Text { text: " underline".into() }],
+            },
+            InlineElement::Strikethrough {
+                content: vec![InlineElement::Text { text: " strike".into() }],
+            },
+            InlineElement::Subscript {
+                content: vec![InlineElement::Text { text: " sub".into() }],
+            },
+            InlineElement::Superscript {
+                content: vec![InlineElement::Text { text: " super".into() }],
+            },
+            InlineElement::Link {
+                href: "http://x.com".into(),
+                title: None,
+                content: vec![InlineElement::Text { text: " link".into() }],
+            },
+            InlineElement::Code { content: " code".into() },
+            InlineElement::Image {
+                src: "img.png".into(),
+                alt: Some(" img".into()),
+                title: None,
+            },
+            InlineElement::Image {
+                src: "img.png".into(),
+                alt: None,
+                title: None,
+            },
+            InlineElement::LineBreak,
+            InlineElement::Text { text: " end".into() },
+        ]);
+        assert_eq!(result, "Hello bold italic underline strike sub super link code img\n end");
+    }
+
+    // ── Section A11: html_blocks_to_lines ─────────────────────────────
+
+    #[test]
+    fn test_html_blocks_to_lines_all_variants() {
+        let result = html_blocks_to_lines(&[
+            BlockElement::Heading {
+                level: 1,
+                content: vec![InlineElement::Text {
+                    text: "Title".into(),
+                }],
+                id: None,
+            },
+            BlockElement::Heading {
+                level: 3,
+                content: vec![InlineElement::Text {
+                    text: "Subtitle".into(),
+                }],
+                id: None,
+            },
+            BlockElement::Paragraph {
+                content: vec![InlineElement::Text {
+                    text: "Para text".into(),
+                }],
+                id: None,
+            },
+            BlockElement::Div {
+                elements: vec![BlockElement::Paragraph {
+                    content: vec![InlineElement::Text {
+                        text: "div inner".into(),
+                    }],
+                    id: None,
+                }],
+                id: None,
+                class: None,
+            },
+            BlockElement::Blockquote {
+                elements: vec![BlockElement::Paragraph {
+                    content: vec![InlineElement::Text {
+                        text: "btext".into(),
+                    }],
+                    id: None,
+                }],
+                id: None,
+            },
+            BlockElement::UnorderedList {
+                items: vec![
+                    wo_html::model::ListItem {
+                        content: vec![InlineElement::Text {
+                            text: "ul item".into(),
+                        }],
+                    },
+                ],
+                id: None,
+            },
+            BlockElement::OrderedList {
+                items: vec![
+                    wo_html::model::ListItem {
+                        content: vec![InlineElement::Text {
+                            text: "ol item".into(),
+                        }],
+                    },
+                ],
+                id: None,
+                start: None,
+            },
+            BlockElement::Table {
+                rows: vec![wo_html::model::TableRow {
+                    cells: vec![
+                        wo_html::model::TableCell {
+                            content: vec![InlineElement::Text {
+                                text: "c1".into(),
+                            }],
+                            colspan: 1,
+                            rowspan: 1,
+                        },
+                        wo_html::model::TableCell {
+                            content: vec![InlineElement::Text {
+                                text: "c2".into(),
+                            }],
+                            colspan: 1,
+                            rowspan: 1,
+                        },
+                    ],
+                    is_header: true,
+                }],
+                id: None,
+            },
+            BlockElement::Pre {
+                content: "pre line 1\npre line 2".into(),
+                id: None,
+            },
+            BlockElement::HorizontalRule,
+            BlockElement::RawHtml {
+                tag: "span".into(),
+                content: "  raw html  ".into(),
+            },
+        ]);
+        let expected = [
+            "# Title",
+            "### Subtitle",
+            "Para text",
+            "div inner",
+            "btext",
+            "- ul item",
+            "1. ol item",
+            "c1\tc2",
+            "pre line 1",
+            "pre line 2",
+            "---",
+            "raw html",
+        ];
+        assert_eq!(result, expected, "\nexpected:\n{:?}\ngot:\n{:?}", expected, result);
+    }
+
+    #[test]
+    fn test_html_blocks_to_lines_raw_html_empty() {
+        let result = html_blocks_to_lines(&[BlockElement::RawHtml {
+            tag: "span".into(),
+            content: "   ".into(),
+        }]);
+        assert!(result.is_empty(), "whitespace-only RawHtml should yield no lines");
+    }
+
+    #[test]
+    fn test_html_blocks_to_lines_paragraph_with_linebreak() {
+        let result = html_blocks_to_lines(&[BlockElement::Paragraph {
+            content: vec![
+                InlineElement::Text { text: "line1".into() },
+                InlineElement::LineBreak,
+                InlineElement::Text { text: "line2".into() },
+            ],
+            id: None,
+        }]);
+        assert_eq!(result, vec!["line1", "line2"]);
+    }
+
+    #[test]
+    fn test_html_blocks_to_lines_image_alt_in_text() {
+        let result = html_blocks_to_lines(&[BlockElement::Paragraph {
+            content: vec![
+                InlineElement::Text { text: "see ".into() },
+                InlineElement::Image {
+                    src: "img.png".into(),
+                    alt: Some("screenshot".into()),
+                    title: None,
+                },
+            ],
+            id: None,
+        }]);
+        assert_eq!(result, vec!["see screenshot"]);
+    }
+
+    #[test]
+    fn test_html_blocks_to_lines_empty_div_blockquote() {
+        let result = html_blocks_to_lines(&[
+            BlockElement::Div {
+                elements: vec![],
+                id: None,
+                class: None,
+            },
+            BlockElement::Blockquote {
+                elements: vec![],
+                id: None,
+            },
+        ]);
+        assert!(result.is_empty(), "empty div/blockquote should produce no lines");
+    }
+
+    // ── EPUB helpers ─────────────────────────────────────────────────
+
+    #[test]
+    fn test_escape_xhtml_text_all_chars() {
+        assert_eq!(escape_xhtml_text("a&b<c>d\"e'f"), "a&amp;b&lt;c&gt;d&quot;e&#39;f");
+        assert_eq!(escape_xhtml_text("plain"), "plain");
+        assert_eq!(escape_xhtml_text(""), "");
+        assert_eq!(escape_xhtml_text("hello world"), "hello world");
+    }
+
+    #[test]
+    fn test_build_xhtml_content() {
+        let result = build_xhtml_content("My Title", "<p>Hello</p>");
+        assert!(result.contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>"), "should have XML declaration");
+        assert!(result.contains("<title>My Title</title>"), "should have title");
+        assert!(result.contains("<p>Hello</p>"), "should have body content");
+        assert!(result.contains("</html>"), "should close html");
+
+        let escaped = build_xhtml_content("AT&T", "<p>1 < 2</p>");
+        assert!(escaped.contains("AT&amp;T"), "title should be escaped");
+    }
+
+    #[test]
+    fn test_txt_to_epub_chapters_with_headings() {
+        let doc = TxtDocument { lines: vec![
+            "## Chapter 1".into(),
+            "First paragraph".into(),
+            "## Chapter 2".into(),
+            "Second paragraph".into(),
+        ], encoding: wo_common::encoding::Encoding::Utf8, had_bom: false };
+        let chapters = txt_to_epub_chapters(&doc);
+        // First heading triggers an "Untitled" empty chapter because chapters was empty
+        assert_eq!(chapters.len(), 3, "should have 3 chapters (incl. initial empty)");
+        assert_eq!(chapters[0].0, "Untitled", "first chapter is empty placeholder");
+        assert!(chapters[0].1.is_empty(), "first chapter has no lines");
+        assert_eq!(chapters[1].0, "Chapter 1", "second chapter title");
+        assert_eq!(chapters[1].1, vec!["First paragraph"], "second chapter lines");
+        assert_eq!(chapters[2].0, "Chapter 2", "third chapter title");
+        assert_eq!(chapters[2].1, vec!["Second paragraph"], "third chapter lines");
+    }
+
+    #[test]
+    fn test_txt_to_epub_chapters_without_headings() {
+        let doc = TxtDocument { lines: vec![
+            "First line".into(),
+            "Second line".into(),
+        ], encoding: wo_common::encoding::Encoding::Utf8, had_bom: false };
+        let chapters = txt_to_epub_chapters(&doc);
+        assert_eq!(chapters.len(), 1, "should have 1 chapter");
+        assert_eq!(chapters[0].0, "First line", "title is first line");
+        assert_eq!(chapters[0].1, vec!["First line", "Second line"], "all lines included");
+    }
+
+    #[test]
+    fn test_txt_to_epub_chapters_empty() {
+        let doc = TxtDocument { lines: vec![], encoding: wo_common::encoding::Encoding::Utf8, had_bom: false };
+        let chapters = txt_to_epub_chapters(&doc);
+        assert_eq!(chapters.len(), 1, "should have 1 chapter");
+        assert_eq!(chapters[0].0, "Untitled", "default title");
+        assert!(chapters[0].1.is_empty(), "no lines");
+    }
+
+    #[test]
+    fn test_html_to_epub_chapters_with_headings() {
+        let elements = vec![
+            BlockElement::Heading { level: 1, content: vec![InlineElement::Text { text: "Ch1".into() }], id: None },
+            BlockElement::Paragraph { content: vec![InlineElement::Text { text: "para1".into() }], id: None },
+            BlockElement::Heading { level: 2, content: vec![InlineElement::Text { text: "Ch2".into() }], id: None },
+            BlockElement::Paragraph { content: vec![InlineElement::Text { text: "para2".into() }], id: None },
+        ];
+        let chapters = html_to_epub_chapters(&elements);
+        assert_eq!(chapters.len(), 2, "should have 2 chapters");
+        assert_eq!(chapters[0].0, "Ch1", "first chapter title");
+        assert_eq!(chapters[1].0, "Ch2", "second chapter title");
+    }
+
+    #[test]
+    fn test_html_to_epub_chapters_without_headings() {
+        let elements = vec![
+            BlockElement::Paragraph { content: vec![InlineElement::Text { text: "First para".into() }], id: None },
+            BlockElement::Paragraph { content: vec![InlineElement::Text { text: "Second para".into() }], id: None },
+        ];
+        let chapters = html_to_epub_chapters(&elements);
+        assert_eq!(chapters.len(), 1, "should have 1 chapter");
+        assert_eq!(chapters[0].0, "First para", "title is first paragraph text");
+    }
+
+    #[test]
+    fn test_html_to_epub_chapters_heading_without_content() {
+        // H3 does not start a new chapter — only h1/h2
+        let elements = vec![BlockElement::Heading { level: 3, content: vec![InlineElement::Text { text: "H3".into() }], id: None }];
+        let chapters = html_to_epub_chapters(&elements);
+        assert_eq!(chapters.len(), 1, "should still produce 1 chapter");
+    }
+
+    #[test]
+    fn test_block_element_to_xhtml_all_variants() {
+        // Heading
+        let h = block_element_to_xhtml(&BlockElement::Heading { level: 2, content: vec![InlineElement::Text { text: "Subtitle".into() }], id: None });
+        assert_eq!(h, "<h2>Subtitle</h2>");
+
+        // Paragraph
+        let p = block_element_to_xhtml(&BlockElement::Paragraph { content: vec![InlineElement::Text { text: "Hello".into() }], id: None });
+        assert_eq!(p, "<p>Hello</p>");
+
+        // UnorderedList
+        let ul = block_element_to_xhtml(&BlockElement::UnorderedList {
+            items: vec![ListItem { content: vec![InlineElement::Text { text: "A".into() }] }],
+            id: None,
+        });
+        assert!(ul.contains("<ul>"), "unordered list should have ul tag");
+
+        // OrderedList
+        let ol = block_element_to_xhtml(&BlockElement::OrderedList {
+            items: vec![ListItem { content: vec![InlineElement::Text { text: "1".into() }] }],
+            id: None,
+            start: None,
+        });
+        assert!(ol.contains("<ol>"), "ordered list should have ol tag");
+
+        // Pre
+        let pre = block_element_to_xhtml(&BlockElement::Pre { content: "code".into(), id: None });
+        assert_eq!(pre, "<pre>code</pre>");
+
+        // HorizontalRule
+        let hr = block_element_to_xhtml(&BlockElement::HorizontalRule);
+        assert_eq!(hr, "<hr/>");
+
+        // Div
+        let div = block_element_to_xhtml(&BlockElement::Div {
+            elements: vec![BlockElement::Paragraph { content: vec![InlineElement::Text { text: "inner".into() }], id: None }],
+            id: None,
+            class: None,
+        });
+        assert_eq!(div, "<p>inner</p>");
+
+        // Blockquote
+        let bq = block_element_to_xhtml(&BlockElement::Blockquote {
+            elements: vec![BlockElement::Paragraph { content: vec![InlineElement::Text { text: "quote".into() }], id: None }],
+            id: None,
+        });
+        assert!(bq.contains("<blockquote>"), "blockquote");
+
+        // Table
+        let table = block_element_to_xhtml(&BlockElement::Table {
+            rows: vec![TableRow {
+                cells: vec![TableCell { content: vec![InlineElement::Text { text: "cell".into() }], colspan: 1, rowspan: 1 }],
+                is_header: false,
+            }],
+            id: None,
+        });
+        assert!(table.contains("<table>"), "table");
+
+        // RawHtml
+        let raw = block_element_to_xhtml(&BlockElement::RawHtml { tag: "div".into(), content: "<b>raw</b>".into() });
+        assert_eq!(raw, "<b>raw</b>");
+
+        // Escaping in headings
+        let esc = block_element_to_xhtml(&BlockElement::Heading { level: 1, content: vec![InlineElement::Text { text: "AT&T".into() }], id: None });
+        assert_eq!(esc, "<h1>AT&amp;T</h1>");
+    }
+
+    #[test]
+    fn test_strip_html_tags_various() {
+        assert_eq!(strip_html_tags("<p>Hello</p>"), "Hello");
+        assert_eq!(strip_html_tags("<div><p>Nested</p></div>"), "Nested");
+        assert_eq!(strip_html_tags("no tags"), "no tags");
+        assert_eq!(strip_html_tags(""), "");
+        assert_eq!(strip_html_tags("<br/>"), "");
+        assert_eq!(strip_html_tags("<a href=\"x\">link</a> text"), "link text");
+        assert_eq!(strip_html_tags("  <b>  spaced  </b>  "), "spaced");
+    }
+
+    // ── FB2 helpers ──────────────────────────────────────────────────
+
+    #[test]
+    fn test_fb2_body_to_lines_and_section_to_lines() {
+        let section = Section {
+            id: None,
+            title: vec![TitleElement { text: "Chapter 1".into(), formatting: vec![] }],
+            elements: vec![
+                ContentElement::Paragraph {
+                    style: None,
+                    id: None,
+                    content: vec![Formatting { text: "Hello world".into(), style: TextStyle::None, href: None, title: None }],
+                },
+                ContentElement::EmptyLine,
+                ContentElement::Subtitle {
+                    content: vec![Formatting { text: "A subtitle".into(), style: TextStyle::None, href: None, title: None }],
+                },
+                ContentElement::Date { value: "2024".into(), content: vec![] },
+                ContentElement::Image { href: Some("img1.png".into()), content_type: None, alt: Some("Diagram".into()), title: None },
+                ContentElement::Cite {
+                    id: None,
+                    text_author: Some("Author".into()),
+                    paragraphs: vec![vec![Formatting { text: "Cited text".into(), style: TextStyle::None, href: None, title: None }]],
+                },
+                ContentElement::TextAuthor {
+                    content: vec![Formatting { text: "Translator".into(), style: TextStyle::None, href: None, title: None }],
+                },
+                ContentElement::Poem {
+                    title: vec![TitleElement { text: "Ode".into(), formatting: vec![] }],
+                    epigraph: vec![],
+                    stanzas: vec![Stanza {
+                        title: vec![],
+                        lines: vec![vec![Formatting { text: "A line".into(), style: TextStyle::None, href: None, title: None }]],
+                    }],
+                },
+            ],
+            sections: vec![],
+        };
+        let body = Body { name: None, lang: None, sections: vec![section], images: vec![] };
+        let mut lines = Vec::new();
+        fb2_body_to_lines(&body, &mut lines);
+        assert!(lines.contains(&"## Chapter 1".to_string()), "should have section title");
+        assert!(lines.contains(&"Hello world".to_string()), "should have paragraph text");
+        assert!(lines.contains(&"### A subtitle".to_string()), "should have subtitle");
+        assert!(lines.contains(&"2024".to_string()), "should have date");
+        assert!(lines.contains(&"[image: Diagram]".to_string()), "should have image alt");
+        assert!(lines.contains(&"> Cited text".to_string()), "should have cite text");
+        assert!(lines.contains(&"  -- Translator".to_string()), "should have text author");
+        assert!(lines.contains(&"*Ode*".to_string()), "should have poem title");
+        assert!(lines.contains(&"  A line".to_string()), "should have poem line");
+        assert!(lines.contains(&"  -- Author".to_string()), "should have cite author");
+    }
+
+    #[test]
+    fn test_fb2_section_to_lines_empty_title_skipped() {
+        let section = Section {
+            id: None,
+            title: vec![TitleElement { text: "".into(), formatting: vec![] }],
+            elements: vec![],
+            sections: vec![],
+        };
+        let mut lines = Vec::new();
+        fb2_section_to_lines(&section, &mut lines);
+        assert!(!lines.iter().any(|l| l.starts_with("##")), "empty title should produce no heading");
+    }
+
+    #[test]
+    fn test_fb2_section_to_lines_image_no_alt() {
+        let section = Section {
+            id: None,
+            title: vec![],
+            elements: vec![ContentElement::Image { href: None, content_type: None, alt: None, title: None }],
+            sections: vec![],
+        };
+        let mut lines = Vec::new();
+        fb2_section_to_lines(&section, &mut lines);
+        assert!(lines.is_empty(), "image without alt should produce no lines");
+    }
+
+    #[test]
+    fn test_fb2_section_to_lines_nested_sections() {
+        let child = Section {
+            id: None,
+            title: vec![TitleElement { text: "Child".into(), formatting: vec![] }],
+            elements: vec![ContentElement::Paragraph {
+                style: None,
+                id: None,
+                content: vec![Formatting { text: "Child content".into(), style: TextStyle::None, href: None, title: None }],
+            }],
+            sections: vec![],
+        };
+        let parent = Section {
+            id: None,
+            title: vec![TitleElement { text: "Parent".into(), formatting: vec![] }],
+            elements: vec![],
+            sections: vec![child],
+        };
+        let mut lines = Vec::new();
+        fb2_section_to_lines(&parent, &mut lines);
+        assert!(lines.contains(&"## Parent".to_string()), "parent title");
+        assert!(lines.contains(&"## Child".to_string()), "child title");
+        assert!(lines.contains(&"Child content".to_string()), "child content");
+    }
+
+    // ── EPUB → DOCX ──────────────────────────────────────────────────
+
+    #[test]
+    fn test_epub_to_ooxml_via_converter() {
+        let epub = EpubDocument {
+            version: "3.0".to_string(),
+            metadata: EpubMetadata {
+                title: Some("Test Book".into()),
+                creator: vec!["Author".into()],
+                language: Some("en".into()),
+                identifier: Some("urn:uuid:test".into()),
+                unique_identifier: Some("uid".into()),
+                ..Default::default()
+            },
+            manifest: vec![],
+            spine: vec!["chapter1".into()],
+            toc: vec![TocEntry { title: "Chapter 1".into(), href: Some("chapter1.xhtml".into()), level: 1, children: vec![], play_order: Some(1) }],
+            chapters: vec![EpubChapter { title: "Chapter 1".into(), content: "<p>Hello from EPUB!</p>".into(), href: "chapter1.xhtml".into() }],
+            cover_image: None,
+            cover_image_type: None,
+        };
+        let serialized = EpubSerializer::new().serialize(&epub).expect("serialize EPUB");
+        let converter = EpubToDocxConverter;
+        let result = converter.convert(&serialized).expect("EPUB→DOCX conversion");
+        assert!(!result.is_empty(), "DOCX output should not be empty");
+        assert_eq!(&result[..4], b"PK\x03\x04", "DOCX is a ZIP archive");
+    }
+
+    #[test]
+    fn test_epub_to_ooxml_document_no_title() {
+        let epub = EpubDocument {
+            version: "3.0".to_string(),
+            metadata: EpubMetadata { title: None, ..Default::default() },
+            manifest: vec![],
+            spine: vec!["chapter1".into()],
+            toc: vec![],
+            chapters: vec![EpubChapter { title: "".into(), content: "plain text".into(), href: "ch1.xhtml".into() }],
+            cover_image: None,
+            cover_image_type: None,
+        };
+        let serialized = EpubSerializer::new().serialize(&epub).expect("serialize");
+        let result = EpubToDocxConverter.convert(&serialized).expect("convert");
+        assert!(!result.is_empty());
+    }
+
+    // ── FB2 → DOCX ───────────────────────────────────────────────────
+
+    #[test]
+    fn test_fb2_to_ooxml_via_converter() {
+        let fb2 = Fb2Document {
+            xmlns: None,
+            title_info: Some(TitleInfo {
+                book_title: Some("FB2 Book".into()),
+                authors: vec![Author { first_name: Some("John".into()), last_name: Some("Doe".into()), ..Default::default() }],
+                lang: Some("en".into()),
+                ..Default::default()
+            }),
+            src_title_info: None,
+            document_info: None,
+            publish_info: None,
+            custom_info: vec![],
+            bodies: vec![Body {
+                name: None,
+                lang: None,
+                sections: vec![Section {
+                    id: None,
+                    title: vec![TitleElement { text: "Ch1".into(), formatting: vec![] }],
+                    elements: vec![ContentElement::Paragraph {
+                        style: None,
+                        id: None,
+                        content: vec![Formatting { text: "Hello FB2!".into(), style: TextStyle::None, href: None, title: None }],
+                    }],
+                    sections: vec![],
+                }],
+                images: vec![],
+            }],
+            binaries: vec![],
+        };
+        let serialized = Fb2Serializer::new().serialize(&fb2).expect("serialize FB2");
+        let converter = Fb2ToDocxConverter;
+        let result = converter.convert(serialized.as_bytes()).expect("FB2→DOCX conversion");
+        assert!(!result.is_empty(), "DOCX output should not be empty");
+        assert_eq!(&result[..4], b"PK\x03\x04", "DOCX is a ZIP archive");
+    }
+
+    #[test]
+    fn test_fb2_to_ooxml_missing_title_info() {
+        let fb2 = Fb2Document {
+            xmlns: None,
+            title_info: None,
+            src_title_info: None,
+            document_info: None,
+            publish_info: None,
+            custom_info: vec![],
+            bodies: vec![Body {
+                name: None,
+                lang: None,
+                sections: vec![Section {
+                    id: None,
+                    title: vec![],
+                    elements: vec![ContentElement::Paragraph {
+                        style: None, id: None,
+                        content: vec![Formatting { text: "content".into(), style: TextStyle::None, href: None, title: None }],
+                    }],
+                    sections: vec![],
+                }],
+                images: vec![],
+            }],
+            binaries: vec![],
+        };
+        let serialized = Fb2Serializer::new().serialize(&fb2).expect("serialize");
+        let result = Fb2ToDocxConverter.convert(serialized.as_bytes()).expect("convert");
+        assert!(!result.is_empty());
+    }
+
+    // ── FB2 section → DOCX paragraphs ────────────────────────────────
+
+    #[test]
+    fn test_fb2_section_to_docx_paragraphs_all_elements() {
+        let mut paragraphs = Vec::new();
+        let section = Section {
+            id: None,
+            title: vec![TitleElement { text: "Title".into(), formatting: vec![] }],
+            elements: vec![
+                ContentElement::Paragraph {
+                    style: None, id: None,
+                    content: vec![Formatting { text: "Para".into(), style: TextStyle::None, href: None, title: None }],
+                },
+                ContentElement::EmptyLine,
+                ContentElement::Subtitle {
+                    content: vec![Formatting { text: "Sub".into(), style: TextStyle::None, href: None, title: None }],
+                },
+                ContentElement::Cite {
+                    id: None,
+                    text_author: None,
+                    paragraphs: vec![vec![Formatting { text: "Cite".into(), style: TextStyle::None, href: None, title: None }]],
+                },
+                ContentElement::TextAuthor {
+                    content: vec![Formatting { text: "TA".into(), style: TextStyle::None, href: None, title: None }],
+                },
+                ContentElement::Date { value: "2024".into(), content: vec![] },
+                ContentElement::Image { href: None, content_type: None, alt: Some("img".into()), title: None },
+                ContentElement::Poem {
+                    title: vec![],
+                    epigraph: vec![],
+                    stanzas: vec![Stanza {
+                        title: vec![],
+                        lines: vec![vec![Formatting { text: "Poem line".into(), style: TextStyle::None, href: None, title: None }]],
+                    }],
+                },
+            ],
+            sections: vec![],
+        };
+        fb2_section_to_docx_paragraphs(&section, &mut paragraphs);
+        assert!(paragraphs.len() > 5, "should produce many paragraphs");
+
+        // title produces a bold paragraph
+        assert!(paragraphs[0].runs.iter().any(|r| r.bold), "title should be bold");
+
+        // find paragraph with left indent (cite/textauthor/poem)
+        let indented = paragraphs.iter().any(|p| p.properties.indent_left.is_some());
+        assert!(indented, "at least one indented paragraph");
+
+        // poem line should be italic
+        let poem_italic = paragraphs.iter().any(|p| p.runs.iter().any(|r| r.italic));
+        assert!(poem_italic, "poem line should be italic");
+    }
+
+    #[test]
+    fn test_fb2_section_to_docx_paragraphs_nested() {
+        let mut paragraphs = Vec::new();
+        let child = Section {
+            id: None,
+            title: vec![TitleElement { text: "Nested".into(), formatting: vec![] }],
+            elements: vec![ContentElement::Paragraph {
+                style: None, id: None,
+                content: vec![Formatting { text: "child".into(), style: TextStyle::None, href: None, title: None }],
+            }],
+            sections: vec![],
+        };
+        let parent = Section {
+            id: None,
+            title: vec![TitleElement { text: "Parent".into(), formatting: vec![] }],
+            elements: vec![],
+            sections: vec![child],
+        };
+        fb2_section_to_docx_paragraphs(&parent, &mut paragraphs);
+        let titles: Vec<&str> = paragraphs.iter().filter_map(|p| p.runs.first().map(|r| r.text.as_str())).collect();
+        assert!(titles.contains(&"Parent"), "parent title");
+        assert!(titles.contains(&"Nested"), "nested title");
+        assert!(titles.contains(&"child"), "child content");
+    }
+
+    // ── FB2 formatting → DOCX runs ──────────────────────────────────
+
+    #[test]
+    fn test_fb2_formatting_to_docx_runs_all_styles() {
+        let formattings = vec![
+            Formatting { text: "plain".into(), style: TextStyle::None, href: None, title: None },
+            Formatting { text: "bold".into(), style: TextStyle::Strong, href: None, title: None },
+            Formatting { text: "italic".into(), style: TextStyle::Emphasis, href: None, title: None },
+            Formatting { text: "strike".into(), style: TextStyle::Strikethrough, href: None, title: None },
+            Formatting { text: "sub".into(), style: TextStyle::Subscript, href: None, title: None },
+            Formatting { text: "super".into(), style: TextStyle::Superscript, href: None, title: None },
+            Formatting { text: "code".into(), style: TextStyle::Code, href: None, title: None },
+        ];
+        let runs = fb2_formatting_to_docx_runs(&formattings);
+        assert_eq!(runs.len(), 7);
+        assert!(!runs[0].bold && !runs[0].italic, "plain style has no formatting");
+        assert!(runs[1].bold, "Strong should be bold");
+        assert!(runs[2].italic, "Emphasis should be italic");
+        assert!(runs[3].strikethrough, "Strikethrough");
+        assert_eq!(runs[4].vertical_alignment, Some(VerticalAlignment::Subscript), "Subscript");
+        assert_eq!(runs[5].vertical_alignment, Some(VerticalAlignment::Superscript), "Superscript");
+        assert_eq!(runs[6].font, Some("Courier New".into()), "Code font");
+    }
+
+    #[test]
+    fn test_fb2_formatting_to_docx_runs_empty_text_skipped() {
+        let runs = fb2_formatting_to_docx_runs(&[Formatting { text: "".into(), style: TextStyle::None, href: None, title: None }]);
+        assert!(runs.is_empty(), "empty formatting should be skipped");
+    }
+
+    // ── DOCX → EPUB ──────────────────────────────────────────────────
+
+    #[test]
+    fn test_docx_to_epub_via_converter() {
+        let ooxml = OoxmlDocument {
+            format: OoxmlFormat::Docx,
+            version: "1.0".to_string(),
+            content_types: vec![],
+            main_part: Some("word/document.xml".to_string()),
+            shared_strings: vec![],
+            part_count: 1,
+            core_properties: CoreProperties {
+                title: Some("Docx Book".to_string()),
+                creator: Some("Author".to_string()),
+                language: Some("en".to_string()),
+                ..Default::default()
+            },
+            relationships: vec![],
+            body: Some(DocxBody {
+                paragraphs: vec![
+                    DocxParagraph {
+                        style_id: Some("Heading1".into()),
+                        properties: DocxParagraphProperties::default(),
+                        runs: vec![DocxRun { text: "Chapter 1".into(), bold: true, italic: false, underline: None, strikethrough: false, double_strikethrough: false, font: None, font_size: None, font_size_cs: None, color: None, highlight: None, vertical_alignment: None, small_caps: false, all_caps: false }],
+                    },
+                    DocxParagraph {
+                        style_id: None,
+                        properties: DocxParagraphProperties::default(),
+                        runs: vec![DocxRun { text: "Some content.".into(), bold: false, italic: false, underline: None, strikethrough: false, double_strikethrough: false, font: None, font_size: None, font_size_cs: None, color: None, highlight: None, vertical_alignment: None, small_caps: false, all_caps: false }],
+                    },
+                ],
+                tables: vec![],
+            }),
+        };
+        let serialized = OoxmlSerializer::new().serialize(&ooxml).expect("serialize DOCX");
+        let converter = DocxToEpubConverter;
+        let result = converter.convert(&serialized).expect("DOCX→EPUB conversion");
+        assert!(!result.is_empty(), "EPUB output should not be empty");
+        assert_eq!(&result[..4], b"PK\x03\x04", "EPUB is a ZIP archive");
+    }
+
+    #[test]
+    fn test_docx_to_epub_no_body() {
+        let ooxml = OoxmlDocument {
+            format: OoxmlFormat::Docx,
+            version: "1.0".to_string(),
+            content_types: vec![],
+            main_part: Some("word/document.xml".to_string()),
+            shared_strings: vec![],
+            part_count: 1,
+            core_properties: CoreProperties {
+                title: Some("Empty".to_string()),
+                ..Default::default()
+            },
+            relationships: vec![],
+            body: None,
+        };
+        let serialized = OoxmlSerializer::new().serialize(&ooxml).expect("serialize");
+        let result = DocxToEpubConverter.convert(&serialized).expect("convert");
+        assert!(!result.is_empty());
+    }
+
+    #[test]
+    fn test_docx_to_epub_no_headings() {
+        let ooxml = OoxmlDocument {
+            format: OoxmlFormat::Docx,
+            version: "1.0".to_string(),
+            content_types: vec![],
+            main_part: Some("word/document.xml".to_string()),
+            shared_strings: vec![],
+            part_count: 1,
+            core_properties: CoreProperties::default(),
+            relationships: vec![],
+            body: Some(DocxBody {
+                paragraphs: vec![
+                    DocxParagraph {
+                        style_id: None,
+                        properties: DocxParagraphProperties::default(),
+                        runs: vec![DocxRun { text: "First line".into(), bold: false, italic: false, underline: None, strikethrough: false, double_strikethrough: false, font: None, font_size: None, font_size_cs: None, color: None, highlight: None, vertical_alignment: None, small_caps: false, all_caps: false }],
+                    },
+                    DocxParagraph {
+                        style_id: None,
+                        properties: DocxParagraphProperties::default(),
+                        runs: vec![DocxRun { text: "Second line".into(), bold: false, italic: false, underline: None, strikethrough: false, double_strikethrough: false, font: None, font_size: None, font_size_cs: None, color: None, highlight: None, vertical_alignment: None, small_caps: false, all_caps: false }],
+                    },
+                ],
+                tables: vec![],
+            }),
+        };
+        let serialized = OoxmlSerializer::new().serialize(&ooxml).expect("serialize");
+        let result = DocxToEpubConverter.convert(&serialized).expect("convert");
+        assert!(!result.is_empty());
+        let epub_bytes = result;
+        // Verify it's a valid EPUB (ZIP)
+        let cursor = std::io::Cursor::new(&epub_bytes);
+        let archive = zip::ZipArchive::new(cursor).expect("EPUB is readable as ZIP");
+        assert!(archive.len() > 0, "EPUB ZIP has entries");
+    }
+
+    // ── Image Data URL helpers ────────────────────────────────────────
+
+    #[test]
+    fn test_data_url_to_bytes_png() {
+        // A 1x1 red PNG in base64
+        let png_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==";
+        let data_url = format!("data:image/png;base64,{}", png_b64);
+        let (bytes, ext) = data_url_to_bytes(&data_url);
+        assert!(bytes.is_some(), "should decode PNG");
+        assert_eq!(ext, "png");
+    }
+
+    #[test]
+    fn test_data_url_to_bytes_jpeg() {
+        let data_url = "data:image/jpeg;base64,/9j/4AAQSkZJRg==";
+        let (bytes, ext) = data_url_to_bytes(data_url);
+        assert!(bytes.is_some(), "should decode JPEG");
+        assert_eq!(ext, "jpg");
+    }
+
+    #[test]
+    fn test_data_url_to_bytes_gif_and_webp() {
+        let data_url_gif = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+        let (bytes_gif, ext_gif) = data_url_to_bytes(data_url_gif);
+        assert!(bytes_gif.is_some(), "should decode GIF");
+        assert_eq!(ext_gif, "gif");
+
+        let data_url_webp = "data:image/webp;base64,UklGRiQAAABXRUJQVlA4IBgAAAAwAQCdASoBAAEAAwA0JaQAA3AA/vuUAAA=";
+        let (bytes_webp, ext_webp) = data_url_to_bytes(data_url_webp);
+        assert!(bytes_webp.is_some(), "should decode WebP");
+        assert_eq!(ext_webp, "webp");
+    }
+
+    #[test]
+    fn test_data_url_to_bytes_svg() {
+        let svg_b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, b"<svg/>");
+        let data_url = format!("data:image/svg+xml;base64,{}", svg_b64);
+        let (bytes, ext) = data_url_to_bytes(&data_url);
+        assert!(bytes.is_some(), "should decode SVG");
+        assert_eq!(ext, "svg");
+    }
+
+    #[test]
+    fn test_data_url_to_bytes_invalid() {
+        let (bytes, ext) = data_url_to_bytes("not a data url");
+        assert!(bytes.is_none(), "invalid data URL should return None");
+        assert_eq!(ext, "png", "default extension is png");
+
+        let (bytes2, ext2) = data_url_to_bytes("data:image/png;base64,!!!invalid!!!");
+        assert!(bytes2.is_none(), "bad base64 should return None");
+        assert_eq!(ext2, "png");
+    }
+
+    #[test]
+    fn test_data_url_to_bytes_unknown_mime() {
+        let b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, b"test");
+        let data_url = format!("data:application/octet-stream;base64,{}", b64);
+        let (bytes, ext) = data_url_to_bytes(&data_url);
+        assert!(bytes.is_some(), "unknown MIME should still decode");
+        assert_eq!(ext, "png", "unknown MIME defaults to png");
+    }
+
+    #[test]
+    fn test_bytes_to_data_url_roundtrip() {
+        let original = b"hello data url";
+        let content_type = "text/plain";
+        let url = bytes_to_data_url(original, content_type);
+        assert!(url.starts_with("data:text/plain;base64,"));
+        let (decoded, ext) = data_url_to_bytes(&url);
+        assert!(decoded.is_some(), "roundtrip decode should succeed");
+        assert_eq!(decoded.unwrap(), original, "roundtrip should match original");
+        assert_eq!(ext, "png", "unknown mime defaults to png");
+    }
+
 }
+
