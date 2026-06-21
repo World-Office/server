@@ -22,7 +22,7 @@ pub enum StorageClientError {
     Base64(#[from] base64::DecodeError),
 }
 
-type Result<T> = std::result::Result<T, StorageClientError>;
+pub(crate) type Result<T> = std::result::Result<T, StorageClientError>;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct CreateSnapshotRequest {
@@ -79,7 +79,7 @@ mod base64_bytes {
 
 #[derive(Debug, Clone)]
 pub struct StorageClient {
-    base_url: String,
+    pub(crate) base_url: String,
     http: reqwest::Client,
 }
 
@@ -566,5 +566,56 @@ impl StorageClient {
 
         let data: serde_json::Value = resp.json().await?;
         Ok(data)
+    }
+}
+
+/// Trait abstracting snapshot storage operations for testability.
+#[allow(async_fn_in_trait)]
+pub trait SnapshotStorage: Send + Sync {
+    /// List snapshots for a file.
+    async fn get_snapshots_for_file(&self, file_id: &str) -> Result<Vec<Snapshot>>;
+    /// Create a new snapshot.
+    async fn save_snapshot(
+        &self,
+        file_id: &str,
+        content_hash: &str,
+        content_blob: &[u8],
+        agent_name: &str,
+        summary: &str,
+    ) -> Result<String>;
+}
+
+impl SnapshotStorage for StorageClient {
+    async fn get_snapshots_for_file(&self, file_id: &str) -> Result<Vec<Snapshot>> {
+        self.list_snapshots(file_id).await
+    }
+
+    async fn save_snapshot(
+        &self,
+        file_id: &str,
+        content_hash: &str,
+        content_blob: &[u8],
+        agent_name: &str,
+        summary: &str,
+    ) -> Result<String> {
+        self.create_snapshot(file_id, content_hash, content_blob, agent_name, summary)
+            .await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_strips_trailing_slash() {
+        let client = StorageClient::new("http://example.com/".into());
+        assert_eq!(client.base_url, "http://example.com");
+    }
+
+    #[test]
+    fn new_keeps_url_without_trailing_slash() {
+        let client = StorageClient::new("http://example.com".into());
+        assert_eq!(client.base_url, "http://example.com");
     }
 }
