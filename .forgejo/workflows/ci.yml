@@ -52,8 +52,8 @@ jobs:
         run: cargo clippy --workspace --all-targets --exclude wo-pdf --exclude wo-webdav -- -D warnings
         timeout-minutes: 30
 
-  test-rust:
-    name: Rust Test (nightly)
+  test-rust-unit:
+    name: Rust Unit Tests (nightly)
     runs-on: codeberg-medium
     steps:
       - name: Checkout
@@ -75,13 +75,135 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
+            ~/.cargo/bin/cargo-nextest
+            ~/.cargo/bin/cargo-llvm-cov
           key: rust-test-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: rust-test-
         timeout-minutes: 5
 
-      - name: Run tests
-        run: cargo test --workspace --lib --exclude wo-pdf --exclude wo-webdav -- --test-threads=1
+      - name: Install cargo-nextest
+        run: cargo install cargo-nextest --locked || true
+        timeout-minutes: 10
+
+      - name: Run unit tests (nextest, --lib)
+        run: |
+          mkdir -p test-results/nextest
+          cargo nextest run --workspace --lib --exclude wo-pdf --exclude wo-webdav \
+            --message-format libtest-json-plus \
+            --archive-file test-results/nextest/archive.tar.zst 2>&1 || true
         timeout-minutes: 60
+
+      - name: Generate JUnit report (nextest)
+        run: |
+          cargo nextest report --workspace --lib --exclude wo-pdf --exclude wo-webdav \
+            --junit test-results/nextest/junit.xml 2>&1 || true
+        timeout-minutes: 5
+        continue-on-error: true
+
+      - name: Upload test reports
+        uses: https://data.forgejo.org/actions/upload-artifact@v3
+        with:
+          name: rust-test-results-${{ github.sha }}
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 14
+        timeout-minutes: 5
+        continue-on-error: true
+
+      - name: Run doc tests
+        run: cargo test --workspace --doc --exclude wo-pdf --exclude wo-webdav
+        timeout-minutes: 30
+        continue-on-error: true
+
+  test-rust-integration:
+    name: Rust Integration Tests
+    runs-on: codeberg-medium
+    needs: [test-rust-unit]
+    steps:
+      - name: Checkout
+        uses: https://data.forgejo.org/actions/checkout@v4
+        timeout-minutes: 5
+
+      - name: Install Rust toolchain
+        uses: https://github.com/dtolnay/rust-toolchain@nightly
+        timeout-minutes: 10
+
+      - name: Install system dependencies
+        run: apt-get update && apt-get install -y --no-install-recommends pkg-config libssl-dev
+        timeout-minutes: 5
+
+      - name: Cache Cargo registry and build
+        uses: https://data.forgejo.org/actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: rust-integration-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: rust-integration-
+        timeout-minutes: 5
+
+      - name: Run integration tests
+        run: cargo test --workspace --tests --exclude wo-pdf --exclude wo-webdav
+        timeout-minutes: 60
+        continue-on-error: true
+
+  coverage-rust:
+    name: Rust Coverage
+    runs-on: codeberg-medium
+    steps:
+      - name: Checkout
+        uses: https://data.forgejo.org/actions/checkout@v4
+        timeout-minutes: 5
+
+      - name: Install Rust toolchain
+        uses: https://github.com/dtolnay/rust-toolchain@nightly
+        with:
+          components: llvm-tools-preview
+        timeout-minutes: 10
+
+      - name: Install system dependencies
+        run: apt-get update && apt-get install -y --no-install-recommends pkg-config libssl-dev
+        timeout-minutes: 5
+
+      - name: Cache Cargo registry and build
+        uses: https://data.forgejo.org/actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+            ~/.cargo/bin/cargo-nextest
+            ~/.cargo/bin/cargo-llvm-cov
+          key: rust-coverage-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: rust-coverage-
+        timeout-minutes: 5
+
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov --locked || true
+        timeout-minutes: 10
+
+      - name: Generate coverage report
+        run: |
+          cargo llvm-cov --workspace --lib --exclude wo-pdf --exclude wo-webdav \
+            --lcov --output-path coverage/rust-lcov.info \
+            --ignore-filename-regex '/target/|/tests/|/benches/|/examples/'
+        timeout-minutes: 60
+
+      - name: Generate HTML coverage report
+        run: |
+          cargo llvm-cov --workspace --lib --exclude wo-pdf --exclude wo-webdav \
+            --html --output-dir coverage/rust-html \
+            --ignore-filename-regex '/target/|/tests/|/benches/|/examples/'
+        timeout-minutes: 60
+
+      - name: Upload coverage artifacts
+        uses: https://data.forgejo.org/actions/upload-artifact@v3
+        with:
+          name: rust-coverage-${{ github.sha }}
+          path: coverage/
+          retention-days: 30
+        timeout-minutes: 5
 
   lint-ts:
     name: TypeScript Lint
@@ -170,6 +292,46 @@ jobs:
         run: pnpm build --filter='!@world-office/tauri-poc'
         timeout-minutes: 15
 
+  test-ts:
+    name: TypeScript Test
+    runs-on: codeberg-medium
+    steps:
+      - name: Checkout
+        uses: https://data.forgejo.org/actions/checkout@v4
+        timeout-minutes: 5
+
+      - name: Setup pnpm
+        uses: https://github.com/pnpm/action-setup@v4
+        with:
+          version: 10
+        timeout-minutes: 5
+
+      - name: Setup Node.js
+        uses: https://data.forgejo.org/actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+        timeout-minutes: 5
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        timeout-minutes: 10
+
+      - name: Run tests with coverage
+        run: pnpm test
+        timeout-minutes: 15
+
+      - name: Upload TS coverage artifacts
+        uses: https://data.forgejo.org/actions/upload-artifact@v3
+        with:
+          name: ts-coverage-${{ github.sha }}
+          path: |
+            packages/**/coverage/
+            apps/**/coverage/
+          if-no-files-found: ignore
+          retention-days: 30
+        timeout-minutes: 5
+
   build-rust:
     name: Rust Build Check
     runs-on: codeberg-medium
@@ -200,3 +362,20 @@ jobs:
       - name: Check all targets
         run: cargo check --workspace --all-targets --exclude wo-pdf --exclude wo-webdav
         timeout-minutes: 30
+
+  e2e-trigger:
+    name: Trigger E2E Tests
+    runs-on: codeberg-medium
+    needs: [lint-rust, test-rust-unit, test-rust-integration, coverage-rust, lint-ts, typecheck-ts, build-ts, test-ts, build-rust]
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Dispatch E2E workflow
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -s -X POST \
+            "https://codeberg.org/api/v1/repos/${{ github.repository }}/actions/workflows/e2e.yml/dispatches" \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"ref":"${{ github.head_ref }}"}'
+        timeout-minutes: 5

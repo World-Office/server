@@ -43,6 +43,15 @@ jobs:
         run: cargo build --target wasm32-unknown-unknown -p wo-x2t-wasm
         timeout-minutes: 30
 
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --locked || true
+        timeout-minutes: 10
+
+      - name: Test wo-x2t-wasm (wasm-pack --node)
+        run: wasm-pack test --node -p wo-x2t-wasm
+        timeout-minutes: 15
+        continue-on-error: true
+
   build-wasm-renderer:
     name: Build wo-renderer-wasm
     runs-on: codeberg-medium
