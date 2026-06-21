@@ -14,7 +14,9 @@
   <a href="https://codeberg.org/World-Office">Organization</a> &
   <a href="CODE_OF_CONDUCT.md">Code of Conduct</a> &
   <a href="CONTRIBUTING.md">Contributing</a> &
-  <a href="SECURITY.md">Security</a>
+  <a href="SECURITY.md">Security</a> <br>
+  <a href="https://codecov.io/gh/World-Office/server"><img src="https://codecov.io/gh/World-Office/server/branch/main/graph/badge.svg?style=flat-square" alt="Codecov"></a>
+  <a href="https://codeberg.org/World-Office/server/actions"><img src="https://codeberg.org/World-Office/server/actions/workflows/ci.yml/badge.svg?style=flat-square" alt="CI"></a>
 </p>
 
 ---
