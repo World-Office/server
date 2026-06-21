@@ -9,3 +9,6 @@ anyhow = { workspace = true }
 thiserror = { workspace = true }
 wo-common = { path = "../wo-common" }
 
+[dev-dependencies]
+proptest = { workspace = true }
+

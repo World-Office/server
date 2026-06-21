@@ -65,4 +65,6 @@ rustybuzz = "0.20"
 pdf-writer = "0.12"
 jsonwebtoken = "9.0"
 tracing-subscriber = "0.1"
+proptest = "1"
+wasm-bindgen-test = "0.3"
 

@@ -20,5 +20,8 @@ wo-ooxml = { path = "../wo-ooxml" }
 console_error_panic_hook = { workspace = true, optional = true }
 serde_json = { workspace = true }
 
+[dev-dependencies]
+wasm-bindgen-test = { workspace = true }
+
 [features]
 default = ["console_error_panic_hook"]
