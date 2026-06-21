@@ -267,7 +267,7 @@ export class WebSocketManager {
       this.emit("operation", serverMsg.operation)
     } else if (serverMsg.type === "participant_update") {
       this.emit("participantUpdate", serverMsg.update)
-    } else if (serverMsg.type === "initial_state") {
+    } else if (serverMsg.type === "initial_state_msg") {
       this.emit("initialState", serverMsg.state)
     } else if (serverMsg.type === "comment_event") {
       // Skip our own comment events (echo from server)

@@ -8,7 +8,6 @@ import {
   WebSocketManager,
   createSelectionUpdate,
 } from "@world-office/collaboration-client"
-import { AuthClient } from "@world-office/collaboration-client"
 import type { CollaborationStore } from "@world-office/editor-stores"
 import { useCallback, useEffect, useRef, useState } from "react"
 
@@ -19,8 +18,6 @@ export interface UseCollaborationOptions {
   collaborationStore: CollaborationStore | null
   /** Pre-created session ID from storage-service. */
   sessionId?: string
-  /** REST API base URL for session-service. */
-  sessionServiceUrl?: string
   /** REST API base URL for coauthoring-service. */
   coauthoringServiceUrl?: string
   onRemoteOperation?: (op: EditOperation) => void
@@ -47,7 +44,6 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
     username,
     collaborationStore,
     sessionId: preCreatedSessionId,
-    sessionServiceUrl = "http://localhost:8001",
     coauthoringServiceUrl = "http://localhost:8004",
     onRemoteOperation,
     onParticipantUpdate,
@@ -56,11 +52,10 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
   } = options
 
   const managerRef = useRef<WebSocketManager | null>(null)
-  const tokenRef = useRef<string | null>(null)
   const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected")
 
   const getOrCreateManager = useCallback(
-    (resolvedSessionId: string, token: string): WebSocketManager => {
+    (resolvedSessionId: string): WebSocketManager => {
       const url = wsUrl.replace("{session_id}", resolvedSessionId)
       if (!managerRef.current || managerRef.current.state === "disconnected") {
         const manager = new WebSocketManager({
@@ -158,7 +153,6 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
         })
 
         managerRef.current = manager
-        tokenRef.current = token
       }
       return managerRef.current
     },
@@ -188,20 +182,14 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
         resolvedSessionId = data.session_id
       }
 
-      const authClient = new AuthClient({ baseUrl: sessionServiceUrl })
-      const { accessToken } = await authClient.createSession({ userId, username })
-
       await fetch(`${coauthoringServiceUrl}/sessions/${resolvedSessionId}/join`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, username }),
       })
 
-      const manager = getOrCreateManager(resolvedSessionId, accessToken)
-      manager.connect(accessToken)
+      const manager = getOrCreateManager(resolvedSessionId)
+      manager.connect()
     } catch (err) {
       console.error("[useCollaboration] connect failed:", err)
     }
@@ -209,7 +197,6 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
     preCreatedSessionId,
     userId,
     username,
-    sessionServiceUrl,
     coauthoringServiceUrl,
     getOrCreateManager,
   ])
@@ -217,7 +204,6 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
   const disconnect = useCallback(() => {
     managerRef.current?.disconnect()
     managerRef.current = null
-    tokenRef.current = null
   }, [])
 
   const sendInsert = useCallback((position: number, text: string) => {
