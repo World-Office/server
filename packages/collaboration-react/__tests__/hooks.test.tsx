@@ -40,10 +40,14 @@ describe("useCollaboration", () => {
       wsHelper = createMockWebSocket()
       return wsHelper.mockWs
     }))
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ session_id: "test-session" }),
+    }))
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
   })
 
   it("should return disconnected initially", () => {
@@ -58,7 +62,7 @@ describe("useCollaboration", () => {
     expect(result.current.connectionState).toBe("disconnected")
   })
 
-  it("should connect when connect() is called", () => {
+  it("should connect when connect() is called", async () => {
     const { result } = renderHook(() =>
       useCollaboration({
         wsUrl: "ws://localhost:8004/ws/test",
@@ -67,14 +71,14 @@ describe("useCollaboration", () => {
       })
     )
 
-    act(() => {
-      result.current.connect()
+    await act(async () => {
+      await result.current.connect()
     })
 
     expect(result.current.connectionState).toBe("connecting")
   })
 
-  it("should transition to connected on open", () => {
+  it("should transition to connected on open", async () => {
     const { result } = renderHook(() =>
       useCollaboration({
         wsUrl: "ws://localhost:8004/ws/test",
@@ -83,15 +87,15 @@ describe("useCollaboration", () => {
       })
     )
 
-    act(() => {
-      result.current.connect()
+    await act(async () => {
+      await result.current.connect()
       wsHelper.simulateOpen()
     })
 
     expect(result.current.connectionState).toBe("connected")
   })
 
-  it("should provide sendInsert and sendDelete", () => {
+  it("should provide sendInsert and sendDelete", async () => {
     const { result } = renderHook(() =>
       useCollaboration({
         wsUrl: "ws://localhost:8004/ws/test",
@@ -100,8 +104,8 @@ describe("useCollaboration", () => {
       })
     )
 
-    act(() => {
-      result.current.connect()
+    await act(async () => {
+      await result.current.connect()
       wsHelper.simulateOpen()
       result.current.sendInsert(5, "Hello")
       result.current.sendDelete(0, 3)
@@ -110,7 +114,7 @@ describe("useCollaboration", () => {
     expect(wsHelper.mockWs.send).toHaveBeenCalledTimes(2)
   })
 
-  it("should update CollaborationStore when connected", () => {
+  it("should update CollaborationStore when connected", async () => {
     const setConnectionStatus = vi.fn()
     const setSessionId = vi.fn()
     const mockStore = {
@@ -126,15 +130,15 @@ describe("useCollaboration", () => {
       })
     )
 
-    act(() => {
-      result.current.connect()
+    await act(async () => {
+      await result.current.connect()
       wsHelper.simulateOpen()
     })
 
     expect(setConnectionStatus).toHaveBeenCalledWith("connected")
   })
 
-  it("should disconnect on unmount", () => {
+  it("should disconnect on unmount", async () => {
     const { result, unmount } = renderHook(() =>
       useCollaboration({
         wsUrl: "ws://localhost:8004/ws/test",
@@ -143,8 +147,8 @@ describe("useCollaboration", () => {
       })
     )
 
-    act(() => {
-      result.current.connect()
+    await act(async () => {
+      await result.current.connect()
       wsHelper.simulateOpen()
     })
 
@@ -153,7 +157,7 @@ describe("useCollaboration", () => {
     expect(wsHelper.mockWs.close).toHaveBeenCalled()
   })
 
-  it("should call onRemoteOperation callback", () => {
+  it("should call onRemoteOperation callback", async () => {
     const onRemoteOp = vi.fn()
     const { result } = renderHook(() =>
       useCollaboration({
@@ -164,18 +168,21 @@ describe("useCollaboration", () => {
       })
     )
 
-    act(() => {
-      result.current.connect()
+    await act(async () => {
+      await result.current.connect()
       wsHelper.simulateOpen()
       wsHelper.simulateMessage(JSON.stringify({
-        session_id: "test",
-        user_id: "u2",
-        revision: 0,
-        type: "insert",
-        position: 0,
-        length: 0,
-        content: "remote",
-        timestamp: "2026-04-18T00:00:00+00:00",
+        type: "edit",
+        operation: {
+          session_id: "test",
+          user_id: "u2",
+          revision: 0,
+          type: "insert",
+          position: 0,
+          length: 0,
+          content: "remote",
+          timestamp: "2026-04-18T00:00:00+00:00",
+        },
       }))
     })
 
