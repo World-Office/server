@@ -1,7 +1,7 @@
+import { loadDocument } from "@world-office/wopi-client";
 import { observer } from "mobx-react-lite";
 import { type JSX, useCallback, useEffect, useRef, useState } from "react";
 import { presentationStore } from "../../stores/PresentationStore";
-import { loadDocument } from "@world-office/wopi-client";
 import type {
 	ChartData,
 	ConnectorData,
@@ -1356,30 +1356,31 @@ const ObservedSlideCanvas = observer(
 		} = presentationStore;
 		const slide = slides[currentSlide];
 
-	const bgStyle = slide?.background
-		? (() => {
-				const bg = slide.background!;
-				if (bg.type === "none") return {};
-				if (bg.type === "solid")
-					return { backgroundColor: bg.color || "#ffffff" };
-				if (bg.type === "gradient" && bg.gradientStops?.length) {
-					const stops = bg.gradientStops
-						.map((s) => `${s.color} ${s.position * 100}%`)
-						.join(", ");
-					return {
-						background: `linear-gradient(${bg.gradientAngle || 0}deg, ${stops})`,
-					};
-				}
-				if (bg.type === "image" && bg.imageData) {
-					return {
-						backgroundImage: `url(${bg.imageData})`,
-						backgroundSize: "cover",
-						backgroundPosition: "center",
-					};
-				}
-				return {};
-		  })()
-		: {};
+		const bgStyle = slide?.background
+			? (() => {
+					// biome-ignore lint/style/noNonNullAssertion: guarded by ternary condition above
+					const bg = slide.background!;
+					if (bg.type === "none") return {};
+					if (bg.type === "solid")
+						return { backgroundColor: bg.color || "#ffffff" };
+					if (bg.type === "gradient" && bg.gradientStops?.length) {
+						const stops = bg.gradientStops
+							.map((s) => `${s.color} ${s.position * 100}%`)
+							.join(", ");
+						return {
+							background: `linear-gradient(${bg.gradientAngle || 0}deg, ${stops})`,
+						};
+					}
+					if (bg.type === "image" && bg.imageData) {
+						return {
+							backgroundImage: `url(${bg.imageData})`,
+							backgroundSize: "cover",
+							backgroundPosition: "center",
+						};
+					}
+					return {};
+				})()
+			: {};
 
 		useEffect(() => {
 			if (!slide || !isPreviewPlaying) return;
@@ -1393,24 +1394,35 @@ const ObservedSlideCanvas = observer(
 		}, [isPreviewPlaying, previewStep, slide, slide?.animations]);
 
 		// Load SVG when format=svg is requested
+		// biome-ignore lint/correctness/useExhaustiveDependencies: loadSvg inner function captures presentationStore
 		useEffect(() => {
-			if (presentationStore.format !== "svg" || !presentationStore.isDocReady || !presentationStore.wopiFileId) return;
+			if (
+				presentationStore.format !== "svg" ||
+				!presentationStore.isDocReady ||
+				!presentationStore.wopiFileId
+			)
+				return;
 
 			setIsSvgLoading(true);
 			setSvgContent(null);
 
 			const loadSvg = async () => {
 				try {
-					const conn = presentationStore.wopiFileId && presentationStore.wopiAccessToken && presentationStore.docserverBase
-						? {
-							wopiFileId: presentationStore.wopiFileId,
-							wopiAccessToken: presentationStore.wopiAccessToken,
-							docserverBase: presentationStore.docserverBase,
-						}
-						: null;
+					const conn =
+						presentationStore.wopiFileId &&
+						presentationStore.wopiAccessToken &&
+						presentationStore.docserverBase
+							? {
+									wopiFileId: presentationStore.wopiFileId,
+									wopiAccessToken: presentationStore.wopiAccessToken,
+									docserverBase: presentationStore.docserverBase,
+								}
+							: null;
 					if (!conn) return;
 					const { content } = await loadDocument({
+						// biome-ignore lint/style/noNonNullAssertion: guarded by !conn check above
 						wopiFileId: conn.wopiFileId!,
+						// biome-ignore lint/style/noNonNullAssertion: guarded by !conn check above
 						wopiAccessToken: conn.wopiAccessToken!,
 						docserverBase: conn.docserverBase,
 						format: "svg",
@@ -1425,7 +1437,13 @@ const ObservedSlideCanvas = observer(
 			};
 
 			loadSvg();
-		}, [presentationStore.format, presentationStore.isDocReady, presentationStore.wopiFileId, presentationStore.wopiAccessToken, presentationStore.docserverBase]);
+		}, [
+			presentationStore.format,
+			presentationStore.isDocReady,
+			presentationStore.wopiFileId,
+			presentationStore.wopiAccessToken,
+			presentationStore.docserverBase,
+		]);
 
 		if (!slide) return <div className="prese-canvas-empty">No slides</div>;
 
@@ -1582,6 +1600,7 @@ const ObservedSlideCanvas = observer(
 							) : svgContent ? (
 								<div
 									ref={svgRef}
+									// biome-ignore lint/security/noDangerouslySetInnerHtml: required for SVG rendering from server
 									dangerouslySetInnerHTML={{ __html: svgContent }}
 									style={{
 										width: "100%",

@@ -4,7 +4,8 @@ import { presentationStore } from "../../stores/PresentationStore";
 import type { ThemePreset } from "../../types/presentation";
 
 const ObservedDesignTab = observer(function ObservedDesignTab() {
-	const { theme, setTheme, slideSize, setSlideSize, slides, currentSlide } = presentationStore;
+	const { theme, setTheme, slideSize, setSlideSize, slides, currentSlide } =
+		presentationStore;
 	const slide = slides[currentSlide];
 	const bg = slide?.background;
 
@@ -99,25 +100,37 @@ const ObservedDesignTab = observer(function ObservedDesignTab() {
 								});
 							}}
 						>
-							{type === "none" ? "None" : type === "solid" ? "Solid" : "Gradient"}
+							{type === "none"
+								? "None"
+								: type === "solid"
+									? "Solid"
+									: "Gradient"}
 						</button>
 					))}
-					{slide?.background?.type !== undefined && slide.background.type !== "none" && (
-						<button
-							type="button"
-							className="prese-designtab-btn"
-							onClick={() => presentationStore.setSlideBackground(currentSlide, undefined)}
-						>
-							Reset
-						</button>
-					)}
+					{slide?.background?.type !== undefined &&
+						slide.background.type !== "none" && (
+							<button
+								type="button"
+								className="prese-designtab-btn"
+								onClick={() =>
+									presentationStore.setSlideBackground(currentSlide, undefined)
+								}
+							>
+								Reset
+							</button>
+						)}
 				</div>
 				{bg?.type === "solid" && (
 					<div className="prese-designtab-elset">
-						<label className="prese-designtab-label" style={{ fontSize: "12px" }}>
+						<label
+							className="prese-designtab-label"
+							style={{ fontSize: "12px" }}
+							htmlFor="designtab-color"
+						>
 							Color
 						</label>
 						<input
+							id="designtab-color"
 							type="color"
 							value={bg.color || "#ffffff"}
 							onChange={(e) =>
@@ -126,17 +139,28 @@ const ObservedDesignTab = observer(function ObservedDesignTab() {
 									color: e.target.value,
 								})
 							}
-							style={{ width: "36px", height: "28px", padding: 0, border: "none", cursor: "pointer" }}
+							style={{
+								width: "36px",
+								height: "28px",
+								padding: 0,
+								border: "none",
+								cursor: "pointer",
+							}}
 						/>
 					</div>
 				)}
 				{bg?.type === "gradient" && (
 					<>
 						<div className="prese-designtab-elset">
-							<label className="prese-designtab-label" style={{ fontSize: "12px" }}>
+							<label
+								className="prese-designtab-label"
+								style={{ fontSize: "12px" }}
+								htmlFor="designtab-start-color"
+							>
 								Start Color
 							</label>
 							<input
+								id="designtab-start-color"
 								type="color"
 								value={bg.gradientStops?.[0]?.color || "#ffffff"}
 								onChange={(e) =>
@@ -144,37 +168,65 @@ const ObservedDesignTab = observer(function ObservedDesignTab() {
 										type: "gradient",
 										gradientStops: [
 											{ position: 0, color: e.target.value },
-											bg.gradientStops?.[1] || { position: 1, color: "#4472C4" },
+											bg.gradientStops?.[1] || {
+												position: 1,
+												color: "#4472C4",
+											},
 										],
 										gradientAngle: bg.gradientAngle ?? 0,
 									})
 								}
-								style={{ width: "36px", height: "28px", padding: 0, border: "none", cursor: "pointer" }}
+								style={{
+									width: "36px",
+									height: "28px",
+									padding: 0,
+									border: "none",
+									cursor: "pointer",
+								}}
 							/>
-							<label className="prese-designtab-label" style={{ fontSize: "12px", marginLeft: "8px" }}>
+							<label
+								className="prese-designtab-label"
+								style={{ fontSize: "12px", marginLeft: "8px" }}
+								htmlFor="designtab-end-color"
+							>
 								End Color
 							</label>
 							<input
+								id="designtab-end-color"
 								type="color"
 								value={bg.gradientStops?.[1]?.color || "#4472C4"}
 								onChange={(e) =>
 									presentationStore.setSlideBackground(currentSlide, {
 										type: "gradient",
 										gradientStops: [
-											bg.gradientStops?.[0] || { position: 0, color: "#ffffff" },
+											bg.gradientStops?.[0] || {
+												position: 0,
+												color: "#ffffff",
+											},
 											{ position: 1, color: e.target.value },
 										],
 										gradientAngle: bg.gradientAngle ?? 0,
 									})
 								}
-								style={{ width: "36px", height: "28px", padding: 0, border: "none", cursor: "pointer" }}
+								style={{
+									width: "36px",
+									height: "28px",
+									padding: 0,
+									border: "none",
+									cursor: "pointer",
+								}}
 							/>
 						</div>
 						<div className="prese-designtab-elset">
-							<label className="prese-designtab-label" style={{ fontSize: "12px" }}>
+							<label
+								className="prese-designtab-label"
+								style={{ fontSize: "12px" }}
+								htmlFor="designtab-angle"
+							>
 								Angle: {bg.gradientAngle ?? 0}°
 							</label>
 							<input
+								id="designtab-angle"
 								type="range"
 								min={0}
 								max={360}

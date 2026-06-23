@@ -1,18 +1,16 @@
-import {
-	usePresentationCollaboration,
-} from "@world-office/collaboration-react";
 import type {
 	PresentationOperation,
 	PresentationStateData,
 	ShapePayload,
 } from "@world-office/collaboration-client";
+import { usePresentationCollaboration } from "@world-office/collaboration-react";
 import { useEffect } from "react";
-import { presentationStore } from "../stores/PresentationStore";
-import type { ShapeData, SlideLayout } from "../types/presentation";
 import {
 	COAUTHORING_API_URL,
 	COAUTHORING_WS_URL,
 } from "../lib/collaboration-config";
+import { presentationStore } from "../stores/PresentationStore";
+import type { ShapeData, SlideLayout } from "../types/presentation";
 
 const SESSION_STORAGE_KEY = "prese-collab-session";
 
@@ -132,17 +130,16 @@ export function PresentationCollaborationProvider(): null {
 		presentationStore.registerMutationCallback(
 			(action: string, data: Record<string, unknown>) => {
 				const payload: Record<string, unknown> = { action, ...data };
-				collab.sendPresentationOp(
-					payload as unknown as PresentationOperation,
-				);
+				collab.sendPresentationOp(payload as unknown as PresentationOperation);
 			},
 		);
-	}, []);
+	}, [collab.sendCursorEvent, collab.sendPresentationOp, user.id, user.name]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: retrySignal triggers reconnect; collab.connect is stable
 	useEffect(() => {
 		presentationStore.connectionError = null;
 		collab.connect();
-	}, [presentationStore.retrySignal]);
+	}, [collab.connect, presentationStore.retrySignal]);
 
 	return null;
 }
