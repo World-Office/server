@@ -1,7 +1,7 @@
 import { observer } from "mobx-react-lite";
 import { type JSX, useCallback, useEffect, useRef, useState } from "react";
 import { presentationStore } from "../../stores/PresentationStore";
-import { WopiClient } from "@world-office/wopi-client";
+import { loadDocument } from "@world-office/wopi-client";
 import type {
 	ChartData,
 	ConnectorData,
@@ -1409,7 +1409,7 @@ const ObservedSlideCanvas = observer(
 						}
 						: null;
 					if (!conn) return;
-					const { content } = await WopiClient.loadDocument({
+					const { content } = await loadDocument({
 						wopiFileId: conn.wopiFileId!,
 						wopiAccessToken: conn.wopiAccessToken!,
 						docserverBase: conn.docserverBase,

@@ -5,7 +5,7 @@ import { collaborationStore } from "../lib/collaboration"
 import { collabSendRef, currentUser } from "../lib/collaboration"
 import { getTotalPages, init, renderPage, setTotalPages } from "../lib/wasm-renderer"
 import { documentStore } from "../stores/DocumentStore"
-import { WopiClient } from "@world-office/wopi-client"
+import { loadDocument } from "@world-office/wopi-client"
 
 const DEMO_PAGE_COUNT = 3
 
@@ -46,7 +46,7 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
       try {
         const conn = documentStore.wopiConnection
         if (!conn) return
-        const { content } = await WopiClient.loadDocument({
+        const { content } = await loadDocument({
           wopiFileId: conn.wopiFileId!,
           wopiAccessToken: conn.wopiAccessToken!,
           docserverBase: conn.docserverBase,

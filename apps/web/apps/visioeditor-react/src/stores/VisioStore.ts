@@ -2,7 +2,7 @@ import { makeAutoObservable } from "mobx"
 import type { EditorMode, LeftMenuAction, PageTab, VisioDocument, VisioMode, ZoomLevel } from "../types/visio"
 import { ZOOM_LEVELS } from "../types/visio"
 import { flowchartStore } from "./FlowchartStore"
-import { WopiClient, detectWopiParams as detectWopi } from "@world-office/wopi-client"
+import { loadDocument, putFile, detectWopiParams as detectWopi } from "@world-office/wopi-client"
 
 const STORAGE_PREFIX = "ve-"
 
@@ -47,7 +47,7 @@ export class VisioStore {
     this.isLoadingError = null
     try {
       const conn = { wopiFileId: this.wopiFileId!, wopiAccessToken: this.wopiAccessToken!, docserverBase: this.docserverBase }
-      const { info, content } = await WopiClient.loadDocument(conn)
+      const { info, content } = await loadDocument(conn)
 
       this.document = {
         title: info.BaseFileName ?? "Untitled",
@@ -92,7 +92,7 @@ export class VisioStore {
     this.isSaving = true
     try {
       const conn = { wopiFileId: this.wopiFileId, wopiAccessToken: this.wopiAccessToken, docserverBase: this.docserverBase }
-      await WopiClient.putFile(conn, this.buildDocumentBlob())
+      await putFile(conn, this.buildDocumentBlob())
       this.isModified = false
     } catch (err) {
       throw err

@@ -386,7 +386,6 @@ mod tests {
             encoding: Encoding::Utf16Le,
             line_ending: LineEnding::Cr,
             write_bom: false,
-            ..Default::default()
         });
 
         let doc = TxtDocument {
@@ -409,7 +408,6 @@ mod tests {
             encoding: Encoding::Utf16Be,
             line_ending: LineEnding::Cr,
             write_bom: false,
-            ..Default::default()
         });
 
         let doc = TxtDocument {
@@ -431,7 +429,6 @@ mod tests {
             encoding: Encoding::Utf16Be,
             line_ending: LineEnding::Lf,
             write_bom: false,
-            ..Default::default()
         });
 
         let doc = TxtDocument {
@@ -452,7 +449,6 @@ mod tests {
             encoding: Encoding::Utf16Be,
             line_ending: LineEnding::Crlf,
             write_bom: false,
-            ..Default::default()
         });
 
         let doc = TxtDocument {
@@ -517,7 +513,6 @@ mod tests {
             encoding: Encoding::Utf16Le,
             line_ending: LineEnding::Crlf,
             write_bom: false,
-            ..Default::default()
         });
         let doc = TxtDocument {
             lines: vec!["a".to_string(), "b".to_string()],
@@ -537,7 +532,6 @@ mod tests {
             encoding: Encoding::Utf16Le,
             line_ending: LineEnding::Lf,
             write_bom: false,
-            ..Default::default()
         });
         let doc = TxtDocument {
             lines: vec!["a".to_string(), "b".to_string()],

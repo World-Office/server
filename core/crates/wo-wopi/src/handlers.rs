@@ -309,7 +309,7 @@ mod tests {
     use axum::{
         body::Body,
         http::{Request, StatusCode},
-        routing::{get, post},
+        routing::get,
         Router,
     };
     use std::sync::Arc;
@@ -427,7 +427,7 @@ mod tests {
 
     #[test]
     fn test_handle_wopi_error_io_is_500() {
-        let err = WopiError::Io(std::io::Error::new(std::io::ErrorKind::Other, "disk full"));
+        let err = WopiError::Io(std::io::Error::other("disk full"));
         let (status, msg) = handle_wopi_error(err);
         assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
         assert_eq!(msg, "disk full");

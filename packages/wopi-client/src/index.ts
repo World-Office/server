@@ -1,6 +1,6 @@
-export {
-  type WopiConnection,
-  type WopiFileInfo,
+export type {
+  WopiConnection,
+  WopiFileInfo,
 } from "./wopi-types"
 
 export {
@@ -9,7 +9,10 @@ export {
 } from "./detect-wopi-params"
 
 export {
-  WopiClient,
+  checkFileInfo,
+  getFile,
+  putFile,
+  loadDocument,
 } from "./wopi-client"
 
 export {

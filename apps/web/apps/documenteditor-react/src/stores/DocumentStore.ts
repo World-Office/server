@@ -10,7 +10,8 @@ import type {
 } from "../types/document"
 import { ZOOM_LEVELS } from "../types/document"
 import {
-  WopiClient,
+  loadDocument,
+  putFile,
   detectWopiParams,
   type WopiConnection,
   type WopiFileInfo,
@@ -271,7 +272,7 @@ export class DocumentStore {
     this.isLoading = true
     this.loadError = null
     try {
-      const { info, content } = await WopiClient.loadDocument(conn)
+      const { info, content } = await loadDocument(conn)
       this.wopiFileInfo = info
       this.lastLoadedContent = content
       this.fileName = info.BaseFileName ?? "Untitled Document"
@@ -294,7 +295,7 @@ export class DocumentStore {
     this.isSaving = true
     try {
       const blob = this.buildDocumentBlob()
-      await WopiClient.putFile(this.wopiConnection, blob)
+      await putFile(this.wopiConnection, blob)
       this.isModified = false
       this.isDirty = false
       this.lastLoadedContent = blob

@@ -1214,7 +1214,7 @@ mod tests {
 
     #[test]
     fn test_parse_default_impl() {
-        let parser = HtmlParser::default();
+        let parser = HtmlParser;
         let html = b"<?xml version=\"1.0\"?><html><head></head><body><p>Default</p></body></html>";
         let doc = parser.parse(html).unwrap();
         assert_eq!(doc.body.elements.len(), 1);

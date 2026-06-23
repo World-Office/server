@@ -1,7 +1,7 @@
 import { observer } from "mobx-react-lite"
 import { useEffect, useRef, useState } from "react"
 import { getTotalPages, init, renderPage, setTotalPages } from "../lib/wasm-renderer"
-import { WopiClient } from "@world-office/wopi-client"
+import { loadDocument } from "@world-office/wopi-client"
 import { pdfStore } from "../stores/PdfStore"
 
 const DEMO_PAGE_COUNT = 5
@@ -43,7 +43,7 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
       try {
         const conn = pdfStore.wopiConnection
         if (!conn) return
-        const { content } = await WopiClient.loadDocument({
+        const { content } = await loadDocument({
           wopiFileId: conn.wopiFileId,
           wopiAccessToken: conn.wopiAccessToken,
           docserverBase: conn.docserverBase,

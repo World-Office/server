@@ -1161,7 +1161,7 @@ impl OoxmlParser {
                     .and_then(|v| v.parse::<f64>().ok())
                     .map(|a| a / 1000.0)
                     .unwrap_or(0.0);
-                let direction = if refl.attribute("dir").as_deref() == Some("fade") {
+                let direction = if refl.attribute("dir") == Some("fade") {
                     ReflectionDirection::Fade
                 } else {
                     ReflectionDirection::Mirror
