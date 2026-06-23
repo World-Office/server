@@ -19,8 +19,9 @@ jobs:
         timeout-minutes: 5
 
       - name: Install Rust toolchain
-        uses: https://github.com/dtolnay/rust-toolchain@nightly
+        uses: https://github.com/dtolnay/rust-toolchain@master
         with:
+          channel: nightly
           targets: wasm32-unknown-unknown
         timeout-minutes: 10
 
@@ -61,8 +62,9 @@ jobs:
         timeout-minutes: 5
 
       - name: Install Rust toolchain
-        uses: https://github.com/dtolnay/rust-toolchain@nightly
+        uses: https://github.com/dtolnay/rust-toolchain@master
         with:
+          channel: nightly
           targets: wasm32-unknown-unknown
         timeout-minutes: 10
 

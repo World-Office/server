@@ -15,7 +15,19 @@ use axum::{
 use repository::StorageRepository;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
+use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
+
+static METRICS: LazyLock<PrometheusHandle> = LazyLock::new(|| {
+    PrometheusBuilder::new()
+        .install_recorder()
+        .expect("failed to install prometheus recorder")
+});
+
+async fn metrics_handler() -> String {
+    METRICS.render()
+}
+
 use tokio::fs;
 use tokio::sync::Mutex;
 use uuid::Uuid;
@@ -1340,6 +1352,7 @@ pub async fn delete_content_link(
 pub fn app(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/health", get(health))
+        .route("/metrics", get(metrics_handler))
         .route("/files", post(upload_file).get(list_files))
         .route(
             "/files/{id}",

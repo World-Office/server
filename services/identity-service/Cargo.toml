@@ -25,3 +25,5 @@ tower = { workspace = true }
 hex = "0.4"
 rusqlite = { workspace = true }
 uuid = { workspace = true }
+metrics = { workspace = true }
+metrics-exporter-prometheus = { workspace = true }

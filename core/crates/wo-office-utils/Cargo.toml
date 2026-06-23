@@ -3,11 +3,16 @@ name = "wo-office-utils"
 version = "0.1.0"
 edition = "2021"
 license = "AGPL-3.0-or-later"
+description = "ZIP and archive manipulation utilities for the World-Office document editing suite"
+repository = "https://codeberg.org/World-Office/server"
+homepage = "https://codeberg.org/World-Office/server"
+keywords = ["zip", "archive", "office", "document"]
+categories = ["compression"]
 
 [dependencies]
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-wo-common = { path = "../wo-common" }
+wo-common = { path = "../wo-common", version = "0.1.0" }
 zip = { version = "2", default-features = false, features = ["deflate"] }
 flate2 = { workspace = true }

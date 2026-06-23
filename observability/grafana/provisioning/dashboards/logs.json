@@ -1,0 +1,82 @@
+{
+  "title": "World Office — Logs (Loki)",
+  "uid": "world-office-logs",
+  "version": 1,
+  "schemaVersion": 39,
+  "tags": ["world-office", "logs"],
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "auto",
+  "panels": [
+    {
+      "title": "Log Volume by Service",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "sum by (job) (rate({job=~\"api-gateway|identity-service|storage-service|conversion-service|coauthoring-service|session-service\"}[5m]))",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "calcs": ["max", "avg"], "displayMode": "table", "placement": "bottom" }
+      }
+    },
+    {
+      "title": "Error Logs by Service",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "sum by (job) (rate({job=~\"api-gateway|identity-service|storage-service|conversion-service|coauthoring-service|session-service\"} |= \"error\" [5m]))",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "calcs": ["max", "avg"], "displayMode": "table", "placement": "bottom" }
+      }
+    },
+    {
+      "title": "Log Explorer",
+      "type": "logs",
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 8 },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "{job=~\"$service\"} |= \"$search\"",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "wrapLogMessage": true,
+        "dedupStrategy": "none",
+        "sortOrder": "Descending"
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "query",
+        "query": "label_values({job=~\".+\"}, job)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true
+      },
+      {
+        "name": "search",
+        "type": "textbox",
+        "query": "",
+        "refresh": 1
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" }
+}

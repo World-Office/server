@@ -64,7 +64,7 @@ Cannot test with `cargo test` — need wasm-pack or browser runtime.
 ## CONVENTIONS
 
 - See `core/AGENTS.md` for parser structure, `FormatRoundtrip` trait, and test conventions
-- CI excludes `wo-pdf` and `wo-webdav` from clippy/check
+- CI runs clippy/check for all 27 core crates (wo-pdf ICE resolved in rustc 1.92.0)
 
 ## ANTI-PATTERNS
 

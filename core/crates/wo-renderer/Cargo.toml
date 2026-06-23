@@ -3,6 +3,11 @@ name = "wo-renderer"
 version = "0.1.0"
 edition = "2021"
 license = "AGPL-3.0-or-later"
+description = "Canvas-based document rendering engine with text layout, gradients, transforms, and path rendering for the World-Office document editing suite"
+repository = "https://codeberg.org/World-Office/server"
+homepage = "https://codeberg.org/World-Office/server"
+keywords = ["rendering", "canvas", "text-layout", "document", "office"]
+categories = ["graphics", "rendering"]
 
 [dependencies]
 anyhow = { workspace = true }
@@ -11,4 +16,4 @@ serde = { workspace = true, features = ["derive"] }
 fontdb = { workspace = true, features = ["fs"] }
 swash = { workspace = true }
 rustybuzz = { workspace = true }
-wo-fonts = { path = "../wo-fonts" }
+wo-fonts = { path = "../wo-fonts", version = "0.1.0" }

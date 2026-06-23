@@ -16,6 +16,18 @@ use bytes::Bytes;
 use http_body_util::BodyExt;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
 use serde::{Deserialize, Serialize};
+use std::sync::LazyLock;
+use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
+
+static METRICS: LazyLock<PrometheusHandle> = LazyLock::new(|| {
+    PrometheusBuilder::new()
+        .install_recorder()
+        .expect("failed to install prometheus recorder")
+});
+
+async fn metrics_handler() -> String {
+    METRICS.render()
+}
 
 /// Service route configuration.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -268,6 +280,7 @@ async fn health(State(state): State<AppState>) -> Json<HealthResponse> {
 fn build_routes(state: AppState) -> Router {
     let mut router = Router::new()
         .route("/health", get(health))
+        .route("/metrics", get(metrics_handler))
         .fallback(proxy_handler);
 
     // Add JWT auth middleware
@@ -281,7 +294,10 @@ fn build_routes(state: AppState) -> Router {
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .json()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
 
     let jwt_secret =
         std::env::var("JWT_SECRET").unwrap_or_else(|_| "dev-secret-change-in-production".into());

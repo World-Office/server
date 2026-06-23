@@ -13,7 +13,19 @@ use chrono::Utc;
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
 use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
+use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
+
+static METRICS: LazyLock<PrometheusHandle> = LazyLock::new(|| {
+    PrometheusBuilder::new()
+        .install_recorder()
+        .expect("failed to install prometheus recorder")
+});
+
+async fn metrics_handler() -> String {
+    METRICS.render()
+}
+
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
@@ -574,6 +586,7 @@ async fn health() -> Json<HealthResponse> {
 fn app(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/health", get(health))
+        .route("/metrics", get(metrics_handler))
         .route("/sessions", post(create_session).get(list_sessions))
         .route("/sessions/{id}", get(get_session).delete(revoke_session))
         .route("/sessions/refresh", post(refresh_session))
@@ -582,7 +595,10 @@ fn app(state: Arc<AppState>) -> Router {
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .json()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
 
     let jwt_secret =
         std::env::var("JWT_SECRET").unwrap_or_else(|_| "dev-secret-change-in-production".into());

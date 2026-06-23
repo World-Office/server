@@ -49,9 +49,9 @@ use wo_odf::OdfSerializer;
 use wo_ooxml::model::{
     AdvanceMode, AnimationData as OoxmlAnimData, Bounds, ConnectorShape, ConnectorShapeType,
     CoreProperties, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, DocxTable,
-    DocxTableCell, DocxTableRow, Fill, OoxmlDocument, OoxmlFormat, PictureShape, PptxPresentation,
-    Slide, SlideShape, SlideSize, SlideTransition, TextBody as OoxmlTextBody, TextBoxShape,
-    TransitionEffect, UnderlineType,
+    DocxTableCell, DocxTableRow, Fill, OoxmlDocument, OoxmlFormat,
+    PictureShape, PptxPresentation, Slide, SlideShape, SlideSize, SlideTransition,
+    TextBody as OoxmlTextBody, TextBoxShape, TransitionEffect, UnderlineType,
 };
 use wo_ooxml::{OoxmlParser, OoxmlSerializer};
 
@@ -6239,10 +6239,11 @@ fn bytes_to_data_url(data: &[u8], content_type: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use base64::Engine;
     use std::io::Write;
     use wo_epub::is_epub_file;
     use wo_html::model::ListItem;
-    use wo_ooxml::model::VerticalAlignment;
+    use wo_ooxml::model::{DocxTableProperties, VerticalAlignment};
     use wo_fb2::model::{Author, Stanza, TitleElement};
     use wo_rtf::model::{RtfTableCell, RtfTableRow};
 
@@ -11453,5 +11454,1186 @@ mod tests {
         assert_eq!(ext, "png", "unknown mime defaults to png");
     }
 
+    #[test]
+    fn test_extract_docx_run_text_form_feed() {
+        let runs = vec![DocxRun {
+            text: "Before\x0CAfter".into(),
+            ..DocxRun::default()
+        }];
+        let result = extract_docx_run_text(&runs);
+        assert_eq!(result, "Before\nAfter");
+    }
+
+    #[test]
+    fn test_docx_runs_to_html_inlines_strikethrough() {
+        let runs = vec![DocxRun {
+            text: "struck".into(),
+            strikethrough: true,
+            ..DocxRun::default()
+        }];
+        let inlines = docx_runs_to_html_inlines(&runs);
+        assert_eq!(inlines.len(), 1);
+        match &inlines[0] {
+            InlineElement::Strikethrough { content } => {
+                assert!(matches!(content[0], InlineElement::Text { text: ref t } if t == "struck"));
+            }
+            _ => panic!("expected Strikethrough"),
+        }
+    }
+
+    #[test]
+    fn test_docx_runs_to_html_inlines_underline() {
+        let runs = vec![DocxRun {
+            text: "under".into(),
+            underline: Some(UnderlineType::Single),
+            ..DocxRun::default()
+        }];
+        let inlines = docx_runs_to_html_inlines(&runs);
+        assert_eq!(inlines.len(), 1);
+        match &inlines[0] {
+            InlineElement::Underline { content } => {
+                assert!(matches!(content[0], InlineElement::Text { text: ref t } if t == "under"));
+            }
+            _ => panic!("expected Underline"),
+        }
+    }
+
+    #[test]
+    fn test_docx_runs_to_html_inlines_bold_italic_order() {
+        // Bold + Italic — verify bold wraps italic
+        let runs = vec![DocxRun {
+            text: "both".into(),
+            bold: true,
+            italic: true,
+            ..DocxRun::default()
+        }];
+        let inlines = docx_runs_to_html_inlines(&runs);
+        assert_eq!(inlines.len(), 1);
+        match &inlines[0] {
+            InlineElement::Bold { content } => match &content[0] {
+                InlineElement::Italic { content: inner } => {
+                    assert!(matches!(inner[0], InlineElement::Text { text: ref t } if t == "both"));
+                }
+                _ => panic!("expected Italic inside Bold"),
+            },
+            _ => panic!("expected Bold"),
+        }
+    }
+
+    #[test]
+    fn test_parse_data_url_bmp() {
+        let bmp_b64 = base64::engine::general_purpose::STANDARD.encode(b"BMPDATA");
+        let url = format!("data:image/bmp;base64,{}", bmp_b64);
+        let (ext, data) = parse_data_url(&url);
+        assert_eq!(ext, "bmp");
+        assert!(!data.is_empty());
+    }
+
+    #[test]
+    fn test_parse_data_url_jpeg() {
+        let jpeg_b64 = base64::engine::general_purpose::STANDARD.encode(b"JPEGDATA");
+        let url = format!("data:image/jpeg;base64,{}", jpeg_b64);
+        let (ext, data) = parse_data_url(&url);
+        assert_eq!(ext, "jpg");
+        assert!(!data.is_empty());
+    }
+
+    #[test]
+    fn test_parse_data_url_missing_comma() {
+        let url = "data:image/png;base64";
+        let (ext, data) = parse_data_url(url);
+        assert_eq!(ext, "png");
+        assert!(data.is_empty());
+    }
+
+    #[test]
+    fn test_encode_data_url_jpg() {
+        let data = b"JPEGBYTES";
+        let url = encode_data_url("jpg", data);
+        assert!(url.starts_with("data:image/jpeg;base64,"));
+    }
+
+    #[test]
+    fn test_encode_data_url_gif() {
+        let url = encode_data_url("gif", b"GIFBYTES");
+        assert!(url.starts_with("data:image/gif;base64,"));
+    }
+
+    #[test]
+    fn test_encode_data_url_bmp() {
+        let url = encode_data_url("bmp", b"BMPBYTES");
+        assert!(url.starts_with("data:image/bmp;base64,"));
+    }
+
+    #[test]
+    fn test_encode_data_url_webp() {
+        let url = encode_data_url("webp", b"WEBPBYTES");
+        assert!(url.starts_with("data:image/webp;base64,"));
+    }
+
+    #[test]
+    fn test_encode_data_url_default_png() {
+        let url = encode_data_url("png", b"PNGBYTES");
+        assert!(url.starts_with("data:image/png;base64,"));
+    }
+
+    #[test]
+    fn test_canvas_height_standard() {
+        assert_eq!(canvas_height("standard"), 720.0);
+    }
+
+    #[test]
+    fn test_canvas_height_widescreen() {
+        assert_eq!(canvas_height("widescreen"), 540.0);
+    }
+
+    #[test]
+    fn test_canvas_height_unknown() {
+        assert_eq!(canvas_height("unknown"), 540.0);
+    }
+
+    #[test]
+    fn test_px_to_emu_basic() {
+        let slide_cx = 12192000i64; // standard PPTX slide width in EMU
+        let emu = px_to_emu(480.0, 960.0, slide_cx);
+        assert_eq!(emu, 6096000);
+    }
+
+    #[test]
+    fn test_emu_to_px_basic() {
+        let slide_cx = 12192000i64;
+        let px = emu_to_px(6096000, 960.0, slide_cx);
+        assert!((px - 480.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_emu_to_px_zero_slide_dim() {
+        let px = emu_to_px(1000, 960.0, 0);
+        assert_eq!(px, 0.0);
+    }
+
+    #[test]
+    fn test_extract_text_info_multi_paragraph() {
+        let tb = OoxmlTextBody {
+            paragraphs: vec![
+                DocxParagraph {
+                    style_id: None, properties: DocxParagraphProperties::default(),
+                    runs: vec![DocxRun { text: "Hello ".into(), ..DocxRun::default() }],
+                },
+                DocxParagraph {
+                    style_id: None, properties: DocxParagraphProperties::default(),
+                    runs: vec![DocxRun { text: "World".into(), ..DocxRun::default() }],
+                },
+            ],
+        };
+        let (text, _fs, _fc) = extract_text_info(&tb);
+        assert_eq!(text, Some("Hello World".to_string()));
+    }
+
+    #[test]
+    fn test_extract_text_info_font_size_and_color() {
+        let tb = OoxmlTextBody {
+            paragraphs: vec![DocxParagraph {
+                style_id: None, properties: DocxParagraphProperties::default(),
+                runs: vec![DocxRun {
+                    text: "Styled".into(),
+                    font_size: Some(2400), // 24pt in half-points
+                    color: Some("FF0000".into()),
+                    ..DocxRun::default()
+                }],
+            }],
+        };
+        let (text, font_size, font_color) = extract_text_info(&tb);
+        assert_eq!(text, Some("Styled".to_string()));
+        assert_eq!(font_size, Some(24.0));
+        assert_eq!(font_color, Some("#FF0000".to_string()));
+    }
+
+    #[test]
+    fn test_extract_text_info_empty_text_skipped() {
+        let tb = OoxmlTextBody {
+            paragraphs: vec![DocxParagraph {
+                style_id: None, properties: DocxParagraphProperties::default(),
+                runs: vec![
+                    DocxRun { text: "".into(), ..DocxRun::default() },
+                    DocxRun { text: "real".into(), ..DocxRun::default() },
+                ],
+            }],
+        };
+        let (text, _fs, _fc) = extract_text_info(&tb);
+        assert_eq!(text, Some("real".to_string()));
+    }
+
+    #[test]
+    fn test_extract_text_info_no_text() {
+        let tb = OoxmlTextBody {
+            paragraphs: vec![],
+        };
+        let (text, _fs, _fc) = extract_text_info(&tb);
+        assert_eq!(text, None);
+    }
+
+    #[test]
+    fn test_extract_text_info_takes_first_font_size() {
+        let tb = OoxmlTextBody {
+            paragraphs: vec![DocxParagraph {
+                style_id: None, properties: DocxParagraphProperties::default(),
+                runs: vec![
+                    DocxRun { text: "one".into(), font_size: Some(1800), ..DocxRun::default() },
+                    DocxRun { text: "two".into(), font_size: Some(2400), ..DocxRun::default() },
+                ],
+            }],
+        };
+        let (_text, font_size, _fc) = extract_text_info(&tb);
+        // First run's font_size (18) wins
+        assert_eq!(font_size, Some(18.0));
+    }
+
+    #[test]
+    fn test_wo_transition_to_ooxml_all_variants() {
+        assert_eq!(wo_transition_to_ooxml("fade"), TransitionEffect::Fade);
+        assert_eq!(wo_transition_to_ooxml("push"), TransitionEffect::Push);
+        assert_eq!(wo_transition_to_ooxml("wipe"), TransitionEffect::Wipe);
+        assert_eq!(wo_transition_to_ooxml("split"), TransitionEffect::Split);
+        assert_eq!(wo_transition_to_ooxml("reveal"), TransitionEffect::Reveal);
+        assert_eq!(wo_transition_to_ooxml("zoom"), TransitionEffect::Zoom);
+        assert_eq!(wo_transition_to_ooxml("morph"), TransitionEffect::Morph);
+        assert_eq!(wo_transition_to_ooxml("dissolve"), TransitionEffect::Dissolve);
+        assert_eq!(wo_transition_to_ooxml("wheel"), TransitionEffect::Wheel);
+        assert_eq!(wo_transition_to_ooxml("random"), TransitionEffect::Random);
+        assert_eq!(wo_transition_to_ooxml("unknown"), TransitionEffect::Fade);
+    }
+
+    #[test]
+    fn test_ooxml_transition_to_wo_all_variants() {
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::None), "");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Fade), "fade");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Push), "push");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Wipe), "wipe");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Split), "split");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Reveal), "reveal");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Zoom), "zoom");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Morph), "morph");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Dissolve), "dissolve");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Wheel), "wheel");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Random), "random");
+    }
+
+    #[test]
+    fn test_docx_to_xps_empty_body() {
+        let doc = OoxmlDocument {
+            format: OoxmlFormat::Docx,
+            version: "1.0".to_string(),
+            content_types: vec![],
+            main_part: Some("word/document.xml".to_string()),
+            shared_strings: vec![],
+            part_count: 1,
+            core_properties: CoreProperties::default(),
+            relationships: vec![],
+            body: None,
+        };
+        let xps = docx_to_xps(&doc);
+        assert_eq!(xps.page_count, 1);
+        assert!(xps.pages[0].content.glyphs.is_empty());
+    }
+
+    #[test]
+    fn test_docx_to_xps_single_line() {
+        let doc = OoxmlDocument {
+            format: OoxmlFormat::Docx,
+            version: "1.0".to_string(),
+            content_types: vec![],
+            main_part: Some("word/document.xml".to_string()),
+            shared_strings: vec![],
+            part_count: 1,
+            core_properties: CoreProperties::default(),
+            relationships: vec![],
+            body: Some(DocxBody {
+                paragraphs: vec![DocxParagraph {
+                    style_id: None, properties: DocxParagraphProperties::default(),
+                    runs: vec![DocxRun { text: "Hello XPS".into(), ..DocxRun::default() }],
+                }],
+                tables: vec![],
+            }),
+        };
+        let xps = docx_to_xps(&doc);
+        assert_eq!(xps.page_count, 1);
+        assert!(!xps.pages[0].content.glyphs.is_empty());
+        assert_eq!(xps.pages[0].content.glyphs[0].text, "Hello XPS");
+    }
+
+    #[test]
+    fn test_docx_to_xps_multi_paragraph() {
+        let doc = OoxmlDocument {
+            format: OoxmlFormat::Docx,
+            version: "1.0".to_string(),
+            content_types: vec![],
+            main_part: Some("word/document.xml".to_string()),
+            shared_strings: vec![],
+            part_count: 1,
+            core_properties: CoreProperties::default(),
+            relationships: vec![],
+            body: Some(DocxBody {
+                paragraphs: vec![
+                    DocxParagraph {
+                        style_id: None, properties: DocxParagraphProperties::default(),
+                        runs: vec![DocxRun { text: "First line".into(), ..DocxRun::default() }],
+                    },
+                    DocxParagraph {
+                        style_id: None, properties: DocxParagraphProperties::default(),
+                        runs: vec![DocxRun { text: "Second line".into(), ..DocxRun::default() }],
+                    },
+                ],
+                tables: vec![],
+            }),
+        };
+        let xps = docx_to_xps(&doc);
+        assert_eq!(xps.page_count, 1);
+        assert_eq!(xps.pages[0].content.glyphs.len(), 2);
+        assert_eq!(xps.pages[0].content.glyphs[0].text, "First line");
+        assert_eq!(xps.pages[0].content.glyphs[1].text, "Second line");
+    }
+
+    #[test]
+    fn test_docx_to_xps_linebreak_split() {
+        // A paragraph with w:br embedded (newline in run text)
+        let doc = OoxmlDocument {
+            format: OoxmlFormat::Docx,
+            version: "1.0".to_string(),
+            content_types: vec![],
+            main_part: Some("word/document.xml".to_string()),
+            shared_strings: vec![],
+            part_count: 1,
+            core_properties: CoreProperties::default(),
+            relationships: vec![],
+            body: Some(DocxBody {
+                paragraphs: vec![DocxParagraph {
+                    style_id: None, properties: DocxParagraphProperties::default(),
+                    runs: vec![DocxRun { text: "Part1\nPart2".into(), ..DocxRun::default() }],
+                }],
+                tables: vec![],
+            }),
+        };
+        let xps = docx_to_xps(&doc);
+        // Both parts on same page
+        assert_eq!(xps.pages[0].content.glyphs.len(), 2);
+        assert_eq!(xps.pages[0].content.glyphs[0].text, "Part1");
+        assert_eq!(xps.pages[0].content.glyphs[1].text, "Part2");
+    }
+
+    #[test]
+    fn test_docx_to_xps_linebreak_stripped_empty() {
+        // Paragraph with only empty runs or blank text — should be skipped
+        let doc = OoxmlDocument {
+            format: OoxmlFormat::Docx,
+            version: "1.0".to_string(),
+            content_types: vec![],
+            main_part: Some("word/document.xml".to_string()),
+            shared_strings: vec![],
+            part_count: 1,
+            core_properties: CoreProperties::default(),
+            relationships: vec![],
+            body: Some(DocxBody {
+                paragraphs: vec![
+                    DocxParagraph {
+                        style_id: None, properties: DocxParagraphProperties::default(),
+                        runs: vec![DocxRun { text: "".into(), ..DocxRun::default() }],
+                    },
+                    DocxParagraph {
+                        style_id: None, properties: DocxParagraphProperties::default(),
+                        runs: vec![DocxRun { text: "Real".into(), ..DocxRun::default() }],
+                    },
+                ],
+                tables: vec![],
+            }),
+        };
+        let xps = docx_to_xps(&doc);
+        assert_eq!(xps.pages[0].content.glyphs.len(), 1);
+        assert_eq!(xps.pages[0].content.glyphs[0].text, "Real");
+    }
+
+    // ── Helper function unit tests ────────────────────────────────────
+
+    #[test]
+    fn test_canvas_height() {
+        assert_eq!(canvas_height("standard"), 720.0);
+        assert_eq!(canvas_height("widescreen"), 540.0);
+        assert_eq!(canvas_height("unknown"), 540.0);
+    }
+
+    #[test]
+    fn test_px_to_emu() {
+        assert_eq!(px_to_emu(100.0, 960.0, 9144000), 952500);
+        assert_eq!(px_to_emu(0.0, 960.0, 9144000), 0);
+    }
+
+    #[test]
+    fn test_emu_to_px() {
+        assert!((emu_to_px(952500, 960.0, 9144000) - 100.0).abs() < 1e-9);
+        assert_eq!(emu_to_px(100, 960.0, 0), 0.0);
+    }
+
+    #[test]
+    fn test_parse_data_url() {
+        let (ext, data) = parse_data_url("data:image/png;base64,iVBORw0KGgo=");
+        assert_eq!(ext, "png");
+        assert!(!data.is_empty(), "expected decoded data");
+
+        let (ext2, data2) = parse_data_url("data:image/jpeg;base64,aGVsbG8=");
+        assert_eq!(ext2, "jpg");
+        assert!(!data2.is_empty());
+        assert_eq!(data2, b"hello");
+
+        let (ext3, data3) = parse_data_url("data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7");
+        assert_eq!(ext3, "gif");
+        assert!(!data3.is_empty());
+
+        let (ext4, data4) = parse_data_url("not-a-data-url");
+        assert_eq!(ext4, "png");
+        assert!(data4.is_empty());
+    }
+
+    #[test]
+    fn test_encode_data_url() {
+        let data = b"hello";
+        let url = encode_data_url("png", data);
+        assert!(url.starts_with("data:image/png;base64,"));
+
+        let url2 = encode_data_url("jpg", data);
+        assert!(url2.starts_with("data:image/jpeg;base64,"));
+
+        let url3 = encode_data_url("gif", data);
+        assert!(url3.starts_with("data:image/gif;base64,"));
+
+        let url4 = encode_data_url("bmp", data);
+        assert!(url4.starts_with("data:image/bmp;base64,"));
+
+        let url5 = encode_data_url("webp", data);
+        assert!(url5.starts_with("data:image/webp;base64,"));
+
+        let url6 = encode_data_url("unknown", data);
+        assert!(url6.starts_with("data:image/png;base64,"));
+    }
+
+    #[test]
+    fn test_extract_text_info() {
+        let tb = OoxmlTextBody {
+            paragraphs: vec![
+                DocxParagraph {
+                    style_id: None, properties: DocxParagraphProperties::default(),
+                    runs: vec![
+                        DocxRun { text: "Hello ".into(), font_size: Some(1200), color: Some("FF0000".into()), ..DocxRun::default() },
+                        DocxRun { text: "World".into(), ..DocxRun::default() },
+                    ],
+                },
+            ],
+        };
+        let (text, font_size, font_color) = extract_text_info(&tb);
+        assert_eq!(text, Some("Hello World".to_string()));
+        assert_eq!(font_size, Some(12.0));
+        assert_eq!(font_color, Some("#FF0000".to_string()));
+
+        // Empty paragraphs
+        let empty_tb = OoxmlTextBody { paragraphs: vec![] };
+        let (t, fs, fc) = extract_text_info(&empty_tb);
+        assert_eq!(t, None);
+        assert_eq!(fs, None);
+        assert_eq!(fc, None);
+    }
+
+    #[test]
+    fn test_wo_transition_to_ooxml() {
+        assert!(matches!(wo_transition_to_ooxml("fade"), TransitionEffect::Fade));
+        assert!(matches!(wo_transition_to_ooxml("push"), TransitionEffect::Push));
+        assert!(matches!(wo_transition_to_ooxml("wipe"), TransitionEffect::Wipe));
+        assert!(matches!(wo_transition_to_ooxml("split"), TransitionEffect::Split));
+        assert!(matches!(wo_transition_to_ooxml("reveal"), TransitionEffect::Reveal));
+        assert!(matches!(wo_transition_to_ooxml("zoom"), TransitionEffect::Zoom));
+        assert!(matches!(wo_transition_to_ooxml("morph"), TransitionEffect::Morph));
+        assert!(matches!(wo_transition_to_ooxml("dissolve"), TransitionEffect::Dissolve));
+        assert!(matches!(wo_transition_to_ooxml("wheel"), TransitionEffect::Wheel));
+        assert!(matches!(wo_transition_to_ooxml("random"), TransitionEffect::Random));
+        assert!(matches!(wo_transition_to_ooxml("unknown"), TransitionEffect::Fade));
+    }
+
+    #[test]
+    fn test_ooxml_transition_to_wo() {
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::None), "");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Fade), "fade");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Push), "push");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Wipe), "wipe");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Split), "split");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Reveal), "reveal");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Zoom), "zoom");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Morph), "morph");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Dissolve), "dissolve");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Wheel), "wheel");
+        assert_eq!(ooxml_transition_to_wo(&TransitionEffect::Random), "random");
+    }
+
+    #[test]
+    fn test_data_url_to_bytes() {
+        let (data, ext) = data_url_to_bytes("data:image/png;base64,aGVsbG8=");
+        assert!(data.is_some(), "expected decoded data");
+        assert_eq!(data.as_ref().unwrap(), b"hello");
+        assert_eq!(ext, "png");
+
+        let (data2, ext2) = data_url_to_bytes("data:image/jpeg;base64,d29ybGQ=");
+        assert!(data2.is_some());
+        assert_eq!(data2.unwrap(), b"world");
+        assert_eq!(ext2, "jpg");
+
+        let (data3, ext3) = data_url_to_bytes("not-a-data-url");
+        assert!(data3.is_none());
+        assert_eq!(ext3, "png");
+
+        let (data4, ext4) = data_url_to_bytes("data:no-comma");
+        assert!(data4.is_none());
+        assert_eq!(ext4, "png");
+    }
+
+    #[test]
+    fn test_bytes_to_data_url() {
+        let data = b"hello";
+        let url = bytes_to_data_url(data, "image/png");
+        assert_eq!(url, "data:image/png;base64,aGVsbG8=");
+
+        let url2 = bytes_to_data_url(data, "image/jpeg");
+        assert_eq!(url2, "data:image/jpeg;base64,aGVsbG8=");
+    }
+
+    #[test]
+    fn test_px_to_cm_x() {
+        let result = px_to_cm_x(960.0);
+        assert_eq!(result, "25.4000cm");
+    }
+
+    #[test]
+    fn test_px_to_cm_y() {
+        let std_result = px_to_cm_y(720.0, false);
+        assert_eq!(std_result, "19.0500cm");
+
+        let ws_result = px_to_cm_y(540.0, true);
+        assert_eq!(ws_result, "14.2875cm");
+    }
+
+    #[test]
+    fn test_parse_cm() {
+        assert!((parse_cm("5cm") - 5.0).abs() < 1e-9);
+        assert!((parse_cm("10.5cm") - 10.5).abs() < 1e-9);
+        assert_eq!(parse_cm("invalid"), 0.0);
+    }
+
+    #[test]
+    fn test_cm_str_to_px_x() {
+        let result = cm_str_to_px_x("25.4cm");
+        assert!((result - 960.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_cm_str_to_px_y() {
+        let std_result = cm_str_to_px_y("19.05cm", false);
+        assert!((std_result - 720.0).abs() < 1e-6);
+
+        let ws_result = cm_str_to_px_y("14.2875cm", true);
+        assert!((ws_result - 540.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_extract_docx_run_text() {
+        let runs = vec![
+            DocxRun { text: "Hello ".into(), ..DocxRun::default() },
+            DocxRun { text: "World".into(), ..DocxRun::default() },
+        ];
+        assert_eq!(extract_docx_run_text(&runs), "Hello World");
+
+        // Form feed (\x0C) → newline
+        let runs_ff = vec![
+            DocxRun { text: "line1\x0Cline2".into(), ..DocxRun::default() },
+        ];
+        assert_eq!(extract_docx_run_text(&runs_ff), "line1\nline2");
+
+        // Empty runs
+        assert_eq!(extract_docx_run_text(&[]), "");
+    }
+
+    #[test]
+    fn test_docx_body_to_text_lines() {
+        let doc = OoxmlDocument {
+            format: OoxmlFormat::Docx,
+            version: "1.0".to_string(),
+            content_types: vec![],
+            main_part: Some("word/document.xml".to_string()),
+            shared_strings: vec![],
+            part_count: 1,
+            core_properties: CoreProperties::default(),
+            relationships: vec![],
+            body: Some(DocxBody {
+                paragraphs: vec![
+                    DocxParagraph { style_id: None, properties: DocxParagraphProperties::default(), runs: vec![DocxRun { text: "Line1".into(), ..DocxRun::default() }] },
+                    DocxParagraph { style_id: None, properties: DocxParagraphProperties::default(), runs: vec![DocxRun { text: "Line2".into(), ..DocxRun::default() }] },
+                ],
+                tables: vec![],
+            }),
+        };
+        let lines = docx_body_to_text_lines(&doc);
+        assert_eq!(lines, vec!["Line1", "Line2"]);
+
+        // None body → empty vec
+        let empty_doc = OoxmlDocument {
+            format: OoxmlFormat::Docx,
+            version: "1.0".to_string(),
+            content_types: vec![],
+            main_part: Some("word/document.xml".to_string()),
+            shared_strings: vec![],
+            part_count: 1,
+            core_properties: CoreProperties::default(),
+            relationships: vec![],
+            body: None,
+        };
+        assert!(docx_body_to_text_lines(&empty_doc).is_empty());
+
+        // With tables (cells joined by \t)
+        let doc_with_table = OoxmlDocument {
+            format: OoxmlFormat::Docx,
+            version: "1.0".to_string(),
+            content_types: vec![],
+            main_part: Some("word/document.xml".to_string()),
+            shared_strings: vec![],
+            part_count: 1,
+            core_properties: CoreProperties::default(),
+            relationships: vec![],
+            body: Some(DocxBody {
+                paragraphs: vec![],
+                tables: vec![DocxTable {
+                    rows: vec![DocxTableRow {
+                        cells: vec![
+                            DocxTableCell { paragraphs: vec![DocxParagraph { style_id: None, properties: DocxParagraphProperties::default(), runs: vec![DocxRun { text: "A".into(), ..DocxRun::default() }] }], column_span: 1, row_span: 1, width: None, shading: None },
+                            DocxTableCell { paragraphs: vec![DocxParagraph { style_id: None, properties: DocxParagraphProperties::default(), runs: vec![DocxRun { text: "B".into(), ..DocxRun::default() }] }], column_span: 1, row_span: 1, width: None, shading: None },
+                        ],
+                        height: None, is_header: false,
+                    }],
+                    properties: DocxTableProperties::default(),
+                }],
+            }),
+        };
+        let table_lines = docx_body_to_text_lines(&doc_with_table);
+        assert_eq!(table_lines, vec!["A\tB"]);
+    }
+
+    #[test]
+    fn test_extract_html_text() {
+        // Empty inlines
+        assert_eq!(extract_html_text(&[]), "");
+
+        // Text
+        assert_eq!(extract_html_text(&[InlineElement::Text { text: "hello".into() }]), "hello");
+
+        // Bold containing text
+        let bold = InlineElement::Bold { content: vec![InlineElement::Text { text: "bold".into() }] };
+        assert_eq!(extract_html_text(&[bold]), "bold");
+
+        // Italic
+        let italic = InlineElement::Italic { content: vec![InlineElement::Text { text: "italic".into() }] };
+        assert_eq!(extract_html_text(&[italic]), "italic");
+
+        // Underline
+        let ul = InlineElement::Underline { content: vec![InlineElement::Text { text: "ul".into() }] };
+        assert_eq!(extract_html_text(&[ul]), "ul");
+
+        // Strikethrough
+        let strike = InlineElement::Strikethrough { content: vec![InlineElement::Text { text: "strike".into() }] };
+        assert_eq!(extract_html_text(&[strike]), "strike");
+
+        // Link
+        let link = InlineElement::Link { href: "https://x.com".into(), title: None, content: vec![InlineElement::Text { text: "click".into() }] };
+        assert_eq!(extract_html_text(&[link]), "click");
+
+        // Code
+        let code = InlineElement::Code { content: "fn()".into() };
+        assert_eq!(extract_html_text(&[code]), "fn()");
+
+        // Image with alt
+        let img = InlineElement::Image { src: "img.png".into(), alt: Some("alt text".into()), title: None };
+        assert_eq!(extract_html_text(&[img]), "alt text");
+
+        // Subscript / Superscript
+        let sub = InlineElement::Subscript { content: vec![InlineElement::Text { text: "sub".into() }] };
+        assert_eq!(extract_html_text(&[sub]), "sub");
+        let sup = InlineElement::Superscript { content: vec![InlineElement::Text { text: "sup".into() }] };
+        assert_eq!(extract_html_text(&[sup]), "sup");
+
+        // Image without alt → empty
+        let img_no_alt = InlineElement::Image { src: "img.png".into(), alt: None, title: None };
+        assert_eq!(extract_html_text(&[img_no_alt]), "");
+    }
+
+    #[test]
+    fn test_strip_html_tags() {
+        assert_eq!(strip_html_tags("<p>hello</p>"), "hello");
+        assert_eq!(strip_html_tags("<div><p>nested</p></div>"), "nested");
+        assert_eq!(strip_html_tags("no tags here"), "no tags here");
+        // Consecutive whitespace after stripping
+        assert_eq!(strip_html_tags("<p>  spaced  </p>"), "spaced");
+    }
+
+    #[test]
+    fn test_escape_xhtml_text() {
+        assert_eq!(escape_xhtml_text("a & b"), "a &amp; b");
+        assert_eq!(escape_xhtml_text("<tag>"), "&lt;tag&gt;");
+        assert_eq!(escape_xhtml_text("quote \"here\""), "quote &quot;here&quot;");
+        assert_eq!(escape_xhtml_text("it's"), "it&#39;s");
+        assert_eq!(escape_xhtml_text("normal"), "normal");
+    }
+
+    #[test]
+    fn test_build_xhtml_content_escaped() {
+        let result = build_xhtml_content("My Title", "<p>Content</p>");
+        assert!(result.contains("<?xml version=\"1.0\""));
+        assert!(result.contains("<title>My Title</title>"));
+        assert!(result.contains("<body>\n<p>Content</p>\n</body>"));
+        assert!(result.contains("</html>"));
+
+        // Title with special characters is escaped
+        let escaped = build_xhtml_content("Title & <stuff>", "<p>body</p>");
+        assert!(escaped.contains("<title>Title &amp; &lt;stuff&gt;</title>"));
+    }
+
+    #[test]
+    fn test_txt_to_epub_chapters() {
+        // Without headings → single chapter with first line as title
+        let txt = TxtDocument { lines: vec!["Hello".into(), "World".into()], encoding: wo_common::encoding::Encoding::Utf8, had_bom: false };
+        let chapters = txt_to_epub_chapters(&txt);
+        assert_eq!(chapters.len(), 1);
+        assert_eq!(chapters[0].0, "Hello");
+        assert_eq!(chapters[0].1, vec!["Hello", "World"]);
+
+        // With ## headings → split into chapters
+        let txt_h = TxtDocument { lines: vec!["## Ch1".into(), "content1".into(), "## Ch2".into(), "content2".into()], encoding: wo_common::encoding::Encoding::Utf8, had_bom: false };
+        let ch = txt_to_epub_chapters(&txt_h);
+        assert_eq!(ch.len(), 3, "expected Untitled + Ch1 + Ch2 chapters");
+        assert_eq!(ch[0].0, "Untitled");
+        assert!(ch[0].1.is_empty());
+        assert_eq!(ch[1].0, "Ch1");
+        assert_eq!(ch[1].1, vec!["content1"]);
+        assert_eq!(ch[2].0, "Ch2");
+        assert_eq!(ch[2].1, vec!["content2"]);
+        assert_eq!(ch[2].0, "Ch2");
+        assert_eq!(ch[2].1, vec!["content2"]);
+
+        // Empty document
+        let empty = TxtDocument { lines: vec![], encoding: wo_common::encoding::Encoding::Utf8, had_bom: false };
+        let ch_empty = txt_to_epub_chapters(&empty);
+        assert_eq!(ch_empty.len(), 1);
+        assert_eq!(ch_empty[0].0, "Untitled");
+        assert!(ch_empty[0].1.is_empty());
+    }
+
+    #[test]
+    fn test_html_to_epub_chapters() {
+        // Without h1/h2 headings → single chapter from first paragraph
+        let elements = vec![
+            BlockElement::Paragraph { content: vec![InlineElement::Text { text: "Content".into() }], id: None },
+        ];
+        let chapters = html_to_epub_chapters(&elements);
+        assert_eq!(chapters.len(), 1);
+        assert_eq!(chapters[0].0, "Content");
+
+        // With h1 heading → splits into chapters
+        let elements_h = vec![
+            BlockElement::Heading { level: 1, content: vec![InlineElement::Text { text: "Ch1".into() }], id: None },
+            BlockElement::Paragraph { content: vec![InlineElement::Text { text: "Body1".into() }], id: None },
+            BlockElement::Heading { level: 2, content: vec![InlineElement::Text { text: "Ch2".into() }], id: None },
+            BlockElement::Paragraph { content: vec![InlineElement::Text { text: "Body2".into() }], id: None },
+        ];
+        let ch = html_to_epub_chapters(&elements_h);
+        assert_eq!(ch.len(), 2);
+        assert_eq!(ch[0].0, "Ch1");
+        assert_eq!(ch[1].0, "Ch2");
+    }
+
+    // ── html_inlines_to_docx_runs ─────────────────────────────────────
+
+    #[test]
+    fn test_html_inlines_to_docx_runs_empty() {
+        let runs = html_inlines_to_docx_runs(&[]);
+        assert!(runs.is_empty());
+    }
+
+    #[test]
+    fn test_html_inlines_to_docx_runs_plain_text() {
+        let runs = html_inlines_to_docx_runs(&[InlineElement::Text { text: "Hello".into() }]);
+        assert_eq!(runs.len(), 1);
+        assert_eq!(runs[0].text, "Hello");
+        assert!(!runs[0].bold);
+    }
+
+    #[test]
+    fn test_html_inlines_to_docx_runs_bold() {
+        let runs = html_inlines_to_docx_runs(&[InlineElement::Bold {
+            content: vec![InlineElement::Text { text: "bold".into() }],
+        }]);
+        assert_eq!(runs.len(), 1);
+        assert_eq!(runs[0].text, "bold");
+        assert!(runs[0].bold);
+    }
+
+    #[test]
+    fn test_html_inlines_to_docx_runs_italic() {
+        let runs = html_inlines_to_docx_runs(&[InlineElement::Italic {
+            content: vec![InlineElement::Text { text: "em".into() }],
+        }]);
+        assert_eq!(runs.len(), 1);
+        assert_eq!(runs[0].text, "em");
+        assert!(runs[0].italic);
+    }
+
+    #[test]
+    fn test_html_inlines_to_docx_runs_mixed() {
+        let runs = html_inlines_to_docx_runs(&[
+            InlineElement::Text { text: "A ".into() },
+            InlineElement::Bold {
+                content: vec![InlineElement::Text { text: "B".into() }],
+            },
+            InlineElement::Italic {
+                content: vec![InlineElement::Text { text: " C".into() }],
+            },
+        ]);
+        assert_eq!(runs.len(), 3);
+        assert_eq!(runs[0].text, "A ");
+        assert!(!runs[0].bold);
+        assert!(!runs[0].italic);
+        assert_eq!(runs[1].text, "B");
+        assert!(runs[1].bold);
+        assert!(!runs[1].italic);
+        assert_eq!(runs[2].text, " C");
+        assert!(!runs[2].bold);
+        assert!(runs[2].italic);
+    }
+
+    #[test]
+    fn test_html_inlines_to_docx_runs_skips_empty_text() {
+        let runs = html_inlines_to_docx_runs(&[InlineElement::Text { text: "".into() }]);
+        assert!(runs.is_empty());
+    }
+
+    #[test]
+    fn test_html_inlines_to_docx_runs_skips_empty_bold() {
+        let runs = html_inlines_to_docx_runs(&[InlineElement::Bold {
+            content: vec![InlineElement::Text { text: "".into() }],
+        }]);
+        assert!(runs.is_empty());
+    }
+
+    // ── epub_to_ooxml ──────────────────────────────────────────────────
+
+    #[test]
+    fn test_epub_to_ooxml_with_title_and_chapter() {
+        let epub = EpubDocument {
+            version: "3.0".to_string(),
+            metadata: EpubMetadata {
+                title: Some("Test Book".into()),
+                creator: vec!["Author".into()],
+                language: Some("en".into()),
+                identifier: Some("urn:uuid:test".into()),
+                unique_identifier: Some("uid".into()),
+                ..Default::default()
+            },
+            manifest: vec![],
+            spine: vec!["ch1".into()],
+            toc: vec![],
+            chapters: vec![EpubChapter {
+                title: "Chapter 1".into(),
+                content: "<p>Hello</p>".into(),
+                href: "ch1.xhtml".into(),
+            }],
+            cover_image: None,
+            cover_image_type: None,
+        };
+        let doc = epub_to_ooxml(&epub);
+        assert_eq!(doc.format, OoxmlFormat::Docx);
+        let body = doc.body.expect("body should be present");
+        // Title paragraph + chapter heading + content line = 3
+        assert_eq!(body.paragraphs.len(), 3);
+        assert_eq!(body.paragraphs[0].runs[0].text, "Test Book");
+        assert!(body.paragraphs[0].runs[0].bold);
+        assert_eq!(body.paragraphs[1].runs[0].text, "Chapter 1");
+        assert!(body.paragraphs[1].runs[0].bold);
+        assert_eq!(body.paragraphs[2].runs[0].text, "Hello");
+        assert!(!body.paragraphs[2].runs[0].bold);
+        assert_eq!(doc.core_properties.title.as_deref(), Some("Test Book"));
+    }
+
+    #[test]
+    fn test_epub_to_ooxml_no_title_no_chapters() {
+        let epub = EpubDocument {
+            version: "3.0".to_string(),
+            metadata: EpubMetadata {
+                title: None,
+                ..Default::default()
+            },
+            manifest: vec![],
+            spine: vec![],
+            toc: vec![],
+            chapters: vec![],
+            cover_image: None,
+            cover_image_type: None,
+        };
+        let doc = epub_to_ooxml(&epub);
+        let body = doc.body.expect("body should be present");
+        assert!(body.paragraphs.is_empty());
+    }
+
+    // ── fb2_to_ooxml ───────────────────────────────────────────────────
+
+    #[test]
+    fn test_fb2_to_ooxml_with_title_and_body() {
+        let fb2 = Fb2Document {
+            xmlns: None,
+            title_info: Some(TitleInfo {
+                book_title: Some("FB2 Book".into()),
+                authors: vec![Author {
+                    first_name: Some("John".into()),
+                    last_name: Some("Doe".into()),
+                    ..Default::default()
+                }],
+                lang: Some("en".into()),
+                ..Default::default()
+            }),
+            src_title_info: None,
+            document_info: None,
+            publish_info: None,
+            custom_info: vec![],
+            bodies: vec![Body {
+                name: None,
+                lang: None,
+                sections: vec![Section {
+                    id: None,
+                    title: vec![TitleElement {
+                        text: "Sec 1".into(),
+                        formatting: vec![],
+                    }],
+                    elements: vec![ContentElement::Paragraph {
+                        style: None,
+                        id: None,
+                        content: vec![Formatting {
+                            text: "Body text".into(),
+                            style: TextStyle::None,
+                            href: None,
+                            title: None,
+                        }],
+                    }],
+                    sections: vec![],
+                }],
+                images: vec![],
+            }],
+            binaries: vec![],
+        };
+        let doc = fb2_to_ooxml(&fb2);
+        assert_eq!(doc.format, OoxmlFormat::Docx);
+        let body = doc.body.expect("body should be present");
+        // Title + section heading + paragraph = 3
+        assert_eq!(body.paragraphs.len(), 3);
+        assert_eq!(body.paragraphs[0].runs[0].text, "FB2 Book");
+        assert!(body.paragraphs[0].runs[0].bold);
+        assert_eq!(body.paragraphs[1].runs[0].text, "Sec 1");
+        assert!(body.paragraphs[1].runs[0].bold);
+        assert_eq!(body.paragraphs[2].runs[0].text, "Body text");
+        assert!(!body.paragraphs[2].runs[0].bold);
+    }
+
+    #[test]
+    fn test_fb2_to_ooxml_no_title_no_body() {
+        let fb2 = Fb2Document {
+            xmlns: None,
+            title_info: None,
+            src_title_info: None,
+            document_info: None,
+            publish_info: None,
+            custom_info: vec![],
+            bodies: vec![],
+            binaries: vec![],
+        };
+        let doc = fb2_to_ooxml(&fb2);
+        let body = doc.body.expect("body should be present");
+        assert!(body.paragraphs.is_empty());
+    }
+
+    // ── fb2_section_to_docx_paragraphs ─────────────────────────────────
+
+    #[test]
+    fn test_fb2_section_to_docx_paragraphs_with_title() {
+        let section = Section {
+            id: None,
+            title: vec![TitleElement {
+                text: "Chapter".into(),
+                formatting: vec![],
+            }],
+            elements: vec![ContentElement::Paragraph {
+                style: None,
+                id: None,
+                content: vec![Formatting {
+                    text: "content".into(),
+                    style: TextStyle::None,
+                    href: None,
+                    title: None,
+                }],
+            }],
+            sections: vec![],
+        };
+        let mut paras = Vec::new();
+        fb2_section_to_docx_paragraphs(&section, &mut paras);
+        assert_eq!(paras.len(), 2);
+        assert_eq!(paras[0].runs[0].text, "Chapter");
+        assert!(paras[0].runs[0].bold);
+        assert_eq!(paras[1].runs[0].text, "content");
+        assert!(!paras[1].runs[0].bold);
+    }
+
+    #[test]
+    fn test_fb2_section_to_docx_paragraphs_empty_line() {
+        let section = Section {
+            id: None,
+            title: vec![],
+            elements: vec![ContentElement::EmptyLine],
+            sections: vec![],
+        };
+        let mut paras = Vec::new();
+        fb2_section_to_docx_paragraphs(&section, &mut paras);
+        assert_eq!(paras.len(), 1);
+        assert!(paras[0].runs.is_empty());
+    }
+
+    // ── docx_body_to_epub_chapters ─────────────────────────────────────
+
+    #[test]
+    fn test_docx_body_to_epub_chapters_no_headings() {
+        let body = DocxBody {
+            paragraphs: vec![
+                DocxParagraph {
+                    style_id: None, properties: DocxParagraphProperties::default(),
+                    runs: vec![DocxRun { text: "Line1".into(), ..DocxRun::default() }],
+                },
+            ],
+            tables: vec![],
+        };
+        let ch = docx_body_to_epub_chapters(&body);
+        assert_eq!(ch.len(), 1);
+        assert_eq!(ch[0].0, "Line1");
+        assert_eq!(ch[0].1, vec!["Line1"]);
+    }
+
+    #[test]
+    fn test_docx_body_to_epub_chapters_with_headings() {
+        let body = DocxBody {
+            paragraphs: vec![
+                DocxParagraph {
+                    style_id: Some("Heading1".into()),
+                    properties: DocxParagraphProperties::default(),
+                    runs: vec![DocxRun { text: "Ch1".into(), ..DocxRun::default() }],
+                },
+                DocxParagraph {
+                    style_id: None,
+                    properties: DocxParagraphProperties::default(),
+                    runs: vec![DocxRun { text: "Body1".into(), ..DocxRun::default() }],
+                },
+                DocxParagraph {
+                    style_id: Some("Heading2".into()),
+                    properties: DocxParagraphProperties::default(),
+                    runs: vec![DocxRun { text: "Ch2".into(), ..DocxRun::default() }],
+                },
+            ],
+            tables: vec![],
+        };
+        let ch = docx_body_to_epub_chapters(&body);
+        assert_eq!(ch.len(), 3);
+        assert_eq!(ch[0].0, "Untitled");
+        assert!(ch[0].1.is_empty());
+        assert_eq!(ch[1].0, "Ch1");
+        assert_eq!(ch[1].1, vec!["Body1"]);
+        assert_eq!(ch[2].0, "Ch2");
+        assert!(ch[2].1.is_empty());
+    }
+
+    // ── docx_to_epub ───────────────────────────────────────────────────
+
+    #[test]
+    fn test_docx_to_epub_with_body_and_headings() {
+        let doc = OoxmlDocument {
+            format: OoxmlFormat::Docx,
+            version: "1.0".to_string(),
+            content_types: vec![],
+            main_part: Some("word/document.xml".to_string()),
+            shared_strings: vec![],
+            part_count: 1,
+            core_properties: CoreProperties {
+                title: Some("Doc Title".into()),
+                creator: Some("Me".into()),
+                language: Some("en".into()),
+                ..Default::default()
+            },
+            relationships: vec![],
+            body: Some(DocxBody {
+                paragraphs: vec![
+                    DocxParagraph {
+                        style_id: Some("Heading1".into()),
+                        properties: DocxParagraphProperties::default(),
+                        runs: vec![DocxRun { text: "Ch1".into(), ..DocxRun::default() }],
+                    },
+                    DocxParagraph {
+                        style_id: None,
+                        properties: DocxParagraphProperties::default(),
+                        runs: vec![DocxRun { text: "Body".into(), ..DocxRun::default() }],
+                    },
+                ],
+                tables: vec![],
+            }),
+        };
+        let epub = docx_to_epub(&doc);
+        assert_eq!(epub.version, "3.0");
+        assert_eq!(epub.metadata.title.as_deref(), Some("Doc Title"));
+        assert_eq!(epub.metadata.creator, vec!["Me"]);
+        assert_eq!(epub.chapters.len(), 2);
+        assert_eq!(epub.chapters[0].title, "Untitled");
+        assert!(epub.chapters[0].content.contains("Untitled"));
+        assert_eq!(epub.chapters[1].title, "Ch1");
+        assert!(epub.chapters[1].content.contains("Body"));
+        assert_eq!(epub.spine, vec!["chapter1", "chapter2"]);
+    }
+
+    #[test]
+    fn test_docx_to_epub_no_body_direct() {
+        let doc = OoxmlDocument {
+            format: OoxmlFormat::Docx,
+            version: "1.0".to_string(),
+            content_types: vec![],
+            main_part: Some("word/document.xml".to_string()),
+            shared_strings: vec![],
+            part_count: 1,
+            core_properties: CoreProperties::default(),
+            relationships: vec![],
+            body: None,
+        };
+        let epub = docx_to_epub(&doc);
+        assert_eq!(epub.chapters.len(), 1);
+        assert_eq!(epub.chapters[0].title, "Untitled");
+    }
+
+    #[test]
+    fn test_docx_to_epub_empty_body_no_paragraphs() {
+        let doc = OoxmlDocument {
+            format: OoxmlFormat::Docx,
+            version: "1.0".to_string(),
+            content_types: vec![],
+            main_part: Some("word/document.xml".to_string()),
+            shared_strings: vec![],
+            part_count: 1,
+            core_properties: CoreProperties::default(),
+            relationships: vec![],
+            body: Some(DocxBody { paragraphs: vec![], tables: vec![] }),
+        };
+        let epub = docx_to_epub(&doc);
+        assert_eq!(epub.chapters.len(), 1);
+    }
 }
 

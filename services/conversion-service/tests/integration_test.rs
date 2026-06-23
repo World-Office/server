@@ -292,8 +292,8 @@ async fn formats_returns_all_fourteen_registered_pairs() {
     let formats = json.as_array().unwrap();
     assert_eq!(
         formats.len(),
-        38,
-        "Should have exactly 38 registered format pairs"
+        42,
+        "Should have exactly 42 registered format pairs"
     );
 
     // Verify all expected pairs are present
@@ -318,6 +318,31 @@ async fn formats_returns_all_fourteen_registered_pairs() {
     assert!(pairs.contains(&("epub", "html")));
     assert!(pairs.contains(&("fb2", "txt")));
     assert!(pairs.contains(&("hwp", "txt")));
+    // Roundtrip + expanded converters
+    assert!(pairs.contains(&("txt", "docx")));
+    assert!(pairs.contains(&("html", "docx")));
+    assert!(pairs.contains(&("txt", "odt")));
+    assert!(pairs.contains(&("html", "odt")));
+    assert!(pairs.contains(&("txt", "epub")));
+    assert!(pairs.contains(&("html", "epub")));
+    assert!(pairs.contains(&("txt", "fb2")));
+    assert!(pairs.contains(&("html", "fb2")));
+    assert!(pairs.contains(&("rtf", "docx")));
+    assert!(pairs.contains(&("docx", "odt")));
+    assert!(pairs.contains(&("odt", "docx")));
+    assert!(pairs.contains(&("epub", "docx")));
+    assert!(pairs.contains(&("fb2", "docx")));
+    assert!(pairs.contains(&("docx", "epub")));
+    assert!(pairs.contains(&("hwp", "docx")));
+    assert!(pairs.contains(&("docx", "xps")));
+    assert!(pairs.contains(&("xps", "txt")));
+    assert!(pairs.contains(&("xps", "html")));
+    assert!(pairs.contains(&("xps", "docx")));
+    assert!(pairs.contains(&("ofd", "txt")));
+    assert!(pairs.contains(&("ofd", "html")));
+    assert!(pairs.contains(&("ofd", "docx")));
+    assert!(pairs.contains(&("djvu", "txt")));
+    assert!(pairs.contains(&("djvu", "docx")));
 }
 
 // ── GET /jobs/{id} ────────────────────────────────────────────────────────

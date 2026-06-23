@@ -33,3 +33,5 @@ base64 = { workspace = true }
 tower = { workspace = true }
 wo-x2t = { path = "../../core/crates/wo-x2t" }
 rusqlite = { workspace = true }
+metrics = { workspace = true }
+metrics-exporter-prometheus = { workspace = true }

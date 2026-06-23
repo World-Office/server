@@ -77,7 +77,7 @@ cargo test -p wo-docserver
 | Canvas rendering | `wo-renderer/` | Text layout, gradients, transforms, paths |
 | Font handling | `wo-fonts/` | Loading, caching, CSS-compliant matching |
 | WOPI protocol | `wo-wopi/` | CheckFileInfo/GetFile/PutFile (axum) |
-| WebDAV protocol | `wo-webdav/` | PROPFIND/MKCOL/PUT/DELETE/LOCK (axum) |
+| WebDAV protocol | `wo-webdav/` | PROPFIND/MKCOL/PUT/DELETE/LOCK (axum, 2,119 lines) |
 | DOCX→PDF pipeline | `wo-docx-renderer/` | Layout → render → PDF |
 | WASM targets | `wo-x2t-wasm/`, `wo-renderer-wasm/ | wasm-bindgen, cannot use `cargo test` |
 
