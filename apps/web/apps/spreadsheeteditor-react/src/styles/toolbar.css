@@ -1,462 +1,462 @@
 /* Toolbar */
 
 .se-toolbar {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  background-color: var(--wo-se-bg-toolbar);
-  border-bottom: 1px solid var(--wo-se-border);
-  user-select: none;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	background-color: var(--wo-se-bg-toolbar);
+	border-bottom: 1px solid var(--wo-se-border);
+	user-select: none;
 }
 
 .se-toolbar-tabs {
-  display: flex;
-  align-items: center;
-  height: 100%;
-  padding: 0 8px;
-  gap: 2px;
+	display: flex;
+	align-items: center;
+	height: 100%;
+	padding: 0 8px;
+	gap: 2px;
 }
 
 .se-toolbar-extra-left,
 .se-toolbar-extra-right {
-  flex: 1;
+	flex: 1;
 }
 
 .se-toolbar-controls {
-  display: none;
-  overflow: hidden;
+	display: none;
+	overflow: hidden;
 }
 
 .se-toolbar-static {
-  display: none;
+	display: none;
 }
 
 .se-toolbar-panels {
-  display: none;
+	display: none;
 }
 
 /* Tab button */
 .se-toolbar-tab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 28px;
-  padding: 0 12px;
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: var(--wo-se-text-secondary);
-  font-size: 12px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-  white-space: nowrap;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	height: 28px;
+	padding: 0 12px;
+	border: none;
+	border-bottom: 2px solid transparent;
+	background: transparent;
+	color: var(--wo-se-text-secondary);
+	font-size: 12px;
+	cursor: pointer;
+	transition: color 0.15s, border-color 0.15s;
+	white-space: nowrap;
 }
 
 .se-toolbar-tab:hover {
-  color: var(--wo-se-text-primary);
+	color: var(--wo-se-text-primary);
 }
 
 .se-toolbar-tab.active {
-  color: var(--wo-se-accent);
-  border-bottom-color: var(--wo-se-accent);
-  font-weight: 600;
+	color: var(--wo-se-accent);
+	border-bottom-color: var(--wo-se-accent);
+	font-weight: 600;
 }
 
 /* HomeTab */
 .se-hometab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 12px 16px;
 }
 
 .se-hometab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .se-hometab-elset {
-  display: flex;
-  align-items: center;
+	display: flex;
+	align-items: center;
 }
 
 .se-hometab-label {
-  font-size: 11px;
-  color: var(--wo-se-text-secondary);
-  text-align: center;
-  margin-top: 2px;
+	font-size: 11px;
+	color: var(--wo-se-text-secondary);
+	text-align: center;
+	margin-top: 2px;
 }
 
 .se-hometab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-se-border);
-  border-radius: 3px;
-  background-color: var(--wo-se-bg-pane);
-  color: var(--wo-se-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
+	display: inline-flex;
+	align-items: center;
+	height: 28px;
+	padding: 0 12px;
+	border: 1px solid var(--wo-se-border);
+	border-radius: 3px;
+	background-color: var(--wo-se-bg-pane);
+	color: var(--wo-se-text-primary);
+	font-size: 12px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background-color 0.15s, border-color 0.15s;
 }
 
 .se-hometab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-se-border);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	border-color: var(--wo-se-border);
 }
 
 .se-hometab-btn.active {
-  background-color: var(--wo-se-accent);
-  color: #ffffff;
-  border-color: var(--wo-se-accent);
+	background-color: var(--wo-se-accent);
+	color: #ffffff;
+	border-color: var(--wo-se-accent);
 }
 
 .se-hometab-zoom-select {
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--wo-se-border);
-  border-radius: 3px;
-  background-color: var(--wo-se-bg-pane);
-  font-size: 12px;
-  color: var(--wo-se-text-primary);
-  cursor: pointer;
+	height: 28px;
+	padding: 0 8px;
+	border: 1px solid var(--wo-se-border);
+	border-radius: 3px;
+	background-color: var(--wo-se-bg-pane);
+	font-size: 12px;
+	color: var(--wo-se-text-primary);
+	cursor: pointer;
 }
 
 .se-hometab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-se-border);
+	width: 100%;
+	height: 1px;
+	background-color: var(--wo-se-border);
 }
 
 /* InsertTab */
 .se-inserttab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 12px 16px;
 }
 
 .se-inserttab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .se-inserttab-elset {
-  display: flex;
-  align-items: center;
+	display: flex;
+	align-items: center;
 }
 
 .se-inserttab-label {
-  font-size: 11px;
-  color: var(--wo-se-text-secondary);
-  text-align: center;
-  margin-top: 2px;
+	font-size: 11px;
+	color: var(--wo-se-text-secondary);
+	text-align: center;
+	margin-top: 2px;
 }
 
 .se-inserttab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-se-border);
-  border-radius: 3px;
-  background-color: var(--wo-se-bg-pane);
-  color: var(--wo-se-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
+	display: inline-flex;
+	align-items: center;
+	height: 28px;
+	padding: 0 12px;
+	border: 1px solid var(--wo-se-border);
+	border-radius: 3px;
+	background-color: var(--wo-se-bg-pane);
+	color: var(--wo-se-text-primary);
+	font-size: 12px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background-color 0.15s, border-color 0.15s;
 }
 
 .se-inserttab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-se-border);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	border-color: var(--wo-se-border);
 }
 
 .se-inserttab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-se-border);
+	width: 100%;
+	height: 1px;
+	background-color: var(--wo-se-border);
 }
 
 /* LayoutTab */
 .se-layouttab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 12px 16px;
 }
 
 .se-layouttab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .se-layouttab-elset {
-  display: flex;
-  align-items: center;
+	display: flex;
+	align-items: center;
 }
 
 .se-layouttab-label {
-  font-size: 11px;
-  color: var(--wo-se-text-secondary);
-  text-align: center;
-  margin-top: 2px;
+	font-size: 11px;
+	color: var(--wo-se-text-secondary);
+	text-align: center;
+	margin-top: 2px;
 }
 
 .se-layouttab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-se-border);
-  border-radius: 3px;
-  background-color: var(--wo-se-bg-pane);
-  color: var(--wo-se-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
+	display: inline-flex;
+	align-items: center;
+	height: 28px;
+	padding: 0 12px;
+	border: 1px solid var(--wo-se-border);
+	border-radius: 3px;
+	background-color: var(--wo-se-bg-pane);
+	color: var(--wo-se-text-primary);
+	font-size: 12px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background-color 0.15s, border-color 0.15s;
 }
 
 .se-layouttab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-se-border);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	border-color: var(--wo-se-border);
 }
 
 .se-layouttab-btn.active {
-  background-color: var(--wo-se-accent);
-  color: #ffffff;
-  border-color: var(--wo-se-accent);
+	background-color: var(--wo-se-accent);
+	color: #ffffff;
+	border-color: var(--wo-se-accent);
 }
 
 .se-layouttab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-se-border);
+	width: 100%;
+	height: 1px;
+	background-color: var(--wo-se-border);
 }
 
 /* FormulaTab */
 .se-formulatab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 12px 16px;
 }
 
 .se-formulatab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .se-formulatab-elset {
-  display: flex;
-  align-items: center;
+	display: flex;
+	align-items: center;
 }
 
 .se-formulatab-label {
-  font-size: 11px;
-  color: var(--wo-se-text-secondary);
-  text-align: center;
-  margin-top: 2px;
+	font-size: 11px;
+	color: var(--wo-se-text-secondary);
+	text-align: center;
+	margin-top: 2px;
 }
 
 .se-formulatab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-se-border);
-  border-radius: 3px;
-  background-color: var(--wo-se-bg-pane);
-  color: var(--wo-se-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
+	display: inline-flex;
+	align-items: center;
+	height: 28px;
+	padding: 0 12px;
+	border: 1px solid var(--wo-se-border);
+	border-radius: 3px;
+	background-color: var(--wo-se-bg-pane);
+	color: var(--wo-se-text-primary);
+	font-size: 12px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background-color 0.15s, border-color 0.15s;
 }
 
 .se-formulatab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-se-border);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	border-color: var(--wo-se-border);
 }
 
 .se-formulatab-btn.active {
-  background-color: var(--wo-se-accent);
-  color: #ffffff;
-  border-color: var(--wo-se-accent);
+	background-color: var(--wo-se-accent);
+	color: #ffffff;
+	border-color: var(--wo-se-accent);
 }
 
 .se-formulatab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-se-border);
+	width: 100%;
+	height: 1px;
+	background-color: var(--wo-se-border);
 }
 
 /* DataTab */
 .se-datatab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 12px 16px;
 }
 
 .se-datatab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .se-datatab-elset {
-  display: flex;
-  align-items: center;
+	display: flex;
+	align-items: center;
 }
 
 .se-datatab-label {
-  font-size: 11px;
-  color: var(--wo-se-text-secondary);
-  text-align: center;
-  margin-top: 2px;
+	font-size: 11px;
+	color: var(--wo-se-text-secondary);
+	text-align: center;
+	margin-top: 2px;
 }
 
 .se-datatab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-se-border);
-  border-radius: 3px;
-  background-color: var(--wo-se-bg-pane);
-  color: var(--wo-se-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
+	display: inline-flex;
+	align-items: center;
+	height: 28px;
+	padding: 0 12px;
+	border: 1px solid var(--wo-se-border);
+	border-radius: 3px;
+	background-color: var(--wo-se-bg-pane);
+	color: var(--wo-se-text-primary);
+	font-size: 12px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background-color 0.15s, border-color 0.15s;
 }
 
 .se-datatab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-se-border);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	border-color: var(--wo-se-border);
 }
 
 .se-datatab-btn.active {
-  background-color: var(--wo-se-accent);
-  color: #ffffff;
-  border-color: var(--wo-se-accent);
+	background-color: var(--wo-se-accent);
+	color: #ffffff;
+	border-color: var(--wo-se-accent);
 }
 
 .se-datatab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-se-border);
+	width: 100%;
+	height: 1px;
+	background-color: var(--wo-se-border);
 }
 
 /* ViewTab */
 .se-viewtab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	padding: 12px 16px;
 }
 
 .se-viewtab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
 }
 
 .se-viewtab-elset {
-  display: flex;
-  align-items: center;
+	display: flex;
+	align-items: center;
 }
 
 .se-viewtab-label {
-  font-size: 11px;
-  color: var(--wo-se-text-secondary);
-  text-align: center;
-  margin-top: 2px;
+	font-size: 11px;
+	color: var(--wo-se-text-secondary);
+	text-align: center;
+	margin-top: 2px;
 }
 
 .se-viewtab-zoom-select {
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--wo-se-border);
-  border-radius: 3px;
-  background-color: var(--wo-se-bg-pane);
-  font-size: 12px;
-  color: var(--wo-se-text-primary);
-  cursor: pointer;
+	height: 28px;
+	padding: 0 8px;
+	border: 1px solid var(--wo-se-border);
+	border-radius: 3px;
+	background-color: var(--wo-se-bg-pane);
+	font-size: 12px;
+	color: var(--wo-se-text-primary);
+	cursor: pointer;
 }
 
 .se-viewtab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-se-border);
-  border-radius: 3px;
-  background-color: var(--wo-se-bg-pane);
-  color: var(--wo-se-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
+	display: inline-flex;
+	align-items: center;
+	height: 28px;
+	padding: 0 12px;
+	border: 1px solid var(--wo-se-border);
+	border-radius: 3px;
+	background-color: var(--wo-se-bg-pane);
+	color: var(--wo-se-text-primary);
+	font-size: 12px;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background-color 0.15s, border-color 0.15s;
 }
 
 .se-viewtab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-se-border);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	border-color: var(--wo-se-border);
 }
 
 .se-viewtab-btn.active {
-  background-color: var(--wo-se-accent);
-  color: #ffffff;
-  border-color: var(--wo-se-accent);
+	background-color: var(--wo-se-accent);
+	color: #ffffff;
+	border-color: var(--wo-se-accent);
 }
 
 .se-viewtab-btn-theme {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-se-border);
-  border-radius: 3px;
-  background-color: var(--wo-se-bg-pane);
-  color: var(--wo-se-text-primary);
-  font-size: 12px;
-  cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	height: 28px;
+	padding: 0 12px;
+	border: 1px solid var(--wo-se-border);
+	border-radius: 3px;
+	background-color: var(--wo-se-bg-pane);
+	color: var(--wo-se-text-primary);
+	font-size: 12px;
+	cursor: pointer;
 }
 
 .se-viewtab-btn-theme:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
 }
 
 .se-viewtab-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--wo-se-text-primary);
-  cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 12px;
+	color: var(--wo-se-text-primary);
+	cursor: pointer;
 }
 
 .se-viewtab-checkbox input[type="checkbox"] {
-  margin: 0;
-  cursor: pointer;
+	margin: 0;
+	cursor: pointer;
 }
 
 .se-viewtab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-se-border);
+	width: 100%;
+	height: 1px;
+	background-color: var(--wo-se-border);
 }
 
 .se-viewtab-separator-theme {
-  margin: 4px 0;
+	margin: 4px 0;
 }

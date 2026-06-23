@@ -1,157 +1,157 @@
 /* Status Bar */
 
 .se-statusbar {
-  position: relative;
-  display: flex;
-  align-items: center;
-  height: var(--wo-se-statusbar-height);
-  padding: 0 2px 0;
-  z-index: 500;
-  background-color: var(--wo-se-bg-statusbar);
-  border-top: 1px solid var(--wo-se-border);
-  font-size: 12px;
-  color: var(--wo-se-text-secondary);
-  user-select: none;
+	position: relative;
+	display: flex;
+	align-items: center;
+	height: var(--wo-se-statusbar-height);
+	padding: 0 2px 0;
+	z-index: 500;
+	background-color: var(--wo-se-bg-statusbar);
+	border-top: 1px solid var(--wo-se-border);
+	font-size: 12px;
+	color: var(--wo-se-text-secondary);
+	user-select: none;
 }
 
 .se-statusbar.no-compact {
-  height: var(--wo-se-statusbar-height-expanded);
+	height: var(--wo-se-statusbar-height-expanded);
 }
 
 /* Sheet navigation */
 .se-statusbar-sheet-nav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 8px;
-  height: 100%;
-  flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 0 8px;
+	height: 100%;
+	flex-shrink: 0;
 }
 
 .se-statusbar-sheet-tabs {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  flex: 1;
-  overflow-x: auto;
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	flex: 1;
+	overflow-x: auto;
 }
 
 .se-statusbar-sheet-tab {
-  padding: 2px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  border-bottom: 2px solid transparent;
+	padding: 2px 12px;
+	font-size: 12px;
+	cursor: pointer;
+	white-space: nowrap;
+	border-bottom: 2px solid transparent;
 }
 
 .se-statusbar-sheet-tab.active {
-  border-bottom-color: var(--wo-se-accent, #4472c4);
-  background-color: var(--wo-se-bg-toolbar, #f0f0f0);
+	border-bottom-color: var(--wo-se-accent, #4472c4);
+	background-color: var(--wo-se-bg-toolbar, #f0f0f0);
 }
 
 /* Statistics */
 .se-statusbar-statistics {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+	display: flex;
+	align-items: center;
+	gap: 4px;
 }
 
 /* Filtered */
 .se-statusbar-filtered {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+	display: flex;
+	align-items: center;
+	gap: 4px;
 }
 
 /* Page navigation */
 .se-statusbar-page-nav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 8px;
-  height: 100%;
-  flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 0 8px;
+	height: 100%;
+	flex-shrink: 0;
 }
 
 .se-statusbar-page-label {
-  font-size: 12px;
-  white-space: nowrap;
-  cursor: default;
-  color: var(--wo-se-text-secondary);
+	font-size: 12px;
+	white-space: nowrap;
+	cursor: default;
+	color: var(--wo-se-text-secondary);
 }
 
 /* Tool buttons */
 .se-statusbar-tools {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 8px;
-  height: 100%;
-  flex-shrink: 0;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 0 8px;
+	height: 100%;
+	flex-shrink: 0;
 }
 
 /* Zoom controls */
 .se-statusbar-zoom-box {
-  position: absolute;
-  right: 0;
-  height: var(--wo-se-statusbar-height);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 10px;
-  flex-shrink: 0;
+	position: absolute;
+	right: 0;
+	height: var(--wo-se-statusbar-height);
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	padding: 0 10px;
+	flex-shrink: 0;
 }
 
 .se-statusbar-no-compact .se-statusbar-zoom-box {
-  height: var(--wo-se-statusbar-height-expanded);
+	height: var(--wo-se-statusbar-height-expanded);
 }
 
 /* Separator */
 .se-statusbar-separator {
-  width: 1px;
-  height: 100%;
-  background-color: var(--wo-se-border);
+	width: 1px;
+	height: 100%;
+	background-color: var(--wo-se-border);
 }
 
 /* Button */
 .se-statusbar-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 3px;
-  background: transparent;
-  color: var(--wo-se-text-primary);
-  font-size: 14px;
-  cursor: pointer;
-  transition: background-color 0.15s;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	border: none;
+	border-radius: 3px;
+	background: transparent;
+	color: var(--wo-se-text-primary);
+	font-size: 14px;
+	cursor: pointer;
+	transition: background-color 0.15s;
 }
 
 .se-statusbar-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
 }
 
 .se-statusbar-btn.active {
-  background-color: var(--wo-se-accent);
-  color: #ffffff;
+	background-color: var(--wo-se-accent);
+	color: #ffffff;
 }
 
 .se-statusbar-btn:disabled {
-  opacity: 0.4;
-  cursor: default;
+	opacity: 0.4;
+	cursor: default;
 }
 
 /* Zoom label */
 .se-statusbar-zoom-label {
-  display: inline-flex;
-  align-items: center;
-  padding: 0 4px;
+	display: inline-flex;
+	align-items: center;
+	padding: 0 4px;
 }
 
 .se-statusbar-label {
-  font-size: 12px;
-  white-space: nowrap;
-  cursor: default;
+	font-size: 12px;
+	white-space: nowrap;
+	cursor: default;
 }

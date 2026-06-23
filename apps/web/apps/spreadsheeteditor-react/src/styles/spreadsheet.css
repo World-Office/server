@@ -1,125 +1,131 @@
 /* Spreadsheet Editor — Main Layout & Reset */
 
 :root {
-  --wo-se-toolbar-height: 40px;
-  --wo-se-toolbar-height-compact: 34px;
-  --wo-se-statusbar-height: 25px;
-  --wo-se-statusbar-height-expanded: 50px;
-  --wo-se-leftmenu-width: 40px;
-  --wo-se-leftmenu-min: 40px;
-  --wo-se-leftmenu-max: 300px;
-  --wo-se-rightmenu-width: 40px;
-  --wo-se-rightmenu-min: 40px;
-  --wo-se-rightmenu-max: 300px;
-  --wo-se-doc-bg: #fbfbfb;
+	--wo-se-toolbar-height: 40px;
+	--wo-se-toolbar-height-compact: 34px;
+	--wo-se-statusbar-height: 25px;
+	--wo-se-statusbar-height-expanded: 50px;
+	--wo-se-leftmenu-width: 40px;
+	--wo-se-leftmenu-min: 40px;
+	--wo-se-leftmenu-max: 300px;
+	--wo-se-rightmenu-width: 40px;
+	--wo-se-rightmenu-min: 40px;
+	--wo-se-rightmenu-max: 300px;
+	--wo-se-doc-bg: #fbfbfb;
 
-  --wo-se-bg-pane: #ffffff;
-  --wo-se-bg-toolbar: var(--wo-color-bg-toolbar, #f0f0f0);
-  --wo-se-bg-statusbar: var(--wo-color-bg-statusbar, #e8e8e8);
-  --wo-se-bg-page: #ffffff;
-  --wo-se-bg-page-active: #ffffff;
-  --wo-se-bg-page-overlay: rgba(68, 71, 150, 1);
-  --wo-se-text-primary: var(--wo-color-text-primary, #333333);
-  --wo-se-text-secondary: var(--wo-color-text-secondary, #666666);
-  --wo-se-border: var(--wo-color-border, #e0e0e0);
-  --wo-se-accent: var(--wo-color-accent, #4472c4);
-  --wo-se-accent-hover: var(--wo-color-accent-hover, #355d9e);
-  --wo-se-font: var(--wo-font-family, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif);
+	--wo-se-bg-pane: #ffffff;
+	--wo-se-bg-toolbar: var(--wo-color-bg-toolbar, #f0f0f0);
+	--wo-se-bg-statusbar: var(--wo-color-bg-statusbar, #e8e8e8);
+	--wo-se-bg-page: #ffffff;
+	--wo-se-bg-page-active: #ffffff;
+	--wo-se-bg-page-overlay: rgba(68, 71, 150, 1);
+	--wo-se-text-primary: var(--wo-color-text-primary, #333333);
+	--wo-se-text-secondary: var(--wo-color-text-secondary, #666666);
+	--wo-se-border: var(--wo-color-border, #e0e0e0);
+	--wo-se-accent: var(--wo-color-accent, #4472c4);
+	--wo-se-accent-hover: var(--wo-color-accent-hover, #355d9e);
+	--wo-se-font: var(
+		--wo-font-family,
+		"Segoe UI",
+		-apple-system,
+		BlinkMacSystemFont,
+		sans-serif
+	);
 }
 
 .viewport-ref {
-  font-family: var(--wo-se-font);
-  color: var(--wo-se-text-primary);
+	font-family: var(--wo-se-font);
+	color: var(--wo-se-text-primary);
 }
 
 #editor_sdk {
-  width: 100%;
-  height: 100%;
+	width: 100%;
+	height: 100%;
 }
 
 /* Viewport — VBox/HBox layout via CSS Grid */
 .se-viewport {
-  position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--wo-se-bg-pane);
-  overflow: hidden;
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	background-color: var(--wo-se-bg-pane);
+	overflow: hidden;
 }
 
 .se-viewport-vbox {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
 }
 
 .se-viewport-toolbar {
-  flex-shrink: 0;
-  overflow: hidden;
+	flex-shrink: 0;
+	overflow: hidden;
 }
 
 .se-viewport-body {
-  flex: 1;
-  display: flex;
-  flex-direction: row;
-  overflow: hidden;
-  min-height: 0;
+	flex: 1;
+	display: flex;
+	flex-direction: row;
+	overflow: hidden;
+	min-height: 0;
 }
 
 .se-viewport-left-menu {
-  flex-shrink: 0;
-  height: 100%;
+	flex-shrink: 0;
+	height: 100%;
 }
 
 .se-viewport-right-menu {
-  flex-shrink: 0;
-  height: 100%;
+	flex-shrink: 0;
+	height: 100%;
 }
 
 .se-viewport-editor {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  overflow: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--wo-se-doc-bg);
+	flex: 1;
+	min-width: 0;
+	height: 100%;
+	overflow: auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: var(--wo-se-doc-bg);
 }
 
 .se-viewport-statusbar {
-  flex-shrink: 0;
+	flex-shrink: 0;
 }
 
 /* File menu panel (full-height overlay) */
 .se-file-menu-panel {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 500;
-  background-color: rgba(0, 0, 0, 0.3);
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 500;
+	background-color: rgba(0, 0, 0, 0.3);
 }
 
 /* About panel */
 .se-about-menu-panel {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  left: 40px;
-  top: 0;
-  padding-right: 40px;
-  z-index: 450;
-  background-color: var(--wo-se-bg-pane);
-  overflow: hidden;
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	left: 40px;
+	top: 0;
+	padding-right: 40px;
+	z-index: 450;
+	background-color: var(--wo-se-bg-pane);
+	overflow: hidden;
 }
 
 /* Document holder */
 .se-document-holder {
-  width: 100%;
-  height: 100%;
-  background-color: var(--wo-se-doc-bg);
+	width: 100%;
+	height: 100%;
+	background-color: var(--wo-se-doc-bg);
 }
