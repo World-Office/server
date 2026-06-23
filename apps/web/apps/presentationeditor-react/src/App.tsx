@@ -1,6 +1,6 @@
-import type { JSX } from "react";
 import { ThemeProvider } from "@world-office/design-system";
 import { useDocumentLoader } from "@world-office/wopi-client";
+import type { JSX } from "react";
 import { PresentationCollaborationProvider } from "./components/PresentationCollaborationProvider";
 import { SlidePresenter } from "./components/SlidePresenter/SlidePresenter";
 import { Viewport } from "./components/Viewport";
@@ -39,7 +39,9 @@ export function App(): JSX.Element {
 		return (
 			<div className="prese-loading">
 				<p>Failed to load document: {presentationStore.isLoadingError}</p>
-				<button onClick={() => window.location.reload()} type="button">Retry</button>
+				<button onClick={() => window.location.reload()} type="button">
+					Retry
+				</button>
 			</div>
 		);
 	}

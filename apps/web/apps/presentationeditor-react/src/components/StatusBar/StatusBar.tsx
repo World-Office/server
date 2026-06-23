@@ -1,4 +1,7 @@
-import { CollaborationStatus, CollaboratorList } from "@world-office/collaboration-react";
+import {
+	CollaborationStatus,
+	CollaboratorList,
+} from "@world-office/collaboration-react";
 import { observer } from "mobx-react-lite";
 import type { JSX } from "react";
 import { presentationStore } from "../../stores/PresentationStore";
