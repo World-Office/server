@@ -151,14 +151,17 @@ describe("WebSocketManager", () => {
       wsHelper.simulateOpen()
 
       wsHelper.simulateMessage(JSON.stringify({
-        session_id: "test-session",
-        user_id: "user-2",
-        revision: 0,
-        type: "insert",
-        position: 0,
-        length: 0,
-        content: "remote",
-        timestamp: "2026-04-18T00:00:00+00:00",
+        type: "edit",
+        operation: {
+          session_id: "test-session",
+          user_id: "user-2",
+          revision: 0,
+          type: "insert",
+          position: 0,
+          length: 0,
+          content: "remote",
+          timestamp: "2026-04-18T00:00:00+00:00",
+        },
       }))
 
       expect(onOp).toHaveBeenCalledOnce()
@@ -173,14 +176,17 @@ describe("WebSocketManager", () => {
       wsHelper.simulateOpen()
 
       wsHelper.simulateMessage(JSON.stringify({
-        session_id: "test-session",
-        user_id: "user-1",
-        revision: 0,
-        type: "insert",
-        position: 0,
-        length: 0,
-        content: "own",
-        timestamp: "2026-04-18T00:00:00+00:00",
+        type: "edit",
+        operation: {
+          session_id: "test-session",
+          user_id: "user-1",
+          revision: 0,
+          type: "insert",
+          position: 0,
+          length: 0,
+          content: "own",
+          timestamp: "2026-04-18T00:00:00+00:00",
+        },
       }))
 
       expect(onOp).not.toHaveBeenCalled()

@@ -112,14 +112,17 @@ describe("Integration: full collaboration lifecycle", () => {
 
     // 4. Receive a remote operation
     wsHelper.simulateMessage(JSON.stringify({
-      session_id: "sess-integration",
-      user_id: "bob",
-      revision: 0,
-      type: "insert",
-      position: 15,
-      length: 0,
-      content: "Hi from Bob",
-      timestamp: "2026-04-18T00:00:00+00:00",
+      type: "edit",
+      operation: {
+        session_id: "sess-integration",
+        user_id: "bob",
+        revision: 0,
+        type: "insert",
+        position: 15,
+        length: 0,
+        content: "Hi from Bob",
+        timestamp: "2026-04-18T00:00:00+00:00",
+      },
     }))
 
     expect(receivedOps).toHaveLength(1)
