@@ -1,7 +1,7 @@
+import { loadDocument } from "@world-office/wopi-client"
 import { observer } from "mobx-react-lite"
 import { useEffect, useRef, useState } from "react"
 import { init, renderPage } from "../lib/wasm-renderer"
-import { loadDocument } from "@world-office/wopi-client"
 import { spreadsheetStore } from "../stores/SpreadsheetStore"
 
 const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
@@ -29,8 +29,14 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
   }, [zoomLevel])
 
   // Load SVG when format=svg is requested
+  // biome-ignore lint/correctness/useExhaustiveDependencies: MobX observable — store properties trigger re-render via observer()
   useEffect(() => {
-    if (spreadsheetStore.format !== "svg" || !spreadsheetStore.isDocReady || !spreadsheetStore.wopiConnection) return
+    if (
+      spreadsheetStore.format !== "svg" ||
+      !spreadsheetStore.isDocReady ||
+      !spreadsheetStore.wopiConnection
+    )
+      return
 
     setIsSvgLoading(true)
     setSvgContent(null)

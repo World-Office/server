@@ -1,3 +1,5 @@
+import { detectWopiParams, loadDocument, putFile } from "@world-office/wopi-client"
+import type { WopiConnection, WopiFileInfo } from "@world-office/wopi-client"
 import { makeAutoObservable } from "mobx"
 import type {
   LeftMenuAction,
@@ -10,8 +12,6 @@ import type {
   ZoomLevel,
 } from "../types/spreadsheet"
 import { ZOOM_LEVELS } from "../types/spreadsheet"
-import { loadDocument, putFile, detectWopiParams } from "@world-office/wopi-client"
-import type { WopiConnection, WopiFileInfo } from "@world-office/wopi-client"
 
 const STORAGE_PREFIX = "se-"
 
@@ -339,7 +339,9 @@ export class SpreadsheetStore {
     if (this.lastLoadedContent) {
       return this.lastLoadedContent
     }
-    return new Blob(["Spreadsheet placeholder"], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })
+    return new Blob(["Spreadsheet placeholder"], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    })
   }
 
   exportAsDownload(): void {
