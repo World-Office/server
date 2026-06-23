@@ -733,22 +733,23 @@ impl OoxmlSerializer {
                 } else {
                     // Determine if we have inline properties or attributes
                     if cell.row_span.is_some() || cell.col_span.is_some() {
-                        xml.push_str(&format!(
-                            r#"
-          <p:tcPr{}"#,
-                            if cell.fill_color.is_some() { ">" } else { "/>" },
-                        ));
-                        if cell.fill_color.is_some() {
+                        if let Some(fill_color) = &cell.fill_color {
                             xml.push_str(&format!(
                                 r#"
+          <p:tcPr>
             <a:solidFill>
               <a:srgbClr val="{}"/>
             </a:solidFill>
           </p:tcPr>"#,
-                                cell.fill_color.as_ref().unwrap(),
+                                fill_color,
                             ));
+                        } else {
+                            xml.push_str(
+                                r#"
+          <p:tcPr/>"#,
+                            );
                         }
-                    } else if cell.fill_color.is_some() {
+                    } else if let Some(fill_color) = &cell.fill_color {
                         xml.push_str(&format!(
                             r#"
           <p:tcPr>
@@ -756,7 +757,7 @@ impl OoxmlSerializer {
               <a:srgbClr val="{}"/>
             </a:solidFill>
           </p:tcPr>"#,
-                            cell.fill_color.as_ref().unwrap(),
+                            fill_color,
                         ));
                     }
                 }

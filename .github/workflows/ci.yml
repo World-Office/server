@@ -151,7 +151,8 @@ jobs:
         run: |
           cargo llvm-cov --workspace --lib \
             --lcov --output-path coverage/rust-lcov.info \
-            --ignore-filename-regex '/target/|/tests/|/benches/|/examples/'
+            --ignore-filename-regex '/target/|/tests/|/benches/|/examples/' \
+            -- --test-threads=1
         timeout-minutes: 60
 
       - name: Upload coverage to Codecov
