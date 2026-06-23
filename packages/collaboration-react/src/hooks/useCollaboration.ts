@@ -193,13 +193,7 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
     } catch (err) {
       console.error("[useCollaboration] connect failed:", err)
     }
-  }, [
-    preCreatedSessionId,
-    userId,
-    username,
-    coauthoringServiceUrl,
-    getOrCreateManager,
-  ])
+  }, [preCreatedSessionId, userId, username, coauthoringServiceUrl, getOrCreateManager])
 
   const disconnect = useCallback(() => {
     managerRef.current?.disconnect()

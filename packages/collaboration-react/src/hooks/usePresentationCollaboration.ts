@@ -16,7 +16,10 @@ export interface UsePresentationCollaborationOptions {
   onPresentationOp?: (op: PresentationOperation, userId: string) => void
   onPresentationState?: (state: PresentationStateData) => void
   onParticipantUpdate?: (update: ParticipantUpdate) => void
-  onSessionJoined?: (participants: Array<{ user_id: string; username: string; color: string }>, myUserId: string) => void
+  onSessionJoined?: (
+    participants: Array<{ user_id: string; username: string; color: string }>,
+    myUserId: string,
+  ) => void
 }
 
 export interface UsePresentationCollaborationResult {
@@ -124,13 +127,7 @@ export function usePresentationCollaboration(
     } catch (err) {
       console.error("[usePresentationCollaboration] connect failed:", err)
     }
-  }, [
-    preCreatedSessionId,
-    userId,
-    username,
-    coauthoringServiceUrl,
-    getOrCreateManager,
-  ])
+  }, [preCreatedSessionId, userId, username, coauthoringServiceUrl, getOrCreateManager])
 
   const disconnect = useCallback(() => {
     managerRef.current?.disconnect()
