@@ -149,6 +149,7 @@ jobs:
 
       - name: Generate coverage report
         run: |
+          mkdir -p coverage
           cargo llvm-cov --workspace --lib \
             --lcov --output-path coverage/rust-lcov.info \
             --ignore-filename-regex '/target/|/tests/|/benches/|/examples/' \
