@@ -1,245 +1,251 @@
 /* ShapePalette — Grid of flowchart shape types with search & categories */
 
 .palette {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
-  background: var(--wo-visio-bg-pane, #ffffff);
-  font-family: var(--wo-visio-font, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif);
-  color: var(--wo-visio-text-primary, #333333);
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	overflow: hidden;
+	background: var(--wo-visio-bg-pane, #ffffff);
+	font-family: var(
+		--wo-visio-font,
+		"Segoe UI",
+		-apple-system,
+		BlinkMacSystemFont,
+		sans-serif
+	);
+	color: var(--wo-visio-text-primary, #333333);
 }
 
 /* ── Search ── */
 
 .searchWrapper {
-  padding: 12px 12px 8px;
-  flex-shrink: 0;
+	padding: 12px 12px 8px;
+	flex-shrink: 0;
 }
 
 .searchInput {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 6px 10px;
-  border: 1px solid var(--wo-visio-border, #e0e0e0);
-  border-radius: 4px;
-  background: var(--wo-visio-bg-page, #ffffff);
-  color: var(--wo-visio-text-primary, #333333);
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.15s;
+	width: 100%;
+	box-sizing: border-box;
+	padding: 6px 10px;
+	border: 1px solid var(--wo-visio-border, #e0e0e0);
+	border-radius: 4px;
+	background: var(--wo-visio-bg-page, #ffffff);
+	color: var(--wo-visio-text-primary, #333333);
+	font-size: 13px;
+	font-family: inherit;
+	outline: none;
+	transition: border-color 0.15s;
 }
 
 .searchInput::placeholder {
-  color: var(--wo-visio-text-secondary, #999999);
+	color: var(--wo-visio-text-secondary, #999999);
 }
 
 .searchInput:focus {
-  border-color: var(--wo-visio-accent, #4472c4);
-  box-shadow: 0 0 0 1px var(--wo-visio-accent, #4472c4);
+	border-color: var(--wo-visio-accent, #4472c4);
+	box-shadow: 0 0 0 1px var(--wo-visio-accent, #4472c4);
 }
 
 /* ── Scrollable grid area ── */
 
 .scrollArea {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 4px 12px 16px;
+	flex: 1;
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding: 4px 12px 16px;
 }
 
 .scrollArea::-webkit-scrollbar {
-  width: 6px;
+	width: 6px;
 }
 
 .scrollArea::-webkit-scrollbar-track {
-  background: transparent;
+	background: transparent;
 }
 
 .scrollArea::-webkit-scrollbar-thumb {
-  background: var(--wo-visio-border, #e0e0e0);
-  border-radius: 3px;
+	background: var(--wo-visio-border, #e0e0e0);
+	border-radius: 3px;
 }
 
 /* ── Categories ── */
 
 .category {
-  margin-bottom: 16px;
+	margin-bottom: 16px;
 }
 
 .category:last-child {
-  margin-bottom: 0;
+	margin-bottom: 0;
 }
 
 .categoryHeader {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--wo-visio-text-secondary, #888888);
-  padding: 8px 4px 6px;
-  border-bottom: 1px solid var(--wo-visio-border, #e0e0e0);
-  margin-bottom: 8px;
-  user-select: none;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: var(--wo-visio-text-secondary, #888888);
+	padding: 8px 4px 6px;
+	border-bottom: 1px solid var(--wo-visio-border, #e0e0e0);
+	margin-bottom: 8px;
+	user-select: none;
 }
 
 .categoryDot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	flex-shrink: 0;
 }
 
 .dotFlow {
-  background-color: #4472c4;
+	background-color: #4472c4;
 }
 
 .dotData {
-  background-color: #548235;
+	background-color: #548235;
 }
 
 .dotIO {
-  background-color: #bf8f00;
+	background-color: #bf8f00;
 }
 
 .dotAdvanced {
-  background-color: #843fa0;
+	background-color: #843fa0;
 }
 
 /* ── Shape grid ── */
 
 .grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 8px;
 }
 
 /* ── Shape item (card) ── */
 
 .shapeItem {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 8px 4px 6px;
-  border: 1px solid var(--wo-visio-border, #e0e0e0);
-  border-radius: 6px;
-  background: var(--wo-visio-bg-page, #ffffff);
-  cursor: grab;
-  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
-  user-select: none;
-  position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	padding: 8px 4px 6px;
+	border: 1px solid var(--wo-visio-border, #e0e0e0);
+	border-radius: 6px;
+	background: var(--wo-visio-bg-page, #ffffff);
+	cursor: grab;
+	transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+	user-select: none;
+	position: relative;
 }
 
 .shapeItem:hover {
-  border-color: var(--wo-visio-accent, #4472c4);
-  box-shadow: 0 1px 4px rgba(68, 114, 196, 0.15);
-  background-color: #f7f9fc;
+	border-color: var(--wo-visio-accent, #4472c4);
+	box-shadow: 0 1px 4px rgba(68, 114, 196, 0.15);
+	background-color: #f7f9fc;
 }
 
 .shapeItem:active {
-  cursor: grabbing;
-  background-color: #eef3fa;
+	cursor: grabbing;
+	background-color: #eef3fa;
 }
 
 .shapeItem.dragging {
-  opacity: 0.5;
+	opacity: 0.5;
 }
 
 /* ── SVG icon ── */
 
 .iconSvg {
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  overflow: visible;
+	width: 36px;
+	height: 36px;
+	flex-shrink: 0;
+	overflow: visible;
 }
 
 .iconSvg :global(path),
 .iconSvg :global(polygon),
 .iconSvg :global(rect),
 .iconSvg :global(ellipse) {
-  fill: #ffffff;
-  stroke: var(--wo-visio-accent, #4472c4);
-  stroke-width: 1.5;
-  transition: stroke 0.15s, fill 0.15s;
+	fill: #ffffff;
+	stroke: var(--wo-visio-accent, #4472c4);
+	stroke-width: 1.5;
+	transition: stroke 0.15s, fill 0.15s;
 }
 
 .shapeItem:hover .iconSvg :global(path),
 .shapeItem:hover .iconSvg :global(polygon),
 .shapeItem:hover .iconSvg :global(rect),
 .shapeItem:hover .iconSvg :global(ellipse) {
-  stroke: var(--wo-visio-accent-hover, #355d9e);
-  fill: #edf2fa;
+	stroke: var(--wo-visio-accent-hover, #355d9e);
+	fill: #edf2fa;
 }
 
 /* ── Label ── */
 
 .shapeLabel {
-  font-size: 10px;
-  line-height: 1.2;
-  color: var(--wo-visio-text-secondary, #666666);
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-  transition: color 0.15s;
+	font-size: 10px;
+	line-height: 1.2;
+	color: var(--wo-visio-text-secondary, #666666);
+	text-align: center;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	max-width: 100%;
+	transition: color 0.15s;
 }
 
 .shapeItem:hover .shapeLabel {
-  color: var(--wo-visio-text-primary, #333333);
+	color: var(--wo-visio-text-primary, #333333);
 }
 
 /* ── Tooltip ── */
 
 .tooltip {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 8px;
-  border-radius: 4px;
-  background: #333333;
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 500;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.12s;
-  z-index: 10;
+	position: absolute;
+	bottom: calc(100% + 6px);
+	left: 50%;
+	transform: translateX(-50%);
+	padding: 4px 8px;
+	border-radius: 4px;
+	background: #333333;
+	color: #ffffff;
+	font-size: 11px;
+	font-weight: 500;
+	white-space: nowrap;
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.12s;
+	z-index: 10;
 }
 
 .shapeItem:hover .tooltip {
-  opacity: 1;
+	opacity: 1;
 }
 
 /* ── Empty state ── */
 
 .emptyState {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 32px 16px;
-  color: var(--wo-visio-text-secondary, #999999);
-  font-size: 13px;
-  text-align: center;
-  gap: 8px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 32px 16px;
+	color: var(--wo-visio-text-secondary, #999999);
+	font-size: 13px;
+	text-align: center;
+	gap: 8px;
 }
 
 .emptyIcon {
-  font-size: 24px;
-  opacity: 0.4;
+	font-size: 24px;
+	opacity: 0.4;
 }
 
 /* ── Shape description ── */
 
 .shapeDescription {
-  display: none;
+	display: none;
 }

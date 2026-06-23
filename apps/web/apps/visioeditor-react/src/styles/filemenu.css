@@ -2,216 +2,216 @@
 
 /* Main container — fills the overlay panel */
 .visio-file-menu {
-  display: flex;
-  width: 100%;
-  height: 100%;
-  background-color: var(--wo-visio-bg-pane);
+	display: flex;
+	width: 100%;
+	height: 100%;
+	background-color: var(--wo-visio-bg-pane);
 }
 
 /* Left sidebar with menu items */
 .visio-file-menu-list {
-  display: flex;
-  flex-direction: column;
-  width: 260px;
-  flex-shrink: 0;
-  background-color: var(--wo-visio-bg-pane);
-  border-right: 1px solid var(--wo-visio-border);
-  overflow-y: auto;
-  user-select: none;
+	display: flex;
+	flex-direction: column;
+	width: 260px;
+	flex-shrink: 0;
+	background-color: var(--wo-visio-bg-pane);
+	border-right: 1px solid var(--wo-visio-border);
+	overflow-y: auto;
+	user-select: none;
 }
 
 /* Menu items list (ul) */
 .visio-file-menu-items {
-  display: block;
-  list-style: none;
-  margin: 0;
-  padding: 8px 0;
+	display: block;
+	list-style: none;
+	margin: 0;
+	padding: 8px 0;
 }
 
 /* Individual menu item */
 .visio-file-menu-item {
-  display: flex;
-  align-items: center;
-  height: 36px;
-  padding: 0 20px;
-  cursor: pointer;
-  white-space: nowrap;
-  font-size: 13px;
-  color: var(--wo-visio-text-primary);
-  transition: background-color 0.15s;
+	display: flex;
+	align-items: center;
+	height: 36px;
+	padding: 0 20px;
+	cursor: pointer;
+	white-space: nowrap;
+	font-size: 13px;
+	color: var(--wo-visio-text-primary);
+	transition: background-color 0.15s;
 }
 
 .visio-file-menu-item:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
 }
 
 .visio-file-menu-item.active {
-  background-color: var(--wo-visio-accent);
-  color: #ffffff;
+	background-color: var(--wo-visio-accent);
+	color: #ffffff;
 }
 
 /* Back arrow icon */
 .visio-file-menu-item-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  margin-right: 10px;
-  font-size: 16px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+	margin-right: 10px;
+	font-size: 16px;
 }
 
 /* Menu item text label */
 .visio-file-menu-item-caption {
-  display: inline-block;
-  overflow: hidden;
-  text-overflow: ellipsis;
+	display: inline-block;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 /* Horizontal rule divider */
 .visio-file-menu-divider {
-  height: 1px;
-  margin: 4px 12px;
-  background-color: var(--wo-visio-border);
-  list-style: none;
+	height: 1px;
+	margin: 4px 12px;
+	background-color: var(--wo-visio-border);
+	list-style: none;
 }
 
 /* Content panel (right side, populated via inline styles) */
 .visio-file-menu-panel-box {
-  height: 100%;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+	height: 100%;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
 }
 
 /* Individual panel content wrapper */
 .visio-file-menu-content-box {
-  height: 100%;
-  overflow-y: auto;
-  position: relative;
+	height: 100%;
+	overflow-y: auto;
+	position: relative;
 }
 
 /* Panel title */
 .visio-file-menu-header {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--wo-visio-text-primary);
-  padding: 24px 20px 20px 0;
-  white-space: nowrap;
+	font-size: 20px;
+	font-weight: 600;
+	color: var(--wo-visio-text-primary);
+	padding: 24px 20px 20px 0;
+	white-space: nowrap;
 }
 
 /* --- Save As panel --- */
 .visio-file-menu-saveas-formats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding-top: 8px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+	padding-top: 8px;
 }
 
 .visio-file-menu-format-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 90px;
-  height: 70px;
-  border: 1px solid var(--wo-visio-border);
-  border-radius: 3px;
-  background-color: var(--wo-visio-bg-pane);
-  cursor: pointer;
-  transition: background-color 0.15s, border-color 0.15s;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 90px;
+	height: 70px;
+	border: 1px solid var(--wo-visio-border);
+	border-radius: 3px;
+	background-color: var(--wo-visio-bg-pane);
+	cursor: pointer;
+	transition: background-color 0.15s, border-color 0.15s;
 }
 
 .visio-file-menu-format-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-visio-border);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	border-color: var(--wo-visio-border);
 }
 
 .visio-file-menu-format-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  color: var(--wo-visio-text-secondary);
-  font-weight: 600;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 12px;
+	color: var(--wo-visio-text-secondary);
+	font-weight: 600;
 }
 
 /* --- Document Info panel --- */
 .visio-file-menu-info-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 8px;
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 8px;
 }
 
 .visio-file-menu-info-row td {
-  padding: 10px 0;
-  font-size: 12px;
-  vertical-align: top;
+	padding: 10px 0;
+	font-size: 12px;
+	vertical-align: top;
 }
 
 .visio-file-menu-info-left label {
-  color: var(--wo-visio-text-secondary);
-  font-size: 12px;
+	color: var(--wo-visio-text-secondary);
+	font-size: 12px;
 }
 
 .visio-file-menu-info-right span {
-  color: var(--wo-visio-text-primary);
-  font-size: 12px;
+	color: var(--wo-visio-text-primary);
+	font-size: 12px;
 }
 
 .visio-file-menu-info-divider td {
-  height: 1px;
-  padding: 0;
-  background-color: var(--wo-visio-border);
+	height: 1px;
+	padding: 0;
+	background-color: var(--wo-visio-border);
 }
 
 /* --- Settings panel --- */
 .visio-file-menu-settings-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 8px;
+	width: 100%;
+	border-collapse: collapse;
+	margin-top: 8px;
 }
 
 .visio-file-menu-settings-group td {
-  padding: 12px 0 4px 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--wo-visio-text-primary);
+	padding: 12px 0 4px 0;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--wo-visio-text-primary);
 }
 
 .visio-file-menu-settings-label {
-  font-size: 13px;
+	font-size: 13px;
 }
 
 .visio-file-menu-settings-left label {
-  color: var(--wo-visio-text-secondary);
-  font-size: 12px;
+	color: var(--wo-visio-text-secondary);
+	font-size: 12px;
 }
 
 .visio-file-menu-settings-right {
-  text-align: right;
+	text-align: right;
 }
 
 .visio-file-menu-settings-divider td {
-  height: 1px;
-  padding: 0;
-  background-color: var(--wo-visio-border);
+	height: 1px;
+	padding: 0;
+	background-color: var(--wo-visio-border);
 }
 
 /* Select dropdown */
 .visio-file-menu-select {
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--wo-visio-border);
-  border-radius: 3px;
-  background-color: var(--wo-visio-bg-pane);
-  font-size: 12px;
-  color: var(--wo-visio-text-primary);
-  cursor: pointer;
+	height: 28px;
+	padding: 0 8px;
+	border: 1px solid var(--wo-visio-border);
+	border-radius: 3px;
+	background-color: var(--wo-visio-bg-pane);
+	font-size: 12px;
+	color: var(--wo-visio-text-primary);
+	cursor: pointer;
 }
 
 /* --- Help panel --- */
 .visio-file-menu-help-content {
-  padding: 8px 20px 20px 0;
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--wo-visio-text-secondary);
+	padding: 8px 20px 20px 0;
+	font-size: 12px;
+	line-height: 1.6;
+	color: var(--wo-visio-text-secondary);
 }
