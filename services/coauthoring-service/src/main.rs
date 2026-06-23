@@ -24,11 +24,11 @@ use axum::{
 use chrono::Utc;
 use diamond_types::list::{ListCRDT, encoding::EncodeOptions};
 use futures_util::{SinkExt, StreamExt};
+use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock};
-use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 
 static METRICS: LazyLock<PrometheusHandle> = LazyLock::new(|| {
     PrometheusBuilder::new()

@@ -321,7 +321,10 @@ mod tests {
             had_bom: false,
         };
         let output = serializer.serialize(&doc).unwrap();
-        assert_eq!(output, b"hello", "single line should not have trailing newline");
+        assert_eq!(
+            output, b"hello",
+            "single line should not have trailing newline"
+        );
     }
 
     #[test]
@@ -393,7 +396,10 @@ mod tests {
         };
         let output = serializer.serialize(&doc).unwrap();
         // 0x000D = CR in UTF-16LE
-        assert!(output.windows(2).any(|w| w == [0x0D, 0x00]), "CR in utf-16le output");
+        assert!(
+            output.windows(2).any(|w| w == [0x0D, 0x00]),
+            "CR in utf-16le output"
+        );
         assert!(!output.windows(2).any(|w| w == [0x0A, 0x00]), "no LF");
     }
 
@@ -413,7 +419,10 @@ mod tests {
         };
         let output = serializer.serialize(&doc).unwrap();
         // 0x000D = CR in UTF-16BE
-        assert!(output.windows(2).any(|w| w == [0x00, 0x0D]), "CR in utf-16be output");
+        assert!(
+            output.windows(2).any(|w| w == [0x00, 0x0D]),
+            "CR in utf-16be output"
+        );
     }
 
     #[test]
@@ -431,7 +440,10 @@ mod tests {
             had_bom: false,
         };
         let output = serializer.serialize(&doc).unwrap();
-        assert!(output.windows(2).any(|w| w == [0x00, 0x0A]), "LF in utf-16be output");
+        assert!(
+            output.windows(2).any(|w| w == [0x00, 0x0A]),
+            "LF in utf-16be output"
+        );
     }
 
     #[test]
@@ -449,7 +461,10 @@ mod tests {
             had_bom: false,
         };
         let output = serializer.serialize(&doc).unwrap();
-        assert!(output.windows(4).any(|w| w == [0x00, 0x0D, 0x00, 0x0A]), "CRLF in utf-16be");
+        assert!(
+            output.windows(4).any(|w| w == [0x00, 0x0D, 0x00, 0x0A]),
+            "CRLF in utf-16be"
+        );
     }
 
     #[test]
@@ -510,7 +525,10 @@ mod tests {
             had_bom: false,
         };
         let output = serializer.serialize(&doc).unwrap();
-        assert!(output.windows(4).any(|w| w == [0x0D, 0x00, 0x0A, 0x00]), "CRLF in utf-16le");
+        assert!(
+            output.windows(4).any(|w| w == [0x0D, 0x00, 0x0A, 0x00]),
+            "CRLF in utf-16le"
+        );
     }
 
     #[test]
@@ -527,6 +545,9 @@ mod tests {
             had_bom: false,
         };
         let output = serializer.serialize(&doc).unwrap();
-        assert!(output.windows(2).any(|w| w == [0x0A, 0x00]), "LF in utf-16le");
+        assert!(
+            output.windows(2).any(|w| w == [0x0A, 0x00]),
+            "LF in utf-16le"
+        );
     }
 }

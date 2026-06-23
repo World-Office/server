@@ -12,11 +12,11 @@ use axum::{
     http::{HeaderMap, StatusCode},
     routing::{delete, get, post},
 };
+use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 use repository::StorageRepository;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
-use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 
 static METRICS: LazyLock<PrometheusHandle> = LazyLock::new(|| {
     PrometheusBuilder::new()

@@ -1095,8 +1095,16 @@ mod tests {
             BlockElement::Paragraph { content, .. } => {
                 let text = &content[0];
                 if let InlineElement::Text { text } = text {
-                    assert!(text.contains("AT&T"), "Expected decoded AT&T, got: {}", text);
-                    assert!(text.contains("M&M's"), "Expected decoded M&M's, got: {}", text);
+                    assert!(
+                        text.contains("AT&T"),
+                        "Expected decoded AT&T, got: {}",
+                        text
+                    );
+                    assert!(
+                        text.contains("M&M's"),
+                        "Expected decoded M&M's, got: {}",
+                        text
+                    );
                 }
             }
             _ => panic!("Expected paragraph"),
@@ -1112,7 +1120,10 @@ mod tests {
         match &doc.body.elements[0] {
             BlockElement::Paragraph { content, .. } => {
                 if let InlineElement::Text { text } = &content[0] {
-                    assert!(text.contains('{'), "Expected curly brace from numeric entity");
+                    assert!(
+                        text.contains('{'),
+                        "Expected curly brace from numeric entity"
+                    );
                     assert!(text.contains('{'), "Expected curly brace from hex entity");
                     assert!(text.contains('&'), "Expected & from &amp;");
                     assert!(text.contains('<'), "Expected < from &lt;");
@@ -1149,7 +1160,9 @@ mod tests {
         let parser = HtmlParser::new();
         let doc = parser.parse(html.as_bytes()).unwrap();
         match &doc.body.elements[0] {
-            BlockElement::Div { class, elements, .. } => {
+            BlockElement::Div {
+                class, elements, ..
+            } => {
                 assert_eq!(class.as_deref(), Some("section"));
                 assert_eq!(elements.len(), 1);
             }

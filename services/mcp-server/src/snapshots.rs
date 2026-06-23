@@ -115,7 +115,9 @@ mod tests {
     #[tokio::test]
     async fn skips_when_hash_exists() {
         let mock = MockDuplicateStorage;
-        let result = auto_snapshot(&mock, "f1", "duplicate content").await.unwrap();
+        let result = auto_snapshot(&mock, "f1", "duplicate content")
+            .await
+            .unwrap();
         assert_eq!(result, "deduplicated");
     }
 }

@@ -629,7 +629,10 @@ mod tests {
             body: HtmlBody { elements: vec![] },
         };
         let output = serializer.serialize(&doc);
-        assert!(output.contains("<meta charset=\"utf-8\"/>"), "charset meta should be serialized");
+        assert!(
+            output.contains("<meta charset=\"utf-8\"/>"),
+            "charset meta should be serialized"
+        );
     }
 
     #[test]
@@ -651,8 +654,14 @@ mod tests {
             body: HtmlBody { elements: vec![] },
         };
         let output = serializer.serialize(&doc);
-        assert!(output.contains("name=\"viewport\""), "meta name should be present");
-        assert!(output.contains("content=\"width=device-width\""), "meta content should be present");
+        assert!(
+            output.contains("name=\"viewport\""),
+            "meta name should be present"
+        );
+        assert!(
+            output.contains("content=\"width=device-width\""),
+            "meta content should be present"
+        );
     }
 
     #[test]
@@ -671,7 +680,10 @@ mod tests {
         };
         let output = serializer.serialize(&doc);
         assert!(output.contains("<style>"), "style tag should be opened");
-        assert!(output.contains("body { margin: 0; }"), "style content should be present");
+        assert!(
+            output.contains("body { margin: 0; }"),
+            "style content should be present"
+        );
         assert!(output.contains("</style>"), "style tag should be closed");
     }
 
@@ -694,9 +706,18 @@ mod tests {
             body: HtmlBody { elements: vec![] },
         };
         let output = serializer.serialize(&doc);
-        assert!(output.contains("rel=\"stylesheet\""), "link rel should be present");
-        assert!(output.contains("href=\"style.css\""), "link href should be present");
-        assert!(output.contains("type=\"text/css\""), "link type should be present");
+        assert!(
+            output.contains("rel=\"stylesheet\""),
+            "link rel should be present"
+        );
+        assert!(
+            output.contains("href=\"style.css\""),
+            "link href should be present"
+        );
+        assert!(
+            output.contains("type=\"text/css\""),
+            "link type should be present"
+        );
     }
 
     // ---------------------------------------------------------------------------
@@ -713,7 +734,9 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::Heading {
                     level: 2,
-                    content: vec![InlineElement::Text { text: "Section".into() }],
+                    content: vec![InlineElement::Text {
+                        text: "Section".into(),
+                    }],
                     id: None,
                 }],
             },
@@ -734,7 +757,9 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::Heading {
                     level: 3,
-                    content: vec![InlineElement::Text { text: "Intro".into() }],
+                    content: vec![InlineElement::Text {
+                        text: "Intro".into(),
+                    }],
                     id: Some("intro".into()),
                 }],
             },
@@ -753,7 +778,9 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::Div {
                     elements: vec![BlockElement::Paragraph {
-                        content: vec![InlineElement::Text { text: "inside".into() }],
+                        content: vec![InlineElement::Text {
+                            text: "inside".into(),
+                        }],
                         id: None,
                     }],
                     id: Some("main".into()),
@@ -779,8 +806,12 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::UnorderedList {
                     items: vec![
-                        ListItem { content: vec![InlineElement::Text { text: "A".into() }] },
-                        ListItem { content: vec![InlineElement::Text { text: "B".into() }] },
+                        ListItem {
+                            content: vec![InlineElement::Text { text: "A".into() }],
+                        },
+                        ListItem {
+                            content: vec![InlineElement::Text { text: "B".into() }],
+                        },
                     ],
                     id: Some("list1".into()),
                 }],
@@ -803,7 +834,9 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::OrderedList {
                     items: vec![ListItem {
-                        content: vec![InlineElement::Text { text: "first".into() }],
+                        content: vec![InlineElement::Text {
+                            text: "first".into(),
+                        }],
                     }],
                     id: None,
                     start: Some(5),
@@ -826,7 +859,9 @@ mod tests {
                     rows: vec![
                         TableRow {
                             cells: vec![TableCell {
-                                content: vec![InlineElement::Text { text: "Name".into() }],
+                                content: vec![InlineElement::Text {
+                                    text: "Name".into(),
+                                }],
                                 colspan: 1,
                                 rowspan: 1,
                             }],
@@ -834,7 +869,9 @@ mod tests {
                         },
                         TableRow {
                             cells: vec![TableCell {
-                                content: vec![InlineElement::Text { text: "Alice".into() }],
+                                content: vec![InlineElement::Text {
+                                    text: "Alice".into(),
+                                }],
                                 colspan: 1,
                                 rowspan: 1,
                             }],
@@ -864,7 +901,9 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::Blockquote {
                     elements: vec![BlockElement::Paragraph {
-                        content: vec![InlineElement::Text { text: "quote".into() }],
+                        content: vec![InlineElement::Text {
+                            text: "quote".into(),
+                        }],
                         id: None,
                     }],
                     id: Some("q1".into()),
@@ -872,7 +911,10 @@ mod tests {
             },
         };
         let output = serializer.serialize(&doc);
-        assert!(output.contains("<blockquote id=\"q1\">"), "blockquote with id");
+        assert!(
+            output.contains("<blockquote id=\"q1\">"),
+            "blockquote with id"
+        );
         assert!(output.contains("quote"), "quote content");
         assert!(output.contains("</blockquote>"), "blockquote close");
     }
@@ -925,7 +967,9 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Bold {
-                        content: vec![InlineElement::Text { text: "bold".into() }],
+                        content: vec![InlineElement::Text {
+                            text: "bold".into(),
+                        }],
                     }],
                     id: None,
                 }],
@@ -945,7 +989,9 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Italic {
-                        content: vec![InlineElement::Text { text: "emph".into() }],
+                        content: vec![InlineElement::Text {
+                            text: "emph".into(),
+                        }],
                     }],
                     id: None,
                 }],
@@ -985,7 +1031,9 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Strikethrough {
-                        content: vec![InlineElement::Text { text: "strike".into() }],
+                        content: vec![InlineElement::Text {
+                            text: "strike".into(),
+                        }],
                     }],
                     id: None,
                 }],
@@ -1063,7 +1111,10 @@ mod tests {
             body: HtmlBody { elements: vec![] },
         };
         let output = serializer.serialize(&doc);
-        assert!(!output.contains("<!DOCTYPE"), "no doctype when doc_type is None");
+        assert!(
+            !output.contains("<!DOCTYPE"),
+            "no doctype when doc_type is None"
+        );
         assert!(output.contains("<html>"), "html tag still present");
     }
 
@@ -1078,7 +1129,11 @@ mod tests {
             head: HtmlHead::default(),
             body: HtmlBody { elements: vec![] },
         };
-        assert_eq!(s1.serialize(&doc), s2.serialize(&doc), "Default should match new()");
+        assert_eq!(
+            s1.serialize(&doc),
+            s2.serialize(&doc),
+            "Default should match new()"
+        );
     }
 
     // ---------------------------------------------------------------------------
@@ -1094,7 +1149,9 @@ mod tests {
             head: HtmlHead::default(),
             body: HtmlBody {
                 elements: vec![BlockElement::Paragraph {
-                    content: vec![InlineElement::Text { text: "hello".into() }],
+                    content: vec![InlineElement::Text {
+                        text: "hello".into(),
+                    }],
                     id: Some("p1".into()),
                 }],
             },
@@ -1119,7 +1176,9 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::Div {
                     elements: vec![BlockElement::Paragraph {
-                        content: vec![InlineElement::Text { text: "plain".into() }],
+                        content: vec![InlineElement::Text {
+                            text: "plain".into(),
+                        }],
                         id: None,
                     }],
                     id: None,
@@ -1147,7 +1206,9 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::UnorderedList {
                     items: vec![ListItem {
-                        content: vec![InlineElement::Text { text: "item".into() }],
+                        content: vec![InlineElement::Text {
+                            text: "item".into(),
+                        }],
                     }],
                     id: None,
                 }],
@@ -1173,7 +1234,9 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::OrderedList {
                     items: vec![ListItem {
-                        content: vec![InlineElement::Text { text: "first".into() }],
+                        content: vec![InlineElement::Text {
+                            text: "first".into(),
+                        }],
                     }],
                     id: Some("ol1".into()),
                     start: None,
@@ -1201,7 +1264,9 @@ mod tests {
                 elements: vec![BlockElement::Table {
                     rows: vec![TableRow {
                         cells: vec![TableCell {
-                            content: vec![InlineElement::Text { text: "data".into() }],
+                            content: vec![InlineElement::Text {
+                                text: "data".into(),
+                            }],
                             colspan: 1,
                             rowspan: 1,
                         }],
@@ -1281,7 +1346,9 @@ mod tests {
                     content: vec![InlineElement::Link {
                         href: "/path".into(),
                         title: None,
-                        content: vec![InlineElement::Text { text: "click".into() }],
+                        content: vec![InlineElement::Text {
+                            text: "click".into(),
+                        }],
                     }],
                     id: None,
                 }],
@@ -1428,7 +1495,10 @@ mod tests {
             },
         };
         let output = serializer.serialize(&doc);
-        assert!(output.contains("<strong><em>nested</em></strong>"), "bold > italic nested");
+        assert!(
+            output.contains("<strong><em>nested</em></strong>"),
+            "bold > italic nested"
+        );
     }
 
     // ---------------------------------------------------------------------------
@@ -1445,13 +1515,18 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::Heading {
                     level: 1,
-                    content: vec![InlineElement::Text { text: "Title".into() }],
+                    content: vec![InlineElement::Text {
+                        text: "Title".into(),
+                    }],
                     id: Some("main-title".into()),
                 }],
             },
         };
         let output = serializer.serialize(&doc);
-        assert!(output.contains("<h1 id=\"main-title\">Title</h1>"), "h1 with id");
+        assert!(
+            output.contains("<h1 id=\"main-title\">Title</h1>"),
+            "h1 with id"
+        );
     }
 
     // ---------------------------------------------------------------------------
@@ -1478,8 +1553,14 @@ mod tests {
             },
         };
         let output = serializer.serialize(&doc);
-        assert!(output.contains("<blockquote id=\"bq\">"), "blockquote with id");
-        assert!(output.contains("<p id=\"qp\">"), "p with id inside blockquote");
+        assert!(
+            output.contains("<blockquote id=\"bq\">"),
+            "blockquote with id"
+        );
+        assert!(
+            output.contains("<p id=\"qp\">"),
+            "p with id inside blockquote"
+        );
         assert!(output.contains("nested quote"));
     }
 
@@ -1492,10 +1573,7 @@ mod tests {
         let serializer = HtmlSerializer::new();
         let doc = HtmlDocument {
             doc_type: Some("html".into()),
-            html_attributes: vec![
-                ("lang".into(), "en".into()),
-                ("dir".into(), "ltr".into()),
-            ],
+            html_attributes: vec![("lang".into(), "en".into()), ("dir".into(), "ltr".into())],
             head: HtmlHead::default(),
             body: HtmlBody { elements: vec![] },
         };
