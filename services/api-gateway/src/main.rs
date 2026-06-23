@@ -15,9 +15,9 @@ use axum::{
 use bytes::Bytes;
 use http_body_util::BodyExt;
 use jsonwebtoken::{Algorithm, DecodingKey, Validation, decode};
+use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 use serde::{Deserialize, Serialize};
 use std::sync::LazyLock;
-use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 
 static METRICS: LazyLock<PrometheusHandle> = LazyLock::new(|| {
     PrometheusBuilder::new()
@@ -421,7 +421,12 @@ mod tests {
             exp: (chrono::Utc::now().timestamp() + 3600) as usize,
             iat: chrono::Utc::now().timestamp() as usize,
         };
-        encode(&Header::default(), &claims, &EncodingKey::from_secret(secret.as_bytes())).unwrap()
+        encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(secret.as_bytes()),
+        )
+        .unwrap()
     }
 
     fn make_expired_token(secret: &str) -> String {
@@ -432,7 +437,12 @@ mod tests {
             exp: (chrono::Utc::now().timestamp() - 3600) as usize,
             iat: (chrono::Utc::now().timestamp() - 7200) as usize,
         };
-        encode(&Header::default(), &claims, &EncodingKey::from_secret(secret.as_bytes())).unwrap()
+        encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(secret.as_bytes()),
+        )
+        .unwrap()
     }
 
     #[tokio::test]

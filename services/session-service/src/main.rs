@@ -11,10 +11,10 @@ use axum::{
 };
 use chrono::Utc;
 use jsonwebtoken::{Algorithm, EncodingKey, Header, encode};
+use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, LazyLock};
-use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 
 static METRICS: LazyLock<PrometheusHandle> = LazyLock::new(|| {
     PrometheusBuilder::new()

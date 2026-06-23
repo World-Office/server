@@ -306,12 +306,12 @@ mod tests {
 </manifest:manifest>"#.as_ref(),
             )
             .unwrap();
-	let input = writer.finish().unwrap();
+        let input = writer.finish().unwrap();
 
-	rt.parse(&input).unwrap();
-	let doc = rt.doc.borrow();
-	let doc = doc.as_ref().unwrap();
-	if let OdfContent::Presentation { slides } = &doc.content {
+        rt.parse(&input).unwrap();
+        let doc = rt.doc.borrow();
+        let doc = doc.as_ref().unwrap();
+        if let OdfContent::Presentation { slides } = &doc.content {
             assert_eq!(slides.len(), 1);
             assert_eq!(slides[0].shapes.len(), 1);
             let shape = &slides[0].shapes[0];

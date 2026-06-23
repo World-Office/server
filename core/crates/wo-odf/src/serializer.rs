@@ -80,10 +80,17 @@ impl OdfSerializer {
                 for text_content in content {
                     match text_content {
                         OdfTextContent::Paragraph(paragraph) => {
-                            svg.push_str(&format!("  <text x=\"0\" y=\"0\">{}</text>\n", escape_xml(&paragraph.text)));
+                            svg.push_str(&format!(
+                                "  <text x=\"0\" y=\"0\">{}</text>\n",
+                                escape_xml(&paragraph.text)
+                            ));
                         }
                         OdfTextContent::Heading(heading) => {
-                            svg.push_str(&format!("  <text x=\"0\" y=\"0\" font-size=\"{}\">{}</text>\n", heading.level * 10, escape_xml(&heading.text)));
+                            svg.push_str(&format!(
+                                "  <text x=\"0\" y=\"0\" font-size=\"{}\">{}</text>\n",
+                                heading.level * 10,
+                                escape_xml(&heading.text)
+                            ));
                         }
                         _ => {}
                     }
@@ -96,9 +103,17 @@ impl OdfSerializer {
                         for cell in &row.cells {
                             let x = cell.column * 100;
                             let y = cell.row * 50;
-                            svg.push_str(&format!("    <rect x=\"{}\" y=\"{}\" width=\"100\" height=\"50\" ", x, y));
+                            svg.push_str(&format!(
+                                "    <rect x=\"{}\" y=\"{}\" width=\"100\" height=\"50\" ",
+                                x, y
+                            ));
                             svg.push_str("stroke=\"black\" fill=\"white\" />\n");
-                            svg.push_str(&format!("      <text x=\"{}\" y=\"{}\">{}</text>\n", x + 10, y + 30, escape_xml(&cell.text)));
+                            svg.push_str(&format!(
+                                "      <text x=\"{}\" y=\"{}\">{}</text>\n",
+                                x + 10,
+                                y + 30,
+                                escape_xml(&cell.text)
+                            ));
                         }
                     }
                     svg.push_str("  </g>\n");
@@ -115,16 +130,27 @@ impl OdfSerializer {
                                 let y: i32 = shape.y.parse().unwrap_or(0);
                                 let width: i32 = shape.width.parse().unwrap_or(100);
                                 let height: i32 = shape.height.parse().unwrap_or(50);
-                                svg.push_str(&format!("    <rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" ", x, y, width, height));
+                                svg.push_str(&format!(
+                                    "    <rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" ",
+                                    x, y, width, height
+                                ));
                                 svg.push_str("stroke=\"black\" fill=\"white\" />\n");
-                                svg.push_str(&format!("      <text x=\"{}\" y=\"{}\">{}</text>\n", x + 5, y + 30, escape_xml(&slide.text_content)));
+                                svg.push_str(&format!(
+                                    "      <text x=\"{}\" y=\"{}\">{}</text>\n",
+                                    x + 5,
+                                    y + 30,
+                                    escape_xml(&slide.text_content)
+                                ));
                             }
                             _ => {
                                 let x: i32 = shape.x.parse().unwrap_or(0);
                                 let y: i32 = shape.y.parse().unwrap_or(0);
                                 let width: i32 = shape.width.parse().unwrap_or(100);
                                 let height: i32 = shape.height.parse().unwrap_or(50);
-                                svg.push_str(&format!("    <rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" ", x, y, width, height));
+                                svg.push_str(&format!(
+                                    "    <rect x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\" ",
+                                    x, y, width, height
+                                ));
                                 svg.push_str("stroke=\"black\" fill=\"none\" />\n");
                             }
                         }

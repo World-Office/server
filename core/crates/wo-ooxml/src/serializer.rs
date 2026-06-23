@@ -212,8 +212,11 @@ impl OoxmlSerializer {
             if let Some(ref master_id) = slide.master_id {
                 attrs.push_str(&format!(r#" sldMasterId="{}""#, master_id));
             }
-            xml.push_str(&format!(r#"
-    <p:sldId {}/>"#, attrs));
+            xml.push_str(&format!(
+                r#"
+    <p:sldId {}/>"#,
+                attrs
+            ));
         }
         xml.push_str("\n  </p:sldIdLst>\n</p:presentation>");
         xml
@@ -225,7 +228,7 @@ impl OoxmlSerializer {
 <p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
        xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main""#,
         );
-        
+
         if let Some(ref layout_id) = slide.layout_id {
             xml.push_str(&format!(r#" sldLayoutId="{}""#, layout_id));
         }
@@ -265,7 +268,8 @@ impl OoxmlSerializer {
                 }
                 SlideShape::Chart(_chart) => {
                     // STUB for future implementation
-                    xml.push_str(r#"
+                    xml.push_str(
+                        r#"
     <p:graphicFrame>
       <p:nvGraphicFramePr>
         <p:cNvPr id="chart-stub" name="Chart"/>
@@ -281,11 +285,13 @@ impl OoxmlSerializer {
           <c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart"/>
         </a:graphicData>
       </a:graphic>
-    </p:graphicFrame>"#);
+    </p:graphicFrame>"#,
+                    );
                 }
                 SlideShape::SmartArt(_smartart) => {
                     // STUB for future implementation
-                    xml.push_str(r#"
+                    xml.push_str(
+                        r#"
     <p:graphicFrame>
       <p:nvGraphicFramePr>
         <p:cNvPr id="smartart-stub" name="SmartArt"/>
@@ -301,7 +307,8 @@ impl OoxmlSerializer {
           <dgm:relIds xmlns:dgm="http://schemas.openxmlformats.org/drawingml/2006/diagram"/>
         </a:graphicData>
       </a:graphic>
-    </p:graphicFrame>"#);
+    </p:graphicFrame>"#,
+                    );
                 }
             }
         }
@@ -490,52 +497,52 @@ impl OoxmlSerializer {
         }
     }
 
-	fn serialize_effect_list(&self, xml: &mut String, effect: &Option<EffectList>) {
-		if let Some(ref el) = effect {
-			xml.push_str("\n        <a:effectLst>");
-			if let Some(ref shadow) = el.shadow {
-				let c = shadow.color.trim_start_matches('#');
-				let alpha = (shadow.opacity * 1000.0) as i64;
-				xml.push_str(&format!(
-					r#"
+    fn serialize_effect_list(&self, xml: &mut String, effect: &Option<EffectList>) {
+        if let Some(ref el) = effect {
+            xml.push_str("\n        <a:effectLst>");
+            if let Some(ref shadow) = el.shadow {
+                let c = shadow.color.trim_start_matches('#');
+                let alpha = (shadow.opacity * 1000.0) as i64;
+                xml.push_str(&format!(
+                    r#"
 		  <a:outerShdw blurRad="{}" dx="{}" dy="{}" algn="tl">
 			<a:srgbClr val="{}">
 			  <a:alpha val="{}"/>
 			</a:srgbClr>
 		  </a:outerShdw>"#,
-					shadow.blur_radius, shadow.dx, shadow.dy, c, alpha,
-				));
-			}
-			if let Some(ref glow) = el.glow {
-				let c = glow.color.trim_start_matches('#');
-				let alpha = (glow.opacity * 1000.0) as i64;
-				xml.push_str(&format!(
-					r#"
+                    shadow.blur_radius, shadow.dx, shadow.dy, c, alpha,
+                ));
+            }
+            if let Some(ref glow) = el.glow {
+                let c = glow.color.trim_start_matches('#');
+                let alpha = (glow.opacity * 1000.0) as i64;
+                xml.push_str(&format!(
+                    r#"
 		  <a:glow rad="{}">
 			<a:srgbClr val="{}">
 			  <a:alpha val="{}"/>
 			</a:srgbClr>
 		  </a:glow>"#,
-					glow.radius, c, alpha,
-				));
-			}
-			if let Some(ref refl) = el.reflection {
-				let alpha = (refl.start_opacity * 1000.0) as i64;
-				let pos = (refl.end_pos * 1000.0) as i64;
-				let dir = if refl.direction == ReflectionDirection::Fade {
-					"fade"
-				} else {
-					"mirror"
-				};
-				xml.push_str(&format!(
-					r#"
+                    glow.radius, c, alpha,
+                ));
+            }
+            if let Some(ref refl) = el.reflection {
+                let alpha = (refl.start_opacity * 1000.0) as i64;
+                let pos = (refl.end_pos * 1000.0) as i64;
+                let dir = if refl.direction == ReflectionDirection::Fade {
+                    "fade"
+                } else {
+                    "mirror"
+                };
+                xml.push_str(&format!(
+                    r#"
 		  <a:reflection blurRad="{}" stA="{}" pos="{}" dir="{}"/>"#,
-					refl.blur_radius, alpha, pos, dir,
-				));
-			}
-			xml.push_str("\n        </a:effectLst>");
-		}
-	}
+                    refl.blur_radius, alpha, pos, dir,
+                ));
+            }
+            xml.push_str("\n        </a:effectLst>");
+        }
+    }
 
     fn serialize_textbox_shape(&self, xml: &mut String, tb: &TextBoxShape) {
         xml.push_str(&format!(
@@ -2664,10 +2671,10 @@ mod tests {
                 animations: vec![],
                 timing_raw: None,
                 background: None,
-        shapes: vec![],
-        layout_id: None,
-        master_id: None,
-        notes: None,
+                shapes: vec![],
+                layout_id: None,
+                master_id: None,
+                notes: None,
             }],
             slide_masters: Vec::new(),
             theme: Some(theme),

@@ -163,7 +163,10 @@ fn infer_format(file_id: &str) -> Result<String> {
         "odp" => Ok("odp".to_string()),
         "vsdx" => Ok("vsdx".to_string()),
         "pdf" => Ok("pdf".to_string()),
-        _ => Err(WopiError::InvalidRequest(format!("Unsupported format: {}", ext))),
+        _ => Err(WopiError::InvalidRequest(format!(
+            "Unsupported format: {}",
+            ext
+        ))),
     }
 }
 
@@ -361,7 +364,11 @@ mod tests {
             ("diagram.vsdx", "vsdx"),
             ("doc.pdf", "pdf"),
         ] {
-            assert_eq!(infer_format(file_id).unwrap(), *expected, "mismatch for {file_id}");
+            assert_eq!(
+                infer_format(file_id).unwrap(),
+                *expected,
+                "mismatch for {file_id}"
+            );
         }
     }
 
@@ -402,9 +409,15 @@ mod tests {
         let cases: Vec<(WopiError, StatusCode)> = vec![
             (WopiError::FileNotFound("x".into()), StatusCode::NOT_FOUND),
             (WopiError::AccessDenied("x".into()), StatusCode::FORBIDDEN),
-            (WopiError::InvalidToken("x".into()), StatusCode::UNAUTHORIZED),
+            (
+                WopiError::InvalidToken("x".into()),
+                StatusCode::UNAUTHORIZED,
+            ),
             (WopiError::LockConflict("x".into()), StatusCode::CONFLICT),
-            (WopiError::InvalidRequest("x".into()), StatusCode::BAD_REQUEST),
+            (
+                WopiError::InvalidRequest("x".into()),
+                StatusCode::BAD_REQUEST,
+            ),
         ];
         for (err, expected_status) in cases {
             let (status, _) = handle_wopi_error(err);
@@ -423,7 +436,8 @@ mod tests {
     #[test]
     fn test_handle_wopi_error_serialization_is_500() {
         // Invalid JSON to trigger a serde error
-        let err = WopiError::Serialization(serde_json::from_str::<serde_json::Value>("").unwrap_err());
+        let err =
+            WopiError::Serialization(serde_json::from_str::<serde_json::Value>("").unwrap_err());
         let (status, _) = handle_wopi_error(err);
         assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
     }
@@ -450,7 +464,10 @@ mod tests {
         state.add_token("valid".to_string(), "user42".to_string());
 
         let app = Router::new()
-            .route("/wopi/files/{file_id}", get(check_file_info::<FileSystemStorage>))
+            .route(
+                "/wopi/files/{file_id}",
+                get(check_file_info::<FileSystemStorage>),
+            )
             .with_state(Arc::new(state));
 
         let req = Request::builder()
@@ -475,7 +492,10 @@ mod tests {
         let state = WopiState::new(storage);
 
         let app = Router::new()
-            .route("/wopi/files/{file_id}", get(check_file_info::<FileSystemStorage>))
+            .route(
+                "/wopi/files/{file_id}",
+                get(check_file_info::<FileSystemStorage>),
+            )
             .with_state(Arc::new(state));
 
         let req = Request::builder()
@@ -495,7 +515,10 @@ mod tests {
         state.add_token("t".to_string(), "u1".to_string());
 
         let app = Router::new()
-            .route("/wopi/files/{file_id}", get(check_file_info::<FileSystemStorage>))
+            .route(
+                "/wopi/files/{file_id}",
+                get(check_file_info::<FileSystemStorage>),
+            )
             .with_state(Arc::new(state));
 
         let req = Request::builder()
@@ -521,7 +544,10 @@ mod tests {
         state.add_token("t".to_string(), "u1".to_string());
 
         let app = Router::new()
-            .route("/wopi/files/{file_id}/contents", get(get_file::<FileSystemStorage>))
+            .route(
+                "/wopi/files/{file_id}/contents",
+                get(get_file::<FileSystemStorage>),
+            )
             .with_state(Arc::new(state));
 
         let req = Request::builder()
@@ -543,7 +569,10 @@ mod tests {
         let state = WopiState::new(storage);
 
         let app = Router::new()
-            .route("/wopi/files/{file_id}/contents", get(get_file::<FileSystemStorage>))
+            .route(
+                "/wopi/files/{file_id}/contents",
+                get(get_file::<FileSystemStorage>),
+            )
             .with_state(Arc::new(state));
 
         let req = Request::builder()
@@ -563,7 +592,10 @@ mod tests {
         state.add_token("t".to_string(), "u1".to_string());
 
         let app = Router::new()
-            .route("/wopi/files/{file_id}/contents", get(get_file::<FileSystemStorage>))
+            .route(
+                "/wopi/files/{file_id}/contents",
+                get(get_file::<FileSystemStorage>),
+            )
             .with_state(Arc::new(state));
 
         let req = Request::builder()

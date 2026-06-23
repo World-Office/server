@@ -10,12 +10,12 @@ use axum::{
     routing::{get, post},
 };
 use chrono::Utc;
+use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, LazyLock};
 use tokio::sync::Mutex;
 use uuid::Uuid;
-use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 
 static METRICS: LazyLock<PrometheusHandle> = LazyLock::new(|| {
     PrometheusBuilder::new()

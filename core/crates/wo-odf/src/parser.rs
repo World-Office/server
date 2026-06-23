@@ -75,15 +75,12 @@ impl OdfParser {
             self.extract_metadata_from_content(&content_doc)
         };
 
-		// Parse auto styles from content.xml office:automatic-styles (ODP shapes reference these)
-		let auto_styles = self.parse_auto_styles(&content_doc);
-		let all_styles: Vec<OdfStyle> = styles
-			.into_iter()
-			.chain(auto_styles)
-			.collect();
+        // Parse auto styles from content.xml office:automatic-styles (ODP shapes reference these)
+        let auto_styles = self.parse_auto_styles(&content_doc);
+        let all_styles: Vec<OdfStyle> = styles.into_iter().chain(auto_styles).collect();
 
-		// Parse document body
-		let content = self.parse_content(&content_doc, &doc_type, &mut archive, &all_styles)?;
+        // Parse document body
+        let content = self.parse_content(&content_doc, &doc_type, &mut archive, &all_styles)?;
 
         Ok(OdfDocument {
             doc_type,
@@ -1016,77 +1013,72 @@ impl OdfParser {
             }
         }
 
-	Ok((fonts, styles))
+        Ok((fonts, styles))
     }
 
     fn parse_auto_styles(&self, doc: &XmlDoc) -> Vec<OdfStyle> {
-	let mut styles = Vec::new();
-	for node in doc.descendants() {
-	    if node.has_tag_name((OFFICE_NS, "automatic-styles")) {
-		for child in node.children() {
-		    if child.has_tag_name((STYLE_NS, "style")) {
-			let style_name = child
-			    .attribute((STYLE_NS, "name"))
-			    .unwrap_or("")
-			    .to_string();
-			if style_name.is_empty() {
-			    continue;
-			}
-			let family = child
-			    .attribute((STYLE_NS, "family"))
-			    .map(|s| s.to_string());
-			let parent = child
-			    .attribute((STYLE_NS, "parent-style-name"))
-			    .map(|s| s.to_string());
-			let mut properties = Vec::new();
-			for prop_child in child.children() {
-			    if prop_child.has_tag_name((STYLE_NS, "graphic-properties"))
-				|| prop_child.has_tag_name((STYLE_NS, "text-properties"))
-				|| prop_child.has_tag_name((STYLE_NS, "paragraph-properties"))
-			    {
-				for attr in prop_child.attributes() {
-				    let key = format!(
-					"{}:{}",
-					prop_child.tag_name().name(),
-					attr.name()
-				    );
-				    properties.push((key, attr.value().to_string()));
-				}
-			    }
-			}
-			styles.push(OdfStyle {
-			    name: style_name,
-			    family,
-			    parent,
-			    display_name: None,
-			    properties,
-			});
-		    }
-		}
-	    }
-	}
-	styles
+        let mut styles = Vec::new();
+        for node in doc.descendants() {
+            if node.has_tag_name((OFFICE_NS, "automatic-styles")) {
+                for child in node.children() {
+                    if child.has_tag_name((STYLE_NS, "style")) {
+                        let style_name = child
+                            .attribute((STYLE_NS, "name"))
+                            .unwrap_or("")
+                            .to_string();
+                        if style_name.is_empty() {
+                            continue;
+                        }
+                        let family = child.attribute((STYLE_NS, "family")).map(|s| s.to_string());
+                        let parent = child
+                            .attribute((STYLE_NS, "parent-style-name"))
+                            .map(|s| s.to_string());
+                        let mut properties = Vec::new();
+                        for prop_child in child.children() {
+                            if prop_child.has_tag_name((STYLE_NS, "graphic-properties"))
+                                || prop_child.has_tag_name((STYLE_NS, "text-properties"))
+                                || prop_child.has_tag_name((STYLE_NS, "paragraph-properties"))
+                            {
+                                for attr in prop_child.attributes() {
+                                    let key =
+                                        format!("{}:{}", prop_child.tag_name().name(), attr.name());
+                                    properties.push((key, attr.value().to_string()));
+                                }
+                            }
+                        }
+                        styles.push(OdfStyle {
+                            name: style_name,
+                            family,
+                            parent,
+                            display_name: None,
+                            properties,
+                        });
+                    }
+                }
+            }
+        }
+        styles
     }
 
     fn resolve_style_property(
-	styles: &[OdfStyle],
-	style_name: &str,
-	prop_key: &str,
+        styles: &[OdfStyle],
+        style_name: &str,
+        prop_key: &str,
     ) -> Option<String> {
-	let style = styles.iter().find(|s| s.name == style_name)?;
-	if let Some(val) = style
-	    .properties
-	    .iter()
-	    .find(|(k, _)| k == prop_key)
-	    .map(|(_, v)| v.clone())
-	{
-	    return Some(val);
-	}
-	if let Some(parent_name) = &style.parent {
-	    Self::resolve_style_property(styles, parent_name, prop_key)
-	} else {
-	    None
-	}
+        let style = styles.iter().find(|s| s.name == style_name)?;
+        if let Some(val) = style
+            .properties
+            .iter()
+            .find(|(k, _)| k == prop_key)
+            .map(|(_, v)| v.clone())
+        {
+            return Some(val);
+        }
+        if let Some(parent_name) = &style.parent {
+            Self::resolve_style_property(styles, parent_name, prop_key)
+        } else {
+            None
+        }
     }
 
     pub fn parse_to_document(&self, data: &[u8]) -> Result<Document> {

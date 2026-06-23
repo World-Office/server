@@ -356,7 +356,10 @@ mod tests {
             info: None,
         };
         let out = RtfSerializer::new().serialize(&doc);
-        assert!(out.contains("\\fcharset1252"), "charset after stripping cp prefix");
+        assert!(
+            out.contains("\\fcharset1252"),
+            "charset after stripping cp prefix"
+        );
     }
 
     #[test]
@@ -366,8 +369,16 @@ mod tests {
             ansi_codepage: None,
             fonts: vec![],
             colors: vec![
-                RtfColor { red: 0, green: 0, blue: 0 },   // auto — skipped
-                RtfColor { red: 255, green: 0, blue: 0 }, // red
+                RtfColor {
+                    red: 0,
+                    green: 0,
+                    blue: 0,
+                }, // auto — skipped
+                RtfColor {
+                    red: 255,
+                    green: 0,
+                    blue: 0,
+                }, // red
             ],
             body: vec![],
             info: None,
@@ -419,7 +430,9 @@ mod tests {
     #[test]
     fn test_serialize_bold() {
         let doc = make_para(RtfInline::Bold {
-            content: vec![RtfInline::Text { text: "bold".into() }],
+            content: vec![RtfInline::Text {
+                text: "bold".into(),
+            }],
         });
         let out = RtfSerializer::new().serialize(&doc);
         assert!(out.contains("\\b "), "bold on");
@@ -452,7 +465,9 @@ mod tests {
     #[test]
     fn test_serialize_strikethrough() {
         let doc = make_para(RtfInline::Strikethrough {
-            content: vec![RtfInline::Text { text: "strike".into() }],
+            content: vec![RtfInline::Text {
+                text: "strike".into(),
+            }],
         });
         let out = RtfSerializer::new().serialize(&doc);
         assert!(out.contains("\\strike "));
@@ -486,7 +501,9 @@ mod tests {
     fn test_serialize_font() {
         let doc = make_para(RtfInline::Font {
             index: 2,
-            content: vec![RtfInline::Text { text: "ftext".into() }],
+            content: vec![RtfInline::Text {
+                text: "ftext".into(),
+            }],
         });
         let out = RtfSerializer::new().serialize(&doc);
         assert!(out.contains("\\f2 "));
@@ -508,7 +525,9 @@ mod tests {
     fn test_serialize_color() {
         let doc = make_para(RtfInline::Color {
             index: 1,
-            content: vec![RtfInline::Text { text: "colored".into() }],
+            content: vec![RtfInline::Text {
+                text: "colored".into(),
+            }],
         });
         let out = RtfSerializer::new().serialize(&doc);
         assert!(out.contains("\\cf1 "));
@@ -548,7 +567,9 @@ mod tests {
             fonts: vec![],
             colors: vec![],
             body: vec![RtfBlock::Paragraph {
-                content: vec![RtfInline::Text { text: "indent".into() }],
+                content: vec![RtfInline::Text {
+                    text: "indent".into(),
+                }],
                 alignment: None,
                 indent_left: Some(720),
                 indent_first: None,
@@ -669,7 +690,9 @@ mod tests {
             body: vec![RtfBlock::Table {
                 rows: vec![RtfTableRow {
                     cells: vec![RtfTableCell {
-                        content: vec![RtfInline::Text { text: "cell1".into() }],
+                        content: vec![RtfInline::Text {
+                            text: "cell1".into(),
+                        }],
                         width: Some(1000),
                     }],
                 }],
@@ -694,7 +717,9 @@ mod tests {
             body: vec![RtfBlock::Table {
                 rows: vec![RtfTableRow {
                     cells: vec![RtfTableCell {
-                        content: vec![RtfInline::Text { text: "nowidth".into() }],
+                        content: vec![RtfInline::Text {
+                            text: "nowidth".into(),
+                        }],
                         width: None,
                     }],
                 }],
@@ -719,7 +744,9 @@ mod tests {
     fn test_serialize_nested_bold_italic() {
         let doc = make_para(RtfInline::Bold {
             content: vec![RtfInline::Italic {
-                content: vec![RtfInline::Text { text: "bold+italic".into() }],
+                content: vec![RtfInline::Text {
+                    text: "bold+italic".into(),
+                }],
             }],
         });
         let out = RtfSerializer::new().serialize(&doc);
@@ -743,13 +770,17 @@ mod tests {
             colors: vec![],
             body: vec![
                 RtfBlock::Paragraph {
-                    content: vec![RtfInline::Text { text: "First para".into() }],
+                    content: vec![RtfInline::Text {
+                        text: "First para".into(),
+                    }],
                     alignment: None,
                     indent_left: None,
                     indent_first: None,
                 },
                 RtfBlock::Paragraph {
-                    content: vec![RtfInline::Text { text: "Second para".into() }],
+                    content: vec![RtfInline::Text {
+                        text: "Second para".into(),
+                    }],
                     alignment: Some(RtfAlignment::Center),
                     indent_left: None,
                     indent_first: None,
@@ -779,13 +810,17 @@ mod tests {
                 rows: vec![
                     RtfTableRow {
                         cells: vec![RtfTableCell {
-                            content: vec![RtfInline::Text { text: "row1cell1".into() }],
+                            content: vec![RtfInline::Text {
+                                text: "row1cell1".into(),
+                            }],
                             width: Some(1000),
                         }],
                     },
                     RtfTableRow {
                         cells: vec![RtfTableCell {
-                            content: vec![RtfInline::Text { text: "row2cell1".into() }],
+                            content: vec![RtfInline::Text {
+                                text: "row2cell1".into(),
+                            }],
                             width: Some(2000),
                         }],
                     },
@@ -848,8 +883,16 @@ mod tests {
                 },
             ],
             colors: vec![
-                RtfColor { red: 0, green: 0, blue: 0 },
-                RtfColor { red: 255, green: 0, blue: 0 },
+                RtfColor {
+                    red: 0,
+                    green: 0,
+                    blue: 0,
+                },
+                RtfColor {
+                    red: 255,
+                    green: 0,
+                    blue: 0,
+                },
             ],
             info: Some(RtfInfo {
                 title: Some("Integration Test".into()),
@@ -859,9 +902,13 @@ mod tests {
             body: vec![
                 RtfBlock::Paragraph {
                     content: vec![
-                        RtfInline::Text { text: "Normal text ".into() },
+                        RtfInline::Text {
+                            text: "Normal text ".into(),
+                        },
                         RtfInline::Bold {
-                            content: vec![RtfInline::Text { text: "bold".into() }],
+                            content: vec![RtfInline::Text {
+                                text: "bold".into(),
+                            }],
                         },
                     ],
                     alignment: Some(RtfAlignment::Center),
@@ -872,7 +919,9 @@ mod tests {
                     rows: vec![RtfTableRow {
                         cells: vec![RtfTableCell {
                             content: vec![RtfInline::Italic {
-                                content: vec![RtfInline::Text { text: "italic cell".into() }],
+                                content: vec![RtfInline::Text {
+                                    text: "italic cell".into(),
+                                }],
                             }],
                             width: Some(2000),
                         }],
@@ -953,6 +1002,10 @@ mod tests {
             body: vec![],
             info: None,
         };
-        assert_eq!(s1.serialize(&doc), s2.serialize(&doc), "Default should match new()");
+        assert_eq!(
+            s1.serialize(&doc),
+            s2.serialize(&doc),
+            "Default should match new()"
+        );
     }
 }
