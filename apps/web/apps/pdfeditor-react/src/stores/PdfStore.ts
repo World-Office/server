@@ -1,3 +1,5 @@
+import { detectWopiParams, loadDocument, putFile } from "@world-office/wopi-client"
+import type { WopiConnection, WopiFileInfo } from "@world-office/wopi-client"
 import { makeAutoObservable } from "mobx"
 import type {
   AnnotationTool,
@@ -11,8 +13,6 @@ import type {
   ZoomLevel,
 } from "../types/pdf"
 import { ZOOM_LEVELS } from "../types/pdf"
-import { loadDocument, putFile, detectWopiParams } from "@world-office/wopi-client"
-import type { WopiConnection, WopiFileInfo } from "@world-office/wopi-client"
 
 const STORAGE_PREFIX = "pe-"
 

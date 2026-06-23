@@ -1,7 +1,7 @@
+import { loadDocument } from "@world-office/wopi-client"
 import { observer } from "mobx-react-lite"
 import { useEffect, useRef, useState } from "react"
 import { getTotalPages, init, renderPage, setTotalPages } from "../lib/wasm-renderer"
-import { loadDocument } from "@world-office/wopi-client"
 import { pdfStore } from "../stores/PdfStore"
 
 const DEMO_PAGE_COUNT = 5
@@ -33,8 +33,9 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
   }, [currentPage, zoomLevel])
 
   // Load SVG when format=svg is requested
+  const { format, isDocReady, wopiConnection } = pdfStore
   useEffect(() => {
-    if (pdfStore.format !== "svg" || !pdfStore.isDocReady || !pdfStore.wopiConnection) return
+    if (format !== "svg" || !isDocReady || !wopiConnection) return
 
     setIsSvgLoading(true)
     setSvgContent(null)
@@ -59,7 +60,7 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
     }
 
     loadSvg()
-  }, [pdfStore.format, pdfStore.isDocReady, pdfStore.wopiConnection])
+  }, [format, isDocReady, wopiConnection])
 
   const totalPages = getTotalPages()
   const canPrev = pdfStore.currentPage > 0
@@ -92,6 +93,7 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
                 width: "100%",
                 height: "100%",
               }}
+              // biome-ignore lint/security/noDangerouslySetInnerHtml: SVG content from own server, not user input
               dangerouslySetInnerHTML={{ __html: svgContent }}
             />
           ) : (

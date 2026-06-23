@@ -16,7 +16,14 @@ export function App() {
   if (loadState === "loading") {
     return (
       <ThemeProvider>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100vh",
+          }}
+        >
           <p>Loading document...</p>
         </div>
       </ThemeProvider>
@@ -25,10 +32,20 @@ export function App() {
   if (loadState === "error") {
     return (
       <ThemeProvider>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            height: "100vh",
+          }}
+        >
           <p>Failed to load document</p>
           <p style={{ color: "#888" }}>{pdfStore.isLoadingError}</p>
-          <button onClick={() => pdfStore.detectAndLoadWopi()}>Retry</button>
+          <button type="button" onClick={() => pdfStore.detectAndLoadWopi()}>
+            Retry
+          </button>
         </div>
       </ThemeProvider>
     )
