@@ -205,9 +205,9 @@ wsl bash -c "cd /mnt/c/Users/Tobias/git/World-Office && ~/.cargo/bin/cargo test 
 wsl bash -c "cd /mnt/c/Users/Tobias/git/World-Office && ~/.cargo/bin/cargo test --workspace"
 ```
 
-### Known Issue: wo-pdf ICE
+### Past Issue: wo-pdf ICE (Resolved)
 
-The wo-pdf crate triggers a Rust compiler ICE (Internal Compiler Error) in some rustc versions. Skip wo-pdf tests until fixed upstream. The CI workflow excludes wo-pdf and wo-webdav from clippy and check steps.
+The wo-pdf crate previously triggered a Rust compiler ICE in older nightly versions. This is resolved with rustc >= 1.92.0. CI includes all 27 core crates.
 
 ## ANTI-PATTERNS
 

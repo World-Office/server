@@ -19,5 +19,6 @@ export default defineConfig({
         lines: 0,
         statements: 0,
       },
+    },
   },
 })

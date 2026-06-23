@@ -12,9 +12,21 @@ use axum::{
 use chrono::Utc;
 use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use tokio::sync::Mutex;
 use uuid::Uuid;
+use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
+
+static METRICS: LazyLock<PrometheusHandle> = LazyLock::new(|| {
+    PrometheusBuilder::new()
+        .install_recorder()
+        .expect("failed to install prometheus recorder")
+});
+
+async fn metrics_handler() -> String {
+    METRICS.render()
+}
+
 pub use wo_x2t::ConversionRouter;
 
 /// Conversion job status.
@@ -392,6 +404,7 @@ pub async fn supported_formats(State(state): State<Arc<AppState>>) -> Json<Vec<F
 pub fn app(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/health", get(health))
+        .route("/metrics", get(metrics_handler))
         .route("/convert", post(submit_conversion))
         .route("/jobs", get(list_jobs))
         .route("/jobs/{id}", get(get_job_status))

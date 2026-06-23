@@ -6,7 +6,10 @@ use tokio::sync::Mutex;
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .json()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
 
     let storage_dir: std::path::PathBuf = std::env::var("STORAGE_DIR")
         .unwrap_or_else(|_| "./data".into())

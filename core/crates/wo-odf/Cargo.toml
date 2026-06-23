@@ -3,12 +3,17 @@ name = "wo-odf"
 version = "0.1.0"
 edition = "2021"
 license = "AGPL-3.0-or-later"
+description = "OpenDocument Format (ODT/ODS/ODP) parser and serializer for the World-Office document editing suite"
+repository = "https://codeberg.org/World-Office/server"
+homepage = "https://codeberg.org/World-Office/server"
+keywords = ["odf", "odt", "ods", "odp", "open-document", "document"]
+categories = ["parser-implementations", "encoding"]
 
 [dependencies]
 anyhow = { workspace = true }
 thiserror = { workspace = true }
-wo-common = { path = "../wo-common" }
-wo-office-utils = { path = "../wo-office-utils" }
+wo-common = { path = "../wo-common", version = "0.1.0" }
+wo-office-utils = { path = "../wo-office-utils", version = "0.1.0" }
 serde = { workspace = true }
 roxmltree = "0.20"
 zip = { workspace = true }

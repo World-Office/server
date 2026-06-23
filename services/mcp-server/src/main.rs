@@ -8,7 +8,10 @@ use tools::McpTools;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .json()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
 
     let storage_url = std::env::var("STORAGE_SERVICE_URL")
         .unwrap_or_else(|_| "http://localhost:8002".to_string());

@@ -492,7 +492,6 @@ impl OoxmlSerializer {
 
 	fn serialize_effect_list(&self, xml: &mut String, effect: &Option<EffectList>) {
 		if let Some(ref el) = effect {
-			let mut has_effect = false;
 			xml.push_str("\n        <a:effectLst>");
 			if let Some(ref shadow) = el.shadow {
 				let c = shadow.color.trim_start_matches('#');
@@ -506,7 +505,6 @@ impl OoxmlSerializer {
 		  </a:outerShdw>"#,
 					shadow.blur_radius, shadow.dx, shadow.dy, c, alpha,
 				));
-				has_effect = true;
 			}
 			if let Some(ref glow) = el.glow {
 				let c = glow.color.trim_start_matches('#');
@@ -520,7 +518,6 @@ impl OoxmlSerializer {
 		  </a:glow>"#,
 					glow.radius, c, alpha,
 				));
-				has_effect = true;
 			}
 			if let Some(ref refl) = el.reflection {
 				let alpha = (refl.start_opacity * 1000.0) as i64;
@@ -535,7 +532,6 @@ impl OoxmlSerializer {
 		  <a:reflection blurRad="{}" stA="{}" pos="{}" dir="{}"/>"#,
 					refl.blur_radius, alpha, pos, dir,
 				));
-				has_effect = true;
 			}
 			xml.push_str("\n        </a:effectLst>");
 		}

@@ -32,3 +32,5 @@ chrono = { workspace = true }
 uuid = { workspace = true }
 tower = { workspace = true }
 rusqlite = { workspace = true }
+metrics = { workspace = true }
+metrics-exporter-prometheus = { workspace = true }

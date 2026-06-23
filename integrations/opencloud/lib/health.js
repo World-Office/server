@@ -1,5 +1,6 @@
 const { exec } = require('child_process');
 const { promisify } = require('util');
+const axios = require('axios');
 const dotenv = require('dotenv');
 
 const execAsync = promisify(exec);
@@ -12,6 +13,7 @@ const VERSION = '1.0.0';
 // Container names we care about
 const CONTAINER_MAP = {
   ocis: 'worldoffice-ocis',
+  ocis_collaboration: 'worldoffice-ocis-collaboration',
   documentserver: 'worldoffice-documentserver',
   traefik: 'worldoffice-traefik'
 };
@@ -106,8 +108,121 @@ async function getHealthStatus() {
   };
 }
 
+async function checkWopiConnectivity() {
+  const ocisDomain = process.env.OCIS_DOMAIN;
+  if (!ocisDomain) {
+    return {
+      accessible: false,
+      error: 'OCIS_DOMAIN not configured',
+      discoveryUrl: null
+    };
+  }
+
+  const useSsl = process.env.ENABLE_SSL !== 'false';
+  const scheme = useSsl ? 'https' : 'http';
+  const discoveryUrl = scheme + '://' + ocisDomain + '/wopi/discovery';
+
+  try {
+    const response = await axios.get(discoveryUrl, {
+      timeout: 5000,
+      validateStatus: function () { return true; }
+    });
+
+    return {
+      accessible: response.status < 500,
+      statusCode: response.status,
+      discoveryUrl: discoveryUrl
+    };
+  } catch (error) {
+    return {
+      accessible: false,
+      error: error.message,
+      discoveryUrl: discoveryUrl
+    };
+  }
+}
+
+async function getSystemMetrics() {
+  const containerNames = Object.values(CONTAINER_MAP);
+
+  const psOutput = await runDocker('ps -a --filter "name=worldoffice" --format "{{.Names}}|{{.State}}"');
+  let totalContainers = 0;
+  let runningContainers = 0;
+  if (psOutput) {
+    for (const line of psOutput.split('\n')) {
+      if (!line) continue;
+      const [name] = line.split('|');
+      if (name && containerNames.includes(name)) {
+        totalContainers++;
+        if (line.includes('running')) runningContainers++;
+      }
+    }
+  }
+
+  // Get memory usage via docker stats (non-streaming, one-shot)
+  let memoryUsage = 0;
+  const statsOutput = await runDocker(
+    'stats --no-stream --format "{{.Name}}|{{.MemUsage}}" --filter "name=worldoffice" 2>/dev/null'
+  );
+  if (statsOutput) {
+    for (const line of statsOutput.split('\n')) {
+      // Parse memory usage like "125.4MiB / 1.952GiB"
+      const memMatch = line.match(/([\d.]+)\s*(KiB|MiB|GiB)/);
+      if (memMatch) {
+        const value = parseFloat(memMatch[1]);
+        const unit = memMatch[2];
+        if (unit === 'KiB') memoryUsage += value / 1024;
+        else if (unit === 'GiB') memoryUsage += value * 1024;
+        else memoryUsage += value;
+      }
+    }
+  }
+
+  memoryUsage = Math.round(memoryUsage);
+
+  return {
+    containers: totalContainers,
+    runningContainers: runningContainers,
+    memoryUsage: memoryUsage,
+    timestamp: new Date().toISOString()
+  };
+}
+
+async function getFullHealthStatus() {
+  const services = await getContainerStatuses();
+
+  const runningCount = Object.values(services).filter(function (s) { return s.running; }).length;
+  const totalCount = Object.keys(CONTAINER_MAP).length;
+
+  let overall = 'unknown';
+  if (runningCount === totalCount && totalCount > 0) {
+    overall = 'healthy';
+  } else if (runningCount > 0) {
+    overall = 'degraded';
+  } else {
+    overall = 'down';
+  }
+
+  const wopi = await checkWopiConnectivity();
+  const metrics = await getSystemMetrics();
+
+  return {
+    overall: overall,
+    services: services,
+    wopi: wopi,
+    metrics: metrics,
+    running: runningCount,
+    healthy: runningCount,
+    total: totalCount,
+    timestamp: new Date().toISOString()
+  };
+}
+
 module.exports = {
   getHealthStatus,
   getContainerStatuses,
+  checkWopiConnectivity,
+  getSystemMetrics,
+  getFullHealthStatus,
   VERSION
 };

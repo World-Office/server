@@ -27,7 +27,19 @@ use futures_util::{SinkExt, StreamExt};
 use rusqlite::{Connection, params};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
+use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
+
+static METRICS: LazyLock<PrometheusHandle> = LazyLock::new(|| {
+    PrometheusBuilder::new()
+        .install_recorder()
+        .expect("failed to install prometheus recorder")
+});
+
+async fn metrics_handler() -> String {
+    METRICS.render()
+}
+
 use tokio::sync::{Mutex, broadcast};
 
 /// A connected editor session.
@@ -999,6 +1011,7 @@ async fn health() -> Json<HealthResponse> {
 fn app(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/health", get(health))
+        .route("/metrics", get(metrics_handler))
         .route("/sessions", post(create_session).get(list_sessions))
         .route("/sessions/{id}", get(get_session))
         .route("/sessions/{id}/join", post(join_session))
@@ -1008,7 +1021,10 @@ fn app(state: Arc<AppState>) -> Router {
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .json()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
 
     let db_path =
         std::env::var("DATABASE_PATH").unwrap_or_else(|_| "coauthoring_sessions.db".into());

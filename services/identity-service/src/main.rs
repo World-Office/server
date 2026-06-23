@@ -13,7 +13,19 @@ use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, deco
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
+use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
+
+static METRICS: LazyLock<PrometheusHandle> = LazyLock::new(|| {
+    PrometheusBuilder::new()
+        .install_recorder()
+        .expect("failed to install prometheus recorder")
+});
+
+async fn metrics_handler() -> String {
+    METRICS.render()
+}
+
 use tokio::sync::Mutex;
 
 /// Stored user record.
@@ -367,6 +379,7 @@ async fn verify(
 fn app(state: Arc<AppState>) -> Router {
     Router::new()
         .route("/health", get(health))
+        .route("/metrics", get(metrics_handler))
         .route("/auth/login", post(login))
         .route("/auth/register", post(register))
         .route("/auth/verify", post(verify))
@@ -375,7 +388,10 @@ fn app(state: Arc<AppState>) -> Router {
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .json()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .init();
 
     let jwt_secret =
         std::env::var("JWT_SECRET").unwrap_or_else(|_| "dev-secret-change-in-production".into());
