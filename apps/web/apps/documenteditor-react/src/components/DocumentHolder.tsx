@@ -1,11 +1,11 @@
 import { createCursorUpdate } from "@world-office/collaboration-client"
+import { loadDocument } from "@world-office/wopi-client"
 import { observer } from "mobx-react-lite"
 import { useEffect, useRef, useState } from "react"
 import { collaborationStore } from "../lib/collaboration"
 import { collabSendRef, currentUser } from "../lib/collaboration"
 import { getTotalPages, init, renderPage, setTotalPages } from "../lib/wasm-renderer"
 import { documentStore } from "../stores/DocumentStore"
-import { loadDocument } from "@world-office/wopi-client"
 
 const DEMO_PAGE_COUNT = 3
 
@@ -36,8 +36,9 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
     renderPage(currentPage, zoomLevel)
   }, [currentPage, zoomLevel])
 
+  const { isDocReady, wopiConnection } = documentStore
   useEffect(() => {
-    if (format !== "svg" || !documentStore.isDocReady || !documentStore.wopiConnection?.wopiFileId) return
+    if (format !== "svg" || !isDocReady || !wopiConnection?.wopiFileId) return
 
     setIsSvgLoading(true)
     setSvgContent(null)
@@ -47,8 +48,8 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
         const conn = documentStore.wopiConnection
         if (!conn) return
         const { content } = await loadDocument({
-          wopiFileId: conn.wopiFileId!,
-          wopiAccessToken: conn.wopiAccessToken!,
+          wopiFileId: conn.wopiFileId,
+          wopiAccessToken: conn.wopiAccessToken,
           docserverBase: conn.docserverBase,
           format: "svg",
         })
@@ -62,7 +63,7 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
     }
 
     loadSvg()
-  }, [format, documentStore.isDocReady, documentStore.wopiConnection])
+  }, [format, isDocReady, wopiConnection])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -128,6 +129,7 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
           svgContent ? (
             <div
               ref={svgRef}
+              // biome-ignore lint/security/noDangerouslySetInnerHtml: SVG content from own server, not user input
               dangerouslySetInnerHTML={{ __html: svgContent }}
               style={{
                 boxShadow: "0 2px 8px rgba(0,0,0,0.15), 0 1px 3px rgba(0,0,0,0.1)",
