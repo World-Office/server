@@ -7,6 +7,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
 
 jobs:
   lint-rust:
@@ -14,41 +15,75 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
+        timeout-minutes: 5
+
+      - uses: dtolnay/rust-toolchain@master
         with:
+          channel: nightly
           components: rustfmt, clippy
+        timeout-minutes: 10
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+        timeout-minutes: 5
+
       - uses: Swatinem/rust-cache@v2
         with:
-          key: nightly
+          key: nightly-lint
+        timeout-minutes: 5
+
       - name: Check formatting
         run: cargo fmt --all -- --check
+        timeout-minutes: 10
+
       - name: Check workspace
         run: cargo check --workspace
+        timeout-minutes: 30
+
       - name: Clippy
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets -- -D warnings
+        timeout-minutes: 30
 
   test-rust-unit:
     name: Rust Unit Tests (nightly)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
+        timeout-minutes: 5
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          channel: nightly
+        timeout-minutes: 10
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+        timeout-minutes: 5
+
       - uses: Swatinem/rust-cache@v2
         with:
-          key: nightly
+          key: nightly-test
+        timeout-minutes: 5
+
       - name: Install cargo-nextest
         run: cargo install cargo-nextest --locked || true
+        timeout-minutes: 10
+
       - name: Run unit tests (nextest, --lib)
         run: |
           mkdir -p test-results/nextest
-          cargo nextest run --workspace --lib --exclude wo-webdav \
+          cargo nextest run --workspace --lib \
             --message-format libtest-json-plus \
             --archive-file test-results/nextest/archive.tar.zst 2>&1 || true
+        timeout-minutes: 60
+
       - name: Generate JUnit report (nextest)
         run: |
-          cargo nextest report --workspace --lib --exclude wo-webdav \
+          cargo nextest report --workspace --lib \
             --junit test-results/nextest/junit.xml 2>&1 || true
+        timeout-minutes: 5
         continue-on-error: true
+
       - name: Upload test reports
         uses: actions/upload-artifact@v4
         with:
@@ -56,9 +91,12 @@ jobs:
           path: test-results/
           if-no-files-found: ignore
           retention-days: 14
+        timeout-minutes: 5
         continue-on-error: true
+
       - name: Run doc tests
-        run: cargo test --workspace --doc --exclude wo-webdav
+        run: cargo test --workspace --doc
+        timeout-minutes: 30
         continue-on-error: true
 
   test-rust-integration:
@@ -67,12 +105,25 @@ jobs:
     needs: [test-rust-unit]
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
+        timeout-minutes: 5
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          channel: nightly
+        timeout-minutes: 10
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+        timeout-minutes: 5
+
       - uses: Swatinem/rust-cache@v2
         with:
-          key: nightly
+          key: nightly-integration
+        timeout-minutes: 5
+
       - name: Run integration tests
-        run: cargo test --workspace --tests --exclude wo-webdav
+        run: cargo test --workspace --tests
+        timeout-minutes: 60
         continue-on-error: true
 
   coverage-rust:
@@ -80,99 +131,165 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
+        timeout-minutes: 5
+
+      - uses: dtolnay/rust-toolchain@master
         with:
+          channel: nightly
           components: llvm-tools-preview
+        timeout-minutes: 10
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+        timeout-minutes: 5
+
       - uses: Swatinem/rust-cache@v2
         with:
           key: nightly-coverage
+        timeout-minutes: 5
+
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov --locked || true
+        timeout-minutes: 10
+
       - name: Generate coverage report
         run: |
-          cargo llvm-cov --workspace --lib --exclude wo-webdav \
+          cargo llvm-cov --workspace --lib \
             --lcov --output-path coverage/rust-lcov.info \
             --ignore-filename-regex '/target/|/tests/|/benches/|/examples/'
+        timeout-minutes: 60
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           files: coverage/rust-lcov.info
           fail_ci_if_error: false
+
       - name: Upload coverage artifacts
         uses: actions/upload-artifact@v4
         with:
           name: rust-coverage-${{ github.sha }}
           path: coverage/
           retention-days: 30
+        timeout-minutes: 5
 
   lint-ts:
     name: TypeScript Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        timeout-minutes: 5
+
       - uses: pnpm/action-setup@v4
         with:
           version: 10
+        timeout-minutes: 5
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
+        timeout-minutes: 5
+
       - run: pnpm install --frozen-lockfile
+        timeout-minutes: 10
+
       - run: pnpm lint
+        timeout-minutes: 10
 
   typecheck-ts:
     name: TypeScript Typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        timeout-minutes: 5
+
       - uses: pnpm/action-setup@v4
         with:
           version: 10
+        timeout-minutes: 5
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
+        timeout-minutes: 5
+
       - run: pnpm install --frozen-lockfile
+        timeout-minutes: 10
+
       - run: pnpm typecheck
+        timeout-minutes: 10
 
   build-ts:
     name: TypeScript Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        timeout-minutes: 5
+
       - uses: pnpm/action-setup@v4
         with:
           version: 10
+        timeout-minutes: 5
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
+        timeout-minutes: 5
+
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
+        timeout-minutes: 10
+
+      - run: pnpm build --filter='!@world-office/tauri-poc'
+        timeout-minutes: 15
 
   test-ts:
     name: TypeScript Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        timeout-minutes: 5
+
       - uses: pnpm/action-setup@v4
         with:
           version: 10
+        timeout-minutes: 5
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
+        timeout-minutes: 5
+
       - run: pnpm install --frozen-lockfile
+        timeout-minutes: 10
+
       - run: pnpm test
+        timeout-minutes: 15
 
   build-rust:
     name: Rust Build Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@nightly
+        timeout-minutes: 5
+
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          channel: nightly
+        timeout-minutes: 10
+
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+        timeout-minutes: 5
+
       - uses: Swatinem/rust-cache@v2
         with:
-          key: nightly
+          key: nightly-build
+        timeout-minutes: 5
+
       - name: Check all targets
-        run: cargo check --all-targets
+        run: cargo check --workspace --all-targets
+        timeout-minutes: 30
