@@ -1,5 +1,10 @@
+import type { CollabUser } from "@world-office/editor-stores";
+import {
+	detectWopiParams,
+	loadDocument,
+	putFile,
+} from "@world-office/wopi-client";
 import { makeAutoObservable } from "mobx";
-import { loadDocument, putFile, detectWopiParams } from "@world-office/wopi-client";
 import { DEFAULT_THEME } from "../lib/themes";
 import type {
 	AdvanceMode,
@@ -20,7 +25,6 @@ import type {
 	TransitionEffect,
 	ZoomLevel,
 } from "../types/presentation";
-import type { CollabUser } from "@world-office/editor-stores";
 import type {
 	ChartData,
 	ChartType,
@@ -82,16 +86,22 @@ export class PresentationStore {
 		this.isLoading = true;
 		this.isLoadingError = null;
 		try {
+			if (!this.wopiFileId || !this.wopiAccessToken) {
+				this.isLoadingError = "Missing WOPI connection details";
+				return;
+			}
 			const conn = {
-				wopiFileId: this.wopiFileId!,
-				wopiAccessToken: this.wopiAccessToken!,
+				wopiFileId: this.wopiFileId,
+				wopiAccessToken: this.wopiAccessToken,
 				docserverBase: this.docserverBase,
 			};
 			const { info, content } = await loadDocument(conn);
 
 			this.document = {
 				title: info.BaseFileName ?? "Untitled",
-				fileType: (info.BaseFileName?.split(".").pop() ?? "pptx") as "pptx" | "odp",
+				fileType: (info.BaseFileName?.split(".").pop() ?? "pptx") as
+					| "pptx"
+					| "odp",
 				info: { author: info.OwnerId, modified: info.Version },
 			};
 
@@ -126,8 +136,6 @@ export class PresentationStore {
 			};
 			await putFile(conn, this.buildDocumentBlob());
 			this.isModified = false;
-		} catch (err) {
-			throw err;
 		} finally {
 			this.isSaving = false;
 		}
@@ -152,7 +160,9 @@ export class PresentationStore {
 		const a = document.createElement("a");
 		a.href = url;
 		const baseName = this.document?.title?.replace(/\.[^.]+$/, "");
-		a.download = (baseName ? baseName + ".wo-presentation" : "presentation.wo-presentation");
+		a.download = baseName
+			? `${baseName}.wo-presentation`
+			: "presentation.wo-presentation";
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
@@ -904,7 +914,8 @@ export class PresentationStore {
 			.sort((a, b) => a.x - b.x);
 
 		const minX = shapes[0].x;
-		const maxRight = shapes[shapes.length - 1].x + shapes[shapes.length - 1].width;
+		const maxRight =
+			shapes[shapes.length - 1].x + shapes[shapes.length - 1].width;
 		const totalWidth = shapes.reduce((sum, s) => sum + s.width, 0);
 		const gap = (maxRight - minX - totalWidth) / (shapes.length - 1);
 
@@ -926,7 +937,8 @@ export class PresentationStore {
 			.sort((a, b) => a.y - b.y);
 
 		const minY = shapes[0].y;
-		const maxBottom = shapes[shapes.length - 1].y + shapes[shapes.length - 1].height;
+		const maxBottom =
+			shapes[shapes.length - 1].y + shapes[shapes.length - 1].height;
 		const totalHeight = shapes.reduce((sum, s) => sum + s.height, 0);
 		const gap = (maxBottom - minY - totalHeight) / (shapes.length - 1);
 
@@ -1125,7 +1137,11 @@ export class PresentationStore {
 	/* Collaboration */
 	currentUserId: string | null = null;
 	currentUserColor: string | null = null;
-	connectionState: "disconnected" | "connecting" | "connected" | "reconnecting" = "disconnected";
+	connectionState:
+		| "disconnected"
+		| "connecting"
+		| "connected"
+		| "reconnecting" = "disconnected";
 	connectionError: string | null = null;
 	retrySignal = 0;
 
