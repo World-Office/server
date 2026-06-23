@@ -20,7 +20,8 @@
     "@world-office/editor-common": "workspace:*",
     "@world-office/editor-stores": "workspace:*",
     "@world-office/sdk-bridge": "workspace:*",
-    "@world-office/i18n": "workspace:*"
+    "@world-office/i18n": "workspace:*",
+    "@world-office/wopi-client": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

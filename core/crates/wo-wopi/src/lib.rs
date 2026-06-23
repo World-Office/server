@@ -107,7 +107,7 @@ mod tests {
 
     #[test]
     fn test_wopi_error_into_response_io() {
-        let io_err = std::io::Error::new(std::io::ErrorKind::Other, "disk error");
+        let io_err = std::io::Error::other("disk error");
         let err = WopiError::Io(io_err);
         let resp = err.into_response();
         assert_eq!(resp.status(), StatusCode::INTERNAL_SERVER_ERROR);

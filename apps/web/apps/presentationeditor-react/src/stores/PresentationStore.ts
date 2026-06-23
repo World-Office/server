@@ -1,5 +1,5 @@
 import { makeAutoObservable } from "mobx";
-import { detectWopiParams, WopiClient } from "@world-office/wopi-client";
+import { loadDocument, putFile, detectWopiParams } from "@world-office/wopi-client";
 import { DEFAULT_THEME } from "../lib/themes";
 import type {
 	AdvanceMode,
@@ -87,7 +87,7 @@ export class PresentationStore {
 				wopiAccessToken: this.wopiAccessToken!,
 				docserverBase: this.docserverBase,
 			};
-			const { info, content } = await WopiClient.loadDocument(conn);
+			const { info, content } = await loadDocument(conn);
 
 			this.document = {
 				title: info.BaseFileName ?? "Untitled",
@@ -124,7 +124,7 @@ export class PresentationStore {
 				wopiAccessToken: this.wopiAccessToken,
 				docserverBase: this.docserverBase,
 			};
-			await WopiClient.putFile(conn, this.buildDocumentBlob());
+			await putFile(conn, this.buildDocumentBlob());
 			this.isModified = false;
 		} catch (err) {
 			throw err;

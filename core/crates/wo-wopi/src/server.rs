@@ -103,7 +103,7 @@ mod tests {
     use super::*;
     use crate::storage::FileSystemStorage;
     use axum::body::Body;
-    use axum::http::{Method, Request, StatusCode};
+    use axum::http::{Request, StatusCode};
     use std::sync::Arc;
     use tempfile::TempDir;
     use tower::ServiceExt;

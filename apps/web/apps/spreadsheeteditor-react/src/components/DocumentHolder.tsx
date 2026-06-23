@@ -1,7 +1,7 @@
 import { observer } from "mobx-react-lite"
 import { useEffect, useRef, useState } from "react"
 import { init, renderPage } from "../lib/wasm-renderer"
-import { WopiClient } from "@world-office/wopi-client"
+import { loadDocument } from "@world-office/wopi-client"
 import { spreadsheetStore } from "../stores/SpreadsheetStore"
 
 const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
@@ -39,7 +39,7 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
       try {
         const conn = spreadsheetStore.wopiConnection
         if (!conn) return
-        const { content } = await WopiClient.loadDocument({
+        const { content } = await loadDocument({
           wopiFileId: conn.wopiFileId,
           wopiAccessToken: conn.wopiAccessToken,
           docserverBase: conn.docserverBase,

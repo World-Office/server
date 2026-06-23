@@ -235,7 +235,7 @@ impl OoxmlSerializer {
         if let Some(ref master_id) = slide.master_id {
             xml.push_str(&format!(r#" sldMasterId="{}""#, master_id));
         }
-        xml.push_str(">");
+        xml.push('>');
 
         // spTree
         xml.push_str("\n  <p:spTree>");

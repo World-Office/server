@@ -672,9 +672,10 @@ pub struct ReflectionEffect {
 }
 
 /// Reflection direction.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ReflectionDirection {
     /// Mirror reflection.
+    #[default]
     #[serde(rename = "mirror")]
     Mirror,
     /// Fade downwards.
@@ -691,12 +692,6 @@ pub struct EffectList {
     pub glow: Option<GlowEffect>,
     /// Reflection effect.
     pub reflection: Option<ReflectionEffect>,
-}
-
-impl Default for ReflectionDirection {
-    fn default() -> Self {
-        Self::Mirror
-    }
 }
 
 /// 2D bounds in EMU units (1/914400 inch).

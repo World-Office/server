@@ -12378,7 +12378,7 @@ mod tests {
         // Verify it's a valid EPUB (ZIP)
         let cursor = std::io::Cursor::new(&epub_bytes);
         let archive = zip::ZipArchive::new(cursor).expect("EPUB is readable as ZIP");
-        assert!(archive.len() > 0, "EPUB ZIP has entries");
+        assert!(!archive.is_empty(), "EPUB ZIP has entries");
     }
 
     // ── Image Data URL helpers ────────────────────────────────────────

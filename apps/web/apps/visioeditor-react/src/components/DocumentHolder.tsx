@@ -1,7 +1,7 @@
 import { observer } from "mobx-react-lite"
 import { useEffect, useRef, useState } from "react"
 import { init, renderPage } from "../lib/wasm-renderer"
-import { WopiClient } from "@world-office/wopi-client"
+import { loadDocument } from "@world-office/wopi-client"
 import { visioStore } from "../stores/VisioStore"
 import { FlowchartCanvas } from "./FlowchartCanvas"
 
@@ -46,7 +46,7 @@ function VsdxCanvas() {
             }
           : null
         if (!conn) return
-        const { content } = await WopiClient.loadDocument({
+        const { content } = await loadDocument({
           wopiFileId: conn.wopiFileId!,
           wopiAccessToken: conn.wopiAccessToken!,
           docserverBase: conn.docserverBase,

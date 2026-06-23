@@ -10,7 +10,7 @@ import type {
   ZoomLevel,
 } from "../types/spreadsheet"
 import { ZOOM_LEVELS } from "../types/spreadsheet"
-import { WopiClient, detectWopiParams } from "@world-office/wopi-client"
+import { loadDocument, putFile, detectWopiParams } from "@world-office/wopi-client"
 import type { WopiConnection, WopiFileInfo } from "@world-office/wopi-client"
 
 const STORAGE_PREFIX = "se-"
@@ -302,7 +302,7 @@ export class SpreadsheetStore {
     this.isLoading = true
     this.isLoadingError = null
     try {
-      const { info, content } = await WopiClient.loadDocument(conn)
+      const { info, content } = await loadDocument(conn)
       this.wopiFileInfo = info
       this.lastLoadedContent = content
       this.document = {
@@ -326,7 +326,7 @@ export class SpreadsheetStore {
     this.isSaving = true
     try {
       const blob = await this.buildDocumentBlob()
-      await WopiClient.putFile(this.wopiConnection, blob)
+      await putFile(this.wopiConnection, blob)
       this.isModified = false
     } catch {
       this.exportAsDownload()
