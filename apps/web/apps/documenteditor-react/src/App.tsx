@@ -1,11 +1,11 @@
 import { useCollaboration } from "@world-office/collaboration-react"
 import { ThemeProvider } from "@world-office/design-system"
+import { useDocumentLoader } from "@world-office/wopi-client"
 import { useEffect, useMemo, useState } from "react"
 import { isDesktop, listenForMenuEvents, listenForUpdateEvents } from "./bridge"
 import { Viewport } from "./components/Viewport"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { usePlugins } from "./hooks/usePlugins"
-import { useDocumentLoader } from "@world-office/wopi-client"
 import { collabSendRef, collaborationStore, currentUser } from "./lib/collaboration"
 import { documentStore } from "./stores/DocumentStore"
 

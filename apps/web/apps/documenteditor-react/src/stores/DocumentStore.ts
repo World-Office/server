@@ -1,3 +1,10 @@
+import {
+  type WopiConnection,
+  type WopiFileInfo,
+  detectWopiParams,
+  loadDocument,
+  putFile,
+} from "@world-office/wopi-client"
 import { makeAutoObservable } from "mobx"
 import type {
   DocumentDocument,
@@ -9,13 +16,6 @@ import type {
   ZoomLevel,
 } from "../types/document"
 import { ZOOM_LEVELS } from "../types/document"
-import {
-  loadDocument,
-  putFile,
-  detectWopiParams,
-  type WopiConnection,
-  type WopiFileInfo,
-} from "@world-office/wopi-client"
 
 const STORAGE_PREFIX = "de-"
 
