@@ -48,7 +48,7 @@ export function PresentationCollaborationProvider(): null {
 		},
 		onPresentationState(state: PresentationStateData) {
 			const slides = state.slides.map((slide, index) => {
-				const shapes: ShapeData[] = slide.order
+				const shapes: ShapeData[] = slide.shape_order
 					.map((shapeId) => slide.shapes[shapeId])
 					.filter((s): s is ShapePayload => Boolean(s))
 					.map((sp) => ({
