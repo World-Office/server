@@ -81,7 +81,9 @@ impl TxtParser {
             }
             Encoding::Utf16Le => {
                 let utf16_data: Vec<u16> = raw_content
-                    .chunks_exact(2)
+                    .as_chunks::<2>()
+                    .0
+                    .iter()
                     .map(|chunk| u16::from_le_bytes([chunk[0], chunk[1]]))
                     .collect();
                 String::from_utf16(&utf16_data).map_err(|e| CoreError::Parse {
@@ -91,7 +93,9 @@ impl TxtParser {
             }
             Encoding::Utf16Be => {
                 let utf16_data: Vec<u16> = raw_content
-                    .chunks_exact(2)
+                    .as_chunks::<2>()
+                    .0
+                    .iter()
                     .map(|chunk| u16::from_be_bytes([chunk[0], chunk[1]]))
                     .collect();
                 String::from_utf16(&utf16_data).map_err(|e| CoreError::Parse {

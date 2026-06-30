@@ -407,7 +407,7 @@ fn read_utf16le_string(data: &[u8], offset: usize, byte_len: usize) -> String {
     let bytes = &data[offset..offset + byte_len];
     // Convert to u16 pairs and then to string
     let mut chars = Vec::new();
-    for chunk in bytes.chunks_exact(2) {
+    for chunk in bytes.as_chunks::<2>().0.iter() {
         let code_unit = u16::from_le_bytes([chunk[0], chunk[1]]);
         chars.push(code_unit);
     }
