@@ -242,7 +242,7 @@ impl RasterImage {
     pub fn from_rgba_bytes(width: u32, height: u32, data: &[u8]) -> Self {
         let pixel_count = (width as usize) * (height as usize);
         let mut pixels = Vec::with_capacity(pixel_count);
-        for chunk in data.chunks_exact(4) {
+        for chunk in data.as_chunks::<4>().0.iter() {
             pixels.push(Pixel::new(chunk[0], chunk[1], chunk[2], chunk[3]));
         }
         // Pad with transparent if data is short
