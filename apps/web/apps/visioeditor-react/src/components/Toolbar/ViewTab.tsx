@@ -3,8 +3,13 @@ import { flowchartStore } from "../../stores/FlowchartStore";
 import { visioStore } from "../../stores/VisioStore";
 import { ZOOM_LEVELS } from "../../types/visio";
 import { exportFlowchartAsSvg } from "../FlowchartCanvas";
+import type { MonacoCommand } from "./MonacoCommand";
 
-export function ViewTab(): JSX.Element {
+interface ViewTabProps {
+	onMonacoCommand: (command: MonacoCommand) => void;
+}
+
+export function ViewTab({ onMonacoCommand }: ViewTabProps): JSX.Element {
 	return (
 		<section
 			className="visio-viewtab-panel"
@@ -128,6 +133,34 @@ export function ViewTab(): JSX.Element {
 				>
 					Interface Theme
 				</button>
+			</div>
+
+			<div className="visio-viewtab-separator" />
+
+			<div className="visio-viewtab-group">
+				<div className="visio-viewtab-elset">
+					<button
+						type="button"
+						className="visio-viewtab-btn"
+						onClick={() => onMonacoCommand("toggleMinimap")}
+						title="Toggle code editor minimap (no-op when Monaco is not mounted)"
+					>
+						Toggle Minimap
+					</button>
+				</div>
+				<div className="visio-viewtab-elset">
+					<button
+						type="button"
+						className="visio-viewtab-btn"
+						onClick={() => onMonacoCommand("toggleWordWrap")}
+						title="Toggle code editor word wrap (no-op when Monaco is not mounted)"
+					>
+						Toggle Word Wrap
+					</button>
+				</div>
+			</div>
+			<div className="visio-viewtab-elset">
+				<span className="visio-viewtab-label">Code Editor</span>
 			</div>
 
 			<div className="visio-viewtab-separator visio-viewtab-separator-theme" />
