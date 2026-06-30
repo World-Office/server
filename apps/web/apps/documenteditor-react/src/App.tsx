@@ -1,8 +1,10 @@
 import { useCollaboration } from "@world-office/collaboration-react"
 import { ThemeProvider } from "@world-office/design-system"
 import { useDocumentLoader } from "@world-office/wopi-client"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { isDesktop, listenForMenuEvents, listenForUpdateEvents } from "./bridge"
+import { getActiveEditor } from "./components/MonacoEditor"
+import { type MonacoCommand, dispatchMonacoCommand } from "./components/Toolbar/MonacoCommand"
 import { Viewport } from "./components/Viewport"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { usePlugins } from "./hooks/usePlugins"
@@ -16,6 +18,10 @@ function generateUserId() {
 export function App() {
   useKeyboardShortcuts()
   usePlugins()
+
+  const handleMonacoCommand = useCallback((command: MonacoCommand) => {
+    dispatchMonacoCommand(command, getActiveEditor())
+  }, [])
 
   const loadState = useDocumentLoader({
     onLoad: () => documentStore.detectAndLoadWopi(),
@@ -213,6 +219,7 @@ export function App() {
         leftMenuVisible={documentStore.leftMenuVisible}
         rightMenuVisible={documentStore.rightMenuVisible}
         isCompactToolbar={documentStore.isCompactToolbar}
+        onMonacoCommand={handleMonacoCommand}
       />
     </ThemeProvider>
   )

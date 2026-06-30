@@ -1,5 +1,10 @@
 import { ThemeProvider } from "@world-office/design-system";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
+import { getActiveEditor } from "./components/MonacoEditor";
+import {
+	type MonacoCommand,
+	dispatchMonacoCommand,
+} from "./components/Toolbar/MonacoCommand";
 import { Viewport } from "./components/Viewport";
 import { useDocumentLoader } from "./hooks/useDocumentLoader";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
@@ -36,6 +41,10 @@ export function App() {
 	const loadState = useDocumentLoader();
 	// Trigger keyboard shortcut registration after mount
 	useKeyboardShortcuts();
+
+	const handleMonacoCommand = useCallback((command: MonacoCommand) => {
+		dispatchMonacoCommand(command, getActiveEditor());
+	}, []);
 
 	// Track document modifications so VisioStore.isModified stays in sync
 	const cleanupRef = useRef<(() => void) | null>(null);
@@ -76,6 +85,7 @@ export function App() {
 				statusbarVisible={visioStore.statusbarVisible}
 				leftMenuVisible={visioStore.leftMenuVisible}
 				isCompactToolbar={visioStore.isCompactToolbar}
+				onMonacoCommand={handleMonacoCommand}
 			/>
 		</ThemeProvider>
 	);

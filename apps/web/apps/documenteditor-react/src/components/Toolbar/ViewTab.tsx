@@ -1,8 +1,13 @@
 import { observer } from "mobx-react-lite"
 import { documentStore } from "../../stores/DocumentStore"
 import { ZOOM_LEVELS } from "../../types/document"
+import type { MonacoCommand } from "./MonacoCommand"
 
-const ObservedViewTab = observer(function ObservedViewTab() {
+interface ViewTabProps {
+  onMonacoCommand: (command: MonacoCommand) => void
+}
+
+const ObservedViewTab = observer(function ObservedViewTab({ onMonacoCommand }: ViewTabProps) {
   return (
     <section className="de-viewtab-panel" data-tab="view" role="tabpanel" aria-labelledby="view">
       {/* Show/Hide */}
@@ -69,19 +74,60 @@ const ObservedViewTab = observer(function ObservedViewTab() {
 
       <div className="de-viewtab-separator" />
 
+      <div className="de-viewtab-group">
+        <div className="de-viewtab-elset">
+          <span className="de-viewtab-label">Code Editor</span>
+        </div>
+        <div className="de-viewtab-elset">
+          <button
+            type="button"
+            className="de-viewtab-btn"
+            onClick={() => onMonacoCommand("toggleWordWrap")}
+            title="Toggle Word Wrap (Alt+Z)"
+          >
+            Toggle Word Wrap
+          </button>
+          <button
+            type="button"
+            className="de-viewtab-btn"
+            onClick={() => onMonacoCommand("toggleMinimap")}
+            title="Toggle Minimap"
+          >
+            Toggle Minimap
+          </button>
+        </div>
+      </div>
+
+      <div className="de-viewtab-separator" />
+
       {/* Views */}
       <div className="de-viewtab-group">
         <div className="de-viewtab-elset">
           <span className="de-viewtab-label">Views</span>
         </div>
         <div className="de-viewtab-elset">
-          <button type="button" className="de-viewtab-btn" title="Page View">
+          <button
+            type="button"
+            className="de-viewtab-btn"
+            disabled
+            title="Page View (not available in code editor)"
+          >
             Page
           </button>
-          <button type="button" className="de-viewtab-btn" title="Web View">
+          <button
+            type="button"
+            className="de-viewtab-btn"
+            disabled
+            title="Web View (not available in code editor)"
+          >
             Web
           </button>
-          <button type="button" className="de-viewtab-btn" title="Read Mode">
+          <button
+            type="button"
+            className="de-viewtab-btn"
+            disabled
+            title="Read Mode (not available in code editor)"
+          >
             Read
           </button>
         </div>
@@ -92,7 +138,12 @@ const ObservedViewTab = observer(function ObservedViewTab() {
       {/* Macros */}
       <div className="de-viewtab-group">
         <div className="de-viewtab-elset">
-          <button type="button" className="de-viewtab-btn" title="Macros">
+          <button
+            type="button"
+            className="de-viewtab-btn"
+            disabled
+            title="Macros (not yet implemented)"
+          >
             Macros
           </button>
         </div>

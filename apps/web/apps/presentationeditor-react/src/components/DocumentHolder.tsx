@@ -1,43 +1,29 @@
-import { observer } from "mobx-react-lite";
-import type { JSX } from "react";
-import { presentationStore } from "../stores/PresentationStore";
-import { SlideCanvas } from "./SlideCanvas";
+import { useState } from "react";
+import { MonacoEditor } from "./MonacoEditor";
 
-const ObservedDocumentHolder = observer(
-	function ObservedDocumentHolder(): JSX.Element {
-		const { currentSlide, totalSlides } = presentationStore;
-		const canPrev = currentSlide > 0;
-		const canNext = currentSlide < totalSlides - 1;
+export function DocumentHolder() {
+	const [content, setContent] = useState(
+		"// Presentation content will appear here",
+	);
 
-		return (
-			<div className="prese-document-holder">
-				<SlideCanvas />
-				<div className="prese-slide-nav">
-					<button
-						type="button"
-						className="prese-slide-nav-btn"
-						disabled={!canPrev}
-						onClick={() => presentationStore.setCurrentSlide(currentSlide - 1)}
-						aria-label="Previous slide"
-					>
-						‹ Prev
-					</button>
-					<span className="prese-slide-nav-label">
-						Slide {currentSlide + 1} of {totalSlides}
-					</span>
-					<button
-						type="button"
-						className="prese-slide-nav-btn"
-						disabled={!canNext}
-						onClick={() => presentationStore.setCurrentSlide(currentSlide + 1)}
-						aria-label="Next slide"
-					>
-						Next ›
-					</button>
-				</div>
-			</div>
-		);
-	},
-);
-
-export const DocumentHolder = ObservedDocumentHolder;
+	return (
+		<div
+			className="prese-document-holder"
+			style={{
+				display: "flex",
+				flexDirection: "column",
+				alignItems: "center",
+				overflow: "auto",
+				height: "100%",
+				backgroundColor: "#e8e8e8",
+			}}
+		>
+			<MonacoEditor
+				value={content}
+				onChange={setContent}
+				language="typescript"
+				editorType="presentation"
+			/>
+		</div>
+	);
+}

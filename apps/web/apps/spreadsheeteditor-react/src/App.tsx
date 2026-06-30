@@ -1,11 +1,20 @@
 import { ThemeProvider } from "@world-office/design-system";
 import { useDocumentLoader } from "@world-office/wopi-client";
+import { useCallback } from "react";
+import { getActiveEditor } from "./components/MonacoEditor";
+import {
+	type MonacoCommand,
+	dispatchMonacoCommand,
+} from "./components/Toolbar/MonacoCommand";
 import { Viewport } from "./components/Viewport";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { spreadsheetStore } from "./stores/SpreadsheetStore";
 
 export function App() {
 	useKeyboardShortcuts();
+	const handleMonacoCommand = useCallback((command: MonacoCommand) => {
+		dispatchMonacoCommand(command, getActiveEditor());
+	}, []);
 	const loadState = useDocumentLoader({
 		onLoad: () => spreadsheetStore.detectAndLoadWopi(),
 		isLoading: spreadsheetStore.isLoading,
@@ -70,6 +79,7 @@ export function App() {
 				leftMenuVisible={spreadsheetStore.leftMenuVisible}
 				rightMenuVisible={spreadsheetStore.rightMenuVisible}
 				isCompactToolbar={spreadsheetStore.isCompactToolbar}
+				onMonacoCommand={handleMonacoCommand}
 			/>
 		</ThemeProvider>
 	);
