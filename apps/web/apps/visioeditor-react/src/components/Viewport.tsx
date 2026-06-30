@@ -4,6 +4,7 @@ import { DocumentHolder } from "./DocumentHolder";
 import { FileMenu } from "./LeftMenu/FileMenu/FileMenu";
 import { LeftMenu } from "./LeftMenu/LeftMenu";
 import { StatusBar } from "./StatusBar/StatusBar";
+import type { MonacoCommand } from "./Toolbar/MonacoCommand";
 import { Toolbar } from "./Toolbar/Toolbar";
 
 interface ViewportProps {
@@ -11,6 +12,7 @@ interface ViewportProps {
 	statusbarVisible: boolean;
 	leftMenuVisible: boolean;
 	isCompactToolbar: boolean;
+	onMonacoCommand: (command: MonacoCommand) => void;
 }
 
 export function Viewport({
@@ -18,6 +20,7 @@ export function Viewport({
 	statusbarVisible,
 	leftMenuVisible,
 	isCompactToolbar,
+	onMonacoCommand,
 }: ViewportProps): ReactNode {
 	const toolbarHeight = isCompactToolbar
 		? "var(--wo-visio-toolbar-height-compact, 34px)"
@@ -42,7 +45,10 @@ export function Viewport({
 						style={{ height: toolbarHeight }}
 						role="toolbar"
 					>
-						<Toolbar isEdit={visioStore.mode?.isEdit ?? false} />
+						<Toolbar
+							isEdit={visioStore.mode?.isEdit ?? false}
+							onMonacoCommand={onMonacoCommand}
+						/>
 					</div>
 				)}
 
