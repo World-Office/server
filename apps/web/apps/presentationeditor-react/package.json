@@ -23,7 +23,8 @@
     "@world-office/i18n": "workspace:*",
     "@world-office/collaboration-client": "workspace:*",
     "@world-office/collaboration-react": "workspace:*",
-    "@world-office/wopi-client": "workspace:*"
+    "@world-office/wopi-client": "workspace:*",
+    "monaco-editor": "^0.52.2"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

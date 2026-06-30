@@ -5,9 +5,16 @@ import { DesignTab } from "./DesignTab";
 import { FileTab } from "./FileTab";
 import { HomeTab } from "./HomeTab";
 import { InsertTab } from "./InsertTab";
+import type { MonacoCommand } from "./MonacoCommand";
 import { TransitionsTab } from "./TransitionsTab";
 
-const ObservedToolbar = observer(function ObservedToolbar() {
+interface ToolbarProps {
+	onMonacoCommand: (command: MonacoCommand) => void;
+}
+
+const ObservedToolbar = observer(function ObservedToolbar({
+	onMonacoCommand,
+}: ToolbarProps) {
 	const isEditMode = presentationStore.isEditMode;
 
 	return (
@@ -15,7 +22,7 @@ const ObservedToolbar = observer(function ObservedToolbar() {
 			<div className="prese-toolbar-tabs">
 				<div className="prese-toolbar-extra-left" />
 				<FileTab />
-				<HomeTab />
+				<HomeTab onMonacoCommand={onMonacoCommand} />
 				{isEditMode && <InsertTab />}
 				{isEditMode && <DesignTab />}
 				<TransitionsTab />
