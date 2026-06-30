@@ -2,8 +2,15 @@ import { observer } from "mobx-react-lite";
 import { useEffect, useRef, useState } from "react";
 import { presentationStore } from "../../stores/PresentationStore";
 import { ZOOM_LEVELS } from "../../types/presentation";
+import type { MonacoCommand } from "./MonacoCommand";
 
-const ObservedHomeTab = observer(function ObservedHomeTab() {
+interface HomeTabProps {
+	onMonacoCommand: (command: MonacoCommand) => void;
+}
+
+const ObservedHomeTab = observer(function ObservedHomeTab({
+	onMonacoCommand,
+}: HomeTabProps) {
 	const [arrangeOpen, setArrangeOpen] = useState(false);
 	const arrangeRef = useRef<HTMLDivElement>(null);
 
@@ -56,27 +63,24 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						onClick={() => presentationStore.cutShape()}
+						onClick={() => onMonacoCommand("cut")}
 						title="Cut"
-						disabled={presentationStore.selectedShapeIds.length === 0}
 					>
 						Cut
 					</button>
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						onClick={() => presentationStore.copyShape()}
+						onClick={() => onMonacoCommand("copy")}
 						title="Copy"
-						disabled={presentationStore.selectedShapeIds.length === 0}
 					>
 						Copy
 					</button>
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						onClick={() => presentationStore.pasteShape()}
+						onClick={() => onMonacoCommand("paste")}
 						title="Paste"
-						disabled={presentationStore.clipboardShapes.length === 0}
 					>
 						Paste
 					</button>
@@ -147,19 +151,35 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 			{/* Font */}
 			<div className="prese-hometab-group">
 				<div className="prese-hometab-elset">
-					<button type="button" className="prese-hometab-btn" title="Bold">
+					<button
+						type="button"
+						className="prese-hometab-btn"
+						disabled
+						title="Bold (not available in code editor)"
+					>
 						B
 					</button>
-					<button type="button" className="prese-hometab-btn" title="Italic">
+					<button
+						type="button"
+						className="prese-hometab-btn"
+						disabled
+						title="Italic (not available in code editor)"
+					>
 						I
 					</button>
-					<button type="button" className="prese-hometab-btn" title="Underline">
+					<button
+						type="button"
+						className="prese-hometab-btn"
+						disabled
+						title="Underline (not available in code editor)"
+					>
 						U
 					</button>
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Strikethrough"
+						disabled
+						title="Strikethrough (not available in code editor)"
 					>
 						S
 					</button>
@@ -168,14 +188,16 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Increase Font Size"
+						disabled
+						title="Increase Font Size (not available in code editor)"
 					>
 						A+
 					</button>
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Decrease Font Size"
+						disabled
+						title="Decrease Font Size (not available in code editor)"
 					>
 						A-
 					</button>
@@ -187,14 +209,16 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Text Color"
+						disabled
+						title="Text Color (not available in code editor)"
 					>
 						A
 					</button>
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Text Highlight Color"
+						disabled
+						title="Text Highlight Color (not available in code editor)"
 					>
 						Ab
 					</button>
@@ -206,10 +230,20 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 			{/* Paragraph */}
 			<div className="prese-hometab-group">
 				<div className="prese-hometab-elset">
-					<button type="button" className="prese-hometab-btn" title="Bullets">
+					<button
+						type="button"
+						className="prese-hometab-btn"
+						disabled
+						title="Bullets (not available in code editor)"
+					>
 						Bullets
 					</button>
-					<button type="button" className="prese-hometab-btn" title="Numbering">
+					<button
+						type="button"
+						className="prese-hometab-btn"
+						disabled
+						title="Numbering (not available in code editor)"
+					>
 						Numbering
 					</button>
 				</div>
@@ -217,24 +251,24 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Align Left"
-						onClick={() => presentationStore.alignLeft()}
+						disabled
+						title="Align Left (not available in code editor)"
 					>
 						Align Left
 					</button>
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Align Center"
-						onClick={() => presentationStore.alignCenter()}
+						disabled
+						title="Align Center (not available in code editor)"
 					>
 						Align Center
 					</button>
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Align Right"
-						onClick={() => presentationStore.alignRight()}
+						disabled
+						title="Align Right (not available in code editor)"
 					>
 						Align Right
 					</button>
@@ -243,24 +277,24 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Align Top"
-						onClick={() => presentationStore.alignTop()}
+						disabled
+						title="Align Top (not available in code editor)"
 					>
 						Align Top
 					</button>
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Align Middle"
-						onClick={() => presentationStore.alignMiddle()}
+						disabled
+						title="Align Middle (not available in code editor)"
 					>
 						Align Middle
 					</button>
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Align Bottom"
-						onClick={() => presentationStore.alignBottom()}
+						disabled
+						title="Align Bottom (not available in code editor)"
 					>
 						Align Bottom
 					</button>
@@ -269,16 +303,16 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Distribute Horizontally"
-						onClick={() => presentationStore.distributeHorizontally()}
+						disabled
+						title="Distribute Horizontally (not available in code editor)"
 					>
 						Distribute H
 					</button>
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Distribute Vertically"
-						onClick={() => presentationStore.distributeVertically()}
+						disabled
+						title="Distribute Vertically (not available in code editor)"
 					>
 						Distribute V
 					</button>
@@ -287,14 +321,16 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Decrease Indent"
+						disabled
+						title="Decrease Indent (not available in code editor)"
 					>
 						Decrease Indent
 					</button>
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Increase Indent"
+						disabled
+						title="Increase Indent (not available in code editor)"
 					>
 						Increase Indent
 					</button>
@@ -303,7 +339,8 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Line Spacing"
+						disabled
+						title="Line Spacing (not available in code editor)"
 					>
 						Line Spacing
 					</button>
@@ -312,7 +349,8 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Text Direction"
+						disabled
+						title="Text Direction (not available in code editor)"
 					>
 						Text Direction
 					</button>
@@ -324,7 +362,12 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 			{/* Drawing */}
 			<div className="prese-hometab-group">
 				<div className="prese-hometab-elset">
-					<button type="button" className="prese-hometab-btn" title="Shapes">
+					<button
+						type="button"
+						className="prese-hometab-btn"
+						disabled
+						title="Shapes (not available in code editor)"
+					>
 						Shapes
 					</button>
 				</div>
@@ -336,196 +379,18 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Arrange"
-						onClick={() => setArrangeOpen(!arrangeOpen)}
+						disabled
+						title="Arrange (not available in code editor)"
 					>
 						Arrange ▾
 					</button>
-					{arrangeOpen && (
-						<div
-							className="prese-hometab-arrange-dropdown"
-							style={{
-								position: "absolute",
-								top: "100%",
-								left: 0,
-								zIndex: 2000,
-								background: "white",
-								border: "1px solid #ccc",
-								borderRadius: "4px",
-								boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
-								minWidth: 140,
-								padding: "4px 0",
-							}}
-						>
-							<button
-								type="button"
-								className="prese-hometab-arrange-item"
-								style={{
-									display: "block",
-									width: "100%",
-									padding: "6px 12px",
-									border: "none",
-									background: "none",
-									cursor: "pointer",
-									textAlign: "left",
-									fontSize: 13,
-								}}
-								onClick={() => {
-									presentationStore.bringForwardSelected();
-									setArrangeOpen(false);
-								}}
-								disabled={presentationStore.selectedShapeIds.length === 0}
-							>
-								Bring Forward
-							</button>
-							<button
-								type="button"
-								className="prese-hometab-arrange-item"
-								style={{
-									display: "block",
-									width: "100%",
-									padding: "6px 12px",
-									border: "none",
-									background: "none",
-									cursor: "pointer",
-									textAlign: "left",
-									fontSize: 13,
-								}}
-								onClick={() => {
-									presentationStore.sendBackwardSelected();
-									setArrangeOpen(false);
-								}}
-								disabled={presentationStore.selectedShapeIds.length === 0}
-							>
-								Send Backward
-							</button>
-							<div
-								style={{ height: 1, background: "#e0e0e0", margin: "4px 0" }}
-							/>
-							<button
-								type="button"
-								className="prese-hometab-arrange-item"
-								style={{
-									display: "block",
-									width: "100%",
-									padding: "6px 12px",
-									border: "none",
-									background: "none",
-									cursor: "pointer",
-									textAlign: "left",
-									fontSize: 13,
-								}}
-								onClick={() => {
-									presentationStore.bringToFrontSelected();
-									setArrangeOpen(false);
-								}}
-								disabled={presentationStore.selectedShapeIds.length === 0}
-							>
-								Bring to Front
-							</button>
-							<button
-								type="button"
-								className="prese-hometab-arrange-item"
-								style={{
-									display: "block",
-									width: "100%",
-									padding: "6px 12px",
-									border: "none",
-									background: "none",
-									cursor: "pointer",
-									textAlign: "left",
-									fontSize: 13,
-								}}
-								onClick={() => {
-									presentationStore.sendToBackSelected();
-									setArrangeOpen(false);
-								}}
-								disabled={presentationStore.selectedShapeIds.length === 0}
-							>
-								Send to Back
-							</button>
-							<div
-								style={{ height: 1, background: "#e0e0e0", margin: "4px 0" }}
-							/>
-							{(
-								["left", "center", "right", "top", "middle", "bottom"] as const
-							).map((align) => (
-								<button
-									key={align}
-									type="button"
-									className="prese-hometab-arrange-item"
-									style={{
-										display: "block",
-										width: "100%",
-										padding: "6px 12px",
-										border: "none",
-										background: "none",
-										cursor: "pointer",
-										textAlign: "left",
-										fontSize: 13,
-									}}
-									onClick={() => {
-										presentationStore.alignSelectedShapes(align);
-										setArrangeOpen(false);
-									}}
-									disabled={presentationStore.selectedShapeIds.length === 0}
-								>
-									Align {align.charAt(0).toUpperCase() + align.slice(1)}
-								</button>
-							))}
-							<div
-								style={{ height: 1, background: "#e0e0e0", margin: "4px 0" }}
-							/>
-							<button
-								type="button"
-								className="prese-hometab-arrange-item"
-								style={{
-									display: "block",
-									width: "100%",
-									padding: "6px 12px",
-									border: "none",
-									background: "none",
-									cursor: "pointer",
-									textAlign: "left",
-									fontSize: 13,
-								}}
-								onClick={() => {
-									presentationStore.groupSelected();
-									setArrangeOpen(false);
-								}}
-								disabled={presentationStore.selectedShapeIds.length < 2}
-							>
-								Group
-							</button>
-							<button
-								type="button"
-								className="prese-hometab-arrange-item"
-								style={{
-									display: "block",
-									width: "100%",
-									padding: "6px 12px",
-									border: "none",
-									background: "none",
-									cursor: "pointer",
-									textAlign: "left",
-									fontSize: 13,
-								}}
-								onClick={() => {
-									presentationStore.ungroupSelected();
-									setArrangeOpen(false);
-								}}
-								disabled={presentationStore.selectedShapeIds.length === 0}
-							>
-								Ungroup
-							</button>
-						</div>
-					)}
 				</div>
 				<div className="prese-hometab-elset">
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						title="Quick Styles"
+						disabled
+						title="Quick Styles (not available in code editor)"
 					>
 						Quick Styles
 					</button>
@@ -534,7 +399,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						onClick={() => presentationStore.selectAllShapes()}
+						onClick={() => onMonacoCommand("selectAll")}
 						title="Select All (Ctrl+A)"
 					>
 						Select All
@@ -547,10 +412,34 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						onClick={() => presentationStore.startPresentation()}
-						title="Start Slide Show (F5)"
+						disabled
+						title="Start Slide Show (not available in code editor)"
 					>
 						▶ Start Slide Show
+					</button>
+				</div>
+			</div>
+
+			<div className="prese-hometab-separator" />
+
+			{/* Editing */}
+			<div className="prese-hometab-group">
+				<div className="prese-hometab-elset">
+					<button
+						type="button"
+						className="prese-hometab-btn"
+						onClick={() => onMonacoCommand("find")}
+						title="Find"
+					>
+						Find
+					</button>
+					<button
+						type="button"
+						className="prese-hometab-btn"
+						onClick={() => onMonacoCommand("replace")}
+						title="Replace"
+					>
+						Replace
 					</button>
 				</div>
 			</div>
