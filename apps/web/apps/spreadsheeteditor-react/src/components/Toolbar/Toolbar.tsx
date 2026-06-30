@@ -6,8 +6,15 @@ import { FormulaTab } from "./FormulaTab";
 import { HomeTab } from "./HomeTab";
 import { InsertTab } from "./InsertTab";
 import { LayoutTab } from "./LayoutTab";
+import type { MonacoCommand } from "./MonacoCommand";
 
-const ObservedToolbar = observer(function ObservedToolbar() {
+interface ToolbarProps {
+	onMonacoCommand: (command: MonacoCommand) => void;
+}
+
+const ObservedToolbar = observer(function ObservedToolbar({
+	onMonacoCommand,
+}: ToolbarProps) {
 	const isEditMode = spreadsheetStore.isEditMode;
 	const isTableSelected = false; // Placeholder for conditional DataTableTab
 
@@ -16,7 +23,7 @@ const ObservedToolbar = observer(function ObservedToolbar() {
 			<div className="se-toolbar-tabs">
 				<div className="se-toolbar-extra-left" />
 				<FileTab />
-				<HomeTab />
+				<HomeTab onMonacoCommand={onMonacoCommand} />
 				{isEditMode && <InsertTab />}
 				{isEditMode && <LayoutTab />}
 				<FormulaTab />
