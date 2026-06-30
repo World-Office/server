@@ -6,6 +6,7 @@ import { LeftMenu } from "./LeftMenu/LeftMenu"
 import { OfflineBadge } from "./OfflineBadge"
 import { RightMenu } from "./RightMenu/RightMenu"
 import { StatusBar } from "./StatusBar/StatusBar"
+import type { MonacoCommand } from "./Toolbar/MonacoCommand"
 import { Toolbar } from "./Toolbar/Toolbar"
 
 interface ViewportProps {
@@ -14,6 +15,7 @@ interface ViewportProps {
   leftMenuVisible: boolean
   rightMenuVisible: boolean
   isCompactToolbar: boolean
+  onMonacoCommand: (command: MonacoCommand) => void
 }
 
 export function Viewport({
@@ -22,6 +24,7 @@ export function Viewport({
   leftMenuVisible,
   rightMenuVisible,
   isCompactToolbar,
+  onMonacoCommand,
 }: ViewportProps): ReactNode {
   const toolbarHeight = isCompactToolbar
     ? "var(--wo-de-toolbar-height-compact, 34px)"
@@ -43,7 +46,7 @@ export function Viewport({
         {/* Toolbar row */}
         {toolbarVisible && (
           <div className="de-viewport-toolbar" style={{ height: toolbarHeight }} role="toolbar">
-            <Toolbar />
+            <Toolbar onMonacoCommand={onMonacoCommand} />
           </div>
         )}
 
