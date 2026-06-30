@@ -78,6 +78,7 @@ const config = loadConfig();
 
 // Export derived values for convenience
 config.OCIS_WOPI_SRC = `https://${config.OCIS_DOMAIN}`;
+config.DOCUMENT_SERVER_PUBLIC_URL = `https://${config.DOCUMENT_SERVER_DOMAIN}`;
 config.DOCUMENT_SERVER_INTERNAL_URL = `http://documentserver:${config.DOCUMENT_SERVER_INTERNAL_PORT}`;
 config.OCIS_INTERNAL_URL = `http://ocis:${config.OCIS_INTERNAL_PORT}`;
 config.COLLABORATION_APP_ADDR = config.DOCUMENT_SERVER_INTERNAL_URL;

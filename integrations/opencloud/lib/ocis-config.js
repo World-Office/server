@@ -33,7 +33,7 @@ function generateWebUIConfig() {
             'vsdx', 'vssx', 'vstx', 'vsdm', 'vssm', 'vstm'
           ],
           handler: {
-            url: `${config.OCIS_WOPI_SRC}/wopi`,
+            url: `${config.DOCUMENT_SERVER_PUBLIC_URL}/wopi`,
             openNewTab: true,
             hasMenuEntry: true
           }
@@ -142,7 +142,7 @@ function getOcisEnvVars() {
     OCIS_LOG_PRETTY: 'true',
 
     // Collaboration (WOPI)
-    COLLABORATION_WOPI_SRC: config.OCIS_WOPI_SRC,
+    COLLABORATION_WOPI_SRC: config.DOCUMENT_SERVER_PUBLIC_URL,
     COLLABORATION_APP_ADDR: config.COLLABORATION_APP_ADDR,
     COLLABORATION_APP_NAME: config.COLLABORATION_APP_NAME
   };
