@@ -13,6 +13,10 @@ pub struct DocServerConfig {
     pub jwt_secret: String,
     /// WOPI host URL to proxy requests to (env: WOPI_HOST_URL, default: "http://ocis:9200").
     pub wopi_host_url: String,
+    /// Public URL exposed to the browser (env: DOCSERVER_PUBLIC_URL).
+    /// Used in the WOPI discovery XML so the OpenCloud Web UI frames
+    /// the correct origin (must be in the OCIS CSP frame-src allowlist).
+    pub public_url: String,
     /// Directory containing the React editor UI build (env: EDITOR_UI_DIR, default: "./editor-ui").
     pub editor_ui_dir: String,
     /// Local data directory (env: DOCSERVER_DATA_DIR, default: "./data").
@@ -35,6 +39,8 @@ impl DocServerConfig {
             wopi_host_url: env::var("WOPI_HOST")
                 .or_else(|_| env::var("WOPI_HOST_URL"))
                 .unwrap_or_else(|_| "http://ocis:9200".into()),
+            public_url: env::var("DOCSERVER_PUBLIC_URL")
+                .unwrap_or_else(|_| "http://localhost:8080".into()),
             editor_ui_dir: env::var("EDITOR_UI_DIR").unwrap_or_else(|_| "./editor-ui".into()),
             data_dir: env::var("DOCSERVER_DATA_DIR").unwrap_or_else(|_| "./data".into()),
         }
