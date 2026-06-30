@@ -1,8 +1,13 @@
 import { observer } from "mobx-react-lite"
 import { pdfStore } from "../../stores/PdfStore"
 import { ZOOM_LEVELS } from "../../types/pdf"
+import type { MonacoCommand } from "./MonacoCommand"
 
-const ObservedViewTab = observer(function ObservedViewTab() {
+interface ViewTabProps {
+  onMonacoCommand: (command: MonacoCommand) => void
+}
+
+const ObservedViewTab = observer(function ObservedViewTab({ onMonacoCommand }: ViewTabProps) {
   return (
     <section className="pdf-viewtab-panel" data-tab="view" role="tabpanel" aria-labelledby="view">
       <div className="pdf-viewtab-group">
@@ -99,6 +104,32 @@ const ObservedViewTab = observer(function ObservedViewTab() {
             />
             Right Panel
           </label>
+        </div>
+      </div>
+
+      <div className="pdf-viewtab-separator" />
+
+      <div className="pdf-viewtab-group">
+        <div className="pdf-viewtab-elset">
+          <span className="pdf-viewtab-label">Code Editor</span>
+        </div>
+        <div className="pdf-viewtab-elset">
+          <button
+            type="button"
+            className="pdf-viewtab-btn"
+            onClick={() => onMonacoCommand("toggleWordWrap")}
+            title="Toggle Word Wrap (Alt+Z)"
+          >
+            Toggle Word Wrap
+          </button>
+          <button
+            type="button"
+            className="pdf-viewtab-btn"
+            onClick={() => onMonacoCommand("toggleMinimap")}
+            title="Toggle Minimap"
+          >
+            Toggle Minimap
+          </button>
         </div>
       </div>
     </section>

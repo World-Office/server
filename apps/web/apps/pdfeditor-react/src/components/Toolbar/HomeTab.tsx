@@ -1,8 +1,13 @@
 import { observer } from "mobx-react-lite"
 import { pdfStore } from "../../stores/PdfStore"
 import { ZOOM_LEVELS } from "../../types/pdf"
+import type { MonacoCommand } from "./MonacoCommand"
 
-const ObservedHomeTab = observer(function ObservedHomeTab() {
+interface HomeTabProps {
+  onMonacoCommand: (command: MonacoCommand) => void
+}
+
+const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: HomeTabProps) {
   function goToFirstPage() {
     pdfStore.setCurrentPage(0)
   }
@@ -147,6 +152,70 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
             title="Hand Tool"
           >
             Hand
+          </button>
+        </div>
+      </div>
+
+      <div className="pdf-hometab-separator" />
+
+      {/* Clipboard */}
+      <div className="pdf-hometab-group">
+        <div className="pdf-hometab-elset">
+          <button
+            type="button"
+            className="pdf-hometab-btn"
+            onClick={() => onMonacoCommand("cut")}
+            title="Cut"
+          >
+            Cut
+          </button>
+          <button
+            type="button"
+            className="pdf-hometab-btn"
+            onClick={() => onMonacoCommand("copy")}
+            title="Copy"
+          >
+            Copy
+          </button>
+          <button
+            type="button"
+            className="pdf-hometab-btn"
+            onClick={() => onMonacoCommand("paste")}
+            title="Paste"
+          >
+            Paste
+          </button>
+        </div>
+      </div>
+
+      <div className="pdf-hometab-separator" />
+
+      {/* Editing */}
+      <div className="pdf-hometab-group">
+        <div className="pdf-hometab-elset">
+          <button
+            type="button"
+            className="pdf-hometab-btn"
+            onClick={() => onMonacoCommand("find")}
+            title="Find"
+          >
+            Find
+          </button>
+          <button
+            type="button"
+            className="pdf-hometab-btn"
+            onClick={() => onMonacoCommand("replace")}
+            title="Replace"
+          >
+            Replace
+          </button>
+          <button
+            type="button"
+            className="pdf-hometab-btn"
+            onClick={() => onMonacoCommand("selectAll")}
+            title="Select All"
+          >
+            Select All
           </button>
         </div>
       </div>
