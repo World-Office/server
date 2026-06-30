@@ -1,11 +1,19 @@
 import { ThemeProvider } from "@world-office/design-system"
 import { useDocumentLoader } from "@world-office/wopi-client"
+import { useCallback } from "react"
+import { getActiveEditor } from "./components/MonacoEditor"
+import { type MonacoCommand, dispatchMonacoCommand } from "./components/Toolbar/MonacoCommand"
 import { Viewport } from "./components/Viewport"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { pdfStore } from "./stores/PdfStore"
 
 export function App() {
   useKeyboardShortcuts()
+
+  const handleMonacoCommand = useCallback((command: MonacoCommand) => {
+    dispatchMonacoCommand(command, getActiveEditor())
+  }, [])
+
   const loadState = useDocumentLoader({
     onLoad: () => pdfStore.detectAndLoadWopi(),
     isLoading: pdfStore.isLoading,
@@ -59,6 +67,7 @@ export function App() {
         leftMenuVisible={pdfStore.leftMenuVisible}
         rightMenuVisible={pdfStore.rightMenuVisible}
         isCompactToolbar={pdfStore.isCompactToolbar}
+        onMonacoCommand={handleMonacoCommand}
       />
     </ThemeProvider>
   )

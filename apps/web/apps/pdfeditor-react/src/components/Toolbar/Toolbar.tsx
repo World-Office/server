@@ -5,10 +5,15 @@ import { FileTab } from "./FileTab"
 import { FormsTab } from "./FormsTab"
 import { HomeTab } from "./HomeTab"
 import { InsertTab } from "./InsertTab"
+import type { MonacoCommand } from "./MonacoCommand"
 import { RedactTab } from "./RedactTab"
 import { ViewTab } from "./ViewTab"
 
-const ObservedToolbar = observer(function ObservedToolbar() {
+interface ToolbarProps {
+  onMonacoCommand: (command: MonacoCommand) => void
+}
+
+const ObservedToolbar = observer(function ObservedToolbar({ onMonacoCommand }: ToolbarProps) {
   const isEditMode = pdfStore.isEditMode
 
   return (
@@ -16,12 +21,12 @@ const ObservedToolbar = observer(function ObservedToolbar() {
       <div className="pdf-toolbar-tabs">
         <div className="pdf-toolbar-extra-left" />
         <FileTab />
-        <HomeTab />
+        <HomeTab onMonacoCommand={onMonacoCommand} />
         <CommentTab />
         {isEditMode && <InsertTab />}
         {isEditMode && <RedactTab />}
         <FormsTab />
-        <ViewTab />
+        <ViewTab onMonacoCommand={onMonacoCommand} />
         <div className="pdf-toolbar-extra-right" />
       </div>
       <section className="pdf-toolbar-controls" role="tabpanel">
