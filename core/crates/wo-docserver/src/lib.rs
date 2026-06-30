@@ -32,7 +32,10 @@ pub struct AppState {
 impl AppState {
     /// Build application state from configuration.
     pub fn new(config: DocServerConfig) -> Self {
-        let wopi_client = WopiClient::new(config.wopi_host_url.clone());
+        let wopi_client = WopiClient::new(
+            config.wopi_host_url.clone(),
+            config.public_url.clone(),
+        );
         Self {
             config,
             wopi_client,
@@ -345,6 +348,7 @@ mod tests {
             port: 0,
             jwt_secret: "test-secret".into(),
             wopi_host_url: "http://localhost:9999".into(),
+            public_url: "http://localhost:9999".into(),
             editor_ui_dir: "./nonexistent-ui".into(),
             data_dir: "./test-data".into(),
         }
