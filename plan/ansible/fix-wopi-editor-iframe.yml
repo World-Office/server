@@ -1,0 +1,113 @@
+# fix-wopi-editor-iframe.yml
+# Fixes the WOPI editor iframe URL in the live OpenCloud configuration
+# so the editor opens at the public document server URL (not the
+# internal container hostname that the OCIS Content Security Policy
+# blocks).
+#
+# Background:
+#   OCIS ships with a CSP that allows framing only from a small set
+#   of public origins. When the OpenCloud deployment was configured
+#   with COLLABORATION_WOPI_SRC pointing at an internal hostname
+#   (e.g. http://localhost:8080), the OpenCloud Web UI emits an
+#   <iframe> to that internal URL and the browser blocks the request
+#   with:
+#
+#     Framing 'http://localhost:8080/' violates the following Content
+#     Security Policy directive: "frame-src 'self' blob:
+#     https://editor.cloud.graphwiz.ai ..."
+#
+#   This playbook rewrites the WOPI URL in the live OpenCloud config
+#   to the public document server URL and restarts the affected
+#   containers.
+#
+# Usage:
+#   ansible-playbook -i inventory/production fix-wopi-editor-iframe.yml
+#
+# Required vars (set in inventory/group_vars or via -e):
+#   document_server_public_url - e.g. https://editor.cloud.graphwiz.ai
+#   opencloud_config_path      - e.g. /etc/ocis/opencloud.yaml (or the
+#                                YAML/JSON the running OpenCloud was
+#                                started with; can be auto-discovered)
+#   opencloud_containers       - list of OpenCloud container names whose
+#                                COLLABORATION_WOPI_SRC env var needs
+#                                to be updated
+---
+- name: Fix WOPI editor iframe URL on production OpenCloud
+  hosts: opencloud
+  become: yes
+  vars:
+    opencloud_containers:
+      - opencloud
+      - opencloud-collaboration
+    document_server_public_url: "https://editor.cloud.graphwiz.ai"
+
+  tasks:
+    - name: Locate the live OpenCloud config file
+      ansible.builtin.find:
+        paths:
+          - /etc/ocis
+          - /etc/opencloud
+          - /opt/opencloud
+          - /opt/world-office/opencloud
+          - "{{ opencloud_config_path | default('') }}"
+        patterns:
+          - "opencloud.yaml"
+          - "ocis.yaml"
+          - "*.env"
+        recurse: true
+      register: found_configs
+
+    - name: Report discovered OpenCloud config files
+      ansible.builtin.debug:
+        msg: "Found OpenCloud configs: {{ found_configs.files | map(attribute='path') | list }}"
+
+    - name: Patch COLLABORATION_WOPI_SRC in discovered configs
+      ansible.builtin.replace:
+        path: "{{ item.path }}"
+        regexp: 'COLLABORATION_WOPI_SRC=(?:https?://)?[\w.\-:]+/?'
+        replace: "COLLABORATION_WOPI_SRC={{ document_server_public_url }}"
+      loop: "{{ found_configs.files }}"
+      when: found_configs.files | length > 0
+      loop_control:
+        label: "{{ item.path }}"
+
+    - name: Patch WOPISrc/app_url lines in YAML configs
+      ansible.builtin.replace:
+        path: "{{ item.path }}"
+        regexp: '(?im)^\s*(?:wopi_url|app_url|WOPISrc)\s*[:=]\s*["'']?(?:https?://)?[\w.\-:]+/?'
+        replace: "\\1: {{ document_server_public_url }}"
+      loop: "{{ found_configs.files }}"
+      when:
+        - found_configs.files | length > 0
+        - item.path is regex('\\.ya?ml$')
+      loop_control:
+        label: "{{ item.path }}"
+      failed_when: false
+
+    - name: Update COLLABORATION_WOPI_SRC env on the running OpenCloud containers
+      community.docker.docker_container_exec:
+        container: "{{ item }}"
+        command: |
+          sh -c 'sed -i "s|^COLLABORATION_WOPI_SRC=.*|COLLABORATION_WOPI_SRC={{ document_server_public_url }}|" /etc/ocis/.env 2>/dev/null; echo done'
+      loop: "{{ opencloud_containers }}"
+      failed_when: false
+
+    - name: Restart the OpenCloud collaboration service so the new URL takes effect
+      community.docker.docker_container:
+        name: "{{ item }}"
+        state: started
+        restart: yes
+      loop: "{{ opencloud_containers }}"
+      failed_when: false
+
+    - name: Wait for OpenCloud to be reachable
+      ansible.builtin.uri:
+        url: "https://{{ document_server_public_url | urlsplit('hostname') }}/"
+        method: GET
+        status_code: 200
+        validate_certs: true
+      register: healthcheck
+      retries: 12
+      delay: 5
+      until: healthcheck.status == 200
+      delegate_to: localhost
