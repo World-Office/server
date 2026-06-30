@@ -21,7 +21,8 @@
     "@world-office/editor-stores": "workspace:*",
     "@world-office/wopi-client": "workspace:*",
     "@world-office/sdk-bridge": "workspace:*",
-    "@world-office/i18n": "workspace:*"
+    "@world-office/i18n": "workspace:*",
+    "monaco-editor": "^0.52.2"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
