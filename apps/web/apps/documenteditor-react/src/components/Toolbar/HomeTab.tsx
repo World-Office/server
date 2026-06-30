@@ -1,18 +1,38 @@
 import { observer } from "mobx-react-lite"
+import type { MonacoCommand } from "./MonacoCommand"
 
-const ObservedHomeTab = observer(function ObservedHomeTab() {
+interface HomeTabProps {
+  onMonacoCommand: (command: MonacoCommand) => void
+}
+
+const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: HomeTabProps) {
   return (
     <section className="de-hometab-panel" data-tab="home" role="tabpanel" aria-labelledby="home">
       {/* Clipboard */}
       <div className="de-hometab-group">
         <div className="de-hometab-elset">
-          <button type="button" className="de-hometab-btn" onClick={() => {}} title="Cut">
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onMonacoCommand("cut")}
+            title="Cut"
+          >
             Cut
           </button>
-          <button type="button" className="de-hometab-btn" onClick={() => {}} title="Copy">
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onMonacoCommand("copy")}
+            title="Copy"
+          >
             Copy
           </button>
-          <button type="button" className="de-hometab-btn" onClick={() => {}} title="Paste">
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onMonacoCommand("paste")}
+            title="Paste"
+          >
             Paste
           </button>
           <button
@@ -130,10 +150,20 @@ const ObservedHomeTab = observer(function ObservedHomeTab() {
       {/* Editing */}
       <div className="de-hometab-group">
         <div className="de-hometab-elset">
-          <button type="button" className="de-hometab-btn" title="Find">
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onMonacoCommand("find")}
+            title="Find"
+          >
             Find
           </button>
-          <button type="button" className="de-hometab-btn" title="Replace">
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onMonacoCommand("replace")}
+            title="Replace"
+          >
             Replace
           </button>
         </div>
