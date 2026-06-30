@@ -89,7 +89,7 @@ async function generateDockerCompose() {
     environment: [
       `OCIS_DOMAIN=${config.OCIS_DOMAIN}`,
       `OCIS_JWT_SECRET=${config.OCIS_JWT_SECRET}`,
-      `COLLABORATION_WOPI_SRC=${config.OCIS_WOPI_SRC}`,
+      `COLLABORATION_WOPI_SRC=${config.DOCUMENT_SERVER_PUBLIC_URL}`,
       `COLLABORATION_APP_ADDR=${config.COLLABORATION_APP_ADDR}`,
       `COLLABORATION_APP_NAME=${config.COLLABORATION_APP_NAME}`,
       `OCIS_REVA_GATEWAY=${config.OCIS_INTERNAL_URL}:9143`,
