@@ -11,7 +11,7 @@ use std::sync::Arc;
 use axum::{
     extract::{Path, Query, State},
     response::{IntoResponse, Json},
-    routing::{get, post},
+    routing::{any, get, post},
     Router,
 };
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
@@ -169,15 +169,40 @@ fn editor_base_url(editor_type: &str, state: &AppState) -> Option<String> {
 
 /// GET /hosting/wopi/{editor_type}/{action}
 ///
-/// Serves a minimal HTML shell that loads the correct React editor app
-/// with WOPI access_token and file_id passed through from URL query params.
+/// The OCIS collaboration service POSTs a form here with `access_token`
+/// (and optionally `file_id`) in the body and `WOPISrc` (and UI locale)
+/// in the query string. We accept both methods and respond with an HTML
+/// shell that redirects the browser to the matching React editor with
+/// the token now in the query string so the editor can read it without
+/// needing to parse the original form body.
 async fn hosting_wopi_handler(
     State(state): State<AppState>,
     Path(path): Path<String>,
+    request: axum::http::Request<axum::body::Body>,
 ) -> axum::response::Response {
     let editor_type = path.split('/').next().unwrap_or(&path);
     let Some(base) = editor_base_url(editor_type, &state) else {
         return (axum::http::StatusCode::NOT_FOUND, editor_type.to_string()).into_response();
+    };
+
+    // POST: read the form body, put the access_token back into the
+    // redirect query string so the editor can read it.
+    // GET: pass through whatever the user already has on the URL.
+    let method = request.method().clone();
+    let access_token = if method == axum::http::Method::POST {
+        let bytes = axum::body::to_bytes(request.into_body(), 64 * 1024)
+            .await
+            .unwrap_or_default();
+        let body = String::from_utf8_lossy(&bytes);
+        parse_form_field(&body, "access_token")
+    } else {
+        String::new()
+    };
+
+    let redirect_qs = if method == axum::http::Method::POST && !access_token.is_empty() {
+        format!("access_token={}", urlencoding(&access_token))
+    } else {
+        String::new()
     };
 
     let html = format!(
@@ -199,7 +224,8 @@ async fn hosting_wopi_handler(
           fileType: '{editor_ext}'
         }};
       }}
-      var editorUrl = '{editor_base}/?' + location.search.slice(1);
+      var redirectQs = '{redirect_qs}';
+      var editorUrl = '{editor_base}/?' + redirectQs;
       window.location.replace(editorUrl);
     }})();
   </script>
@@ -211,8 +237,62 @@ async fn hosting_wopi_handler(
         editor = editor_type,
         editor_base = base,
         editor_ext = editor_type,
+        redirect_qs = redirect_qs,
     );
     axum::response::Html(html).into_response()
+}
+
+/// Extract a single form field from an `application/x-www-form-urlencoded`
+/// body. Returns an empty string if the body is empty or the field is
+/// missing.
+fn parse_form_field(body: &str, field: &str) -> String {
+    for pair in body.split('&') {
+        if let Some((k, v)) = pair.split_once('=') {
+            if k == field {
+                return url_decode(v);
+            }
+        }
+    }
+    String::new()
+}
+
+fn url_decode(s: &str) -> String {
+    let bytes = s.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'+' {
+            out.push(b' ');
+            i += 1;
+        } else if bytes[i] == b'%' && i + 2 < bytes.len() {
+            if let Ok(b) = u8::from_str_radix(
+                std::str::from_utf8(&bytes[i + 1..i + 3]).unwrap_or("00"),
+                16,
+            ) {
+                out.push(b);
+                i += 3;
+            } else {
+                out.push(bytes[i]);
+                i += 1;
+            }
+        } else {
+            out.push(bytes[i]);
+            i += 1;
+        }
+    }
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+/// Minimal URL component encoder for the access_token path.
+fn urlencoding(s: &str) -> String {
+    s.bytes()
+        .map(|b| match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
+                (b as char).to_string()
+            }
+            _ => format!("%{:02X}", b),
+        })
+        .collect()
 }
 
 /// GET /wopi/files/:file_id  →  proxy CheckFileInfo to OCIS
@@ -332,7 +412,7 @@ pub fn create_app(config: DocServerConfig) -> Router {
     let mut app = Router::new()
         .route("/health", get(health_handler))
         .route("/hosting/discovery", get(discovery_handler))
-        .route("/hosting/wopi/{*path}", get(hosting_wopi_handler))
+        .route("/hosting/wopi/{*path}", any(hosting_wopi_handler))
         .route("/wopi/files/{file_id}", get(wopi_check_file_info))
         .route(
             "/wopi/files/{file_id}/contents",
@@ -473,6 +553,55 @@ mod tests {
         let decoded = BASE64.decode(resp_json.data.unwrap()).unwrap();
         let html = String::from_utf8(decoded).unwrap();
         assert!(html.contains("Hello World"));
+    }
+
+    #[tokio::test]
+    async fn test_hosting_wopi_accepts_post_with_form_body() {
+        let app = create_app(test_config());
+        use axum::http::header::CONTENT_TYPE;
+        let body = "access_token=secret123&file_id=abc-456";
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/hosting/wopi/word/edit?WOPISrc=https%3A%2F%2Fexample.com%2Fwopi%2Ffiles%2Fabc")
+                    .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), 64 * 1024)
+            .await
+            .unwrap();
+        let html = String::from_utf8_lossy(&bytes);
+        assert!(
+            html.contains("access_token=secret123"),
+            "redirect query string must carry the access_token: {html}"
+        );
+        assert!(html.contains("Redirecting to word editor"));
+    }
+
+    #[tokio::test]
+    async fn test_hosting_wopi_accepts_get_with_query_token() {
+        let app = create_app(test_config());
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .method("GET")
+                    .uri("/hosting/wopi/sheet/edit?access_token=querytoken&file_id=xyz")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), 64 * 1024)
+            .await
+            .unwrap();
+        let html = String::from_utf8_lossy(&bytes);
+        assert!(html.contains("Redirecting to sheet editor"));
     }
 
     #[tokio::test]
