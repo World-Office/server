@@ -43,11 +43,11 @@ export function App() {
   currentUser.username = username
 
   const { sendParticipantUpdate, connect } = useCollaboration({
-    wsUrl: `ws://localhost:8004/ws/{session_id}?user_id=${userId}&username=${encodeURIComponent(username)}`,
+    wsUrl: import.meta.env.VITE_COLLABORATION_WS_URL + `/ws/{session_id}?user_id=${userId}&username=${encodeURIComponent(username)}`,
     userId,
     username,
     collaborationStore,
-    coauthoringServiceUrl: "http://localhost:8004",
+    coauthoringServiceUrl: import.meta.env.VITE_COLLABORATION_HTTP_URL,
   })
 
   useEffect(() => {
