@@ -21,7 +21,9 @@ interface ContentLinkPanelProps {
 
 /* ── API ── */
 
-const STORAGE_API = (import.meta as any).env?.VITE_WOPI_HOST_URL ?? "http://localhost:8002"
+const STORAGE_API =
+  (import.meta.env as unknown as { VITE_WOPI_HOST_URL?: string }).VITE_WOPI_HOST_URL ??
+  "http://localhost:8002"
 
 function currentDocId(): string {
   return documentStore.filePath ? (documentStore.filePath.split("/").pop() ?? "doc-1") : "doc-1"

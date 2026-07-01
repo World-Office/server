@@ -38,6 +38,7 @@ interface MonacoEditorProps {
 	language?: string;
 	theme?: string;
 	editorType?: string;
+	readOnly?: boolean;
 }
 
 export function MonacoEditor({
@@ -46,6 +47,7 @@ export function MonacoEditor({
 	language = "typescript",
 	theme = "vs",
 	editorType,
+	readOnly,
 }: MonacoEditorProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -74,7 +76,8 @@ export function MonacoEditor({
 				tabSize: 2,
 				insertSpaces: true,
 				wordWrap: "on",
-				readOnly: editorType === "presentation" || editorType === "pdf",
+				readOnly:
+					readOnly ?? (editorType === "presentation" || editorType === "pdf"),
 			});
 
 			editorRef.current = editor;
