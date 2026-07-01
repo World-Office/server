@@ -136,14 +136,33 @@ async fn discovery_handler(State(state): State<AppState>) -> Result<String, AppE
     Ok(discovery)
 }
 
-/// Map editor type from WOPI route path to the editor's dev/static URL.
-fn editor_base_url(editor_type: &str) -> Option<&'static str> {
+/// Resolve the public base URL for a given editor type.
+///
+/// Precedence: per-editor env var (e.g. EDITOR_URL_WORD) > shared
+/// EDITOR_HOST/<type> > dev defaults. The shared host must be set in
+/// production deployments; otherwise the redirect goes to localhost.
+fn editor_base_url(editor_type: &str, state: &AppState) -> Option<String> {
+    let env_key = match editor_type {
+        "word" => "EDITOR_URL_WORD",
+        "sheet" => "EDITOR_URL_SHEET",
+        "slide" => "EDITOR_URL_SLIDE",
+        "diagram" => "EDITOR_URL_DIAGRAM",
+        "pdf" => "EDITOR_URL_PDF",
+        _ => return None,
+    };
+    if let Ok(url) = std::env::var(env_key) {
+        return Some(url);
+    }
+    if let Ok(host) = std::env::var("EDITOR_HOST") {
+        return Some(format!("{}/{}", host.trim_end_matches('/'), editor_type));
+    }
+    let _ = state;
     match editor_type {
-        "word" => Some("http://localhost:3006"),
-        "sheet" => Some("http://localhost:3007"),
-        "slide" => Some("http://localhost:3005"),
-        "diagram" => Some("http://localhost:3003"),
-        "pdf" => Some("http://localhost:3004"),
+        "word" => Some("http://localhost:3006".into()),
+        "sheet" => Some("http://localhost:3007".into()),
+        "slide" => Some("http://localhost:3005".into()),
+        "diagram" => Some("http://localhost:3003".into()),
+        "pdf" => Some("http://localhost:3004".into()),
         _ => None,
     }
 }
@@ -153,11 +172,11 @@ fn editor_base_url(editor_type: &str) -> Option<&'static str> {
 /// Serves a minimal HTML shell that loads the correct React editor app
 /// with WOPI access_token and file_id passed through from URL query params.
 async fn hosting_wopi_handler(
-    State(_state): State<AppState>,
+    State(state): State<AppState>,
     Path(path): Path<String>,
 ) -> axum::response::Response {
     let editor_type = path.split('/').next().unwrap_or(&path);
-    let Some(base) = editor_base_url(editor_type) else {
+    let Some(base) = editor_base_url(editor_type, &state) else {
         return (axum::http::StatusCode::NOT_FOUND, editor_type.to_string()).into_response();
     };
 
