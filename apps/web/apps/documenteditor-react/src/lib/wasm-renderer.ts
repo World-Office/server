@@ -8,15 +8,15 @@
 
 /** API surface exposed by wo-renderer-wasm after wasm-pack build. */
 interface WasmRenderApi {
-	init(): void
-	render_page(
-		docBytes: Uint8Array,
-		format: string,
-		width?: number | null,
-		height?: number | null,
-	): number
-	get_pixel_data(handle: number): Uint8Array
-	release_canvas(handle: number): void
+  init(): void
+  render_page(
+    docBytes: Uint8Array,
+    format: string,
+    width?: number | null,
+    height?: number | null,
+  ): number
+  get_pixel_data(handle: number): Uint8Array
+  release_canvas(handle: number): void
 }
 
 let wasmApi: WasmRenderApi | null = null
@@ -29,35 +29,35 @@ let loadingPromise: Promise<boolean> | null = null
  * Safe to call multiple times — subsequent calls return cached result.
  */
 export async function loadWasmRenderer(): Promise<boolean> {
-	if (wasmApi) return true
-	if (loadAttempted) return false
-	if (loadingPromise) return loadingPromise
+  if (wasmApi) return true
+  if (loadAttempted) return false
+  if (loadingPromise) return loadingPromise
 
-	loadAttempted = true
-	loadingPromise = (async () => {
-		try {
-			const mod = (await import(
-				/* @vite-ignore */
-				"@world-office/wo-renderer-wasm/pkg/wo_renderer_wasm.js",
-			)) as unknown as WasmRenderApi
-			mod.init()
-			wasmApi = mod
-			console.info("[WasmRenderer] WASM module loaded")
-			return true
-		} catch (err) {
-			console.warn("[WasmRenderer] WASM module not available, using placeholder:", err)
-			return false
-		} finally {
-			loadingPromise = null
-		}
-	})()
+  loadAttempted = true
+  loadingPromise = (async () => {
+    try {
+      const mod = (await import(
+        /* @vite-ignore */
+        "@world-office/wo-renderer-wasm/pkg/wo_renderer_wasm.js"
+      )) as unknown as WasmRenderApi
+      mod.init()
+      wasmApi = mod
+      console.info("[WasmRenderer] WASM module loaded")
+      return true
+    } catch (err) {
+      console.warn("[WasmRenderer] WASM module not available, using placeholder:", err)
+      return false
+    } finally {
+      loadingPromise = null
+    }
+  })()
 
-	return loadingPromise
+  return loadingPromise
 }
 
 /** Check whether the WASM renderer was loaded successfully. */
 export function isWasmReady(): boolean {
-	return wasmApi !== null
+  return wasmApi !== null
 }
 
 /**
@@ -70,52 +70,52 @@ export function isWasmReady(): boolean {
  * @returns `true` if real content was rendered, `false` if placeholder was used
  */
 export function renderDocumentToCanvas(
-	docBytes: Uint8Array,
-	format: string,
-	canvas: HTMLCanvasElement,
-	width = 794, // A4 at 96 DPI
-	height = 1123,
+  docBytes: Uint8Array,
+  format: string,
+  canvas: HTMLCanvasElement,
+  width = 794, // A4 at 96 DPI
+  height = 1123,
 ): boolean {
-	if (!wasmApi || !["docx"].includes(format)) {
-		renderPlaceholder(canvas, width, height, format, wasmApi === null)
-		return false
-	}
+  if (!wasmApi || !["docx"].includes(format)) {
+    renderPlaceholder(canvas, width, height, format, wasmApi === null)
+    return false
+  }
 
-	let handle = -1
-	try {
-		handle = wasmApi.render_page(docBytes, format, width, height)
-		if (typeof handle !== "number" || handle <= 0) {
-			console.error("[WasmRenderer] render_page returned invalid handle:", handle)
-			renderPlaceholder(canvas, width, height, format, false)
-			return false
-		}
+  let handle = -1
+  try {
+    handle = wasmApi.render_page(docBytes, format, width, height)
+    if (typeof handle !== "number" || handle <= 0) {
+      console.error("[WasmRenderer] render_page returned invalid handle:", handle)
+      renderPlaceholder(canvas, width, height, format, false)
+      return false
+    }
 
-		const pixels = wasmApi.get_pixel_data(handle)
-		const ctx = canvas.getContext("2d")
-		if (ctx && pixels.length === width * height * 4) {
-			canvas.width = width
-			canvas.height = height
-			const imageData = new ImageData(
-				new Uint8ClampedArray(pixels.buffer as ArrayBuffer, pixels.byteOffset, pixels.byteLength),
-				width,
-				height,
-			)
-			ctx.putImageData(imageData, 0, 0)
-		}
-		return true
-	} catch (err) {
-		console.error("[WasmRenderer] render_page failed:", err)
-		renderPlaceholder(canvas, width, height, format, false)
-		return false
-	} finally {
-		if (handle > 0) {
-			try {
-				wasmApi.release_canvas(handle)
-			} catch {
-				// Best-effort cleanup
-			}
-		}
-	}
+    const pixels = wasmApi.get_pixel_data(handle)
+    const ctx = canvas.getContext("2d")
+    if (ctx && pixels.length === width * height * 4) {
+      canvas.width = width
+      canvas.height = height
+      const imageData = new ImageData(
+        new Uint8ClampedArray(pixels.buffer as ArrayBuffer, pixels.byteOffset, pixels.byteLength),
+        width,
+        height,
+      )
+      ctx.putImageData(imageData, 0, 0)
+    }
+    return true
+  } catch (err) {
+    console.error("[WasmRenderer] render_page failed:", err)
+    renderPlaceholder(canvas, width, height, format, false)
+    return false
+  } finally {
+    if (handle > 0) {
+      try {
+        wasmApi.release_canvas(handle)
+      } catch {
+        // Best-effort cleanup
+      }
+    }
+  }
 }
 
 /** Supported document formats for canvas rendering (vs Monaco text). */
@@ -123,66 +123,70 @@ export const CANVAS_FORMATS = new Set(["docx"])
 
 /** Check if a file extension should be rendered via canvas instead of Monaco. */
 export function isCanvasFormat(filename: string): boolean {
-	const ext = filename.toLowerCase().split(".").pop() ?? ""
-	return CANVAS_FORMATS.has(ext)
+  const ext = filename.toLowerCase().split(".").pop() ?? ""
+  return CANVAS_FORMATS.has(ext)
 }
 
 function renderPlaceholder(
-	canvas: HTMLCanvasElement,
-	width: number,
-	height: number,
-	format: string,
-	wasmNotBuilt: boolean,
+  canvas: HTMLCanvasElement,
+  width: number,
+  height: number,
+  format: string,
+  wasmNotBuilt: boolean,
 ): void {
-	canvas.width = width
-	canvas.height = height
-	const ctx = canvas.getContext("2d")
-	if (!ctx) return
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return
 
-	// White page background
-	ctx.fillStyle = "#ffffff"
-	ctx.fillRect(0, 0, width, height)
+  // White page background
+  ctx.fillStyle = "#ffffff"
+  ctx.fillRect(0, 0, width, height)
 
-	// Subtle page shadow
-	ctx.fillStyle = "rgba(0, 0, 0, 0.06)"
-	ctx.fillRect(3, 3, width, height)
-	ctx.fillStyle = "#ffffff"
-	ctx.fillRect(0, 0, width, height)
+  // Subtle page shadow
+  ctx.fillStyle = "rgba(0, 0, 0, 0.06)"
+  ctx.fillRect(3, 3, width, height)
+  ctx.fillStyle = "#ffffff"
+  ctx.fillRect(0, 0, width, height)
 
-	// Page border
-	ctx.strokeStyle = "#dddddd"
-	ctx.lineWidth = 0.5
-	ctx.strokeRect(0, 0, width, height)
+  // Page border
+  ctx.strokeStyle = "#dddddd"
+  ctx.lineWidth = 0.5
+  ctx.strokeRect(0, 0, width, height)
 
-	// Centered message
-	ctx.textAlign = "center"
+  // Centered message
+  ctx.textAlign = "center"
 
-	if (wasmNotBuilt) {
-		ctx.fillStyle = "#666666"
-		ctx.font = "bold 16px sans-serif"
-		ctx.fillText("Document rendering not available", width / 2, height / 2 - 40)
+  if (wasmNotBuilt) {
+    ctx.fillStyle = "#666666"
+    ctx.font = "bold 16px sans-serif"
+    ctx.fillText("Document rendering not available", width / 2, height / 2 - 40)
 
-		ctx.fillStyle = "#888888"
-		ctx.font = "13px sans-serif"
-		ctx.fillText(
-			`The WASM renderer for .${format.toUpperCase()} files has not been built yet.`,
-			width / 2,
-			height / 2 - 10,
-		)
-		ctx.fillText(
-			"Run: cd core/crates/wo-renderer-wasm && wasm-pack build --target web",
-			width / 2,
-			height / 2 + 16,
-		)
-	} else {
-		ctx.fillStyle = "#666666"
-		ctx.font = "bold 16px sans-serif"
-		ctx.fillText(`Rendering for .${format} is not yet supported`, width / 2, height / 2 - 20)
+    ctx.fillStyle = "#888888"
+    ctx.font = "13px sans-serif"
+    ctx.fillText(
+      `The WASM renderer for .${format.toUpperCase()} files has not been built yet.`,
+      width / 2,
+      height / 2 - 10,
+    )
+    ctx.fillText(
+      "Run: cd core/crates/wo-renderer-wasm && wasm-pack build --target web",
+      width / 2,
+      height / 2 + 16,
+    )
+  } else {
+    ctx.fillStyle = "#666666"
+    ctx.font = "bold 16px sans-serif"
+    ctx.fillText(`Rendering for .${format} is not yet supported`, width / 2, height / 2 - 20)
 
-		ctx.fillStyle = "#888888"
-		ctx.font = "13px sans-serif"
-		ctx.fillText("Only DOCX format is currently supported by the WASM renderer.", width / 2, height / 2 + 10)
-	}
+    ctx.fillStyle = "#888888"
+    ctx.font = "13px sans-serif"
+    ctx.fillText(
+      "Only DOCX format is currently supported by the WASM renderer.",
+      width / 2,
+      height / 2 + 10,
+    )
+  }
 
-	ctx.textAlign = "start"
+  ctx.textAlign = "start"
 }

@@ -32,10 +32,7 @@ pub struct AppState {
 impl AppState {
     /// Build application state from configuration.
     pub fn new(config: DocServerConfig) -> Self {
-        let wopi_client = WopiClient::new(
-            config.wopi_host_url.clone(),
-            config.public_url.clone(),
-        );
+        let wopi_client = WopiClient::new(config.wopi_host_url.clone(), config.public_url.clone());
         Self {
             config,
             wopi_client,
