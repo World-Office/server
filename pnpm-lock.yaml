@@ -47,6 +47,9 @@ importers:
       '@world-office/sdk-bridge':
         specifier: workspace:*
         version: link:../../../../packages/sdk-bridge
+      '@world-office/wo-renderer-wasm':
+        specifier: workspace:*
+        version: link:../../../../core/crates/wo-renderer-wasm
       '@world-office/wopi-client':
         specifier: workspace:*
         version: link:../../../../packages/wopi-client
@@ -326,6 +329,8 @@ importers:
       vite:
         specifier: ^6.0.0
         version: 6.4.2(@types/node@25.6.0)(sass-embedded@1.100.0)(sass@1.100.0)(yaml@2.8.3)
+
+  core/crates/wo-renderer-wasm: {}
 
   desktop/tauri-poc:
     devDependencies:
