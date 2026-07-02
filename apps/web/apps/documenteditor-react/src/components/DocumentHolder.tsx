@@ -1,7 +1,7 @@
 import { observer } from "mobx-react-lite"
 import { useEffect, useRef, useState } from "react"
-import { documentStore } from "../stores/DocumentStore"
 import { isCanvasFormat } from "../lib/wasm-renderer"
+import { documentStore } from "../stores/DocumentStore"
 import { DocumentCanvas } from "./DocumentCanvas"
 import { MonacoEditor } from "./MonacoEditor"
 
@@ -42,7 +42,7 @@ export const DocumentHolder = observer(function DocumentHolder() {
     if (!currentBlob || currentBlob === lastBlobRef.current) return
     lastBlobRef.current = currentBlob
     void blobToText(currentBlob).then(setValue)
-  }, [documentStore.lastLoadedContent, useCanvas])
+  }, [useCanvas])
 
   useEffect(
     () => () => {
