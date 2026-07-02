@@ -8,3 +8,4 @@ packages:
   - "tools/*"
   - "desktop/tauri-poc"
   - "desktop/tauri-poc/tests"
+  - "core/crates/wo-renderer-wasm"
