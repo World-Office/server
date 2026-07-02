@@ -13,7 +13,7 @@ use wo_renderer::{Canvas, Color, FontLibrary};
 
 #[cfg(target_arch = "wasm32")]
 static FALLBACK_FONT_BYTES: &[u8] =
-    include_bytes!("../../../assets/fonts/liberation/LiberationSans-Regular.ttf");
+    include_bytes!("../../../../assets/fonts/liberation/LiberationSans-Regular.ttf");
 
 /// Global canvas instance store.
 ///
