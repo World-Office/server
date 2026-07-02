@@ -45,6 +45,12 @@ WORKDIR /app
 # Copy the compiled binary from the builder stage.
 COPY --from=builder --chown=worldoffice:worldoffice /app/target/release/wo-docserver /usr/local/bin/wo-docserver
 
+# Copy pre-built frontend editor UI assets (built by CI and extracted to
+# frontend-dist/).  Each subdirectory matches a Vite base path:
+#   word/ sheet/ slide/ pdf/ diagram/
+# These are served by wo-docserver's static_files::editor_ui_service().
+COPY --chown=worldoffice:worldoffice frontend-dist/ /app/editor-ui/
+
 # Create data directories expected by the OpenCloud integration volumes.
 RUN mkdir -p /var/www/worldoffice/Data /var/log/worldoffice /var/lib/worldoffice && \
     chown -R worldoffice:worldoffice /var/www/worldoffice /var/log/worldoffice /var/lib/worldoffice

@@ -86,3 +86,18 @@ jobs:
       - name: Build wo-renderer-wasm
         run: cargo build --target wasm32-unknown-unknown -p wo-renderer-wasm
         timeout-minutes: 30
+
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --locked || true
+        timeout-minutes: 10
+
+      - name: Build WASM JS bindings
+        run: wasm-pack build --target web --out-dir pkg core/crates/wo-renderer-wasm
+        timeout-minutes: 15
+
+      - name: Upload wo-renderer-wasm pkg
+        uses: https://data.forgejo.org/actions/upload-artifact@v4
+        with:
+          name: wo-renderer-wasm-pkg-${{ github.sha }}
+          path: core/crates/wo-renderer-wasm/pkg/
+          retention-days: 7
