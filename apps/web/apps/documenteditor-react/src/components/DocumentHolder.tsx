@@ -1,6 +1,8 @@
 import { observer } from "mobx-react-lite"
 import { useEffect, useRef, useState } from "react"
 import { documentStore } from "../stores/DocumentStore"
+import { isCanvasFormat } from "../lib/wasm-renderer"
+import { DocumentCanvas } from "./DocumentCanvas"
 import { MonacoEditor } from "./MonacoEditor"
 
 const SAVE_DEBOUNCE_MS = 1500
@@ -11,7 +13,6 @@ function languageForFile(name: string): string {
   if (ext === "json") return "json"
   if (ext === "html" || ext === "htm") return "html"
   if (ext === "rtf") return "plaintext"
-  // .odt, .docx, .fodt are zipped XML; surface as xml for Monaco syntax highlighting
   return "xml"
 }
 
@@ -25,19 +26,23 @@ export const DocumentHolder = observer(function DocumentHolder() {
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const initializedRef = useRef(false)
 
+  const fileName = documentStore.fileName ?? ""
+  const blob = documentStore.lastLoadedContent
+  const useCanvas = blob !== undefined && isCanvasFormat(fileName)
+
   useEffect(() => {
     if (initializedRef.current) return
     initializedRef.current = true
     void documentStore.detectAndLoadWopi()
   }, [])
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: trigger when the WOPI-loaded blob changes so we re-render the editor
   useEffect(() => {
-    const blob = documentStore.lastLoadedContent
-    if (!blob || blob === lastBlobRef.current) return
-    lastBlobRef.current = blob
-    void blobToText(blob).then(setValue)
-  }, [documentStore.lastLoadedContent])
+    if (useCanvas) return
+    const currentBlob = documentStore.lastLoadedContent
+    if (!currentBlob || currentBlob === lastBlobRef.current) return
+    lastBlobRef.current = currentBlob
+    void blobToText(currentBlob).then(setValue)
+  }, [documentStore.lastLoadedContent, useCanvas])
 
   useEffect(
     () => () => {
@@ -76,6 +81,23 @@ export const DocumentHolder = observer(function DocumentHolder() {
     )
   }
 
+  if (useCanvas && blob) {
+    return (
+      <div
+        className="de-document-holder"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          overflow: "hidden",
+          height: "100%",
+        }}
+      >
+        <DocumentCanvas blob={blob} fileName={fileName} />
+      </div>
+    )
+  }
+
   return (
     <div
       className="de-document-holder"
@@ -91,7 +113,7 @@ export const DocumentHolder = observer(function DocumentHolder() {
       <MonacoEditor
         value={value}
         onChange={handleChange}
-        language={languageForFile(documentStore.fileName ?? "")}
+        language={languageForFile(fileName)}
         readOnly={documentStore.wopiFileInfo ? !documentStore.wopiFileInfo.UserCanWrite : false}
         editorType="document"
       />
