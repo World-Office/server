@@ -10,6 +10,8 @@
  * a no-op. Callers do not need to guard for this.
  */
 
+import type { Editor } from "@tiptap/core"
+
 export type RichTextCommand =
   | "bold"
   | "italic"
@@ -53,11 +55,7 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "image",
 ] as const
 
-export interface RichTextCommandSurface {
-  chain(): Record<string, (...args: unknown[]) => { run(): void }>
-  isActive(name: string, attrs?: Record<string, unknown>): boolean
-  getHTML(): string
-}
+export type RichTextCommandSurface = Editor
 
 let activeEditor: RichTextCommandSurface | null = null
 
@@ -124,19 +122,21 @@ export function dispatchRichTextCommand(command: RichTextCommand): boolean {
     case "code":
       chain.toggleCode().run()
       return true
-    case "link":
+    case "link": {
       // Prompt for a URL and apply a link to the selected text
       const url = window.prompt("Enter link URL:")
       if (url) {
         chain.setLink({ href: url }).run()
       }
       return true
-    case "image":
+    }
+    case "image": {
       // Prompt for an image URL and insert it
       const src = window.prompt("Enter image URL:")
       if (src) {
         chain.setImage({ src }).run()
       }
       return true
+    }
   }
 }
