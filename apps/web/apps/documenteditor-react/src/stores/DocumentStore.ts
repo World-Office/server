@@ -6,6 +6,7 @@ import {
   putFile,
 } from "@world-office/wopi-client"
 import { makeAutoObservable } from "mobx"
+import { convertToHtml, convertFromHtml } from "../lib/conversion"
 import type {
   DocumentDocument,
   DocumentMode,
@@ -88,13 +89,20 @@ export class DocumentStore {
   isDirty = false
   format: "native" | "svg" = "native"
 
+  /* Rich text editor */
+  richTextHtml: string | null = null
+  richTextFormat: string | null = null
+
+  get editorType(): "canvas" | "monaco" | "richtext" {
+    const ext = this.fileName.toLowerCase().split(".").pop() ?? ""
+    if (ext === "docx" || ext === "odt") return "richtext"
+    if (["txt", "md", "json", "rtf", "html", "htm", "xml", "js", "ts", "tsx", "jsx", "css", "scss", "py", "rs"].includes(ext)) return "monaco"
+    return "canvas"
+  }
+
   constructor() {
     makeAutoObservable(this)
-    const params = detectWopiParams()
-    if (params) {
-      this.wopiConnection = params
-      this.detectAndLoadWopi()
-    }
+    this.detectAndLoadWopi()
   }
 
   /* ── Actions ── */
@@ -262,7 +270,10 @@ export class DocumentStore {
   async detectAndLoadWopi(): Promise<void> {
     if (!this.wopiConnection) {
       const params = detectWopiParams()
-      if (!params) return
+      if (!params) {
+        await this.loadFromDemo()
+        return
+      }
       this.wopiConnection = params
     }
     await this.loadFromWopi(this.wopiConnection)
@@ -281,6 +292,41 @@ export class DocumentStore {
         title: this.fileName,
         fileType: this.fileName.split(".").pop() ?? "docx",
       })
+      const format = this.getDocumentFormat()
+      if (format === "docx" || format === "odt") {
+        this.richTextFormat = format
+        this.richTextHtml = await convertToHtml(content, format)
+      }
+      this.isDocReady = true
+    } catch (err) {
+      this.loadError = err instanceof Error ? err.message : String(err)
+    } finally {
+      this.isLoading = false
+    }
+  }
+
+  async loadFromDemo(): Promise<void> {
+    this.isLoading = true
+    this.loadError = null
+    try {
+      const base = window.location.origin
+      const infoRes = await fetch(`${base}/demo/info`)
+      const info: WopiFileInfo = await infoRes.json()
+      const contentRes = await fetch(`${base}/demo/document`)
+      const content = await contentRes.blob()
+      this.wopiFileInfo = info
+      this.lastLoadedContent = content
+      this.fileName = info.BaseFileName ?? "demo.docx"
+      this.wopiConnection = null
+      this.setDocument({
+        title: this.fileName,
+        fileType: "docx",
+      })
+      const format = this.getDocumentFormat()
+      if (format === "docx" || format === "odt") {
+        this.richTextFormat = format
+        this.richTextHtml = await convertToHtml(content, format)
+      }
       this.isDocReady = true
     } catch (err) {
       this.loadError = err instanceof Error ? err.message : String(err)
@@ -294,7 +340,7 @@ export class DocumentStore {
     if (!this.isModified && !this.isDirty) return
     this.isSaving = true
     try {
-      const blob = this.buildDocumentBlob()
+      const blob = await this.buildDocumentBlob()
       await putFile(this.wopiConnection, blob)
       this.isModified = false
       this.isDirty = false
@@ -307,9 +353,13 @@ export class DocumentStore {
     }
   }
 
-  buildDocumentBlob(): Blob {
+  async buildDocumentBlob(): Promise<Blob> {
     if (this.lastLoadedContent && !this.isModified && !this.isDirty) {
       return this.lastLoadedContent
+    }
+    const format = this.richTextFormat
+    if (this.editorType === "richtext" && this.richTextHtml && format) {
+      return await convertFromHtml(this.richTextHtml, format)
     }
     return new Blob(["<document serialization placeholder>"], {
       type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -317,17 +367,28 @@ export class DocumentStore {
   }
 
   exportAsDownload(): void {
-    const blob = this.buildDocumentBlob()
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = this.fileName || "document.docx"
-    a.click()
-    URL.revokeObjectURL(url)
+    void this.buildDocumentBlob().then((blob) => {
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = this.fileName || "document.docx"
+      a.click()
+      URL.revokeObjectURL(url)
+    })
   }
 
   setFormat(format: "native" | "svg"): void {
     this.format = format
+  }
+
+  updateRichText(html: string): void {
+    this.richTextHtml = html
+    this.isModified = true
+  }
+
+  getDocumentFormat(): string | null {
+    const ext = this.fileName.toLowerCase().split(".").pop()
+    return ext ?? null
   }
 }
 

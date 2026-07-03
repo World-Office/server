@@ -1,11 +1,13 @@
 import { observer } from "mobx-react-lite"
 import type { MonacoCommand } from "./MonacoCommand"
+import type { RichTextCommand } from "../../lib/rte-command"
 
 interface HomeTabProps {
   onMonacoCommand: (command: MonacoCommand) => void
+  onRichTextCommand: (command: RichTextCommand) => void
 }
 
-const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: HomeTabProps) {
+const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand, onRichTextCommand }: HomeTabProps) {
   return (
     <section className="de-hometab-panel" data-tab="home" role="tabpanel" aria-labelledby="home">
       {/* Clipboard */}
@@ -51,16 +53,16 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
       {/* Font */}
       <div className="de-hometab-group">
         <div className="de-hometab-elset">
-          <button type="button" className="de-hometab-btn" title="Bold">
+          <button type="button" className="de-hometab-btn" onClick={() => onRichTextCommand("bold")} title="Bold">
             B
           </button>
-          <button type="button" className="de-hometab-btn" title="Italic">
+          <button type="button" className="de-hometab-btn" onClick={() => onRichTextCommand("italic")} title="Italic">
             I
           </button>
-          <button type="button" className="de-hometab-btn" title="Underline">
+          <button type="button" className="de-hometab-btn" onClick={() => onRichTextCommand("underline")} title="Underline">
             U
           </button>
-          <button type="button" className="de-hometab-btn" title="Strikethrough">
+          <button type="button" className="de-hometab-btn" onClick={() => onRichTextCommand("strike")} title="Strikethrough">
             S
           </button>
         </div>
@@ -87,21 +89,21 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
       {/* Paragraph */}
       <div className="de-hometab-group">
         <div className="de-hometab-elset">
-          <button type="button" className="de-hometab-btn" title="Bullets">
+          <button type="button" className="de-hometab-btn" onClick={() => onRichTextCommand("bulletList")} title="Bullets">
             Bullets
           </button>
-          <button type="button" className="de-hometab-btn" title="Numbering">
+          <button type="button" className="de-hometab-btn" onClick={() => onRichTextCommand("orderedList")} title="Numbering">
             Numbering
           </button>
         </div>
         <div className="de-hometab-elset">
-          <button type="button" className="de-hometab-btn" title="Align Left">
+          <button type="button" className="de-hometab-btn" onClick={() => onRichTextCommand("alignLeft")} title="Align Left">
             Align Left
           </button>
-          <button type="button" className="de-hometab-btn" title="Align Center">
+          <button type="button" className="de-hometab-btn" onClick={() => onRichTextCommand("alignCenter")} title="Align Center">
             Align Center
           </button>
-          <button type="button" className="de-hometab-btn" title="Align Right">
+          <button type="button" className="de-hometab-btn" onClick={() => onRichTextCommand("alignRight")} title="Align Right">
             Align Right
           </button>
         </div>
@@ -136,10 +138,10 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
           </button>
         </div>
         <div className="de-hometab-elset">
-          <button type="button" className="de-hometab-btn" title="Heading 1">
+          <button type="button" className="de-hometab-btn" onClick={() => onRichTextCommand("heading1")} title="Heading 1">
             Heading 1
           </button>
-          <button type="button" className="de-hometab-btn" title="Heading 2">
+          <button type="button" className="de-hometab-btn" onClick={() => onRichTextCommand("heading2")} title="Heading 2">
             Heading 2
           </button>
         </div>

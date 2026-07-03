@@ -400,6 +400,45 @@ async fn conversion_formats(State(state): State<AppState>) -> Json<FormatsRespon
     Json(FormatsResponse { formats: pairs })
 }
 
+#[derive(Debug, Serialize)]
+#[allow(non_snake_case)]
+struct DemoFileInfo {
+    BaseFileName: String,
+    OwnerId: String,
+    Size: u64,
+    Version: String,
+    UserCanWrite: bool,
+    UserId: String,
+    UserFriendlyName: String,
+}
+
+async fn demo_info_handler() -> Json<DemoFileInfo> {
+    Json(DemoFileInfo {
+        BaseFileName: "demo.docx".into(),
+        OwnerId: "demo".into(),
+        Size: 0,
+        Version: "1.0".into(),
+        UserCanWrite: false,
+        UserId: "demo-user".into(),
+        UserFriendlyName: "Demo User".into(),
+    })
+}
+
+async fn demo_document_handler() -> Result<(axum::http::StatusCode, [(axum::http::HeaderName, String); 1], Vec<u8>), AppError> {
+    let path = std::env::var("DEMO_DOC_PATH").unwrap_or_else(|_| "./demo.docx".into());
+    let data = tokio::fs::read(&path)
+        .await
+        .map_err(|e| AppError::NotFound(format!("Demo file not found: {e}")))?;
+    Ok((
+        axum::http::StatusCode::OK,
+        [(
+            axum::http::header::CONTENT_TYPE,
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document".into(),
+        )],
+        data,
+    ))
+}
+
 // ── Router builder ──────────────────────────────────────────────────────
 
 /// Build the application router.
@@ -417,6 +456,8 @@ pub fn create_app(config: DocServerConfig) -> Router {
         )
         .route("/api/conversion/convert", post(conversion_convert))
         .route("/api/conversion/formats", get(conversion_formats))
+        .route("/demo/info", get(demo_info_handler))
+        .route("/demo/document", get(demo_document_handler))
         .with_state(state);
 
     // Serve editor UI if the directory exists, otherwise fall back to landing page

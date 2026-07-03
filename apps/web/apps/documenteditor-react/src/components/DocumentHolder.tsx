@@ -4,6 +4,7 @@ import { isCanvasFormat } from "../lib/wasm-renderer"
 import { documentStore } from "../stores/DocumentStore"
 import { DocumentCanvas } from "./DocumentCanvas"
 import { MonacoEditor } from "./MonacoEditor"
+import { RichTextEditor } from "./RichTextEditor"
 
 const SAVE_DEBOUNCE_MS = 1500
 
@@ -24,25 +25,21 @@ export const DocumentHolder = observer(function DocumentHolder() {
   const [value, setValue] = useState<string>("")
   const lastBlobRef = useRef<Blob | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const initializedRef = useRef(false)
 
   const fileName = documentStore.fileName ?? ""
   const blob = documentStore.lastLoadedContent
+  const editorType = documentStore.editorType
   const useCanvas = blob !== undefined && isCanvasFormat(fileName)
 
-  useEffect(() => {
-    if (initializedRef.current) return
-    initializedRef.current = true
-    void documentStore.detectAndLoadWopi()
-  }, [])
+  // Document loading is handled by useDocumentLoader in App.tsx
 
   useEffect(() => {
-    if (useCanvas) return
+    if (editorType !== "monaco") return
     const currentBlob = documentStore.lastLoadedContent
     if (!currentBlob || currentBlob === lastBlobRef.current) return
     lastBlobRef.current = currentBlob
     void blobToText(currentBlob).then(setValue)
-  }, [useCanvas])
+  }, [editorType])
 
   useEffect(
     () => () => {
@@ -54,6 +51,16 @@ export const DocumentHolder = observer(function DocumentHolder() {
   const handleChange = (next: string) => {
     setValue(next)
     documentStore.isModified = true
+    if (!documentStore.wopiConnection) return
+    if (documentStore.wopiFileInfo && !documentStore.wopiFileInfo.UserCanWrite) return
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+    saveTimerRef.current = setTimeout(() => {
+      void documentStore.saveToWopi()
+    }, SAVE_DEBOUNCE_MS)
+  }
+
+  const handleRichTextChange = (html: string) => {
+    documentStore.updateRichText(html)
     if (!documentStore.wopiConnection) return
     if (documentStore.wopiFileInfo && !documentStore.wopiFileInfo.UserCanWrite) return
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
@@ -77,6 +84,51 @@ export const DocumentHolder = observer(function DocumentHolder() {
     return (
       <div className="de-document-holder de-document-holder--loading">
         <p>Loading document...</p>
+      </div>
+    )
+  }
+
+  if (editorType === "richtext") {
+    return (
+      <div
+        className="de-document-holder"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          overflow: "hidden",
+          height: "100%",
+          backgroundColor: "#e8e8e8",
+        }}
+      >
+        <RichTextEditor
+          html={documentStore.richTextHtml ?? ""}
+          onChange={handleRichTextChange}
+        />
+      </div>
+    )
+  }
+
+  if (editorType === "monaco" && blob) {
+    return (
+      <div
+        className="de-document-holder"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          overflow: "hidden",
+          height: "100%",
+          backgroundColor: "#e8e8e8",
+        }}
+      >
+        <MonacoEditor
+          value={value}
+          onChange={handleChange}
+          language={languageForFile(fileName)}
+          readOnly={documentStore.wopiFileInfo ? !documentStore.wopiFileInfo.UserCanWrite : false}
+          editorType="document"
+        />
       </div>
     )
   }

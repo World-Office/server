@@ -9,7 +9,7 @@ use wo_docserver::create_app;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     // Initialise tracing with a sensible default subscriber.
-    tracing_subscriber::fmt()
+    tracing_subscriber::FmtSubscriber::builder()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
                 .unwrap_or_else(|_| "wo_docserver=info,tower_http=debug".into()),

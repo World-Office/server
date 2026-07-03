@@ -7,6 +7,7 @@ import { OfflineBadge } from "./OfflineBadge"
 import { RightMenu } from "./RightMenu/RightMenu"
 import { StatusBar } from "./StatusBar/StatusBar"
 import type { MonacoCommand } from "./Toolbar/MonacoCommand"
+import type { RichTextCommand } from "../lib/rte-command"
 import { Toolbar } from "./Toolbar/Toolbar"
 
 interface ViewportProps {
@@ -16,6 +17,7 @@ interface ViewportProps {
   rightMenuVisible: boolean
   isCompactToolbar: boolean
   onMonacoCommand: (command: MonacoCommand) => void
+  onRichTextCommand: (command: RichTextCommand) => void
 }
 
 export function Viewport({
@@ -25,6 +27,7 @@ export function Viewport({
   rightMenuVisible,
   isCompactToolbar,
   onMonacoCommand,
+  onRichTextCommand,
 }: ViewportProps): ReactNode {
   const toolbarHeight = isCompactToolbar
     ? "var(--wo-de-toolbar-height-compact, 34px)"
@@ -46,7 +49,7 @@ export function Viewport({
         {/* Toolbar row */}
         {toolbarVisible && (
           <div className="de-viewport-toolbar" style={{ height: toolbarHeight }} role="toolbar">
-            <Toolbar onMonacoCommand={onMonacoCommand} />
+            <Toolbar onMonacoCommand={onMonacoCommand} onRichTextCommand={onRichTextCommand} />
           </div>
         )}
 
