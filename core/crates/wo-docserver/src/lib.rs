@@ -424,7 +424,14 @@ async fn demo_info_handler() -> Json<DemoFileInfo> {
     })
 }
 
-async fn demo_document_handler() -> Result<(axum::http::StatusCode, [(axum::http::HeaderName, String); 1], Vec<u8>), AppError> {
+async fn demo_document_handler() -> Result<
+    (
+        axum::http::StatusCode,
+        [(axum::http::HeaderName, String); 1],
+        Vec<u8>,
+    ),
+    AppError,
+> {
     let path = std::env::var("DEMO_DOC_PATH").unwrap_or_else(|_| "./demo.docx".into());
     let data = tokio::fs::read(&path)
         .await
