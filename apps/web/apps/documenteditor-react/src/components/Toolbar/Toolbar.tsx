@@ -9,14 +9,16 @@ import { HomeTab } from "./HomeTab"
 import { InsertTab } from "./InsertTab"
 import { LayoutTab } from "./LayoutTab"
 import type { MonacoCommand } from "./MonacoCommand"
+import type { RichTextCommand } from "../../lib/rte-command"
 import { ReferencesTab } from "./ReferencesTab"
 import { ViewTab } from "./ViewTab"
 
 interface ToolbarProps {
   onMonacoCommand: (command: MonacoCommand) => void
+  onRichTextCommand: (command: RichTextCommand) => void
 }
 
-const ObservedToolbar = observer(function ObservedToolbar({ onMonacoCommand }: ToolbarProps) {
+const ObservedToolbar = observer(function ObservedToolbar({ onMonacoCommand, onRichTextCommand }: ToolbarProps) {
   const isEditMode = documentStore.isEditMode
   const connectionStatus = collaborationStore.connectionStatus
   const userCount = collaborationStore.users.length
@@ -26,7 +28,7 @@ const ObservedToolbar = observer(function ObservedToolbar({ onMonacoCommand }: T
       <div className="de-toolbar-tabs">
         <div className="de-toolbar-extra-left" />
         <FileTab />
-        <HomeTab onMonacoCommand={onMonacoCommand} />
+        <HomeTab onMonacoCommand={onMonacoCommand} onRichTextCommand={onRichTextCommand} />
         {isEditMode && <InsertTab />}
         {isEditMode && <LayoutTab />}
         <ReferencesTab />

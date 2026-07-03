@@ -1,0 +1,72 @@
+const CONVERSION_ENDPOINT = "/api/conversion/convert"
+
+interface ConversionResponse {
+  status: string
+  data?: string
+  format?: string
+  error?: string
+  duration_ms: number
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const result = reader.result as string
+      resolve(result.split(",")[1] ?? "")
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
+function base64ToBlob(b64: string, mimeType: string): Blob {
+  const byteChars = atob(b64)
+  const bytes = new Uint8Array(byteChars.length)
+  for (let i = 0; i < byteChars.length; i++) {
+    bytes[i] = byteChars.charCodeAt(i)
+  }
+  return new Blob([bytes], { type: mimeType })
+}
+
+export async function convertToHtml(blob: Blob, sourceFormat: string): Promise<string> {
+  const data = await blobToBase64(blob)
+  const res = await fetch(CONVERSION_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ source_format: sourceFormat, target_format: "html", data }),
+  })
+  if (!res.ok) {
+    throw new Error(`Conversion request failed: ${res.status} ${res.statusText}`)
+  }
+  const json: ConversionResponse = await res.json()
+  if (!json.data) {
+    throw new Error(`Conversion failed: ${json.status} — ${json.error ?? "unknown error"}`)
+  }
+  const htmlBytes = base64ToBlob(json.data, "text/html; charset=utf-8")
+  return htmlBytes.text()
+}
+
+export async function convertFromHtml(html: string, targetFormat: string): Promise<Blob> {
+  const encoder = new TextEncoder()
+  const htmlBytes = encoder.encode(html)
+  const blob = new Blob([htmlBytes], { type: "text/html; charset=utf-8" })
+  const data = await blobToBase64(blob)
+  const res = await fetch(CONVERSION_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ source_format: "html", target_format: targetFormat, data }),
+  })
+  if (!res.ok) {
+    throw new Error(`Conversion request failed: ${res.status} ${res.statusText}`)
+  }
+  const json: ConversionResponse = await res.json()
+  if (!json.data) {
+    throw new Error(`Conversion failed: ${json.status} — ${json.error ?? "unknown error"}`)
+  }
+  const mimeType =
+    targetFormat === "odt"
+      ? "application/vnd.oasis.opendocument.text"
+      : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  return base64ToBlob(json.data, mimeType)
+}

@@ -1,10 +1,12 @@
 import { useCollaboration } from "@world-office/collaboration-react"
 import { ThemeProvider } from "@world-office/design-system"
 import { useDocumentLoader } from "@world-office/wopi-client"
+import { observer } from "mobx-react-lite"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { isDesktop, listenForMenuEvents, listenForUpdateEvents } from "./bridge"
 import { getActiveEditor } from "./components/MonacoEditor"
 import { type MonacoCommand, dispatchMonacoCommand } from "./components/Toolbar/MonacoCommand"
+import { type RichTextCommand, dispatchRichTextCommand } from "./lib/rte-command"
 import { Viewport } from "./components/Viewport"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { usePlugins } from "./hooks/usePlugins"
@@ -15,12 +17,16 @@ function generateUserId() {
   return `user-${Math.random().toString(36).slice(2, 9)}`
 }
 
-export function App() {
+export const App = observer(function App() {
   useKeyboardShortcuts()
   usePlugins()
 
   const handleMonacoCommand = useCallback((command: MonacoCommand) => {
     dispatchMonacoCommand(command, getActiveEditor())
+  }, [])
+
+  const handleRichTextCommand = useCallback((command: RichTextCommand) => {
+    dispatchRichTextCommand(command)
   }, [])
 
   const loadState = useDocumentLoader({
@@ -220,7 +226,8 @@ export function App() {
         rightMenuVisible={documentStore.rightMenuVisible}
         isCompactToolbar={documentStore.isCompactToolbar}
         onMonacoCommand={handleMonacoCommand}
+        onRichTextCommand={handleRichTextCommand}
       />
     </ThemeProvider>
   )
-}
+})
