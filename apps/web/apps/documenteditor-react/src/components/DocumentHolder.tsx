@@ -101,10 +101,7 @@ export const DocumentHolder = observer(function DocumentHolder() {
           backgroundColor: "#e8e8e8",
         }}
       >
-        <RichTextEditor
-          html={documentStore.richTextHtml ?? ""}
-          onChange={handleRichTextChange}
-        />
+        <RichTextEditor html={documentStore.richTextHtml ?? ""} onChange={handleRichTextChange} />
       </div>
     )
   }

@@ -1,9 +1,9 @@
-import { useEditor, EditorContent } from "@tiptap/react"
-import StarterKit from "@tiptap/starter-kit"
-import Underline from "@tiptap/extension-underline"
-import TextAlign from "@tiptap/extension-text-align"
-import Link from "@tiptap/extension-link"
 import Image from "@tiptap/extension-image"
+import Link from "@tiptap/extension-link"
+import TextAlign from "@tiptap/extension-text-align"
+import Underline from "@tiptap/extension-underline"
+import { EditorContent, useEditor } from "@tiptap/react"
+import StarterKit from "@tiptap/starter-kit"
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react"
 import { setActiveRichTextEditor } from "../lib/rte-command"
 
@@ -43,7 +43,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         onChangeRef.current?.(currentHtml)
       },
       onCreate({ editor }) {
-        setActiveRichTextEditor(editor as any)
+        setActiveRichTextEditor(editor)
       },
     })
 

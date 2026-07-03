@@ -6,11 +6,11 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { isDesktop, listenForMenuEvents, listenForUpdateEvents } from "./bridge"
 import { getActiveEditor } from "./components/MonacoEditor"
 import { type MonacoCommand, dispatchMonacoCommand } from "./components/Toolbar/MonacoCommand"
-import { type RichTextCommand, dispatchRichTextCommand } from "./lib/rte-command"
 import { Viewport } from "./components/Viewport"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { usePlugins } from "./hooks/usePlugins"
 import { collabSendRef, collaborationStore, currentUser } from "./lib/collaboration"
+import { type RichTextCommand, dispatchRichTextCommand } from "./lib/rte-command"
 import { documentStore } from "./stores/DocumentStore"
 
 function generateUserId() {

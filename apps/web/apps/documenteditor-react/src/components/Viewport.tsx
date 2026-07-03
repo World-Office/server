@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import type { RichTextCommand } from "../lib/rte-command"
 import { documentStore } from "../stores/DocumentStore"
 import { DocumentHolder } from "./DocumentHolder"
 import { FileMenu } from "./FileMenu/FileMenu"
@@ -7,7 +8,6 @@ import { OfflineBadge } from "./OfflineBadge"
 import { RightMenu } from "./RightMenu/RightMenu"
 import { StatusBar } from "./StatusBar/StatusBar"
 import type { MonacoCommand } from "./Toolbar/MonacoCommand"
-import type { RichTextCommand } from "../lib/rte-command"
 import { Toolbar } from "./Toolbar/Toolbar"
 
 interface ViewportProps {

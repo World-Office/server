@@ -6,7 +6,7 @@ import {
   putFile,
 } from "@world-office/wopi-client"
 import { makeAutoObservable } from "mobx"
-import { convertToHtml, convertFromHtml } from "../lib/conversion"
+import { convertFromHtml, convertToHtml } from "../lib/conversion"
 import type {
   DocumentDocument,
   DocumentMode,
@@ -96,7 +96,26 @@ export class DocumentStore {
   get editorType(): "canvas" | "monaco" | "richtext" {
     const ext = this.fileName.toLowerCase().split(".").pop() ?? ""
     if (ext === "docx" || ext === "odt") return "richtext"
-    if (["txt", "md", "json", "rtf", "html", "htm", "xml", "js", "ts", "tsx", "jsx", "css", "scss", "py", "rs"].includes(ext)) return "monaco"
+    if (
+      [
+        "txt",
+        "md",
+        "json",
+        "rtf",
+        "html",
+        "htm",
+        "xml",
+        "js",
+        "ts",
+        "tsx",
+        "jsx",
+        "css",
+        "scss",
+        "py",
+        "rs",
+      ].includes(ext)
+    )
+      return "monaco"
     return "canvas"
   }
 
