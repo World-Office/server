@@ -27,5 +27,8 @@ export default defineConfig({
   build: {
     outDir: "dist",
     sourcemap: true,
+    rollupOptions: {
+      external: ["@world-office/wo-renderer-wasm/pkg/wo_renderer_wasm.js"],
+    },
   },
 })
