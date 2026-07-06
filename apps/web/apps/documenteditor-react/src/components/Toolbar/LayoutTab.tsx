@@ -1,6 +1,13 @@
 import { observer } from "mobx-react-lite"
+import type { RichTextCommand } from "../../lib/rte-command"
 
-const ObservedLayoutTab = observer(function ObservedLayoutTab() {
+interface LayoutTabProps {
+  onRichTextCommand: (command: RichTextCommand) => void
+}
+
+const ObservedLayoutTab = observer(function ObservedLayoutTab({
+  onRichTextCommand,
+}: LayoutTabProps) {
   return (
     <section
       className="de-layouttab-panel"
@@ -57,11 +64,37 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab() {
           <span className="de-layouttab-label">Paragraph</span>
         </div>
         <div className="de-layouttab-elset">
-          <button type="button" className="de-layouttab-btn" title="Indent">
+          <button
+            type="button"
+            className="de-layouttab-btn"
+            onClick={() => onRichTextCommand("indent")}
+            title="Indent"
+          >
             Indent
           </button>
-          <button type="button" className="de-layouttab-btn" title="Spacing">
-            Spacing
+          <button
+            type="button"
+            className="de-layouttab-btn"
+            onClick={() => onRichTextCommand("lineSpacing")}
+            title="Line Spacing"
+          >
+            Line Spacing
+          </button>
+          <button
+            type="button"
+            className="de-layouttab-btn"
+            onClick={() => onRichTextCommand("paragraphSpacingBefore")}
+            title="Space Before Paragraph"
+          >
+            Space Before
+          </button>
+          <button
+            type="button"
+            className="de-layouttab-btn"
+            onClick={() => onRichTextCommand("paragraphSpacingAfter")}
+            title="Space After Paragraph"
+          >
+            Space After
           </button>
         </div>
       </div>
