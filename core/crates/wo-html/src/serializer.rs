@@ -262,8 +262,17 @@ impl HtmlSerializer {
         let mut out = String::new();
         for el in elements {
             match el {
-                InlineElement::Text { text } => {
-                    out.push_str(&escape_text(text));
+                InlineElement::Text { text, style } => {
+                    if let Some(style_val) = style {
+                        out.push_str(&format!(
+                            "<span style=\"{}\">",
+                            escape_attr(style_val)
+                        ));
+                        out.push_str(&escape_text(text));
+                        out.push_str("</span>");
+                    } else {
+                        out.push_str(&escape_text(text));
+                    }
                 }
                 InlineElement::Bold { content } => {
                     out.push_str("<strong>");
@@ -386,8 +395,9 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Text {
-                        text: "hello".into(),
-                    }],
+                text: "hello".into(),
+                style: None,
+            }],
                     id: Some("foo\"bar".into()),
                 }],
             },
@@ -418,8 +428,9 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Text {
-                        text: "a < b & c > d".into(),
-                    }],
+                text: "a < b & c > d".into(),
+                style: None,
+            }],
                     id: None,
                 }],
             },
@@ -449,8 +460,9 @@ mod tests {
                         href: "https://example.com?a=1&b=2".into(),
                         title: Some("click \"here\"".into()),
                         content: vec![InlineElement::Text {
-                            text: "link".into(),
-                        }],
+                text: "link".into(),
+                style: None,
+            }],
                     }],
                     id: None,
                 }],
@@ -735,8 +747,9 @@ mod tests {
                 elements: vec![BlockElement::Heading {
                     level: 2,
                     content: vec![InlineElement::Text {
-                        text: "Section".into(),
-                    }],
+                text: "Section".into(),
+                style: None,
+            }],
                     id: None,
                 }],
             },
@@ -758,8 +771,9 @@ mod tests {
                 elements: vec![BlockElement::Heading {
                     level: 3,
                     content: vec![InlineElement::Text {
-                        text: "Intro".into(),
-                    }],
+                text: "Intro".into(),
+                style: None,
+            }],
                     id: Some("intro".into()),
                 }],
             },
@@ -779,8 +793,9 @@ mod tests {
                 elements: vec![BlockElement::Div {
                     elements: vec![BlockElement::Paragraph {
                         content: vec![InlineElement::Text {
-                            text: "inside".into(),
-                        }],
+                text: "inside".into(),
+                style: None,
+            }],
                         id: None,
                     }],
                     id: Some("main".into()),
@@ -807,10 +822,10 @@ mod tests {
                 elements: vec![BlockElement::UnorderedList {
                     items: vec![
                         ListItem {
-                            content: vec![InlineElement::Text { text: "A".into() }],
+                            content: vec![InlineElement::Text { text: "A".into(), style: None }],
                         },
                         ListItem {
-                            content: vec![InlineElement::Text { text: "B".into() }],
+                            content: vec![InlineElement::Text { text: "B".into(), style: None }],
                         },
                     ],
                     id: Some("list1".into()),
@@ -835,8 +850,9 @@ mod tests {
                 elements: vec![BlockElement::OrderedList {
                     items: vec![ListItem {
                         content: vec![InlineElement::Text {
-                            text: "first".into(),
-                        }],
+                text: "first".into(),
+                style: None,
+            }],
                     }],
                     id: None,
                     start: Some(5),
@@ -860,8 +876,9 @@ mod tests {
                         TableRow {
                             cells: vec![TableCell {
                                 content: vec![InlineElement::Text {
-                                    text: "Name".into(),
-                                }],
+                text: "Name".into(),
+                style: None,
+            }],
                                 colspan: 1,
                                 rowspan: 1,
                             }],
@@ -870,8 +887,9 @@ mod tests {
                         TableRow {
                             cells: vec![TableCell {
                                 content: vec![InlineElement::Text {
-                                    text: "Alice".into(),
-                                }],
+                text: "Alice".into(),
+                style: None,
+            }],
                                 colspan: 1,
                                 rowspan: 1,
                             }],
@@ -902,8 +920,9 @@ mod tests {
                 elements: vec![BlockElement::Blockquote {
                     elements: vec![BlockElement::Paragraph {
                         content: vec![InlineElement::Text {
-                            text: "quote".into(),
-                        }],
+                text: "quote".into(),
+                style: None,
+            }],
                         id: None,
                     }],
                     id: Some("q1".into()),
@@ -968,8 +987,9 @@ mod tests {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Bold {
                         content: vec![InlineElement::Text {
-                            text: "bold".into(),
-                        }],
+                text: "bold".into(),
+                style: None,
+            }],
                     }],
                     id: None,
                 }],
@@ -990,8 +1010,9 @@ mod tests {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Italic {
                         content: vec![InlineElement::Text {
-                            text: "emph".into(),
-                        }],
+                text: "emph".into(),
+                style: None,
+            }],
                     }],
                     id: None,
                 }],
@@ -1011,7 +1032,7 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Underline {
-                        content: vec![InlineElement::Text { text: "und".into() }],
+                        content: vec![InlineElement::Text { text: "und".into(), style: None }],
                     }],
                     id: None,
                 }],
@@ -1032,8 +1053,9 @@ mod tests {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Strikethrough {
                         content: vec![InlineElement::Text {
-                            text: "strike".into(),
-                        }],
+                text: "strike".into(),
+                style: None,
+            }],
                     }],
                     id: None,
                 }],
@@ -1053,7 +1075,7 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Subscript {
-                        content: vec![InlineElement::Text { text: "sub".into() }],
+                        content: vec![InlineElement::Text { text: "sub".into(), style: None }],
                     }],
                     id: None,
                 }],
@@ -1073,7 +1095,7 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Superscript {
-                        content: vec![InlineElement::Text { text: "sup".into() }],
+                        content: vec![InlineElement::Text { text: "sup".into(), style: None }],
                     }],
                     id: None,
                 }],
@@ -1150,8 +1172,9 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Text {
-                        text: "hello".into(),
-                    }],
+                text: "hello".into(),
+                style: None,
+            }],
                     id: Some("p1".into()),
                 }],
             },
@@ -1177,8 +1200,9 @@ mod tests {
                 elements: vec![BlockElement::Div {
                     elements: vec![BlockElement::Paragraph {
                         content: vec![InlineElement::Text {
-                            text: "plain".into(),
-                        }],
+                text: "plain".into(),
+                style: None,
+            }],
                         id: None,
                     }],
                     id: None,
@@ -1207,8 +1231,9 @@ mod tests {
                 elements: vec![BlockElement::UnorderedList {
                     items: vec![ListItem {
                         content: vec![InlineElement::Text {
-                            text: "item".into(),
-                        }],
+                text: "item".into(),
+                style: None,
+            }],
                     }],
                     id: None,
                 }],
@@ -1235,8 +1260,9 @@ mod tests {
                 elements: vec![BlockElement::OrderedList {
                     items: vec![ListItem {
                         content: vec![InlineElement::Text {
-                            text: "first".into(),
-                        }],
+                text: "first".into(),
+                style: None,
+            }],
                     }],
                     id: Some("ol1".into()),
                     start: None,
@@ -1265,8 +1291,9 @@ mod tests {
                     rows: vec![TableRow {
                         cells: vec![TableCell {
                             content: vec![InlineElement::Text {
-                                text: "data".into(),
-                            }],
+                text: "data".into(),
+                style: None,
+            }],
                             colspan: 1,
                             rowspan: 1,
                         }],
@@ -1347,8 +1374,9 @@ mod tests {
                         href: "/path".into(),
                         title: None,
                         content: vec![InlineElement::Text {
-                            text: "click".into(),
-                        }],
+                text: "click".into(),
+                style: None,
+            }],
                     }],
                     id: None,
                 }],
@@ -1486,8 +1514,9 @@ mod tests {
                     content: vec![InlineElement::Bold {
                         content: vec![InlineElement::Italic {
                             content: vec![InlineElement::Text {
-                                text: "nested".into(),
-                            }],
+                text: "nested".into(),
+                style: None,
+            }],
                         }],
                     }],
                     id: None,
@@ -1516,8 +1545,9 @@ mod tests {
                 elements: vec![BlockElement::Heading {
                     level: 1,
                     content: vec![InlineElement::Text {
-                        text: "Title".into(),
-                    }],
+                text: "Title".into(),
+                style: None,
+            }],
                     id: Some("main-title".into()),
                 }],
             },
@@ -1544,8 +1574,9 @@ mod tests {
                 elements: vec![BlockElement::Blockquote {
                     elements: vec![BlockElement::Paragraph {
                         content: vec![InlineElement::Text {
-                            text: "nested quote".into(),
-                        }],
+                text: "nested quote".into(),
+                style: None,
+            }],
                         id: Some("qp".into()),
                     }],
                     id: Some("bq".into()),
@@ -1596,7 +1627,7 @@ mod tests {
             body: HtmlBody {
                 elements: vec![BlockElement::OrderedList {
                     items: vec![ListItem {
-                        content: vec![InlineElement::Text { text: "x".into() }],
+                        content: vec![InlineElement::Text { text: "x".into(), style: None }],
                     }],
                     id: None,
                     start: None,

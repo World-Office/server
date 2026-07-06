@@ -238,6 +238,7 @@ impl HtmlParser {
                     elements.push(BlockElement::Paragraph {
                         content: vec![InlineElement::Text {
                             text: trimmed.to_string(),
+                            style: None,
                         }],
                         id: None,
                     });
@@ -336,9 +337,7 @@ impl HtmlParser {
             if ch.is_text() {
                 if let Some(text) = ch.text() {
                     if !text.is_empty() {
-                        elements.push(InlineElement::Text {
-                            text: text.to_string(),
-                        });
+                        elements.push(InlineElement::Text { text: text.to_string(), style: None });
                     }
                 }
                 continue;
@@ -359,7 +358,7 @@ impl HtmlParser {
                         let text = direct_text(&ch);
                         if !text.is_empty() {
                             elements.push(InlineElement::Bold {
-                                content: vec![InlineElement::Text { text }],
+                                content: vec![InlineElement::Text { text, style: None }],
                             });
                         }
                     }
@@ -372,7 +371,7 @@ impl HtmlParser {
                         let text = direct_text(&ch);
                         if !text.is_empty() {
                             elements.push(InlineElement::Italic {
-                                content: vec![InlineElement::Text { text }],
+                                content: vec![InlineElement::Text { text, style: None }],
                             });
                         }
                     }
@@ -385,7 +384,7 @@ impl HtmlParser {
                         let text = direct_text(&ch);
                         if !text.is_empty() {
                             elements.push(InlineElement::Underline {
-                                content: vec![InlineElement::Text { text }],
+                                content: vec![InlineElement::Text { text, style: None }],
                             });
                         }
                     }
@@ -398,7 +397,7 @@ impl HtmlParser {
                         let text = direct_text(&ch);
                         if !text.is_empty() {
                             elements.push(InlineElement::Strikethrough {
-                                content: vec![InlineElement::Text { text }],
+                                content: vec![InlineElement::Text { text, style: None }],
                             });
                         }
                     }
@@ -411,7 +410,7 @@ impl HtmlParser {
                         let text = direct_text(&ch);
                         if !text.is_empty() {
                             elements.push(InlineElement::Subscript {
-                                content: vec![InlineElement::Text { text }],
+                                content: vec![InlineElement::Text { text, style: None }],
                             });
                         }
                     }
@@ -424,7 +423,7 @@ impl HtmlParser {
                         let text = direct_text(&ch);
                         if !text.is_empty() {
                             elements.push(InlineElement::Superscript {
-                                content: vec![InlineElement::Text { text }],
+                                content: vec![InlineElement::Text { text, style: None }],
                             });
                         }
                     }
@@ -449,7 +448,7 @@ impl HtmlParser {
                             elements.push(InlineElement::Link {
                                 href,
                                 title,
-                                content: vec![InlineElement::Text { text }],
+                                content: vec![InlineElement::Text { text, style: None }],
                             });
                         }
                     }
@@ -460,13 +459,23 @@ impl HtmlParser {
                     let title = attr(&ch, "title");
                     elements.push(InlineElement::Image { src, alt, title });
                 }
+                "span" => {
+                    let text = direct_text(&ch);
+                    let style = attr(&ch, "style");
+                    if !text.is_empty() {
+                        elements.push(InlineElement::Text { text, style });
+                    }
+                }
                 "br" => {
                     elements.push(InlineElement::LineBreak);
                 }
                 _ => {
                     let text = direct_text(&ch);
                     if !text.is_empty() {
-                        elements.push(InlineElement::Text { text });
+                        elements.push(InlineElement::Text {
+                            text,
+                            style: None,
+                        });
                     }
                 }
             }
@@ -584,7 +593,7 @@ impl HtmlParser {
         let mut count = 0u32;
         for el in elements {
             match el {
-                InlineElement::Text { text } => {
+                InlineElement::Text { text, .. } => {
                     count += text.split_whitespace().count() as u32;
                 }
                 InlineElement::Bold { content }
@@ -1094,7 +1103,7 @@ mod tests {
         match &doc.body.elements[0] {
             BlockElement::Paragraph { content, .. } => {
                 let text = &content[0];
-                if let InlineElement::Text { text } = text {
+                if let InlineElement::Text { text, style: None } = text {
                     assert!(
                         text.contains("AT&T"),
                         "Expected decoded AT&T, got: {}",
@@ -1119,7 +1128,7 @@ mod tests {
         let doc = parser.parse(html.as_bytes()).unwrap();
         match &doc.body.elements[0] {
             BlockElement::Paragraph { content, .. } => {
-                if let InlineElement::Text { text } = &content[0] {
+                if let InlineElement::Text { text, style: None } = &content[0] {
                     assert!(
                         text.contains('{'),
                         "Expected curly brace from numeric entity"
@@ -1195,7 +1204,7 @@ mod tests {
                 let texts: Vec<&str> = content
                     .iter()
                     .filter_map(|e| {
-                        if let InlineElement::Text { text } = e {
+                        if let InlineElement::Text { text, style: None } = e {
                             Some(text.as_str())
                         } else {
                             None
