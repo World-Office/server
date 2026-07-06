@@ -1,6 +1,13 @@
 import { observer } from "mobx-react-lite"
+import type { RichTextCommand } from "../../lib/rte-command"
 
-const ObservedInsertTab = observer(function ObservedInsertTab() {
+interface InsertTabProps {
+  onRichTextCommand: (command: RichTextCommand) => void
+}
+
+const ObservedInsertTab = observer(function ObservedInsertTab({
+  onRichTextCommand,
+}: InsertTabProps) {
   return (
     <section
       className="de-inserttab-panel"
@@ -17,7 +24,12 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
           <button type="button" className="de-inserttab-btn" title="Blank Page">
             Blank Page
           </button>
-          <button type="button" className="de-inserttab-btn" title="Page Break">
+          <button
+            type="button"
+            className="de-inserttab-btn"
+            onClick={() => onRichTextCommand("pageBreak")}
+            title="Page Break"
+          >
             Page Break
           </button>
         </div>
@@ -28,7 +40,12 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
       {/* Tables */}
       <div className="de-inserttab-group">
         <div className="de-inserttab-elset">
-          <button type="button" className="de-inserttab-btn" title="Table">
+          <button
+            type="button"
+            className="de-inserttab-btn"
+            onClick={() => onRichTextCommand("insertTable")}
+            title="Table"
+          >
             Table
           </button>
         </div>
@@ -56,7 +73,12 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
       {/* Images */}
       <div className="de-inserttab-group">
         <div className="de-inserttab-elset">
-          <button type="button" className="de-inserttab-btn" title="Pictures">
+          <button
+            type="button"
+            className="de-inserttab-btn"
+            onClick={() => onRichTextCommand("image")}
+            title="Pictures"
+          >
             Pictures
           </button>
           <button type="button" className="de-inserttab-btn" title="Online Pictures">
@@ -73,7 +95,12 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
       {/* Links */}
       <div className="de-inserttab-group">
         <div className="de-inserttab-elset">
-          <button type="button" className="de-inserttab-btn" title="Link">
+          <button
+            type="button"
+            className="de-inserttab-btn"
+            onClick={() => onRichTextCommand("link")}
+            title="Link"
+          >
             Link
           </button>
         </div>
