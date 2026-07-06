@@ -43,10 +43,18 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
           <button
             type="button"
             className="de-hometab-btn"
-            onClick={() => {}}
-            title="Format Painter"
+            onClick={() => onRichTextCommand("undo")}
+            title="Undo"
           >
-            Format Painter
+            Undo
+          </button>
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("redo")}
+            title="Redo"
+          >
+            Redo
           </button>
         </div>
       </div>
@@ -88,22 +96,142 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
           >
             S
           </button>
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("subscript")}
+            title="Subscript"
+          >
+            x₂
+          </button>
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("superscript")}
+            title="Superscript"
+          >
+            x²
+          </button>
         </div>
         <div className="de-hometab-elset">
-          <button type="button" className="de-hometab-btn" title="Increase Font Size">
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("fontSize")}
+            title="Font Size"
+          >
             A+
           </button>
-          <button type="button" className="de-hometab-btn" title="Decrease Font Size">
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("fontSize")}
+            title="Font Size"
+          >
             A-
           </button>
         </div>
         <div className="de-hometab-elset">
-          <button type="button" className="de-hometab-btn" title="Text Color">
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("textColor")}
+            title="Text Color"
+          >
             A
           </button>
-          <button type="button" className="de-hometab-btn" title="Text Highlight Color">
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("highlight")}
+            title="Text Highlight Color"
+          >
             Ab
           </button>
+        </div>
+        <div className="de-hometab-elset">
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("blockquote")}
+            title="Blockquote"
+          >
+            Quote
+          </button>
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("codeBlock")}
+            title="Code Block"
+          >
+            Code
+          </button>
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("clearFormatting")}
+            title="Clear Formatting"
+          >
+            Clear
+          </button>
+        </div>
+      </div>
+
+      <div className="de-hometab-separator" />
+
+      {/* Font Family & Size */}
+      <div className="de-hometab-group">
+        <div className="de-hometab-elset">
+          <span className="de-hometab-label">Font</span>
+        </div>
+        <div className="de-hometab-elset">
+          <select
+            className="de-hometab-select"
+            onChange={(e) => {
+              const val = e.target.value
+              if (val) {
+                onRichTextCommand("fontFamily")
+              }
+            }}
+            title="Font Family"
+            style={{ maxWidth: 120 }}
+          >
+            <option value="">Font</option>
+            <option value="Aptos">Aptos</option>
+            <option value="Calibri">Calibri</option>
+            <option value="Arial">Arial</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Verdana">Verdana</option>
+          </select>
+          <select
+            className="de-hometab-select"
+            onChange={(e) => {
+              const val = e.target.value
+              if (val) {
+                onRichTextCommand("fontSize")
+              }
+            }}
+            title="Font Size"
+            style={{ maxWidth: 60 }}
+          >
+            <option value="">Size</option>
+            <option value="8pt">8</option>
+            <option value="9pt">9</option>
+            <option value="10pt">10</option>
+            <option value="11pt">11</option>
+            <option value="12pt">12</option>
+            <option value="14pt">14</option>
+            <option value="16pt">16</option>
+            <option value="18pt">18</option>
+            <option value="20pt">20</option>
+            <option value="24pt">24</option>
+            <option value="28pt">28</option>
+            <option value="36pt">36</option>
+            <option value="48pt">48</option>
+            <option value="72pt">72</option>
+          </select>
         </div>
       </div>
 
@@ -127,6 +255,14 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
             title="Numbering"
           >
             Numbering
+          </button>
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("taskList")}
+            title="Task List"
+          >
+            Tasks
           </button>
         </div>
         <div className="de-hometab-elset">
@@ -154,18 +290,31 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
           >
             Align Right
           </button>
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("alignJustify")}
+            title="Justify"
+          >
+            Justify
+          </button>
         </div>
         <div className="de-hometab-elset">
-          <button type="button" className="de-hometab-btn" title="Decrease Indent">
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("outdent")}
+            title="Decrease Indent"
+          >
             Decrease Indent
           </button>
-          <button type="button" className="de-hometab-btn" title="Increase Indent">
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("indent")}
+            title="Increase Indent"
+          >
             Increase Indent
-          </button>
-        </div>
-        <div className="de-hometab-elset">
-          <button type="button" className="de-hometab-btn" title="Line Spacing">
-            Line Spacing
           </button>
         </div>
       </div>
@@ -201,6 +350,14 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
             title="Heading 2"
           >
             Heading 2
+          </button>
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("heading3")}
+            title="Heading 3"
+          >
+            Heading 3
           </button>
         </div>
       </div>

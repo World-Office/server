@@ -180,7 +180,7 @@ impl FormatConverter for TxtToHtmlConverter {
             .lines
             .iter()
             .map(|line| BlockElement::Paragraph {
-                content: vec![InlineElement::Text { text: line.clone() }],
+                content: vec![InlineElement::Text { text: line.clone(), style: None }],
                 id: None,
             })
             .collect();
@@ -486,6 +486,7 @@ impl FormatConverter for EpubToHtmlConverter {
                 level: 1,
                 content: vec![InlineElement::Text {
                     text: title.clone(),
+                    style: None,
                 }],
                 id: None,
             });
@@ -496,8 +497,9 @@ impl FormatConverter for EpubToHtmlConverter {
                 elements.push(BlockElement::Heading {
                     level: 2,
                     content: vec![InlineElement::Text {
-                        text: chapter.title.clone(),
-                    }],
+                text: chapter.title.clone(),
+                style: None,
+            }],
                     id: None,
                 });
             }
@@ -506,8 +508,9 @@ impl FormatConverter for EpubToHtmlConverter {
                 if !line.is_empty() {
                     elements.push(BlockElement::Paragraph {
                         content: vec![InlineElement::Text {
-                            text: line.to_string(),
-                        }],
+                text: line.to_string(),
+                style: None,
+            }],
                         id: None,
                     });
                 }
@@ -783,9 +786,7 @@ impl FormatConverter for XpsToHtmlConverter {
             let mut page_inlines: Vec<InlineElement> = Vec::new();
             for glyph in &page.content.glyphs {
                 if !glyph.text.is_empty() {
-                    page_inlines.push(InlineElement::Text {
-                        text: glyph.text.clone(),
-                    });
+                    page_inlines.push(InlineElement::Text { text: glyph.text.clone(), style: None });
                 }
             }
             if !page_inlines.is_empty() {
@@ -887,26 +888,27 @@ impl FormatConverter for OfdToHtmlConverter {
                     InlineElement::Bold {
                         content: vec![InlineElement::Italic {
                             content: vec![InlineElement::Text {
-                                text: text_obj.text.clone(),
-                            }],
+                text: text_obj.text.clone(),
+                style: None,
+            }],
                         }],
                     }
                 } else if text_obj.bold {
                     InlineElement::Bold {
                         content: vec![InlineElement::Text {
-                            text: text_obj.text.clone(),
-                        }],
+                text: text_obj.text.clone(),
+                style: None,
+            }],
                     }
                 } else if text_obj.italic {
                     InlineElement::Italic {
                         content: vec![InlineElement::Text {
-                            text: text_obj.text.clone(),
-                        }],
+                text: text_obj.text.clone(),
+                style: None,
+            }],
                     }
                 } else {
-                    InlineElement::Text {
-                        text: text_obj.text.clone(),
-                    }
+                    InlineElement::Text { text: text_obj.text.clone(), style: None }
                 };
                 page_inlines.push(inline);
             }
@@ -1465,7 +1467,7 @@ fn inline_elements_to_formatting(elements: &[InlineElement]) -> Vec<Formatting> 
     let mut result = Vec::new();
     for elem in elements {
         match elem {
-            InlineElement::Text { text } => {
+            InlineElement::Text { text, .. } => {
                 if !text.is_empty() {
                     result.push(Formatting {
                         text: text.clone(),
@@ -1576,7 +1578,7 @@ fn extract_inline_text(elements: &[InlineElement]) -> String {
     let mut result = String::new();
     for elem in elements {
         match elem {
-            InlineElement::Text { text } => result.push_str(text),
+            InlineElement::Text { text, .. } => result.push_str(text),
             InlineElement::Bold { content }
             | InlineElement::Italic { content }
             | InlineElement::Underline { content }
@@ -1660,7 +1662,7 @@ fn rtf_to_html_inlines(inlines: &[RtfInline]) -> Vec<InlineElement> {
     for inline in inlines {
         match inline {
             RtfInline::Text { text } => {
-                result.push(InlineElement::Text { text: text.clone() });
+                result.push(InlineElement::Text { text: text.clone(), style: None });
             }
             RtfInline::Bold { content } => {
                 let inner = rtf_to_html_inlines(content);
@@ -1761,7 +1763,7 @@ fn html_inlines_to_rtf_inlines(inlines: &[InlineElement]) -> Vec<RtfInline> {
     let mut result = Vec::new();
     for inline in inlines {
         match inline {
-            InlineElement::Text { text } => {
+            InlineElement::Text { text, .. } => {
                 if !text.is_empty() {
                     result.push(RtfInline::Text { text: text.clone() });
                 }
@@ -1964,7 +1966,7 @@ fn extract_html_text(inlines: &[InlineElement]) -> String {
     let mut result = String::new();
     for inline in inlines {
         match inline {
-            InlineElement::Text { text } => result.push_str(text),
+            InlineElement::Text { text, .. } => result.push_str(text),
             InlineElement::Bold { content }
             | InlineElement::Italic { content }
             | InlineElement::Underline { content }
@@ -2342,7 +2344,7 @@ fn html_inlines_to_docx_runs(inlines: &[InlineElement]) -> Vec<DocxRun> {
     let mut runs = Vec::new();
     for inline in inlines {
         match inline {
-            InlineElement::Text { text } => {
+            InlineElement::Text { text, .. } => {
                 if !text.is_empty() {
                     runs.push(DocxRun {
                         text: text.clone(),
@@ -2745,7 +2747,7 @@ fn html_inlines_to_odf_spans(inlines: &[InlineElement]) -> Vec<TextSpan> {
     let mut spans = Vec::new();
     for inline in inlines {
         match inline {
-            InlineElement::Text { text } => {
+            InlineElement::Text { text, .. } => {
                 if !text.is_empty() {
                     spans.push(TextSpan {
                         text: text.clone(),
@@ -2941,27 +2943,27 @@ fn docx_runs_to_html_inlines(runs: &[DocxRun]) -> Vec<InlineElement> {
         let element: InlineElement = if run.bold && run.italic {
             InlineElement::Bold {
                 content: vec![InlineElement::Italic {
-                    content: vec![InlineElement::Text { text }],
+                    content: vec![InlineElement::Text { text, style: None }],
                 }],
             }
         } else if run.bold {
             InlineElement::Bold {
-                content: vec![InlineElement::Text { text }],
+                content: vec![InlineElement::Text { text, style: None }],
             }
         } else if run.italic {
             InlineElement::Italic {
-                content: vec![InlineElement::Text { text }],
+                content: vec![InlineElement::Text { text, style: None }],
             }
         } else if run.strikethrough {
             InlineElement::Strikethrough {
-                content: vec![InlineElement::Text { text }],
+                content: vec![InlineElement::Text { text, style: None }],
             }
         } else if run.underline.is_some() {
             InlineElement::Underline {
-                content: vec![InlineElement::Text { text }],
+                content: vec![InlineElement::Text { text, style: None }],
             }
         } else {
-            InlineElement::Text { text }
+            InlineElement::Text { text, style: None }
         };
 
         result.push(element);
@@ -3618,8 +3620,9 @@ fn odf_content_to_html_blocks(content: &OdfContent) -> Vec<BlockElement> {
                 result.push(BlockElement::Heading {
                     level: h.level as u8,
                     content: vec![InlineElement::Text {
-                        text: h.text.clone(),
-                    }],
+                text: h.text.clone(),
+                style: None,
+            }],
                     id: None,
                 });
             }
@@ -3640,9 +3643,7 @@ fn odf_content_to_html_blocks(content: &OdfContent) -> Vec<BlockElement> {
                             .iter()
                             .filter_map(|c| {
                                 if let OdfTextContent::Paragraph(p) = c {
-                                    Some(InlineElement::Text {
-                                        text: p.text.clone(),
-                                    })
+                                    Some(InlineElement::Text { text: p.text.clone(), style: None })
                                 } else {
                                     None
                                 }
@@ -3675,8 +3676,9 @@ fn odf_content_to_html_blocks(content: &OdfContent) -> Vec<BlockElement> {
                             .iter()
                             .map(|c| TableCell {
                                 content: vec![InlineElement::Text {
-                                    text: c.text.clone(),
-                                }],
+                text: c.text.clone(),
+                style: None,
+            }],
                                 colspan: c.col_span,
                                 rowspan: c.row_span,
                             })
@@ -3706,8 +3708,9 @@ fn odf_paragraph_to_inlines(p: &wo_odf::model::TextParagraph) -> Vec<InlineEleme
             return Vec::new();
         }
         return vec![InlineElement::Text {
-            text: p.text.clone(),
-        }];
+                text: p.text.clone(),
+                style: None,
+            }];
     }
 
     // Build text from spans; the paragraph text is the full text,
@@ -3716,9 +3719,7 @@ fn odf_paragraph_to_inlines(p: &wo_odf::model::TextParagraph) -> Vec<InlineEleme
     let mut inlines = Vec::new();
     for span in &p.spans {
         if !span.text.is_empty() {
-            inlines.push(InlineElement::Text {
-                text: span.text.clone(),
-            });
+            inlines.push(InlineElement::Text { text: span.text.clone(), style: None });
         }
     }
     inlines
@@ -8806,22 +8807,25 @@ mod tests {
                     BlockElement::Heading {
                         level: 1,
                         content: vec![InlineElement::Text {
-                            text: "H1 Title".into(),
-                        }],
+                text: "H1 Title".into(),
+                style: None,
+            }],
                         id: None,
                     },
                     BlockElement::Heading {
                         level: 2,
                         content: vec![InlineElement::Text {
-                            text: "H2 Title".into(),
-                        }],
+                text: "H2 Title".into(),
+                style: None,
+            }],
                         id: None,
                     },
                     BlockElement::Heading {
                         level: 6,
                         content: vec![InlineElement::Text {
-                            text: "H6 Title".into(),
-                        }],
+                text: "H6 Title".into(),
+                style: None,
+            }],
                         id: None,
                     },
                 ],
@@ -8849,12 +8853,12 @@ mod tests {
                         TableRow {
                             cells: vec![
                                 TableCell {
-                                    content: vec![InlineElement::Text { text: "A1".into() }],
+                                    content: vec![InlineElement::Text { text: "A1".into(), style: None }],
                                     colspan: 1,
                                     rowspan: 1,
                                 },
                                 TableCell {
-                                    content: vec![InlineElement::Text { text: "B1".into() }],
+                                    content: vec![InlineElement::Text { text: "B1".into(), style: None }],
                                     colspan: 2,
                                     rowspan: 1,
                                 },
@@ -8864,12 +8868,12 @@ mod tests {
                         TableRow {
                             cells: vec![
                                 TableCell {
-                                    content: vec![InlineElement::Text { text: "A2".into() }],
+                                    content: vec![InlineElement::Text { text: "A2".into(), style: None }],
                                     colspan: 1,
                                     rowspan: 2,
                                 },
                                 TableCell {
-                                    content: vec![InlineElement::Text { text: "B2".into() }],
+                                    content: vec![InlineElement::Text { text: "B2".into(), style: None }],
                                     colspan: 1,
                                     rowspan: 1,
                                 },
@@ -8907,13 +8911,15 @@ mod tests {
                         items: vec![
                             ListItem {
                                 content: vec![InlineElement::Text {
-                                    text: "UL Item 1".into(),
-                                }],
+                text: "UL Item 1".into(),
+                style: None,
+            }],
                             },
                             ListItem {
                                 content: vec![InlineElement::Text {
-                                    text: "UL Item 2".into(),
-                                }],
+                text: "UL Item 2".into(),
+                style: None,
+            }],
                             },
                         ],
                         id: None,
@@ -8921,8 +8927,9 @@ mod tests {
                     BlockElement::OrderedList {
                         items: vec![ListItem {
                             content: vec![InlineElement::Text {
-                                text: "OL Item".into(),
-                            }],
+                text: "OL Item".into(),
+                style: None,
+            }],
                         }],
                         id: None,
                         start: Some(5),
@@ -8949,8 +8956,9 @@ mod tests {
                     BlockElement::Div {
                         elements: vec![BlockElement::Paragraph {
                             content: vec![InlineElement::Text {
-                                text: "div text".into(),
-                            }],
+                text: "div text".into(),
+                style: None,
+            }],
                             id: None,
                         }],
                         id: None,
@@ -8959,8 +8967,9 @@ mod tests {
                     BlockElement::Blockquote {
                         elements: vec![BlockElement::Paragraph {
                             content: vec![InlineElement::Text {
-                                text: "quote text".into(),
-                            }],
+                text: "quote text".into(),
+                style: None,
+            }],
                             id: None,
                         }],
                         id: None,
@@ -9033,36 +9042,43 @@ mod tests {
         let inlines = vec![
             InlineElement::Text {
                 text: "plain ".into(),
+                style: None,
             },
             InlineElement::Bold {
                 content: vec![InlineElement::Text {
-                    text: "bold".into(),
-                }],
+                text: "bold".into(),
+                style: None,
+            }],
             },
             InlineElement::Italic {
                 content: vec![InlineElement::Text {
-                    text: " italic".into(),
-                }],
+                text: " italic".into(),
+                style: None,
+            }],
             },
             InlineElement::Underline {
                 content: vec![InlineElement::Text {
-                    text: " underline".into(),
-                }],
+                text: " underline".into(),
+                style: None,
+            }],
             },
             InlineElement::Strikethrough {
                 content: vec![InlineElement::Text {
-                    text: " strike".into(),
-                }],
+                text: " strike".into(),
+                style: None,
+            }],
             },
             InlineElement::Subscript {
                 content: vec![InlineElement::Text {
-                    text: " sub".into(),
-                }],
+                text: " sub".into(),
+                style: None,
+            }],
             },
             InlineElement::Superscript {
                 content: vec![InlineElement::Text {
-                    text: " super".into(),
-                }],
+                text: " super".into(),
+                style: None,
+            }],
             },
             InlineElement::Code {
                 content: " code".into(),
@@ -9071,8 +9087,9 @@ mod tests {
                 href: "https://example.com".into(),
                 title: None,
                 content: vec![InlineElement::Text {
-                    text: "link".into(),
-                }],
+                text: "link".into(),
+                style: None,
+            }],
             },
             InlineElement::Image {
                 src: "img.png".into(),
@@ -9080,7 +9097,7 @@ mod tests {
                 title: None,
             },
             InlineElement::LineBreak,
-            InlineElement::Text { text: "end".into() },
+            InlineElement::Text { text: "end".into(), style: None },
         ];
         let runs = html_inlines_to_docx_runs(&inlines);
         assert_eq!(runs.len(), 11);
@@ -9112,7 +9129,7 @@ mod tests {
     #[test]
     fn test_html_inlines_to_docx_runs_empty_text_skipped() {
         let inlines = vec![
-            InlineElement::Text { text: "".into() },
+            InlineElement::Text { text: "".into(), style: None },
             InlineElement::Image {
                 src: "img.png".into(),
                 alt: None,
@@ -9129,10 +9146,12 @@ mod tests {
         let inlines = vec![
             InlineElement::Text {
                 text: "line1".into(),
+                style: None,
             },
             InlineElement::LineBreak,
             InlineElement::Text {
                 text: "line2".into(),
+                style: None,
             },
         ];
         let runs = html_inlines_to_docx_runs(&inlines);
@@ -9152,8 +9171,9 @@ mod tests {
                 elements: vec![BlockElement::Heading {
                     level: 1,
                     content: vec![InlineElement::Text {
-                        text: "Title".into(),
-                    }],
+                text: "Title".into(),
+                style: None,
+            }],
                     id: None,
                 }],
             },
@@ -9168,28 +9188,31 @@ mod tests {
         let elements = vec![
             BlockElement::Heading {
                 level: 1,
-                content: vec![InlineElement::Text { text: "H1".into() }],
+                content: vec![InlineElement::Text { text: "H1".into(), style: None }],
                 id: None,
             },
             BlockElement::Paragraph {
                 content: vec![InlineElement::Text {
-                    text: "para".into(),
-                }],
+                text: "para".into(),
+                style: None,
+            }],
                 id: None,
             },
             BlockElement::UnorderedList {
                 items: vec![ListItem {
                     content: vec![InlineElement::Text {
-                        text: "ul item".into(),
-                    }],
+                text: "ul item".into(),
+                style: None,
+            }],
                 }],
                 id: None,
             },
             BlockElement::OrderedList {
                 items: vec![ListItem {
                     content: vec![InlineElement::Text {
-                        text: "ol item".into(),
-                    }],
+                text: "ol item".into(),
+                style: None,
+            }],
                 }],
                 id: None,
                 start: None,
@@ -9198,8 +9221,9 @@ mod tests {
                 rows: vec![TableRow {
                     cells: vec![TableCell {
                         content: vec![InlineElement::Text {
-                            text: "cell".into(),
-                        }],
+                text: "cell".into(),
+                style: None,
+            }],
                         colspan: 2,
                         rowspan: 1,
                     }],
@@ -9215,8 +9239,9 @@ mod tests {
             BlockElement::Div {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Text {
-                        text: "div text".into(),
-                    }],
+                text: "div text".into(),
+                style: None,
+            }],
                     id: None,
                 }],
                 id: None,
@@ -9225,8 +9250,9 @@ mod tests {
             BlockElement::Blockquote {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Text {
-                        text: "bq text".into(),
-                    }],
+                text: "bq text".into(),
+                style: None,
+            }],
                     id: None,
                 }],
                 id: None,
@@ -9313,6 +9339,7 @@ mod tests {
         let elements = vec![BlockElement::Paragraph {
             content: vec![InlineElement::Text {
                 text: "real".into(),
+                style: None,
             }],
             id: None,
         }];
@@ -9329,33 +9356,39 @@ mod tests {
         let inlines = vec![
             InlineElement::Text {
                 text: "text ".into(),
+                style: None,
             },
             InlineElement::Bold {
                 content: vec![InlineElement::Text {
-                    text: "bold".into(),
-                }],
+                text: "bold".into(),
+                style: None,
+            }],
             },
             InlineElement::Italic {
                 content: vec![InlineElement::Text {
-                    text: " italic".into(),
-                }],
+                text: " italic".into(),
+                style: None,
+            }],
             },
             InlineElement::Underline {
                 content: vec![InlineElement::Text {
-                    text: " underline".into(),
-                }],
+                text: " underline".into(),
+                style: None,
+            }],
             },
             InlineElement::Strikethrough {
                 content: vec![InlineElement::Text {
-                    text: " strike".into(),
-                }],
+                text: " strike".into(),
+                style: None,
+            }],
             },
             InlineElement::Link {
                 href: "https://ex.com".into(),
                 title: None,
                 content: vec![InlineElement::Text {
-                    text: "link".into(),
-                }],
+                text: "link".into(),
+                style: None,
+            }],
             },
             InlineElement::Code {
                 content: " code".into(),
@@ -9367,16 +9400,18 @@ mod tests {
             },
             InlineElement::Superscript {
                 content: vec![InlineElement::Text {
-                    text: " super".into(),
-                }],
+                text: " super".into(),
+                style: None,
+            }],
             },
             InlineElement::Subscript {
                 content: vec![InlineElement::Text {
-                    text: " sub".into(),
-                }],
+                text: " sub".into(),
+                style: None,
+            }],
             },
             InlineElement::LineBreak,
-            InlineElement::Text { text: "end".into() },
+            InlineElement::Text { text: "end".into(), style: None },
         ];
         let spans = html_inlines_to_odf_spans(&inlines);
         assert_eq!(spans.len(), 11);
@@ -9405,7 +9440,7 @@ mod tests {
     #[test]
     fn test_html_inlines_to_odf_spans_empty_skipped() {
         let spans = html_inlines_to_odf_spans(&[
-            InlineElement::Text { text: "".into() },
+            InlineElement::Text { text: "".into(), style: None },
             InlineElement::Image {
                 src: "img.png".into(),
                 alt: None,
@@ -10014,7 +10049,7 @@ mod tests {
     #[test]
     fn test_html_to_odf_empty_paragraph() {
         let elements = vec![BlockElement::Paragraph {
-            content: vec![InlineElement::Text { text: "".into() }],
+            content: vec![InlineElement::Text { text: "".into(), style: None }],
             id: None,
         }];
         let content = html_blocks_to_odf_content(&elements);
@@ -10045,6 +10080,7 @@ mod tests {
         let result = html_elements_to_fb2(&[BlockElement::Paragraph {
             content: vec![InlineElement::Text {
                 text: String::new(),
+                style: None,
             }],
             id: None,
         }]);
@@ -10059,8 +10095,9 @@ mod tests {
         let result = html_elements_to_fb2(&[BlockElement::Div {
             elements: vec![BlockElement::Paragraph {
                 content: vec![InlineElement::Text {
-                    text: "inner div text".into(),
-                }],
+                text: "inner div text".into(),
+                style: None,
+            }],
                 id: None,
             }],
             id: None,
@@ -10079,8 +10116,9 @@ mod tests {
         let result = html_elements_to_fb2(&[BlockElement::Blockquote {
             elements: vec![BlockElement::Paragraph {
                 content: vec![InlineElement::Text {
-                    text: "quote text".into(),
-                }],
+                text: "quote text".into(),
+                style: None,
+            }],
                 id: None,
             }],
             id: None,
@@ -10125,8 +10163,9 @@ mod tests {
         let items = vec![
             wo_html::model::ListItem {
                 content: vec![InlineElement::Text {
-                    text: "item one".into(),
-                }],
+                text: "item one".into(),
+                style: None,
+            }],
             },
             wo_html::model::ListItem { content: vec![] },
         ];
@@ -10156,8 +10195,9 @@ mod tests {
             rows: vec![wo_html::model::TableRow {
                 cells: vec![wo_html::model::TableCell {
                     content: vec![InlineElement::Text {
-                        text: "cell data".into(),
-                    }],
+                text: "cell data".into(),
+                style: None,
+            }],
                     colspan: 1,
                     rowspan: 1,
                 }],
@@ -10195,8 +10235,9 @@ mod tests {
             BlockElement::Heading {
                 level: 2,
                 content: vec![InlineElement::Text {
-                    text: "heading".into(),
-                }],
+                text: "heading".into(),
+                style: None,
+            }],
                 id: None,
             },
             BlockElement::HorizontalRule,
@@ -10214,9 +10255,7 @@ mod tests {
 
     #[test]
     fn test_inline_elements_to_formatting_empty_text() {
-        let result = inline_elements_to_formatting(&[InlineElement::Text {
-            text: String::new(),
-        }]);
+        let result = inline_elements_to_formatting(&[InlineElement::Text { text: String::new(), style: None }]);
         assert!(result.is_empty(), "empty text should produce no formatting");
     }
 
@@ -10225,6 +10264,7 @@ mod tests {
         let result = inline_elements_to_formatting(&[InlineElement::Bold {
             content: vec![InlineElement::Text {
                 text: "bold text".into(),
+                style: None,
             }],
         }]);
         assert_eq!(result.len(), 1);
@@ -10237,6 +10277,7 @@ mod tests {
         let result = inline_elements_to_formatting(&[InlineElement::Italic {
             content: vec![InlineElement::Text {
                 text: "italic text".into(),
+                style: None,
             }],
         }]);
         assert_eq!(result.len(), 1);
@@ -10248,6 +10289,7 @@ mod tests {
         let result = inline_elements_to_formatting(&[InlineElement::Strikethrough {
             content: vec![InlineElement::Text {
                 text: "struck".into(),
+                style: None,
             }],
         }]);
         assert_eq!(result.len(), 1);
@@ -10259,6 +10301,7 @@ mod tests {
         let result = inline_elements_to_formatting(&[InlineElement::Underline {
             content: vec![InlineElement::Text {
                 text: "underlined".into(),
+                style: None,
             }],
         }]);
         assert_eq!(result.len(), 1);
@@ -10268,7 +10311,7 @@ mod tests {
     #[test]
     fn test_inline_elements_to_formatting_subscript_nested() {
         let result = inline_elements_to_formatting(&[InlineElement::Subscript {
-            content: vec![InlineElement::Text { text: "sub".into() }],
+            content: vec![InlineElement::Text { text: "sub".into(), style: None }],
         }]);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].style, TextStyle::Subscript);
@@ -10279,6 +10322,7 @@ mod tests {
         let result = inline_elements_to_formatting(&[InlineElement::Superscript {
             content: vec![InlineElement::Text {
                 text: "super".into(),
+                style: None,
             }],
         }]);
         assert_eq!(result.len(), 1);
@@ -10323,6 +10367,7 @@ mod tests {
             title: Some("Example".into()),
             content: vec![InlineElement::Text {
                 text: "click me".into(),
+                style: None,
             }],
         }]);
         assert_eq!(result.len(), 1);
@@ -10379,8 +10424,9 @@ mod tests {
         let result = inline_elements_to_formatting(&[InlineElement::Bold {
             content: vec![InlineElement::Italic {
                 content: vec![InlineElement::Text {
-                    text: "bolditalic".into(),
-                }],
+                text: "bolditalic".into(),
+                style: None,
+            }],
             }],
         }]);
         assert_eq!(result.len(), 1);
@@ -10393,38 +10439,42 @@ mod tests {
     #[test]
     fn test_extract_inline_text_all_variants() {
         let result = extract_inline_text(&[
-            InlineElement::Text {
-                text: "Hello ".into(),
-            },
+            InlineElement::Text { text: "Hello ".into(), style: None },
             InlineElement::Bold {
                 content: vec![InlineElement::Text {
-                    text: "bold".into(),
-                }],
+                text: "bold".into(),
+                style: None,
+            }],
             },
             InlineElement::Italic {
                 content: vec![InlineElement::Text {
-                    text: " italic".into(),
-                }],
+                text: " italic".into(),
+                style: None,
+            }],
             },
             InlineElement::Underline {
                 content: vec![InlineElement::Text {
-                    text: " underline".into(),
-                }],
+                text: " underline".into(),
+                style: None,
+            }],
             },
             InlineElement::Strikethrough {
                 content: vec![InlineElement::Text {
-                    text: " strike".into(),
-                }],
+                text: " strike".into(),
+                style: None,
+            }],
             },
             InlineElement::Subscript {
                 content: vec![InlineElement::Text {
-                    text: " sub".into(),
-                }],
+                text: " sub".into(),
+                style: None,
+            }],
             },
             InlineElement::Superscript {
                 content: vec![InlineElement::Text {
-                    text: " super".into(),
-                }],
+                text: " super".into(),
+                style: None,
+            }],
             },
             InlineElement::Code {
                 content: " code".into(),
@@ -10433,8 +10483,9 @@ mod tests {
                 href: "http://x.com".into(),
                 title: None,
                 content: vec![InlineElement::Text {
-                    text: " link".into(),
-                }],
+                text: " link".into(),
+                style: None,
+            }],
             },
             InlineElement::Image {
                 src: "i.png".into(),
@@ -10447,9 +10498,7 @@ mod tests {
                 title: None,
             },
             InlineElement::LineBreak,
-            InlineElement::Text {
-                text: " end".into(),
-            },
+            InlineElement::Text { text: " end".into(), style: None },
         ]);
         assert_eq!(
             result,
@@ -10462,8 +10511,9 @@ mod tests {
         let result = extract_inline_text(&[InlineElement::Bold {
             content: vec![InlineElement::Italic {
                 content: vec![InlineElement::Text {
-                    text: "nested text".into(),
-                }],
+                text: "nested text".into(),
+                style: None,
+            }],
             }],
         }]);
         assert_eq!(result, "nested text");
@@ -10472,9 +10522,9 @@ mod tests {
     #[test]
     fn test_extract_inline_text_linebreak_as_space() {
         let result = extract_inline_text(&[
-            InlineElement::Text { text: "a".into() },
+            InlineElement::Text { text: "a".into(), style: None },
             InlineElement::LineBreak,
-            InlineElement::Text { text: "b".into() },
+            InlineElement::Text { text: "b".into(), style: None },
         ]);
         assert_eq!(result, "a b");
     }
@@ -10784,24 +10834,24 @@ mod tests {
     #[test]
     fn test_html_inlines_to_rtf_inlines_all_variants() {
         let result = html_inlines_to_rtf_inlines(&[
-            InlineElement::Text { text: "t".into() },
+            InlineElement::Text { text: "t".into(), style: None },
             InlineElement::Bold {
-                content: vec![InlineElement::Text { text: "b".into() }],
+                content: vec![InlineElement::Text { text: "b".into(), style: None }],
             },
             InlineElement::Italic {
-                content: vec![InlineElement::Text { text: "i".into() }],
+                content: vec![InlineElement::Text { text: "i".into(), style: None }],
             },
             InlineElement::Underline {
-                content: vec![InlineElement::Text { text: "u".into() }],
+                content: vec![InlineElement::Text { text: "u".into(), style: None }],
             },
             InlineElement::Strikethrough {
-                content: vec![InlineElement::Text { text: "s".into() }],
+                content: vec![InlineElement::Text { text: "s".into(), style: None }],
             },
             InlineElement::Superscript {
-                content: vec![InlineElement::Text { text: "sup".into() }],
+                content: vec![InlineElement::Text { text: "sup".into(), style: None }],
             },
             InlineElement::Subscript {
-                content: vec![InlineElement::Text { text: "sub".into() }],
+                content: vec![InlineElement::Text { text: "sub".into(), style: None }],
             },
             InlineElement::Code {
                 content: "c".into(),
@@ -10809,7 +10859,7 @@ mod tests {
             InlineElement::Link {
                 href: "http://x.com".into(),
                 title: None,
-                content: vec![InlineElement::Text { text: "l".into() }],
+                content: vec![InlineElement::Text { text: "l".into(), style: None }],
             },
             InlineElement::Image {
                 src: "x.png".into(),
@@ -10840,9 +10890,7 @@ mod tests {
     #[test]
     fn test_html_inlines_to_rtf_inlines_empty_skipped() {
         let result = html_inlines_to_rtf_inlines(&[
-            InlineElement::Text {
-                text: String::new(),
-            },
+            InlineElement::Text { text: String::new(), style: None },
             InlineElement::Bold { content: vec![] },
             InlineElement::Italic { content: vec![] },
             InlineElement::Underline { content: vec![] },
@@ -10869,11 +10917,13 @@ mod tests {
             content: vec![
                 InlineElement::Bold {
                     content: vec![InlineElement::Text {
-                        text: "bold in link".into(),
-                    }],
+                text: "bold in link".into(),
+                style: None,
+            }],
                 },
                 InlineElement::Text {
                     text: " plain in link".into(),
+                    style: None,
                 },
             ],
         }]);
@@ -10890,8 +10940,9 @@ mod tests {
             let result = html_blocks_to_rtf_blocks(&[BlockElement::Heading {
                 level,
                 content: vec![InlineElement::Text {
-                    text: format!("h{level} text"),
-                }],
+                text: format!("h{level} text"),
+                style: None,
+            }],
                 id: None,
             }]);
             assert_eq!(
@@ -10918,6 +10969,7 @@ mod tests {
             level: 7u8,
             content: vec![InlineElement::Text {
                 text: "deep heading".into(),
+                style: None,
             }],
             id: None,
         }]);
@@ -10942,8 +10994,9 @@ mod tests {
             BlockElement::Div {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Text {
-                        text: "div content".into(),
-                    }],
+                text: "div content".into(),
+                style: None,
+            }],
                     id: None,
                 }],
                 id: None,
@@ -10952,8 +11005,9 @@ mod tests {
             BlockElement::Blockquote {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Text {
-                        text: "quote content".into(),
-                    }],
+                text: "quote content".into(),
+                style: None,
+            }],
                     id: None,
                 }],
                 id: None,
@@ -10968,13 +11022,15 @@ mod tests {
             items: vec![
                 wo_html::model::ListItem {
                     content: vec![InlineElement::Text {
-                        text: "item1".into(),
-                    }],
+                text: "item1".into(),
+                style: None,
+            }],
                 },
                 wo_html::model::ListItem {
                     content: vec![InlineElement::Text {
-                        text: "item2".into(),
-                    }],
+                text: "item2".into(),
+                style: None,
+            }],
                 },
             ],
             id: None,
@@ -11003,8 +11059,9 @@ mod tests {
         let result = html_blocks_to_rtf_blocks(&[BlockElement::OrderedList {
             items: vec![wo_html::model::ListItem {
                 content: vec![InlineElement::Text {
-                    text: "first".into(),
-                }],
+                text: "first".into(),
+                style: None,
+            }],
             }],
             id: None,
             start: Some(5),
@@ -11027,7 +11084,7 @@ mod tests {
         let result = html_blocks_to_rtf_blocks(&[BlockElement::Table {
             rows: vec![wo_html::model::TableRow {
                 cells: vec![wo_html::model::TableCell {
-                    content: vec![InlineElement::Text { text: "a".into() }],
+                    content: vec![InlineElement::Text { text: "a".into(), style: None }],
                     colspan: 1,
                     rowspan: 1,
                 }],
@@ -11116,45 +11173,50 @@ mod tests {
     #[test]
     fn test_extract_html_text_all_variants() {
         let result = extract_html_text(&[
-            InlineElement::Text {
-                text: "Hello ".into(),
-            },
+            InlineElement::Text { text: "Hello ".into(), style: None },
             InlineElement::Bold {
                 content: vec![InlineElement::Text {
-                    text: "bold".into(),
-                }],
+                text: "bold".into(),
+                style: None,
+            }],
             },
             InlineElement::Italic {
                 content: vec![InlineElement::Text {
-                    text: " italic".into(),
-                }],
+                text: " italic".into(),
+                style: None,
+            }],
             },
             InlineElement::Underline {
                 content: vec![InlineElement::Text {
-                    text: " underline".into(),
-                }],
+                text: " underline".into(),
+                style: None,
+            }],
             },
             InlineElement::Strikethrough {
                 content: vec![InlineElement::Text {
-                    text: " strike".into(),
-                }],
+                text: " strike".into(),
+                style: None,
+            }],
             },
             InlineElement::Subscript {
                 content: vec![InlineElement::Text {
-                    text: " sub".into(),
-                }],
+                text: " sub".into(),
+                style: None,
+            }],
             },
             InlineElement::Superscript {
                 content: vec![InlineElement::Text {
-                    text: " super".into(),
-                }],
+                text: " super".into(),
+                style: None,
+            }],
             },
             InlineElement::Link {
                 href: "http://x.com".into(),
                 title: None,
                 content: vec![InlineElement::Text {
-                    text: " link".into(),
-                }],
+                text: " link".into(),
+                style: None,
+            }],
             },
             InlineElement::Code {
                 content: " code".into(),
@@ -11170,9 +11232,7 @@ mod tests {
                 title: None,
             },
             InlineElement::LineBreak,
-            InlineElement::Text {
-                text: " end".into(),
-            },
+            InlineElement::Text { text: " end".into(), style: None },
         ]);
         assert_eq!(
             result,
@@ -11188,28 +11248,32 @@ mod tests {
             BlockElement::Heading {
                 level: 1,
                 content: vec![InlineElement::Text {
-                    text: "Title".into(),
-                }],
+                text: "Title".into(),
+                style: None,
+            }],
                 id: None,
             },
             BlockElement::Heading {
                 level: 3,
                 content: vec![InlineElement::Text {
-                    text: "Subtitle".into(),
-                }],
+                text: "Subtitle".into(),
+                style: None,
+            }],
                 id: None,
             },
             BlockElement::Paragraph {
                 content: vec![InlineElement::Text {
-                    text: "Para text".into(),
-                }],
+                text: "Para text".into(),
+                style: None,
+            }],
                 id: None,
             },
             BlockElement::Div {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Text {
-                        text: "div inner".into(),
-                    }],
+                text: "div inner".into(),
+                style: None,
+            }],
                     id: None,
                 }],
                 id: None,
@@ -11218,8 +11282,9 @@ mod tests {
             BlockElement::Blockquote {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::Text {
-                        text: "btext".into(),
-                    }],
+                text: "btext".into(),
+                style: None,
+            }],
                     id: None,
                 }],
                 id: None,
@@ -11227,16 +11292,18 @@ mod tests {
             BlockElement::UnorderedList {
                 items: vec![wo_html::model::ListItem {
                     content: vec![InlineElement::Text {
-                        text: "ul item".into(),
-                    }],
+                text: "ul item".into(),
+                style: None,
+            }],
                 }],
                 id: None,
             },
             BlockElement::OrderedList {
                 items: vec![wo_html::model::ListItem {
                     content: vec![InlineElement::Text {
-                        text: "ol item".into(),
-                    }],
+                text: "ol item".into(),
+                style: None,
+            }],
                 }],
                 id: None,
                 start: None,
@@ -11245,12 +11312,12 @@ mod tests {
                 rows: vec![wo_html::model::TableRow {
                     cells: vec![
                         wo_html::model::TableCell {
-                            content: vec![InlineElement::Text { text: "c1".into() }],
+                            content: vec![InlineElement::Text { text: "c1".into(), style: None }],
                             colspan: 1,
                             rowspan: 1,
                         },
                         wo_html::model::TableCell {
-                            content: vec![InlineElement::Text { text: "c2".into() }],
+                            content: vec![InlineElement::Text { text: "c2".into(), style: None }],
                             colspan: 1,
                             rowspan: 1,
                         },
@@ -11308,10 +11375,12 @@ mod tests {
             content: vec![
                 InlineElement::Text {
                     text: "line1".into(),
+                    style: None,
                 },
                 InlineElement::LineBreak,
                 InlineElement::Text {
                     text: "line2".into(),
+                    style: None,
                 },
             ],
             id: None,
@@ -11325,6 +11394,7 @@ mod tests {
             content: vec![
                 InlineElement::Text {
                     text: "see ".into(),
+                    style: None,
                 },
                 InlineElement::Image {
                     src: "img.png".into(),
@@ -11460,24 +11530,26 @@ mod tests {
         let elements = vec![
             BlockElement::Heading {
                 level: 1,
-                content: vec![InlineElement::Text { text: "Ch1".into() }],
+                content: vec![InlineElement::Text { text: "Ch1".into(), style: None }],
                 id: None,
             },
             BlockElement::Paragraph {
                 content: vec![InlineElement::Text {
-                    text: "para1".into(),
-                }],
+                text: "para1".into(),
+                style: None,
+            }],
                 id: None,
             },
             BlockElement::Heading {
                 level: 2,
-                content: vec![InlineElement::Text { text: "Ch2".into() }],
+                content: vec![InlineElement::Text { text: "Ch2".into(), style: None }],
                 id: None,
             },
             BlockElement::Paragraph {
                 content: vec![InlineElement::Text {
-                    text: "para2".into(),
-                }],
+                text: "para2".into(),
+                style: None,
+            }],
                 id: None,
             },
         ];
@@ -11492,14 +11564,16 @@ mod tests {
         let elements = vec![
             BlockElement::Paragraph {
                 content: vec![InlineElement::Text {
-                    text: "First para".into(),
-                }],
+                text: "First para".into(),
+                style: None,
+            }],
                 id: None,
             },
             BlockElement::Paragraph {
                 content: vec![InlineElement::Text {
-                    text: "Second para".into(),
-                }],
+                text: "Second para".into(),
+                style: None,
+            }],
                 id: None,
             },
         ];
@@ -11513,7 +11587,7 @@ mod tests {
         // H3 does not start a new chapter — only h1/h2
         let elements = vec![BlockElement::Heading {
             level: 3,
-            content: vec![InlineElement::Text { text: "H3".into() }],
+            content: vec![InlineElement::Text { text: "H3".into(), style: None }],
             id: None,
         }];
         let chapters = html_to_epub_chapters(&elements);
@@ -11527,6 +11601,7 @@ mod tests {
             level: 2,
             content: vec![InlineElement::Text {
                 text: "Subtitle".into(),
+                style: None,
             }],
             id: None,
         });
@@ -11536,6 +11611,7 @@ mod tests {
         let p = block_element_to_xhtml(&BlockElement::Paragraph {
             content: vec![InlineElement::Text {
                 text: "Hello".into(),
+                style: None,
             }],
             id: None,
         });
@@ -11544,7 +11620,7 @@ mod tests {
         // UnorderedList
         let ul = block_element_to_xhtml(&BlockElement::UnorderedList {
             items: vec![ListItem {
-                content: vec![InlineElement::Text { text: "A".into() }],
+                content: vec![InlineElement::Text { text: "A".into(), style: None }],
             }],
             id: None,
         });
@@ -11553,7 +11629,7 @@ mod tests {
         // OrderedList
         let ol = block_element_to_xhtml(&BlockElement::OrderedList {
             items: vec![ListItem {
-                content: vec![InlineElement::Text { text: "1".into() }],
+                content: vec![InlineElement::Text { text: "1".into(), style: None }],
             }],
             id: None,
             start: None,
@@ -11575,8 +11651,9 @@ mod tests {
         let div = block_element_to_xhtml(&BlockElement::Div {
             elements: vec![BlockElement::Paragraph {
                 content: vec![InlineElement::Text {
-                    text: "inner".into(),
-                }],
+                text: "inner".into(),
+                style: None,
+            }],
                 id: None,
             }],
             id: None,
@@ -11588,8 +11665,9 @@ mod tests {
         let bq = block_element_to_xhtml(&BlockElement::Blockquote {
             elements: vec![BlockElement::Paragraph {
                 content: vec![InlineElement::Text {
-                    text: "quote".into(),
-                }],
+                text: "quote".into(),
+                style: None,
+            }],
                 id: None,
             }],
             id: None,
@@ -11601,8 +11679,9 @@ mod tests {
             rows: vec![TableRow {
                 cells: vec![TableCell {
                     content: vec![InlineElement::Text {
-                        text: "cell".into(),
-                    }],
+                text: "cell".into(),
+                style: None,
+            }],
                     colspan: 1,
                     rowspan: 1,
                 }],
@@ -11624,6 +11703,7 @@ mod tests {
             level: 1,
             content: vec![InlineElement::Text {
                 text: "AT&T".into(),
+                style: None,
             }],
             id: None,
         });
@@ -12482,7 +12562,7 @@ mod tests {
         assert_eq!(inlines.len(), 1);
         match &inlines[0] {
             InlineElement::Strikethrough { content } => {
-                assert!(matches!(content[0], InlineElement::Text { text: ref t } if t == "struck"));
+                assert!(matches!(content[0], InlineElement::Text { text: ref t, style: None } if t == "struck"));
             }
             _ => panic!("expected Strikethrough"),
         }
@@ -12499,7 +12579,7 @@ mod tests {
         assert_eq!(inlines.len(), 1);
         match &inlines[0] {
             InlineElement::Underline { content } => {
-                assert!(matches!(content[0], InlineElement::Text { text: ref t } if t == "under"));
+                assert!(matches!(content[0], InlineElement::Text { text: ref t, style: None } if t == "under"));
             }
             _ => panic!("expected Underline"),
         }
@@ -12519,7 +12599,7 @@ mod tests {
         match &inlines[0] {
             InlineElement::Bold { content } => match &content[0] {
                 InlineElement::Italic { content: inner } => {
-                    assert!(matches!(inner[0], InlineElement::Text { text: ref t } if t == "both"));
+                    assert!(matches!(inner[0], InlineElement::Text { text: ref t, style: None } if t == "both"));
                 }
                 _ => panic!("expected Italic inside Bold"),
             },
@@ -13282,7 +13362,8 @@ mod tests {
         // Text
         assert_eq!(
             extract_html_text(&[InlineElement::Text {
-                text: "hello".into()
+                text: "hello".into(),
+                style: None,
             }]),
             "hello"
         );
@@ -13291,6 +13372,7 @@ mod tests {
         let bold = InlineElement::Bold {
             content: vec![InlineElement::Text {
                 text: "bold".into(),
+                style: None,
             }],
         };
         assert_eq!(extract_html_text(&[bold]), "bold");
@@ -13299,13 +13381,14 @@ mod tests {
         let italic = InlineElement::Italic {
             content: vec![InlineElement::Text {
                 text: "italic".into(),
+                style: None,
             }],
         };
         assert_eq!(extract_html_text(&[italic]), "italic");
 
         // Underline
         let ul = InlineElement::Underline {
-            content: vec![InlineElement::Text { text: "ul".into() }],
+            content: vec![InlineElement::Text { text: "ul".into(), style: None }],
         };
         assert_eq!(extract_html_text(&[ul]), "ul");
 
@@ -13313,6 +13396,7 @@ mod tests {
         let strike = InlineElement::Strikethrough {
             content: vec![InlineElement::Text {
                 text: "strike".into(),
+                style: None,
             }],
         };
         assert_eq!(extract_html_text(&[strike]), "strike");
@@ -13323,6 +13407,7 @@ mod tests {
             title: None,
             content: vec![InlineElement::Text {
                 text: "click".into(),
+                style: None,
             }],
         };
         assert_eq!(extract_html_text(&[link]), "click");
@@ -13343,11 +13428,11 @@ mod tests {
 
         // Subscript / Superscript
         let sub = InlineElement::Subscript {
-            content: vec![InlineElement::Text { text: "sub".into() }],
+            content: vec![InlineElement::Text { text: "sub".into(), style: None }],
         };
         assert_eq!(extract_html_text(&[sub]), "sub");
         let sup = InlineElement::Superscript {
-            content: vec![InlineElement::Text { text: "sup".into() }],
+            content: vec![InlineElement::Text { text: "sup".into(), style: None }],
         };
         assert_eq!(extract_html_text(&[sup]), "sup");
 
@@ -13447,6 +13532,7 @@ mod tests {
         let elements = vec![BlockElement::Paragraph {
             content: vec![InlineElement::Text {
                 text: "Content".into(),
+                style: None,
             }],
             id: None,
         }];
@@ -13458,24 +13544,26 @@ mod tests {
         let elements_h = vec![
             BlockElement::Heading {
                 level: 1,
-                content: vec![InlineElement::Text { text: "Ch1".into() }],
+                content: vec![InlineElement::Text { text: "Ch1".into(), style: None }],
                 id: None,
             },
             BlockElement::Paragraph {
                 content: vec![InlineElement::Text {
-                    text: "Body1".into(),
-                }],
+                text: "Body1".into(),
+                style: None,
+            }],
                 id: None,
             },
             BlockElement::Heading {
                 level: 2,
-                content: vec![InlineElement::Text { text: "Ch2".into() }],
+                content: vec![InlineElement::Text { text: "Ch2".into(), style: None }],
                 id: None,
             },
             BlockElement::Paragraph {
                 content: vec![InlineElement::Text {
-                    text: "Body2".into(),
-                }],
+                text: "Body2".into(),
+                style: None,
+            }],
                 id: None,
             },
         ];
@@ -13495,9 +13583,7 @@ mod tests {
 
     #[test]
     fn test_html_inlines_to_docx_runs_plain_text() {
-        let runs = html_inlines_to_docx_runs(&[InlineElement::Text {
-            text: "Hello".into(),
-        }]);
+        let runs = html_inlines_to_docx_runs(&[InlineElement::Text { text: "Hello".into(), style: None }]);
         assert_eq!(runs.len(), 1);
         assert_eq!(runs[0].text, "Hello");
         assert!(!runs[0].bold);
@@ -13508,6 +13594,7 @@ mod tests {
         let runs = html_inlines_to_docx_runs(&[InlineElement::Bold {
             content: vec![InlineElement::Text {
                 text: "bold".into(),
+                style: None,
             }],
         }]);
         assert_eq!(runs.len(), 1);
@@ -13518,7 +13605,7 @@ mod tests {
     #[test]
     fn test_html_inlines_to_docx_runs_italic() {
         let runs = html_inlines_to_docx_runs(&[InlineElement::Italic {
-            content: vec![InlineElement::Text { text: "em".into() }],
+            content: vec![InlineElement::Text { text: "em".into(), style: None }],
         }]);
         assert_eq!(runs.len(), 1);
         assert_eq!(runs[0].text, "em");
@@ -13528,12 +13615,12 @@ mod tests {
     #[test]
     fn test_html_inlines_to_docx_runs_mixed() {
         let runs = html_inlines_to_docx_runs(&[
-            InlineElement::Text { text: "A ".into() },
+            InlineElement::Text { text: "A ".into(), style: None },
             InlineElement::Bold {
-                content: vec![InlineElement::Text { text: "B".into() }],
+                content: vec![InlineElement::Text { text: "B".into(), style: None }],
             },
             InlineElement::Italic {
-                content: vec![InlineElement::Text { text: " C".into() }],
+                content: vec![InlineElement::Text { text: " C".into(), style: None }],
             },
         ]);
         assert_eq!(runs.len(), 3);
@@ -13550,14 +13637,14 @@ mod tests {
 
     #[test]
     fn test_html_inlines_to_docx_runs_skips_empty_text() {
-        let runs = html_inlines_to_docx_runs(&[InlineElement::Text { text: "".into() }]);
+        let runs = html_inlines_to_docx_runs(&[InlineElement::Text { text: "".into(), style: None }]);
         assert!(runs.is_empty());
     }
 
     #[test]
     fn test_html_inlines_to_docx_runs_skips_empty_bold() {
         let runs = html_inlines_to_docx_runs(&[InlineElement::Bold {
-            content: vec![InlineElement::Text { text: "".into() }],
+            content: vec![InlineElement::Text { text: "".into(), style: None }],
         }]);
         assert!(runs.is_empty());
     }

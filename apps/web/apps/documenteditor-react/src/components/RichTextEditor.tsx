@@ -1,6 +1,14 @@
+import Color from "@tiptap/extension-color"
+import FontFamily from "@tiptap/extension-font-family"
+import Highlight from "@tiptap/extension-highlight"
 import Image from "@tiptap/extension-image"
 import Link from "@tiptap/extension-link"
+import Subscript from "@tiptap/extension-subscript"
+import Superscript from "@tiptap/extension-superscript"
+import TaskItem from "@tiptap/extension-task-item"
+import TaskList from "@tiptap/extension-task-list"
 import TextAlign from "@tiptap/extension-text-align"
+import { TextStyle } from "@tiptap/extension-text-style"
 import Underline from "@tiptap/extension-underline"
 import { EditorContent, useEditor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
@@ -31,6 +39,14 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       extensions: [
         StarterKit,
         Underline,
+        TextStyle,
+        Color,
+        FontFamily,
+        Highlight.configure({ multicolor: true }),
+        Subscript,
+        Superscript,
+        TaskList,
+        TaskItem.configure({ nested: true }),
         TextAlign.configure({ types: ["heading", "paragraph"] }),
         Link.configure({ openOnClick: true }),
         Image,

@@ -17,6 +17,13 @@ export type RichTextCommand =
   | "italic"
   | "underline"
   | "strike"
+  | "subscript"
+  | "superscript"
+  | "textColor"
+  | "highlight"
+  | "fontFamily"
+  | "fontSize"
+  | "clearFormatting"
   | "undo"
   | "redo"
   | "heading1"
@@ -24,13 +31,17 @@ export type RichTextCommand =
   | "heading3"
   | "bulletList"
   | "orderedList"
+  | "taskList"
   | "alignLeft"
   | "alignCenter"
   | "alignRight"
+  | "alignJustify"
   | "blockquote"
-  | "code"
+  | "codeBlock"
   | "link"
   | "image"
+  | "indent"
+  | "outdent"
 
 export type RichTextCommandHandler = (command: RichTextCommand) => void
 
@@ -39,6 +50,13 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "italic",
   "underline",
   "strike",
+  "subscript",
+  "superscript",
+  "textColor",
+  "highlight",
+  "fontFamily",
+  "fontSize",
+  "clearFormatting",
   "undo",
   "redo",
   "heading1",
@@ -46,13 +64,17 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "heading3",
   "bulletList",
   "orderedList",
+  "taskList",
   "alignLeft",
   "alignCenter",
   "alignRight",
+  "alignJustify",
   "blockquote",
-  "code",
+  "codeBlock",
   "link",
   "image",
+  "indent",
+  "outdent",
 ] as const
 
 export type RichTextCommandSurface = Editor
@@ -86,6 +108,43 @@ export function dispatchRichTextCommand(command: RichTextCommand): boolean {
     case "strike":
       chain.toggleStrike().run()
       return true
+    case "subscript":
+      chain.toggleSubscript().run()
+      return true
+    case "superscript":
+      chain.toggleSuperscript().run()
+      return true
+    case "textColor": {
+      const color = window.prompt("Enter text color (name or hex, e.g., red, #ff0000):")
+      if (color) {
+        chain.setColor(color).run()
+      }
+      return true
+    }
+    case "highlight": {
+      const hlColor = window.prompt("Enter highlight color (name or hex):")
+      if (hlColor) {
+        chain.toggleHighlight({ color: hlColor }).run()
+      }
+      return true
+    }
+    case "fontFamily": {
+      const font = window.prompt("Enter font family (e.g., Arial, Times New Roman):")
+      if (font) {
+        chain.setFontFamily(font).run()
+      }
+      return true
+    }
+    case "fontSize": {
+      const size = window.prompt("Enter font size (e.g., 14pt, 16px):")
+      if (size) {
+        chain.setMark("textStyle", { fontSize: size }).run()
+      }
+      return true
+    }
+    case "clearFormatting":
+      chain.unsetAllMarks().run()
+      return true
     case "undo":
       chain.undo().run()
       return true
@@ -107,6 +166,9 @@ export function dispatchRichTextCommand(command: RichTextCommand): boolean {
     case "orderedList":
       chain.toggleOrderedList().run()
       return true
+    case "taskList":
+      chain.toggleTaskList().run()
+      return true
     case "alignLeft":
       chain.setTextAlign("left").run()
       return true
@@ -116,14 +178,22 @@ export function dispatchRichTextCommand(command: RichTextCommand): boolean {
     case "alignRight":
       chain.setTextAlign("right").run()
       return true
+    case "alignJustify":
+      chain.setTextAlign("justify").run()
+      return true
     case "blockquote":
       chain.toggleBlockquote().run()
       return true
-    case "code":
-      chain.toggleCode().run()
+    case "codeBlock":
+      chain.toggleCodeBlock().run()
+      return true
+    case "indent":
+      chain.sinkListItem("listItem").run()
+      return true
+    case "outdent":
+      chain.liftListItem("listItem").run()
       return true
     case "link": {
-      // Prompt for a URL and apply a link to the selected text
       const url = window.prompt("Enter link URL:")
       if (url) {
         chain.setLink({ href: url }).run()
@@ -131,7 +201,6 @@ export function dispatchRichTextCommand(command: RichTextCommand): boolean {
       return true
     }
     case "image": {
-      // Prompt for an image URL and insert it
       const src = window.prompt("Enter image URL:")
       if (src) {
         chain.setImage({ src }).run()

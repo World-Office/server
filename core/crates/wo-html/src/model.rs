@@ -101,6 +101,7 @@ pub struct TableCell {
 pub enum InlineElement {
     Text {
         text: String,
+        style: Option<String>,
     },
     Bold {
         content: Vec<InlineElement>,
