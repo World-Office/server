@@ -32,7 +32,7 @@ const ObservedToolbar = observer(function ObservedToolbar({
         <div className="de-toolbar-extra-left" />
         <FileTab />
         <HomeTab onMonacoCommand={onMonacoCommand} onRichTextCommand={onRichTextCommand} />
-        {isEditMode && <InsertTab />}
+        {isEditMode && <InsertTab onRichTextCommand={onRichTextCommand} />}
         {isEditMode && <LayoutTab />}
         <ReferencesTab />
         <ViewTab onMonacoCommand={onMonacoCommand} />

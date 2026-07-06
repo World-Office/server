@@ -42,6 +42,22 @@ export type RichTextCommand =
   | "image"
   | "indent"
   | "outdent"
+  // Table commands
+  | "insertTable"
+  | "addRowBefore"
+  | "addRowAfter"
+  | "deleteRow"
+  | "addColumnBefore"
+  | "addColumnAfter"
+  | "deleteColumn"
+  | "mergeCells"
+  | "splitCell"
+  | "toggleHeaderRow"
+  | "toggleHeaderColumn"
+  | "toggleHeaderCell"
+  | "deleteTable"
+  | "pageBreak"
+  | "horizontalRule"
 
 export type RichTextCommandHandler = (command: RichTextCommand) => void
 
@@ -75,6 +91,21 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "image",
   "indent",
   "outdent",
+  "insertTable",
+  "addRowBefore",
+  "addRowAfter",
+  "deleteRow",
+  "addColumnBefore",
+  "addColumnAfter",
+  "deleteColumn",
+  "mergeCells",
+  "splitCell",
+  "toggleHeaderRow",
+  "toggleHeaderColumn",
+  "toggleHeaderCell",
+  "deleteTable",
+  "pageBreak",
+  "horizontalRule",
 ] as const
 
 export type RichTextCommandSurface = Editor
@@ -207,5 +238,57 @@ export function dispatchRichTextCommand(command: RichTextCommand): boolean {
       }
       return true
     }
+    // Table commands
+    case "insertTable": {
+      const rows = Number.parseInt(window.prompt("Number of rows:", "3") ?? "3", 10)
+      const cols = Number.parseInt(window.prompt("Number of columns:", "3") ?? "3", 10)
+      if (rows > 0 && cols > 0) {
+        chain.insertTable({ rows, cols, withHeaderRow: true }).run()
+      }
+      return true
+    }
+    case "addRowBefore":
+      chain.addRowBefore().run()
+      return true
+    case "addRowAfter":
+      chain.addRowAfter().run()
+      return true
+    case "deleteRow":
+      chain.deleteRow().run()
+      return true
+    case "addColumnBefore":
+      chain.addColumnBefore().run()
+      return true
+    case "addColumnAfter":
+      chain.addColumnAfter().run()
+      return true
+    case "deleteColumn":
+      chain.deleteColumn().run()
+      return true
+    case "mergeCells":
+      chain.mergeCells().run()
+      return true
+    case "splitCell":
+      chain.splitCell().run()
+      return true
+    case "toggleHeaderRow":
+      chain.toggleHeaderRow().run()
+      return true
+    case "toggleHeaderColumn":
+      chain.toggleHeaderColumn().run()
+      return true
+    case "toggleHeaderCell":
+      chain.toggleHeaderCell().run()
+      return true
+    case "deleteTable":
+      chain.deleteTable().run()
+      return true
+    case "pageBreak":
+      // Use a horizontal rule as a page break marker
+      chain.setHorizontalRule().run()
+      return true
+    case "horizontalRule":
+      chain.setHorizontalRule().run()
+      return true
   }
 }

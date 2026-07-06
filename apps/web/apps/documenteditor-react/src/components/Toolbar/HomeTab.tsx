@@ -364,6 +364,83 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 
       <div className="de-hometab-separator" />
 
+      {/* Table */}
+      <div className="de-hometab-group">
+        <div className="de-hometab-elset">
+          <span className="de-hometab-label">Table</span>
+        </div>
+        <div className="de-hometab-elset">
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("addRowAfter")}
+            title="Insert Row Below"
+          >
+            Row+
+          </button>
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("deleteRow")}
+            title="Delete Row"
+          >
+            Row-
+          </button>
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("addColumnAfter")}
+            title="Insert Column Right"
+          >
+            Col+
+          </button>
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("deleteColumn")}
+            title="Delete Column"
+          >
+            Col-
+          </button>
+        </div>
+        <div className="de-hometab-elset">
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("mergeCells")}
+            title="Merge Cells"
+          >
+            Merge
+          </button>
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("splitCell")}
+            title="Split Cell"
+          >
+            Split
+          </button>
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("toggleHeaderRow")}
+            title="Toggle Header Row"
+          >
+            Header
+          </button>
+          <button
+            type="button"
+            className="de-hometab-btn"
+            onClick={() => onRichTextCommand("deleteTable")}
+            title="Delete Table"
+          >
+            Del Tbl
+          </button>
+        </div>
+      </div>
+
+      <div className="de-hometab-separator" />
+
       {/* Editing */}
       <div className="de-hometab-group">
         <div className="de-hometab-elset">
