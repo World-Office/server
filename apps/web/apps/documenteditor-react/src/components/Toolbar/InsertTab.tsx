@@ -139,6 +139,16 @@ const ObservedInsertTab = observer(function ObservedInsertTab({
             Drop Cap
           </button>
         </div>
+        <div className="de-inserttab-elset">
+          <button
+            type="button"
+            className="de-inserttab-btn"
+            onClick={() => onRichTextCommand("horizontalRule")}
+            title="Horizontal Rule"
+          >
+            HR
+          </button>
+        </div>
       </div>
 
       <div className="de-inserttab-separator" />

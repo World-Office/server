@@ -58,6 +58,10 @@ export type RichTextCommand =
   | "deleteTable"
   | "pageBreak"
   | "horizontalRule"
+  // Line spacing / paragraph
+  | "lineSpacing"
+  | "paragraphSpacingBefore"
+  | "paragraphSpacingAfter"
 
 export type RichTextCommandHandler = (command: RichTextCommand) => void
 
@@ -106,6 +110,9 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "deleteTable",
   "pageBreak",
   "horizontalRule",
+  "lineSpacing",
+  "paragraphSpacingBefore",
+  "paragraphSpacingAfter",
 ] as const
 
 export type RichTextCommandSurface = Editor
@@ -290,5 +297,26 @@ export function dispatchRichTextCommand(command: RichTextCommand): boolean {
     case "horizontalRule":
       chain.setHorizontalRule().run()
       return true
+    case "lineSpacing": {
+      const spacing = window.prompt("Enter line spacing (e.g., 1, 1.15, 1.5, 2):", "1.15")
+      if (spacing) {
+        chain.setMark("textStyle", { lineHeight: spacing }).run()
+      }
+      return true
+    }
+    case "paragraphSpacingBefore": {
+      const before = window.prompt("Enter space before paragraph (px):", "12")
+      if (before) {
+        chain.setMark("textStyle", { marginTop: `${before}px` }).run()
+      }
+      return true
+    }
+    case "paragraphSpacingAfter": {
+      const after = window.prompt("Enter space after paragraph (px):", "12")
+      if (after) {
+        chain.setMark("textStyle", { marginBottom: `${after}px` }).run()
+      }
+      return true
+    }
   }
 }
