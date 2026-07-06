@@ -21,16 +21,36 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab({
           <span className="de-layouttab-label">Page Setup</span>
         </div>
         <div className="de-layouttab-elset">
-          <button type="button" className="de-layouttab-btn" title="Margins">
+          <button
+            type="button"
+            className="de-layouttab-btn"
+            onClick={() => onRichTextCommand("pageMargins")}
+            title="Margins"
+          >
             Margins
           </button>
-          <button type="button" className="de-layouttab-btn" title="Orientation">
+          <button
+            type="button"
+            className="de-layouttab-btn"
+            onClick={() => onRichTextCommand("pageOrientation")}
+            title="Orientation"
+          >
             Orientation
           </button>
-          <button type="button" className="de-layouttab-btn" title="Size">
+          <button
+            type="button"
+            className="de-layouttab-btn"
+            onClick={() => onRichTextCommand("pageSize")}
+            title="Size"
+          >
             Size
           </button>
-          <button type="button" className="de-layouttab-btn" title="Columns">
+          <button
+            type="button"
+            className="de-layouttab-btn"
+            onClick={() => onRichTextCommand("columns")}
+            title="Columns"
+          >
             Columns
           </button>
         </div>

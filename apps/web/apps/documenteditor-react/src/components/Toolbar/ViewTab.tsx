@@ -1,13 +1,18 @@
 import { observer } from "mobx-react-lite"
+import type { RichTextCommand } from "../../lib/rte-command"
 import { documentStore } from "../../stores/DocumentStore"
 import { ZOOM_LEVELS } from "../../types/document"
 import type { MonacoCommand } from "./MonacoCommand"
 
 interface ViewTabProps {
   onMonacoCommand: (command: MonacoCommand) => void
+  onRichTextCommand?: (command: RichTextCommand) => void
 }
 
-const ObservedViewTab = observer(function ObservedViewTab({ onMonacoCommand }: ViewTabProps) {
+const ObservedViewTab = observer(function ObservedViewTab({
+  onMonacoCommand,
+  onRichTextCommand,
+}: ViewTabProps) {
   return (
     <section className="de-viewtab-panel" data-tab="view" role="tabpanel" aria-labelledby="view">
       {/* Show/Hide */}
@@ -134,6 +139,76 @@ const ObservedViewTab = observer(function ObservedViewTab({ onMonacoCommand }: V
       </div>
 
       <div className="de-viewtab-separator" />
+
+      {/* Find & Replace */}
+      {onRichTextCommand && (
+        <>
+          <div className="de-viewtab-group">
+            <div className="de-viewtab-elset">
+              <span className="de-viewtab-label">Editing</span>
+            </div>
+            <div className="de-viewtab-elset">
+              <button
+                type="button"
+                className="de-viewtab-btn"
+                onClick={() => onRichTextCommand("openSearch")}
+                title="Find & Replace"
+              >
+                Find & Replace
+              </button>
+              <button
+                type="button"
+                className="de-viewtab-btn"
+                onClick={() => onRichTextCommand("findNext")}
+                title="Find Next"
+              >
+                Find Next
+              </button>
+              <button
+                type="button"
+                className="de-viewtab-btn"
+                onClick={() => onRichTextCommand("findPrevious")}
+                title="Find Previous"
+              >
+                Find Prev
+              </button>
+              <button
+                type="button"
+                className="de-viewtab-btn"
+                onClick={() => onRichTextCommand("replace")}
+                title="Replace"
+              >
+                Replace
+              </button>
+              <button
+                type="button"
+                className="de-viewtab-btn"
+                onClick={() => onRichTextCommand("addComment")}
+                title="Add Comment"
+              >
+                Add Comment
+              </button>
+              <button
+                type="button"
+                className="de-viewtab-btn"
+                onClick={() => onRichTextCommand("toggleComment")}
+                title="Remove Comment"
+              >
+                Remove Comment
+              </button>
+              <button
+                type="button"
+                className="de-viewtab-btn"
+                onClick={() => onRichTextCommand("toggleSpellCheck")}
+                title="Toggle Spell Check"
+              >
+                Spell Check
+              </button>
+            </div>
+          </div>
+          <div className="de-viewtab-separator" />
+        </>
+      )}
 
       {/* Macros */}
       <div className="de-viewtab-group">

@@ -35,7 +35,7 @@ const ObservedToolbar = observer(function ObservedToolbar({
         {isEditMode && <InsertTab onRichTextCommand={onRichTextCommand} />}
         {isEditMode && <LayoutTab onRichTextCommand={onRichTextCommand} />}
         <ReferencesTab />
-        <ViewTab onMonacoCommand={onMonacoCommand} />
+        <ViewTab onMonacoCommand={onMonacoCommand} onRichTextCommand={onRichTextCommand} />
         {isEditMode && <FormsTab />}
         {isEditMode && <HeaderFooterTab />}
         <div className="de-toolbar-extra-right">
