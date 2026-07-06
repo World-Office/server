@@ -24,6 +24,9 @@
     "@world-office/collaboration-client": "workspace:*",
     "@world-office/collaboration-react": "workspace:*",
     "@world-office/wopi-client": "workspace:*",
+    "@tiptap/core": "^3.27.1",
+    "@tiptap/react": "^3.27.1",
+    "@tiptap/starter-kit": "^3.27.1",
     "monaco-editor": "^0.52.2"
   },
   "devDependencies": {

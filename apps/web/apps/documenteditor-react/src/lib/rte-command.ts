@@ -62,8 +62,47 @@ export type RichTextCommand =
   | "lineSpacing"
   | "paragraphSpacingBefore"
   | "paragraphSpacingAfter"
+  | "pageOrientation"
+  | "pageSize"
+  | "pageMargins"
+  | "columns"
+  | "columnsReset"
+  | "editHeader"
+  | "editFooter"
+  | "openSearch"
+  | "findNext"
+  | "findPrevious"
+  | "replace"
+  | "replaceAll"
+  | "addComment"
+  | "toggleComment"
+  | "toggleSpellCheck"
+
+export interface PageLayoutSettings {
+  orientation?: "portrait" | "landscape"
+  pageSize?: "A4" | "A3" | "Letter" | "Legal"
+  margins?: "normal" | "narrow" | "wide"
+}
+
+export interface SearchState {
+  query: string
+  replaceText: string
+  currentIndex: number
+  matches: number
+}
 
 export type RichTextCommandHandler = (command: RichTextCommand) => void
+
+const pageLayout: PageLayoutSettings = {}
+const searchState: SearchState = { query: "", replaceText: "", currentIndex: 0, matches: 0 }
+
+export function getPageLayout(): PageLayoutSettings {
+  return pageLayout
+}
+
+export function getSearchState(): SearchState {
+  return searchState
+}
 
 export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "bold",
@@ -113,6 +152,21 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "lineSpacing",
   "paragraphSpacingBefore",
   "paragraphSpacingAfter",
+  "pageOrientation",
+  "pageSize",
+  "pageMargins",
+  "columns",
+  "columnsReset",
+  "editHeader",
+  "editFooter",
+  "openSearch",
+  "findNext",
+  "findPrevious",
+  "replace",
+  "replaceAll",
+  "addComment",
+  "toggleComment",
+  "toggleSpellCheck",
 ] as const
 
 export type RichTextCommandSurface = Editor
@@ -305,16 +359,187 @@ export function dispatchRichTextCommand(command: RichTextCommand): boolean {
       return true
     }
     case "paragraphSpacingBefore": {
-      const before = window.prompt("Enter space before paragraph (px):", "12")
+      const before = window.prompt("Enter space before paragraph (px):", "12") ?? ""
       if (before) {
         chain.setMark("textStyle", { marginTop: `${before}px` }).run()
       }
       return true
     }
     case "paragraphSpacingAfter": {
-      const after = window.prompt("Enter space after paragraph (px):", "12")
+      const after = window.prompt("Enter space after paragraph (px):", "12") ?? ""
       if (after) {
         chain.setMark("textStyle", { marginBottom: `${after}px` }).run()
+      }
+      return true
+    }
+    case "pageOrientation": {
+      const orientation = window.prompt(
+        "Page orientation (portrait/landscape):",
+        pageLayout.orientation ?? "portrait",
+      )
+      if (orientation === "portrait" || orientation === "landscape") {
+        pageLayout.orientation = orientation
+        window.dispatchEvent(
+          new CustomEvent("world-office:page-layout", { detail: { ...pageLayout } }),
+        )
+      }
+      return true
+    }
+    case "pageSize": {
+      const size = window.prompt("Page size (A4/A3/Letter/Legal):", pageLayout.pageSize ?? "A4")
+      if (size && ["A4", "A3", "Letter", "Legal"].includes(size)) {
+        pageLayout.pageSize = size as PageLayoutSettings["pageSize"]
+        window.dispatchEvent(
+          new CustomEvent("world-office:page-layout", { detail: { ...pageLayout } }),
+        )
+      }
+      return true
+    }
+    case "pageMargins": {
+      const margins = window.prompt("Margins (normal/narrow/wide):", pageLayout.margins ?? "normal")
+      if (margins && ["normal", "narrow", "wide"].includes(margins)) {
+        pageLayout.margins = margins as PageLayoutSettings["margins"]
+        window.dispatchEvent(
+          new CustomEvent("world-office:page-layout", { detail: { ...pageLayout } }),
+        )
+      }
+      return true
+    }
+    case "columns": {
+      const cols = window.prompt("Number of columns (1-3):", "2")
+      const n = Number.parseInt(cols ?? "1", 10)
+      if (n >= 1 && n <= 3) {
+        window.dispatchEvent(new CustomEvent("world-office:columns", { detail: { count: n } }))
+      }
+      return true
+    }
+    case "columnsReset":
+      window.dispatchEvent(new CustomEvent("world-office:columns", { detail: { count: 1 } }))
+      return true
+    case "editHeader":
+      editor.commands.focus("start")
+      editor.commands.scrollIntoView()
+      return true
+    case "editFooter":
+      editor.commands.focus("end")
+      editor.commands.scrollIntoView()
+      return true
+    case "openSearch": {
+      const query = window.prompt("Search for:", searchState.query || "")
+      if (query) {
+        const doc = editor.state.doc
+        const text = doc.textBetween(0, doc.content.size, "\n", " ")
+        const matches = text.toLowerCase().split(query.toLowerCase()).length - 1
+        searchState.query = query
+        searchState.matches = matches
+        searchState.currentIndex = 0
+        const pos = text.toLowerCase().indexOf(query.toLowerCase())
+        if (pos >= 0) {
+          const from = pos
+          const to = from + query.length
+          editor.commands.setTextSelection({ from, to })
+          editor.commands.scrollIntoView()
+        }
+        window.dispatchEvent(
+          new CustomEvent("world-office:search-state", { detail: { ...searchState } }),
+        )
+      }
+      return true
+    }
+    case "findNext": {
+      if (!searchState.query) return true
+      const doc = editor.state.doc
+      const text = doc.textBetween(0, doc.content.size, "\n", " ")
+      const query = searchState.query.toLowerCase()
+      const textLower = text.toLowerCase()
+      let pos = textLower.indexOf(query, (editor.state.selection.anchor || 0) + 1)
+      if (pos < 0) pos = textLower.indexOf(query)
+      if (pos >= 0) {
+        editor.commands.setTextSelection({ from: pos, to: pos + query.length })
+        editor.commands.scrollIntoView()
+      }
+      return true
+    }
+    case "findPrevious": {
+      if (!searchState.query) return true
+      const doc = editor.state.doc
+      const text = doc.textBetween(0, doc.content.size, "\n", " ")
+      const query = searchState.query.toLowerCase()
+      const textLower = text.toLowerCase()
+      let pos = textLower.lastIndexOf(
+        query,
+        (editor.state.selection.anchor || text.length) - query.length - 1,
+      )
+      if (pos < 0) pos = textLower.lastIndexOf(query)
+      if (pos >= 0) {
+        editor.commands.setTextSelection({ from: pos, to: pos + query.length })
+        editor.commands.scrollIntoView()
+      }
+      return true
+    }
+    case "replace": {
+      if (!searchState.query) return true
+      const replaceWith = window.prompt("Replace with:", searchState.replaceText || "")
+      if (replaceWith !== null) {
+        searchState.replaceText = replaceWith
+        const { from, to } = editor.state.selection
+        if (from !== to) {
+          const selected = editor.state.doc.textBetween(from, to, "\n", " ")
+          if (selected.toLowerCase() === searchState.query.toLowerCase()) {
+            editor.chain().focus().deleteRange({ from, to }).insertContent(replaceWith).run()
+          }
+        }
+        setTimeout(() => dispatchRichTextCommand("findNext"), 50)
+      }
+      return true
+    }
+    case "replaceAll": {
+      const replaceWith = window.prompt("Replace all matches with:", searchState.replaceText || "")
+      if (replaceWith !== null) {
+        searchState.replaceText = replaceWith
+        const doc = editor.state.doc
+        const text = doc.textBetween(0, doc.content.size, "\n", " ")
+        let count = 0
+        let idx = 0
+        const query = searchState.query.toLowerCase()
+        while (true) {
+          const pos = text.toLowerCase().indexOf(query, idx)
+          if (pos < 0) break
+          const from = pos
+          const to = pos + query.length
+          editor.chain().focus().deleteRange({ from, to }).insertContent(replaceWith).run()
+          count++
+          idx = pos + replaceWith.length
+        }
+        window.dispatchEvent(
+          new CustomEvent("world-office:search-state", {
+            detail: { ...searchState, matches: count },
+          }),
+        )
+      }
+      return true
+    }
+    case "addComment": {
+      const comment = window.prompt("Add comment:")
+      if (comment) {
+        const { from, to } = editor.state.selection
+        if (from !== to) {
+          editor.chain().focus().setComment({ comment }).run()
+        }
+      }
+      return true
+    }
+    case "toggleComment":
+      editor.chain().focus().unsetComment().run()
+      return true
+    case "toggleSpellCheck": {
+      const current = document.querySelector<HTMLElement>(".rich-text-editor [contenteditable]")
+      if (current) {
+        const enabled = current.getAttribute("spellcheck") !== "false"
+        current.setAttribute("spellcheck", enabled ? "false" : "true")
+        window.dispatchEvent(
+          new CustomEvent("world-office:spellcheck", { detail: { enabled: !enabled } }),
+        )
       }
       return true
     }
