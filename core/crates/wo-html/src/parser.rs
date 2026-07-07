@@ -337,7 +337,10 @@ impl HtmlParser {
             if ch.is_text() {
                 if let Some(text) = ch.text() {
                     if !text.is_empty() {
-                        elements.push(InlineElement::Text { text: text.to_string(), style: None });
+                        elements.push(InlineElement::Text {
+                            text: text.to_string(),
+                            style: None,
+                        });
                     }
                 }
                 continue;
@@ -472,10 +475,7 @@ impl HtmlParser {
                 _ => {
                     let text = direct_text(&ch);
                     if !text.is_empty() {
-                        elements.push(InlineElement::Text {
-                            text,
-                            style: None,
-                        });
+                        elements.push(InlineElement::Text { text, style: None });
                     }
                 }
             }
