@@ -1,35 +1,50 @@
-/* Document Editor — Main Layout & Reset */
+/* Document Editor — Main Layout & Reset — Professional OnlyOffice-style look */
 
 :root {
-  --wo-de-toolbar-height: 40px;
-  --wo-de-toolbar-height-compact: 34px;
-  --wo-de-statusbar-height: 25px;
-  --wo-de-statusbar-height-expanded: 50px;
+  --wo-de-toolbar-height: 36px;
+  --wo-de-toolbar-height-compact: 32px;
+  --wo-de-statusbar-height: 24px;
+  --wo-de-statusbar-height-expanded: 48px;
   --wo-de-leftmenu-width: 40px;
   --wo-de-leftmenu-min: 40px;
   --wo-de-leftmenu-max: 300px;
   --wo-de-rightmenu-width: 40px;
   --wo-de-rightmenu-min: 40px;
   --wo-de-rightmenu-max: 300px;
-  --wo-de-doc-bg: #fbfbfb;
 
+  --wo-de-doc-bg: #f0f0f0;
   --wo-de-bg-pane: #ffffff;
-  --wo-de-bg-toolbar: var(--wo-color-bg-toolbar, #f0f0f0);
-  --wo-de-bg-statusbar: var(--wo-color-bg-statusbar, #e8e8e8);
+  --wo-de-bg-toolbar: #f3f3f3;
+  --wo-de-bg-toolbar-tabs: #ffffff;
+  --wo-de-bg-toolbar-panel: #f8f8f8;
+  --wo-de-bg-statusbar: #f3f3f3;
   --wo-de-bg-page: #ffffff;
   --wo-de-bg-page-active: #ffffff;
-  --wo-de-bg-page-overlay: rgba(68, 71, 150, 1);
-  --wo-de-text-primary: var(--wo-color-text-primary, #333333);
-  --wo-de-text-secondary: var(--wo-color-text-secondary, #666666);
-  --wo-de-border: var(--wo-color-border, #e0e0e0);
-  --wo-de-accent: var(--wo-color-accent, #4472c4);
-  --wo-de-accent-hover: var(--wo-color-accent-hover, #355d9e);
-  --wo-de-font: var(--wo-font-family, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif);
+  --wo-de-bg-page-overlay: rgba(68, 114, 196, 0.12);
+
+  --wo-de-text-primary: #333333;
+  --wo-de-text-secondary: #666666;
+  --wo-de-text-muted: #999999;
+  --wo-de-border: #d9d9d9;
+  --wo-de-border-light: #e8e8e8;
+
+  --wo-de-accent: #4472c4;
+  --wo-de-accent-hover: #3a64b0;
+  --wo-de-accent-light: rgba(68, 114, 196, 0.08);
+  --wo-de-accent-active: rgba(68, 114, 196, 0.15);
+
+  --wo-de-btn-hover: #e5e5e5;
+  --wo-de-btn-active: #d0d0d0;
+
+  --wo-de-font: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif;
+  --wo-de-font-size: 12px;
+  --wo-de-icon-size: 18px;
 }
 
 .viewport-ref {
   font-family: var(--wo-de-font);
   color: var(--wo-de-text-primary);
+  font-size: var(--wo-de-font-size);
 }
 
 #editor_sdk {
@@ -57,7 +72,8 @@
 
 .de-viewport-toolbar {
   flex-shrink: 0;
-  overflow: hidden;
+  overflow: visible;
+  z-index: 100;
 }
 
 .de-viewport-body {
@@ -84,13 +100,40 @@
   height: 100%;
   overflow: auto;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   background-color: var(--wo-de-doc-bg);
+  padding: 30px 20px;
 }
 
-.de-viewport-statusbar {
-  flex-shrink: 0;
+.de-viewport-editor::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.de-viewport-editor::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.de-viewport-editor::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 5px;
+}
+
+.de-viewport-editor::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Page mockup container */
+.de-document-page {
+  width: 100%;
+  max-width: 210mm;
+  min-height: 297mm;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+  padding: 2.54cm;
+  position: relative;
+  margin: 0 auto;
 }
 
 /* File menu panel (full-height overlay) */
@@ -121,5 +164,80 @@
 .de-document-holder {
   width: 100%;
   height: 100%;
-  background-color: var(--wo-de-doc-bg);
+  background-color: transparent;
+  position: relative;
+}
+
+/* Rich text editor styling */
+.rich-text-editor {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  background: #fff !important;
+  font-family: "Aptos", "Calibri", "Segoe UI", Roboto, sans-serif !important;
+  font-size: 11pt !important;
+  line-height: 1.5 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.rich-text-editor .ProseMirror {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  outline: none;
+  min-height: 200px;
+}
+
+.rich-text-editor .ProseMirror p {
+  margin: 0 0 0.5em 0;
+}
+
+.rich-text-editor .ProseMirror h1 {
+  font-size: 2em;
+  margin: 0.67em 0;
+}
+.rich-text-editor .ProseMirror h2 {
+  font-size: 1.5em;
+  margin: 0.75em 0;
+}
+.rich-text-editor .ProseMirror h3 {
+  font-size: 1.17em;
+  margin: 0.83em 0;
+}
+
+/* Loading & error states */
+.de-document-holder--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--wo-de-text-secondary);
+  font-size: 14px;
+}
+
+.de-document-holder--error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #d32f2f;
+  font-size: 14px;
+}
+
+.de-document-holder--error button {
+  padding: 6px 16px;
+  background: var(--wo-de-accent);
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.de-document-holder--error button:hover {
+  background: var(--wo-de-accent-hover);
 }
