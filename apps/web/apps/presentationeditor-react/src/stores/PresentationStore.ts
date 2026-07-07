@@ -5,6 +5,7 @@ import {
 	putFile,
 } from "@world-office/wopi-client";
 import { makeAutoObservable } from "mobx";
+import { convertPptxToHtml } from "../lib/conversion";
 import { DEFAULT_THEME } from "../lib/themes";
 import type {
 	AdvanceMode,
@@ -65,6 +66,10 @@ export class PresentationStore {
 	docserverBase = "";
 	format: "native" | "svg" = "native";
 
+	/* PPTX to HTML pipeline */
+	lastLoadedContent: Blob | null = null;
+	convertedHtml: string | null = null;
+
 	markModified(): void {
 		this.isModified = true;
 	}
@@ -97,6 +102,8 @@ export class PresentationStore {
 			};
 			const { info, content } = await loadDocument(conn);
 
+			this.lastLoadedContent = content;
+
 			this.document = {
 				title: info.BaseFileName ?? "Untitled",
 				fileType: (info.BaseFileName?.split(".").pop() ?? "pptx") as
@@ -104,6 +111,18 @@ export class PresentationStore {
 					| "odp",
 				info: { author: info.OwnerId, modified: info.Version },
 			};
+
+			const ext = info.BaseFileName?.split(".").pop()?.toLowerCase();
+
+			if (ext === "pptx" || ext === "odp") {
+				const buf = await content.arrayBuffer();
+				try {
+					const html = await convertPptxToHtml(buf);
+					this.convertedHtml = html;
+				} catch (e) {
+					console.warn("PPTX conversion failed, falling back to JSON:", e);
+				}
+			}
 
 			try {
 				const text = await content.text();
