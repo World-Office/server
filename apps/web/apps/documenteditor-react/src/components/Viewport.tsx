@@ -1,5 +1,7 @@
+import { CollaboratorCursors } from "@world-office/collaboration-react"
 import { useEffect, useState } from "react"
 import type { ReactNode } from "react"
+import { collaborationStore } from "../lib/collaboration"
 import type { PageLayoutSettings, RichTextCommand } from "../lib/rte-command"
 import { documentStore } from "../stores/DocumentStore"
 import { DocumentHolder } from "./DocumentHolder"
@@ -137,9 +139,15 @@ export function Viewport({
                 paddingBottom: margin,
                 columnCount: columns,
                 columnGap: columns > 1 ? "2.54cm" : "normal",
+                position: "relative",
               }}
             >
               <DocumentHolder />
+              <CollaboratorCursors
+                cursors={collaborationStore.remoteCursors}
+                userColors={new Map(collaborationStore.users.map((u) => [u.id, u.color]))}
+                userNames={new Map(collaborationStore.users.map((u) => [u.id, u.name]))}
+              />
             </div>
           </div>
 
