@@ -20,7 +20,7 @@ interface ViewportProps {
   rightMenuVisible: boolean
   isCompactToolbar: boolean
   onMonacoCommand: (command: MonacoCommand) => void
-  onRichTextCommand: (command: RichTextCommand) => void
+  onRichTextCommand: (command: RichTextCommand, value?: string) => void
 }
 
 const PAGE_SIZE_CSS: Record<string, { width: string; height: string }> = {
@@ -116,16 +116,7 @@ export function Viewport({
           />
 
           {/* Editor container */}
-          <div
-            className="de-viewport-editor"
-            style={{
-              background: "#f0f0f0",
-              overflow: "auto",
-              display: "flex",
-              justifyContent: "center",
-              padding: "20px",
-            }}
-          >
+          <div className="de-viewport-editor">
             <div
               style={{
                 width: pageWidth,
