@@ -2,6 +2,7 @@ import { observer } from "mobx-react-lite"
 import { useEffect, useRef, useState } from "react"
 import { pdfStore } from "../stores/PdfStore"
 import { MonacoEditor } from "./MonacoEditor"
+import { PdfViewer } from "./PdfViewer"
 
 const SAVE_DEBOUNCE_MS = 1500
 
@@ -9,7 +10,6 @@ function languageForFile(name: string): string {
   const ext = name.toLowerCase().split(".").pop() ?? ""
   if (ext === "txt" || ext === "md") return "plaintext"
   if (ext === "json") return "json"
-  // .pdf is binary; surface raw text representation as xml fallback for Monaco
   return "xml"
 }
 
@@ -19,6 +19,8 @@ async function blobToText(blob: Blob): Promise<string> {
 
 export const DocumentHolder = observer(function DocumentHolder() {
   const [value, setValue] = useState<string>("")
+  const [pdfArrayBuffer, setPdfArrayBuffer] = useState<ArrayBuffer | null>(null)
+  const [pdfRenderError, setPdfRenderError] = useState(false)
   const lastBlobRef = useRef<Blob | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const initializedRef = useRef(false)
@@ -29,12 +31,21 @@ export const DocumentHolder = observer(function DocumentHolder() {
     void pdfStore.detectAndLoadWopi()
   }, [])
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: trigger when the WOPI-loaded blob changes so we re-render the editor
+  // biome-ignore lint/correctness/useExhaustiveDependencies: trigger when the WOPI-loaded blob changes
   useEffect(() => {
     const blob = pdfStore.lastLoadedContent
     if (!blob || blob === lastBlobRef.current) return
     lastBlobRef.current = blob
-    void blobToText(blob).then(setValue)
+
+    try {
+      blob.arrayBuffer().then((buf) => {
+        setPdfArrayBuffer(buf)
+        setPdfRenderError(false)
+      })
+    } catch {
+      void blobToText(blob).then(setValue)
+      setPdfRenderError(true)
+    }
   }, [pdfStore.lastLoadedContent])
 
   useEffect(
@@ -70,6 +81,23 @@ export const DocumentHolder = observer(function DocumentHolder() {
     return (
       <div className="pdf-document-holder pdf-document-holder--loading">
         <p>Loading PDF...</p>
+      </div>
+    )
+  }
+
+  if (!pdfRenderError && pdfArrayBuffer) {
+    return (
+      <div
+        className="pdf-document-holder"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          overflow: "hidden",
+          height: "100%",
+        }}
+      >
+        <PdfViewer pdfData={pdfArrayBuffer} />
       </div>
     )
   }
