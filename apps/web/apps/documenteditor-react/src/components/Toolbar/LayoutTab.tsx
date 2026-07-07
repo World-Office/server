@@ -1,8 +1,18 @@
+import {
+  BringToFront,
+  Columns2,
+  IndentIncrease,
+  PaintBucket,
+  PanelRightOpen,
+  Rows3,
+  SquareSplitVertical,
+  TextSelect,
+} from "lucide-react"
 import { observer } from "mobx-react-lite"
 import type { RichTextCommand } from "../../lib/rte-command"
 
 interface LayoutTabProps {
-  onRichTextCommand: (command: RichTextCommand) => void
+  onRichTextCommand: (command: RichTextCommand, value?: string) => void
 }
 
 const ObservedLayoutTab = observer(function ObservedLayoutTab({
@@ -17,9 +27,7 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab({
     >
       {/* Page Setup */}
       <div className="de-layouttab-group">
-        <div className="de-layouttab-elset">
-          <span className="de-layouttab-label">Page Setup</span>
-        </div>
+        <span className="de-layouttab-label">Page Setup</span>
         <div className="de-layouttab-elset">
           <button
             type="button"
@@ -27,7 +35,8 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab({
             onClick={() => onRichTextCommand("pageMargins")}
             title="Margins"
           >
-            Margins
+            <PanelRightOpen size={18} />
+            <span>Margins</span>
           </button>
           <button
             type="button"
@@ -35,7 +44,8 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab({
             onClick={() => onRichTextCommand("pageOrientation")}
             title="Orientation"
           >
-            Orientation
+            <SquareSplitVertical size={18} />
+            <span>Orientation</span>
           </button>
           <button
             type="button"
@@ -43,7 +53,8 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab({
             onClick={() => onRichTextCommand("pageSize")}
             title="Size"
           >
-            Size
+            <Rows3 size={18} />
+            <span>Size</span>
           </button>
           <button
             type="button"
@@ -51,46 +62,39 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab({
             onClick={() => onRichTextCommand("columns")}
             title="Columns"
           >
-            Columns
+            <Columns2 size={18} />
+            <span>Columns</span>
           </button>
         </div>
       </div>
-
-      <div className="de-layouttab-separator" />
 
       {/* Page Background */}
       <div className="de-layouttab-group">
-        <div className="de-layouttab-elset">
-          <span className="de-layouttab-label">Page Background</span>
-        </div>
+        <span className="de-layouttab-label">Background</span>
         <div className="de-layouttab-elset">
           <button type="button" className="de-layouttab-btn" title="Watermark">
-            Watermark
+            <BringToFront size={18} />
+            <span>Watermark</span>
           </button>
           <button type="button" className="de-layouttab-btn" title="Page Color">
-            Page Color
-          </button>
-          <button type="button" className="de-layouttab-btn" title="Page Borders">
-            Page Borders
+            <PaintBucket size={18} />
+            <span>Color</span>
           </button>
         </div>
       </div>
 
-      <div className="de-layouttab-separator" />
-
       {/* Paragraph */}
       <div className="de-layouttab-group">
-        <div className="de-layouttab-elset">
-          <span className="de-layouttab-label">Paragraph</span>
-        </div>
+        <span className="de-layouttab-label">Paragraph</span>
         <div className="de-layouttab-elset">
           <button
             type="button"
             className="de-layouttab-btn"
             onClick={() => onRichTextCommand("indent")}
-            title="Indent"
+            title="Increase Indent"
           >
-            Indent
+            <IndentIncrease size={18} />
+            <span>Indent</span>
           </button>
           <button
             type="button"
@@ -98,23 +102,8 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab({
             onClick={() => onRichTextCommand("lineSpacing")}
             title="Line Spacing"
           >
-            Line Spacing
-          </button>
-          <button
-            type="button"
-            className="de-layouttab-btn"
-            onClick={() => onRichTextCommand("paragraphSpacingBefore")}
-            title="Space Before Paragraph"
-          >
-            Space Before
-          </button>
-          <button
-            type="button"
-            className="de-layouttab-btn"
-            onClick={() => onRichTextCommand("paragraphSpacingAfter")}
-            title="Space After Paragraph"
-          >
-            Space After
+            <TextSelect size={18} />
+            <span>Spacing</span>
           </button>
         </div>
       </div>

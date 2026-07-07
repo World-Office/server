@@ -1,8 +1,21 @@
+import {
+  BookImage,
+  Divide,
+  FileInput,
+  Image,
+  ImageDown,
+  Link,
+  SeparatorHorizontal,
+  Shapes,
+  Sigma,
+  Table2,
+  TextCursorInput,
+} from "lucide-react"
 import { observer } from "mobx-react-lite"
 import type { RichTextCommand } from "../../lib/rte-command"
 
 interface InsertTabProps {
-  onRichTextCommand: (command: RichTextCommand) => void
+  onRichTextCommand: (command: RichTextCommand, value?: string) => void
 }
 
 const ObservedInsertTab = observer(function ObservedInsertTab({
@@ -17,12 +30,15 @@ const ObservedInsertTab = observer(function ObservedInsertTab({
     >
       {/* Pages */}
       <div className="de-inserttab-group">
+        <span className="de-inserttab-label">Pages</span>
         <div className="de-inserttab-elset">
           <button type="button" className="de-inserttab-btn" title="Cover Page">
-            Cover Page
+            <BookImage size={18} />
+            <span>Cover</span>
           </button>
           <button type="button" className="de-inserttab-btn" title="Blank Page">
-            Blank Page
+            <FileInput size={18} />
+            <span>Blank</span>
           </button>
           <button
             type="button"
@@ -30,48 +46,31 @@ const ObservedInsertTab = observer(function ObservedInsertTab({
             onClick={() => onRichTextCommand("pageBreak")}
             title="Page Break"
           >
-            Page Break
+            <SeparatorHorizontal size={18} />
+            <span>Break</span>
           </button>
         </div>
       </div>
 
-      <div className="de-inserttab-separator" />
-
       {/* Tables */}
       <div className="de-inserttab-group">
+        <span className="de-inserttab-label">Table</span>
         <div className="de-inserttab-elset">
           <button
             type="button"
             className="de-inserttab-btn"
             onClick={() => onRichTextCommand("insertTable")}
-            title="Table"
+            title="Insert Table"
           >
-            Table
+            <Table2 size={18} />
+            <span>Table</span>
           </button>
         </div>
       </div>
-
-      <div className="de-inserttab-separator" />
-
-      {/* Illustrations */}
-      <div className="de-inserttab-group">
-        <div className="de-inserttab-elset">
-          <button type="button" className="de-inserttab-btn" title="Shapes">
-            Shapes
-          </button>
-          <button type="button" className="de-inserttab-btn" title="Icons">
-            Icons
-          </button>
-          <button type="button" className="de-inserttab-btn" title="3D Models">
-            3D Models
-          </button>
-        </div>
-      </div>
-
-      <div className="de-inserttab-separator" />
 
       {/* Images */}
       <div className="de-inserttab-group">
+        <span className="de-inserttab-label">Images</span>
         <div className="de-inserttab-elset">
           <button
             type="button"
@@ -79,21 +78,23 @@ const ObservedInsertTab = observer(function ObservedInsertTab({
             onClick={() => onRichTextCommand("image")}
             title="Pictures"
           >
-            Pictures
+            <Image size={18} />
+            <span>Picture</span>
           </button>
-          <button type="button" className="de-inserttab-btn" title="Online Pictures">
-            Online Pictures
+          <button type="button" className="de-inserttab-btn" title="Shapes">
+            <Shapes size={18} />
+            <span>Shapes</span>
           </button>
-          <button type="button" className="de-inserttab-btn" title="Screenshot">
-            Screenshot
+          <button type="button" className="de-inserttab-btn" title="Icons">
+            <ImageDown size={18} />
+            <span>Icons</span>
           </button>
         </div>
       </div>
 
-      <div className="de-inserttab-separator" />
-
       {/* Links */}
       <div className="de-inserttab-group">
+        <span className="de-inserttab-label">Links</span>
         <div className="de-inserttab-elset">
           <button
             type="button"
@@ -101,68 +102,38 @@ const ObservedInsertTab = observer(function ObservedInsertTab({
             onClick={() => onRichTextCommand("link")}
             title="Link"
           >
-            Link
+            <Link size={18} />
+            <span>Link</span>
           </button>
         </div>
       </div>
-
-      <div className="de-inserttab-separator" />
-
-      {/* Headers & Footers */}
-      <div className="de-inserttab-group">
-        <div className="de-inserttab-elset">
-          <button type="button" className="de-inserttab-btn" title="Header">
-            Header
-          </button>
-          <button type="button" className="de-inserttab-btn" title="Footer">
-            Footer
-          </button>
-        </div>
-        <div className="de-inserttab-elset">
-          <button type="button" className="de-inserttab-btn" title="Page Number">
-            Page Number
-          </button>
-        </div>
-      </div>
-
-      <div className="de-inserttab-separator" />
 
       {/* Text */}
       <div className="de-inserttab-group">
+        <span className="de-inserttab-label">Text</span>
         <div className="de-inserttab-elset">
           <button type="button" className="de-inserttab-btn" title="Text Box">
-            Text Box
+            <TextCursorInput size={18} />
+            <span>Box</span>
           </button>
-        </div>
-        <div className="de-inserttab-elset">
-          <button type="button" className="de-inserttab-btn" title="Drop Cap">
-            Drop Cap
-          </button>
-        </div>
-        <div className="de-inserttab-elset">
           <button
             type="button"
             className="de-inserttab-btn"
             onClick={() => onRichTextCommand("horizontalRule")}
             title="Horizontal Rule"
           >
-            HR
+            <SeparatorHorizontal size={18} />
+            <span>HR</span>
           </button>
         </div>
-      </div>
-
-      <div className="de-inserttab-separator" />
-
-      {/* Symbols */}
-      <div className="de-inserttab-group">
         <div className="de-inserttab-elset">
           <button type="button" className="de-inserttab-btn" title="Equation">
-            Equation
+            <Sigma size={18} />
+            <span>Equation</span>
           </button>
-        </div>
-        <div className="de-inserttab-elset">
           <button type="button" className="de-inserttab-btn" title="Symbol">
-            Symbol
+            <Divide size={18} />
+            <span>Symbol</span>
           </button>
         </div>
       </div>
