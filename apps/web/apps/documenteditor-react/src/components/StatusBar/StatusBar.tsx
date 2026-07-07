@@ -1,5 +1,7 @@
+import { CollaborationStatus, CollaboratorList } from "@world-office/collaboration-react"
 import { observer } from "mobx-react-lite"
 import type { JSX } from "react"
+import { collaborationStore } from "../../lib/collaboration"
 import { documentStore } from "../../stores/DocumentStore"
 
 function ZoomControls(): JSX.Element {
@@ -142,6 +144,30 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
         >
           ✓
         </button>
+      </div>
+
+      <div className="de-statusbar-separator" />
+
+      {/* Collaboration status + user avatars */}
+      <div className="de-statusbar-tools" style={{ gap: 8 }}>
+        <CollaborationStatus
+          state={collaborationStore.connectionStatus}
+          userCount={collaborationStore.users.length}
+        />
+        <CollaboratorList users={collaborationStore.users} />
+      </div>
+
+      {/* Save indicator */}
+      <div className="de-statusbar-tools">
+        {documentStore.isDirty ? (
+          <span className="de-statusbar-label" style={{ color: "#e67e22" }}>
+            • Unsaved
+          </span>
+        ) : documentStore.lastSavedAt ? (
+          <span className="de-statusbar-label" style={{ color: "#27ae60" }}>
+            Saved {documentStore.lastSavedAt.toLocaleTimeString()}
+          </span>
+        ) : null}
       </div>
 
       {/* Zoom controls */}

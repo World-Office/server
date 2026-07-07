@@ -87,6 +87,7 @@ export class DocumentStore {
   filePath: string | null = null
   fileName = "Untitled Document"
   isDirty = false
+  lastSavedAt: Date | null = null
   format: "native" | "svg" = "native"
 
   /* Rich text editor */
@@ -282,6 +283,7 @@ export class DocumentStore {
 
   markSaved(): void {
     this.isDirty = false
+    this.lastSavedAt = new Date()
   }
 
   /* ── WOPI ── */
