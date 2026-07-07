@@ -5989,6 +5989,87 @@ impl FormatConverter for OdpToWoPresentationConverter {
     }
 }
 
+// ── WoPresentation → HTML converter ──────────────────────────────────────
+//
+// Converts the WoPresentation JSON format (which is the intermediate bridge
+// between PPTX/ODP and the frontend) into a simple HTML document.
+//
+// Each slide becomes a <section> containing the text content of its shapes
+// as paragraphs. This enables the frontend's Text Edit view for presentations.
+
+/// Converts WoPresentation JSON → HTML.
+pub struct WoPresentationToHtmlConverter;
+
+impl FormatConverter for WoPresentationToHtmlConverter {
+    fn source_format(&self) -> &str {
+        "wo-presentation"
+    }
+    fn target_format(&self) -> &str {
+        "html"
+    }
+
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        let wo: WoPresentation = serde_json::from_slice(data)
+            .map_err(|e| ConversionError::Parse(format!("Invalid WoPresentation JSON: {}", e)))?;
+
+        let mut html = String::new();
+        html.push_str("<!DOCTYPE html><html><head><meta charset=\"utf-8\">");
+        html.push_str("<style>
+body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 0; background: #f0f0f0; }
+.slide { background: #fff; width: 960px; min-height: 540px; margin: 20px auto; padding: 48px 64px; box-shadow: 0 2px 8px rgba(0,0,0,.15); page-break-after: always; }
+.slide-title { font-size: 24px; font-weight: 600; margin-bottom: 24px; }
+.slide-num { float: right; color: #999; font-size: 14px; }
+</style></head><body>\n");
+
+        for (i, slide) in wo.slides.iter().enumerate() {
+            html.push_str(&format!(
+                "<div class=\"slide\"><div class=\"slide-num\">Slide {}</div>\n",
+                i + 1
+            ));
+
+            if !slide.title.is_empty() {
+                html.push_str(&format!(
+                    "<div class=\"slide-title\">{}</div>\n",
+                    html_escape(&slide.title)
+                ));
+            }
+
+            for shape in &slide.shapes {
+                if let Some(text) = &shape.text {
+                    if !text.is_empty() {
+                        html.push_str(&format!(
+                            "<p style=\"margin:4px 0;\">{}</p>\n",
+                            html_escape(text)
+                        ));
+                    }
+                }
+            }
+
+            if let Some(notes) = &slide.notes {
+                if !notes.is_empty() {
+                    html.push_str(&format!(
+                        "<p style=\"margin:8px 0;color:#888;font-style:italic;font-size:12px;\">Notes: {}</p>\n",
+                        html_escape(notes)
+                    ));
+                }
+            }
+
+            html.push_str("</div>\n");
+        }
+
+        html.push_str("</body></html>");
+        Ok(html.into_bytes())
+    }
+}
+
+/// Minimal HTML escaping for text content.
+fn html_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+}
+
 // ── ODP Conversion Helpers ─────────────────────────────────────────
 
 fn wo_slide_to_odp_slide(

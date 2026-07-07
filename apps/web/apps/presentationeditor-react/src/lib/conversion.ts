@@ -51,3 +51,31 @@ export async function convertPptxToHtml(data: ArrayBuffer): Promise<string> {
 	const htmlBytes = base64ToBlob(json.data, "text/html; charset=utf-8");
 	return htmlBytes.text();
 }
+
+export async function convertPptxToWoPresentation(
+	data: ArrayBuffer,
+): Promise<string> {
+	const base64 = arrayBufferToBase64(data);
+	const res = await fetch(CONVERSION_ENDPOINT, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			source_format: "pptx",
+			target_format: "wo-presentation",
+			data: base64,
+		}),
+	});
+	if (!res.ok) {
+		throw new Error(
+			`Conversion request failed: ${res.status} ${res.statusText}`,
+		);
+	}
+	const json: ConversionResponse = await res.json();
+	if (!json.data) {
+		throw new Error(
+			`Conversion failed: ${json.status} — ${json.error ?? "unknown error"}`,
+		);
+	}
+	const rawBytes = base64ToBlob(json.data, "application/json");
+	return rawBytes.text();
+}

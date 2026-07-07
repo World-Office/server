@@ -5,7 +5,10 @@ import {
 	putFile,
 } from "@world-office/wopi-client";
 import { makeAutoObservable } from "mobx";
-import { convertPptxToHtml } from "../lib/conversion";
+import {
+	convertPptxToHtml,
+	convertPptxToWoPresentation,
+} from "../lib/conversion";
 import { DEFAULT_THEME } from "../lib/themes";
 import type {
 	AdvanceMode,
@@ -116,19 +119,28 @@ export class PresentationStore {
 
 			if (ext === "pptx" || ext === "odp") {
 				const buf = await content.arrayBuffer();
+				// Convert to WoPresentation JSON for the canvas view (SlideCanvas)
+				try {
+					const json = await convertPptxToWoPresentation(buf);
+					this.fromJSON(json);
+				} catch (e) {
+					console.warn("PPTX→WoPresentation conversion failed:", e);
+					this.resetToDefaults();
+				}
+				// Convert to HTML for the Text Edit view
 				try {
 					const html = await convertPptxToHtml(buf);
 					this.convertedHtml = html;
 				} catch (e) {
-					console.warn("PPTX conversion failed, falling back to JSON:", e);
+					console.warn("PPTX→HTML conversion failed:", e);
 				}
-			}
-
-			try {
-				const text = await content.text();
-				this.fromJSON(text);
-			} catch {
-				this.resetToDefaults();
+			} else {
+				try {
+					const text = await content.text();
+					this.fromJSON(text);
+				} catch {
+					this.resetToDefaults();
+				}
 			}
 
 			this.isDocReady = true;
