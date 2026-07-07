@@ -2,11 +2,16 @@ import { observer } from "mobx-react-lite";
 import { useEffect, useRef, useState } from "react";
 import { presentationStore } from "../stores/PresentationStore";
 import { MonacoEditor } from "./MonacoEditor";
+import { SlideCanvas } from "./SlideCanvas/SlideCanvas";
+import { SlideTextEditor } from "./SlideTextEditor";
+
+type ViewMode = "canvas" | "text" | "source";
 
 const SAVE_DEBOUNCE_MS = 1500;
 
 export const DocumentHolder = observer(function DocumentHolder() {
 	const [value, setValue] = useState<string>("");
+	const [viewMode, setViewMode] = useState<ViewMode>("source");
 	const lastSerializedRef = useRef<string | null>(null);
 	const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const initializedRef = useRef(false);
@@ -29,6 +34,16 @@ export const DocumentHolder = observer(function DocumentHolder() {
 		lastSerializedRef.current = next;
 		setValue(next);
 	}, [presentationStore.document]);
+
+	const hasCanvas = presentationStore.slides.length > 0;
+	const hasHtml = presentationStore.convertedHtml !== null;
+
+	const effectiveViewMode: ViewMode =
+		viewMode === "source" && hasHtml
+			? "text"
+			: viewMode === "source" && hasCanvas
+				? "canvas"
+				: viewMode;
 
 	useEffect(
 		() => () => {
@@ -88,13 +103,90 @@ export const DocumentHolder = observer(function DocumentHolder() {
 				backgroundColor: "#e8e8e8",
 			}}
 		>
-			<MonacoEditor
-				value={value}
-				onChange={handleChange}
-				language="json"
-				readOnly={false}
-				editorType="presentation"
-			/>
+			<div
+				style={{
+					display: "flex",
+					gap: 4,
+					padding: "4px 8px",
+					backgroundColor: "#f5f5f5",
+					borderBottom: "1px solid #ccc",
+				}}
+			>
+				{hasCanvas && (
+					<button
+						type="button"
+						onClick={() => setViewMode("canvas")}
+						style={{
+							padding: "4px 12px",
+							fontWeight: effectiveViewMode === "canvas" ? 700 : 400,
+							backgroundColor:
+								effectiveViewMode === "canvas" ? "#fff" : "transparent",
+							border: "1px solid #ccc",
+							borderRadius: 4,
+							cursor: "pointer",
+						}}
+					>
+						Canvas View
+					</button>
+				)}
+				{hasHtml && (
+					<button
+						type="button"
+						onClick={() => setViewMode("text")}
+						style={{
+							padding: "4px 12px",
+							fontWeight: effectiveViewMode === "text" ? 700 : 400,
+							backgroundColor:
+								effectiveViewMode === "text" ? "#fff" : "transparent",
+							border: "1px solid #ccc",
+							borderRadius: 4,
+							cursor: "pointer",
+						}}
+					>
+						Text Edit
+					</button>
+				)}
+				<button
+					type="button"
+					onClick={() => setViewMode("source")}
+					style={{
+						padding: "4px 12px",
+						fontWeight: effectiveViewMode === "source" ? 700 : 400,
+						backgroundColor:
+							effectiveViewMode === "source" ? "#fff" : "transparent",
+						border: "1px solid #ccc",
+						borderRadius: 4,
+						cursor: "pointer",
+					}}
+				>
+					Source
+				</button>
+			</div>
+
+			{effectiveViewMode === "canvas" && hasCanvas && (
+				<div style={{ flex: 1, overflow: "auto" }}>
+					<SlideCanvas />
+				</div>
+			)}
+			{effectiveViewMode === "text" && hasHtml && (
+				<div style={{ flex: 1, overflow: "auto" }}>
+					<SlideTextEditor
+						value={presentationStore.convertedHtml ?? ""}
+						onChange={(html) => {
+							presentationStore.convertedHtml = html;
+						}}
+					/>
+				</div>
+			)}
+			{effectiveViewMode === "source" && (
+				<MonacoEditor
+					value={value}
+					onChange={handleChange}
+					language="json"
+					readOnly={false}
+					editorType="presentation"
+				/>
+			)}
 		</div>
 	);
 });
