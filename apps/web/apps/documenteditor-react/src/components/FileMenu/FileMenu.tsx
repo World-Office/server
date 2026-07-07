@@ -3,6 +3,7 @@ import { documentStore } from "../../stores/DocumentStore"
 import { FileMenuItems } from "./FileMenuItems"
 import { CreateNewPanel } from "./panels/CreateNewPanel"
 import { DocumentInfoPanel } from "./panels/DocumentInfoPanel"
+import { FileBrowserPanel } from "./panels/FileBrowserPanel"
 import { HelpPanel } from "./panels/HelpPanel"
 import { PrintPreviewPanel } from "./panels/PrintPreviewPanel"
 import { ProtectDocPanel } from "./panels/ProtectDocPanel"
@@ -11,6 +12,8 @@ import { RightsPanel } from "./panels/RightsPanel"
 import { SaveAsPanel } from "./panels/SaveAsPanel"
 import { SaveCopyPanel } from "./panels/SaveCopyPanel"
 import { SettingsPanel } from "./panels/SettingsPanel"
+import { SharePanel } from "./panels/SharePanel"
+import { VersionHistoryPanel } from "./panels/VersionHistoryPanel"
 
 const panelContainerStyle: CSSProperties = {
   width: "100%",
@@ -54,12 +57,15 @@ export function FileMenu() {
           <SaveCopyPanel visible={activePanel === "save-copy"} />
           <RecentFilesPanel visible={activePanel === "recent"} />
           <CreateNewPanel visible={activePanel === "create-new"} />
+          <FileBrowserPanel visible={activePanel === "browse"} />
           <DocumentInfoPanel visible={activePanel === "info"} />
           <RightsPanel visible={activePanel === "rights"} />
           <SettingsPanel visible={activePanel === "opts"} />
           <HelpPanel visible={activePanel === "help"} />
           <ProtectDocPanel visible={activePanel === "protect"} />
           <PrintPreviewPanel visible={activePanel === "printpreview"} />
+          <SharePanel visible={activePanel === "share"} />
+          <VersionHistoryPanel visible={activePanel === "history"} />
         </div>
       </div>
     </div>

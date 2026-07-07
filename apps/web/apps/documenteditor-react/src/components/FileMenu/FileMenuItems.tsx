@@ -23,6 +23,7 @@ const MENU_ITEMS: MenuItem[] = [
   { action: "rename", caption: "Rename...", hasPanel: false },
   { action: "info", caption: "Document Info...", hasPanel: true },
   { action: "rights", caption: "Access Rights...", hasPanel: true },
+  { action: "share", caption: "Share...", hasPanel: true },
   { action: "history", caption: "Version History...", hasPanel: true },
   { action: "opts", caption: "Advanced Settings...", hasPanel: true },
   { action: "help", caption: "Help...", hasPanel: true },
@@ -32,6 +33,7 @@ const MENU_ITEMS: MenuItem[] = [
   { action: "suggest", caption: "Suggest Feature", hasPanel: false },
   { action: "create-new", caption: "Create New", hasPanel: true },
   { action: "open-recent", caption: "Open Recent", hasPanel: false },
+  { action: "browse", caption: "Browse Files", hasPanel: false },
   { action: "protect", caption: "Protect Document", hasPanel: true },
 ]
 
@@ -43,6 +45,12 @@ export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
   }
 
   async function handleDesktopAction(action: string): Promise<void> {
+    if (action === "browse") {
+      documentStore.setActiveFileMenuPanel("browse")
+      documentStore.setActiveTab("file")
+      return
+    }
+
     if (!documentStore.isDesktop) {
       onMenuClick(action, false)
       return

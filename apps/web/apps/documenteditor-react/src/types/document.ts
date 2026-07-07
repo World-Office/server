@@ -83,6 +83,8 @@ export type FileMenuAction =
   | "suggest"
   | "create-new"
   | "open-recent"
+  | "browse"
+  | "share"
   | "protect"
 
 export type LeftMenuAction =
