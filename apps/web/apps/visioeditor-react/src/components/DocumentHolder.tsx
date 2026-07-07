@@ -152,7 +152,11 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
 		if (ext === "vsdx" || ext === "vdx") {
 			const loadHtml = async () => {
 				try {
-					const conn = { wopiFileId: fileId, wopiAccessToken: token, docserverBase: visioStore.docserverBase };
+					const conn = {
+						wopiFileId: fileId,
+						wopiAccessToken: token,
+						docserverBase: visioStore.docserverBase,
+					};
 					const { content } = await loadDocument(conn);
 					const buf = await content.arrayBuffer();
 					const html = await convertVsdxToHtml(buf);
@@ -163,9 +167,7 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
 			};
 			loadHtml();
 		}
-	}, [
-		visioStore.isDocReady,
-	]);
+	}, [visioStore.isDocReady]);
 
 	const hasFlowchart = visioStore.editorMode === "flowchart";
 	const hasHtml = convertedHtml !== null;
