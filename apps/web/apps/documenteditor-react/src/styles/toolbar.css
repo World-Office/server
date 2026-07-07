@@ -1,4 +1,4 @@
-/* Toolbar */
+/* Toolbar — Professional Office Ribbon Style */
 
 .de-toolbar {
   display: flex;
@@ -9,22 +9,64 @@
   user-select: none;
 }
 
+/* Tab strip */
 .de-toolbar-tabs {
   display: flex;
   align-items: center;
   height: 100%;
-  padding: 0 8px;
-  gap: 2px;
+  padding: 0 4px;
+  gap: 0;
+  background: var(--wo-de-bg-toolbar-tabs);
+  border-bottom: 1px solid var(--wo-de-border);
 }
 
-.de-toolbar-extra-left,
+.de-toolbar-extra-left {
+  flex: 0 0 auto;
+}
+
 .de-toolbar-extra-right {
   flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-right: 4px;
 }
 
+/* Tab button */
+.de-toolbar-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 14px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--wo-de-text-secondary);
+  font-size: 12px;
+  font-family: var(--wo-de-font);
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background-color 0.12s;
+  white-space: nowrap;
+  position: relative;
+  margin-bottom: -1px;
+}
+
+.de-toolbar-tab:hover {
+  color: var(--wo-de-text-primary);
+  background-color: var(--wo-de-accent-light);
+}
+
+.de-toolbar-tab.active {
+  color: var(--wo-de-accent);
+  border-bottom-color: var(--wo-de-accent);
+  font-weight: 600;
+  background-color: var(--wo-de-bg-toolbar);
+}
+
+/* Tab panels — hidden by default, shown via JS */
 .de-toolbar-controls {
   display: none;
-  overflow: hidden;
 }
 
 .de-toolbar-static {
@@ -35,660 +77,165 @@
   display: none;
 }
 
-/* Tab button */
-.de-toolbar-tab {
+/* =============================================
+   Shared tab panel — ribbon-style toolbar area
+   ============================================= */
+
+/* All tab panels share this structure */
+section[class*="tab-panel"] {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 6px 8px;
+  background: var(--wo-de-bg-toolbar-panel);
+  min-height: 84px;
+  border-bottom: 1px solid var(--wo-de-border-light);
+}
+
+/* Group container */
+div[class*="group"] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  border-right: 1px solid var(--wo-de-border-light);
+  min-height: 100%;
+}
+
+div[class*="group"]:last-child {
+  border-right: none;
+}
+
+/* Button set within a group */
+div[class*="elset"] {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Group label */
+span[class*="label"] {
+  display: block;
+  font-size: 9px;
+  color: var(--wo-de-text-muted);
+  text-align: center;
+  line-height: 1.2;
+  white-space: nowrap;
+  padding: 0 2px;
+  margin-top: 1px;
+  max-width: 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Ribbon button */
+button[class*="btn"] {
   display: inline-flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 28px;
-  padding: 0 12px;
-  border: none;
-  border-bottom: 2px solid transparent;
+  gap: 2px;
+  min-width: 40px;
+  height: 52px;
+  padding: 4px 6px 2px;
+  border: 1px solid transparent;
+  border-radius: 4px;
   background: transparent;
-  color: var(--wo-de-text-secondary);
-  font-size: 12px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-  white-space: nowrap;
-}
-
-.de-toolbar-tab:hover {
   color: var(--wo-de-text-primary);
-}
-
-.de-toolbar-tab.active {
-  color: var(--wo-de-accent);
-  border-bottom-color: var(--wo-de-accent);
-  font-weight: 600;
-}
-
-/* HomeTab */
-.de-hometab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
-}
-
-.de-hometab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.de-hometab-elset {
-  display: flex;
-  align-items: center;
-}
-
-.de-hometab-label {
-  font-size: 11px;
-  color: var(--wo-de-text-secondary);
-  text-align: center;
-  margin-top: 2px;
-}
-
-.de-hometab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-de-border);
-  border-radius: 3px;
-  background-color: var(--wo-de-bg-pane);
-  color: var(--wo-de-text-primary);
-  font-size: 12px;
+  font-size: 9px;
+  font-family: var(--wo-de-font);
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
+  transition: background-color 0.1s, border-color 0.1s;
+  line-height: 1.1;
+  position: relative;
 }
 
-.de-hometab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
+button[class*="btn"] svg,
+button[class*="btn"] .lucide {
+  width: var(--wo-de-icon-size);
+  height: var(--wo-de-icon-size);
+  stroke-width: 1.8;
+  color: var(--wo-de-text-secondary);
+  flex-shrink: 0;
+  display: block;
+}
+
+button[class*="btn"]:hover {
+  background-color: var(--wo-de-btn-hover);
   border-color: var(--wo-de-border);
 }
 
-.de-hometab-btn.active {
-  background-color: var(--wo-de-accent);
-  color: #ffffff;
+button[class*="btn"]:active,
+button[class*="btn"].active {
+  background-color: var(--wo-de-btn-active);
+  border-color: var(--wo-de-border);
+}
+
+button[class*="btn"].active {
+  background-color: var(--wo-de-accent-light);
+}
+
+button[class*="btn"]:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* Select dropdowns in toolbar */
+select[class*="select"] {
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid var(--wo-de-border);
+  border-radius: 3px;
+  background: var(--wo-de-bg-pane);
+  font-size: 11px;
+  font-family: var(--wo-de-font);
+  color: var(--wo-de-text-primary);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.12s;
+}
+
+select[class*="select"]:hover {
   border-color: var(--wo-de-accent);
 }
 
-.de-hometab-zoom-select {
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--wo-de-border);
-  border-radius: 3px;
-  background-color: var(--wo-de-bg-pane);
-  font-size: 12px;
-  color: var(--wo-de-text-primary);
-  cursor: pointer;
-}
-
-.de-hometab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-de-border);
-}
-
-/* DesignTab */
-.de-designtab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
-}
-
-.de-designtab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.de-designtab-elset {
-  display: flex;
-  align-items: center;
-}
-
-.de-designtab-label {
-  font-size: 11px;
-  color: var(--wo-de-text-secondary);
-  text-align: center;
-  margin-top: 2px;
-}
-
-.de-designtab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-de-border);
-  border-radius: 3px;
-  background-color: var(--wo-de-bg-pane);
-  color: var(--wo-de-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
-}
-
-.de-designtab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-de-border);
-}
-
-.de-designtab-btn.active {
-  background-color: var(--wo-de-accent);
-  color: #ffffff;
+select[class*="select"]:focus {
   border-color: var(--wo-de-accent);
+  box-shadow: 0 0 0 1px var(--wo-de-accent-light);
 }
 
-.de-designtab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-de-border);
-}
-
-/* TransitionsTab */
-.de-transitionstab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
-}
-
-.de-transitionstab-group {
+/* Checkbox labels (View tab) */
+label[class*="checkbox"] {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.de-transitionstab-elset {
-  display: flex;
-  align-items: center;
-}
-
-.de-transitionstab-label {
+  gap: 4px;
   font-size: 11px;
-  color: var(--wo-de-text-secondary);
-  text-align: center;
-  margin-top: 2px;
-}
-
-.de-transitionstab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-de-border);
+  color: var(--wo-de-text-primary);
+  cursor: pointer;
+  padding: 2px 4px;
   border-radius: 3px;
-  background-color: var(--wo-de-bg-pane);
-  color: var(--wo-de-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
+  transition: background-color 0.1s;
 }
 
-.de-transitionstab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-de-border);
+label[class*="checkbox"]:hover {
+  background-color: var(--wo-de-btn-hover);
 }
 
-.de-transitionstab-btn.active {
-  background-color: var(--wo-de-accent);
-  color: #ffffff;
-  border-color: var(--wo-de-accent);
-}
-
-.de-transitionstab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-de-border);
-}
-
-/* AnimationTab */
-.de-animationtab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
-}
-
-.de-animationtab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.de-animationtab-elset {
-  display: flex;
-  align-items: center;
-}
-
-.de-animationtab-label {
-  font-size: 11px;
-  color: var(--wo-de-text-secondary);
-  text-align: center;
-  margin-top: 2px;
-}
-
-.de-animationtab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-de-border);
-  border-radius: 3px;
-  background-color: var(--wo-de-bg-pane);
-  color: var(--wo-de-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
-}
-
-.de-animationtab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-de-border);
-}
-
-.de-animationtab-btn.active {
-  background-color: var(--wo-de-accent);
-  color: #ffffff;
-  border-color: var(--wo-de-accent);
-}
-
-.de-animationtab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-de-border);
-}
-
-/* InsertTab */
-.de-inserttab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
-}
-
-.de-inserttab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.de-inserttab-elset {
-  display: flex;
-  align-items: center;
-}
-
-.de-inserttab-label {
-  font-size: 11px;
-  color: var(--wo-de-text-secondary);
-  text-align: center;
-  margin-top: 2px;
-}
-
-.de-inserttab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-de-border);
-  border-radius: 3px;
-  background-color: var(--wo-de-bg-pane);
-  color: var(--wo-de-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
-}
-
-.de-inserttab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-de-border);
-}
-
-.de-inserttab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-de-border);
-}
-
-/* ViewTab */
-.de-viewtab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
-}
-
-.de-viewtab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.de-viewtab-elset {
-  display: flex;
-  align-items: center;
-}
-
-.de-viewtab-label {
-  font-size: 11px;
-  color: var(--wo-de-text-secondary);
-  text-align: center;
-  margin-top: 2px;
-}
-
-.de-viewtab-zoom-select {
-  height: 28px;
-  padding: 0 8px;
-  border: 1px solid var(--wo-de-border);
-  border-radius: 3px;
-  background-color: var(--wo-de-bg-pane);
-  font-size: 12px;
-  color: var(--wo-de-text-primary);
-  cursor: pointer;
-}
-
-.de-viewtab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-de-border);
-  border-radius: 3px;
-  background-color: var(--wo-de-bg-pane);
-  color: var(--wo-de-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
-}
-
-.de-viewtab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-de-border);
-}
-
-.de-viewtab-btn.active {
-  background-color: var(--wo-de-accent);
-  color: #ffffff;
-  border-color: var(--wo-de-accent);
-}
-
-.de-viewtab-btn-theme {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-de-border);
-  border-radius: 3px;
-  background-color: var(--wo-de-bg-pane);
-  color: var(--wo-de-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.de-viewtab-btn-theme:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-}
-
-.de-viewtab-checkbox {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--wo-de-text-primary);
-  cursor: pointer;
-}
-
-.de-viewtab-checkbox input[type="checkbox"] {
+label[class*="checkbox"] input[type="checkbox"] {
   margin: 0;
   cursor: pointer;
+  accent-color: var(--wo-de-accent);
 }
 
-.de-viewtab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-de-border);
-}
+/* =============================================
+   Legacy class support for backward compatibility
+   (replaces individual tab-specific classes)
+   ============================================= */
 
-.de-viewtab-separator-theme {
-  margin: 4px 0;
-}
-
-/* Document Editor — Layout Tab */
-.de-layouttab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
-}
-
-.de-layouttab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.de-layouttab-elset {
-  display: flex;
-  align-items: center;
-}
-
-.de-layouttab-label {
-  font-size: 11px;
-  color: var(--wo-de-text-secondary);
-  text-align: center;
-  margin-top: 2px;
-}
-
-.de-layouttab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-de-border);
-  border-radius: 3px;
-  background-color: var(--wo-de-bg-pane);
-  color: var(--wo-de-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
-}
-
-.de-layouttab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-de-border);
-}
-
-.de-layouttab-btn.active {
-  background-color: var(--wo-de-accent);
-  color: #ffffff;
-  border-color: var(--wo-de-accent);
-}
-
-.de-layouttab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-de-border);
-}
-
-/* Document Editor — References Tab */
-.de-referencestab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
-}
-
-.de-referencestab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.de-referencestab-elset {
-  display: flex;
-  align-items: center;
-}
-
-.de-referencestab-label {
-  font-size: 11px;
-  color: var(--wo-de-text-secondary);
-  text-align: center;
-  margin-top: 2px;
-}
-
-.de-referencestab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-de-border);
-  border-radius: 3px;
-  background-color: var(--wo-de-bg-pane);
-  color: var(--wo-de-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
-}
-
-.de-referencestab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-de-border);
-}
-
-.de-referencestab-btn.active {
-  background-color: var(--wo-de-accent);
-  color: #ffffff;
-  border-color: var(--wo-de-accent);
-}
-
-.de-referencestab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-de-border);
-}
-
-/* Document Editor — Forms Tab */
-.de-formstab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
-}
-
-.de-formstab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.de-formstab-elset {
-  display: flex;
-  align-items: center;
-}
-
-.de-formstab-label {
-  font-size: 11px;
-  color: var(--wo-de-text-secondary);
-  text-align: center;
-  margin-top: 2px;
-}
-
-.de-formstab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-de-border);
-  border-radius: 3px;
-  background-color: var(--wo-de-bg-pane);
-  color: var(--wo-de-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
-}
-
-.de-formstab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-de-border);
-}
-
-.de-formstab-btn.active {
-  background-color: var(--wo-de-accent);
-  color: #ffffff;
-  border-color: var(--wo-de-accent);
-}
-
-.de-formstab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-de-border);
-}
-
-/* Document Editor — Header & Footer Tab */
-.de-headerfootertab-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 12px 16px;
-}
-
-.de-headerfootertab-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.de-headerfootertab-elset {
-  display: flex;
-  align-items: center;
-}
-
-.de-headerfootertab-label {
-  font-size: 11px;
-  color: var(--wo-de-text-secondary);
-  text-align: center;
-  margin-top: 2px;
-}
-
-.de-headerfootertab-btn {
-  display: inline-flex;
-  align-items: center;
-  height: 28px;
-  padding: 0 12px;
-  border: 1px solid var(--wo-de-border);
-  border-radius: 3px;
-  background-color: var(--wo-de-bg-pane);
-  color: var(--wo-de-text-primary);
-  font-size: 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background-color 0.15s, border-color 0.15s;
-}
-
-.de-headerfootertab-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  border-color: var(--wo-de-border);
-}
-
-.de-headerfootertab-btn.active {
-  background-color: var(--wo-de-accent);
-  color: #ffffff;
-  border-color: var(--wo-de-accent);
-}
-
-.de-headerfootertab-separator {
-  width: 100%;
-  height: 1px;
-  background-color: var(--wo-de-border);
-}
+/* These are all handled by the generic selectors above
+   Individual class overrides only when needed */
