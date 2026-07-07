@@ -181,7 +181,7 @@ export function setActiveRichTextEditor(editor: RichTextCommandSurface | null): 
   activeEditor = editor
 }
 
-export function dispatchRichTextCommand(command: RichTextCommand): boolean {
+export function dispatchRichTextCommand(command: RichTextCommand, value?: string): boolean {
   const editor = activeEditor
   if (!editor) return false
 
@@ -207,28 +207,28 @@ export function dispatchRichTextCommand(command: RichTextCommand): boolean {
       chain.toggleSuperscript().run()
       return true
     case "textColor": {
-      const color = window.prompt("Enter text color (name or hex, e.g., red, #ff0000):")
+      const color = value || window.prompt("Enter text color (name or hex, e.g., red, #ff0000):")
       if (color) {
         chain.setColor(color).run()
       }
       return true
     }
     case "highlight": {
-      const hlColor = window.prompt("Enter highlight color (name or hex):")
+      const hlColor = value || window.prompt("Enter highlight color (name or hex):")
       if (hlColor) {
         chain.toggleHighlight({ color: hlColor }).run()
       }
       return true
     }
     case "fontFamily": {
-      const font = window.prompt("Enter font family (e.g., Arial, Times New Roman):")
+      const font = value || window.prompt("Enter font family (e.g., Arial, Times New Roman):")
       if (font) {
         chain.setFontFamily(font).run()
       }
       return true
     }
     case "fontSize": {
-      const size = window.prompt("Enter font size (e.g., 14pt, 16px):")
+      const size = value || window.prompt("Enter font size (e.g., 14pt, 16px):")
       if (size) {
         chain.setMark("textStyle", { fontSize: size }).run()
       }
