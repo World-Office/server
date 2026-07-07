@@ -22,8 +22,8 @@ use crate::converters::{
     OfdToDocxConverter, OfdToHtmlConverter, OfdToTxtConverter, PptxToWoPresentationConverter,
     RtfToDocxConverter, RtfToHtmlConverter, RtfToTxtConverter, TxtToDocxConverter,
     TxtToEpubConverter, TxtToFb2Converter, TxtToHtmlConverter, TxtToOdtConverter,
-    TxtToRtfConverter, WoPresentationToOdpConverter, WoPresentationToPptxConverter,
-    XpsToDocxConverter, XpsToHtmlConverter, XpsToTxtConverter,
+    TxtToRtfConverter, WoPresentationToHtmlConverter, WoPresentationToOdpConverter,
+    WoPresentationToPptxConverter, XpsToDocxConverter, XpsToHtmlConverter, XpsToTxtConverter,
 };
 use crate::model::{ConversionOutput, ConversionResult, ConversionStatus};
 use crate::FormatConverter;
@@ -93,6 +93,7 @@ impl ConversionRouter {
         registry.register(PptxToWoPresentationConverter);
         registry.register(WoPresentationToOdpConverter);
         registry.register(OdpToWoPresentationConverter);
+        registry.register(WoPresentationToHtmlConverter);
         Self { registry }
     }
 
@@ -484,10 +485,11 @@ mod tests {
         assert!(pairs.contains(&("pptx", "wo-presentation")));
         assert!(pairs.contains(&("wo-presentation", "odp")));
         assert!(pairs.contains(&("odp", "wo-presentation")));
+        assert!(pairs.contains(&("wo-presentation", "html")));
         assert_eq!(
             pairs.len(),
-            42,
-            "expected 42 registered converters, got {}",
+            43,
+            "expected 43 registered converters, got {}",
             pairs.len()
         );
     }
