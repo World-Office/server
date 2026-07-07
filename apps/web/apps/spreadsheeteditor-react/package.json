@@ -25,7 +25,9 @@
     "@tiptap/core": "^3.27.1",
     "@tiptap/react": "^3.27.1",
     "@tiptap/starter-kit": "^3.27.1",
-    "monaco-editor": "^0.52.2"
+		"monaco-editor": "^0.52.2",
+		"@univerjs/presets": "^0.25.1",
+		"@univerjs/preset-sheets-core": "^0.25.1"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
