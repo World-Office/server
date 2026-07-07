@@ -238,9 +238,7 @@ export function VersionHistoryPanel({ visible }: { visible: boolean }) {
 
       {!loading && versions.length === 0 && !error && (
         <div className="de-file-menu-body">
-          <p className="de-file-menu-instruction">
-            No previous versions available for this file.
-          </p>
+          <p className="de-file-menu-instruction">No previous versions available for this file.</p>
           <p className="de-file-menu-instruction">
             Versions are created automatically when you save changes.
           </p>
