@@ -1,17 +1,19 @@
-/* Status Bar */
+/* Status Bar — Professional Office Suite Style */
 
 .de-statusbar {
   position: relative;
   display: flex;
   align-items: center;
   height: var(--wo-de-statusbar-height);
-  padding: 0 2px 0;
-  z-index: 500;
+  padding: 0 4px;
+  z-index: 100;
   background-color: var(--wo-de-bg-statusbar);
   border-top: 1px solid var(--wo-de-border);
-  font-size: 12px;
+  font-size: 11px;
+  font-family: var(--wo-de-font);
   color: var(--wo-de-text-secondary);
   user-select: none;
+  gap: 0;
 }
 
 .de-statusbar.no-compact {
@@ -22,75 +24,51 @@
 .de-statusbar-page-nav {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 0 8px;
+  gap: 2px;
+  padding: 0 6px;
   height: 100%;
   flex-shrink: 0;
 }
 
 .de-statusbar-page-label {
-  font-size: 12px;
+  font-size: 11px;
   white-space: nowrap;
   cursor: default;
   color: var(--wo-de-text-secondary);
+  padding: 0 4px;
 }
 
-/* Document-specific status bar elements */
-.de-statusbar-page-nav {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.de-statusbar-word-count {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.de-statusbar-track-changes {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.de-statusbar-spelling {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-/* Tool buttons */
+/* Status bar tool button groups */
 .de-statusbar-tools {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 0 8px;
+  gap: 2px;
+  padding: 0 6px;
   height: 100%;
   flex-shrink: 0;
+  border-right: 1px solid transparent;
 }
 
-/* Zoom controls */
-.de-statusbar-zoom-box {
-  position: absolute;
-  right: 0;
-  height: var(--wo-de-statusbar-height);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 10px;
-  flex-shrink: 0;
+.de-statusbar-tools:not(:last-child) {
+  margin-right: 0;
 }
 
-.de-statusbar-no-compact .de-statusbar-zoom-box {
-  height: var(--wo-de-statusbar-height-expanded);
+/* Word count & labels */
+.de-statusbar-label {
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: default;
+  color: var(--wo-de-text-secondary);
+  padding: 0 4px;
 }
 
 /* Separator */
 .de-statusbar-separator {
   width: 1px;
-  height: 100%;
+  height: 16px;
   background-color: var(--wo-de-border);
+  flex-shrink: 0;
+  margin: 0 2px;
 }
 
 /* Button */
@@ -98,29 +76,64 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
+  width: 22px;
+  height: 20px;
+  border: 1px solid transparent;
   border-radius: 3px;
   background: transparent;
-  color: var(--wo-de-text-primary);
-  font-size: 14px;
+  color: var(--wo-de-text-secondary);
   cursor: pointer;
-  transition: background-color 0.15s;
+  transition: background-color 0.1s, border-color 0.1s;
+  padding: 0;
+}
+
+.de-statusbar-btn svg,
+.de-statusbar-btn .lucide {
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.8;
+  display: block;
 }
 
 .de-statusbar-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
+  background-color: var(--wo-de-btn-hover);
+  border-color: var(--wo-de-border);
+}
+
+.de-statusbar-btn:active {
+  background-color: var(--wo-de-btn-active);
 }
 
 .de-statusbar-btn.active {
-  background-color: var(--wo-de-accent);
-  color: #ffffff;
+  background-color: var(--wo-de-accent-light);
+  color: var(--wo-de-accent);
+}
+
+.de-statusbar-btn.active svg {
+  color: var(--wo-de-accent);
 }
 
 .de-statusbar-btn:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: default;
+  pointer-events: none;
+}
+
+/* Zoom controls (right side) */
+.de-statusbar-zoom-box {
+  position: absolute;
+  right: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  flex-shrink: 0;
+  background: var(--wo-de-bg-statusbar);
+}
+
+.de-statusbar-no-compact .de-statusbar-zoom-box {
+  height: var(--wo-de-statusbar-height-expanded);
 }
 
 /* Zoom label */
@@ -128,10 +141,37 @@
   display: inline-flex;
   align-items: center;
   padding: 0 4px;
+  font-size: 11px;
+  min-width: 36px;
+  justify-content: center;
+  color: var(--wo-de-text-primary);
+  cursor: pointer;
 }
 
-.de-statusbar-label {
-  font-size: 12px;
-  white-space: nowrap;
-  cursor: default;
+.de-statusbar-zoom-label:hover {
+  color: var(--wo-de-accent);
+}
+
+/* Language select */
+.de-statusbar-select {
+  height: 20px;
+  padding: 0 4px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  font-size: 11px;
+  font-family: var(--wo-de-font);
+  color: var(--wo-de-text-secondary);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.1s;
+  max-width: 100px;
+}
+
+.de-statusbar-select:hover {
+  border-color: var(--wo-de-border);
+}
+
+.de-statusbar-select:focus {
+  border-color: var(--wo-de-accent);
 }
