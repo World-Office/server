@@ -1,9 +1,11 @@
 import { loadDocument } from "@world-office/wopi-client";
 import { observer } from "mobx-react-lite";
 import { useEffect, useRef, useState } from "react";
+import { convertVsdxToHtml } from "../lib/conversion";
 import { init, renderPage } from "../lib/wasm-renderer";
 import { visioStore } from "../stores/VisioStore";
 import { FlowchartCanvas } from "./FlowchartCanvas";
+import { ShapeTextEditor } from "./ShapeTextEditor";
 
 function VsdxCanvas() {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -12,7 +14,6 @@ function VsdxCanvas() {
 	const [svgContent, setSvgContent] = useState<string | null>(null);
 	const [isSvgLoading, setIsSvgLoading] = useState(false);
 
-	// Initialize renderer once on mount
 	useEffect(() => {
 		const canvas = canvasRef.current;
 		if (!canvas || initialized.current) return;
@@ -22,14 +23,12 @@ function VsdxCanvas() {
 		renderPage(visioStore.currentPageIndex, visioStore.zoomLevel);
 	}, []);
 
-	// Re-render when page or zoom changes
 	const { currentPageIndex, zoomLevel } = visioStore;
 	useEffect(() => {
 		if (!initialized.current) return;
 		renderPage(currentPageIndex, zoomLevel);
 	}, [currentPageIndex, zoomLevel]);
 
-	// Load SVG when format=svg is requested
 	const {
 		format: vsdxFormat,
 		isDocReady,
@@ -135,11 +134,125 @@ function VsdxCanvas() {
 	);
 }
 
+type ViewMode = "canvas" | "flowchart" | "text";
+
 const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
-	if (visioStore.editorMode === "flowchart") {
-		return <FlowchartCanvas />;
-	}
-	return <VsdxCanvas />;
+	const [viewMode, setViewMode] = useState<ViewMode>(
+		visioStore.editorMode === "flowchart" ? "flowchart" : "canvas",
+	);
+	const [convertedHtml, setConvertedHtml] = useState<string | null>(null);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: trigger on WOPI connection changes to load content
+	useEffect(() => {
+		const fileId = visioStore.wopiFileId;
+		const token = visioStore.wopiAccessToken;
+		if (!fileId || !token) return;
+
+		const ext = visioStore.document?.fileType?.toLowerCase();
+		if (ext === "vsdx" || ext === "vdx") {
+			const loadHtml = async () => {
+				try {
+					const conn = { wopiFileId: fileId, wopiAccessToken: token, docserverBase: visioStore.docserverBase };
+					const { content } = await loadDocument(conn);
+					const buf = await content.arrayBuffer();
+					const html = await convertVsdxToHtml(buf);
+					setConvertedHtml(html);
+				} catch (e) {
+					console.warn("VSDX conversion failed:", e);
+				}
+			};
+			loadHtml();
+		}
+	}, [
+		visioStore.isDocReady,
+	]);
+
+	const hasFlowchart = visioStore.editorMode === "flowchart";
+	const hasHtml = convertedHtml !== null;
+
+	return (
+		<div
+			className="visio-document-holder"
+			style={{
+				display: "flex",
+				flexDirection: "column",
+				alignItems: "stretch",
+				overflow: "hidden",
+				height: "100%",
+				backgroundColor: "#e8e8e8",
+			}}
+		>
+			<div
+				style={{
+					display: "flex",
+					gap: 4,
+					padding: "4px 8px",
+					backgroundColor: "#f5f5f5",
+					borderBottom: "1px solid #ccc",
+				}}
+			>
+				{hasFlowchart && (
+					<button
+						type="button"
+						onClick={() => setViewMode("flowchart")}
+						style={{
+							padding: "4px 12px",
+							fontWeight: viewMode === "flowchart" ? 700 : 400,
+							backgroundColor:
+								viewMode === "flowchart" ? "#fff" : "transparent",
+							border: "1px solid #ccc",
+							borderRadius: 4,
+							cursor: "pointer",
+						}}
+					>
+						Diagram Editor
+					</button>
+				)}
+				{hasHtml && (
+					<button
+						type="button"
+						onClick={() => setViewMode("text")}
+						style={{
+							padding: "4px 12px",
+							fontWeight: viewMode === "text" ? 700 : 400,
+							backgroundColor: viewMode === "text" ? "#fff" : "transparent",
+							border: "1px solid #ccc",
+							borderRadius: 4,
+							cursor: "pointer",
+						}}
+					>
+						Text View
+					</button>
+				)}
+				<button
+					type="button"
+					onClick={() => setViewMode("canvas")}
+					style={{
+						padding: "4px 12px",
+						fontWeight: viewMode === "canvas" ? 700 : 400,
+						backgroundColor: viewMode === "canvas" ? "#fff" : "transparent",
+						border: "1px solid #ccc",
+						borderRadius: 4,
+						cursor: "pointer",
+					}}
+				>
+					Rendered View
+				</button>
+			</div>
+
+			{viewMode === "flowchart" && hasFlowchart && (
+				<div style={{ flex: 1, overflow: "auto" }}>
+					<FlowchartCanvas />
+				</div>
+			)}
+			{viewMode === "text" && hasHtml && (
+				<div style={{ flex: 1, overflow: "auto" }}>
+					<ShapeTextEditor value={convertedHtml} onChange={setConvertedHtml} />
+				</div>
+			)}
+			{viewMode === "canvas" && <VsdxCanvas />}
+		</div>
+	);
 });
 
 export { ObservedDocumentHolder as DocumentHolder };
