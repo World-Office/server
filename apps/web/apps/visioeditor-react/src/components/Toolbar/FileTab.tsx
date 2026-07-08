@@ -1,3 +1,4 @@
+import { File } from "lucide-react";
 import type { JSX } from "react";
 import { visioStore } from "../../stores/VisioStore";
 
@@ -20,6 +21,7 @@ export function FileTab(): JSX.Element {
 			onClick={handleClick}
 			aria-label="File"
 		>
+			<File size={14} />
 			File
 		</button>
 	);
