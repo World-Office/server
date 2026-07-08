@@ -1,3 +1,31 @@
+import {
+	AlignCenter,
+	AlignLeft,
+	AlignRight,
+	ArrowUpDown,
+	Bold,
+	Clipboard,
+	Combine,
+	Copy,
+	DollarSign,
+	Filter,
+	Italic,
+	PaintBucket,
+	Paintbrush,
+	Palette,
+	Percent,
+	Replace,
+	Scissors,
+	Search,
+	Sigma,
+	SquarePlus,
+	Strikethrough,
+	Table,
+	Trash2,
+	Type,
+	Underline,
+	WrapText,
+} from "lucide-react";
 import { observer } from "mobx-react-lite";
 import type { MonacoCommand } from "./MonacoCommand";
 
@@ -24,7 +52,8 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						onClick={() => onMonacoCommand("cut")}
 						title="Cut"
 					>
-						Cut
+						<Scissors size={18} />
+						<span>Cut</span>
 					</button>
 					<button
 						type="button"
@@ -32,7 +61,8 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						onClick={() => onMonacoCommand("copy")}
 						title="Copy"
 					>
-						Copy
+						<Copy size={18} />
+						<span>Copy</span>
 					</button>
 					<button
 						type="button"
@@ -40,15 +70,17 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						onClick={() => onMonacoCommand("paste")}
 						title="Paste"
 					>
-						Paste
+						<Clipboard size={18} />
+						<span>Paste</span>
 					</button>
 					<button
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Format Painter (not available in code editor)"
+						title="Format Painter"
 					>
-						Format Painter
+						<Paintbrush size={18} />
+						<span>Format Painter</span>
 					</button>
 				</div>
 			</div>
@@ -62,33 +94,57 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Bold (not available in code editor)"
+						title="Bold"
 					>
-						B
+						<Bold size={18} />
+						<span>Bold</span>
 					</button>
 					<button
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Italic (not available in code editor)"
+						title="Italic"
 					>
-						I
+						<Italic size={18} />
+						<span>Italic</span>
 					</button>
 					<button
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Underline (not available in code editor)"
+						title="Underline"
 					>
-						U
+						<Underline size={18} />
+						<span>Underline</span>
 					</button>
 					<button
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Strikethrough (not available in code editor)"
+						title="Strikethrough"
 					>
-						S
+						<Strikethrough size={18} />
+						<span>Strikethrough</span>
+					</button>
+				</div>
+				<div className="se-hometab-elset">
+					<button
+						type="button"
+						className="se-hometab-btn"
+						disabled
+						title="Increase Font Size"
+					>
+						<Type size={18} />
+						<span>Increase</span>
+					</button>
+					<button
+						type="button"
+						className="se-hometab-btn"
+						disabled
+						title="Decrease Font Size"
+					>
+						<Type size={18} />
+						<span>Decrease</span>
 					</button>
 				</div>
 				<div className="se-hometab-elset">
@@ -96,38 +152,19 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Increase Font Size (not available in code editor)"
+						title="Text Color"
 					>
-						A+
+						<Palette size={18} />
+						<span>Text Color</span>
 					</button>
 					<button
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Decrease Font Size (not available in code editor)"
+						title="Fill Color"
 					>
-						A-
-					</button>
-				</div>
-				<div className="se-hometab-elset">
-					<span className="se-hometab-label">Font Size</span>
-				</div>
-				<div className="se-hometab-elset">
-					<button
-						type="button"
-						className="se-hometab-btn"
-						disabled
-						title="Text Color (not available in code editor)"
-					>
-						A
-					</button>
-					<button
-						type="button"
-						className="se-hometab-btn"
-						disabled
-						title="Text Highlight Color (not available in code editor)"
-					>
-						Ab
+						<PaintBucket size={18} />
+						<span>Fill Color</span>
 					</button>
 				</div>
 			</div>
@@ -141,33 +178,37 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Align Left (not available in code editor)"
+						title="Align Left"
 					>
-						Align Left
+						<AlignLeft size={18} />
+						<span>Align Left</span>
 					</button>
 					<button
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Align Center (not available in code editor)"
+						title="Align Center"
 					>
-						Align Center
+						<AlignCenter size={18} />
+						<span>Align Center</span>
 					</button>
 					<button
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Align Right (not available in code editor)"
+						title="Align Right"
 					>
-						Align Right
+						<AlignRight size={18} />
+						<span>Align Right</span>
 					</button>
 					<button
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Merge & Center (not available in code editor)"
+						title="Merge & Center"
 					>
-						Merge
+						<Combine size={18} />
+						<span>Merge</span>
 					</button>
 				</div>
 				<div className="se-hometab-elset">
@@ -175,9 +216,10 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Wrap Text (not available in code editor)"
+						title="Wrap Text"
 					>
-						Wrap Text
+						<WrapText size={18} />
+						<span>Wrap Text</span>
 					</button>
 				</div>
 			</div>
@@ -191,33 +233,28 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Currency (not available in code editor)"
+						title="Currency Format"
 					>
-						$
+						<DollarSign size={18} />
+						<span>Currency</span>
 					</button>
 					<button
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Percent (not available in code editor)"
+						title="Percent Format"
 					>
-						%
+						<Percent size={18} />
+						<span>Percent</span>
 					</button>
 					<button
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Decimal (not available in code editor)"
+						title="Decimal Format"
 					>
-						.00
-					</button>
-					<button
-						type="button"
-						className="se-hometab-btn"
-						disabled
-						title="Comma (not available in code editor)"
-					>
-						,
+						<Sigma size={18} />
+						<span>Decimal</span>
 					</button>
 				</div>
 			</div>
@@ -231,17 +268,19 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Cell Styles (not available in code editor)"
+						title="Cell Styles"
 					>
-						Cell Styles
+						<Table size={18} />
+						<span>Cell Styles</span>
 					</button>
 					<button
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Conditional Formatting (not available in code editor)"
+						title="Conditional Formatting"
 					>
-						Conditional Formatting
+						<PaintBucket size={18} />
+						<span>Conditional</span>
 					</button>
 				</div>
 			</div>
@@ -255,17 +294,19 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Insert Cells (not available in code editor)"
+						title="Insert Cells"
 					>
-						Insert
+						<SquarePlus size={18} />
+						<span>Insert</span>
 					</button>
 					<button
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Delete Cells (not available in code editor)"
+						title="Delete Cells"
 					>
-						Delete
+						<Trash2 size={18} />
+						<span>Delete</span>
 					</button>
 				</div>
 				<div className="se-hometab-elset">
@@ -273,9 +314,10 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Format (not available in code editor)"
+						title="Format"
 					>
-						Format
+						<Paintbrush size={18} />
+						<span>Format</span>
 					</button>
 				</div>
 			</div>
@@ -291,7 +333,8 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						onClick={() => onMonacoCommand("find")}
 						title="Find"
 					>
-						Find
+						<Search size={18} />
+						<span>Find</span>
 					</button>
 					<button
 						type="button"
@@ -299,7 +342,8 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						onClick={() => onMonacoCommand("replace")}
 						title="Replace"
 					>
-						Replace
+						<Replace size={18} />
+						<span>Replace</span>
 					</button>
 				</div>
 				<div className="se-hometab-elset">
@@ -307,9 +351,10 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Auto Sum (not available in code editor)"
+						title="Auto Sum"
 					>
-						Σ
+						<Sigma size={18} />
+						<span>Sum</span>
 					</button>
 				</div>
 				<div className="se-hometab-elset">
@@ -317,17 +362,19 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Sort (not available in code editor)"
+						title="Sort"
 					>
-						Sort
+						<ArrowUpDown size={18} />
+						<span>Sort</span>
 					</button>
 					<button
 						type="button"
 						className="se-hometab-btn"
 						disabled
-						title="Filter (not available in code editor)"
+						title="Filter"
 					>
-						Filter
+						<Filter size={18} />
+						<span>Filter</span>
 					</button>
 				</div>
 			</div>

@@ -25,8 +25,8 @@ export const App = observer(function App() {
     dispatchMonacoCommand(command, getActiveEditor())
   }, [])
 
-  const handleRichTextCommand = useCallback((command: RichTextCommand) => {
-    dispatchRichTextCommand(command)
+  const handleRichTextCommand = useCallback((command: RichTextCommand, value?: string) => {
+    dispatchRichTextCommand(command, value)
   }, [])
 
   const loadState = useDocumentLoader({

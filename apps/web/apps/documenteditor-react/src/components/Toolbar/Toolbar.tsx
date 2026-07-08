@@ -15,7 +15,7 @@ import { ViewTab } from "./ViewTab"
 
 interface ToolbarProps {
   onMonacoCommand: (command: MonacoCommand) => void
-  onRichTextCommand: (command: RichTextCommand) => void
+  onRichTextCommand: (command: RichTextCommand, value?: string) => void
 }
 
 const ObservedToolbar = observer(function ObservedToolbar({

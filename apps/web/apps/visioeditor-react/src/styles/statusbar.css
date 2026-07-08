@@ -1,21 +1,21 @@
-/* Status Bar */
+/* Status Bar - Professional Styling */
 
 .visio-statusbar {
 	position: relative;
 	display: flex;
 	align-items: center;
-	height: var(--wo-visio-statusbar-height);
-	padding: 0 2px 0;
+	height: var(--wo-visio-statusbar-height, 24px);
+	padding: 0 2px;
 	z-index: 500;
-	background-color: var(--wo-visio-bg-statusbar);
-	border-top: 1px solid var(--wo-visio-border);
+	background: #f3f3f3;
+	border-top: 1px solid #d0d0d0;
 	font-size: 12px;
-	color: var(--wo-visio-text-secondary);
+	color: #555;
 	user-select: none;
 }
 
 .visio-statusbar.no-compact {
-	height: var(--wo-visio-statusbar-expanded);
+	height: var(--wo-visio-statusbar-expanded, 32px);
 }
 
 /* Tabs scroll buttons */
@@ -24,8 +24,9 @@
 	height: 100%;
 	display: flex;
 	align-items: center;
-	padding: 0 12px 0 10px;
+	padding: 0 10px;
 	flex-shrink: 0;
+	gap: 2px;
 }
 
 /* Sheets dropdown trigger */
@@ -34,8 +35,8 @@
 	align-items: center;
 	padding: 0 8px;
 	height: 100%;
-	border-left: 1px solid var(--wo-visio-border);
-	border-right: 1px solid var(--wo-visio-border);
+	border-left: 1px solid #d0d0d0;
+	border-right: 1px solid #d0d0d0;
 	flex-shrink: 0;
 }
 
@@ -43,7 +44,7 @@
 .visio-statusbar-zoom-box {
 	position: absolute;
 	right: 0;
-	height: var(--wo-visio-statusbar-height);
+	height: var(--wo-visio-statusbar-height, 24px);
 	display: flex;
 	align-items: center;
 	gap: 4px;
@@ -52,7 +53,7 @@
 }
 
 .visio-statusbar-no-compact .visio-statusbar-zoom-box {
-	height: var(--wo-visio-statusbar-expanded);
+	height: var(--wo-visio-statusbar-expanded, 32px);
 }
 
 /* Sheets bar (page tabs) */
@@ -60,14 +61,14 @@
 	position: absolute;
 	left: 66px;
 	right: 160px;
-	height: var(--wo-visio-statusbar-height);
+	height: var(--wo-visio-statusbar-height, 24px);
 	overflow: hidden;
 }
 
 .visio-statusbar-no-compact .visio-statusbar-sheets-bar-box {
 	left: 66px;
 	right: 135px;
-	border-bottom: 1px solid var(--wo-visio-border);
+	border-bottom: 1px solid #d0d0d0;
 }
 
 .visio-statusbar-sheets-bar {
@@ -84,38 +85,39 @@
 .visio-statusbar-page-tab {
 	display: inline-block;
 	padding: 0 10px;
-	line-height: var(--wo-visio-statusbar-height);
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
-	border: 1px solid var(--wo-visio-border);
+	line-height: var(--wo-visio-statusbar-height, 24px);
+	background: #f0f0f0;
+	border: 1px solid #d0d0d0;
 	border-top: none;
-	color: var(--wo-visio-text-secondary);
+	color: #555;
 	cursor: pointer;
 	white-space: nowrap;
 	font-size: 12px;
-	transition: background-color 0.15s, color 0.15s;
+	transition: background-color 0.12s, color 0.12s;
 }
 
 .visio-statusbar-page-tab:hover {
-	background-color: var(--wo-visio-bg-pane);
-	color: var(--wo-visio-text-primary);
+	background: #e8e8e8;
+	color: #333;
 	border-top: none;
 }
 
 .visio-statusbar-page-tab.active {
-	background-color: var(--wo-visio-bg-pane);
+	background: #ffffff;
 	border-bottom-color: transparent;
 	border-top: none;
 	padding-top: 1px;
 	font-weight: 600;
-	color: var(--wo-visio-text-primary);
-	box-shadow: inset 0 4px 0 var(--wo-visio-border-accent, #444796);
+	color: #333;
+	box-shadow: inset 0 4px 0 #4472c4;
 }
 
 /* Separator */
 .visio-statusbar-separator {
 	width: 1px;
-	height: 100%;
-	background-color: var(--wo-visio-border);
+	height: 60%;
+	background: #d0d0d0;
+	align-self: center;
 }
 
 /* Button */
@@ -123,24 +125,34 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 24px;
-	height: 24px;
-	border: none;
+	width: 22px;
+	height: 20px;
+	border: 1px solid transparent;
 	border-radius: 3px;
 	background: transparent;
-	color: var(--wo-visio-text-primary);
-	font-size: 14px;
 	cursor: pointer;
-	transition: background-color 0.15s;
+	transition: background-color 0.12s, border-color 0.12s;
+}
+
+.visio-statusbar-btn svg {
+	width: 14px;
+	height: 14px;
+	color: #555;
 }
 
 .visio-statusbar-btn:hover {
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	background-color: #e5e5e5;
+	border-color: #d0d0d0;
 }
 
 .visio-statusbar-btn.active {
-	background-color: var(--wo-visio-accent);
-	color: #ffffff;
+	background-color: #d9e6f7;
+	border-color: #4472c4;
+	color: #4472c4;
+}
+
+.visio-statusbar-btn.active svg {
+	color: #4472c4;
 }
 
 .visio-statusbar-btn:disabled {
@@ -153,19 +165,21 @@
 	display: inline-flex;
 	align-items: center;
 	padding: 0 4px;
+	gap: 2px;
 }
 
 .visio-statusbar-label {
 	font-size: 12px;
 	white-space: nowrap;
 	cursor: default;
+	color: #555;
 }
 
 /* Number of sheet (expanded mode) */
 .visio-statusbar-number-of-sheet {
 	position: absolute;
 	left: 0;
-	height: var(--wo-visio-statusbar-height);
+	height: var(--wo-visio-statusbar-height, 24px);
 	width: 135px;
 	display: flex;
 	align-items: center;
@@ -188,8 +202,8 @@
 	left: 0;
 	bottom: 100%;
 	min-width: 112px;
-	background-color: var(--wo-visio-bg-pane);
-	border: 1px solid var(--wo-visio-border);
+	background: #ffffff;
+	border: 1px solid #d0d0d0;
 	border-radius: 4px;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 	z-index: 600;
@@ -203,19 +217,34 @@
 }
 
 .visio-statusbar-sheet-item {
-	padding: 4px 20px 4px;
+	padding: 4px 20px;
 	cursor: pointer;
 	white-space: nowrap;
 	font-size: 12px;
-	color: var(--wo-visio-text-primary);
+	color: #333;
 }
 
 .visio-statusbar-sheet-item:hover {
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	background: #f0f0f0;
 }
 
 .visio-statusbar-sheet-item.active {
 	font-weight: 600;
-	background-color: var(--wo-visio-accent);
+	background: #4472c4;
 	color: #ffffff;
+}
+
+/* Save indicator */
+.visio-save-indicator {
+	font-size: 11px;
+	padding: 0 4px;
+	color: #888;
+}
+
+.visio-save-indicator.saving {
+	color: #e68a00;
+}
+
+.visio-save-indicator.modified {
+	color: #c0392b;
 }
