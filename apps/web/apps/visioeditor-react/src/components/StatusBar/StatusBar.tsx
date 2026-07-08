@@ -1,3 +1,4 @@
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import type { JSX } from "react";
 import { visioStore } from "../../stores/VisioStore";
@@ -39,7 +40,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
 						)
 					}
 				>
-					‹
+					<ChevronLeft size={14} />
 				</button>
 				<button
 					type="button"
@@ -54,7 +55,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
 						)
 					}
 				>
-					›
+					<ChevronRight size={14} />
 				</button>
 			</div>
 
