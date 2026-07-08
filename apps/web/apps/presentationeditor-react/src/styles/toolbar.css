@@ -1,4 +1,4 @@
-/* Toolbar */
+/* Toolbar — Professional Office Ribbon Style (Presentation Editor) */
 
 .prese-toolbar {
 	display: flex;
@@ -13,450 +13,186 @@
 	display: flex;
 	align-items: center;
 	height: 100%;
-	padding: 0 8px;
-	gap: 2px;
+	padding: 0 4px;
+	gap: 0;
+	background: var(--wo-de-bg-toolbar-tabs, #ffffff);
+	border-bottom: 1px solid var(--wo-prese-border);
 }
 
 .prese-toolbar-extra-left,
 .prese-toolbar-extra-right {
 	flex: 1;
+	display: flex;
+	align-items: center;
 }
 
-.prese-toolbar-controls {
-	display: none;
-	overflow: hidden;
+.prese-toolbar-extra-right {
+	justify-content: flex-end;
+	padding-right: 4px;
 }
 
-.prese-toolbar-static {
-	display: none;
-}
-
-.prese-toolbar-panels {
-	display: none;
-}
-
-/* Tab button */
 .prese-toolbar-tab {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	height: 28px;
-	padding: 0 12px;
+	gap: 4px;
+	height: 100%;
+	padding: 0 14px;
 	border: none;
 	border-bottom: 2px solid transparent;
 	background: transparent;
 	color: var(--wo-prese-text-secondary);
 	font-size: 12px;
+	font-family: var(--wo-se-font, "Segoe UI");
 	cursor: pointer;
-	transition: color 0.15s, border-color 0.15s;
+	transition: color 0.12s, border-color 0.12s, background-color 0.12s;
 	white-space: nowrap;
+	position: relative;
+	margin-bottom: -1px;
 }
 
 .prese-toolbar-tab:hover {
 	color: var(--wo-prese-text-primary);
+	background-color: rgba(68, 114, 196, 0.08);
 }
 
 .prese-toolbar-tab.active {
 	color: var(--wo-prese-accent);
 	border-bottom-color: var(--wo-prese-accent);
 	font-weight: 600;
+	background-color: #ffffff;
 }
 
-/* HomeTab */
-.prese-hometab-panel {
+.prese-toolbar-controls,
+.prese-toolbar-static,
+.prese-toolbar-panels {
+	display: none;
+}
+
+section[class*="tab-panel"] {
 	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	padding: 12px 16px;
+	align-items: stretch;
+	gap: 0;
+	padding: 6px 8px;
+	background: #f8f8f8;
+	min-height: 84px;
+	border-bottom: 1px solid #e8e8e8;
 }
 
-.prese-hometab-group {
+div[class*="group"] {
 	display: flex;
+	flex-direction: column;
 	align-items: center;
-	gap: 8px;
-}
-
-.prese-hometab-elset {
-	display: flex;
-	align-items: center;
-}
-
-.prese-hometab-label {
-	font-size: 11px;
-	color: var(--wo-prese-text-secondary);
-	text-align: center;
-	margin-top: 2px;
-}
-
-.prese-hometab-btn {
-	display: inline-flex;
-	align-items: center;
-	height: 28px;
-	padding: 0 12px;
-	border: 1px solid var(--wo-prese-border);
-	border-radius: 3px;
-	background-color: var(--wo-prese-bg-pane);
-	color: var(--wo-prese-text-primary);
-	font-size: 12px;
-	cursor: pointer;
-	white-space: nowrap;
-	transition: background-color 0.15s, border-color 0.15s;
-}
-
-.prese-hometab-btn:hover {
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
-	border-color: var(--wo-prese-border);
-}
-
-.prese-hometab-btn.active {
-	background-color: var(--wo-prese-accent);
-	color: #ffffff;
-	border-color: var(--wo-prese-accent);
-}
-
-.prese-hometab-zoom-select {
-	height: 28px;
+	gap: 2px;
 	padding: 0 8px;
-	border: 1px solid var(--wo-prese-border);
-	border-radius: 3px;
-	background-color: var(--wo-prese-bg-pane);
-	font-size: 12px;
-	color: var(--wo-prese-text-primary);
-	cursor: pointer;
+	border-right: 1px solid #e8e8e8;
+	min-height: 100%;
 }
 
-.prese-hometab-separator {
-	width: 100%;
-	height: 1px;
-	background-color: var(--wo-prese-border);
+div[class*="group"]:last-child {
+	border-right: none;
 }
 
-/* DesignTab */
-.prese-designtab-panel {
+div[class*="elset"] {
 	display: flex;
+	align-items: center;
+	gap: 1px;
 	flex-wrap: wrap;
-	gap: 8px;
-	padding: 12px 16px;
+	justify-content: center;
 }
 
-.prese-designtab-group {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.prese-designtab-elset {
-	display: flex;
-	align-items: center;
-}
-
-.prese-designtab-label {
-	font-size: 11px;
-	color: var(--wo-prese-text-secondary);
+span[class*="label"] {
+	display: block;
+	font-size: 9px;
+	color: #999999;
 	text-align: center;
-	margin-top: 2px;
+	line-height: 1.2;
+	white-space: nowrap;
+	padding: 0 2px;
+	margin-top: 1px;
+	max-width: 64px;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
-.prese-designtab-btn {
+button[class*="btn"] {
 	display: inline-flex;
+	flex-direction: column;
 	align-items: center;
-	height: 28px;
-	padding: 0 12px;
-	border: 1px solid var(--wo-prese-border);
-	border-radius: 3px;
-	background-color: var(--wo-prese-bg-pane);
-	color: var(--wo-prese-text-primary);
-	font-size: 12px;
+	justify-content: center;
+	gap: 2px;
+	min-width: 40px;
+	height: 52px;
+	padding: 4px 6px 2px;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	background: transparent;
+	color: #333333;
+	font-size: 9px;
+	font-family: var(--wo-se-font, "Segoe UI");
 	cursor: pointer;
 	white-space: nowrap;
-	transition: background-color 0.15s, border-color 0.15s;
+	transition: background-color 0.1s, border-color 0.1s;
+	line-height: 1.1;
+	position: relative;
 }
 
-.prese-designtab-btn:hover {
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
-	border-color: var(--wo-prese-border);
+button[class*="btn"] svg {
+	width: 18px;
+	height: 18px;
+	stroke-width: 1.8;
+	color: #666666;
+	flex-shrink: 0;
+	display: block;
 }
 
-.prese-designtab-btn.active {
-	background-color: var(--wo-prese-accent);
-	color: #ffffff;
-	border-color: var(--wo-prese-accent);
+button[class*="btn"]:hover {
+	background-color: #e5e5e5;
+	border-color: #d9d9d9;
 }
 
-.prese-designtab-separator {
-	width: 100%;
-	height: 1px;
-	background-color: var(--wo-prese-border);
+button[class*="btn"]:active,
+button[class*="btn"].active {
+	background-color: #d0d0d0;
+	border-color: #d9d9d9;
 }
 
-/* TransitionsTab */
-.prese-transitionstab-panel {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	padding: 12px 16px;
+button[class*="btn"]:disabled {
+	opacity: 0.35;
+	cursor: default;
+	pointer-events: none;
 }
 
-.prese-transitionstab-group {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.prese-transitionstab-elset {
-	display: flex;
-	align-items: center;
-}
-
-.prese-transitionstab-label {
+select[class*="select"] {
+	height: 22px;
+	padding: 0 6px;
+	border: 1px solid #d9d9d9;
+	border-radius: 3px;
+	background: #ffffff;
 	font-size: 11px;
-	color: var(--wo-prese-text-secondary);
-	text-align: center;
-	margin-top: 2px;
-}
-
-.prese-transitionstab-btn {
-	display: inline-flex;
-	align-items: center;
-	height: 28px;
-	padding: 0 12px;
-	border: 1px solid var(--wo-prese-border);
-	border-radius: 3px;
-	background-color: var(--wo-prese-bg-pane);
-	color: var(--wo-prese-text-primary);
-	font-size: 12px;
+	font-family: var(--wo-se-font, "Segoe UI");
+	color: #333333;
 	cursor: pointer;
-	white-space: nowrap;
-	transition: background-color 0.15s, border-color 0.15s;
+	outline: none;
 }
 
-.prese-transitionstab-btn:hover {
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
-	border-color: var(--wo-prese-border);
-}
-
-.prese-transitionstab-btn.active {
-	background-color: var(--wo-prese-accent);
-	color: #ffffff;
-	border-color: var(--wo-prese-accent);
-}
-
-.prese-transitionstab-separator {
-	width: 100%;
-	height: 1px;
-	background-color: var(--wo-prese-border);
-}
-
-/* AnimationTab */
-.prese-animationtab-panel {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	padding: 12px 16px;
-}
-
-.prese-animationtab-group {
+label[class*="checkbox"] {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-}
-
-.prese-animationtab-elset {
-	display: flex;
-	align-items: center;
-}
-
-.prese-animationtab-label {
+	gap: 4px;
 	font-size: 11px;
-	color: var(--wo-prese-text-secondary);
-	text-align: center;
-	margin-top: 2px;
-}
-
-.prese-animationtab-btn {
-	display: inline-flex;
-	align-items: center;
-	height: 28px;
-	padding: 0 12px;
-	border: 1px solid var(--wo-prese-border);
+	color: #333333;
+	cursor: pointer;
+	padding: 2px 4px;
 	border-radius: 3px;
-	background-color: var(--wo-prese-bg-pane);
-	color: var(--wo-prese-text-primary);
-	font-size: 12px;
-	cursor: pointer;
-	white-space: nowrap;
-	transition: background-color 0.15s, border-color 0.15s;
 }
 
-.prese-animationtab-btn:hover {
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
-	border-color: var(--wo-prese-border);
+label[class*="checkbox"]:hover {
+	background-color: #e5e5e5;
 }
 
-.prese-animationtab-btn.active {
-	background-color: var(--wo-prese-accent);
-	color: #ffffff;
-	border-color: var(--wo-prese-accent);
-}
-
-.prese-animationtab-separator {
-	width: 100%;
-	height: 1px;
-	background-color: var(--wo-prese-border);
-}
-
-/* InsertTab */
-.prese-inserttab-panel {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	padding: 12px 16px;
-}
-
-.prese-inserttab-group {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.prese-inserttab-elset {
-	display: flex;
-	align-items: center;
-}
-
-.prese-inserttab-label {
-	font-size: 11px;
-	color: var(--wo-prese-text-secondary);
-	text-align: center;
-	margin-top: 2px;
-}
-
-.prese-inserttab-btn {
-	display: inline-flex;
-	align-items: center;
-	height: 28px;
-	padding: 0 12px;
-	border: 1px solid var(--wo-prese-border);
-	border-radius: 3px;
-	background-color: var(--wo-prese-bg-pane);
-	color: var(--wo-prese-text-primary);
-	font-size: 12px;
-	cursor: pointer;
-	white-space: nowrap;
-	transition: background-color 0.15s, border-color 0.15s;
-}
-
-.prese-inserttab-btn:hover {
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
-	border-color: var(--wo-prese-border);
-}
-
-.prese-inserttab-separator {
-	width: 100%;
-	height: 1px;
-	background-color: var(--wo-prese-border);
-}
-
-/* ViewTab */
-.prese-viewtab-panel {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	padding: 12px 16px;
-}
-
-.prese-viewtab-group {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.prese-viewtab-elset {
-	display: flex;
-	align-items: center;
-}
-
-.prese-viewtab-label {
-	font-size: 11px;
-	color: var(--wo-prese-text-secondary);
-	text-align: center;
-	margin-top: 2px;
-}
-
-.prese-viewtab-zoom-select {
-	height: 28px;
-	padding: 0 8px;
-	border: 1px solid var(--wo-prese-border);
-	border-radius: 3px;
-	background-color: var(--wo-prese-bg-pane);
-	font-size: 12px;
-	color: var(--wo-prese-text-primary);
-	cursor: pointer;
-}
-
-.prese-viewtab-btn {
-	display: inline-flex;
-	align-items: center;
-	height: 28px;
-	padding: 0 12px;
-	border: 1px solid var(--wo-prese-border);
-	border-radius: 3px;
-	background-color: var(--wo-prese-bg-pane);
-	color: var(--wo-prese-text-primary);
-	font-size: 12px;
-	cursor: pointer;
-	white-space: nowrap;
-	transition: background-color 0.15s, border-color 0.15s;
-}
-
-.prese-viewtab-btn:hover {
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
-	border-color: var(--wo-prese-border);
-}
-
-.prese-viewtab-btn.active {
-	background-color: var(--wo-prese-accent);
-	color: #ffffff;
-	border-color: var(--wo-prese-accent);
-}
-
-.prese-viewtab-btn-theme {
-	display: inline-flex;
-	align-items: center;
-	height: 28px;
-	padding: 0 12px;
-	border: 1px solid var(--wo-prese-border);
-	border-radius: 3px;
-	background-color: var(--wo-prese-bg-pane);
-	color: var(--wo-prese-text-primary);
-	font-size: 12px;
-	cursor: pointer;
-}
-
-.prese-viewtab-btn-theme:hover {
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
-}
-
-.prese-viewtab-checkbox {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	font-size: 12px;
-	color: var(--wo-prese-text-primary);
-	cursor: pointer;
-}
-
-.prese-viewtab-checkbox input[type="checkbox"] {
+label[class*="checkbox"] input[type="checkbox"] {
 	margin: 0;
 	cursor: pointer;
-}
-
-.prese-viewtab-separator {
-	width: 100%;
-	height: 1px;
-	background-color: var(--wo-prese-border);
-}
-
-.prese-viewtab-separator-theme {
-	margin: 4px 0;
+	accent-color: var(--wo-prese-accent);
 }
