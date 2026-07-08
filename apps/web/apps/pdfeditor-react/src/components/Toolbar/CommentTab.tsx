@@ -1,3 +1,11 @@
+import {
+  BadgeCheck,
+  Highlighter,
+  MessageSquare,
+  Shapes,
+  Strikethrough,
+  Underline,
+} from "lucide-react"
 import { observer } from "mobx-react-lite"
 import { pdfStore } from "../../stores/PdfStore"
 import type { AnnotationTool } from "../../types/pdf"
@@ -21,6 +29,7 @@ const ObservedCommentTab = observer(function ObservedCommentTab() {
           onClick={() => setAnnotationTool("text-comment")}
           title="Text Comment"
         >
+          <MessageSquare size={18} />
           Text Comment
         </button>
         <button
@@ -29,6 +38,7 @@ const ObservedCommentTab = observer(function ObservedCommentTab() {
           onClick={() => setAnnotationTool("stamp")}
           title="Stamp"
         >
+          <BadgeCheck size={18} />
           Stamp
         </button>
         <button
@@ -37,6 +47,7 @@ const ObservedCommentTab = observer(function ObservedCommentTab() {
           onClick={() => setAnnotationTool("shape-comment")}
           title="Shape Comment"
         >
+          <Shapes size={18} />
           Shape Comment
         </button>
       </div>
@@ -51,6 +62,7 @@ const ObservedCommentTab = observer(function ObservedCommentTab() {
             onClick={() => setAnnotationTool("highlight")}
             title="Highlight"
           >
+            <Highlighter size={18} />
             Highlight
           </button>
         </div>
@@ -66,6 +78,7 @@ const ObservedCommentTab = observer(function ObservedCommentTab() {
             onClick={() => setAnnotationTool("strikeout")}
             title="Strikeout"
           >
+            <Strikethrough size={18} />
             Strikeout
           </button>
         </div>
@@ -76,6 +89,7 @@ const ObservedCommentTab = observer(function ObservedCommentTab() {
             onClick={() => setAnnotationTool("underline")}
             title="Underline"
           >
+            <Underline size={18} />
             Underline
           </button>
         </div>

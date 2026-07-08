@@ -1,3 +1,4 @@
+import { Columns2, Map as MapIcon, Maximize, WrapText } from "lucide-react"
 import { observer } from "mobx-react-lite"
 import { pdfStore } from "../../stores/PdfStore"
 import { ZOOM_LEVELS } from "../../types/pdf"
@@ -36,6 +37,7 @@ const ObservedViewTab = observer(function ObservedViewTab({ onMonacoCommand }: V
             onClick={() => pdfStore.setFitToPage(!pdfStore.fitToPage)}
             title="Fit to page"
           >
+            <Maximize size={18} />
             Fit to Page
           </button>
         </div>
@@ -46,6 +48,7 @@ const ObservedViewTab = observer(function ObservedViewTab({ onMonacoCommand }: V
             onClick={() => pdfStore.setFitToWidth(!pdfStore.fitToWidth)}
             title="Fit to width"
           >
+            <Columns2 size={18} />
             Fit to Width
           </button>
         </div>
@@ -120,6 +123,7 @@ const ObservedViewTab = observer(function ObservedViewTab({ onMonacoCommand }: V
             onClick={() => onMonacoCommand("toggleWordWrap")}
             title="Toggle Word Wrap (Alt+Z)"
           >
+            <WrapText size={18} />
             Toggle Word Wrap
           </button>
           <button
@@ -128,6 +132,7 @@ const ObservedViewTab = observer(function ObservedViewTab({ onMonacoCommand }: V
             onClick={() => onMonacoCommand("toggleMinimap")}
             title="Toggle Minimap"
           >
+            <MapIcon size={18} />
             Toggle Minimap
           </button>
         </div>
