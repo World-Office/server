@@ -1,3 +1,12 @@
+import {
+	Columns2,
+	Download,
+	Maximize,
+	Monitor,
+	Palette,
+	Workflow,
+	WrapText,
+} from "lucide-react";
 import type { JSX } from "react";
 import { flowchartStore } from "../../stores/FlowchartStore";
 import { visioStore } from "../../stores/VisioStore";
@@ -43,6 +52,7 @@ export function ViewTab({ onMonacoCommand }: ViewTabProps): JSX.Element {
 						onClick={() => visioStore.setFitToPage(!visioStore.fitToPage)}
 						title="Fit to page"
 					>
+						<Maximize size={16} />
 						Fit to Page
 					</button>
 				</div>
@@ -53,6 +63,7 @@ export function ViewTab({ onMonacoCommand }: ViewTabProps): JSX.Element {
 						onClick={() => visioStore.setFitToWidth(!visioStore.fitToWidth)}
 						title="Fit to width"
 					>
+						<Columns2 size={16} />
 						Fit to Width
 					</button>
 				</div>
@@ -73,6 +84,7 @@ export function ViewTab({ onMonacoCommand }: ViewTabProps): JSX.Element {
 						}}
 						title="Switch between VSDX view and flowchart editor"
 					>
+						<Workflow size={16} />
 						{visioStore.editorMode === "flowchart"
 							? "▦ Flowchart"
 							: "▢ Diagram"}
@@ -97,6 +109,7 @@ export function ViewTab({ onMonacoCommand }: ViewTabProps): JSX.Element {
 								visioStore.editorMode === "flowchart" ? undefined : "none",
 						}}
 					>
+						<Download size={16} />
 						Export SVG
 					</button>
 				</div>
@@ -131,6 +144,7 @@ export function ViewTab({ onMonacoCommand }: ViewTabProps): JSX.Element {
 					className="visio-viewtab-btn-theme"
 					title="Interface theme"
 				>
+					<Palette size={16} />
 					Interface Theme
 				</button>
 			</div>
@@ -145,6 +159,7 @@ export function ViewTab({ onMonacoCommand }: ViewTabProps): JSX.Element {
 						onClick={() => onMonacoCommand("toggleMinimap")}
 						title="Toggle code editor minimap (no-op when Monaco is not mounted)"
 					>
+						<Monitor size={16} />
 						Toggle Minimap
 					</button>
 				</div>
@@ -155,6 +170,7 @@ export function ViewTab({ onMonacoCommand }: ViewTabProps): JSX.Element {
 						onClick={() => onMonacoCommand("toggleWordWrap")}
 						title="Toggle code editor word wrap (no-op when Monaco is not mounted)"
 					>
+						<WrapText size={16} />
 						Toggle Word Wrap
 					</button>
 				</div>
