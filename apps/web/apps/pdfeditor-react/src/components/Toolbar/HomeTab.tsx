@@ -1,3 +1,20 @@
+import {
+  CheckSquare,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Clipboard,
+  Columns2,
+  Copy,
+  Edit3,
+  Hand,
+  Maximize,
+  MousePointer,
+  Replace,
+  Scissors,
+  Search,
+} from "lucide-react"
 import { observer } from "mobx-react-lite"
 import { pdfStore } from "../../stores/PdfStore"
 import { ZOOM_LEVELS } from "../../types/pdf"
@@ -46,6 +63,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
             onClick={goToFirstPage}
             title="First Page"
           >
+            <ChevronsLeft size={18} />
             First
           </button>
           <button
@@ -54,6 +72,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
             onClick={goToPrevPage}
             title="Previous Page"
           >
+            <ChevronLeft size={18} />
             Previous
           </button>
           <button
@@ -62,6 +81,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
             onClick={goToNextPage}
             title="Next Page"
           >
+            <ChevronRight size={18} />
             Next
           </button>
           <button
@@ -70,6 +90,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
             onClick={goToLastPage}
             title="Last Page"
           >
+            <ChevronsRight size={18} />
             Last
           </button>
         </div>
@@ -103,6 +124,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
             onClick={() => pdfStore.setFitToPage(!pdfStore.fitToPage)}
             title="Fit to Page"
           >
+            <Maximize size={18} />
             Fit to Page
           </button>
         </div>
@@ -113,6 +135,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
             onClick={() => pdfStore.setFitToWidth(!pdfStore.fitToWidth)}
             title="Fit to Width"
           >
+            <Columns2 size={18} />
             Fit to Width
           </button>
         </div>
@@ -128,6 +151,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
             onClick={toggleEditMode}
             title="Toggle Edit Mode"
           >
+            <Edit3 size={18} />
             Edit Mode
           </button>
         </div>
@@ -143,6 +167,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
             onClick={toggleSelectTool}
             title="Select Tool"
           >
+            <MousePointer size={18} />
             Select
           </button>
           <button
@@ -151,6 +176,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
             onClick={toggleHandTool}
             title="Hand Tool"
           >
+            <Hand size={18} />
             Hand
           </button>
         </div>
@@ -167,6 +193,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
             onClick={() => onMonacoCommand("cut")}
             title="Cut"
           >
+            <Scissors size={18} />
             Cut
           </button>
           <button
@@ -175,6 +202,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
             onClick={() => onMonacoCommand("copy")}
             title="Copy"
           >
+            <Copy size={18} />
             Copy
           </button>
           <button
@@ -183,6 +211,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
             onClick={() => onMonacoCommand("paste")}
             title="Paste"
           >
+            <Clipboard size={18} />
             Paste
           </button>
         </div>
@@ -199,6 +228,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
             onClick={() => onMonacoCommand("find")}
             title="Find"
           >
+            <Search size={18} />
             Find
           </button>
           <button
@@ -207,6 +237,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
             onClick={() => onMonacoCommand("replace")}
             title="Replace"
           >
+            <Replace size={18} />
             Replace
           </button>
           <button
@@ -215,6 +246,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({ onMonacoCommand }: H
             onClick={() => onMonacoCommand("selectAll")}
             title="Select All"
           >
+            <CheckSquare size={18} />
             Select All
           </button>
         </div>

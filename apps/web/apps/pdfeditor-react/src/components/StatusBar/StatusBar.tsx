@@ -1,3 +1,13 @@
+import {
+  ChevronLeft,
+  ChevronRight,
+  Columns2,
+  Hand,
+  Maximize,
+  MousePointer,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react"
 import { observer } from "mobx-react-lite"
 import type { JSX } from "react"
 import { pdfStore } from "../../stores/PdfStore"
@@ -12,7 +22,7 @@ function ZoomControls(): JSX.Element {
         title="Fit to page"
         onClick={() => pdfStore.setFitToPage(!pdfStore.fitToPage)}
       >
-        ⊞
+        <Maximize size={14} />
       </button>
       <button
         type="button"
@@ -20,7 +30,7 @@ function ZoomControls(): JSX.Element {
         title="Fit to width"
         onClick={() => pdfStore.setFitToWidth(!pdfStore.fitToWidth)}
       >
-        ⇔
+        <Columns2 size={14} />
       </button>
       <button
         type="button"
@@ -28,7 +38,7 @@ function ZoomControls(): JSX.Element {
         title="Zoom Out"
         onClick={() => pdfStore.zoomOut()}
       >
-        −
+        <ZoomOut size={14} />
       </button>
       <div className="pdf-statusbar-zoom-label">
         <span className="pdf-statusbar-label">{`${pdfStore.zoomLevel}%`}</span>
@@ -39,7 +49,7 @@ function ZoomControls(): JSX.Element {
         title="Zoom In"
         onClick={() => pdfStore.zoomIn()}
       >
-        +
+        <ZoomIn size={14} />
       </button>
     </>
   )
@@ -62,7 +72,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
           disabled={pdfStore.currentPage <= 0}
           onClick={() => pdfStore.setCurrentPage(pdfStore.currentPage - 1)}
         >
-          ‹
+          <ChevronLeft size={14} />
         </button>
         <button
           type="button"
@@ -71,7 +81,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
           disabled={pdfStore.currentPage >= pdfStore.pageCount - 1}
           onClick={() => pdfStore.setCurrentPage(pdfStore.currentPage + 1)}
         >
-          ›
+          <ChevronRight size={14} />
         </button>
       </div>
 
@@ -83,7 +93,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
           title="Select Tool"
           onClick={() => pdfStore.setCurrentTool("select")}
         >
-          ⊙
+          <MousePointer size={14} />
         </button>
         <button
           type="button"
@@ -91,7 +101,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
           title="Hand Tool"
           onClick={() => pdfStore.setCurrentTool("hand")}
         >
-          ✋
+          <Hand size={14} />
         </button>
       </div>
 
