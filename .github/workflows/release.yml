@@ -8,7 +8,7 @@ on:
 jobs:
   build-core:
     name: Build Rust Crates (Release)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -22,7 +22,7 @@ jobs:
 
   build-web:
     name: Build Web Apps
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
