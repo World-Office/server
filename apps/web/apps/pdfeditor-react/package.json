@@ -21,6 +21,7 @@
     "@world-office/i18n": "workspace:*",
     "@world-office/sdk-bridge": "workspace:*",
     "@world-office/wopi-client": "workspace:*",
+    "lucide-react": "^1.23.0",
     "mobx": "^6.13.0",
     "mobx-react-lite": "^4.1.0",
     "monaco-editor": "^0.52.2",
