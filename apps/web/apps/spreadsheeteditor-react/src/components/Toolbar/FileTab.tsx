@@ -1,3 +1,4 @@
+import { File } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { spreadsheetStore } from "../../stores/SpreadsheetStore";
 
@@ -20,7 +21,8 @@ const ObservedFileTab = observer(function ObservedFileTab() {
 			onClick={handleClick}
 			aria-label="File"
 		>
-			File
+			<File size={14} />
+			<span>File</span>
 		</button>
 	);
 });
