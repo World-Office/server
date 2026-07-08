@@ -1,17 +1,19 @@
-/* Status Bar */
+/* Status Bar — Professional Office Suite Style (Spreadsheet Editor) */
 
 .se-statusbar {
 	position: relative;
 	display: flex;
 	align-items: center;
 	height: var(--wo-se-statusbar-height);
-	padding: 0 2px 0;
-	z-index: 500;
+	padding: 0 4px;
+	z-index: 100;
 	background-color: var(--wo-se-bg-statusbar);
 	border-top: 1px solid var(--wo-se-border);
-	font-size: 12px;
+	font-size: 11px;
+	font-family: var(--wo-se-font);
 	color: var(--wo-se-text-secondary);
 	user-select: none;
+	gap: 0;
 }
 
 .se-statusbar.no-compact {
@@ -22,31 +24,44 @@
 .se-statusbar-sheet-nav {
 	display: flex;
 	align-items: center;
-	gap: 4px;
-	padding: 0 8px;
+	gap: 2px;
+	padding: 0 6px;
 	height: 100%;
 	flex-shrink: 0;
 }
 
+/* Sheet tab bar */
 .se-statusbar-sheet-tabs {
 	display: flex;
 	align-items: center;
-	gap: 2px;
+	gap: 1px;
 	flex: 1;
 	overflow-x: auto;
+	height: 100%;
 }
 
 .se-statusbar-sheet-tab {
-	padding: 2px 12px;
-	font-size: 12px;
+	display: inline-flex;
+	align-items: center;
+	height: 100%;
+	padding: 0 10px;
+	font-size: 11px;
 	cursor: pointer;
 	white-space: nowrap;
 	border-bottom: 2px solid transparent;
+	color: var(--wo-se-text-secondary);
+	transition: color 0.1s, border-color 0.1s, background-color 0.1s;
+}
+
+.se-statusbar-sheet-tab:hover {
+	color: var(--wo-se-text-primary);
+	background-color: var(--wo-de-btn-hover, rgba(0, 0, 0, 0.04));
 }
 
 .se-statusbar-sheet-tab.active {
-	border-bottom-color: var(--wo-se-accent, #4472c4);
-	background-color: var(--wo-se-bg-toolbar, #f0f0f0);
+	color: var(--wo-se-accent);
+	border-bottom-color: var(--wo-se-accent);
+	font-weight: 600;
 }
 
 /* Statistics */
@@ -63,54 +78,32 @@
 	gap: 4px;
 }
 
-/* Page navigation */
-.se-statusbar-page-nav {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	padding: 0 8px;
-	height: 100%;
-	flex-shrink: 0;
-}
-
-.se-statusbar-page-label {
-	font-size: 12px;
-	white-space: nowrap;
-	cursor: default;
-	color: var(--wo-se-text-secondary);
-}
-
-/* Tool buttons */
+/* Status bar tool button groups */
 .se-statusbar-tools {
 	display: flex;
 	align-items: center;
-	gap: 4px;
-	padding: 0 8px;
+	gap: 2px;
+	padding: 0 6px;
 	height: 100%;
 	flex-shrink: 0;
 }
 
-/* Zoom controls */
-.se-statusbar-zoom-box {
-	position: absolute;
-	right: 0;
-	height: var(--wo-se-statusbar-height);
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	padding: 0 10px;
-	flex-shrink: 0;
-}
-
-.se-statusbar-no-compact .se-statusbar-zoom-box {
-	height: var(--wo-se-statusbar-height-expanded);
+/* Labels */
+.se-statusbar-label {
+	font-size: 11px;
+	white-space: nowrap;
+	cursor: default;
+	color: var(--wo-se-text-secondary);
+	padding: 0 4px;
 }
 
 /* Separator */
 .se-statusbar-separator {
 	width: 1px;
-	height: 100%;
+	height: 16px;
 	background-color: var(--wo-se-border);
+	flex-shrink: 0;
+	margin: 0 2px;
 }
 
 /* Button */
@@ -118,29 +111,64 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 24px;
-	height: 24px;
-	border: none;
+	width: 22px;
+	height: 20px;
+	border: 1px solid transparent;
 	border-radius: 3px;
 	background: transparent;
-	color: var(--wo-se-text-primary);
-	font-size: 14px;
+	color: var(--wo-se-text-secondary);
 	cursor: pointer;
-	transition: background-color 0.15s;
+	transition: background-color 0.1s, border-color 0.1s;
+	padding: 0;
+}
+
+.se-statusbar-btn svg,
+.se-statusbar-btn .lucide {
+	width: 14px;
+	height: 14px;
+	stroke-width: 1.8;
+	display: block;
 }
 
 .se-statusbar-btn:hover {
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	background-color: var(--wo-de-btn-hover, #e5e5e5);
+	border-color: var(--wo-se-border);
+}
+
+.se-statusbar-btn:active {
+	background-color: var(--wo-de-btn-active, #d0d0d0);
 }
 
 .se-statusbar-btn.active {
-	background-color: var(--wo-se-accent);
-	color: #ffffff;
+	background-color: var(--wo-de-accent-light, rgba(68, 114, 196, 0.08));
+	color: var(--wo-se-accent);
+}
+
+.se-statusbar-btn.active svg {
+	color: var(--wo-se-accent);
 }
 
 .se-statusbar-btn:disabled {
-	opacity: 0.4;
+	opacity: 0.35;
 	cursor: default;
+	pointer-events: none;
+}
+
+/* Zoom controls (right side) */
+.se-statusbar-zoom-box {
+	position: absolute;
+	right: 0;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 0 8px;
+	flex-shrink: 0;
+	background: var(--wo-se-bg-statusbar);
+}
+
+.se-statusbar-no-compact .se-statusbar-zoom-box {
+	height: var(--wo-se-statusbar-height-expanded);
 }
 
 /* Zoom label */
@@ -148,10 +176,37 @@
 	display: inline-flex;
 	align-items: center;
 	padding: 0 4px;
+	font-size: 11px;
+	min-width: 36px;
+	justify-content: center;
+	color: var(--wo-se-text-primary);
+	cursor: pointer;
 }
 
-.se-statusbar-label {
-	font-size: 12px;
-	white-space: nowrap;
-	cursor: default;
+.se-statusbar-zoom-label:hover {
+	color: var(--wo-se-accent);
+}
+
+/* Language select */
+.se-statusbar-select {
+	height: 20px;
+	padding: 0 4px;
+	border: 1px solid transparent;
+	border-radius: 2px;
+	background: transparent;
+	font-size: 11px;
+	font-family: var(--wo-se-font);
+	color: var(--wo-se-text-secondary);
+	cursor: pointer;
+	outline: none;
+	transition: border-color 0.1s;
+	max-width: 100px;
+}
+
+.se-statusbar-select:hover {
+	border-color: var(--wo-se-border);
+}
+
+.se-statusbar-select:focus {
+	border-color: var(--wo-se-accent);
 }

@@ -1,38 +1,35 @@
-/* Toolbar */
+/* Toolbar — Professional Office Ribbon Style (Spreadsheet Editor) */
 
 .se-toolbar {
 	display: flex;
 	flex-direction: column;
 	height: 100%;
-	background-color: var(--wo-se-bg-toolbar);
+	background-color: var(--wo-se-bg-toolbar, var(--wo-de-bg-toolbar, #f3f3f3));
 	border-bottom: 1px solid var(--wo-se-border);
 	user-select: none;
 }
 
+/* Tab strip */
 .se-toolbar-tabs {
 	display: flex;
 	align-items: center;
 	height: 100%;
-	padding: 0 8px;
-	gap: 2px;
+	padding: 0 4px;
+	gap: 0;
+	background: var(--wo-de-bg-toolbar-tabs, #ffffff);
+	border-bottom: 1px solid var(--wo-se-border);
 }
 
 .se-toolbar-extra-left,
 .se-toolbar-extra-right {
 	flex: 1;
+	display: flex;
+	align-items: center;
 }
 
-.se-toolbar-controls {
-	display: none;
-	overflow: hidden;
-}
-
-.se-toolbar-static {
-	display: none;
-}
-
-.se-toolbar-panels {
-	display: none;
+.se-toolbar-extra-right {
+	justify-content: flex-end;
+	padding-right: 4px;
 }
 
 /* Tab button */
@@ -40,423 +37,190 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	height: 28px;
-	padding: 0 12px;
+	height: 100%;
+	padding: 0 14px;
 	border: none;
 	border-bottom: 2px solid transparent;
 	background: transparent;
 	color: var(--wo-se-text-secondary);
 	font-size: 12px;
+	font-family: var(--wo-se-font);
 	cursor: pointer;
-	transition: color 0.15s, border-color 0.15s;
+	transition: color 0.12s, border-color 0.12s, background-color 0.12s;
 	white-space: nowrap;
+	position: relative;
+	margin-bottom: -1px;
 }
 
 .se-toolbar-tab:hover {
 	color: var(--wo-se-text-primary);
+	background-color: var(--wo-de-accent-light, rgba(68, 114, 196, 0.08));
 }
 
 .se-toolbar-tab.active {
 	color: var(--wo-se-accent);
 	border-bottom-color: var(--wo-se-accent);
 	font-weight: 600;
+	background-color: var(--wo-de-bg-toolbar, #ffffff);
 }
 
-/* HomeTab */
-.se-hometab-panel {
+/* Tab panels — hidden by default, shown via JS */
+.se-toolbar-controls,
+.se-toolbar-static,
+.se-toolbar-panels {
+	display: none;
+}
+
+/* =============================================
+   Shared tab panel — ribbon-style toolbar area
+   ============================================= */
+
+section[class*="tab-panel"] {
 	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	padding: 12px 16px;
+	align-items: stretch;
+	gap: 0;
+	padding: 6px 8px;
+	background: var(--wo-de-bg-toolbar-panel, #f8f8f8);
+	min-height: 84px;
+	border-bottom: 1px solid var(--wo-de-border-light, #e8e8e8);
 }
 
-.se-hometab-group {
+/* Group container */
+div[class*="group"] {
 	display: flex;
+	flex-direction: column;
 	align-items: center;
-	gap: 8px;
-}
-
-.se-hometab-elset {
-	display: flex;
-	align-items: center;
-}
-
-.se-hometab-label {
-	font-size: 11px;
-	color: var(--wo-se-text-secondary);
-	text-align: center;
-	margin-top: 2px;
-}
-
-.se-hometab-btn {
-	display: inline-flex;
-	align-items: center;
-	height: 28px;
-	padding: 0 12px;
-	border: 1px solid var(--wo-se-border);
-	border-radius: 3px;
-	background-color: var(--wo-se-bg-pane);
-	color: var(--wo-se-text-primary);
-	font-size: 12px;
-	cursor: pointer;
-	white-space: nowrap;
-	transition: background-color 0.15s, border-color 0.15s;
-}
-
-.se-hometab-btn:hover {
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
-	border-color: var(--wo-se-border);
-}
-
-.se-hometab-btn.active {
-	background-color: var(--wo-se-accent);
-	color: #ffffff;
-	border-color: var(--wo-se-accent);
-}
-
-.se-hometab-zoom-select {
-	height: 28px;
+	gap: 2px;
 	padding: 0 8px;
-	border: 1px solid var(--wo-se-border);
-	border-radius: 3px;
-	background-color: var(--wo-se-bg-pane);
-	font-size: 12px;
-	color: var(--wo-se-text-primary);
-	cursor: pointer;
+	border-right: 1px solid var(--wo-de-border-light, #e8e8e8);
+	min-height: 100%;
 }
 
-.se-hometab-separator {
-	width: 100%;
-	height: 1px;
-	background-color: var(--wo-se-border);
+div[class*="group"]:last-child {
+	border-right: none;
 }
 
-/* InsertTab */
-.se-inserttab-panel {
+/* Button set within a group */
+div[class*="elset"] {
 	display: flex;
+	align-items: center;
+	gap: 1px;
 	flex-wrap: wrap;
-	gap: 8px;
-	padding: 12px 16px;
+	justify-content: center;
 }
 
-.se-inserttab-group {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.se-inserttab-elset {
-	display: flex;
-	align-items: center;
-}
-
-.se-inserttab-label {
-	font-size: 11px;
-	color: var(--wo-se-text-secondary);
+/* Group label */
+span[class*="label"] {
+	display: block;
+	font-size: 9px;
+	color: var(--wo-se-text-secondary, #999999);
 	text-align: center;
-	margin-top: 2px;
+	line-height: 1.2;
+	white-space: nowrap;
+	padding: 0 2px;
+	margin-top: 1px;
+	max-width: 64px;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
-.se-inserttab-btn {
+/* Ribbon button */
+button[class*="btn"] {
 	display: inline-flex;
+	flex-direction: column;
 	align-items: center;
-	height: 28px;
-	padding: 0 12px;
-	border: 1px solid var(--wo-se-border);
-	border-radius: 3px;
-	background-color: var(--wo-se-bg-pane);
+	justify-content: center;
+	gap: 2px;
+	min-width: 40px;
+	height: 52px;
+	padding: 4px 6px 2px;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	background: transparent;
 	color: var(--wo-se-text-primary);
-	font-size: 12px;
+	font-size: 9px;
+	font-family: var(--wo-se-font);
 	cursor: pointer;
 	white-space: nowrap;
-	transition: background-color 0.15s, border-color 0.15s;
+	transition: background-color 0.1s, border-color 0.1s;
+	line-height: 1.1;
+	position: relative;
 }
 
-.se-inserttab-btn:hover {
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+button[class*="btn"] svg,
+button[class*="btn"] .lucide {
+	width: var(--wo-de-icon-size, 18px);
+	height: var(--wo-de-icon-size, 18px);
+	stroke-width: 1.8;
+	color: var(--wo-se-text-secondary);
+	flex-shrink: 0;
+	display: block;
+}
+
+button[class*="btn"]:hover {
+	background-color: var(--wo-de-btn-hover, #e5e5e5);
 	border-color: var(--wo-se-border);
 }
 
-.se-inserttab-separator {
-	width: 100%;
-	height: 1px;
-	background-color: var(--wo-se-border);
-}
-
-/* LayoutTab */
-.se-layouttab-panel {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	padding: 12px 16px;
-}
-
-.se-layouttab-group {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.se-layouttab-elset {
-	display: flex;
-	align-items: center;
-}
-
-.se-layouttab-label {
-	font-size: 11px;
-	color: var(--wo-se-text-secondary);
-	text-align: center;
-	margin-top: 2px;
-}
-
-.se-layouttab-btn {
-	display: inline-flex;
-	align-items: center;
-	height: 28px;
-	padding: 0 12px;
-	border: 1px solid var(--wo-se-border);
-	border-radius: 3px;
-	background-color: var(--wo-se-bg-pane);
-	color: var(--wo-se-text-primary);
-	font-size: 12px;
-	cursor: pointer;
-	white-space: nowrap;
-	transition: background-color 0.15s, border-color 0.15s;
-}
-
-.se-layouttab-btn:hover {
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+button[class*="btn"]:active,
+button[class*="btn"].active {
+	background-color: var(--wo-de-btn-active, #d0d0d0);
 	border-color: var(--wo-se-border);
 }
 
-.se-layouttab-btn.active {
-	background-color: var(--wo-se-accent);
-	color: #ffffff;
+button[class*="btn"].active {
+	background-color: var(--wo-de-accent-light, rgba(68, 114, 196, 0.08));
+}
+
+button[class*="btn"]:disabled {
+	opacity: 0.35;
+	cursor: default;
+	pointer-events: none;
+}
+
+/* Select dropdowns in toolbar */
+select[class*="select"] {
+	height: 22px;
+	padding: 0 6px;
+	border: 1px solid var(--wo-se-border);
+	border-radius: 3px;
+	background: var(--wo-de-bg-pane, #ffffff);
+	font-size: 11px;
+	font-family: var(--wo-se-font);
+	color: var(--wo-se-text-primary);
+	cursor: pointer;
+	outline: none;
+	transition: border-color 0.12s;
+}
+
+select[class*="select"]:hover {
 	border-color: var(--wo-se-accent);
 }
 
-.se-layouttab-separator {
-	width: 100%;
-	height: 1px;
-	background-color: var(--wo-se-border);
-}
-
-/* FormulaTab */
-.se-formulatab-panel {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	padding: 12px 16px;
-}
-
-.se-formulatab-group {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.se-formulatab-elset {
-	display: flex;
-	align-items: center;
-}
-
-.se-formulatab-label {
-	font-size: 11px;
-	color: var(--wo-se-text-secondary);
-	text-align: center;
-	margin-top: 2px;
-}
-
-.se-formulatab-btn {
-	display: inline-flex;
-	align-items: center;
-	height: 28px;
-	padding: 0 12px;
-	border: 1px solid var(--wo-se-border);
-	border-radius: 3px;
-	background-color: var(--wo-se-bg-pane);
-	color: var(--wo-se-text-primary);
-	font-size: 12px;
-	cursor: pointer;
-	white-space: nowrap;
-	transition: background-color 0.15s, border-color 0.15s;
-}
-
-.se-formulatab-btn:hover {
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
-	border-color: var(--wo-se-border);
-}
-
-.se-formulatab-btn.active {
-	background-color: var(--wo-se-accent);
-	color: #ffffff;
+select[class*="select"]:focus {
 	border-color: var(--wo-se-accent);
+	box-shadow: 0 0 0 1px var(--wo-de-accent-light, rgba(68, 114, 196, 0.08));
 }
 
-.se-formulatab-separator {
-	width: 100%;
-	height: 1px;
-	background-color: var(--wo-se-border);
-}
-
-/* DataTab */
-.se-datatab-panel {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	padding: 12px 16px;
-}
-
-.se-datatab-group {
+/* Checkbox labels */
+label[class*="checkbox"] {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-}
-
-.se-datatab-elset {
-	display: flex;
-	align-items: center;
-}
-
-.se-datatab-label {
+	gap: 4px;
 	font-size: 11px;
-	color: var(--wo-se-text-secondary);
-	text-align: center;
-	margin-top: 2px;
-}
-
-.se-datatab-btn {
-	display: inline-flex;
-	align-items: center;
-	height: 28px;
-	padding: 0 12px;
-	border: 1px solid var(--wo-se-border);
+	color: var(--wo-se-text-primary);
+	cursor: pointer;
+	padding: 2px 4px;
 	border-radius: 3px;
-	background-color: var(--wo-se-bg-pane);
-	color: var(--wo-se-text-primary);
-	font-size: 12px;
-	cursor: pointer;
-	white-space: nowrap;
-	transition: background-color 0.15s, border-color 0.15s;
+	transition: background-color 0.1s;
 }
 
-.se-datatab-btn:hover {
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
-	border-color: var(--wo-se-border);
+label[class*="checkbox"]:hover {
+	background-color: var(--wo-de-btn-hover, #e5e5e5);
 }
 
-.se-datatab-btn.active {
-	background-color: var(--wo-se-accent);
-	color: #ffffff;
-	border-color: var(--wo-se-accent);
-}
-
-.se-datatab-separator {
-	width: 100%;
-	height: 1px;
-	background-color: var(--wo-se-border);
-}
-
-/* ViewTab */
-.se-viewtab-panel {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 8px;
-	padding: 12px 16px;
-}
-
-.se-viewtab-group {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.se-viewtab-elset {
-	display: flex;
-	align-items: center;
-}
-
-.se-viewtab-label {
-	font-size: 11px;
-	color: var(--wo-se-text-secondary);
-	text-align: center;
-	margin-top: 2px;
-}
-
-.se-viewtab-zoom-select {
-	height: 28px;
-	padding: 0 8px;
-	border: 1px solid var(--wo-se-border);
-	border-radius: 3px;
-	background-color: var(--wo-se-bg-pane);
-	font-size: 12px;
-	color: var(--wo-se-text-primary);
-	cursor: pointer;
-}
-
-.se-viewtab-btn {
-	display: inline-flex;
-	align-items: center;
-	height: 28px;
-	padding: 0 12px;
-	border: 1px solid var(--wo-se-border);
-	border-radius: 3px;
-	background-color: var(--wo-se-bg-pane);
-	color: var(--wo-se-text-primary);
-	font-size: 12px;
-	cursor: pointer;
-	white-space: nowrap;
-	transition: background-color 0.15s, border-color 0.15s;
-}
-
-.se-viewtab-btn:hover {
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
-	border-color: var(--wo-se-border);
-}
-
-.se-viewtab-btn.active {
-	background-color: var(--wo-se-accent);
-	color: #ffffff;
-	border-color: var(--wo-se-accent);
-}
-
-.se-viewtab-btn-theme {
-	display: inline-flex;
-	align-items: center;
-	height: 28px;
-	padding: 0 12px;
-	border: 1px solid var(--wo-se-border);
-	border-radius: 3px;
-	background-color: var(--wo-se-bg-pane);
-	color: var(--wo-se-text-primary);
-	font-size: 12px;
-	cursor: pointer;
-}
-
-.se-viewtab-btn-theme:hover {
-	background-color: var(--wo-color-bg-secondary, #f5f5f5);
-}
-
-.se-viewtab-checkbox {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	font-size: 12px;
-	color: var(--wo-se-text-primary);
-	cursor: pointer;
-}
-
-.se-viewtab-checkbox input[type="checkbox"] {
+label[class*="checkbox"] input[type="checkbox"] {
 	margin: 0;
 	cursor: pointer;
-}
-
-.se-viewtab-separator {
-	width: 100%;
-	height: 1px;
-	background-color: var(--wo-se-border);
-}
-
-.se-viewtab-separator-theme {
-	margin: 4px 0;
+	accent-color: var(--wo-se-accent);
 }
