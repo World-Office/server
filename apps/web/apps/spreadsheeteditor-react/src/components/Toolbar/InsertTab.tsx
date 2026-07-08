@@ -1,3 +1,20 @@
+import {
+	AreaChart,
+	BarChart3,
+	BarChartHorizontal,
+	Globe,
+	Grid3x3,
+	Heading,
+	Image,
+	LineChart,
+	Link,
+	PieChart,
+	ScatterChart,
+	Shapes,
+	Smile,
+	Table2,
+	TrendingUp,
+} from "lucide-react";
 import { observer } from "mobx-react-lite";
 
 const ObservedInsertTab = observer(function ObservedInsertTab() {
@@ -17,7 +34,8 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
 						onClick={() => {}}
 						title="PivotTable"
 					>
-						PivotTable
+						<Table2 size={18} />
+						<span>PivotTable</span>
 					</button>
 					<button
 						type="button"
@@ -25,7 +43,8 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
 						onClick={() => {}}
 						title="Table"
 					>
-						Table
+						<Grid3x3 size={18} />
+						<span>Table</span>
 					</button>
 				</div>
 			</div>
@@ -39,49 +58,55 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
 						type="button"
 						className="se-inserttab-btn"
 						onClick={() => {}}
-						title="Column"
+						title="Column Chart"
 					>
-						Column
+						<BarChart3 size={18} />
+						<span>Column</span>
 					</button>
 					<button
 						type="button"
 						className="se-inserttab-btn"
 						onClick={() => {}}
-						title="Line"
+						title="Line Chart"
 					>
-						Line
+						<TrendingUp size={18} />
+						<span>Line</span>
 					</button>
 					<button
 						type="button"
 						className="se-inserttab-btn"
 						onClick={() => {}}
-						title="Pie"
+						title="Pie Chart"
 					>
-						Pie
+						<PieChart size={18} />
+						<span>Pie</span>
 					</button>
 					<button
 						type="button"
 						className="se-inserttab-btn"
 						onClick={() => {}}
-						title="Bar"
+						title="Bar Chart"
 					>
-						Bar
+						<BarChartHorizontal size={18} />
+						<span>Bar</span>
 					</button>
 					<button
 						type="button"
 						className="se-inserttab-btn"
 						onClick={() => {}}
-						title="Area"
+						title="Area Chart"
 					>
-						Area
+						<AreaChart size={18} />
+						<span>Area</span>
 					</button>
 					<button
 						type="button"
 						className="se-inserttab-btn"
 						onClick={() => {}}
-						title="Scatter"
+						title="Scatter Chart"
 					>
-						Scatter
+						<ScatterChart size={18} />
+						<span>Scatter</span>
 					</button>
 				</div>
 			</div>
@@ -97,7 +122,8 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
 						onClick={() => {}}
 						title="Picture"
 					>
-						Picture
+						<Image size={18} />
+						<span>Picture</span>
 					</button>
 					<button
 						type="button"
@@ -105,7 +131,8 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
 						onClick={() => {}}
 						title="Online Pictures"
 					>
-						Online Pictures
+						<Globe size={18} />
+						<span>Online</span>
 					</button>
 				</div>
 			</div>
@@ -121,7 +148,8 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
 						onClick={() => {}}
 						title="Shapes"
 					>
-						Shapes
+						<Shapes size={18} />
+						<span>Shapes</span>
 					</button>
 				</div>
 			</div>
@@ -137,7 +165,8 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
 						onClick={() => {}}
 						title="Link"
 					>
-						Link
+						<Link size={18} />
+						<span>Link</span>
 					</button>
 				</div>
 			</div>
@@ -153,7 +182,8 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
 						onClick={() => {}}
 						title="Header"
 					>
-						Header
+						<Heading size={18} />
+						<span>Header</span>
 					</button>
 					<button
 						type="button"
@@ -161,7 +191,8 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
 						onClick={() => {}}
 						title="Footer"
 					>
-						Footer
+						<Heading size={18} />
+						<span>Footer</span>
 					</button>
 				</div>
 			</div>
@@ -175,25 +206,28 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
 						type="button"
 						className="se-inserttab-btn"
 						onClick={() => {}}
-						title="Line"
+						title="Line Sparkline"
 					>
-						Line
+						<LineChart size={18} />
+						<span>Line</span>
 					</button>
 					<button
 						type="button"
 						className="se-inserttab-btn"
 						onClick={() => {}}
-						title="Column"
+						title="Column Sparkline"
 					>
-						Column
+						<BarChart3 size={18} />
+						<span>Column</span>
 					</button>
 					<button
 						type="button"
 						className="se-inserttab-btn"
 						onClick={() => {}}
-						title="Win/Loss"
+						title="Win/Loss Sparkline"
 					>
-						Win/Loss
+						<TrendingUp size={18} />
+						<span>Win/Loss</span>
 					</button>
 				</div>
 			</div>
@@ -209,7 +243,8 @@ const ObservedInsertTab = observer(function ObservedInsertTab() {
 						onClick={() => {}}
 						title="Icons"
 					>
-						Icons
+						<Smile size={18} />
+						<span>Icons</span>
 					</button>
 				</div>
 			</div>

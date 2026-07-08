@@ -1,3 +1,4 @@
+import { Grid3x3, Moon, Sun, Table, ToggleLeft } from "lucide-react";
 import { observer } from "mobx-react-lite";
 
 const ObservedDataTableTab = observer(function ObservedDataTableTab() {
@@ -8,7 +9,7 @@ const ObservedDataTableTab = observer(function ObservedDataTableTab() {
 			role="tabpanel"
 			aria-labelledby="table"
 		>
-			{/* Table Design Options */}
+			{/* Table Style Options */}
 			<div className="se-datatab-group">
 				<div className="se-datatab-elset">
 					<span className="se-datatab-label">Table Style Options</span>
@@ -20,7 +21,8 @@ const ObservedDataTableTab = observer(function ObservedDataTableTab() {
 						onClick={() => {}}
 						title="Header Row"
 					>
-						Header Row
+						<ToggleLeft size={18} />
+						<span>Header Row</span>
 					</button>
 					<button
 						type="button"
@@ -28,7 +30,8 @@ const ObservedDataTableTab = observer(function ObservedDataTableTab() {
 						onClick={() => {}}
 						title="Total Row"
 					>
-						Total Row
+						<ToggleLeft size={18} />
+						<span>Total Row</span>
 					</button>
 					<button
 						type="button"
@@ -36,7 +39,8 @@ const ObservedDataTableTab = observer(function ObservedDataTableTab() {
 						onClick={() => {}}
 						title="First Column"
 					>
-						First Column
+						<ToggleLeft size={18} />
+						<span>First Column</span>
 					</button>
 					<button
 						type="button"
@@ -44,7 +48,8 @@ const ObservedDataTableTab = observer(function ObservedDataTableTab() {
 						onClick={() => {}}
 						title="Last Column"
 					>
-						Last Column
+						<ToggleLeft size={18} />
+						<span>Last Column</span>
 					</button>
 				</div>
 			</div>
@@ -61,25 +66,28 @@ const ObservedDataTableTab = observer(function ObservedDataTableTab() {
 						type="button"
 						className="se-datatab-btn"
 						onClick={() => {}}
-						title="Light"
+						title="Light Style"
 					>
-						Light
+						<Sun size={18} />
+						<span>Light</span>
 					</button>
 					<button
 						type="button"
 						className="se-datatab-btn"
 						onClick={() => {}}
-						title="Medium"
+						title="Medium Style"
 					>
-						Medium
+						<Sun size={18} />
+						<span>Medium</span>
 					</button>
 					<button
 						type="button"
 						className="se-datatab-btn"
 						onClick={() => {}}
-						title="Dark"
+						title="Dark Style"
 					>
-						Dark
+						<Moon size={18} />
+						<span>Dark</span>
 					</button>
 				</div>
 			</div>
@@ -98,7 +106,8 @@ const ObservedDataTableTab = observer(function ObservedDataTableTab() {
 						onClick={() => {}}
 						title="Banded Rows"
 					>
-						Banded Rows
+						<Grid3x3 size={18} />
+						<span>Banded Rows</span>
 					</button>
 					<button
 						type="button"
@@ -106,14 +115,15 @@ const ObservedDataTableTab = observer(function ObservedDataTableTab() {
 						onClick={() => {}}
 						title="Banded Columns"
 					>
-						Banded Columns
+						<Grid3x3 size={18} />
+						<span>Banded Columns</span>
 					</button>
 				</div>
 			</div>
 
 			<div className="se-datatab-separator" />
 
-			{/* Banded Columns */}
+			{/* First/Last Columns */}
 			<div className="se-datatab-group">
 				<div className="se-datatab-elset">
 					<span className="se-datatab-label">First/Last Columns</span>
@@ -125,7 +135,8 @@ const ObservedDataTableTab = observer(function ObservedDataTableTab() {
 						onClick={() => {}}
 						title="First Column"
 					>
-						First Column
+						<Table size={18} />
+						<span>First Column</span>
 					</button>
 					<button
 						type="button"
@@ -133,7 +144,8 @@ const ObservedDataTableTab = observer(function ObservedDataTableTab() {
 						onClick={() => {}}
 						title="Last Column"
 					>
-						Last Column
+						<Table size={18} />
+						<span>Last Column</span>
 					</button>
 				</div>
 			</div>

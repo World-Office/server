@@ -1,3 +1,15 @@
+import {
+	ArrowDownCircle,
+	ArrowUpCircle,
+	Equal,
+	Hash,
+	Minus,
+	Play,
+	Plus,
+	Search,
+	Sigma,
+	Square,
+} from "lucide-react";
 import { observer } from "mobx-react-lite";
 
 const ObservedFormulaTab = observer(function ObservedFormulaTab() {
@@ -18,9 +30,10 @@ const ObservedFormulaTab = observer(function ObservedFormulaTab() {
 						type="button"
 						className="se-formulatab-btn"
 						onClick={() => {}}
-						title="Sum"
+						title="Auto Sum"
 					>
-						Sum
+						<Sigma size={18} />
+						<span>Sum</span>
 					</button>
 					<button
 						type="button"
@@ -28,7 +41,8 @@ const ObservedFormulaTab = observer(function ObservedFormulaTab() {
 						onClick={() => {}}
 						title="Average"
 					>
-						Average
+						<Equal size={18} />
+						<span>Average</span>
 					</button>
 					<button
 						type="button"
@@ -36,7 +50,8 @@ const ObservedFormulaTab = observer(function ObservedFormulaTab() {
 						onClick={() => {}}
 						title="Count"
 					>
-						Count
+						<Hash size={18} />
+						<span>Count</span>
 					</button>
 					<button
 						type="button"
@@ -44,7 +59,8 @@ const ObservedFormulaTab = observer(function ObservedFormulaTab() {
 						onClick={() => {}}
 						title="Min"
 					>
-						Min
+						<Minus size={18} />
+						<span>Min</span>
 					</button>
 					<button
 						type="button"
@@ -52,23 +68,26 @@ const ObservedFormulaTab = observer(function ObservedFormulaTab() {
 						onClick={() => {}}
 						title="Max"
 					>
-						Max
+						<Plus size={18} />
+						<span>Max</span>
 					</button>
 					<button
 						type="button"
 						className="se-formulatab-btn"
 						onClick={() => {}}
-						title="If"
+						title="IF Function"
 					>
-						If
+						<Equal size={18} />
+						<span>If</span>
 					</button>
 					<button
 						type="button"
 						className="se-formulatab-btn"
 						onClick={() => {}}
-						title="VLookup"
+						title="VLOOKUP"
 					>
-						VLOOKUP
+						<Search size={18} />
+						<span>VLOOKUP</span>
 					</button>
 				</div>
 			</div>
@@ -87,7 +106,8 @@ const ObservedFormulaTab = observer(function ObservedFormulaTab() {
 						onClick={() => {}}
 						title="Name Manager"
 					>
-						Name Manager
+						<Sigma size={18} />
+						<span>Name Manager</span>
 					</button>
 					<button
 						type="button"
@@ -95,7 +115,8 @@ const ObservedFormulaTab = observer(function ObservedFormulaTab() {
 						onClick={() => {}}
 						title="Create from Selection"
 					>
-						Create from Selection
+						<Plus size={18} />
+						<span>Create from Selection</span>
 					</button>
 				</div>
 			</div>
@@ -114,7 +135,8 @@ const ObservedFormulaTab = observer(function ObservedFormulaTab() {
 						onClick={() => {}}
 						title="Trace Precedents"
 					>
-						Trace Precedents
+						<ArrowUpCircle size={18} />
+						<span>Trace Precedents</span>
 					</button>
 					<button
 						type="button"
@@ -122,7 +144,8 @@ const ObservedFormulaTab = observer(function ObservedFormulaTab() {
 						onClick={() => {}}
 						title="Trace Dependents"
 					>
-						Trace Dependents
+						<ArrowDownCircle size={18} />
+						<span>Trace Dependents</span>
 					</button>
 				</div>
 			</div>
@@ -139,17 +162,19 @@ const ObservedFormulaTab = observer(function ObservedFormulaTab() {
 						type="button"
 						className="se-formulatab-btn"
 						onClick={() => {}}
-						title="Automatic"
+						title="Automatic Calculation"
 					>
-						Automatic
+						<Play size={18} />
+						<span>Automatic</span>
 					</button>
 					<button
 						type="button"
 						className="se-formulatab-btn"
 						onClick={() => {}}
-						title="Manual"
+						title="Manual Calculation"
 					>
-						Manual
+						<Square size={18} />
+						<span>Manual</span>
 					</button>
 				</div>
 			</div>

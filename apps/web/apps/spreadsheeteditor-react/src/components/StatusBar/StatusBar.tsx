@@ -1,3 +1,15 @@
+import {
+	ChevronLeft,
+	Columns2,
+	Equal,
+	Hash,
+	Maximize2,
+	Minus,
+	Plus,
+	Sigma,
+	ZoomIn,
+	ZoomOut,
+} from "lucide-react";
 import { observer } from "mobx-react-lite";
 import type { JSX } from "react";
 import { spreadsheetStore } from "../../stores/SpreadsheetStore";
@@ -14,7 +26,7 @@ function ZoomControls(): JSX.Element {
 					spreadsheetStore.setFitToPage(!spreadsheetStore.fitToPage)
 				}
 			>
-				⊞
+				<Maximize2 size={14} />
 			</button>
 			<button
 				type="button"
@@ -24,7 +36,7 @@ function ZoomControls(): JSX.Element {
 					spreadsheetStore.setFitToWidth(!spreadsheetStore.fitToWidth)
 				}
 			>
-				⇔
+				<Columns2 size={14} />
 			</button>
 			<button
 				type="button"
@@ -32,7 +44,7 @@ function ZoomControls(): JSX.Element {
 				title="Zoom Out"
 				onClick={() => spreadsheetStore.zoomOut()}
 			>
-				−
+				<ZoomOut size={14} />
 			</button>
 			<div className="se-statusbar-zoom-label">
 				<span className="se-statusbar-label">{`${spreadsheetStore.zoomLevel}%`}</span>
@@ -43,7 +55,7 @@ function ZoomControls(): JSX.Element {
 				title="Zoom In"
 				onClick={() => spreadsheetStore.zoomIn()}
 			>
-				+
+				<ZoomIn size={14} />
 			</button>
 		</>
 	);
@@ -74,7 +86,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
 						)
 					}
 				>
-					‹
+					<ChevronLeft size={14} />
 				</button>
 				<div className="se-statusbar-sheet-dropdown">
 					<select
@@ -98,7 +110,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
 					title="Add sheet"
 					onClick={() => spreadsheetStore.addSheet("Sheet")}
 				>
-					+
+					<Plus size={14} />
 				</button>
 			</div>
 
@@ -134,7 +146,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
 						title="Average"
 						onClick={() => spreadsheetStore.toggleStatistics("average")}
 					>
-						Avg
+						<Equal size={14} />
 					</button>
 					<button
 						type="button"
@@ -142,7 +154,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
 						title="Count"
 						onClick={() => spreadsheetStore.toggleStatistics("count")}
 					>
-						Count
+						<Hash size={14} />
 					</button>
 					<button
 						type="button"
@@ -150,7 +162,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
 						title="Min"
 						onClick={() => spreadsheetStore.toggleStatistics("min")}
 					>
-						Min
+						<Minus size={14} />
 					</button>
 					<button
 						type="button"
@@ -158,7 +170,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
 						title="Max"
 						onClick={() => spreadsheetStore.toggleStatistics("max")}
 					>
-						Max
+						<Plus size={14} />
 					</button>
 					<button
 						type="button"
@@ -166,7 +178,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
 						title="Sum"
 						onClick={() => spreadsheetStore.toggleStatistics("sum")}
 					>
-						Sum
+						<Sigma size={14} />
 					</button>
 				</div>
 			)}

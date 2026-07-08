@@ -1,3 +1,15 @@
+import {
+	AlignStartVertical,
+	BringToFront,
+	Columns,
+	FileText,
+	Grid3x3,
+	Group,
+	Heading,
+	Ruler,
+	SendToBack,
+	Ungroup,
+} from "lucide-react";
 import { observer } from "mobx-react-lite";
 
 const ObservedLayoutTab = observer(function ObservedLayoutTab() {
@@ -18,25 +30,28 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab() {
 						type="button"
 						className="se-layouttab-btn"
 						onClick={() => {}}
-						title="Normal"
+						title="Normal Margins"
 					>
-						Normal
+						<Ruler size={18} />
+						<span>Normal</span>
 					</button>
 					<button
 						type="button"
 						className="se-layouttab-btn"
 						onClick={() => {}}
-						title="Wide"
+						title="Wide Margins"
 					>
-						Wide
+						<Ruler size={18} />
+						<span>Wide</span>
 					</button>
 					<button
 						type="button"
 						className="se-layouttab-btn"
 						onClick={() => {}}
-						title="Narrow"
+						title="Narrow Margins"
 					>
-						Narrow
+						<Ruler size={18} />
+						<span>Narrow</span>
 					</button>
 				</div>
 				<div className="se-layouttab-elset">
@@ -49,7 +64,8 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab() {
 						onClick={() => {}}
 						title="Portrait"
 					>
-						Portrait
+						<Columns size={18} />
+						<span>Portrait</span>
 					</button>
 					<button
 						type="button"
@@ -57,7 +73,8 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab() {
 						onClick={() => {}}
 						title="Landscape"
 					>
-						Landscape
+						<Columns size={18} />
+						<span>Landscape</span>
 					</button>
 				</div>
 				<div className="se-layouttab-elset">
@@ -70,7 +87,8 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab() {
 						onClick={() => {}}
 						title="Letter"
 					>
-						Letter
+						<FileText size={18} />
+						<span>Letter</span>
 					</button>
 					<button
 						type="button"
@@ -78,7 +96,8 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab() {
 						onClick={() => {}}
 						title="Legal"
 					>
-						Legal
+						<FileText size={18} />
+						<span>Legal</span>
 					</button>
 				</div>
 			</div>
@@ -97,7 +116,8 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab() {
 						onClick={() => {}}
 						title="Gridlines"
 					>
-						Gridlines
+						<Grid3x3 size={18} />
+						<span>Gridlines</span>
 					</button>
 					<button
 						type="button"
@@ -105,7 +125,8 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab() {
 						onClick={() => {}}
 						title="Headings"
 					>
-						Headings
+						<Heading size={18} />
+						<span>Headings</span>
 					</button>
 				</div>
 			</div>
@@ -124,7 +145,8 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab() {
 						onClick={() => {}}
 						title="Bring Forward"
 					>
-						Bring Forward
+						<BringToFront size={18} />
+						<span>Bring Forward</span>
 					</button>
 					<button
 						type="button"
@@ -132,7 +154,8 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab() {
 						onClick={() => {}}
 						title="Send Backward"
 					>
-						Send Backward
+						<SendToBack size={18} />
+						<span>Send Backward</span>
 					</button>
 					<button
 						type="button"
@@ -140,7 +163,8 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab() {
 						onClick={() => {}}
 						title="Bring to Front"
 					>
-						Bring to Front
+						<BringToFront size={18} />
+						<span>Bring to Front</span>
 					</button>
 					<button
 						type="button"
@@ -148,7 +172,8 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab() {
 						onClick={() => {}}
 						title="Send to Back"
 					>
-						Send to Back
+						<SendToBack size={18} />
+						<span>Send to Back</span>
 					</button>
 				</div>
 				<div className="se-layouttab-elset">
@@ -158,7 +183,8 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab() {
 						onClick={() => {}}
 						title="Align"
 					>
-						Align
+						<AlignStartVertical size={18} />
+						<span>Align</span>
 					</button>
 					<button
 						type="button"
@@ -166,7 +192,8 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab() {
 						onClick={() => {}}
 						title="Group"
 					>
-						Group
+						<Group size={18} />
+						<span>Group</span>
 					</button>
 					<button
 						type="button"
@@ -174,7 +201,8 @@ const ObservedLayoutTab = observer(function ObservedLayoutTab() {
 						onClick={() => {}}
 						title="Ungroup"
 					>
-						Ungroup
+						<Ungroup size={18} />
+						<span>Ungroup</span>
 					</button>
 				</div>
 			</div>
