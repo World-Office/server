@@ -13,7 +13,7 @@ env:
 jobs:
   lint-rust:
     name: Rust Lint
-    runs-on: [self-hosted, linux]
+    runs-on: [self-hosted, ci-host]
     steps:
       - uses: actions/checkout@v4
         timeout-minutes: 5
@@ -46,7 +46,7 @@ jobs:
 
   test-rust-unit:
     name: Rust Unit Tests (nightly)
-    runs-on: [self-hosted, linux]
+    runs-on: [self-hosted, ci-host]
     steps:
       - uses: actions/checkout@v4
         timeout-minutes: 5
@@ -99,7 +99,7 @@ jobs:
 
   test-rust-integration:
     name: Rust Integration Tests
-    runs-on: [self-hosted, linux]
+    runs-on: [self-hosted, ci-host]
     needs: [test-rust-unit]
     steps:
       - uses: actions/checkout@v4
@@ -124,7 +124,7 @@ jobs:
 
   coverage-rust:
     name: Rust Coverage
-    runs-on: [self-hosted, linux]
+    runs-on: [self-hosted, ci-host]
     steps:
       - uses: actions/checkout@v4
         timeout-minutes: 5
@@ -172,7 +172,7 @@ jobs:
 
   lint-ts:
     name: TypeScript Lint
-    runs-on: [self-hosted, linux]
+    runs-on: [self-hosted, ci-host]
     steps:
       - uses: actions/checkout@v4
         timeout-minutes: 5
@@ -194,7 +194,7 @@ jobs:
 
   typecheck-ts:
     name: TypeScript Typecheck
-    runs-on: [self-hosted, linux]
+    runs-on: [self-hosted, ci-host]
     steps:
       - uses: actions/checkout@v4
         timeout-minutes: 5
@@ -216,7 +216,7 @@ jobs:
 
   build-ts:
     name: TypeScript Build
-    runs-on: [self-hosted, linux]
+    runs-on: [self-hosted, ci-host]
     steps:
       - uses: actions/checkout@v4
         timeout-minutes: 5
@@ -238,7 +238,7 @@ jobs:
 
   test-ts:
     name: TypeScript Test
-    runs-on: [self-hosted, linux]
+    runs-on: [self-hosted, ci-host]
     steps:
       - uses: actions/checkout@v4
         timeout-minutes: 5
@@ -260,7 +260,7 @@ jobs:
 
   build-rust:
     name: Rust Build Check
-    runs-on: [self-hosted, linux]
+    runs-on: [self-hosted, ci-host]
     steps:
       - uses: actions/checkout@v4
         timeout-minutes: 5
