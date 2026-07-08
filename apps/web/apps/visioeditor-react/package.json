@@ -12,20 +12,21 @@
     "lint:fix": "biome check --write src/"
   },
   "dependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "mobx": "^6.13.0",
-    "mobx-react-lite": "^4.1.0",
-    "@world-office/design-system": "workspace:*",
-    "@world-office/editor-common": "workspace:*",
-    "@world-office/editor-stores": "workspace:*",
-    "@world-office/sdk-bridge": "workspace:*",
-    "@world-office/i18n": "workspace:*",
-    "@world-office/wopi-client": "workspace:*",
     "@tiptap/core": "^3.27.1",
     "@tiptap/react": "^3.27.1",
     "@tiptap/starter-kit": "^3.27.1",
-    "monaco-editor": "^0.52.2"
+    "@world-office/design-system": "workspace:*",
+    "@world-office/editor-common": "workspace:*",
+    "@world-office/editor-stores": "workspace:*",
+    "@world-office/i18n": "workspace:*",
+    "@world-office/sdk-bridge": "workspace:*",
+    "@world-office/wopi-client": "workspace:*",
+    "lucide-react": "^1.23.0",
+    "mobx": "^6.13.0",
+    "mobx-react-lite": "^4.1.0",
+    "monaco-editor": "^0.52.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
