@@ -1,3 +1,4 @@
+import { ArrowDown, ArrowUp, Play, Sparkles } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { presentationStore } from "../../stores/PresentationStore";
 import type {
@@ -136,6 +137,7 @@ const ObservedAnimationTab = observer(function ObservedAnimationTab() {
 							title={cat.label}
 							onClick={() => handleCategoryClick(cat.key)}
 						>
+							<Sparkles size={18} />
 							{cat.label}
 						</button>
 					</div>
@@ -159,6 +161,7 @@ const ObservedAnimationTab = observer(function ObservedAnimationTab() {
 									isPreviewPlaying ? stopPreview() : startPreview()
 								}
 							>
+								<Play size={18} />
 								{isPreviewPlaying ? "Stop" : "Preview"}
 							</button>
 						</div>
@@ -179,6 +182,7 @@ const ObservedAnimationTab = observer(function ObservedAnimationTab() {
 						title="Animation Pane"
 						onClick={() => presentationStore.setActiveRightPanel("animation")}
 					>
+						<Sparkles size={18} />
 						Animation Pane
 					</button>
 				</div>
@@ -262,6 +266,7 @@ const ObservedAnimationTab = observer(function ObservedAnimationTab() {
 									moveAnimationEarlier(currentSlide, slideAnims.length - 1)
 								}
 							>
+								<ArrowUp size={18} />
 								Move Earlier
 							</button>
 						</div>
@@ -272,6 +277,7 @@ const ObservedAnimationTab = observer(function ObservedAnimationTab() {
 								title="Move Later"
 								onClick={() => moveAnimationLater(currentSlide, 0)}
 							>
+								<ArrowDown size={18} />
 								Move Later
 							</button>
 						</div>

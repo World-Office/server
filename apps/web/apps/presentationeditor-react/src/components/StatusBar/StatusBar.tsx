@@ -2,6 +2,16 @@ import {
 	CollaborationStatus,
 	CollaboratorList,
 } from "@world-office/collaboration-react";
+import {
+	ChevronLeft,
+	ChevronRight,
+	Columns2,
+	Maximize,
+	Play,
+	RefreshCw,
+	ZoomIn,
+	ZoomOut,
+} from "lucide-react";
 import { observer } from "mobx-react-lite";
 import type { JSX } from "react";
 import { presentationStore } from "../../stores/PresentationStore";
@@ -18,7 +28,7 @@ function ZoomControls(): JSX.Element {
 					presentationStore.setFitToPage(!presentationStore.fitToPage)
 				}
 			>
-				⊞
+				<Maximize size={14} />
 			</button>
 			<button
 				type="button"
@@ -28,7 +38,7 @@ function ZoomControls(): JSX.Element {
 					presentationStore.setFitToWidth(!presentationStore.fitToWidth)
 				}
 			>
-				⇔
+				<Columns2 size={14} />
 			</button>
 			<button
 				type="button"
@@ -36,7 +46,7 @@ function ZoomControls(): JSX.Element {
 				title="Zoom Out"
 				onClick={() => presentationStore.zoomOut()}
 			>
-				−
+				<ZoomOut size={14} />
 			</button>
 			<div className="prese-statusbar-zoom-label">
 				<span className="prese-statusbar-label">{`${presentationStore.zoomLevel}%`}</span>
@@ -47,7 +57,7 @@ function ZoomControls(): JSX.Element {
 				title="Zoom In"
 				onClick={() => presentationStore.zoomIn()}
 			>
-				+
+				<ZoomIn size={14} />
 			</button>
 		</>
 	);
@@ -91,7 +101,8 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
 						title="Retry collaboration connection"
 						onClick={() => presentationStore.requestRetry()}
 					>
-						↻ Retry
+						<RefreshCw size={14} />
+						Retry
 					</button>
 				</>
 			)}
@@ -108,7 +119,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
 					disabled={currentSlide <= 0}
 					onClick={() => presentationStore.setCurrentSlide(currentSlide - 1)}
 				>
-					‹
+					<ChevronLeft size={14} />
 				</button>
 				<span className="prese-statusbar-page-label">
 					Slide {currentSlide + 1} of {totalSlides}
@@ -120,14 +131,14 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
 					disabled={currentSlide >= totalSlides - 1}
 					onClick={() => presentationStore.setCurrentSlide(currentSlide + 1)}
 				>
-					›
+					<ChevronRight size={14} />
 				</button>
 			</div>
 
 			{/* Slideshow button */}
 			<div className="prese-statusbar-tools">
 				<button type="button" className="prese-statusbar-btn" title="Slideshow">
-					▶
+					<Play size={14} />
 				</button>
 			</div>
 

@@ -1,3 +1,4 @@
+import { Copy } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { presentationStore } from "../../stores/PresentationStore";
 import type { TransitionEffect } from "../../types/presentation";
@@ -207,6 +208,7 @@ const ObservedTransitionsTab = observer(function ObservedTransitionsTab() {
 						title="Apply to All Slides"
 						onClick={() => presentationStore.applyTransitionToAll()}
 					>
+						<Copy size={18} />
 						Apply to All
 					</button>
 				</div>

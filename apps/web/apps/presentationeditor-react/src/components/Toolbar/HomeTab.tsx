@@ -1,3 +1,44 @@
+import {
+	AlignCenter,
+	AlignCenterVertical,
+	AlignEndVertical,
+	AlignLeft,
+	AlignRight,
+	AlignStartVertical,
+	ArrowLeftRight,
+	ArrowUpDown,
+	Bold,
+	ChevronLeft,
+	ChevronRight,
+	ChevronsLeft,
+	ChevronsRight,
+	Clipboard,
+	Columns2,
+	Copy,
+	FilePlus,
+	Highlighter,
+	IndentDecrease,
+	IndentIncrease,
+	Italic,
+	Layers,
+	List,
+	ListOrdered,
+	Maximize,
+	MinusCircle,
+	MousePointerClick,
+	PaintBucket,
+	Paintbrush,
+	Palette,
+	Play,
+	PlusCircle,
+	Replace,
+	Rows2,
+	Scissors,
+	Search,
+	Shapes,
+	Strikethrough,
+	Underline,
+} from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useEffect, useRef, useState } from "react";
 import { presentationStore } from "../../stores/PresentationStore";
@@ -66,6 +107,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						onClick={() => onMonacoCommand("cut")}
 						title="Cut"
 					>
+						<Scissors size={18} />
 						Cut
 					</button>
 					<button
@@ -74,6 +116,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						onClick={() => onMonacoCommand("copy")}
 						title="Copy"
 					>
+						<Copy size={18} />
 						Copy
 					</button>
 					<button
@@ -82,6 +125,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						onClick={() => onMonacoCommand("paste")}
 						title="Paste"
 					>
+						<Clipboard size={18} />
 						Paste
 					</button>
 					<button
@@ -90,6 +134,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						onClick={() => {}}
 						title="Format Painter"
 					>
+						<Paintbrush size={18} />
 						Format Painter
 					</button>
 				</div>
@@ -106,6 +151,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						onClick={goToFirstSlide}
 						title="First Slide"
 					>
+						<ChevronsLeft size={18} />
 						First
 					</button>
 					<button
@@ -114,6 +160,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						onClick={goToPrevSlide}
 						title="Previous Slide"
 					>
+						<ChevronLeft size={18} />
 						Previous
 					</button>
 					<button
@@ -122,6 +169,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						onClick={goToNextSlide}
 						title="Next Slide"
 					>
+						<ChevronRight size={18} />
 						Next
 					</button>
 					<button
@@ -130,6 +178,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						onClick={goToLastSlide}
 						title="Last Slide"
 					>
+						<ChevronsRight size={18} />
 						Last
 					</button>
 				</div>
@@ -141,6 +190,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 				</div>
 				<div className="prese-hometab-elset">
 					<button type="button" className="prese-hometab-btn" title="New Slide">
+						<FilePlus size={18} />
 						New Slide
 					</button>
 				</div>
@@ -157,7 +207,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Bold (not available in code editor)"
 					>
-						B
+						<Bold size={18} />B
 					</button>
 					<button
 						type="button"
@@ -165,7 +215,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Italic (not available in code editor)"
 					>
-						I
+						<Italic size={18} />I
 					</button>
 					<button
 						type="button"
@@ -173,7 +223,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Underline (not available in code editor)"
 					>
-						U
+						<Underline size={18} />U
 					</button>
 					<button
 						type="button"
@@ -181,7 +231,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Strikethrough (not available in code editor)"
 					>
-						S
+						<Strikethrough size={18} />S
 					</button>
 				</div>
 				<div className="prese-hometab-elset">
@@ -191,6 +241,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Increase Font Size (not available in code editor)"
 					>
+						<PlusCircle size={18} />
 						A+
 					</button>
 					<button
@@ -199,6 +250,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Decrease Font Size (not available in code editor)"
 					>
+						<MinusCircle size={18} />
 						A-
 					</button>
 				</div>
@@ -212,7 +264,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Text Color (not available in code editor)"
 					>
-						A
+						<Palette size={18} />A
 					</button>
 					<button
 						type="button"
@@ -220,6 +272,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Text Highlight Color (not available in code editor)"
 					>
+						<Highlighter size={18} />
 						Ab
 					</button>
 				</div>
@@ -236,6 +289,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Bullets (not available in code editor)"
 					>
+						<List size={18} />
 						Bullets
 					</button>
 					<button
@@ -244,6 +298,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Numbering (not available in code editor)"
 					>
+						<ListOrdered size={18} />
 						Numbering
 					</button>
 				</div>
@@ -254,6 +309,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Align Left (not available in code editor)"
 					>
+						<AlignLeft size={18} />
 						Align Left
 					</button>
 					<button
@@ -262,6 +318,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Align Center (not available in code editor)"
 					>
+						<AlignCenter size={18} />
 						Align Center
 					</button>
 					<button
@@ -270,6 +327,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Align Right (not available in code editor)"
 					>
+						<AlignRight size={18} />
 						Align Right
 					</button>
 				</div>
@@ -280,6 +338,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Align Top (not available in code editor)"
 					>
+						<AlignStartVertical size={18} />
 						Align Top
 					</button>
 					<button
@@ -288,6 +347,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Align Middle (not available in code editor)"
 					>
+						<AlignCenterVertical size={18} />
 						Align Middle
 					</button>
 					<button
@@ -296,6 +356,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Align Bottom (not available in code editor)"
 					>
+						<AlignEndVertical size={18} />
 						Align Bottom
 					</button>
 				</div>
@@ -306,6 +367,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Distribute Horizontally (not available in code editor)"
 					>
+						<Columns2 size={18} />
 						Distribute H
 					</button>
 					<button
@@ -314,6 +376,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Distribute Vertically (not available in code editor)"
 					>
+						<Rows2 size={18} />
 						Distribute V
 					</button>
 				</div>
@@ -324,6 +387,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Decrease Indent (not available in code editor)"
 					>
+						<IndentDecrease size={18} />
 						Decrease Indent
 					</button>
 					<button
@@ -332,6 +396,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Increase Indent (not available in code editor)"
 					>
+						<IndentIncrease size={18} />
 						Increase Indent
 					</button>
 				</div>
@@ -342,6 +407,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Line Spacing (not available in code editor)"
 					>
+						<ArrowUpDown size={18} />
 						Line Spacing
 					</button>
 				</div>
@@ -352,6 +418,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Text Direction (not available in code editor)"
 					>
+						<ArrowLeftRight size={18} />
 						Text Direction
 					</button>
 				</div>
@@ -368,6 +435,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Shapes (not available in code editor)"
 					>
+						<Shapes size={18} />
 						Shapes
 					</button>
 				</div>
@@ -382,6 +450,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Arrange (not available in code editor)"
 					>
+						<Layers size={18} />
 						Arrange ▾
 					</button>
 				</div>
@@ -392,6 +461,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Quick Styles (not available in code editor)"
 					>
+						<PaintBucket size={18} />
 						Quick Styles
 					</button>
 				</div>
@@ -402,6 +472,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						onClick={() => onMonacoCommand("selectAll")}
 						title="Select All (Ctrl+A)"
 					>
+						<MousePointerClick size={18} />
 						Select All
 					</button>
 				</div>
@@ -415,7 +486,8 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						disabled
 						title="Start Slide Show (not available in code editor)"
 					>
-						▶ Start Slide Show
+						<Play size={18} />
+						Start Slide Show
 					</button>
 				</div>
 			</div>
@@ -431,6 +503,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						onClick={() => onMonacoCommand("find")}
 						title="Find"
 					>
+						<Search size={18} />
 						Find
 					</button>
 					<button
@@ -439,6 +512,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						onClick={() => onMonacoCommand("replace")}
 						title="Replace"
 					>
+						<Replace size={18} />
 						Replace
 					</button>
 				</div>
@@ -477,6 +551,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						}
 						title="Fit to Page"
 					>
+						<Maximize size={18} />
 						Fit to Page
 					</button>
 				</div>
@@ -489,6 +564,7 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 						}
 						title="Fit to Width"
 					>
+						<Columns2 size={18} />
 						Fit to Width
 					</button>
 				</div>

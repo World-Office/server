@@ -1,3 +1,4 @@
+import { File } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { presentationStore } from "../../stores/PresentationStore";
 
@@ -20,6 +21,7 @@ const ObservedFileTab = observer(function ObservedFileTab() {
 			onClick={handleClick}
 			aria-label="File"
 		>
+			<File size={16} />
 			File
 		</button>
 	);
