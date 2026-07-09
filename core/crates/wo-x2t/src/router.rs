@@ -22,8 +22,11 @@ use crate::converters::{
     OfdToDocxConverter, OfdToHtmlConverter, OfdToTxtConverter, PptxToWoPresentationConverter,
     RtfToDocxConverter, RtfToHtmlConverter, RtfToTxtConverter, TxtToDocxConverter,
     TxtToEpubConverter, TxtToFb2Converter, TxtToHtmlConverter, TxtToOdtConverter,
-    TxtToRtfConverter, WoPresentationToHtmlConverter, WoPresentationToOdpConverter,
-    WoPresentationToPptxConverter, XpsToDocxConverter, XpsToHtmlConverter, XpsToTxtConverter,
+    TxtToRtfConverter,     VsdmToVsdxConverter, VsdxToVsdmConverter, VsdxToWoDiagramConverter,
+    WoDiagramToVsdxConverter, PdfToWoPdfConverter, WoPdfToPdfConverter,
+    WoPresentationToHtmlConverter, WoPresentationToOdpConverter,
+    WoPresentationToPptxConverter, XlsxToWoSpreadsheetConverter, XpsToDocxConverter,
+    XpsToHtmlConverter, XpsToTxtConverter, WoSpreadsheetToXlsxConverter,
 };
 use crate::model::{ConversionOutput, ConversionResult, ConversionStatus};
 use crate::FormatConverter;
@@ -94,6 +97,14 @@ impl ConversionRouter {
         registry.register(WoPresentationToOdpConverter);
         registry.register(OdpToWoPresentationConverter);
         registry.register(WoPresentationToHtmlConverter);
+        registry.register(XlsxToWoSpreadsheetConverter);
+        registry.register(WoSpreadsheetToXlsxConverter);
+        registry.register(VsdxToWoDiagramConverter);
+        registry.register(WoDiagramToVsdxConverter);
+        registry.register(VsdmToVsdxConverter);
+        registry.register(VsdxToVsdmConverter);
+        registry.register(PdfToWoPdfConverter);
+        registry.register(WoPdfToPdfConverter);
         Self { registry }
     }
 
@@ -486,10 +497,16 @@ mod tests {
         assert!(pairs.contains(&("wo-presentation", "odp")));
         assert!(pairs.contains(&("odp", "wo-presentation")));
         assert!(pairs.contains(&("wo-presentation", "html")));
+        // Visio format converters
+        assert!(pairs.contains(&("vsdm", "vsdx")));
+        assert!(pairs.contains(&("vsdx", "vsdm")));
+        // PDF format converters
+        assert!(pairs.contains(&("pdf", "wo-pdf-document")));
+        assert!(pairs.contains(&("wo-pdf-document", "pdf")));
         assert_eq!(
             pairs.len(),
-            43,
-            "expected 43 registered converters, got {}",
+            51,
+            "expected 51 registered converters, got {}",
             pairs.len()
         );
     }

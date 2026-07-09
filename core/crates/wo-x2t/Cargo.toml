@@ -23,6 +23,8 @@ wo-hwp = { path = "../wo-hwp" }
 wo-xps = { path = "../wo-xps" }
 wo-ofd = { path = "../wo-ofd" }
 wo-djvu = { path = "../wo-djvu" }
+wo-visio = { path = "../wo-visio" }
+wo-pdf = { path = "../wo-pdf" }
 
 [dev-dependencies]
 zip = { workspace = true }

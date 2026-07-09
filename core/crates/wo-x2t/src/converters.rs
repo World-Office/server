@@ -2098,7 +2098,8 @@ fn txt_to_ooxml(txt_doc: &TxtDocument) -> OoxmlDocument {
         part_count: 1,
         core_properties: CoreProperties::default(),
         relationships: vec![],
-        body: Some(DocxBody {
+        xlsx_workbook: None,
+        docx_body: Some(DocxBody {
             paragraphs,
             tables: vec![],
         }),
@@ -2306,7 +2307,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                     },
                 };
                 let sub = html_to_ooxml(&sub_doc);
-                if let Some(body) = &sub.body {
+                if let Some(body) = &sub.docx_body {
                     paragraphs.extend(body.paragraphs.clone());
                     tables.extend(body.tables.clone());
                 }
@@ -2347,7 +2348,8 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
         part_count: 1,
         core_properties: CoreProperties::default(),
         relationships: vec![],
-        body: Some(DocxBody { paragraphs, tables }),
+        xlsx_workbook: None,
+        docx_body: Some(DocxBody { paragraphs, tables }),
     }
 }
 
@@ -2910,7 +2912,7 @@ fn extract_docx_run_text(runs: &[DocxRun]) -> String {
 fn docx_body_to_text_lines(doc: &OoxmlDocument) -> Vec<String> {
     let mut lines = Vec::new();
 
-    let body = match &doc.body {
+    let body = match &doc.docx_body {
         Some(b) => b,
         None => return lines,
     };
@@ -2987,7 +2989,7 @@ fn docx_runs_to_html_inlines(runs: &[DocxRun]) -> Vec<InlineElement> {
 fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
     let mut result = Vec::new();
 
-    let body = match &doc.body {
+    let body = match &doc.docx_body {
         Some(b) => b,
         None => return result,
     };
@@ -3061,7 +3063,7 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
 fn docx_to_odf(doc: &OoxmlDocument) -> OdfDocument {
     let mut content: Vec<OdfTextContent> = Vec::new();
 
-    if let Some(body) = &doc.body {
+    if let Some(body) = &doc.docx_body {
         for para in &body.paragraphs {
             let is_heading = para
                 .style_id
@@ -3364,7 +3366,8 @@ fn odf_to_ooxml(doc: &OdfDocument) -> OoxmlDocument {
             ..Default::default()
         },
         relationships: vec![],
-        body: Some(DocxBody { paragraphs, tables }),
+        xlsx_workbook: None,
+        docx_body: Some(DocxBody { paragraphs, tables }),
     }
 }
 
@@ -3480,7 +3483,8 @@ fn rtf_to_ooxml(rtf_doc: &RtfDocument) -> OoxmlDocument {
             ..Default::default()
         },
         relationships: vec![],
-        body: Some(DocxBody { paragraphs, tables }),
+        xlsx_workbook: None,
+        docx_body: Some(DocxBody { paragraphs, tables }),
     }
 }
 
@@ -4188,7 +4192,8 @@ fn epub_to_ooxml(epub_doc: &EpubDocument) -> OoxmlDocument {
             ..Default::default()
         },
         relationships: vec![],
-        body: Some(DocxBody {
+        xlsx_workbook: None,
+        docx_body: Some(DocxBody {
             paragraphs,
             tables: vec![],
         }),
@@ -4293,7 +4298,8 @@ fn fb2_to_ooxml(fb2_doc: &Fb2Document) -> OoxmlDocument {
             ..Default::default()
         },
         relationships: vec![],
-        body: Some(DocxBody {
+        xlsx_workbook: None,
+        docx_body: Some(DocxBody {
             paragraphs,
             tables: vec![],
         }),
@@ -4608,7 +4614,7 @@ fn docx_to_epub(doc: &OoxmlDocument) -> EpubDocument {
         .clone()
         .unwrap_or_else(|| "Untitled".to_string());
 
-    let body = match &doc.body {
+    let body = match &doc.docx_body {
         Some(b) => b,
         None => {
             let chapters = vec![EpubChapter {
@@ -4841,7 +4847,8 @@ fn xps_to_ooxml(xps_doc: &wo_xps::model::XpsDocument) -> OoxmlDocument {
             ..Default::default()
         },
         relationships: vec![],
-        body: Some(DocxBody {
+        xlsx_workbook: None,
+        docx_body: Some(DocxBody {
             paragraphs,
             tables: vec![],
         }),
@@ -4920,7 +4927,8 @@ fn ofd_to_ooxml(ofd_doc: &wo_ofd::model::OfdDocument) -> OoxmlDocument {
             ..Default::default()
         },
         relationships: vec![],
-        body: Some(DocxBody {
+        xlsx_workbook: None,
+        docx_body: Some(DocxBody {
             paragraphs,
             tables: vec![],
         }),
@@ -5034,7 +5042,8 @@ fn hwp_to_ooxml(hwp_doc: &wo_hwp::model::HwpDocument) -> OoxmlDocument {
             ..Default::default()
         },
         relationships: vec![],
-        body: Some(DocxBody {
+        xlsx_workbook: None,
+        docx_body: Some(DocxBody {
             paragraphs,
             tables: vec![],
         }),
@@ -5135,7 +5144,8 @@ fn djvu_to_ooxml(djvu_doc: &wo_djvu::model::DjvuDocument) -> OoxmlDocument {
             ..Default::default()
         },
         relationships: vec![],
-        body: Some(DocxBody {
+        xlsx_workbook: None,
+        docx_body: Some(DocxBody {
             paragraphs,
             tables: vec![],
         }),
@@ -5179,7 +5189,7 @@ fn docx_to_xps(doc: &OoxmlDocument) -> wo_xps::model::XpsDocument {
 
     // Collect all lines from the DOCX body
     let mut lines: Vec<String> = Vec::new();
-    if let Some(body) = &doc.body {
+    if let Some(body) = &doc.docx_body {
         for para in &body.paragraphs {
             let text = extract_docx_run_text(&para.runs);
             if !text.is_empty() {
@@ -6330,6 +6340,654 @@ fn data_url_to_bytes(data_url: &str) -> (Option<Vec<u8>>, String) {
 fn bytes_to_data_url(data: &[u8], content_type: &str) -> String {
     let b64 = base64::Engine::encode(&base64::engine::general_purpose::STANDARD, data);
     format!("data:{};base64,{}", content_type, b64)
+}
+
+// ── XLSX Spreadsheet Format Converters (XLSX ↔ WoSpreadsheet) ─────
+
+use wo_ooxml::model::{
+    CellType as XlsxCellType, XlsxCell, XlsxCol, XlsxMergeCell, XlsxRow,
+    XlsxSheet, XlsxSheetProperties, XlsxStyles, XlsxWorkbook, XlsxWorkbookProperties,
+};
+use crate::spreadsheet_model::{WoSpreadsheet, WoSheet, WoRow, WoCell};
+
+/// Converts XLSX bytes → frontend WoSpreadsheet JSON.
+pub struct XlsxToWoSpreadsheetConverter;
+
+impl FormatConverter for XlsxToWoSpreadsheetConverter {
+    fn source_format(&self) -> &str {
+        "xlsx"
+    }
+    fn target_format(&self) -> &str {
+        "wo-spreadsheet"
+    }
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        let parser = OoxmlParser::new();
+        let ooxml = parser
+            .parse(data)
+            .map_err(|e| ConversionError::Parse(e.to_string()))?;
+
+        let wb = ooxml.xlsx_workbook.ok_or_else(|| {
+            ConversionError::Parse("Not a valid XLSX file".to_string())
+        })?;
+
+        let sheet_order: Vec<String> = wb.sheets.iter().map(|s| s.name.clone()).collect();
+
+        let sheets: Vec<WoSheet> = wb
+            .sheets
+            .iter()
+            .map(|sheet| {
+                let rows: Vec<WoRow> = sheet
+                    .rows
+                    .iter()
+                    .map(|row| {
+                        let cells: Vec<WoCell> = row
+                            .cells
+                            .iter()
+                            .map(|cell| {
+                                let t = match cell.t {
+                                    XlsxCellType::N => "n",
+                                    XlsxCellType::S => "s",
+                                    XlsxCellType::Str | XlsxCellType::InlineStr => "str",
+                                    XlsxCellType::B => "b",
+                                    XlsxCellType::E => "e",
+                                    XlsxCellType::D => "d",
+                                };
+                                let v = if cell.t == XlsxCellType::S {
+                                    let idx: usize = cell.v.parse().unwrap_or(0);
+                                    wb.shared_strings.get(idx).cloned().unwrap_or_default()
+                                } else {
+                                    cell.v.clone()
+                                };
+                                WoCell {
+                                    r: cell.r.clone(),
+                                    t: t.to_string(),
+                                    v,
+                                    s: cell.s,
+                                    f: cell.f.clone(),
+                                }
+                            })
+                            .collect();
+                        WoRow {
+                            r: row.r,
+                            cells,
+                        }
+                    })
+                    .collect();
+
+                let merges: Vec<String> = sheet
+                    .merges
+                    .iter()
+                    .map(|m| m.ref_range.clone())
+                    .collect();
+
+                let max_col = sheet
+                    .cols
+                    .iter()
+                    .map(|c| c.max)
+                    .max()
+                    .unwrap_or(26);
+
+                WoSheet {
+                    id: sheet.sheet_id.to_string(),
+                    name: sheet.name.clone(),
+                    row_count: sheet.rows.last().map(|r| r.r).unwrap_or(0).max(1),
+                    column_count: max_col,
+                    rows,
+                    merges,
+                }
+            })
+            .collect();
+
+        let wo = WoSpreadsheet {
+            version: 1,
+            name: "Spreadsheet".to_string(),
+            sheet_order,
+            sheets,
+            shared_strings: wb.shared_strings,
+        };
+
+        serde_json::to_vec_pretty(&wo)
+            .map_err(|e| ConversionError::Serialize(e.to_string()))
+    }
+}
+
+/// Converts frontend WoSpreadsheet JSON → XLSX bytes.
+pub struct WoSpreadsheetToXlsxConverter;
+
+impl FormatConverter for WoSpreadsheetToXlsxConverter {
+    fn source_format(&self) -> &str {
+        "wo-spreadsheet"
+    }
+    fn target_format(&self) -> &str {
+        "xlsx"
+    }
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        let wo: WoSpreadsheet = serde_json::from_slice(data)
+            .map_err(|e| ConversionError::Parse(format!("Invalid WoSpreadsheet JSON: {}", e)))?;
+
+        let mut shared_strings: Vec<String> = Vec::new();
+        let mut ss_index: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
+
+        for sheet in &wo.sheets {
+            for row in &sheet.rows {
+                for cell in &row.cells {
+                    if cell.t == "s" && !ss_index.contains_key(&cell.v) {
+                        let idx = shared_strings.len() as u32;
+                        shared_strings.push(cell.v.clone());
+                        ss_index.insert(cell.v.clone(), idx);
+                    }
+                }
+            }
+        }
+
+        let xlsx_sheets: Vec<XlsxSheet> = wo
+            .sheets
+            .iter()
+            .enumerate()
+            .map(|(i, sheet)| {
+                let rows: Vec<XlsxRow> = sheet
+                    .rows
+                    .iter()
+                    .map(|row| {
+                        let cells: Vec<XlsxCell> = row
+                            .cells
+                            .iter()
+                            .map(|cell| {
+                                let cell_type = match cell.t.as_str() {
+                                    "n" => XlsxCellType::N,
+                                    "s" => XlsxCellType::S,
+                                    "str" => XlsxCellType::Str,
+                                    "b" => XlsxCellType::B,
+                                    "e" => XlsxCellType::E,
+                                    "d" => XlsxCellType::D,
+                                    _ => XlsxCellType::N,
+                                };
+                                let v = if cell_type == XlsxCellType::S {
+                                    ss_index.get(&cell.v).map(|i| i.to_string()).unwrap_or_default()
+                                } else {
+                                    cell.v.clone()
+                                };
+                                XlsxCell {
+                                    r: cell.r.clone(),
+                                    t: cell_type,
+                                    v,
+                                    s: cell.s,
+                                    f: cell.f.clone(),
+                                }
+                            })
+                            .collect();
+                        XlsxRow {
+                            r: row.r,
+                            ht: None,
+                            hidden: false,
+                            s: None,
+                            cells,
+                            spans: None,
+                        }
+                    })
+                    .collect();
+
+                let merges: Vec<XlsxMergeCell> = sheet
+                    .merges
+                    .iter()
+                    .map(|m| XlsxMergeCell {
+                        ref_range: m.clone(),
+                    })
+                    .collect();
+
+                let cols: Vec<XlsxCol> = if sheet.column_count > 0 {
+                    vec![XlsxCol {
+                        min: 1,
+                        max: sheet.column_count.max(1),
+                        width: None,
+                        style: None,
+                        hidden: false,
+                        best_fit: false,
+                        custom_width: false,
+                    }]
+                } else {
+                    vec![]
+                };
+
+                XlsxSheet {
+                    name: sheet.name.clone(),
+                    sheet_id: (i + 1) as u32,
+                    state: wo_ooxml::model::SheetState::Visible,
+                    rows,
+                    cols,
+                    merges,
+                    properties: XlsxSheetProperties::default(),
+                }
+            })
+            .collect();
+
+        let workbook = XlsxWorkbook {
+            properties: XlsxWorkbookProperties::default(),
+            sheets: xlsx_sheets,
+            shared_strings,
+            styles: XlsxStyles::default(),
+            defined_names: vec![],
+        };
+
+        let serializer = OoxmlSerializer::new();
+        serializer
+            .serialize_xlsx(&workbook)
+            .map_err(|e| ConversionError::Serialize(e.to_string()))
+    }
+}
+
+// ── VSDX Visio Format Converters (VSDX ↔ WoVisioDiagram) ──────────
+
+use wo_visio::{VisioDocument, VisioShape, VisioConnector, VisioGeometry, GeoSegment, VisioParser, VisioSerializer};
+use wo_pdf::model::{PdfAnnotation as CorePdfAnnotation, PdfDocument as CorePdfDocument, PdfPage as CorePdfPage};
+use wo_pdf::{PdfParser, PdfSerializer};
+
+use crate::pdf_model::{WoPdfAnnotation, WoPdfDocument, WoPdfPage};
+use crate::visio_model::{WoVisioDiagram, WoVisioPage, WoVisioShape, WoVisioConnector, WoVisioGeometry, WoVisioGeoSegment};
+
+/// Converts VSDX bytes → frontend WoVisioDiagram JSON.
+pub struct VsdxToWoDiagramConverter;
+
+impl FormatConverter for VsdxToWoDiagramConverter {
+    fn source_format(&self) -> &str {
+        "vsdx"
+    }
+    fn target_format(&self) -> &str {
+        "wo-visio-diagram"
+    }
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        let parser = VisioParser::new();
+        let vsdx = parser
+            .parse(data)
+            .map_err(|e| ConversionError::Parse(e.to_string()))?;
+
+        let wo = visio_to_wo_diagram(&vsdx);
+
+        serde_json::to_vec_pretty(&wo)
+            .map_err(|e| ConversionError::Serialize(e.to_string()))
+    }
+}
+
+/// Converts frontend WoVisioDiagram JSON → VSDX bytes.
+pub struct WoDiagramToVsdxConverter;
+
+impl FormatConverter for WoDiagramToVsdxConverter {
+    fn source_format(&self) -> &str {
+        "wo-visio-diagram"
+    }
+    fn target_format(&self) -> &str {
+        "vsdx"
+    }
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        let wo: WoVisioDiagram = serde_json::from_slice(data)
+            .map_err(|e| ConversionError::Parse(format!("Invalid WoVisioDiagram JSON: {}", e)))?;
+
+        let vsdx = wo_diagram_to_visio(&wo);
+
+        let serializer = VisioSerializer::new();
+        serializer
+            .serialize(&vsdx)
+            .map_err(|e| ConversionError::Serialize(e.to_string()))
+    }
+}
+
+/// Converts PDF bytes → frontend WoPdf JSON.
+pub struct PdfToWoPdfConverter;
+
+impl FormatConverter for PdfToWoPdfConverter {
+    fn source_format(&self) -> &str { "pdf" }
+    fn target_format(&self) -> &str { "wo-pdf-document" }
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        let parser = PdfParser::new();
+        let doc = parser.parse(data).map_err(|e| ConversionError::Parse(e.to_string()))?;
+        let wo = core_pdf_to_wo(&doc);
+        serde_json::to_vec_pretty(&wo).map_err(|e| ConversionError::Serialize(e.to_string()))
+    }
+}
+
+/// Converts frontend WoPdf JSON → PDF bytes.
+pub struct WoPdfToPdfConverter;
+
+impl FormatConverter for WoPdfToPdfConverter {
+    fn source_format(&self) -> &str { "wo-pdf-document" }
+    fn target_format(&self) -> &str { "pdf" }
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        let wo: WoPdfDocument = serde_json::from_slice(data)
+            .map_err(|e| ConversionError::Parse(format!("Invalid WoPdf JSON: {}", e)))?;
+        let doc = wo_to_core_pdf(&wo);
+        let serializer = PdfSerializer::new();
+        serializer.serialize(&doc).map_err(|e| ConversionError::Serialize(e.to_string()))
+    }
+}
+
+fn core_pdf_to_wo(core: &CorePdfDocument) -> WoPdfDocument {
+    WoPdfDocument {
+        version: core.version.clone(),
+        page_count: core.page_count,
+        title: core.metadata.title.clone(),
+        author: core.metadata.author.clone(),
+        subject: core.metadata.subject.clone(),
+        creator: core.metadata.creator.clone(),
+        producer: core.metadata.producer.clone(),
+        pages: core.pages.iter().map(|p| core_page_to_wo(p)).collect(),
+    }
+}
+
+fn wo_to_core_pdf(wo: &WoPdfDocument) -> CorePdfDocument {
+    use wo_pdf::model::{PdfMetadata, XrefType};
+    CorePdfDocument {
+        version: wo.version.clone(),
+        page_count: wo.page_count,
+        metadata: PdfMetadata {
+            title: wo.title.clone(),
+            author: wo.author.clone(),
+            subject: wo.subject.clone(),
+            keywords: None,
+            creator: wo.creator.clone(),
+            producer: wo.producer.clone(),
+            creation_date: None,
+            modification_date: None,
+        },
+        pages: wo.pages.iter().map(|p| wo_page_to_core(p)).collect(),
+        objects: Vec::new(),
+        linearized: false,
+        xref_type: XrefType::Unknown,
+        encryption: None,
+    }
+}
+
+fn core_page_to_wo(page: &CorePdfPage) -> WoPdfPage {
+    WoPdfPage {
+        number: page.number,
+        width: page.width.unwrap_or(612.0) as f64,
+        height: page.height.unwrap_or(792.0) as f64,
+        text: page.text.clone(),
+        rotation: page.rotation,
+        annotations: page.annotations.iter().map(|a| core_annot_to_wo(a)).collect(),
+    }
+}
+
+fn wo_page_to_core(page: &WoPdfPage) -> CorePdfPage {
+    CorePdfPage {
+        number: page.number,
+        width: Some(page.width as f32),
+        height: Some(page.height as f32),
+        text: page.text.clone(),
+        rotation: page.rotation,
+        annotations: page.annotations.iter().map(|a| wo_annot_to_core(a)).collect(),
+    }
+}
+
+fn core_annot_to_wo(annot: &CorePdfAnnotation) -> WoPdfAnnotation {
+    WoPdfAnnotation {
+        subtype: annot.subtype.clone(),
+        rect: [annot.rect[0] as f64, annot.rect[1] as f64, annot.rect[2] as f64, annot.rect[3] as f64],
+        contents: annot.contents.clone(),
+        author: annot.author.clone(),
+        modified: annot.modified.clone(),
+        quad_points: match &annot.quad_points {
+            Some(points) => points.iter().map(|v| *v as f64).collect(),
+            None => Vec::new(),
+        },
+        color: annot.color.map(|c| vec![c[0] as f64, c[1] as f64, c[2] as f64]).unwrap_or_default(),
+        opacity: annot.opacity.map(|v| v as f64),
+        open: annot.open,
+        name: annot.name.clone(),
+        border: match &annot.border {
+            Some(b) => b.iter().map(|v| *v as f64).collect(),
+            None => Vec::new(),
+        },
+    }
+}
+
+fn wo_annot_to_core(annot: &WoPdfAnnotation) -> CorePdfAnnotation {
+    let quad_points = if annot.quad_points.is_empty() {
+        None
+    } else {
+        Some(annot.quad_points.iter().map(|v| *v as f32).collect())
+    };
+    let border = if annot.border.is_empty() {
+        None
+    } else {
+        Some(annot.border.iter().map(|v| *v as f32).collect())
+    };
+    CorePdfAnnotation {
+        subtype: annot.subtype.clone(),
+        rect: [annot.rect[0] as f32, annot.rect[1] as f32, annot.rect[2] as f32, annot.rect[3] as f32],
+        contents: annot.contents.clone(),
+        author: annot.author.clone(),
+        modified: annot.modified.clone(),
+        quad_points,
+        color: if annot.color.len() >= 3 { Some([annot.color[0] as f32, annot.color[1] as f32, annot.color[2] as f32]) } else { None },
+        opacity: annot.opacity.map(|v| v as f32),
+        open: annot.open,
+        name: annot.name.clone(),
+        border,
+    }
+}
+
+/// Identity converter: VSDM → VSDX (same binary format, different extension).
+/// VSDM is Visio macro-enabled drawing, identical to VSDX in structure.
+pub struct VsdmToVsdxConverter;
+
+impl FormatConverter for VsdmToVsdxConverter {
+    fn source_format(&self) -> &str {
+        "vsdm"
+    }
+    fn target_format(&self) -> &str {
+        "vsdx"
+    }
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        Ok(data.to_vec())
+    }
+}
+
+/// Identity converter: VSDX → VSDM (same binary format, different extension).
+pub struct VsdxToVsdmConverter;
+
+impl FormatConverter for VsdxToVsdmConverter {
+    fn source_format(&self) -> &str {
+        "vsdx"
+    }
+    fn target_format(&self) -> &str {
+        "vsdm"
+    }
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        Ok(data.to_vec())
+    }
+}
+
+/// Convert a VisioDocument (from wo-visio parser) to the WoVisioDiagram bridge model.
+fn visio_to_wo_diagram(vsdx: &VisioDocument) -> WoVisioDiagram {
+    let pages: Vec<WoVisioPage> = vsdx
+        .pages
+        .iter()
+        .map(|p| WoVisioPage {
+            id: p.id.clone(),
+            name: p.name.clone(),
+            width: p.width,
+            height: p.height,
+            shapes: p.shapes.iter().map(visio_shape_to_wo).collect(),
+            connectors: p.connectors.iter().map(visio_connector_to_wo).collect(),
+            background_page_id: p.background_page_id.clone(),
+        })
+        .collect();
+
+    WoVisioDiagram {
+        version: vsdx.version.clone(),
+        title: vsdx.properties.title.clone(),
+        creator: vsdx.properties.creator.clone(),
+        description: vsdx.properties.description.clone(),
+        pages,
+    }
+}
+
+/// Convert a VisioShape to WoVisioShape.
+fn visio_shape_to_wo(s: &VisioShape) -> WoVisioShape {
+    WoVisioShape {
+        id: s.id.clone(),
+        name: s.name.clone(),
+        x: s.x,
+        y: s.y,
+        width: s.width,
+        height: s.height,
+        rotation: s.rotation,
+        text: s.text.clone(),
+        fill_color: s.fill_color.clone(),
+        stroke_color: s.stroke_color.clone(),
+        stroke_width: s.stroke_width,
+        geometry: s.geometry.as_ref().map(|g| visio_geom_to_wo(g)),
+        sub_shapes: s.sub_shapes.iter().map(visio_shape_to_wo).collect(),
+        font_size: s.formatting.as_ref().and_then(|f| f.font_size),
+        font_color: s.formatting.as_ref().and_then(|f| f.font_color.clone()),
+        bold: s.formatting.as_ref().and_then(|f| f.bold),
+        italic: s.formatting.as_ref().and_then(|f| f.italic),
+        underline: s.formatting.as_ref().and_then(|f| f.underline),
+    }
+}
+
+/// Convert a VisioGeometry to WoVisioGeometry.
+fn visio_geom_to_wo(g: &VisioGeometry) -> WoVisioGeometry {
+    WoVisioGeometry {
+        segments: g.segments.iter().map(geoseg_to_wo).collect(),
+    }
+}
+
+/// Convert a GeoSegment to WoVisioGeoSegment.
+fn geoseg_to_wo(seg: &GeoSegment) -> WoVisioGeoSegment {
+    match seg {
+        GeoSegment::MoveTo { x, y } => WoVisioGeoSegment::MoveTo { x: *x, y: *y },
+        GeoSegment::LineTo { x, y } => WoVisioGeoSegment::LineTo { x: *x, y: *y },
+        GeoSegment::ArcTo { x, y, .. } => WoVisioGeoSegment::ArcTo { x: *x, y: *y },
+        GeoSegment::EllipticalArcTo { x, y, .. } => WoVisioGeoSegment::EllipticalArcTo { x: *x, y: *y },
+        GeoSegment::BezierTo { x, y, .. } => WoVisioGeoSegment::BezierTo { x: *x, y: *y },
+        GeoSegment::PolylineTo { x, y, points } => WoVisioGeoSegment::PolylineTo { x: *x, y: *y, points: points.clone() },
+        GeoSegment::Rectangle { w, h } => WoVisioGeoSegment::Rectangle { w: *w, h: *h },
+        GeoSegment::Ellipse { x, y, cx, cy } => WoVisioGeoSegment::Ellipse { x: *x, y: *y, cx: *cx, cy: *cy },
+        GeoSegment::InfiniteLine { x1, y1, x2, y2 } => WoVisioGeoSegment::InfiniteLine { x1: *x1, y1: *y1, x2: *x2, y2: *y2 },
+        GeoSegment::SplineStart { .. } | GeoSegment::NURBSTo { .. } => {
+            // Simplified — these complex curves are represented as a degenerate LineTo
+            WoVisioGeoSegment::LineTo { x: 0.0, y: 0.0 }
+        }
+    }
+}
+
+/// Convert a VisioConnector to WoVisioConnector.
+pub fn visio_connector_to_wo(c: &VisioConnector) -> WoVisioConnector {
+    WoVisioConnector {
+        id: c.id.clone(),
+        name: c.name.clone(),
+        from_shape_id: c.from_shape_id.clone(),
+        to_shape_id: c.to_shape_id.clone(),
+        text: c.text.clone(),
+    }
+}
+
+/// Convert WoVisioDiagram back to the wo-visio VisioDocument model.
+fn wo_diagram_to_visio(wo: &WoVisioDiagram) -> VisioDocument {
+    use wo_visio::{VisioDocument, VisioPage, VisioProperties};
+
+    VisioDocument {
+        version: wo.version.clone(),
+        properties: VisioProperties {
+            title: wo.title.clone(),
+            subject: None,
+            creator: wo.creator.clone(),
+            description: wo.description.clone(),
+        },
+        pages: wo.pages.iter().map(|p| VisioPage {
+            id: p.id.clone(),
+            name: p.name.clone(),
+            width: p.width,
+            height: p.height,
+            shapes: p.shapes.iter().map(wo_shape_to_visio).collect(),
+            connectors: p.connectors.iter().map(wo_connector_to_visio).collect(),
+            background_page_id: p.background_page_id.clone(),
+        }).collect(),
+        masters: vec![],
+        theme_colors: vec![],
+    }
+}
+
+/// Convert a WoVisioShape back to VisioShape.
+fn wo_shape_to_visio(s: &WoVisioShape) -> VisioShape {
+    use wo_visio::VisioFormatting;
+
+    VisioShape {
+        id: s.id.clone(),
+        name: s.name.clone(),
+        unique_id: None,
+        master_id: None,
+        x: s.x,
+        y: s.y,
+        width: s.width,
+        height: s.height,
+        rotation: s.rotation,
+        text: s.text.clone(),
+        fill_color: s.fill_color.clone(),
+        fill_foreground: None,
+        fill_background: None,
+        stroke_color: s.stroke_color.clone(),
+        stroke_width: s.stroke_width,
+        stroke_pattern: None,
+        shadow_color: None,
+        shadow_offset_x: None,
+        shadow_offset_y: None,
+        layer_member: None,
+        geometry: s.geometry.as_ref().map(|g| VisioGeometry {
+            width: 0.0,
+            height: 0.0,
+            segments: g.segments.iter().map(wo_geoseg_to_visio).collect(),
+        }),
+        sub_shapes: s.sub_shapes.iter().map(wo_shape_to_visio).collect(),
+        style: None,
+        formatting: if s.font_size.is_some() || s.font_color.is_some() || s.bold.is_some() || s.italic.is_some() || s.underline.is_some() {
+            Some(VisioFormatting {
+                font: None,
+                font_size: s.font_size,
+                font_color: s.font_color.clone(),
+                italic: s.italic,
+                bold: s.bold,
+                underline: s.underline,
+                align_horizontal: None,
+                align_vertical: None,
+                tlbr: None,
+            })
+        } else {
+            None
+        },
+    }
+}
+
+/// Convert a WoVisioGeoSegment back to GeoSegment.
+fn wo_geoseg_to_visio(seg: &WoVisioGeoSegment) -> GeoSegment {
+    match *seg {
+        WoVisioGeoSegment::MoveTo { x, y } => GeoSegment::MoveTo { x, y },
+        WoVisioGeoSegment::LineTo { x, y } => GeoSegment::LineTo { x, y },
+        WoVisioGeoSegment::ArcTo { x, y } => GeoSegment::ArcTo { x, y, a: 0.0, b: 0.0, c: 0.0 },
+        WoVisioGeoSegment::EllipticalArcTo { x, y } => GeoSegment::EllipticalArcTo { x, y, a: 0.0, b: 0.0, c: 0.0, d: 0.0 },
+        WoVisioGeoSegment::BezierTo { x, y } => GeoSegment::BezierTo { x, y, a: 0.0, b: 0.0, c: 0.0, d: 0.0 },
+        WoVisioGeoSegment::PolylineTo { x, y, ref points } => GeoSegment::PolylineTo { x, y, points: points.clone() },
+        WoVisioGeoSegment::Rectangle { w, h } => GeoSegment::Rectangle { w, h },
+        WoVisioGeoSegment::Ellipse { x, y, cx, cy } => GeoSegment::Ellipse { x, y, cx, cy },
+        WoVisioGeoSegment::InfiniteLine { x1, y1, x2, y2 } => GeoSegment::InfiniteLine { x1, y1, x2, y2 },
+    }
+}
+
+/// Convert a WoVisioConnector back to VisioConnector.
+fn wo_connector_to_visio(c: &WoVisioConnector) -> VisioConnector {
+    VisioConnector {
+        id: c.id.clone(),
+        name: c.name.clone(),
+        from_shape_id: c.from_shape_id.clone(),
+        to_shape_id: c.to_shape_id.clone(),
+        from_connection: None,
+        to_connection: None,
+        arrow_type: None,
+        routing_style: None,
+        geometry: None,
+        text: c.text.clone(),
+    }
 }
 
 // ── Tests ────────────────────────────────────────────────────────────
@@ -8931,7 +9589,7 @@ mod tests {
             },
         };
         let ooxml = html_to_ooxml(&html);
-        let body = ooxml.body.as_ref().unwrap();
+        let body = ooxml.docx_body.as_ref().unwrap();
         assert_eq!(body.paragraphs.len(), 3);
         assert_eq!(body.paragraphs[0].runs[0].text, "H1 Title");
         assert!(body.paragraphs[0].runs[0].bold);
@@ -8997,7 +9655,7 @@ mod tests {
             },
         };
         let ooxml = html_to_ooxml(&html);
-        let body = ooxml.body.as_ref().unwrap();
+        let body = ooxml.docx_body.as_ref().unwrap();
         assert_eq!(body.tables.len(), 1);
         assert_eq!(body.tables[0].rows.len(), 2);
         assert!(body.tables[0].rows[0].is_header);
@@ -9049,7 +9707,7 @@ mod tests {
             },
         };
         let ooxml = html_to_ooxml(&html);
-        let body = ooxml.body.as_ref().unwrap();
+        let body = ooxml.docx_body.as_ref().unwrap();
         assert_eq!(body.paragraphs.len(), 3);
         assert!(body.paragraphs[0].runs[0].text.contains("UL Item 1"));
         assert!(body.paragraphs[0].properties.indent_left == Some(720));
@@ -9089,7 +9747,7 @@ mod tests {
             },
         };
         let ooxml = html_to_ooxml(&html);
-        let body = ooxml.body.as_ref().unwrap();
+        let body = ooxml.docx_body.as_ref().unwrap();
         assert_eq!(body.paragraphs.len(), 2);
         assert_eq!(body.paragraphs[0].runs[0].text, "div text");
         assert_eq!(body.paragraphs[1].runs[0].text, "quote text");
@@ -9112,7 +9770,7 @@ mod tests {
             },
         };
         let ooxml = html_to_ooxml(&html);
-        let body = ooxml.body.as_ref().unwrap();
+        let body = ooxml.docx_body.as_ref().unwrap();
         assert_eq!(body.paragraphs.len(), 3);
         assert_eq!(body.paragraphs[0].runs[0].text, "pre line 1");
         assert_eq!(body.paragraphs[1].runs[0].text, "pre line 2");
@@ -9143,7 +9801,7 @@ mod tests {
             },
         };
         let ooxml = html_to_ooxml(&html);
-        let body = ooxml.body.as_ref().unwrap();
+        let body = ooxml.docx_body.as_ref().unwrap();
         assert_eq!(body.paragraphs.len(), 1);
         assert_eq!(body.paragraphs[0].runs[0].text, "raw content");
     }
@@ -9595,7 +10253,8 @@ mod tests {
                 ..Default::default()
             },
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+        docx_body: Some(DocxBody {
                 paragraphs: vec![],
                 tables: vec![DocxTable {
                     rows: vec![DocxTableRow {
@@ -9693,7 +10352,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+        docx_body: Some(DocxBody {
                 paragraphs: vec![
                     DocxParagraph {
                         style_id: Some("Heading1".into()),
@@ -9836,7 +10496,7 @@ mod tests {
         assert_eq!(ooxml.core_properties.title, Some("ODF Doc".into()));
         assert_eq!(ooxml.core_properties.creator, Some("Creator".into()));
 
-        let body = ooxml.body.as_ref().unwrap();
+        let body = ooxml.docx_body.as_ref().unwrap();
         assert_eq!(body.paragraphs.len(), 3);
         assert_eq!(body.paragraphs[0].style_id, Some("Heading2".into()));
         assert!(body.paragraphs[0].runs[0].bold);
@@ -9897,7 +10557,7 @@ mod tests {
             styles: vec![],
         };
         let ooxml = odf_to_ooxml(&odf);
-        let body = ooxml.body.as_ref().unwrap();
+        let body = ooxml.docx_body.as_ref().unwrap();
         assert_eq!(body.paragraphs.len(), 1);
         let runs = &body.paragraphs[0].runs;
         assert_eq!(runs.len(), 3);
@@ -9944,7 +10604,7 @@ mod tests {
             styles: vec![],
         };
         let ooxml = odf_to_ooxml(&odf);
-        let body = ooxml.body.as_ref().unwrap();
+        let body = ooxml.docx_body.as_ref().unwrap();
         // Empty paragraph is skipped, only list item remains
         assert_eq!(body.paragraphs.len(), 1);
         assert!(body.paragraphs[0].runs[0].text.contains('\u{2022}'));
@@ -9988,7 +10648,7 @@ mod tests {
             }],
         };
         let ooxml = rtf_to_ooxml(&rtf_doc);
-        let body = ooxml.body.as_ref().unwrap();
+        let body = ooxml.docx_body.as_ref().unwrap();
         assert_eq!(body.paragraphs.len(), 1);
         let runs = &body.paragraphs[0].runs;
         assert_eq!(runs.len(), 4);
@@ -10026,7 +10686,7 @@ mod tests {
             }],
         };
         let ooxml = rtf_to_ooxml(&rtf_doc);
-        let body = ooxml.body.as_ref().unwrap();
+        let body = ooxml.docx_body.as_ref().unwrap();
         // The table placeholder paragraph should be filtered out (no runs)
         assert!(body.paragraphs.is_empty());
         // The table should exist
@@ -10168,7 +10828,7 @@ mod tests {
             },
         };
         let ooxml = html_to_ooxml(&html);
-        let body = ooxml.body.as_ref().unwrap();
+        let body = ooxml.docx_body.as_ref().unwrap();
         assert!(body.paragraphs.is_empty());
     }
 
@@ -12520,7 +13180,8 @@ mod tests {
                 ..Default::default()
             },
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+        docx_body: Some(DocxBody {
                 paragraphs: vec![
                     DocxParagraph {
                         style_id: Some("Heading1".into()),
@@ -12591,7 +13252,8 @@ mod tests {
                 ..Default::default()
             },
             relationships: vec![],
-            body: None,
+            xlsx_workbook: None,
+            docx_body: None,
         };
         let serialized = OoxmlSerializer::new().serialize(&ooxml).expect("serialize");
         let result = DocxToEpubConverter.convert(&serialized).expect("convert");
@@ -12609,7 +13271,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+        docx_body: Some(DocxBody {
                 paragraphs: vec![
                     DocxParagraph {
                         style_id: None,
@@ -13056,7 +13719,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: None,
+            xlsx_workbook: None,
+            docx_body: None,
         };
         let xps = docx_to_xps(&doc);
         assert_eq!(xps.page_count, 1);
@@ -13074,7 +13738,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+        docx_body: Some(DocxBody {
                 paragraphs: vec![DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
@@ -13103,7 +13768,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+        docx_body: Some(DocxBody {
                 paragraphs: vec![
                     DocxParagraph {
                         style_id: None,
@@ -13144,7 +13810,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+        docx_body: Some(DocxBody {
                 paragraphs: vec![DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
@@ -13175,7 +13842,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+        docx_body: Some(DocxBody {
                 paragraphs: vec![
                     DocxParagraph {
                         style_id: None,
@@ -13470,7 +14138,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+        docx_body: Some(DocxBody {
                 paragraphs: vec![
                     DocxParagraph {
                         style_id: None,
@@ -13505,7 +14174,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: None,
+            xlsx_workbook: None,
+            docx_body: None,
         };
         assert!(docx_body_to_text_lines(&empty_doc).is_empty());
 
@@ -13519,7 +14189,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+        docx_body: Some(DocxBody {
                 paragraphs: vec![],
                 tables: vec![DocxTable {
                     rows: vec![DocxTableRow {
@@ -13922,7 +14593,7 @@ mod tests {
         };
         let doc = epub_to_ooxml(&epub);
         assert_eq!(doc.format, OoxmlFormat::Docx);
-        let body = doc.body.expect("body should be present");
+        let body = doc.docx_body.expect("body should be present");
         // Title paragraph + chapter heading + content line = 3
         assert_eq!(body.paragraphs.len(), 3);
         assert_eq!(body.paragraphs[0].runs[0].text, "Test Book");
@@ -13950,7 +14621,7 @@ mod tests {
             cover_image_type: None,
         };
         let doc = epub_to_ooxml(&epub);
-        let body = doc.body.expect("body should be present");
+        let body = doc.docx_body.expect("body should be present");
         assert!(body.paragraphs.is_empty());
     }
 
@@ -14001,7 +14672,7 @@ mod tests {
         };
         let doc = fb2_to_ooxml(&fb2);
         assert_eq!(doc.format, OoxmlFormat::Docx);
-        let body = doc.body.expect("body should be present");
+        let body = doc.docx_body.expect("body should be present");
         // Title + section heading + paragraph = 3
         assert_eq!(body.paragraphs.len(), 3);
         assert_eq!(body.paragraphs[0].runs[0].text, "FB2 Book");
@@ -14025,7 +14696,7 @@ mod tests {
             binaries: vec![],
         };
         let doc = fb2_to_ooxml(&fb2);
-        let body = doc.body.expect("body should be present");
+        let body = doc.docx_body.expect("body should be present");
         assert!(body.paragraphs.is_empty());
     }
 
@@ -14154,7 +14825,8 @@ mod tests {
                 ..Default::default()
             },
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+        docx_body: Some(DocxBody {
                 paragraphs: vec![
                     DocxParagraph {
                         style_id: Some("Heading1".into()),
@@ -14199,7 +14871,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: None,
+            xlsx_workbook: None,
+            docx_body: None,
         };
         let epub = docx_to_epub(&doc);
         assert_eq!(epub.chapters.len(), 1);
@@ -14217,7 +14890,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+        docx_body: Some(DocxBody {
                 paragraphs: vec![],
                 tables: vec![],
             }),
