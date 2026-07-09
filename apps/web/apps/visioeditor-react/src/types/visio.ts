@@ -80,7 +80,7 @@ export type FileMenuAction =
 	| "external-help"
 	| "suggest";
 
-export type EditorMode = "vsdx" | "flowchart";
+export type EditorMode = "vsdx" | "vsdm" | "flowchart";
 
 export type LeftMenuAction = "thumbs" | "chat" | "support" | "about" | "shapes";
 
