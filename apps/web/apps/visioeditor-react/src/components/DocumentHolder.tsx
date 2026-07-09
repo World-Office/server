@@ -149,7 +149,7 @@ const ObservedDocumentHolder = observer(function ObservedDocumentHolder() {
 		if (!fileId || !token) return;
 
 		const ext = visioStore.document?.fileType?.toLowerCase();
-		if (ext === "vsdx" || ext === "vdx") {
+		if (ext === "vsdx" || ext === "vsdm" || ext === "vdx") {
 			const loadHtml = async () => {
 				try {
 					const conn = {
