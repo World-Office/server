@@ -17,6 +17,7 @@ members = [
     "core/crates/wo-odf",
     "core/crates/wo-ooxml",
     "core/crates/wo-msbinary",
+    "core/crates/wo-visio",
     "core/crates/wo-docx-renderer",
     "core/crates/wo-x2t",
     "core/crates/wo-renderer",
