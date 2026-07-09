@@ -784,6 +784,7 @@ impl PdfParser {
                     height: None,
                     text: None,
                     rotation: 0,
+                    annotations: Vec::new(),
                 };
 
                 // MediaBox: [llx lly urx ury]
@@ -807,6 +808,9 @@ impl PdfParser {
 
                 // Extract text from content stream
                 page.text = self.extract_text_from_page(page_obj, objects, obj_map, raw);
+
+                // Extract annotations from /Annots
+                page.annotations = self.extract_annotations_from_page(page_obj, objects, obj_map);
 
                 pages.push(page);
             }
@@ -877,6 +881,140 @@ impl PdfParser {
         } else {
             Some(combined)
         }
+    }
+
+    fn get_num_array(&self, val: &PdfValue) -> Vec<f32> {
+        match val {
+            PdfValue::Array(arr) => {
+                arr.iter()
+                    .map(|v| match v {
+                        PdfValue::Integer(n) => *n as f32,
+                        PdfValue::Real(f) => *f as f32,
+                        _ => 0.0,
+                    })
+                    .collect()
+            }
+            _ => Vec::new(),
+        }
+    }
+
+    fn extract_annotations_from_page(
+        &self,
+        page_obj: &PdfObject,
+        objects: &[PdfObject],
+        obj_map: &HashMap<(u32, u32), usize>,
+    ) -> Vec<PdfAnnotation> {
+        let mut annotations = Vec::new();
+
+        let annots_val = match self.get_dict_entry("/Annots", &page_obj.entries) {
+            Some(v) => v,
+            None => return annotations,
+        };
+
+        let annots_refs: Vec<PdfValue> = match &annots_val {
+            PdfValue::Array(arr) => arr.clone(),
+            PdfValue::Reference { .. } => vec![annots_val.clone()],
+            _ => return annotations,
+        };
+
+        for annot_ref in &annots_refs {
+            let annot_obj = match self.resolve_ref(annot_ref, objects, obj_map) {
+                Some(obj) => obj,
+                None => continue,
+            };
+
+            let subtype = match self.get_dict_entry("/Subtype", &annot_obj.entries) {
+                Some(PdfValue::Name(ref n)) => n.clone(),
+                _ => continue,
+            };
+
+            let rect = match self.get_dict_entry("/Rect", &annot_obj.entries) {
+                Some(ref r) => {
+                    let nums = self.get_num_array(r);
+                    if nums.len() >= 4 {
+                        [nums[0], nums[1], nums[2], nums[3]]
+                    } else {
+                        continue;
+                    }
+                }
+                None => continue,
+            };
+
+            let contents = match self.get_dict_entry("/Contents", &annot_obj.entries) {
+                Some(PdfValue::String(s)) => Some(s),
+                _ => None,
+            };
+
+            let author = match self.get_dict_entry("/T", &annot_obj.entries) {
+                Some(PdfValue::String(s)) => Some(s),
+                _ => None,
+            };
+
+            let modified = match self.get_dict_entry("/M", &annot_obj.entries) {
+                Some(PdfValue::String(s)) => Some(s),
+                _ => None,
+            };
+
+            let color = match self.get_dict_entry("/C", &annot_obj.entries) {
+                Some(ref c) => {
+                    let nums = self.get_num_array(c);
+                    if nums.len() >= 3 {
+                        Some([nums[0], nums[1], nums[2]])
+                    } else {
+                        None
+                    }
+                }
+                None => None,
+            };
+
+            let opacity = match self.get_dict_entry("/CA", &annot_obj.entries) {
+                Some(PdfValue::Real(f)) => Some(f as f32),
+                Some(PdfValue::Integer(n)) => Some(n as f32),
+                _ => None,
+            };
+
+            let open = match self.get_dict_entry("/Open", &annot_obj.entries) {
+                Some(PdfValue::Boolean(b)) => Some(b),
+                _ => None,
+            };
+
+            let name = match self.get_dict_entry("/NM", &annot_obj.entries) {
+                Some(PdfValue::String(s)) => Some(s),
+                _ => None,
+            };
+
+            let border = match self.get_dict_entry("/Border", &annot_obj.entries) {
+                Some(ref b) => {
+                    let nums = self.get_num_array(b);
+                    if nums.is_empty() { None } else { Some(nums) }
+                }
+                None => None,
+            };
+
+            let quad_points = match self.get_dict_entry("/QuadPoints", &annot_obj.entries) {
+                Some(ref q) => {
+                    let nums = self.get_num_array(q);
+                    if nums.is_empty() { None } else { Some(nums) }
+                }
+                None => None,
+            };
+
+            annotations.push(PdfAnnotation {
+                subtype,
+                rect,
+                contents,
+                author,
+                modified,
+                quad_points,
+                color,
+                opacity,
+                open,
+                name,
+                border,
+            });
+        }
+
+        annotations
     }
 
     fn try_decompress(&self, data: &[u8]) -> Vec<u8> {
