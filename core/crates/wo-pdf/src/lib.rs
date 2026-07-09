@@ -7,10 +7,12 @@
 pub mod model;
 pub mod parser;
 pub mod roundtrip;
+pub mod serializer;
 
 pub use model::PdfDocument;
 pub use parser::PdfParser;
 pub use roundtrip::PdfRoundtrip;
+pub use serializer::PdfSerializer;
 
 pub const FORMAT_NAME: &str = "pdf";
 
