@@ -1,11 +1,8 @@
 import { observer } from "mobx-react-lite";
+import { Ribbon, spreadsheetRibbonSpec } from "@world-office/editor-common";
+import type { RibbonCommandDispatch, RibbonContext } from "@world-office/editor-common";
 import { spreadsheetStore } from "../../stores/SpreadsheetStore";
-import { DataTableTab } from "./DataTableTab";
 import { FileTab } from "./FileTab";
-import { FormulaTab } from "./FormulaTab";
-import { HomeTab } from "./HomeTab";
-import { InsertTab } from "./InsertTab";
-import { LayoutTab } from "./LayoutTab";
 import type { MonacoCommand } from "./MonacoCommand";
 
 interface ToolbarProps {
@@ -15,26 +12,47 @@ interface ToolbarProps {
 const ObservedToolbar = observer(function ObservedToolbar({
 	onMonacoCommand,
 }: ToolbarProps) {
-	const isEditMode = spreadsheetStore.isEditMode;
-	const isTableSelected = false; // Placeholder for conditional DataTableTab
+	const context: RibbonContext = {
+		isEditMode: spreadsheetStore.isEditMode,
+		isModified: spreadsheetStore.isModified,
+		isSaving: spreadsheetStore.isSaving,
+		canEdit: spreadsheetStore.isEditMode,
+		activeTab: "",
+		isWopi: !!spreadsheetStore.wopiConnection,
+		connectionStatus: spreadsheetStore.wopiConnection
+			? "connected"
+			: "disconnected",
+		userCount: 0,
+		fileName: spreadsheetStore.document?.title ?? "",
+	};
+
+	const dispatch: RibbonCommandDispatch = {
+		onRichTextCommand: () => {
+			/* no-op — spreadsheet uses Monaco, not TipTap */
+		},
+		onMonacoCommand: (command: string) => {
+			onMonacoCommand(command as MonacoCommand);
+		},
+		onCommand: (command: string) => {
+			/* Custom spreadsheet commands are dispatched as custom events */
+			window.dispatchEvent(
+				new CustomEvent("wo-command", {
+					detail: { command },
+				}),
+			);
+		},
+		onSave: async () => {
+			await spreadsheetStore.saveToWopi();
+		},
+	};
 
 	return (
-		<div className="se-toolbar">
-			<div className="se-toolbar-tabs">
-				<div className="se-toolbar-extra-left" />
-				<FileTab />
-				<HomeTab onMonacoCommand={onMonacoCommand} />
-				{isEditMode && <InsertTab />}
-				{isEditMode && <LayoutTab />}
-				<FormulaTab />
-				{isEditMode && isTableSelected && <DataTableTab />}
-				<div className="se-toolbar-extra-right" />
-			</div>
-			<section className="se-toolbar-controls" role="tabpanel">
-				<section className="se-toolbar-static" />
-				<section className="se-toolbar-panels" />
-			</section>
-		</div>
+		<Ribbon
+			spec={spreadsheetRibbonSpec}
+			context={context}
+			dispatch={dispatch}
+			beforeTabs={<FileTab />}
+		/>
 	);
 });
 

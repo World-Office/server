@@ -40,3 +40,5 @@ export * from "./controllers"
 export * from "./utils"
 
 export { getPluginAPI, sandboxExecutePlugin } from "./plugin-api"
+
+export * from "./ribbon"

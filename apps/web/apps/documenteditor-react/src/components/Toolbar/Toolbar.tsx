@@ -1,17 +1,13 @@
 import { CollaborationStatus } from "@world-office/collaboration-react"
+import { Ribbon, wordRibbonSpec } from "@world-office/editor-common"
+import type { RibbonCommandDispatch, RibbonContext } from "@world-office/editor-common"
+import { detectWopiParams } from "@world-office/wopi-client"
 import { observer } from "mobx-react-lite"
 import { collaborationStore } from "../../lib/collaboration"
 import type { RichTextCommand } from "../../lib/rte-command"
 import { documentStore } from "../../stores/DocumentStore"
 import { FileTab } from "./FileTab"
-import { FormsTab } from "./FormsTab"
-import { HeaderFooterTab } from "./HeaderFooterTab"
-import { HomeTab } from "./HomeTab"
-import { InsertTab } from "./InsertTab"
-import { LayoutTab } from "./LayoutTab"
 import type { MonacoCommand } from "./MonacoCommand"
-import { ReferencesTab } from "./ReferencesTab"
-import { ViewTab } from "./ViewTab"
 
 interface ToolbarProps {
   onMonacoCommand: (command: MonacoCommand) => void
@@ -22,31 +18,50 @@ const ObservedToolbar = observer(function ObservedToolbar({
   onMonacoCommand,
   onRichTextCommand,
 }: ToolbarProps) {
-  const isEditMode = documentStore.isEditMode
   const connectionStatus = collaborationStore.connectionStatus
   const userCount = collaborationStore.users.length
+  const wopi = detectWopiParams()
+
+  const context: RibbonContext = {
+    isEditMode: documentStore.isEditMode,
+    isModified: documentStore.isModified,
+    isSaving: documentStore.isSaving,
+    canEdit: true,
+    activeTab: "",
+    isWopi: !!wopi,
+    connectionStatus,
+    userCount,
+    fileName: documentStore.fileName,
+  }
+
+  const dispatch: RibbonCommandDispatch = {
+    onMonacoCommand: (cmd: string) => onMonacoCommand(cmd as MonacoCommand),
+    onRichTextCommand: (cmd: string, value?: string) => onRichTextCommand(cmd as RichTextCommand, value),
+    onCommand: (cmd: string, value?: string) => {
+      if (cmd === "save") {
+        window.dispatchEvent(new CustomEvent("wo-command", { detail: { command: "save" } }))
+      } else if (cmd === "share") {
+        window.dispatchEvent(new CustomEvent("wo-command", { detail: { command: "share" } }))
+      } else if (cmd === "zoomIn") {
+        documentStore.zoomIn()
+      } else if (cmd === "zoomOut") {
+        documentStore.zoomOut()
+      } else if (cmd === "download") {
+        window.dispatchEvent(new CustomEvent("wo-command", { detail: { command: "download" } }))
+      } else {
+        onRichTextCommand(cmd as RichTextCommand, value)
+      }
+    },
+  }
 
   return (
-    <div className="de-toolbar">
-      <div className="de-toolbar-tabs">
-        <div className="de-toolbar-extra-left" />
-        <FileTab />
-        <HomeTab onMonacoCommand={onMonacoCommand} onRichTextCommand={onRichTextCommand} />
-        {isEditMode && <InsertTab onRichTextCommand={onRichTextCommand} />}
-        {isEditMode && <LayoutTab onRichTextCommand={onRichTextCommand} />}
-        <ReferencesTab />
-        <ViewTab onMonacoCommand={onMonacoCommand} onRichTextCommand={onRichTextCommand} />
-        {isEditMode && <FormsTab />}
-        {isEditMode && <HeaderFooterTab />}
-        <div className="de-toolbar-extra-right">
-          <CollaborationStatus state={connectionStatus} userCount={userCount} />
-        </div>
-      </div>
-      <section className="de-toolbar-controls" role="tabpanel">
-        <section className="de-toolbar-static" />
-        <section className="de-toolbar-panels" />
-      </section>
-    </div>
+    <Ribbon
+      spec={wordRibbonSpec}
+      context={context}
+      dispatch={dispatch}
+      beforeTabs={<FileTab />}
+      tabBarExtra={<CollaborationStatus state={connectionStatus} userCount={userCount} />}
+    />
   )
 })
 
