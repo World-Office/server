@@ -28,7 +28,7 @@ jobs:
           if command -v apt-get &> /dev/null; then
             sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
           elif command -v pacman &> /dev/null; then
-            sudo pacman -Syu --noconfirm pkg-config openssl
+            sudo pacman -S --noconfirm pkg-config openssl
           elif command -v apk &> /dev/null; then
             sudo apk add pkgconfig openssl-dev
           else
@@ -69,7 +69,7 @@ jobs:
           if command -v apt-get &> /dev/null; then
             sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
           elif command -v pacman &> /dev/null; then
-            sudo pacman -Syu --noconfirm pkg-config openssl
+            sudo pacman -S --noconfirm pkg-config openssl
           elif command -v apk &> /dev/null; then
             sudo apk add pkgconfig openssl-dev
           else
@@ -133,7 +133,7 @@ jobs:
           if command -v apt-get &> /dev/null; then
             sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
           elif command -v pacman &> /dev/null; then
-            sudo pacman -Syu --noconfirm pkg-config openssl
+            sudo pacman -S --noconfirm pkg-config openssl
           elif command -v apk &> /dev/null; then
             sudo apk add pkgconfig openssl-dev
           else
@@ -169,7 +169,7 @@ jobs:
           if command -v apt-get &> /dev/null; then
             sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
           elif command -v pacman &> /dev/null; then
-            sudo pacman -Syu --noconfirm pkg-config openssl
+            sudo pacman -S --noconfirm pkg-config openssl
           elif command -v apk &> /dev/null; then
             sudo apk add pkgconfig openssl-dev
           else
@@ -313,7 +313,7 @@ jobs:
           if command -v apt-get &> /dev/null; then
             sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
           elif command -v pacman &> /dev/null; then
-            sudo pacman -Syu --noconfirm pkg-config openssl
+            sudo pacman -S --noconfirm pkg-config openssl
           elif command -v apk &> /dev/null; then
             sudo apk add pkgconfig openssl-dev
           else
