@@ -14,7 +14,7 @@ env:
 jobs:
   lint-rust:
     name: Rust Lint
-    runs-on: codeberg-medium
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -56,7 +56,7 @@ jobs:
 
   test-rust-unit:
     name: Rust Unit Tests (nightly)
-    runs-on: codeberg-medium
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -121,7 +121,7 @@ jobs:
 
   test-rust-integration:
     name: Rust Integration Tests
-    runs-on: codeberg-medium
+    runs-on: ubuntu-latest
     needs: [test-rust-unit]
     steps:
       - name: Checkout
@@ -156,7 +156,7 @@ jobs:
 
   coverage-rust:
     name: Rust Coverage
-    runs-on: codeberg-medium
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -214,7 +214,7 @@ jobs:
 
   lint-ts:
     name: TypeScript Lint
-    runs-on: codeberg-medium
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -243,7 +243,7 @@ jobs:
 
   typecheck-ts:
     name: TypeScript Typecheck
-    runs-on: codeberg-medium
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -272,7 +272,7 @@ jobs:
 
   build-ts:
     name: TypeScript Build
-    runs-on: codeberg-medium
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -301,7 +301,7 @@ jobs:
 
   test-ts:
     name: TypeScript Test
-    runs-on: codeberg-medium
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -341,7 +341,7 @@ jobs:
 
   build-rust:
     name: Rust Build Check
-    runs-on: codeberg-medium
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -374,7 +374,7 @@ jobs:
 
   e2e-trigger:
     name: Trigger E2E Tests
-    runs-on: codeberg-medium
+    runs-on: ubuntu-latest
     needs: [lint-rust, test-rust-unit, test-rust-integration, coverage-rust, lint-ts, typecheck-ts, build-ts, test-ts, build-rust]
     if: github.event_name == 'pull_request'
     steps:
