@@ -1,198 +1,198 @@
 /* Toolbar — Professional Office Ribbon Style (Presentation Editor) */
 
 .prese-toolbar {
-	display: flex;
-	flex-direction: column;
-	height: 100%;
-	background-color: var(--wo-prese-bg-toolbar);
-	border-bottom: 1px solid var(--wo-prese-border);
-	user-select: none;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--wo-prese-bg-toolbar);
+  border-bottom: 1px solid var(--wo-prese-border);
+  user-select: none;
 }
 
 .prese-toolbar-tabs {
-	display: flex;
-	align-items: center;
-	height: 100%;
-	padding: 0 4px;
-	gap: 0;
-	background: var(--wo-de-bg-toolbar-tabs, #ffffff);
-	border-bottom: 1px solid var(--wo-prese-border);
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 4px;
+  gap: 0;
+  background: var(--wo-de-bg-toolbar-tabs, #ffffff);
+  border-bottom: 1px solid var(--wo-prese-border);
 }
 
 .prese-toolbar-extra-left,
 .prese-toolbar-extra-right {
-	flex: 1;
-	display: flex;
-	align-items: center;
+  flex: 1;
+  display: flex;
+  align-items: center;
 }
 
 .prese-toolbar-extra-right {
-	justify-content: flex-end;
-	padding-right: 4px;
+  justify-content: flex-end;
+  padding-right: 4px;
 }
 
 .prese-toolbar-tab {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	gap: 4px;
-	height: 100%;
-	padding: 0 14px;
-	border: none;
-	border-bottom: 2px solid transparent;
-	background: transparent;
-	color: var(--wo-prese-text-secondary);
-	font-size: 12px;
-	font-family: var(--wo-se-font, "Segoe UI");
-	cursor: pointer;
-	transition: color 0.12s, border-color 0.12s, background-color 0.12s;
-	white-space: nowrap;
-	position: relative;
-	margin-bottom: -1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 100%;
+  padding: 0 14px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--wo-prese-text-secondary);
+  font-size: 12px;
+  font-family: var(--wo-se-font, "Segoe UI");
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background-color 0.12s;
+  white-space: nowrap;
+  position: relative;
+  margin-bottom: -1px;
 }
 
 .prese-toolbar-tab:hover {
-	color: var(--wo-prese-text-primary);
-	background-color: rgba(68, 114, 196, 0.08);
+  color: var(--wo-prese-text-primary);
+  background-color: rgba(68, 114, 196, 0.08);
 }
 
 .prese-toolbar-tab.active {
-	color: var(--wo-prese-accent);
-	border-bottom-color: var(--wo-prese-accent);
-	font-weight: 600;
-	background-color: #ffffff;
+  color: var(--wo-prese-accent);
+  border-bottom-color: var(--wo-prese-accent);
+  font-weight: 600;
+  background-color: #ffffff;
 }
 
 .prese-toolbar-controls,
 .prese-toolbar-static,
 .prese-toolbar-panels {
-	display: none;
+  display: none;
 }
 
 section[class*="tab-panel"] {
-	display: flex;
-	align-items: stretch;
-	gap: 0;
-	padding: 6px 8px;
-	background: #f8f8f8;
-	min-height: 84px;
-	border-bottom: 1px solid #e8e8e8;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 6px 8px;
+  background: #f8f8f8;
+  min-height: 84px;
+  border-bottom: 1px solid #e8e8e8;
 }
 
 div[class*="group"] {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	gap: 2px;
-	padding: 0 8px;
-	border-right: 1px solid #e8e8e8;
-	min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  border-right: 1px solid #e8e8e8;
+  min-height: 100%;
 }
 
 div[class*="group"]:last-child {
-	border-right: none;
+  border-right: none;
 }
 
 div[class*="elset"] {
-	display: flex;
-	align-items: center;
-	gap: 1px;
-	flex-wrap: wrap;
-	justify-content: center;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 span[class*="label"] {
-	display: block;
-	font-size: 9px;
-	color: #999999;
-	text-align: center;
-	line-height: 1.2;
-	white-space: nowrap;
-	padding: 0 2px;
-	margin-top: 1px;
-	max-width: 64px;
-	overflow: hidden;
-	text-overflow: ellipsis;
+  display: block;
+  font-size: 9px;
+  color: #999999;
+  text-align: center;
+  line-height: 1.2;
+  white-space: nowrap;
+  padding: 0 2px;
+  margin-top: 1px;
+  max-width: 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 button[class*="btn"] {
-	display: inline-flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	gap: 2px;
-	min-width: 40px;
-	height: 52px;
-	padding: 4px 6px 2px;
-	border: 1px solid transparent;
-	border-radius: 4px;
-	background: transparent;
-	color: #333333;
-	font-size: 9px;
-	font-family: var(--wo-se-font, "Segoe UI");
-	cursor: pointer;
-	white-space: nowrap;
-	transition: background-color 0.1s, border-color 0.1s;
-	line-height: 1.1;
-	position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 40px;
+  height: 52px;
+  padding: 4px 6px 2px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #333333;
+  font-size: 9px;
+  font-family: var(--wo-se-font, "Segoe UI");
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.1s, border-color 0.1s;
+  line-height: 1.1;
+  position: relative;
 }
 
 button[class*="btn"] svg {
-	width: 18px;
-	height: 18px;
-	stroke-width: 1.8;
-	color: #666666;
-	flex-shrink: 0;
-	display: block;
+  width: 18px;
+  height: 18px;
+  stroke-width: 1.8;
+  color: #666666;
+  flex-shrink: 0;
+  display: block;
 }
 
 button[class*="btn"]:hover {
-	background-color: #e5e5e5;
-	border-color: #d9d9d9;
+  background-color: #e5e5e5;
+  border-color: #d9d9d9;
 }
 
 button[class*="btn"]:active,
 button[class*="btn"].active {
-	background-color: #d0d0d0;
-	border-color: #d9d9d9;
+  background-color: #d0d0d0;
+  border-color: #d9d9d9;
 }
 
 button[class*="btn"]:disabled {
-	opacity: 0.35;
-	cursor: default;
-	pointer-events: none;
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
 }
 
 select[class*="select"] {
-	height: 22px;
-	padding: 0 6px;
-	border: 1px solid #d9d9d9;
-	border-radius: 3px;
-	background: #ffffff;
-	font-size: 11px;
-	font-family: var(--wo-se-font, "Segoe UI");
-	color: #333333;
-	cursor: pointer;
-	outline: none;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid #d9d9d9;
+  border-radius: 3px;
+  background: #ffffff;
+  font-size: 11px;
+  font-family: var(--wo-se-font, "Segoe UI");
+  color: #333333;
+  cursor: pointer;
+  outline: none;
 }
 
 label[class*="checkbox"] {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	font-size: 11px;
-	color: #333333;
-	cursor: pointer;
-	padding: 2px 4px;
-	border-radius: 3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #333333;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
 }
 
 label[class*="checkbox"]:hover {
-	background-color: #e5e5e5;
+  background-color: #e5e5e5;
 }
 
 label[class*="checkbox"] input[type="checkbox"] {
-	margin: 0;
-	cursor: pointer;
-	accent-color: var(--wo-prese-accent);
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--wo-prese-accent);
 }

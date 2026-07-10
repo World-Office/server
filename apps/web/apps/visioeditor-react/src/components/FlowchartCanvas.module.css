@@ -1,193 +1,175 @@
 /* FlowchartCanvas — SVG-based flowchart editor canvas */
 
 .container {
-	width: 100%;
-	height: 100%;
-	overflow: hidden;
-	position: relative;
-	background: var(--wo-visio-bg-page, #f5f5f5);
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+  background: var(--wo-visio-bg-page, #f5f5f5);
 }
 
 .svg {
-	width: 100%;
-	height: 100%;
-	display: block;
-	cursor: default;
+  width: 100%;
+  height: 100%;
+  display: block;
+  cursor: default;
 }
 
 .svg.panning {
-	cursor: grabbing;
+  cursor: grabbing;
 }
 
 /* ── Canvas background ── */
 
 .canvasBackground {
-	fill: var(--wo-visio-bg-page, #f5f5f5);
-	stroke: none;
+  fill: var(--wo-visio-bg-page, #f5f5f5);
+  stroke: none;
 }
 
 /* ── Node groups ── */
 
 .nodeGroup {
-	cursor: move;
-	transition: opacity 0.12s;
+  cursor: move;
+  transition: opacity 0.12s;
 }
 
 .nodeGroup.connectSource {
-	opacity: 0.6;
+  opacity: 0.6;
 }
 
 .nodeGroup.connectTarget {
-	cursor: crosshair;
+  cursor: crosshair;
 }
 
 /* ── Shape bodies ── */
 
 .shapeBody {
-	fill: #ffffff;
-	stroke: var(--wo-visio-text-primary, #333333);
-	stroke-width: 2;
-	transition: fill 0.1s, stroke 0.1s, filter 0.1s;
+  fill: #ffffff;
+  stroke: var(--wo-visio-text-primary, #333333);
+  stroke-width: 2;
+  transition: fill 0.1s, stroke 0.1s, filter 0.1s;
 }
 
 .nodeGroup:hover .shapeBody {
-	fill: #f0f4fa;
+  fill: #f0f4fa;
 }
 
 .shapeBody.selected {
-	stroke: var(--wo-visio-accent, #4472c4);
-	stroke-width: 3;
-	filter: drop-shadow(0 0 3px rgba(68, 114, 196, 0.35));
+  stroke: var(--wo-visio-accent, #4472c4);
+  stroke-width: 3;
+  filter: drop-shadow(0 0 3px rgba(68, 114, 196, 0.35));
 }
 
 .shapeBody.connectTargetHighlight {
-	filter: drop-shadow(0 0 4px var(--wo-visio-accent, #4472c4));
+  filter: drop-shadow(0 0 4px var(--wo-visio-accent, #4472c4));
 }
 
 /* ── Node label text ── */
 
 .nodeLabel {
-	font-family: var(
-		--wo-visio-font,
-		"Segoe UI",
-		-apple-system,
-		BlinkMacSystemFont,
-		sans-serif
-	);
-	fill: var(--wo-visio-text-primary, #333333);
-	user-select: none;
-	pointer-events: none;
-	dominant-baseline: central;
-	text-anchor: middle;
+  font-family: var(--wo-visio-font, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif);
+  fill: var(--wo-visio-text-primary, #333333);
+  user-select: none;
+  pointer-events: none;
+  dominant-baseline: central;
+  text-anchor: middle;
 }
 
 /* ── Connector dots ── */
 
 .connectorDot {
-	fill: #ffffff;
-	stroke: var(--wo-visio-accent, #4472c4);
-	stroke-width: 2;
-	cursor: crosshair;
-	transition: fill 0.12s, r 0.12s;
+  fill: #ffffff;
+  stroke: var(--wo-visio-accent, #4472c4);
+  stroke-width: 2;
+  cursor: crosshair;
+  transition: fill 0.12s, r 0.12s;
 }
 
 .connectorDot:hover {
-	fill: var(--wo-visio-accent, #4472c4);
+  fill: var(--wo-visio-accent, #4472c4);
 }
 
 .connectorDot.active {
-	fill: var(--wo-visio-accent, #4472c4);
-	stroke-width: 2.5;
+  fill: var(--wo-visio-accent, #4472c4);
+  stroke-width: 2.5;
 }
 
 /* ── Edges ── */
 
 .edgeLine {
-	fill: none;
-	stroke: var(--wo-visio-text-primary, #333333);
-	stroke-width: 2;
-	cursor: pointer;
-	transition: stroke 0.1s, stroke-width 0.1s;
+  fill: none;
+  stroke: var(--wo-visio-text-primary, #333333);
+  stroke-width: 2;
+  cursor: pointer;
+  transition: stroke 0.1s, stroke-width 0.1s;
 }
 
 .edgeLine:hover {
-	stroke: var(--wo-visio-accent, #4472c4);
-	stroke-width: 3;
+  stroke: var(--wo-visio-accent, #4472c4);
+  stroke-width: 3;
 }
 
 .edgeLine.selected {
-	stroke: var(--wo-visio-accent, #4472c4);
-	stroke-width: 3;
+  stroke: var(--wo-visio-accent, #4472c4);
+  stroke-width: 3;
 }
 
 /* ── Edge label ── */
 
 .edgeLabel {
-	font-family: var(
-		--wo-visio-font,
-		"Segoe UI",
-		-apple-system,
-		BlinkMacSystemFont,
-		sans-serif
-	);
-	font-size: 12px;
-	fill: var(--wo-visio-text-secondary, #666666);
-	user-select: none;
-	pointer-events: none;
-	dominant-baseline: central;
-	text-anchor: middle;
+  font-family: var(--wo-visio-font, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 12px;
+  fill: var(--wo-visio-text-secondary, #666666);
+  user-select: none;
+  pointer-events: none;
+  dominant-baseline: central;
+  text-anchor: middle;
 }
 
 /* ── Temporary connection line ── */
 
 .tempConnection {
-	fill: none;
-	stroke: var(--wo-visio-accent, #4472c4);
-	stroke-width: 2;
-	stroke-dasharray: 6 3;
-	pointer-events: none;
+  fill: none;
+  stroke: var(--wo-visio-accent, #4472c4);
+  stroke-width: 2;
+  stroke-dasharray: 6 3;
+  pointer-events: none;
 }
 
 /* ── Inline editing ── */
 
 .editForeignObject {
-	pointer-events: none;
+  pointer-events: none;
 }
 
 .editInput {
-	width: 100%;
-	height: 100%;
-	box-sizing: border-box;
-	border: 2px solid var(--wo-visio-accent, #4472c4);
-	border-radius: 2px;
-	background: #ffffff;
-	font-family: var(
-		--wo-visio-font,
-		"Segoe UI",
-		-apple-system,
-		BlinkMacSystemFont,
-		sans-serif
-	);
-	font-size: inherit;
-	color: var(--wo-visio-text-primary, #333333);
-	text-align: center;
-	outline: none;
-	padding: 2px 4px;
-	pointer-events: all;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  border: 2px solid var(--wo-visio-accent, #4472c4);
+  border-radius: 2px;
+  background: #ffffff;
+  font-family: var(--wo-visio-font, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: inherit;
+  color: var(--wo-visio-text-primary, #333333);
+  text-align: center;
+  outline: none;
+  padding: 2px 4px;
+  pointer-events: all;
 }
 
 /* ── Subprocess/Predefined-process extra lines ── */
 
 .subprocessLine {
-	stroke: var(--wo-visio-text-primary, #333333);
-	stroke-width: 1.5;
-	pointer-events: none;
+  stroke: var(--wo-visio-text-primary, #333333);
+  stroke-width: 1.5;
+  pointer-events: none;
 }
 
 /* ── Grid / snap indicators (future use) ── */
 
 .gridLine {
-	stroke: #e0e0e0;
-	stroke-width: 0.5;
-	pointer-events: none;
+  stroke: #e0e0e0;
+  stroke-width: 0.5;
+  pointer-events: none;
 }
