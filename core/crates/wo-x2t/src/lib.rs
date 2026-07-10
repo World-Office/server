@@ -7,12 +7,12 @@ pub mod converter;
 pub mod converters;
 pub mod error;
 pub mod model;
+pub mod pdf_model;
 pub mod presentation_model;
 pub mod roundtrip;
 pub mod router;
 pub mod spreadsheet_model;
 pub mod visio_model;
-pub mod pdf_model;
 
 pub use converter::{
     error_result, success_result, unsupported_result, ConverterRegistry, FormatConverter,

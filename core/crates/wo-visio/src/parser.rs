@@ -7,8 +7,8 @@
 
 use std::io::{Cursor, Read};
 
-use quick_xml::events::Event;
 use quick_xml::Reader;
+use quick_xml::events::Event;
 use uuid::Uuid;
 
 use crate::model::*;
@@ -75,9 +75,9 @@ impl VisioParser {
         archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
         path: &str,
     ) -> Result<String, VisioError> {
-        let mut file = archive.by_name(path).map_err(|_| {
-            VisioError::MissingEntry(path.to_string())
-        })?;
+        let mut file = archive
+            .by_name(path)
+            .map_err(|_| VisioError::MissingEntry(path.to_string()))?;
         let mut buf = String::new();
         file.read_to_string(&mut buf)?;
         Ok(buf)
@@ -319,10 +319,11 @@ impl VisioParser {
             } else if bytes[i..].starts_with(b"</Shape>") {
                 let end = i + 9; // "</Shape>" length
                 if let Some(start) = start_pos
-                    && depth == 1 {
-                        ranges.push((start, end));
-                        start_pos = None;
-                    }
+                    && depth == 1
+                {
+                    ranges.push((start, end));
+                    start_pos = None;
+                }
                 depth = depth.saturating_sub(1);
             }
         }
@@ -336,10 +337,11 @@ impl VisioParser {
 
     fn parse_shape_from_xml(&self, xml: &str, _is_sub_shape: bool) -> VisioShape {
         // First pass: extract attributes from <Shape> tag
-        let id = self.extract_attr_from_xml(xml, "Shape", "ID").unwrap_or_else(|| {
-            Uuid::new_v4().to_string()
-        });
-        let name = self.extract_attr_from_xml(xml, "Shape", "NameU")
+        let id = self
+            .extract_attr_from_xml(xml, "Shape", "ID")
+            .unwrap_or_else(|| Uuid::new_v4().to_string());
+        let name = self
+            .extract_attr_from_xml(xml, "Shape", "NameU")
             .or_else(|| self.extract_attr_from_xml(xml, "Shape", "Name"));
         let unique_id = self.extract_attr_from_xml(xml, "Shape", "UniqueID");
         let master_id = self.extract_attr_from_xml(xml, "Shape", "Master");
@@ -349,7 +351,10 @@ impl VisioParser {
         let pin_y = self.parse_cell_f64(xml, "PinY").unwrap_or(0.0);
         let width = self.parse_cell_f64(xml, "Width").unwrap_or(0.0);
         let height = self.parse_cell_f64(xml, "Height").unwrap_or(0.0);
-        let angle_deg = self.parse_cell_f64(xml, "Angle").unwrap_or(0.0).to_degrees();
+        let angle_deg = self
+            .parse_cell_f64(xml, "Angle")
+            .unwrap_or(0.0)
+            .to_degrees();
 
         let loc_pin_x = self.parse_cell_f64(xml, "LocPinX").unwrap_or(width / 2.0);
         let loc_pin_y = self.parse_cell_f64(xml, "LocPinY").unwrap_or(height / 2.0);
@@ -370,7 +375,8 @@ impl VisioParser {
         let shadow_offset_x = self.parse_cell_f64(xml, "ShdwOffsetX");
         let shadow_offset_y = self.parse_cell_f64(xml, "ShdwOffsetY");
         let layer_member = self.parse_cell_string(xml, "LayerMember");
-        let style = self.parse_cell_string(xml, "LineStyle")
+        let style = self
+            .parse_cell_string(xml, "LineStyle")
             .or_else(|| self.parse_cell_string(xml, "FillStyle"))
             .or_else(|| self.parse_cell_string(xml, "TextStyle"));
 
@@ -428,16 +434,14 @@ impl VisioParser {
                     }
                 }
                 Ok(Event::Text(ref t)) => {
-                    if in_text
-                        && let Ok(escaped) = t.unescape() {
-                            text_parts.push(escaped.to_string());
-                        }
+                    if in_text && let Ok(escaped) = t.unescape() {
+                        text_parts.push(escaped.to_string());
+                    }
                 }
                 Ok(Event::CData(ref c)) => {
-                    if in_text
-                        && let Ok(text) = String::from_utf8(c.to_vec()) {
-                            text_parts.push(text);
-                        }
+                    if in_text && let Ok(text) = String::from_utf8(c.to_vec()) {
+                        text_parts.push(text);
+                    }
                 }
                 Ok(Event::End(ref e)) => {
                     let tag = String::from_utf8_lossy(e.name().as_ref()).to_string();
@@ -511,7 +515,11 @@ impl VisioParser {
         if segments.is_empty() {
             None
         } else {
-            Some(VisioGeometry { width, height, segments })
+            Some(VisioGeometry {
+                width,
+                height,
+                segments,
+            })
         }
     }
 
@@ -536,10 +544,12 @@ impl VisioParser {
                             }
                         }
                         "Row" if in_geometry => {
-                            if !cells.is_empty() && !row_type.is_empty()
-                                && let Some(seg) = self.build_segment(&row_type, &cells) {
-                                    segments.push(seg);
-                                }
+                            if !cells.is_empty()
+                                && !row_type.is_empty()
+                                && let Some(seg) = self.build_segment(&row_type, &cells)
+                            {
+                                segments.push(seg);
+                            }
                             cells.clear();
                             row_type = Self::attr(e, "T").unwrap_or_default();
                             in_row = true;
@@ -559,9 +569,10 @@ impl VisioParser {
                     match tag.as_str() {
                         "Row" if in_row => {
                             if !row_type.is_empty()
-                                && let Some(seg) = self.build_segment(&row_type, &cells) {
-                                    segments.push(seg);
-                                }
+                                && let Some(seg) = self.build_segment(&row_type, &cells)
+                            {
+                                segments.push(seg);
+                            }
                             cells.clear();
                             row_type.clear();
                             in_row = false;
@@ -584,12 +595,22 @@ impl VisioParser {
 
     fn build_segment(&self, row_type: &str, cells: &[(String, f64)]) -> Option<GeoSegment> {
         let get = |name: &str| -> f64 {
-            cells.iter().find(|(n, _)| n == name).map(|(_, v)| *v).unwrap_or(0.0)
+            cells
+                .iter()
+                .find(|(n, _)| n == name)
+                .map(|(_, v)| *v)
+                .unwrap_or(0.0)
         };
 
         match row_type {
-            "MoveTo" => Some(GeoSegment::MoveTo { x: get("X"), y: get("Y") }),
-            "LineTo" => Some(GeoSegment::LineTo { x: get("X"), y: get("Y") }),
+            "MoveTo" => Some(GeoSegment::MoveTo {
+                x: get("X"),
+                y: get("Y"),
+            }),
+            "LineTo" => Some(GeoSegment::LineTo {
+                x: get("X"),
+                y: get("Y"),
+            }),
             "ArcTo" => Some(GeoSegment::ArcTo {
                 x: get("X"),
                 y: get("Y"),
@@ -660,21 +681,29 @@ impl VisioParser {
     // ── Formatting ───────────────────────────────────────────
 
     fn parse_formatting(&self, xml: &str) -> Option<VisioFormatting> {
-        let font = self.parse_cell_string(xml, "Char.Font")
+        let font = self
+            .parse_cell_string(xml, "Char.Font")
             .or_else(|| self.parse_cell_string_from_section(xml, "Character", "Font"));
-        let font_size = self.parse_cell_f64(xml, "Char.Size")
+        let font_size = self
+            .parse_cell_f64(xml, "Char.Size")
             .or_else(|| self.parse_cell_f64_from_section(xml, "Character", "Size"));
-        let font_color = self.parse_cell_string(xml, "Char.Color")
+        let font_color = self
+            .parse_cell_string(xml, "Char.Color")
             .or_else(|| self.parse_cell_string_from_section(xml, "Character", "Color"));
-        let italic = self.parse_cell_bool(xml, "Char.Italic")
+        let italic = self
+            .parse_cell_bool(xml, "Char.Italic")
             .or_else(|| self.parse_cell_bool_from_section(xml, "Character", "Italic"));
-        let bold = self.parse_cell_bool(xml, "Char.Bold")
+        let bold = self
+            .parse_cell_bool(xml, "Char.Bold")
             .or_else(|| self.parse_cell_bool_from_section(xml, "Character", "Bold"));
-        let underline = self.parse_cell_bool(xml, "Char.Underline")
+        let underline = self
+            .parse_cell_bool(xml, "Char.Underline")
             .or_else(|| self.parse_cell_bool_from_section(xml, "Character", "Underline"));
-        let align_horizontal = self.parse_cell_string(xml, "Para.HorizontalAlign")
+        let align_horizontal = self
+            .parse_cell_string(xml, "Para.HorizontalAlign")
             .or_else(|| self.parse_cell_string_from_section(xml, "Paragraph", "HorizontalAlign"));
-        let align_vertical = self.parse_cell_string(xml, "Char.VerticalAlign")
+        let align_vertical = self
+            .parse_cell_string(xml, "Char.VerticalAlign")
             .or_else(|| self.parse_cell_string_from_section(xml, "Paragraph", "VerticalAlign"));
 
         if font.is_none()
@@ -703,10 +732,11 @@ impl VisioParser {
     // ── Connector parsing ────────────────────────────────────
 
     fn parse_connector_from_xml(&self, xml: &str) -> Option<VisioConnector> {
-        let id = self.extract_attr_from_xml(xml, "Shape", "ID").unwrap_or_else(|| {
-            Uuid::new_v4().to_string()
-        });
-        let name = self.extract_attr_from_xml(xml, "Shape", "NameU")
+        let id = self
+            .extract_attr_from_xml(xml, "Shape", "ID")
+            .unwrap_or_else(|| Uuid::new_v4().to_string());
+        let name = self
+            .extract_attr_from_xml(xml, "Shape", "NameU")
             .or_else(|| self.extract_attr_from_xml(xml, "Shape", "Name"));
         let text = self.extract_shape_text(xml);
 
@@ -771,16 +801,16 @@ impl VisioParser {
                         "Cell" if depth == 0 && !in_section => {
                             let n = Self::attr(e, "N")?;
                             if n == cell_name
-                                && let Some(v) = Self::attr(e, "V") {
-                                    return Some(v);
-                                }
-                                // Check for <Cell N="...">text</Cell>
+                                && let Some(v) = Self::attr(e, "V")
+                            {
+                                return Some(v);
+                            }
+                            // Check for <Cell N="...">text</Cell>
                         }
                         _ => {}
                     }
                 }
-                Ok(Event::Text(ref _t)) => {
-                }
+                Ok(Event::Text(ref _t)) => {}
                 Ok(Event::End(ref e)) => {
                     let tag = String::from_utf8_lossy(e.name().as_ref()).to_string();
                     match tag.as_str() {
@@ -832,13 +862,23 @@ impl VisioParser {
     }
 
     /// Parse a cell value from within a specific Section/Row (for formatting sections).
-    fn parse_cell_f64_from_section(&self, xml: &str, section_name: &str, cell_name: &str) -> Option<f64> {
+    fn parse_cell_f64_from_section(
+        &self,
+        xml: &str,
+        section_name: &str,
+        cell_name: &str,
+    ) -> Option<f64> {
         let val = self.parse_cell_from_section(xml, section_name, cell_name)?;
         let clean = val.trim_start_matches('=');
         clean.parse::<f64>().ok()
     }
 
-    fn parse_cell_bool_from_section(&self, xml: &str, section_name: &str, cell_name: &str) -> Option<bool> {
+    fn parse_cell_bool_from_section(
+        &self,
+        xml: &str,
+        section_name: &str,
+        cell_name: &str,
+    ) -> Option<bool> {
         let val = self.parse_cell_from_section(xml, section_name, cell_name)?;
         let clean = val.trim_start_matches('=');
         match clean {
@@ -848,7 +888,12 @@ impl VisioParser {
         }
     }
 
-    fn parse_cell_string_from_section(&self, xml: &str, section_name: &str, cell_name: &str) -> Option<String> {
+    fn parse_cell_string_from_section(
+        &self,
+        xml: &str,
+        section_name: &str,
+        cell_name: &str,
+    ) -> Option<String> {
         let val = self.parse_cell_from_section(xml, section_name, cell_name)?;
         let clean = val.trim_start_matches('=').to_string();
         if clean.is_empty() { None } else { Some(clean) }
@@ -887,9 +932,10 @@ impl VisioParser {
                         "Cell" if in_row => {
                             let n = Self::attr(e, "N").unwrap_or_default();
                             if n == cell_name
-                                && let Some(v) = Self::attr(e, "V") {
-                                    return Some(v);
-                                }
+                                && let Some(v) = Self::attr(e, "V")
+                            {
+                                return Some(v);
+                            }
                         }
                         _ => {}
                     }
@@ -1022,10 +1068,7 @@ impl VisioParser {
 
     // ── Theme Colors ─────────────────────────────────────────
 
-    fn parse_theme_colors(
-        &self,
-        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
-    ) -> Vec<ThemeColor> {
+    fn parse_theme_colors(&self, archive: &mut zip::ZipArchive<Cursor<&[u8]>>) -> Vec<ThemeColor> {
         let xml = match self.try_read_zip_entry(archive, "visio/colors.xml") {
             Some(x) => x,
             None => return Vec::new(),

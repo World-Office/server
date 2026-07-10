@@ -306,9 +306,11 @@ impl VisioSerializer {
             || shape.fill_foreground.is_some()
             || shape.fill_background.is_some();
         if has_fill {
-            xml.push_str(r#"
+            xml.push_str(
+                r#"
       <Section N="Fill">
-        <Row IX="0">"#);
+        <Row IX="0">"#,
+            );
             if let Some(ref fg) = shape.fill_foreground {
                 xml.push_str(&format!(
                     r#"
@@ -323,9 +325,11 @@ impl VisioSerializer {
                     escape_xml(bg)
                 ));
             }
-            xml.push_str(r#"
+            xml.push_str(
+                r#"
         </Row>
-      </Section>"#);
+      </Section>"#,
+            );
         }
 
         // Line section
@@ -333,9 +337,11 @@ impl VisioSerializer {
             || shape.stroke_width.is_some()
             || shape.stroke_pattern.is_some();
         if has_line {
-            xml.push_str(r#"
+            xml.push_str(
+                r#"
       <Section N="Line">
-        <Row IX="0">"#);
+        <Row IX="0">"#,
+            );
             if let Some(ref lc) = shape.stroke_color {
                 xml.push_str(&format!(
                     r#"
@@ -357,9 +363,11 @@ impl VisioSerializer {
                     lp
                 ));
             }
-            xml.push_str(r#"
+            xml.push_str(
+                r#"
         </Row>
-      </Section>"#);
+      </Section>"#,
+            );
         }
 
         // Shadow section
@@ -367,9 +375,11 @@ impl VisioSerializer {
             || shape.shadow_offset_x.is_some()
             || shape.shadow_offset_y.is_some();
         if has_shadow {
-            xml.push_str(r#"
+            xml.push_str(
+                r#"
       <Section N="Shadow">
-        <Row IX="0">"#);
+        <Row IX="0">"#,
+            );
             if let Some(ref sc) = shape.shadow_color {
                 xml.push_str(&format!(
                     r#"
@@ -391,9 +401,11 @@ impl VisioSerializer {
                     oy
                 ));
             }
-            xml.push_str(r#"
+            xml.push_str(
+                r#"
         </Row>
-      </Section>"#);
+      </Section>"#,
+            );
         }
 
         // Geometry section
@@ -478,19 +490,23 @@ impl VisioSerializer {
     // ── Geometry serialization ────────────────────────────────
 
     fn serialize_geometry(&self, xml: &mut String, geom: &VisioGeometry) {
-        xml.push_str(r#"
+        xml.push_str(
+            r#"
       <Section N="Geometry" IX="0">
         <Cell N="NoFill" V="0"/>
         <Cell N="NoLine" V="0"/>
-        <Cell N="NoShow" V="0"/>"#);
+        <Cell N="NoShow" V="0"/>"#,
+        );
 
         // Determine the geometry width/height for the bounding box
         for seg in &geom.segments {
             self.serialize_geo_segment(xml, seg);
         }
 
-        xml.push_str(r#"
-      </Section>"#);
+        xml.push_str(
+            r#"
+      </Section>"#,
+        );
     }
 
     fn serialize_geo_segment(&self, xml: &mut String, seg: &GeoSegment) {

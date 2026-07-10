@@ -6344,11 +6344,11 @@ fn bytes_to_data_url(data: &[u8], content_type: &str) -> String {
 
 // ── XLSX Spreadsheet Format Converters (XLSX ↔ WoSpreadsheet) ─────
 
+use crate::spreadsheet_model::{WoCell, WoRow, WoSheet, WoSpreadsheet};
 use wo_ooxml::model::{
-    CellType as XlsxCellType, XlsxCell, XlsxCol, XlsxMergeCell, XlsxRow,
-    XlsxSheet, XlsxSheetProperties, XlsxStyles, XlsxWorkbook, XlsxWorkbookProperties,
+    CellType as XlsxCellType, XlsxCell, XlsxCol, XlsxMergeCell, XlsxRow, XlsxSheet,
+    XlsxSheetProperties, XlsxStyles, XlsxWorkbook, XlsxWorkbookProperties,
 };
-use crate::spreadsheet_model::{WoSpreadsheet, WoSheet, WoRow, WoCell};
 
 /// Converts XLSX bytes → frontend WoSpreadsheet JSON.
 pub struct XlsxToWoSpreadsheetConverter;
@@ -6366,9 +6366,9 @@ impl FormatConverter for XlsxToWoSpreadsheetConverter {
             .parse(data)
             .map_err(|e| ConversionError::Parse(e.to_string()))?;
 
-        let wb = ooxml.xlsx_workbook.ok_or_else(|| {
-            ConversionError::Parse("Not a valid XLSX file".to_string())
-        })?;
+        let wb = ooxml
+            .xlsx_workbook
+            .ok_or_else(|| ConversionError::Parse("Not a valid XLSX file".to_string()))?;
 
         let sheet_order: Vec<String> = wb.sheets.iter().map(|s| s.name.clone()).collect();
 
@@ -6407,25 +6407,14 @@ impl FormatConverter for XlsxToWoSpreadsheetConverter {
                                 }
                             })
                             .collect();
-                        WoRow {
-                            r: row.r,
-                            cells,
-                        }
+                        WoRow { r: row.r, cells }
                     })
                     .collect();
 
-                let merges: Vec<String> = sheet
-                    .merges
-                    .iter()
-                    .map(|m| m.ref_range.clone())
-                    .collect();
+                let merges: Vec<String> =
+                    sheet.merges.iter().map(|m| m.ref_range.clone()).collect();
 
-                let max_col = sheet
-                    .cols
-                    .iter()
-                    .map(|c| c.max)
-                    .max()
-                    .unwrap_or(26);
+                let max_col = sheet.cols.iter().map(|c| c.max).max().unwrap_or(26);
 
                 WoSheet {
                     id: sheet.sheet_id.to_string(),
@@ -6446,8 +6435,7 @@ impl FormatConverter for XlsxToWoSpreadsheetConverter {
             shared_strings: wb.shared_strings,
         };
 
-        serde_json::to_vec_pretty(&wo)
-            .map_err(|e| ConversionError::Serialize(e.to_string()))
+        serde_json::to_vec_pretty(&wo).map_err(|e| ConversionError::Serialize(e.to_string()))
     }
 }
 
@@ -6503,7 +6491,10 @@ impl FormatConverter for WoSpreadsheetToXlsxConverter {
                                     _ => XlsxCellType::N,
                                 };
                                 let v = if cell_type == XlsxCellType::S {
-                                    ss_index.get(&cell.v).map(|i| i.to_string()).unwrap_or_default()
+                                    ss_index
+                                        .get(&cell.v)
+                                        .map(|i| i.to_string())
+                                        .unwrap_or_default()
                                 } else {
                                     cell.v.clone()
                                 };
@@ -6578,12 +6569,19 @@ impl FormatConverter for WoSpreadsheetToXlsxConverter {
 
 // ── VSDX Visio Format Converters (VSDX ↔ WoVisioDiagram) ──────────
 
-use wo_visio::{VisioDocument, VisioShape, VisioConnector, VisioGeometry, GeoSegment, VisioParser, VisioSerializer};
-use wo_pdf::model::{PdfAnnotation as CorePdfAnnotation, PdfDocument as CorePdfDocument, PdfPage as CorePdfPage};
+use wo_pdf::model::{
+    PdfAnnotation as CorePdfAnnotation, PdfDocument as CorePdfDocument, PdfPage as CorePdfPage,
+};
 use wo_pdf::{PdfParser, PdfSerializer};
+use wo_visio::{
+    GeoSegment, VisioConnector, VisioDocument, VisioGeometry, VisioParser, VisioSerializer,
+    VisioShape,
+};
 
 use crate::pdf_model::{WoPdfAnnotation, WoPdfDocument, WoPdfPage};
-use crate::visio_model::{WoVisioDiagram, WoVisioPage, WoVisioShape, WoVisioConnector, WoVisioGeometry, WoVisioGeoSegment};
+use crate::visio_model::{
+    WoVisioConnector, WoVisioDiagram, WoVisioGeoSegment, WoVisioGeometry, WoVisioPage, WoVisioShape,
+};
 
 /// Converts VSDX bytes → frontend WoVisioDiagram JSON.
 pub struct VsdxToWoDiagramConverter;
@@ -6603,8 +6601,7 @@ impl FormatConverter for VsdxToWoDiagramConverter {
 
         let wo = visio_to_wo_diagram(&vsdx);
 
-        serde_json::to_vec_pretty(&wo)
-            .map_err(|e| ConversionError::Serialize(e.to_string()))
+        serde_json::to_vec_pretty(&wo).map_err(|e| ConversionError::Serialize(e.to_string()))
     }
 }
 
@@ -6635,11 +6632,17 @@ impl FormatConverter for WoDiagramToVsdxConverter {
 pub struct PdfToWoPdfConverter;
 
 impl FormatConverter for PdfToWoPdfConverter {
-    fn source_format(&self) -> &str { "pdf" }
-    fn target_format(&self) -> &str { "wo-pdf-document" }
+    fn source_format(&self) -> &str {
+        "pdf"
+    }
+    fn target_format(&self) -> &str {
+        "wo-pdf-document"
+    }
     fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
         let parser = PdfParser::new();
-        let doc = parser.parse(data).map_err(|e| ConversionError::Parse(e.to_string()))?;
+        let doc = parser
+            .parse(data)
+            .map_err(|e| ConversionError::Parse(e.to_string()))?;
         let wo = core_pdf_to_wo(&doc);
         serde_json::to_vec_pretty(&wo).map_err(|e| ConversionError::Serialize(e.to_string()))
     }
@@ -6649,14 +6652,20 @@ impl FormatConverter for PdfToWoPdfConverter {
 pub struct WoPdfToPdfConverter;
 
 impl FormatConverter for WoPdfToPdfConverter {
-    fn source_format(&self) -> &str { "wo-pdf-document" }
-    fn target_format(&self) -> &str { "pdf" }
+    fn source_format(&self) -> &str {
+        "wo-pdf-document"
+    }
+    fn target_format(&self) -> &str {
+        "pdf"
+    }
     fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
         let wo: WoPdfDocument = serde_json::from_slice(data)
             .map_err(|e| ConversionError::Parse(format!("Invalid WoPdf JSON: {}", e)))?;
         let doc = wo_to_core_pdf(&wo);
         let serializer = PdfSerializer::new();
-        serializer.serialize(&doc).map_err(|e| ConversionError::Serialize(e.to_string()))
+        serializer
+            .serialize(&doc)
+            .map_err(|e| ConversionError::Serialize(e.to_string()))
     }
 }
 
@@ -6703,7 +6712,11 @@ fn core_page_to_wo(page: &CorePdfPage) -> WoPdfPage {
         height: page.height.unwrap_or(792.0) as f64,
         text: page.text.clone(),
         rotation: page.rotation,
-        annotations: page.annotations.iter().map(|a| core_annot_to_wo(a)).collect(),
+        annotations: page
+            .annotations
+            .iter()
+            .map(|a| core_annot_to_wo(a))
+            .collect(),
     }
 }
 
@@ -6714,14 +6727,23 @@ fn wo_page_to_core(page: &WoPdfPage) -> CorePdfPage {
         height: Some(page.height as f32),
         text: page.text.clone(),
         rotation: page.rotation,
-        annotations: page.annotations.iter().map(|a| wo_annot_to_core(a)).collect(),
+        annotations: page
+            .annotations
+            .iter()
+            .map(|a| wo_annot_to_core(a))
+            .collect(),
     }
 }
 
 fn core_annot_to_wo(annot: &CorePdfAnnotation) -> WoPdfAnnotation {
     WoPdfAnnotation {
         subtype: annot.subtype.clone(),
-        rect: [annot.rect[0] as f64, annot.rect[1] as f64, annot.rect[2] as f64, annot.rect[3] as f64],
+        rect: [
+            annot.rect[0] as f64,
+            annot.rect[1] as f64,
+            annot.rect[2] as f64,
+            annot.rect[3] as f64,
+        ],
         contents: annot.contents.clone(),
         author: annot.author.clone(),
         modified: annot.modified.clone(),
@@ -6729,7 +6751,10 @@ fn core_annot_to_wo(annot: &CorePdfAnnotation) -> WoPdfAnnotation {
             Some(points) => points.iter().map(|v| *v as f64).collect(),
             None => Vec::new(),
         },
-        color: annot.color.map(|c| vec![c[0] as f64, c[1] as f64, c[2] as f64]).unwrap_or_default(),
+        color: annot
+            .color
+            .map(|c| vec![c[0] as f64, c[1] as f64, c[2] as f64])
+            .unwrap_or_default(),
         opacity: annot.opacity.map(|v| v as f64),
         open: annot.open,
         name: annot.name.clone(),
@@ -6753,12 +6778,25 @@ fn wo_annot_to_core(annot: &WoPdfAnnotation) -> CorePdfAnnotation {
     };
     CorePdfAnnotation {
         subtype: annot.subtype.clone(),
-        rect: [annot.rect[0] as f32, annot.rect[1] as f32, annot.rect[2] as f32, annot.rect[3] as f32],
+        rect: [
+            annot.rect[0] as f32,
+            annot.rect[1] as f32,
+            annot.rect[2] as f32,
+            annot.rect[3] as f32,
+        ],
         contents: annot.contents.clone(),
         author: annot.author.clone(),
         modified: annot.modified.clone(),
         quad_points,
-        color: if annot.color.len() >= 3 { Some([annot.color[0] as f32, annot.color[1] as f32, annot.color[2] as f32]) } else { None },
+        color: if annot.color.len() >= 3 {
+            Some([
+                annot.color[0] as f32,
+                annot.color[1] as f32,
+                annot.color[2] as f32,
+            ])
+        } else {
+            None
+        },
         opacity: annot.opacity.map(|v| v as f32),
         open: annot.open,
         name: annot.name.clone(),
@@ -6859,12 +6897,28 @@ fn geoseg_to_wo(seg: &GeoSegment) -> WoVisioGeoSegment {
         GeoSegment::MoveTo { x, y } => WoVisioGeoSegment::MoveTo { x: *x, y: *y },
         GeoSegment::LineTo { x, y } => WoVisioGeoSegment::LineTo { x: *x, y: *y },
         GeoSegment::ArcTo { x, y, .. } => WoVisioGeoSegment::ArcTo { x: *x, y: *y },
-        GeoSegment::EllipticalArcTo { x, y, .. } => WoVisioGeoSegment::EllipticalArcTo { x: *x, y: *y },
+        GeoSegment::EllipticalArcTo { x, y, .. } => {
+            WoVisioGeoSegment::EllipticalArcTo { x: *x, y: *y }
+        }
         GeoSegment::BezierTo { x, y, .. } => WoVisioGeoSegment::BezierTo { x: *x, y: *y },
-        GeoSegment::PolylineTo { x, y, points } => WoVisioGeoSegment::PolylineTo { x: *x, y: *y, points: points.clone() },
+        GeoSegment::PolylineTo { x, y, points } => WoVisioGeoSegment::PolylineTo {
+            x: *x,
+            y: *y,
+            points: points.clone(),
+        },
         GeoSegment::Rectangle { w, h } => WoVisioGeoSegment::Rectangle { w: *w, h: *h },
-        GeoSegment::Ellipse { x, y, cx, cy } => WoVisioGeoSegment::Ellipse { x: *x, y: *y, cx: *cx, cy: *cy },
-        GeoSegment::InfiniteLine { x1, y1, x2, y2 } => WoVisioGeoSegment::InfiniteLine { x1: *x1, y1: *y1, x2: *x2, y2: *y2 },
+        GeoSegment::Ellipse { x, y, cx, cy } => WoVisioGeoSegment::Ellipse {
+            x: *x,
+            y: *y,
+            cx: *cx,
+            cy: *cy,
+        },
+        GeoSegment::InfiniteLine { x1, y1, x2, y2 } => WoVisioGeoSegment::InfiniteLine {
+            x1: *x1,
+            y1: *y1,
+            x2: *x2,
+            y2: *y2,
+        },
         GeoSegment::SplineStart { .. } | GeoSegment::NURBSTo { .. } => {
             // Simplified — these complex curves are represented as a degenerate LineTo
             WoVisioGeoSegment::LineTo { x: 0.0, y: 0.0 }
@@ -6895,15 +6949,19 @@ fn wo_diagram_to_visio(wo: &WoVisioDiagram) -> VisioDocument {
             creator: wo.creator.clone(),
             description: wo.description.clone(),
         },
-        pages: wo.pages.iter().map(|p| VisioPage {
-            id: p.id.clone(),
-            name: p.name.clone(),
-            width: p.width,
-            height: p.height,
-            shapes: p.shapes.iter().map(wo_shape_to_visio).collect(),
-            connectors: p.connectors.iter().map(wo_connector_to_visio).collect(),
-            background_page_id: p.background_page_id.clone(),
-        }).collect(),
+        pages: wo
+            .pages
+            .iter()
+            .map(|p| VisioPage {
+                id: p.id.clone(),
+                name: p.name.clone(),
+                width: p.width,
+                height: p.height,
+                shapes: p.shapes.iter().map(wo_shape_to_visio).collect(),
+                connectors: p.connectors.iter().map(wo_connector_to_visio).collect(),
+                background_page_id: p.background_page_id.clone(),
+            })
+            .collect(),
         masters: vec![],
         theme_colors: vec![],
     }
@@ -6941,7 +6999,12 @@ fn wo_shape_to_visio(s: &WoVisioShape) -> VisioShape {
         }),
         sub_shapes: s.sub_shapes.iter().map(wo_shape_to_visio).collect(),
         style: None,
-        formatting: if s.font_size.is_some() || s.font_color.is_some() || s.bold.is_some() || s.italic.is_some() || s.underline.is_some() {
+        formatting: if s.font_size.is_some()
+            || s.font_color.is_some()
+            || s.bold.is_some()
+            || s.italic.is_some()
+            || s.underline.is_some()
+        {
             Some(VisioFormatting {
                 font: None,
                 font_size: s.font_size,
@@ -6964,13 +7027,39 @@ fn wo_geoseg_to_visio(seg: &WoVisioGeoSegment) -> GeoSegment {
     match *seg {
         WoVisioGeoSegment::MoveTo { x, y } => GeoSegment::MoveTo { x, y },
         WoVisioGeoSegment::LineTo { x, y } => GeoSegment::LineTo { x, y },
-        WoVisioGeoSegment::ArcTo { x, y } => GeoSegment::ArcTo { x, y, a: 0.0, b: 0.0, c: 0.0 },
-        WoVisioGeoSegment::EllipticalArcTo { x, y } => GeoSegment::EllipticalArcTo { x, y, a: 0.0, b: 0.0, c: 0.0, d: 0.0 },
-        WoVisioGeoSegment::BezierTo { x, y } => GeoSegment::BezierTo { x, y, a: 0.0, b: 0.0, c: 0.0, d: 0.0 },
-        WoVisioGeoSegment::PolylineTo { x, y, ref points } => GeoSegment::PolylineTo { x, y, points: points.clone() },
+        WoVisioGeoSegment::ArcTo { x, y } => GeoSegment::ArcTo {
+            x,
+            y,
+            a: 0.0,
+            b: 0.0,
+            c: 0.0,
+        },
+        WoVisioGeoSegment::EllipticalArcTo { x, y } => GeoSegment::EllipticalArcTo {
+            x,
+            y,
+            a: 0.0,
+            b: 0.0,
+            c: 0.0,
+            d: 0.0,
+        },
+        WoVisioGeoSegment::BezierTo { x, y } => GeoSegment::BezierTo {
+            x,
+            y,
+            a: 0.0,
+            b: 0.0,
+            c: 0.0,
+            d: 0.0,
+        },
+        WoVisioGeoSegment::PolylineTo { x, y, ref points } => GeoSegment::PolylineTo {
+            x,
+            y,
+            points: points.clone(),
+        },
         WoVisioGeoSegment::Rectangle { w, h } => GeoSegment::Rectangle { w, h },
         WoVisioGeoSegment::Ellipse { x, y, cx, cy } => GeoSegment::Ellipse { x, y, cx, cy },
-        WoVisioGeoSegment::InfiniteLine { x1, y1, x2, y2 } => GeoSegment::InfiniteLine { x1, y1, x2, y2 },
+        WoVisioGeoSegment::InfiniteLine { x1, y1, x2, y2 } => {
+            GeoSegment::InfiniteLine { x1, y1, x2, y2 }
+        }
     }
 }
 
@@ -10254,7 +10343,7 @@ mod tests {
             },
             relationships: vec![],
             xlsx_workbook: None,
-        docx_body: Some(DocxBody {
+            docx_body: Some(DocxBody {
                 paragraphs: vec![],
                 tables: vec![DocxTable {
                     rows: vec![DocxTableRow {
@@ -10353,7 +10442,7 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-        docx_body: Some(DocxBody {
+            docx_body: Some(DocxBody {
                 paragraphs: vec![
                     DocxParagraph {
                         style_id: Some("Heading1".into()),
@@ -13181,7 +13270,7 @@ mod tests {
             },
             relationships: vec![],
             xlsx_workbook: None,
-        docx_body: Some(DocxBody {
+            docx_body: Some(DocxBody {
                 paragraphs: vec![
                     DocxParagraph {
                         style_id: Some("Heading1".into()),
@@ -13272,7 +13361,7 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-        docx_body: Some(DocxBody {
+            docx_body: Some(DocxBody {
                 paragraphs: vec![
                     DocxParagraph {
                         style_id: None,
@@ -13739,7 +13828,7 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-        docx_body: Some(DocxBody {
+            docx_body: Some(DocxBody {
                 paragraphs: vec![DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
@@ -13769,7 +13858,7 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-        docx_body: Some(DocxBody {
+            docx_body: Some(DocxBody {
                 paragraphs: vec![
                     DocxParagraph {
                         style_id: None,
@@ -13811,7 +13900,7 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-        docx_body: Some(DocxBody {
+            docx_body: Some(DocxBody {
                 paragraphs: vec![DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
@@ -13843,7 +13932,7 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-        docx_body: Some(DocxBody {
+            docx_body: Some(DocxBody {
                 paragraphs: vec![
                     DocxParagraph {
                         style_id: None,
@@ -14139,7 +14228,7 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-        docx_body: Some(DocxBody {
+            docx_body: Some(DocxBody {
                 paragraphs: vec![
                     DocxParagraph {
                         style_id: None,
@@ -14190,7 +14279,7 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-        docx_body: Some(DocxBody {
+            docx_body: Some(DocxBody {
                 paragraphs: vec![],
                 tables: vec![DocxTable {
                     rows: vec![DocxTableRow {
@@ -14826,7 +14915,7 @@ mod tests {
             },
             relationships: vec![],
             xlsx_workbook: None,
-        docx_body: Some(DocxBody {
+            docx_body: Some(DocxBody {
                 paragraphs: vec![
                     DocxParagraph {
                         style_id: Some("Heading1".into()),
@@ -14891,7 +14980,7 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-        docx_body: Some(DocxBody {
+            docx_body: Some(DocxBody {
                 paragraphs: vec![],
                 tables: vec![],
             }),

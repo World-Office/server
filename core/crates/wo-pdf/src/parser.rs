@@ -885,15 +885,14 @@ impl PdfParser {
 
     fn get_num_array(&self, val: &PdfValue) -> Vec<f32> {
         match val {
-            PdfValue::Array(arr) => {
-                arr.iter()
-                    .map(|v| match v {
-                        PdfValue::Integer(n) => *n as f32,
-                        PdfValue::Real(f) => *f as f32,
-                        _ => 0.0,
-                    })
-                    .collect()
-            }
+            PdfValue::Array(arr) => arr
+                .iter()
+                .map(|v| match v {
+                    PdfValue::Integer(n) => *n as f32,
+                    PdfValue::Real(f) => *f as f32,
+                    _ => 0.0,
+                })
+                .collect(),
             _ => Vec::new(),
         }
     }
@@ -986,7 +985,11 @@ impl PdfParser {
             let border = match self.get_dict_entry("/Border", &annot_obj.entries) {
                 Some(ref b) => {
                     let nums = self.get_num_array(b);
-                    if nums.is_empty() { None } else { Some(nums) }
+                    if nums.is_empty() {
+                        None
+                    } else {
+                        Some(nums)
+                    }
                 }
                 None => None,
             };
@@ -994,7 +997,11 @@ impl PdfParser {
             let quad_points = match self.get_dict_entry("/QuadPoints", &annot_obj.entries) {
                 Some(ref q) => {
                     let nums = self.get_num_array(q);
-                    if nums.is_empty() { None } else { Some(nums) }
+                    if nums.is_empty() {
+                        None
+                    } else {
+                        Some(nums)
+                    }
                 }
                 None => None,
             };

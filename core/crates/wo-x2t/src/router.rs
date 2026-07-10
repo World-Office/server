@@ -19,14 +19,14 @@ use crate::converters::{
     HtmlToDocxConverter, HtmlToEpubConverter, HtmlToFb2Converter, HtmlToOdtConverter,
     HtmlToRtfConverter, HtmlToTxtConverter, HwpToDocxConverter, HwpToTxtConverter,
     OdpToWoPresentationConverter, OdtToDocxConverter, OdtToHtmlConverter, OdtToTxtConverter,
-    OfdToDocxConverter, OfdToHtmlConverter, OfdToTxtConverter, PptxToWoPresentationConverter,
-    RtfToDocxConverter, RtfToHtmlConverter, RtfToTxtConverter, TxtToDocxConverter,
-    TxtToEpubConverter, TxtToFb2Converter, TxtToHtmlConverter, TxtToOdtConverter,
-    TxtToRtfConverter,     VsdmToVsdxConverter, VsdxToVsdmConverter, VsdxToWoDiagramConverter,
-    WoDiagramToVsdxConverter, PdfToWoPdfConverter, WoPdfToPdfConverter,
-    WoPresentationToHtmlConverter, WoPresentationToOdpConverter,
-    WoPresentationToPptxConverter, XlsxToWoSpreadsheetConverter, XpsToDocxConverter,
-    XpsToHtmlConverter, XpsToTxtConverter, WoSpreadsheetToXlsxConverter,
+    OfdToDocxConverter, OfdToHtmlConverter, OfdToTxtConverter, PdfToWoPdfConverter,
+    PptxToWoPresentationConverter, RtfToDocxConverter, RtfToHtmlConverter, RtfToTxtConverter,
+    TxtToDocxConverter, TxtToEpubConverter, TxtToFb2Converter, TxtToHtmlConverter,
+    TxtToOdtConverter, TxtToRtfConverter, VsdmToVsdxConverter, VsdxToVsdmConverter,
+    VsdxToWoDiagramConverter, WoDiagramToVsdxConverter, WoPdfToPdfConverter,
+    WoPresentationToHtmlConverter, WoPresentationToOdpConverter, WoPresentationToPptxConverter,
+    WoSpreadsheetToXlsxConverter, XlsxToWoSpreadsheetConverter, XpsToDocxConverter,
+    XpsToHtmlConverter, XpsToTxtConverter,
 };
 use crate::model::{ConversionOutput, ConversionResult, ConversionStatus};
 use crate::FormatConverter;

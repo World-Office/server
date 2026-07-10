@@ -85,15 +85,47 @@ pub struct WoVisioGeometry {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type")]
 pub enum WoVisioGeoSegment {
-    MoveTo { x: f64, y: f64 },
-    LineTo { x: f64, y: f64 },
-    ArcTo { x: f64, y: f64 },
-    EllipticalArcTo { x: f64, y: f64 },
-    BezierTo { x: f64, y: f64 },
-    PolylineTo { x: f64, y: f64, points: Vec<(f64, f64)> },
-    Rectangle { w: f64, h: f64 },
-    Ellipse { x: f64, y: f64, cx: f64, cy: f64 },
-    InfiniteLine { x1: f64, y1: f64, x2: f64, y2: f64 },
+    MoveTo {
+        x: f64,
+        y: f64,
+    },
+    LineTo {
+        x: f64,
+        y: f64,
+    },
+    ArcTo {
+        x: f64,
+        y: f64,
+    },
+    EllipticalArcTo {
+        x: f64,
+        y: f64,
+    },
+    BezierTo {
+        x: f64,
+        y: f64,
+    },
+    PolylineTo {
+        x: f64,
+        y: f64,
+        points: Vec<(f64, f64)>,
+    },
+    Rectangle {
+        w: f64,
+        h: f64,
+    },
+    Ellipse {
+        x: f64,
+        y: f64,
+        cx: f64,
+        cy: f64,
+    },
+    InfiniteLine {
+        x1: f64,
+        y1: f64,
+        x2: f64,
+        y2: f64,
+    },
 }
 
 /// A connector line between shapes.
