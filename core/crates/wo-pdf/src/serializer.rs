@@ -12,6 +12,7 @@ use crate::model::*;
 pub struct PdfSerializer;
 
 impl PdfSerializer {
+    #[must_use]
     pub fn new() -> Self {
         Self
     }

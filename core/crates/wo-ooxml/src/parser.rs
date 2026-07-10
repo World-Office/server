@@ -2218,6 +2218,7 @@ impl OoxmlParser {
         Ok(sheets)
     }
 
+    #[allow(clippy::type_complexity)]
     fn parse_xlsx_worksheet(
         &self,
         doc: &XmlDoc,
@@ -2598,30 +2599,30 @@ impl OoxmlParser {
     }
 
     fn parse_xlsx_border_side(&self, elem: roxmltree::Node) -> XlsxBorderSide {
-        let mut side = XlsxBorderSide::default();
-        side.style = elem.attribute("style").map(|s| s.to_string());
-        if let Some(color_elem) = elem.children().find(|c| c.has_tag_name("color")) {
-            side.color = color_elem.attribute("rgb").map(|c| c.to_string());
+        XlsxBorderSide {
+            style: elem.attribute("style").map(|s| s.to_string()),
+            color: elem.children()
+                .find(|c| c.has_tag_name("color"))
+                .and_then(|c| c.attribute("rgb").map(|s| s.to_string())),
         }
-        side
     }
 
     fn parse_xlsx_alignment(&self, elem: roxmltree::Node) -> XlsxAlignment {
-        let mut alignment = XlsxAlignment::default();
-        alignment.horizontal = elem.attribute("horizontal").map(|s| s.to_string());
-        alignment.vertical = elem.attribute("vertical").map(|s| s.to_string());
-        alignment.text_rotation = elem.attribute("textRotation").and_then(|r| r.parse().ok());
-        alignment.wrap_text = elem.attribute("wrapText") == Some("1");
-        alignment.indent = elem.attribute("indent").and_then(|i| i.parse().ok());
-        alignment.shrink_to_fit = elem.attribute("shrinkToFit") == Some("1");
-        alignment
+        XlsxAlignment {
+            horizontal: elem.attribute("horizontal").map(|s| s.to_string()),
+            vertical: elem.attribute("vertical").map(|s| s.to_string()),
+            text_rotation: elem.attribute("textRotation").and_then(|r| r.parse().ok()),
+            wrap_text: elem.attribute("wrapText") == Some("1"),
+            indent: elem.attribute("indent").and_then(|i| i.parse().ok()),
+            shrink_to_fit: elem.attribute("shrinkToFit") == Some("1"),
+        }
     }
 
     fn parse_xlsx_protection(&self, elem: roxmltree::Node) -> XlsxProtection {
-        let mut protection = XlsxProtection::default();
-        protection.locked = elem.attribute("locked") != Some("0");
-        protection.hidden = elem.attribute("hidden") == Some("1");
-        protection
+        XlsxProtection {
+            locked: elem.attribute("locked") != Some("0"),
+            hidden: elem.attribute("hidden") == Some("1"),
+        }
     }
 
     fn parse_xlsx_defined_names(
