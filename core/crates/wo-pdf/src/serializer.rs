@@ -16,6 +16,13 @@ impl PdfSerializer {
     pub fn new() -> Self {
         Self
     }
+}
+
+impl Default for PdfSerializer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
     /// Serialize a PdfDocument into PDF bytes.
     ///
