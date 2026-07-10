@@ -9,7 +9,7 @@ import { type MonacoCommand, dispatchMonacoCommand } from "./components/Toolbar/
 import { Viewport } from "./components/Viewport"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { usePlugins } from "./hooks/usePlugins"
-import { collabSendRef, collaborationStore, currentUser } from "./lib/collaboration"
+import { collabSendRef, collabSendCommentRef, collaborationStore, currentUser } from "./lib/collaboration"
 import { type RichTextCommand, dispatchRichTextCommand } from "./lib/rte-command"
 import { documentStore } from "./stores/DocumentStore"
 
@@ -48,7 +48,7 @@ export const App = observer(function App() {
   currentUser.id = userId
   currentUser.username = username
 
-  const { sendParticipantUpdate, connect } = useCollaboration({
+  const { sendParticipantUpdate, sendCommentEvent, connect } = useCollaboration({
     wsUrl: `${import.meta.env.VITE_COLLABORATION_WS_URL}/ws/{session_id}?user_id=${userId}&username=${encodeURIComponent(username)}`,
     userId,
     username,
@@ -58,8 +58,9 @@ export const App = observer(function App() {
 
   useEffect(() => {
     collabSendRef.send = sendParticipantUpdate
+    collabSendCommentRef.send = sendCommentEvent
     connect()
-  }, [sendParticipantUpdate, connect])
+  }, [sendParticipantUpdate, sendCommentEvent, connect])
 
   useEffect(() => {
     const desktop = isDesktop()
