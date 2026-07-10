@@ -91,7 +91,7 @@ pub fn render_page(
         .parse(doc_bytes)
         .map_err(|e| format!("Failed to parse DOCX: {}", e))?;
 
-    let body = ooxml.body.unwrap_or_else(DocxBody::default);
+    let body = ooxml.docx_body.unwrap_or_else(DocxBody::default);
 
     // Use provided dimensions or A4 defaults at 96 DPI
     let canvas_width = width.unwrap_or(794);

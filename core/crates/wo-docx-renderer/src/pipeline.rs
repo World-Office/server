@@ -46,7 +46,7 @@ impl DocxRenderPipeline {
             });
         }
 
-        let body = ooxml.body.unwrap_or_else(DocxBody::default);
+        let body = ooxml.docx_body.unwrap_or_else(DocxBody::default);
 
         // Stage 2: Layout
         let layout_engine = LayoutEngine::new(&self.config);
@@ -126,7 +126,7 @@ impl DocxRenderPipeline {
                             format: "docx".into(),
                             message: format!("Failed to parse DOCX: {}", e),
                         })?;
-                        ooxml.body.unwrap_or_else(DocxBody::default)
+                        ooxml.docx_body.unwrap_or_else(DocxBody::default)
                     };
                 let all_pages = layout_engine.layout(&body);
                 if page_idx < all_pages.len() {
