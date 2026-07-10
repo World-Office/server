@@ -242,13 +242,19 @@ describe("Presentation Coauthoring", () => {
         new Promise((resolve, reject) => {
           const ws = new WebSocket(wsUrl1)
           const timeout = setTimeout(() => reject(new Error("WS1 timeout")), 10000)
-          ws.onopen = () => { clearTimeout(timeout); resolve(ws) }
+          ws.onopen = () => {
+            clearTimeout(timeout)
+            resolve(ws)
+          }
           ws.onerror = () => reject(new Error("WS1 error"))
         }),
         new Promise((resolve, reject) => {
           const ws = new WebSocket(wsUrl2)
           const timeout = setTimeout(() => reject(new Error("WS2 timeout")), 10000)
-          ws.onopen = () => { clearTimeout(timeout); resolve(ws) }
+          ws.onopen = () => {
+            clearTimeout(timeout)
+            resolve(ws)
+          }
           ws.onerror = () => reject(new Error("WS2 error"))
         }),
       ])
@@ -300,13 +306,19 @@ describe("Presentation Coauthoring", () => {
         new Promise((resolve, reject) => {
           const ws = new WebSocket(wsUrl1)
           const timeout = setTimeout(() => reject(new Error("WS1 timeout")), 10000)
-          ws.onopen = () => { clearTimeout(timeout); resolve(ws) }
+          ws.onopen = () => {
+            clearTimeout(timeout)
+            resolve(ws)
+          }
           ws.onerror = () => reject(new Error("WS1 error"))
         }),
         new Promise((resolve, reject) => {
           const ws = new WebSocket(wsUrl2)
           const timeout = setTimeout(() => reject(new Error("WS2 timeout")), 10000)
-          ws.onopen = () => { clearTimeout(timeout); resolve(ws) }
+          ws.onopen = () => {
+            clearTimeout(timeout)
+            resolve(ws)
+          }
           ws.onerror = () => reject(new Error("WS2 error"))
         }),
       ])
@@ -363,13 +375,19 @@ describe("Presentation Coauthoring", () => {
         new Promise((resolve, reject) => {
           const ws = new WebSocket(wsUrl1)
           const timeout = setTimeout(() => reject(new Error("WS1 timeout")), 10000)
-          ws.onopen = () => { clearTimeout(timeout); resolve(ws) }
+          ws.onopen = () => {
+            clearTimeout(timeout)
+            resolve(ws)
+          }
           ws.onerror = () => reject(new Error("WS1 error"))
         }),
         new Promise((resolve, reject) => {
           const ws = new WebSocket(wsUrl2)
           const timeout = setTimeout(() => reject(new Error("WS2 timeout")), 10000)
-          ws.onopen = () => { clearTimeout(timeout); resolve(ws) }
+          ws.onopen = () => {
+            clearTimeout(timeout)
+            resolve(ws)
+          }
           ws.onerror = () => reject(new Error("WS2 error"))
         }),
       ])
@@ -432,13 +450,19 @@ describe("Presentation Coauthoring", () => {
         new Promise((resolve, reject) => {
           const ws = new WebSocket(wsUrl1)
           const timeout = setTimeout(() => reject(new Error("WS1 timeout")), 10000)
-          ws.onopen = () => { clearTimeout(timeout); resolve(ws) }
+          ws.onopen = () => {
+            clearTimeout(timeout)
+            resolve(ws)
+          }
           ws.onerror = () => reject(new Error("WS1 error"))
         }),
         new Promise((resolve, reject) => {
           const ws = new WebSocket(wsUrl2)
           const timeout = setTimeout(() => reject(new Error("WS2 timeout")), 10000)
-          ws.onopen = () => { clearTimeout(timeout); resolve(ws) }
+          ws.onopen = () => {
+            clearTimeout(timeout)
+            resolve(ws)
+          }
           ws.onerror = () => reject(new Error("WS2 error"))
         }),
       ])
@@ -540,7 +564,10 @@ describe("Presentation Coauthoring", () => {
       const ws1 = await new Promise((resolve, reject) => {
         const ws = new WebSocket(wsUrl)
         const timeout = setTimeout(() => reject(new Error("WS1 timeout")), 10000)
-        ws.onopen = () => { clearTimeout(timeout); resolve(ws) }
+        ws.onopen = () => {
+          clearTimeout(timeout)
+          resolve(ws)
+        }
         ws.onerror = () => reject(new Error("WS1 error"))
       })
 
@@ -570,13 +597,19 @@ describe("Presentation Coauthoring", () => {
       const ws2 = await new Promise((resolve, reject) => {
         const ws = new WebSocket(wsUrl)
         const timeout = setTimeout(() => reject(new Error("WS2 timeout")), 10000)
-        ws.onopen = () => { clearTimeout(timeout); resolve(ws) }
+        ws.onopen = () => {
+          clearTimeout(timeout)
+          resolve(ws)
+        }
         ws.onerror = () => reject(new Error("WS2 error"))
       })
 
       // Get initial state after reconnect
       const initialState2 = await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error("Initial state on reconnect timeout")), 8000)
+        const timeout = setTimeout(
+          () => reject(new Error("Initial state on reconnect timeout")),
+          8000,
+        )
         ws2.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data)
@@ -623,7 +656,10 @@ describe("Presentation Coauthoring", () => {
             new Promise((resolve, reject) => {
               const ws = new WebSocket(u.url)
               const timeout = setTimeout(() => reject(new Error(`${u.id} timeout`)), 10000)
-              ws.onopen = () => { clearTimeout(timeout); resolve(ws) }
+              ws.onopen = () => {
+                clearTimeout(timeout)
+                resolve(ws)
+              }
               ws.onerror = () => reject(new Error(`${u.id} error`))
             }),
         ),

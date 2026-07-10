@@ -6712,11 +6712,7 @@ fn core_page_to_wo(page: &CorePdfPage) -> WoPdfPage {
         height: page.height.unwrap_or(792.0) as f64,
         text: page.text.clone(),
         rotation: page.rotation,
-        annotations: page
-            .annotations
-            .iter()
-            .map(core_annot_to_wo)
-            .collect(),
+        annotations: page.annotations.iter().map(core_annot_to_wo).collect(),
     }
 }
 
@@ -6727,11 +6723,7 @@ fn wo_page_to_core(page: &WoPdfPage) -> CorePdfPage {
         height: Some(page.height as f32),
         text: page.text.clone(),
         rotation: page.rotation,
-        annotations: page
-            .annotations
-            .iter()
-            .map(wo_annot_to_core)
-            .collect(),
+        annotations: page.annotations.iter().map(wo_annot_to_core).collect(),
     }
 }
 

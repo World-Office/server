@@ -451,12 +451,13 @@ async fn demo_document_handler() -> Result<
 
 // ── Router builder ──────────────────────────────────────────────────────
 
-/// Initialize metrics exporter
 fn init_metrics() {
-    PrometheusBuilder::new()
+    if let Err(e) = PrometheusBuilder::new()
         .with_http_listener("0.0.0.0:9091".parse::<SocketAddr>().unwrap())
         .install()
-        .expect("Failed to install Prometheus recorder");
+    {
+        tracing::warn!("Failed to install Prometheus HTTP listener (metrics will be unavailable): {e}");
+    }
 }
 
 /// Build the application router.

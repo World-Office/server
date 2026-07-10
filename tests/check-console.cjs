@@ -1,5 +1,4 @@
 const { chromium } = require("playwright")
-
 ;(async () => {
   const browser = await chromium.launch({ headless: true })
   const context = await browser.newContext({ viewport: { width: 1400, height: 900 } })

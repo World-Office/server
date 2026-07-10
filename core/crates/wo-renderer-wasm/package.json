@@ -1,14 +1,10 @@
 {
   "name": "@world-office/wo-renderer-wasm",
   "version": "0.1.0",
-  "collaborators": [
-    "World Office Contributors"
-  ],
+  "collaborators": ["World Office Contributors"],
   "description": "WASM bindings for World-Office rendering engine",
   "type": "module",
-  "files": [
-    "pkg"
-  ],
+  "files": ["pkg"],
   "main": "pkg/wo_renderer_wasm.js",
   "module": "pkg/wo_renderer_wasm.js",
   "types": "pkg/wo_renderer_wasm.d.ts",
