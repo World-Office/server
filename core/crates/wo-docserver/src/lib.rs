@@ -456,7 +456,9 @@ fn init_metrics() {
         .with_http_listener("0.0.0.0:9091".parse::<SocketAddr>().unwrap())
         .install()
     {
-        tracing::warn!("Failed to install Prometheus HTTP listener (metrics will be unavailable): {e}");
+        tracing::warn!(
+            "Failed to install Prometheus HTTP listener (metrics will be unavailable): {e}"
+        );
     }
 }
 
