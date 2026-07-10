@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react"
 import type { RibbonCommandDispatch, RibbonContext, RibbonSpec } from "../types"
-import { RibbonTabBar } from "./RibbonTabBar"
 import { RibbonPanel } from "./RibbonPanel"
+import { RibbonTabBar } from "./RibbonTabBar"
 
 interface RibbonProps {
   spec: RibbonSpec
@@ -41,7 +41,12 @@ export function Ribbon({ spec, context, dispatch, beforeTabs, tabBarExtra }: Rib
         extra={tabBarExtra}
       />
       {activeTab && (
-        <RibbonPanel key={activeTab.id} tab={activeTab} context={enrichedContext} dispatch={dispatch} />
+        <RibbonPanel
+          key={activeTab.id}
+          tab={activeTab}
+          context={enrichedContext}
+          dispatch={dispatch}
+        />
       )}
     </div>
   )

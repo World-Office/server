@@ -24,7 +24,9 @@ export function ControlRenderer({ control, context, dispatch }: ControlRendererP
 
   switch (control.type) {
     case "button":
-      return <ButtonControl spec={control} context={context} dispatch={dispatch} enabled={isEnabled} />
+      return (
+        <ButtonControl spec={control} context={context} dispatch={dispatch} enabled={isEnabled} />
+      )
     case "select":
       return <SelectControl spec={control} context={context} enabled={isEnabled} />
     case "dropdown":
@@ -36,7 +38,17 @@ export function ControlRenderer({ control, context, dispatch }: ControlRendererP
     case "color-picker":
       return <ColorPickerControl spec={control} context={context} enabled={isEnabled} />
     case "separator":
-      return <div className="de-ribbon-separator" style={{ width: 1, height: 32, backgroundColor: "var(--wo-de-border-light)", margin: "0 4px" }} />
+      return (
+        <div
+          className="de-ribbon-separator"
+          style={{
+            width: 1,
+            height: 32,
+            backgroundColor: "var(--wo-de-border-light)",
+            margin: "0 4px",
+          }}
+        />
+      )
     case "spacer":
       return <div className="de-ribbon-spacer" style={{ flex: 1 }} />
     default:
@@ -183,15 +195,17 @@ function ColorPickerControl({
 
   return (
     <div className="de-ribbon-colorpicker" title={spec.tooltip}>
-      <button
-        type="button"
-        className="de-ribbon-btn"
-        disabled={!enabled}
-        onClick={() => {}}
-      >
+      <button type="button" className="de-ribbon-btn" disabled={!enabled} onClick={() => {}}>
         <span
           className="de-ribbon-color-swatch"
-          style={{ backgroundColor: currentColor, width: 18, height: 18, borderRadius: 2, border: "1px solid #ccc", display: "block" }}
+          style={{
+            backgroundColor: currentColor,
+            width: 18,
+            height: 18,
+            borderRadius: 2,
+            border: "1px solid #ccc",
+            display: "block",
+          }}
         />
         {spec.label && <span className="de-ribbon-btn-label">{spec.label}</span>}
       </button>
@@ -209,12 +223,15 @@ export function getInlineIcon(name: string): React.ReactNode | null {
     Strikethrough: "M6 12h12M16 6a4 4 0 0 0-8 0v4a4 4 0 0 0 8 0V6zM8 18a4 4 0 0 0 8 0",
     Subscript: "M4 18l8-12M4 6l8 12M17 18l4-4-4-4",
     Superscript: "M4 18l8-12M4 6l8 12M17 6l4 4-4 4",
-    Scissors: "M6 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM20 4L8 12m0 0l12 8",
+    Scissors:
+      "M6 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM6 20a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM20 4L8 12m0 0l12 8",
     Copy: "M8 4v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7l-3-3H10a2 2 0 0 0-2 2zM16 4v4h4M12 14H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2",
-    ClipboardPaste: "M15 2H9a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h1M9 2a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M15 5h1a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1",
+    ClipboardPaste:
+      "M15 2H9a2 2 0 0 0-2 2v1a2 2 0 0 0 2 2h1M9 2a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M15 5h1a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h1",
     Heading1: "M4 12h8M4 18V6M12 18V6M17 18V6l4 4",
     Heading2: "M4 12h8M4 18V6M12 18V6M21 18h-4a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2h4V8h-6",
-    Heading3: "M4 12h8M4 18V6M12 18V6M21 10a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2",
+    Heading3:
+      "M4 12h8M4 18V6M12 18V6M21 10a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v2a2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2",
     AlignLeft: "M3 6h18M3 12h12M3 18h18M3 24h6",
     AlignCenter: "M3 6h18M6 12h12M3 18h18M9 24h6",
     AlignRight: "M3 6h18M9 12h12M3 18h18M15 24h6",
@@ -230,20 +247,26 @@ export function getInlineIcon(name: string): React.ReactNode | null {
     Replace: "M14 4l-4 8h8l-4 8M4 6l2 2m0 0l2-2M6 8V4",
     RemoveFormatting: "M4 7V4h16v3M9 20h6M12 4v16",
     Table2: "M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18",
-    Palette: "M12 2a10 10 0 0 0 0 20c2.5 0 4-1.5 4-3 0-.5-.2-1-.5-1.3-.3-.4-.5-.9-.5-1.4 0-1.1.9-2 2-2h1a8 8 0 0 0 8-8c0-4.4-3.6-8-8-8zM6 10a2 2 0 1 1 4 0 2 2 0 0 1-4 0z",
+    Palette:
+      "M12 2a10 10 0 0 0 0 20c2.5 0 4-1.5 4-3 0-.5-.2-1-.5-1.3-.3-.4-.5-.9-.5-1.4 0-1.1.9-2 2-2h1a8 8 0 0 0 8-8c0-4.4-3.6-8-8-8zM6 10a2 2 0 1 1 4 0 2 2 0 0 1-4 0z",
     File: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6",
     Save: "M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8",
     Share2: "M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13",
-    Users: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75",
+    Users:
+      "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75",
     ZoomIn: "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35M11 8v6M8 11h6",
     ZoomOut: "M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.35-4.35M8 11h6",
-    Image: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM21 15l-5-5L7 15",
-    Printer: "M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14v6h12v-6M6 6V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2",
-    Globe: "M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zM2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z",
+    Image:
+      "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM21 15l-5-5L7 15",
+    Printer:
+      "M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14v6h12v-6M6 6V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2",
+    Globe:
+      "M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zM2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z",
     Cloud: "M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z",
     Lock: "M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2zm10-10V7a4 4 0 0 0-8 0v4",
     Eye: "M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",
-    Settings: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",
+    Settings:
+      "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",
     HelpCircle: "M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h0",
     Download: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3",
     Upload: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12",
@@ -267,6 +290,8 @@ export function getInlineIcon(name: string): React.ReactNode | null {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
+      role="img"
+      aria-label={name}
     >
       <path d={d} />
     </svg>

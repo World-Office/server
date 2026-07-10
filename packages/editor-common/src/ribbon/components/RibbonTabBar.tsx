@@ -8,7 +8,13 @@ interface RibbonTabBarProps {
   extra?: React.ReactNode
 }
 
-export function RibbonTabBar({ tabs, activeTabId, onTabChange, beforeTabs, extra }: RibbonTabBarProps) {
+export function RibbonTabBar({
+  tabs,
+  activeTabId,
+  onTabChange,
+  beforeTabs,
+  extra,
+}: RibbonTabBarProps) {
   return (
     <div className="de-toolbar-tabs">
       <div className="de-toolbar-extra-left" />

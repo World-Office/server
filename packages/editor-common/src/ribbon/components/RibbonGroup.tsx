@@ -12,7 +12,12 @@ export function RibbonGroup({ group, context, dispatch }: RibbonGroupProps) {
     <div className="de-ribbon-group">
       <div className="de-ribbon-elset">
         {group.controls.map((control) => (
-          <ControlRenderer key={control.id} control={control} context={context} dispatch={dispatch} />
+          <ControlRenderer
+            key={control.id}
+            control={control}
+            context={context}
+            dispatch={dispatch}
+          />
         ))}
       </div>
       <span className="de-ribbon-label">{group.label}</span>
