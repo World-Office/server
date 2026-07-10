@@ -1,110 +1,82 @@
-name: Deploy
+name: Deploy Demo
 
 on:
   push:
     branches: [main]
 
+env:
+  CARGO_TERM_COLOR: always
+  JWT_SECRET: ci-test-secret
+
 jobs:
-  build-and-push:
-    name: Build and Push Docker Images
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+  build-and-deploy:
+    name: Build and Deploy to cloud.graphwiz.ai
+    runs-on: legion
     if: github.ref == 'refs/heads/main'
-    env:
-      DOCKER_IMAGE: ghcr.io/${{ github.repository_owner }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Install system deps
+        run: sudo pacman -S --noconfirm pkg-config openssl libxml2 || true
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+      - name: Build wo-docserver (release)
+        run: cargo build --release -p wo-docserver
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          version: 10.4.1
 
-      - name: Build and push identity-service
-        uses: docker/build-push-action@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          context: .
-          file: services.Dockerfile
-          build-args: SERVICE_NAME=identity-service
-          push: true
-          tags: ${{ env.DOCKER_IMAGE }}/identity-service:latest,${{ env.DOCKER_IMAGE }}/identity-service:${{ github.sha }}
+          node-version: 20
 
-      - name: Build and push storage-service
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: services.Dockerfile
-          build-args: SERVICE_NAME=storage-service
-          push: true
-          tags: ${{ env.DOCKER_IMAGE }}/storage-service:latest,${{ env.DOCKER_IMAGE }}/storage-service:${{ github.sha }}
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
 
-      - name: Build and push conversion-service
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: services.Dockerfile
-          build-args: SERVICE_NAME=conversion-service
-          push: true
-          tags: ${{ env.DOCKER_IMAGE }}/conversion-service:latest,${{ env.DOCKER_IMAGE }}/conversion-service:${{ github.sha }}
+      - name: Build editor frontends
+        run: |
+          pnpm --filter @world-office/documenteditor build
+          pnpm --filter @world-office/spreadsheeteditor build
+          pnpm --filter @world-office/presentationeditor build
+          pnpm --filter @world-office/pdfeditor build
+          pnpm --filter @world-office/visioeditor build
 
-      - name: Build and push coauthoring-service
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: services.Dockerfile
-          build-args: SERVICE_NAME=coauthoring-service
-          push: true
-          tags: ${{ env.DOCKER_IMAGE }}/coauthoring-service:latest,${{ env.DOCKER_IMAGE }}/coauthoring-service:${{ github.sha }}
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
 
-      - name: Build and push session-service
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: services.Dockerfile
-          build-args: SERVICE_NAME=session-service
-          push: true
-          tags: ${{ env.DOCKER_IMAGE }}/session-service:latest,${{ env.DOCKER_IMAGE }}/session-service:${{ github.sha }}
+      - name: Copy binary to server
+        run: |
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key" \
+            target/release/wo-docserver \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/home/${{ secrets.DEPLOY_USER }}/wo-docserver-new
 
-      - name: Build and push api-gateway
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: services.Dockerfile
-          build-args: SERVICE_NAME=api-gateway
-          push: true
-          tags: ${{ env.DOCKER_IMAGE }}/api-gateway:latest,${{ env.DOCKER_IMAGE }}/api-gateway:${{ github.sha }}
+      - name: Copy editor frontends to server
+        run: |
+          ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }} \
+            "mkdir -p /home/weiss/frontends/word /home/weiss/frontends/sheet /home/weiss/frontends/slide /home/weiss/frontends/pdf /home/weiss/frontends/diagram"
+          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key" \
+            apps/web/apps/documenteditor-react/dist/ \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/home/weiss/frontends/word/
+          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key" \
+            apps/web/apps/spreadsheeteditor-react/dist/ \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/home/weiss/frontends/sheet/
+          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key" \
+            apps/web/apps/presentationeditor-react/dist/ \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/home/weiss/frontends/slide/
+          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key" \
+            apps/web/apps/pdfeditor-react/dist/ \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/home/weiss/frontends/pdf/
+          rsync -avz --delete -e "ssh -o StrictHostKeyChecking=no -i ~/.ssh/deploy_key" \
+            apps/web/apps/visioeditor-react/dist/ \
+            ${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/home/weiss/frontends/diagram/
 
-      - name: Build and push docserver
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: core/crates/wo-docserver/Dockerfile
-          push: true
-          tags: ${{ env.DOCKER_IMAGE }}/docserver:latest,${{ env.DOCKER_IMAGE }}/docserver:${{ github.sha }}
-
-      - name: Build and push server
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: services/server/Dockerfile
-          push: true
-          tags: ${{ env.DOCKER_IMAGE }}/server:latest,${{ env.DOCKER_IMAGE }}/server:${{ github.sha }}
-
-  deploy:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    needs: build-and-push
-    steps:
-      - name: Deploy via SSH
+      - name: Deploy and restart service
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.DEPLOY_HOST }}
@@ -112,22 +84,16 @@ jobs:
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
             set -e
-            COMPOSE_PATH="${{ secrets.DEPLOY_COMPOSE_PATH }}"
-            if [ -z "$COMPOSE_PATH" ]; then
-              COMPOSE_PATH="/opt/worldoffice"
-            fi
-            if [ ! -f "$COMPOSE_PATH/docker-compose.prod.yml" ]; then
-              echo "ERROR: docker-compose.prod.yml not found at $COMPOSE_PATH"
-              exit 1
-            fi
-            cd "$COMPOSE_PATH"
-
-            echo "Pulling latest images..."
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
-            echo "Starting services..."
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-            echo "Deployed $(date)"
-        timeout-minutes: 15
+            sudo mv /home/weiss/wo-docserver-new /opt/worldoffice/wo-docserver
+            sudo rm -rf /opt/worldoffice/editor-ui
+            sudo mkdir -p /opt/worldoffice/editor-ui
+            sudo mv /home/weiss/frontends/word /opt/worldoffice/editor-ui/word
+            sudo mv /home/weiss/frontends/sheet /opt/worldoffice/editor-ui/sheet
+            sudo mv /home/weiss/frontends/slide /opt/worldoffice/editor-ui/slide
+            sudo mv /home/weiss/frontends/pdf /opt/worldoffice/editor-ui/pdf
+            sudo mv /home/weiss/frontends/diagram /opt/worldoffice/editor-ui/diagram
+            sudo rm -rf /home/weiss/frontends
+            sudo systemctl restart worldoffice.service
 
       - name: Verify deployment
         uses: appleboy/ssh-action@v1
@@ -136,13 +102,9 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           script: |
-            COMPOSE_PATH="${{ secrets.DEPLOY_COMPOSE_PATH }}"
-            if [ -z "$COMPOSE_PATH" ]; then
-              COMPOSE_PATH="/opt/worldoffice"
-            fi
-            cd "$COMPOSE_PATH"
-            echo "--- Service status ---"
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
-            echo "--- Health check results ---"
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml logs --tail=5 --no-color | grep -E "(health|Health|HEALTH)" || echo "No health logs found"
-        timeout-minutes: 5
+            echo "--- Binary ---"
+            ls -la /opt/worldoffice/wo-docserver
+            echo "--- Health ---"
+            curl -sf http://localhost:9201/health && echo " OK" || echo " FAIL"
+            echo "--- Service ---"
+            sudo systemctl status worldoffice.service --no-pager 2>&1 | head -5
