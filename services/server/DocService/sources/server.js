@@ -28,6 +28,8 @@ const metaRouter = require("./routes/meta")
 const ms = require("ms")
 const aiProxyHandler = require("./ai/aiProxyHandler")
 const runtimeConfigManager = require("./../../Common/sources/runtimeConfigManager")
+const metrics = require("./metrics")
+const client = require('prom-client')
 
 const cfgWopiEnable = config.get("wopi.enable")
 const cfgWopiDummyEnable = config.get("wopi.dummy.enable")
@@ -229,6 +231,10 @@ docsCoServer.install(server, app, () => {
   app.get("/downloadfile/:docid", canvasService.downloadFile)
   app.post("/downloadfile/:docid", rawFileParser, canvasService.downloadFile)
   app.get("/healthcheck", utils.checkClientIp, docsCoServer.healthCheck)
+  app.get("/metrics", (req, res) => {
+    res.set('Content-Type', client.register.contentType)
+    res.end(client.register.metrics())
+  })
 
   app.get("/baseurl", (req, res) => {
     const ctx = new operationContext.Context()

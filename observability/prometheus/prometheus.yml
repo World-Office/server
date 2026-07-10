@@ -7,6 +7,9 @@ global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+rule_files:
+  - 'alerts.yml'
+
 scrape_configs:
   - job_name: 'api-gateway'
     static_configs:
@@ -36,6 +39,16 @@ scrape_configs:
   - job_name: 'session-service'
     static_configs:
       - targets: ['host.docker.internal:8005']
+    metrics_path: '/metrics'
+
+  - job_name: 'docserver'
+    static_configs:
+      - targets: ['host.docker.internal:9091']
+    metrics_path: '/metrics'
+
+  - job_name: 'server'
+    static_configs:
+      - targets: ['host.docker.internal:3000']
     metrics_path: '/metrics'
 
   - job_name: 'prometheus'

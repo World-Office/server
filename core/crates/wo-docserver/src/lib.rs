@@ -15,6 +15,8 @@ use axum::{
     Router,
 };
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
+use metrics_exporter_prometheus::PrometheusBuilder;
+use once_cell::sync::OnceCell;
 use serde::{Deserialize, Serialize};
 use wo_x2t::ConversionRouter;
 use wopi::WopiClient;
@@ -448,9 +450,23 @@ async fn demo_document_handler() -> Result<
 
 // ── Router builder ──────────────────────────────────────────────────────
 
+/// Initialize metrics exporter
+fn init_metrics() -> &'static PrometheusBuilder {
+    static METRICS: OnceCell<PrometheusBuilder> = OnceCell::new();
+    METRICS.get_or_init(|| {
+        PrometheusBuilder::new()
+            .with_http_listener("0.0.0.0:9091".parse().unwrap())
+            .install()
+            .expect("Failed to install Prometheus recorder")
+    })
+}
+
 /// Build the application router.
 pub fn create_app(config: DocServerConfig) -> Router {
     let state = AppState::new(config.clone());
+
+    // Initialize metrics
+    let _metrics = init_metrics();
 
     let mut app = Router::new()
         .route("/health", get(health_handler))
