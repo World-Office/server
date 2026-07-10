@@ -6,6 +6,7 @@ pub mod config;
 pub mod static_files;
 pub mod wopi;
 
+use std::net::SocketAddr;
 use std::sync::Arc;
 
 use axum::{
@@ -16,7 +17,7 @@ use axum::{
 };
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use metrics_exporter_prometheus::PrometheusBuilder;
-use once_cell::sync::OnceCell;
+
 use serde::{Deserialize, Serialize};
 use wo_x2t::ConversionRouter;
 use wopi::WopiClient;
@@ -451,14 +452,11 @@ async fn demo_document_handler() -> Result<
 // ── Router builder ──────────────────────────────────────────────────────
 
 /// Initialize metrics exporter
-fn init_metrics() -> &'static PrometheusBuilder {
-    static METRICS: OnceCell<PrometheusBuilder> = OnceCell::new();
-    METRICS.get_or_init(|| {
-        PrometheusBuilder::new()
-            .with_http_listener("0.0.0.0:9091".parse().unwrap())
-            .install()
-            .expect("Failed to install Prometheus recorder")
-    })
+fn init_metrics() {
+    PrometheusBuilder::new()
+        .with_http_listener("0.0.0.0:9091".parse::<SocketAddr>().unwrap())
+        .install()
+        .expect("Failed to install Prometheus recorder");
 }
 
 /// Build the application router.
