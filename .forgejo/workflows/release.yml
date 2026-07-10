@@ -9,7 +9,7 @@ on:
 jobs:
   build-core:
     name: Build Rust Crates (Release)
-    runs-on: codeberg-medium
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -47,7 +47,7 @@ jobs:
 
   build-web:
     name: Build Web Apps
-    runs-on: codeberg-medium
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -85,7 +85,7 @@ jobs:
 
   create-release:
     name: Create Release
-    runs-on: codeberg-medium
+    runs-on: ubuntu-latest
     needs: [build-core, build-web]
     steps:
       - name: Checkout

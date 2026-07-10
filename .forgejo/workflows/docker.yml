@@ -12,7 +12,7 @@ env:
 jobs:
   build-frontend:
     name: Build Frontend
-    runs-on: codeberg-medium
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: https://data.forgejo.org/actions/checkout@v4
@@ -59,7 +59,7 @@ jobs:
 
   build-services:
     name: Build ${{ matrix.service }}
-    runs-on: codeberg-medium
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
@@ -119,7 +119,7 @@ jobs:
 
   build-docserver:
     name: Build wo-docserver
-    runs-on: codeberg-medium
+    runs-on: ubuntu-latest
     needs: [build-frontend]
     steps:
       - name: Checkout
