@@ -80,9 +80,14 @@ impl OoxmlParser {
             Vec::new()
         };
 
-        // Parse DOCX body if available
-        let body = match format {
+        // Parse format-specific content
+        let docx_body = match format {
             OoxmlFormat::Docx => self.parse_docx_body(&mut archive)?,
+            _ => None,
+        };
+
+        let xlsx_workbook = match format {
+            OoxmlFormat::Xlsx => Some(self.parse_xlsx(&mut archive)?),
             _ => None,
         };
 
@@ -95,7 +100,8 @@ impl OoxmlParser {
             part_count,
             core_properties,
             relationships,
-            body,
+            docx_body,
+            xlsx_workbook,
         })
     }
 
@@ -290,6 +296,11 @@ impl OoxmlParser {
     const A_NS: &str = "http://schemas.openxmlformats.org/drawingml/2006/main";
     #[allow(dead_code)]
     const R_NS: &str = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+
+    // --- XLSX namespaces ---
+
+    const S_NS: &str = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+    const S_R_NS: &str = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 
     /// Parse PPTX presentation from ppt/presentation.xml.
     pub fn parse_pptx(
@@ -2041,6 +2052,619 @@ impl OoxmlParser {
             slide_layouts: Vec::new(), // Layouts resolved via relationships
         })
     }
+
+    // --- XLSX Parsing ---
+
+    /// Parse XLSX workbook from xl/workbook.xml and related files.
+    pub fn parse_xlsx(&self, archive: &mut zip::ZipArchive<Cursor<&[u8]>>) -> Result<XlsxWorkbook> {
+        // Parse workbook.xml to get sheet names and relationships
+        let workbook_xml = self.read_zip_entry(archive, "xl/workbook.xml")?;
+        let workbook_doc = XmlDoc::parse(&workbook_xml).map_err(|e| CoreError::Parse {
+            format: "ooxml".into(),
+            message: format!("Invalid workbook.xml: {}", e),
+        })?;
+
+        // Parse workbook relationships to map sheet IDs to file paths
+        let workbook_rels_xml = self.read_zip_entry(archive, "xl/_rels/workbook.xml.rels")?;
+        let workbook_rels_doc =
+            XmlDoc::parse(&workbook_rels_xml).map_err(|e| CoreError::Parse {
+                format: "ooxml".into(),
+                message: format!("Invalid workbook.xml.rels: {}", e),
+            })?;
+
+        // Extract shared strings
+        let shared_strings = self.extract_shared_strings(archive)?;
+
+        // Parse styles
+        let styles = self.parse_xlsx_styles(archive)?;
+
+        // Parse defined names
+        let defined_names = self.parse_xlsx_defined_names(archive)?;
+
+        // Parse workbook properties
+        let properties = self.parse_xlsx_workbook_properties(&workbook_doc)?;
+
+        // Parse sheets
+        let sheets = self.parse_xlsx_sheets(
+            archive,
+            &workbook_doc,
+            &workbook_rels_doc,
+            &shared_strings,
+            &styles,
+        )?;
+
+        Ok(XlsxWorkbook {
+            properties,
+            sheets,
+            shared_strings,
+            styles,
+            defined_names,
+        })
+    }
+
+    fn parse_xlsx_workbook_properties(&self, doc: &XmlDoc) -> Result<XlsxWorkbookProperties> {
+        let workbook_elem = doc
+            .descendants()
+            .find(|n| n.has_tag_name("workbook") && n.tag_name().namespace() == Some(Self::S_NS));
+
+        let mut properties = XlsxWorkbookProperties::default();
+
+        if let Some(workbook_elem) = workbook_elem {
+            // Parse date1904 attribute
+            if let Some(date_1904) = workbook_elem.attribute("date1904") {
+                properties.date_1904 = date_1904 == "1";
+            }
+
+            // Parse workbookView
+            for view_elem in workbook_elem.descendants() {
+                if view_elem.has_tag_name("workbookView")
+                    && view_elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    if let Some(active_tab) = view_elem.attribute("activeTab") {
+                        properties.active_tab = active_tab.parse().ok();
+                    }
+                    if let Some(first_sheet) = view_elem.attribute("firstSheet") {
+                        properties.first_sheet = first_sheet.parse().ok();
+                    }
+                    properties.view = view_elem.attribute("view").map(|s| s.to_string());
+                    break;
+                }
+            }
+        }
+
+        Ok(properties)
+    }
+
+    fn parse_xlsx_sheets(
+        &self,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+        workbook_doc: &XmlDoc,
+        workbook_rels_doc: &XmlDoc,
+        shared_strings: &[String],
+        styles: &XlsxStyles,
+    ) -> Result<Vec<XlsxSheet>> {
+        let mut sheets = Vec::new();
+
+        // Build sheet ID to relationship mapping
+        let mut sheet_id_to_rels: std::collections::HashMap<String, String> =
+            std::collections::HashMap::new();
+        for rel_elem in workbook_rels_doc.descendants() {
+            if rel_elem.has_tag_name("Relationship")
+                && rel_elem.tag_name().namespace() == Some(Self::S_R_NS)
+            {
+                if let (Some(id), Some(target)) =
+                    (rel_elem.attribute("Id"), rel_elem.attribute("Target"))
+                {
+                    if target.starts_with("worksheets/sheet") {
+                        sheet_id_to_rels.insert(id.to_string(), target.to_string());
+                    }
+                }
+            }
+        }
+
+        // Parse sheets from workbook.xml
+        for sheet_elem in workbook_doc.descendants() {
+            if sheet_elem.has_tag_name("sheet")
+                && sheet_elem.tag_name().namespace() == Some(Self::S_NS)
+            {
+                let name = sheet_elem.attribute("name").unwrap_or("Sheet1").to_string();
+                let sheet_id_attr = sheet_elem.attribute("sheetId").unwrap_or("1");
+                let sheet_id: u32 = sheet_id_attr.parse().unwrap_or(1);
+                let r_id = sheet_elem.attribute("id").unwrap_or("rId1").to_string();
+
+                // Get sheet state
+                let state = if let Some(state_attr) = sheet_elem.attribute("state") {
+                    match state_attr {
+                        "hidden" => SheetState::Hidden,
+                        "veryHidden" => SheetState::VeryHidden,
+                        _ => SheetState::Visible,
+                    }
+                } else {
+                    SheetState::Visible
+                };
+
+                // Find the worksheet file path
+                let worksheet_path = if let Some(target) = sheet_id_to_rels.get(&r_id) {
+                    format!("xl/{}", target)
+                } else {
+                    format!("xl/worksheets/sheet{}.xml", sheet_id)
+                };
+
+                // Parse the worksheet
+                let worksheet_xml = self
+                    .read_zip_entry(archive, &worksheet_path)
+                    .unwrap_or_default();
+                let worksheet_doc =
+                    XmlDoc::parse(&worksheet_xml).map_err(|e| CoreError::Parse {
+                        format: "ooxml".into(),
+                        message: format!("Invalid worksheet {}: {}", worksheet_path, e),
+                    })?;
+
+                let (rows, cols, merges, sheet_properties) =
+                    self.parse_xlsx_worksheet(&worksheet_doc, shared_strings, styles)?;
+
+                sheets.push(XlsxSheet {
+                    name,
+                    sheet_id,
+                    state,
+                    rows,
+                    cols,
+                    merges,
+                    properties: sheet_properties,
+                });
+            }
+        }
+
+        Ok(sheets)
+    }
+
+    fn parse_xlsx_worksheet(
+        &self,
+        doc: &XmlDoc,
+        shared_strings: &[String],
+        _styles: &XlsxStyles,
+    ) -> Result<(
+        Vec<XlsxRow>,
+        Vec<XlsxCol>,
+        Vec<XlsxMergeCell>,
+        XlsxSheetProperties,
+    )> {
+        let mut rows = Vec::new();
+        let mut cols = Vec::new();
+        let mut merges = Vec::new();
+        let mut sheet_properties = XlsxSheetProperties::default();
+
+        // Parse sheet properties
+        let worksheet_elem = doc
+            .descendants()
+            .find(|n| n.has_tag_name("worksheet") && n.tag_name().namespace() == Some(Self::S_NS));
+
+        if let Some(worksheet_elem) = worksheet_elem {
+            // Parse sheet properties
+            for prop_elem in worksheet_elem.descendants() {
+                if prop_elem.has_tag_name("sheetPr")
+                    && prop_elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    if let Some(tab_color) = prop_elem.attribute("tabColor") {
+                        sheet_properties.tab_color = Some(tab_color.to_string());
+                    }
+                } else if prop_elem.has_tag_name("sheetView")
+                    && prop_elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    if let Some(zoom_scale) = prop_elem.attribute("zoomScale") {
+                        sheet_properties.zoom_scale = zoom_scale.parse().ok();
+                    }
+                    if let Some(zoom_scale_normal) = prop_elem.attribute("zoomScaleNormal") {
+                        sheet_properties.zoom_scale_normal = zoom_scale_normal.parse().ok();
+                    }
+                    if let Some(zoom_scale_page_layout_view) =
+                        prop_elem.attribute("zoomScalePageLayoutView")
+                    {
+                        sheet_properties.zoom_scale_page_layout_view =
+                            zoom_scale_page_layout_view.parse().ok();
+                    }
+                    if let Some(workbook_view_id) = prop_elem.attribute("workbookViewId") {
+                        sheet_properties.workbook_view_id = workbook_view_id.parse().ok();
+                    }
+                }
+            }
+
+            // Parse columns
+            for col_elem in worksheet_elem.descendants() {
+                if col_elem.has_tag_name("col")
+                    && col_elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    let min: u32 = col_elem
+                        .attribute("min")
+                        .unwrap_or("1")
+                        .parse()
+                        .unwrap_or(1);
+                    let max: u32 = col_elem
+                        .attribute("max")
+                        .unwrap_or("1")
+                        .parse()
+                        .unwrap_or(1);
+                    let width: Option<f64> =
+                        col_elem.attribute("width").and_then(|w| w.parse().ok());
+                    let style: Option<u32> =
+                        col_elem.attribute("style").and_then(|s| s.parse().ok());
+                    let hidden = col_elem.attribute("hidden") == Some("1");
+                    let best_fit = col_elem.attribute("bestFit") == Some("1");
+                    let custom_width = col_elem.attribute("customWidth") == Some("1");
+
+                    cols.push(XlsxCol {
+                        min,
+                        max,
+                        width,
+                        style,
+                        hidden,
+                        best_fit,
+                        custom_width,
+                    });
+                }
+            }
+
+            // Parse merge cells
+            for merge_cell_elem in worksheet_elem.descendants() {
+                if merge_cell_elem.has_tag_name("mergeCell")
+                    && merge_cell_elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    if let Some(ref_range) = merge_cell_elem.attribute("ref") {
+                        merges.push(XlsxMergeCell {
+                            ref_range: ref_range.to_string(),
+                        });
+                    }
+                }
+            }
+
+            // Parse rows
+            for row_elem in worksheet_elem.descendants() {
+                if row_elem.has_tag_name("row")
+                    && row_elem.tag_name().namespace() == Some(Self::S_NS)
+                {
+                    let r: u32 = row_elem.attribute("r").unwrap_or("1").parse().unwrap_or(1);
+                    let ht: Option<f64> = row_elem.attribute("ht").and_then(|h| h.parse().ok());
+                    let hidden = row_elem.attribute("hidden") == Some("1");
+                    let s: Option<u32> = row_elem.attribute("s").and_then(|s| s.parse().ok());
+                    let spans = row_elem.attribute("spans").map(|s| s.to_string());
+
+                    let mut cells = Vec::new();
+                    for cell_elem in row_elem.descendants() {
+                        if cell_elem.has_tag_name("c")
+                            && cell_elem.tag_name().namespace() == Some(Self::S_NS)
+                        {
+                            let cell = self.parse_xlsx_cell(cell_elem, shared_strings)?;
+                            cells.push(cell);
+                        }
+                    }
+
+                    rows.push(XlsxRow {
+                        r,
+                        ht,
+                        hidden,
+                        s,
+                        cells,
+                        spans,
+                    });
+                }
+            }
+        }
+
+        Ok((rows, cols, merges, sheet_properties))
+    }
+
+    fn parse_xlsx_cell(
+        &self,
+        cell_elem: roxmltree::Node,
+        shared_strings: &[String],
+    ) -> Result<XlsxCell> {
+        let r = cell_elem.attribute("r").unwrap_or("").to_string();
+        let s: Option<u32> = cell_elem.attribute("s").and_then(|s| s.parse().ok());
+
+        let t_attr = cell_elem.attribute("t");
+        let cell_type = if let Some(t) = t_attr {
+            match t {
+                "s" => CellType::S,
+                "str" => CellType::Str,
+                "b" => CellType::B,
+                "e" => CellType::E,
+                "d" => CellType::D,
+                "inlineStr" => CellType::InlineStr,
+                _ => CellType::N,
+            }
+        } else {
+            CellType::N
+        };
+
+        let mut v = String::new();
+        if let Some(v_elem) = cell_elem.descendants().find(|n| n.has_tag_name("v")) {
+            v = v_elem.text().unwrap_or("").to_string();
+        }
+
+        // Resolve shared string index to actual value
+        if cell_type == CellType::S {
+            if let Ok(idx) = v.parse::<usize>() {
+                if idx < shared_strings.len() {
+                    v = shared_strings[idx].clone();
+                }
+            }
+        }
+
+        let f = cell_elem
+            .descendants()
+            .find(|n| n.has_tag_name("f"))
+            .and_then(|n| n.text().map(|t| t.to_string()));
+
+        Ok(XlsxCell {
+            r,
+            t: cell_type,
+            v,
+            s,
+            f,
+        })
+    }
+
+    fn parse_xlsx_styles(
+        &self,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    ) -> Result<XlsxStyles> {
+        if archive.by_name("xl/styles.xml").is_err() {
+            return Ok(XlsxStyles::default());
+        }
+
+        let xml = self.read_zip_entry(archive, "xl/styles.xml")?;
+        let doc = XmlDoc::parse(&xml).map_err(|e| CoreError::Parse {
+            format: "ooxml".into(),
+            message: format!("Invalid styles.xml: {}", e),
+        })?;
+
+        let mut styles = XlsxStyles::default();
+
+        // Parse number formats
+        for num_fmt_elem in doc.descendants() {
+            if num_fmt_elem.has_tag_name("numFmt")
+                && num_fmt_elem.tag_name().namespace() == Some(Self::S_NS)
+            {
+                if let (Some(num_fmt_id), Some(format_code)) = (
+                    num_fmt_elem.attribute("numFmtId"),
+                    num_fmt_elem.attribute("formatCode"),
+                ) {
+                    if let Ok(num_fmt_id_parsed) = num_fmt_id.parse::<u32>() {
+                        styles.num_fmts.push(XlsxNumFmt {
+                            num_fmt_id: num_fmt_id_parsed,
+                            format_code: format_code.to_string(),
+                        });
+                    }
+                }
+            }
+        }
+
+        // Parse fonts
+        for font_elem in doc.descendants() {
+            if font_elem.has_tag_name("font")
+                && font_elem.tag_name().namespace() == Some(Self::S_NS)
+            {
+                let mut font = XlsxFont::default();
+
+                for child in font_elem.children() {
+                    if child.has_tag_name("name") {
+                        font.name = child.text().map(|t| t.to_string());
+                    } else if child.has_tag_name("sz") {
+                        font.sz = child.text().and_then(|t| t.parse::<f64>().ok());
+                    } else if child.has_tag_name("b") {
+                        font.b = true;
+                    } else if child.has_tag_name("i") {
+                        font.i = true;
+                    } else if child.has_tag_name("u") {
+                        font.u = child.text().map(|t| t.to_string());
+                    } else if child.has_tag_name("strike") {
+                        font.strike = true;
+                    } else if child.has_tag_name("color") {
+                        font.color = child.attribute("rgb").map(|c| c.to_string());
+                    }
+                }
+
+                styles.fonts.push(font);
+            }
+        }
+
+        // Parse fills
+        for fill_elem in doc.descendants() {
+            if fill_elem.has_tag_name("fill")
+                && fill_elem.tag_name().namespace() == Some(Self::S_NS)
+            {
+                let mut fill = XlsxFill::default();
+
+                for child in fill_elem.children() {
+                    if child.has_tag_name("patternFill") {
+                        fill.pattern_type = child.attribute("patternType").map(|p| p.to_string());
+                        if let Some(fg_color) = child.children().find(|c| c.has_tag_name("fgColor"))
+                        {
+                            fill.fg_color = fg_color.attribute("rgb").map(|c| c.to_string());
+                        }
+                        if let Some(bg_color) = child.children().find(|c| c.has_tag_name("bgColor"))
+                        {
+                            fill.bg_color = bg_color.attribute("rgb").map(|c| c.to_string());
+                        }
+                    }
+                }
+
+                styles.fills.push(fill);
+            }
+        }
+
+        // Parse borders (simplified)
+        for border_elem in doc.descendants() {
+            if border_elem.has_tag_name("border")
+                && border_elem.tag_name().namespace() == Some(Self::S_NS)
+            {
+                let mut border = XlsxBorder::default();
+
+                for child in border_elem.children() {
+                    if child.has_tag_name("left") {
+                        border.left = Some(self.parse_xlsx_border_side(child));
+                    } else if child.has_tag_name("right") {
+                        border.right = Some(self.parse_xlsx_border_side(child));
+                    } else if child.has_tag_name("top") {
+                        border.top = Some(self.parse_xlsx_border_side(child));
+                    } else if child.has_tag_name("bottom") {
+                        border.bottom = Some(self.parse_xlsx_border_side(child));
+                    } else if child.has_tag_name("diagonal") {
+                        border.diagonal = Some(self.parse_xlsx_border_side(child));
+                    }
+                }
+
+                styles.borders.push(border);
+            }
+        }
+
+        // Parse cell style XFs
+        for xf_elem in doc.descendants() {
+            if xf_elem.has_tag_name("xf") && xf_elem.tag_name().namespace() == Some(Self::S_NS) {
+                // Check if this is a cellStyleXf (has apply* attributes)
+                let mut has_apply_attrs = false;
+                for attr in [
+                    "applyNumberFormat",
+                    "applyFont",
+                    "applyFill",
+                    "applyBorder",
+                    "applyAlignment",
+                    "applyProtection",
+                ] {
+                    if xf_elem.attribute(attr) == Some("1") {
+                        has_apply_attrs = true;
+                        break;
+                    }
+                }
+
+                if has_apply_attrs {
+                    let mut xf = XlsxCellStyleXf::default();
+
+                    if let Some(num_fmt_id) = xf_elem.attribute("numFmtId") {
+                        xf.num_fmt_id = num_fmt_id.parse().ok();
+                        xf.apply_number_format = true;
+                    }
+                    if let Some(font_id) = xf_elem.attribute("fontId") {
+                        xf.font_id = font_id.parse().ok();
+                        xf.apply_font = true;
+                    }
+                    if let Some(fill_id) = xf_elem.attribute("fillId") {
+                        xf.fill_id = fill_id.parse().ok();
+                        xf.apply_fill = true;
+                    }
+                    if let Some(border_id) = xf_elem.attribute("borderId") {
+                        xf.border_id = border_id.parse().ok();
+                        xf.apply_border = true;
+                    }
+
+                    styles.cell_style_xfs.push(xf);
+                } else {
+                    // This is a cellXf
+                    let mut xf = XlsxCellXf::default();
+
+                    if let Some(num_fmt_id) = xf_elem.attribute("numFmtId") {
+                        xf.num_fmt_id = num_fmt_id.parse().ok();
+                    }
+                    if let Some(font_id) = xf_elem.attribute("fontId") {
+                        xf.font_id = font_id.parse().ok();
+                    }
+                    if let Some(fill_id) = xf_elem.attribute("fillId") {
+                        xf.fill_id = fill_id.parse().ok();
+                    }
+                    if let Some(border_id) = xf_elem.attribute("borderId") {
+                        xf.border_id = border_id.parse().ok();
+                    }
+
+                    // Parse alignment
+                    if let Some(alignment_elem) =
+                        xf_elem.children().find(|c| c.has_tag_name("alignment"))
+                    {
+                        xf.alignment = Some(self.parse_xlsx_alignment(alignment_elem));
+                    }
+
+                    // Parse protection
+                    if let Some(protection_elem) =
+                        xf_elem.children().find(|c| c.has_tag_name("protection"))
+                    {
+                        xf.protection = Some(self.parse_xlsx_protection(protection_elem));
+                    }
+
+                    styles.cell_xfs.push(xf);
+                }
+            }
+        }
+
+        Ok(styles)
+    }
+
+    fn parse_xlsx_border_side(&self, elem: roxmltree::Node) -> XlsxBorderSide {
+        let mut side = XlsxBorderSide::default();
+        side.style = elem.attribute("style").map(|s| s.to_string());
+        if let Some(color_elem) = elem.children().find(|c| c.has_tag_name("color")) {
+            side.color = color_elem.attribute("rgb").map(|c| c.to_string());
+        }
+        side
+    }
+
+    fn parse_xlsx_alignment(&self, elem: roxmltree::Node) -> XlsxAlignment {
+        let mut alignment = XlsxAlignment::default();
+        alignment.horizontal = elem.attribute("horizontal").map(|s| s.to_string());
+        alignment.vertical = elem.attribute("vertical").map(|s| s.to_string());
+        alignment.text_rotation = elem.attribute("textRotation").and_then(|r| r.parse().ok());
+        alignment.wrap_text = elem.attribute("wrapText") == Some("1");
+        alignment.indent = elem.attribute("indent").and_then(|i| i.parse().ok());
+        alignment.shrink_to_fit = elem.attribute("shrinkToFit") == Some("1");
+        alignment
+    }
+
+    fn parse_xlsx_protection(&self, elem: roxmltree::Node) -> XlsxProtection {
+        let mut protection = XlsxProtection::default();
+        protection.locked = elem.attribute("locked") != Some("0");
+        protection.hidden = elem.attribute("hidden") == Some("1");
+        protection
+    }
+
+    fn parse_xlsx_defined_names(
+        &self,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    ) -> Result<Vec<XlsxDefinedName>> {
+        if archive.by_name("xl/workbook.xml").is_err() {
+            return Ok(Vec::new());
+        }
+
+        let xml = self.read_zip_entry(archive, "xl/workbook.xml")?;
+        let doc = XmlDoc::parse(&xml).map_err(|e| CoreError::Parse {
+            format: "ooxml".into(),
+            message: format!("Invalid workbook.xml: {}", e),
+        })?;
+
+        let mut defined_names = Vec::new();
+
+        for defined_name_elem in doc.descendants() {
+            if defined_name_elem.has_tag_name("definedName")
+                && defined_name_elem.tag_name().namespace() == Some(Self::S_NS)
+            {
+                let name = defined_name_elem
+                    .attribute("name")
+                    .unwrap_or("")
+                    .to_string();
+                let ref_range = defined_name_elem.text().unwrap_or("").to_string();
+                let comment = defined_name_elem
+                    .attribute("comment")
+                    .map(|c| c.to_string());
+
+                if !name.is_empty() && !ref_range.is_empty() {
+                    defined_names.push(XlsxDefinedName {
+                        name,
+                        ref_range,
+                        comment,
+                    });
+                }
+            }
+        }
+
+        Ok(defined_names)
+    }
 }
 
 impl Default for OoxmlParser {
@@ -2205,7 +2829,7 @@ mod tests {
         );
         let parser = OoxmlParser::new();
         let doc = parser.parse(&docx).unwrap();
-        let body = doc.body.unwrap();
+        let body = doc.docx_body.unwrap();
         assert_eq!(body.paragraphs.len(), 2);
         assert_eq!(body.paragraphs[0].runs[0].text, "First paragraph");
         assert_eq!(body.paragraphs[1].runs[0].text, "Second paragraph");
@@ -2232,7 +2856,7 @@ mod tests {
         );
         let parser = OoxmlParser::new();
         let doc = parser.parse(&docx).unwrap();
-        let body = doc.body.unwrap();
+        let body = doc.docx_body.unwrap();
         assert_eq!(body.paragraphs.len(), 1);
 
         let r1 = &body.paragraphs[0].runs[0];
@@ -2265,7 +2889,7 @@ mod tests {
         );
         let parser = OoxmlParser::new();
         let doc = parser.parse(&docx).unwrap();
-        let body = doc.body.unwrap();
+        let body = doc.docx_body.unwrap();
 
         assert_eq!(
             body.paragraphs[0].properties.alignment,
@@ -2304,7 +2928,7 @@ mod tests {
         );
         let parser = OoxmlParser::new();
         let doc = parser.parse(&docx).unwrap();
-        let body = doc.body.unwrap();
+        let body = doc.docx_body.unwrap();
 
         assert_eq!(body.tables.len(), 1);
         assert_eq!(body.tables[0].rows.len(), 2);
@@ -2334,7 +2958,7 @@ mod tests {
         );
         let parser = OoxmlParser::new();
         let doc = parser.parse(&docx).unwrap();
-        let body = doc.body.unwrap();
+        let body = doc.docx_body.unwrap();
         assert_eq!(body.paragraphs.len(), 3);
         assert!(body.paragraphs[0].runs.is_empty());
         assert_eq!(body.paragraphs[1].runs[0].text, "Not empty");
@@ -2359,7 +2983,7 @@ mod tests {
         );
         let parser = OoxmlParser::new();
         let doc = parser.parse(&docx).unwrap();
-        let body = doc.body.unwrap();
+        let body = doc.docx_body.unwrap();
         let runs = &body.paragraphs[0].runs;
         assert_eq!(runs.len(), 5);
         assert_eq!(
@@ -2387,7 +3011,7 @@ mod tests {
         );
         let parser = OoxmlParser::new();
         let doc = parser.parse(&docx).unwrap();
-        let body = doc.body.unwrap();
+        let body = doc.docx_body.unwrap();
         assert_eq!(body.paragraphs[0].style_id.as_deref(), Some("Heading1"));
     }
 
@@ -2971,5 +3595,24 @@ mod tests {
         assert_eq!(a1.start, "afterPrevious");
         assert_eq!(a1.duration, 0.3);
         assert_eq!(a1.delay, 1.0);
+    }
+
+    #[test]
+    fn test_parse_xlsx() {
+        let data = include_bytes!("../tests/simple.xlsx");
+        let parser = OoxmlParser::new();
+        let doc = parser.parse(data.as_slice()).expect("parse");
+        assert!(doc.xlsx_workbook.is_some());
+        let wb = doc.xlsx_workbook.unwrap();
+        assert_eq!(wb.sheets.len(), 1);
+        assert_eq!(wb.sheets[0].name, "Sheet1");
+        assert_eq!(wb.sheets[0].rows.len(), 3);
+        assert_eq!(wb.sheets[0].rows[0].cells.len(), 2);
+        assert_eq!(wb.sheets[0].rows[0].cells[0].v, "Name");
+        assert_eq!(wb.sheets[0].rows[0].cells[1].v, "Age");
+        assert_eq!(wb.sheets[0].rows[1].cells[0].v, "Alice");
+        assert_eq!(wb.sheets[0].rows[1].cells[1].v, "30");
+        assert_eq!(wb.sheets[0].rows[2].cells[0].v, "Bob");
+        assert_eq!(wb.sheets[0].rows[2].cells[1].v, "25");
     }
 }
