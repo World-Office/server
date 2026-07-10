@@ -28,6 +28,9 @@ hyper = { workspace = true }
 wo-x2t = { path = "../wo-x2t" }
 wo-wopi = { path = "../wo-wopi" }
 reqwest = { version = "0.12", features = ["json"] }
+metrics = "0.22"
+metrics-exporter-prometheus = "0.13"
+once_cell = "1.19"
 
 [dev-dependencies]
 tower = { workspace = true }

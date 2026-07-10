@@ -1,0 +1,229 @@
+{
+  "title": "World Office — Production Overview",
+  "uid": "world-office-production",
+  "version": 1,
+  "schemaVersion": 39,
+  "tags": ["world-office", "production", "monitoring"],
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "30s",
+  "panels": [
+    {
+      "title": "Overall System Health",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "sum(up{job=~"api-gateway|identity-service|storage-service|conversion-service|coauthoring-service|session-service|docserver|server"}) / count(up{job=~"api-gateway|identity-service|storage-service|conversion-service|coauthoring-service|session-service|docserver|server"}) * 100",
+          "legendFormat": "Healthy Services",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "value": "100", "text": "ALL HEALTHY", "color": "green" },
+            { "type": "range", "from": "50", "to": "99", "text": "PARTIAL", "color": "yellow" },
+            { "type": "range", "from": "0", "to": "49", "text": "CRITICAL", "color": "red" }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red" }, { "value": 50, "color": "yellow" }, { "value": 100, "color": "green" }] },
+          "unit": "percent"
+        }
+      }
+    },
+    {
+      "title": "Service Status Matrix",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 0 },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "up{job=~"api-gateway|identity-service|storage-service|conversion-service|coauthoring-service|session-service|docserver|server"}",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showHeader": true,
+        "sortBy": [{"displayName": "Value", "desc": true}]
+      },
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "Time": 0,
+              "Value": 1,
+              "job": 2
+            },
+            "renameByName": {
+              "Value": "Status",
+              "job": "Service"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "title": "HTTP Request Rate (last 5m)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[5m])) by (job)",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "calcs": ["max", "avg"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "title": "Error Rate (last 5m)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{status=~"5.."}[5m])) by (job)",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "calcs": ["max", "avg"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "title": "P99 Latency by Service",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (job, le))",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "calcs": ["max", "avg"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "title": "Memory Usage (MB)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+      "id": 6,
+      "targets": [
+        {
+          "expr": "process_resident_memory_bytes{job=~"api-gateway|identity-service|storage-service|conversion-service|coauthoring-service|session-service"} / 1024 / 1024",
+          "legendFormat": "{{job}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "calcs": ["max", "avg"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "title": "Conversion Operations (last 5m)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+      "id": 7,
+      "targets": [
+        {
+          "expr": "sum(rate(conversions_total[5m])) by (format)",
+          "legendFormat": "{{format}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "calcs": ["max", "avg"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "title": "Conversion Success Rate",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+      "id": 8,
+      "targets": [
+        {
+          "expr": "sum(rate(conversions_total{status="success"}[5m])) / sum(rate(conversions_total[5m])) * 100",
+          "legendFormat": "Success Rate",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "showThresholdLabels": true,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red" },
+              { "value": 80, "color": "yellow" },
+              { "value": 95, "color": "green" }
+            ]
+          },
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        }
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "type": "query",
+        "query": "label_values(up, job)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "annotations": {
+    "list": [
+      {
+        "name": "Alerts",
+        "type": "dashboard",
+        "enable": true,
+        "hide": false,
+        "iconColor": "red",
+        "datasource": "Prometheus",
+        "query": "ALERTS{}"
+      }
+    ]
+  }
+}

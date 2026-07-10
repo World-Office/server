@@ -567,6 +567,29 @@ impl StorageClient {
         let data: serde_json::Value = resp.json().await?;
         Ok(data)
     }
+
+    /// Check the health status of the storage service
+    pub async fn check_health(&self) -> Result<String> {
+        let resp = self
+            .http
+            .get(format!("{}/health", self.base_url))
+            .send()
+            .await?;
+
+        let status = resp.status().as_u16();
+        if !resp.status().is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            tracing::error!(status, %body, "health check failed");
+            return Err(StorageClientError::Status { status, body });
+        }
+
+        let health_data: serde_json::Value = resp.json().await?;
+        let status_str = health_data
+            .get("status")
+            .and_then(|s| s.as_str())
+            .unwrap_or("unknown");
+        Ok(status_str.to_string())
+    }
 }
 
 /// Trait abstracting snapshot storage operations for testability.

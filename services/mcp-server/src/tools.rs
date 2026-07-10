@@ -180,6 +180,15 @@ impl McpTools {
                     "required": ["link_id"]
                 }))),
             ),
+            Tool::new(
+                "health",
+                "Check the health status of the MCP server and its dependencies",
+                Arc::new(object(json!({
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }))),
+            ),
         ]
     }
 
@@ -458,6 +467,23 @@ impl ServerHandler for McpTools {
                     Err(e) => Ok(Self::error_result(e.to_string())),
                 }
             }
+            "health" => {
+                let storage_health = match self.client.check_health().await {
+                    Ok(status) => status,
+                    Err(e) => format!("Storage service unhealthy: {}", e),
+                };
+
+                let data = json!({
+                    "status": "ok",
+                    "service": "mcp-server",
+                    "version": "0.1.0",
+                    "storage_service": storage_health,
+                    "tools_available": Self::tool_definitions().len()
+                });
+                Ok(CallToolResult::success(vec![Content::text(
+                    data.to_string(),
+                )]))
+            }
             other => Err(ErrorData::invalid_params(
                 format!("Unknown tool: {}", other),
                 None,
@@ -471,8 +497,8 @@ mod tests {
     use super::*;
 
     #[test]
-    fn tool_definitions_returns_14_tools() {
-        assert_eq!(McpTools::tool_definitions().len(), 14);
+    fn tool_definitions_returns_15_tools() {
+        assert_eq!(McpTools::tool_definitions().len(), 15);
     }
 
     #[test]
@@ -496,6 +522,7 @@ mod tests {
                 "create_contentlink",
                 "list_contentlinks",
                 "resolve_contentlink",
+                "health",
             ]
         );
     }

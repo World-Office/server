@@ -1,250 +1,221 @@
-/* Status Bar - Professional Styling */
-
 .visio-statusbar {
-	position: relative;
-	display: flex;
-	align-items: center;
-	height: var(--wo-visio-statusbar-height, 24px);
-	padding: 0 2px;
-	z-index: 500;
-	background: #f3f3f3;
-	border-top: 1px solid #d0d0d0;
-	font-size: 12px;
-	color: #555;
-	user-select: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: var(--wo-visio-statusbar-height);
+  padding: 0 4px;
+  z-index: 100;
+  background-color: var(--wo-visio-bg-statusbar);
+  border-top: 1px solid var(--wo-visio-border);
+  font-size: 11px;
+  color: var(--wo-visio-text-secondary);
+  user-select: none;
+  gap: 0;
 }
 
 .visio-statusbar.no-compact {
-	height: var(--wo-visio-statusbar-expanded, 32px);
+  height: var(--wo-visio-statusbar-expanded);
 }
 
-/* Tabs scroll buttons */
 .visio-statusbar-tabs-scroll {
-	width: 66px;
-	height: 100%;
-	display: flex;
-	align-items: center;
-	padding: 0 10px;
-	flex-shrink: 0;
-	gap: 2px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px;
+  height: 100%;
+  flex-shrink: 0;
 }
 
-/* Sheets dropdown trigger */
 .visio-statusbar-addtabs-box {
-	display: flex;
-	align-items: center;
-	padding: 0 8px;
-	height: 100%;
-	border-left: 1px solid #d0d0d0;
-	border-right: 1px solid #d0d0d0;
-	flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  height: 100%;
+  border-left: 1px solid var(--wo-visio-border);
+  border-right: 1px solid var(--wo-visio-border);
+  flex-shrink: 0;
 }
 
-/* Zoom controls */
 .visio-statusbar-zoom-box {
-	position: absolute;
-	right: 0;
-	height: var(--wo-visio-statusbar-height, 24px);
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	padding: 0 10px;
-	flex-shrink: 0;
+  position: absolute;
+  right: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  flex-shrink: 0;
+  background: var(--wo-visio-bg-statusbar);
 }
 
-.visio-statusbar-no-compact .visio-statusbar-zoom-box {
-	height: var(--wo-visio-statusbar-expanded, 32px);
-}
-
-/* Sheets bar (page tabs) */
 .visio-statusbar-sheets-bar-box {
-	position: absolute;
-	left: 66px;
-	right: 160px;
-	height: var(--wo-visio-statusbar-height, 24px);
-	overflow: hidden;
-}
-
-.visio-statusbar-no-compact .visio-statusbar-sheets-bar-box {
-	left: 66px;
-	right: 135px;
-	border-bottom: 1px solid #d0d0d0;
+  position: absolute;
+  left: 66px;
+  right: 160px;
+  height: 100%;
+  overflow: hidden;
 }
 
 .visio-statusbar-sheets-bar {
-	width: 100%;
-	height: 100%;
+  width: 100%;
+  height: 100%;
 }
 
 .visio-statusbar-tabs {
-	display: flex;
-	height: 100%;
+  display: flex;
+  height: 100%;
 }
 
-/* Page tab */
 .visio-statusbar-page-tab {
-	display: inline-block;
-	padding: 0 10px;
-	line-height: var(--wo-visio-statusbar-height, 24px);
-	background: #f0f0f0;
-	border: 1px solid #d0d0d0;
-	border-top: none;
-	color: #555;
-	cursor: pointer;
-	white-space: nowrap;
-	font-size: 12px;
-	transition: background-color 0.12s, color 0.12s;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  height: 100%;
+  background-color: transparent;
+  border: none;
+  color: var(--wo-visio-text-secondary);
+  cursor: pointer;
+  font-size: 11px;
+  transition: background-color 0.1s, color 0.1s;
+  gap: 4px;
 }
 
 .visio-statusbar-page-tab:hover {
-	background: #e8e8e8;
-	color: #333;
-	border-top: none;
+  background-color: #e5e5e5;
+  color: var(--wo-visio-text-primary);
 }
 
 .visio-statusbar-page-tab.active {
-	background: #ffffff;
-	border-bottom-color: transparent;
-	border-top: none;
-	padding-top: 1px;
-	font-weight: 600;
-	color: #333;
-	box-shadow: inset 0 4px 0 #4472c4;
+  background-color: #ffffff;
+  font-weight: 600;
+  color: var(--wo-visio-text-primary);
+  border-bottom: 2px solid var(--wo-visio-accent);
 }
 
-/* Separator */
-.visio-statusbar-separator {
-	width: 1px;
-	height: 60%;
-	background: #d0d0d0;
-	align-self: center;
-}
-
-/* Button */
 .visio-statusbar-btn {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 22px;
-	height: 20px;
-	border: 1px solid transparent;
-	border-radius: 3px;
-	background: transparent;
-	cursor: pointer;
-	transition: background-color 0.12s, border-color 0.12s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 20px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--wo-visio-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.1s, border-color 0.1s;
+  padding: 0;
 }
 
 .visio-statusbar-btn svg {
-	width: 14px;
-	height: 14px;
-	color: #555;
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.8;
+  display: block;
 }
 
 .visio-statusbar-btn:hover {
-	background-color: #e5e5e5;
-	border-color: #d0d0d0;
+  background-color: #e5e5e5;
+  border-color: var(--wo-visio-border);
+}
+
+.visio-statusbar-btn:active {
+  background-color: #d0d0d0;
 }
 
 .visio-statusbar-btn.active {
-	background-color: #d9e6f7;
-	border-color: #4472c4;
-	color: #4472c4;
+  background-color: rgba(68, 114, 196, 0.08);
+  color: var(--wo-visio-accent);
 }
 
 .visio-statusbar-btn.active svg {
-	color: #4472c4;
+  color: var(--wo-visio-accent);
 }
 
 .visio-statusbar-btn:disabled {
-	opacity: 0.4;
-	cursor: default;
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
 }
 
-/* Zoom label */
 .visio-statusbar-zoom-label {
-	display: inline-flex;
-	align-items: center;
-	padding: 0 4px;
-	gap: 2px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+  font-size: 11px;
+  min-width: 36px;
+  justify-content: center;
+  color: var(--wo-visio-text-primary);
+  cursor: pointer;
 }
 
 .visio-statusbar-label {
-	font-size: 12px;
-	white-space: nowrap;
-	cursor: default;
-	color: #555;
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: default;
+  color: var(--wo-visio-text-secondary);
+  padding: 0 4px;
 }
 
-/* Number of sheet (expanded mode) */
+.visio-statusbar-separator {
+  width: 1px;
+  height: 16px;
+  background-color: var(--wo-visio-border);
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
 .visio-statusbar-number-of-sheet {
-	position: absolute;
-	left: 0;
-	height: var(--wo-visio-statusbar-height, 24px);
-	width: 135px;
-	display: flex;
-	align-items: center;
-	justify-content: flex-start;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  height: 100%;
+  flex-shrink: 0;
 }
 
 .visio-statusbar-number-of-sheet .visio-statusbar-label {
-	font-weight: 600;
+  font-weight: 600;
 }
 
-/* Sheet list dropdown */
 .visio-statusbar-sheet-list {
-	display: inline-block;
-	position: relative;
+  display: inline-block;
+  position: relative;
 }
 
 .visio-statusbar-sheet-dropdown {
-	display: none;
-	position: absolute;
-	left: 0;
-	bottom: 100%;
-	min-width: 112px;
-	background: #ffffff;
-	border: 1px solid #d0d0d0;
-	border-radius: 4px;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-	z-index: 600;
-	list-style: none;
-	padding: 4px 0;
+  display: none;
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  min-width: 112px;
+  background-color: #ffffff;
+  border: 1px solid var(--wo-visio-border);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 600;
+  list-style: none;
+  padding: 4px 0;
 }
 
 .visio-statusbar-sheet-list:hover .visio-statusbar-sheet-dropdown,
 .visio-statusbar-sheet-dropdown:hover {
-	display: block;
+  display: block;
 }
 
 .visio-statusbar-sheet-item {
-	padding: 4px 20px;
-	cursor: pointer;
-	white-space: nowrap;
-	font-size: 12px;
-	color: #333;
+  padding: 4px 20px 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--wo-visio-text-primary);
 }
 
 .visio-statusbar-sheet-item:hover {
-	background: #f0f0f0;
+  background-color: #e5e5e5;
 }
 
 .visio-statusbar-sheet-item.active {
-	font-weight: 600;
-	background: #4472c4;
-	color: #ffffff;
-}
-
-/* Save indicator */
-.visio-save-indicator {
-	font-size: 11px;
-	padding: 0 4px;
-	color: #888;
-}
-
-.visio-save-indicator.saving {
-	color: #e68a00;
-}
-
-.visio-save-indicator.modified {
-	color: #c0392b;
+  font-weight: 600;
+  background-color: rgba(68, 114, 196, 0.08);
+  color: var(--wo-visio-accent);
 }
