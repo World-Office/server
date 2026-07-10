@@ -129,8 +129,7 @@ impl PdfSerializer {
     ) -> Result<(), String> {
         writeln!(output, "{} 0 obj", obj_num).map_err(|e| e.to_string())?;
 
-        write!(output, "<< /Type /Annot /Subtype /{}", annot.subtype)
-            .map_err(|e| e.to_string())?;
+        write!(output, "<< /Type /Annot /Subtype /{}", annot.subtype).map_err(|e| e.to_string())?;
 
         write!(
             output,
@@ -144,16 +143,13 @@ impl PdfSerializer {
                 .map_err(|e| e.to_string())?;
         }
         if let Some(ref author) = annot.author {
-            write!(output, " /T {}", Self::pdf_string(author))
-                .map_err(|e| e.to_string())?;
+            write!(output, " /T {}", Self::pdf_string(author)).map_err(|e| e.to_string())?;
         }
         if let Some(ref modified) = annot.modified {
-            write!(output, " /M {}", Self::pdf_string(modified))
-                .map_err(|e| e.to_string())?;
+            write!(output, " /M {}", Self::pdf_string(modified)).map_err(|e| e.to_string())?;
         }
         if let Some(ref name) = annot.name {
-            write!(output, " /NM {}", Self::pdf_string(name))
-                .map_err(|e| e.to_string())?;
+            write!(output, " /NM {}", Self::pdf_string(name)).map_err(|e| e.to_string())?;
         }
 
         if let Some(ref color) = annot.color {

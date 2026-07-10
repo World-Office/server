@@ -15,9 +15,10 @@ pub fn is_visio_file(data: &[u8]) -> bool {
     }
     let cursor = std::io::Cursor::new(data);
     if let Ok(mut archive) = zip::ZipArchive::new(cursor)
-        && archive.by_name("[Content_Types].xml").is_ok() {
-            return true;
-        }
+        && archive.by_name("[Content_Types].xml").is_ok()
+    {
+        return true;
+    }
     false
 }
 
@@ -77,7 +78,9 @@ mod tests {
     fn roundtrip_basic_document() {
         let doc = create_test_document();
         let serializer = VisioSerializer::new();
-        let bytes = serializer.serialize(&doc).expect("serialization should succeed");
+        let bytes = serializer
+            .serialize(&doc)
+            .expect("serialization should succeed");
 
         assert!(!bytes.is_empty(), "serialized bytes should not be empty");
         assert!(is_visio_file(&bytes), "output should be a valid VSDX file");
