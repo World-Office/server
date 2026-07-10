@@ -6678,7 +6678,7 @@ fn core_pdf_to_wo(core: &CorePdfDocument) -> WoPdfDocument {
         subject: core.metadata.subject.clone(),
         creator: core.metadata.creator.clone(),
         producer: core.metadata.producer.clone(),
-        pages: core.pages.iter().map(|p| core_page_to_wo(p)).collect(),
+        pages: core.pages.iter().map(core_page_to_wo).collect(),
     }
 }
 
@@ -6697,7 +6697,7 @@ fn wo_to_core_pdf(wo: &WoPdfDocument) -> CorePdfDocument {
             creation_date: None,
             modification_date: None,
         },
-        pages: wo.pages.iter().map(|p| wo_page_to_core(p)).collect(),
+        pages: wo.pages.iter().map(wo_page_to_core).collect(),
         objects: Vec::new(),
         linearized: false,
         xref_type: XrefType::Unknown,
@@ -6715,7 +6715,7 @@ fn core_page_to_wo(page: &CorePdfPage) -> WoPdfPage {
         annotations: page
             .annotations
             .iter()
-            .map(|a| core_annot_to_wo(a))
+            .map(core_annot_to_wo)
             .collect(),
     }
 }
@@ -6730,7 +6730,7 @@ fn wo_page_to_core(page: &WoPdfPage) -> CorePdfPage {
         annotations: page
             .annotations
             .iter()
-            .map(|a| wo_annot_to_core(a))
+            .map(wo_annot_to_core)
             .collect(),
     }
 }
@@ -6874,7 +6874,7 @@ fn visio_shape_to_wo(s: &VisioShape) -> WoVisioShape {
         fill_color: s.fill_color.clone(),
         stroke_color: s.stroke_color.clone(),
         stroke_width: s.stroke_width,
-        geometry: s.geometry.as_ref().map(|g| visio_geom_to_wo(g)),
+        geometry: s.geometry.as_ref().map(visio_geom_to_wo),
         sub_shapes: s.sub_shapes.iter().map(visio_shape_to_wo).collect(),
         font_size: s.formatting.as_ref().and_then(|f| f.font_size),
         font_color: s.formatting.as_ref().and_then(|f| f.font_color.clone()),
