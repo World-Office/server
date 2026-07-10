@@ -55,6 +55,68 @@ impl OoxmlSerializer {
         Ok(result.into_inner())
     }
 
+    /// Serialize an XlsxWorkbook to XLSX bytes (ZIP archive).
+    pub fn serialize_xlsx(&self, wb: &XlsxWorkbook) -> Result<Vec<u8>, anyhow::Error> {
+        let buf = Cursor::new(Vec::new());
+        let mut zip = zip::ZipWriter::new(buf);
+
+        let options = zip::write::SimpleFileOptions::default()
+            .compression_method(zip::CompressionMethod::Deflated);
+
+        // 1. [Content_Types].xml
+        let content_types = self.build_xlsx_content_types(wb);
+        zip.start_file("[Content_Types].xml", options)?;
+        zip.write_all(content_types.as_bytes())?;
+
+        // 2. _rels/.rels
+        let rels = self.build_xlsx_root_rels();
+        zip.start_file("_rels/.rels", options)?;
+        zip.write_all(rels.as_bytes())?;
+
+        // 3. xl/workbook.xml
+        let wb_xml = self.build_xlsx_workbook_xml(wb);
+        zip.start_file("xl/workbook.xml", options)?;
+        zip.write_all(wb_xml.as_bytes())?;
+
+        // 4. xl/_rels/workbook.xml.rels
+        let wb_rels = self.build_xlsx_workbook_rels(wb);
+        zip.start_file("xl/_rels/workbook.xml.rels", options)?;
+        zip.write_all(wb_rels.as_bytes())?;
+
+        // 5. Each worksheet
+        for (i, sheet) in wb.sheets.iter().enumerate() {
+            let sheet_path = format!("xl/worksheets/sheet{}.xml", i + 1);
+            let sheet_xml = self.build_xlsx_sheet_xml(sheet);
+            zip.start_file(&sheet_path, options)?;
+            zip.write_all(sheet_xml.as_bytes())?;
+        }
+
+        // 6. xl/sharedStrings.xml
+        if !wb.shared_strings.is_empty() {
+            let ss_xml = self.build_xlsx_shared_strings(&wb.shared_strings);
+            zip.start_file("xl/sharedStrings.xml", options)?;
+            zip.write_all(ss_xml.as_bytes())?;
+        }
+
+        // 7. xl/styles.xml
+        let styles_xml = self.build_xlsx_styles_xml(&wb.styles);
+        zip.start_file("xl/styles.xml", options)?;
+        zip.write_all(styles_xml.as_bytes())?;
+
+        // 8. xl/theme/theme1.xml
+        let theme_xml = self.build_xlsx_theme_xml();
+        zip.start_file("xl/theme/theme1.xml", options)?;
+        zip.write_all(theme_xml.as_bytes())?;
+
+        // 9. docProps/core.xml
+        let core_xml = self.build_core_properties(&CoreProperties::default());
+        zip.start_file("docProps/core.xml", options)?;
+        zip.write_all(core_xml.as_bytes())?;
+
+        let result = zip.finish()?;
+        Ok(result.into_inner())
+    }
+
     /// Serialize a PptxPresentation to PPTX bytes (ZIP archive).
     pub fn serialize_pptx(&self, pres: &PptxPresentation) -> Result<Vec<u8>, anyhow::Error> {
         let buf = Cursor::new(Vec::new());
@@ -923,7 +985,7 @@ impl OoxmlSerializer {
   <w:body>"#,
         );
 
-        if let Some(ref body) = doc.body {
+        if let Some(ref body) = doc.docx_body {
             for para in &body.paragraphs {
                 xml.push_str(&self.serialize_paragraph(para));
             }
@@ -1495,6 +1557,801 @@ impl OoxmlSerializer {
 </p:sldMaster>"#
             .to_string()
     }
+
+    // --- XLSX helpers ---
+
+    fn build_xlsx_content_types(&self, wb: &XlsxWorkbook) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>
+  <Override PartName="/xl/theme/theme1.xml" ContentType="application/vnd.openxmlformats-officedocument.theme+xml"/>"#,
+        );
+        for i in 1..=wb.sheets.len() {
+            xml.push_str(&format!(
+                r#"
+  <Override PartName="/xl/worksheets/sheet{}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>"#,
+                i
+            ));
+        }
+        if !wb.shared_strings.is_empty() {
+            xml.push_str(r#"
+  <Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>"#);
+        }
+        xml.push_str("\n</Types>");
+        xml
+    }
+
+    fn build_xlsx_root_rels(&self) -> String {
+        String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>"#,
+        )
+    }
+
+    fn build_xlsx_workbook_xml(&self, wb: &XlsxWorkbook) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+          xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">"#,
+        );
+
+        // workbookPr
+        xml.push_str(
+            r#"
+  <workbookPr date1904=""#,
+        );
+        xml.push_str(if wb.properties.date_1904 { "1" } else { "0" });
+        xml.push_str("\"/>");
+
+        // bookViews
+        xml.push_str(
+            r#"
+  <bookViews>
+    <workbookView "#,
+        );
+        if let Some(ref view) = wb.properties.view {
+            xml.push_str(&format!(r#"view="{}" "#, escape_xml(view)));
+        }
+        if let Some(tab) = wb.properties.active_tab {
+            xml.push_str(&format!(r#"activeTab="{}" "#, tab));
+        }
+        xml.push_str(
+            r#"xWindow="0" yWindow="0" windowWidth="19200" windowHeight="12480"/>
+    </workbookView>
+  </bookViews>"#,
+        );
+
+        // sheets
+        xml.push_str(
+            r#"
+  <sheets>"#,
+        );
+        for (i, sheet) in wb.sheets.iter().enumerate() {
+            let state_attr = match sheet.state {
+                SheetState::Visible => String::new(),
+                SheetState::Hidden => r#" state="hidden""#.to_string(),
+                SheetState::VeryHidden => r#" state="veryHidden""#.to_string(),
+            };
+            xml.push_str(&format!(
+                r#"
+    <sheet name="{}" sheetId="{}" r:id="rId{}"{} />"#,
+                escape_xml(&sheet.name),
+                sheet.sheet_id,
+                i + 1,
+                state_attr,
+            ));
+        }
+        xml.push_str(
+            r#"
+  </sheets>"#,
+        );
+
+        // definedNames
+        if !wb.defined_names.is_empty() {
+            xml.push_str(
+                r#"
+  <definedNames>"#,
+            );
+            for dn in &wb.defined_names {
+                xml.push_str(&format!(
+                    r#"
+    <definedName name="{}""#,
+                    escape_xml(&dn.name),
+                ));
+                if let Some(ref comment) = dn.comment {
+                    xml.push_str(&format!(r#" comment="{}""#, escape_xml(comment)));
+                }
+                xml.push_str(&format!(r#">{}</definedName>"#, escape_xml(&dn.ref_range)));
+            }
+            xml.push_str(
+                r#"
+  </definedNames>"#,
+            );
+        }
+
+        xml.push_str("\n</workbook>");
+        xml
+    }
+
+    fn build_xlsx_workbook_rels(&self, wb: &XlsxWorkbook) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">"#,
+        );
+        let mut rel_id = 1u32;
+        for i in 1..=wb.sheets.len() {
+            xml.push_str(&format!(
+                r#"
+  <Relationship Id="rId{}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet{}.xml"/>"#,
+                rel_id, i,
+            ));
+            rel_id += 1;
+        }
+        if !wb.shared_strings.is_empty() {
+            xml.push_str(&format!(
+                r#"
+  <Relationship Id="rId{}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>"#,
+                rel_id,
+            ));
+            rel_id += 1;
+        }
+        xml.push_str(&format!(
+            r#"
+  <Relationship Id="rId{}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>"#,
+            rel_id,
+        ));
+        rel_id += 1;
+        xml.push_str(&format!(
+            r#"
+  <Relationship Id="rId{}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme" Target="theme/theme1.xml"/>"#,
+            rel_id,
+        ));
+        xml.push_str("\n</Relationships>");
+        xml
+    }
+
+    fn build_xlsx_sheet_xml(&self, sheet: &XlsxSheet) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+           xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">"#,
+        );
+
+        // sheetPr
+        let has_sheet_pr = sheet.properties.tab_color.is_some()
+            || sheet.properties.outline_level.is_some()
+            || sheet.properties.zoom_scale.is_some()
+            || sheet.properties.zoom_scale_normal.is_some()
+            || sheet.properties.zoom_scale_page_layout_view.is_some()
+            || sheet.properties.workbook_view_id.is_some();
+        if has_sheet_pr {
+            xml.push_str(
+                r#"
+  <sheetPr>"#,
+            );
+            if let Some(ref color) = sheet.properties.tab_color {
+                xml.push_str(&format!(r#"<tabColor rgb="{}"/>"#, escape_xml(color)));
+            }
+            if let Some(level) = sheet.properties.outline_level {
+                xml.push_str(&format!(r#"<outlinePr summaryBelow="{}"/>"#, level));
+            }
+            // pageSetUpPr / zoom is expressed via sheetViews, handle via sheetViews below
+            xml.push_str(
+                r#"
+  </sheetPr>"#,
+            );
+        }
+
+        // sheetViews
+        xml.push_str(
+            r#"
+  <sheetViews>
+    <sheetView workbookViewId="0""#,
+        );
+        if let Some(zoom) = sheet.properties.zoom_scale {
+            xml.push_str(&format!(r#" zoomScale="{}""#, zoom));
+        }
+        if let Some(zoom_normal) = sheet.properties.zoom_scale_normal {
+            xml.push_str(&format!(r#" zoomScaleNormal="{}""#, zoom_normal));
+        }
+        if let Some(zoom_page) = sheet.properties.zoom_scale_page_layout_view {
+            xml.push_str(&format!(r#" zoomScalePageLayoutView="{}""#, zoom_page));
+        }
+        xml.push_str(
+            r#" tabSelected="0">
+    </sheetView>
+  </sheetViews>"#,
+        );
+
+        // cols
+        if !sheet.cols.is_empty() {
+            xml.push_str(
+                r#"
+  <cols>"#,
+            );
+            for col in &sheet.cols {
+                xml.push_str(&format!(
+                    r#"
+    <col min="{}" max="{}""#,
+                    col.min, col.max,
+                ));
+                if let Some(w) = col.width {
+                    xml.push_str(&format!(r#" width="{}""#, w));
+                }
+                if col.custom_width {
+                    xml.push_str(r#" customWidth="1""#);
+                }
+                if col.hidden {
+                    xml.push_str(r#" hidden="1""#);
+                }
+                if col.best_fit {
+                    xml.push_str(r#" bestFit="1""#);
+                }
+                if let Some(s) = col.style {
+                    xml.push_str(&format!(r#" style="{}""#, s));
+                }
+                xml.push_str("/>");
+            }
+            xml.push_str(
+                r#"
+  </cols>"#,
+            );
+        }
+
+        // sheetData
+        xml.push_str(
+            r#"
+  <sheetData>"#,
+        );
+        for row in &sheet.rows {
+            xml.push_str(&format!(
+                r#"
+    <row r="{}""#,
+                row.r,
+            ));
+            if let Some(ht) = row.ht {
+                xml.push_str(&format!(r#" ht="{}" customHeight="1""#, ht));
+            }
+            if row.hidden {
+                xml.push_str(r#" hidden="1""#);
+            }
+            if let Some(span) = &row.spans {
+                xml.push_str(&format!(r#" spans="{}""#, span));
+            }
+            if let Some(s) = row.s {
+                xml.push_str(&format!(r#" s="{}" customFormat="1""#, s));
+            }
+            xml.push('>');
+            for cell in &row.cells {
+                xml.push_str(&format!(
+                    r#"
+      <c r="{}""#,
+                    cell.r,
+                ));
+                // Cell type attribute
+                let type_attr = match cell.t {
+                    CellType::S => "t=\"s\"",
+                    CellType::Str => "t=\"str\"",
+                    CellType::B => "t=\"b\"",
+                    CellType::E => "t=\"e\"",
+                    CellType::D => "t=\"d\"",
+                    CellType::InlineStr => "t=\"inlineStr\"",
+                    CellType::N => "",
+                };
+                if !type_attr.is_empty() {
+                    xml.push_str(&format!(" {}", type_attr));
+                }
+                if let Some(s) = cell.s {
+                    xml.push_str(&format!(r#" s="{}""#, s));
+                }
+
+                // Formula
+                if let Some(ref f) = cell.f {
+                    xml.push_str(&format!(
+                        r#">
+        <f>{}</f>"#,
+                        escape_xml(f)
+                    ));
+                } else {
+                    xml.push('>');
+                }
+
+                // Value
+                match cell.t {
+                    CellType::InlineStr => {
+                        xml.push_str(&format!(
+                            r#"
+        <is><t xml:space="preserve">{}</t></is>"#,
+                            escape_xml(&cell.v)
+                        ));
+                    }
+                    _ => {
+                        xml.push_str(&format!(
+                            r#"
+        <v>{}</v>"#,
+                            escape_xml(&cell.v)
+                        ));
+                    }
+                }
+
+                xml.push_str(
+                    r#"
+      </c>"#,
+                );
+            }
+            xml.push_str(
+                r#"
+    </row>"#,
+            );
+        }
+        xml.push_str(
+            r#"
+  </sheetData>"#,
+        );
+
+        // mergeCells
+        if !sheet.merges.is_empty() {
+            xml.push_str(&format!(
+                r#"
+  <mergeCells count="{}">"#,
+                sheet.merges.len(),
+            ));
+            for m in &sheet.merges {
+                xml.push_str(&format!(
+                    r#"
+    <mergeCell ref="{}"/>"#,
+                    escape_xml(&m.ref_range),
+                ));
+            }
+            xml.push_str(
+                r#"
+  </mergeCells>"#,
+            );
+        }
+
+        xml.push_str("\n</worksheet>");
+        xml
+    }
+
+    fn build_xlsx_shared_strings(&self, strings: &[String]) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+     count=""#,
+        );
+        xml.push_str(&strings.len().to_string());
+        xml.push_str("\" uniqueCount=\"");
+        xml.push_str(&strings.len().to_string());
+        xml.push_str("\">");
+
+        for s in strings {
+            xml.push_str(&format!(
+                r#"
+  <si>
+    <t xml:space="preserve">{}</t>
+  </si>"#,
+                escape_xml(s),
+            ));
+        }
+
+        xml.push_str("\n</sst>");
+        xml
+    }
+
+    fn build_xlsx_styles_xml(&self, styles: &XlsxStyles) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">"#,
+        );
+
+        // numFmts
+        if !styles.num_fmts.is_empty() {
+            xml.push_str(&format!(
+                r#"
+  <numFmts count="{}">"#,
+                styles.num_fmts.len(),
+            ));
+            for nf in &styles.num_fmts {
+                xml.push_str(&format!(
+                    r#"
+    <numFmt numFmtId="{}" formatCode="{}"/>"#,
+                    nf.num_fmt_id,
+                    escape_xml(&nf.format_code),
+                ));
+            }
+            xml.push_str(
+                r#"
+  </numFmts>"#,
+            );
+        }
+
+        // fonts
+        if !styles.fonts.is_empty() {
+            xml.push_str(&format!(
+                r#"
+  <fonts count="{}">"#,
+                styles.fonts.len(),
+            ));
+            for font in &styles.fonts {
+                xml.push_str(
+                    r#"
+    <font>"#,
+                );
+                if let Some(ref name) = font.name {
+                    xml.push_str(&format!(
+                        r#"
+      <name val="{}"/>"#,
+                        escape_xml(name)
+                    ));
+                }
+                if let Some(sz) = font.sz {
+                    xml.push_str(&format!(
+                        r#"
+      <sz val="{}"/>"#,
+                        sz
+                    ));
+                }
+                if font.b {
+                    xml.push_str(
+                        r#"
+      <b/>"#,
+                    );
+                }
+                if font.i {
+                    xml.push_str(
+                        r#"
+      <i/>"#,
+                    );
+                }
+                if font.strike {
+                    xml.push_str(
+                        r#"
+      <strike/>"#,
+                    );
+                }
+                if let Some(ref u) = font.u {
+                    xml.push_str(&format!(
+                        r#"
+      <u val="{}"/>"#,
+                        escape_xml(u)
+                    ));
+                }
+                if let Some(ref color) = font.color {
+                    xml.push_str(&format!(
+                        r#"
+      <color rgb="{}"/>"#,
+                        escape_xml(color)
+                    ));
+                }
+                xml.push_str(
+                    r#"
+    </font>"#,
+                );
+            }
+            xml.push_str(
+                r#"
+  </fonts>"#,
+            );
+        } else {
+            // Default font (always required)
+            xml.push_str(
+                r#"
+  <fonts count="1">
+    <font>
+      <sz val="11"/>
+      <name val="Calibri"/>
+    </font>
+  </fonts>"#,
+            );
+        }
+
+        // fills
+        if !styles.fills.is_empty() {
+            xml.push_str(&format!(
+                r#"
+  <fills count="{}">"#,
+                styles.fills.len(),
+            ));
+            for fill in &styles.fills {
+                xml.push_str(
+                    r#"
+    <fill>"#,
+                );
+                if let Some(ref pt) = fill.pattern_type {
+                    xml.push_str(&format!(
+                        r#"
+      <patternFill patternType="{}""#,
+                        escape_xml(pt)
+                    ));
+                    if let Some(ref fg) = fill.fg_color {
+                        xml.push_str(&format!(r#" fgColor="{}""#, escape_xml(fg)));
+                    }
+                    if let Some(ref bg) = fill.bg_color {
+                        xml.push_str(&format!(r#" bgColor="{}""#, escape_xml(bg)));
+                    }
+                    xml.push_str(r#"/>"#);
+                } else {
+                    xml.push_str(
+                        r#"
+      <patternFill patternType="none"/>"#,
+                    );
+                }
+                xml.push_str(
+                    r#"
+    </fill>"#,
+                );
+            }
+            xml.push_str(
+                r#"
+  </fills>"#,
+            );
+        } else {
+            // Default fills (always required - gray125 and none)
+            xml.push_str(
+                r#"
+  <fills count="2">
+    <fill>
+      <patternFill patternType="none"/>
+    </fill>
+    <fill>
+      <patternFill patternType="gray125"/>
+    </fill>
+  </fills>"#,
+            );
+        }
+
+        // borders
+        if !styles.borders.is_empty() {
+            xml.push_str(&format!(
+                r#"
+  <borders count="{}">"#,
+                styles.borders.len(),
+            ));
+            for border in &styles.borders {
+                xml.push_str(
+                    r#"
+    <border>"#,
+                );
+                self.push_border_side(&mut xml, "left", &border.left);
+                self.push_border_side(&mut xml, "right", &border.right);
+                self.push_border_side(&mut xml, "top", &border.top);
+                self.push_border_side(&mut xml, "bottom", &border.bottom);
+                self.push_border_side(&mut xml, "diagonal", &border.diagonal);
+                xml.push_str(
+                    r#"
+    </border>"#,
+                );
+            }
+            xml.push_str(
+                r#"
+  </borders>"#,
+            );
+        } else {
+            // Default border (always required)
+            xml.push_str(
+                r#"
+  <borders count="1">
+    <border>
+      <left/>
+      <right/>
+      <top/>
+      <bottom/>
+      <diagonal/>
+    </border>
+  </borders>"#,
+            );
+        }
+
+        // cellStyleXfs
+        if !styles.cell_style_xfs.is_empty() {
+            xml.push_str(&format!(
+                r#"
+  <cellStyleXfs count="{}">"#,
+                styles.cell_style_xfs.len(),
+            ));
+            for xf in &styles.cell_style_xfs {
+                xml.push_str(
+                    r#"
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0""#,
+                );
+                if xf.apply_number_format {
+                    xml.push_str(r#" applyNumberFormat="1""#);
+                }
+                if xf.apply_font {
+                    xml.push_str(r#" applyFont="1""#);
+                }
+                if xf.apply_fill {
+                    xml.push_str(r#" applyFill="1""#);
+                }
+                if xf.apply_border {
+                    xml.push_str(r#" applyBorder="1""#);
+                }
+                if xf.apply_alignment {
+                    xml.push_str(r#" applyAlignment="1""#);
+                }
+                if xf.apply_protection {
+                    xml.push_str(r#" applyProtection="1""#);
+                }
+                xml.push_str(r#"/>"#);
+            }
+            xml.push_str(
+                r#"
+  </cellStyleXfs>"#,
+            );
+        }
+
+        // cellXfs
+        if !styles.cell_xfs.is_empty() {
+            xml.push_str(&format!(
+                r#"
+  <cellXfs count="{}">"#,
+                styles.cell_xfs.len(),
+            ));
+            for xf in &styles.cell_xfs {
+                xml.push_str(&format!(
+                    r#"
+    <xf numFmtId="{}" fontId="{}" fillId="{}" borderId="{}""#,
+                    xf.num_fmt_id.unwrap_or(0),
+                    xf.font_id.unwrap_or(0),
+                    xf.fill_id.unwrap_or(0),
+                    xf.border_id.unwrap_or(0),
+                ));
+                if xf.num_fmt_id.is_some() {
+                    xml.push_str(r#" applyNumberFormat="1""#);
+                }
+                if xf.font_id.is_some() {
+                    xml.push_str(r#" applyFont="1""#);
+                }
+                if xf.fill_id.is_some() {
+                    xml.push_str(r#" applyFill="1""#);
+                }
+                if xf.border_id.is_some() {
+                    xml.push_str(r#" applyBorder="1""#);
+                }
+                if xf.alignment.is_some() {
+                    xml.push_str(r#" applyAlignment="1""#);
+                }
+                if xf.protection.is_some() {
+                    xml.push_str(r#" applyProtection="1""#);
+                }
+                xml.push('>');
+
+                // Alignment
+                if let Some(ref align) = xf.alignment {
+                    xml.push_str(
+                        r#"
+      <alignment"#,
+                    );
+                    if let Some(ref h) = align.horizontal {
+                        xml.push_str(&format!(r#" horizontal="{}""#, escape_xml(h)));
+                    }
+                    if let Some(ref v) = align.vertical {
+                        xml.push_str(&format!(r#" vertical="{}""#, escape_xml(v)));
+                    }
+                    if let Some(rot) = align.text_rotation {
+                        xml.push_str(&format!(r#" textRotation="{}""#, rot));
+                    }
+                    if align.wrap_text {
+                        xml.push_str(r#" wrapText="1""#);
+                    }
+                    if let Some(ind) = align.indent {
+                        xml.push_str(&format!(r#" indent="{}""#, ind));
+                    }
+                    if align.shrink_to_fit {
+                        xml.push_str(r#" shrinkToFit="1""#);
+                    }
+                    xml.push_str(r#"/>"#);
+                }
+
+                // Protection
+                if let Some(ref prot) = xf.protection {
+                    xml.push_str(&format!(
+                        r#"
+      <protection locked="{}" hidden="{}"/>"#,
+                        if prot.locked { "1" } else { "0" },
+                        if prot.hidden { "1" } else { "0" },
+                    ));
+                }
+
+                xml.push_str(
+                    r#"
+    </xf>"#,
+                );
+            }
+            xml.push_str(
+                r#"
+  </cellXfs>"#,
+            );
+        }
+
+        xml.push_str("\n</styleSheet>");
+        xml
+    }
+
+    fn push_border_side(&self, xml: &mut String, name: &str, side: &Option<XlsxBorderSide>) {
+        if let Some(ref s) = side {
+            xml.push_str(&format!(
+                r#"
+      <{} style="{}""#,
+                name,
+                s.style.as_deref().unwrap_or("none"),
+            ));
+            if let Some(ref color) = s.color {
+                xml.push_str(&format!(r#" color="{}""#, escape_xml(color)));
+            }
+            xml.push_str("/>");
+        } else {
+            xml.push_str(&format!(
+                r#"
+      <{}/>"#,
+                name,
+            ));
+        }
+    }
+
+    fn build_xlsx_theme_xml(&self) -> String {
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<a:theme xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+         name="Office Theme">
+  <a:themeElements>
+    <a:clrScheme name="Office">
+      <a:dk1><a:srgbClr val="000000"/></a:dk1>
+      <a:lt1><a:srgbClr val="FFFFFF"/></a:lt1>
+      <a:dk2><a:srgbClr val="44546A"/></a:dk2>
+      <a:lt2><a:srgbClr val="E7E6E6"/></a:lt2>
+      <a:accent1><a:srgbClr val="4472C4"/></a:accent1>
+      <a:accent2><a:srgbClr val="ED7D31"/></a:accent2>
+      <a:accent3><a:srgbClr val="A5A5A5"/></a:accent3>
+      <a:accent4><a:srgbClr val="FFC000"/></a:accent4>
+      <a:accent5><a:srgbClr val="5B9BD5"/></a:accent5>
+      <a:accent6><a:srgbClr val="70AD47"/></a:accent6>
+      <a:hlink><a:srgbClr val="0563C1"/></a:hlink>
+      <a:folHlink><a:srgbClr val="954F72"/></a:folHlink>
+    </a:clrScheme>
+    <a:fontScheme name="Office">
+      <a:majorFont>
+        <a:latin typeface="Calibri Light"/>
+        <a:ea typeface=""/>
+        <a:cs typeface=""/>
+      </a:majorFont>
+      <a:minorFont>
+        <a:latin typeface="Calibri"/>
+        <a:ea typeface=""/>
+        <a:cs typeface=""/>
+      </a:minorFont>
+    </a:fontScheme>
+    <a:fmtScheme name="Office">
+      <a:fillStyleLst>
+        <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
+        <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
+        <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
+      </a:fillStyleLst>
+      <a:lnStyleLst>
+        <a:ln w="6350"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln>
+        <a:ln w="6350"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln>
+        <a:ln w="6350"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln>
+      </a:lnStyleLst>
+      <a:effectStyleLst>
+        <a:effectStyle><a:effectLst/></a:effectStyle>
+        <a:effectStyle><a:effectLst/></a:effectStyle>
+        <a:effectStyle><a:effectLst/></a:effectStyle>
+      </a:effectStyleLst>
+      <a:bgFillStyleLst>
+        <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
+        <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
+        <a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill>
+      </a:bgFillStyleLst>
+    </a:fmtScheme>
+  </a:themeElements>
+</a:theme>"#
+            .to_string()
+    }
 }
 
 impl Default for OoxmlSerializer {
@@ -1533,7 +2390,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+            docx_body: Some(DocxBody {
                 paragraphs: vec![DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
@@ -1615,7 +2473,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+            docx_body: Some(DocxBody {
                 paragraphs: vec![DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
@@ -1696,7 +2555,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+            docx_body: Some(DocxBody {
                 paragraphs: vec![
                     DocxParagraph {
                         style_id: None,
@@ -1792,7 +2652,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+            docx_body: Some(DocxBody {
                 paragraphs: vec![],
                 tables: vec![DocxTable {
                     rows: vec![
@@ -1941,7 +2802,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: None,
+            docx_body: None,
+            xlsx_workbook: None,
         };
         let ser = OoxmlSerializer::new();
         let bytes = ser.serialize(&doc).unwrap();
@@ -2718,7 +3580,8 @@ mod tests {
                 revision: Some("1".to_string()),
             },
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+            docx_body: Some(DocxBody {
                 paragraphs: vec![DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
@@ -2768,7 +3631,8 @@ mod tests {
             part_count: 1,
             core_properties: CoreProperties::default(),
             relationships: vec![],
-            body: Some(DocxBody {
+            xlsx_workbook: None,
+            docx_body: Some(DocxBody {
                 paragraphs: vec![],
                 tables: vec![],
             }),

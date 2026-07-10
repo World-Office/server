@@ -73,7 +73,9 @@ pub struct OoxmlDocument {
     /// Relationships.
     pub relationships: Vec<Relationship>,
     /// Document body (DOCX only).
-    pub body: Option<DocxBody>,
+    pub docx_body: Option<DocxBody>,
+    /// XLSX workbook (XLSX only).
+    pub xlsx_workbook: Option<XlsxWorkbook>,
 }
 
 /// A content type entry.
@@ -106,6 +108,308 @@ pub struct Relationship {
     pub rel_type: String,
     pub target: String,
     pub target_mode: Option<String>,
+}
+
+// --- XLSX Models ---
+
+/// XLSX workbook structure.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxWorkbook {
+    /// Workbook-level properties.
+    pub properties: XlsxWorkbookProperties,
+    /// Sheets in this workbook.
+    pub sheets: Vec<XlsxSheet>,
+    /// Shared strings table.
+    pub shared_strings: Vec<String>,
+    /// Styles (number formats, fonts, fills, borders).
+    pub styles: XlsxStyles,
+    /// Defined names (named ranges).
+    pub defined_names: Vec<XlsxDefinedName>,
+}
+
+/// Workbook properties.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxWorkbookProperties {
+    pub date_1904: bool,
+    pub view: Option<String>,
+    pub active_tab: Option<usize>,
+    pub first_sheet: Option<usize>,
+}
+
+/// A single worksheet.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxSheet {
+    /// Sheet name.
+    pub name: String,
+    /// Sheet ID (r:id reference).
+    pub sheet_id: u32,
+    /// Sheet state (visible/hidden/veryHidden).
+    pub state: SheetState,
+    /// Rows in this sheet.
+    pub rows: Vec<XlsxRow>,
+    /// Column definitions.
+    pub cols: Vec<XlsxCol>,
+    /// Merged cell ranges.
+    pub merges: Vec<XlsxMergeCell>,
+    /// Sheet-level properties.
+    pub properties: XlsxSheetProperties,
+}
+
+/// Sheet visibility state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum SheetState {
+    #[default]
+    Visible,
+    Hidden,
+    VeryHidden,
+}
+
+/// Sheet properties.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxSheetProperties {
+    pub tab_color: Option<String>,
+    pub outline_level: Option<u32>,
+    pub zoom_scale: Option<u32>,
+    pub zoom_scale_normal: Option<u32>,
+    pub zoom_scale_page_layout_view: Option<u32>,
+    pub workbook_view_id: Option<u32>,
+}
+
+/// A row in a worksheet.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxRow {
+    /// Row number (1-based).
+    pub r: u32,
+    /// Row height.
+    pub ht: Option<f64>,
+    /// Row visibility.
+    pub hidden: bool,
+    /// Row style.
+    pub s: Option<u32>,
+    /// Cells in this row.
+    pub cells: Vec<XlsxCell>,
+    /// Row span (number of columns this row spans).
+    pub spans: Option<String>,
+}
+
+/// A cell in a worksheet.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxCell {
+    /// Cell reference (e.g., "A1", "B2").
+    pub r: String,
+    /// Cell type.
+    pub t: CellType,
+    /// Cell value (raw or shared string index).
+    pub v: String,
+    /// Style index.
+    pub s: Option<u32>,
+    /// Formula (if present).
+    pub f: Option<String>,
+}
+
+/// Cell data type.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum CellType {
+    /// Number
+    #[default]
+    N,
+    /// Shared string (index into shared strings table)
+    S,
+    /// String (inline)
+    Str,
+    /// Boolean
+    B,
+    /// Error
+    E,
+    /// Date
+    D,
+    /// Empty/unknown
+    InlineStr,
+}
+
+/// Column definition.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxCol {
+    /// Minimum column index (1-based).
+    pub min: u32,
+    /// Maximum column index (1-based).
+    pub max: u32,
+    /// Column width.
+    pub width: Option<f64>,
+    /// Column style.
+    pub style: Option<u32>,
+    /// Column visibility.
+    pub hidden: bool,
+    /// Best fit.
+    pub best_fit: bool,
+    /// Custom width.
+    pub custom_width: bool,
+}
+
+/// Merged cell range.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxMergeCell {
+    /// Reference (e.g., "A1:B2").
+    pub ref_range: String,
+}
+
+/// Styles collection.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxStyles {
+    /// Number formats.
+    pub num_fmts: Vec<XlsxNumFmt>,
+    /// Fonts.
+    pub fonts: Vec<XlsxFont>,
+    /// Fills.
+    pub fills: Vec<XlsxFill>,
+    /// Borders.
+    pub borders: Vec<XlsxBorder>,
+    /// Cell style formats.
+    pub cell_style_xfs: Vec<XlsxCellStyleXf>,
+    /// Cell formats.
+    pub cell_xfs: Vec<XlsxCellXf>,
+}
+
+/// Number format.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxNumFmt {
+    /// Format code.
+    pub format_code: String,
+    /// Format ID.
+    pub num_fmt_id: u32,
+}
+
+/// Font definition.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxFont {
+    /// Font name.
+    pub name: Option<String>,
+    /// Font size.
+    pub sz: Option<f64>,
+    /// Bold.
+    pub b: bool,
+    /// Italic.
+    pub i: bool,
+    /// Underline.
+    pub u: Option<String>,
+    /// Strikethrough.
+    pub strike: bool,
+    /// Color.
+    pub color: Option<String>,
+}
+
+/// Fill definition.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxFill {
+    /// Pattern type.
+    pub pattern_type: Option<String>,
+    /// Foreground color.
+    pub fg_color: Option<String>,
+    /// Background color.
+    pub bg_color: Option<String>,
+}
+
+/// Border definition.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxBorder {
+    /// Left border.
+    pub left: Option<XlsxBorderSide>,
+    /// Right border.
+    pub right: Option<XlsxBorderSide>,
+    /// Top border.
+    pub top: Option<XlsxBorderSide>,
+    /// Bottom border.
+    pub bottom: Option<XlsxBorderSide>,
+    /// Diagonal border.
+    pub diagonal: Option<XlsxBorderSide>,
+}
+
+/// Border side definition.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxBorderSide {
+    /// Style.
+    pub style: Option<String>,
+    /// Color.
+    pub color: Option<String>,
+}
+
+/// Cell style format (XF).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxCellStyleXf {
+    /// Number format ID.
+    pub num_fmt_id: Option<u32>,
+    /// Font ID.
+    pub font_id: Option<u32>,
+    /// Fill ID.
+    pub fill_id: Option<u32>,
+    /// Border ID.
+    pub border_id: Option<u32>,
+    /// Apply number format.
+    pub apply_number_format: bool,
+    /// Apply font.
+    pub apply_font: bool,
+    /// Apply fill.
+    pub apply_fill: bool,
+    /// Apply border.
+    pub apply_border: bool,
+    /// Apply alignment.
+    pub apply_alignment: bool,
+    /// Apply protection.
+    pub apply_protection: bool,
+}
+
+/// Cell format (XF).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxCellXf {
+    /// Number format ID.
+    pub num_fmt_id: Option<u32>,
+    /// Font ID.
+    pub font_id: Option<u32>,
+    /// Fill ID.
+    pub fill_id: Option<u32>,
+    /// Border ID.
+    pub border_id: Option<u32>,
+    /// Alignment.
+    pub alignment: Option<XlsxAlignment>,
+    /// Protection.
+    pub protection: Option<XlsxProtection>,
+}
+
+/// Cell alignment.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxAlignment {
+    /// Horizontal alignment.
+    pub horizontal: Option<String>,
+    /// Vertical alignment.
+    pub vertical: Option<String>,
+    /// Text rotation.
+    pub text_rotation: Option<i32>,
+    /// Wrap text.
+    pub wrap_text: bool,
+    /// Indent.
+    pub indent: Option<u32>,
+    /// Shrink to fit.
+    pub shrink_to_fit: bool,
+}
+
+/// Cell protection.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxProtection {
+    /// Locked.
+    pub locked: bool,
+    /// Hidden.
+    pub hidden: bool,
+}
+
+/// Defined name (named range).
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct XlsxDefinedName {
+    /// Name.
+    pub name: String,
+    /// Reference (e.g., "Sheet1!$A$1:$B$2").
+    pub ref_range: String,
+    /// Comment.
+    pub comment: Option<String>,
 }
 
 // --- DOCX Body Model ---
