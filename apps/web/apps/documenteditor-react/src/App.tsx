@@ -9,7 +9,12 @@ import { type MonacoCommand, dispatchMonacoCommand } from "./components/Toolbar/
 import { Viewport } from "./components/Viewport"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { usePlugins } from "./hooks/usePlugins"
-import { collabSendRef, collabSendCommentRef, collaborationStore, currentUser } from "./lib/collaboration"
+import {
+  collabSendCommentRef,
+  collabSendRef,
+  collaborationStore,
+  currentUser,
+} from "./lib/collaboration"
 import { type RichTextCommand, dispatchRichTextCommand } from "./lib/rte-command"
 import { documentStore } from "./stores/DocumentStore"
 

@@ -24,7 +24,17 @@ jobs:
         timeout-minutes: 10
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+        run: |
+          if command -v apt-get &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+          elif command -v pacman &> /dev/null; then
+            sudo pacman -Syu --noconfirm pkg-config openssl
+          elif command -v apk &> /dev/null; then
+            sudo apk add pkgconfig openssl-dev
+          else
+            echo "No known package manager found"
+            exit 1
+          fi
         timeout-minutes: 5
 
       - uses: Swatinem/rust-cache@v2
@@ -55,7 +65,17 @@ jobs:
         timeout-minutes: 10
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+        run: |
+          if command -v apt-get &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+          elif command -v pacman &> /dev/null; then
+            sudo pacman -Syu --noconfirm pkg-config openssl
+          elif command -v apk &> /dev/null; then
+            sudo apk add pkgconfig openssl-dev
+          else
+            echo "No known package manager found"
+            exit 1
+          fi
         timeout-minutes: 5
 
       - uses: Swatinem/rust-cache@v2
@@ -109,7 +129,17 @@ jobs:
         timeout-minutes: 10
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+        run: |
+          if command -v apt-get &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+          elif command -v pacman &> /dev/null; then
+            sudo pacman -Syu --noconfirm pkg-config openssl
+          elif command -v apk &> /dev/null; then
+            sudo apk add pkgconfig openssl-dev
+          else
+            echo "No known package manager found"
+            exit 1
+          fi
         timeout-minutes: 5
 
       - uses: Swatinem/rust-cache@v2
@@ -135,7 +165,17 @@ jobs:
         timeout-minutes: 10
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+        run: |
+          if command -v apt-get &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+          elif command -v pacman &> /dev/null; then
+            sudo pacman -Syu --noconfirm pkg-config openssl
+          elif command -v apk &> /dev/null; then
+            sudo apk add pkgconfig openssl-dev
+          else
+            echo "No known package manager found"
+            exit 1
+          fi
         timeout-minutes: 5
 
       - uses: Swatinem/rust-cache@v2
@@ -269,7 +309,17 @@ jobs:
         timeout-minutes: 10
 
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+        run: |
+          if command -v apt-get &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+          elif command -v pacman &> /dev/null; then
+            sudo pacman -Syu --noconfirm pkg-config openssl
+          elif command -v apk &> /dev/null; then
+            sudo apk add pkgconfig openssl-dev
+          else
+            echo "No known package manager found"
+            exit 1
+          fi
         timeout-minutes: 5
 
       - uses: Swatinem/rust-cache@v2

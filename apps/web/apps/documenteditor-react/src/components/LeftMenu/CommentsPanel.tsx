@@ -1,7 +1,7 @@
 import { CommentPanel } from "@world-office/collaboration-react"
 import { observer } from "mobx-react-lite"
 import type { JSX } from "react"
-import { collaborationStore, collabSendCommentRef, currentUser } from "../../lib/collaboration"
+import { collabSendCommentRef, collaborationStore, currentUser } from "../../lib/collaboration"
 import { documentStore } from "../../stores/DocumentStore"
 
 interface CommentsPanelProps {
