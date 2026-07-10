@@ -64,25 +64,13 @@ module.exports = {
   coverageDirectory: "<rootDir>/coverage",
 
   // An array of regexp pattern strings used to skip coverage collection
-  coveragePathIgnorePatterns: [
-    "/node_modules/",
-    "/tests/",
-    "/test/",
-    "/__mocks__/",
-  ],
+  coveragePathIgnorePatterns: ["/node_modules/", "/tests/", "/test/", "/__mocks__/"],
 
   // Indicates which provider should be used to instrument code for coverage
   coverageProvider: "v8",
 
   // A list of reporter names that Jest uses when writing coverage reports
-  coverageReporters: [
-    "json",
-    "text",
-    "text-summary",
-    "lcov",
-    "clover",
-    "html-summary",
-  ],
+  coverageReporters: ["json", "text", "text-summary", "lcov", "clover", "html-summary"],
 
   // An object that configures minimum threshold enforcement for coverage results
   // Set to non-blocking thresholds initially - will tighten over time

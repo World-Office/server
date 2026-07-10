@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test"
+import { type Page, expect, test } from "@playwright/test"
 
 /**
  * Presentation Collaboration E2E Tests
