@@ -1,146 +1,146 @@
 .prese-statusbar {
-	position: relative;
-	display: flex;
-	align-items: center;
-	height: var(--wo-prese-statusbar-height);
-	padding: 0 4px;
-	z-index: 100;
-	background-color: var(--wo-prese-bg-statusbar);
-	border-top: 1px solid var(--wo-prese-border);
-	font-size: 11px;
-	font-family: var(--wo-se-font, "Segoe UI");
-	color: var(--wo-prese-text-secondary);
-	user-select: none;
-	gap: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: var(--wo-prese-statusbar-height);
+  padding: 0 4px;
+  z-index: 100;
+  background-color: var(--wo-prese-bg-statusbar);
+  border-top: 1px solid var(--wo-prese-border);
+  font-size: 11px;
+  font-family: var(--wo-se-font, "Segoe UI");
+  color: var(--wo-prese-text-secondary);
+  user-select: none;
+  gap: 0;
 }
 
 .prese-statusbar.no-compact {
-	height: var(--wo-prese-statusbar-height-expanded);
+  height: var(--wo-prese-statusbar-height-expanded);
 }
 
 .prese-statusbar-nav {
-	display: flex;
-	align-items: center;
-	gap: 2px;
-	padding: 0 6px;
-	height: 100%;
-	flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px;
+  height: 100%;
+  flex-shrink: 0;
 }
 
 .prese-statusbar-tools {
-	display: flex;
-	align-items: center;
-	gap: 2px;
-	padding: 0 6px;
-	height: 100%;
-	flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px;
+  height: 100%;
+  flex-shrink: 0;
 }
 
 .prese-statusbar-label {
-	font-size: 11px;
-	white-space: nowrap;
-	cursor: default;
-	color: var(--wo-prese-text-secondary);
-	padding: 0 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: default;
+  color: var(--wo-prese-text-secondary);
+  padding: 0 4px;
 }
 
 .prese-statusbar-separator {
-	width: 1px;
-	height: 16px;
-	background-color: var(--wo-prese-border);
-	flex-shrink: 0;
-	margin: 0 2px;
+  width: 1px;
+  height: 16px;
+  background-color: var(--wo-prese-border);
+  flex-shrink: 0;
+  margin: 0 2px;
 }
 
 .prese-statusbar-btn {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 22px;
-	height: 20px;
-	border: 1px solid transparent;
-	border-radius: 3px;
-	background: transparent;
-	color: var(--wo-prese-text-secondary);
-	cursor: pointer;
-	transition: background-color 0.1s, border-color 0.1s;
-	padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 20px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--wo-prese-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.1s, border-color 0.1s;
+  padding: 0;
 }
 
 .prese-statusbar-btn svg {
-	width: 14px;
-	height: 14px;
-	stroke-width: 1.8;
-	display: block;
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.8;
+  display: block;
 }
 
 .prese-statusbar-btn:hover {
-	background-color: #e5e5e5;
-	border-color: var(--wo-prese-border);
+  background-color: #e5e5e5;
+  border-color: var(--wo-prese-border);
 }
 
 .prese-statusbar-btn:active {
-	background-color: #d0d0d0;
+  background-color: #d0d0d0;
 }
 
 .prese-statusbar-btn.active {
-	background-color: rgba(68, 114, 196, 0.08);
-	color: var(--wo-prese-accent);
+  background-color: rgba(68, 114, 196, 0.08);
+  color: var(--wo-prese-accent);
 }
 
 .prese-statusbar-btn.active svg {
-	color: var(--wo-prese-accent);
+  color: var(--wo-prese-accent);
 }
 
 .prese-statusbar-btn:disabled {
-	opacity: 0.35;
-	cursor: default;
-	pointer-events: none;
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
 }
 
 .prese-statusbar-zoom-box {
-	position: absolute;
-	right: 0;
-	height: 100%;
-	display: flex;
-	align-items: center;
-	gap: 2px;
-	padding: 0 8px;
-	flex-shrink: 0;
-	background: var(--wo-prese-bg-statusbar);
+  position: absolute;
+  right: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  flex-shrink: 0;
+  background: var(--wo-prese-bg-statusbar);
 }
 
 .prese-statusbar-zoom-label {
-	display: inline-flex;
-	align-items: center;
-	padding: 0 4px;
-	font-size: 11px;
-	min-width: 36px;
-	justify-content: center;
-	color: #333333;
-	cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+  font-size: 11px;
+  min-width: 36px;
+  justify-content: center;
+  color: #333333;
+  cursor: pointer;
 }
 
 .prese-statusbar-zoom-label:hover {
-	color: var(--wo-prese-accent);
+  color: var(--wo-prese-accent);
 }
 
 .prese-statusbar-select {
-	height: 20px;
-	padding: 0 4px;
-	border: 1px solid transparent;
-	border-radius: 2px;
-	background: transparent;
-	font-size: 11px;
-	color: var(--wo-prese-text-secondary);
-	cursor: pointer;
-	outline: none;
+  height: 20px;
+  padding: 0 4px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  font-size: 11px;
+  color: var(--wo-prese-text-secondary);
+  cursor: pointer;
+  outline: none;
 }
 
 .prese-statusbar-select:hover {
-	border-color: var(--wo-prese-border);
+  border-color: var(--wo-prese-border);
 }
 
 .prese-statusbar-select:focus {
-	border-color: var(--wo-prese-accent);
+  border-color: var(--wo-prese-accent);
 }

@@ -1,1 +1,1 @@
-export { SlideCanvas } from "./SlideCanvas";
+export { SlideCanvas } from "./SlideCanvas"
