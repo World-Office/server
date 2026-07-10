@@ -226,7 +226,7 @@ export function SpreadsheetGrid({ data }: SpreadsheetGridProps) {
         },
         presets: [
           UniverSheetsCorePreset({
-            container,
+            container: containerRef.current,
           }),
         ],
       })
