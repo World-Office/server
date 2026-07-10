@@ -1,0 +1,426 @@
+import type { RibbonSpec } from "../types"
+import { cloudTab } from "./cloud-spec"
+
+/**
+ * Presentation editor ribbon spec — mirrors ONLYOFFICE Presentation Editor ribbon 1:1.
+ *
+ * Tabs: Home, Insert, Design, Transitions, Animation
+ */
+export const presentationRibbonSpec: RibbonSpec = {
+  tabs: [
+    // ── Home ────────────────────────────────────────────────────────────
+    {
+      id: "home",
+      label: "Home",
+      groups: [
+        {
+          id: "clipboard",
+          label: "Clipboard",
+          controls: [
+            { id: "cut", type: "button", icon: "Scissors", label: "Cut", command: "cut", shortcut: "Ctrl+X" },
+            { id: "copy", type: "button", icon: "Copy", label: "Copy", command: "copy", shortcut: "Ctrl+C" },
+            { id: "paste", type: "button", icon: "ClipboardPaste", label: "Paste", command: "paste", shortcut: "Ctrl+V" },
+            { id: "format-painter", type: "button", icon: "Paintbrush", label: "Painter", command: "formatPainter" },
+          ],
+        },
+        {
+          id: "slides",
+          label: "Slides",
+          controls: [
+            { id: "new-slide", type: "button", icon: "Plus", label: "New Slide", command: "addSlide" },
+            { id: "first-slide", type: "button", icon: "ChevronsLeft", label: "First", command: "goToFirstSlide" },
+            { id: "prev-slide", type: "button", icon: "ChevronLeft", label: "Previous", command: "goToPrevSlide" },
+            { id: "next-slide", type: "button", icon: "ChevronRight", label: "Next", command: "goToNextSlide" },
+            { id: "last-slide", type: "button", icon: "ChevronsRight", label: "Last", command: "goToLastSlide" },
+          ],
+        },
+        {
+          id: "font",
+          label: "Font",
+          controls: [
+            { id: "bold", type: "button", icon: "Bold", label: "Bold", command: "bold", toggleable: true, shortcut: "Ctrl+B", enabled: () => false },
+            { id: "italic", type: "button", icon: "Italic", label: "Italic", command: "italic", toggleable: true, shortcut: "Ctrl+I", enabled: () => false },
+            { id: "underline", type: "button", icon: "Underline", label: "Underline", command: "underline", toggleable: true, shortcut: "Ctrl+U", enabled: () => false },
+            { id: "strikethrough", type: "button", icon: "Strikethrough", label: "Strike", command: "strike", toggleable: true, enabled: () => false },
+            { id: "font-size-increase", type: "button", icon: "Plus", label: "Grow", command: "increaseFontSize", enabled: () => false },
+            { id: "font-size-decrease", type: "button", icon: "Minus", label: "Shrink", command: "decreaseFontSize", enabled: () => false },
+            { id: "text-color", type: "color-picker", label: "Color", color: () => "#000000", onChange: () => {} },
+            { id: "highlight", type: "color-picker", label: "Highlight", color: () => "#FFFF00", onChange: () => {}, enabled: () => false },
+          ],
+        },
+        {
+          id: "paragraph",
+          label: "Paragraph",
+          controls: [
+            { id: "bullets", type: "button", icon: "List", label: "Bullets", command: "bulletList", enabled: () => false },
+            { id: "numbering", type: "button", icon: "ListOrdered", label: "Numbering", command: "orderedList", enabled: () => false },
+            { id: "align-left", type: "button", icon: "AlignLeft", label: "Left", command: "alignLeft", enabled: () => false },
+            { id: "align-center", type: "button", icon: "AlignCenter", label: "Center", command: "alignCenter", enabled: () => false },
+            { id: "align-right", type: "button", icon: "AlignRight", label: "Right", command: "alignRight", enabled: () => false },
+            { id: "align-top", type: "button", icon: "AlignStartVertical", label: "Top", command: "alignTop", enabled: () => false },
+            { id: "align-middle", type: "button", icon: "AlignCenterVertical", label: "Middle", command: "alignMiddle", enabled: () => false },
+            { id: "align-bottom", type: "button", icon: "AlignEndVertical", label: "Bottom", command: "alignBottom", enabled: () => false },
+            { id: "distribute-h", type: "button", icon: "DistributeHorizontal", label: "Distrib H", command: "distributeHorizontally", enabled: () => false },
+            { id: "distribute-v", type: "button", icon: "DistributeVertical", label: "Distrib V", command: "distributeVertically", enabled: () => false },
+            { id: "indent-decrease", type: "button", icon: "IndentDecrease", label: "Outdent", command: "outdent", enabled: () => false },
+            { id: "indent-increase", type: "button", icon: "IndentIncrease", label: "Indent", command: "indent", enabled: () => false },
+            { id: "line-spacing", type: "button", icon: "WrapText", label: "Spacing", command: "lineSpacing", enabled: () => false },
+            { id: "text-direction", type: "button", icon: "RotateCcw", label: "Direction", command: "textDirection", enabled: () => false },
+          ],
+        },
+        {
+          id: "drawing",
+          label: "Drawing",
+          controls: [
+            { id: "shapes", type: "button", icon: "Shapes", label: "Shapes", command: "insertShape" },
+            { id: "arrange", type: "button", icon: "Layers", label: "Arrange", command: "arrange" },
+            { id: "quick-styles", type: "button", icon: "Palette", label: "Styles", command: "quickStyles" },
+            { id: "select-all", type: "button", icon: "MousePointer", label: "Select", command: "selectAll" },
+          ],
+        },
+        {
+          id: "slideshow",
+          label: "Slideshow",
+          controls: [
+            { id: "start-slideshow", type: "button", icon: "Play", label: "Start", command: "startPresentation", enabled: () => false },
+          ],
+        },
+        {
+          id: "editing",
+          label: "Editing",
+          controls: [
+            { id: "find", type: "button", icon: "Search", label: "Find", command: "find", shortcut: "Ctrl+F" },
+            { id: "replace", type: "button", icon: "Replace", label: "Replace", command: "replace", shortcut: "Ctrl+H" },
+          ],
+        },
+        {
+          id: "zoom",
+          label: "Zoom",
+          controls: [
+            {
+              id: "zoom-level",
+              type: "select",
+              label: "",
+              options: [
+                { value: "50", label: "50%" },
+                { value: "75", label: "75%" },
+                { value: "100", label: "100%" },
+                { value: "125", label: "125%" },
+                { value: "150", label: "150%" },
+                { value: "175", label: "175%" },
+                { value: "200", label: "200%" },
+              ],
+              value: () => "100",
+              onChange: (val) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", { detail: { command: "setZoomLevel", value: val } }),
+                ),
+              width: 70,
+            },
+            { id: "fit-to-page", type: "button", icon: "Maximize", label: "Fit Page", command: "fitToPage" },
+            { id: "fit-to-width", type: "button", icon: "Columns2", label: "Fit Width", command: "fitToWidth" },
+          ],
+        },
+      ],
+    },
+
+    // ── Insert ──────────────────────────────────────────────────────────
+    {
+      id: "insert",
+      label: "Insert",
+      visible: (ctx) => ctx.isEditMode,
+      groups: [
+        {
+          id: "insert-slides",
+          label: "Slides",
+          controls: [
+            { id: "insert-new-slide", type: "button", icon: "Plus", label: "New Slide", command: "addSlide" },
+          ],
+        },
+        {
+          id: "insert-tables",
+          label: "Tables",
+          controls: [
+            { id: "insert-table", type: "button", icon: "Table2", label: "Table", command: "insertTable" },
+          ],
+        },
+        {
+          id: "insert-illustrations",
+          label: "Illustrations",
+          controls: [
+            { id: "insert-shapes", type: "button", icon: "Shapes", label: "Shapes", command: "insertShape" },
+            { id: "insert-connector-straight", type: "button", icon: "GitGraph", label: "Straight", command: "insertConnectorStraight" },
+            { id: "insert-connector-bent", type: "button", icon: "GitGraph", label: "Bent", command: "insertConnectorBent" },
+            { id: "insert-connector-curved", type: "button", icon: "GitGraph", label: "Curved", command: "insertConnectorCurved" },
+            { id: "insert-chart", type: "button", icon: "BarChart3", label: "Chart", command: "insertChart" },
+            { id: "insert-icons", type: "button", icon: "Smile", label: "Icons", command: "insertIcon" },
+            { id: "insert-3d", type: "button", icon: "Box", label: "3D Models", command: "insert3dModel" },
+          ],
+        },
+        {
+          id: "insert-images",
+          label: "Images",
+          controls: [
+            { id: "insert-picture", type: "button", icon: "Image", label: "Pictures", command: "insertPicture" },
+            { id: "insert-online-picture", type: "button", icon: "Globe", label: "Online", command: "insertOnlinePicture" },
+            { id: "insert-photo-album", type: "button", icon: "Images", label: "Album", command: "insertPhotoAlbum" },
+          ],
+        },
+        {
+          id: "insert-links",
+          label: "Links",
+          controls: [
+            { id: "insert-link", type: "button", icon: "Link", label: "Link", command: "insertLink", shortcut: "Ctrl+K" },
+          ],
+        },
+        {
+          id: "insert-text",
+          label: "Text",
+          controls: [
+            { id: "insert-text-box", type: "button", icon: "Type", label: "Text Box", command: "insertTextBox" },
+            { id: "insert-wordart", type: "button", icon: "Palette", label: "WordArt", command: "insertWordArt" },
+            { id: "insert-header-footer", type: "button", icon: "FileText", label: "H&F", command: "insertHeaderFooter" },
+            { id: "insert-date-time", type: "button", icon: "Clock", label: "Date", command: "insertDateTime" },
+            { id: "insert-slide-number", type: "button", icon: "Hash", label: "# Slide", command: "insertSlideNumber" },
+          ],
+        },
+        {
+          id: "insert-media",
+          label: "Media",
+          controls: [
+            { id: "insert-video", type: "button", icon: "Video", label: "Video", command: "insertVideo" },
+            { id: "insert-audio", type: "button", icon: "Music", label: "Audio", command: "insertAudio" },
+          ],
+        },
+        {
+          id: "insert-symbols",
+          label: "Symbols",
+          controls: [
+            { id: "insert-equation", type: "button", icon: "Sigma", label: "Equation", command: "insertEquation" },
+            { id: "insert-symbol", type: "button", icon: "Omega", label: "Symbol", command: "insertSymbol" },
+          ],
+        },
+      ],
+    },
+
+    // ── Design ──────────────────────────────────────────────────────────
+    {
+      id: "design",
+      label: "Design",
+      visible: (ctx) => ctx.isEditMode,
+      groups: [
+        {
+          id: "themes",
+          label: "Themes",
+          controls: [
+            { id: "theme-standard", type: "button", icon: "Sun", label: "Standard", command: "setThemeStandard" },
+            { id: "theme-dark", type: "button", icon: "Moon", label: "Dark", command: "setThemeDark" },
+            { id: "theme-gradient", type: "button", icon: "Palette", label: "Gradient", command: "setThemeGradient" },
+            { id: "theme-modern", type: "button", icon: "Monitor", label: "Modern", command: "setThemeModern" },
+          ],
+        },
+        {
+          id: "background",
+          label: "Background",
+          controls: [
+            { id: "bg-none", type: "button", icon: "X", label: "None", command: "setBackgroundNone" },
+            { id: "bg-solid", type: "button", icon: "Circle", label: "Solid", command: "setBackgroundSolid" },
+            { id: "bg-gradient", type: "button", icon: "Palette", label: "Gradient", command: "setBackgroundGradient" },
+            { id: "bg-reset", type: "button", icon: "RotateCcw", label: "Reset", command: "resetBackground" },
+            { id: "bg-color", type: "color-picker", label: "Color", color: () => "#ffffff", onChange: () => {} },
+            {
+              id: "bg-color-start",
+              type: "color-picker",
+              label: "Start",
+              color: () => "#ffffff",
+              onChange: () => {},
+            },
+            {
+              id: "bg-color-end",
+              type: "color-picker",
+              label: "End",
+              color: () => "#000000",
+              onChange: () => {},
+            },
+            // Angle slider — not supported by current control types, represented as buttons
+            { id: "bg-angle", type: "button", icon: "RotateCw", label: "Angle", command: "" },
+          ],
+        },
+        {
+          id: "slide-size",
+          label: "Slide Size",
+          controls: [
+            { id: "slide-size-standard", type: "button", icon: "Columns2", label: "4:3", command: "setSlideSizeStandard" },
+            { id: "slide-size-widescreen", type: "button", icon: "Maximize", label: "16:9", command: "setSlideSizeWidescreen" },
+          ],
+        },
+      ],
+    },
+
+    // ── Transitions ─────────────────────────────────────────────────────
+    {
+      id: "transitions",
+      label: "Transitions",
+      groups: [
+        {
+          id: "transition-effect",
+          label: "Transition",
+          controls: [
+            { id: "effect-none", type: "button", icon: "X", label: "None", command: "setTransitionNone" },
+            { id: "effect-fade", type: "button", icon: "Minimize", label: "Fade", command: "setTransitionFade" },
+            { id: "effect-push", type: "button", icon: "ArrowRight", label: "Push", command: "setTransitionPush" },
+            { id: "effect-wipe", type: "button", icon: "ArrowRightToLine", label: "Wipe", command: "setTransitionWipe" },
+            { id: "effect-split", type: "button", icon: "ArrowLeftRight", label: "Split", command: "setTransitionSplit" },
+            { id: "effect-reveal", type: "button", icon: "Eye", label: "Reveal", command: "setTransitionReveal" },
+            { id: "effect-checker", type: "button", icon: "Grid3x3", label: "Checker", command: "setTransitionChecker" },
+            { id: "effect-zoom", type: "button", icon: "ZoomIn", label: "Zoom", command: "setTransitionZoom" },
+            { id: "effect-morph", type: "button", icon: "Shapes", label: "Morph", command: "setTransitionMorph" },
+            { id: "effect-circle", type: "button", icon: "Circle", label: "Circle", command: "setTransitionCircle" },
+            { id: "effect-uncover", type: "button", icon: "EyeOff", label: "Uncover", command: "setTransitionUncover" },
+            { id: "effect-cover", type: "button", icon: "Eye", label: "Cover", command: "setTransitionCover" },
+          ],
+        },
+        {
+          id: "transition-duration",
+          label: "Duration",
+          controls: [
+            { id: "duration-very-fast", type: "button", icon: "Clock", label: "V.Fast", command: "setDurationVeryFast" },
+            { id: "duration-fast", type: "button", icon: "Clock", label: "Fast", command: "setDurationFast" },
+            { id: "duration-normal", type: "button", icon: "Clock", label: "Normal", command: "setDurationNormal" },
+            { id: "duration-slow", type: "button", icon: "Timer", label: "Slow", command: "setDurationSlow" },
+            { id: "duration-very-slow", type: "button", icon: "Timer", label: "V.Slow", command: "setDurationVerySlow" },
+          ],
+        },
+        {
+          id: "transition-sound",
+          label: "Sound",
+          controls: [
+            { id: "sound-none", type: "button", icon: "VolumeX", label: "No Sound", command: "setTransitionSoundNone" },
+            { id: "sound-select", type: "button", icon: "Volume2", label: "Sound", command: "setTransitionSound" },
+          ],
+        },
+        {
+          id: "advance-slide",
+          label: "Advance Slide",
+          controls: [
+            { id: "advance-click", type: "button", icon: "MousePointer", label: "Click", command: "setAdvanceClick", toggleable: true },
+            {
+              id: "advance-after",
+              type: "select",
+              label: "After",
+              options: [
+                { value: "0", label: "0s" },
+                { value: "2", label: "2s" },
+                { value: "3", label: "3s" },
+                { value: "5", label: "5s" },
+                { value: "10", label: "10s" },
+              ],
+              value: () => "3",
+              onChange: (val) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", { detail: { command: "setAdvanceTiming", value: val } }),
+                ),
+              width: 60,
+            },
+          ],
+        },
+        {
+          id: "apply-to-all",
+          label: "Apply",
+          controls: [
+            { id: "apply-transition-all", type: "button", icon: "Check", label: "Apply All", command: "applyTransitionToAll" },
+          ],
+        },
+      ],
+    },
+
+    // ── Animation ───────────────────────────────────────────────────────
+    {
+      id: "animation",
+      label: "Animation",
+      groups: [
+        {
+          id: "anim-category",
+          label: "Animations",
+          controls: [
+            { id: "anim-none", type: "button", icon: "X", label: "None", command: "setAnimationCategoryNone" },
+            { id: "anim-entrance", type: "button", icon: "LogIn", label: "Entrance", command: "setAnimationEntrance" },
+            { id: "anim-emphasis", type: "button", icon: "Bold", label: "Emphasis", command: "setAnimationEmphasis" },
+            { id: "anim-exit", type: "button", icon: "LogOut", label: "Exit", command: "setAnimationExit" },
+            { id: "anim-motion-path", type: "button", icon: "Map", label: "Paths", command: "setAnimationMotionPath" },
+          ],
+        },
+        {
+          id: "anim-preview",
+          label: "Preview",
+          visible: () => false, // visible when animations exist — toggle via context not available, default hidden
+          controls: [
+            { id: "anim-preview-play", type: "button", icon: "Play", label: "Preview", command: "startPreview" },
+            { id: "anim-preview-stop", type: "button", icon: "Square", label: "Stop", command: "stopPreview" },
+          ],
+        },
+        {
+          id: "anim-advanced",
+          label: "Advanced",
+          controls: [
+            { id: "anim-pane", type: "button", icon: "PanelRight", label: "Pane", command: "openAnimationPane" },
+          ],
+        },
+        {
+          id: "anim-timing",
+          label: "Timing",
+          controls: [
+            { id: "timing-onclick", type: "button", icon: "MousePointer", label: "On Click", command: "setStartOnClick", toggleable: true },
+            { id: "timing-with-previous", type: "button", icon: "ArrowRight", label: "With Prev", command: "setStartWithPrevious", toggleable: true },
+            { id: "timing-after-previous", type: "button", icon: "ArrowRightToLine", label: "After Prev", command: "setStartAfterPrevious", toggleable: true },
+          ],
+        },
+        {
+          id: "anim-duration",
+          label: "Duration",
+          controls: [
+            { id: "duration-fast", type: "button", icon: "Clock", label: "Fast", command: "setAnimDurationFast" },
+            { id: "duration-normal", type: "button", icon: "Clock", label: "Normal", command: "setAnimDurationNormal" },
+            { id: "duration-slow", type: "button", icon: "Timer", label: "Slow", command: "setAnimDurationSlow" },
+            { id: "duration-very-slow", type: "button", icon: "Timer", label: "V.Slow", command: "setAnimDurationVerySlow" },
+          ],
+        },
+        {
+          id: "anim-delay",
+          label: "Delay",
+          controls: [
+            {
+              id: "delay-select",
+              type: "select",
+              label: "",
+              options: [
+                { value: "0", label: "0s" },
+                { value: "0.25", label: "0.25s" },
+                { value: "0.5", label: "0.5s" },
+                { value: "1", label: "1s" },
+              ],
+              value: () => "0",
+              onChange: (val) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", { detail: { command: "setAnimationDelay", value: val } }),
+                ),
+              width: 60,
+            },
+          ],
+        },
+        {
+          id: "anim-reorder",
+          label: "Reorder",
+          visible: () => false,
+          controls: [
+            { id: "move-earlier", type: "button", icon: "ChevronUp", label: "Earlier", command: "moveAnimationEarlier" },
+            { id: "move-later", type: "button", icon: "ChevronDown", label: "Later", command: "moveAnimationLater" },
+          ],
+        },
+      ],
+    },
+
+    // ── Cloud tab (WOPI) ────────────────────────────────────────────────
+    cloudTab,
+  ],
+}

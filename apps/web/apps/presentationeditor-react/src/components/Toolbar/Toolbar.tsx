@@ -1,12 +1,10 @@
 import { observer } from "mobx-react-lite";
+import { Ribbon, presentationRibbonSpec } from "@world-office/editor-common";
+import type { RibbonCommandDispatch, RibbonContext } from "@world-office/editor-common";
+import { detectWopiParams } from "@world-office/wopi-client";
 import { presentationStore } from "../../stores/PresentationStore";
-import { AnimationTab } from "./AnimationTab";
-import { DesignTab } from "./DesignTab";
 import { FileTab } from "./FileTab";
-import { HomeTab } from "./HomeTab";
-import { InsertTab } from "./InsertTab";
 import type { MonacoCommand } from "./MonacoCommand";
-import { TransitionsTab } from "./TransitionsTab";
 
 interface ToolbarProps {
 	onMonacoCommand: (command: MonacoCommand) => void;
@@ -15,25 +13,66 @@ interface ToolbarProps {
 const ObservedToolbar = observer(function ObservedToolbar({
 	onMonacoCommand,
 }: ToolbarProps) {
-	const isEditMode = presentationStore.isEditMode;
+	const wopi = detectWopiParams();
+
+	const context: RibbonContext = {
+		isEditMode: presentationStore.isEditMode,
+		isModified: presentationStore.isModified ?? false,
+		isSaving: presentationStore.isSaving ?? false,
+		canEdit: presentationStore.isEditMode,
+		activeTab: "",
+		isWopi: !!wopi,
+		connectionStatus: "connected",
+		userCount: 0,
+		fileName: presentationStore.document?.title ?? "",
+	};
+
+	const dispatch: RibbonCommandDispatch = {
+		onRichTextCommand: () => {},
+		onMonacoCommand: (command: string) => {
+			onMonacoCommand(command as MonacoCommand);
+		},
+		onCommand: (command: string) => {
+			switch (command) {
+				case "addSlide":
+					presentationStore.addSlide();
+					break;
+				case "goToFirstSlide":
+					presentationStore.setCurrentSlide(0);
+					break;
+				case "goToPrevSlide":
+					presentationStore.setCurrentSlide(
+						Math.max(0, presentationStore.currentSlide - 1),
+					);
+					break;
+				case "goToNextSlide":
+					presentationStore.setCurrentSlide(
+						Math.min(
+							presentationStore.totalSlides - 1,
+							presentationStore.currentSlide + 1,
+						),
+					);
+					break;
+				case "goToLastSlide":
+					presentationStore.setCurrentSlide(
+						presentationStore.totalSlides - 1,
+					);
+					break;
+				default:
+					window.dispatchEvent(
+						new CustomEvent("wo-command", { detail: { command } }),
+					);
+			}
+		},
+	};
 
 	return (
-		<div className="prese-toolbar">
-			<div className="prese-toolbar-tabs">
-				<div className="prese-toolbar-extra-left" />
-				<FileTab />
-				<HomeTab onMonacoCommand={onMonacoCommand} />
-				{isEditMode && <InsertTab />}
-				{isEditMode && <DesignTab />}
-				<TransitionsTab />
-				<AnimationTab />
-				<div className="prese-toolbar-extra-right" />
-			</div>
-			<section className="prese-toolbar-controls" role="tabpanel">
-				<section className="prese-toolbar-static" />
-				<section className="prese-toolbar-panels" />
-			</section>
-		</div>
+		<Ribbon
+			spec={presentationRibbonSpec}
+			context={context}
+			dispatch={dispatch}
+			beforeTabs={<FileTab />}
+		/>
 	);
 });
 
