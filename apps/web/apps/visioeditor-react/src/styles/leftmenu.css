@@ -1,67 +1,67 @@
 /* Visio Editor — Left Menu Styles */
 
 .visio-left-menu {
-  display: flex;
-  width: var(--wo-visio-leftmenu-width);
-  height: 100%;
-  background-color: var(--wo-visio-bg-toolbar);
-  border-right: 1px solid var(--wo-visio-border);
-  user-select: none;
+	display: flex;
+	width: var(--wo-visio-leftmenu-width);
+	height: 100%;
+	background-color: var(--wo-visio-bg-toolbar);
+	border-right: 1px solid var(--wo-visio-border);
+	user-select: none;
 }
 
 .visio-left-menu-btns {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  flex: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	flex: 1;
 }
 
 /* Toolbar-style button (square, icon-only) */
 .visio-left-menu-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 40px;
-  border: none;
-  background: transparent;
-  color: var(--wo-visio-text-secondary);
-  cursor: pointer;
-  transition: background-color 0.15s, color 0.15s;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 40px;
+	border: none;
+	background: transparent;
+	color: var(--wo-visio-text-secondary);
+	cursor: pointer;
+	transition: background-color 0.15s, color 0.15s;
 }
 
 .visio-left-menu-btn:hover {
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
-  color: var(--wo-visio-text-primary);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	color: var(--wo-visio-text-primary);
 }
 
 .visio-left-menu-btn.active {
-  color: var(--wo-visio-accent);
-  background-color: var(--wo-color-bg-secondary, #f5f5f5);
+	color: var(--wo-visio-accent);
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
 }
 
 /* Icon SVG container */
 .visio-left-menu-icon {
-  width: 20px;
-  height: 20px;
+	width: 20px;
+	height: 20px;
 }
 
 .visio-left-menu-icon svg {
-  width: 100%;
-  height: 100%;
+	width: 100%;
+	height: 100%;
 }
 
 /* Side panel area (expandable, sits beside the icon bar) */
 .visio-left-panel-side {
-  width: 250px;
-  height: 100%;
-  background-color: var(--wo-visio-bg-pane);
-  border-right: 1px solid var(--wo-visio-border);
-  overflow: hidden;
+	width: 250px;
+	height: 100%;
+	background-color: var(--wo-visio-bg-pane);
+	border-right: 1px solid var(--wo-visio-border);
+	overflow: hidden;
 }
 
 /* Chat panel placeholder */
 .visio-left-panel-chat {
-  width: 100%;
-  height: 100%;
+	width: 100%;
+	height: 100%;
 }
