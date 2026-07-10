@@ -467,7 +467,7 @@ pub fn create_app(config: DocServerConfig) -> Router {
     let state = AppState::new(config.clone());
 
     // Initialize metrics
-    let _metrics = init_metrics();
+    init_metrics();
 
     let mut app = Router::new()
         .route("/health", get(health_handler))
