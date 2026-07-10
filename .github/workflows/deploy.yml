@@ -13,6 +13,9 @@ jobs:
       packages: write
     if: github.ref == 'refs/heads/main'
     steps:
+      - name: Set Docker image prefix
+        run: echo "DOCKER_IMAGE=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:])" >> $GITHUB_ENV
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -33,7 +36,7 @@ jobs:
           file: services.Dockerfile
           build-args: SERVICE_NAME=identity-service
           push: true
-          tags: ghcr.io/${{ github.repository }}/identity-service:latest,ghcr.io/${{ github.repository }}/identity-service:${{ github.sha }}
+          tags: ghcr.io/${{ env.DOCKER_IMAGE }}/identity-service:latest,ghcr.io/${{ github.repository }}/identity-service:${{ github.sha }}
 
       - name: Build and push storage-service
         uses: docker/build-push-action@v5
@@ -42,7 +45,7 @@ jobs:
           file: services.Dockerfile
           build-args: SERVICE_NAME=storage-service
           push: true
-          tags: ghcr.io/${{ github.repository }}/storage-service:latest,ghcr.io/${{ github.repository }}/storage-service:${{ github.sha }}
+          tags: ghcr.io/${{ env.DOCKER_IMAGE }}/storage-service:latest,ghcr.io/${{ github.repository }}/storage-service:${{ github.sha }}
 
       - name: Build and push conversion-service
         uses: docker/build-push-action@v5
@@ -51,7 +54,7 @@ jobs:
           file: services.Dockerfile
           build-args: SERVICE_NAME=conversion-service
           push: true
-          tags: ghcr.io/${{ github.repository }}/conversion-service:latest,ghcr.io/${{ github.repository }}/conversion-service:${{ github.sha }}
+          tags: ghcr.io/${{ env.DOCKER_IMAGE }}/conversion-service:latest,ghcr.io/${{ github.repository }}/conversion-service:${{ github.sha }}
 
       - name: Build and push coauthoring-service
         uses: docker/build-push-action@v5
@@ -60,7 +63,7 @@ jobs:
           file: services.Dockerfile
           build-args: SERVICE_NAME=coauthoring-service
           push: true
-          tags: ghcr.io/${{ github.repository }}/coauthoring-service:latest,ghcr.io/${{ github.repository }}/coauthoring-service:${{ github.sha }}
+          tags: ghcr.io/${{ env.DOCKER_IMAGE }}/coauthoring-service:latest,ghcr.io/${{ github.repository }}/coauthoring-service:${{ github.sha }}
 
       - name: Build and push session-service
         uses: docker/build-push-action@v5
@@ -69,7 +72,7 @@ jobs:
           file: services.Dockerfile
           build-args: SERVICE_NAME=session-service
           push: true
-          tags: ghcr.io/${{ github.repository }}/session-service:latest,ghcr.io/${{ github.repository }}/session-service:${{ github.sha }}
+          tags: ghcr.io/${{ env.DOCKER_IMAGE }}/session-service:latest,ghcr.io/${{ github.repository }}/session-service:${{ github.sha }}
 
       - name: Build and push api-gateway
         uses: docker/build-push-action@v5
@@ -78,7 +81,7 @@ jobs:
           file: services.Dockerfile
           build-args: SERVICE_NAME=api-gateway
           push: true
-          tags: ghcr.io/${{ github.repository }}/api-gateway:latest,ghcr.io/${{ github.repository }}/api-gateway:${{ github.sha }}
+          tags: ghcr.io/${{ env.DOCKER_IMAGE }}/api-gateway:latest,ghcr.io/${{ github.repository }}/api-gateway:${{ github.sha }}
 
       - name: Build and push docserver
         uses: docker/build-push-action@v5
@@ -86,7 +89,7 @@ jobs:
           context: .
           file: core/crates/wo-docserver/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}/docserver:latest,ghcr.io/${{ github.repository }}/docserver:${{ github.sha }}
+          tags: ghcr.io/${{ env.DOCKER_IMAGE }}/docserver:latest,ghcr.io/${{ github.repository }}/docserver:${{ github.sha }}
 
       - name: Build and push server
         uses: docker/build-push-action@v5
@@ -94,7 +97,7 @@ jobs:
           context: .
           file: services/server/Dockerfile
           push: true
-          tags: ghcr.io/${{ github.repository }}/server:latest,ghcr.io/${{ github.repository }}/server:${{ github.sha }}
+          tags: ghcr.io/${{ env.DOCKER_IMAGE }}/server:latest,ghcr.io/${{ github.repository }}/server:${{ github.sha }}
 
   deploy:
     name: Deploy to Production
