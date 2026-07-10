@@ -2601,7 +2601,8 @@ impl OoxmlParser {
     fn parse_xlsx_border_side(&self, elem: roxmltree::Node) -> XlsxBorderSide {
         XlsxBorderSide {
             style: elem.attribute("style").map(|s| s.to_string()),
-            color: elem.children()
+            color: elem
+                .children()
                 .find(|c| c.has_tag_name("color"))
                 .and_then(|c| c.attribute("rgb").map(|s| s.to_string())),
         }
