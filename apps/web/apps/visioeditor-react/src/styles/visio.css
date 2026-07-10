@@ -1,339 +1,345 @@
 /* Visio Editor — Main Layout & Reset */
 
 :root {
-  --wo-visio-toolbar-height: 40px;
-  --wo-visio-toolbar-height-compact: 34px;
-  --wo-visio-statusbar-height: 25px;
-  --wo-visio-statusbar-height-expanded: 50px;
-  --wo-visio-leftmenu-width: 40px;
-  --wo-visio-leftmenu-min: 40px;
-  --wo-visio-leftmenu-max: 300px;
-  --wo-visio-doc-bg: #fbfbfb;
+	--wo-visio-toolbar-height: 40px;
+	--wo-visio-toolbar-height-compact: 34px;
+	--wo-visio-statusbar-height: 25px;
+	--wo-visio-statusbar-height-expanded: 50px;
+	--wo-visio-leftmenu-width: 40px;
+	--wo-visio-leftmenu-min: 40px;
+	--wo-visio-leftmenu-max: 300px;
+	--wo-visio-doc-bg: #fbfbfb;
 
-  --wo-visio-bg-pane: #ffffff;
-  --wo-visio-bg-toolbar: var(--wo-color-bg-toolbar, #f0f0f0);
-  --wo-visio-bg-statusbar: var(--wo-color-bg-statusbar, #e8e8e8);
-  --wo-visio-bg-page: #ffffff;
-  --wo-visio-bg-page-active: #ffffff;
-  --wo-visio-bg-page-overlay: rgba(68, 71, 150, 1);
-  --wo-visio-text-primary: var(--wo-color-text-primary, #333333);
-  --wo-visio-text-secondary: var(--wo-color-text-secondary, #666666);
-  --wo-visio-border: var(--wo-color-border, #e0e0e0);
-  --wo-visio-accent: var(--wo-color-accent, #4472c4);
-  --wo-visio-accent-hover: var(--wo-color-accent-hover, #355d9e);
-  --wo-visio-font: var(--wo-font-family, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif);
+	--wo-visio-bg-pane: #ffffff;
+	--wo-visio-bg-toolbar: var(--wo-color-bg-toolbar, #f0f0f0);
+	--wo-visio-bg-statusbar: var(--wo-color-bg-statusbar, #e8e8e8);
+	--wo-visio-bg-page: #ffffff;
+	--wo-visio-bg-page-active: #ffffff;
+	--wo-visio-bg-page-overlay: rgba(68, 71, 150, 1);
+	--wo-visio-text-primary: var(--wo-color-text-primary, #333333);
+	--wo-visio-text-secondary: var(--wo-color-text-secondary, #666666);
+	--wo-visio-border: var(--wo-color-border, #e0e0e0);
+	--wo-visio-accent: var(--wo-color-accent, #4472c4);
+	--wo-visio-accent-hover: var(--wo-color-accent-hover, #355d9e);
+	--wo-visio-font: var(
+		--wo-font-family,
+		"Segoe UI",
+		-apple-system,
+		BlinkMacSystemFont,
+		sans-serif
+	);
 }
 
 .viewport-ref {
-  font-family: var(--wo-visio-font);
-  color: var(--wo-visio-text-primary);
+	font-family: var(--wo-visio-font);
+	color: var(--wo-visio-text-primary);
 }
 
 #editor_sdk {
-  width: 100%;
-  height: 100%;
+	width: 100%;
+	height: 100%;
 }
 
 /* Viewport — VBox/HBox layout via CSS Grid */
 .visio-viewport {
-  position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--wo-visio-bg-pane);
-  overflow: hidden;
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	background-color: var(--wo-visio-bg-pane);
+	overflow: hidden;
 }
 
 .visio-viewport-vbox {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  height: 100%;
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
 }
 
 .visio-viewport-toolbar {
-  flex-shrink: 0;
-  overflow: hidden;
+	flex-shrink: 0;
+	overflow: hidden;
 }
 
 .visio-viewport-body {
-  flex: 1;
-  display: flex;
-  flex-direction: row;
-  overflow: hidden;
-  min-height: 0;
+	flex: 1;
+	display: flex;
+	flex-direction: row;
+	overflow: hidden;
+	min-height: 0;
 }
 
 .visio-viewport-left-menu {
-  flex-shrink: 0;
-  height: 100%;
+	flex-shrink: 0;
+	height: 100%;
 }
 
 .visio-viewport-editor {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  overflow: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: var(--wo-visio-doc-bg);
+	flex: 1;
+	min-width: 0;
+	height: 100%;
+	overflow: auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: var(--wo-visio-doc-bg);
 }
 
 .visio-viewport-statusbar {
-  flex-shrink: 0;
+	flex-shrink: 0;
 }
 
 /* File menu panel (full-height overlay) */
 .visio-file-menu-panel {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 500;
-  background-color: rgba(0, 0, 0, 0.3);
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 500;
+	background-color: rgba(0, 0, 0, 0.3);
 }
 
 /* About panel */
 .visio-about-menu-panel {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  left: 40px;
-  top: 0;
-  padding-right: 40px;
-  z-index: 450;
-  background-color: var(--wo-visio-bg-pane);
-  overflow: hidden;
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	left: 40px;
+	top: 0;
+	padding-right: 40px;
+	z-index: 450;
+	background-color: var(--wo-visio-bg-pane);
+	overflow: hidden;
 }
 
 /* Document holder */
 .visio-document-holder {
-  width: 100%;
-  height: 100%;
-  background-color: var(--wo-visio-doc-bg);
+	width: 100%;
+	height: 100%;
+	background-color: var(--wo-visio-doc-bg);
 }
 
 /* ── Properties panel (flowchart mode) ── */
 
 .fc-props-panel {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 220px;
-  background: #ffffff;
-  border: 1px solid #d0d0d0;
-  border-radius: 6px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
-  z-index: 10;
-  padding: 8px 12px;
-  font-size: 12px;
-  user-select: none;
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	width: 220px;
+	background: #ffffff;
+	border: 1px solid #d0d0d0;
+	border-radius: 6px;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+	z-index: 10;
+	padding: 8px 12px;
+	font-size: 12px;
+	user-select: none;
 }
 
 .fc-props-header {
-  font-weight: 600;
-  font-size: 13px;
-  color: #333;
-  padding-bottom: 6px;
-  margin-bottom: 6px;
-  border-bottom: 1px solid #e8e8e8;
+	font-weight: 600;
+	font-size: 13px;
+	color: #333;
+	padding-bottom: 6px;
+	margin-bottom: 6px;
+	border-bottom: 1px solid #e8e8e8;
 }
 
 .fc-props-section {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
 }
 
 .fc-props-label {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 11px;
-  color: #666;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	font-size: 11px;
+	color: #666;
 }
 
 .fc-props-input {
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  padding: 3px 6px;
-  font-size: 12px;
-  outline: none;
-  background: #fafafa;
+	border: 1px solid #ccc;
+	border-radius: 3px;
+	padding: 3px 6px;
+	font-size: 12px;
+	outline: none;
+	background: #fafafa;
 }
 .fc-props-input:focus {
-  border-color: #4472c4;
-  background: #fff;
+	border-color: #4472c4;
+	background: #fff;
 }
 
 .fc-props-narrow {
-  width: 60px;
+	width: 60px;
 }
 
 .fc-props-color {
-  width: 32px;
-  height: 24px;
-  padding: 0;
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  cursor: pointer;
+	width: 32px;
+	height: 24px;
+	padding: 0;
+	border: 1px solid #ccc;
+	border-radius: 3px;
+	cursor: pointer;
 }
 
 .fc-props-row {
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
-  align-items: flex-end;
+	display: flex;
+	flex-direction: row;
+	gap: 8px;
+	align-items: flex-end;
 }
 
 .fc-props-row > .fc-props-label {
-  flex: 1;
+	flex: 1;
 }
 
 .fc-props-check {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: #666;
-  white-space: nowrap;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	gap: 4px;
+	font-size: 11px;
+	color: #666;
+	white-space: nowrap;
 }
 
 .fc-props-check input {
-  margin: 0;
+	margin: 0;
 }
 
 .fc-props-select {
-  border: 1px solid #ccc;
-  border-radius: 3px;
-  padding: 2px 4px;
-  font-size: 12px;
-  outline: none;
-  background: #fafafa;
+	border: 1px solid #ccc;
+	border-radius: 3px;
+	padding: 2px 4px;
+	font-size: 12px;
+	outline: none;
+	background: #fafafa;
 }
 .fc-props-select:focus {
-  border-color: #4472c4;
+	border-color: #4472c4;
 }
 
 /* ── Loading / Error screens ── */
 
 .visio-loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  width: 100vw;
-  background: var(--wo-visio-bg-pane, #ffffff);
-  gap: 16px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100vh;
+	width: 100vw;
+	background: var(--wo-visio-bg-pane, #ffffff);
+	gap: 16px;
 }
 
 .visio-loading-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #e0e0e0;
-  border-top-color: #4472c4;
-  border-radius: 50%;
-  animation: visio-spin 0.8s linear infinite;
+	width: 32px;
+	height: 32px;
+	border: 3px solid #e0e0e0;
+	border-top-color: #4472c4;
+	border-radius: 50%;
+	animation: visio-spin 0.8s linear infinite;
 }
 
 @keyframes visio-spin {
-  to {
-    transform: rotate(360deg);
-  }
+	to {
+		transform: rotate(360deg);
+	}
 }
 
 .visio-loading p {
-  font-size: 14px;
-  color: #666;
-  margin: 0;
+	font-size: 14px;
+	color: #666;
+	margin: 0;
 }
 
 .visio-loading-error-text {
-  color: #d32f2f !important;
-  font-weight: 500;
+	color: #d32f2f !important;
+	font-weight: 500;
 }
 
 .visio-loading-retry {
-  margin-top: 8px;
-  padding: 8px 20px;
-  border: 1px solid #4472c4;
-  border-radius: 4px;
-  background: #ffffff;
-  color: #4472c4;
-  font-size: 13px;
-  cursor: pointer;
+	margin-top: 8px;
+	padding: 8px 20px;
+	border: 1px solid #4472c4;
+	border-radius: 4px;
+	background: #ffffff;
+	color: #4472c4;
+	font-size: 13px;
+	cursor: pointer;
 }
 .visio-loading-retry:hover {
-  background: #f0f4fa;
+	background: #f0f4fa;
 }
 
 /* ── Save indicator ── */
 
 .visio-save-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  color: #888;
-  padding: 0 8px;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 11px;
+	color: #888;
+	padding: 0 8px;
 }
 
 .visio-save-indicator.saving {
-  color: #4472c4;
+	color: #4472c4;
 }
 
 .visio-save-indicator.modified {
-  color: #d32f2f;
+	color: #d32f2f;
 }
 
 /* ── Context menu (flowchart mode) ── */
 
 .fc-context-menu {
-  position: fixed;
-  z-index: 1000;
-  min-width: 160px;
-  background: #ffffff;
-  border: 1px solid #d0d0d0;
-  border-radius: 6px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-  padding: 4px 0;
-  font-size: 12px;
-  user-select: none;
+	position: fixed;
+	z-index: 1000;
+	min-width: 160px;
+	background: #ffffff;
+	border: 1px solid #d0d0d0;
+	border-radius: 6px;
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+	padding: 4px 0;
+	font-size: 12px;
+	user-select: none;
 }
 
 .fc-context-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 6px 16px;
-  border: none;
-  background: transparent;
-  color: #333;
-  cursor: pointer;
-  font-size: 12px;
+	display: block;
+	width: 100%;
+	text-align: left;
+	padding: 6px 16px;
+	border: none;
+	background: transparent;
+	color: #333;
+	cursor: pointer;
+	font-size: 12px;
 }
 .fc-context-item:hover {
-  background: #f0f4fa;
+	background: #f0f4fa;
 }
 .fc-context-item:disabled {
-  color: #bbb;
-  cursor: default;
+	color: #bbb;
+	cursor: default;
 }
 
 .fc-context-sep {
-  height: 1px;
-  background: #e8e8e8;
-  margin: 4px 0;
+	height: 1px;
+	background: #e8e8e8;
+	margin: 4px 0;
 }
 
 .fc-context-danger {
-  color: #d32f2f;
+	color: #d32f2f;
 }
 .fc-context-danger:hover {
-  background: #fef2f2;
+	background: #fef2f2;
 }
