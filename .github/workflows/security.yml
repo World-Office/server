@@ -7,7 +7,7 @@ on:
 jobs:
   cargo-audit:
     name: Rust Dependency Audit
-    runs-on: [self-hosted, linux]
+    runs-on: legion
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -19,7 +19,7 @@ jobs:
 
   npm-audit:
     name: NPM Dependency Audit
-    runs-on: [self-hosted, linux]
+    runs-on: legion
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
