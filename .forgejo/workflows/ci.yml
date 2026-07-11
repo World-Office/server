@@ -21,8 +21,9 @@ jobs:
         timeout-minutes: 5
 
       - name: Install Rust toolchain
-        uses: https://github.com/dtolnay/rust-toolchain@nightly
+        uses: https://github.com/dtolnay/rust-toolchain@master
         with:
+          channel: nightly
           components: rustfmt, clippy
         timeout-minutes: 10
 
@@ -62,7 +63,9 @@ jobs:
         timeout-minutes: 5
 
       - name: Install Rust toolchain
-        uses: https://github.com/dtolnay/rust-toolchain@nightly
+        uses: https://github.com/dtolnay/rust-toolchain@master
+        with:
+          channel: nightly
         timeout-minutes: 10
 
       - name: Install system dependencies
@@ -126,7 +129,9 @@ jobs:
         timeout-minutes: 5
 
       - name: Install Rust toolchain
-        uses: https://github.com/dtolnay/rust-toolchain@nightly
+        uses: https://github.com/dtolnay/rust-toolchain@master
+        with:
+          channel: nightly
         timeout-minutes: 10
 
       - name: Install system dependencies
@@ -158,8 +163,9 @@ jobs:
         timeout-minutes: 5
 
       - name: Install Rust toolchain
-        uses: https://github.com/dtolnay/rust-toolchain@nightly
+        uses: https://github.com/dtolnay/rust-toolchain@master
         with:
+          channel: nightly
           components: llvm-tools-preview
         timeout-minutes: 10
 
@@ -216,6 +222,8 @@ jobs:
 
       - name: Setup pnpm
         uses: https://github.com/pnpm/action-setup@v4
+        with:
+          version: 10.4.1
         timeout-minutes: 5
 
       - name: Setup Node.js
@@ -243,6 +251,8 @@ jobs:
 
       - name: Setup pnpm
         uses: https://github.com/pnpm/action-setup@v4
+        with:
+          version: 10.4.1
         timeout-minutes: 5
 
       - name: Setup Node.js
@@ -270,6 +280,8 @@ jobs:
 
       - name: Setup pnpm
         uses: https://github.com/pnpm/action-setup@v4
+        with:
+          version: 10.4.1
         timeout-minutes: 5
 
       - name: Setup Node.js
@@ -297,6 +309,8 @@ jobs:
 
       - name: Setup pnpm
         uses: https://github.com/pnpm/action-setup@v4
+        with:
+          version: 10.4.1
         timeout-minutes: 5
 
       - name: Setup Node.js
@@ -334,7 +348,9 @@ jobs:
         timeout-minutes: 5
 
       - name: Install Rust toolchain
-        uses: https://github.com/dtolnay/rust-toolchain@nightly
+        uses: https://github.com/dtolnay/rust-toolchain@master
+        with:
+          channel: nightly
         timeout-minutes: 10
 
       - name: Install system dependencies
