@@ -67,12 +67,7 @@ const ObservedToolbar = observer(function ObservedToolbar({ onMonacoCommand }: T
   }
 
   return (
-    <Ribbon
-      spec={pdfRibbonSpec}
-      context={context}
-      dispatch={dispatch}
-      beforeTabs={<FileTab />}
-    />
+    <Ribbon spec={pdfRibbonSpec} context={context} dispatch={dispatch} beforeTabs={<FileTab />} />
   )
 })
 
