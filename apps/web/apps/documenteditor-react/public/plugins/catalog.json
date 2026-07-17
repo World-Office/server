@@ -1,0 +1,46 @@
+[
+  {
+    "id": "word-count",
+    "name": "Word Count",
+    "version": "1.0.0",
+    "description": "Displays real-time word, character, and paragraph counts in the status bar.",
+    "author": "World Office",
+    "icon": "bar-chart-3",
+    "homepage": "",
+    "license": "MIT",
+    "downloadUrl": "/plugins/word-count.js"
+  },
+  {
+    "id": "ai-writer",
+    "name": "AI Writing Assistant",
+    "version": "1.0.0",
+    "description": "AI-powered writing suggestions, grammar check, and style improvements using the built-in AI provider.",
+    "author": "World Office",
+    "icon": "sparkles",
+    "homepage": "",
+    "license": "AGPL-3.0",
+    "downloadUrl": "/plugins/ai-writer.js"
+  },
+  {
+    "id": "template-gallery",
+    "name": "Template Gallery",
+    "version": "1.0.0",
+    "description": "Browse and insert from a curated collection of document templates.",
+    "author": "World Office",
+    "icon": "layout-template",
+    "homepage": "",
+    "license": "MIT",
+    "downloadUrl": "/plugins/template-gallery.js"
+  },
+  {
+    "id": "export-pdf",
+    "name": "PDF Export Pro",
+    "version": "2.0.0",
+    "description": "Advanced PDF export with bookmarks, metadata, and PDF/A compliance options.",
+    "author": "Community",
+    "icon": "file-output",
+    "homepage": "",
+    "license": "MIT",
+    "downloadUrl": "/plugins/export-pdf.js"
+  }
+]

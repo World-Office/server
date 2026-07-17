@@ -1,6 +1,6 @@
 import { ThemeProvider } from "@world-office/design-system";
 import { useDocumentLoader } from "@world-office/wopi-client";
-import { useCallback } from "react";
+import { lazy, Suspense, useCallback } from "react";
 import { getActiveEditor } from "./components/MonacoEditor";
 import {
 	type MonacoCommand,
@@ -12,7 +12,10 @@ import { useEmbeddedMode } from "./hooks/useEmbeddedMode";
 import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge";
 import { useEmbeddedAutoSave } from "./hooks/useEmbeddedAutoSave";
 import { spreadsheetStore } from "./stores/SpreadsheetStore";
-import { SpreadsheetCollaborationProvider } from "./components/SpreadsheetCollaborationProvider";
+
+const SpreadsheetCollaborationProvider = lazy(
+	() => import("./components/SpreadsheetCollaborationProvider"),
+);
 
 export function App() {
 	useKeyboardShortcuts();
@@ -109,7 +112,9 @@ export function App() {
 				isCompactToolbar={spreadsheetStore.isCompactToolbar}
 				onMonacoCommand={handleMonacoCommand}
 			/>
-			<SpreadsheetCollaborationProvider />
+			<Suspense fallback={null}>
+				<SpreadsheetCollaborationProvider />
+			</Suspense>
 		</ThemeProvider>
 	);
 }

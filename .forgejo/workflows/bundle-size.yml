@@ -1,0 +1,64 @@
+# .forgejo/workflows/bundle-size.yml
+name: Bundle Size Check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/web/apps/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "scripts/bundle-size-check.js"
+  pull_request:
+    paths:
+      - "apps/web/apps/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "scripts/bundle-size-check.js"
+  workflow_dispatch:
+
+jobs:
+  bundle-size:
+    name: Bundle Size
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: https://data.forgejo.org/actions/checkout@v4
+        timeout-minutes: 5
+
+      - name: Setup pnpm
+        uses: https://github.com/pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+        timeout-minutes: 5
+
+      - name: Setup Node.js
+        uses: https://data.forgejo.org/actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+        timeout-minutes: 5
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        timeout-minutes: 10
+
+      - name: Build editor-shell (with editor apps)
+        run: pnpm build --filter=@world-office/editor-shell --filter=@world-office/documenteditor --filter=@world-office/spreadsheeteditor --filter=@world-office/presentationeditor --filter=@world-office/pdfeditor --filter=@world-office/visioeditor
+        timeout-minutes: 15
+
+      - name: Check bundle sizes
+        run: node scripts/bundle-size-check.js --threshold=10
+        timeout-minutes: 5
+
+      - name: Upload bundle size report
+        uses: https://data.forgejo.org/actions/upload-artifact@v3
+        with:
+          name: bundle-size-report-${{ github.sha }}
+          path: scripts/bundle-size-report.json
+          if-no-files-found: ignore
+          retention-days: 30
+        timeout-minutes: 2
+        continue-on-error: true

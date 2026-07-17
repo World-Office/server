@@ -1,5 +1,5 @@
 import { ThemeProvider } from "@world-office/design-system";
-import { useCallback, useEffect, useRef } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef } from "react";
 import { getActiveEditor } from "./components/MonacoEditor";
 import {
 	type MonacoCommand,
@@ -10,7 +10,13 @@ import { useDocumentLoader } from "./hooks/useDocumentLoader";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { flowchartStore } from "./stores/FlowchartStore";
 import { visioStore } from "./stores/VisioStore";
-import { VisioCollaborationProvider } from "./components/VisioCollaborationProvider";
+
+const VisioCollaborationProvider = lazy(
+	() =>
+		import("./components/VisioCollaborationProvider").then((m) => ({
+			default: m.VisioCollaborationProvider,
+		})),
+);
 
 function LoadingScreen(): React.JSX.Element {
 	return (
@@ -81,7 +87,9 @@ export function App() {
 
 	return (
 		<ThemeProvider>
-			<VisioCollaborationProvider />
+			<Suspense fallback={null}>
+				<VisioCollaborationProvider />
+			</Suspense>
 			<Viewport
 				toolbarVisible={visioStore.toolbarVisible}
 				statusbarVisible={visioStore.statusbarVisible}
