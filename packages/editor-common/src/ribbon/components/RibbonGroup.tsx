@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import type { RibbonCommandDispatch, RibbonContext, RibbonGroupSpec } from "../types"
 import { ControlRenderer } from "./ControlRenderer"
 
@@ -8,6 +9,8 @@ interface RibbonGroupProps {
 }
 
 export function RibbonGroup({ group, context, dispatch }: RibbonGroupProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="de-ribbon-group">
       <div className="de-ribbon-elset">
@@ -20,7 +23,7 @@ export function RibbonGroup({ group, context, dispatch }: RibbonGroupProps) {
           />
         ))}
       </div>
-      <span className="de-ribbon-label">{group.label}</span>
+      <span className="de-ribbon-label">{t(group.label)}</span>
     </div>
   )
 }

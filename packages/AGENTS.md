@@ -17,6 +17,7 @@ packages/
 ├── editor-stores/        # Editor state management (8 files, 6 ts/tsx)
 ├── sdk-bridge/           # SDK bridge layer (9 files, 7 ts/tsx)
 ├── i18n/                 # Internationalization (4 files, 2 ts/tsx)
+├── spellchecker/         # Client-side spellchecker (nspell, Hunspell dictionaries, 8 source files)
 ├── eslint-config/        # Shared ESLint configuration (2 files)
 └── tsconfig/             # Shared TypeScript configuration (4 files)
 ```

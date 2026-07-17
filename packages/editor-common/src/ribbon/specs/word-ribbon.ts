@@ -167,7 +167,20 @@ export const wordRibbonSpec: RibbonSpec = {
               type: "color-picker",
               label: "Color",
               color: () => "#000000",
-              onChange: () => {},
+              onChange: (c: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", { detail: { command: "textColor", value: c } }),
+                ),
+            },
+            {
+              id: "highlight-color",
+              type: "color-picker",
+              label: "Highlight",
+              color: () => "#ffff00",
+              onChange: (c: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", { detail: { command: "highlight", value: c } }),
+                ),
             },
             {
               id: "clear-formatting",
@@ -252,6 +265,41 @@ export const wordRibbonSpec: RibbonSpec = {
               label: "Indent",
               command: "indent",
             },
+            {
+              id: "line-spacing",
+              type: "select",
+              label: "Line Spacing",
+              options: [
+                { value: "1", label: "1.0" },
+                { value: "1.15", label: "1.15" },
+                { value: "1.5", label: "1.5" },
+                { value: "2", label: "2.0" },
+                { value: "2.5", label: "2.5" },
+                { value: "3", label: "3.0" },
+              ],
+              value: () => "1.15",
+              onChange: (val: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", { detail: { command: "lineSpacing", value: val } }),
+                ),
+              width: 80,
+            },
+            {
+              id: "text-direction-ltr",
+              type: "button",
+              icon: "AlignLeft",
+              label: "LTR",
+              command: "setTextDirection",
+              value: "ltr",
+            },
+            {
+              id: "text-direction-rtl",
+              type: "button",
+              icon: "AlignRight",
+              label: "RTL",
+              command: "setTextDirection",
+              value: "rtl",
+            },
           ],
         },
         {
@@ -308,6 +356,19 @@ export const wordRibbonSpec: RibbonSpec = {
       visible: (ctx) => ctx.isEditMode,
       groups: [
         {
+          id: "pages",
+          label: "Pages",
+          controls: [
+            {
+              id: "page-break",
+              type: "button",
+              icon: "Minus",
+              label: "Break",
+              command: "pageBreak",
+            },
+          ],
+        },
+        {
           id: "table",
           label: "Table",
           controls: [
@@ -338,6 +399,19 @@ export const wordRibbonSpec: RibbonSpec = {
               label: "Link",
               command: "link",
               shortcut: "Ctrl+K",
+            },
+          ],
+        },
+        {
+          id: "text",
+          label: "Text",
+          controls: [
+            {
+              id: "horizontal-rule",
+              type: "button",
+              icon: "Minus",
+              label: "HR",
+              command: "horizontalRule",
             },
           ],
         },
@@ -405,6 +479,46 @@ export const wordRibbonSpec: RibbonSpec = {
       label: "References",
       groups: [
         {
+          id: "toc",
+          label: "Table of Contents",
+          controls: [
+            {
+              id: "insert-toc",
+              type: "button",
+              icon: "List",
+              label: "TOC",
+              command: "insertToc",
+            },
+            {
+              id: "update-toc",
+              type: "button",
+              icon: "Replace",
+              label: "Update",
+              command: "updateToc",
+            },
+          ],
+        },
+        {
+          id: "footnotes",
+          label: "Footnotes",
+          controls: [
+            {
+              id: "insert-footnote",
+              type: "button",
+              icon: "Plus",
+              label: "Footnote",
+              command: "insertFootnote",
+            },
+            {
+              id: "insert-endnote",
+              type: "button",
+              icon: "Plus",
+              label: "Endnote",
+              command: "insertEndnote",
+            },
+          ],
+        },
+        {
           id: "comments",
           label: "Comments",
           controls: [
@@ -427,6 +541,66 @@ export const wordRibbonSpec: RibbonSpec = {
       ],
     },
 
+    {
+      id: "review",
+      label: "Review",
+      groups: [
+        {
+          id: "tracking",
+          label: "Tracking",
+          controls: [
+            {
+              id: "track-changes",
+              type: "button",
+              icon: "Eye",
+              label: "Track Changes",
+              command: "toggleTrackChanges",
+            },
+          ],
+        },
+        {
+          id: "changes",
+          label: "Changes",
+          controls: [
+            {
+              id: "accept-change",
+              type: "button",
+              icon: "Check",
+              label: "Accept",
+              command: "acceptChange",
+            },
+            {
+              id: "reject-change",
+              type: "button",
+              icon: "X",
+              label: "Reject",
+              command: "rejectChange",
+            },
+            {
+              id: "accept-all",
+              type: "button",
+              icon: "CheckCheck",
+              label: "Accept All",
+              command: "acceptAllChanges",
+            },
+            {
+              id: "reject-all",
+              type: "button",
+              icon: "XCircle",
+              label: "Reject All",
+              command: "rejectAllChanges",
+            },
+            {
+              id: "next-change",
+              type: "button",
+              icon: "ChevronRight",
+              label: "Next",
+              command: "nextChange",
+            },
+          ],
+        },
+      ],
+    },
     {
       id: "view",
       label: "View",

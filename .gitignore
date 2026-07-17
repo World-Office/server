@@ -65,6 +65,7 @@ Makefile
 # =====================
 node_modules/
 dist/
+frontend-dist/
 .next/
 .turbo/
 .vercel/

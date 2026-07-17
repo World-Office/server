@@ -1,3 +1,21 @@
+import { localStorage } from "./utils/local-storage"
+import type {
+  PluginContext,
+  PluginEditorAPI,
+  PluginEditorSelection,
+  PluginI18nAPI,
+  PluginMenuAPI,
+  PluginPanelAPI,
+  PluginStorageAPI,
+  PluginToolbarAPI,
+  PluginToolbarButtonConfig,
+  PluginToolbarTabConfig,
+  PluginMenuItemConfig,
+  PluginPanelConfig,
+} from "./plugin/types"
+
+// ── Legacy Types (backward compatibility) ───────────────────────────────
+
 interface ToolbarButtonConfig {
   id: string
   label: string
@@ -17,6 +35,130 @@ interface PluginAPIConfig {
     showToast(message: string): void
   }
 }
+
+// ── PluginContext Factory ───────────────────────────────────────────────
+
+/**
+ * Create a full PluginContext for a given plugin ID.
+ */
+export function createPluginContext(pluginId: string): PluginContext {
+  const storageApi: PluginStorageAPI = {
+    get(key: string): string | null {
+      return localStorage.getItem(`wo-plugin:${pluginId}:${key}`)
+    },
+    set(key: string, value: string): void {
+      localStorage.setItem(`wo-plugin:${pluginId}:${key}`, value)
+    },
+    remove(key: string): void {
+      localStorage.removeItem(`wo-plugin:${pluginId}:${key}`)
+    },
+  }
+
+  const toolbarApi: PluginToolbarAPI = {
+    registerButton(config: PluginToolbarButtonConfig): void {
+      window.dispatchEvent(
+        new CustomEvent("plugin-add-button", {
+          detail: { ...config, pluginId },
+        }),
+      )
+    },
+    registerTab(config: PluginToolbarTabConfig): void {
+      window.dispatchEvent(
+        new CustomEvent("plugin-add-tab", {
+          detail: { ...config, pluginId },
+        }),
+      )
+    },
+    unregisterButton(id: string): void {
+      window.dispatchEvent(
+        new CustomEvent("plugin-remove-button", {
+          detail: { id, pluginId },
+        }),
+      )
+    },
+    unregisterTab(id: string): void {
+      window.dispatchEvent(
+        new CustomEvent("plugin-remove-tab", {
+          detail: { id, pluginId },
+        }),
+      )
+    },
+  }
+
+  const menuApi: PluginMenuAPI = {
+    registerItem(config: PluginMenuItemConfig): void {
+      window.dispatchEvent(
+        new CustomEvent("plugin-add-menu-item", {
+          detail: { ...config, pluginId },
+        }),
+      )
+    },
+    unregisterItem(id: string): void {
+      window.dispatchEvent(
+        new CustomEvent("plugin-remove-menu-item", {
+          detail: { id, pluginId },
+        }),
+      )
+    },
+  }
+
+  const panelApi: PluginPanelAPI = {
+    registerPanel(config: PluginPanelConfig): void {
+      window.dispatchEvent(
+        new CustomEvent("plugin-add-panel", {
+          detail: { ...config, pluginId },
+        }),
+      )
+    },
+    unregisterPanel(id: string): void {
+      window.dispatchEvent(
+        new CustomEvent("plugin-remove-panel", {
+          detail: { id, pluginId },
+        }),
+      )
+    },
+  }
+
+  const i18nApi: PluginI18nAPI = {
+    addTranslations(locale: string, translations: Record<string, string>): void {
+      window.dispatchEvent(
+        new CustomEvent("plugin-add-translations", {
+          detail: { locale, translations, pluginId },
+        }),
+      )
+    },
+  }
+
+  const editorApi: PluginEditorAPI = {
+    getSelection(): PluginEditorSelection {
+      const sel = window.getSelection()
+      if (!sel || sel.rangeCount === 0) {
+        return { text: "", range: document.createRange() }
+      }
+      const range = sel.getRangeAt(0)
+      return { text: sel.toString(), range }
+    },
+    insertContent(content: string): void {
+      window.dispatchEvent(
+        new CustomEvent("plugin-insert-content", {
+          detail: { content, pluginId },
+        }),
+      )
+    },
+  }
+
+  return {
+    pluginId,
+    toolbar: toolbarApi,
+    menu: menuApi,
+    panel: panelApi,
+    i18n: i18nApi,
+    storage: storageApi,
+    editor: editorApi,
+  }
+}
+
+// ── Legacy Plugin API (backward compatible) ─────────────────────────────
 
 let pluginAPI: PluginAPIConfig | null = null
 

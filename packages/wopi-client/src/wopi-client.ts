@@ -1,13 +1,18 @@
 import type { WopiConnection, WopiFileInfo } from "./wopi-types"
 
-const authHeaders = (token: string): Record<string, string> => ({
-  Authorization: `Bearer ${token}`,
-})
+function wopiUrl(base: string, conn: WopiConnection, extraQs?: string): string {
+  let url = `${base}?access_token=${encodeURIComponent(conn.wopiAccessToken)}`
+  if (extraQs) url += `&${extraQs}`
+  return url
+}
 
 /** Call CheckFileInfo to get document metadata. */
 export async function checkFileInfo(conn: WopiConnection): Promise<WopiFileInfo> {
-  const url = `${conn.docserverBase}/wopi/files/${conn.wopiFileId}`
-  const res = await fetch(url, { headers: authHeaders(conn.wopiAccessToken) })
+  const url = wopiUrl(
+    `${conn.docserverBase}/wopi/files/${conn.wopiFileId}`,
+    conn,
+  )
+  const res = await fetch(url)
   if (!res.ok) {
     throw new Error(`WOPI CheckFileInfo failed: ${res.status}`)
   }
@@ -16,11 +21,12 @@ export async function checkFileInfo(conn: WopiConnection): Promise<WopiFileInfo>
 
 /** Call GetFile to download document content as a Blob. */
 export async function getFile(conn: WopiConnection): Promise<Blob> {
-  let url = `${conn.docserverBase}/wopi/files/${conn.wopiFileId}/contents`
-  if (conn.format) {
-    url += `?format=${encodeURIComponent(conn.format)}`
-  }
-  const res = await fetch(url, { headers: authHeaders(conn.wopiAccessToken) })
+  let url = wopiUrl(
+    `${conn.docserverBase}/wopi/files/${conn.wopiFileId}/contents`,
+    conn,
+    conn.format ? `format=${encodeURIComponent(conn.format)}` : undefined,
+  )
+  const res = await fetch(url)
   if (!res.ok) {
     throw new Error(`WOPI GetFile failed: ${res.status}`)
   }
@@ -29,9 +35,11 @@ export async function getFile(conn: WopiConnection): Promise<Blob> {
 
 /** Call PutFile to upload document content. */
 export async function putFile(conn: WopiConnection, blob: Blob): Promise<void> {
-  const url = `${conn.docserverBase}/wopi/files/${conn.wopiFileId}/contents`
+  const url = wopiUrl(
+    `${conn.docserverBase}/wopi/files/${conn.wopiFileId}/contents`,
+    conn,
+  )
   const headers: Record<string, string> = {
-    ...authHeaders(conn.wopiAccessToken),
     "Content-Type": "application/octet-stream",
     "X-WOPI-Override": "PUT",
   }

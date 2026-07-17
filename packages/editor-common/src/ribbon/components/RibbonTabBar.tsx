@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next"
 import type { RibbonTabSpec } from "../types"
 
 interface RibbonTabBarProps {
@@ -15,6 +16,8 @@ export function RibbonTabBar({
   beforeTabs,
   extra,
 }: RibbonTabBarProps) {
+  const { t } = useTranslation()
+
   return (
     <div className="de-toolbar-tabs">
       <div className="de-toolbar-extra-left" />
@@ -28,7 +31,7 @@ export function RibbonTabBar({
           role="tab"
           aria-selected={tab.id === activeTabId}
         >
-          {tab.label}
+          {t(tab.label)}
         </button>
       ))}
       <div className="de-toolbar-extra-right">{extra}</div>
