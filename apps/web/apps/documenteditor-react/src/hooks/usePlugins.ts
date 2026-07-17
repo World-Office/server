@@ -10,6 +10,11 @@ interface Plugin {
 
 export function usePlugins() {
   useEffect(() => {
+    // Plugin system requires Tauri desktop runtime — skip in web context
+    if (typeof window !== "undefined" && !(window as unknown as Record<string, unknown>).__TAURI__) {
+      return
+    }
+
     async function loadPlugins() {
       try {
         const { invoke } = await import("@tauri-apps/api/core")
@@ -21,7 +26,7 @@ export function usePlugins() {
           }
         }
       } catch (err) {
-        console.error("[Plugins] Load error:", err)
+        console.warn("[Plugins] Load error:", err)
       }
     }
 

@@ -1,4 +1,7 @@
 import { observer } from "mobx-react-lite"
+import { getActiveRichTextEditor } from "../../lib/rte-command"
+import { insertTableOfContentsCommand, updateTableOfContentsCommand } from "../../lib/toc-extension"
+import { insertFootnoteCommand } from "../../lib/footnote-mark"
 
 const ObservedReferencesTab = observer(function ObservedReferencesTab() {
   return (
@@ -8,41 +11,77 @@ const ObservedReferencesTab = observer(function ObservedReferencesTab() {
       role="tabpanel"
       aria-labelledby="references"
     >
-      {/* Table of Contents */}
       <div className="de-referencestab-group">
         <div className="de-referencestab-elset">
-          <button type="button" className="de-referencestab-btn" title="Table of Contents">
+          <button
+            type="button"
+            className="de-referencestab-btn"
+            title="Table of Contents"
+            onClick={() => {
+              const editor = getActiveRichTextEditor()
+              if (editor) insertTableOfContentsCommand(editor)
+            }}
+          >
             Table of Contents
           </button>
+          <button
+            type="button"
+            className="de-referencestab-btn"
+            title="Update TOC"
+            onClick={() => {
+              const editor = getActiveRichTextEditor()
+              if (editor) updateTableOfContentsCommand(editor)
+            }}
+          >
+            Update TOC
+          </button>
         </div>
       </div>
 
       <div className="de-referencestab-separator" />
 
-      {/* Footnotes */}
       <div className="de-referencestab-group">
         <div className="de-referencestab-elset">
-          <button type="button" className="de-referencestab-btn" title="Insert Footnote">
+          <button
+            type="button"
+            className="de-referencestab-btn"
+            title="Insert Footnote"
+            onClick={() => {
+              const editor = getActiveRichTextEditor()
+              if (editor) insertFootnoteCommand(editor)
+            }}
+          >
             Insert Footnote
           </button>
-          <button type="button" className="de-referencestab-btn" title="Next Footnote">
-            Next Footnote
-          </button>
         </div>
       </div>
 
       <div className="de-referencestab-separator" />
 
-      {/* Citations & Bibliography */}
       <div className="de-referencestab-group">
         <div className="de-referencestab-elset">
-          <button type="button" className="de-referencestab-btn" title="Insert Citation">
+          <button
+            type="button"
+            className="de-referencestab-btn"
+            title="Insert Citation"
+            onClick={() => {}}
+          >
             Insert Citation
           </button>
-          <button type="button" className="de-referencestab-btn" title="Manage Sources">
+          <button
+            type="button"
+            className="de-referencestab-btn"
+            title="Manage Sources"
+            onClick={() => {}}
+          >
             Manage Sources
           </button>
-          <button type="button" className="de-referencestab-btn" title="Bibliography">
+          <button
+            type="button"
+            className="de-referencestab-btn"
+            title="Bibliography"
+            onClick={() => {}}
+          >
             Bibliography
           </button>
         </div>
@@ -50,10 +89,14 @@ const ObservedReferencesTab = observer(function ObservedReferencesTab() {
 
       <div className="de-referencestab-separator" />
 
-      {/* Captions */}
       <div className="de-referencestab-group">
         <div className="de-referencestab-elset">
-          <button type="button" className="de-referencestab-btn" title="Insert Caption">
+          <button
+            type="button"
+            className="de-referencestab-btn"
+            title="Insert Caption"
+            onClick={() => {}}
+          >
             Insert Caption
           </button>
         </div>
@@ -61,13 +104,22 @@ const ObservedReferencesTab = observer(function ObservedReferencesTab() {
 
       <div className="de-referencestab-separator" />
 
-      {/* Index */}
       <div className="de-referencestab-group">
         <div className="de-referencestab-elset">
-          <button type="button" className="de-referencestab-btn" title="Mark Entry">
+          <button
+            type="button"
+            className="de-referencestab-btn"
+            title="Mark Entry"
+            onClick={() => {}}
+          >
             Mark Entry
           </button>
-          <button type="button" className="de-referencestab-btn" title="Insert Index">
+          <button
+            type="button"
+            className="de-referencestab-btn"
+            title="Insert Index"
+            onClick={() => {}}
+          >
             Insert Index
           </button>
         </div>

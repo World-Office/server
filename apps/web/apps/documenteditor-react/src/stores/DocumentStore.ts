@@ -79,6 +79,11 @@ export class DocumentStore {
   /* Track changes */
   trackChanges = false
 
+  /* Header / Footer */
+  headerHtml = ""
+  footerHtml = ""
+  headerFooterMode: "none" | "header" | "footer" = "none"
+
   /* Spelling */
   spellingEnabled = true
 

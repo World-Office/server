@@ -1,30 +1,68 @@
-import { useCollaboration } from "@world-office/collaboration-react"
 import { ThemeProvider } from "@world-office/design-system"
 import { useDocumentLoader } from "@world-office/wopi-client"
 import { observer } from "mobx-react-lite"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { isDesktop, listenForMenuEvents, listenForUpdateEvents } from "./bridge"
+import { DocumentCollaborationProvider } from "./components/DocumentCollaborationProvider"
 import { getActiveEditor } from "./components/MonacoEditor"
 import { type MonacoCommand, dispatchMonacoCommand } from "./components/Toolbar/MonacoCommand"
+import { ShortcutsOverlay } from "./components/ShortcutsOverlay"
 import { Viewport } from "./components/Viewport"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { usePlugins } from "./hooks/usePlugins"
-import {
-  collabSendCommentRef,
-  collabSendRef,
-  collaborationStore,
-  currentUser,
-} from "./lib/collaboration"
 import { type RichTextCommand, dispatchRichTextCommand } from "./lib/rte-command"
 import { documentStore } from "./stores/DocumentStore"
-
-function generateUserId() {
-  return `user-${Math.random().toString(36).slice(2, 9)}`
-}
+import { useEmbeddedMode } from "./hooks/useEmbeddedMode"
+import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge"
+import { useEmbeddedAutoSave } from "./hooks/useEmbeddedAutoSave"
+import { useSpellchecker } from "./hooks/useSpellchecker"
+import { SpellcheckContext } from "./lib/spellcheck-context"
+import { SpellcheckContextMenu } from "./components/SpellcheckContextMenu"
 
 export const App = observer(function App() {
+  const [shortcutsVisible, setShortcutsVisible] = useState(false)
+
   useKeyboardShortcuts()
   usePlugins()
+
+  const spellcheck = useSpellchecker()
+
+  const { embedded } = useEmbeddedMode(
+    documentStore.setToolbarVisible.bind(documentStore),
+    documentStore.setStatusbarVisible.bind(documentStore),
+    documentStore.setLeftMenuVisible.bind(documentStore),
+    documentStore.setRightMenuVisible.bind(documentStore),
+  )
+
+  const bridge = useEmbeddedBridge({
+    embedded,
+    onSave: async () => {
+      await documentStore.saveToWopi()
+    },
+  })
+
+  useEmbeddedAutoSave(
+    embedded,
+    documentStore.wopiConnection,
+    documentStore.isModified,
+    () => documentStore.buildDocumentBlob(),
+    bridge.notifyDocumentSaved,
+    bridge.notifyError,
+  )
+
+  useEffect(() => {
+    function handleGlobalKey(e: KeyboardEvent) {
+      if (e.key === "?" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const tag = (e.target as HTMLElement).tagName
+        if (tag !== "INPUT" && tag !== "TEXTAREA" && !(e.target as HTMLElement).isContentEditable) {
+          e.preventDefault()
+          setShortcutsVisible((v) => !v)
+        }
+      }
+    }
+    window.addEventListener("keydown", handleGlobalKey)
+    return () => window.removeEventListener("keydown", handleGlobalKey)
+  }, [])
 
   const handleMonacoCommand = useCallback((command: MonacoCommand) => {
     dispatchMonacoCommand(command, getActiveEditor())
@@ -46,26 +84,6 @@ export const App = observer(function App() {
   }
 
   const [updateAvailable, setUpdateAvailable] = useState(false)
-
-  const userId = useMemo(() => generateUserId(), [])
-  const username = useMemo(() => `User ${userId.slice(-4)}`, [userId])
-
-  currentUser.id = userId
-  currentUser.username = username
-
-  const { sendParticipantUpdate, sendCommentEvent, connect } = useCollaboration({
-    wsUrl: `${import.meta.env.VITE_COLLABORATION_WS_URL}/ws/{session_id}?user_id=${userId}&username=${encodeURIComponent(username)}`,
-    userId,
-    username,
-    collaborationStore,
-    coauthoringServiceUrl: import.meta.env.VITE_COLLABORATION_HTTP_URL,
-  })
-
-  useEffect(() => {
-    collabSendRef.send = sendParticipantUpdate
-    collabSendCommentRef.send = sendCommentEvent
-    connect()
-  }, [sendParticipantUpdate, sendCommentEvent, connect])
 
   useEffect(() => {
     const desktop = isDesktop()
@@ -225,15 +243,24 @@ export const App = observer(function App() {
           </button>
         </div>
       )}
-      <Viewport
-        toolbarVisible={documentStore.toolbarVisible}
-        statusbarVisible={documentStore.statusbarVisible}
-        leftMenuVisible={documentStore.leftMenuVisible}
-        rightMenuVisible={documentStore.rightMenuVisible}
-        isCompactToolbar={documentStore.isCompactToolbar}
-        onMonacoCommand={handleMonacoCommand}
-        onRichTextCommand={handleRichTextCommand}
-      />
+      <DocumentCollaborationProvider />
+      <ShortcutsOverlay visible={shortcutsVisible} onClose={() => setShortcutsVisible(false)} />
+      <SpellcheckContext.Provider value={spellcheck}>
+        <Viewport
+          toolbarVisible={documentStore.toolbarVisible}
+          statusbarVisible={documentStore.statusbarVisible}
+          leftMenuVisible={documentStore.leftMenuVisible}
+          rightMenuVisible={documentStore.rightMenuVisible}
+          isCompactToolbar={documentStore.isCompactToolbar}
+          onMonacoCommand={handleMonacoCommand}
+          onRichTextCommand={handleRichTextCommand}
+        />
+        <SpellcheckContextMenu
+          spellchecker={spellcheck.spellchecker}
+          editorElement={null}
+          addToDictionary={spellcheck.addToDictionary}
+        />
+      </SpellcheckContext.Provider>
     </ThemeProvider>
   )
 })

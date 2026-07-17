@@ -41,6 +41,16 @@
   --wo-de-icon-size: 18px;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
 .viewport-ref {
   font-family: var(--wo-de-font);
   color: var(--wo-de-text-primary);
@@ -240,4 +250,172 @@
 
 .de-document-holder--error button:hover {
   background: var(--wo-de-accent-hover);
+}
+
+/* Footnote references */
+.footnote-ref {
+  font-size: 0.75em;
+  vertical-align: super;
+  color: var(--wo-de-accent);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.footnote-ref::before {
+  content: "[";
+}
+
+.footnote-ref::after {
+  content: "]";
+}
+
+/* Table of Contents */
+.table-of-contents {
+  padding: 12px 16px;
+  border: 1px solid var(--wo-de-border);
+  border-radius: 4px;
+  margin: 8px 0;
+  background: var(--wo-de-bg-toolbar-panel);
+}
+
+.toc-placeholder {
+  color: var(--wo-de-text-muted);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.toc-item {
+  padding: 2px 0;
+  line-height: 1.4;
+}
+
+.toc-item a {
+  color: var(--wo-de-accent);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.toc-item a:hover {
+  text-decoration: underline;
+}
+
+.toc-level-1 {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.toc-level-2 {
+  padding-left: 20px;
+}
+
+.toc-level-3 {
+  padding-left: 40px;
+  font-size: 12px;
+}
+
+@media print {
+  .de-toolbar,
+  .de-statusbar,
+  .de-file-menu,
+  .de-left-menu,
+  .de-right-menu,
+  .de-shortcuts-overlay {
+    display: none !important;
+  }
+
+  .de-viewport {
+    position: static !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .de-document-holder {
+    overflow: visible !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+  }
+
+  .ProseMirror {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  @page {
+    margin: 2cm;
+    size: A4;
+  }
+}
+
+.de-shortcuts-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.de-shortcuts-panel {
+  background: var(--wo-de-bg-primary, #fff);
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  padding: 16px 20px;
+  min-width: 360px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.de-shortcuts-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--wo-de-border);
+}
+
+.de-shortcuts-header button {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: var(--wo-de-text-secondary);
+  padding: 0 4px;
+}
+
+.de-shortcuts-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.de-shortcuts-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--wo-de-text-secondary);
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--wo-de-border);
+}
+
+.de-shortcuts-table td {
+  padding: 6px 8px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--wo-de-bg-pane, #f0f0f0);
+}
+
+.de-shortcuts-table kbd {
+  display: inline-block;
+  padding: 2px 6px;
+  font-family: monospace;
+  font-size: 11px;
+  background: var(--wo-de-bg-pane, #f0f0f0);
+  border: 1px solid var(--wo-de-border);
+  border-radius: 3px;
+  box-shadow: 0 1px 0 var(--wo-de-border);
 }

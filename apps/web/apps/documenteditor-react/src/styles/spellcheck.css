@@ -1,0 +1,46 @@
+.spellcheck-error {
+	text-decoration: wavy underline #ef4444;
+	text-underline-offset: 2px;
+	cursor: pointer;
+}
+
+.spellcheck-context-menu {
+	position: fixed;
+	z-index: 9999;
+	background: #fff;
+	border: 1px solid #d0d0d0;
+	border-radius: 6px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	padding: 4px 0;
+	min-width: 160px;
+}
+
+.spellcheck-context-menu button {
+	display: block;
+	width: 100%;
+	padding: 6px 12px;
+	font-size: 13px;
+	text-align: left;
+	background: none;
+	border: none;
+	cursor: pointer;
+}
+
+.spellcheck-context-menu button:hover {
+	background: #f0f0f0;
+}
+
+.spellcheck-context-menu .spellcheck-suggestion {
+	font-weight: 500;
+}
+
+.spellcheck-context-menu .spellcheck-divider {
+	height: 1px;
+	background: #e0e0e0;
+	margin: 4px 0;
+}
+
+.spellcheck-context-menu .spellcheck-action {
+	color: #666;
+	font-size: 12px;
+}

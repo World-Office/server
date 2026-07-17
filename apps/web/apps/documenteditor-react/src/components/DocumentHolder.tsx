@@ -1,10 +1,12 @@
 import { observer } from "mobx-react-lite"
-import { useEffect, useRef, useState } from "react"
+import { lazy, Suspense, useEffect, useRef, useState } from "react"
 import { isCanvasFormat } from "../lib/wasm-renderer"
 import { documentStore } from "../stores/DocumentStore"
 import { DocumentCanvas } from "./DocumentCanvas"
-import { MonacoEditor } from "./MonacoEditor"
 import { RichTextEditor } from "./RichTextEditor"
+import { useSpellcheck } from "../lib/spellcheck-context"
+
+const MonacoEditor = lazy(() => import("./MonacoEditor").then((m) => ({ default: m.MonacoEditor })))
 
 const SAVE_DEBOUNCE_MS = 1500
 
@@ -25,6 +27,7 @@ export const DocumentHolder = observer(function DocumentHolder() {
   const [value, setValue] = useState<string>("")
   const lastBlobRef = useRef<Blob | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const spellcheck = useSpellcheck()
 
   const fileName = documentStore.fileName ?? ""
   const blob = documentStore.lastLoadedContent
@@ -61,6 +64,8 @@ export const DocumentHolder = observer(function DocumentHolder() {
 
   const handleRichTextChange = (html: string) => {
     documentStore.updateRichText(html)
+    const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
+    documentStore.setWordCount(text ? text.split(/\s+/).length : 0)
     if (!documentStore.wopiConnection) return
     if (documentStore.wopiFileInfo && !documentStore.wopiFileInfo.UserCanWrite) return
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
@@ -101,7 +106,7 @@ export const DocumentHolder = observer(function DocumentHolder() {
           backgroundColor: "#e8e8e8",
         }}
       >
-        <RichTextEditor html={documentStore.richTextHtml ?? ""} onChange={handleRichTextChange} />
+        <RichTextEditor html={documentStore.richTextHtml ?? ""} onChange={handleRichTextChange} spellchecker={spellcheck.spellchecker} />
       </div>
     )
   }
@@ -119,13 +124,15 @@ export const DocumentHolder = observer(function DocumentHolder() {
           backgroundColor: "#e8e8e8",
         }}
       >
-        <MonacoEditor
-          value={value}
-          onChange={handleChange}
-          language={languageForFile(fileName)}
-          readOnly={documentStore.wopiFileInfo ? !documentStore.wopiFileInfo.UserCanWrite : false}
-          editorType="document"
-        />
+        <Suspense fallback={<div>Loading editor...</div>}>
+          <MonacoEditor
+            value={value}
+            onChange={handleChange}
+            language={languageForFile(fileName)}
+            readOnly={documentStore.wopiFileInfo ? !documentStore.wopiFileInfo.UserCanWrite : false}
+            editorType="document"
+          />
+        </Suspense>
       </div>
     )
   }
@@ -159,13 +166,15 @@ export const DocumentHolder = observer(function DocumentHolder() {
         backgroundColor: "#e8e8e8",
       }}
     >
-      <MonacoEditor
-        value={value}
-        onChange={handleChange}
-        language={languageForFile(fileName)}
-        readOnly={documentStore.wopiFileInfo ? !documentStore.wopiFileInfo.UserCanWrite : false}
-        editorType="document"
-      />
+      <Suspense fallback={<div>Loading editor...</div>}>
+        <MonacoEditor
+          value={value}
+          onChange={handleChange}
+          language={languageForFile(fileName)}
+          readOnly={documentStore.wopiFileInfo ? !documentStore.wopiFileInfo.UserCanWrite : false}
+          editorType="document"
+        />
+      </Suspense>
     </div>
   )
 })

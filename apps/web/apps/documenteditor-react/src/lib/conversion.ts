@@ -47,7 +47,27 @@ export async function convertToHtml(blob: Blob, sourceFormat: string): Promise<s
   return htmlBytes.text()
 }
 
+const FORMAT_MIME_TYPES: Record<string, string> = {
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  dotx: "application/vnd.openxmlformats-officedocument.wordprocessingml.template",
+  odt: "application/vnd.oasis.opendocument.text",
+  ott: "application/vnd.oasis.opendocument.text-template",
+  rtf: "application/rtf",
+  txt: "text/plain",
+  html: "text/html; charset=utf-8",
+  epub: "application/epub+zip",
+  fb2: "application/x-fictionbook+xml",
+  pdf: "application/pdf",
+}
+
 export async function convertFromHtml(html: string, targetFormat: string): Promise<Blob> {
+  // TXT is a special case — strip HTML tags server-side would be ideal,
+  // but we can do it client-side for immediate export
+  if (targetFormat === "txt") {
+    const text = html.replace(/<br\s*\/?>/gi, "\n").replace(/<\/p>/gi, "\n\n").replace(/<[^>]+>/g, "")
+    return new Blob([text.trim()], { type: "text/plain" })
+  }
+
   const encoder = new TextEncoder()
   const htmlBytes = encoder.encode(html)
   const blob = new Blob([htmlBytes], { type: "text/html; charset=utf-8" })
@@ -64,9 +84,15 @@ export async function convertFromHtml(html: string, targetFormat: string): Promi
   if (!json.data) {
     throw new Error(`Conversion failed: ${json.status} — ${json.error ?? "unknown error"}`)
   }
-  const mimeType =
-    targetFormat === "odt"
-      ? "application/vnd.oasis.opendocument.text"
-      : "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  const mimeType = FORMAT_MIME_TYPES[targetFormat] ?? "application/octet-stream"
   return base64ToBlob(json.data, mimeType)
+}
+
+export function downloadBlob(blob: Blob, fileName: string): void {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = fileName
+  a.click()
+  URL.revokeObjectURL(url)
 }

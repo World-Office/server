@@ -11,6 +11,12 @@
  */
 
 import type { Editor } from "@tiptap/core"
+import { toggleTrackChanges, acceptChange, rejectChange, acceptAllChanges, rejectAllChanges, nextChange } from "./track-changes"
+import { insertTableOfContentsCommand, updateTableOfContentsCommand } from "./toc-extension"
+import { insertFootnoteCommand } from "./footnote-mark"
+import { insertEndnoteCommand } from "./endnote-mark"
+import { currentUser } from "./collaboration"
+import { documentStore } from "../stores/DocumentStore"
 
 export type RichTextCommand =
   | "bold"
@@ -26,9 +32,16 @@ export type RichTextCommand =
   | "clearFormatting"
   | "undo"
   | "redo"
+  | "cut"
+  | "copy"
+  | "paste"
+  | "normal"
   | "heading1"
   | "heading2"
   | "heading3"
+  | "heading4"
+  | "heading5"
+  | "heading6"
   | "bulletList"
   | "orderedList"
   | "taskList"
@@ -69,6 +82,7 @@ export type RichTextCommand =
   | "columnsReset"
   | "editHeader"
   | "editFooter"
+  | "find"
   | "openSearch"
   | "findNext"
   | "findPrevious"
@@ -76,7 +90,25 @@ export type RichTextCommand =
   | "replaceAll"
   | "addComment"
   | "toggleComment"
+  | "insertToc"
+  | "updateToc"
+  | "insertFootnote"
+  | "insertEndnote"
+  | "setTextDirection"
   | "toggleSpellCheck"
+  | "toggleTrackChanges"
+  | "acceptChange"
+  | "rejectChange"
+  | "acceptAllChanges"
+  | "rejectAllChanges"
+  | "nextChange"
+  | "insertPageNumber"
+  | "insertPlainTextControl"
+  | "insertDropdownControl"
+  | "insertCheckboxControl"
+  | "insertDatePickerControl"
+  | "setBoxBorder"
+  | "removeBorders"
 
 export interface PageLayoutSettings {
   orientation?: "portrait" | "landscape"
@@ -118,9 +150,13 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "clearFormatting",
   "undo",
   "redo",
+  "normal",
   "heading1",
   "heading2",
   "heading3",
+  "heading4",
+  "heading5",
+  "heading6",
   "bulletList",
   "orderedList",
   "taskList",
@@ -166,7 +202,25 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "replaceAll",
   "addComment",
   "toggleComment",
+  "insertToc",
+  "updateToc",
+  "insertFootnote",
+  "insertEndnote",
+  "setTextDirection",
   "toggleSpellCheck",
+  "toggleTrackChanges",
+  "acceptChange",
+  "rejectChange",
+  "acceptAllChanges",
+  "rejectAllChanges",
+  "nextChange",
+  "insertPageNumber",
+  "insertPlainTextControl",
+  "insertDropdownControl",
+  "insertCheckboxControl",
+  "insertDatePickerControl",
+  "setBoxBorder",
+  "removeBorders",
 ] as const
 
 export type RichTextCommandSurface = Editor
@@ -215,7 +269,9 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
     }
     case "highlight": {
       const hlColor = value || window.prompt("Enter highlight color (name or hex):")
-      if (hlColor) {
+      if (hlColor === "transparent" || hlColor === "none") {
+        chain.unsetHighlight().run()
+      } else if (hlColor) {
         chain.toggleHighlight({ color: hlColor }).run()
       }
       return true
@@ -243,6 +299,21 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
     case "redo":
       chain.redo().run()
       return true
+    case "cut":
+      document.execCommand("cut")
+      return true
+    case "copy":
+      document.execCommand("copy")
+      return true
+    case "paste":
+      document.execCommand("paste")
+      return true
+    case "find":
+    case "openSearch":
+      return true
+    case "normal":
+      chain.setParagraph().run()
+      return true
     case "heading1":
       chain.toggleHeading({ level: 1 }).run()
       return true
@@ -251,6 +322,15 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       return true
     case "heading3":
       chain.toggleHeading({ level: 3 }).run()
+      return true
+    case "heading4":
+      chain.toggleHeading({ level: 4 }).run()
+      return true
+    case "heading5":
+      chain.toggleHeading({ level: 5 }).run()
+      return true
+    case "heading6":
+      chain.toggleHeading({ level: 6 }).run()
       return true
     case "bulletList":
       chain.toggleBulletList().run()
@@ -417,12 +497,10 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       window.dispatchEvent(new CustomEvent("world-office:columns", { detail: { count: 1 } }))
       return true
     case "editHeader":
-      editor.commands.focus("start")
-      editor.commands.scrollIntoView()
+      documentStore.headerFooterMode = documentStore.headerFooterMode === "header" ? "none" : "header"
       return true
     case "editFooter":
-      editor.commands.focus("end")
-      editor.commands.scrollIntoView()
+      documentStore.headerFooterMode = documentStore.headerFooterMode === "footer" ? "none" : "footer"
       return true
     case "openSearch": {
       const query = window.prompt("Search for:", searchState.query || "")
@@ -532,6 +610,24 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
     case "toggleComment":
       editor.chain().focus().unsetComment().run()
       return true
+    case "insertToc":
+      insertTableOfContentsCommand(editor)
+      return true
+    case "updateToc":
+      updateTableOfContentsCommand(editor)
+      return true
+    case "insertFootnote":
+      insertFootnoteCommand(editor)
+      return true
+    case "insertEndnote":
+      insertEndnoteCommand(editor)
+      return true
+    case "setTextDirection": {
+      if (value === "ltr" || value === "rtl") {
+        editor.chain().focus().setTextDirection(value).run()
+      }
+      return true
+    }
     case "toggleSpellCheck": {
       const current = document.querySelector<HTMLElement>(".rich-text-editor [contenteditable]")
       if (current) {
@@ -543,5 +639,33 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       }
       return true
     }
+    case "toggleTrackChanges":
+      return toggleTrackChanges(editor, currentUser.username, currentUser.id)
+    case "acceptChange":
+      return acceptChange(editor, editor.state.selection.from)
+    case "rejectChange":
+      return rejectChange(editor, editor.state.selection.from)
+    case "acceptAllChanges":
+      acceptAllChanges(editor)
+      return true
+    case "rejectAllChanges":
+      rejectAllChanges(editor)
+      return true
+    case "nextChange":
+      return nextChange(editor)
+    case "insertPageNumber":
+      return editor.chain().focus().insertContent('<span data-page-number>1</span>').run()
+    case "insertPlainTextControl":
+      return editor.chain().focus().insertContent('<span data-content-control="plain-text">Enter text</span>').run()
+    case "insertDropdownControl":
+      return editor.chain().focus().insertContent('<span data-content-control="dropdown" data-options="">Select...</span>').run()
+    case "insertCheckboxControl":
+      return editor.chain().focus().insertContent('<span data-content-control="checkbox">☐</span>').run()
+    case "insertDatePickerControl":
+      return editor.chain().focus().insertContent('<span data-content-control="date-picker"></span>').run()
+    case "setBoxBorder":
+      return editor.commands.setBorderTop("2px solid #000") && editor.commands.setBorderBottom("2px solid #000")
+    case "removeBorders":
+      return editor.commands.removeBorders()
   }
 }

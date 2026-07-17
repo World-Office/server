@@ -1,0 +1,25 @@
+.track-insert {
+	text-decoration: underline;
+	color: #16a34a;
+}
+
+.track-delete {
+	text-decoration: line-through;
+	color: #dc2626;
+	opacity: 0.8;
+}
+
+.track-insert::after,
+.track-delete::after {
+	font-size: 10px;
+	opacity: 0.7;
+	margin-left: 2px;
+}
+
+.track-insert[data-author]::after {
+	content: "(" attr(data-author) ")";
+}
+
+.track-delete[data-author]::after {
+	content: "(" attr(data-author) ")";
+}

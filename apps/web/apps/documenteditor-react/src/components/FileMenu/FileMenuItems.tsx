@@ -1,6 +1,7 @@
 import { openFile } from "../../bridge/file-operations"
 import { documentStore } from "../../stores/DocumentStore"
 import type { FileMenuAction } from "../../types/document"
+import { useTranslation } from "react-i18next"
 
 interface FileMenuItemsProps {
   onMenuClick: (action: string, hasPanel: boolean) => void
@@ -14,7 +15,6 @@ interface MenuItem {
 }
 
 const MENU_ITEMS: MenuItem[] = [
-  { action: "back", caption: "Back", hasPanel: false },
   { action: "saveas", caption: "Download as...", hasPanel: true },
   { action: "save-copy", caption: "Save Copy as...", hasPanel: true },
   { action: "save-desktop", caption: "Save as...", hasPanel: false },
@@ -38,6 +38,7 @@ const MENU_ITEMS: MenuItem[] = [
 ]
 
 export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
+  const { t } = useTranslation()
   const activePanel = documentStore.activeFileMenuPanel
 
   function handleBack(): void {
@@ -94,7 +95,7 @@ export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
         }}
       >
         <span className="de-file-menu-item-icon">←</span>
-        <span className="de-file-menu-item-caption">Back</span>
+        <span className="de-file-menu-item-caption">{t("Back")}</span>
       </div>
       <li className="de-file-menu-divider" />
       {MENU_ITEMS.map((item) => (
@@ -111,7 +112,7 @@ export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
             }
           }}
         >
-          <span className="de-file-menu-item-caption">{item.caption}</span>
+          <span className="de-file-menu-item-caption">{t(item.caption)}</span>
         </div>
       ))}
     </ul>

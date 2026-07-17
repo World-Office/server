@@ -1,10 +1,13 @@
 import { observer } from "mobx-react-lite"
 import type { JSX } from "react"
+import { useTranslation } from "react-i18next"
 import { documentStore } from "../../stores/DocumentStore"
 import type { RightMenuPanel } from "../../types/document"
 import { RightMenuButton } from "./RightMenuButton"
 
 const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> = [
+  { action: "ai-assistant", title: "AI Assistant", icon: "✨" },
+  { action: "comments", title: "Comments", icon: "💬" },
   { action: "paragraph", title: "Paragraph", icon: "¶" },
   { action: "table", title: "Table", icon: "⊞" },
   { action: "image", title: "Image", icon: "🖼" },
@@ -18,6 +21,8 @@ const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> = 
 ]
 
 function RightMenuInner(): JSX.Element {
+  const { t } = useTranslation()
+
   return (
     <div
       className="de-right-menu"
@@ -30,7 +35,7 @@ function RightMenuInner(): JSX.Element {
           <RightMenuButton
             key={action}
             action={action}
-            title={title}
+            title={t(title)}
             icon={icon}
             active={documentStore.activeRightPanel === action}
             onClick={() => documentStore.toggleRightPanel(action)}

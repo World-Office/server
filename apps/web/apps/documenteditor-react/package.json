@@ -46,14 +46,17 @@
     "@world-office/editor-stores": "workspace:*",
     "@world-office/i18n": "workspace:*",
     "@world-office/sdk-bridge": "workspace:*",
+    "@world-office/spellchecker": "workspace:*",
     "@world-office/wo-renderer-wasm": "workspace:*",
     "@world-office/wopi-client": "workspace:*",
+    "i18next": "^24.0.0",
     "lucide-react": "^1.23.0",
     "mobx": "^6.13.0",
     "mobx-react-lite": "^4.1.0",
     "monaco-editor": "^0.52.2",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-i18next": "^15.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
