@@ -12,6 +12,7 @@ const operationContext = require("../operationContext")
 const storageFs = require("./storage-fs")
 const storageS3 = require("./storage-s3")
 const storageAz = require("./storage-az")
+const storageSeaweedfs = require("./storage-seaweedfs")
 
 const cfgExpSessionAbsolute = ms(config.get("services.CoAuthoring.expire.sessionabsolute"))
 const cfgCacheStorage = config.get("storage")
@@ -34,6 +35,8 @@ function getStorage(storageCfg) {
   switch (storageCfg.name) {
     case "storage-s3":
       return storageS3
+    case "storage-seaweedfs":
+      return storageSeaweedfs
     case "storage-az":
       return storageAz
     default:

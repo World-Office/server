@@ -55,9 +55,9 @@ Only fully implemented service with real CRUD:
 - NEVER expose WOPI endpoints without auth tokens
 - NEVER add npm deps to `server/` without updating `package-lock.json`
 - NEVER commit to `server/` without `npm run code:check` (lint + format)
-- Most Rust services are stubs — check `src/main.rs` before assuming full implementation
 
 ## NOTES
 
+- All 8 Rust services have real implementations — thin binaries wrapping library crates with axum + tokio. The `services/AGENTS.md` structure table lists their current capabilities.
 - `services-enterprise/` has 3 additional services (audit, SCIM, webhooks) under commercial license
 - CI Docker build matrix covers: identity-service, storage-service, conversion-service, coauthoring-service, session-service, api-gateway, wo-docserver

@@ -44,7 +44,17 @@ if (!empty($_["directToken"])) {
         data-template="<?php p($_["isTemplate"]) ?>"
         data-anchor="<?php p($_["anchor"]) ?>"
         data-inframe="<?php p($_["inframe"]) ?>"
-        data-inviewer="<?php p($_["inviewer"]) ?>"></div>
+        data-inviewer="<?php p($_["inviewer"]) ?>"
+        <?php if (!empty($_["useWopi"])) { ?>
+        data-usewopi="true"
+        data-wopiaccesstoken="<?php p($_["wopiAccessToken"]) ?>"
+        data-wopifileid="<?php p($_["wopiFileId"]) ?>"
+        data-wopihosturl="<?php p($_["wopiHostUrl"]) ?>"
+        data-editortype="<?php p($_["editorType"]) ?>"
+        data-embedded="true"
+        data-userid="<?php p($_["userId"]) ?>"
+        data-username="<?php p($_["userName"]) ?>"
+        <?php } ?>></div>
 </div>
 
 <?php if (!empty($_["directToken"])) { ?>

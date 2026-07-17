@@ -51,6 +51,14 @@ return [
        ["name" => "template#add_template", "url" => "/ajax/template", "verb" => "POST"],
        ["name" => "template#delete_template", "url" => "/ajax/template", "verb" => "DELETE"],
        ["name" => "template#get_templates", "url" => "/ajax/template", "verb" => "GET"],
+       // ---- WOPI protocol routes ----
+       ["name" => "wopi#checkFileInfo", "url" => "/wopi/files/{fileId}", "verb" => "GET"],
+       ["name" => "wopi#getFileInfo", "url" => "/wopi/files/{fileId}", "verb" => "GET"],
+       ["name" => "wopi#getContents", "url" => "/wopi/files/{fileId}/contents", "verb" => "GET"],
+       ["name" => "wopi#putContents", "url" => "/wopi/files/{fileId}/contents", "verb" => "PUT"],
+       ["name" => "wopi#lockFile", "url" => "/wopi/files/{fileId}/lock", "verb" => "POST"],
+       ["name" => "wopi#unlockFile", "url" => "/wopi/files/{fileId}/unlock", "verb" => "POST"],
+       ["name" => "wopi#refreshLock", "url" => "/wopi/files/{fileId}/refreshLock", "verb" => "POST"],
     ],
     "ocs" => [
         ["name" => "federation#key", "url" => "/api/v1/key", "verb" => "POST"],

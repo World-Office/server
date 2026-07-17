@@ -1333,6 +1333,25 @@ class EditorController extends Controller {
             "anchor" => $anchor
         ];
 
+        // Check if WOPI React editor mode is requested
+        $requestParams = $this->request->getParams();
+        $useWopi = (isset($requestParams['use_wopi']) && $requestParams['use_wopi'] === 'true')
+            || \OCP\Server::get(\OCP\IAppConfig::class)->getValueString($this->appName, 'use_wopi_editor', 'false') === 'true';
+
+        if ($useWopi && !empty($fileId)) {
+            $user = $this->userSession->getUser();
+            $userId = $user?->getUID();
+            if ($userId !== null) {
+                [$file, $error, $share] = $this->getFile($userId, $fileId, $filePath, $template);
+                if (!isset($error) && $file instanceof File) {
+                    $isWritable = !$inviewer && ($file->getPermissions() & Constants::PERMISSION_UPDATE) === Constants::PERMISSION_UPDATE;
+                    $wopiConfig = $this->getWopiEditorConfig($file, $isWritable, $userId);
+                    $params = array_merge($params, $wopiConfig);
+                    $params['useWopi'] = true;
+                }
+            }
+        }
+
         $response = null;
         if ($inframe === true) {
             $params["inframe"] = true;
@@ -1545,6 +1564,76 @@ class EditorController extends Controller {
         }
 
         return [null, false];
+    }
+
+    /**
+     * Resolve editor type from MIME type for WOPI React editor
+     *
+     * @param string $mimeType - file MIME type
+     *
+     * @return string
+     */
+    private function resolveEditorType(string $mimeType): string {
+        $typeMap = [
+            'application/vnd.oasis.opendocument.text' => 'document',
+            'application/vnd.oasis.opendocument.text-template' => 'document',
+            'application/vnd.oasis.opendocument.text-flat-xml' => 'document',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'document',
+            'application/msword' => 'document',
+            'application/rtf' => 'document',
+            'text/plain' => 'document',
+            'text/csv' => 'document',
+            'text/html' => 'document',
+
+            'application/vnd.oasis.opendocument.spreadsheet' => 'spreadsheet',
+            'application/vnd.oasis.opendocument.spreadsheet-template' => 'spreadsheet',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'spreadsheet',
+            'application/vnd.ms-excel' => 'spreadsheet',
+
+            'application/vnd.oasis.opendocument.presentation' => 'presentation',
+            'application/vnd.oasis.opendocument.presentation-template' => 'presentation',
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation' => 'presentation',
+            'application/vnd.ms-powerpoint' => 'presentation',
+        ];
+
+        return $typeMap[$mimeType] ?? 'document';
+    }
+
+    /**
+     * Generate WOPI editor configuration for React editor iframe.
+     * Returns array of template parameters for the editor page.
+     *
+     * @param File $file - file node
+     * @param bool $isWritable - whether the file can be edited
+     * @param string $userId - user identifier
+     *
+     * @return array
+     */
+    private function getWopiEditorConfig(File $file, bool $isWritable, string $userId): array {
+        // Generate WOPI access token (JWT)
+        $tokenPayload = [
+            'fileId' => $file->getId(),
+            'userId' => $userId,
+            'exp' => time() + 3600, // 1 hour expiry
+        ];
+        $accessToken = $this->crypt->getHash($tokenPayload);
+
+        // Determine editor type from MIME type
+        $mimeType = $file->getMimeType();
+        $editorType = $this->resolveEditorType($mimeType);
+
+        // Get WOPI host base URL (Nextcloud instance base URL)
+        $wopiBaseUrl = rtrim($this->urlGenerator->getAbsoluteURL('/'), '/');
+
+        return [
+            'wopiAccessToken' => $accessToken,
+            'wopiFileId' => (string) $file->getId(),
+            'wopiHostUrl' => $wopiBaseUrl,
+            'editorType' => $editorType,
+            'embedded' => 'true',
+            'userId' => $userId,
+            'userName' => $this->userSession->getUser()?->getDisplayName() ?? '',
+        ];
     }
 
     /**

@@ -48,6 +48,16 @@
 		OCA.WorldOffice.inviewer = !!$('#iframeEditor').data('inviewer')
 		OCA.WorldOffice.filePath = $('#iframeEditor').data('path')
 		OCA.WorldOffice.anchor = $('#iframeEditor').attr('data-anchor')
+
+		OCA.WorldOffice.useWopi = !!$('#iframeEditor').data('usewopi')
+		OCA.WorldOffice.wopiAccessToken = $('#iframeEditor').data('wopiaccesstoken')
+		OCA.WorldOffice.wopiFileId = $('#iframeEditor').data('wopifileid')
+		OCA.WorldOffice.wopiHostUrl = $('#iframeEditor').data('wopihosturl')
+		OCA.WorldOffice.editorType = $('#iframeEditor').data('editortype')
+		OCA.WorldOffice.embedded = !!$('#iframeEditor').data('embedded')
+		OCA.WorldOffice.wopiUserId = $('#iframeEditor').data('userid')
+		OCA.WorldOffice.wopiUserName = $('#iframeEditor').data('username')
+
 		OCA.WorldOffice.currentWindow = window
 		OCA.WorldOffice.currentUser = OC.getCurrentUser()
 
@@ -58,6 +68,11 @@
 
 		if (!OCA.WorldOffice.fileId && !OCA.WorldOffice.shareToken && !OCA.WorldOffice.directToken) {
 			OCA.WorldOffice.showMessage(t(OCA.WorldOffice.AppName, 'FileId is empty'), 'error', { timeout: -1 })
+			return
+		}
+
+		if (OCA.WorldOffice.useWopi) {
+			OCA.WorldOffice.initWopiEditor()
 			return
 		}
 
@@ -425,7 +440,23 @@
 			})
 	}
 
+	OCA.WorldOffice.onRequestClose = OCA.WorldOffice.onRequestClose || function() {}
+
+	var _origRequestClose = OCA.WorldOffice.onRequestClose
+
 	OCA.WorldOffice.onRequestClose = function() {
+		if (OCA.WorldOffice.useWopi) {
+			OCA.WorldOffice.sendToWopiEditor({ type: 'save' })
+			setTimeout(function() {
+				if (OCA.WorldOffice.inframe) {
+					window.parent.postMessage({ method: 'onClose', param: {} }, '*')
+				} else {
+					OCA.WorldOffice.currentWindow.close()
+				}
+			}, 1000)
+			return
+		}
+
 		if (OCA.WorldOffice.directEditor) {
 			OCA.WorldOffice.directEditor.close()
 			return
@@ -793,6 +824,117 @@
 		}
 
 		return configUrl
+	}
+
+	OCA.WorldOffice.initWopiEditor = function() {
+		var container = document.getElementById('iframeEditor')
+		container.innerHTML = ''
+
+		var editorUrl = OCA.WorldOffice.wopiHostUrl
+			+ '/editors/' + OCA.WorldOffice.editorType + '/'
+			+ '?access_token=' + encodeURIComponent(OCA.WorldOffice.wopiAccessToken)
+			+ '&file_id=' + encodeURIComponent(OCA.WorldOffice.wopiFileId)
+			+ '&embedded=true'
+			+ '&docserverBase=' + encodeURIComponent(OCA.WorldOffice.wopiHostUrl)
+
+		var iframe = document.createElement('iframe')
+		iframe.id = 'wopiEditorFrame'
+		iframe.src = editorUrl
+		iframe.style.width = '100%'
+		iframe.style.height = '100%'
+		iframe.style.border = 'none'
+		iframe.setAttribute('allowfullscreen', '')
+		container.appendChild(iframe)
+
+		OCA.WorldOffice.wopiIframe = iframe
+
+		window.addEventListener('message', function(event) {
+			var data = event.data
+			if (!data || data.source !== 'worldoffice-editor') return
+
+			switch (data.type) {
+			case 'app_ready':
+				break
+
+			case 'document_ready':
+				OCA.WorldOffice.onWopiDocumentReady()
+				break
+
+			case 'document_modified':
+				OCA.WorldOffice.onWopiDocumentModified()
+				break
+
+			case 'document_saved':
+				OCA.WorldOffice.onWopiDocumentSaved(data.version)
+				break
+
+			case 'error':
+				OCA.WorldOffice.showMessage(data.message, 'error', { timeout: -1 })
+				break
+
+			case 'request_close':
+				OCA.WorldOffice.onRequestClose()
+				break
+			}
+		})
+
+		OCA.WorldOffice.sendToWopiEditor = function(command) {
+			if (OCA.WorldOffice.wopiIframe && OCA.WorldOffice.wopiIframe.contentWindow) {
+				OCA.WorldOffice.wopiIframe.contentWindow.postMessage({
+					source: 'worldoffice-nextcloud',
+					...command,
+				}, '*')
+			}
+		}
+
+		if (OCA.WorldOffice.inframe) {
+			window.parent.postMessage({
+				method: 'onDocumentReady',
+				param: {},
+			}, '*')
+		}
+	}
+
+	OCA.WorldOffice.onWopiDocumentReady = function() {
+		var favicon = OC.filePath(OCA.WorldOffice.AppName, 'img', OCA.WorldOffice.editorType + '.ico')
+		if (OCA.WorldOffice.inframe) {
+			window.parent.postMessage({
+				method: 'changeFavicon',
+				param: favicon,
+			}, '*')
+		} else {
+			$('link[rel="icon"]').attr('href', favicon)
+		}
+
+		OCA.WorldOffice.currentWindow.document.title = OCA.WorldOffice.filePath
+			? OCA.WorldOffice.filePath.split('/').pop() + ' - ' + oc_defaults.title
+			: oc_defaults.title
+	}
+
+	OCA.WorldOffice.onWopiDocumentModified = function() {
+		var title = OCA.WorldOffice.currentWindow.document.title
+		if (title.indexOf(' *') === -1) {
+			OCA.WorldOffice.currentWindow.document.title = title.replace(' - ', ' * - ')
+		}
+
+		if (OCA.WorldOffice.inframe) {
+			window.parent.postMessage({
+				method: 'onDocumentStateChange',
+				param: true,
+			}, '*')
+		}
+	}
+
+	OCA.WorldOffice.onWopiDocumentSaved = function(version) {
+		var title = OCA.WorldOffice.currentWindow.document.title
+		OCA.WorldOffice.currentWindow.document.title = title.replace(' * ', ' ').replace(' *-', ' -')
+
+		if (OCA.WorldOffice.inframe) {
+			window.parent.postMessage({
+				method: 'onDocumentStateChange',
+				param: false,
+			}, '*')
+		}
 	}
 
 	OCA.WorldOffice.InitEditor()

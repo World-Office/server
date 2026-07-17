@@ -13,6 +13,12 @@ const SERVICES = [
     containerName: 'worldoffice-ocis'
   },
   {
+    key: 'ocis_collaboration',
+    name: 'OCIS Collaboration',
+    description: 'WOPI protocol service for document collaboration',
+    containerName: 'worldoffice-ocis-collaboration'
+  },
+  {
     key: 'documentserver',
     name: 'Document Server',
     description: 'World Office document editing server',
