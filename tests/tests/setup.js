@@ -22,6 +22,11 @@ const config = {
   coauthoringServiceWs: process.env.COAUTHORING_SERVICE_WS || "ws://localhost:8004",
   storageServiceUrl: process.env.STORAGE_SERVICE_URL || "http://localhost:8002",
 
+  // Enterprise services
+  auditServiceUrl: process.env.AUDIT_SERVICE_URL || "http://localhost:8003",
+  scimServiceUrl: process.env.SCIM_SERVICE_URL || "http://localhost:8004",
+  webhookServiceUrl: process.env.WEBHOOK_SERVICE_URL || "http://localhost:8005",
+
   // Internal URLs (for container-to-container communication)
   documentServerInternalUrl: process.env.DOCUMENT_SERVER_INTERNAL_URL || "http://documentserver:80",
   ocisInternalUrl: process.env.OCIS_INTERNAL_URL || "http://ocis:9200",

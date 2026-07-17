@@ -9,6 +9,7 @@
     "test:health": "jest --testPathPattern=tests/e2e/health",
     "test:wopi": "jest --testPathPattern=tests/e2e/wopi",
     "test:api": "jest --testPathPattern=tests/e2e/api",
+    "test:enterprise": "jest --testPathPattern=tests/e2e/enterprise",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
