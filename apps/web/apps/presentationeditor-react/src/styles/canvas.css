@@ -97,6 +97,15 @@
 	opacity: 0.6;
 }
 
+/* Rubber-band marquee selection overlay */
+.prese-canvas-marquee {
+	position: absolute;
+	background: rgba(74, 144, 217, 0.2);
+	border: 1px solid #4a90d9;
+	pointer-events: none;
+	z-index: 999;
+}
+
 /* Slide navigation */
 .prese-slide-nav {
 	display: flex;
@@ -141,4 +150,23 @@
 	display: flex;
 	flex-direction: column;
 	background-color: var(--wo-prese-doc-bg);
+}
+
+/* Drag-and-drop image upload overlay */
+.prese-canvas-drop-indicator {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	z-index: 10000;
+	background-color: rgba(74, 144, 217, 0.15);
+	border: 3px dashed var(--wo-prese-accent);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	pointer-events: none;
+	font-size: 18px;
+	font-weight: 600;
+	color: var(--wo-prese-accent, #4a90d9);
+	box-sizing: border-box;
 }

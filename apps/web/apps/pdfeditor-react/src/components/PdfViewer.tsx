@@ -1,6 +1,27 @@
-import { GlobalWorkerOptions, getDocument } from "pdfjs-dist"
+import { GlobalWorkerOptions, getDocument, TextLayer } from "pdfjs-dist"
 import type { PDFDocumentProxy } from "pdfjs-dist"
 import { useCallback, useEffect, useRef, useState } from "react"
+
+import { pdfStore } from "../stores/PdfStore"
+import type { AnnotationTool } from "../types/pdf"
+
+const ANNOTATION_COLORS: Record<AnnotationTool, string> = {
+  highlight: "#FFEB3B",
+  strikeout: "#F44336",
+  underline: "#2196F3",
+  "text-comment": "#FF9800",
+  stamp: "#9C27B0",
+  "shape-comment": "#4CAF50",
+}
+
+const KEYBOARD_SHORTCUTS: Record<string, AnnotationTool> = {
+  h: "highlight",
+  s: "strikeout",
+  u: "underline",
+  t: "text-comment",
+  m: "stamp",
+  g: "shape-comment",
+}
 
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url"
 
@@ -19,12 +40,28 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
   const [doc, setDoc] = useState<PDFDocumentProxy | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [zoom, setZoom] = useState(100)
-  const [numPages, setNumPages] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRefs = useRef<Map<number, HTMLCanvasElement>>(new Map())
+  const textLayerRefs = useRef<Map<number, HTMLDivElement>>(new Map())
   const pageElRefs = useRef<Map<number, HTMLDivElement>>(new Map())
   const renderTasksRef = useRef<Map<number, { cancel: () => void }>>(new Map())
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (e.key === "Escape") {
+        pdfStore.setAnnotationTool(null)
+        return
+      }
+      const tool = KEYBOARD_SHORTCUTS[e.key.toLowerCase()]
+      if (tool) {
+        pdfStore.setAnnotationTool(tool === pdfStore.activeAnnotationTool ? null : tool)
+      }
+    }
+    window.addEventListener("keydown", handleKey)
+    return () => window.removeEventListener("keydown", handleKey)
+  }, [])
+  const textLayerInstancesRef = useRef<Map<number, TextLayer>>(new Map())
   const renderedPagesRef = useRef<Map<number, PageRenderState>>(new Map())
   const docRef = useRef<PDFDocumentProxy | null>(null)
 
@@ -34,6 +71,17 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
         canvasRefs.current.set(pageNum, el)
       } else {
         canvasRefs.current.delete(pageNum)
+      }
+    },
+    [],
+  )
+
+  const getTextLayerRef = useCallback(
+    (pageNum: number) => (el: HTMLDivElement | null) => {
+      if (el) {
+        textLayerRefs.current.set(pageNum, el)
+      } else {
+        textLayerRefs.current.delete(pageNum)
       }
     },
     [],
@@ -50,10 +98,36 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
     [],
   )
 
+  const handleAnnotLayerClick = useCallback(
+    (pageNum: number) => (e: React.MouseEvent<HTMLDivElement>) => {
+      const tool = pdfStore.activeAnnotationTool
+      if (!tool) return
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+      const x = e.clientX - rect.left
+      const y = e.clientY - rect.top
+      const color = ANNOTATION_COLORS[tool] ?? "#FF9800"
+      pdfStore.addAnnotation({
+        page: pageNum,
+        x,
+        y,
+        width: 150,
+        height: 40,
+        color,
+        text: tool === "text-comment" ? "" : undefined,
+      })
+      if (tool !== "highlight" && tool !== "strikeout" && tool !== "underline") {
+        pdfStore.setAnnotationTool(null)
+      }
+    },
+    [],
+  )
+
   useEffect(() => {
     if (!pdfData) {
       setDoc(null)
-      setNumPages(0)
+      pdfStore.setPageCount(0)
+      pdfStore.setCurrentPage(0)
+      pdfStore.setPdfDocProxy(null)
       setLoading(false)
       setError(null)
       return
@@ -64,7 +138,12 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
     }
     renderTasksRef.current.clear()
     renderedPagesRef.current.clear()
+    for (const tl of textLayerInstancesRef.current.values()) {
+      tl.cancel()
+    }
+    textLayerInstancesRef.current.clear()
     canvasRefs.current.clear()
+    textLayerRefs.current.clear()
     pageElRefs.current.clear()
 
     setLoading(true)
@@ -75,7 +154,8 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
     loadingTask.promise
       .then((pdf) => {
         setDoc(pdf)
-        setNumPages(pdf.numPages)
+        pdfStore.setPageCount(pdf.numPages)
+        pdfStore.setPdfDocProxy(pdf)
         docRef.current = pdf
         setLoading(false)
       })
@@ -93,6 +173,7 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
   const renderPage = useCallback(
     async (pageNum: number, currentDoc: PDFDocumentProxy, currentZoom: number) => {
       const canvas = canvasRefs.current.get(pageNum)
+      const textLayerDiv = textLayerRefs.current.get(pageNum)
       if (!canvas) return
 
       const existingTask = renderTasksRef.current.get(pageNum)
@@ -106,6 +187,13 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
         canvas.width = viewport.width
         canvas.height = viewport.height
 
+        // Size the text layer container to match canvas
+        if (textLayerDiv) {
+          textLayerDiv.style.width = `${viewport.width}px`
+          textLayerDiv.style.height = `${viewport.height}px`
+          textLayerDiv.replaceChildren()
+        }
+
         const renderTask = pdfPage.render({
           canvas,
           viewport,
@@ -116,6 +204,23 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
         await renderTask.promise
 
         renderTasksRef.current.delete(pageNum)
+
+        // Render text layer for text selection
+        if (textLayerDiv) {
+          try {
+            const textContent = await pdfPage.getTextContent()
+            const textLayer = new TextLayer({
+              textContentSource: textContent,
+              container: textLayerDiv,
+              viewport,
+            })
+            textLayerInstancesRef.current.set(pageNum, textLayer)
+            await textLayer.render()
+          } catch {
+            // Text layer failure is non-critical
+          }
+        }
+
         renderedPagesRef.current.set(pageNum, { pageNum, zoom: currentZoom })
       } catch (err: unknown) {
         if (err instanceof Error && err.name !== "RenderingCancelledException") {
@@ -126,10 +231,11 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
     [],
   )
 
+  // Re-render visible pages when zoom changes
   useEffect(() => {
     if (!doc) return
 
-    const currentZoom = zoom
+    const currentZoom = pdfStore.zoomLevel
 
     const visiblePages: number[] = []
     for (const [pageNum] of renderedPagesRef.current) {
@@ -145,13 +251,13 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
     for (const pageNum of visiblePages) {
       void renderPage(pageNum, doc, currentZoom)
     }
-  }, [zoom, doc, renderPage])
+  }, [pdfStore.zoomLevel, doc, renderPage])
 
+  // IntersectionObserver: lazy render + track current page
   useEffect(() => {
     if (!doc || !containerRef.current) return
 
     const currentDoc = doc
-    const currentZoom = zoom
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -160,9 +266,10 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
           const pageNum = Number.parseInt(pageEl.dataset.pageNum ?? "0", 10)
           if (entry.isIntersecting) {
             const rendered = renderedPagesRef.current.get(pageNum)
-            if (!rendered || rendered.zoom !== currentZoom) {
-              void renderPage(pageNum, currentDoc, currentZoom)
+            if (!rendered || rendered.zoom !== pdfStore.zoomLevel) {
+              void renderPage(pageNum, currentDoc, pdfStore.zoomLevel)
             }
+            pdfStore.setCurrentPage(pageNum - 1)
           }
         }
       },
@@ -176,42 +283,46 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
     return () => {
       observer.disconnect()
     }
-  }, [doc, zoom, renderPage])
+  }, [doc, renderPage])
 
-  const zoomIn = useCallback(() => {
-    setZoom((z) => Math.min(500, z + 25))
-  }, [])
+  // Handle fitToPage / fitToWidth from PdfStore
+  useEffect(() => {
+    if (!doc || !containerRef.current) return
 
-  const zoomOut = useCallback(() => {
-    setZoom((z) => Math.max(10, z - 25))
-  }, [])
+    if (pdfStore.fitToPage) {
+      void doc.getPage(1).then((page) => {
+        const vp = page.getViewport({ scale: 1 })
+        const container = containerRef.current
+        if (!container) return
+        const scaleX = (container.clientWidth - 40) / vp.width
+        const scaleY = (container.clientHeight - 40) / vp.height
+        const fitScale = Math.max(50, Math.round(Math.min(scaleX, scaleY) * 100)) as 50 | 75 | 100 | 125 | 150 | 175 | 200 | 300 | 400 | 500
+        pdfStore.setZoomLevel(fitScale)
+      })
+    } else if (pdfStore.fitToWidth) {
+      void doc.getPage(1).then((page) => {
+        const vp = page.getViewport({ scale: 1 })
+        const container = containerRef.current
+        if (!container) return
+        const fitScale = Math.max(50, Math.round(((container.clientWidth - 40) / vp.width) * 100)) as 50 | 75 | 100 | 125 | 150 | 175 | 200 | 300 | 400 | 500
+        pdfStore.setZoomLevel(fitScale)
+      })
+    }
+  }, [doc, pdfStore.fitToPage, pdfStore.fitToWidth])
 
-  const fitWidth = useCallback(() => {
-    const currentDoc = docRef.current
-    const container = containerRef.current
-    if (!currentDoc || !container) return
-    void currentDoc.getPage(1).then((page) => {
-      const vp = page.getViewport({ scale: 1 })
-      const containerWidth = container.clientWidth
-      const fitScale = Math.max(10, Math.round(((containerWidth - 40) / vp.width) * 100))
-      setZoom(fitScale)
-    })
-  }, [])
+  // Scroll to current page when changed from toolbar
+  useEffect(() => {
+    const pageEl = pageElRefs.current.get(pdfStore.currentPage + 1)
+    if (pageEl && containerRef.current) {
+      const containerRect = containerRef.current.getBoundingClientRect()
+      const elRect = pageEl.getBoundingClientRect()
+    if (elRect.top < containerRect.top || elRect.bottom > containerRect.bottom) {
+        pageEl.scrollIntoView({ behavior: "smooth", block: "start" })
+      }
+    }
+  }, [pdfStore.currentPage])
 
-  const fitPage = useCallback(() => {
-    const currentDoc = docRef.current
-    const container = containerRef.current
-    if (!currentDoc || !container) return
-    void currentDoc.getPage(1).then((page) => {
-      const vp = page.getViewport({ scale: 1 })
-      const containerWidth = container.clientWidth
-      const containerHeight = container.clientHeight
-      const scaleX = (containerWidth - 40) / vp.width
-      const scaleY = (containerHeight - 40) / vp.height
-      const fitScale = Math.max(10, Math.round(Math.min(scaleX, scaleY) * 100))
-      setZoom(fitScale)
-    })
-  }, [])
+  const numPages = pdfStore.pageCount
 
   if (!pdfData) {
     return (
@@ -251,43 +362,8 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
       style={{ display: "flex", flexDirection: "column", height: "100%" }}
     >
       <div
-        className="pdf-viewer-toolbar"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "8px 16px",
-          background: "#f5f5f5",
-          borderBottom: "1px solid #ddd",
-          flexShrink: 0,
-        }}
-      >
-        <button type="button" onClick={zoomOut} title="Zoom Out">
-          −
-        </button>
-        <span style={{ minWidth: 48, textAlign: "center", fontWeight: 600 }}>{zoom}%</span>
-        <button type="button" onClick={zoomIn} title="Zoom In">
-          +
-        </button>
-        <span style={{ color: "#999" }}>|</span>
-        <button type="button" onClick={fitWidth} title="Fit Width">
-          Fit Width
-        </button>
-        <button type="button" onClick={fitPage} title="Fit Page">
-          Fit Page
-        </button>
-        <span style={{ marginLeft: "auto", color: "#666", fontSize: 13 }}>
-          Page{" "}
-          {renderedPagesRef.current.size > 0
-            ? [...renderedPagesRef.current.keys()].sort((a, b) => a - b)[0]
-            : "—"}{" "}
-          of {numPages}
-        </span>
-      </div>
-
-      <div
-        ref={containerRef}
         className="pdf-viewer-pages"
+        ref={containerRef}
         style={{
           flex: 1,
           overflow: "auto",
@@ -308,9 +384,63 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
               background: "#fff",
               boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
               lineHeight: 0,
+              position: "relative",
             }}
           >
             <canvas ref={getCanvasRef(pageNum)} />
+            <div
+              ref={getTextLayerRef(pageNum)}
+              className="pdf-text-layer"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                overflow: "hidden",
+                lineHeight: "1",
+                fontSize: "1px",
+              }}
+            />
+            <div
+              className="pdf-annot-layer"
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                pointerEvents: pdfStore.activeAnnotationTool ? "auto" : "none",
+                cursor: pdfStore.activeAnnotationTool ? "crosshair" : "default",
+              }}
+              onClick={handleAnnotLayerClick(pageNum)}
+            >
+              {pdfStore.annotations.filter((a) => a.page === pageNum).map((annot) => (
+                <div
+                  key={annot.id}
+                  style={{
+                    position: "absolute",
+                    left: annot.x,
+                    top: annot.y,
+                    width: annot.width,
+                    height: annot.height,
+                    backgroundColor: annot.color + "40",
+                    border: `2px solid ${annot.color}`,
+                    borderRadius: 4,
+                    cursor: "pointer",
+                    pointerEvents: "auto",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 10,
+                    color: "#333",
+                    overflow: "hidden",
+                  }}
+                  title={annot.text ?? ""}
+                  onClick={() => pdfStore.removeAnnotation(annot.id)}
+                >
+                  {annot.text ? <span style={{ padding: 2, wordBreak: "break-all" }}>{annot.text}</span> : <span style={{ fontSize: 16 }}>📌</span>}
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>

@@ -4,10 +4,12 @@ import {
 	loadDocument,
 	putFile,
 } from "@world-office/wopi-client";
+import type { WopiConnection } from "@world-office/wopi-client";
 import { makeAutoObservable } from "mobx";
 import {
 	convertPptxToHtml,
 	convertPptxToWoPresentation,
+	convertWoPresentationToPptx,
 } from "../lib/conversion";
 import { DEFAULT_THEME } from "../lib/themes";
 import type {
@@ -68,6 +70,15 @@ export class PresentationStore {
 	wopiAccessToken: string | null = null;
 	docserverBase = "";
 	format: "native" | "svg" = "native";
+
+	get wopiConnection(): WopiConnection | null {
+		if (!this.wopiFileId || !this.wopiAccessToken) return null;
+		return {
+			wopiFileId: this.wopiFileId,
+			wopiAccessToken: this.wopiAccessToken,
+			docserverBase: this.docserverBase,
+		};
+	}
 
 	/* PPTX to HTML pipeline */
 	lastLoadedContent: Blob | null = null;
@@ -155,7 +166,7 @@ export class PresentationStore {
 
 	async saveToWopi(): Promise<void> {
 		if (!this.wopiFileId || !this.wopiAccessToken) {
-			this.exportAsDownload();
+			void this.exportAsDownload();
 			return;
 		}
 		this.isSaving = true;
@@ -165,15 +176,25 @@ export class PresentationStore {
 				wopiAccessToken: this.wopiAccessToken,
 				docserverBase: this.docserverBase,
 			};
-			await putFile(conn, this.buildDocumentBlob());
+			await putFile(conn, await this.buildDocumentBlob());
 			this.isModified = false;
 		} finally {
 			this.isSaving = false;
 		}
 	}
 
-	buildDocumentBlob(): Blob {
-		return new Blob([this.toJSON()], { type: "application/json" });
+	async buildDocumentBlob(): Promise<Blob> {
+		const json = this.toJSON();
+		try {
+			const pptxBuffer = await convertWoPresentationToPptx(json);
+			return new Blob([pptxBuffer], {
+				type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+			});
+		} catch (err) {
+			console.error("Failed to convert wo-presentation to PPTX:", err);
+			// Fall back to saving as JSON if conversion fails
+			return new Blob([json], { type: "application/json" });
+		}
 	}
 
 	async save(): Promise<void> {
@@ -185,15 +206,15 @@ export class PresentationStore {
 		}
 	}
 
-	exportAsDownload(): void {
-		const blob = this.buildDocumentBlob();
+	async exportAsDownload(): Promise<void> {
+		const blob = await this.buildDocumentBlob();
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement("a");
 		a.href = url;
 		const baseName = this.document?.title?.replace(/\.[^.]+$/, "");
 		a.download = baseName
-			? `${baseName}.wo-presentation`
-			: "presentation.wo-presentation";
+			? `${baseName}.pptx`
+			: "presentation.pptx";
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);

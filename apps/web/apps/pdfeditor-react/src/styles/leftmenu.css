@@ -7,6 +7,11 @@
   background-color: var(--wo-pdf-bg-toolbar);
   border-right: 1px solid var(--wo-pdf-border);
   user-select: none;
+  transition: width 0.2s ease;
+}
+
+.pdf-left-menu[data-expanded="true"] {
+  width: calc(var(--wo-pdf-leftmenu-width) + 250px);
 }
 
 .pdf-left-menu-btns {
@@ -64,4 +69,50 @@
 .pdf-left-panel-chat {
   width: 100%;
   height: 100%;
+}
+
+.pdf-thumbnail-panel {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.pdf-thumbnail-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pdf-thumbnail-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.pdf-thumbnail-item:hover {
+  border-color: var(--wo-pdf-border);
+}
+
+.pdf-thumbnail-item--active {
+  border-color: var(--wo-pdf-accent);
+}
+
+.pdf-thumbnail-item img {
+  width: 100%;
+  height: auto;
+  display: block;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.pdf-thumbnail-label {
+  font-size: 11px;
+  color: var(--wo-pdf-text-secondary);
 }

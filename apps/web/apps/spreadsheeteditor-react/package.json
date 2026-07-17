@@ -17,6 +17,8 @@
     "@tiptap/starter-kit": "^3.27.1",
     "@univerjs/preset-sheets-core": "^0.25.1",
     "@univerjs/presets": "^0.25.1",
+    "@world-office/collaboration-client": "workspace:*",
+    "@world-office/collaboration-react": "workspace:*",
     "@world-office/design-system": "workspace:*",
     "@world-office/editor-common": "workspace:*",
     "@world-office/editor-stores": "workspace:*",
@@ -28,7 +30,9 @@
     "mobx-react-lite": "^4.1.0",
     "monaco-editor": "^0.52.2",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "i18next": "^24.0.0",
+    "react-dom": "^19.0.0",
+    "react-i18next": "^15.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

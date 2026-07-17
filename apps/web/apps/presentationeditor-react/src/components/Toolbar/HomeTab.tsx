@@ -8,6 +8,7 @@ import {
 	ArrowLeftRight,
 	ArrowUpDown,
 	Bold,
+	ChevronDown,
 	ChevronLeft,
 	ChevronRight,
 	ChevronsLeft,
@@ -447,12 +448,159 @@ const ObservedHomeTab = observer(function ObservedHomeTab({
 					<button
 						type="button"
 						className="prese-hometab-btn"
-						disabled
-						title="Arrange (not available in code editor)"
+						onClick={() => setArrangeOpen(!arrangeOpen)}
+						title="Arrange"
 					>
 						<Layers size={18} />
-						Arrange ▾
+						Arrange <ChevronDown size={12} />
 					</button>
+					{arrangeOpen && (
+						<div className="prese-arrange-dropdown">
+							<button
+								type="button"
+								className="prese-arrange-dropdown-item"
+								onClick={() => {
+									presentationStore.bringToFrontSelected();
+									setArrangeOpen(false);
+								}}
+							>
+								Bring to Front
+							</button>
+							<button
+								type="button"
+								className="prese-arrange-dropdown-item"
+								onClick={() => {
+									presentationStore.sendToBackSelected();
+									setArrangeOpen(false);
+								}}
+							>
+								Send to Back
+							</button>
+							<button
+								type="button"
+								className="prese-arrange-dropdown-item"
+								onClick={() => {
+									presentationStore.bringForwardSelected();
+									setArrangeOpen(false);
+								}}
+							>
+								Bring Forward
+							</button>
+							<button
+								type="button"
+								className="prese-arrange-dropdown-item"
+								onClick={() => {
+									presentationStore.sendBackwardSelected();
+									setArrangeOpen(false);
+								}}
+							>
+								Send Backward
+							</button>
+							<hr className="prese-arrange-dropdown-divider" />
+							<button
+								type="button"
+								className="prese-arrange-dropdown-item"
+								onClick={() => {
+									presentationStore.alignLeft();
+									setArrangeOpen(false);
+								}}
+							>
+								Align Left
+							</button>
+							<button
+								type="button"
+								className="prese-arrange-dropdown-item"
+								onClick={() => {
+									presentationStore.alignCenter();
+									setArrangeOpen(false);
+								}}
+							>
+								Align Center
+							</button>
+							<button
+								type="button"
+								className="prese-arrange-dropdown-item"
+								onClick={() => {
+									presentationStore.alignRight();
+									setArrangeOpen(false);
+								}}
+							>
+								Align Right
+							</button>
+							<button
+								type="button"
+								className="prese-arrange-dropdown-item"
+								onClick={() => {
+									presentationStore.alignTop();
+									setArrangeOpen(false);
+								}}
+							>
+								Align Top
+							</button>
+							<button
+								type="button"
+								className="prese-arrange-dropdown-item"
+								onClick={() => {
+									presentationStore.alignMiddle();
+									setArrangeOpen(false);
+								}}
+							>
+								Align Middle
+							</button>
+							<button
+								type="button"
+								className="prese-arrange-dropdown-item"
+								onClick={() => {
+									presentationStore.alignBottom();
+									setArrangeOpen(false);
+								}}
+							>
+								Align Bottom
+							</button>
+							<hr className="prese-arrange-dropdown-divider" />
+							<button
+								type="button"
+								className="prese-arrange-dropdown-item"
+								onClick={() => {
+									presentationStore.distributeHorizontally();
+									setArrangeOpen(false);
+								}}
+							>
+								Distribute Horizontally
+							</button>
+							<button
+								type="button"
+								className="prese-arrange-dropdown-item"
+								onClick={() => {
+									presentationStore.distributeVertically();
+									setArrangeOpen(false);
+								}}
+							>
+								Distribute Vertically
+							</button>
+							<hr className="prese-arrange-dropdown-divider" />
+							<button
+								type="button"
+								className="prese-arrange-dropdown-item"
+								onClick={() => {
+									presentationStore.groupSelected();
+									setArrangeOpen(false);
+								}}
+							>
+								Group
+							</button>
+							<button
+								type="button"
+								className="prese-arrange-dropdown-item"
+								onClick={() => {
+									presentationStore.ungroupSelected();
+									setArrangeOpen(false);
+								}}
+							>
+								Ungroup
+							</button>
+						</div>
+					)}
 				</div>
 				<div className="prese-hometab-elset">
 					<button

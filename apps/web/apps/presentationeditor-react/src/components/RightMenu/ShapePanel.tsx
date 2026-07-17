@@ -6,23 +6,109 @@ function ShapePanelInner(): JSX.Element {
 	const {
 		slides,
 		currentSlide,
-		selectedShapeId,
+		selectedShapeIds,
 		updateShape,
 		removeShape,
 		deselectShape,
 	} = presentationStore;
 	const slide = slides[currentSlide];
-	const shape = slide?.shapes?.find((s) => s.id === selectedShapeId);
+	const shape =
+		selectedShapeIds.length === 1
+			? slide?.shapes?.find((s) => s.id === selectedShapeIds[0])
+			: null;
 
-	if (!shape) {
+	/* No shape selected */
+	if (selectedShapeIds.length === 0) {
 		return <div className="prese-shape-panel-empty">No shape selected</div>;
 	}
 
+	/* Multiple shapes selected — show count + batch-editable properties */
+	if (selectedShapeIds.length > 1) {
+		const batchSet = (updates: Record<string, unknown>): void => {
+			for (const id of selectedShapeIds) {
+				updateShape(currentSlide, id, updates);
+			}
+		};
+
+		/* Use the first selected shape as a reference for current values */
+		const firstShape = slide?.shapes?.find(
+			(s) => s.id === selectedShapeIds[0],
+		);
+
+		return (
+			<div className="prese-shape-panel">
+				<div className="prese-shape-panel-header">
+					{selectedShapeIds.length} shapes selected
+				</div>
+
+				<div className="prese-shape-panel-grid">
+					<label className="prese-shape-panel-field">
+						<span className="prese-shape-panel-label">Fill</span>
+						<input
+							className="prese-shape-panel-color"
+							type="color"
+							value={firstShape?.fillColor || "#ffffff"}
+							onChange={(e) => batchSet({ fillColor: e.target.value })}
+						/>
+					</label>
+					<label className="prese-shape-panel-field">
+						<span className="prese-shape-panel-label">Stroke</span>
+						<input
+							className="prese-shape-panel-color"
+							type="color"
+							value={firstShape?.strokeColor || "#cccccc"}
+							onChange={(e) => batchSet({ strokeColor: e.target.value })}
+						/>
+					</label>
+					<label className="prese-shape-panel-field">
+						<span className="prese-shape-panel-label">Stroke Width</span>
+						<input
+							className="prese-shape-panel-input"
+							type="number"
+							step={1}
+							min={0}
+							value={firstShape?.strokeWidth ?? 0}
+							onChange={(e) =>
+								batchSet({ strokeWidth: Number(e.target.value) })
+							}
+						/>
+					</label>
+					<label className="prese-shape-panel-field">
+						<span className="prese-shape-panel-label">Font Size</span>
+						<input
+							className="prese-shape-panel-input"
+							type="number"
+							step={1}
+							min={8}
+							value={firstShape?.fontSize ?? 16}
+							onChange={(e) =>
+								batchSet({ fontSize: Number(e.target.value) })
+							}
+						/>
+					</label>
+				</div>
+
+				<div className="prese-shape-panel-grid">
+					<label className="prese-shape-panel-field">
+						<span className="prese-shape-panel-label">Font Color</span>
+						<input
+							className="prese-shape-panel-color"
+							type="color"
+							value={firstShape?.fontColor || "#000000"}
+							onChange={(e) => batchSet({ fontColor: e.target.value })}
+						/>
+					</label>
+				</div>
+			</div>
+		);
+	}
+
+	/* Single shape selected — full property editor */
 	const slideIndex = currentSlide;
-	const sid = shape.id;
+	const sid = shape!.id;
 
 	const set = (updates: Record<string, unknown>): void => {
-		updateShape(slideIndex, sid, updates as Partial<typeof shape>);
+		updateShape(slideIndex, sid, updates);
 	};
 
 	return (
@@ -36,7 +122,7 @@ function ShapePanelInner(): JSX.Element {
 						className="prese-shape-panel-input"
 						type="number"
 						step={1}
-						value={shape.x}
+						value={shape!.x}
 						onChange={(e) => set({ x: Number(e.target.value) })}
 					/>
 				</label>
@@ -46,7 +132,7 @@ function ShapePanelInner(): JSX.Element {
 						className="prese-shape-panel-input"
 						type="number"
 						step={1}
-						value={shape.y}
+						value={shape!.y}
 						onChange={(e) => set({ y: Number(e.target.value) })}
 					/>
 				</label>
@@ -57,7 +143,7 @@ function ShapePanelInner(): JSX.Element {
 						type="number"
 						step={1}
 						min={1}
-						value={shape.width}
+						value={shape!.width}
 						onChange={(e) => set({ width: Number(e.target.value) })}
 					/>
 				</label>
@@ -68,7 +154,7 @@ function ShapePanelInner(): JSX.Element {
 						type="number"
 						step={1}
 						min={1}
-						value={shape.height}
+						value={shape!.height}
 						onChange={(e) => set({ height: Number(e.target.value) })}
 					/>
 				</label>
@@ -83,7 +169,7 @@ function ShapePanelInner(): JSX.Element {
 						step={1}
 						min={0}
 						max={360}
-						value={shape.rotation}
+						value={shape!.rotation}
 						onChange={(e) => set({ rotation: Number(e.target.value) })}
 					/>
 				</label>
@@ -93,7 +179,7 @@ function ShapePanelInner(): JSX.Element {
 						className="prese-shape-panel-input"
 						type="number"
 						step={1}
-						value={shape.zIndex}
+						value={shape!.zIndex}
 						onChange={(e) => set({ zIndex: Number(e.target.value) })}
 					/>
 				</label>
@@ -105,7 +191,7 @@ function ShapePanelInner(): JSX.Element {
 					<input
 						className="prese-shape-panel-color"
 						type="color"
-						value={shape.fillColor || "#ffffff"}
+						value={shape!.fillColor || "#ffffff"}
 						onChange={(e) => set({ fillColor: e.target.value })}
 					/>
 				</label>
@@ -114,7 +200,7 @@ function ShapePanelInner(): JSX.Element {
 					<input
 						className="prese-shape-panel-color"
 						type="color"
-						value={shape.strokeColor || "#cccccc"}
+						value={shape!.strokeColor || "#cccccc"}
 						onChange={(e) => set({ strokeColor: e.target.value })}
 					/>
 				</label>
@@ -125,7 +211,7 @@ function ShapePanelInner(): JSX.Element {
 						type="number"
 						step={1}
 						min={0}
-						value={shape.strokeWidth ?? 0}
+						value={shape!.strokeWidth ?? 0}
 						onChange={(e) => set({ strokeWidth: Number(e.target.value) })}
 					/>
 				</label>
@@ -136,7 +222,7 @@ function ShapePanelInner(): JSX.Element {
 						type="number"
 						step={1}
 						min={8}
-						value={shape.fontSize ?? 16}
+						value={shape!.fontSize ?? 16}
 						onChange={(e) => set({ fontSize: Number(e.target.value) })}
 					/>
 				</label>
@@ -148,7 +234,7 @@ function ShapePanelInner(): JSX.Element {
 					<input
 						className="prese-shape-panel-color"
 						type="color"
-						value={shape.fontColor || "#000000"}
+						value={shape!.fontColor || "#000000"}
 						onChange={(e) => set({ fontColor: e.target.value })}
 					/>
 				</label>
@@ -159,7 +245,7 @@ function ShapePanelInner(): JSX.Element {
 				<textarea
 					className="prese-shape-panel-textarea"
 					rows={4}
-					value={shape.text ?? ""}
+					value={shape!.text ?? ""}
 					onChange={(e) => set({ text: e.target.value })}
 					placeholder="Shape text…"
 				/>

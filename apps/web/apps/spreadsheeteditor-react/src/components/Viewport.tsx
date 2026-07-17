@@ -2,8 +2,10 @@ import type { ReactNode } from "react";
 import { spreadsheetStore } from "../stores/SpreadsheetStore";
 import { DocumentHolder } from "./DocumentHolder";
 import { FileMenu } from "./FileMenu/FileMenu";
+import { FormulaBar } from "./FormulaBar";
 import { LeftMenu } from "./LeftMenu/LeftMenu";
 import { RightMenu } from "./RightMenu/RightMenu";
+import { SheetTabBar } from "./SheetTabBar";
 import { StatusBar } from "./StatusBar/StatusBar";
 import type { MonacoCommand } from "./Toolbar/MonacoCommand";
 import { Toolbar } from "./Toolbar/Toolbar";
@@ -39,7 +41,7 @@ export function Viewport({
 				<FileMenu />
 			</section>
 
-			{/* Vertical layout: toolbar → body → statusbar */}
+			{/* Vertical layout: toolbar → formula bar → body → sheet tabs → statusbar */}
 			<div className="se-viewport-vbox">
 				{/* Toolbar row */}
 				{toolbarVisible && (
@@ -51,6 +53,9 @@ export function Viewport({
 						<Toolbar onMonacoCommand={onMonacoCommand} />
 					</div>
 				)}
+
+				{/* Formula bar row */}
+				<FormulaBar />
 
 				{/* Body row: left-menu | about-panel | editor | right-menu */}
 				<div className="se-viewport-body">
@@ -86,6 +91,9 @@ export function Viewport({
 						</div>
 					)}
 				</div>
+
+				{/* Sheet tab bar row */}
+				<SheetTabBar />
 
 				{/* Statusbar row */}
 				{statusbarVisible && (

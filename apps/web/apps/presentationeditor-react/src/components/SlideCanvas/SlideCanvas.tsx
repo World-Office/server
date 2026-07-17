@@ -2,6 +2,7 @@ import { loadDocument } from "@world-office/wopi-client";
 import { observer } from "mobx-react-lite";
 import { type JSX, useCallback, useEffect, useRef, useState } from "react";
 import { presentationStore } from "../../stores/PresentationStore";
+import { usePresentationKeyboard } from "../../hooks/usePresentationKeyboard";
 import type {
 	ChartData,
 	ConnectorData,
@@ -501,6 +502,7 @@ function shadowToFilter(shadow: ShadowEffect, id: string): JSX.Element {
 function renderShape(
 	shape: ShapeData,
 	isSelected: boolean,
+	multiSelected: boolean,
 	onDragStart: (e: React.MouseEvent, shapeId: string) => void,
 	onResizeStart: (e: React.MouseEvent, shapeId: string, handle: string) => void,
 	onDoubleClick?: (shapeId: string) => void,
@@ -508,6 +510,8 @@ function renderShape(
 ): JSX.Element | null {
 	const hasGradient = !!shape.gradientFill?.stops?.length;
 	const hasShadow = !!shape.shadow;
+	const showSelection = isSelected && !multiSelected;
+	const showHandles = showSelection && !shape.groupId;
 
 	const style: React.CSSProperties = {
 		position: "absolute",
@@ -515,7 +519,11 @@ function renderShape(
 		top: `${shape.y}px`,
 		width: `${shape.width}px`,
 		height: `${shape.height}px`,
-		outline: isSelected ? "2px solid var(--wo-prese-accent)" : "none",
+		outline: showSelection
+			? shape.groupId
+				? "2px dashed var(--wo-prese-accent)"
+				: "2px solid var(--wo-prese-accent)"
+			: "none",
 		outlineOffset: "-1px",
 		cursor: "pointer",
 		zIndex: shape.zIndex,
@@ -573,8 +581,8 @@ function renderShape(
 					<title>Chart</title>
 					{chartSvg}
 				</svg>
-				{isSelected && renderResizeHandles(shape.id, onResizeStart)}
-				{isSelected &&
+				{showHandles && renderResizeHandles(shape.id, onResizeStart)}
+				{showHandles &&
 					renderRotationHandle(shape.id, shape.width, onRotateStart)}
 			</div>
 		);
@@ -598,8 +606,8 @@ function renderShape(
 					<title>Table</title>
 					{tableSvg}
 				</svg>
-				{isSelected && renderResizeHandles(shape.id, onResizeStart)}
-				{isSelected &&
+				{showHandles && renderResizeHandles(shape.id, onResizeStart)}
+				{showHandles &&
 					renderRotationHandle(shape.id, shape.width, onRotateStart)}
 			</div>
 		);
@@ -646,8 +654,8 @@ function renderShape(
 							</text>
 						)}
 					</svg>
-					{isSelected && renderResizeHandles(shape.id, onResizeStart)}
-					{isSelected &&
+					{showHandles && renderResizeHandles(shape.id, onResizeStart)}
+					{showHandles &&
 						renderRotationHandle(shape.id, shape.width, onRotateStart)}
 				</div>
 			);
@@ -683,8 +691,8 @@ function renderShape(
 							</text>
 						)}
 					</svg>
-					{isSelected && renderResizeHandles(shape.id, onResizeStart)}
-					{isSelected &&
+					{showHandles && renderResizeHandles(shape.id, onResizeStart)}
+					{showHandles &&
 						renderRotationHandle(shape.id, shape.width, onRotateStart)}
 				</div>
 			);
@@ -728,8 +736,8 @@ function renderShape(
 							</text>
 						)}
 					</svg>
-					{isSelected && renderResizeHandles(shape.id, onResizeStart)}
-					{isSelected &&
+					{showHandles && renderResizeHandles(shape.id, onResizeStart)}
+					{showHandles &&
 						renderRotationHandle(shape.id, shape.width, onRotateStart)}
 				</div>
 			);
@@ -770,8 +778,8 @@ function renderShape(
 							</text>
 						)}
 					</svg>
-					{isSelected && renderResizeHandles(shape.id, onResizeStart)}
-					{isSelected &&
+					{showHandles && renderResizeHandles(shape.id, onResizeStart)}
+					{showHandles &&
 						renderRotationHandle(shape.id, shape.width, onRotateStart)}
 				</div>
 			);
@@ -812,8 +820,8 @@ function renderShape(
 							</text>
 						)}
 					</svg>
-					{isSelected && renderResizeHandles(shape.id, onResizeStart)}
-					{isSelected &&
+					{showHandles && renderResizeHandles(shape.id, onResizeStart)}
+					{showHandles &&
 						renderRotationHandle(shape.id, shape.width, onRotateStart)}
 				</div>
 			);
@@ -844,8 +852,8 @@ function renderShape(
 							strokeWidth={coreProps.strokeWidth || 2}
 						/>
 					</svg>
-					{isSelected && renderResizeHandles(shape.id, onResizeStart)}
-					{isSelected &&
+					{showHandles && renderResizeHandles(shape.id, onResizeStart)}
+					{showHandles &&
 						renderRotationHandle(shape.id, shape.width, onRotateStart)}
 				</div>
 			);
@@ -894,8 +902,8 @@ function renderShape(
 							markerEnd={`url(#arrow-${shape.id})`}
 						/>
 					</svg>
-					{isSelected && renderResizeHandles(shape.id, onResizeStart)}
-					{isSelected &&
+					{showHandles && renderResizeHandles(shape.id, onResizeStart)}
+					{showHandles &&
 						renderRotationHandle(shape.id, shape.width, onRotateStart)}
 				</div>
 			);
@@ -917,8 +925,8 @@ function renderShape(
 							coreProps.stroke,
 							coreProps.strokeWidth || 2,
 						)}
-						{isSelected && renderResizeHandles(shape.id, onResizeStart)}
-						{isSelected &&
+						{showHandles && renderResizeHandles(shape.id, onResizeStart)}
+						{showHandles &&
 							renderRotationHandle(shape.id, shape.width, onRotateStart)}
 					</div>
 				);
@@ -948,8 +956,8 @@ function renderShape(
 					>
 						{shape.text || "Text"}
 					</span>
-					{isSelected && renderResizeHandles(shape.id, onResizeStart)}
-					{isSelected &&
+					{showHandles && renderResizeHandles(shape.id, onResizeStart)}
+					{showHandles &&
 						renderRotationHandle(shape.id, shape.width, onRotateStart)}
 				</div>
 			);
@@ -974,8 +982,8 @@ function renderShape(
 						}}
 						draggable={false}
 					/>
-					{isSelected && renderResizeHandles(shape.id, onResizeStart)}
-					{isSelected &&
+					{showHandles && renderResizeHandles(shape.id, onResizeStart)}
+					{showHandles &&
 						renderRotationHandle(shape.id, shape.width, onRotateStart)}
 				</div>
 			);
@@ -1155,6 +1163,7 @@ function InlineEditOverlay({
 
 const ObservedSlideCanvas = observer(
 	function ObservedSlideCanvas(): JSX.Element {
+		usePresentationKeyboard();
 		interface DragState {
 			shapeIds: string[];
 			startX: number;
@@ -1181,8 +1190,32 @@ const ObservedSlideCanvas = observer(
 			cy: number;
 		} | null>(null);
 		const svgRef = useRef<HTMLDivElement>(null);
+		const slideRef = useRef<HTMLDivElement>(null);
 		const [svgContent, setSvgContent] = useState<string | null>(null);
 		const [isSvgLoading, setIsSvgLoading] = useState(false);
+		const [isDragOver, setIsDragOver] = useState(false);
+
+		interface MarqueeState {
+			active: boolean;
+			startX: number;
+			startY: number;
+			currentX: number;
+			currentY: number;
+		}
+		const marqueeRef = useRef<MarqueeState>({
+			active: false,
+			startX: 0,
+			startY: 0,
+			currentX: 0,
+			currentY: 0,
+		});
+		const [marqueeRender, setMarqueeRender] = useState<MarqueeState>({
+			active: false,
+			startX: 0,
+			startY: 0,
+			currentX: 0,
+			currentY: 0,
+		});
 		const onDragStart = useCallback((e: React.MouseEvent, shapeId: string) => {
 			const slide = presentationStore.slides[presentationStore.currentSlide];
 			// Determine which shapes to drag: if the clicked shape is part of multi-selection, drag all selected
@@ -1255,6 +1288,16 @@ const ObservedSlideCanvas = observer(
 		);
 
 		const handleMouseMove = useCallback((e: MouseEvent) => {
+			if (marqueeRef.current.active) {
+				const slideEl = slideRef.current;
+				if (!slideEl) return;
+				const rect = slideEl.getBoundingClientRect();
+				const scale = presentationStore.zoomLevel / 100;
+				marqueeRef.current.currentX = (e.clientX - rect.left) / scale;
+				marqueeRef.current.currentY = (e.clientY - rect.top) / scale;
+				setMarqueeRender({ ...marqueeRef.current });
+				return;
+			}
 			if (dragRef.current) {
 				const { origins, startX, startY } = dragRef.current;
 				const dx = (e.clientX - startX) / (presentationStore.zoomLevel / 100);
@@ -1311,6 +1354,52 @@ const ObservedSlideCanvas = observer(
 		}, []);
 
 		const handleMouseUp = useCallback(() => {
+			if (marqueeRef.current.active) {
+				const { startX, startY, currentX, currentY } = marqueeRef.current;
+				marqueeRef.current.active = false;
+				setMarqueeRender({
+					active: false,
+					startX: 0,
+					startY: 0,
+					currentX: 0,
+					currentY: 0,
+				});
+
+				const dx = Math.abs(currentX - startX);
+				const dy = Math.abs(currentY - startY);
+
+				if (dx < 5 && dy < 5) {
+					// Single click on background — deselect all
+					presentationStore.deselectAllShapes();
+				} else {
+					const slide =
+						presentationStore.slides[
+							presentationStore.currentSlide
+						];
+					if (slide?.shapes) {
+						const mL = Math.min(startX, currentX);
+						const mT = Math.min(startY, currentY);
+						const mR = Math.max(startX, currentX);
+						const mB = Math.max(startY, currentY);
+
+						const intersecting = slide.shapes.filter(
+							(s) =>
+								mL < s.x + s.width &&
+								mR > s.x &&
+								mT < s.y + s.height &&
+								mB > s.y,
+						);
+						const currentSet = new Set(
+							presentationStore.selectedShapeIds,
+						);
+						for (const s of intersecting) {
+							currentSet.add(s.id);
+						}
+						presentationStore.selectedShapeIds =
+							Array.from(currentSet);
+					}
+				}
+			}
 			if (dragRef.current && dragRef.current.origins.length > 0) {
 				// Push a single snapshot after transient multi-drag ends
 				const { shapeIds } = dragRef.current;
@@ -1355,6 +1444,7 @@ const ObservedSlideCanvas = observer(
 			editingShapeId,
 		} = presentationStore;
 		const slide = slides[currentSlide];
+		const multiSelected = selectedShapeIds.length > 1;
 
 		const bgStyle = slide?.background
 			? (() => {
@@ -1467,13 +1557,29 @@ const ObservedSlideCanvas = observer(
 			? `prese-canvas-slide ${previewAnimClass} ${previewExitClass}`.trim()
 			: "prese-canvas-slide";
 
-		const handleCanvasClick = (e: React.MouseEvent) => {
-			if (
-				e.target === e.currentTarget ||
-				(e.target as HTMLElement).classList.contains("prese-canvas-background")
-			) {
+		const handleCanvasMouseDown = (e: React.MouseEvent) => {
+			const target = e.target as HTMLElement;
+			const isBackground =
+				target === e.currentTarget ||
+				target.classList.contains("prese-canvas-background");
+			if (!isBackground) return;
+
+			if (!e.shiftKey) {
 				presentationStore.deselectAllShapes();
 			}
+
+			const rect = e.currentTarget.getBoundingClientRect();
+			const scale = zoomLevel / 100;
+			const startX = (e.clientX - rect.left) / scale;
+			const startY = (e.clientY - rect.top) / scale;
+			marqueeRef.current = {
+				active: true,
+				startX,
+				startY,
+				currentX: startX,
+				currentY: startY,
+			};
+			setMarqueeRender({ active: true, startX, startY, currentX: startX, currentY: startY });
 		};
 
 		const handleCanvasKeyDown = (e: React.KeyboardEvent) => {
@@ -1505,9 +1611,54 @@ const ObservedSlideCanvas = observer(
 			presentationStore.notifyCursorMove();
 		}, []);
 
+		const handleDragOver = useCallback(
+			(e: React.DragEvent<HTMLDivElement>) => {
+				e.preventDefault();
+				if (e.dataTransfer.types?.includes("Files")) {
+					setIsDragOver(true);
+				}
+			},
+			[],
+		);
+
+		const handleDragEnter = useCallback(
+			(e: React.DragEvent<HTMLDivElement>) => {
+				if (e.dataTransfer.types?.includes("Files")) {
+					setIsDragOver(true);
+				}
+			},
+			[],
+		);
+
+		const handleDragLeave = useCallback(
+			(e: React.DragEvent<HTMLDivElement>) => {
+				const relatedTarget = e.relatedTarget as Node | null;
+				if (!relatedTarget || !e.currentTarget.contains(relatedTarget)) {
+					setIsDragOver(false);
+				}
+			},
+			[],
+		);
+
+		const handleDrop = useCallback(
+			(e: React.DragEvent<HTMLDivElement>) => {
+				e.preventDefault();
+				setIsDragOver(false);
+				const file = e.dataTransfer.files?.[0];
+				if (file && file.type.startsWith("image/")) {
+					presentationStore.addImageToSlide(
+						presentationStore.currentSlide,
+						file,
+					);
+				}
+			},
+			[],
+		);
+
 		return (
 			<div className="prese-canvas-container">
 				<div
+					ref={slideRef}
 					className={previewClass}
 					style={{
 						width: `${canvasWidth}px`,
@@ -1519,10 +1670,14 @@ const ObservedSlideCanvas = observer(
 							: undefined,
 						animationDelay: previewAnim ? `${previewAnim.delay}s` : undefined,
 					}}
-					onClick={handleCanvasClick}
+					onMouseDown={handleCanvasMouseDown}
 					onKeyDown={handleCanvasKeyDown}
 					onPointerMove={handlePointerMove}
 					onPointerLeave={handlePointerLeave}
+					onDragOver={handleDragOver}
+					onDragEnter={handleDragEnter}
+					onDragLeave={handleDragLeave}
+					onDrop={handleDrop}
 				>
 					<div className="prese-canvas-background" style={bgStyle} />
 
@@ -1612,16 +1767,85 @@ const ObservedSlideCanvas = observer(
 							)}
 						</div>
 					) : (
-						slide.shapes?.map((shape) =>
-							renderShape(
-								shape,
-								selectedShapeIds.includes(shape.id),
-								onDragStart,
-								onResizeStartCB,
-								handleInlineDoubleClick,
-								onRotateStart,
-							),
-						)
+						<>
+							{slide.shapes?.map((shape) =>
+								renderShape(
+									shape,
+									selectedShapeIds.includes(shape.id),
+									multiSelected,
+									onDragStart,
+									onResizeStartCB,
+									handleInlineDoubleClick,
+									onRotateStart,
+								),
+							)}
+							{multiSelected &&
+								slide.shapes &&
+								(() => {
+									const multiShapes = slide.shapes.filter((s) =>
+										selectedShapeIds.includes(s.id),
+									);
+									if (multiShapes.length < 2) return null;
+									const minX = Math.min(
+										...multiShapes.map((s) => s.x),
+									);
+									const minY = Math.min(
+										...multiShapes.map((s) => s.y),
+									);
+									const maxX = Math.max(
+										...multiShapes.map((s) => s.x + s.width),
+									);
+									const maxY = Math.max(
+										...multiShapes.map((s) => s.y + s.height),
+									);
+									const bbW = maxX - minX;
+									const bbH = maxY - minY;
+									return (
+										<div
+											style={{
+												position: "absolute",
+												left: minX,
+												top: minY,
+												width: bbW,
+												height: bbH,
+												outline:
+													"2px solid var(--wo-prese-accent)",
+												outlineOffset: "-1px",
+												pointerEvents: "none",
+											}}
+										>
+											{RESIZE_HANDLES.map((h) => (
+												<div
+													key={h.name}
+													className="prese-canvas-resize-handle"
+													style={{
+														position: "absolute",
+														left: h.x as
+															| string
+															| number,
+														top: h.y as
+															| string
+															| number,
+														width: HANDLE_SIZE,
+														height: HANDLE_SIZE,
+														marginLeft:
+															-(HANDLE_SIZE / 2),
+														marginTop:
+															-(HANDLE_SIZE / 2),
+														backgroundColor:
+															"white",
+														border:
+															"1px solid var(--wo-prese-accent)",
+														cursor: h.cursor,
+														zIndex: 1000,
+														pointerEvents: "none",
+													}}
+												/>
+											))}
+										</div>
+									);
+								})()}
+						</>
 					)}
 
 					{/* Inline text editing overlay */}
@@ -1655,6 +1879,35 @@ const ObservedSlideCanvas = observer(
 					>
 						<CollaborativeCursors />
 					</div>
+
+					{marqueeRender.active && (
+						<div
+							className="prese-canvas-marquee"
+							style={{
+								left: Math.min(
+									marqueeRender.startX,
+									marqueeRender.currentX,
+								),
+								top: Math.min(
+									marqueeRender.startY,
+									marqueeRender.currentY,
+								),
+								width: Math.abs(
+									marqueeRender.currentX -
+										marqueeRender.startX,
+								),
+								height: Math.abs(
+									marqueeRender.currentY -
+										marqueeRender.startY,
+								),
+							}}
+						/>
+					)}
+					{isDragOver && (
+						<div className="prese-canvas-drop-indicator">
+							Drop image here
+						</div>
+					)}
 				</div>
 			</div>
 		);

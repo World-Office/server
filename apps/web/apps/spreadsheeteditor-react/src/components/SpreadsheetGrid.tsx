@@ -5,6 +5,10 @@ import { useEffect, useRef, useState } from "react";
 
 import "@univerjs/preset-sheets-core/lib/index.css";
 import { convertXlsxToWoSpreadsheet } from "../lib/conversion";
+import {
+	registerUniverChangeHandler,
+	setActiveUniverAPI,
+} from "../lib/univer-command";
 
 interface WoSpreadsheet {
 	version: number;
@@ -236,7 +240,12 @@ export function SpreadsheetGrid({ data }: SpreadsheetGridProps) {
 			univerAPI.createWorkbook(
 				univerData as unknown as Record<string, unknown>,
 			);
-			disposeRef.current = () => univerAPI.dispose();
+			setActiveUniverAPI(univerAPI as never);
+			registerUniverChangeHandler(univerAPI as never);
+			disposeRef.current = () => {
+				setActiveUniverAPI(null);
+				univerAPI.dispose();
+			};
 		} catch (err) {
 			console.error("Failed to initialize Univer:", err);
 		}

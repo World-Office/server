@@ -849,6 +849,18 @@ const ObservedSlidePresenter = observer(
 			}
 		};
 
+		const touchStartXRef = useRef(0);
+		const handleTouchStart = (e: React.TouchEvent) => {
+			touchStartXRef.current = e.touches[0].clientX;
+		};
+		const handleTouchEnd = (e: React.TouchEvent) => {
+			const diff = touchStartXRef.current - e.changedTouches[0].clientX;
+			if (Math.abs(diff) > 40) {
+				if (diff > 0) nextSlide();
+				else prevSlide();
+			}
+		};
+
 		const svgDefs: JSX.Element[] = [];
 		const shapeElements = slide.shapes?.map((shape) =>
 			renderPresenterShape(shape, svgDefs),
@@ -859,6 +871,8 @@ const ObservedSlidePresenter = observer(
 				className="prese-presenter-overlay"
 				onKeyDown={handleKeyDown}
 				onWheel={handleWheel}
+				onTouchStart={handleTouchStart}
+				onTouchEnd={handleTouchEnd}
 				ref={containerRef}
 			>
 				<div className="prese-presenter-main">

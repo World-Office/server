@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite";
 import type { JSX } from "react";
+import { useTranslation } from "react-i18next";
 import { spreadsheetStore } from "../../stores/SpreadsheetStore";
 import type { LeftMenuAction } from "../../types/spreadsheet";
 import { LeftMenuButton } from "./LeftMenuButton";
@@ -15,6 +16,8 @@ const BUTTONS: Array<{ action: LeftMenuAction; title: string; icon: string }> =
 	];
 
 function LeftMenuInner(): JSX.Element {
+	const { t } = useTranslation()
+
 	return (
 		<div
 			className="se-left-menu"
@@ -27,7 +30,7 @@ function LeftMenuInner(): JSX.Element {
 					<LeftMenuButton
 						key={action}
 						action={action}
-						title={title}
+						title={t(title)}
 						icon={icon}
 						active={spreadsheetStore.activeLeftPanel === action}
 						onClick={() => spreadsheetStore.toggleLeftPanel(action)}

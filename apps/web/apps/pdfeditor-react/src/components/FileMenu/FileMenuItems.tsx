@@ -1,4 +1,5 @@
 import type { JSX } from "react"
+import { useTranslation } from "react-i18next"
 import { pdfStore } from "../../stores/PdfStore"
 import type { FileMenuAction } from "../../types/pdf"
 
@@ -25,6 +26,7 @@ const MENU_ITEMS: MenuItem[] = [
 ]
 
 export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps): JSX.Element {
+  const { t } = useTranslation()
   const activePanel = pdfStore.activeFileMenuPanel
 
   function handleBack(): void {
@@ -48,7 +50,7 @@ export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps): JSX.
         onKeyDown={(e) => handleKeyDown(e, handleBack)}
       >
         <span className="pdf-file-menu-item-icon">←</span>
-        <span className="pdf-file-menu-item-caption">Back</span>
+        <span className="pdf-file-menu-item-caption">{t("Back")}</span>
       </div>
       <li className="pdf-file-menu-divider" />
       {MENU_ITEMS.map((item) => (
@@ -60,7 +62,7 @@ export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps): JSX.
           onClick={() => onMenuClick(item.action, item.hasPanel)}
           onKeyDown={(e) => handleKeyDown(e, () => onMenuClick(item.action, item.hasPanel))}
         >
-          <span className="pdf-file-menu-item-caption">{item.caption}</span>
+          <span className="pdf-file-menu-item-caption">{t(item.caption)}</span>
         </div>
       ))}
     </ul>

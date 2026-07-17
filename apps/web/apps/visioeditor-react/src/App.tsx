@@ -10,6 +10,7 @@ import { useDocumentLoader } from "./hooks/useDocumentLoader";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { flowchartStore } from "./stores/FlowchartStore";
 import { visioStore } from "./stores/VisioStore";
+import { VisioCollaborationProvider } from "./components/VisioCollaborationProvider";
 
 function LoadingScreen(): React.JSX.Element {
 	return (
@@ -80,6 +81,7 @@ export function App() {
 
 	return (
 		<ThemeProvider>
+			<VisioCollaborationProvider />
 			<Viewport
 				toolbarVisible={visioStore.toolbarVisible}
 				statusbarVisible={visioStore.statusbarVisible}

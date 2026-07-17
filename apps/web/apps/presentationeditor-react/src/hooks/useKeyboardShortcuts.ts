@@ -71,12 +71,16 @@ export function useKeyboardShortcuts(): void {
 				case "ArrowLeft":
 				case "PageUp":
 					if (presentationStore.isPresenting) return; // handled by SlidePresenter
+					// Don't slide-navigate when shapes are selected — shape nudge takes priority
+					if (presentationStore.selectedShapeIds.length > 0) return;
 					e.preventDefault();
 					if (currentSlide > 0)
 						presentationStore.setCurrentSlide(currentSlide - 1);
 					break;
 				case "ArrowRight":
 				case "PageDown":
+					// Don't slide-navigate when shapes are selected — shape nudge takes priority
+					if (presentationStore.selectedShapeIds.length > 0) return;
 					e.preventDefault();
 					if (currentSlide < totalSlides - 1)
 						presentationStore.setCurrentSlide(currentSlide + 1);
