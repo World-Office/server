@@ -313,6 +313,50 @@ body,
   font-size: 12px;
 }
 
+/* ── Mobile breakpoints ─────────────────────── */
+
+@media (max-width: 768px) {
+  .de-viewport-editor {
+    padding: 8px 4px;
+  }
+
+  .de-viewport-left-menu,
+  .de-viewport-right-menu {
+    display: none;
+  }
+
+  .de-document-page {
+    max-width: 100%;
+    padding: 1cm 0.5cm;
+    min-height: auto;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .de-viewport-body {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .de-viewport-editor {
+    padding: 4px 0;
+  }
+
+  .de-document-page {
+    padding: 0.5cm 0.3cm;
+  }
+
+  .rich-text-editor {
+    font-size: 10pt !important;
+  }
+
+  .de-shortcuts-panel {
+    min-width: auto;
+    width: 90vw;
+  }
+}
+
 @media print {
   .de-toolbar,
   .de-statusbar,

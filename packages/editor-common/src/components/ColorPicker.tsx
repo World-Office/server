@@ -19,11 +19,46 @@ export interface ColorPickerProps {
 // ── Shared state ───────────────────────────────────────────────────────
 
 const DEFAULT_PALETTE = [
-  "#000000", "#434343", "#666666", "#999999", "#B7B7B7", "#CCCCCC", "#D9D9D9", "#FFFFFF",
-  "#E06666", "#F6B26B", "#FFD966", "#93C47D", "#76A5AF", "#6FA8DC", "#8E7CC3", "#C27BA0",
-  "#CC0000", "#E69138", "#F1C232", "#6AA84F", "#45818E", "#3D85C6", "#674EA7", "#A64D79",
-  "#990000", "#B45F06", "#BF9000", "#38761D", "#134F5C", "#0B5394", "#351C75", "#741B47",
-  "#660000", "#783F04", "#7F6000", "#274E13", "#0C343D", "#073763", "#20124D", "#4C1130",
+  "#000000",
+  "#434343",
+  "#666666",
+  "#999999",
+  "#B7B7B7",
+  "#CCCCCC",
+  "#D9D9D9",
+  "#FFFFFF",
+  "#E06666",
+  "#F6B26B",
+  "#FFD966",
+  "#93C47D",
+  "#76A5AF",
+  "#6FA8DC",
+  "#8E7CC3",
+  "#C27BA0",
+  "#CC0000",
+  "#E69138",
+  "#F1C232",
+  "#6AA84F",
+  "#45818E",
+  "#3D85C6",
+  "#674EA7",
+  "#A64D79",
+  "#990000",
+  "#B45F06",
+  "#BF9000",
+  "#38761D",
+  "#134F5C",
+  "#0B5394",
+  "#351C75",
+  "#741B47",
+  "#660000",
+  "#783F04",
+  "#7F6000",
+  "#274E13",
+  "#0C343D",
+  "#073763",
+  "#20124D",
+  "#4C1130",
 ]
 
 const MAX_RECENT = 8
@@ -143,7 +178,10 @@ export function ColorPicker({
               height: "100%",
               display: "block",
               borderRadius: 1,
-              background: value === "transparent" ? "repeating-linear-gradient(45deg, #fff, #fff 2px, #ddd 2px, #ddd 4px)" : undefined,
+              background:
+                value === "transparent"
+                  ? "repeating-linear-gradient(45deg, #fff, #fff 2px, #ddd 2px, #ddd 4px)"
+                  : undefined,
             }}
           />
           <span
@@ -176,9 +214,22 @@ export function ColorPicker({
               >
                 Recent
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: `repeat(${MAX_RECENT}, 1fr)`, gap: 3, marginBottom: spacing[2] }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: `repeat(${MAX_RECENT}, 1fr)`,
+                  gap: 3,
+                  marginBottom: spacing[2],
+                }}
+              >
                 {recent.map((c) => (
-                  <button key={c} type="button" title={c} style={swatchStyle(c)} onClick={() => handleSelect(c)} />
+                  <button
+                    key={c}
+                    type="button"
+                    title={c}
+                    style={swatchStyle(c)}
+                    onClick={() => handleSelect(c)}
+                  />
                 ))}
               </div>
             </>
@@ -195,9 +246,22 @@ export function ColorPicker({
           >
             Theme Colors
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 3, marginBottom: spacing[2] }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(8, 1fr)",
+              gap: 3,
+              marginBottom: spacing[2],
+            }}
+          >
             {palette.map((c) => (
-              <button key={c} type="button" title={c} style={swatchStyle(c)} onClick={() => handleSelect(c)} />
+              <button
+                key={c}
+                type="button"
+                title={c}
+                style={swatchStyle(c)}
+                onClick={() => handleSelect(c)}
+              />
             ))}
           </div>
 

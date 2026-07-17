@@ -1,5 +1,6 @@
 import { colors, radii, shadows, spacing, typography } from "@world-office/design-system"
-import React, { useCallback, useEffect, useRef, useState } from "react"
+import type React from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type { CSSProperties, ReactNode } from "react"
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -28,7 +29,12 @@ export interface ContextMenuProps {
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
-function clampToViewport(left: number, top: number, width: number, height: number): { left: number; top: number } {
+function clampToViewport(
+  left: number,
+  top: number,
+  width: number,
+  height: number,
+): { left: number; top: number } {
   const vw = window.innerWidth
   const vh = window.innerHeight
   const clampedLeft = left + width > vw ? vw - width - 4 : left
@@ -58,7 +64,11 @@ function ContextMenuItemRow({
   }, [focused])
 
   if (item.separator) {
-    return <li style={{ height: 1, backgroundColor: colors.semantic.border, margin: `${spacing[0.5]} 0` }} />
+    return (
+      <li
+        style={{ height: 1, backgroundColor: colors.semantic.border, margin: `${spacing[0.5]} 0` }}
+      />
+    )
   }
 
   const base: CSSProperties = {
@@ -82,7 +92,7 @@ function ContextMenuItemRow({
   }
 
   return (
-    <li ref={ref} role="none">
+    <li ref={ref}>
       <button
         type="button"
         role="menuitem"
@@ -93,10 +103,26 @@ function ContextMenuItemRow({
         onMouseEnter={onHover}
       >
         {item.checkable && (
-          <span style={{ width: 16, height: 16, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <span
+            style={{
+              width: 16,
+              height: 16,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
             {item.checked && (
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                <path d="M2 5L4 7L8 3" stroke={colors.accent.DEFAULT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" role="img" aria-label="Checked">
+                <title>Checked</title>
+                <path
+                  d="M2 5L4 7L8 3"
+                  stroke={colors.accent.DEFAULT}
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             )}
           </span>
@@ -117,13 +143,11 @@ function ContextSubmenu({
   items,
   onSelect,
   isOpen,
-  onOpen,
   parentRect,
 }: {
   items: ContextMenuItem[]
   onSelect?: (item: ContextMenuItem) => void
   isOpen: boolean
-  onOpen: () => void
   parentRect: DOMRect
 }) {
   const subRef = useRef<HTMLDivElement>(null)
@@ -142,7 +166,7 @@ function ContextSubmenu({
         display: isOpen ? "block" : "none",
       }}
     >
-      <MenuItems items={items} onSelect={onSelect} parentMenu={false} />
+      <MenuItems items={items} onSelect={onSelect} />
     </div>
   )
 }
@@ -152,11 +176,9 @@ function ContextSubmenu({
 function MenuItems({
   items,
   onSelect,
-  parentMenu = true,
 }: {
   items: ContextMenuItem[]
   onSelect?: (item: ContextMenuItem) => void
-  parentMenu?: boolean
 }) {
   const [focusIdx, setFocusIdx] = useState(-1)
   const [openSubIdx, setOpenSubIdx] = useState(-1)
@@ -238,7 +260,16 @@ function MenuItems({
     >
       {items.map((item, idx) => {
         if (item.separator) {
-          return <li key={`sep-${idx}`} style={{ height: 1, backgroundColor: colors.semantic.border, margin: `${spacing[0.5]} 0` }} />
+          return (
+            <li
+              key={`sep-${idx}`}
+              style={{
+                height: 1,
+                backgroundColor: colors.semantic.border,
+                margin: `${spacing[0.5]} 0`,
+              }}
+            />
+          )
         }
 
         const thisEnabledIdx = item.disabled ? -1 : enabledCounter++
@@ -249,7 +280,9 @@ function MenuItems({
         return (
           <li
             key={item.id}
-            ref={(el) => { itemRefs.current[idx] = el }}
+            ref={(el) => {
+              itemRefs.current[idx] = el
+            }}
             onMouseEnter={() => {
               setFocusIdx(thisEnabledIdx)
               if (hasChildren) setOpenSubIdx(thisEnabledIdx)
@@ -267,11 +300,10 @@ function MenuItems({
             />
             {hasChildren && isSubOpen && itemRefs.current[idx] && (
               <ContextSubmenu
-                items={item.children!}
+                items={item.children ?? []}
                 onSelect={onSelect}
                 isOpen={isSubOpen}
-                onOpen={() => setOpenSubIdx(thisEnabledIdx)}
-                parentRect={itemRefs.current[idx]!.getBoundingClientRect()}
+                parentRect={itemRefs.current[idx]?.getBoundingClientRect()}
               />
             )}
           </li>
@@ -283,7 +315,15 @@ function MenuItems({
 
 // ── Main Component ──────────────────────────────────────────────────────
 
-export function ContextMenu({ items, x, y, visible, onClose, onSelect, className }: ContextMenuProps) {
+export function ContextMenu({
+  items,
+  x,
+  y,
+  visible,
+  onClose,
+  onSelect,
+  className,
+}: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null)
 
   // Dismiss on scroll
@@ -331,12 +371,12 @@ export function ContextMenu({ items, x, y, visible, onClose, onSelect, className
     left,
     top,
     zIndex: 1000,
-    ...className ? {} : {},
+    ...(className ? {} : {}),
   }
 
   return (
     <div ref={menuRef} className={className} style={containerStyle}>
-      <MenuItems items={items} onSelect={onSelect} parentMenu={true} />
+      <MenuItems items={items} onSelect={onSelect} />
     </div>
   )
 }

@@ -55,7 +55,6 @@ export const LineSpacingExtension = Extension.create<LineSpacingOptions>({
           state.doc.nodesBetween(from, to, (node, pos) => {
             if (relevantTypes.includes(node.type.name)) {
               const nodeFrom = pos
-              const nodeTo = pos + node.nodeSize
               tr = tr.setNodeMarkup(nodeFrom, undefined, {
                 ...node.attrs,
                 lineHeight: spacing,
@@ -79,7 +78,6 @@ export const LineSpacingExtension = Extension.create<LineSpacingOptions>({
           state.doc.nodesBetween(from, to, (node, pos) => {
             if (relevantTypes.includes(node.type.name) && node.attrs.lineHeight) {
               const nodeFrom = pos
-              const nodeTo = pos + node.nodeSize
               const { lineHeight: _, ...rest } = node.attrs
               tr = tr.setNodeMarkup(nodeFrom, undefined, rest)
             }

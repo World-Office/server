@@ -1,14 +1,16 @@
-import { colors, radii, shadows, spacing, typography } from "@world-office/design-system"
-import React, { useCallback, useEffect, useRef, useState } from "react"
+import { colors, radii, shadows, spacing } from "@world-office/design-system"
+import { useCallback, useEffect, useRef, useState } from "react"
 import type { CSSProperties, ReactNode } from "react"
 
 // ── Types ──────────────────────────────────────────────────────────────
 
 export type FlyoutPosition = "below" | "above" | "left" | "right"
 
+type TriggerRenderFn = (args: { isOpen: boolean; toggle: () => void }) => ReactNode
+
 export interface FlyoutPanelProps {
   /** Element that triggers the flyout (e.g. a toolbar button) */
-  trigger: ReactNode
+  trigger: ReactNode | TriggerRenderFn
   /** Content rendered inside the flyout panel */
   children: ReactNode
   /** Where the panel appears relative to the trigger (default: below) */
@@ -31,7 +33,6 @@ export function FlyoutPanel({
   position = "below",
   visible: controlledVisible,
   onVisibleChange,
-  arrow = false,
   className,
   style,
 }: FlyoutPanelProps) {
@@ -55,8 +56,10 @@ export function FlyoutPanel({
     if (!isOpen) return
     const handler = (e: MouseEvent) => {
       if (
-        panelRef.current && !panelRef.current.contains(e.target as Node) &&
-        triggerRef.current && !triggerRef.current.contains(e.target as Node)
+        panelRef.current &&
+        !panelRef.current.contains(e.target as Node) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(e.target as Node)
       ) {
         setOpen(false)
       }
@@ -98,13 +101,29 @@ export function FlyoutPanel({
   return (
     <div className={className} style={{ position: "relative", display: "inline-flex", ...style }}>
       <div ref={triggerRef}>
-        {typeof trigger === "function" ? trigger({ isOpen, toggle: () => setOpen(!isOpen) }) : (
-          <button type="button" onClick={() => setOpen(!isOpen)} style={{ border: "none", background: "none", cursor: "pointer", padding: 0, display: "contents" }}>
+        {typeof trigger === "function" ? (
+          (trigger as TriggerRenderFn)({ isOpen, toggle: () => setOpen(!isOpen) })
+        ) : (
+          <button
+            type="button"
+            onClick={() => setOpen(!isOpen)}
+            style={{
+              border: "none",
+              background: "none",
+              cursor: "pointer",
+              padding: 0,
+              display: "contents",
+            }}
+          >
             {trigger}
           </button>
         )}
       </div>
-      {isOpen && <div ref={panelRef} style={getPanelStyle()}>{children}</div>}
+      {isOpen && (
+        <div ref={panelRef} style={getPanelStyle()}>
+          {children}
+        </div>
+      )}
     </div>
   )
 }

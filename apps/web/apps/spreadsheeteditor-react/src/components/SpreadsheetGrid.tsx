@@ -2,6 +2,8 @@ import { UniverSheetsCorePreset } from "@univerjs/preset-sheets-core";
 import UniverPresetSheetsCoreEnUS from "@univerjs/preset-sheets-core/locales/en-US";
 import { LocaleType, createUniver, mergeLocales } from "@univerjs/presets";
 import { useEffect, useRef, useState } from "react";
+import { usePinchZoom } from "../../../editor-shell/src/hooks/usePinchZoom";
+import { spreadsheetStore } from "../stores/SpreadsheetStore";
 
 import "@univerjs/preset-sheets-core/lib/index.css";
 import { convertXlsxToWoSpreadsheet } from "../lib/conversion";
@@ -145,6 +147,12 @@ export function SpreadsheetGrid({ data }: SpreadsheetGridProps) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const disposeRef = useRef<(() => void) | null>(null);
 	const [univerData, setUniverData] = useState<UniverWorkbookData | null>(null);
+
+	usePinchZoom(containerRef, {
+		onZoomIn: () => spreadsheetStore.zoomIn(),
+		onZoomOut: () => spreadsheetStore.zoomOut(),
+		threshold: 20,
+	});
 
 	useEffect(() => {
 		if (!data) {

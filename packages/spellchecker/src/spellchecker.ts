@@ -1,5 +1,5 @@
 import nspell from "nspell"
-import type { SpellCheckerOptions, SpellCheckResult } from "./types"
+import type { SpellCheckResult, SpellCheckerOptions } from "./types"
 
 type NSpellInstance = ReturnType<typeof nspell>
 
@@ -38,9 +38,9 @@ export class SpellChecker {
 
     const results: SpellCheckResult[] = []
     const wordRegex = /\b[a-zA-Z\u00C0-\u024F]+\b/g
-    let match: RegExpExecArray | null
+    let match = wordRegex.exec(text)
 
-    while ((match = wordRegex.exec(text)) !== null) {
+    while (match !== null) {
       const word = match[0]
       if (!this.check(word)) {
         results.push({
@@ -49,6 +49,7 @@ export class SpellChecker {
           suggestions: this.suggest(word),
         })
       }
+      match = wordRegex.exec(text)
     }
 
     return results

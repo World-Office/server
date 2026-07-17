@@ -78,7 +78,7 @@ export interface PluginPanelConfig {
   /** Panel position: "left" | "right" | "bottom" */
   position?: "left" | "right" | "bottom"
   /** Render function — receives a container element */
-  render: (container: HTMLElement) => void | (() => void)
+  render: (container: HTMLElement) => undefined | (() => void)
   /** Destroy/cleanup function */
   destroy?: () => void
 }

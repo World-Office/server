@@ -4,7 +4,6 @@ export const PlainTextControl = Node.create({
 	name: "plainTextControl",
 	group: "inline",
 	inline: true,
-	contenteditable: true,
 	draggable: true,
 
 	addAttributes() {
@@ -50,7 +49,6 @@ export const DropdownControl = Node.create({
 	},
 
 	renderHTML({ HTMLAttributes, node }) {
-		const options = (node.attrs.options as string).split(",")
 		const placeholder = node.attrs.placeholder as string
 		return [
 			"span",

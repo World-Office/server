@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react"
+import { useCallback, useEffect } from "react"
 
 const SHORTCUTS = [
   { keys: "Ctrl+Z", action: "Undo" },
@@ -48,6 +48,10 @@ export function ShortcutsOverlay({ visible, onClose }: ShortcutsOverlayProps) {
         fontFamily: "system-ui, sans-serif",
       }}
       onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onClose()
+      }}
+      role="presentation"
     >
       <div
         style={{
@@ -59,6 +63,8 @@ export function ShortcutsOverlay({ visible, onClose }: ShortcutsOverlayProps) {
           boxShadow: "0 8px 32px rgba(0,0,0,0.2)",
         }}
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        role="presentation"
       >
         <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 700 }}>Keyboard Shortcuts</h2>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>

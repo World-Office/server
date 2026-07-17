@@ -1,5 +1,6 @@
 import { colors, radii, shadows, spacing, typography } from "@world-office/design-system"
-import React, { useCallback, useEffect, useId, useRef, useState } from "react"
+import type React from "react"
+import { useCallback, useEffect, useId, useRef, useState } from "react"
 import type { CSSProperties, ReactNode } from "react"
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -28,7 +29,11 @@ export interface DropdownMenuProps {
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
-function useCloseOnOutside(ref: React.RefObject<HTMLElement | null>, open: boolean, onClose: () => void) {
+function useCloseOnOutside(
+  ref: React.RefObject<HTMLElement | null>,
+  open: boolean,
+  onClose: () => void,
+) {
   useEffect(() => {
     if (!open) return
     const handler = (e: MouseEvent) => {
@@ -40,64 +45,6 @@ function useCloseOnOutside(ref: React.RefObject<HTMLElement | null>, open: boole
 }
 
 // ── Subcomponents ──────────────────────────────────────────────────────
-
-function SubMenu({ items, onSelect, parentRef }: { items: DropdownMenuItem[]; onSelect?: (item: DropdownMenuItem) => void; parentRef: React.RefObject<HTMLLIElement | null> }) {
-  const [open, setOpen] = useState(false)
-  const subRef = useRef<HTMLDivElement>(null)
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
-
-  useEffect(() => () => clearTimeout(timerRef.current), [])
-
-  const handleMouseEnter = () => {
-    clearTimeout(timerRef.current)
-    setOpen(true)
-  }
-
-  const handleMouseLeave = () => {
-    timerRef.current = setTimeout(() => setOpen(false), 150)
-  }
-
-  // Use intersection with parent for positioning
-  const [subStyle, setSubStyle] = useState<CSSProperties>({})
-  useEffect(() => {
-    if (open && parentRef.current) {
-      const rect = parentRef.current.getBoundingClientRect()
-      const subWidth = 180
-      const right = rect.right + subWidth > window.innerWidth
-      setSubStyle({
-        position: "absolute",
-        top: 0,
-        [right ? "right" : "left"]: "100%",
-        ...(right ? {} : { marginLeft: -1 }),
-      })
-    }
-  }, [open, parentRef])
-
-  return (
-    <li
-      ref={parentRef}
-      style={{ position: "relative" }}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <button
-        type="button"
-        style={itemStyle(false)}
-        onClick={() => {
-          if (items.length > 0) setOpen((o) => !o)
-        }}
-      >
-        <span style={{ flex: 1 }}>{items[0] ? "" : ""}</span>
-        <span style={{ fontSize: 10, opacity: 0.5, marginLeft: "auto" }}>▶</span>
-      </button>
-      {open && (
-        <div ref={subRef} style={subStyle}>
-          <MenuList items={items} onSelect={(item) => { onSelect?.(item); setOpen(false) }} />
-        </div>
-      )}
-    </li>
-  )
-}
 
 function itemStyle(disabled: boolean): CSSProperties {
   return {
@@ -120,7 +67,10 @@ function itemStyle(disabled: boolean): CSSProperties {
   }
 }
 
-function MenuList({ items, onSelect }: { items: DropdownMenuItem[]; onSelect?: (item: DropdownMenuItem) => void }) {
+function MenuList({
+  items,
+  onSelect,
+}: { items: DropdownMenuItem[]; onSelect?: (item: DropdownMenuItem) => void }) {
   const [focusIdx, setFocusIdx] = useState(-1)
   const ulRef = useRef<HTMLUListElement>(null)
 
@@ -168,11 +118,20 @@ function MenuList({ items, onSelect }: { items: DropdownMenuItem[]; onSelect?: (
     >
       {items.map((item) => {
         if (item.separator) {
-          return <li key={`sep-${item.id}`} style={{ height: 1, backgroundColor: colors.semantic.border, margin: `${spacing[0.5]} 0` }} />
+          return (
+            <li
+              key={`sep-${item.id}`}
+              style={{
+                height: 1,
+                backgroundColor: colors.semantic.border,
+                margin: `${spacing[0.5]} 0`,
+              }}
+            />
+          )
         }
         const currentEnabledIdx = item.disabled ? -1 : enabledIdx++
         return (
-          <li key={item.id} role="none">
+          <li key={item.id}>
             <button
               type="button"
               role="menuitem"
@@ -182,22 +141,40 @@ function MenuList({ items, onSelect }: { items: DropdownMenuItem[]; onSelect?: (
               style={itemStyle(item.disabled ?? false)}
               onClick={() => onSelect?.(item)}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = colors.neutral[100]
+                ;(e.currentTarget as HTMLElement).style.backgroundColor = colors.neutral[100]
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"
+                ;(e.currentTarget as HTMLElement).style.backgroundColor = "transparent"
               }}
             >
               {item.checkable && (
-                <span style={{ width: 16, height: 16, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <span
+                  style={{
+                    width: 16,
+                    height: 16,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
                   {item.checked && (
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                      <path d="M2 5L4 7L8 3" stroke={colors.accent.DEFAULT} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" role="img" aria-label="Checked">
+                      <title>Checked</title>
+                      <path
+                        d="M2 5L4 7L8 3"
+                        stroke={colors.accent.DEFAULT}
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
                     </svg>
                   )}
                 </span>
               )}
-              {item.icon && <span style={{ display: "inline-flex", flexShrink: 0 }}>{item.icon}</span>}
+              {item.icon && (
+                <span style={{ display: "inline-flex", flexShrink: 0 }}>{item.icon}</span>
+              )}
               <span style={{ flex: 1 }}>{item.label}</span>
               {item.children && item.children.length > 0 && (
                 <span style={{ fontSize: 10, opacity: 0.5, marginLeft: "auto" }}>▶</span>
@@ -212,7 +189,14 @@ function MenuList({ items, onSelect }: { items: DropdownMenuItem[]; onSelect?: (
 
 // ── Component ──────────────────────────────────────────────────────────
 
-export function DropdownMenu({ trigger, items, onSelect, align = "left", className, style }: DropdownMenuProps) {
+export function DropdownMenu({
+  trigger,
+  items,
+  onSelect,
+  align = "left",
+  className,
+  style,
+}: DropdownMenuProps) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const id = useId()
@@ -237,7 +221,11 @@ export function DropdownMenu({ trigger, items, onSelect, align = "left", classNa
   }
 
   return (
-    <div ref={containerRef} className={className} style={{ position: "relative", display: "inline-flex", ...style }}>
+    <div
+      ref={containerRef}
+      className={className}
+      style={{ position: "relative", display: "inline-flex", ...style }}
+    >
       <button
         type="button"
         id={id}

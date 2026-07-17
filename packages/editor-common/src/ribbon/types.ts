@@ -76,6 +76,8 @@ export interface RibbonButtonSpec extends RibbonControlBase {
   icon: string
   /** Command to execute on click */
   command: string
+  /** Optional value passed alongside command (e.g. "ltr"/"rtl" for textDirection) */
+  value?: string
   /** If true, button acts as a toggle */
   toggleable?: boolean
   /** Current toggle state (only used when toggleable) */

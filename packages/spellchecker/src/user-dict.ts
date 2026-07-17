@@ -6,8 +6,7 @@ export class LocalStorageUserDict implements UserDictionary {
   private wordBank: string[] = []
 
   constructor() {
-    const stored =
-      typeof localStorage !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null
+    const stored = typeof localStorage !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null
     this.wordBank = stored ? JSON.parse(stored) : []
   }
 

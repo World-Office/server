@@ -35,9 +35,12 @@ export type UniverCommand =
 	| "wrapText"
 	// ── Number format ──
 	| "numberFormatCurrency"
+	| "currencyFormat"
 	| "numberFormatPercent"
+	| "percentFormat"
 	| "increaseDecimal"
 	| "decreaseDecimal"
+	| "decimalFormat"
 	// ── Clear ──
 	| "clearFormatting"
 	// ── Data operations ──

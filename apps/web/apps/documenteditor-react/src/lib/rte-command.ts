@@ -664,7 +664,7 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
     case "insertDatePickerControl":
       return editor.chain().focus().insertContent('<span data-content-control="date-picker"></span>').run()
     case "setBoxBorder":
-      return editor.commands.setBorderTop("2px solid #000") && editor.commands.setBorderBottom("2px solid #000")
+      return editor.commands.setBorderTop({ borderTop: "2px solid #000" }) && editor.commands.setBorderBottom({ borderBottom: "2px solid #000" })
     case "removeBorders":
       return editor.commands.removeBorders()
   }

@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent, act } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ColorPicker } from "../components/ColorPicker"
 import { SpinBox } from "../components/SpinBox"
 
@@ -35,9 +35,9 @@ describe("ColorPicker", () => {
     fireEvent.click(button)
 
     // Find the first color swatch button (not the toggle button)
-    const swatches = screen.getAllByRole("button").filter(
-      (btn) => btn !== button && btn.title && btn.title.startsWith("#"),
-    )
+    const swatches = screen
+      .getAllByRole("button")
+      .filter((btn) => btn !== button && btn.title && btn.title.startsWith("#"))
     expect(swatches.length).toBeGreaterThan(0)
     fireEvent.click(swatches[0])
     expect(onChange).toHaveBeenCalledWith(swatches[0].title)

@@ -1,4 +1,5 @@
 import { Extension } from "@tiptap/core"
+import type { EditorState, Transaction } from "@tiptap/pm/state"
 
 export interface TextDirectionOptions {
   types: string[]
@@ -49,10 +50,15 @@ export const TextDirectionExtension = Extension.create<TextDirectionOptions>({
   },
 
   addCommands() {
-    return {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cmds: Record<string, (...args: any[]) => any> = {
       setTextDirection:
         (direction: "ltr" | "rtl") =>
-        ({ tr, state, dispatch }) => {
+        ({ tr, state, dispatch }: {
+          tr: Transaction
+          state: EditorState
+          dispatch: ((tr: Transaction) => void) | undefined
+        }) => {
           const { selection } = state
           tr = tr.setSelection(selection)
           const { from, to } = selection
@@ -73,7 +79,11 @@ export const TextDirectionExtension = Extension.create<TextDirectionOptions>({
         },
       unsetTextDirection:
         () =>
-        ({ tr, state, dispatch }) => {
+        ({ tr, state, dispatch }: {
+          tr: Transaction
+          state: EditorState
+          dispatch: ((tr: Transaction) => void) | undefined
+        }) => {
           const { selection } = state
           tr = tr.setSelection(selection)
           const { from, to } = selection
@@ -91,5 +101,6 @@ export const TextDirectionExtension = Extension.create<TextDirectionOptions>({
           return true
         },
     }
+    return cmds
   },
 })
