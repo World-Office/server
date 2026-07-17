@@ -2,6 +2,7 @@ import { observer } from "mobx-react-lite";
 import { Ribbon, spreadsheetRibbonSpec } from "@world-office/editor-common";
 import type { RibbonCommandDispatch, RibbonContext } from "@world-office/editor-common";
 import { spreadsheetStore } from "../../stores/SpreadsheetStore";
+import { dispatchUniverCommand } from "../../lib/univer-command";
 import { FileTab } from "./FileTab";
 import type { MonacoCommand } from "./MonacoCommand";
 
@@ -27,8 +28,11 @@ const ObservedToolbar = observer(function ObservedToolbar({
 	};
 
 	const dispatch: RibbonCommandDispatch = {
-		onRichTextCommand: () => {
-			/* no-op — spreadsheet uses Monaco, not TipTap */
+		onRichTextCommand: (command: string, value?: string) => {
+			dispatchUniverCommand(
+				command as Parameters<typeof dispatchUniverCommand>[0],
+				value,
+			);
 		},
 		onMonacoCommand: (command: string) => {
 			onMonacoCommand(command as MonacoCommand);

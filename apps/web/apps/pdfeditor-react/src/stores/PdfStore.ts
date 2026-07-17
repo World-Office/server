@@ -1,6 +1,7 @@
 import { detectWopiParams, loadDocument, putFile } from "@world-office/wopi-client"
 import type { WopiConnection, WopiFileInfo } from "@world-office/wopi-client"
 import { makeAutoObservable } from "mobx"
+import type { PDFDocumentProxy } from "pdfjs-dist"
 import type {
   AnnotationTool,
   LeftMenuAction,
@@ -14,6 +15,17 @@ import type {
 } from "../types/pdf"
 import { ZOOM_LEVELS } from "../types/pdf"
 
+export interface PdfAnnotation {
+  id: string
+  page: number
+  x: number
+  y: number
+  width: number
+  height: number
+  color: string
+  text?: string
+}
+
 const STORAGE_PREFIX = "pe-"
 
 export class PdfStore {
@@ -21,6 +33,8 @@ export class PdfStore {
   document: PdfDocument | null = null
   isDocReady = false
   format: "native" | "svg" = "native"
+
+  pdfDocProxy: PDFDocumentProxy | null = null
 
   /* Toolbar */
   activeTab: PdfTab | null = null
@@ -60,6 +74,9 @@ export class PdfStore {
 
   /* Annotation tools */
   activeAnnotationTool: AnnotationTool | null = null
+
+  /* Annotations */
+  annotations: PdfAnnotation[] = []
 
   /* Form fields */
   currentFormFieldIndex = 0
@@ -105,6 +122,10 @@ export class PdfStore {
 
   setDocReady(ready: boolean): void {
     this.isDocReady = ready
+  }
+
+  setPdfDocProxy(proxy: PDFDocumentProxy | null): void {
+    this.pdfDocProxy = proxy
   }
 
   setFormat(format: "native" | "svg"): void {
@@ -215,6 +236,23 @@ export class PdfStore {
 
   setAnnotationTool(tool: AnnotationTool | null): void {
     this.activeAnnotationTool = tool
+  }
+
+  addAnnotation(annot: { page: number; x: number; y: number; width: number; height: number; color: string; text?: string }): void {
+    this.annotations.push({
+      id: `annot-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      page: annot.page,
+      x: annot.x,
+      y: annot.y,
+      width: annot.width,
+      height: annot.height,
+      color: annot.color,
+      text: annot.text,
+    })
+  }
+
+  removeAnnotation(id: string): void {
+    this.annotations = this.annotations.filter((a) => a.id !== id)
   }
 
   setCurrentTool(tool: Tool): void {

@@ -90,6 +90,7 @@ export type RightMenuPanel =
   | "chart"
   | "textart"
   | "form"
+  | "annotations"
 
 export type AnnotationTool =
   | "highlight"

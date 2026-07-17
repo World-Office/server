@@ -16,6 +16,8 @@ import type {
 	ZoomLevel,
 } from "../types/spreadsheet";
 import { ZOOM_LEVELS } from "../types/spreadsheet";
+import { convertWoSpreadsheetToXlsx } from "../lib/conversion";
+import { getUniverSnapshot, onUniverChange } from "../lib/univer-command";
 
 const STORAGE_PREFIX = "se-";
 
@@ -90,6 +92,9 @@ export class SpreadsheetStore {
 
 	constructor() {
 		makeAutoObservable(this);
+		onUniverChange(() => {
+			this.isModified = true;
+		});
 	}
 
 	/* ── Actions ── */
@@ -351,7 +356,19 @@ export class SpreadsheetStore {
 		}
 	}
 
-	buildDocumentBlob(): Blob {
+	async buildDocumentBlob(): Promise<Blob> {
+		const snapshot = getUniverSnapshot();
+		if (snapshot) {
+			try {
+				const json = JSON.stringify(snapshot);
+				const xlsxBuffer = await convertWoSpreadsheetToXlsx(json);
+				return new Blob([xlsxBuffer], {
+					type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+				});
+			} catch (err) {
+				console.error("Failed to convert Univer snapshot to XLSX:", err);
+			}
+		}
 		if (this.lastLoadedContent) {
 			return this.lastLoadedContent;
 		}
@@ -360,8 +377,8 @@ export class SpreadsheetStore {
 		});
 	}
 
-	exportAsDownload(): void {
-		const blob = this.buildDocumentBlob();
+	async exportAsDownload(): Promise<void> {
+		const blob = await this.buildDocumentBlob();
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement("a");
 		a.href = url;

@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite";
 import type { JSX } from "react";
+import { useTranslation } from "react-i18next";
 import { spreadsheetStore } from "../../stores/SpreadsheetStore";
 import type { RightMenuPanel } from "../../types/spreadsheet";
 import { RightMenuButton } from "./RightMenuButton";
@@ -18,6 +19,8 @@ const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> =
 	];
 
 function RightMenuInner(): JSX.Element {
+	const { t } = useTranslation()
+
 	return (
 		<div
 			className="se-right-menu"
@@ -30,7 +33,7 @@ function RightMenuInner(): JSX.Element {
 					<RightMenuButton
 						key={action}
 						action={action}
-						title={title}
+						title={t(title)}
 						icon={icon}
 						active={spreadsheetStore.activeRightPanel === action}
 						onClick={() => spreadsheetStore.toggleRightPanel(action)}

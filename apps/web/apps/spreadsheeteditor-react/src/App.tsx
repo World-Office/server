@@ -8,10 +8,38 @@ import {
 } from "./components/Toolbar/MonacoCommand";
 import { Viewport } from "./components/Viewport";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { useEmbeddedMode } from "./hooks/useEmbeddedMode";
+import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge";
+import { useEmbeddedAutoSave } from "./hooks/useEmbeddedAutoSave";
 import { spreadsheetStore } from "./stores/SpreadsheetStore";
+import { SpreadsheetCollaborationProvider } from "./components/SpreadsheetCollaborationProvider";
 
 export function App() {
 	useKeyboardShortcuts();
+
+	const { embedded } = useEmbeddedMode(
+		spreadsheetStore.setToolbarVisible.bind(spreadsheetStore),
+		spreadsheetStore.setStatusbarVisible.bind(spreadsheetStore),
+		spreadsheetStore.setLeftMenuVisible.bind(spreadsheetStore),
+		spreadsheetStore.setRightMenuVisible.bind(spreadsheetStore),
+	);
+
+	const bridge = useEmbeddedBridge({
+		embedded,
+		onSave: async () => {
+			await spreadsheetStore.saveToWopi();
+		},
+	});
+
+	useEmbeddedAutoSave(
+		embedded,
+		spreadsheetStore.wopiConnection,
+		spreadsheetStore.isModified,
+		() => spreadsheetStore.buildDocumentBlob(),
+		bridge.notifyDocumentSaved,
+		bridge.notifyError,
+	);
+
 	const handleMonacoCommand = useCallback((command: MonacoCommand) => {
 		dispatchMonacoCommand(command, getActiveEditor());
 	}, []);
@@ -81,6 +109,7 @@ export function App() {
 				isCompactToolbar={spreadsheetStore.isCompactToolbar}
 				onMonacoCommand={handleMonacoCommand}
 			/>
+			<SpreadsheetCollaborationProvider />
 		</ThemeProvider>
 	);
 }

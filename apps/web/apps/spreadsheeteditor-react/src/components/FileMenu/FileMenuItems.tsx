@@ -1,5 +1,6 @@
 import { spreadsheetStore } from "../../stores/SpreadsheetStore";
 import type { FileMenuAction } from "../../types/spreadsheet";
+import { useTranslation } from "react-i18next";
 
 interface FileMenuItemsProps {
 	onMenuClick: (action: string, hasPanel: boolean) => void;
@@ -13,7 +14,6 @@ interface MenuItem {
 }
 
 const MENU_ITEMS: MenuItem[] = [
-	{ action: "back", caption: "Back", hasPanel: false },
 	{ action: "saveas", caption: "Download as...", hasPanel: true },
 	{ action: "save-copy", caption: "Save Copy as...", hasPanel: true },
 	{ action: "save-desktop", caption: "Save as...", hasPanel: false },
@@ -28,13 +28,14 @@ const MENU_ITEMS: MenuItem[] = [
 	{ action: "exit", caption: "Go to Documents", hasPanel: false },
 	{ action: "close-editor", caption: "Close Editor", hasPanel: false },
 	{ action: "external-help", caption: "External Help", hasPanel: false },
-	{ action: "suggest", caption: "Suggest a Feature", hasPanel: false },
+	{ action: "suggest", caption: "Suggest Feature", hasPanel: false },
 	{ action: "create-new", caption: "Create New", hasPanel: false },
 	{ action: "open-recent", caption: "Open Recent", hasPanel: false },
-	{ action: "protect", caption: "Protect...", hasPanel: true },
+	{ action: "protect", caption: "Protect Document", hasPanel: true },
 ];
 
 export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
+	const { t } = useTranslation()
 	const activePanel = spreadsheetStore.activeFileMenuPanel;
 
 	function handleBack(): void {
@@ -56,7 +57,7 @@ export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
 				}}
 			>
 				<span className="se-file-menu-item-icon">←</span>
-				<span className="se-file-menu-item-caption">Back</span>
+				<span className="se-file-menu-item-caption">{t("Back")}</span>
 			</div>
 			<li className="se-file-menu-divider" />
 			{MENU_ITEMS.map((item) => (
@@ -73,7 +74,7 @@ export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
 						}
 					}}
 				>
-					<span className="se-file-menu-item-caption">{item.caption}</span>
+					<span className="se-file-menu-item-caption">{t(item.caption)}</span>
 				</div>
 			))}
 		</ul>

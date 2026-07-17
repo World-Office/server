@@ -27,8 +27,17 @@
   --wo-pdf-font: var(--wo-font-family, "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif);
 }
 
+html,
+body,
+#root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
 .viewport-ref {
-  font-family: var(--wo-pdf-font);
   color: var(--wo-pdf-text-primary);
 }
 
@@ -122,4 +131,29 @@
   width: 100%;
   height: 100%;
   background-color: var(--wo-pdf-doc-bg);
+}
+
+/* PDF.js text layer — positions transparent text spans over the canvas */
+.pdf-text-layer {
+  position: absolute;
+  text-align: initial;
+  inset: 0;
+  overflow: hidden;
+  opacity: 0.25;
+  line-height: 1;
+}
+
+.pdf-text-layer > span {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  transform-origin: 0% 0%;
+}
+
+.pdf-text-layer ::selection {
+  background: rgba(68, 114, 196, 0.4);
+}
+
+.pdf-text-layer ::-moz-selection {
+  background: rgba(68, 114, 196, 0.4);
 }

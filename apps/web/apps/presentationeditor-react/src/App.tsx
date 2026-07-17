@@ -11,6 +11,9 @@ import {
 import { Viewport } from "./components/Viewport";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useTheme } from "./hooks/useTheme";
+import { useEmbeddedMode } from "./hooks/useEmbeddedMode";
+import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge";
+import { useEmbeddedAutoSave } from "./hooks/useEmbeddedAutoSave";
 import { presentationStore } from "./stores/PresentationStore";
 
 function onLoad(): Promise<void> {
@@ -30,6 +33,29 @@ function onLoad(): Promise<void> {
 export function App(): JSX.Element {
 	useKeyboardShortcuts();
 	useTheme();
+
+	const { embedded } = useEmbeddedMode(
+		presentationStore.setToolbarVisible.bind(presentationStore),
+		presentationStore.setStatusbarVisible.bind(presentationStore),
+		presentationStore.setLeftMenuVisible.bind(presentationStore),
+		presentationStore.setRightMenuVisible.bind(presentationStore),
+	);
+
+	const bridge = useEmbeddedBridge({
+		embedded,
+		onSave: async () => {
+			await presentationStore.saveToWopi();
+		},
+	});
+
+	useEmbeddedAutoSave(
+		embedded,
+		presentationStore.wopiConnection,
+		presentationStore.isModified,
+		() => presentationStore.buildDocumentBlob(),
+		bridge.notifyDocumentSaved,
+		bridge.notifyError,
+	);
 
 	const handleMonacoCommand = useCallback((command: MonacoCommand) => {
 		dispatchMonacoCommand(command, getActiveEditor());

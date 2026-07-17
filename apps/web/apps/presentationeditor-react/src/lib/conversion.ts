@@ -79,3 +79,35 @@ export async function convertPptxToWoPresentation(
 	const rawBytes = base64ToBlob(json.data, "application/json");
 	return rawBytes.text();
 }
+
+export async function convertWoPresentationToPptx(
+	json: string,
+): Promise<ArrayBuffer> {
+	const encoder = new TextEncoder();
+	const bytes = encoder.encode(json);
+	const base64 = arrayBufferToBase64(bytes.buffer as ArrayBuffer);
+	const res = await fetch(CONVERSION_ENDPOINT, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			source_format: "wo-presentation",
+			target_format: "pptx",
+			data: base64,
+		}),
+	});
+	if (!res.ok) {
+		throw new Error(
+			`Conversion request failed: ${res.status} ${res.statusText}`,
+		);
+	}
+	const responseJson: ConversionResponse = await res.json();
+	if (!responseJson.data) {
+		throw new Error(
+			`Conversion failed: ${responseJson.status} — ${responseJson.error ?? "unknown error"}`,
+		);
+	}
+	return base64ToBlob(
+		responseJson.data,
+		"application/vnd.openxmlformats-officedocument.presentationml.presentation",
+	).arrayBuffer();
+}

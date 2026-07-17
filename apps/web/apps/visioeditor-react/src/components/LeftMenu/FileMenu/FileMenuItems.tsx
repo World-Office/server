@@ -1,4 +1,5 @@
 import type { JSX } from "react";
+import { useTranslation } from "react-i18next";
 import { visioStore } from "../../../stores/VisioStore";
 import type { FileMenuAction } from "../../../types/visio";
 
@@ -19,7 +20,6 @@ interface MenuItem {
 }
 
 const MENU_ITEMS: MenuItem[] = [
-	{ action: "back", caption: "Back", hasPanel: false },
 	{ action: "saveas", caption: "Download as...", hasPanel: true },
 	{ action: "save-copy", caption: "Save Copy as...", hasPanel: true },
 	{ action: "printpreview", caption: "Print", hasPanel: true },
@@ -34,6 +34,7 @@ export function FileMenuItems({
 	onMenuClick,
 	onBack,
 }: FileMenuItemsProps): JSX.Element {
+	const { t } = useTranslation()
 	const activePanel = visioStore.activeFileMenuPanel;
 
 	function handleBack(): void {
@@ -57,7 +58,7 @@ export function FileMenuItems({
 				onKeyDown={(e) => handleKeyDown(e, handleBack)}
 			>
 				<span className="visio-file-menu-item-icon">←</span>
-				<span className="visio-file-menu-item-caption">Back</span>
+				<span className="visio-file-menu-item-caption">{t("Back")}</span>
 			</div>
 			<li className="visio-file-menu-divider" />
 			{MENU_ITEMS.map((item) => (
@@ -71,7 +72,7 @@ export function FileMenuItems({
 						handleKeyDown(e, () => onMenuClick(item.action, item.hasPanel))
 					}
 				>
-					<span className="visio-file-menu-item-caption">{item.caption}</span>
+					<span className="visio-file-menu-item-caption">{t(item.caption)}</span>
 				</div>
 			))}
 		</ul>

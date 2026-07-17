@@ -15,6 +15,8 @@
     "@tiptap/core": "^3.27.1",
     "@tiptap/react": "^3.27.1",
     "@tiptap/starter-kit": "^3.27.1",
+    "@world-office/collaboration-client": "workspace:*",
+    "@world-office/collaboration-react": "workspace:*",
     "@world-office/design-system": "workspace:*",
     "@world-office/editor-common": "workspace:*",
     "@world-office/editor-stores": "workspace:*",
@@ -27,7 +29,9 @@
     "monaco-editor": "^0.52.2",
     "pdfjs-dist": "^6.1.200",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "i18next": "^24.0.0",
+    "react-dom": "^19.0.0",
+    "react-i18next": "^15.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

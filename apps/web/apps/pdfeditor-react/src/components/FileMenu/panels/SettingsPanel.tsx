@@ -1,39 +1,62 @@
+import { useTranslation } from "react-i18next"
+import i18n from "i18next"
+
 export function SettingsPanel({ visible }: { visible: boolean }) {
+  const { t } = useTranslation()
+
   return (
     <div
       className="pdf-file-menu-content-box"
       style={{ display: visible ? "block" : "none", padding: 0, flexDirection: "column" }}
     >
-      <div className="pdf-file-menu-header">Advanced Settings</div>
+      <div className="pdf-file-menu-header">{t("Advanced Settings")}</div>
       <table className="pdf-file-menu-settings-table">
         <tbody>
           <tr className="pdf-file-menu-settings-group">
-            <td className="pdf-file-menu-settings-label" colSpan={2}>
-              Theme
-            </td>
-          </tr>
-          <tr>
             <td className="pdf-file-menu-settings-left">
-              <span>Interface theme</span>
+              <span>{t("Language")}</span>
             </td>
             <td className="pdf-file-menu-settings-right">
-              <select className="pdf-file-menu-select" defaultValue="default">
-                <option value="default">Default</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
-                <option value="dark-contrast">Dark Contrast</option>
+              <select
+                className="pdf-file-menu-select"
+                value={i18n.language?.substring(0, 2) || "en"}
+                onChange={(e) => i18n.changeLanguage(e.target.value)}
+              >
+                <option value="en">English</option>
+                <option value="de">Deutsch</option>
+                <option value="fr">Français</option>
+                <option value="es">Español</option>
+                <option value="it">Italiano</option>
+                <option value="pt">Português</option>
+                <option value="ru">Русский</option>
+                <option value="zh">中文</option>
+                <option value="ja">日本語</option>
+                <option value="ko">한국어</option>
+                <option value="nl">Nederlands</option>
+                <option value="pl">Polski</option>
+                <option value="tr">Türkçe</option>
+                <option value="ar">العربية</option>
               </select>
             </td>
           </tr>
           <tr className="pdf-file-menu-settings-divider" />
           <tr className="pdf-file-menu-settings-group">
-            <td className="pdf-file-menu-settings-label" colSpan={2}>
-              Font Rendering
+            <td className="pdf-file-menu-settings-left">
+              <span>{t("Interface Theme")}</span>
+            </td>
+            <td className="pdf-file-menu-settings-right">
+              <select className="pdf-file-menu-select" defaultValue="default">
+                <option value="default">{t("Standard")}</option>
+                <option value="light">{t("Light")}</option>
+                <option value="dark">{t("Dark")}</option>
+                <option value="dark-contrast">{t("Dark")} Contrast</option>
+              </select>
             </td>
           </tr>
-          <tr>
+          <tr className="pdf-file-menu-settings-divider" />
+          <tr className="pdf-file-menu-settings-group">
             <td className="pdf-file-menu-settings-left">
-              <span>Spell Checking</span>
+              <span>{t("Spell Checking")}</span>
             </td>
             <td className="pdf-file-menu-settings-right">
               <input type="checkbox" defaultChecked />

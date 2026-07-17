@@ -30,7 +30,12 @@ export function downloadBlob(blob: Blob, filename: string): void {
 	URL.revokeObjectURL(url);
 }
 
-export async function exportToPPTX(): Promise<void> {
+const PRESENTATION_MIME_TYPES: Record<string, string> = {
+	pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+	odp: "application/vnd.oasis.opendocument.presentation",
+};
+
+async function exportPresentation(format: string, fileName: string): Promise<void> {
 	const { presentationStore } = await import("../stores/PresentationStore");
 	const json = presentationStore.toJSON();
 
@@ -41,7 +46,7 @@ export async function exportToPPTX(): Promise<void> {
 			headers: { "Content-Type": "application/json" },
 			body: JSON.stringify({
 				input_format: "wo-presentation",
-				output_format: "pptx",
+				output_format: format,
 				data: b64,
 			}),
 		});
@@ -56,18 +61,30 @@ export async function exportToPPTX(): Promise<void> {
 		if (!outputB64) throw new Error("No output data in conversion response");
 
 		const bytes = base64Decode(outputB64);
-		const blob = new Blob([bytes as unknown as BlobPart], {
-			type: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-		});
-		downloadBlob(blob, "presentation.pptx");
+		const mimeType = PRESENTATION_MIME_TYPES[format] ?? "application/octet-stream";
+		const blob = new Blob([bytes as unknown as BlobPart], { type: mimeType });
+		downloadBlob(blob, fileName);
 	} catch (err) {
-		console.error("PPTX export failed:", err);
+		console.error(`${format.toUpperCase()} export failed:`, err);
 		const fallback = confirm(
-			"PPTX conversion is not available. Download as JSON instead?",
+			`${format.toUpperCase()} conversion is not available. Download as JSON instead?`,
 		);
 		if (fallback) {
 			const fallbackBlob = new Blob([json], { type: "application/json" });
 			downloadBlob(fallbackBlob, "presentation.json");
 		}
 	}
+}
+
+export function exportToPPTX(): Promise<void> {
+	return exportPresentation("pptx", "presentation.pptx");
+}
+
+export function exportToFormat(format: string): Promise<void> {
+	const extensions: Record<string, string> = {
+		pptx: "pptx",
+		odp: "odp",
+	};
+	const ext = extensions[format] ?? format;
+	return exportPresentation(format, `presentation.${ext}`);
 }

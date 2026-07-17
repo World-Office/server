@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite";
 import type { JSX } from "react";
+import { useTranslation } from "react-i18next";
 import { presentationStore } from "../../stores/PresentationStore";
 import type { RightMenuPanel } from "../../types/presentation";
 import { AnimationPanel } from "./AnimationPanel";
@@ -31,6 +32,7 @@ const PANELS: Record<RightMenuPanel, JSX.Element> = {
 };
 
 function RightMenuInner(): JSX.Element {
+	const { t } = useTranslation()
 	const { activeRightPanel, toggleRightPanel } = presentationStore;
 
 	return (
@@ -45,7 +47,7 @@ function RightMenuInner(): JSX.Element {
 					<RightMenuButton
 						key={action}
 						action={action}
-						title={title}
+						title={t(title)}
 						icon={icon}
 						active={activeRightPanel === action}
 						onClick={() => toggleRightPanel(action)}

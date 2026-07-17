@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite"
 import type { JSX } from "react"
+import { useTranslation } from "react-i18next"
 import { pdfStore } from "../../stores/PdfStore"
 import type { RightMenuPanel } from "../../types/pdf"
 import { RightMenuButton } from "./RightMenuButton"
@@ -12,9 +13,11 @@ const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> = 
   { action: "chart", title: "Chart", icon: "📊" },
   { action: "textart", title: "TextArt", icon: "Aa" },
   { action: "form", title: "Form", icon: "📋" },
+  { action: "annotations", title: "Annotations", icon: "💬" },
 ]
 
 function RightMenuInner(): JSX.Element {
+  const { t } = useTranslation()
   return (
     <div
       className="pdf-right-menu"
@@ -27,7 +30,7 @@ function RightMenuInner(): JSX.Element {
           <RightMenuButton
             key={action}
             action={action}
-            title={title}
+            title={t(title)}
             icon={icon}
             active={pdfStore.activeRightPanel === action}
             onClick={() => pdfStore.toggleRightPanel(action)}

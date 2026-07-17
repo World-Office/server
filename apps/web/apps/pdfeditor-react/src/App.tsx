@@ -6,6 +6,7 @@ import { type MonacoCommand, dispatchMonacoCommand } from "./components/Toolbar/
 import { Viewport } from "./components/Viewport"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { pdfStore } from "./stores/PdfStore"
+import { PdfCollaborationProvider } from "./components/PdfCollaborationProvider"
 
 export function App() {
   useKeyboardShortcuts()
@@ -61,6 +62,7 @@ export function App() {
 
   return (
     <ThemeProvider>
+      <PdfCollaborationProvider />
       <Viewport
         toolbarVisible={pdfStore.toolbarVisible}
         statusbarVisible={pdfStore.statusbarVisible}

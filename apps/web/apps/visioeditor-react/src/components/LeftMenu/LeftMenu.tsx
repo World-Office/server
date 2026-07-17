@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite";
 import type { JSX } from "react";
+import { useTranslation } from "react-i18next";
 import { visioStore } from "../../stores/VisioStore";
 import { ShapePalette } from "../ShapePalette/ShapePalette";
 import { LeftMenuButton } from "./LeftMenuButton";
@@ -8,11 +9,13 @@ const BUTTONS = [
 	{ action: "thumbs" as const, title: "Pages", icon: "⊟" },
 	{ action: "shapes" as const, title: "Shapes", icon: "◇" },
 	{ action: "chat" as const, title: "Chat", icon: "💬" },
-	{ action: "support" as const, title: "Feedback & Support", icon: "❓" },
+	{ action: "support" as const, title: "Support", icon: "❓" },
 	{ action: "about" as const, title: "About", icon: "ℹ" },
 ];
 
 function LeftMenuInner(): JSX.Element {
+	const { t } = useTranslation()
+
 	return (
 		<div
 			className="visio-left-menu"
@@ -25,7 +28,7 @@ function LeftMenuInner(): JSX.Element {
 					<LeftMenuButton
 						key={action}
 						action={action}
-						title={title}
+						title={t(title)}
 						icon={icon}
 						active={visioStore.activeLeftPanel === action}
 						onClick={() => visioStore.toggleLeftPanel(action)}
