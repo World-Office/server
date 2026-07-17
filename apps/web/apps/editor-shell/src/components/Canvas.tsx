@@ -1,6 +1,5 @@
 import type { ReactNode } from "react"
 import { useEffect, useRef, useState } from "react"
-import { init, renderPage } from "../lib/wasm-renderer"
 
 interface CanvasProps {
   children?: ReactNode
@@ -16,15 +15,17 @@ export function Canvas({ children }: CanvasProps) {
     setShowCanvas(children === undefined || children === null)
   }, [children])
 
-  // Initialize canvas renderer when no children are provided
+  // Lazy-initialize canvas renderer (WASM module loaded on demand)
   useEffect(() => {
     if (!showCanvas) return
     const canvas = canvasRef.current
     if (!canvas || initialized.current) return
     initialized.current = true
 
-    init(canvas)
-    renderPage(0, 100)
+    import("../lib/wasm-renderer").then((mod) => {
+      mod.init(canvas)
+      mod.renderPage(0, 100)
+    })
   }, [showCanvas])
 
   return (

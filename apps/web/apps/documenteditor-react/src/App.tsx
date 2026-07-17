@@ -1,12 +1,10 @@
 import { ThemeProvider } from "@world-office/design-system"
 import { useDocumentLoader } from "@world-office/wopi-client"
 import { observer } from "mobx-react-lite"
-import { useCallback, useEffect, useState } from "react"
+import { type ComponentType, lazy, Suspense, useCallback, useEffect, useState } from "react"
 import { isDesktop, listenForMenuEvents, listenForUpdateEvents } from "./bridge"
-import { DocumentCollaborationProvider } from "./components/DocumentCollaborationProvider"
 import { getActiveEditor } from "./components/MonacoEditor"
 import { type MonacoCommand, dispatchMonacoCommand } from "./components/Toolbar/MonacoCommand"
-import { ShortcutsOverlay } from "./components/ShortcutsOverlay"
 import { Viewport } from "./components/Viewport"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { usePlugins } from "./hooks/usePlugins"
@@ -17,7 +15,23 @@ import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge"
 import { useEmbeddedAutoSave } from "./hooks/useEmbeddedAutoSave"
 import { useSpellchecker } from "./hooks/useSpellchecker"
 import { SpellcheckContext } from "./lib/spellcheck-context"
-import { SpellcheckContextMenu } from "./components/SpellcheckContextMenu"
+
+// Non-critical components loaded on demand
+const DocumentCollaborationProvider = lazy(
+  () =>
+    import("./components/DocumentCollaborationProvider").then((m) => ({
+      default: m.DocumentCollaborationProvider,
+    })),
+)
+const ShortcutsOverlay = lazy(() =>
+  import("./components/ShortcutsOverlay").then((m) => ({ default: m.ShortcutsOverlay })),
+)
+const SpellcheckContextMenu = lazy(
+  () =>
+    import("./components/SpellcheckContextMenu").then((m) => ({
+      default: m.SpellcheckContextMenu,
+    })),
+)
 
 export const App = observer(function App() {
   const [shortcutsVisible, setShortcutsVisible] = useState(false)
@@ -243,8 +257,12 @@ export const App = observer(function App() {
           </button>
         </div>
       )}
-      <DocumentCollaborationProvider />
-      <ShortcutsOverlay visible={shortcutsVisible} onClose={() => setShortcutsVisible(false)} />
+      <Suspense fallback={null}>
+        <DocumentCollaborationProvider />
+      </Suspense>
+      <Suspense fallback={null}>
+        <ShortcutsOverlay visible={shortcutsVisible} onClose={() => setShortcutsVisible(false)} />
+      </Suspense>
       <SpellcheckContext.Provider value={spellcheck}>
         <Viewport
           toolbarVisible={documentStore.toolbarVisible}
@@ -255,11 +273,13 @@ export const App = observer(function App() {
           onMonacoCommand={handleMonacoCommand}
           onRichTextCommand={handleRichTextCommand}
         />
-        <SpellcheckContextMenu
-          spellchecker={spellcheck.spellchecker}
-          editorElement={null}
-          addToDictionary={spellcheck.addToDictionary}
-        />
+        <Suspense fallback={null}>
+          <SpellcheckContextMenu
+            spellchecker={spellcheck.spellchecker}
+            editorElement={null}
+            addToDictionary={spellcheck.addToDictionary}
+          />
+        </Suspense>
       </SpellcheckContext.Provider>
     </ThemeProvider>
   )

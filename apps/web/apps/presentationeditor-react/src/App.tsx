@@ -1,8 +1,7 @@
 import { ThemeProvider } from "@world-office/design-system";
 import { useDocumentLoader } from "@world-office/wopi-client";
-import { type JSX, useCallback } from "react";
+import { type JSX, lazy, Suspense, useCallback } from "react";
 import { getActiveEditor } from "./components/MonacoEditor";
-import { PresentationCollaborationProvider } from "./components/PresentationCollaborationProvider";
 import { SlidePresenter } from "./components/SlidePresenter/SlidePresenter";
 import {
 	type MonacoCommand,
@@ -15,6 +14,10 @@ import { useEmbeddedMode } from "./hooks/useEmbeddedMode";
 import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge";
 import { useEmbeddedAutoSave } from "./hooks/useEmbeddedAutoSave";
 import { presentationStore } from "./stores/PresentationStore";
+
+const PresentationCollaborationProvider = lazy(
+	() => import("./components/PresentationCollaborationProvider"),
+);
 
 function onLoad(): Promise<void> {
 	const hasWopi = presentationStore.detectWopiParams();
@@ -83,7 +86,9 @@ export function App(): JSX.Element {
 
 	return (
 		<ThemeProvider>
-			<PresentationCollaborationProvider />
+			<Suspense fallback={null}>
+				<PresentationCollaborationProvider />
+			</Suspense>
 			{presentationStore.isPresenting && <SlidePresenter />}
 			<Viewport
 				toolbarVisible={presentationStore.toolbarVisible}

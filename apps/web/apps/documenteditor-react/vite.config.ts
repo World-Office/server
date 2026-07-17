@@ -29,6 +29,13 @@ export default defineConfig({
     sourcemap: true,
     rollupOptions: {
       external: ["@world-office/wo-renderer-wasm/pkg/wo_renderer_wasm.js"],
+      output: {
+        manualChunks(id) {
+          if (id.includes("monaco-editor")) return "monaco"
+          if (id.includes("node_modules/react") || id.includes("node_modules/mobx") || id.includes("node_modules/scheduler")) return "vendor"
+          if (id.includes("node_modules")) return "deps"
+        },
+      },
     },
   },
 })
