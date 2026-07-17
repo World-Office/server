@@ -38,6 +38,13 @@ impl AppState {
         dirs::data_local_dir().map(|dir| dir.join("WorldOffice").join(RECENT_FILES_KEY))
     }
 
+    fn clear_recent_files(&self) {
+        *self.recent_files.lock().unwrap() = Vec::new();
+        if let Some(path) = Self::get_storage_path() {
+            let _ = fs::remove_file(&path);
+        }
+    }
+
     fn load_recent_files(&self) {
         if let Some(path) = Self::get_storage_path() {
             if path.exists() {
@@ -150,12 +157,8 @@ impl SessionState {
 
     #[test]
     fn test_add_recent_file() {
-        // Clear any existing recent files to ensure test isolation
-        if let Some(path) = AppState::get_storage_path() {
-            let _ = fs::remove_file(&path);
-        }
-        
         let state = AppState::new();
+        state.clear_recent_files();
         state.add_recent_file("/test/path/document.docx".to_string());
         let recent = state.get_recent_files();
         assert_eq!(recent.len(), 1);

@@ -35,7 +35,7 @@ pub struct AppState {
 impl AppState {
     /// Build application state from configuration.
     pub fn new(config: DocServerConfig) -> Self {
-        let wopi_client = WopiClient::new(config.wopi_host_url.clone(), config.public_url.clone());
+        let wopi_client = WopiClient::new(config.wopi_host_url.clone(), config.public_url.clone(), config.wopi_insecure);
         Self {
             config,
             wopi_client,
@@ -175,35 +175,32 @@ fn editor_base_url(editor_type: &str, state: &AppState) -> Option<String> {
 /// shell that redirects the browser to the matching React editor with
 /// the token now in the query string so the editor can read it without
 /// needing to parse the original form body.
+///
+/// For supported editor types (word/document, sheet/spreadsheet,
+/// slide/presentation) the redirect points to the local `/editors/{type}/`
+/// route (WOPI-first bridge).  Other types (diagram, pdf) still redirect
+/// to the external URL resolved by [`editor_base_url`].
 async fn hosting_wopi_handler(
     State(state): State<AppState>,
     Path(path): Path<String>,
     request: axum::http::Request<axum::body::Body>,
 ) -> axum::response::Response {
     let editor_type = path.split('/').next().unwrap_or(&path);
-    let Some(base) = editor_base_url(editor_type, &state) else {
-        return (axum::http::StatusCode::NOT_FOUND, editor_type.to_string()).into_response();
-    };
-
-    // POST: read the form body, put the access_token back into the
-    // redirect query string so the editor can read it.
-    // GET: pass through whatever the user already has on the URL.
     let method = request.method().clone();
-    let access_token = if method == axum::http::Method::POST {
-        let bytes = axum::body::to_bytes(request.into_body(), 64 * 1024)
-            .await
-            .unwrap_or_default();
-        let body = String::from_utf8_lossy(&bytes);
-        parse_form_field(&body, "access_token")
+
+    let redirect_base = if let Some(local) = wopi_type_to_local_route(editor_type) {
+        local.to_string()
     } else {
-        String::new()
+        match editor_base_url(editor_type, &state) {
+            Some(url) => url,
+            None => {
+                return (axum::http::StatusCode::NOT_FOUND, editor_type.to_string())
+                    .into_response();
+            }
+        }
     };
 
-    let redirect_qs = if method == axum::http::Method::POST && !access_token.is_empty() {
-        format!("access_token={}", urlencoding(&access_token))
-    } else {
-        String::new()
-    };
+    let redirect_url = build_editor_redirect_url(&redirect_base, &method, request).await;
 
     let html = format!(
         r#"<!DOCTYPE html>
@@ -219,14 +216,11 @@ async fn hosting_wopi_handler(
       var fileId = params.get('file_id');
       if (token && fileId) {{
         window.__WORLD_OFFICE_CONFIG__ = {{
-          accessToken: token,
-          fileId: fileId,
-          fileType: '{editor_ext}'
+          wopiAccessToken: token,
+          wopiFileId: fileId
         }};
       }}
-      var redirectQs = '{redirect_qs}';
-      var editorUrl = '{editor_base}/?' + redirectQs;
-      window.location.replace(editorUrl);
+      window.location.replace('{redirect_url}');
     }})();
   </script>
 </head>
@@ -235,11 +229,79 @@ async fn hosting_wopi_handler(
 </body>
 </html>"#,
         editor = editor_type,
-        editor_base = base,
-        editor_ext = editor_type,
-        redirect_qs = redirect_qs,
+        redirect_url = redirect_url,
     );
     axum::response::Html(html).into_response()
+}
+
+/// Build the editor redirect URL from the base path, HTTP method, and
+/// request, carrying through the access_token, file_id, and embedded
+/// parameters so the editor can authenticate its WOPI requests.
+async fn build_editor_redirect_url(
+    base: &str,
+    method: &axum::http::Method,
+    request: axum::http::Request<axum::body::Body>,
+) -> String {
+    let clean_base = base.trim_end_matches('/');
+
+    // Extract query string BEFORE consuming the body (borrow-checker)
+    let original_query = request.uri().query().unwrap_or("").to_string();
+
+    if method == axum::http::Method::POST {
+        // POST: read access_token / file_id / embedded / WOPISrc from form body
+        let bytes = axum::body::to_bytes(request.into_body(), 64 * 1024)
+            .await
+            .unwrap_or_default();
+        let body = String::from_utf8_lossy(&bytes);
+
+        let mut qs_parts: Vec<String> = Vec::new();
+        let access_token = parse_form_field(&body, "access_token");
+        if !access_token.is_empty() {
+            qs_parts.push(format!("access_token={}", urlencoding(&access_token)));
+        }
+
+        // OCIS collaboration may not send file_id in the form body,
+        // so extract it from the WOPISrc URL if missing.
+        let file_id = parse_form_field(&body, "file_id");
+        if !file_id.is_empty() {
+            qs_parts.push(format!("file_id={}", urlencoding(&file_id)));
+        } else {
+            // file_id not in form — extract it from the real WOPISrc (last occurrence)
+            let real_wopi_src = extract_last_query_param(&original_query, "WOPISrc");
+            if !real_wopi_src.is_empty() {
+                let fid = file_id_from_wopi_src(&real_wopi_src);
+                if !fid.is_empty() {
+                    qs_parts.push(format!("file_id={}", urlencoding(&fid)));
+                }
+            }
+        }
+
+        let embedded = parse_form_field(&body, "embedded");
+        if !embedded.is_empty() {
+            qs_parts.push(format!("embedded={}", urlencoding(&embedded)));
+        }
+
+        // Also forward WOPISrc if it was in the original query string
+        // (OCIS collaboration service sends WOPISrc in the POST URL)
+        let wopi_src = extract_last_query_param(&original_query, "WOPISrc");
+        if !wopi_src.is_empty() {
+            qs_parts.push(format!("WOPISrc={}", urlencoding(&wopi_src)));
+        }
+
+        if qs_parts.is_empty() {
+            format!("{}/", clean_base)
+        } else {
+            format!("{}/?{}", clean_base, qs_parts.join("&"))
+        }
+    } else {
+        // GET: preserve all existing query parameters as-is
+        let query = request.uri().query().unwrap_or("");
+        if query.is_empty() {
+            format!("{}/", clean_base)
+        } else {
+            format!("{}/?{}", clean_base, query)
+        }
+    }
 }
 
 /// Extract a single form field from an `application/x-www-form-urlencoded`
@@ -254,6 +316,32 @@ fn parse_form_field(body: &str, field: &str) -> String {
         }
     }
     String::new()
+}
+
+/// Extract the value of the LAST occurrence of a query parameter.
+/// Used for WOPISrc where the real URL (not the template placeholder)
+/// is always the last occurrence.
+fn extract_last_query_param(query: &str, name: &str) -> String {
+    let mut last = String::new();
+    for pair in query.split('&') {
+        if let Some((k, v)) = pair.split_once('=') {
+            if k == name {
+                last = url_decode(v);
+            }
+        }
+    }
+    last
+}
+
+/// Extract the file_id from a WOPISrc URL of the form:
+/// `https://host/wopi/files/{file_id}`
+fn file_id_from_wopi_src(wopi_src: &str) -> String {
+    if let Some(pos) = wopi_src.find("/wopi/files/") {
+        let after = &wopi_src[pos + "/wopi/files/".len()..];
+        after.split(&['/', '?', '&', '#'][..]).next().unwrap_or("").to_string()
+    } else {
+        String::new()
+    }
 }
 
 fn url_decode(s: &str) -> String {
@@ -295,15 +383,136 @@ fn urlencoding(s: &str) -> String {
         .collect()
 }
 
+// ── Editor bundle helpers ───────────────────────────────────────────
+
+/// Map an editor type key (from URL path) to a directory name inside editor_ui_dir.
+fn resolve_editor_dir(type_key: &str) -> Option<&'static str> {
+    match type_key {
+        "document" | "word" => Some("word"),
+        "spreadsheet" | "cell" | "sheet" => Some("sheet"),
+        "presentation" | "slide" => Some("slide"),
+        "pdf" => Some("pdf"),
+        "diagram" => Some("diagram"),
+        _ => None,
+    }
+}
+
+/// Determine MIME type for a file based on its extension.
+fn mime_for_filename(path: &std::path::Path) -> &'static str {
+    match path.extension().and_then(|e| e.to_str()) {
+        Some("js") | Some("mjs") => "application/javascript",
+        Some("css") => "text/css",
+        Some("wasm") => "application/wasm",
+        Some("html") | Some("htm") => "text/html; charset=utf-8",
+        Some("png") => "image/png",
+        Some("svg") => "image/svg+xml",
+        Some("json") => "application/json",
+        Some("woff2") => "font/woff2",
+        Some("woff") => "font/woff",
+        Some("ttf") => "font/ttf",
+        Some("otf") => "font/otf",
+        Some("ico") => "image/x-icon",
+        Some("map") => "application/json",
+        Some("txt") => "text/plain; charset=utf-8",
+        _ => "application/octet-stream",
+    }
+}
+
+/// Map a WOPI editor type to the local editor route path (bridge flow).
+/// Returns `None` for types that should keep using external editor URLs.
+fn wopi_type_to_local_route(editor_type: &str) -> Option<&'static str> {
+    match editor_type {
+        "word" | "document" => Some("/editors/document/"),
+        "sheet" | "spreadsheet" => Some("/editors/spreadsheet/"),
+        "slide" | "presentation" => Some("/editors/presentation/"),
+        "pdf" => Some("/editors/pdf/"),
+        "diagram" => Some("/editors/diagram/"),
+        _ => None,
+    }
+}
+
+// ── Editor bundle serving handlers ──────────────────────────────────
+
+/// GET /editors/{type}/
+///
+/// Serves the React editor's `index.html` from `editor_ui_dir/{dir}/`.
+/// This is the entry point for the WOPI-first bridge flow.
+async fn serve_editor_index(
+    Path(type_path): Path<String>,
+    State(state): State<AppState>,
+) -> Result<
+    (
+        axum::http::StatusCode,
+        [(axum::http::HeaderName, String); 1],
+        Vec<u8>,
+    ),
+    axum::http::StatusCode,
+> {
+    let dir_name = resolve_editor_dir(&type_path).ok_or(axum::http::StatusCode::NOT_FOUND)?;
+    let index_path = std::path::Path::new(&state.config.editor_ui_dir)
+        .join(dir_name)
+        .join("index.html");
+
+    let data = tokio::fs::read(&index_path)
+        .await
+        .map_err(|_| axum::http::StatusCode::NOT_FOUND)?;
+
+    Ok((
+        axum::http::StatusCode::OK,
+        [(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8".into())],
+        data,
+    ))
+}
+
+/// GET /editors/{type}/{*asset_path}
+///
+/// Serves static assets (JS, CSS, WASM, fonts, images) from the editor
+/// build directory.  Used by the editor index.html to load its resources.
+async fn serve_editor_assets(
+    Path((type_path, asset_path)): Path<(String, String)>,
+    State(state): State<AppState>,
+) -> Result<
+    (
+        axum::http::StatusCode,
+        [(axum::http::HeaderName, String); 1],
+        Vec<u8>,
+    ),
+    axum::http::StatusCode,
+> {
+    let dir_name = resolve_editor_dir(&type_path).ok_or(axum::http::StatusCode::NOT_FOUND)?;
+
+    // Prevent directory traversal
+    if asset_path.split('/').any(|seg| seg == "..") {
+        return Err(axum::http::StatusCode::FORBIDDEN);
+    }
+
+    let file_path = std::path::Path::new(&state.config.editor_ui_dir)
+        .join(dir_name)
+        .join(&asset_path);
+
+    let data = tokio::fs::read(&file_path)
+        .await
+        .map_err(|_| axum::http::StatusCode::NOT_FOUND)?;
+
+    let content_type = mime_for_filename(&file_path);
+
+    Ok((
+        axum::http::StatusCode::OK,
+        [(axum::http::header::CONTENT_TYPE, content_type.to_string())],
+        data,
+    ))
+}
+
 /// GET /wopi/files/:file_id  →  proxy CheckFileInfo to OCIS
 async fn wopi_check_file_info(
     State(state): State<AppState>,
     Path(file_id): Path<String>,
     Query(params): Query<TokenQuery>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    // Validate JWT
-    let _claims = WopiClient::validate_token(&params.access_token, &state.config.jwt_secret)
-        .map_err(|e| AppError::Unauthorized(e.to_string()))?;
+    if !state.config.is_passthrough_mode() {
+        let _claims = WopiClient::validate_token(&params.access_token, &state.config.jwt_secret)
+            .map_err(|e| AppError::Unauthorized(e.to_string()))?;
+    }
 
     let info = state
         .wopi_client
@@ -318,8 +527,10 @@ async fn wopi_get_file(
     Path(file_id): Path<String>,
     Query(params): Query<TokenQuery>,
 ) -> Result<axum::body::Bytes, AppError> {
-    let _claims = WopiClient::validate_token(&params.access_token, &state.config.jwt_secret)
-        .map_err(|e| AppError::Unauthorized(e.to_string()))?;
+    if !state.config.is_passthrough_mode() {
+        let _claims = WopiClient::validate_token(&params.access_token, &state.config.jwt_secret)
+            .map_err(|e| AppError::Unauthorized(e.to_string()))?;
+    }
 
     let data = state
         .wopi_client
@@ -335,8 +546,10 @@ async fn wopi_put_file(
     Query(params): Query<TokenQuery>,
     body: axum::body::Bytes,
 ) -> Result<(), AppError> {
-    let _claims = WopiClient::validate_token(&params.access_token, &state.config.jwt_secret)
-        .map_err(|e| AppError::Unauthorized(e.to_string()))?;
+    if !state.config.is_passthrough_mode() {
+        let _claims = WopiClient::validate_token(&params.access_token, &state.config.jwt_secret)
+            .map_err(|e| AppError::Unauthorized(e.to_string()))?;
+    }
 
     state
         .wopi_client
@@ -482,6 +695,9 @@ pub fn create_app(config: DocServerConfig) -> Router {
         .route("/api/conversion/formats", get(conversion_formats))
         .route("/demo/info", get(demo_info_handler))
         .route("/demo/document", get(demo_document_handler))
+        // Editor bundle routes (WOPI-first bridge) — before fallback ServeDir
+        .route("/editors/{type}/", get(serve_editor_index))
+        .route("/editors/{type}/{*asset_path}", get(serve_editor_assets))
         .with_state(state);
 
     // Serve editor UI if the directory exists, otherwise fall back to landing page
@@ -512,6 +728,8 @@ mod tests {
             public_url: "http://localhost:9999".into(),
             editor_ui_dir: "./nonexistent-ui".into(),
             data_dir: "./test-data".into(),
+            wopi_token_mode: "jwt".into(),
+            wopi_insecure: false,
         }
     }
 

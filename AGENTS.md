@@ -2,8 +2,8 @@
 
 **Updated:** 2026-04-19
 **Source:** codeberg.org/World-Office/server (independent project)
-**License:** AGPL-3.0-or-later (enterprise extensions under separate commercial license)
-**Crate count:** 26 core + 5 enterprise Rust crates, 8 + 3 enterprise services
+**License:** AGPL-3.0-or-later (enterprise extensions in separate private repo)
+**Crate count:** 26 core + 8 services
 **Rust edition:** 2024 (nightly in CI, stable for releases)
 
 ## OVERVIEW
@@ -15,13 +15,10 @@ World-Office is an independent, open-source document editing suite built in Rust
 ```
 server/
 +-- core/crates/                     26 Rust crates (format parsers, renderer, WASM, protocols)
-+-- core-enterprise/crates/          5 enterprise Rust crates (signatures, DRM, redaction, watermark, comparison)
 +-- desktop/tauri-poc/               Tauri 2.0 desktop shell (10 modules)
 +-- services/                        8 Rust microservices
-+-- services-enterprise/             3 enterprise services (audit, SCIM, webhooks)
 +-- apps/web/                        Web editor frontend (editors, themes, translations)
 +-- apps/web/apps/                   Individual editor apps (documenteditor-react, spreadsheeteditor-react, etc.)
-+-- apps-web-enterprise/             Enterprise web apps
 +-- packages/                        Shared TypeScript packages (design-system, editor-common, etc.)
 +-- integrations/                    Third-party integrations
 +-- tests/                           E2E test suite (Jest + Playwright + Docker Compose)
@@ -75,19 +72,6 @@ server/
 | wo-webdav | WebDAV server (axum, PROPFIND/MKCOL/PUT/DELETE/LOCK) |
 | wo-docserver | Document server: serves editor UI, proxies WOPI requests to OCIS |
 
-## ENTERPRISE CRATES (core-enterprise/crates/)
-
-| Crate | Description |
-|-------|-------------|
-| wo-digital-signature | Digital signature support |
-| wo-redaction | Document redaction |
-| wo-drm | Digital rights management |
-| wo-watermark | Document watermarking |
-| wo-comparison | Document comparison |
-| wo-converter-pro | Advanced format conversion |
-
-These crates are available under a separate commercial license (LICENSE-COMMERCIAL).
-
 ## SERVICES (services/)
 
 | Service | Description |
@@ -113,9 +97,6 @@ These crates are available under a separate commercial license (LICENSE-COMMERCI
 
 | Service | Description |
 |---------|-------------|
-| audit-service | Audit logging |
-| scim-service | SCIM user provisioning |
-| webhook-service | Webhook delivery |
 
 ## TAURI DESKTOP (desktop/tauri-poc/)
 
@@ -215,5 +196,4 @@ The wo-pdf crate previously triggered a Rust compiler ICE in older nightly versi
 - NEVER add new Rust dependencies without checking they compile on Windows (wasm-bindgen crates can be tricky)
 - The WOPI server (wo-wopi) requires access tokens -- do not expose endpoints without auth
 - WASM crates (wo-x2t-wasm, wo-renderer-wasm) cannot be tested with standard `cargo test` -- they need wasm-pack or a browser runtime
-- The Cargo workspace includes enterprise crates (`core-enterprise/`, `services-enterprise/`) -- changes to workspace Cargo.toml affect both open-source and enterprise builds
 - pnpm workspace includes `apps/web/apps/*` -- editor changes propagate across all editor shells

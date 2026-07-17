@@ -19,26 +19,18 @@ members = [
     "core/crates/wo-msbinary",
     "core/crates/wo-visio",
     "core/crates/wo-docx-renderer",
-    "core/crates/wo-x2t",
-    "core/crates/wo-renderer",
-    "core/crates/wo-fonts",
-    "core/crates/wo-raster",
-    "core-enterprise/crates/wo-digital-signature",
-    "core-enterprise/crates/wo-redaction",
-    "core-enterprise/crates/wo-drm",
-    "core-enterprise/crates/wo-watermark",
-    "core-enterprise/crates/wo-comparison",
-    "core-enterprise/crates/wo-converter-pro",
+    "core/crates/wo-wopi",
+    "core/crates/wo-webdav",
+    "core/crates/wo-docserver",
+    "core/crates/wo-x2t-wasm",
+    "core/crates/wo-renderer-wasm",
     "services/api-gateway",
+    "services/storage-service",
     "services/conversion-service",
     "services/coauthoring-service",
-    "services/storage-service",
-    "services/session-service",
     "services/identity-service",
+    "services/session-service",
     "services/mcp-server",
-    "services-enterprise/audit-service",
-    "services-enterprise/scim-service",
-    "services-enterprise/webhook-service",
     "core/crates/wo-wopi",
     "core/crates/wo-webdav",
     "core/crates/wo-x2t-wasm",
@@ -95,6 +87,7 @@ hyper = { version = "1", features = ["full"] }
 base64 = "0.22"
 reqwest = { version = "0.12", features = ["json"] }
 sha2 = "0.10"
+serial_test = "3.5.0"
 async-trait = "0.1"
 tempfile = "3"
 tower = "0.5"

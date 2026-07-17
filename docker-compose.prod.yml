@@ -153,10 +153,77 @@ services:
 
   # ── Document Server ──────────────────────────────────────────────────
 
+  # ── OpenCloud (OCIS) ─────────────────────────────────────────────────
+  opencloud:
+    image: owncloud/ocis:latest
+    container_name: world-office-opencloud
+    restart: unless-stopped
+    hostname: opencloud
+    ports:
+      - "${OCIS_PORT:-9200}:9200"
+    environment:
+      OCIS_DOMAIN: ${OCIS_DOMAIN:-localhost}
+      OCIS_URL: ${OCIS_URL:-https://localhost:9200}
+      OCIS_INSECURE: "true"
+      PROXY_INSECURE_BACKENDS: "true"
+      OCIS_JWT_SECRET: ${JWT_SECRET:-prod-secret-change-me}
+      TOKEN_MANAGER_JWT_SECRET: ${JWT_SECRET:-prod-secret-change-me}
+      OCIS_TRANSFER_SECRET: ${TRANSFER_SECRET:-transfer-secret}
+      OCIS_MACHINE_AUTH_API_KEY: ${MACHINE_AUTH_KEY:-machine-key}
+      IDM_CREATE_DEMO_USERS: "true"
+      IDM_ADMIN_PASSWORD: ${OCIS_ADMIN_PASSWORD:-admin}
+      NATS_NATS_HOST: "0.0.0.0"
+      NATS_NATS_PORT: "9233"
+      GATEWAY_GRPC_ADDR: "0.0.0.0:9142"
+    volumes:
+      - ocis_data:/var/lib/ocis
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-check-certificate -qO- https://localhost:9200/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      start_period: 90s
+      retries: 5
+
+  collaboration:
+    image: owncloud/ocis:latest
+    container_name: world-office-collaboration
+    restart: unless-stopped
+    hostname: collaboration
+    depends_on:
+      opencloud:
+        condition: service_healthy
+    command: ["collaboration", "server"]
+    environment:
+      COLLABORATION_GRPC_ADDR: 0.0.0.0:9301
+      COLLABORATION_HTTP_ADDR: 0.0.0.0:9300
+      MICRO_REGISTRY: nats-js-kv
+      MICRO_REGISTRY_ADDRESS: opencloud:9233
+      GATEWAY_GRPC_ADDR: opencloud:9142
+      COLLABORATION_WOPI_SRC: http://docserver:80
+      COLLABORATION_APP_ADDR: ${PUBLIC_URL:-https://editor.cloud.graphwiz.ai}
+      COLLABORATION_APP_INSECURE: "true"
+      COLLABORATION_APP_NAME: WorldOffice
+      COLLABORATION_APP_PRODUCT: WorldOffice
+      COLLABORATION_WOPI_SECRET: ${JWT_SECRET:-prod-secret-change-me}
+      COLLABORATION_APP_PROOF_DISABLE: "true"
+      COLLABORATION_CS3API_DATAGATEWAY_INSECURE: "true"
+      OCIS_URL: ${OCIS_URL:-https://opencloud:9200}
+      OCIS_INSECURE: "true"
+      OCIS_JWT_SECRET: ${JWT_SECRET:-prod-secret-change-me}
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-check-certificate -qO- http://localhost:9300/wopi/discovery || exit 1"]
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
+
   docserver:
     image: codeberg.org/world-office/docserver:${IMAGE_TAG:-latest}
     container_name: world-office-docserver
     restart: unless-stopped
+    depends_on:
+      collaboration:
+        condition: service_healthy
     ports:
       - "${DOCSERVER_PORT:-80}:80"
     environment:

@@ -1,0 +1,101 @@
+# =============================================================================
+# World-Office Local Dev Stack — OCIS with embedded collaboration service
+# =============================================================================
+#
+# Run wo-docserver locally (outside Docker) for fast Rust iteration.
+# Usage:
+#   docker compose -f docker-compose.dev.yml up -d
+#   cargo run -p wo-docserver --release
+#
+# Environment for wo-docserver:
+#   JWT_SECRET=mysecret
+#   WOPI_HOST_URL=https://localhost:9200
+#   WOPI_TOKEN_MODE=passthrough
+#   DOCSERVER_PUBLIC_URL=http://localhost:8082
+#   EDITOR_UI_DIR=./frontend-dist
+
+services:
+  # ── OCIS (ownCloud Infinite Scale 8.x) ─────────────────────────────────
+  ocis:
+    image: owncloud/ocis:latest
+    container_name: dev-ocis
+    hostname: ocis
+    restart: "no"
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        ocis init || true
+        sh /etc/ocis/patch-config.sh
+        ocis server &
+        sleep 20
+        ocis collaboration server &
+        wait
+    ports:
+      - "9200:9200"
+    environment:
+      # Domain / URL
+      - OCIS_DOMAIN=localhost
+      - OCIS_URL=https://localhost:9200
+
+      # TLS — OCIS needs HTTPS for its IDP/OIDC
+      - PROXY_TLS=true
+      - PROXY_TRANSPORT_TLS_CERT=/tls/tls-cert.pem
+      - PROXY_TRANSPORT_TLS_KEY=/tls/tls-key.pem
+      - OCIS_INSECURE=true
+      - PROXY_INSECURE_BACKENDS=true
+
+      # IDP must match OCIS_URL
+      - IDP_ISSUER=https://localhost:9200
+
+      # JWT — must match wo-docserver's JWT_SECRET
+      - OCIS_JWT_SECRET=mysecret
+      - TOKEN_MANAGER_JWT_SECRET=mysecret
+      - OCIS_TRANSFER_SECRET=dev_transfer_secret
+      - OCIS_MACHINE_AUTH_API_KEY=dev_machine_auth_key
+
+      # Auth — basic + demo users (admin/admin)
+      - AUTHENTICATION_HANDLERS=basic
+      - IDM_CREATE_DEMO_USERS=true
+      - IDM_ADMIN_PASSWORD=admin
+
+      # Collaboration service (embedded in OCIS 8.x, started alongside main server)
+      - COLLABORATION_APP_ADDR=http://host.docker.internal:8082
+      - COLLABORATION_WOPI_SRC=https://localhost:9200
+      - COLLABORATION_WOPI_SECRET=mysecret
+      - COLLABORATION_APP_INSECURE=true
+      - COLLABORATION_APP_PROOF_DISABLE=true
+      - COLLABORATION_CS3API_DATAGATEWAY_INSECURE=true
+      - COLLABORATION_APP_NAME=WorldOffice
+
+      # Logging
+      - OCIS_LOG_LEVEL=info
+      - OCIS_LOG_PRETTY=true
+      - COLLABORATION_LOG_LEVEL=info
+
+      # Web UI
+      - WEB_UI_CONFIG_FILE=/etc/ocis/web-ui.json
+    extra_hosts:
+      - "host.docker.internal:172.27.0.1"
+    volumes:
+      - ocis-data:/var/lib/ocis
+      - ./tests/docker/ocis/web-ui.json:/etc/ocis/web-ui.json:ro
+      - ./tests/docker/ocis/app-registry.yaml:/etc/ocis/app-registry.yaml
+      - ./tests/docker/ocis/patch-config.sh:/etc/ocis/patch-config.sh:ro
+      - ./tests/docker/ocis/tls-cert.pem:/tls/tls-cert.pem:ro
+      - ./tests/docker/ocis/tls-key.pem:/tls/tls-key.pem:ro
+    networks:
+      - worldoffice-dev
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-check-certificate -qO- https://localhost:9200/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 30
+
+networks:
+  worldoffice-dev:
+    driver: bridge
+
+volumes:
+  ocis-data:
+    name: dev-ocis-data

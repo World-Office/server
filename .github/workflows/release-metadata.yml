@@ -1,0 +1,43 @@
+# .github/workflows/release-metadata.yml
+name: Release Metadata
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  metadata:
+    name: Publish releases.json
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout desktop-releases repo
+        uses: actions/checkout@v4
+        with:
+          repository: World-Office/desktop-releases
+          ref: pages
+          token: ${{ secrets.GH_RELEASE_TOKEN }}
+
+      - name: Generate releases.json
+        run: |
+          VERSION=${{ github.ref_name }}
+          VERSION="${VERSION#v}"
+          cat > releases.json <<EOF
+          {
+            "latest_version": "${VERSION}",
+            "download_url": "https://github.com/World-Office/server/releases/download/v${VERSION}/world-office_${VERSION}_amd64.deb",
+            "release_notes_url": "https://github.com/World-Office/server/releases/tag/v${VERSION}",
+            "checksum": ""
+          }
+          EOF
+
+      - name: Commit and push
+        run: |
+          git config user.name "World Office Bot"
+          git config user.email "bot@world-office.org"
+          git add releases.json
+          VERSION=${{ github.ref_name }}
+          VERSION="${VERSION#v}"
+          git diff --cached --quiet || git commit -m "release v${VERSION}: update releases.json"
+          git push origin pages
+        timeout-minutes: 5

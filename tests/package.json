@@ -26,6 +26,7 @@
     "xml2js": "^0.6.2"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.0",
     "@jest/globals": "^29.7.0",
     "@playwright/test": "^1.59.1",
     "eslint": "^8.54.0",

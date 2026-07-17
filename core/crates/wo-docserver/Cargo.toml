@@ -27,10 +27,11 @@ sha2 = { workspace = true }
 hyper = { workspace = true }
 wo-x2t = { path = "../wo-x2t" }
 wo-wopi = { path = "../wo-wopi" }
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-webpki-roots"] }
 metrics = "0.22"
 metrics-exporter-prometheus = "0.13"
 
 
 [dev-dependencies]
 tower = { workspace = true }
+serial_test = { workspace = true }
