@@ -1,0 +1,32 @@
+{
+  "name": "@world-office/spellchecker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Client-side spell checker with Hunspell dictionaries",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src/",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "dictionary-de": "^3.0.0",
+    "dictionary-en": "^4.0.0",
+    "nspell": "^2.1.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.7.0"
+  }
+}

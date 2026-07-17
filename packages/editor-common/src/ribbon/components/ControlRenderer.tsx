@@ -1,3 +1,5 @@
+import React from "react"
+import { useTranslation } from "react-i18next"
 import type {
   RibbonButtonSpec,
   RibbonCheckboxSpec,
@@ -9,6 +11,11 @@ import type {
   RibbonSelectSpec,
   RibbonSplitButtonSpec,
 } from "../types"
+
+function tl(t: (key: string) => string, ...values: (string | undefined)[]): string {
+  const key = values.find((v): v is string => typeof v === "string" && v.length > 0)
+  return key ? t(key) : ""
+}
 
 interface ControlRendererProps {
   control: RibbonControlSpec
@@ -28,15 +35,15 @@ export function ControlRenderer({ control, context, dispatch }: ControlRendererP
         <ButtonControl spec={control} context={context} dispatch={dispatch} enabled={isEnabled} />
       )
     case "select":
-      return <SelectControl spec={control} context={context} enabled={isEnabled} />
+      return <SelectControl spec={control} context={context} dispatch={dispatch} enabled={isEnabled} />
     case "dropdown":
-      return <DropdownControl spec={control} enabled={isEnabled} />
+      return <DropdownControl spec={control} dispatch={dispatch} enabled={isEnabled} />
     case "split-button":
-      return <SplitButtonControl spec={control} enabled={isEnabled} />
+      return <SplitButtonControl spec={control} dispatch={dispatch} enabled={isEnabled} />
     case "checkbox":
-      return <CheckboxControl spec={control} context={context} enabled={isEnabled} />
+      return <CheckboxControl spec={control} context={context} dispatch={dispatch} enabled={isEnabled} />
     case "color-picker":
-      return <ColorPickerControl spec={control} context={context} enabled={isEnabled} />
+      return <ColorPickerControl spec={control} context={context} dispatch={dispatch} enabled={isEnabled} />
     case "separator":
       return (
         <div
@@ -67,6 +74,7 @@ function ButtonControl({
   dispatch: RibbonCommandDispatch
   enabled: boolean
 }) {
+  const { t } = useTranslation()
   const IconComp = getInlineIcon(spec.icon)
   const isToggled = spec.toggleable && spec.toggled ? spec.toggled(context) : false
 
@@ -75,7 +83,7 @@ function ButtonControl({
       type="button"
       className={`de-ribbon-btn ${isToggled ? "active" : ""}`}
       disabled={!enabled}
-      title={spec.tooltip ?? spec.label}
+      title={tl(t, spec.tooltip, spec.label)}
       onClick={() => {
         dispatch.onRichTextCommand(spec.command)
         dispatch.onMonacoCommand(spec.command)
@@ -83,7 +91,7 @@ function ButtonControl({
       }}
     >
       {IconComp && <span className="de-ribbon-btn-icon">{IconComp}</span>}
-      {spec.label && <span className="de-ribbon-btn-label">{spec.label}</span>}
+      {spec.label && <span className="de-ribbon-btn-label">{t(spec.label)}</span>}
     </button>
   )
 }
@@ -91,12 +99,15 @@ function ButtonControl({
 function SelectControl({
   spec,
   context,
+  dispatch,
   enabled,
 }: {
   spec: RibbonSelectSpec
   context: RibbonContext
+  dispatch: RibbonCommandDispatch
   enabled: boolean
 }) {
+  const { t } = useTranslation()
   const currentValue = spec.value(context)
 
   return (
@@ -104,13 +115,16 @@ function SelectControl({
       className="de-ribbon-select"
       value={currentValue}
       disabled={!enabled}
-      title={spec.tooltip ?? spec.label}
+      title={tl(t, spec.tooltip, spec.label)}
       style={spec.width ? { width: spec.width } : undefined}
-      onChange={(e) => spec.onChange(e.target.value)}
+      onChange={(e) => {
+        spec.onChange(e.target.value)
+        dispatch.onRichTextCommand(e.target.value)
+      }}
     >
       {spec.options.map((opt) => (
         <option key={opt.value} value={opt.value}>
-          {opt.label}
+          {t(opt.label)}
         </option>
       ))}
     </select>
@@ -119,65 +133,240 @@ function SelectControl({
 
 function DropdownControl({
   spec,
+  dispatch,
   enabled,
 }: {
   spec: RibbonDropdownSpec
+  dispatch: RibbonCommandDispatch
   enabled: boolean
 }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = React.useState(false)
+  const popoverRef = React.useRef<HTMLDivElement>(null)
+  const buttonRef = React.useRef<HTMLButtonElement>(null)
+
+  React.useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [open])
+
   return (
-    <button
-      type="button"
-      className="de-ribbon-btn de-ribbon-dropdown-btn"
-      disabled={!enabled}
-      title={spec.tooltip}
-      onClick={() => {}}
-    >
-      {spec.icon ? <span className="de-ribbon-btn-icon">{getInlineIcon(spec.icon)}</span> : null}
-      {spec.label ? <span className="de-ribbon-btn-label">{spec.label}</span> : null}
-      <span className="de-ribbon-dropdown-arrow">▾</span>
-    </button>
+    <div className="de-ribbon-dropdown" style={{ position: "relative", display: "inline-flex" }}>
+      <button
+        ref={buttonRef}
+        type="button"
+        className="de-ribbon-btn de-ribbon-dropdown-btn"
+        disabled={!enabled}
+      title={tl(t, spec.tooltip, spec.label)}
+        onClick={() => setOpen((o) => !o)}
+      >
+        {spec.icon ? <span className="de-ribbon-btn-icon">{getInlineIcon(spec.icon)}</span> : null}
+        {spec.label ? <span className="de-ribbon-btn-label">{t(spec.label)}</span> : null}
+        <span className="de-ribbon-dropdown-arrow">▾</span>
+      </button>
+      {open && spec.items.length > 0 && (
+        <div
+          ref={popoverRef}
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            zIndex: 1000,
+            background: "#fff",
+            border: "1px solid #d0d0d0",
+            borderRadius: 4,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            padding: "4px 0",
+            marginTop: 2,
+            minWidth: 180,
+          }}
+        >
+          {spec.items.map((item, idx) =>
+            item.separator ? (
+              <div key={`sep-${idx}`} style={{ height: 1, background: "#e0e0e0", margin: "4px 8px" }} />
+            ) : (
+              <button
+                key={item.id}
+                type="button"
+                className="de-ribbon-dropdown-item"
+                disabled={item.disabled}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  width: "100%",
+                  padding: "6px 12px",
+                  border: "none",
+                  background: "none",
+                  cursor: item.disabled ? "default" : "pointer",
+                  textAlign: "left",
+                  fontSize: 13,
+                }}
+                onClick={() => {
+                  if (item.command) {
+                    dispatch.onRichTextCommand(item.command)
+                    dispatch.onCommand(item.command)
+                  }
+                  setOpen(false)
+                }}
+              >
+                {item.icon ? <span style={{ display: "inline-flex" }}>{getInlineIcon(item.icon)}</span> : null}
+                <span>{t(item.label)}</span>
+              </button>
+            )
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
 function SplitButtonControl({
   spec,
+  dispatch,
   enabled,
 }: {
   spec: RibbonSplitButtonSpec
+  dispatch: RibbonCommandDispatch
   enabled: boolean
 }) {
+  const { t } = useTranslation()
+  const [open, setOpen] = React.useState(false)
+  const popoverRef = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [open])
+
   return (
-    <button
-      type="button"
-      className="de-ribbon-btn de-ribbon-split-btn"
-      disabled={!enabled}
-      title={spec.tooltip}
-    >
-      <span className="de-ribbon-btn-icon">{getInlineIcon(spec.icon)}</span>
-    </button>
+    <div className="de-ribbon-split-button" style={{ position: "relative", display: "inline-flex" }}>
+      <button
+        type="button"
+        className="de-ribbon-btn de-ribbon-split-btn-main"
+        disabled={!enabled}
+        title={spec.tooltip ? t(spec.tooltip) : ""}
+        onClick={() => {
+          dispatch.onRichTextCommand(spec.command)
+          dispatch.onMonacoCommand(spec.command)
+          dispatch.onCommand(spec.command)
+        }}
+      >
+        <span className="de-ribbon-btn-icon">{getInlineIcon(spec.icon)}</span>
+      </button>
+      <button
+        type="button"
+        className="de-ribbon-btn de-ribbon-split-btn-arrow"
+        disabled={!enabled}
+        title={spec.tooltip ? t(spec.tooltip) : ""}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span style={{ fontSize: 10, lineHeight: 1 }}>▾</span>
+      </button>
+      {open && spec.items.length > 0 && (
+        <div
+          ref={popoverRef}
+          style={{
+            position: "absolute",
+            top: "100%",
+            right: 0,
+            zIndex: 1000,
+            background: "#fff",
+            border: "1px solid #d0d0d0",
+            borderRadius: 4,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            padding: "4px 0",
+            marginTop: 2,
+            minWidth: 160,
+          }}
+        >
+          {spec.items.map((item, idx) =>
+            item.separator ? (
+              <div key={`sep-${idx}`} style={{ height: 1, background: "#e0e0e0", margin: "4px 8px" }} />
+            ) : (
+              <button
+                key={item.id}
+                type="button"
+                className="de-ribbon-dropdown-item"
+                disabled={item.disabled}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  width: "100%",
+                  padding: "6px 12px",
+                  border: "none",
+                  background: "none",
+                  cursor: item.disabled ? "default" : "pointer",
+                  textAlign: "left",
+                  fontSize: 13,
+                }}
+                onClick={() => {
+                  if (item.command) {
+                    dispatch.onRichTextCommand(item.command)
+                    dispatch.onCommand(item.command)
+                  }
+                  setOpen(false)
+                }}
+              >
+                {item.icon ? <span style={{ display: "inline-flex" }}>{getInlineIcon(item.icon)}</span> : null}
+                <span>{t(item.label)}</span>
+              </button>
+            )
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
 function CheckboxControl({
   spec,
   context,
+  dispatch,
   enabled,
 }: {
   spec: RibbonCheckboxSpec
   context: RibbonContext
+  dispatch: RibbonCommandDispatch
   enabled: boolean
 }) {
+  const { t } = useTranslation()
   const isChecked = spec.checked(context)
 
   return (
-    <label className="de-ribbon-checkbox" title={spec.tooltip}>
+    <label className="de-ribbon-checkbox" title={spec.tooltip ? t(spec.tooltip) : ""}>
       <input
         type="checkbox"
         checked={isChecked}
         disabled={!enabled}
-        onChange={(e) => spec.onChange(e.target.checked)}
+        onChange={(e) => {
+          spec.onChange(e.target.checked)
+          dispatch.onRichTextCommand(spec.id ?? "")
+          dispatch.onCommand(spec.id ?? "")
+        }}
       />
-      <span>{spec.label}</span>
+      <span>{t(spec.label ?? "")}</span>
     </label>
   )
 }
@@ -185,17 +374,55 @@ function CheckboxControl({
 function ColorPickerControl({
   spec,
   context,
+  dispatch,
   enabled,
 }: {
   spec: RibbonColorPickerSpec
   context: RibbonContext
+  dispatch: RibbonCommandDispatch
   enabled: boolean
 }) {
+  const { t } = useTranslation()
   const currentColor = spec.color(context)
+  const [open, setOpen] = React.useState(false)
+  const popoverRef = React.useRef<HTMLDivElement>(null)
+  const buttonRef = React.useRef<HTMLButtonElement>(null)
+
+  React.useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [open])
+
+  const defaultPalette = [
+    "#000000", "#434343", "#666666", "#999999", "#B7B7B7", "#CCCCCC", "#D9D9D9", "#FFFFFF",
+    "#E06666", "#F6B26B", "#FFD966", "#93C47D", "#76A5AF", "#6FA8DC", "#8E7CC3", "#C27BA0",
+    "#CC0000", "#E69138", "#F1C232", "#6AA84F", "#45818E", "#3D85C6", "#674EA7", "#A64D79",
+    "#990000", "#B45F06", "#BF9000", "#38761D", "#134F5C", "#0B5394", "#351C75", "#741B47",
+    "#660000", "#783F04", "#7F6000", "#274E13", "#0C343D", "#073763", "#20124D", "#4C1130",
+  ]
+
+  const palette = spec.colors ?? defaultPalette
 
   return (
-    <div className="de-ribbon-colorpicker" title={spec.tooltip}>
-      <button type="button" className="de-ribbon-btn" disabled={!enabled} onClick={() => {}}>
+    <div className="de-ribbon-colorpicker" title={spec.tooltip ? t(spec.tooltip) : ""} style={{ position: "relative" }}>
+      <button
+        ref={buttonRef}
+        type="button"
+        className="de-ribbon-btn"
+        disabled={!enabled}
+        onClick={() => setOpen((o) => !o)}
+      >
         <span
           className="de-ribbon-color-swatch"
           style={{
@@ -205,10 +432,68 @@ function ColorPickerControl({
             borderRadius: 2,
             border: "1px solid #ccc",
             display: "block",
+            position: "relative",
           }}
-        />
-        {spec.label && <span className="de-ribbon-btn-label">{spec.label}</span>}
+        >
+          <span
+            style={{
+              position: "absolute",
+              bottom: -1,
+              left: 0,
+              width: "100%",
+              height: 3,
+              backgroundColor: currentColor,
+              borderTop: "1px solid #ccc",
+              boxSizing: "border-box",
+            }}
+          />
+        </span>
+        {spec.label && <span className="de-ribbon-btn-label">{t(spec.label)}</span>}
       </button>
+      {open && (
+        <div
+          ref={popoverRef}
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            zIndex: 1000,
+            background: "#fff",
+            border: "1px solid #d0d0d0",
+            borderRadius: 4,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+            padding: 8,
+            marginTop: 4,
+            display: "grid",
+            gridTemplateColumns: "repeat(8, 1fr)",
+            gap: 3,
+            minWidth: 200,
+          }}
+        >
+          {palette.map((c) => (
+            <button
+              key={c}
+              type="button"
+              title={c}
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 2,
+                border: c === currentColor ? "2px solid #333" : "1px solid #d0d0d0",
+                backgroundColor: c,
+                cursor: "pointer",
+                padding: 0,
+              }}
+              onClick={() => {
+                spec.onChange(c)
+                const cmd = spec.id.replace(/-([a-z])/g, (_: string, l: string) => l.toUpperCase())
+                dispatch.onRichTextCommand(cmd, c)
+                setOpen(false)
+              }}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }

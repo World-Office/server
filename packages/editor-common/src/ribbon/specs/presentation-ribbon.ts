@@ -155,14 +155,20 @@ export const presentationRibbonSpec: RibbonSpec = {
               type: "color-picker",
               label: "Color",
               color: () => "#000000",
-              onChange: () => {},
+              onChange: (c: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", { detail: { command: "textColor", value: c } }),
+                ),
             },
             {
               id: "highlight",
               type: "color-picker",
               label: "Highlight",
               color: () => "#FFFF00",
-              onChange: () => {},
+              onChange: (c: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", { detail: { command: "highlight", value: c } }),
+                ),
               enabled: () => false,
             },
           ],
@@ -683,21 +689,30 @@ export const presentationRibbonSpec: RibbonSpec = {
               type: "color-picker",
               label: "Color",
               color: () => "#ffffff",
-              onChange: () => {},
+              onChange: (c: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", { detail: { command: "bgColor", value: c } }),
+                ),
             },
             {
               id: "bg-color-start",
               type: "color-picker",
               label: "Start",
               color: () => "#ffffff",
-              onChange: () => {},
+              onChange: (c: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", { detail: { command: "bgColorStart", value: c } }),
+                ),
             },
             {
               id: "bg-color-end",
               type: "color-picker",
               label: "End",
               color: () => "#000000",
-              onChange: () => {},
+              onChange: (c: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", { detail: { command: "bgColorEnd", value: c } }),
+                ),
             },
             // Angle slider — not supported by current control types, represented as buttons
             { id: "bg-angle", type: "button", icon: "RotateCw", label: "Angle", command: "" },

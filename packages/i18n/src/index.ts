@@ -1,7 +1,6 @@
 // @world-office/i18n — i18next configuration for World Office editors
 
 import i18n from "i18next"
-import { initReactI18next } from "react-i18next"
 
 export interface I18nConfig {
   /** Current language code (e.g. "en", "de") */
@@ -10,8 +9,8 @@ export interface I18nConfig {
   fallbackLng?: string
   /** Base URL path for loading locale JSON files */
   localePath?: string
-  /** Pre-loaded translations (avoids fetch) */
-  resources?: Record<string, Record<string, string>>
+  /** Pre-loaded translations (avoids fetch). Shape: { lng: { namespace: { key: value } } } */
+  resources?: Record<string, Record<string, Record<string, string>>>
   /** Whether to enable debug logging */
   debug?: boolean
 }
@@ -45,16 +44,11 @@ export function createI18n(config: I18nConfig = {}): typeof i18n {
 
   // If pre-loaded resources provided, use them directly
   if (resources) {
-    const namespacedResources: Record<string, { translation: Record<string, string> }> = {}
-    for (const [lang, translations] of Object.entries(resources)) {
-      namespacedResources[lang] = { translation: translations }
-    }
-
     i18n.init({
       lng,
       fallbackLng,
       debug,
-      resources: namespacedResources,
+      resources,
       interpolation: { escapeValue: false },
       react: { useSuspense: false },
     })

@@ -62,7 +62,6 @@ export const spreadsheetRibbonSpec: RibbonSpec = {
               command: "bold",
               toggleable: true,
               shortcut: "Ctrl+B",
-              enabled: () => false,
             },
             {
               id: "italic",
@@ -72,7 +71,6 @@ export const spreadsheetRibbonSpec: RibbonSpec = {
               command: "italic",
               toggleable: true,
               shortcut: "Ctrl+I",
-              enabled: () => false,
             },
             {
               id: "underline",
@@ -82,7 +80,6 @@ export const spreadsheetRibbonSpec: RibbonSpec = {
               command: "underline",
               toggleable: true,
               shortcut: "Ctrl+U",
-              enabled: () => false,
             },
             {
               id: "strikethrough",
@@ -91,7 +88,6 @@ export const spreadsheetRibbonSpec: RibbonSpec = {
               label: "Strike",
               command: "strikethrough",
               toggleable: true,
-              enabled: () => false,
             },
             {
               id: "increase-font-size",
@@ -99,7 +95,6 @@ export const spreadsheetRibbonSpec: RibbonSpec = {
               icon: "Type",
               label: "Increase Size",
               command: "increaseFontSize",
-              enabled: () => false,
             },
             {
               id: "decrease-font-size",
@@ -107,23 +102,26 @@ export const spreadsheetRibbonSpec: RibbonSpec = {
               icon: "Type",
               label: "Decrease Size",
               command: "decreaseFontSize",
-              enabled: () => false,
             },
             {
               id: "text-color",
               type: "color-picker",
               label: "Text Color",
               color: () => "#000000",
-              onChange: () => {},
-              enabled: () => false,
+              onChange: (c: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", { detail: { command: "textColor", value: c } }),
+                ),
             },
             {
               id: "fill-color",
               type: "color-picker",
               label: "Fill Color",
               color: () => "#FFFFFF",
-              onChange: () => {},
-              enabled: () => false,
+              onChange: (c: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", { detail: { command: "fillColor", value: c } }),
+                ),
             },
           ],
         },
