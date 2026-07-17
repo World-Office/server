@@ -33,19 +33,71 @@ worldoffice-nextcloud/
 └── package.json              # JS deps (@nextcloud/*, Vue 3.5, Vite 7)
 ```
 
-## WHERE TO LOOK
+## ARCHITECTURE: WOPI-First Bridge
 
-| Task | Location | Notes |
-|------|----------|-------|
-| Editor controller | `lib/Controller/EditorController.php` | `create` + `index` methods |
-| Admin settings | `lib/AdminSettings.php` | DocumentServerUrl, JWT, etc. |
-| DocServer comms | `lib/DocumentService.php` | Builds config JSON for editor |
-| JWT handling | `lib/Crypt.php` | Token generation/validation |
-| JS frontend | `src/` | Vue 3 components |
-| Editor template | `templates/editor.php` | Renders DocEditor JS config |
-| File creation | `lib/FileCreator.php` | New doc/xls/ppt from templates |
-| Health check | `lib/Cron/EditorsCheck.php` | Background connection checker |
-| Test environment | `test-env/` | docker-compose.yml |
+The Nextcloud integration uses a **WOPI-first** architecture with DocsAPI fallback:
+
+```
+Nextcloud PHP (EditorController)
+  │
+  ├── Detection: WOPI or DocsAPI?
+  │   ├── useWopi=true  → WOPI bridge (default)
+  │   └── useWopi=false → DocsAPI fallback (backward compat, ?use_docsapi=true)
+  │
+  ├── WOPI Path (default):
+  │   ├── EditorController generates WOPI access token (JWT)
+  │   ├── editor.php renders data attributes (usewopi, access_token, file_id, etc.)
+  │   ├── editor.js detects useWopi → calls initWopiEditor()
+  │   └── React editor loads in iframe from wo-docserver/editors/{type}/
+  │       ├── PostMessage bridge for lifecycle events
+  │       └── WOPI PutFile for auto-save (debounced 3s)
+  │
+  └── DocsAPI Path (legacy):
+      ├── EditorController builds DocsAPI config JSON
+      ├── editor.php loads api.js from document server
+      └── DocsAPI.DocEditor initializes in iframe
+```
+
+### WOPI Flow
+
+1. User opens file → `EditorController::indexAction()` generates JWT with `file_id`, `user_id`, expiry
+2. `editor.php` renders `#iframeEditor` with WOPI data attributes
+3. `editor.js` detects `data-usewopi="true"` → calls `initWopiEditor()`
+4. Editor iframe loads from `wo-docserver/editors/{type}/?access_token=...&file_id=...&embedded=true`
+5. React editor runs in embedded mode (minimal chrome) with postMessage bridge
+6. Auto-save: document changes trigger debounced WOPI PutFile to Nextcloud WOPI host
+7. On close: postMessage protocol triggers save-then-exit
+
+### WOPI Endpoints (Nextcloud PHP)
+
+| Route | Controller Method | Description |
+|-------|------------------|-------------|
+| `GET  /wopi/files/{fileId}` | `WOPIController::checkFileInfo()` | File metadata JSON |
+| `GET  /wopi/files/{fileId}/contents` | `WOPIController::getContents()` | Raw file bytes |
+| `PUT  /wopi/files/{fileId}/contents` | `WOPIController::putContents()` | Save file |
+| `POST /wopi/files/{fileId}/lock` | `WOPIController::lockFile()` | Acquire lock |
+| `POST /wopi/files/{fileId}/unlock` | `WOPIController::unlockFile()` | Release lock |
+| `POST /wopi/files/{fileId}/refreshLock` | `WOPIController::refreshLock()` | Refresh lock |
+
+### PostMessage Protocol
+
+**Editor → Nextcloud parent (upstream):**
+| Event | When | Payload |
+|-------|------|---------|
+| `app_ready` | Editor initialized | — |
+| `document_ready` | File loaded and rendered | — |
+| `document_modified` | Unsaved changes exist | — |
+| `document_saved` | Save completed | `{ version: string }` |
+| `error` | Fatal error | `{ code: string, message: string }` |
+| `request_close` | User wants to close | — |
+
+**Nextcloud parent → Editor (downstream):**
+| Command | Action | Payload |
+|---------|--------|---------|
+| `save` | Trigger save | — |
+| `close` | Force close | — |
+| `set_user` | Update user info | `{ userId, userName }` |
+| `theme` | Dark/light mode | `{ theme: 'light'|'dark' }` |
 
 ## REQUIREMENTS
 

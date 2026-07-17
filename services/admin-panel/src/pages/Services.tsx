@@ -1,10 +1,5 @@
 import { useApi } from '../hooks/useApi';
 
-interface RouteInfo {
-  prefix: string;
-  upstream: string;
-}
-
 interface GatewayHealth {
   status: string;
   service: string;
