@@ -98,6 +98,8 @@ export type LeftMenuAction =
   | "about"
 
 export type RightMenuPanel =
+  | "ai-assistant"
+  | "comments"
   | "paragraph"
   | "table"
   | "image"

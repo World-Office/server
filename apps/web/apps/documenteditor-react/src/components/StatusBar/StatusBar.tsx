@@ -1,4 +1,6 @@
 import { CollaborationStatus, CollaboratorList } from "@world-office/collaboration-react"
+import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import {
   Check,
   ChevronLeft,
@@ -19,13 +21,15 @@ import { collaborationStore } from "../../lib/collaboration"
 import { documentStore } from "../../stores/DocumentStore"
 
 function ZoomControls(): JSX.Element {
+  const { t } = useTranslation()
+
   return (
     <>
       <div className="de-statusbar-separator" />
       <button
         type="button"
         className={`de-statusbar-btn${documentStore.fitToPage ? " active" : ""}`}
-        title="Fit to page"
+        title={t("Fit to Page")}
         onClick={() => documentStore.setFitToPage(!documentStore.fitToPage)}
       >
         <Maximize2 size={14} />
@@ -33,7 +37,7 @@ function ZoomControls(): JSX.Element {
       <button
         type="button"
         className={`de-statusbar-btn${documentStore.fitToWidth ? " active" : ""}`}
-        title="Fit to width"
+        title={t("Fit to Width")}
         onClick={() => documentStore.setFitToWidth(!documentStore.fitToWidth)}
       >
         <Minimize2 size={14} />
@@ -41,7 +45,7 @@ function ZoomControls(): JSX.Element {
       <button
         type="button"
         className="de-statusbar-btn"
-        title="Zoom Out"
+        title={t("Zoom Out")}
         onClick={() => documentStore.zoomOut()}
       >
         <ZoomOut size={14} />
@@ -52,7 +56,7 @@ function ZoomControls(): JSX.Element {
       <button
         type="button"
         className="de-statusbar-btn"
-        title="Zoom In"
+        title={t("Zoom In")}
         onClick={() => documentStore.zoomIn()}
       >
         <ZoomIn size={14} />
@@ -62,8 +66,10 @@ function ZoomControls(): JSX.Element {
 }
 
 const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
+  const { t } = useTranslation()
   const { currentPage, totalPages, languageCode, wordCount, trackChanges, spellingEnabled } =
     documentStore
+  const [activeTool, setActiveTool] = useState<"select" | "hand">("select")
 
   return (
     <div className="de-statusbar">
@@ -72,19 +78,19 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
         <button
           type="button"
           className="de-statusbar-btn"
-          title="Previous page"
+          title={t("Previous page")}
           disabled={currentPage <= 0}
           onClick={() => documentStore.setCurrentPage(currentPage - 1)}
         >
           <ChevronLeft size={14} />
         </button>
         <span className="de-statusbar-page-label">
-          Page {currentPage + 1} of {totalPages}
+          {t("Page {{current}} of {{total}}", { current: currentPage + 1, total: totalPages })}
         </span>
         <button
           type="button"
           className="de-statusbar-btn"
-          title="Next page"
+          title={t("Next page")}
           disabled={currentPage >= totalPages - 1}
           onClick={() => documentStore.setCurrentPage(currentPage + 1)}
         >
@@ -94,10 +100,20 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
 
       {/* Select/Hand tool */}
       <div className="de-statusbar-tools">
-        <button type="button" className="de-statusbar-btn active" title="Select Tool">
+        <button
+          type="button"
+          className={`de-statusbar-btn${activeTool === "select" ? " active" : ""}`}
+          title={t("Select Tool")}
+          onClick={() => setActiveTool("select")}
+        >
           <MousePointerClick size={14} />
         </button>
-        <button type="button" className="de-statusbar-btn" title="Hand Tool">
+        <button
+          type="button"
+          className={`de-statusbar-btn${activeTool === "hand" ? " active" : ""}`}
+          title={t("Hand Tool")}
+          onClick={() => setActiveTool("hand")}
+        >
           <Hand size={14} />
         </button>
       </div>
@@ -106,7 +122,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
 
       {/* Language selector */}
       <div className="de-statusbar-tools">
-        <select className="de-statusbar-select" value={languageCode} aria-label="Language">
+        <select className="de-statusbar-select" value={languageCode} aria-label={t("Language")} onChange={(e) => documentStore.setLanguageCode(e.target.value)}>
           <option value="en-US">EN</option>
           <option value="es-ES">ES</option>
           <option value="fr-FR">FR</option>
@@ -121,7 +137,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
 
       {/* Word count */}
       <div className="de-statusbar-tools">
-        <span className="de-statusbar-label">Words: {wordCount}</span>
+        <span className="de-statusbar-label">{t("Words: {{count}}", { count: wordCount })}</span>
       </div>
 
       {/* Desktop file info */}
@@ -141,7 +157,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
         <button
           type="button"
           className={`de-statusbar-btn${trackChanges ? " active" : ""}`}
-          title="Track Changes"
+          title={t("Track Changes")}
           onClick={() => documentStore.setTrackChanges(!trackChanges)}
         >
           <FilePenLine size={14} />
@@ -153,7 +169,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
         <button
           type="button"
           className={`de-statusbar-btn${spellingEnabled ? " active" : ""}`}
-          title="Spelling"
+          title={t("Spell Check")}
           onClick={() => documentStore.setSpellingEnabled(!spellingEnabled)}
         >
           <SpellCheck size={14} />
@@ -179,7 +195,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
               size={12}
               style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }}
             />
-            Unsaved
+            {t("Unsaved")}
           </span>
         ) : documentStore.lastSavedAt ? (
           <span className="de-statusbar-label" style={{ color: "#27ae60" }}>
@@ -187,7 +203,7 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
               size={12}
               style={{ display: "inline", verticalAlign: "middle", marginRight: 2 }}
             />
-            Saved {documentStore.lastSavedAt.toLocaleTimeString()}
+            {t("Saved")} {documentStore.lastSavedAt.toLocaleTimeString()}
           </span>
         ) : null}
       </div>

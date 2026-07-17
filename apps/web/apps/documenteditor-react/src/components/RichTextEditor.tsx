@@ -3,7 +3,6 @@ import Focus from "@tiptap/extension-focus"
 import FontFamily from "@tiptap/extension-font-family"
 import Highlight from "@tiptap/extension-highlight"
 import Image from "@tiptap/extension-image"
-import Link from "@tiptap/extension-link"
 import Placeholder from "@tiptap/extension-placeholder"
 import Subscript from "@tiptap/extension-subscript"
 import Superscript from "@tiptap/extension-superscript"
@@ -16,11 +15,20 @@ import TaskList from "@tiptap/extension-task-list"
 import TextAlign from "@tiptap/extension-text-align"
 import { TextStyle } from "@tiptap/extension-text-style"
 import Typography from "@tiptap/extension-typography"
-import Underline from "@tiptap/extension-underline"
 import { EditorContent, useEditor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react"
 import { CommentMark } from "../lib/comment-mark"
+import { ContentControls, DatePickerControl, DropdownControl, CheckboxControl, PlainTextControl } from "../lib/content-controls"
+import { EndnoteMark } from "../lib/endnote-mark"
+import { FootnoteMark } from "../lib/footnote-mark"
+import { LineSpacingExtension } from "../lib/line-spacing-extension"
+import { SpellcheckExtension } from "../lib/spellcheck-extension"
+import { TextDirectionExtension } from "../lib/text-direction-extension"
+import { TrackInsertMark, TrackDeleteMark } from "../lib/track-changes"
+import { TableOfContents } from "../lib/toc-extension"
+import { ParagraphBorders } from "../lib/paragraph-borders"
+import { PageNumber } from "../lib/page-number"
 import { setActiveRichTextEditor } from "../lib/rte-command"
 
 export interface RichTextEditorHandle {
@@ -32,10 +40,11 @@ interface RichTextEditorProps {
   html: string
   onChange?: (html: string) => void
   readOnly?: boolean
+  spellchecker?: import("@world-office/spellchecker").SpellChecker | null
 }
 
 export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
-  function RichTextEditor({ html, onChange, readOnly }, ref) {
+  function RichTextEditor({ html, onChange, readOnly, spellchecker }, ref) {
     const onChangeRef = useRef(onChange)
     const lastSetHtmlRef = useRef(html)
 
@@ -45,8 +54,9 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 
     const editor = useEditor({
       extensions: [
-        StarterKit,
-        Underline,
+        StarterKit.configure({
+          link: { openOnClick: true },
+        }),
         TextStyle,
         Color,
         FontFamily,
@@ -60,12 +70,33 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         TableCell,
         TableHeader,
         TextAlign.configure({ types: ["heading", "paragraph"] }),
-        Link.configure({ openOnClick: true }),
         Image,
         Typography,
         Focus.configure({ className: "has-focus" }),
-        Placeholder.configure({ placeholder: "Start typing…" }),
+        Placeholder.configure({ placeholder: "Start typing\u2026" }),
         CommentMark,
+        EndnoteMark,
+        FootnoteMark,
+        LineSpacingExtension.configure({
+          types: ["paragraph", "heading"],
+          defaultSpacing: "1.15",
+        }),
+        TextDirectionExtension.configure({
+          types: ["paragraph", "heading", "blockquote", "listItem"],
+        }),
+        TrackInsertMark,
+        TrackDeleteMark,
+        TableOfContents,
+        ParagraphBorders,
+        PageNumber,
+        PlainTextControl,
+        DropdownControl,
+        CheckboxControl,
+        DatePickerControl,
+        SpellcheckExtension.configure({
+          spellchecker: spellchecker ?? null,
+          enabled: spellchecker?.isEnabled() ?? true,
+        }),
       ],
       content: html,
       editable: !readOnly,

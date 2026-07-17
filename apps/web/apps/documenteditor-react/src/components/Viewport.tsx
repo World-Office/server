@@ -5,10 +5,13 @@ import { collaborationStore } from "../lib/collaboration"
 import type { PageLayoutSettings, RichTextCommand } from "../lib/rte-command"
 import { documentStore } from "../stores/DocumentStore"
 import { DocumentHolder } from "./DocumentHolder"
+import { HeaderFooterEditor } from "./HeaderFooter"
 import { FileMenu } from "./FileMenu/FileMenu"
 import { LeftMenu } from "./LeftMenu/LeftMenu"
 import { OfflineBadge } from "./OfflineBadge"
 import { RightMenu } from "./RightMenu/RightMenu"
+import { AiAssistantPanel } from "./RightMenu/AiAssistantPanel"
+import { CommentsPanel } from "./CommentsPanel"
 import { StatusBar } from "./StatusBar/StatusBar"
 import type { MonacoCommand } from "./Toolbar/MonacoCommand"
 import { Toolbar } from "./Toolbar/Toolbar"
@@ -133,7 +136,9 @@ export function Viewport({
                 position: "relative",
               }}
             >
+              <HeaderFooterEditor region="header" />
               <DocumentHolder />
+              <HeaderFooterEditor region="footer" />
               <CollaboratorCursors
                 cursors={collaborationStore.remoteCursors}
                 userColors={new Map(collaborationStore.users.map((u) => [u.id, u.color]))}
@@ -145,9 +150,11 @@ export function Viewport({
           {rightMenuVisible && (
             <div
               className="de-viewport-right-menu"
-              style={{ width: "var(--wo-de-rightmenu-width, 40px)" }}
+              style={{ width: "var(--wo-de-rightmenu-width, 40px)", display: "flex", position: "relative" }}
             >
               <RightMenu />
+              <AiAssistantPanel visible={documentStore.activeRightPanel === "ai-assistant"} />
+              <CommentsPanel visible={documentStore.activeRightPanel === "comments"} />
             </div>
           )}
         </div>

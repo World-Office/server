@@ -1,5 +1,6 @@
 import { observer } from "mobx-react-lite"
 import type { JSX } from "react"
+import { useTranslation } from "react-i18next"
 import { documentStore } from "../../stores/DocumentStore"
 import type { LeftMenuAction } from "../../types/document"
 import { CommentsPanel } from "./CommentsPanel"
@@ -18,6 +19,8 @@ const BUTTONS: Array<{ action: LeftMenuAction; title: string; icon: string }> = 
 ]
 
 function LeftMenuInner(): JSX.Element {
+  const { t } = useTranslation()
+
   return (
     <div className="de-left-menu" role="menubar" aria-orientation="vertical" aria-label="Left menu">
       <div className="de-left-menu-btns">
@@ -25,7 +28,7 @@ function LeftMenuInner(): JSX.Element {
           <LeftMenuButton
             key={action}
             action={action}
-            title={title}
+            title={t(title)}
             icon={icon}
             active={documentStore.activeLeftPanel === action}
             onClick={() => documentStore.toggleLeftPanel(action)}
