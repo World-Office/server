@@ -132,6 +132,38 @@ body,
 	background-color: var(--wo-visio-doc-bg);
 }
 
+/* ── Mobile breakpoints ─────────────────────── */
+
+@media (max-width: 768px) {
+	.visio-viewport-left-menu {
+		display: none;
+	}
+
+	.visio-viewport-body {
+		flex-direction: column;
+	}
+
+	.visio-viewport-editor {
+		align-items: stretch;
+	}
+
+	.fc-props-panel {
+		top: 4px;
+		right: 4px;
+		width: 180px;
+		font-size: 11px;
+	}
+}
+
+@media (max-width: 480px) {
+	.fc-props-panel {
+		width: 140px;
+		right: 2px;
+		top: 2px;
+		padding: 4px 8px;
+	}
+}
+
 /* ── Properties panel (flowchart mode) ── */
 
 .fc-props-panel {

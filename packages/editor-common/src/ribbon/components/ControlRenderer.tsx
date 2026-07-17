@@ -35,15 +35,26 @@ export function ControlRenderer({ control, context, dispatch }: ControlRendererP
         <ButtonControl spec={control} context={context} dispatch={dispatch} enabled={isEnabled} />
       )
     case "select":
-      return <SelectControl spec={control} context={context} dispatch={dispatch} enabled={isEnabled} />
+      return (
+        <SelectControl spec={control} context={context} dispatch={dispatch} enabled={isEnabled} />
+      )
     case "dropdown":
       return <DropdownControl spec={control} dispatch={dispatch} enabled={isEnabled} />
     case "split-button":
       return <SplitButtonControl spec={control} dispatch={dispatch} enabled={isEnabled} />
     case "checkbox":
-      return <CheckboxControl spec={control} context={context} dispatch={dispatch} enabled={isEnabled} />
+      return (
+        <CheckboxControl spec={control} context={context} dispatch={dispatch} enabled={isEnabled} />
+      )
     case "color-picker":
-      return <ColorPickerControl spec={control} context={context} dispatch={dispatch} enabled={isEnabled} />
+      return (
+        <ColorPickerControl
+          spec={control}
+          context={context}
+          dispatch={dispatch}
+          enabled={isEnabled}
+        />
+      )
     case "separator":
       return (
         <div
@@ -85,9 +96,9 @@ function ButtonControl({
       disabled={!enabled}
       title={tl(t, spec.tooltip, spec.label)}
       onClick={() => {
-        dispatch.onRichTextCommand(spec.command)
+        dispatch.onRichTextCommand(spec.command, spec.value)
         dispatch.onMonacoCommand(spec.command)
-        dispatch.onCommand(spec.command)
+        dispatch.onCommand(spec.command, spec.value)
       }}
     >
       {IconComp && <span className="de-ribbon-btn-icon">{IconComp}</span>}
@@ -168,7 +179,7 @@ function DropdownControl({
         type="button"
         className="de-ribbon-btn de-ribbon-dropdown-btn"
         disabled={!enabled}
-      title={tl(t, spec.tooltip, spec.label)}
+        title={tl(t, spec.tooltip, spec.label)}
         onClick={() => setOpen((o) => !o)}
       >
         {spec.icon ? <span className="de-ribbon-btn-icon">{getInlineIcon(spec.icon)}</span> : null}
@@ -194,7 +205,10 @@ function DropdownControl({
         >
           {spec.items.map((item, idx) =>
             item.separator ? (
-              <div key={`sep-${idx}`} style={{ height: 1, background: "#e0e0e0", margin: "4px 8px" }} />
+              <div
+                key={`sep-${idx}`}
+                style={{ height: 1, background: "#e0e0e0", margin: "4px 8px" }}
+              />
             ) : (
               <button
                 key={item.id}
@@ -221,10 +235,12 @@ function DropdownControl({
                   setOpen(false)
                 }}
               >
-                {item.icon ? <span style={{ display: "inline-flex" }}>{getInlineIcon(item.icon)}</span> : null}
+                {item.icon ? (
+                  <span style={{ display: "inline-flex" }}>{getInlineIcon(item.icon)}</span>
+                ) : null}
                 <span>{t(item.label)}</span>
               </button>
-            )
+            ),
           )}
         </div>
       )}
@@ -248,10 +264,7 @@ function SplitButtonControl({
   React.useEffect(() => {
     if (!open) return
     const handler = (e: MouseEvent) => {
-      if (
-        popoverRef.current &&
-        !popoverRef.current.contains(e.target as Node)
-      ) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
         setOpen(false)
       }
     }
@@ -260,7 +273,10 @@ function SplitButtonControl({
   }, [open])
 
   return (
-    <div className="de-ribbon-split-button" style={{ position: "relative", display: "inline-flex" }}>
+    <div
+      className="de-ribbon-split-button"
+      style={{ position: "relative", display: "inline-flex" }}
+    >
       <button
         type="button"
         className="de-ribbon-btn de-ribbon-split-btn-main"
@@ -302,7 +318,10 @@ function SplitButtonControl({
         >
           {spec.items.map((item, idx) =>
             item.separator ? (
-              <div key={`sep-${idx}`} style={{ height: 1, background: "#e0e0e0", margin: "4px 8px" }} />
+              <div
+                key={`sep-${idx}`}
+                style={{ height: 1, background: "#e0e0e0", margin: "4px 8px" }}
+              />
             ) : (
               <button
                 key={item.id}
@@ -329,10 +348,12 @@ function SplitButtonControl({
                   setOpen(false)
                 }}
               >
-                {item.icon ? <span style={{ display: "inline-flex" }}>{getInlineIcon(item.icon)}</span> : null}
+                {item.icon ? (
+                  <span style={{ display: "inline-flex" }}>{getInlineIcon(item.icon)}</span>
+                ) : null}
                 <span>{t(item.label)}</span>
               </button>
-            )
+            ),
           )}
         </div>
       )}
@@ -405,17 +426,56 @@ function ColorPickerControl({
   }, [open])
 
   const defaultPalette = [
-    "#000000", "#434343", "#666666", "#999999", "#B7B7B7", "#CCCCCC", "#D9D9D9", "#FFFFFF",
-    "#E06666", "#F6B26B", "#FFD966", "#93C47D", "#76A5AF", "#6FA8DC", "#8E7CC3", "#C27BA0",
-    "#CC0000", "#E69138", "#F1C232", "#6AA84F", "#45818E", "#3D85C6", "#674EA7", "#A64D79",
-    "#990000", "#B45F06", "#BF9000", "#38761D", "#134F5C", "#0B5394", "#351C75", "#741B47",
-    "#660000", "#783F04", "#7F6000", "#274E13", "#0C343D", "#073763", "#20124D", "#4C1130",
+    "#000000",
+    "#434343",
+    "#666666",
+    "#999999",
+    "#B7B7B7",
+    "#CCCCCC",
+    "#D9D9D9",
+    "#FFFFFF",
+    "#E06666",
+    "#F6B26B",
+    "#FFD966",
+    "#93C47D",
+    "#76A5AF",
+    "#6FA8DC",
+    "#8E7CC3",
+    "#C27BA0",
+    "#CC0000",
+    "#E69138",
+    "#F1C232",
+    "#6AA84F",
+    "#45818E",
+    "#3D85C6",
+    "#674EA7",
+    "#A64D79",
+    "#990000",
+    "#B45F06",
+    "#BF9000",
+    "#38761D",
+    "#134F5C",
+    "#0B5394",
+    "#351C75",
+    "#741B47",
+    "#660000",
+    "#783F04",
+    "#7F6000",
+    "#274E13",
+    "#0C343D",
+    "#073763",
+    "#20124D",
+    "#4C1130",
   ]
 
   const palette = spec.colors ?? defaultPalette
 
   return (
-    <div className="de-ribbon-colorpicker" title={spec.tooltip ? t(spec.tooltip) : ""} style={{ position: "relative" }}>
+    <div
+      className="de-ribbon-colorpicker"
+      title={spec.tooltip ? t(spec.tooltip) : ""}
+      style={{ position: "relative" }}
+    >
       <button
         ref={buttonRef}
         type="button"

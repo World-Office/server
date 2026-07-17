@@ -2,7 +2,6 @@ import { colors, radii, shadows, spacing, typography } from "@world-office/desig
 import {
   loadPluginConfig,
   pluginLoader,
-  savePluginConfig,
   togglePluginEnabled,
   type PluginConfig,
   type PluginRegistryEntry,
@@ -176,7 +175,7 @@ export const PluginManager = observer(function PluginManager({ visible, onClose 
 
   const statusBadgeStyle = (status: string) => ({
     fontSize: typography.fontSize.xs,
-    padding: `${spacing[0.25]} ${spacing[1]}`,
+    padding: `${spacing[0.5]} ${spacing[1]}`,
     borderRadius: radii.sm,
     backgroundColor:
       status === "active"
@@ -292,7 +291,6 @@ export const PluginManager = observer(function PluginManager({ visible, onClose 
           ) : (
             <div style={listStyle}>
               {plugins.map((entry) => {
-                const cfg = configs.find((c) => c.id === entry.plugin.id)
                 const enabled = entry.status === "active"
                 return (
                   <div key={entry.plugin.id} style={pluginCardStyle(entry.status)}>

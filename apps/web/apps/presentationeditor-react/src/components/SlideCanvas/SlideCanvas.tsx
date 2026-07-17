@@ -1,6 +1,7 @@
 import { loadDocument } from "@world-office/wopi-client";
 import { observer } from "mobx-react-lite";
 import { type JSX, useCallback, useEffect, useRef, useState } from "react";
+import { useSwipe } from "../../../../editor-shell/src/hooks/useSwipe";
 import { presentationStore } from "../../stores/PresentationStore";
 import { usePresentationKeyboard } from "../../hooks/usePresentationKeyboard";
 import type {
@@ -1161,9 +1162,21 @@ function InlineEditOverlay({
 	);
 }
 
+const slideRef = useRef<HTMLDivElement>(null);
+
 const ObservedSlideCanvas = observer(
 	function ObservedSlideCanvas(): JSX.Element {
 		usePresentationKeyboard();
+		useSwipe(slideRef, {
+			onSwipeLeft: () => {
+				if (presentationStore.currentSlide < presentationStore.slides.length - 1)
+					presentationStore.currentSlide++
+			},
+			onSwipeRight: () => {
+				if (presentationStore.currentSlide > 0)
+					presentationStore.currentSlide--
+			},
+		})
 		interface DragState {
 			shapeIds: string[];
 			startX: number;
@@ -1190,7 +1203,6 @@ const ObservedSlideCanvas = observer(
 			cy: number;
 		} | null>(null);
 		const svgRef = useRef<HTMLDivElement>(null);
-		const slideRef = useRef<HTMLDivElement>(null);
 		const [svgContent, setSvgContent] = useState<string | null>(null);
 		const [isSvgLoading, setIsSvgLoading] = useState(false);
 		const [isDragOver, setIsDragOver] = useState(false);

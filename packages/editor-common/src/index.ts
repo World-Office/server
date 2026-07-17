@@ -45,7 +45,12 @@ export * from "./ribbon"
 
 // ── Plugin System ───────────────────────────────────────────────────────
 
-export { type WorldOfficePlugin, type PluginContext, type PluginStatus, type PluginRegistryEntry } from "./plugin/types"
+export type {
+  WorldOfficePlugin,
+  PluginContext,
+  PluginStatus,
+  PluginRegistryEntry,
+} from "./plugin/types"
 export type {
   PluginToolbarButtonConfig,
   PluginToolbarTabConfig,
@@ -60,6 +65,13 @@ export type {
   PluginEditorSelection,
 } from "./plugin/types"
 
-export { type PluginConfig, loadPluginConfig, savePluginConfig, getPluginSettings, updatePluginSettings, togglePluginEnabled } from "./plugin/config"
+export {
+  type PluginConfig,
+  loadPluginConfig,
+  savePluginConfig,
+  getPluginSettings,
+  updatePluginSettings,
+  togglePluginEnabled,
+} from "./plugin/config"
 
 export { PluginLoader, pluginLoader } from "./plugin/loader"

@@ -56,10 +56,7 @@ export function getPluginSettings(pluginId: string): Record<string, unknown> {
 /**
  * Update a plugin's settings by ID.
  */
-export function updatePluginSettings(
-  pluginId: string,
-  settings: Record<string, unknown>,
-): void {
+export function updatePluginSettings(pluginId: string, settings: Record<string, unknown>): void {
   const configs = loadPluginConfig()
   const idx = configs.findIndex((c) => c.id === pluginId)
   if (idx >= 0) {

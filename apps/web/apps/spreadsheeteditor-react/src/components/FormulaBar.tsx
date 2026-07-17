@@ -1,6 +1,5 @@
 import { observer } from "mobx-react-lite";
 import { useEffect, useRef, useState } from "react";
-import { spreadsheetStore } from "../stores/SpreadsheetStore";
 import {
 	getActiveUniverAPI,
 	onUniverChange,

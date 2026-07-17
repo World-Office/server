@@ -8,10 +8,7 @@ function wopiUrl(base: string, conn: WopiConnection, extraQs?: string): string {
 
 /** Call CheckFileInfo to get document metadata. */
 export async function checkFileInfo(conn: WopiConnection): Promise<WopiFileInfo> {
-  const url = wopiUrl(
-    `${conn.docserverBase}/wopi/files/${conn.wopiFileId}`,
-    conn,
-  )
+  const url = wopiUrl(`${conn.docserverBase}/wopi/files/${conn.wopiFileId}`, conn)
   const res = await fetch(url)
   if (!res.ok) {
     throw new Error(`WOPI CheckFileInfo failed: ${res.status}`)
@@ -21,7 +18,7 @@ export async function checkFileInfo(conn: WopiConnection): Promise<WopiFileInfo>
 
 /** Call GetFile to download document content as a Blob. */
 export async function getFile(conn: WopiConnection): Promise<Blob> {
-  let url = wopiUrl(
+  const url = wopiUrl(
     `${conn.docserverBase}/wopi/files/${conn.wopiFileId}/contents`,
     conn,
     conn.format ? `format=${encodeURIComponent(conn.format)}` : undefined,
@@ -35,10 +32,7 @@ export async function getFile(conn: WopiConnection): Promise<Blob> {
 
 /** Call PutFile to upload document content. */
 export async function putFile(conn: WopiConnection, blob: Blob): Promise<void> {
-  const url = wopiUrl(
-    `${conn.docserverBase}/wopi/files/${conn.wopiFileId}/contents`,
-    conn,
-  )
+  const url = wopiUrl(`${conn.docserverBase}/wopi/files/${conn.wopiFileId}/contents`, conn)
   const headers: Record<string, string> = {
     "Content-Type": "application/octet-stream",
     "X-WOPI-Override": "PUT",

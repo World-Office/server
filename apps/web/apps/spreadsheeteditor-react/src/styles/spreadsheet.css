@@ -139,3 +139,35 @@ body,
 	height: 100%;
 	background-color: var(--wo-se-doc-bg);
 }
+
+/* ── Mobile breakpoints ─────────────────────── */
+
+@media (max-width: 768px) {
+	.se-formula-bar {
+		display: none;
+	}
+
+	.se-viewport-left-menu,
+	.se-viewport-right-menu {
+		display: none;
+	}
+
+	.se-viewport-body {
+		flex-direction: column;
+	}
+
+	.se-viewport-editor {
+		align-items: stretch;
+	}
+}
+
+@media (max-width: 480px) {
+	.se-viewport-toolbar {
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+	}
+
+	.se-viewport-toolbar > * {
+		flex-shrink: 0;
+	}
+}

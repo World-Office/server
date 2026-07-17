@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ContextMenu } from "../components/ContextMenu"
 
 describe("ContextMenu", () => {
@@ -25,20 +25,47 @@ describe("ContextMenu", () => {
   })
 
   it("renders menu items when visible is true", () => {
-    render(<ContextMenu items={items} x={100} y={100} visible={true} onClose={onClose} onSelect={onSelect} />)
+    render(
+      <ContextMenu
+        items={items}
+        x={100}
+        y={100}
+        visible={true}
+        onClose={onClose}
+        onSelect={onSelect}
+      />,
+    )
     expect(screen.getByRole("menu")).toBeInTheDocument()
     expect(screen.getByText("Cut")).toBeInTheDocument()
     expect(screen.getByText("Copy")).toBeInTheDocument()
   })
 
   it("calls onSelect when an enabled item is clicked", () => {
-    render(<ContextMenu items={items} x={100} y={100} visible={true} onClose={onClose} onSelect={onSelect} />)
+    render(
+      <ContextMenu
+        items={items}
+        x={100}
+        y={100}
+        visible={true}
+        onClose={onClose}
+        onSelect={onSelect}
+      />,
+    )
     fireEvent.click(screen.getByText("Cut"))
     expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ id: "cut" }))
   })
 
   it("does not call onSelect for disabled items", () => {
-    render(<ContextMenu items={items} x={100} y={100} visible={true} onClose={onClose} onSelect={onSelect} />)
+    render(
+      <ContextMenu
+        items={items}
+        x={100}
+        y={100}
+        visible={true}
+        onClose={onClose}
+        onSelect={onSelect}
+      />,
+    )
     fireEvent.click(screen.getByText("Paste"))
     expect(onSelect).not.toHaveBeenCalled()
   })
@@ -48,7 +75,14 @@ describe("ContextMenu", () => {
     render(
       <div>
         <div data-testid="outside">Outside</div>
-        <ContextMenu items={items} x={100} y={100} visible={true} onClose={onClose} onSelect={onSelect} />
+        <ContextMenu
+          items={items}
+          x={100}
+          y={100}
+          visible={true}
+          onClose={onClose}
+          onSelect={onSelect}
+        />
       </div>,
     )
     vi.advanceTimersByTime(10)
@@ -58,13 +92,31 @@ describe("ContextMenu", () => {
   })
 
   it("calls onClose on Escape key", () => {
-    render(<ContextMenu items={items} x={100} y={100} visible={true} onClose={onClose} onSelect={onSelect} />)
+    render(
+      <ContextMenu
+        items={items}
+        x={100}
+        y={100}
+        visible={true}
+        onClose={onClose}
+        onSelect={onSelect}
+      />,
+    )
     fireEvent.keyDown(screen.getByRole("menu"), { key: "Escape" })
     expect(onClose).toHaveBeenCalled()
   })
 
   it("renders checkable item without checkmark when unchecked", () => {
-    render(<ContextMenu items={items} x={100} y={100} visible={true} onClose={onClose} onSelect={onSelect} />)
+    render(
+      <ContextMenu
+        items={items}
+        x={100}
+        y={100}
+        visible={true}
+        onClose={onClose}
+        onSelect={onSelect}
+      />,
+    )
     const wrapItem = screen.getByText("Word Wrap").closest("button")
     const svg = wrapItem?.querySelector("svg")
     expect(svg).toBeNull() // no checkmark when unchecked
@@ -74,7 +126,16 @@ describe("ContextMenu", () => {
     const simpleItems = [
       { id: "wrap", label: "Word Wrap", checkable: true as const, checked: true },
     ]
-    render(<ContextMenu items={simpleItems} x={100} y={100} visible={true} onClose={onClose} onSelect={onSelect} />)
+    render(
+      <ContextMenu
+        items={simpleItems}
+        x={100}
+        y={100}
+        visible={true}
+        onClose={onClose}
+        onSelect={onSelect}
+      />,
+    )
     const wrapBtn = screen.getByText("Word Wrap").closest("button")
     const svg = wrapBtn?.querySelector("svg")
     expect(svg).toBeTruthy()
@@ -82,9 +143,25 @@ describe("ContextMenu", () => {
 
   it("renders submenu items with arrow indicator", () => {
     const itemsWithSubmenu = [
-      { id: "sort", label: "Sort", children: [{ id: "sort-asc", label: "Ascending" }, { id: "sort-desc", label: "Descending" }] },
+      {
+        id: "sort",
+        label: "Sort",
+        children: [
+          { id: "sort-asc", label: "Ascending" },
+          { id: "sort-desc", label: "Descending" },
+        ],
+      },
     ]
-    render(<ContextMenu items={itemsWithSubmenu} x={100} y={100} visible={true} onClose={onClose} onSelect={onSelect} />)
+    render(
+      <ContextMenu
+        items={itemsWithSubmenu}
+        x={100}
+        y={100}
+        visible={true}
+        onClose={onClose}
+        onSelect={onSelect}
+      />,
+    )
     const arrow = screen.getByText("▶")
     expect(arrow).toBeInTheDocument()
   })

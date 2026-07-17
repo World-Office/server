@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach } from "vitest"
-import { render, screen, fireEvent } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { DropdownMenu } from "../components/DropdownMenu"
 
 describe("DropdownMenu", () => {
@@ -102,7 +102,14 @@ describe("DropdownMenu", () => {
 
   it("renders submenu items with arrow indicator", () => {
     const itemsWithSubmenu = [
-      { id: "sort", label: "Sort", children: [{ id: "sort-asc", label: "Ascending" }, { id: "sort-desc", label: "Descending" }] },
+      {
+        id: "sort",
+        label: "Sort",
+        children: [
+          { id: "sort-asc", label: "Ascending" },
+          { id: "sort-desc", label: "Descending" },
+        ],
+      },
     ]
     render(<DropdownMenu trigger="Data" items={itemsWithSubmenu} onSelect={onSelect} />)
     fireEvent.click(screen.getByText("Data"))

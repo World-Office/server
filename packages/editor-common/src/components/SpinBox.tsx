@@ -147,11 +147,33 @@ export function SpinBox({
         onKeyDown={handleKeyDown}
         aria-label="Spin box"
       />
-      <div style={{ display: "flex", flexDirection: "column", borderLeft: `1px solid ${colors.semantic.border}` }}>
-        <button type="button" disabled={disabled} style={{ ...btnStyle, borderBottom: `1px solid ${colors.semantic.border}`, borderRadius: 0 }} onClick={increment} aria-label="Increase">
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          borderLeft: `1px solid ${colors.semantic.border}`,
+        }}
+      >
+        <button
+          type="button"
+          disabled={disabled}
+          style={{
+            ...btnStyle,
+            borderBottom: `1px solid ${colors.semantic.border}`,
+            borderRadius: 0,
+          }}
+          onClick={increment}
+          aria-label="Increase"
+        >
           ▲
         </button>
-        <button type="button" disabled={disabled} style={{ ...btnStyle, borderRadius: 0 }} onClick={decrement} aria-label="Decrease">
+        <button
+          type="button"
+          disabled={disabled}
+          style={{ ...btnStyle, borderRadius: 0 }}
+          onClick={decrement}
+          aria-label="Decrease"
+        >
           ▼
         </button>
       </div>

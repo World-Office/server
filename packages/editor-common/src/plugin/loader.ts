@@ -29,7 +29,13 @@ export class PluginLoader {
       configs.map(async (cfg) => {
         if (!cfg.enabled) {
           this.registry.set(cfg.id, {
-            plugin: { id: cfg.id, name: cfg.name, version: "0.0.0", destroy: () => {} },
+            plugin: {
+              id: cfg.id,
+              name: cfg.name,
+              version: "0.0.0",
+              init: async () => {},
+              destroy: () => {},
+            },
             status: "disabled",
           })
           return
@@ -50,7 +56,13 @@ export class PluginLoader {
           const msg = err instanceof Error ? err.message : String(err)
           console.error(`[PluginLoader] Failed to load plugin "${cfg.id}":`, msg)
           this.registry.set(cfg.id, {
-            plugin: { id: cfg.id, name: cfg.name, version: "0.0.0", destroy: () => {} },
+            plugin: {
+              id: cfg.id,
+              name: cfg.name,
+              version: "0.0.0",
+              init: async () => {},
+              destroy: () => {},
+            },
             status: "failed",
             error: msg,
           })

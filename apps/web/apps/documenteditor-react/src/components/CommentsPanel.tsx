@@ -17,7 +17,6 @@ const ObservedCommentsPanel = observer(function ObservedCommentsPanel({
 }: CommentsPanelProps) {
   const [newCommentText, setNewCommentText] = useState("")
   const [replyTexts, setReplyTexts] = useState<Record<string, string>>({})
-  const { t } = { t: (s: string) => s } // i18n placeholder — uses app-level react-i18next
 
   if (!visible) return null
 

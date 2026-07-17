@@ -96,7 +96,7 @@
   background: var(--wo-color-accent, #2ecc71);
   color: #fff;
   border: none;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -107,7 +107,7 @@
 
 .editor-mobile-fab:active {
   transform: scale(0.95);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
 }
 
 .editor-mobile-toast {
@@ -121,15 +121,26 @@
   border-radius: 8px;
   font-size: 13px;
   max-width: 240px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   animation: editor-toast-fade 3s ease forwards;
 }
 
 @keyframes editor-toast-fade {
-  0% { opacity: 0; transform: translateY(8px); }
-  10% { opacity: 1; transform: translateY(0); }
-  80% { opacity: 1; }
-  100% { opacity: 0; transform: translateY(-8px); }
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
 }
 
 /* ── Error & 404 pages ─────────────────────── */

@@ -1,14 +1,14 @@
 import type { EditorConfig } from "@/types/editor"
-import { useEffect, useState, type ReactNode } from "react"
+import { type ReactNode, useEffect, useState } from "react"
+import { useIsMobile } from "../hooks/useMediaQuery"
 import { Canvas } from "./Canvas"
 import { ErrorBoundary } from "./ErrorBoundary"
-import { ShortcutsOverlay } from "./ShortcutsOverlay"
 import { LeftPanel } from "./LeftPanel"
 import { RightPanel } from "./RightPanel"
+import { ShortcutsOverlay } from "./ShortcutsOverlay"
 import { StatusBar } from "./StatusBar"
 import { TabBar } from "./TabBar"
 import { Toolbar } from "./Toolbar"
-import { useIsMobile } from "../hooks/useMediaQuery"
 
 interface EditorLayoutProps {
   editorType: EditorConfig["type"]
@@ -90,17 +90,13 @@ export function EditorLayout({
       <div className="editor-body">
         {showTabBar && <TabBar editorType={editorType} />}
         {showLeftPanel && (
-          <LeftPanel
-            onClose={isMobile ? () => setShowMobileLeft(false) : undefined}
-          />
+          <LeftPanel onClose={isMobile ? () => setShowMobileLeft(false) : undefined} />
         )}
         <Canvas>
           <ErrorBoundary>{children}</ErrorBoundary>
         </Canvas>
         {showRightPanel && (
-          <RightPanel
-            onClose={isMobile ? () => setShowMobileRight(false) : undefined}
-          />
+          <RightPanel onClose={isMobile ? () => setShowMobileRight(false) : undefined} />
         )}
       </div>
       <div className="editor-statusbar">

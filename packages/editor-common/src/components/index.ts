@@ -23,7 +23,6 @@ export { Tab, TabBar, type TabProps, type TabBarProps, type TabData } from "./Ta
 export { Tooltip, type TooltipProps } from "./Tooltip"
 export { Slider, type SliderProps } from "./Slider"
 export { ColorPicker, type ColorPickerProps } from "./ColorPicker"
-export { ColorPicker, type ColorPickerProps } from "./ColorPicker"
 export { DropdownMenu, type DropdownMenuProps, type DropdownMenuItem } from "./DropdownMenu"
 export { FlyoutPanel, type FlyoutPanelProps, type FlyoutPosition } from "./FlyoutPanel"
 export { SpinBox, type SpinBoxProps } from "./SpinBox"

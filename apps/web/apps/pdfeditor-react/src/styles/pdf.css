@@ -133,6 +133,68 @@ body,
   background-color: var(--wo-pdf-doc-bg);
 }
 
+/* ── Mobile breakpoints ─────────────────────── */
+
+@media (max-width: 768px) {
+  .pdf-viewport-left-menu,
+  .pdf-viewport-right-menu {
+    display: none;
+  }
+
+  .pdf-viewport-editor {
+    padding: 4px;
+    align-items: stretch;
+  }
+
+  .pdf-viewport-body {
+    flex-direction: column;
+  }
+
+  /* Pages fill screen width */
+  .pdf-text-layer {
+    max-width: 100%;
+  }
+
+  /* Thumbnails as bottom strip */
+  .pdf-thumbnail-strip {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    height: 60px;
+    gap: 4px;
+    padding: 4px 8px;
+    background: var(--wo-pdf-bg-pane);
+    border-top: 1px solid var(--wo-pdf-border);
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .pdf-thumbnail-strip img {
+    height: 100%;
+    width: auto;
+    flex-shrink: 0;
+    border: 1px solid var(--wo-pdf-border);
+    border-radius: 2px;
+    cursor: pointer;
+  }
+
+  .pdf-thumbnail-strip img.active {
+    border-color: var(--wo-pdf-accent);
+    box-shadow: 0 0 0 2px var(--wo-pdf-accent);
+  }
+}
+
+@media (max-width: 480px) {
+  .pdf-viewport-editor {
+    padding: 2px;
+  }
+
+  .pdf-thumbnail-strip {
+    height: 48px;
+    gap: 2px;
+    padding: 2px 4px;
+  }
+}
+
 /* PDF.js text layer — positions transparent text spans over the canvas */
 .pdf-text-layer {
   position: absolute;

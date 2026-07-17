@@ -1,18 +1,18 @@
-import { localStorage } from "./utils/local-storage"
 import type {
   PluginContext,
   PluginEditorAPI,
   PluginEditorSelection,
   PluginI18nAPI,
   PluginMenuAPI,
+  PluginMenuItemConfig,
   PluginPanelAPI,
+  PluginPanelConfig,
   PluginStorageAPI,
   PluginToolbarAPI,
   PluginToolbarButtonConfig,
   PluginToolbarTabConfig,
-  PluginMenuItemConfig,
-  PluginPanelConfig,
 } from "./plugin/types"
+import { localStorage } from "./utils/local-storage"
 
 // ── Legacy Types (backward compatibility) ───────────────────────────────
 

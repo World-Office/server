@@ -147,6 +147,79 @@ body,
 	background-color: var(--wo-prese-doc-bg);
 }
 
+/* ── Mobile breakpoints ─────────────────────── */
+
+@media (max-width: 768px) {
+	.prese-viewport-left-menu,
+	.prese-viewport-right-menu {
+		display: none;
+	}
+
+	.prese-viewport-body {
+		flex-direction: column;
+	}
+
+	.prese-viewport-editor {
+		align-items: stretch;
+		padding: 8px;
+	}
+
+	/* Single-slide portrait mode */
+	.prese-presenter-slide {
+		width: 95vw;
+		max-width: 95vw;
+		padding: 24px 16px;
+		aspect-ratio: auto;
+		min-height: 60vh;
+	}
+
+	/* Slide-up notes panel */
+	.prese-presenter-notes-panel {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		margin: 0;
+		border-radius: 12px 12px 0 0;
+		z-index: 11000;
+		max-height: 40vh;
+		overflow-y: auto;
+		box-shadow: 0 -4px 16px rgba(0,0,0,0.2);
+	}
+
+	/* Timer smaller on mobile */
+	.prese-presenter-timer {
+		font-size: 0.75rem;
+	}
+
+	.prese-presenter-controls {
+		padding: 8px 16px;
+		gap: 8px;
+		bottom: 16px;
+	}
+}
+
+@media (max-width: 480px) {
+	.prese-viewport-editor {
+		padding: 4px;
+	}
+
+	.prese-presenter-slide {
+		padding: 16px 12px;
+		min-height: 50vh;
+	}
+
+	.prese-presenter-slide-title {
+		font-size: 1.5rem;
+	}
+
+	.prese-presenter-next {
+		width: 120px;
+		right: 8px;
+		bottom: 80px;
+	}
+}
+
 /* Transition badge on slide thumbnails */
 .prese-slide-thumb-transition {
 	position: absolute;
