@@ -7,7 +7,7 @@ on:
 jobs:
   cargo-audit:
     name: Rust Dependency Audit
-    runs-on: legion
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -19,12 +19,12 @@ jobs:
 
   npm-audit:
     name: NPM Dependency Audit
-    runs-on: legion
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: 10.4.1
       - uses: actions/setup-node@v4
         with:
           node-version: 20

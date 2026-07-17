@@ -19,7 +19,6 @@ apps/web/
 │   ├── visioeditor-react/         # React editor (26 ts/tsx)
 │   ├── editor-shell/              # Shared shell (13 ts/tsx)
 │   └── api/                       # API layer (1 JS)
-├── vendor/                        # Vendored libs (ace, backbone, monaco, requirejs, underscore)
 ├── theme/                         # Editor themes
 ├── translation/                   # i18n translations
 └── test/                          # Web-level tests
@@ -33,9 +32,9 @@ apps/web/
 | Spreadsheet editing | `apps/spreadsheeteditor-react/` | React, TypeScript |
 | Presentation editing | `apps/presentationeditor-react/` | React, TypeScript |
 | PDF editing | `apps/pdfeditor-react/` | React, TypeScript |
+| Visio editing | `apps/visioeditor-react/` | React, TypeScript |
 | Shared code | `apps/common/` | 217 JS files, shared by all editors |
 | Shared components | `apps/editor-shell/` | Shell, toolbar, menu |
-| Vendored code | `vendor/` | DO NOT MODIFY — ace, backbone, monaco, requirejs, underscore |
 
 ## CONVENTIONS
 
@@ -45,7 +44,6 @@ apps/web/
 
 ## ANTI-PATTERNS
 
-- NEVER modify `vendor/` — frozen vendored dependencies
 - NEVER add editor-specific logic to `apps/common/` — shared only
 - Changes to `apps/common/` affect ALL editor apps
 

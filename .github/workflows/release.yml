@@ -8,7 +8,7 @@ on:
 jobs:
   build-core:
     name: Build Rust Crates (Release)
-    runs-on: legion
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -22,12 +22,12 @@ jobs:
 
   build-web:
     name: Build Web Apps
-    runs-on: legion
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: 10.4.1
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -40,3 +40,31 @@ jobs:
           path: |
             apps/*/dist/
             packages/*/dist/
+
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: [build-core, build-web]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: rust-release
+          path: target/release/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: web-dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Release ${{ github.ref_name }}"
+          tag_name: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            target/release/worldoffice-*
+            web-dist/**/*
+          generate_release_notes: true

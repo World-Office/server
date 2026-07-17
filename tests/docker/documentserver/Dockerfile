@@ -70,8 +70,13 @@ WORKDIR /app
 # Copy the compiled Rust binary
 COPY --from=builder /build/server/target/release/wo-docserver /app/wo-docserver
 
-# Copy the built React editor UI (if available)
-COPY --from=builder /build/server/apps/web/apps /app/editor-ui/apps
+# Copy the built React editor UI into versioned subdirectories expected by
+# wo-docserver's resolve_editor_dir() — word/ sheet/ slide/ pdf/ diagram/
+COPY --from=builder /build/server/apps/web/apps/documenteditor-react/dist /app/editor-ui/word/
+COPY --from=builder /build/server/apps/web/apps/spreadsheeteditor-react/dist /app/editor-ui/sheet/
+COPY --from=builder /build/server/apps/web/apps/presentationeditor-react/dist /app/editor-ui/slide/
+COPY --from=builder /build/server/apps/web/apps/pdfeditor-react/dist /app/editor-ui/pdf/
+COPY --from=builder /build/server/apps/web/apps/visioeditor-react/dist /app/editor-ui/diagram/
 
 # Copy a minimal landing page as fallback (when no editor UI is built)
 RUN echo '<!DOCTYPE html><html><head><title>World-Office Document Server</title></head><body style="font-family:system-ui;display:flex;justify-content:center;align-items:center;height:100vh;margin:0"><div style="text-align:center"><h1>World-Office Document Server</h1><p>Rust-based document server is running.</p></div></body></html>' > /app/index.html
@@ -86,7 +91,7 @@ ENV JWT_IN_BODY=true
 ARG WOPI_HOST=http://ocis:9200
 ENV WOPI_HOST=${WOPI_HOST}
 
-# Editor UI directory (served as static files)
+# Editor UI directory (must match resolve_editor_dir() expectations: word/ sheet/ slide/ pdf/ diagram/)
 ENV EDITOR_UI_DIR=/app/editor-ui
 ENV DOCSERVER_HOST=0.0.0.0
 ENV DOCSERVER_PORT=80

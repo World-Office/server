@@ -21,6 +21,12 @@ pub struct DocServerConfig {
     pub editor_ui_dir: String,
     /// Local data directory (env: DOCSERVER_DATA_DIR, default: "./data").
     pub data_dir: String,
+    /// WOPI token validation mode (env: WOPI_TOKEN_MODE, default: "jwt").
+    /// "jwt" = validate access_token as JWT before proxying.
+    /// "passthrough" = forward token directly to the WOPI host (for OCIS Reva tokens).
+    pub wopi_token_mode: String,
+    /// Accept self-signed TLS certificates when connecting to the WOPI host (env: WOPI_INSECURE, default: false).
+    pub wopi_insecure: bool,
 }
 
 impl DocServerConfig {
@@ -43,6 +49,10 @@ impl DocServerConfig {
                 .unwrap_or_else(|_| "http://localhost:8080".into()),
             editor_ui_dir: env::var("EDITOR_UI_DIR").unwrap_or_else(|_| "./editor-ui".into()),
             data_dir: env::var("DOCSERVER_DATA_DIR").unwrap_or_else(|_| "./data".into()),
+            wopi_token_mode: env::var("WOPI_TOKEN_MODE").unwrap_or_else(|_| "jwt".into()),
+            wopi_insecure: env::var("WOPI_INSECURE")
+                .map(|v| v == "true" || v == "1")
+                .unwrap_or(false),
         }
     }
 
@@ -50,13 +60,19 @@ impl DocServerConfig {
     pub fn bind_addr(&self) -> String {
         format!("{}:{}", self.host, self.port)
     }
+
+    pub fn is_passthrough_mode(&self) -> bool {
+        self.wopi_token_mode == "passthrough"
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serial_test::serial;
 
     #[test]
+    #[serial]
     fn test_config_from_env_defaults() {
         env::set_var("DOCSERVER_PORT", "80");
         env::remove_var("PORT");
@@ -72,6 +88,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     fn test_config_custom_port() {
         env::set_var("JWT_SECRET", "test-secret");
         env::set_var("DOCSERVER_PORT", "9090");
@@ -83,6 +100,7 @@ mod tests {
     }
 
     #[test]
+    #[serial]
     #[should_panic(expected = "JWT_SECRET environment variable is required")]
     fn test_config_missing_jwt_secret() {
         env::remove_var("JWT_SECRET");

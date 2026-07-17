@@ -1,0 +1,197 @@
+# .github/workflows/desktop-release.yml
+name: Desktop Build & Publish
+
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - main
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-linux:
+    name: Build Tauri Desktop (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        timeout-minutes: 5
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        timeout-minutes: 10
+
+      - name: Install system dependencies (Tauri)
+        run: |
+          if command -v apt-get &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+              pkg-config libssl-dev \
+              libwebkit2gtk-4.1-dev libappindicator3-dev \
+              librsvg2-dev patchelf
+          elif command -v pacman &> /dev/null; then
+            sudo pacman -S --noconfirm pkg-config openssl \
+              webkit2gtk-4.1 libappindicator-gtk3 \
+              librsvg patchelf
+          elif command -v apk &> /dev/null; then
+            sudo apk add pkgconfig openssl-dev \
+              webkit2gtk-4.1-dev libappindicator-dev \
+              librsvg-dev patchelf
+          else
+            echo "No known package manager found"
+            exit 1
+          fi
+        timeout-minutes: 5
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+        timeout-minutes: 5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+        timeout-minutes: 5
+
+      - name: Cache Cargo registry
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: desktop
+        timeout-minutes: 5
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        timeout-minutes: 10
+
+      - name: Build web frontend
+        run: pnpm --filter @world-office/tauri-poc run build:web
+        timeout-minutes: 10
+
+      - name: Run Rust unit tests
+        run: cargo test -p world-office-desktop -- --test-threads=1
+        timeout-minutes: 5
+
+      - name: Run vitest integration tests
+        run: pnpm --filter @world-office/tauri-poc-tests run test
+        timeout-minutes: 5
+
+      - name: Build Tauri application
+        run: pnpm --filter @world-office/tauri-poc run build
+        timeout-minutes: 30
+
+      - name: Upload .deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-deb
+          path: desktop/tauri-poc/src-tauri/target/release/bundle/deb/*.deb
+        timeout-minutes: 5
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tauri-appimage
+          path: desktop/tauri-poc/src-tauri/target/release/bundle/appimage/*.AppImage
+        timeout-minutes: 5
+
+      - name: Upload source tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-tarball
+          path: |
+            !desktop/tauri-poc/src-tauri/target/
+            desktop/tauri-poc/
+        timeout-minutes: 5
+
+  test-desktop:
+    name: Test Desktop
+    runs-on: ubuntu-latest
+    needs: [build-linux]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install system deps for testing
+        run: |
+          if command -v apt-get &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends \
+              xvfb libwebkit2gtk-4.1-dev
+          elif command -v pacman &> /dev/null; then
+            sudo pacman -S --noconfirm xorg-server-xvfb webkit2gtk-4.1
+          else
+            sudo apk add xvfb webkit2gtk-4.1-dev
+          fi
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+        timeout-minutes: 5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+        timeout-minutes: 5
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+        timeout-minutes: 10
+
+      - name: Download Tauri binary
+        uses: actions/download-artifact@v4
+        with:
+          name: tauri-deb
+          path: artifacts/
+
+      - name: Install and verify binary
+        run: |
+          sudo dpkg -i artifacts/*.deb || sudo apt-get install -f -y
+          xvfb-run world-office --version
+        timeout-minutes: 5
+
+      - name: Run Rust unit tests
+        run: cargo test -p world-office-desktop -- --test-threads=1
+        timeout-minutes: 5
+
+      - name: Run vitest integration tests
+        run: pnpm --filter @world-office/tauri-poc-tests run test
+        timeout-minutes: 5
+
+  release:
+    name: Create Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    needs: [build-linux]
+    steps:
+      - name: Download .deb
+        uses: actions/download-artifact@v4
+        with:
+          name: tauri-deb
+          path: artifacts/deb/
+        timeout-minutes: 5
+
+      - name: Download AppImage
+        uses: actions/download-artifact@v4
+        with:
+          name: tauri-appimage
+          path: artifacts/appimage/
+        timeout-minutes: 5
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "World Office Desktop ${{ github.ref_name }}"
+          tag_name: ${{ github.ref_name }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            artifacts/deb/*.deb
+            artifacts/appimage/*.AppImage
+          generate_release_notes: true
+        timeout-minutes: 10
