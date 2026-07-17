@@ -41,25 +41,25 @@ cd "$COMPOSE_PATH"
 # Pull latest images
 echo "📥 Pulling latest images..."
 if [ "$DRY_RUN" = true ]; then
-  echo "[DRY RUN] Would run: docker compose -f docker-compose.yml -f docker-compose.prod.yml pull"
+  echo "[DRY RUN] Would run: docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile observability pull"
 else
-  docker compose -f docker-compose.yml -f docker-compose.prod.yml pull
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile observability pull
 fi
 
 # Start services
 echo "🚀 Starting services..."
 if [ "$DRY_RUN" = true ]; then
-  echo "[DRY RUN] Would run: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d"
+  echo "[DRY RUN] Would run: docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile observability up -d"
 else
-  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile observability up -d
 fi
 
 # Verify deployment
 echo "✅ Verifying deployment..."
 if [ "$DRY_RUN" = true ]; then
-  echo "[DRY RUN] Would run: docker compose -f docker-compose.yml -f docker-compose.prod.yml ps"
+  echo "[DRY RUN] Would run: docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile observability ps"
 else
-  docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
+  docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile observability ps
 fi
 
 echo ""
