@@ -1,9 +1,9 @@
-import { useTranslation } from "react-i18next"
-import i18n from "i18next"
+import i18n from "i18next";
 import type { JSX } from "react";
+import { useTranslation } from "react-i18next";
 
 export function SettingsPanel({ visible }: { visible: boolean }): JSX.Element {
-	const { t } = useTranslation()
+	const { t } = useTranslation();
 
 	return (
 		<div
@@ -46,7 +46,9 @@ export function SettingsPanel({ visible }: { visible: boolean }): JSX.Element {
 					</tr>
 					<tr className="prese-file-menu-row">
 						<td className="prese-file-menu-left">
-							<span className="prese-file-menu-label">{t("Interface Theme")}</span>
+							<span className="prese-file-menu-label">
+								{t("Interface Theme")}
+							</span>
 						</td>
 						<td className="prese-file-menu-right">
 							<select className="prese-file-menu-select" defaultValue="default">
@@ -59,7 +61,9 @@ export function SettingsPanel({ visible }: { visible: boolean }): JSX.Element {
 					</tr>
 					<tr className="prese-file-menu-row">
 						<td className="prese-file-menu-left">
-							<span className="prese-file-menu-label">{t("Font Rendering")}</span>
+							<span className="prese-file-menu-label">
+								{t("Font Rendering")}
+							</span>
 						</td>
 						<td className="prese-file-menu-right">
 							<select className="prese-file-menu-select" defaultValue="auto">
@@ -73,7 +77,9 @@ export function SettingsPanel({ visible }: { visible: boolean }): JSX.Element {
 					</tr>
 					<tr className="prese-file-menu-row">
 						<td className="prese-file-menu-left">
-							<span className="prese-file-menu-label">{t("Spell Checking")}</span>
+							<span className="prese-file-menu-label">
+								{t("Spell Checking")}
+							</span>
 						</td>
 						<td className="prese-file-menu-right">
 							<label className="prese-file-menu-checkbox">

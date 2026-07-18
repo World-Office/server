@@ -35,7 +35,10 @@ const PRESENTATION_MIME_TYPES: Record<string, string> = {
 	odp: "application/vnd.oasis.opendocument.presentation",
 };
 
-async function exportPresentation(format: string, fileName: string): Promise<void> {
+async function exportPresentation(
+	format: string,
+	fileName: string,
+): Promise<void> {
 	const { presentationStore } = await import("../stores/PresentationStore");
 	const json = presentationStore.toJSON();
 
@@ -61,7 +64,8 @@ async function exportPresentation(format: string, fileName: string): Promise<voi
 		if (!outputB64) throw new Error("No output data in conversion response");
 
 		const bytes = base64Decode(outputB64);
-		const mimeType = PRESENTATION_MIME_TYPES[format] ?? "application/octet-stream";
+		const mimeType =
+			PRESENTATION_MIME_TYPES[format] ?? "application/octet-stream";
 		const blob = new Blob([bytes as unknown as BlobPart], { type: mimeType });
 		downloadBlob(blob, fileName);
 	} catch (err) {

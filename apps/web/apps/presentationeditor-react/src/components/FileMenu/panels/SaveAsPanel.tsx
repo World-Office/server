@@ -8,7 +8,15 @@ const ACTIVE_FORMATS = [
 ];
 
 const COMING_SOON_FORMATS = [
-	"PPSX", "PDF", "POTX", "PPTM", "PDFA", "PDF/A", "OTP", "JPG", "PNG",
+	"PPSX",
+	"PDF",
+	"POTX",
+	"PPTM",
+	"PDFA",
+	"PDF/A",
+	"OTP",
+	"JPG",
+	"PNG",
 ];
 
 function downloadJSON(): void {

@@ -2,8 +2,8 @@ import { loadDocument } from "@world-office/wopi-client";
 import { observer } from "mobx-react-lite";
 import { type JSX, useCallback, useEffect, useRef, useState } from "react";
 import { useSwipe } from "../../../../editor-shell/src/hooks/useSwipe";
-import { presentationStore } from "../../stores/PresentationStore";
 import { usePresentationKeyboard } from "../../hooks/usePresentationKeyboard";
+import { presentationStore } from "../../stores/PresentationStore";
 import type {
 	ChartData,
 	ConnectorData,
@@ -1169,14 +1169,17 @@ const ObservedSlideCanvas = observer(
 		usePresentationKeyboard();
 		useSwipe(slideRef, {
 			onSwipeLeft: () => {
-				if (presentationStore.currentSlide < presentationStore.slides.length - 1)
-					presentationStore.currentSlide++
+				if (
+					presentationStore.currentSlide <
+					presentationStore.slides.length - 1
+				)
+					presentationStore.currentSlide++;
 			},
 			onSwipeRight: () => {
 				if (presentationStore.currentSlide > 0)
-					presentationStore.currentSlide--
+					presentationStore.currentSlide--;
 			},
-		})
+		});
 		interface DragState {
 			shapeIds: string[];
 			startX: number;
@@ -1385,9 +1388,7 @@ const ObservedSlideCanvas = observer(
 					presentationStore.deselectAllShapes();
 				} else {
 					const slide =
-						presentationStore.slides[
-							presentationStore.currentSlide
-						];
+						presentationStore.slides[presentationStore.currentSlide];
 					if (slide?.shapes) {
 						const mL = Math.min(startX, currentX);
 						const mT = Math.min(startY, currentY);
@@ -1401,14 +1402,11 @@ const ObservedSlideCanvas = observer(
 								mT < s.y + s.height &&
 								mB > s.y,
 						);
-						const currentSet = new Set(
-							presentationStore.selectedShapeIds,
-						);
+						const currentSet = new Set(presentationStore.selectedShapeIds);
 						for (const s of intersecting) {
 							currentSet.add(s.id);
 						}
-						presentationStore.selectedShapeIds =
-							Array.from(currentSet);
+						presentationStore.selectedShapeIds = Array.from(currentSet);
 					}
 				}
 			}
@@ -1591,7 +1589,13 @@ const ObservedSlideCanvas = observer(
 				currentX: startX,
 				currentY: startY,
 			};
-			setMarqueeRender({ active: true, startX, startY, currentX: startX, currentY: startY });
+			setMarqueeRender({
+				active: true,
+				startX,
+				startY,
+				currentX: startX,
+				currentY: startY,
+			});
 		};
 
 		const handleCanvasKeyDown = (e: React.KeyboardEvent) => {
@@ -1623,15 +1627,12 @@ const ObservedSlideCanvas = observer(
 			presentationStore.notifyCursorMove();
 		}, []);
 
-		const handleDragOver = useCallback(
-			(e: React.DragEvent<HTMLDivElement>) => {
-				e.preventDefault();
-				if (e.dataTransfer.types?.includes("Files")) {
-					setIsDragOver(true);
-				}
-			},
-			[],
-		);
+		const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+			e.preventDefault();
+			if (e.dataTransfer.types?.includes("Files")) {
+				setIsDragOver(true);
+			}
+		}, []);
 
 		const handleDragEnter = useCallback(
 			(e: React.DragEvent<HTMLDivElement>) => {
@@ -1652,20 +1653,14 @@ const ObservedSlideCanvas = observer(
 			[],
 		);
 
-		const handleDrop = useCallback(
-			(e: React.DragEvent<HTMLDivElement>) => {
-				e.preventDefault();
-				setIsDragOver(false);
-				const file = e.dataTransfer.files?.[0];
-				if (file && file.type.startsWith("image/")) {
-					presentationStore.addImageToSlide(
-						presentationStore.currentSlide,
-						file,
-					);
-				}
-			},
-			[],
-		);
+		const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+			e.preventDefault();
+			setIsDragOver(false);
+			const file = e.dataTransfer.files?.[0];
+			if (file && file.type.startsWith("image/")) {
+				presentationStore.addImageToSlide(presentationStore.currentSlide, file);
+			}
+		}, []);
 
 		return (
 			<div className="prese-canvas-container">
@@ -1798,12 +1793,8 @@ const ObservedSlideCanvas = observer(
 										selectedShapeIds.includes(s.id),
 									);
 									if (multiShapes.length < 2) return null;
-									const minX = Math.min(
-										...multiShapes.map((s) => s.x),
-									);
-									const minY = Math.min(
-										...multiShapes.map((s) => s.y),
-									);
+									const minX = Math.min(...multiShapes.map((s) => s.x));
+									const minY = Math.min(...multiShapes.map((s) => s.y));
 									const maxX = Math.max(
 										...multiShapes.map((s) => s.x + s.width),
 									);
@@ -1820,8 +1811,7 @@ const ObservedSlideCanvas = observer(
 												top: minY,
 												width: bbW,
 												height: bbH,
-												outline:
-													"2px solid var(--wo-prese-accent)",
+												outline: "2px solid var(--wo-prese-accent)",
 												outlineOffset: "-1px",
 												pointerEvents: "none",
 											}}
@@ -1832,22 +1822,14 @@ const ObservedSlideCanvas = observer(
 													className="prese-canvas-resize-handle"
 													style={{
 														position: "absolute",
-														left: h.x as
-															| string
-															| number,
-														top: h.y as
-															| string
-															| number,
+														left: h.x as string | number,
+														top: h.y as string | number,
 														width: HANDLE_SIZE,
 														height: HANDLE_SIZE,
-														marginLeft:
-															-(HANDLE_SIZE / 2),
-														marginTop:
-															-(HANDLE_SIZE / 2),
-														backgroundColor:
-															"white",
-														border:
-															"1px solid var(--wo-prese-accent)",
+														marginLeft: -(HANDLE_SIZE / 2),
+														marginTop: -(HANDLE_SIZE / 2),
+														backgroundColor: "white",
+														border: "1px solid var(--wo-prese-accent)",
 														cursor: h.cursor,
 														zIndex: 1000,
 														pointerEvents: "none",
@@ -1896,29 +1878,15 @@ const ObservedSlideCanvas = observer(
 						<div
 							className="prese-canvas-marquee"
 							style={{
-								left: Math.min(
-									marqueeRender.startX,
-									marqueeRender.currentX,
-								),
-								top: Math.min(
-									marqueeRender.startY,
-									marqueeRender.currentY,
-								),
-								width: Math.abs(
-									marqueeRender.currentX -
-										marqueeRender.startX,
-								),
-								height: Math.abs(
-									marqueeRender.currentY -
-										marqueeRender.startY,
-								),
+								left: Math.min(marqueeRender.startX, marqueeRender.currentX),
+								top: Math.min(marqueeRender.startY, marqueeRender.currentY),
+								width: Math.abs(marqueeRender.currentX - marqueeRender.startX),
+								height: Math.abs(marqueeRender.currentY - marqueeRender.startY),
 							}}
 						/>
 					)}
 					{isDragOver && (
-						<div className="prese-canvas-drop-indicator">
-							Drop image here
-						</div>
+						<div className="prese-canvas-drop-indicator">Drop image here</div>
 					)}
 				</div>
 			</div>

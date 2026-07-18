@@ -31,9 +31,7 @@ function ShapePanelInner(): JSX.Element {
 		};
 
 		/* Use the first selected shape as a reference for current values */
-		const firstShape = slide?.shapes?.find(
-			(s) => s.id === selectedShapeIds[0],
-		);
+		const firstShape = slide?.shapes?.find((s) => s.id === selectedShapeIds[0]);
 
 		return (
 			<div className="prese-shape-panel">
@@ -81,9 +79,7 @@ function ShapePanelInner(): JSX.Element {
 							step={1}
 							min={8}
 							value={firstShape?.fontSize ?? 16}
-							onChange={(e) =>
-								batchSet({ fontSize: Number(e.target.value) })
-							}
+							onChange={(e) => batchSet({ fontSize: Number(e.target.value) })}
 						/>
 					</label>
 				</div>

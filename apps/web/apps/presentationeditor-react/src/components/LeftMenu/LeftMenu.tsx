@@ -17,7 +17,7 @@ const BUTTONS: Array<{ action: LeftMenuAction; title: string; icon: string }> =
 	];
 
 function LeftMenuInner(): JSX.Element {
-	const { t } = useTranslation()
+	const { t } = useTranslation();
 
 	return (
 		<div

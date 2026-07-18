@@ -1,6 +1,6 @@
 import { ThemeProvider } from "@world-office/design-system";
 import { useDocumentLoader } from "@world-office/wopi-client";
-import { type JSX, lazy, Suspense, useCallback } from "react";
+import { type JSX, Suspense, lazy, useCallback } from "react";
 import { getActiveEditor } from "./components/MonacoEditor";
 import { SlidePresenter } from "./components/SlidePresenter/SlidePresenter";
 import {
@@ -8,15 +8,17 @@ import {
 	dispatchMonacoCommand,
 } from "./components/Toolbar/MonacoCommand";
 import { Viewport } from "./components/Viewport";
+import { useEmbeddedAutoSave } from "./hooks/useEmbeddedAutoSave";
+import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge";
+import { useEmbeddedMode } from "./hooks/useEmbeddedMode";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useTheme } from "./hooks/useTheme";
-import { useEmbeddedMode } from "./hooks/useEmbeddedMode";
-import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge";
-import { useEmbeddedAutoSave } from "./hooks/useEmbeddedAutoSave";
 import { presentationStore } from "./stores/PresentationStore";
 
-const PresentationCollaborationProvider = lazy(
-	() => import("./components/PresentationCollaborationProvider"),
+const PresentationCollaborationProvider = lazy(() =>
+	import("./components/PresentationCollaborationProvider").then((m) => ({
+		default: m.PresentationCollaborationProvider,
+	})),
 );
 
 function onLoad(): Promise<void> {

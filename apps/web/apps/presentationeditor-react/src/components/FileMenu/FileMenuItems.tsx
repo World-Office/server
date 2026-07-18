@@ -1,6 +1,6 @@
+import { useTranslation } from "react-i18next";
 import { presentationStore } from "../../stores/PresentationStore";
 import type { FileMenuAction } from "../../types/presentation";
-import { useTranslation } from "react-i18next";
 
 interface FileMenuItemsProps {
 	onMenuClick: (action: string, hasPanel: boolean) => void;
@@ -34,7 +34,7 @@ const MENU_ITEMS: MenuItem[] = [
 ];
 
 export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
-	const { t } = useTranslation()
+	const { t } = useTranslation();
 	const activePanel = presentationStore.activeFileMenuPanel;
 
 	function handleBack(): void {
@@ -72,7 +72,9 @@ export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
 						handleKeyDown(e, () => onMenuClick(item.action, item.hasPanel))
 					}
 				>
-					<span className="prese-file-menu-item-caption">{t(item.caption)}</span>
+					<span className="prese-file-menu-item-caption">
+						{t(item.caption)}
+					</span>
 				</div>
 			))}
 		</ul>
