@@ -1,0 +1,12 @@
+{
+  "thresholdMB": 12,
+  "targetMB": 10,
+  "editors": [
+    "documenteditor-react",
+    "spreadsheeteditor-react",
+    "presentationeditor-react",
+    "pdfeditor-react",
+    "visioeditor-react"
+  ],
+  "notes": "Target is under 10MB per editor. CI fails at 12MB to allow for temporary growth."
+}

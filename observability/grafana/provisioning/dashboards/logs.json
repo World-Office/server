@@ -17,7 +17,8 @@
         {
           "expr": "sum by (job) (rate({job=~\"api-gateway|identity-service|storage-service|conversion-service|coauthoring-service|session-service\"}[5m]))",
           "legendFormat": "{{job}}",
-          "refId": "A"
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" }
         }
       ],
       "options": {
@@ -33,7 +34,8 @@
         {
           "expr": "sum by (job) (rate({job=~\"api-gateway|identity-service|storage-service|conversion-service|coauthoring-service|session-service\"} |= \"error\" [5m]))",
           "legendFormat": "{{job}}",
-          "refId": "A"
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" }
         }
       ],
       "options": {
@@ -48,7 +50,8 @@
       "targets": [
         {
           "expr": "{job=~\"$service\"} |= \"$search\"",
-          "refId": "A"
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" }
         }
       ],
       "options": {
