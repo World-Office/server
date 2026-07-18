@@ -27,3 +27,18 @@ rusqlite = { workspace = true }
 uuid = { workspace = true }
 metrics = { workspace = true }
 metrics-exporter-prometheus = { workspace = true }
+openidconnect = { version = "4.0.1", optional = true }
+ldap3 = { version = "0.12.1", optional = true }
+samael = { version = "0.0.22", optional = true }
+base64 = { workspace = true }
+url = "2"
+rand = "0.8"
+oauth2 = { version = "5.0.0", features = ["reqwest"] }
+quick-xml = { version = "0.41.0", features = ["serialize"] }
+reqwest.workspace = true
+
+[features]
+default = ["saml", "oidc", "ldap"]
+saml = ["samael"]
+oidc = ["openidconnect"]
+ldap = ["ldap3"]
