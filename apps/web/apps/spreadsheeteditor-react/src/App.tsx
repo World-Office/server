@@ -1,20 +1,22 @@
 import { ThemeProvider } from "@world-office/design-system";
 import { useDocumentLoader } from "@world-office/wopi-client";
-import { lazy, Suspense, useCallback } from "react";
+import { Suspense, lazy, useCallback } from "react";
 import { getActiveEditor } from "./components/MonacoEditor";
 import {
 	type MonacoCommand,
 	dispatchMonacoCommand,
 } from "./components/Toolbar/MonacoCommand";
 import { Viewport } from "./components/Viewport";
-import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
-import { useEmbeddedMode } from "./hooks/useEmbeddedMode";
-import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge";
 import { useEmbeddedAutoSave } from "./hooks/useEmbeddedAutoSave";
+import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge";
+import { useEmbeddedMode } from "./hooks/useEmbeddedMode";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { spreadsheetStore } from "./stores/SpreadsheetStore";
 
-const SpreadsheetCollaborationProvider = lazy(
-	() => import("./components/SpreadsheetCollaborationProvider"),
+const SpreadsheetCollaborationProvider = lazy(() =>
+	import("./components/SpreadsheetCollaborationProvider").then((m) => ({
+		default: m.SpreadsheetCollaborationProvider,
+	})),
 );
 
 export function App() {

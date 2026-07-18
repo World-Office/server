@@ -19,7 +19,7 @@ const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> =
 	];
 
 function RightMenuInner(): JSX.Element {
-	const { t } = useTranslation()
+	const { t } = useTranslation();
 
 	return (
 		<div

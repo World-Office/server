@@ -1,8 +1,8 @@
+import { Plus } from "lucide-react";
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Plus } from "lucide-react";
-import { spreadsheetStore } from "../stores/SpreadsheetStore";
 import { getActiveUniverAPI, onUniverChange } from "../lib/univer-command";
+import { spreadsheetStore } from "../stores/SpreadsheetStore";
 
 interface ContextMenuState {
 	x: number;
@@ -91,7 +91,12 @@ export const SheetTabBar = observer(function SheetTabBar() {
 			e.preventDefault();
 			const sheet = spreadsheetStore.sheets[index];
 			if (!sheet) return;
-			setContextMenu({ x: e.clientX, y: e.clientY, sheetIndex: index, sheetName: sheet.name });
+			setContextMenu({
+				x: e.clientX,
+				y: e.clientY,
+				sheetIndex: index,
+				sheetName: sheet.name,
+			});
 		},
 		[],
 	);

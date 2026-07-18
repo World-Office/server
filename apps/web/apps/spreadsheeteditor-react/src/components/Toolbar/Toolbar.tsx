@@ -1,8 +1,11 @@
-import { observer } from "mobx-react-lite";
 import { Ribbon, spreadsheetRibbonSpec } from "@world-office/editor-common";
-import type { RibbonCommandDispatch, RibbonContext } from "@world-office/editor-common";
-import { spreadsheetStore } from "../../stores/SpreadsheetStore";
+import type {
+	RibbonCommandDispatch,
+	RibbonContext,
+} from "@world-office/editor-common";
+import { observer } from "mobx-react-lite";
 import { dispatchUniverCommand } from "../../lib/univer-command";
+import { spreadsheetStore } from "../../stores/SpreadsheetStore";
 import { FileTab } from "./FileTab";
 import type { MonacoCommand } from "./MonacoCommand";
 

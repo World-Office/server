@@ -1,8 +1,8 @@
-import { useTranslation } from "react-i18next"
-import i18n from "i18next"
+import i18n from "i18next";
+import { useTranslation } from "react-i18next";
 
 export function SettingsPanel({ visible }: { visible: boolean }) {
-	const { t } = useTranslation()
+	const { t } = useTranslation();
 
 	return (
 		<div
@@ -58,7 +58,9 @@ export function SettingsPanel({ visible }: { visible: boolean }) {
 					</tr>
 					<tr className="se-file-menu-settings-group">
 						<td className="se-file-menu-settings-left">
-							<span className="se-file-menu-label">{t("Show Formula Bar")}</span>
+							<span className="se-file-menu-label">
+								{t("Show Formula Bar")}
+							</span>
 						</td>
 						<td className="se-file-menu-settings-right">
 							<select className="se-file-menu-select">
