@@ -31,11 +31,14 @@ members = [
     "services/identity-service",
     "services/session-service",
     "services/mcp-server",
+    "services-enterprise/scim-service",
+    "services-enterprise/webhook-service",
     "core/crates/wo-wopi",
     "core/crates/wo-webdav",
     "core/crates/wo-x2t-wasm",
     "core/crates/wo-renderer-wasm",
     "core/crates/wo-docserver",
+    "services-enterprise/audit-service",
 ]
 
 [workspace.package]
