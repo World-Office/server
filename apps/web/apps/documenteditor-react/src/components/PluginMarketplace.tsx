@@ -105,9 +105,7 @@ export function PluginMarketplace({ visible, onClose }: PluginMarketplaceProps) 
     if (!searchQuery.trim()) return catalog
     const q = searchQuery.toLowerCase().trim()
     return catalog.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.description.toLowerCase().includes(q),
+      (p) => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q),
     )
   }, [catalog, searchQuery])
 
@@ -233,19 +231,60 @@ export function PluginMarketplace({ visible, onClose }: PluginMarketplaceProps) 
   }
 
   const renderLoading = () => (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: spacing[12], gap: spacing[2] }}>
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ animation: "marketplace-spin 1s linear infinite", color: colors.neutral[400] }}>
-        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="31.4 31.4" strokeLinecap="round" />
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: spacing[12],
+        gap: spacing[2],
+      }}
+    >
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        style={{ animation: "marketplace-spin 1s linear infinite", color: colors.neutral[400] }}
+      >
+        <circle
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          strokeWidth="3"
+          strokeDasharray="31.4 31.4"
+          strokeLinecap="round"
+        />
       </svg>
-      <span style={{ fontSize: typography.fontSize.sm, color: colors.neutral[500] }}>Loading catalog…</span>
+      <span style={{ fontSize: typography.fontSize.sm, color: colors.neutral[500] }}>
+        Loading catalog…
+      </span>
       <style>{SPIN_KEYFRAMES}</style>
     </div>
   )
 
   const renderError = () => (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: spacing[12], gap: spacing[2], textAlign: "center" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: spacing[12],
+        gap: spacing[2],
+        textAlign: "center",
+      }}
+    >
       <div style={{ fontSize: 32, color: colors.error.DEFAULT }}>⚠</div>
-      <span style={{ fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.semantic.foreground }}>
+      <span
+        style={{
+          fontSize: typography.fontSize.sm,
+          fontWeight: typography.fontWeight.medium,
+          color: colors.semantic.foreground,
+        }}
+      >
         Failed to load catalog
       </span>
       <span style={{ fontSize: typography.fontSize.xs, color: colors.neutral[500], maxWidth: 300 }}>
@@ -259,7 +298,16 @@ export function PluginMarketplace({ visible, onClose }: PluginMarketplaceProps) 
   )
 
   const renderEmptyCatalog = () => (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: spacing[12], gap: spacing[2] }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: spacing[12],
+        gap: spacing[2],
+      }}
+    >
       <Package size={32} color={colors.neutral[400]} />
       <span style={{ fontSize: typography.fontSize.sm, color: colors.neutral[500] }}>
         No plugins available yet.
@@ -268,7 +316,16 @@ export function PluginMarketplace({ visible, onClose }: PluginMarketplaceProps) 
   )
 
   const renderEmptySearch = () => (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: spacing[12], gap: spacing[2] }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: spacing[12],
+        gap: spacing[2],
+      }}
+    >
       <Search size={24} color={colors.neutral[400]} />
       <span style={{ fontSize: typography.fontSize.sm, color: colors.neutral[500] }}>
         No plugins match &quot;{searchQuery}&quot;
@@ -308,22 +365,37 @@ export function PluginMarketplace({ visible, onClose }: PluginMarketplaceProps) 
             }}
           >
             <div style={{ display: "flex", alignItems: "flex-start", gap: spacing[1.5] }}>
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 36,
-                height: 36,
-                borderRadius: radii.md,
-                backgroundColor: colors.neutral[50],
-                color: colors.neutral[600],
-                flexShrink: 0,
-              }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: 36,
+                  height: 36,
+                  borderRadius: radii.md,
+                  backgroundColor: colors.neutral[50],
+                  color: colors.neutral[600],
+                  flexShrink: 0,
+                }}
+              >
                 <PluginIcon icon={plugin.icon} size={18} />
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: spacing[1], flexWrap: "wrap" }}>
-                  <span style={{ fontSize: typography.fontSize.sm, fontWeight: typography.fontWeight.medium, color: colors.semantic.foreground }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: spacing[1],
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: typography.fontSize.sm,
+                      fontWeight: typography.fontWeight.medium,
+                      color: colors.semantic.foreground,
+                    }}
+                  >
                     {plugin.name}
                   </span>
                   <span style={{ fontSize: typography.fontSize.xs, color: colors.neutral[400] }}>
@@ -333,34 +405,46 @@ export function PluginMarketplace({ visible, onClose }: PluginMarketplaceProps) 
               </div>
             </div>
 
-            <p style={{
-              fontSize: typography.fontSize.xs,
-              color: colors.neutral[600],
-              lineHeight: typography.lineHeight.normal,
-              margin: 0,
-              display: "-webkit-box",
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: "vertical",
-              overflow: "hidden",
-              minHeight: "2.25em",
-            }}>
+            <p
+              style={{
+                fontSize: typography.fontSize.xs,
+                color: colors.neutral[600],
+                lineHeight: typography.lineHeight.normal,
+                margin: 0,
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+                minHeight: "2.25em",
+              }}
+            >
               {plugin.description}
             </p>
 
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "auto", paddingTop: spacing[0.5] }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginTop: "auto",
+                paddingTop: spacing[0.5],
+              }}
+            >
               <span style={{ fontSize: typography.fontSize.xs, color: colors.neutral[400] }}>
                 {plugin.author}
               </span>
               {installed ? (
-                <span style={{
-                  fontSize: typography.fontSize.xs,
-                  fontWeight: typography.fontWeight.medium,
-                  padding: `${spacing[0.5]} ${spacing[1]}`,
-                  borderRadius: radii.sm,
-                  backgroundColor: "#d4edda",
-                  color: "#155724",
-                  lineHeight: 1.4,
-                }}>
+                <span
+                  style={{
+                    fontSize: typography.fontSize.xs,
+                    fontWeight: typography.fontWeight.medium,
+                    padding: `${spacing[0.5]} ${spacing[1]}`,
+                    borderRadius: radii.sm,
+                    backgroundColor: "#d4edda",
+                    color: "#155724",
+                    lineHeight: 1.4,
+                  }}
+                >
                   ✓ Installed
                 </span>
               ) : (
@@ -421,21 +505,30 @@ export function PluginMarketplace({ visible, onClose }: PluginMarketplaceProps) 
         </button>
 
         <div style={{ display: "flex", gap: spacing[3], alignItems: "center" }}>
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 64,
-            height: 64,
-            borderRadius: radii.xl,
-            backgroundColor: colors.neutral[50],
-            color: colors.neutral[600],
-            flexShrink: 0,
-          }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 64,
+              height: 64,
+              borderRadius: radii.xl,
+              backgroundColor: colors.neutral[50],
+              color: colors.neutral[600],
+              flexShrink: 0,
+            }}
+          >
             <PluginIcon icon={selectedPlugin.icon} size={32} />
           </div>
           <div>
-            <h2 style={{ margin: 0, fontSize: typography.fontSize.lg, fontWeight: typography.fontWeight.semibold, color: colors.semantic.foreground }}>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: typography.fontSize.lg,
+                fontWeight: typography.fontWeight.semibold,
+                color: colors.semantic.foreground,
+              }}
+            >
               {selectedPlugin.name}
             </h2>
             <span style={{ fontSize: typography.fontSize.sm, color: colors.neutral[500] }}>
@@ -444,31 +537,52 @@ export function PluginMarketplace({ visible, onClose }: PluginMarketplaceProps) 
           </div>
         </div>
 
-        <p style={{
-          margin: 0,
-          fontSize: typography.fontSize.sm,
-          color: colors.neutral[600],
-          lineHeight: typography.lineHeight.relaxed,
-        }}>
+        <p
+          style={{
+            margin: 0,
+            fontSize: typography.fontSize.sm,
+            color: colors.neutral[600],
+            lineHeight: typography.lineHeight.relaxed,
+          }}
+        >
           {selectedPlugin.description}
         </p>
 
-        <div style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: spacing[1],
-          padding: spacing[2],
-          borderRadius: radii.md,
-          backgroundColor: colors.neutral[50],
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", fontSize: typography.fontSize.sm }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: spacing[1],
+            padding: spacing[2],
+            borderRadius: radii.md,
+            backgroundColor: colors.neutral[50],
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: typography.fontSize.sm,
+            }}
+          >
             <span style={{ color: colors.neutral[500] }}>License</span>
-            <span style={{ color: colors.semantic.foreground, fontWeight: typography.fontWeight.medium }}>
+            <span
+              style={{
+                color: colors.semantic.foreground,
+                fontWeight: typography.fontWeight.medium,
+              }}
+            >
               {selectedPlugin.license}
             </span>
           </div>
           {selectedPlugin.homepage && (
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: typography.fontSize.sm }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: typography.fontSize.sm,
+              }}
+            >
               <span style={{ color: colors.neutral[500] }}>Homepage</span>
               <span style={{ color: colors.semantic.foreground }}>{selectedPlugin.homepage}</span>
             </div>
@@ -517,16 +631,20 @@ export function PluginMarketplace({ visible, onClose }: PluginMarketplaceProps) 
       <div style={maskStyle} onClick={onClose} role="presentation" />
       <div style={dialogStyle} role="dialog" aria-label="Plugin Marketplace">
         <div style={headerStyle}>
-          <span style={titleStyle}>
-            {selectedPlugin ? "Plugin Details" : "Plugin Marketplace"}
-          </span>
+          <span style={titleStyle}>{selectedPlugin ? "Plugin Details" : "Plugin Marketplace"}</span>
           <button type="button" style={closeBtnStyle} onClick={onClose} aria-label="Close">
             <X size={16} />
           </button>
         </div>
 
         {!selectedPlugin && !loading && !error && (
-          <div style={{ padding: `${spacing[1.5]} ${spacing[2]}`, borderBottom: `1px solid ${colors.semantic.border}`, flexShrink: 0 }}>
+          <div
+            style={{
+              padding: `${spacing[1.5]} ${spacing[2]}`,
+              borderBottom: `1px solid ${colors.semantic.border}`,
+              flexShrink: 0,
+            }}
+          >
             <div style={{ position: "relative" }}>
               <Search
                 size={14}
@@ -563,9 +681,7 @@ export function PluginMarketplace({ visible, onClose }: PluginMarketplaceProps) 
           </div>
         )}
 
-        <div style={bodyStyle}>
-          {renderBody()}
-        </div>
+        <div style={bodyStyle}>{renderBody()}</div>
 
         <div style={footerStyle}>
           <button type="button" style={btnPrimary} onClick={onClose}>

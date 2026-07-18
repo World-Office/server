@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react"
-import { documentStore } from "../../../stores/DocumentStore"
+import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
+import { documentStore } from "../../../stores/DocumentStore"
 
 interface TemplateInfo {
   id: string

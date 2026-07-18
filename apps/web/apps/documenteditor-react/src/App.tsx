@@ -1,36 +1,34 @@
 import { ThemeProvider } from "@world-office/design-system"
 import { useDocumentLoader } from "@world-office/wopi-client"
 import { observer } from "mobx-react-lite"
-import { type ComponentType, lazy, Suspense, useCallback, useEffect, useState } from "react"
+import { Suspense, lazy, useCallback, useEffect, useState } from "react"
 import { isDesktop, listenForMenuEvents, listenForUpdateEvents } from "./bridge"
 import { getActiveEditor } from "./components/MonacoEditor"
 import { type MonacoCommand, dispatchMonacoCommand } from "./components/Toolbar/MonacoCommand"
 import { Viewport } from "./components/Viewport"
+import { useEmbeddedAutoSave } from "./hooks/useEmbeddedAutoSave"
+import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge"
+import { useEmbeddedMode } from "./hooks/useEmbeddedMode"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { usePlugins } from "./hooks/usePlugins"
-import { type RichTextCommand, dispatchRichTextCommand } from "./lib/rte-command"
-import { documentStore } from "./stores/DocumentStore"
-import { useEmbeddedMode } from "./hooks/useEmbeddedMode"
-import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge"
-import { useEmbeddedAutoSave } from "./hooks/useEmbeddedAutoSave"
 import { useSpellchecker } from "./hooks/useSpellchecker"
+import { type RichTextCommand, dispatchRichTextCommand } from "./lib/rte-command"
 import { SpellcheckContext } from "./lib/spellcheck-context"
+import { documentStore } from "./stores/DocumentStore"
 
 // Non-critical components loaded on demand
-const DocumentCollaborationProvider = lazy(
-  () =>
-    import("./components/DocumentCollaborationProvider").then((m) => ({
-      default: m.DocumentCollaborationProvider,
-    })),
+const DocumentCollaborationProvider = lazy(() =>
+  import("./components/DocumentCollaborationProvider").then((m) => ({
+    default: m.DocumentCollaborationProvider,
+  })),
 )
 const ShortcutsOverlay = lazy(() =>
   import("./components/ShortcutsOverlay").then((m) => ({ default: m.ShortcutsOverlay })),
 )
-const SpellcheckContextMenu = lazy(
-  () =>
-    import("./components/SpellcheckContextMenu").then((m) => ({
-      default: m.SpellcheckContextMenu,
-    })),
+const SpellcheckContextMenu = lazy(() =>
+  import("./components/SpellcheckContextMenu").then((m) => ({
+    default: m.SpellcheckContextMenu,
+  })),
 )
 
 export const App = observer(function App() {

@@ -6,9 +6,7 @@ declare module "nspell" {
     remove(word: string): void
     spell(word: string): boolean
   }
-  interface NSpellConstructor {
-    (aff: BufferSource, dic: BufferSource): NSpellInstance
-  }
+  type NSpellConstructor = (aff: BufferSource, dic: BufferSource) => NSpellInstance
   const nspell: NSpellConstructor
   export default nspell
 }

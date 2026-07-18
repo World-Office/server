@@ -4,37 +4,37 @@ import { mergeAttributes } from "@tiptap/core"
 let pageCounter = 0
 
 function nextPageNumber(): number {
-	pageCounter++
-	return pageCounter
+  pageCounter++
+  return pageCounter
 }
 
 export const PageNumber = Node.create({
-	name: "pageNumber",
-	group: "inline",
-	inline: true,
-	atom: true,
-	selectable: true,
-	draggable: true,
+  name: "pageNumber",
+  group: "inline",
+  inline: true,
+  atom: true,
+  selectable: true,
+  draggable: true,
 
-	addAttributes() {
-		return {
-			position: { default: "bottom" },
-		}
-	},
+  addAttributes() {
+    return {
+      position: { default: "bottom" },
+    }
+  },
 
-	parseHTML() {
-		return [{ tag: 'span[data-page-number]' }]
-	},
+  parseHTML() {
+    return [{ tag: "span[data-page-number]" }]
+  },
 
-	renderHTML({ HTMLAttributes }) {
-		return [
-			"span",
-			mergeAttributes(HTMLAttributes, {
-				"data-page-number": "",
-				contenteditable: "false",
-				style: "display: inline-block; min-width: 2ch; user-select: none; color: #888;",
-			}),
-			`${nextPageNumber()}`,
-		]
-	},
+  renderHTML({ HTMLAttributes }) {
+    return [
+      "span",
+      mergeAttributes(HTMLAttributes, {
+        "data-page-number": "",
+        contenteditable: "false",
+        style: "display: inline-block; min-width: 2ch; user-select: none; color: #888;",
+      }),
+      `${nextPageNumber()}`,
+    ]
+  },
 })

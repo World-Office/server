@@ -64,7 +64,10 @@ export async function convertFromHtml(html: string, targetFormat: string): Promi
   // TXT is a special case — strip HTML tags server-side would be ideal,
   // but we can do it client-side for immediate export
   if (targetFormat === "txt") {
-    const text = html.replace(/<br\s*\/?>/gi, "\n").replace(/<\/p>/gi, "\n\n").replace(/<[^>]+>/g, "")
+    const text = html
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/p>/gi, "\n\n")
+      .replace(/<[^>]+>/g, "")
     return new Blob([text.trim()], { type: "text/plain" })
   }
 

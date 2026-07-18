@@ -1,10 +1,10 @@
 import { observer } from "mobx-react-lite"
-import { lazy, Suspense, useEffect, useRef, useState } from "react"
+import { Suspense, lazy, useEffect, useRef, useState } from "react"
+import { useSpellcheck } from "../lib/spellcheck-context"
 import { isCanvasFormat } from "../lib/wasm-renderer"
 import { documentStore } from "../stores/DocumentStore"
 import { DocumentCanvas } from "./DocumentCanvas"
 import { RichTextEditor } from "./RichTextEditor"
-import { useSpellcheck } from "../lib/spellcheck-context"
 
 const MonacoEditor = lazy(() => import("./MonacoEditor").then((m) => ({ default: m.MonacoEditor })))
 
@@ -64,7 +64,10 @@ export const DocumentHolder = observer(function DocumentHolder() {
 
   const handleRichTextChange = (html: string) => {
     documentStore.updateRichText(html)
-    const text = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
+    const text = html
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
     documentStore.setWordCount(text ? text.split(/\s+/).length : 0)
     if (!documentStore.wopiConnection) return
     if (documentStore.wopiFileInfo && !documentStore.wopiFileInfo.UserCanWrite) return
@@ -106,7 +109,11 @@ export const DocumentHolder = observer(function DocumentHolder() {
           backgroundColor: "#e8e8e8",
         }}
       >
-        <RichTextEditor html={documentStore.richTextHtml ?? ""} onChange={handleRichTextChange} spellchecker={spellcheck.spellchecker} />
+        <RichTextEditor
+          html={documentStore.richTextHtml ?? ""}
+          onChange={handleRichTextChange}
+          spellchecker={spellcheck.spellchecker}
+        />
       </div>
     )
   }

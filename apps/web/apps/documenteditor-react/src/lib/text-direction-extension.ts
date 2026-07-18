@@ -54,7 +54,11 @@ export const TextDirectionExtension = Extension.create<TextDirectionOptions>({
     const cmds: Record<string, (...args: any[]) => any> = {
       setTextDirection:
         (direction: "ltr" | "rtl") =>
-        ({ tr, state, dispatch }: {
+        ({
+          tr,
+          state,
+          dispatch,
+        }: {
           tr: Transaction
           state: EditorState
           dispatch: ((tr: Transaction) => void) | undefined
@@ -79,7 +83,11 @@ export const TextDirectionExtension = Extension.create<TextDirectionOptions>({
         },
       unsetTextDirection:
         () =>
-        ({ tr, state, dispatch }: {
+        ({
+          tr,
+          state,
+          dispatch,
+        }: {
           tr: Transaction
           state: EditorState
           dispatch: ((tr: Transaction) => void) | undefined

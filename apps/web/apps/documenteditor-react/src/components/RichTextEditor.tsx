@@ -19,17 +19,22 @@ import { EditorContent, useEditor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react"
 import { CommentMark } from "../lib/comment-mark"
-import { DatePickerControl, DropdownControl, CheckboxControl, PlainTextControl } from "../lib/content-controls"
+import {
+  CheckboxControl,
+  DatePickerControl,
+  DropdownControl,
+  PlainTextControl,
+} from "../lib/content-controls"
 import { EndnoteMark } from "../lib/endnote-mark"
 import { FootnoteMark } from "../lib/footnote-mark"
 import { LineSpacingExtension } from "../lib/line-spacing-extension"
+import { PageNumber } from "../lib/page-number"
+import { ParagraphBorders } from "../lib/paragraph-borders"
+import { setActiveRichTextEditor } from "../lib/rte-command"
 import { SpellcheckExtension } from "../lib/spellcheck-extension"
 import { TextDirectionExtension } from "../lib/text-direction-extension"
-import { TrackInsertMark, TrackDeleteMark } from "../lib/track-changes"
 import { TableOfContents } from "../lib/toc-extension"
-import { ParagraphBorders } from "../lib/paragraph-borders"
-import { PageNumber } from "../lib/page-number"
-import { setActiveRichTextEditor } from "../lib/rte-command"
+import { TrackDeleteMark, TrackInsertMark } from "../lib/track-changes"
 
 export interface RichTextEditorHandle {
   getHTML(): string

@@ -4,14 +4,14 @@ import type { ReactNode } from "react"
 import { collaborationStore } from "../lib/collaboration"
 import type { PageLayoutSettings, RichTextCommand } from "../lib/rte-command"
 import { documentStore } from "../stores/DocumentStore"
+import { CommentsPanel } from "./CommentsPanel"
 import { DocumentHolder } from "./DocumentHolder"
-import { HeaderFooterEditor } from "./HeaderFooter"
 import { FileMenu } from "./FileMenu/FileMenu"
+import { HeaderFooterEditor } from "./HeaderFooter"
 import { LeftMenu } from "./LeftMenu/LeftMenu"
 import { OfflineBadge } from "./OfflineBadge"
-import { RightMenu } from "./RightMenu/RightMenu"
 import { AiAssistantPanel } from "./RightMenu/AiAssistantPanel"
-import { CommentsPanel } from "./CommentsPanel"
+import { RightMenu } from "./RightMenu/RightMenu"
 import { StatusBar } from "./StatusBar/StatusBar"
 import type { MonacoCommand } from "./Toolbar/MonacoCommand"
 import { Toolbar } from "./Toolbar/Toolbar"
@@ -150,7 +150,11 @@ export function Viewport({
           {rightMenuVisible && (
             <div
               className="de-viewport-right-menu"
-              style={{ width: "var(--wo-de-rightmenu-width, 40px)", display: "flex", position: "relative" }}
+              style={{
+                width: "var(--wo-de-rightmenu-width, 40px)",
+                display: "flex",
+                position: "relative",
+              }}
             >
               <RightMenu />
               <AiAssistantPanel visible={documentStore.activeRightPanel === "ai-assistant"} />

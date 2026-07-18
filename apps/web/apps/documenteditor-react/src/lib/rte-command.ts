@@ -11,12 +11,19 @@
  */
 
 import type { Editor } from "@tiptap/core"
-import { toggleTrackChanges, acceptChange, rejectChange, acceptAllChanges, rejectAllChanges, nextChange } from "./track-changes"
-import { insertTableOfContentsCommand, updateTableOfContentsCommand } from "./toc-extension"
-import { insertFootnoteCommand } from "./footnote-mark"
-import { insertEndnoteCommand } from "./endnote-mark"
-import { currentUser } from "./collaboration"
 import { documentStore } from "../stores/DocumentStore"
+import { currentUser } from "./collaboration"
+import { insertEndnoteCommand } from "./endnote-mark"
+import { insertFootnoteCommand } from "./footnote-mark"
+import { insertTableOfContentsCommand, updateTableOfContentsCommand } from "./toc-extension"
+import {
+  acceptAllChanges,
+  acceptChange,
+  nextChange,
+  rejectAllChanges,
+  rejectChange,
+  toggleTrackChanges,
+} from "./track-changes"
 
 export type RichTextCommand =
   | "bold"
@@ -497,10 +504,12 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       window.dispatchEvent(new CustomEvent("world-office:columns", { detail: { count: 1 } }))
       return true
     case "editHeader":
-      documentStore.headerFooterMode = documentStore.headerFooterMode === "header" ? "none" : "header"
+      documentStore.headerFooterMode =
+        documentStore.headerFooterMode === "header" ? "none" : "header"
       return true
     case "editFooter":
-      documentStore.headerFooterMode = documentStore.headerFooterMode === "footer" ? "none" : "footer"
+      documentStore.headerFooterMode =
+        documentStore.headerFooterMode === "footer" ? "none" : "footer"
       return true
     case "openSearch": {
       const query = window.prompt("Search for:", searchState.query || "")
@@ -654,17 +663,36 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
     case "nextChange":
       return nextChange(editor)
     case "insertPageNumber":
-      return editor.chain().focus().insertContent('<span data-page-number>1</span>').run()
+      return editor.chain().focus().insertContent("<span data-page-number>1</span>").run()
     case "insertPlainTextControl":
-      return editor.chain().focus().insertContent('<span data-content-control="plain-text">Enter text</span>').run()
+      return editor
+        .chain()
+        .focus()
+        .insertContent('<span data-content-control="plain-text">Enter text</span>')
+        .run()
     case "insertDropdownControl":
-      return editor.chain().focus().insertContent('<span data-content-control="dropdown" data-options="">Select...</span>').run()
+      return editor
+        .chain()
+        .focus()
+        .insertContent('<span data-content-control="dropdown" data-options="">Select...</span>')
+        .run()
     case "insertCheckboxControl":
-      return editor.chain().focus().insertContent('<span data-content-control="checkbox">☐</span>').run()
+      return editor
+        .chain()
+        .focus()
+        .insertContent('<span data-content-control="checkbox">☐</span>')
+        .run()
     case "insertDatePickerControl":
-      return editor.chain().focus().insertContent('<span data-content-control="date-picker"></span>').run()
+      return editor
+        .chain()
+        .focus()
+        .insertContent('<span data-content-control="date-picker"></span>')
+        .run()
     case "setBoxBorder":
-      return editor.commands.setBorderTop({ borderTop: "2px solid #000" }) && editor.commands.setBorderBottom({ borderBottom: "2px solid #000" })
+      return (
+        editor.commands.setBorderTop({ borderTop: "2px solid #000" }) &&
+        editor.commands.setBorderBottom({ borderBottom: "2px solid #000" })
+      )
     case "removeBorders":
       return editor.commands.removeBorders()
   }

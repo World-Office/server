@@ -15,7 +15,7 @@ export const EndnoteMark = Mark.create({
   },
 
   parseHTML() {
-    return [{ tag: 'sup[data-endnote-id]' }]
+    return [{ tag: "sup[data-endnote-id]" }]
   },
 
   renderHTML({ HTMLAttributes }) {
@@ -25,9 +25,13 @@ export const EndnoteMark = Mark.create({
 
 export function insertEndnoteCommand(editor: Editor) {
   const id = `en-${String(Date.now())}`
-  return editor.chain().focus().insertContent({
-    type: "text",
-    marks: [{ type: EndnoteMark.name, attrs: { id } }],
-    text: id.slice(-3),
-  }).run()
+  return editor
+    .chain()
+    .focus()
+    .insertContent({
+      type: "text",
+      marks: [{ type: EndnoteMark.name, attrs: { id } }],
+      text: id.slice(-3),
+    })
+    .run()
 }

@@ -86,7 +86,10 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
 
       {error && (
         <div className="de-file-menu-body">
-          <p className="de-file-menu-instruction" style={{ color: "var(--wo-color-error, #cc0000)" }}>
+          <p
+            className="de-file-menu-instruction"
+            style={{ color: "var(--wo-color-error, #cc0000)" }}
+          >
             {error}
           </p>
         </div>

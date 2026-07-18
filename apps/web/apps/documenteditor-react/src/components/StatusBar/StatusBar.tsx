@@ -1,6 +1,4 @@
 import { CollaborationStatus, CollaboratorList } from "@world-office/collaboration-react"
-import { useState } from "react"
-import { useTranslation } from "react-i18next"
 import {
   Check,
   ChevronLeft,
@@ -16,7 +14,9 @@ import {
   ZoomOut,
 } from "lucide-react"
 import { observer } from "mobx-react-lite"
+import { useState } from "react"
 import type { JSX } from "react"
+import { useTranslation } from "react-i18next"
 import { collaborationStore } from "../../lib/collaboration"
 import { documentStore } from "../../stores/DocumentStore"
 
@@ -122,7 +122,12 @@ const ObservedStatusBar = observer(function ObservedStatusBar(): JSX.Element {
 
       {/* Language selector */}
       <div className="de-statusbar-tools">
-        <select className="de-statusbar-select" value={languageCode} aria-label={t("Language")} onChange={(e) => documentStore.setLanguageCode(e.target.value)}>
+        <select
+          className="de-statusbar-select"
+          value={languageCode}
+          aria-label={t("Language")}
+          onChange={(e) => documentStore.setLanguageCode(e.target.value)}
+        >
           <option value="en-US">EN</option>
           <option value="es-ES">ES</option>
           <option value="fr-FR">FR</option>

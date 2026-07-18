@@ -1,9 +1,11 @@
-import { useTranslation } from "react-i18next"
 import i18n from "i18next"
 import { observer } from "mobx-react-lite"
+import { useTranslation } from "react-i18next"
 import { documentStore } from "../../../stores/DocumentStore"
 
-const ObservedSettingsPanel = observer(function ObservedSettingsPanel({ visible }: { visible: boolean }) {
+const ObservedSettingsPanel = observer(function ObservedSettingsPanel({
+  visible,
+}: { visible: boolean }) {
   const { t } = useTranslation()
 
   function handleClose(): void {

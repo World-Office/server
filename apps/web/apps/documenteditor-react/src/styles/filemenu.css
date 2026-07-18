@@ -206,13 +206,31 @@
   pointer-events: none;
 }
 
-.de-template-preview-body h1 { font-size: 14px; margin: 4px 0; }
-.de-template-preview-body h2 { font-size: 12px; margin: 4px 0; }
-.de-template-preview-body h3 { font-size: 11px; margin: 2px 0; }
-.de-template-preview-body p { margin: 2px 0; }
-.de-template-preview-body table { border-collapse: collapse; width: 100%; }
+.de-template-preview-body h1 {
+  font-size: 14px;
+  margin: 4px 0;
+}
+.de-template-preview-body h2 {
+  font-size: 12px;
+  margin: 4px 0;
+}
+.de-template-preview-body h3 {
+  font-size: 11px;
+  margin: 2px 0;
+}
+.de-template-preview-body p {
+  margin: 2px 0;
+}
+.de-template-preview-body table {
+  border-collapse: collapse;
+  width: 100%;
+}
 .de-template-preview-body td,
-.de-template-preview-body th { border: 1px solid #ddd; padding: 2px 4px; font-size: 10px; }
+.de-template-preview-body th {
+  border: 1px solid #ddd;
+  padding: 2px 4px;
+  font-size: 10px;
+}
 
 /* --- Document Info panel --- */
 .de-file-menu-info-table {

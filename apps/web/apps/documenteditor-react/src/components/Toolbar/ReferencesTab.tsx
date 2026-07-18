@@ -1,7 +1,7 @@
 import { observer } from "mobx-react-lite"
+import { insertFootnoteCommand } from "../../lib/footnote-mark"
 import { getActiveRichTextEditor } from "../../lib/rte-command"
 import { insertTableOfContentsCommand, updateTableOfContentsCommand } from "../../lib/toc-extension"
-import { insertFootnoteCommand } from "../../lib/footnote-mark"
 
 const ObservedReferencesTab = observer(function ObservedReferencesTab() {
   return (
