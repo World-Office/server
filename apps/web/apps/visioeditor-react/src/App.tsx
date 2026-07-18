@@ -1,5 +1,5 @@
 import { ThemeProvider } from "@world-office/design-system";
-import { lazy, Suspense, useCallback, useEffect, useRef } from "react";
+import { Suspense, lazy, useCallback, useEffect, useRef } from "react";
 import { getActiveEditor } from "./components/MonacoEditor";
 import {
 	type MonacoCommand,
@@ -11,11 +11,10 @@ import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { flowchartStore } from "./stores/FlowchartStore";
 import { visioStore } from "./stores/VisioStore";
 
-const VisioCollaborationProvider = lazy(
-	() =>
-		import("./components/VisioCollaborationProvider").then((m) => ({
-			default: m.VisioCollaborationProvider,
-		})),
+const VisioCollaborationProvider = lazy(() =>
+	import("./components/VisioCollaborationProvider").then((m) => ({
+		default: m.VisioCollaborationProvider,
+	})),
 );
 
 function LoadingScreen(): React.JSX.Element {

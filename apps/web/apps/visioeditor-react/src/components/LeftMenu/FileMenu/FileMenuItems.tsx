@@ -34,7 +34,7 @@ export function FileMenuItems({
 	onMenuClick,
 	onBack,
 }: FileMenuItemsProps): JSX.Element {
-	const { t } = useTranslation()
+	const { t } = useTranslation();
 	const activePanel = visioStore.activeFileMenuPanel;
 
 	function handleBack(): void {
@@ -72,7 +72,9 @@ export function FileMenuItems({
 						handleKeyDown(e, () => onMenuClick(item.action, item.hasPanel))
 					}
 				>
-					<span className="visio-file-menu-item-caption">{t(item.caption)}</span>
+					<span className="visio-file-menu-item-caption">
+						{t(item.caption)}
+					</span>
 				</div>
 			))}
 		</ul>

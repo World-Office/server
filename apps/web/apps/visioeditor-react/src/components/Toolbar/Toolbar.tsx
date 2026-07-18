@@ -1,5 +1,8 @@
 import { Ribbon, visioRibbonSpec } from "@world-office/editor-common";
-import type { RibbonCommandDispatch, RibbonContext } from "@world-office/editor-common";
+import type {
+	RibbonCommandDispatch,
+	RibbonContext,
+} from "@world-office/editor-common";
 import { detectWopiParams } from "@world-office/wopi-client";
 import { flowchartStore } from "../../stores/FlowchartStore";
 import { visioStore } from "../../stores/VisioStore";
