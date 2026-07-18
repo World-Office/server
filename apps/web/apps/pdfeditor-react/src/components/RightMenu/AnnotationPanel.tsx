@@ -1,8 +1,8 @@
 import { observer } from "mobx-react-lite"
 import type { JSX } from "react"
 import { pdfStore } from "../../stores/PdfStore"
-import { AnnotationEditor } from "../AnnotationEditor"
 import type { PdfAnnotation } from "../../stores/PdfStore"
+import { AnnotationEditor } from "../AnnotationEditor"
 
 function AnnotationPanelInner(): JSX.Element {
   const annotations = pdfStore.annotations
@@ -23,7 +23,10 @@ function AnnotationPanelInner(): JSX.Element {
   }
 
   return (
-    <div className="pdf-annotation-panel" style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8, height: "100%" }}>
+    <div
+      className="pdf-annotation-panel"
+      style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8, height: "100%" }}
+    >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Annotations</h3>
         <button
@@ -48,13 +51,31 @@ function AnnotationPanelInner(): JSX.Element {
       )}
 
       {pageAnnotations.map((annot: PdfAnnotation) => (
-        <div key={annot.id} style={{ border: "1px solid #ddd", borderRadius: 6, overflow: "hidden" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 8px", background: "#f5f5f5", fontSize: 12 }}>
+        <div
+          key={annot.id}
+          style={{ border: "1px solid #ddd", borderRadius: 6, overflow: "hidden" }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "4px 8px",
+              background: "#f5f5f5",
+              fontSize: 12,
+            }}
+          >
             <span style={{ fontWeight: 500 }}>{annot.id.slice(0, 12)}</span>
             <button
               type="button"
               onClick={() => pdfStore.removeAnnotation(annot.id)}
-              style={{ background: "none", border: "none", color: "#d32f2f", cursor: "pointer", fontSize: 14 }}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#d32f2f",
+                cursor: "pointer",
+                fontSize: 14,
+              }}
             >
               ✕
             </button>
@@ -82,9 +103,13 @@ function AnnotationPanelInner(): JSX.Element {
                   }
                 }}
                 style={{
-                  width: 16, height: 16, borderRadius: "50%",
-                  background: c, border: c === annot.color ? "2px solid #333" : "2px solid transparent",
-                  cursor: "pointer", padding: 0,
+                  width: 16,
+                  height: 16,
+                  borderRadius: "50%",
+                  background: c,
+                  border: c === annot.color ? "2px solid #333" : "2px solid transparent",
+                  cursor: "pointer",
+                  padding: 0,
                 }}
               />
             ))}

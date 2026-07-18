@@ -1,5 +1,5 @@
-import { useTranslation } from "react-i18next"
 import i18n from "i18next"
+import { useTranslation } from "react-i18next"
 
 export function SettingsPanel({ visible }: { visible: boolean }) {
   const { t } = useTranslation()

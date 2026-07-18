@@ -1,13 +1,17 @@
 import { ThemeProvider } from "@world-office/design-system"
 import { useDocumentLoader } from "@world-office/wopi-client"
-import { lazy, Suspense, useCallback } from "react"
+import { Suspense, lazy, useCallback } from "react"
 import { getActiveEditor } from "./components/MonacoEditor"
 import { type MonacoCommand, dispatchMonacoCommand } from "./components/Toolbar/MonacoCommand"
 import { Viewport } from "./components/Viewport"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { pdfStore } from "./stores/PdfStore"
 
-const PdfCollaborationProvider = lazy(() => import("./components/PdfCollaborationProvider"))
+const PdfCollaborationProvider = lazy(() =>
+  import("./components/PdfCollaborationProvider").then((m) => ({
+    default: m.PdfCollaborationProvider,
+  })),
+)
 
 export function App() {
   useKeyboardShortcuts()
