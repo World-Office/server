@@ -17,6 +17,7 @@ import { NotificationConfig } from './pages/NotificationConfig';
 import { AiChat } from './pages/AiChat';
 import { AiProviders } from './pages/AiProviders';
 import { AiSettings } from './pages/AiSettings';
+import { SsoProviders } from './pages/SsoProviders';
 
 export function App() {
   return (
@@ -39,6 +40,7 @@ export function App() {
         <Route path="/ai/chat" element={<AiChat />} />
         <Route path="/ai/providers" element={<AiProviders />} />
         <Route path="/ai/settings" element={<AiSettings />} />
+        <Route path="/sso/providers" element={<SsoProviders />} />
       </Route>
     </Routes>
   );

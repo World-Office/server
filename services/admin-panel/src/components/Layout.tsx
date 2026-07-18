@@ -43,6 +43,10 @@ const navSections: NavSection[] = [
     items: [{ path: '/notification-config', label: 'Notification Config' }],
   },
   {
+    heading: 'SSO',
+    items: [{ path: '/sso/providers', label: 'SSO Providers' }],
+  },
+  {
     heading: 'AI',
     items: [
       { path: '/ai/chat', label: 'AI Chat' },
