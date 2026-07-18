@@ -1,7 +1,7 @@
+import { useTranslation } from "react-i18next"
 import { openFile } from "../../bridge/file-operations"
 import { documentStore } from "../../stores/DocumentStore"
 import type { FileMenuAction } from "../../types/document"
-import { useTranslation } from "react-i18next"
 
 interface FileMenuItemsProps {
   onMenuClick: (action: string, hasPanel: boolean) => void

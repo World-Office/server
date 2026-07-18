@@ -92,7 +92,9 @@ const ObservedCommentsPanel = observer(function ObservedCommentsPanel({
           background: "#f8f9fa",
         }}
       >
-        <span>Comments {commentsStore.activeCount > 0 ? `(${commentsStore.activeCount})` : ""}</span>
+        <span>
+          Comments {commentsStore.activeCount > 0 ? `(${commentsStore.activeCount})` : ""}
+        </span>
         <button
           type="button"
           onClick={() => documentStore.setActiveRightPanel(null)}
@@ -124,7 +126,11 @@ const ObservedCommentsPanel = observer(function ObservedCommentsPanel({
         <textarea
           value={newCommentText}
           onChange={(e) => setNewCommentText(e.target.value)}
-          placeholder={editor?.state.selection.from !== editor?.state.selection.to ? "Comment on selected text\u2026" : "Select text first, then add a comment\u2026"}
+          placeholder={
+            editor?.state.selection.from !== editor?.state.selection.to
+              ? "Comment on selected text\u2026"
+              : "Select text first, then add a comment\u2026"
+          }
           rows={3}
           style={{
             width: "100%",
@@ -140,7 +146,11 @@ const ObservedCommentsPanel = observer(function ObservedCommentsPanel({
         <button
           type="button"
           onClick={handleAddComment}
-          disabled={!newCommentText.trim() || !editor || editor.state.selection.from === editor.state.selection.to}
+          disabled={
+            !newCommentText.trim() ||
+            !editor ||
+            editor.state.selection.from === editor.state.selection.to
+          }
           style={{
             padding: "6px 16px",
             background: "#2ecc71",
@@ -151,7 +161,12 @@ const ObservedCommentsPanel = observer(function ObservedCommentsPanel({
             fontSize: 13,
             fontWeight: 500,
             alignSelf: "flex-end",
-            opacity: !newCommentText.trim() || !editor || editor.state.selection.from === editor.state.selection.to ? 0.5 : 1,
+            opacity:
+              !newCommentText.trim() ||
+              !editor ||
+              editor.state.selection.from === editor.state.selection.to
+                ? 0.5
+                : 1,
           }}
         >
           Add Comment
@@ -174,7 +189,15 @@ const ObservedCommentsPanel = observer(function ObservedCommentsPanel({
         )}
 
         {/* Unresolved comments */}
-        {unresolved.map((comment) => renderComment(comment, replyTexts, handleAddReply, handleNavigateToComment, setReplyTexts))}
+        {unresolved.map((comment) =>
+          renderComment(
+            comment,
+            replyTexts,
+            handleAddReply,
+            handleNavigateToComment,
+            setReplyTexts,
+          ),
+        )}
 
         {/* Resolved comments section */}
         {resolved.length > 0 && (
@@ -191,7 +214,15 @@ const ObservedCommentsPanel = observer(function ObservedCommentsPanel({
             >
               Resolved ({resolved.length})
             </div>
-            {resolved.map((comment) => renderComment(comment, replyTexts, handleAddReply, handleNavigateToComment, setReplyTexts))}
+            {resolved.map((comment) =>
+              renderComment(
+                comment,
+                replyTexts,
+                handleAddReply,
+                handleNavigateToComment,
+                setReplyTexts,
+              ),
+            )}
           </>
         )}
       </div>
@@ -353,9 +384,7 @@ function renderComment(
         <input
           type="text"
           value={replyTexts[comment.id] ?? ""}
-          onChange={(e) =>
-            setReplyTexts((prev) => ({ ...prev, [comment.id]: e.target.value }))
-          }
+          onChange={(e) => setReplyTexts((prev) => ({ ...prev, [comment.id]: e.target.value }))}
           placeholder="Reply\u2026"
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {

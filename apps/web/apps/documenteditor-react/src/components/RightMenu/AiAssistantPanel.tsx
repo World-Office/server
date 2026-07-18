@@ -58,10 +58,11 @@ export function AiAssistantPanel({ visible }: { visible: boolean }) {
   function replaceSelection(text: string): void {
     const editor = getActiveRichTextEditor()
     if (!editor) return
-    editor.chain().focus().insertContentAt(
-      { from: editor.state.selection.from, to: editor.state.selection.to },
-      text,
-    ).run()
+    editor
+      .chain()
+      .focus()
+      .insertContentAt({ from: editor.state.selection.from, to: editor.state.selection.to }, text)
+      .run()
   }
 
   async function handleAction(action: AiAction): Promise<void> {
@@ -133,9 +134,7 @@ export function AiAssistantPanel({ visible }: { visible: boolean }) {
 
       <div className="de-ai-assistant-body">
         {!hasSelection && (
-          <p className="de-ai-assistant-hint">
-            Select text in the document to use AI actions.
-          </p>
+          <p className="de-ai-assistant-hint">Select text in the document to use AI actions.</p>
         )}
 
         {hasSelection && (
@@ -155,9 +154,7 @@ export function AiAssistantPanel({ visible }: { visible: boolean }) {
           </div>
         )}
 
-        {error && (
-          <div className="de-ai-assistant-error">{error}</div>
-        )}
+        {error && <div className="de-ai-assistant-error">{error}</div>}
 
         {result && (
           <div className="de-ai-assistant-result">

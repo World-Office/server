@@ -40,7 +40,10 @@ export async function callAi(prompt: string, systemPrompt?: string): Promise<str
 }
 
 export async function summarizeSelection(text: string): Promise<string> {
-  return callAi(text, "Summarize the following text concisely. Output only the summary, no preamble.")
+  return callAi(
+    text,
+    "Summarize the following text concisely. Output only the summary, no preamble.",
+  )
 }
 
 export async function improveWriting(text: string): Promise<string> {

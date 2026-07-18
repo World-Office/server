@@ -15,7 +15,7 @@ export const FootnoteMark = Mark.create({
   },
 
   parseHTML() {
-    return [{ tag: 'sup[data-footnote-id]' }]
+    return [{ tag: "sup[data-footnote-id]" }]
   },
 
   renderHTML({ HTMLAttributes }) {
@@ -25,11 +25,15 @@ export const FootnoteMark = Mark.create({
 
 export function insertFootnoteCommand(editor: Editor) {
   const id = String(Date.now())
-  return editor.chain().focus().insertContent({
-    type: "text",
-    marks: [{ type: FootnoteMark.name, attrs: { id } }],
-    text: id.slice(-3),
-  }).run()
+  return editor
+    .chain()
+    .focus()
+    .insertContent({
+      type: "text",
+      marks: [{ type: FootnoteMark.name, attrs: { id } }],
+      text: id.slice(-3),
+    })
+    .run()
 }
 
 export const FootnoteContent = Mark.create({
@@ -46,7 +50,7 @@ export const FootnoteContent = Mark.create({
   },
 
   parseHTML() {
-    return [{ tag: 'div[data-footnote-content-id]' }]
+    return [{ tag: "div[data-footnote-content-id]" }]
   },
 
   renderHTML({ HTMLAttributes }) {

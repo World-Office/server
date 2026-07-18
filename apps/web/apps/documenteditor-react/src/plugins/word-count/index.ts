@@ -1,4 +1,4 @@
-import type { WorldOfficePlugin, PluginContext } from "@world-office/editor-common"
+import type { PluginContext, WorldOfficePlugin } from "@world-office/editor-common"
 
 function countWords(text: string): { words: number; chars: number; charsNoSpaces: number } {
   const trimmed = text.trim()
@@ -24,7 +24,7 @@ const wordCountPlugin: WorldOfficePlugin = {
       group: "Editing",
       onClick: () => {
         const selection = ctx.editor.getSelection()
-        const text = selection.text || (document.body.innerText || "")
+        const text = selection.text || document.body.innerText || ""
         const counts = countWords(text)
         const msg = `Words: ${counts.words} | Characters: ${counts.chars} | No spaces: ${counts.charsNoSpaces}`
         window.dispatchEvent(new CustomEvent("plugin-show-toast", { detail: { message: msg } }))

@@ -14,7 +14,7 @@
 //   { type: 'set_user', userId: string, userName: string }
 //   { type: 'theme', theme: 'light' | 'dark' }
 
-import { useEffect, useCallback } from "react";
+import { useCallback, useEffect } from "react"
 
 type UpstreamEvent =
   | { type: "app_ready" }
@@ -22,73 +22,68 @@ type UpstreamEvent =
   | { type: "document_modified" }
   | { type: "document_saved"; version: string }
   | { type: "error"; code: string; message: string }
-  | { type: "request_close" };
+  | { type: "request_close" }
 
 type DownstreamCommand =
   | { type: "save" }
   | { type: "close" }
   | { type: "set_user"; userId: string; userName: string }
-  | { type: "theme"; theme: "light" | "dark" };
+  | { type: "theme"; theme: "light" | "dark" }
 
 export function useEmbeddedBridge(options: {
-  embedded: boolean;
-  onSave?: () => Promise<void>;
-  onClose?: () => void;
-  onSetUser?: (userId: string, userName: string) => void;
-  onThemeChange?: (theme: "light" | "dark") => void;
+  embedded: boolean
+  onSave?: () => Promise<void>
+  onClose?: () => void
+  onSetUser?: (userId: string, userName: string) => void
+  onThemeChange?: (theme: "light" | "dark") => void
 }) {
-  const { embedded, onSave, onClose, onSetUser, onThemeChange } = options;
+  const { embedded, onSave, onClose, onSetUser, onThemeChange } = options
 
   const postToParent = useCallback((event: UpstreamEvent) => {
     if (window.parent !== window) {
-      window.parent.postMessage(
-        { source: "worldoffice-editor", ...event },
-        "*",
-      );
+      window.parent.postMessage({ source: "worldoffice-editor", ...event }, "*")
     }
-  }, []);
+  }, [])
 
   useEffect(() => {
-    if (!embedded) return;
+    if (!embedded) return
 
-    postToParent({ type: "app_ready" });
+    postToParent({ type: "app_ready" })
 
     const handleDownstream = (event: MessageEvent) => {
-      const data = event.data;
-      if (data?.source !== "worldoffice-nextcloud") return;
+      const data = event.data
+      if (data?.source !== "worldoffice-nextcloud") return
 
-      const cmd = data as DownstreamCommand;
+      const cmd = data as DownstreamCommand
       switch (cmd.type) {
         case "save":
           if (onSave) {
             onSave()
-              .then(() =>
-                postToParent({ type: "document_saved", version: "" }),
-              )
+              .then(() => postToParent({ type: "document_saved", version: "" }))
               .catch(() =>
                 postToParent({
                   type: "error",
                   code: "SAVE_FAILED",
                   message: "Failed to save document",
                 }),
-              );
+              )
           }
-          break;
+          break
         case "close":
-          if (onClose) onClose();
-          break;
+          if (onClose) onClose()
+          break
         case "set_user":
-          if (onSetUser) onSetUser(cmd.userId, cmd.userName);
-          break;
+          if (onSetUser) onSetUser(cmd.userId, cmd.userName)
+          break
         case "theme":
-          if (onThemeChange) onThemeChange(cmd.theme);
-          break;
+          if (onThemeChange) onThemeChange(cmd.theme)
+          break
       }
-    };
+    }
 
-    window.addEventListener("message", handleDownstream);
-    return () => window.removeEventListener("message", handleDownstream);
-  }, [embedded, onSave, onClose, onSetUser, onThemeChange, postToParent]);
+    window.addEventListener("message", handleDownstream)
+    return () => window.removeEventListener("message", handleDownstream)
+  }, [embedded, onSave, onClose, onSetUser, onThemeChange, postToParent])
 
   return {
     notifyDocumentReady: useCallback(
@@ -104,13 +99,9 @@ export function useEmbeddedBridge(options: {
       [postToParent],
     ),
     notifyError: useCallback(
-      (code: string, message: string) =>
-        postToParent({ type: "error", code, message }),
+      (code: string, message: string) => postToParent({ type: "error", code, message }),
       [postToParent],
     ),
-    notifyRequestClose: useCallback(
-      () => postToParent({ type: "request_close" }),
-      [postToParent],
-    ),
-  };
+    notifyRequestClose: useCallback(() => postToParent({ type: "request_close" }), [postToParent]),
+  }
 }

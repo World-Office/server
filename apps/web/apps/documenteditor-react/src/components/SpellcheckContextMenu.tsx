@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react"
 import type { SpellChecker } from "@world-office/spellchecker"
+import { useEffect, useRef, useState } from "react"
 
 interface SpellcheckContextMenuProps {
   spellchecker: SpellChecker | null
@@ -64,11 +64,7 @@ export function SpellcheckContextMenu({
   if (!menu) return null
 
   return (
-    <div
-      ref={menuRef}
-      className="spellcheck-context-menu"
-      style={{ left: menu.x, top: menu.y }}
-    >
+    <div ref={menuRef} className="spellcheck-context-menu" style={{ left: menu.x, top: menu.y }}>
       {menu.suggestions.length > 0 ? (
         menu.suggestions.slice(0, 5).map((suggestion) => (
           <button
@@ -100,9 +96,7 @@ export function SpellcheckContextMenu({
           </button>
         ))
       ) : (
-        <div style={{ padding: "6px 12px", color: "#999", fontSize: 13 }}>
-          No suggestions
-        </div>
+        <div style={{ padding: "6px 12px", color: "#999", fontSize: 13 }}>No suggestions</div>
       )}
 
       <div className="spellcheck-divider" />

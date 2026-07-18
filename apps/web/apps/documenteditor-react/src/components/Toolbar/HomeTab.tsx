@@ -33,10 +33,10 @@ import {
 } from "lucide-react"
 import { observer } from "mobx-react-lite"
 import { useState } from "react"
-import type { RichTextCommand } from "../../lib/rte-command"
-import type { MonacoCommand } from "./MonacoCommand"
-import { useSpellcheck } from "../../lib/spellcheck-context"
 import { useTranslation } from "react-i18next"
+import type { RichTextCommand } from "../../lib/rte-command"
+import { useSpellcheck } from "../../lib/spellcheck-context"
+import type { MonacoCommand } from "./MonacoCommand"
 
 interface HomeTabProps {
   onMonacoCommand: (command: MonacoCommand) => void

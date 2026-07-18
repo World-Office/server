@@ -30,7 +30,10 @@ export function RightsPanel({ visible }: { visible: boolean }) {
                 <span className="de-file-menu-label">Can Edit</span>
               </td>
               <td className="de-file-menu-right">
-                <span className="de-file-menu-label" style={{ color: info?.UserCanWrite ? "#27ae60" : "#e74c3c" }}>
+                <span
+                  className="de-file-menu-label"
+                  style={{ color: info?.UserCanWrite ? "#27ae60" : "#e74c3c" }}
+                >
                   {info?.UserCanWrite ? "Yes" : "No"}
                 </span>
               </td>

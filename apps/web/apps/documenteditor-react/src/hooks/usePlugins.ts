@@ -11,7 +11,10 @@ interface Plugin {
 export function usePlugins() {
   useEffect(() => {
     // Plugin system requires Tauri desktop runtime — skip in web context
-    if (typeof window !== "undefined" && !(window as unknown as Record<string, unknown>).__TAURI__) {
+    if (
+      typeof window !== "undefined" &&
+      !(window as unknown as Record<string, unknown>).__TAURI__
+    ) {
       return
     }
 

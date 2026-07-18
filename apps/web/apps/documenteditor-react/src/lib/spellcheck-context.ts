@@ -1,5 +1,5 @@
-import { createContext, useContext } from "react"
 import type { SpellChecker } from "@world-office/spellchecker"
+import { createContext, useContext } from "react"
 
 export interface SpellcheckContextValue {
   spellchecker: SpellChecker | null

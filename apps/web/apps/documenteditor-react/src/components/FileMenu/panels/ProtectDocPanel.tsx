@@ -22,7 +22,10 @@ export function ProtectDocPanel({ visible }: { visible: boolean }) {
                 <span className="de-file-menu-label">Editing</span>
               </td>
               <td className="de-file-menu-right">
-                <span className="de-file-menu-label" style={{ color: canEdit ? "#27ae60" : "#e74c3c" }}>
+                <span
+                  className="de-file-menu-label"
+                  style={{ color: canEdit ? "#27ae60" : "#e74c3c" }}
+                >
                   {canEdit ? "Full Access" : "Read Only"}
                 </span>
               </td>

@@ -28,12 +28,10 @@ export const SpellcheckExtension = Extension.create<SpellcheckExtensionOptions>(
 
   addCommands() {
     return {
-      setSpellcheckEnabled:
-        (enabled: boolean) =>
-        () => {
-          this.options.enabled = enabled
-          return true
-        },
+      setSpellcheckEnabled: (enabled: boolean) => () => {
+        this.options.enabled = enabled
+        return true
+      },
     }
   },
 

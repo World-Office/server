@@ -1,5 +1,9 @@
+import {
+  LocalStorageUserDict,
+  PreloadedDictionaryStore,
+  SpellChecker,
+} from "@world-office/spellchecker"
 import { useCallback, useEffect, useRef, useState } from "react"
-import { SpellChecker, PreloadedDictionaryStore, LocalStorageUserDict } from "@world-office/spellchecker"
 
 const DICTIONARIES: Record<string, { aff: string; dic: string }> = {
   "en-US": { aff: "/dictionaries/en-US.aff", dic: "/dictionaries/en-US.dic" },
@@ -21,10 +25,7 @@ export function useSpellchecker() {
 
     setLoading(true)
     try {
-      const [affResp, dicResp] = await Promise.all([
-        fetch(dict.aff),
-        fetch(dict.dic),
-      ])
+      const [affResp, dicResp] = await Promise.all([fetch(dict.aff), fetch(dict.dic)])
       const aff = await affResp.arrayBuffer()
       const dic = await dicResp.arrayBuffer()
 

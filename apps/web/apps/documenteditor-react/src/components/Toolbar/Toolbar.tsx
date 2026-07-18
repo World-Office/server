@@ -36,7 +36,8 @@ const ObservedToolbar = observer(function ObservedToolbar({
 
   const dispatch: RibbonCommandDispatch = {
     onMonacoCommand: (cmd: string) => onMonacoCommand(cmd as MonacoCommand),
-    onRichTextCommand: (cmd: string, value?: string) => onRichTextCommand(cmd as RichTextCommand, value),
+    onRichTextCommand: (cmd: string, value?: string) =>
+      onRichTextCommand(cmd as RichTextCommand, value),
     onCommand: (cmd: string, value?: string) => {
       if (cmd === "save") {
         window.dispatchEvent(new CustomEvent("wo-command", { detail: { command: "save" } }))

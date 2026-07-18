@@ -1,10 +1,10 @@
 import { colors, radii, shadows, spacing, typography } from "@world-office/design-system"
 import {
+  type PluginConfig,
+  type PluginRegistryEntry,
   loadPluginConfig,
   pluginLoader,
   togglePluginEnabled,
-  type PluginConfig,
-  type PluginRegistryEntry,
 } from "@world-office/editor-common"
 import { observer } from "mobx-react-lite"
 import { useCallback, useEffect, useState } from "react"
@@ -16,7 +16,10 @@ interface PluginManagerProps {
   onClose: () => void
 }
 
-export const PluginManager = observer(function PluginManager({ visible, onClose }: PluginManagerProps) {
+export const PluginManager = observer(function PluginManager({
+  visible,
+  onClose,
+}: PluginManagerProps) {
   const [plugins, setPlugins] = useState<PluginRegistryEntry[]>([])
   const [configs, setConfigs] = useState<PluginConfig[]>([])
   const [showMarketplace, setShowMarketplace] = useState(false)
@@ -178,17 +181,8 @@ export const PluginManager = observer(function PluginManager({ visible, onClose 
     padding: `${spacing[0.5]} ${spacing[1]}`,
     borderRadius: radii.sm,
     backgroundColor:
-      status === "active"
-        ? "#d4edda"
-        : status === "failed"
-          ? "#f8d7da"
-          : colors.neutral[100],
-    color:
-      status === "active"
-        ? "#155724"
-        : status === "failed"
-          ? "#721c24"
-          : colors.neutral[600],
+      status === "active" ? "#d4edda" : status === "failed" ? "#f8d7da" : colors.neutral[100],
+    color: status === "active" ? "#155724" : status === "failed" ? "#721c24" : colors.neutral[600],
   })
 
   const footerStyle = {

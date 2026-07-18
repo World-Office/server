@@ -1,7 +1,7 @@
 import { Node, mergeAttributes } from "@tiptap/core"
 import type { Editor } from "@tiptap/core"
-import { Plugin, PluginKey } from "@tiptap/pm/state"
 import type { Node as PmNode } from "@tiptap/pm/model"
+import { Plugin, PluginKey } from "@tiptap/pm/state"
 
 export interface TocItem {
   id: string
@@ -107,11 +107,15 @@ export const TableOfContents = Node.create({
   },
 
   parseHTML() {
-    return [{ tag: 'div[data-toc]' }]
+    return [{ tag: "div[data-toc]" }]
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ["div", mergeAttributes(HTMLAttributes, { class: "table-of-contents", "data-toc": "" }), 0]
+    return [
+      "div",
+      mergeAttributes(HTMLAttributes, { class: "table-of-contents", "data-toc": "" }),
+      0,
+    ]
   },
 
   addNodeView() {
@@ -120,7 +124,8 @@ export const TableOfContents = Node.create({
       container.className = "table-of-contents"
       container.contentEditable = "false"
       container.setAttribute("data-toc", "")
-      container.innerHTML = '<span class="toc-placeholder">Table of Contents — headings will appear here</span>'
+      container.innerHTML =
+        '<span class="toc-placeholder">Table of Contents — headings will appear here</span>'
       return { dom: container }
     }
   },
