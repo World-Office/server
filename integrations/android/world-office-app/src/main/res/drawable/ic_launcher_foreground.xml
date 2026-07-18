@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Background circle -->
+    <path
+        android:fillColor="#1B5E91"
+        android:pathData="M54,54m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0" />
+
+    <!-- Document icon -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,35 L38,73 C38,74.1 38.9,75 40,75 L68,75 C69.1,75 70,74.1 70,73 L70,47 L58,35 Z" />
+
+    <!-- Document fold -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:pathData="M58,35 L58,47 L70,47 Z" />
+
+    <!-- Text lines -->
+    <path
+        android:fillColor="#1B5E91"
+        android:pathData="M44,52 L64,52"
+        android:strokeWidth="2"
+        android:strokeColor="#1B5E91" />
+    <path
+        android:fillColor="#1B5E91"
+        android:pathData="M44,58 L64,58"
+        android:strokeWidth="2"
+        android:strokeColor="#1B5E91" />
+    <path
+        android:fillColor="#1B5E91"
+        android:pathData="M44,64 L58,64"
+        android:strokeWidth="2"
+        android:strokeColor="#1B5E91" />
+
+    <!-- WO letters -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M48,40 L48,44 L52,44 L52,40 Z M54,40 L54,44 L62,44 L62,40 Z"
+        android:strokeWidth="0.5"
+        android:strokeColor="#1B5E91" />
+
+</vector>
