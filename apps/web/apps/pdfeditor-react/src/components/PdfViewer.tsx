@@ -1,4 +1,4 @@
-import { GlobalWorkerOptions, getDocument, TextLayer } from "pdfjs-dist"
+import { GlobalWorkerOptions, TextLayer, getDocument } from "pdfjs-dist"
 import type { PDFDocumentProxy } from "pdfjs-dist"
 import { useCallback, useEffect, useRef, useState } from "react"
 
@@ -296,7 +296,17 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
         if (!container) return
         const scaleX = (container.clientWidth - 40) / vp.width
         const scaleY = (container.clientHeight - 40) / vp.height
-        const fitScale = Math.max(50, Math.round(Math.min(scaleX, scaleY) * 100)) as 50 | 75 | 100 | 125 | 150 | 175 | 200 | 300 | 400 | 500
+        const fitScale = Math.max(50, Math.round(Math.min(scaleX, scaleY) * 100)) as
+          | 50
+          | 75
+          | 100
+          | 125
+          | 150
+          | 175
+          | 200
+          | 300
+          | 400
+          | 500
         pdfStore.setZoomLevel(fitScale)
       })
     } else if (pdfStore.fitToWidth) {
@@ -304,7 +314,10 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
         const vp = page.getViewport({ scale: 1 })
         const container = containerRef.current
         if (!container) return
-        const fitScale = Math.max(50, Math.round(((container.clientWidth - 40) / vp.width) * 100)) as 50 | 75 | 100 | 125 | 150 | 175 | 200 | 300 | 400 | 500
+        const fitScale = Math.max(
+          50,
+          Math.round(((container.clientWidth - 40) / vp.width) * 100),
+        ) as 50 | 75 | 100 | 125 | 150 | 175 | 200 | 300 | 400 | 500
         pdfStore.setZoomLevel(fitScale)
       })
     }
@@ -316,7 +329,7 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
     if (pageEl && containerRef.current) {
       const containerRect = containerRef.current.getBoundingClientRect()
       const elRect = pageEl.getBoundingClientRect()
-    if (elRect.top < containerRect.top || elRect.bottom > containerRect.bottom) {
+      if (elRect.top < containerRect.top || elRect.bottom > containerRect.bottom) {
         pageEl.scrollIntoView({ behavior: "smooth", block: "start" })
       }
     }
@@ -413,33 +426,39 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
               }}
               onClick={handleAnnotLayerClick(pageNum)}
             >
-              {pdfStore.annotations.filter((a) => a.page === pageNum).map((annot) => (
-                <div
-                  key={annot.id}
-                  style={{
-                    position: "absolute",
-                    left: annot.x,
-                    top: annot.y,
-                    width: annot.width,
-                    height: annot.height,
-                    backgroundColor: annot.color + "40",
-                    border: `2px solid ${annot.color}`,
-                    borderRadius: 4,
-                    cursor: "pointer",
-                    pointerEvents: "auto",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 10,
-                    color: "#333",
-                    overflow: "hidden",
-                  }}
-                  title={annot.text ?? ""}
-                  onClick={() => pdfStore.removeAnnotation(annot.id)}
-                >
-                  {annot.text ? <span style={{ padding: 2, wordBreak: "break-all" }}>{annot.text}</span> : <span style={{ fontSize: 16 }}>📌</span>}
-                </div>
-              ))}
+              {pdfStore.annotations
+                .filter((a) => a.page === pageNum)
+                .map((annot) => (
+                  <div
+                    key={annot.id}
+                    style={{
+                      position: "absolute",
+                      left: annot.x,
+                      top: annot.y,
+                      width: annot.width,
+                      height: annot.height,
+                      backgroundColor: annot.color + "40",
+                      border: `2px solid ${annot.color}`,
+                      borderRadius: 4,
+                      cursor: "pointer",
+                      pointerEvents: "auto",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 10,
+                      color: "#333",
+                      overflow: "hidden",
+                    }}
+                    title={annot.text ?? ""}
+                    onClick={() => pdfStore.removeAnnotation(annot.id)}
+                  >
+                    {annot.text ? (
+                      <span style={{ padding: 2, wordBreak: "break-all" }}>{annot.text}</span>
+                    ) : (
+                      <span style={{ fontSize: 16 }}>📌</span>
+                    )}
+                  </div>
+                ))}
             </div>
           </div>
         ))}

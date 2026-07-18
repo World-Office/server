@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 
-import { pdfStore } from "../../stores/PdfStore"
 import type { PDFDocumentProxy } from "pdfjs-dist"
+import { pdfStore } from "../../stores/PdfStore"
 
 const THUMB_SCALE = 0.2
 

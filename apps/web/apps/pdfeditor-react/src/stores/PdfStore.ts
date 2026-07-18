@@ -238,7 +238,15 @@ export class PdfStore {
     this.activeAnnotationTool = tool
   }
 
-  addAnnotation(annot: { page: number; x: number; y: number; width: number; height: number; color: string; text?: string }): void {
+  addAnnotation(annot: {
+    page: number
+    x: number
+    y: number
+    width: number
+    height: number
+    color: string
+    text?: string
+  }): void {
     this.annotations.push({
       id: `annot-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       page: annot.page,

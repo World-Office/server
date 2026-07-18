@@ -82,7 +82,12 @@ export function Viewport({
           {pdfStore.activeRightPanel === "annotations" && (
             <div
               className="pdf-right-panel"
-              style={{ width: 340, borderLeft: "1px solid #ddd", overflow: "auto", background: "#fff" }}
+              style={{
+                width: 340,
+                borderLeft: "1px solid #ddd",
+                overflow: "auto",
+                background: "#fff",
+              }}
             >
               <AnnotationPanel />
             </div>
