@@ -1,0 +1,34 @@
+{
+  "name": "@world-office/plugin-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plugin development SDK for World Office",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "bin": {
+    "create-wo-plugin": "./bin/create-wo-plugin.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src/"
+  },
+  "dependencies": {
+    "@world-office/editor-common": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@world-office/tsconfig": "workspace:*",
+    "tsup": "^8.0.0",
+    "typescript": "^5.7.0"
+  }
+}
