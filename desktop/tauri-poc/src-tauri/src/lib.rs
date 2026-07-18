@@ -33,11 +33,17 @@ pub fn run() {
             commands::close_doc,
             commands::about,
             commands::get_recent_files,
+            commands::clear_recent_files,
             commands::update_window_title,
             commands::zoom_in,
             commands::zoom_out,
             commands::reset_zoom,
             commands::toggle_fullscreen,
+            commands::save_window_state,
+            commands::get_window_state,
+            commands::show_open_dialog,
+            commands::show_save_dialog,
+            commands::pick_directory,
             health::check_backend_health,
             plugins::get_plugins,
             plugins::get_plugin_source,
@@ -153,15 +159,38 @@ pub fn run() {
                 }
             }
             tauri::RunEvent::WindowEvent {
+                label,
                 event: window_event,
                 ..
             } => {
-                if let tauri::WindowEvent::DragDrop(drag_event) = window_event {
-                    if let tauri::DragDropEvent::Drop { paths, .. } = drag_event {
-                        for path in paths {
-                            let path_str = path.to_string_lossy().to_string();
-                            let _ = commands::open_file(handle, path_str);
-                        }
+                let save_state = matches!(
+                    &window_event,
+                    tauri::WindowEvent::CloseRequested { .. }
+                        | tauri::WindowEvent::Moved(_)
+                        | tauri::WindowEvent::Resized(_)
+                );
+                if save_state
+                    && let Some(window) = handle.get_webview_window(&label)
+                {
+                    let app_state = handle.state::<AppState>();
+                    let size = window.outer_size().ok();
+                    let pos = window.outer_position().ok();
+                    app_state.save_window_state(
+                        &label,
+                        size.map(|s| s.width as f64).unwrap_or(800.0),
+                        size.map(|s| s.height as f64).unwrap_or(600.0),
+                        pos.map(|p| p.x as f64).unwrap_or(100.0),
+                        pos.map(|p| p.y as f64).unwrap_or(100.0),
+                        window.is_maximized().unwrap_or(false),
+                    );
+                }
+
+                if let tauri::WindowEvent::DragDrop(drag_event) = &window_event
+                    && let tauri::DragDropEvent::Drop { paths, .. } = drag_event
+                {
+                    for path in paths {
+                        let path_str = path.to_string_lossy().to_string();
+                        let _ = commands::open_file(handle, path_str);
                     }
                 }
             }
@@ -248,6 +277,11 @@ fn handle_menu_event(app: &tauri::AppHandle, id: &str) {
                     let _ = window.close();
                 }
             }
+        }
+        "clear-recent" => {
+            let state = app.state::<AppState>();
+            state.clear_recent_files();
+            bridge::emit_menu_event(app, "clear-recent");
         }
         // Handle Window menu document entries: focus the clicked window
         id if app.get_webview_window(id).is_some() => {

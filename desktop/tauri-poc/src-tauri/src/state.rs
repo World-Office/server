@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -5,6 +6,28 @@ use std::sync::Mutex;
 const MAX_RECENT_FILES: usize = 10;
 const RECENT_FILES_KEY: &str = "recent_files.json";
 const SESSION_FILE: &str = "session.json";
+const WINDOW_STATES_FILE: &str = "window_states.json";
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WindowState {
+    pub width: f64,
+    pub height: f64,
+    pub x: f64,
+    pub y: f64,
+    pub maximized: bool,
+}
+
+impl Default for WindowState {
+    fn default() -> Self {
+        Self {
+            width: 800.0,
+            height: 600.0,
+            x: 100.0,
+            y: 100.0,
+            maximized: false,
+        }
+    }
+}
 
 #[derive(Default)]
 pub struct AppState {
@@ -38,10 +61,51 @@ impl AppState {
         dirs::data_local_dir().map(|dir| dir.join("WorldOffice").join(RECENT_FILES_KEY))
     }
 
-    fn clear_recent_files(&self) {
+    pub fn clear_recent_files(&self) {
         *self.recent_files.lock().unwrap() = Vec::new();
         if let Some(path) = Self::get_storage_path() {
             let _ = fs::remove_file(&path);
+        }
+    }
+
+    /// Save window state for a given label.
+    pub fn save_window_state(&self, label: &str, width: f64, height: f64, x: f64, y: f64, maximized: bool) {
+        let mut states = self.load_all_window_states();
+        states.insert(label.to_string(), WindowState { width, height, x, y, maximized });
+        self.write_window_states(&states);
+    }
+
+    /// Get saved window state for a label, or None.
+    pub fn get_window_state(&self, label: &str) -> Option<WindowState> {
+        let states = self.load_all_window_states();
+        states.get(label).cloned()
+    }
+
+    /// Get window state for "default" label (generic fallback).
+    pub fn get_default_window_state(&self) -> WindowState {
+        self.get_window_state("default").unwrap_or_default()
+    }
+
+    fn window_states_path() -> Option<PathBuf> {
+        dirs::data_local_dir().map(|dir| dir.join("WorldOffice").join(WINDOW_STATES_FILE))
+    }
+
+    fn load_all_window_states(&self) -> std::collections::HashMap<String, WindowState> {
+        Self::window_states_path()
+            .and_then(|path| {
+                fs::read_to_string(&path).ok().and_then(|content| {
+                    serde_json::from_str::<std::collections::HashMap<String, WindowState>>(&content).ok()
+                })
+            })
+            .unwrap_or_default()
+    }
+
+    fn write_window_states(&self, states: &std::collections::HashMap<String, WindowState>) {
+        if let Some(path) = Self::window_states_path() {
+            if let Some(parent) = path.parent() {
+                let _ = fs::create_dir_all(parent);
+            }
+            let _ = fs::write(&path, serde_json::to_string(states).unwrap_or_default());
         }
     }
 
@@ -141,7 +205,6 @@ impl SessionState {
     use super::*;
     use std::env;
     use std::fs;
-    use std::path::PathBuf;
 
     #[test]
     fn test_app_state_new() {
