@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">World Office</string>
+    <string name="server_config_title">Server Configuration</string>
+    <string name="server_url_label">Server URL</string>
+    <string name="server_url_hint">https://example.com</string>
+    <string name="test_connection">Test Connection</string>
+    <string name="connecting">Connecting…</string>
+    <string name="connection_success">Connection successful!</string>
+    <string name="connection_failed">Connection failed. Please check the URL and try again.</string>
+    <string name="invalid_url">Please enter a valid URL (https://…)</string>
+    <string name="save_config">Save &amp; Continue</string>
+    <string name="my_documents">My Documents</string>
+    <string name="no_documents">No documents found</string>
+    <string name="loading">Loading…</string>
+    <string name="error_loading_files">Failed to load documents. Pull to retry.</string>
+    <string name="error_no_server">No server configured. Please configure a server first.</string>
+    <string name="open_document">Open Document</string>
+    <string name="saving">Saving…</string>
+    <string name="document_saved">Document saved successfully</string>
+    <string name="document_save_failed">Failed to save document</string>
+    <string name="confirm_discard">Discard changes?</string>
+    <string name="confirm_discard_message">You have unsaved changes. Do you want to save before leaving?</string>
+    <string name="save_and_exit">Save &amp; Exit</string>
+    <string name="discard">Discard</string>
+    <string name="cancel">Cancel</string>
+    <string name="retry">Retry</string>
+    <string name="settings">Settings</string>
+    <string name="file_type_document">Document</string>
+    <string name="file_type_spreadsheet">Spreadsheet</string>
+    <string name="file_type_presentation">Presentation</string>
+    <string name="file_type_unknown">Unknown</string>
+    <string name="modified_at">Modified %1$s</string>
+    <string name="size_bytes">%1$d bytes</string>
+    <string name="refresh">Refresh</string>
+    <string name="logout">Logout</string>
+    <string name="logout_confirm">Are you sure you want to disconnect from this server?</string>
+    <string name="editor_loading">Loading editor…</string>
+    <string name="network_error">Network error. Please check your connection.</string>
+    <string name="unauthorized">Session expired. Please reconnect.</string>
+</resources>
