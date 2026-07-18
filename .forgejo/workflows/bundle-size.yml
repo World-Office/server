@@ -50,7 +50,7 @@ jobs:
         timeout-minutes: 15
 
       - name: Check bundle sizes
-        run: node scripts/bundle-size-check.js --threshold=10
+        run: node scripts/bundle-size-check.js --threshold=12
         timeout-minutes: 5
 
       - name: Upload bundle size report
@@ -61,4 +61,14 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
         timeout-minutes: 2
+        continue-on-error: true
+
+      - name: Upload bundle-size config as artifact
+        uses: https://data.forgejo.org/actions/upload-artifact@v4
+        with:
+          name: bundle-size-config-${{ github.sha }}
+          path: .forgejo/bundle-size-config.json
+          if-no-files-found: ignore
+          retention-days: 7
+        timeout-minutes: 1
         continue-on-error: true

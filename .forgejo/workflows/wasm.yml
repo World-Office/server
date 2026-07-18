@@ -44,6 +44,26 @@ jobs:
         run: cargo build --target wasm32-unknown-unknown -p wo-x2t-wasm
         timeout-minutes: 30
 
+      - name: Measure wo-x2t-wasm metrics
+        id: wasm-x2t-metrics
+        run: |
+          chmod +x scripts/wasm-metrics.sh
+          scripts/wasm-metrics.sh wo-x2t-wasm core/crates/wo-x2t-wasm > /tmp/wasm-x2t-metrics.json
+          cat /tmp/wasm-x2t-metrics.json
+          echo "wasm-size=$(jq -r '.size_kb' /tmp/wasm-x2t-metrics.json)" >> $GITHUB_ENV
+          echo "wasm-compile=$(jq -r '.compile_time_seconds' /tmp/wasm-x2t-metrics.json)" >> $GITHUB_ENV
+        timeout-minutes: 2
+        continue-on-error: true
+
+      - name: Annotate wo-x2t-wasm size
+        if: always()
+        run: |
+          SIZE_KB=$(jq -r '.size_kb // "unknown"' /tmp/wasm-x2t-metrics.json 2>/dev/null || echo "unknown")
+          COMPILE_S=$(jq -r '.compile_time_seconds // "unknown"' /tmp/wasm-x2t-metrics.json 2>/dev/null || echo "unknown")
+          echo "::notice title=wo-x2t-wasm::Binary: ${SIZE_KB} KB | Compile: ${COMPILE_S}s"
+        timeout-minutes: 1
+        continue-on-error: true
+
       - name: Install wasm-pack
         run: cargo install wasm-pack --locked || true
         timeout-minutes: 10
@@ -87,6 +107,26 @@ jobs:
         run: cargo build --target wasm32-unknown-unknown -p wo-renderer-wasm
         timeout-minutes: 30
 
+      - name: Measure wo-renderer-wasm metrics
+        id: wasm-renderer-metrics
+        run: |
+          chmod +x scripts/wasm-metrics.sh
+          scripts/wasm-metrics.sh wo-renderer-wasm core/crates/wo-renderer-wasm > /tmp/wasm-renderer-metrics.json
+          cat /tmp/wasm-renderer-metrics.json
+          echo "renderer-wasm-size=$(jq -r '.size_kb' /tmp/wasm-renderer-metrics.json)" >> $GITHUB_ENV
+          echo "renderer-wasm-compile=$(jq -r '.compile_time_seconds' /tmp/wasm-renderer-metrics.json)" >> $GITHUB_ENV
+        timeout-minutes: 2
+        continue-on-error: true
+
+      - name: Annotate wo-renderer-wasm size
+        if: always()
+        run: |
+          SIZE_KB=$(jq -r '.size_kb // "unknown"' /tmp/wasm-renderer-metrics.json 2>/dev/null || echo "unknown")
+          COMPILE_S=$(jq -r '.compile_time_seconds // "unknown"' /tmp/wasm-renderer-metrics.json 2>/dev/null || echo "unknown")
+          echo "::notice title=wo-renderer-wasm::Binary: ${SIZE_KB} KB | Compile: ${COMPILE_S}s"
+        timeout-minutes: 1
+        continue-on-error: true
+
       - name: Install wasm-pack
         run: cargo install wasm-pack --locked || true
         timeout-minutes: 10
@@ -94,6 +134,15 @@ jobs:
       - name: Build WASM JS bindings
         run: wasm-pack build --target web --out-dir pkg core/crates/wo-renderer-wasm
         timeout-minutes: 15
+
+      - name: Measure wasm-pack pkg size
+        if: always()
+        run: |
+          PKG_SIZE=$(find core/crates/wo-renderer-wasm/pkg -type f -exec stat --printf="%s" {} + 2>/dev/null | paste -sd+ | bc || echo 0)
+          PKG_SIZE_KB=$(echo "scale=2; $PKG_SIZE / 1024" | bc)
+          echo "::notice title=wo-renderer-wasm-pkg::wasm-pack pkg total: ${PKG_SIZE_KB} KB"
+        timeout-minutes: 1
+        continue-on-error: true
 
       - name: Upload wo-renderer-wasm pkg
         uses: https://data.forgejo.org/actions/upload-artifact@v4
