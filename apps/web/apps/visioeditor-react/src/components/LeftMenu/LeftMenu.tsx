@@ -14,7 +14,7 @@ const BUTTONS = [
 ];
 
 function LeftMenuInner(): JSX.Element {
-	const { t } = useTranslation()
+	const { t } = useTranslation();
 
 	return (
 		<div

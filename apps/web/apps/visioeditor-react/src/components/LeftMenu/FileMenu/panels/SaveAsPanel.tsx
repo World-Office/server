@@ -1,7 +1,11 @@
 import { visioStore } from "../../../../stores/VisioStore";
 
 const FLOWCHART_FORMATS = [
-	{ id: "wo-flowchart", label: "WO Flowchart", description: "World-Office Diagram (JSON)" },
+	{
+		id: "wo-flowchart",
+		label: "WO Flowchart",
+		description: "World-Office Diagram (JSON)",
+	},
 ];
 
 const VSDX_FORMATS = [
