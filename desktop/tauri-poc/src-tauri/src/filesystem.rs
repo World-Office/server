@@ -1,3 +1,4 @@
+use crate::bridge::BridgeError;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use mime_guess::Mime;
 use serde::{Deserialize, Serialize};
@@ -26,154 +27,149 @@ pub struct FileInfo {
 }
 
 #[tauri::command]
-pub async fn read_file(path: String) -> Result<String, String> {
+pub async fn read_file(path: String) -> Result<String, BridgeError> {
     let path = Path::new(&path);
     if !path.exists() {
-        return Err(format!("File not found: {}", path.display()));
+        return Err(BridgeError::FileSystemError(format!("File not found: {}", path.display())));
     }
 
     tokio::fs::read_to_string(path)
         .await
-        .map_err(|e| format!("Failed to read file: {}", e))
+        .map_err(|e| BridgeError::FileSystemError(format!("Failed to read file: {}", e)))
 }
 
 #[tauri::command]
-pub async fn read_file_binary(path: String) -> Result<String, String> {
+pub async fn read_file_binary(path: String) -> Result<String, BridgeError> {
     let path = Path::new(&path);
     if !path.exists() {
-        return Err(format!("File not found: {}", path.display()));
+        return Err(BridgeError::FileSystemError(format!("File not found: {}", path.display())));
     }
 
     let bytes = tokio::fs::read(path)
         .await
-        .map_err(|e| format!("Failed to read binary file: {}", e))?;
+        .map_err(|e| BridgeError::FileSystemError(format!("Failed to read binary file: {}", e)))?;
     Ok(STANDARD.encode(&bytes))
 }
 
 #[tauri::command]
-pub async fn write_file(path: String, content: String) -> Result<(), String> {
+pub async fn write_file(path: String, content: String) -> Result<(), BridgeError> {
     let path = Path::new(&path);
 
-    // Create parent directories if they don't exist
-    if let Some(parent) = path.parent() {
-        if !parent.exists() {
-            tokio::fs::create_dir_all(parent)
-                .await
-                .map_err(|e| format!("Failed to create directories: {}", e))?;
-        }
+    if let Some(parent) = path.parent()
+        && !parent.exists()
+    {
+        tokio::fs::create_dir_all(parent)
+            .await
+            .map_err(|e| BridgeError::FileSystemError(format!("Failed to create directories: {}", e)))?;
     }
 
     tokio::fs::write(path, content)
         .await
-        .map_err(|e| format!("Failed to write file: {}", e))
+        .map_err(|e| BridgeError::FileSystemError(format!("Failed to write file: {}", e)))
 }
 
 #[tauri::command]
-pub async fn write_file_binary(path: String, content_base64: String) -> Result<(), String> {
+pub async fn write_file_binary(path: String, content_base64: String) -> Result<(), BridgeError> {
     let path = Path::new(&path);
 
-    // Create parent directories if they don't exist
-    if let Some(parent) = path.parent() {
-        if !parent.exists() {
-            tokio::fs::create_dir_all(parent)
-                .await
-                .map_err(|e| format!("Failed to create directories: {}", e))?;
-        }
+    if let Some(parent) = path.parent()
+        && !parent.exists()
+    {
+        tokio::fs::create_dir_all(parent)
+            .await
+            .map_err(|e| BridgeError::FileSystemError(format!("Failed to create directories: {}", e)))?;
     }
 
     let bytes = STANDARD
         .decode(&content_base64)
-        .map_err(|e| format!("Failed to decode base64: {}", e))?;
+        .map_err(|e| BridgeError::SerializationError(format!("Failed to decode base64: {}", e)))?;
 
     tokio::fs::write(path, bytes)
         .await
-        .map_err(|e| format!("Failed to write binary file: {}", e))
+        .map_err(|e| BridgeError::FileSystemError(format!("Failed to write binary file: {}", e)))
 }
 
 #[tauri::command]
-pub async fn delete_file(path: String) -> Result<(), String> {
+pub async fn delete_file(path: String) -> Result<(), BridgeError> {
     let path = Path::new(&path);
     if !path.exists() {
-        return Err(format!("File not found: {}", path.display()));
+        return Err(BridgeError::FileSystemError(format!("File not found: {}", path.display())));
     }
 
     if path.is_dir() {
         tokio::fs::remove_dir_all(path)
             .await
-            .map_err(|e| format!("Failed to delete directory: {}", e))
+            .map_err(|e| BridgeError::FileSystemError(format!("Failed to delete directory: {}", e)))
     } else {
         tokio::fs::remove_file(path)
             .await
-            .map_err(|e| format!("Failed to delete file: {}", e))
+            .map_err(|e| BridgeError::FileSystemError(format!("Failed to delete file: {}", e)))
     }
 }
 
 #[tauri::command]
-pub async fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
+pub async fn rename_file(old_path: String, new_path: String) -> Result<(), BridgeError> {
     let old_path = Path::new(&old_path);
     let new_path = Path::new(&new_path);
 
     if !old_path.exists() {
-        return Err(format!("Source file not found: {}", old_path.display()));
+        return Err(BridgeError::FileSystemError(format!("Source file not found: {}", old_path.display())));
     }
 
-    // Create parent directories if they don't exist
-    if let Some(parent) = new_path.parent() {
-        if !parent.exists() {
-            tokio::fs::create_dir_all(parent)
-                .await
-                .map_err(|e| format!("Failed to create directories: {}", e))?;
-        }
+    if let Some(parent) = new_path.parent()
+        && !parent.exists()
+    {
+        tokio::fs::create_dir_all(parent)
+            .await
+            .map_err(|e| BridgeError::FileSystemError(format!("Failed to create directories: {}", e)))?;
     }
 
     tokio::fs::rename(old_path, new_path)
         .await
-        .map_err(|e| format!("Failed to rename file: {}", e))
+        .map_err(|e| BridgeError::FileSystemError(format!("Failed to rename file: {}", e)))
 }
 
 #[tauri::command]
-pub async fn copy_file(src: String, dst: String) -> Result<(), String> {
+pub async fn copy_file(src: String, dst: String) -> Result<(), BridgeError> {
     let src_path = Path::new(&src);
     let dst_path = Path::new(&dst);
 
     if !src_path.exists() {
-        return Err(format!("Source file not found: {}", src_path.display()));
+        return Err(BridgeError::FileSystemError(format!("Source file not found: {}", src_path.display())));
     }
 
-    // Create parent directories if they don't exist
-    if let Some(parent) = dst_path.parent() {
-        if !parent.exists() {
-            tokio::fs::create_dir_all(parent)
-                .await
-                .map_err(|e| format!("Failed to create directories: {}", e))?;
-        }
+    if let Some(parent) = dst_path.parent()
+        && !parent.exists()
+    {
+        tokio::fs::create_dir_all(parent)
+            .await
+            .map_err(|e| BridgeError::FileSystemError(format!("Failed to create directories: {}", e)))?;
     }
 
     if src_path.is_dir() {
-        // For directories, we need to recursively copy
         copy_dir_recursive(src_path, dst_path).await
     } else {
         tokio::fs::copy(src_path, dst_path)
             .await
-            .map_err(|e| format!("Failed to copy file: {}", e))?;
+            .map_err(|e| BridgeError::FileSystemError(format!("Failed to copy file: {}", e)))?;
         Ok(())
     }
 }
 
-async fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), String> {
+async fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), BridgeError> {
     for entry in WalkDir::new(src).min_depth(1) {
-        let entry = entry.map_err(|e| format!("WalkDir error: {}", e))?;
+        let entry = entry.map_err(|e| BridgeError::FileSystemError(format!("WalkDir error: {}", e)))?;
         let src_path = entry.path();
         let dst_path = dst.join(src_path.strip_prefix(src).unwrap());
 
         if entry.file_type().is_dir() {
             tokio::fs::create_dir_all(&dst_path)
                 .await
-                .map_err(|e| format!("Failed to create directory {}: {}", dst_path.display(), e))?;
+                .map_err(|e| BridgeError::FileSystemError(format!("Failed to create directory {}: {}", dst_path.display(), e)))?;
         } else {
             tokio::fs::copy(src_path, &dst_path)
                 .await
-                .map_err(|e| format!("Failed to copy {}: {}", dst_path.display(), e))?;
+                .map_err(|e| BridgeError::FileSystemError(format!("Failed to copy {}: {}", dst_path.display(), e)))?;
         }
     }
 
@@ -181,35 +177,35 @@ async fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub async fn list_directory(path: String) -> Result<Vec<FileEntry>, String> {
+pub async fn list_directory(path: String) -> Result<Vec<FileEntry>, BridgeError> {
     let path = Path::new(&path);
     if !path.exists() {
-        return Err(format!("Directory not found: {}", path.display()));
+        return Err(BridgeError::FileSystemError(format!("Directory not found: {}", path.display())));
     }
 
     if !path.is_dir() {
-        return Err(format!("Path is not a directory: {}", path.display()));
+        return Err(BridgeError::FileSystemError(format!("Path is not a directory: {}", path.display())));
     }
 
     let mut entries = Vec::new();
 
     let mut dir_entries = tokio::fs::read_dir(path)
         .await
-        .map_err(|e| format!("Failed to read directory: {}", e))?;
+        .map_err(|e| BridgeError::FileSystemError(format!("Failed to read directory: {}", e)))?;
 
     while let Some(entry) = dir_entries
         .next_entry()
         .await
-        .map_err(|e| format!("Failed to read entry: {}", e))?
+        .map_err(|e| BridgeError::FileSystemError(format!("Failed to read entry: {}", e)))?
     {
         let metadata = entry
             .metadata()
             .await
-            .map_err(|e| format!("Failed to get metadata: {}", e))?;
+            .map_err(|e| BridgeError::FileSystemError(format!("Failed to get metadata: {}", e)))?;
 
         let modified = metadata
             .modified()
-            .map_err(|e| format!("Failed to get modified time: {}", e))?;
+            .map_err(|e| BridgeError::FileSystemError(format!("Failed to get modified time: {}", e)))?;
 
         let file_entry = FileEntry {
             name: entry.file_name().to_string_lossy().into_owned(),
@@ -222,7 +218,6 @@ pub async fn list_directory(path: String) -> Result<Vec<FileEntry>, String> {
         entries.push(file_entry);
     }
 
-    // Sort: directories first, then files, alphabetically
     entries.sort_by(|a, b| match (a.is_dir, b.is_dir) {
         (true, false) => std::cmp::Ordering::Less,
         (false, true) => std::cmp::Ordering::Greater,
@@ -233,31 +228,31 @@ pub async fn list_directory(path: String) -> Result<Vec<FileEntry>, String> {
 }
 
 #[tauri::command]
-pub async fn create_directory(path: String) -> Result<(), String> {
+pub async fn create_directory(path: String) -> Result<(), BridgeError> {
     let path = Path::new(&path);
     if path.exists() {
-        return Err(format!("Path already exists: {}", path.display()));
+        return Err(BridgeError::FileSystemError(format!("Path already exists: {}", path.display())));
     }
 
     tokio::fs::create_dir_all(path)
         .await
-        .map_err(|e| format!("Failed to create directory: {}", e))
+        .map_err(|e| BridgeError::FileSystemError(format!("Failed to create directory: {}", e)))
 }
 
 #[tauri::command]
-pub async fn get_file_info(path: String) -> Result<FileInfo, String> {
+pub async fn get_file_info(path: String) -> Result<FileInfo, BridgeError> {
     let path = Path::new(&path);
     if !path.exists() {
-        return Err(format!("File not found: {}", path.display()));
+        return Err(BridgeError::FileSystemError(format!("File not found: {}", path.display())));
     }
 
     let metadata = tokio::fs::metadata(path)
         .await
-        .map_err(|e| format!("Failed to get metadata: {}", e))?;
+        .map_err(|e| BridgeError::FileSystemError(format!("Failed to get metadata: {}", e)))?;
 
     let modified = metadata
         .modified()
-        .map_err(|e| format!("Failed to get modified time: {}", e))?;
+        .map_err(|e| BridgeError::FileSystemError(format!("Failed to get modified time: {}", e)))?;
 
     let created = metadata.created().ok();
 
@@ -293,15 +288,14 @@ pub async fn get_file_info(path: String) -> Result<FileInfo, String> {
 }
 
 #[tauri::command]
-pub fn detect_document_type(path: String) -> Result<String, String> {
+pub fn detect_document_type(path: String) -> Result<String, BridgeError> {
     let path = Path::new(&path);
     if !path.exists() {
-        return Err(format!("File not found: {}", path.display()));
+        return Err(BridgeError::FileSystemError(format!("File not found: {}", path.display())));
     }
 
     let extension = path.extension().and_then(|e| e.to_str()).unwrap_or("");
 
-    // Common document types based on extension
     let doc_type: String = match extension.to_lowercase().as_str() {
         "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document".into(),
         "doc" => "application/msword".into(),
@@ -324,7 +318,6 @@ pub fn detect_document_type(path: String) -> Result<String, String> {
             "application/vnd.openxmlformats-officedocument.presentationml.presentation".into()
         }
         _ => {
-            // Fall back to mime_guess for unknown types
             let mime: Mime = mime_guess::from_path(path).first_or_octet_stream();
             mime.to_string()
         }
@@ -334,15 +327,15 @@ pub fn detect_document_type(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
-pub fn get_home_directory() -> Result<String, String> {
+pub fn get_home_directory() -> Result<String, BridgeError> {
     dirs::home_dir()
         .map(|p| p.to_string_lossy().into_owned())
-        .ok_or_else(|| "Failed to get home directory".to_string())
+        .ok_or_else(|| BridgeError::FileSystemError("Failed to get home directory".to_string()))
 }
 
 #[tauri::command]
-pub fn get_documents_directory() -> Result<String, String> {
+pub fn get_documents_directory() -> Result<String, BridgeError> {
     dirs::document_dir()
         .map(|p| p.to_string_lossy().into_owned())
-        .ok_or_else(|| "Failed to get documents directory".to_string())
+        .ok_or_else(|| BridgeError::FileSystemError("Failed to get documents directory".to_string()))
 }

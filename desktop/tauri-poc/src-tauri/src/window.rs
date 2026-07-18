@@ -2,8 +2,6 @@ use crate::state::AppState;
 use tauri::{AppHandle, Manager, PhysicalPosition, WebviewUrl, WebviewWindowBuilder};
 
 const WINDOW_OFFSET: f64 = 30.0;
-const WINDOW_WIDTH: f64 = 800.0;
-const WINDOW_HEIGHT: f64 = 600.0;
 
 fn cascade_position(_app: &AppHandle, index: usize) -> PhysicalPosition<f64> {
     let offset = (index as f64) * WINDOW_OFFSET;
@@ -12,6 +10,7 @@ fn cascade_position(_app: &AppHandle, index: usize) -> PhysicalPosition<f64> {
 
 pub fn create_new_document_window(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let state = app.state::<AppState>();
+    let saved = state.get_default_window_state();
     let mut window_count = state.window_count.lock().unwrap();
     *window_count += 1;
     let count = *window_count;
@@ -21,12 +20,18 @@ pub fn create_new_document_window(app: &AppHandle) -> Result<(), Box<dyn std::er
     let label = format!("document-{}", count);
     let title = format!("Untitled Document {}", count);
 
-    let _ = WebviewWindowBuilder::new(app, &label, WebviewUrl::App("index.html".into()))
+    let builder = WebviewWindowBuilder::new(app, &label, WebviewUrl::App("index.html".into()))
         .title(&title)
-        .inner_size(WINDOW_WIDTH, WINDOW_HEIGHT)
         .min_inner_size(400.0, 300.0)
-        .position(pos.x, pos.y)
-        .build()?;
+        .inner_size(saved.width, saved.height);
+
+    // Use saved position if available, otherwise cascade
+    if saved.x != 100.0 || saved.y != 100.0 {
+        // Only use saved position if it differs from default (indicates user moved window)
+        let _ = builder.position(saved.x, saved.y).build()?;
+    } else {
+        let _ = builder.position(pos.x, pos.y).build()?;
+    }
 
     Ok(())
 }

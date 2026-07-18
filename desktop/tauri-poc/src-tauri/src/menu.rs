@@ -33,6 +33,10 @@ pub fn create_app_menu<R: tauri::Runtime>(
             let item = MenuItemBuilder::with_id(&id, &caption).build(app)?;
             recent_submenu = recent_submenu.item(&item);
         }
+        recent_submenu = recent_submenu.separator();
+        let clear_item = MenuItemBuilder::with_id("clear-recent", "Clear Recent Files")
+            .build(app)?;
+        recent_submenu = recent_submenu.item(&clear_item);
     }
 
     let recent_menu = recent_submenu.build()?;
