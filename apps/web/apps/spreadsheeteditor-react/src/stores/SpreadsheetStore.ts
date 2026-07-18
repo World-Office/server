@@ -5,6 +5,8 @@ import {
 } from "@world-office/wopi-client";
 import type { WopiConnection, WopiFileInfo } from "@world-office/wopi-client";
 import { makeAutoObservable } from "mobx";
+import { convertWoSpreadsheetToXlsx } from "../lib/conversion";
+import { getUniverSnapshot, onUniverChange } from "../lib/univer-command";
 import type {
 	LeftMenuAction,
 	RightMenuPanel,
@@ -16,8 +18,6 @@ import type {
 	ZoomLevel,
 } from "../types/spreadsheet";
 import { ZOOM_LEVELS } from "../types/spreadsheet";
-import { convertWoSpreadsheetToXlsx } from "../lib/conversion";
-import { getUniverSnapshot, onUniverChange } from "../lib/univer-command";
 
 const STORAGE_PREFIX = "se-";
 

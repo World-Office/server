@@ -16,7 +16,9 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
 
 		if (formatId === "csv") {
 			void spreadsheetStore.buildDocumentBlob();
-			alert("CSV export: Use the XLSX export and open in Excel/Calc to save as CSV.");
+			alert(
+				"CSV export: Use the XLSX export and open in Excel/Calc to save as CSV.",
+			);
 			return;
 		}
 
@@ -50,20 +52,28 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
 						{format.label}
 					</button>
 				))}
-				{["ODS", "PDF", "XLTX", "OTS", "XLSB", "XLSM", "PDFA", "JPG", "PNG"].map(
-					(format) => (
-						<button
-							key={format}
-							type="button"
-							className="se-file-menu-format-btn"
-							disabled
-							style={{ opacity: 0.5 }}
-							onClick={() => {}}
-						>
-							{format}
-						</button>
-					),
-				)}
+				{[
+					"ODS",
+					"PDF",
+					"XLTX",
+					"OTS",
+					"XLSB",
+					"XLSM",
+					"PDFA",
+					"JPG",
+					"PNG",
+				].map((format) => (
+					<button
+						key={format}
+						type="button"
+						className="se-file-menu-format-btn"
+						disabled
+						style={{ opacity: 0.5 }}
+						onClick={() => {}}
+					>
+						{format}
+					</button>
+				))}
 			</div>
 			<div className="se-file-menu-footer">
 				<button type="button" onClick={handleClose}>

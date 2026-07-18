@@ -1,7 +1,13 @@
-import type { EditOperation, ParticipantUpdate } from "@world-office/collaboration-client";
+import type {
+	EditOperation,
+	ParticipantUpdate,
+} from "@world-office/collaboration-client";
 import { useCollaboration } from "@world-office/collaboration-react";
 import { useEffect } from "react";
-import { COAUTHORING_API_URL, COAUTHORING_WS_URL } from "../lib/collaboration-config";
+import {
+	COAUTHORING_API_URL,
+	COAUTHORING_WS_URL,
+} from "../lib/collaboration-config";
 import { spreadsheetStore } from "../stores/SpreadsheetStore";
 
 const SESSION_STORAGE_KEY = "sheet-collab-session";

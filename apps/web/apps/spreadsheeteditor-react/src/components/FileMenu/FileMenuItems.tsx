@@ -1,6 +1,6 @@
+import { useTranslation } from "react-i18next";
 import { spreadsheetStore } from "../../stores/SpreadsheetStore";
 import type { FileMenuAction } from "../../types/spreadsheet";
-import { useTranslation } from "react-i18next";
 
 interface FileMenuItemsProps {
 	onMenuClick: (action: string, hasPanel: boolean) => void;
@@ -35,7 +35,7 @@ const MENU_ITEMS: MenuItem[] = [
 ];
 
 export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
-	const { t } = useTranslation()
+	const { t } = useTranslation();
 	const activePanel = spreadsheetStore.activeFileMenuPanel;
 
 	function handleBack(): void {

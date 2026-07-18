@@ -1,9 +1,6 @@
 import { observer } from "mobx-react-lite";
 import { useEffect, useRef, useState } from "react";
-import {
-	getActiveUniverAPI,
-	onUniverChange,
-} from "../lib/univer-command";
+import { getActiveUniverAPI, onUniverChange } from "../lib/univer-command";
 
 export const FormulaBar = observer(function FormulaBar() {
 	const [cellRef, setCellRef] = useState("A1");

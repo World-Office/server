@@ -1,7 +1,4 @@
-import {
-	getActiveUniverAPI,
-	onUniverChange,
-} from "./univer-command";
+import { getActiveUniverAPI, onUniverChange } from "./univer-command";
 
 export interface ActiveCellState {
 	bold: boolean;
@@ -122,7 +119,9 @@ export function onStateChange(callback: () => void): () => void {
 	};
 }
 
-export function subscribeCellState(callback: (state: ActiveCellState) => void): () => void {
+export function subscribeCellState(
+	callback: (state: ActiveCellState) => void,
+): () => void {
 	const listener = () => callback(currentState);
 	stateListeners.add(listener);
 	return () => {

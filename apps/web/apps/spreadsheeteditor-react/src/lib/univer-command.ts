@@ -11,9 +11,12 @@
  * Pattern follows rte-command.ts from documenteditor-react.
  */
 
-import { createPivotTable } from "./pivot-table"
-import { applyConditionalFormatting, removeConditionalFormatting } from "./conditional-formatting"
-import { applyDataValidation } from "./data-validation"
+import {
+	applyConditionalFormatting,
+	removeConditionalFormatting,
+} from "./conditional-formatting";
+import { applyDataValidation } from "./data-validation";
+import { createPivotTable } from "./pivot-table";
 
 /** Commands that the spreadsheet ribbon can dispatch. */
 export type UniverCommand =
@@ -99,7 +102,10 @@ export type UniverCommand =
  */
 export interface UniverAPIFacade {
 	getActiveWorkbook(): UniverWorkbookFacade | null;
-	addEvent(event: unknown, callback: (...args: unknown[]) => void): {
+	addEvent(
+		event: unknown,
+		callback: (...args: unknown[]) => void,
+	): {
 		dispose(): void;
 	};
 }
@@ -411,9 +417,7 @@ export function dispatchUniverCommand(
 					worksheet.insertCells(value as "right" | "down" | undefined);
 					return true;
 				}
-				console.warn(
-					"[UniverCommand] insertCells API not available on facade",
-				);
+				console.warn("[UniverCommand] insertCells API not available on facade");
 				return false;
 			} catch {
 				console.warn("[UniverCommand] insertCells threw an error");
@@ -429,9 +433,7 @@ export function dispatchUniverCommand(
 					worksheet.deleteCells(value as "left" | "up" | undefined);
 					return true;
 				}
-				console.warn(
-					"[UniverCommand] deleteCells API not available on facade",
-				);
+				console.warn("[UniverCommand] deleteCells API not available on facade");
 				return false;
 			} catch {
 				console.warn("[UniverCommand] deleteCells threw an error");
@@ -449,7 +451,9 @@ export function dispatchUniverCommand(
 		case "insertLineSparkline":
 		case "insertColumnSparkline":
 		case "insertWinLossSparkline":
-			console.warn(`[UniverCommand] ${command} not yet implemented (chart API stub)`);
+			console.warn(
+				`[UniverCommand] ${command} not yet implemented (chart API stub)`,
+			);
 			// TODO: When Univer chart API matures, wire to univerAPI.insertChart(type, data)
 			return false;
 
@@ -471,7 +475,9 @@ export function dispatchUniverCommand(
 		case "setMargins":
 		case "setOrientation":
 		case "setPageSize":
-			console.warn(`[UniverCommand] ${command} not yet implemented (page layout stub)`);
+			console.warn(
+				`[UniverCommand] ${command} not yet implemented (page layout stub)`,
+			);
 			// TODO: Use Univer page layout API when available
 			return false;
 
@@ -483,39 +489,51 @@ export function dispatchUniverCommand(
 		case "alignObjects":
 		case "groupObjects":
 		case "ungroupObjects":
-			console.warn(`[UniverCommand] ${command} not yet implemented (arrange stub)`);
+			console.warn(
+				`[UniverCommand] ${command} not yet implemented (arrange stub)`,
+			);
 			// TODO: Use Univer shape/object ordering API when available
 			return false;
 
 		// ── Find / Replace ──
 		case "find":
 		case "replace":
-			console.warn(`[UniverCommand] ${command} not yet implemented (find/replace dialog stub)`);
+			console.warn(
+				`[UniverCommand] ${command} not yet implemented (find/replace dialog stub)`,
+			);
 			return false;
 
 		case "pivotTable": {
-			if (!activeAPI) return false
+			if (!activeAPI) return false;
 			return createPivotTable(activeAPI, {
 				sourceRange: value ?? "A1:D20",
 				targetSheetName: "PivotTable",
 				fields: [],
-			})
+			});
 		}
 		case "conditionalFormat": {
 			if (range) {
-				applyConditionalFormatting(range.getCellRef(), { type: "greaterThan", value: 0, format: { bold: true } }, range)
+				applyConditionalFormatting(
+					range.getCellRef(),
+					{ type: "greaterThan", value: 0, format: { bold: true } },
+					range,
+				);
 			}
-			return true
+			return true;
 		}
 		case "removeConditionalFormat": {
-			if (range) removeConditionalFormatting(range.getCellRef())
-			return true
+			if (range) removeConditionalFormatting(range.getCellRef());
+			return true;
 		}
 		case "dataValidation": {
 			if (range) {
-				applyDataValidation(range.getCellRef(), { type: "list", listItems: [] }, range)
+				applyDataValidation(
+					range.getCellRef(),
+					{ type: "list", listItems: [] },
+					range,
+				);
 			}
-			return true
+			return true;
 		}
 
 		default:
