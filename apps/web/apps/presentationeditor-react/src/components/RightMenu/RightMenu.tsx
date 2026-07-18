@@ -32,7 +32,7 @@ const PANELS: Record<RightMenuPanel, JSX.Element> = {
 };
 
 function RightMenuInner(): JSX.Element {
-	const { t } = useTranslation()
+	const { t } = useTranslation();
 	const { activeRightPanel, toggleRightPanel } = presentationStore;
 
 	return (

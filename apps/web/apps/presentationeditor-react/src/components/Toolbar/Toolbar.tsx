@@ -1,7 +1,10 @@
-import { observer } from "mobx-react-lite";
 import { Ribbon, presentationRibbonSpec } from "@world-office/editor-common";
-import type { RibbonCommandDispatch, RibbonContext } from "@world-office/editor-common";
+import type {
+	RibbonCommandDispatch,
+	RibbonContext,
+} from "@world-office/editor-common";
 import { detectWopiParams } from "@world-office/wopi-client";
+import { observer } from "mobx-react-lite";
 import { presentationStore } from "../../stores/PresentationStore";
 import { FileTab } from "./FileTab";
 import type { MonacoCommand } from "./MonacoCommand";
@@ -54,9 +57,7 @@ const ObservedToolbar = observer(function ObservedToolbar({
 					);
 					break;
 				case "goToLastSlide":
-					presentationStore.setCurrentSlide(
-						presentationStore.totalSlides - 1,
-					);
+					presentationStore.setCurrentSlide(presentationStore.totalSlides - 1);
 					break;
 				default:
 					window.dispatchEvent(

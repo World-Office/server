@@ -212,9 +212,7 @@ export class PresentationStore {
 		const a = document.createElement("a");
 		a.href = url;
 		const baseName = this.document?.title?.replace(/\.[^.]+$/, "");
-		a.download = baseName
-			? `${baseName}.pptx`
-			: "presentation.pptx";
+		a.download = baseName ? `${baseName}.pptx` : "presentation.pptx";
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
