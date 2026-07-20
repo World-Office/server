@@ -125,6 +125,49 @@
         "legend": { "calcs": ["max", "avg"], "displayMode": "table", "placement": "bottom" },
         "tooltip": { "mode": "multi" }
       }
+    },
+    {
+      "title": "Coauthoring — Active Sessions",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 16 },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "sessions_active",
+          "legendFormat": "Active sessions",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }] }
+        }
+      }
+    },
+    {
+      "title": "Coauthoring — Connection Refused",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 16 },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "rate(connection_refused_total[5m])",
+          "legendFormat": "Refused/min",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "calcs": ["max", "avg"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
     }
   ],
   "templating": {

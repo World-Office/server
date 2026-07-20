@@ -36,6 +36,15 @@ static METRICS: LazyLock<PrometheusHandle> = LazyLock::new(|| {
         .expect("failed to install prometheus recorder")
 });
 
+metrics::describe_counter!(
+    "connection_refused_total",
+    "Total number of WebSocket connection attempts refused (session not found)"
+);
+metrics::describe_gauge!(
+    "sessions_active",
+    "Current number of active collaboration sessions"
+);
+
 async fn metrics_handler() -> String {
     METRICS.render()
 }
@@ -576,6 +585,8 @@ async fn create_session(
         pchannels.insert(session_id.clone(), presentation_tx);
     }
 
+    metrics::gauge!("sessions_active", 1.0);
+
     // Initialize presentation state (will be populated as operations arrive)
     {
         let mut pstate = state.presentation_state.lock().await;
@@ -751,6 +762,7 @@ async fn handle_ws(
     let presence_rx = match presence_rx {
         Some(rx) => rx,
         None => {
+            metrics::counter!("connection_refused_total", 1);
             let _ = socket
                 .send(Message::Text(
                     format!(r#"{{"error":"Session {} not found"}}"#, session_id).into(),
