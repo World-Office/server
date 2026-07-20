@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { visioStore } from "../../../stores/VisioStore";
 import { FileMenuItems } from "./FileMenuItems";
+import { CreateNewPanel } from "./panels/CreateNewPanel";
 import { DocumentInfoPanel } from "./panels/DocumentInfoPanel";
 import { HelpPanel } from "./panels/HelpPanel";
 import { SaveAsPanel } from "./panels/SaveAsPanel";
@@ -47,11 +48,12 @@ export function FileMenu() {
 			</div>
 			<div style={panelContainerStyle}>
 				<div className="visio-file-menu-panel-box" style={contentBoxBaseStyle}>
-					<SaveAsPanel visible={activePanel === "saveas"} />
-					<SettingsPanel visible={activePanel === "opts"} />
-					<DocumentInfoPanel visible={activePanel === "info"} />
-					<HelpPanel visible={activePanel === "help"} />
-					<PrintPreviewPanel visible={activePanel === "printpreview"} />
+				<CreateNewPanel visible={activePanel === "new"} />
+				<SaveAsPanel visible={activePanel === "saveas"} />
+				<SettingsPanel visible={activePanel === "opts"} />
+				<DocumentInfoPanel visible={activePanel === "info"} />
+				<HelpPanel visible={activePanel === "help"} />
+				<PrintPreviewPanel visible={activePanel === "printpreview"} />
 				</div>
 			</div>
 		</div>

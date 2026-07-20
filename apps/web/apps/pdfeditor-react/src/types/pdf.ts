@@ -65,6 +65,7 @@ export type PdfTab = "file" | "home" | "comment" | "insert" | "redact" | "forms"
 
 export type FileMenuAction =
   | "back"
+  | "new"
   | "saveas"
   | "save-copy"
   | "save-desktop"
