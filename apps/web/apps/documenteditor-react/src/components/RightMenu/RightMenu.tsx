@@ -8,6 +8,7 @@ import { RightMenuButton } from "./RightMenuButton"
 const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> = [
   { action: "ai-assistant", title: "AI Assistant", icon: "✨" },
   { action: "comments", title: "Comments", icon: "💬" },
+  { action: "review", title: "Review", icon: "✓" },
   { action: "paragraph", title: "Paragraph", icon: "¶" },
   { action: "table", title: "Table", icon: "⊞" },
   { action: "image", title: "Image", icon: "🖼" },
