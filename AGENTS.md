@@ -24,7 +24,7 @@ server/
 +-- tests/                           E2E test suite (Jest + Playwright + Docker Compose)
 +-- observability/                   Grafana, Prometheus, Loki, Tempo
 +-- ci/                              Docker base images for CI
-+-- .forgejo/workflows/              CI/CD (ci, docker, release, security, wasm)
++-- .github/workflows/               CI/CD (ci, deploy, docker, release, security, wasm)
 +-- .sisyphus/plans/                 Implementation plans
 ```
 
@@ -157,10 +157,10 @@ Stack: Jest, Playwright, Docker Compose. Run with `npm test` or `npm run test:e2
 | Rust core | Cargo | `cargo build --workspace` |
 | Rust tests | Cargo | `cargo test --workspace --lib -- --test-threads=1` |
 | Rust lint | Clippy | `cargo clippy --workspace` |
-| Tauri desktop | Cargo + npm | `cd desktop/tauri-poc && cargo tauri dev` |
+| Tauri desktop | Cargo + npm | `cd desktop/tauri-poc && cargo tauri dev` (excluded from CI — requires libwebkit2gtk-4.1-dev) |
 | Web frontend | pnpm | `pnpm install && pnpm dev` |
 | E2E tests | npm | `cd tests && npm test` |
-| CI | Forgejo Actions | `.forgejo/workflows/` (ci, docker, release, security, wasm) |
+| CI | GitHub Actions | `.github/workflows/` (ci, deploy, docker, release, security, wasm) |
 | Security audit | Weekly (Monday 06:00 UTC) | `cargo audit` + `pnpm audit --audit-level=high` |
 
 ## CODE STYLE

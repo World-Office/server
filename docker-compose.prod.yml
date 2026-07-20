@@ -229,7 +229,7 @@ services:
     environment:
       RUST_LOG: ${RUST_LOG:-info}
       JWT_SECRET: ${DOCSERVER_JWT_SECRET:-${JWT_SECRET:-prod-docserver-secret}}
-      WOPI_HOST_URL: ${WOPI_HOST_URL:-http://ocis:9200}
+      WOPI_HOST_URL: ${WOPI_HOST_URL:-http://opencloud:9200}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80/health"]
       interval: 15s
