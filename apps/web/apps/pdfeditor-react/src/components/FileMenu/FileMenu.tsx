@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react"
 import { pdfStore } from "../../stores/PdfStore"
 import { FileMenuItems } from "./FileMenuItems"
+import { CreateNewPanel } from "./panels/CreateNewPanel"
 import { DocumentInfoPanel } from "./panels/DocumentInfoPanel"
 import { HelpPanel } from "./panels/HelpPanel"
 import { SaveAsPanel } from "./panels/SaveAsPanel"
@@ -42,6 +43,7 @@ export function FileMenu() {
       </div>
       <div style={panelContainerStyle}>
         <div className="pdf-file-menu-panel-box" style={contentBoxBaseStyle}>
+          <CreateNewPanel visible={activePanel === "new"} />
           <SaveAsPanel visible={activePanel === "saveas"} />
           <SettingsPanel visible={activePanel === "opts"} />
           <DocumentInfoPanel visible={activePanel === "info"} />

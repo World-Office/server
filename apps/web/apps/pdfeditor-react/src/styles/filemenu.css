@@ -215,3 +215,48 @@
   line-height: 1.6;
   color: var(--wo-pdf-text-secondary);
 }
+
+.pdf-template-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--wo-de-border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.pdf-template-card:hover {
+  background-color: var(--wo-color-bg-secondary, #f5f5f5);
+  border-color: var(--wo-de-accent, #426ab3);
+}
+
+.pdf-template-icon {
+  font-size: 28px;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--wo-de-bg-pane);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.pdf-template-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pdf-template-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--wo-de-text-primary);
+}
+
+.pdf-template-desc {
+  font-size: 11px;
+  color: var(--wo-de-text-secondary);
+  margin-top: 2px;
+}
