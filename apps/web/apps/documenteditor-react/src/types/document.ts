@@ -100,6 +100,7 @@ export type LeftMenuAction =
 export type RightMenuPanel =
   | "ai-assistant"
   | "comments"
+  | "review"
   | "paragraph"
   | "table"
   | "image"

@@ -12,6 +12,7 @@ import { LeftMenu } from "./LeftMenu/LeftMenu"
 import { OfflineBadge } from "./OfflineBadge"
 import { AiAssistantPanel } from "./RightMenu/AiAssistantPanel"
 import { RightMenu } from "./RightMenu/RightMenu"
+import { TrackChangesPanel } from "./RightMenu/TrackChangesPanel"
 import { StatusBar } from "./StatusBar/StatusBar"
 import type { MonacoCommand } from "./Toolbar/MonacoCommand"
 import { Toolbar } from "./Toolbar/Toolbar"
@@ -159,6 +160,7 @@ export function Viewport({
               <RightMenu />
               <AiAssistantPanel visible={documentStore.activeRightPanel === "ai-assistant"} />
               <CommentsPanel visible={documentStore.activeRightPanel === "comments"} />
+              <TrackChangesPanel visible={documentStore.activeRightPanel === "review"} />
             </div>
           )}
         </div>
