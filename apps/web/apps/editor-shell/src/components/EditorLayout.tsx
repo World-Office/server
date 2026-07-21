@@ -70,7 +70,7 @@ export function EditorLayout({
 
   if (notFound) {
     return (
-      <div className="editor-layout editor-layout--error">
+      <div className="editor-layout editor-layout--error" role="alert">
         <div className="editor-error-page">
           <h1>404</h1>
           <p>The requested page was not found.</p>
@@ -81,7 +81,7 @@ export function EditorLayout({
 
   if (error) {
     return (
-      <div className="editor-layout editor-layout--error">
+      <div className="editor-layout editor-layout--error" role="alert">
         <div className="editor-error-page">
           <h1>Error</h1>
           <p>{error}</p>
@@ -121,10 +121,10 @@ export function EditorLayout({
 
   return (
     <div className={layoutClass}>
-      <div className="editor-toolbar">
+      <header className="editor-toolbar" role="banner">
         <Toolbar editorType={editorType} />
-      </div>
-      <div className="editor-body">
+      </header>
+      <div className="editor-body" role="main">
         {showTabBar && <TabBar editorType={editorType} />}
         {showLeftPanel && (
           <Suspense fallback={<div className="editor-panel-skeleton" />}>
@@ -140,9 +140,9 @@ export function EditorLayout({
           </Suspense>
         )}
       </div>
-      <div className="editor-statusbar">
+      <footer className="editor-statusbar" role="contentinfo">
         <StatusBar />
-      </div>
+      </footer>
 
       <ShortcutsOverlay visible={showShortcuts} onClose={() => setShowShortcuts(false)} />
 

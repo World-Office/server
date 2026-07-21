@@ -5,7 +5,7 @@ interface LeftPanelProps {
 
 export function LeftPanel({ title = "Navigation", onClose }: LeftPanelProps) {
   return (
-    <div className="editor-left-panel">
+    <div className="editor-left-panel" role="region" aria-label={title}>
       <div className="panel-container">
         <div className="panel-title">
           {title}

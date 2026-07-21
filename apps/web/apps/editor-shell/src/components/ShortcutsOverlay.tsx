@@ -54,6 +54,9 @@ export function ShortcutsOverlay({ visible, onClose }: ShortcutsOverlayProps) {
       role="presentation"
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="shortcuts-dialog-title"
         style={{
           background: "#fff",
           borderRadius: 8,
@@ -64,9 +67,8 @@ export function ShortcutsOverlay({ visible, onClose }: ShortcutsOverlayProps) {
         }}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
-        role="presentation"
       >
-        <h2 style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 700 }}>Keyboard Shortcuts</h2>
+        <h2 id="shortcuts-dialog-title" style={{ margin: "0 0 16px", fontSize: 18, fontWeight: 700 }}>Keyboard Shortcuts</h2>
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <tbody>
             {SHORTCUTS.map((s) => (
