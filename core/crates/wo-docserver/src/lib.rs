@@ -431,6 +431,70 @@ fn wopi_type_to_local_route(editor_type: &str) -> Option<&'static str> {
     }
 }
 
+// ── Dictionary serving ──────────────────────────────────────────────
+
+/// GET /dictionaries/{*path}
+///
+/// Serves Hunspell dictionary files (.aff, .dic) for the spellchecker.
+/// The frontend requests files like `/dictionaries/en-US.aff` but the
+/// on-disk layout is `en_US/en_US.aff` (locale subdirectory). This handler
+/// normalizes hyphens to underscores and maps `{locale}.{ext}` →
+/// `{locale}/{locale}.{ext}`.
+async fn serve_dictionary(
+    Path(path): Path<String>,
+) -> Result<
+    (
+        axum::http::StatusCode,
+        [(axum::http::HeaderName, String); 1],
+        Vec<u8>,
+    ),
+    axum::http::StatusCode,
+> {
+    if path.split('/').any(|seg| seg == "..") {
+        return Err(axum::http::StatusCode::FORBIDDEN);
+    }
+
+    let dict_dir =
+        std::env::var("DICTIONARIES_DIR").unwrap_or_else(|_| "/app/assets/dictionaries".into());
+
+    // Parse the path as "{locale}.{ext}" — e.g. "en-US.aff" → locale="en-US", ext="aff"
+    let file_stem = std::path::Path::new(&path)
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or(&path);
+    let locale_norm = file_stem.replace('-', "_");
+
+    // Build path: dictionaries/{locale}/{locale}.{ext}
+    let ext = std::path::Path::new(&path)
+        .extension()
+        .and_then(|s| s.to_str())
+        .unwrap_or("");
+    let file_name = if ext.is_empty() {
+        format!("{locale_norm}")
+    } else {
+        format!("{locale_norm}.{ext}")
+    };
+    let file_path = std::path::Path::new(&dict_dir)
+        .join(&locale_norm)
+        .join(&file_name);
+
+    let data = tokio::fs::read(&file_path)
+        .await
+        .map_err(|_| axum::http::StatusCode::NOT_FOUND)?;
+
+    let content_type = match ext {
+        "aff" => "text/plain; charset=utf-8",
+        "dic" => "application/octet-stream",
+        _ => "application/octet-stream",
+    };
+
+    Ok((
+        axum::http::StatusCode::OK,
+        [(axum::http::header::CONTENT_TYPE, content_type.to_string())],
+        data,
+    ))
+}
+
 // ── Editor bundle serving handlers ──────────────────────────────────
 
 /// GET /editors/{type}/
@@ -695,6 +759,8 @@ pub fn create_app(config: DocServerConfig) -> Router {
         .route("/api/conversion/formats", get(conversion_formats))
         .route("/demo/info", get(demo_info_handler))
         .route("/demo/document", get(demo_document_handler))
+        // Dictionary files for frontend spellchecker
+        .route("/dictionaries/{*path}", get(serve_dictionary))
         // Editor bundle routes (WOPI-first bridge) — before fallback ServeDir
         .route("/editors/{type}/", get(serve_editor_index))
         .route("/editors/{type}/{*asset_path}", get(serve_editor_assets))

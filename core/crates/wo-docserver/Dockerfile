@@ -51,6 +51,14 @@ COPY --from=builder --chown=worldoffice:worldoffice /app/target/release/wo-docse
 # These are served by wo-docserver's static_files::editor_ui_service().
 COPY --chown=worldoffice:worldoffice frontend-dist/ /app/editor-ui/
 
+# Copy Hunspell dictionaries for the frontend spellchecker. The
+# /dictionaries/{*path} route handler serves these with locale code
+# normalization (en-US → en_US).
+COPY --chown=worldoffice:worldoffice assets/dictionaries/ /app/assets/dictionaries/
+
+# Copy a minimal demo document for the standalone demo endpoint.
+COPY --chown=worldoffice:worldoffice assets/demo.docx /app/assets/demo.docx
+
 # Create data directories expected by the OpenCloud integration volumes.
 RUN mkdir -p /var/www/worldoffice/Data /var/log/worldoffice /var/lib/worldoffice && \
     chown -R worldoffice:worldoffice /var/www/worldoffice /var/log/worldoffice /var/lib/worldoffice
@@ -71,6 +79,7 @@ USER worldoffice
 # Only set the port explicitly so the default (80) is clear to operators.
 # ---------------------------------------------------------------------------
 ENV DOCSERVER_PORT=80
+ENV DEMO_DOC_PATH=/app/assets/demo.docx
 
 # Expose the default bind port.  The OpenCloud compose maps this internally
 # via DOCUMENT_SERVER_INTERNAL_PORT=80 and publishes through Traefik.
