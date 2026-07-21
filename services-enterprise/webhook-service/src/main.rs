@@ -9,7 +9,7 @@ use std::sync::Arc;
 #[cfg(feature = "enterprise")]
 use tokio::sync::Mutex;
 #[cfg(feature = "enterprise")]
-use webhook_service::{repository::WebhookRepository, run_background_worker, AppState};
+use webhook_service::{AppState, repository::WebhookRepository, run_background_worker};
 
 #[cfg(feature = "enterprise")]
 #[tokio::main]
@@ -19,8 +19,7 @@ async fn main() {
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    let db_path =
-        std::env::var("WEBHOOK_DB_PATH").unwrap_or_else(|_| "./data/webhooks.db".into());
+    let db_path = std::env::var("WEBHOOK_DB_PATH").unwrap_or_else(|_| "./data/webhooks.db".into());
     if let Some(parent) = std::path::Path::new(&db_path).parent() {
         let _ = std::fs::create_dir_all(parent);
     }

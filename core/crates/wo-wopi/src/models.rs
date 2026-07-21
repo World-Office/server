@@ -23,7 +23,6 @@ pub struct CheckFileInfoResponse {
     pub user_id: String,
 
     // ── UI-rendering fields (required by WOPI clients) ──
-
     /// Display name shown in the editor UI
     #[serde(rename = "UserFriendlyName", skip_serializing_if = "Option::is_none")]
     pub user_friendly_name: Option<String>,
@@ -41,7 +40,6 @@ pub struct CheckFileInfoResponse {
     pub sha256: Option<String>,
 
     // ── Breadcrumb and navigation ──
-
     /// Breadcrumb document name
     #[serde(rename = "BreadcrumbDocName", skip_serializing_if = "Option::is_none")]
     pub breadcrumb_doc_name: Option<String>,
@@ -55,13 +53,14 @@ pub struct CheckFileInfoResponse {
     pub file_url: Option<String>,
 
     // ── Auth ──
-
     /// Authentication identifier from the host
-    #[serde(rename = "HostAuthenticationId", skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "HostAuthenticationId",
+        skip_serializing_if = "Option::is_none"
+    )]
     pub host_authentication_id: Option<String>,
 
     // ── Capabilities ──
-
     /// Whether the user can write to the file
     #[serde(rename = "UserCanWrite", default)]
     pub user_can_write: bool,

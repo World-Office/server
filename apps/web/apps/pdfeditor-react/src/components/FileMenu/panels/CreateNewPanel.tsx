@@ -14,7 +14,7 @@ const TEMPLATES: TemplateInfo[] = [
 ]
 
 export function CreateNewPanel({ visible }: { visible: boolean }) {
-  function handleUseTemplate(id: string): void {
+  function handleUseTemplate(_id: string): void {
     pdfStore.setFileMenuOpen(false)
     pdfStore.setActiveFileMenuPanel(null)
   }

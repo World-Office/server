@@ -389,7 +389,10 @@ pub async fn run_background_worker(state: Arc<AppState>) {
             continue;
         }
 
-        tracing::debug!(count = pending.len(), "background worker processing deliveries");
+        tracing::debug!(
+            count = pending.len(),
+            "background worker processing deliveries"
+        );
 
         for delivery in pending {
             let webhook = {
@@ -467,8 +470,7 @@ pub async fn run_background_worker(state: Arc<AppState>) {
                 );
             } else {
                 let delay = delivery::retry_delay(new_attempt);
-                let next_retry = Utc::now()
-                    + chrono::Duration::seconds(delay.as_secs() as i64);
+                let next_retry = Utc::now() + chrono::Duration::seconds(delay.as_secs() as i64);
                 let next_retry_str = next_retry.to_rfc3339();
 
                 let mut repo = state.repo.lock().await;

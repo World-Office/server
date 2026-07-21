@@ -35,7 +35,11 @@ pub struct AppState {
 impl AppState {
     /// Build application state from configuration.
     pub fn new(config: DocServerConfig) -> Self {
-        let wopi_client = WopiClient::new(config.wopi_host_url.clone(), config.public_url.clone(), config.wopi_insecure);
+        let wopi_client = WopiClient::new(
+            config.wopi_host_url.clone(),
+            config.public_url.clone(),
+            config.wopi_insecure,
+        );
         Self {
             config,
             wopi_client,
@@ -338,7 +342,11 @@ fn extract_last_query_param(query: &str, name: &str) -> String {
 fn file_id_from_wopi_src(wopi_src: &str) -> String {
     if let Some(pos) = wopi_src.find("/wopi/files/") {
         let after = &wopi_src[pos + "/wopi/files/".len()..];
-        after.split(&['/', '?', '&', '#'][..]).next().unwrap_or("").to_string()
+        after
+            .split(&['/', '?', '&', '#'][..])
+            .next()
+            .unwrap_or("")
+            .to_string()
     } else {
         String::new()
     }
@@ -523,7 +531,10 @@ async fn serve_editor_index(
 
     Ok((
         axum::http::StatusCode::OK,
-        [(axum::http::header::CONTENT_TYPE, "text/html; charset=utf-8".into())],
+        [(
+            axum::http::header::CONTENT_TYPE,
+            "text/html; charset=utf-8".into(),
+        )],
         data,
     ))
 }

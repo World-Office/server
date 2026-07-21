@@ -3,8 +3,8 @@
 #![cfg_attr(feature = "enterprise", allow(unused))]
 #![cfg_attr(not(feature = "enterprise"), allow(dead_code))]
 
-use std::sync::Arc;
 use scim_service::{AppState, app, repository::ScimRepository};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[cfg_attr(not(feature = "enterprise"), allow(unreachable_code))]

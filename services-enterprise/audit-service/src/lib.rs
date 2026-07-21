@@ -173,10 +173,7 @@ pub async fn record_event(
         "audit event recorded"
     );
 
-    Ok((
-        StatusCode::CREATED,
-        Json(RecordEventResponse { event }),
-    ))
+    Ok((StatusCode::CREATED, Json(RecordEventResponse { event })))
 }
 
 /// GET /events — list events with pagination.
@@ -280,10 +277,7 @@ pub async fn events_stream(
             Err(broadcast::error::RecvError::Closed) => None,
             Err(broadcast::error::RecvError::Lagged(n)) => {
                 tracing::warn!("SSE client lagged by {} messages", n);
-                Some((
-                    Ok(Event::default().data("{\"type\":\"keepalive\"}")),
-                    rx,
-                ))
+                Some((Ok(Event::default().data("{\"type\":\"keepalive\"}")), rx))
             }
         }
     });

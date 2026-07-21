@@ -145,7 +145,7 @@ mod tests {
 
     #[test]
     fn retry_delay_zero_or_one_both_produce_base_delay() {
-            assert_eq!(retry_delay(0).as_secs(), 10);
+        assert_eq!(retry_delay(0).as_secs(), 10);
         assert_eq!(retry_delay(1).as_secs(), 10);
     }
 
