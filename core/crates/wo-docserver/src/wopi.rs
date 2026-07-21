@@ -159,9 +159,9 @@ impl WopiClient {
         }
 
         let base = self.public_url.trim_end_matches('/');
-            // The WOPI spec requires the <WOPISrc> placeholder in urlsrc attributes.
-    // In XML, '<' and '>' must be escaped as &lt; and &gt; inside attribute values.
-    let xml = format!(
+        // The WOPI spec requires the <WOPISrc> placeholder in urlsrc attributes.
+        // In XML, '<' and '>' must be escaped as &lt; and &gt; inside attribute values.
+        let xml = format!(
             r#"<?xml version="1.0" encoding="utf-8"?>
 <wopi-discovery>
   <net-zone name="external-http">
@@ -197,7 +197,6 @@ impl WopiClient {
 "#
         );
 
-
         {
             let mut guard = self.discovery_cache.lock().unwrap();
             *guard = Some(CachedDiscovery {
@@ -232,9 +231,9 @@ where
                 }
                 attempt += 1;
                 if attempt > MAX_RETRIES {
-                    return Err(err.context(format!(
-                        "WOPI host unreachable after {MAX_RETRIES} retries"
-                    )));
+                    return Err(
+                        err.context(format!("WOPI host unreachable after {MAX_RETRIES} retries"))
+                    );
                 }
                 let delay = INITIAL_BACKOFF
                     .checked_mul(2u32.pow(attempt - 1))
@@ -248,9 +247,7 @@ where
 /// Returns true if the error looks like a transient transport failure.
 fn is_transient_error(err: &anyhow::Error) -> bool {
     if let Some(reqwest_err) = err.downcast_ref::<reqwest::Error>() {
-        return reqwest_err.is_connect()
-            || reqwest_err.is_timeout()
-            || reqwest_err.is_request();
+        return reqwest_err.is_connect() || reqwest_err.is_timeout() || reqwest_err.is_request();
     }
     false
 }
@@ -262,27 +259,35 @@ mod tests {
     #[tokio::test]
     async fn test_discovery_uses_configured_public_url() {
         let client = WopiClient::new(
-                    "http://ocis:9200".into(),
-                    "https://editor.example.com".into(),
-                    false,
-                );
+            "http://ocis:9200".into(),
+            "https://editor.example.com".into(),
+            false,
+        );
         let xml = client.get_discovery().await.unwrap();
         assert!(xml.contains("href=\"https://editor.example.com\""));
-        assert!(xml.contains("urlsrc=\"https://editor.example.com/hosting/wopi/word/edit?WOPISrc=&lt;WOPISrc&gt;\""));
-        assert!(xml.contains("urlsrc=\"https://editor.example.com/hosting/wopi/sheet/edit?WOPISrc=&lt;WOPISrc&gt;\""));
-        assert!(xml.contains("urlsrc=\"https://editor.example.com/hosting/wopi/slide/edit?WOPISrc=&lt;WOPISrc&gt;\""));
+        assert!(xml.contains(
+            "urlsrc=\"https://editor.example.com/hosting/wopi/word/edit?WOPISrc=&lt;WOPISrc&gt;\""
+        ));
+        assert!(xml.contains(
+            "urlsrc=\"https://editor.example.com/hosting/wopi/sheet/edit?WOPISrc=&lt;WOPISrc&gt;\""
+        ));
+        assert!(xml.contains(
+            "urlsrc=\"https://editor.example.com/hosting/wopi/slide/edit?WOPISrc=&lt;WOPISrc&gt;\""
+        ));
         assert!(xml.contains("urlsrc=\"https://editor.example.com/hosting/wopi/diagram/edit?WOPISrc=&lt;WOPISrc&gt;\""));
-        assert!(xml.contains("urlsrc=\"https://editor.example.com/hosting/wopi/pdf/view?WOPISrc=&lt;WOPISrc&gt;\""));
+        assert!(xml.contains(
+            "urlsrc=\"https://editor.example.com/hosting/wopi/pdf/view?WOPISrc=&lt;WOPISrc&gt;\""
+        ));
         assert!(!xml.contains("localhost:8080"));
     }
 
     #[tokio::test]
     async fn test_discovery_cache_returns_cached_value() {
         let client = WopiClient::new(
-                    "http://ocis:9200".into(),
-                    "https://editor.example.com".into(),
-                    false,
-                );
+            "http://ocis:9200".into(),
+            "https://editor.example.com".into(),
+            false,
+        );
         let first = client.get_discovery().await.unwrap();
         let second = client.get_discovery().await.unwrap();
         assert_eq!(first, second);

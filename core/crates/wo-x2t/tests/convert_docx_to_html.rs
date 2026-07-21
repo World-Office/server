@@ -14,8 +14,7 @@ fn test_docx_to_html_conversion() {
     let docx_path = get_fixture_path("demo.docx");
     assert!(docx_path.exists(), "demo.docx not found at {:?}", docx_path);
 
-    let data = fs::read(&docx_path)
-        .expect(&format!("Failed to read {:?}", docx_path));
+    let data = fs::read(&docx_path).expect(&format!("Failed to read {:?}", docx_path));
 
     eprintln!("Read {} bytes from demo.docx", data.len());
 
@@ -51,8 +50,7 @@ fn test_docx_to_html_conversion() {
     );
 
     assert!(
-        html.to_lowercase().contains("<!doctype html")
-            || html.to_lowercase().contains("<html"),
+        html.to_lowercase().contains("<!doctype html") || html.to_lowercase().contains("<html"),
         "Output should contain HTML document structure"
     );
 
@@ -68,7 +66,6 @@ fn test_docx_to_html_conversion() {
         .join("..")
         .join("target")
         .join("x2t-docx-to-html-output.html");
-    fs::write(&out_path, &output.data)
-        .expect(&format!("Failed to write output to {:?}", out_path));
+    fs::write(&out_path, &output.data).expect(&format!("Failed to write output to {:?}", out_path));
     eprintln!("Output written to: {:?}", out_path);
 }

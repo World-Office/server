@@ -204,8 +204,7 @@ mod tests {
         };
         repo.insert(&old_event).unwrap();
 
-        repo.insert(&make_event("new-evt", "test.new"))
-            .unwrap();
+        repo.insert(&make_event("new-evt", "test.new")).unwrap();
 
         let deleted = repo.delete_older_than(30).unwrap();
         assert_eq!(deleted, 1);
@@ -227,10 +226,8 @@ mod tests {
 
         {
             let mut repo = AuditRepository::new(&db_path).unwrap();
-            repo.insert(&make_event("persist-1", "test.event"))
-                .unwrap();
-            repo.insert(&make_event("persist-2", "test.event"))
-                .unwrap();
+            repo.insert(&make_event("persist-1", "test.event")).unwrap();
+            repo.insert(&make_event("persist-2", "test.event")).unwrap();
         }
         {
             let repo = AuditRepository::new(&db_path).unwrap();

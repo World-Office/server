@@ -1,7 +1,7 @@
 //! audit-service — World-Office enterprise audit logging microservice binary.
 
-use std::sync::Arc;
 use audit_service::{AppState, app, repository::AuditRepository};
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
 #[tokio::main]

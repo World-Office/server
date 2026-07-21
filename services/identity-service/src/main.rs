@@ -15,8 +15,8 @@ use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 use rusqlite::Connection;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::sync::{Arc, LazyLock};
 use std::collections::HashMap;
+use std::sync::{Arc, LazyLock};
 
 static METRICS: LazyLock<PrometheusHandle> = LazyLock::new(|| {
     PrometheusBuilder::new()
@@ -111,15 +111,24 @@ impl UserRepository {
         let mut rows = stmt.query(rusqlite::params![username])?;
         match rows.next()? {
             Some(row) => Ok(Some(User {
-                id: row.get(0)?, username: row.get(1)?, email: row.get(2)?,
-                password_hash: row.get(3)?, role: row.get(4)?, created_at: row.get(5)?,
-                sso_provider: row.get(6)?, external_id: row.get(7)?,
+                id: row.get(0)?,
+                username: row.get(1)?,
+                email: row.get(2)?,
+                password_hash: row.get(3)?,
+                role: row.get(4)?,
+                created_at: row.get(5)?,
+                sso_provider: row.get(6)?,
+                external_id: row.get(7)?,
             })),
             None => Ok(None),
         }
     }
 
-    fn get_by_external_id(&self, external_id: &str, provider: &str) -> Result<Option<User>, rusqlite::Error> {
+    fn get_by_external_id(
+        &self,
+        external_id: &str,
+        provider: &str,
+    ) -> Result<Option<User>, rusqlite::Error> {
         let mut stmt = self.conn.prepare(
             "SELECT id, username, email, password_hash, role, created_at, sso_provider, external_id
              FROM users WHERE external_id = ?1 AND sso_provider = ?2",
@@ -127,9 +136,14 @@ impl UserRepository {
         let mut rows = stmt.query(rusqlite::params![external_id, provider])?;
         match rows.next()? {
             Some(row) => Ok(Some(User {
-                id: row.get(0)?, username: row.get(1)?, email: row.get(2)?,
-                password_hash: row.get(3)?, role: row.get(4)?, created_at: row.get(5)?,
-                sso_provider: row.get(6)?, external_id: row.get(7)?,
+                id: row.get(0)?,
+                username: row.get(1)?,
+                email: row.get(2)?,
+                password_hash: row.get(3)?,
+                role: row.get(4)?,
+                created_at: row.get(5)?,
+                sso_provider: row.get(6)?,
+                external_id: row.get(7)?,
             })),
             None => Ok(None),
         }
@@ -143,9 +157,14 @@ impl UserRepository {
         let mut rows = stmt.query(rusqlite::params![email])?;
         match rows.next()? {
             Some(row) => Ok(Some(User {
-                id: row.get(0)?, username: row.get(1)?, email: row.get(2)?,
-                password_hash: row.get(3)?, role: row.get(4)?, created_at: row.get(5)?,
-                sso_provider: row.get(6)?, external_id: row.get(7)?,
+                id: row.get(0)?,
+                username: row.get(1)?,
+                email: row.get(2)?,
+                password_hash: row.get(3)?,
+                role: row.get(4)?,
+                created_at: row.get(5)?,
+                sso_provider: row.get(6)?,
+                external_id: row.get(7)?,
             })),
             None => Ok(None),
         }
@@ -158,9 +177,14 @@ impl UserRepository {
         )?;
         let rows = stmt.query_map([], |row| {
             Ok(User {
-                id: row.get(0)?, username: row.get(1)?, email: row.get(2)?,
-                password_hash: row.get(3)?, role: row.get(4)?, created_at: row.get(5)?,
-                sso_provider: row.get(6)?, external_id: row.get(7)?,
+                id: row.get(0)?,
+                username: row.get(1)?,
+                email: row.get(2)?,
+                password_hash: row.get(3)?,
+                role: row.get(4)?,
+                created_at: row.get(5)?,
+                sso_provider: row.get(6)?,
+                external_id: row.get(7)?,
             })
         })?;
         let mut users = Vec::new();
@@ -275,8 +299,10 @@ fn load_sso_config() -> SsoConfig {
             bind_dn: std::env::var("LDAP_BIND_DN").unwrap_or_default(),
             bind_password: std::env::var("LDAP_BIND_PASSWORD").unwrap_or_default(),
             base_dn: std::env::var("LDAP_BASE_DN").unwrap_or_default(),
-            user_filter: std::env::var("LDAP_USER_FILTER").unwrap_or_else(|_| "(uid={username})".into()),
-            group_filter: std::env::var("LDAP_GROUP_FILTER").unwrap_or_else(|_| "(member={dn})".into()),
+            user_filter: std::env::var("LDAP_USER_FILTER")
+                .unwrap_or_else(|_| "(uid={username})".into()),
+            group_filter: std::env::var("LDAP_GROUP_FILTER")
+                .unwrap_or_else(|_| "(member={dn})".into()),
             mapping: HashMap::new(),
         });
         tracing::info!("LDAP config loaded from environment variables");
@@ -293,7 +319,9 @@ mod saml_mod {
     use samael::service_provider::ServiceProviderBuilder;
     use samael::traits::ToXml;
 
-    fn build_sp(config: &SamlConfig) -> Result<samael::service_provider::ServiceProvider, Box<dyn std::error::Error>> {
+    fn build_sp(
+        config: &SamlConfig,
+    ) -> Result<samael::service_provider::ServiceProvider, Box<dyn std::error::Error>> {
         let mut builder = ServiceProviderBuilder::default();
         builder.entity_id(Some(config.entity_id.clone()));
         builder.acs_url(Some(config.acs_url.clone()));
@@ -303,19 +331,31 @@ mod saml_mod {
     pub async fn metadata_handler(
         State(state): State<Arc<AppState>>,
     ) -> Result<Html<String>, (StatusCode, Json<ErrorResponse>)> {
-        let config = state.sso_config.saml.as_ref()
+        let config = state
+            .sso_config
+            .saml
+            .as_ref()
             .ok_or_else(|| make_error(StatusCode::NOT_FOUND, "SAML not configured"))?;
 
         let sp = build_sp(config).map_err(|e| {
-            make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Failed to build SP: {e}"))
+            make_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                &format!("Failed to build SP: {e}"),
+            )
         })?;
 
         let metadata = sp.metadata().map_err(|e| {
-            make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Failed to generate metadata: {e}"))
+            make_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                &format!("Failed to generate metadata: {e}"),
+            )
         })?;
 
         let xml = ToXml::to_string(&metadata).map_err(|e| {
-            make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Failed to serialize metadata: {e}"))
+            make_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                &format!("Failed to serialize metadata: {e}"),
+            )
         })?;
 
         Ok(Html(xml))
@@ -324,23 +364,40 @@ mod saml_mod {
     pub async fn login_handler(
         State(state): State<Arc<AppState>>,
     ) -> Result<Redirect, (StatusCode, Json<ErrorResponse>)> {
-        let config = state.sso_config.saml.as_ref()
+        let config = state
+            .sso_config
+            .saml
+            .as_ref()
             .ok_or_else(|| make_error(StatusCode::NOT_FOUND, "SAML not configured"))?;
 
         let sp = build_sp(config).map_err(|e| {
-            make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Failed to build SP: {e}"))
+            make_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                &format!("Failed to build SP: {e}"),
+            )
         })?;
 
-        let authn_req = sp.make_authentication_request(&config.idp_sso_url).map_err(|e| {
-            make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Failed to create authn request: {e}"))
-        })?;
+        let authn_req = sp
+            .make_authentication_request(&config.idp_sso_url)
+            .map_err(|e| {
+                make_error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    &format!("Failed to create authn request: {e}"),
+                )
+            })?;
 
         if let Some(url) = authn_req.redirect("").map_err(|e| {
-            make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Failed to build redirect URL: {e}"))
+            make_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                &format!("Failed to build redirect URL: {e}"),
+            )
         })? {
             Ok(Redirect::to(url.as_str()))
         } else {
-            Err(make_error(StatusCode::INTERNAL_SERVER_ERROR, "Failed to construct redirect URL"))
+            Err(make_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "Failed to construct redirect URL",
+            ))
         }
     }
 
@@ -348,21 +405,32 @@ mod saml_mod {
         State(state): State<Arc<AppState>>,
         form: axum::Form<HashMap<String, String>>,
     ) -> Result<Json<LoginResponse>, (StatusCode, Json<ErrorResponse>)> {
-        let config = state.sso_config.saml.as_ref()
+        let config = state
+            .sso_config
+            .saml
+            .as_ref()
             .ok_or_else(|| make_error(StatusCode::NOT_FOUND, "SAML not configured"))?;
 
         let sp = build_sp(config).map_err(|e| {
-            make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Failed to build SP: {e}"))
+            make_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                &format!("Failed to build SP: {e}"),
+            )
         })?;
 
-        let saml_response = form.get("SAMLResponse")
+        let saml_response = form
+            .get("SAMLResponse")
             .ok_or_else(|| make_error(StatusCode::BAD_REQUEST, "Missing SAMLResponse"))?;
 
         let assertion = sp.parse_base64_response(saml_response, None).map_err(|e| {
-            make_error(StatusCode::UNAUTHORIZED, &format!("Invalid SAML response: {e}"))
+            make_error(
+                StatusCode::UNAUTHORIZED,
+                &format!("Invalid SAML response: {e}"),
+            )
         })?;
 
-        let email = assertion.subject
+        let email = assertion
+            .subject
             .as_ref()
             .and_then(|s| s.name_id.as_ref())
             .map(|n| n.value.clone())
@@ -388,17 +456,23 @@ mod saml_mod {
                         external_id: Some(email.clone()),
                     };
                     users.insert(&new_user).map_err(|e| {
-                        make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Failed to create user: {e}"))
+                        make_error(
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            &format!("Failed to create user: {e}"),
+                        )
                     })?;
                     new_user
                 }
-            }
+            },
         };
 
         let token = issue_jwt(&state, &user);
         tracing::info!(username = %user.username, provider = "saml", "user authenticated via SAML");
 
-        Ok(Json(LoginResponse { token, expires_in: 86400 }))
+        Ok(Json(LoginResponse {
+            token,
+            expires_in: 86400,
+        }))
     }
 }
 
@@ -409,20 +483,29 @@ mod saml_mod {
     pub async fn metadata_handler(
         _state: State<Arc<AppState>>,
     ) -> Result<Html<String>, (StatusCode, Json<ErrorResponse>)> {
-        Err(make_error(StatusCode::NOT_IMPLEMENTED, "SAML support not enabled"))
+        Err(make_error(
+            StatusCode::NOT_IMPLEMENTED,
+            "SAML support not enabled",
+        ))
     }
 
     pub async fn login_handler(
         _state: State<Arc<AppState>>,
     ) -> Result<Redirect, (StatusCode, Json<ErrorResponse>)> {
-        Err(make_error(StatusCode::NOT_IMPLEMENTED, "SAML support not enabled"))
+        Err(make_error(
+            StatusCode::NOT_IMPLEMENTED,
+            "SAML support not enabled",
+        ))
     }
 
     pub async fn acs_handler(
         _state: State<Arc<AppState>>,
         _form: axum::Form<HashMap<String, String>>,
     ) -> Result<Json<LoginResponse>, (StatusCode, Json<ErrorResponse>)> {
-        Err(make_error(StatusCode::NOT_IMPLEMENTED, "SAML support not enabled"))
+        Err(make_error(
+            StatusCode::NOT_IMPLEMENTED,
+            "SAML support not enabled",
+        ))
     }
 }
 
@@ -434,9 +517,8 @@ use saml_mod as saml;
 mod oidc_mod {
     use super::*;
     use oauth2::{
-        AuthUrl, ClientId, ClientSecret, TokenUrl, AuthorizationCode,
-        basic::BasicClient,
-        StandardTokenResponse, EmptyExtraTokenFields, Scope, CsrfToken, TokenResponse,
+        AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, EmptyExtraTokenFields,
+        Scope, StandardTokenResponse, TokenResponse, TokenUrl, basic::BasicClient,
     };
 
     struct OidcSession {
@@ -449,7 +531,12 @@ mod oidc_mod {
         LazyLock::new(|| tokio::sync::Mutex::new(Vec::new()));
 
     pub fn list_providers(state: &AppState) -> Vec<&OidcProvider> {
-        state.sso_config.oidc_providers.iter().filter(|p| p.enabled).collect()
+        state
+            .sso_config
+            .oidc_providers
+            .iter()
+            .filter(|p| p.enabled)
+            .collect()
     }
 
     pub async fn login_handler(
@@ -457,13 +544,24 @@ mod oidc_mod {
         Query(params): Query<HashMap<String, String>>,
     ) -> Result<Redirect, (StatusCode, Json<ErrorResponse>)> {
         let provider_id = params.get("provider").map(|s| s.as_str()).unwrap_or("");
-        let provider = state.sso_config.oidc_providers.iter()
+        let provider = state
+            .sso_config
+            .oidc_providers
+            .iter()
             .find(|p| p.id == provider_id && p.enabled)
-            .ok_or_else(|| make_error(StatusCode::NOT_FOUND,
-                &format!("OIDC provider '{provider_id}' not found or disabled")))?;
+            .ok_or_else(|| {
+                make_error(
+                    StatusCode::NOT_FOUND,
+                    &format!("OIDC provider '{provider_id}' not found or disabled"),
+                )
+            })?;
 
-        let auth_url = AuthUrl::new(provider.issuer_url.clone())
-            .map_err(|e| make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Invalid auth URL: {e}")))?;
+        let auth_url = AuthUrl::new(provider.issuer_url.clone()).map_err(|e| {
+            make_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                &format!("Invalid auth URL: {e}"),
+            )
+        })?;
 
         let client = BasicClient::new(ClientId::new(provider.client_id.clone()))
             .set_client_secret(ClientSecret::new(provider.client_secret.clone()))
@@ -495,35 +593,70 @@ mod oidc_mod {
         State(state): State<Arc<AppState>>,
         Query(params): Query<HashMap<String, String>>,
     ) -> Result<Json<LoginResponse>, (StatusCode, Json<ErrorResponse>)> {
-        let code = params.get("code")
+        let code = params
+            .get("code")
             .ok_or_else(|| make_error(StatusCode::BAD_REQUEST, "Missing authorization code"))?;
-        let state_param = params.get("state")
+        let state_param = params
+            .get("state")
             .ok_or_else(|| make_error(StatusCode::BAD_REQUEST, "Missing state parameter"))?;
 
         let mut sessions = OIDC_SESSIONS.lock().await;
-        let session_idx = sessions.iter().position(|s| s.state == *state_param)
+        let session_idx = sessions
+            .iter()
+            .position(|s| s.state == *state_param)
             .ok_or_else(|| make_error(StatusCode::UNAUTHORIZED, "Invalid state parameter"))?;
         let session = sessions.remove(session_idx);
 
-        let provider = state.sso_config.oidc_providers.iter()
+        let provider = state
+            .sso_config
+            .oidc_providers
+            .iter()
             .find(|p| p.id == session.provider_id)
-            .ok_or_else(|| make_error(StatusCode::INTERNAL_SERVER_ERROR, "Provider config not found"))?;
+            .ok_or_else(|| {
+                make_error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    "Provider config not found",
+                )
+            })?;
 
-        let auth_url = AuthUrl::new(provider.issuer_url.clone())
-            .map_err(|e| make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Invalid URL: {e}")))?;
+        let auth_url = AuthUrl::new(provider.issuer_url.clone()).map_err(|e| {
+            make_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                &format!("Invalid URL: {e}"),
+            )
+        })?;
 
-        let oidc_config_url = format!("{}/.well-known/openid-configuration", provider.issuer_url.trim_end_matches('/'));
-        let resp = reqwest::get(&oidc_config_url).await
-            .map_err(|e| make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Failed to fetch OIDC config: {e}")))?;
+        let oidc_config_url = format!(
+            "{}/.well-known/openid-configuration",
+            provider.issuer_url.trim_end_matches('/')
+        );
+        let resp = reqwest::get(&oidc_config_url).await.map_err(|e| {
+            make_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                &format!("Failed to fetch OIDC config: {e}"),
+            )
+        })?;
 
-        let oidc_config: serde_json::Value = resp.json().await
-            .map_err(|e| make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Failed to parse OIDC config: {e}")))?;
+        let oidc_config: serde_json::Value = resp.json().await.map_err(|e| {
+            make_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                &format!("Failed to parse OIDC config: {e}"),
+            )
+        })?;
 
-        let token_endpoint = oidc_config["token_endpoint"].as_str()
-            .ok_or_else(|| make_error(StatusCode::INTERNAL_SERVER_ERROR, "No token_endpoint in OIDC config"))?;
+        let token_endpoint = oidc_config["token_endpoint"].as_str().ok_or_else(|| {
+            make_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "No token_endpoint in OIDC config",
+            )
+        })?;
 
-        let token_url = TokenUrl::new(token_endpoint.to_string())
-            .map_err(|e| make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Invalid token URL: {e}")))?;
+        let token_url = TokenUrl::new(token_endpoint.to_string()).map_err(|e| {
+            make_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                &format!("Invalid token URL: {e}"),
+            )
+        })?;
 
         let client = BasicClient::new(ClientId::new(provider.client_id.clone()))
             .set_client_secret(ClientSecret::new(provider.client_secret.clone()))
@@ -531,14 +664,24 @@ mod oidc_mod {
             .set_token_uri(token_url);
 
         let http_client = reqwest::Client::new();
-        let token_res: StandardTokenResponse<EmptyExtraTokenFields, oauth2::basic::BasicTokenType> = client
-            .exchange_code(AuthorizationCode::new(code.clone()))
-            .request_async(&http_client)
-            .await
-            .map_err(|e| make_error(StatusCode::UNAUTHORIZED, &format!("Token exchange failed: {e}")))?;
+        let token_res: StandardTokenResponse<EmptyExtraTokenFields, oauth2::basic::BasicTokenType> =
+            client
+                .exchange_code(AuthorizationCode::new(code.clone()))
+                .request_async(&http_client)
+                .await
+                .map_err(|e| {
+                    make_error(
+                        StatusCode::UNAUTHORIZED,
+                        &format!("Token exchange failed: {e}"),
+                    )
+                })?;
 
-        let userinfo_url = oidc_config["userinfo_endpoint"].as_str()
-            .ok_or_else(|| make_error(StatusCode::INTERNAL_SERVER_ERROR, "No userinfo_endpoint in OIDC config"))?;
+        let userinfo_url = oidc_config["userinfo_endpoint"].as_str().ok_or_else(|| {
+            make_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "No userinfo_endpoint in OIDC config",
+            )
+        })?;
 
         let access_token = token_res.access_token().secret();
         let userinfo_resp = reqwest::Client::new()
@@ -546,16 +689,27 @@ mod oidc_mod {
             .bearer_auth(access_token)
             .send()
             .await
-            .map_err(|e| make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Failed to get userinfo: {e}")))?;
+            .map_err(|e| {
+                make_error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    &format!("Failed to get userinfo: {e}"),
+                )
+            })?;
 
-        let userinfo: serde_json::Value = userinfo_resp.json().await
-            .map_err(|e| make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Failed to parse userinfo: {e}")))?;
+        let userinfo: serde_json::Value = userinfo_resp.json().await.map_err(|e| {
+            make_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                &format!("Failed to parse userinfo: {e}"),
+            )
+        })?;
 
-        let email = userinfo["email"].as_str()
+        let email = userinfo["email"]
+            .as_str()
             .or_else(|| userinfo["preferred_username"].as_str())
             .unwrap_or("unknown@oidc.user");
         let sub = userinfo["sub"].as_str().unwrap_or(email);
-        let name = userinfo["name"].as_str()
+        let name = userinfo["name"]
+            .as_str()
             .or_else(|| userinfo["preferred_username"].as_str())
             .unwrap_or("oidc_user");
 
@@ -580,17 +734,23 @@ mod oidc_mod {
                         external_id: Some(external_id),
                     };
                     users.insert(&new_user).map_err(|e| {
-                        make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Failed to create user: {e}"))
+                        make_error(
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            &format!("Failed to create user: {e}"),
+                        )
                     })?;
                     new_user
                 }
-            }
+            },
         };
 
         let token = issue_jwt(&state, &user);
         tracing::info!(username = %user.username, provider = %provider.id, "user authenticated via OIDC");
 
-        Ok(Json(LoginResponse { token, expires_in: 86400 }))
+        Ok(Json(LoginResponse {
+            token,
+            expires_in: 86400,
+        }))
     }
 }
 
@@ -606,14 +766,20 @@ mod oidc_mod {
         _state: State<Arc<AppState>>,
         _params: Query<HashMap<String, String>>,
     ) -> Result<Redirect, (StatusCode, Json<ErrorResponse>)> {
-        Err(make_error(StatusCode::NOT_IMPLEMENTED, "OIDC support not enabled"))
+        Err(make_error(
+            StatusCode::NOT_IMPLEMENTED,
+            "OIDC support not enabled",
+        ))
     }
 
     pub async fn callback_handler(
         _state: State<Arc<AppState>>,
         _params: Query<HashMap<String, String>>,
     ) -> Result<Json<LoginResponse>, (StatusCode, Json<ErrorResponse>)> {
-        Err(make_error(StatusCode::NOT_IMPLEMENTED, "OIDC support not enabled"))
+        Err(make_error(
+            StatusCode::NOT_IMPLEMENTED,
+            "OIDC support not enabled",
+        ))
     }
 }
 
@@ -632,7 +798,9 @@ mod ldap_mod {
                 .set_starttls(true)
                 .set_no_tls_verify(true),
             &config.url,
-        ).await.map_err(|e| format!("LDAP connect failed: {e}"))?;
+        )
+        .await
+        .map_err(|e| format!("LDAP connect failed: {e}"))?;
 
         drive!(conn);
 
@@ -649,27 +817,49 @@ mod ldap_mod {
         State(state): State<Arc<AppState>>,
         Json(payload): Json<LoginRequest>,
     ) -> Result<Json<LoginResponse>, (StatusCode, Json<ErrorResponse>)> {
-        let config = state.sso_config.ldap.as_ref()
+        let config = state
+            .sso_config
+            .ldap
+            .as_ref()
             .ok_or_else(|| make_error(StatusCode::NOT_FOUND, "LDAP not configured"))?;
 
-        let mut ldap = connect(config).await
+        let mut ldap = connect(config)
+            .await
             .map_err(|e| make_error(StatusCode::INTERNAL_SERVER_ERROR, &e))?;
 
         let user_filter = config.user_filter.replace("{username}", &payload.username);
 
-        let (search_result, _ldap_result) = ldap.search(
-            &config.base_dn, Scope::Subtree, &user_filter,
-            vec!["dn", "cn", "uid", "mail", "displayName"],
-        ).await.map_err(|e| {
-            make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("LDAP search failed: {e}"))
-        })?.success().map_err(|e| {
-            make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("LDAP search error: {e}"))
-        })?;
+        let (search_result, _ldap_result) = ldap
+            .search(
+                &config.base_dn,
+                Scope::Subtree,
+                &user_filter,
+                vec!["dn", "cn", "uid", "mail", "displayName"],
+            )
+            .await
+            .map_err(|e| {
+                make_error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    &format!("LDAP search failed: {e}"),
+                )
+            })?
+            .success()
+            .map_err(|e| {
+                make_error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    &format!("LDAP search error: {e}"),
+                )
+            })?;
 
-        let entries: Vec<SearchEntry> = search_result.into_iter()
+        let entries: Vec<SearchEntry> = search_result
+            .into_iter()
             .filter_map(|re| {
                 let entry = SearchEntry::construct(re);
-                if entry.dn.is_empty() { None } else { Some(entry) }
+                if entry.dn.is_empty() {
+                    None
+                } else {
+                    Some(entry)
+                }
             })
             .collect();
 
@@ -685,8 +875,13 @@ mod ldap_mod {
                 .set_starttls(true)
                 .set_no_tls_verify(true),
             &config.url,
-        ).await.map_err(|e| {
-            make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("LDAP connect failed: {e}"))
+        )
+        .await
+        .map_err(|e| {
+            make_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                &format!("LDAP connect failed: {e}"),
+            )
         })?;
 
         drive!(user_conn);
@@ -696,19 +891,29 @@ mod ldap_mod {
         match bind_result {
             Ok(resp) => {
                 if let Err(e) = resp.success() {
-                    return Err(make_error(StatusCode::UNAUTHORIZED, &format!("LDAP bind failed: {e}")));
+                    return Err(make_error(
+                        StatusCode::UNAUTHORIZED,
+                        &format!("LDAP bind failed: {e}"),
+                    ));
                 }
             }
             Err(e) => {
-                return Err(make_error(StatusCode::UNAUTHORIZED, &format!("LDAP bind failed: {e}")));
+                return Err(make_error(
+                    StatusCode::UNAUTHORIZED,
+                    &format!("LDAP bind failed: {e}"),
+                ));
             }
         }
 
-        let email = user_entry.attrs.get("mail")
+        let email = user_entry
+            .attrs
+            .get("mail")
             .and_then(|v| v.first().cloned())
             .unwrap_or_else(|| format!("{}@ldap.local", payload.username));
 
-        let display_name = user_entry.attrs.get("displayName")
+        let display_name = user_entry
+            .attrs
+            .get("displayName")
             .or_else(|| user_entry.attrs.get("cn"))
             .and_then(|v| v.first().cloned())
             .unwrap_or_else(|| payload.username.clone());
@@ -719,7 +924,10 @@ mod ldap_mod {
 
         let user = match users.get_by_external_id(&external_id, "ldap") {
             Ok(Some(u)) => {
-                let updated = User { email: Some(email.clone()), ..u };
+                let updated = User {
+                    email: Some(email.clone()),
+                    ..u
+                };
                 users.update(&updated).ok();
                 updated
             }
@@ -737,43 +945,71 @@ mod ldap_mod {
                         external_id: Some(external_id),
                     };
                     users.insert(&new_user).map_err(|e| {
-                        make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Failed to create user: {e}"))
+                        make_error(
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            &format!("Failed to create user: {e}"),
+                        )
                     })?;
                     new_user
                 }
-            }
+            },
         };
 
         let token = issue_jwt(&state, &user);
         tracing::info!(username = %user.username, provider = "ldap", "user authenticated via LDAP");
 
-        Ok(Json(LoginResponse { token, expires_in: 86400 }))
+        Ok(Json(LoginResponse {
+            token,
+            expires_in: 86400,
+        }))
     }
 
     pub async fn sync_handler(
         State(state): State<Arc<AppState>>,
     ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
-        let config = state.sso_config.ldap.as_ref()
+        let config = state
+            .sso_config
+            .ldap
+            .as_ref()
             .ok_or_else(|| make_error(StatusCode::NOT_FOUND, "LDAP not configured"))?;
 
-        let mut ldap = connect(config).await
+        let mut ldap = connect(config)
+            .await
             .map_err(|e| make_error(StatusCode::INTERNAL_SERVER_ERROR, &e))?;
 
         let user_filter = config.user_filter.replace("{username}", "*");
 
-        let (search_result, _ldap_result) = ldap.search(
-            &config.base_dn, Scope::Subtree, &user_filter,
-            vec!["dn", "cn", "uid", "mail", "displayName"],
-        ).await.map_err(|e| {
-            make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("LDAP search failed: {e}"))
-        })?.success().map_err(|e| {
-            make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("LDAP search error: {e}"))
-        })?;
+        let (search_result, _ldap_result) = ldap
+            .search(
+                &config.base_dn,
+                Scope::Subtree,
+                &user_filter,
+                vec!["dn", "cn", "uid", "mail", "displayName"],
+            )
+            .await
+            .map_err(|e| {
+                make_error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    &format!("LDAP search failed: {e}"),
+                )
+            })?
+            .success()
+            .map_err(|e| {
+                make_error(
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    &format!("LDAP search error: {e}"),
+                )
+            })?;
 
-        let user_entries: Vec<SearchEntry> = search_result.into_iter()
+        let user_entries: Vec<SearchEntry> = search_result
+            .into_iter()
             .filter_map(|re| {
                 let entry = SearchEntry::construct(re);
-                if entry.dn.is_empty() { None } else { Some(entry) }
+                if entry.dn.is_empty() {
+                    None
+                } else {
+                    Some(entry)
+                }
             })
             .collect();
 
@@ -783,13 +1019,21 @@ mod ldap_mod {
 
         for entry in &user_entries {
             let external_id = format!("ldap:{}", entry.dn);
-            let email = entry.attrs.get("mail")
-                .and_then(|v| v.first().cloned()).unwrap_or_default();
-            let display_name = entry.attrs.get("displayName")
+            let email = entry
+                .attrs
+                .get("mail")
+                .and_then(|v| v.first().cloned())
+                .unwrap_or_default();
+            let display_name = entry
+                .attrs
+                .get("displayName")
                 .or_else(|| entry.attrs.get("cn"))
-                .and_then(|v| v.first().cloned()).unwrap_or_default();
+                .and_then(|v| v.first().cloned())
+                .unwrap_or_default();
             let username = if display_name.is_empty() {
-                entry.attrs.get("uid")
+                entry
+                    .attrs
+                    .get("uid")
                     .and_then(|v| v.first().cloned())
                     .unwrap_or_else(|| format!("ldap_user_{synced}"))
             } else {
@@ -799,7 +1043,11 @@ mod ldap_mod {
             match users.get_by_external_id(&external_id, "ldap") {
                 Ok(Some(user)) => {
                     let updated = User {
-                        email: if email.is_empty() { user.email } else { Some(email.clone()) },
+                        email: if email.is_empty() {
+                            user.email
+                        } else {
+                            Some(email.clone())
+                        },
                         ..user
                     };
                     if users.update(&updated).unwrap_or(false) {
@@ -843,13 +1091,19 @@ mod ldap_mod {
         _state: State<Arc<AppState>>,
         _payload: Json<LoginRequest>,
     ) -> Result<Json<LoginResponse>, (StatusCode, Json<ErrorResponse>)> {
-        Err(make_error(StatusCode::NOT_IMPLEMENTED, "LDAP support not enabled"))
+        Err(make_error(
+            StatusCode::NOT_IMPLEMENTED,
+            "LDAP support not enabled",
+        ))
     }
 
     pub async fn sync_handler(
         _state: State<Arc<AppState>>,
     ) -> Result<Json<serde_json::Value>, (StatusCode, Json<ErrorResponse>)> {
-        Err(make_error(StatusCode::NOT_IMPLEMENTED, "LDAP support not enabled"))
+        Err(make_error(
+            StatusCode::NOT_IMPLEMENTED,
+            "LDAP support not enabled",
+        ))
     }
 }
 
@@ -913,7 +1167,13 @@ struct ErrorResponse {
 }
 
 fn make_error(code: StatusCode, msg: &str) -> (StatusCode, Json<ErrorResponse>) {
-    (code, Json(ErrorResponse { error: msg.to_string(), code: code.as_u16() }))
+    (
+        code,
+        Json(ErrorResponse {
+            error: msg.to_string(),
+            code: code.as_u16(),
+        }),
+    )
 }
 
 fn issue_jwt(state: &AppState, user: &User) -> String {
@@ -924,8 +1184,12 @@ fn issue_jwt(state: &AppState, user: &User) -> String {
         exp: chrono::Utc::now().timestamp() as usize + 86400,
         iat: chrono::Utc::now().timestamp() as usize,
     };
-    encode(&Header::default(), &claims, &EncodingKey::from_secret(state.jwt_secret.as_bytes()))
-        .unwrap_or_default()
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(state.jwt_secret.as_bytes()),
+    )
+    .unwrap_or_default()
 }
 
 fn hash_password(password: &str) -> String {
@@ -941,18 +1205,30 @@ async fn register(
     Json(payload): Json<RegisterRequest>,
 ) -> Result<Json<RegisterResponse>, (StatusCode, Json<ErrorResponse>)> {
     if payload.username.is_empty() || payload.username.len() < 3 {
-        return Err(make_error(StatusCode::BAD_REQUEST, "Username must be at least 3 characters"));
+        return Err(make_error(
+            StatusCode::BAD_REQUEST,
+            "Username must be at least 3 characters",
+        ));
     }
     if payload.password.is_empty() || payload.password.len() < 6 {
-        return Err(make_error(StatusCode::BAD_REQUEST, "Password must be at least 6 characters"));
+        return Err(make_error(
+            StatusCode::BAD_REQUEST,
+            "Password must be at least 6 characters",
+        ));
     }
 
     let users = state.users.lock().await;
 
     if users.exists(&payload.username).map_err(|e| {
-        make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Database error: {e}"))
+        make_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            &format!("Database error: {e}"),
+        )
     })? {
-        return Err(make_error(StatusCode::CONFLICT, &format!("User '{}' already exists", payload.username)));
+        return Err(make_error(
+            StatusCode::CONFLICT,
+            &format!("User '{}' already exists", payload.username),
+        ));
     }
 
     let user = User {
@@ -967,7 +1243,10 @@ async fn register(
     };
 
     users.insert(&user).map_err(|e| {
-        make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Database error: {e}"))
+        make_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            &format!("Database error: {e}"),
+        )
     })?;
 
     tracing::info!(username = %payload.username, "user registered");
@@ -989,7 +1268,10 @@ async fn login(
     let users = state.users.lock().await;
 
     let user = match users.get_by_username(&payload.username).map_err(|e| {
-        make_error(StatusCode::INTERNAL_SERVER_ERROR, &format!("Database error: {e}"))
+        make_error(
+            StatusCode::INTERNAL_SERVER_ERROR,
+            &format!("Database error: {e}"),
+        )
     })? {
         Some(u) => u,
         None => return Err(make_error(StatusCode::UNAUTHORIZED, "Invalid credentials")),
@@ -1003,7 +1285,10 @@ async fn login(
     let token = issue_jwt(&state, &user);
     tracing::info!(username = %user.username, "user logged in");
 
-    Ok(Json(LoginResponse { token, expires_in: 86400 }))
+    Ok(Json(LoginResponse {
+        token,
+        expires_in: 86400,
+    }))
 }
 
 async fn health() -> Json<HealthResponse> {
@@ -1042,25 +1327,28 @@ async fn verify(
             username: token_data.claims.sub,
             role: token_data.claims.role,
         })),
-        Err(_) => Err(make_error(StatusCode::UNAUTHORIZED, "Invalid or expired token")),
+        Err(_) => Err(make_error(
+            StatusCode::UNAUTHORIZED,
+            "Invalid or expired token",
+        )),
     }
 }
 
 // SSO provider listing
 
-async fn sso_providers(
-    State(state): State<Arc<AppState>>,
-) -> Json<Vec<SsoProviderStatus>> {
+async fn sso_providers(State(state): State<Arc<AppState>>) -> Json<Vec<SsoProviderStatus>> {
     let mut providers = Vec::new();
 
     providers.push(SsoProviderStatus {
         provider: "saml".into(),
         configured: state.sso_config.saml.is_some(),
         enabled: state.sso_config.saml.is_some(),
-        details: state.sso_config.saml.as_ref().map(|c| serde_json::json!({
-            "entity_id": c.entity_id,
-            "acs_url": c.acs_url,
-        })),
+        details: state.sso_config.saml.as_ref().map(|c| {
+            serde_json::json!({
+                "entity_id": c.entity_id,
+                "acs_url": c.acs_url,
+            })
+        }),
     });
 
     for p in &state.sso_config.oidc_providers {
@@ -1080,10 +1368,12 @@ async fn sso_providers(
         provider: "ldap".into(),
         configured: state.sso_config.ldap.is_some(),
         enabled: state.sso_config.ldap.is_some(),
-        details: state.sso_config.ldap.as_ref().map(|c| serde_json::json!({
-            "url": c.url,
-            "base_dn": c.base_dn,
-        })),
+        details: state.sso_config.ldap.as_ref().map(|c| {
+            serde_json::json!({
+                "url": c.url,
+                "base_dn": c.base_dn,
+            })
+        }),
     });
 
     Json(providers)
@@ -1198,7 +1488,9 @@ mod tests {
                     .method("POST")
                     .uri("/auth/register")
                     .header("content-type", "application/json")
-                    .body(Body::from(r#"{"username":"testuser","password":"pass123"}"#))
+                    .body(Body::from(
+                        r#"{"username":"testuser","password":"pass123"}"#,
+                    ))
                     .unwrap(),
             )
             .await
@@ -1211,7 +1503,9 @@ mod tests {
                     .method("POST")
                     .uri("/auth/login")
                     .header("content-type", "application/json")
-                    .body(Body::from(r#"{"username":"testuser","password":"pass123"}"#))
+                    .body(Body::from(
+                        r#"{"username":"testuser","password":"pass123"}"#,
+                    ))
                     .unwrap(),
             )
             .await
@@ -1275,7 +1569,9 @@ mod tests {
                     .method("POST")
                     .uri("/auth/register")
                     .header("content-type", "application/json")
-                    .body(Body::from(r#"{"username":"testuser2","password":"correct"}"#))
+                    .body(Body::from(
+                        r#"{"username":"testuser2","password":"correct"}"#,
+                    ))
                     .unwrap(),
             )
             .await
@@ -1357,7 +1653,10 @@ mod tests {
         repo.insert(&user).unwrap();
         assert!(repo.exists("charlie").unwrap());
         repo.conn
-            .execute("DELETE FROM users WHERE username = ?1", rusqlite::params!["charlie"])
+            .execute(
+                "DELETE FROM users WHERE username = ?1",
+                rusqlite::params!["charlie"],
+            )
             .unwrap();
         assert!(!repo.exists("charlie").unwrap());
     }
@@ -1378,7 +1677,10 @@ mod tests {
             };
             repo.insert(&user).unwrap();
         }
-        let mut stmt = repo.conn.prepare("SELECT username FROM users ORDER BY username").unwrap();
+        let mut stmt = repo
+            .conn
+            .prepare("SELECT username FROM users ORDER BY username")
+            .unwrap();
         let names: Vec<String> = stmt
             .query_map([], |row| row.get(0))
             .unwrap()

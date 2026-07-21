@@ -6,7 +6,6 @@
 pub mod models;
 pub mod repository;
 
-use std::sync::Arc;
 use axum::{
     Json, Router,
     extract::{Path, Query, State},
@@ -15,12 +14,10 @@ use axum::{
 };
 use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 use repository::ScimRepository;
+use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use models::{
-    ScimError, ScimGroup, ScimListResponse, ScimUser,
-    SCHEMA_GROUP, SCHEMA_USER,
-};
+use models::{SCHEMA_GROUP, SCHEMA_USER, ScimError, ScimGroup, ScimListResponse, ScimUser};
 
 static METRICS: std::sync::LazyLock<PrometheusHandle> = std::sync::LazyLock::new(|| {
     PrometheusBuilder::new()
@@ -100,7 +97,10 @@ pub async fn list_users(
             if let Some(obj) = val.as_object_mut() {
                 if let Some(meta) = obj.get_mut("meta") {
                     if let Some(m) = meta.as_object_mut() {
-                        m.insert("location".into(), serde_json::Value::String(format!("/v2/Users/{}", id)));
+                        m.insert(
+                            "location".into(),
+                            serde_json::Value::String(format!("/v2/Users/{}", id)),
+                        );
                     }
                 }
             }
@@ -118,7 +118,11 @@ pub async fn create_user(
     let schemas = payload
         .get("schemas")
         .and_then(|v| v.as_array())
-        .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect::<Vec<_>>())
+        .map(|a| {
+            a.iter()
+                .filter_map(|v| v.as_str().map(String::from))
+                .collect::<Vec<_>>()
+        })
         .unwrap_or_default();
 
     if !schemas.contains(&SCHEMA_USER.to_string()) {
@@ -254,22 +258,24 @@ pub async fn update_user(
     }
 
     let repo = state.repo.lock().await;
-    let mut result = repo.get_user(&user_id).map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ScimError::new(Some("internalError"), &e.to_string(), 500)),
-        )
-    })?
-    .ok_or_else(|| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ScimError::new(
-                Some("internalError"),
-                "User disappeared after update",
-                500,
-            )),
-        )
-    })?;
+    let mut result = repo
+        .get_user(&user_id)
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ScimError::new(Some("internalError"), &e.to_string(), 500)),
+            )
+        })?
+        .ok_or_else(|| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ScimError::new(
+                    Some("internalError"),
+                    "User disappeared after update",
+                    500,
+                )),
+            )
+        })?;
 
     result.meta.as_mut().map(|m| {
         m.location = Some(format!("/v2/Users/{}", user_id));
@@ -306,22 +312,24 @@ pub async fn patch_user(
     }
 
     let repo = state.repo.lock().await;
-    let mut result = repo.get_user(&user_id).map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ScimError::new(Some("internalError"), &e.to_string(), 500)),
-        )
-    })?
-    .ok_or_else(|| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ScimError::new(
-                Some("internalError"),
-                "User disappeared after patch",
-                500,
-            )),
-        )
-    })?;
+    let mut result = repo
+        .get_user(&user_id)
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ScimError::new(Some("internalError"), &e.to_string(), 500)),
+            )
+        })?
+        .ok_or_else(|| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ScimError::new(
+                    Some("internalError"),
+                    "User disappeared after patch",
+                    500,
+                )),
+            )
+        })?;
 
     result.meta.as_mut().map(|m| {
         m.location = Some(format!("/v2/Users/{}", user_id));
@@ -394,7 +402,10 @@ pub async fn list_groups(
             if let Some(obj) = val.as_object_mut() {
                 if let Some(meta) = obj.get_mut("meta") {
                     if let Some(m) = meta.as_object_mut() {
-                        m.insert("location".into(), serde_json::Value::String(format!("/v2/Groups/{}", id)));
+                        m.insert(
+                            "location".into(),
+                            serde_json::Value::String(format!("/v2/Groups/{}", id)),
+                        );
                     }
                 }
             }
@@ -412,7 +423,11 @@ pub async fn create_group(
     let schemas = payload
         .get("schemas")
         .and_then(|v| v.as_array())
-        .map(|a| a.iter().filter_map(|v| v.as_str().map(String::from)).collect::<Vec<_>>())
+        .map(|a| {
+            a.iter()
+                .filter_map(|v| v.as_str().map(String::from))
+                .collect::<Vec<_>>()
+        })
         .unwrap_or_default();
 
     if !schemas.contains(&SCHEMA_GROUP.to_string()) {
@@ -441,7 +456,10 @@ pub async fn create_group(
                 StatusCode::CONFLICT,
                 Json(ScimError::new(
                     Some("uniqueness"),
-                    &format!("Group '{}' already exists or other conflict: {}", group.display_name, e),
+                    &format!(
+                        "Group '{}' already exists or other conflict: {}",
+                        group.display_name, e
+                    ),
                     409,
                 )),
             )
@@ -449,22 +467,24 @@ pub async fn create_group(
     };
 
     let repo = state.repo.lock().await;
-    let mut created = repo.get_group(&id).map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ScimError::new(Some("internalError"), &e.to_string(), 500)),
-        )
-    })?
-    .ok_or_else(|| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ScimError::new(
-                Some("internalError"),
-                "Failed to retrieve created group",
-                500,
-            )),
-        )
-    })?;
+    let mut created = repo
+        .get_group(&id)
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ScimError::new(Some("internalError"), &e.to_string(), 500)),
+            )
+        })?
+        .ok_or_else(|| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ScimError::new(
+                    Some("internalError"),
+                    "Failed to retrieve created group",
+                    500,
+                )),
+            )
+        })?;
 
     created.meta.as_mut().map(|m| {
         m.location = Some(format!("/v2/Groups/{}", id));
@@ -537,22 +557,24 @@ pub async fn update_group(
     }
 
     let repo = state.repo.lock().await;
-    let mut result = repo.get_group(&group_id).map_err(|e| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ScimError::new(Some("internalError"), &e.to_string(), 500)),
-        )
-    })?
-    .ok_or_else(|| {
-        (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ScimError::new(
-                Some("internalError"),
-                "Group disappeared after update",
-                500,
-            )),
-        )
-    })?;
+    let mut result = repo
+        .get_group(&group_id)
+        .map_err(|e| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ScimError::new(Some("internalError"), &e.to_string(), 500)),
+            )
+        })?
+        .ok_or_else(|| {
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ScimError::new(
+                    Some("internalError"),
+                    "Group disappeared after update",
+                    500,
+                )),
+            )
+        })?;
 
     result.meta.as_mut().map(|m| {
         m.location = Some(format!("/v2/Groups/{}", group_id));
@@ -663,7 +685,10 @@ pub fn app(state: Arc<AppState>) -> Router {
         .route("/v2/Users", get(list_users).post(create_user))
         .route(
             "/v2/Users/{id}",
-            get(get_user).put(update_user).patch(patch_user).delete(delete_user),
+            get(get_user)
+                .put(update_user)
+                .patch(patch_user)
+                .delete(delete_user),
         )
         .route("/v2/Groups", get(list_groups).post(create_group))
         .route(

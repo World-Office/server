@@ -1,7 +1,7 @@
 //! SQLite-backed persistence for webhooks and delivery logs.
 
 use crate::models::{DeliveryLog, Webhook};
-use rusqlite::{params, Connection};
+use rusqlite::{Connection, params};
 use std::path::Path;
 
 /// SQLite-backed store for [`Webhook`] registrations and [`DeliveryLog`] records.
@@ -104,16 +104,14 @@ impl WebhookRepository {
     }
 
     /// List enabled webhooks subscribed to a given event type (or wildcard `*`).
-    pub fn list_webhooks_by_event(&self, event_type: &str) -> Result<Vec<Webhook>, rusqlite::Error> {
+    pub fn list_webhooks_by_event(
+        &self,
+        event_type: &str,
+    ) -> Result<Vec<Webhook>, rusqlite::Error> {
         let all = self.list_webhooks()?;
         Ok(all
             .into_iter()
-            .filter(|w| {
-                w.enabled
-                    && w.events
-                        .iter()
-                        .any(|e| e == event_type || e == "*")
-            })
+            .filter(|w| w.enabled && w.events.iter().any(|e| e == event_type || e == "*"))
             .collect())
     }
 
@@ -293,8 +291,10 @@ mod tests {
     #[test]
     fn list_webhooks_multiple() {
         let mut repo = WebhookRepository::new_in_memory().unwrap();
-        repo.insert_webhook(&make_webhook("a", vec!["created"])).unwrap();
-        repo.insert_webhook(&make_webhook("b", vec!["deleted"])).unwrap();
+        repo.insert_webhook(&make_webhook("a", vec!["created"]))
+            .unwrap();
+        repo.insert_webhook(&make_webhook("b", vec!["deleted"]))
+            .unwrap();
         repo.insert_webhook(&make_webhook("c", vec!["*"])).unwrap();
         let list = repo.list_webhooks().unwrap();
         assert_eq!(list.len(), 3);
@@ -303,8 +303,10 @@ mod tests {
     #[test]
     fn list_webhooks_by_event_matches_subscribed() {
         let mut repo = WebhookRepository::new_in_memory().unwrap();
-        repo.insert_webhook(&make_webhook("w1", vec!["created"])).unwrap();
-        repo.insert_webhook(&make_webhook("w2", vec!["updated"])).unwrap();
+        repo.insert_webhook(&make_webhook("w1", vec!["created"]))
+            .unwrap();
+        repo.insert_webhook(&make_webhook("w2", vec!["updated"]))
+            .unwrap();
         repo.insert_webhook(&make_webhook("w3", vec!["*"])).unwrap();
         let created = repo.list_webhooks_by_event("created").unwrap();
         assert_eq!(created.len(), 2); // w1 + wildcard w3
@@ -345,7 +347,8 @@ mod tests {
     #[test]
     fn delete_webhook() {
         let mut repo = WebhookRepository::new_in_memory().unwrap();
-        repo.insert_webhook(&make_webhook("wh-d", vec!["*"])).unwrap();
+        repo.insert_webhook(&make_webhook("wh-d", vec!["*"]))
+            .unwrap();
         assert!(repo.delete_webhook("wh-d").unwrap());
         assert!(repo.get_webhook("wh-d").unwrap().is_none());
     }

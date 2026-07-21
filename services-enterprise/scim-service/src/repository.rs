@@ -58,7 +58,8 @@ impl ScimRepository {
         let now = chrono::Utc::now().to_rfc3339();
         let active = user.active.unwrap_or(true) as i64;
         let emails = serde_json::to_string(&user.emails).unwrap_or_else(|_| "[]".to_string());
-        let phones = serde_json::to_string(&user.phone_numbers).unwrap_or_else(|_| "[]".to_string());
+        let phones =
+            serde_json::to_string(&user.phone_numbers).unwrap_or_else(|_| "[]".to_string());
         let name_formatted = user.name.as_ref().and_then(|n| n.formatted.as_deref());
         let name_given = user.name.as_ref().and_then(|n| n.given_name.as_deref());
         let name_family = user.name.as_ref().and_then(|n| n.family_name.as_deref());
@@ -124,7 +125,8 @@ impl ScimRepository {
         let now = chrono::Utc::now().to_rfc3339();
         let active = user.active.unwrap_or(true) as i64;
         let emails = serde_json::to_string(&user.emails).unwrap_or_else(|_| "[]".to_string());
-        let phones = serde_json::to_string(&user.phone_numbers).unwrap_or_else(|_| "[]".to_string());
+        let phones =
+            serde_json::to_string(&user.phone_numbers).unwrap_or_else(|_| "[]".to_string());
         let name_formatted = user.name.as_ref().and_then(|n| n.formatted.as_deref());
         let name_given = user.name.as_ref().and_then(|n| n.given_name.as_deref());
         let name_family = user.name.as_ref().and_then(|n| n.family_name.as_deref());
@@ -218,9 +220,10 @@ impl ScimRepository {
     }
 
     pub fn delete_user(&mut self, id: &str) -> Result<bool, rusqlite::Error> {
-        let affected = self
-            .conn
-            .execute("DELETE FROM scim_users WHERE id = ?1", rusqlite::params![id])?;
+        let affected = self.conn.execute(
+            "DELETE FROM scim_users WHERE id = ?1",
+            rusqlite::params![id],
+        )?;
         Ok(affected > 0)
     }
 
@@ -230,8 +233,7 @@ impl ScimRepository {
             .clone()
             .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
         let now = chrono::Utc::now().to_rfc3339();
-        let members =
-            serde_json::to_string(&group.members).unwrap_or_else(|_| "[]".to_string());
+        let members = serde_json::to_string(&group.members).unwrap_or_else(|_| "[]".to_string());
 
         self.conn.execute(
             "INSERT INTO scim_groups (id, display_name, members, created_at, updated_at)
@@ -264,8 +266,7 @@ impl ScimRepository {
 
     pub fn update_group(&mut self, id: &str, group: &ScimGroup) -> Result<bool, rusqlite::Error> {
         let now = chrono::Utc::now().to_rfc3339();
-        let members =
-            serde_json::to_string(&group.members).unwrap_or_else(|_| "[]".to_string());
+        let members = serde_json::to_string(&group.members).unwrap_or_else(|_| "[]".to_string());
 
         let affected = self.conn.execute(
             "UPDATE scim_groups SET display_name = ?1, members = ?2, updated_at = ?3
@@ -276,12 +277,10 @@ impl ScimRepository {
     }
 
     pub fn delete_group(&mut self, id: &str) -> Result<bool, rusqlite::Error> {
-        let affected = self
-            .conn
-            .execute(
-                "DELETE FROM scim_groups WHERE id = ?1",
-                rusqlite::params![id],
-            )?;
+        let affected = self.conn.execute(
+            "DELETE FROM scim_groups WHERE id = ?1",
+            rusqlite::params![id],
+        )?;
         Ok(affected > 0)
     }
 }
@@ -309,10 +308,8 @@ fn row_to_user(row: &rusqlite::Row<'_>) -> Result<ScimUser, rusqlite::Error> {
         None
     };
 
-    let emails: Vec<ScimMultiValue> =
-        serde_json::from_str(&emails_str).unwrap_or_default();
-    let phone_numbers: Vec<ScimMultiValue> =
-        serde_json::from_str(&phones_str).unwrap_or_default();
+    let emails: Vec<ScimMultiValue> = serde_json::from_str(&emails_str).unwrap_or_default();
+    let phone_numbers: Vec<ScimMultiValue> = serde_json::from_str(&phones_str).unwrap_or_default();
 
     Ok(ScimUser {
         schemas: vec![crate::models::SCHEMA_USER.to_string()],
@@ -340,8 +337,7 @@ fn row_to_group(row: &rusqlite::Row<'_>) -> Result<ScimGroup, rusqlite::Error> {
     let created_at: String = row.get(3)?;
     let updated_at: String = row.get(4)?;
 
-    let members: Vec<ScimMultiValue> =
-        serde_json::from_str(&members_str).unwrap_or_default();
+    let members: Vec<ScimMultiValue> = serde_json::from_str(&members_str).unwrap_or_default();
 
     Ok(ScimGroup {
         schemas: vec![crate::models::SCHEMA_GROUP.to_string()],
@@ -416,29 +412,35 @@ fn apply_patch_path_to_user(user: &mut ScimUser, path: &str, value: &serde_json:
         }
         "name.formatted" => {
             if let Some(v) = value.as_str() {
-                user.name.get_or_insert_with(|| crate::models::ScimUserName {
-                    formatted: None,
-                    given_name: None,
-                    family_name: None,
-                }).formatted = Some(v.to_string());
+                user.name
+                    .get_or_insert_with(|| crate::models::ScimUserName {
+                        formatted: None,
+                        given_name: None,
+                        family_name: None,
+                    })
+                    .formatted = Some(v.to_string());
             }
         }
         "name.givenName" => {
             if let Some(v) = value.as_str() {
-                user.name.get_or_insert_with(|| crate::models::ScimUserName {
-                    formatted: None,
-                    given_name: None,
-                    family_name: None,
-                }).given_name = Some(v.to_string());
+                user.name
+                    .get_or_insert_with(|| crate::models::ScimUserName {
+                        formatted: None,
+                        given_name: None,
+                        family_name: None,
+                    })
+                    .given_name = Some(v.to_string());
             }
         }
         "name.familyName" => {
             if let Some(v) = value.as_str() {
-                user.name.get_or_insert_with(|| crate::models::ScimUserName {
-                    formatted: None,
-                    given_name: None,
-                    family_name: None,
-                }).family_name = Some(v.to_string());
+                user.name
+                    .get_or_insert_with(|| crate::models::ScimUserName {
+                        formatted: None,
+                        given_name: None,
+                        family_name: None,
+                    })
+                    .family_name = Some(v.to_string());
             }
         }
         _ => {}
@@ -505,7 +507,10 @@ mod tests {
         let got = repo.get_user(&id).unwrap().unwrap();
         assert_eq!(got.user_name, "user_abc");
         assert!(got.active.unwrap_or(false));
-        assert_eq!(got.name.as_ref().unwrap().given_name.as_deref(), Some("Firstabc"));
+        assert_eq!(
+            got.name.as_ref().unwrap().given_name.as_deref(),
+            Some("Firstabc")
+        );
     }
 
     #[test]

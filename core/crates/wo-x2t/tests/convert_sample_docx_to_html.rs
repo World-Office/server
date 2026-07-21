@@ -45,8 +45,7 @@ fn test_sample_docx_to_html_conversion() {
     );
 
     assert!(
-        html.to_lowercase().contains("<!doctype html")
-            || html.to_lowercase().contains("<html"),
+        html.to_lowercase().contains("<!doctype html") || html.to_lowercase().contains("<html"),
         "Output should contain HTML document structure"
     );
 
@@ -57,7 +56,6 @@ fn test_sample_docx_to_html_conversion() {
     );
 
     let out_path = project_root.join("target").join("x2t-sample-output.html");
-    fs::write(&out_path, &output.data)
-        .expect(&format!("Failed to write output to {:?}", out_path));
+    fs::write(&out_path, &output.data).expect(&format!("Failed to write output to {:?}", out_path));
     eprintln!("Output written to: {:?}", out_path);
 }
