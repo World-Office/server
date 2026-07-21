@@ -37,3 +37,28 @@ body,
   color: var(--wo-color-text-primary);
   background-color: var(--wo-color-bg-primary);
 }
+
+/* A11Y — visible focus indicator for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--wo-color-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Remove focus ring for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* A11Y — screen-reader-only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}

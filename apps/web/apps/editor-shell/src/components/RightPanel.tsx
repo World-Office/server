@@ -5,7 +5,7 @@ interface RightPanelProps {
 
 export function RightPanel({ title = "Properties", onClose }: RightPanelProps) {
   return (
-    <div className="editor-right-panel">
+    <div className="editor-right-panel" role="region" aria-label={title}>
       <div className="panel-container">
         <div className="panel-title">
           {title}
