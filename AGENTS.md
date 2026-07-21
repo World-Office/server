@@ -1,6 +1,6 @@
 # World-Office WORKSPACE
 
-**Updated:** 2026-04-19
+**Updated:** 2026-07-21
 **Source:** codeberg.org/World-Office/server (independent project)
 **License:** AGPL-3.0-or-later (enterprise extensions in separate private repo)
 **Crate count:** 26 core + 8 services
@@ -80,7 +80,7 @@ server/
 | storage-service | File storage backend (CRUD endpoints, SQLite-backed metadata, disk blob storage) |
 | conversion-service | Format conversion |
 | coauthoring-service | Real-time collaboration |
-| identity-service | Auth (JWT, OAuth2) |
+| identity-service | Auth (JWT, OAuth2, SAML 2.0, OIDC, LDAP) |
 | session-service | Session management |
 | server | Main document server |
 | admin-panel | Admin dashboard |
@@ -97,6 +97,9 @@ server/
 
 | Service | Description |
 |---------|-------------|
+| audit-service | Audit logging for enterprise compliance |
+| scim-service | SCIM provisioning (user/group sync, LDAP integration) |
+| webhook-service | Webhook dispatch for document events |
 
 ## TAURI DESKTOP (desktop/tauri-poc/)
 
@@ -128,6 +131,7 @@ Shared packages in `packages/` under `@world-office` namespace:
 - collaboration-client -- Collaboration protocol client
 - collaboration-react -- React bindings for collaboration
 - sdk-bridge -- SDK bridge layer
+- plugin-sdk -- Plugin SDK (types, validator, scaffold CLI)
 - i18n -- Internationalization
 - eslint-config -- Shared ESLint configuration
 - tsconfig -- Shared TypeScript configuration
@@ -189,6 +193,19 @@ wsl bash -c "cd /mnt/c/Users/Tobias/git/World-Office && ~/.cargo/bin/cargo test 
 ### Past Issue: wo-pdf ICE (Resolved)
 
 The wo-pdf crate previously triggered a Rust compiler ICE in older nightly versions. This is resolved with rustc >= 1.92.0. CI includes all 27 core crates.
+
+## DOCUMENTATION (plan/)
+
+The workspace-level `plan/` directory contains operational and developer documentation:
+
+| Document | Description |
+|----------|-------------|
+| `plan/operations-runbook.md` | Production ops: deploy, monitoring, incident response, scaling |
+| `plan/sso-configuration-guide.md` | SSO setup: SAML 2.0, OpenID Connect, LDAP |
+| `plan/plugin-development-guide.md` | Plugin SDK: create, build, publish plugins |
+| `plan/desktop-app-guide.md` | Tauri desktop: build, features, architecture |
+| `plan/performance.md` | Baseline performance metrics and optimization targets |
+| `plan/collaboration-service-deployment.md` | Coauthoring service deployment notes |
 
 ## ANTI-PATTERNS
 
