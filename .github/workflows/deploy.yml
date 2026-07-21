@@ -49,6 +49,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Lowercase GHCR owner
+        run: echo "GHCR_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -67,8 +70,8 @@ jobs:
           build-args: SERVICE_NAME=${{ matrix.service }}
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}:latest
-            ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}:${{ env.IMAGE_TAG }}
+            ${{ env.REGISTRY }}/${{ env.GHCR_OWNER }}/${{ matrix.service }}:latest
+            ${{ env.REGISTRY }}/${{ env.GHCR_OWNER }}/${{ matrix.service }}:${{ env.IMAGE_TAG }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
