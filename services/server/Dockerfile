@@ -32,8 +32,8 @@ FROM node:20-alpine AS runtime
 WORKDIR /app
 
 # Create a non-root user and group (matching the Rust services pattern)
-RUN addgroup --gid 1001 worldoffice && \
-    adduser --uid 1001 --gid worldoffice --disabled-password --home /app worldoffice
+RUN addgroup -g 1001 worldoffice && \
+    adduser -u 1001 -G worldoffice -D -h /app worldoffice
 
 # Copy built files from builder
 COPY --from=builder --chown=worldoffice:worldoffice /app/package.json ./
