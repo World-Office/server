@@ -35,7 +35,8 @@ core/target/
 *.dll
 *.so
 *.dylib
-Cargo.lock
+# Cargo.lock is committed for reproducible builds of application binaries
+# Cargo.lock
 
 # =====================
 # C++ / CMake
@@ -65,7 +66,8 @@ Makefile
 # =====================
 node_modules/
 dist/
-frontend-dist/
+# frontend-dist is required for docserver Docker builds, committed for CI
+# frontend-dist/
 .next/
 .turbo/
 .vercel/
