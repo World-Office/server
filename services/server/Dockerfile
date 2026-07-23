@@ -10,15 +10,14 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy the entire repository so pnpm workspace resolution works
+# Copy the server source (context is services/server/)
 COPY . .
 
-# Install dependencies using pnpm
-RUN npm install -g pnpm@10.4.1
-RUN pnpm install --frozen-lockfile
+# Install all dependencies (including devDeps for build)
+RUN npm ci
 
 # Build the application
-RUN pnpm build
+RUN npm run build
 
 # ---------------------------------------------------------------------------
 # Stage 2: Minimal runtime image
@@ -33,15 +32,14 @@ RUN addgroup -g 1001 worldoffice && \
 
 # Copy built files from builder
 COPY --from=builder --chown=worldoffice:worldoffice /app/package.json ./
-COPY --from=builder --chown=worldoffice:worldoffice /app/pnpm-lock.yaml ./
+COPY --from=builder --chown=worldoffice:worldoffice /app/package-lock.json ./
 COPY --from=builder --chown=worldoffice:worldoffice /app/node_modules ./node_modules
 COPY --from=builder --chown=worldoffice:worldoffice /app/dist ./dist
 COPY --from=builder --chown=worldoffice:worldoffice /app/public ./public
 COPY --from=builder --chown=worldoffice:worldoffice /app/views ./views
 
-# Install only production dependencies
-RUN npm install -g pnpm@10.4.1
-RUN pnpm install --frozen-lockfile --prod
+# Prune devDependencies — keep only production deps
+RUN npm prune --omit=dev
 
 # Create data directories
 RUN mkdir -p /var/lib/worldoffice/data /var/lib/worldoffice/logs /var/log/worldoffice && \
@@ -62,4 +60,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:3000/healthcheck || exit 1
 
 # Start the server
-ENTRYPOINT ["pnpm", "start"]
+ENTRYPOINT ["npm", "start"]

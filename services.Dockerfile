@@ -15,6 +15,11 @@ ARG SERVICE_NAME
 
 WORKDIR /app
 
+# Install system dependencies needed by some crates (xmlsec for samael / identity-service)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libxmlsec1-dev libxml2-dev && \
+    rm -rf /var/lib/apt/lists/*
+
 # Copy the workspace root Cargo.toml and all member directories — Cargo requires
 # all workspace members to be present for dependency resolution, even when
 # building a single crate with -p.
