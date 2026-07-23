@@ -16,8 +16,9 @@ ARG SERVICE_NAME
 WORKDIR /app
 
 # Install system dependencies needed by some crates (xmlsec for samael / identity-service)
+# libclang-dev is required by bindgen (used by samael's xmlsec-rs build script)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libxmlsec1-dev libxml2-dev && \
+    apt-get install -y --no-install-recommends libxmlsec1-dev libxml2-dev libclang-dev && \
     rm -rf /var/lib/apt/lists/*
 
 # Copy the workspace root Cargo.toml and all member directories — Cargo requires
