@@ -30,7 +30,7 @@ export function CreateNewPanel({ visible }: { visible: boolean }) {
 		}
 	}, [preview]);
 
-	function handleCreateNew(id: string): void {
+	function handleCreateNew(_id: string): void {
 		spreadsheetStore.setFileMenuOpen(false);
 		spreadsheetStore.setActiveFileMenuPanel(null);
 	}
