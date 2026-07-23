@@ -66,8 +66,8 @@ Makefile
 # =====================
 node_modules/
 dist/
-# frontend-dist is required for docserver Docker builds, committed for CI
-# frontend-dist/
+# frontend-dist is built by CI during deploy (pnpm build + collect-frontend-dist.mjs)
+frontend-dist/
 .next/
 .turbo/
 .vercel/

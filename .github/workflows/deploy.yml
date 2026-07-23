@@ -25,10 +25,51 @@ env:
   IMAGE_TAG: ${{ github.sha }}
 
 jobs:
+  # -------------------------------------------------------------------------
+  # Build frontend — installs pnpm deps, builds all editors, collects
+  # dist outputs into frontend-dist/ for the wo-docserver Docker build.
+  # -------------------------------------------------------------------------
+  build-frontend:
+    name: Build Frontend UI
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        timeout-minutes: 5
+
+      - uses: pnpm/action-setup@v4
+        timeout-minutes: 5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+        timeout-minutes: 5
+
+      - run: pnpm install --frozen-lockfile
+        timeout-minutes: 10
+
+      - run: pnpm build --filter='!@world-office/tauri-poc'
+        timeout-minutes: 20
+
+      - run: node scripts/collect-frontend-dist.mjs
+        timeout-minutes: 5
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend-dist/
+          retention-days: 1
+        timeout-minutes: 5
+
+  # -------------------------------------------------------------------------
+  # Build and push all Docker images to GitHub Container Registry
+  # -------------------------------------------------------------------------
   build-and-push:
     name: Build and Push Docker Images
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
+    needs: build-frontend
     strategy:
       fail-fast: false
       matrix:
@@ -49,6 +90,12 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend-dist/
 
       - name: Lowercase GHCR owner
         run: echo "GHCR_OWNER=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_ENV
