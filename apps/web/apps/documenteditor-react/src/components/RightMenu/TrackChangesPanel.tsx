@@ -20,7 +20,8 @@ export function TrackChangesPanel({ visible }: TrackChangesPanelProps) {
 
   if (!visible) return null
 
-  function withEditor(fn: (editor: ReturnType<typeof getActiveRichTextEditor>) => void) {
+  type RichTextEditor = NonNullable<ReturnType<typeof getActiveRichTextEditor>>
+  function withEditor(fn: (editor: RichTextEditor) => void) {
     const editor = getActiveRichTextEditor()
     if (!editor) {
       setMessage("No active document editor")
