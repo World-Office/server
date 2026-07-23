@@ -17,7 +17,7 @@ const TEMPLATES: TemplateInfo[] = [
 
 export function CreateNewPanel({ visible }: { visible: boolean }) {
 	const [preview, setPreview] = useState<string | null>(null);
-	const [previewJson, setPreviewJson] = useState<string>("");
+	const [previewJson] = useState<string>("");
 
 	function handleUseTemplate(id: string): void {
 		presentationStore.setFileMenuOpen(false);
