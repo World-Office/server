@@ -585,7 +585,7 @@ async fn create_session(
         pchannels.insert(session_id.clone(), presentation_tx);
     }
 
-    metrics::gauge!("sessions_active", 1.0);
+    metrics::gauge!("sessions_active").set(1.0);
 
     // Initialize presentation state (will be populated as operations arrive)
     {
@@ -762,7 +762,7 @@ async fn handle_ws(
     let presence_rx = match presence_rx {
         Some(rx) => rx,
         None => {
-            metrics::counter!("connection_refused_total", 1);
+            metrics::counter!("connection_refused_total").increment(1);
             let _ = socket
                 .send(Message::Text(
                     format!(r#"{{"error":"Session {} not found"}}"#, session_id).into(),
