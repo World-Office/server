@@ -36,14 +36,16 @@ static METRICS: LazyLock<PrometheusHandle> = LazyLock::new(|| {
         .expect("failed to install prometheus recorder")
 });
 
-metrics::describe_counter!(
-    "connection_refused_total",
-    "Total number of WebSocket connection attempts refused (session not found)"
-);
-metrics::describe_gauge!(
-    "sessions_active",
-    "Current number of active collaboration sessions"
-);
+fn describe_metrics() {
+    metrics::describe_counter!(
+        "connection_refused_total",
+        "Total number of WebSocket connection attempts refused (session not found)"
+    );
+    metrics::describe_gauge!(
+        "sessions_active",
+        "Current number of active collaboration sessions"
+    );
+}
 
 async fn metrics_handler() -> String {
     METRICS.render()
@@ -1037,6 +1039,8 @@ async fn main() {
         .json()
         .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
         .init();
+
+    describe_metrics();
 
     let db_path =
         std::env::var("DATABASE_PATH").unwrap_or_else(|_| "coauthoring_sessions.db".into());
