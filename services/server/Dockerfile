@@ -10,16 +10,12 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files first for better caching
-COPY package.json ./
-COPY pnpm-lock.yaml ./
+# Copy the entire repository so pnpm workspace resolution works
+COPY . .
 
 # Install dependencies using pnpm
 RUN npm install -g pnpm@10.4.1
 RUN pnpm install --frozen-lockfile
-
-# Copy the entire source code
-COPY . .
 
 # Build the application
 RUN pnpm build
