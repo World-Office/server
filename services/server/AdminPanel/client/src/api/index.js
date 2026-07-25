@@ -172,7 +172,7 @@ export const rotateWopiKeys = async () => {
 };
 
 export const checkHealth = async () => {
-  const response = await safeFetch(`${DOCSERVICE_URL}/healthcheck`);
+  const response = await safeFetch(`${DOCSERVICE_URL}/health`);
   if (!response.ok) throw new Error('DocService health check failed');
   const result = await response.text();
   if (result !== 'true') throw new Error('DocService health check failed');

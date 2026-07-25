@@ -231,6 +231,7 @@ docsCoServer.install(server, app, () => {
   app.get("/downloadfile/:docid", canvasService.downloadFile)
   app.post("/downloadfile/:docid", rawFileParser, canvasService.downloadFile)
   app.get("/healthcheck", utils.checkClientIp, docsCoServer.healthCheck)
+  app.get("/health", utils.checkClientIp, docsCoServer.healthCheck)
   app.get("/metrics", (req, res) => {
     res.set("Content-Type", client.register.contentType)
     res.end(client.register.metrics())
