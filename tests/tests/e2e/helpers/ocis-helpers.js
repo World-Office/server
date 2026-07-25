@@ -17,10 +17,20 @@ const path = require("node:path")
 // ---------------------------------------------------------------------------
 
 const OCIS_URL = process.env.OCIS_URL || "https://localhost:9200"
-const COLLABORATION_URL = process.env.COLLABORATION_URL || "http://localhost:9300"
+// Collaboration WOPI endpoints are exposed through the same reverse proxy as
+// OCIS itself (https://cloud.graphwiz.ai/wopi/files/... → collaboration:9300).
+// Default to OCIS_URL when COLLABORATION_URL is not explicitly set.
+const COLLABORATION_URL = process.env.COLLABORATION_URL || OCIS_URL
 const EODOCS_URL = process.env.EODOCS_URL || "http://localhost:8082"
 const TEST_USER = process.env.TEST_USER || "admin"
 const TEST_PASS = process.env.TEST_PASS || "admin"
+
+// CSS selector that uniquely matches the BODY ProseMirror editor in the
+// documenteditor-react SPA, excluding header/footer editors (which live inside
+// <div data-header-footer-region="...">). RichTextEditor wraps TipTap in
+// <div class="rich-text-editor"> and DocumentHolder wraps that in
+// <div class="de-document-holder">. Either ancestor uniquely identifies body.
+const EDITOR_BODY_SELECTOR = ".de-document-holder .ProseMirror, .rich-text-editor .ProseMirror"
 
 const LOGIN = {
   username: "#oc-login-username",
@@ -30,7 +40,7 @@ const LOGIN = {
 
 /** Minimal valid OOXML .docx as base64 (contains "Hello from World Office!") */
 const MINIMAL_DOCX_B64 =
-  "UEsDBBQABgAIAAAAIQD/2X8S0AEAAM8EAAATAAgCW0NvbnRlbnRfVHlwZXMueG1sIIJyZWxzLy5yZWxzCi4uL3dvcmQvZG9jdW1lbnQueG1sCqSwTsMwDIvPSfQjd2FHQ/ZDxJyiYxQaJG2YfaHAWbaSNG1k3dbSNNrpCj6T7v5wTPnJTt3yvun1P9yA6f0aQWCiC3xiR4QLJcOFAzCkVOA7U1BYa3VyDGATp0fJKKBqKAr+AiycMQmK4xzGfVkD6eYQgK3uCUZx8qQiBKFGSnkAUEsHCAVV4W1NAAAAagEAAFBLAwQUAAYACAAAACEApL6x/QEAAAAPAQAACwAIAl9yZWxzLy5yZWxzCjxSeWVyZW5jaWVzLz52YXIvRU9IL1Jvb3RNYW5pZmVzdC54bWwKPC9SdWxlcz4KCi88cm9vdE1hbmlmZXN0IHhtbG5zPSJodHRwOi8vc2NoZW1hcy5vcGVueG1sZm9ybWF0cy5vcmcvcGFja2FnZS8yMDA2L21ldGFkYXRhL2NvcmUtcHJvcGVydGllcyI+CiAgPERlZmF1bHRTdHJldGNoIFBhcnRDb25maWd1cmF0aW9ucz0iZXh0cmFjdC8yMDEyIiAvPgo8L3Jvb3RNYW5pZmVzdD4KUEsHCAB2+sS0AQAAFwEAAFBLAwQUAAYACAAAACEAu5Wq1wMAAABIAQAADQAIAl3b3JkL2RvY3VtZW50LnhtbCiVwU4DQAwCG1+n9FS2sbscudDqHRAZKNrRjXRHEM1smcBNTk3GLkFKdQmYtVOCvlV1olUVWt2UBXILIS5Wp1cBZmAApFKc0DsIpYCnRUVVZJVsUT6KUWjKpZt1WpCwVdMFU0AFBLBwiVoapnAAAAUQEAAFBLAQIUABQABgAIAAAAIQD/2X8S0AEAAM8EAAAEAAAAAAAAAAAAAAAAAAAAAABbQ29udGVudF9UeXBlc10ueG1sUEsBAhQAFAAGAAgAAAAhAKS+s/0BAAAADwEAAAkAAAAAAAAAAAAAAAAAPwEAABfcmVscy8ucmVsc1BLAQIUABQABgAIAAAAIQC72rXBAwAAAEgBAAANAAAAAAAAAAAAAAAAAGwEAAB3b3JkL2RvY3VtZW50LnhtbFBLBQYAAAAAAgACAIAAAAB2FgEAAAAA"
+  "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"
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -234,35 +244,104 @@ async function openEditorInBrowser(page, wopiSrc, wopiToken) {
       <script>document.getElementById('f').submit();</script>
     </body></html>
   `
-  await page.setContent(formHtml)
-  await page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {})
+  // Race-free: register the navigation listener BEFORE setContent fires the
+  // auto-submitting form. A sequential setContent → waitForNavigation misses
+  // the navigation because the form's submit() runs during setContent.
+  await Promise.all([
+    page
+      .waitForNavigation({ waitUntil: "domcontentloaded", timeout: 30000 })
+      .catch(() => {}),
+    page.setContent(formHtml),
+  ])
 }
 
 /**
- * Wait for the editor iframe to load and return it.
- * The editor loads inside an iframe at documenteditor/main/index.html.
+ * Wait for the editor to mount the body ProseMirror instance with content.
+ *
+ * The documenteditor-react SPA mounts THREE TipTap/ProseMirror editors:
+ *   - region="header" (default placeholder text "Header")
+ *   - region="body"   (the actual loaded document content)
+ *   - region="footer" (default placeholder text "Footer")
+ *
+ * Header/Footer editors live inside <div data-header-footer-region="...">.
+ * We wait specifically for the BODY editor to contain non-empty content.
+ *
+ * Returns the Playwright `page` (the editor renders on the main document, not in
+ * an iframe). Returns null on timeout.
  */
 async function waitForEditorFrame(page, timeoutMs = 20000) {
-  await page.waitForTimeout(timeoutMs)
-
-  const frames = page.frames()
-  const editorFrame = frames.find((f) => f.url().includes("documenteditor/main/index.html"))
-  return editorFrame || null
+  const deadline = Date.now() + timeoutMs
+  while (Date.now() < deadline) {
+    const ready = await page.evaluate(() => {
+      const editors = document.querySelectorAll(".ProseMirror")
+      for (const el of editors) {
+        // Skip header/footer editors (placeholders "Header" / "Footer")
+        if (el.closest("[data-header-footer-region]")) continue
+        if (el.textContent.trim().length > 0) return true
+      }
+      return false
+    })
+    if (ready) return page
+    await page.waitForTimeout(500)
+  }
+  return null
 }
 
 /**
- * Get the editor state from the editor iframe.
+ * Get the editor state from the page.
+ * `hasCanvas` is kept for API compatibility with older tests; it is true when
+ * the body ProseMirror editor has rendered content.
  */
 async function getEditorState(editorFrame) {
   if (!editorFrame) return { hasCanvas: false, isError: true, title: "no frame" }
 
-  return editorFrame.evaluate(() => ({
-    hasCanvas: !!document.querySelector("canvas"),
-    isError: !!document.querySelector(".error-page"),
-    isLoading: !!document.querySelector(".loading-page"),
-    bodyClasses: document.body.className.substring(0, 100),
-    title: document.title,
-  }))
+  return editorFrame.evaluate(() => {
+    let bodyEditor = null
+    for (const el of document.querySelectorAll(".ProseMirror")) {
+      if (el.closest("[data-header-footer-region]")) continue
+      bodyEditor = el
+      break
+    }
+    const bodyText = bodyEditor ? bodyEditor.textContent.trim() : ""
+    return {
+      hasCanvas: bodyText.length > 0,
+      bodyText,
+      isError:
+        !!document.querySelector(".error-page") ||
+        document.body.innerText.includes("Failed to load document"),
+      isLoading: !!document.querySelector(".loading-page"),
+      bodyClasses: document.body.className.substring(0, 100),
+      title: document.title,
+    }
+  })
+}
+
+/**
+ * Wait for the body ProseMirror editor to be present in the DOM.
+ *
+ * Use this in place of `frame.waitForSelector("canvas", ...)` — the
+ * documenteditor-react SPA renders TipTap/ProseMirror editors, not a canvas.
+ *
+ * `frameOrPage` may be either a Playwright Page or Frame. Returns the locator
+ * for the body editor (throws on timeout, matching `waitForSelector` semantics).
+ */
+async function waitForBodyEditor(frameOrPage, timeoutMs = 30000) {
+  return frameOrPage.waitForSelector(EDITOR_BODY_SELECTOR, {
+    timeout: timeoutMs,
+    state: "visible",
+  })
+}
+
+/**
+ * Focus + click the body editor so subsequent keyboard input lands in it.
+ *
+ * Use this in place of `frame.click("canvas")`. Returns the body editor
+ * locator for chaining.
+ */
+async function focusBodyEditor(frameOrPage) {
+  const locator = await waitForBodyEditor(frameOrPage, 30000)
+  await locator.click()
+  return locator
 }
 
 /**
@@ -284,6 +363,7 @@ module.exports = {
   TEST_PASS,
   LOGIN,
   MINIMAL_DOCX_B64,
+  EDITOR_BODY_SELECTOR,
   loginToOCIS,
   uploadTestDoc,
   getFileId,
@@ -293,5 +373,7 @@ module.exports = {
   openEditorInBrowser,
   waitForEditorFrame,
   getEditorState,
+  waitForBodyEditor,
+  focusBodyEditor,
   uniqueFilename,
 }

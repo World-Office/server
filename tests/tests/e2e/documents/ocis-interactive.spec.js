@@ -21,6 +21,8 @@
 const { test, expect, chromium } = require("@playwright/test")
 
 const OCIS_URL = process.env.OCIS_URL || "https://localhost:9200"
+const TEST_USER_A = process.env.TEST_USER || process.env.TEST_USER_A || "admin"
+const TEST_PASS_A = process.env.TEST_PASS || process.env.TEST_PASS_A || "admin"
 
 // OCIS login page selectors (discovered via DOM inspection)
 const LOGIN = {
@@ -59,7 +61,7 @@ test.describe("OCIS Interactive E2E @headed", () => {
   test.setTimeout(300000)
 
   test("login to OCIS as admin and verify web UI loads", async ({ page }) => {
-    await loginToOCIS(page, "admin", "admin")
+    await loginToOCIS(page, TEST_USER_A, TEST_PASS_A)
 
     await page.screenshot({ path: "test-results/01-after-login.png", fullPage: true })
 
@@ -76,7 +78,7 @@ test.describe("OCIS Interactive E2E @headed", () => {
   })
 
   test("navigate to Personal files section", async ({ page }) => {
-    await loginToOCIS(page, "admin", "admin")
+    await loginToOCIS(page, TEST_USER_A, TEST_PASS_A)
 
     // Navigate to files
     await page.goto(`${OCIS_URL}/f/`, { waitUntil: "domcontentloaded", timeout: 60000 })
@@ -104,11 +106,12 @@ test.describe("OCIS Interactive E2E @headed", () => {
     const oidc = await request.get(`${OCIS_URL}/.well-known/openid-configuration`)
     expect(oidc.status()).toBe(200)
     const config = await oidc.json()
-    expect(config.issuer).toBe("https://localhost:9200")
+    // Issuer should match the configured OCIS_URL (env-overridable).
+    expect(config.issuer).toBe(OCIS_URL)
     console.log("OIDC issuer:", config.issuer)
 
     // WebDAV root (should require auth)
-    const webdav = await request.fetch(`${OCIS_URL}/dav/files/admin/`, {
+    const webdav = await request.fetch(`${OCIS_URL}/dav/files/${TEST_USER_A}/`, {
       method: "PROPFIND",
       headers: { Depth: "0" },
     })
@@ -129,8 +132,8 @@ test.describe("OCIS Co-editing @headed", () => {
     try {
       // Log in both users concurrently to avoid session invalidation races
       const [urlA, urlB] = await Promise.all([
-        loginToOCIS(pageA, "admin", "admin").then(() => pageA.url()),
-        loginToOCIS(pageB, "admin", "admin").then(() => pageB.url()),
+        loginToOCIS(pageA, TEST_USER_A, TEST_PASS_A).then(() => pageA.url()),
+        loginToOCIS(pageB, TEST_USER_A, TEST_PASS_A).then(() => pageB.url()),
       ])
 
       console.log("User A logged in, URL:", urlA)

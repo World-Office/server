@@ -12,17 +12,24 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
 /// JWT claims carried in access tokens issued by OCIS.
+///
+/// OCIS-signed WOPI tokens have the shape:
+/// `{ "WopiContext": { "AccessToken": "...", ... }, "exp": <unix_ts> }`
+/// and do NOT include `sub`/`iat`/`user_id`. Because wo-docserver only
+/// validates the signature and forwards the token verbatim to the WOPI
+/// host, every field except `exp` is optional and defaults if absent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
     /// Subject — typically the user or file identifier.
+    #[serde(default)]
     pub sub: String,
     /// Expiration time (Unix timestamp).
     pub exp: usize,
     /// Issued-at time (Unix timestamp).
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub iat: Option<usize>,
     /// User ID accessing the resource.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub user_id: Option<String>,
 }
 
@@ -159,38 +166,42 @@ impl WopiClient {
         }
 
         let base = self.public_url.trim_end_matches('/');
-        // The WOPI spec requires the <WOPISrc> placeholder in urlsrc attributes.
-        // In XML, '<' and '>' must be escaped as &lt; and &gt; inside attribute values.
+        // Note: the urlsrc attributes intentionally do NOT include a WOPISrc query
+        // parameter. OpenCloud's collaboration service (the WOPI app provider) fetches
+        // this discovery XML, parses the urlsrc as a base URL, and appends WOPISrc
+        // (plus optional lang/dchat params) itself via its addQueryToURL logic.
+        // Including `?WOPISrc=<WOPISrc>` here would produce a malformed app_url with
+        // a double WOPISrc parameter (`?WOPISrc=<WOPISrc>&WOPISrc=<actual>`).
         let xml = format!(
             r#"<?xml version="1.0" encoding="utf-8"?>
 <wopi-discovery>
   <net-zone name="external-http">
     <app name="World Office Document Server" href="{base}">
       <!-- Word / Document -->
-      <action name="edit" ext="docx" urlsrc="{base}/hosting/wopi/word/edit?WOPISrc=&lt;WOPISrc&gt;"/>
-      <action name="edit" ext="odt" urlsrc="{base}/hosting/wopi/word/edit?WOPISrc=&lt;WOPISrc&gt;"/>
-      <action name="edit" ext="fodt" urlsrc="{base}/hosting/wopi/word/edit?WOPISrc=&lt;WOPISrc&gt;"/>
-      <action name="view" ext="ott" urlsrc="{base}/hosting/wopi/word/edit?WOPISrc=&lt;WOPISrc&gt;"/>
-      <action name="edit" ext="rtf" urlsrc="{base}/hosting/wopi/word/edit?WOPISrc=&lt;WOPISrc&gt;"/>
+      <action name="edit" ext="docx" urlsrc="{base}/hosting/wopi/word/edit"/>
+      <action name="edit" ext="odt" urlsrc="{base}/hosting/wopi/word/edit"/>
+      <action name="edit" ext="fodt" urlsrc="{base}/hosting/wopi/word/edit"/>
+      <action name="view" ext="ott" urlsrc="{base}/hosting/wopi/word/edit"/>
+      <action name="edit" ext="rtf" urlsrc="{base}/hosting/wopi/word/edit"/>
       <!-- Spreadsheet -->
-      <action name="edit" ext="xlsx" urlsrc="{base}/hosting/wopi/sheet/edit?WOPISrc=&lt;WOPISrc&gt;"/>
-      <action name="edit" ext="ods" urlsrc="{base}/hosting/wopi/sheet/edit?WOPISrc=&lt;WOPISrc&gt;"/>
-      <action name="edit" ext="fods" urlsrc="{base}/hosting/wopi/sheet/edit?WOPISrc=&lt;WOPISrc&gt;"/>
-      <action name="view" ext="ots" urlsrc="{base}/hosting/wopi/sheet/edit?WOPISrc=&lt;WOPISrc&gt;"/>
+      <action name="edit" ext="xlsx" urlsrc="{base}/hosting/wopi/sheet/edit"/>
+      <action name="edit" ext="ods" urlsrc="{base}/hosting/wopi/sheet/edit"/>
+      <action name="edit" ext="fods" urlsrc="{base}/hosting/wopi/sheet/edit"/>
+      <action name="view" ext="ots" urlsrc="{base}/hosting/wopi/sheet/edit"/>
       <!-- Presentation -->
-      <action name="edit" ext="pptx" urlsrc="{base}/hosting/wopi/slide/edit?WOPISrc=&lt;WOPISrc&gt;"/>
-      <action name="edit" ext="odp" urlsrc="{base}/hosting/wopi/slide/edit?WOPISrc=&lt;WOPISrc&gt;"/>
-      <action name="edit" ext="fodp" urlsrc="{base}/hosting/wopi/slide/edit?WOPISrc=&lt;WOPISrc&gt;"/>
-      <action name="view" ext="otp" urlsrc="{base}/hosting/wopi/slide/edit?WOPISrc=&lt;WOPISrc&gt;"/>
+      <action name="edit" ext="pptx" urlsrc="{base}/hosting/wopi/slide/edit"/>
+      <action name="edit" ext="odp" urlsrc="{base}/hosting/wopi/slide/edit"/>
+      <action name="edit" ext="fodp" urlsrc="{base}/hosting/wopi/slide/edit"/>
+      <action name="view" ext="otp" urlsrc="{base}/hosting/wopi/slide/edit"/>
       <!-- Diagram / Visio -->
-      <action name="edit" ext="vsdx" urlsrc="{base}/hosting/wopi/diagram/edit?WOPISrc=&lt;WOPISrc&gt;"/>
-      <action name="view" ext="vssx" urlsrc="{base}/hosting/wopi/diagram/view?WOPISrc=&lt;WOPISrc&gt;"/>
-      <action name="view" ext="vstx" urlsrc="{base}/hosting/wopi/diagram/view?WOPISrc=&lt;WOPISrc&gt;"/>
-      <action name="view" ext="vsdm" urlsrc="{base}/hosting/wopi/diagram/view?WOPISrc=&lt;WOPISrc&gt;"/>
-      <action name="view" ext="vssm" urlsrc="{base}/hosting/wopi/diagram/view?WOPISrc=&lt;WOPISrc&gt;"/>
-      <action name="view" ext="vstm" urlsrc="{base}/hosting/wopi/diagram/view?WOPISrc=&lt;WOPISrc&gt;"/>
+      <action name="edit" ext="vsdx" urlsrc="{base}/hosting/wopi/diagram/edit"/>
+      <action name="view" ext="vssx" urlsrc="{base}/hosting/wopi/diagram/view"/>
+      <action name="view" ext="vstx" urlsrc="{base}/hosting/wopi/diagram/view"/>
+      <action name="view" ext="vsdm" urlsrc="{base}/hosting/wopi/diagram/view"/>
+      <action name="view" ext="vssm" urlsrc="{base}/hosting/wopi/diagram/view"/>
+      <action name="view" ext="vstm" urlsrc="{base}/hosting/wopi/diagram/view"/>
       <!-- PDF -->
-      <action name="view" ext="pdf" urlsrc="{base}/hosting/wopi/pdf/view?WOPISrc=&lt;WOPISrc&gt;"/>
+      <action name="view" ext="pdf" urlsrc="{base}/hosting/wopi/pdf/view"/>
     </app>
   </net-zone>
 </wopi-discovery>
@@ -265,19 +276,13 @@ mod tests {
         );
         let xml = client.get_discovery().await.unwrap();
         assert!(xml.contains("href=\"https://editor.example.com\""));
-        assert!(xml.contains(
-            "urlsrc=\"https://editor.example.com/hosting/wopi/word/edit?WOPISrc=&lt;WOPISrc&gt;\""
-        ));
-        assert!(xml.contains(
-            "urlsrc=\"https://editor.example.com/hosting/wopi/sheet/edit?WOPISrc=&lt;WOPISrc&gt;\""
-        ));
-        assert!(xml.contains(
-            "urlsrc=\"https://editor.example.com/hosting/wopi/slide/edit?WOPISrc=&lt;WOPISrc&gt;\""
-        ));
-        assert!(xml.contains("urlsrc=\"https://editor.example.com/hosting/wopi/diagram/edit?WOPISrc=&lt;WOPISrc&gt;\""));
-        assert!(xml.contains(
-            "urlsrc=\"https://editor.example.com/hosting/wopi/pdf/view?WOPISrc=&lt;WOPISrc&gt;\""
-        ));
+        // urlsrc must NOT include a WOPISrc query param — OpenCloud adds it itself
+        assert!(xml.contains("urlsrc=\"https://editor.example.com/hosting/wopi/word/edit\""));
+        assert!(xml.contains("urlsrc=\"https://editor.example.com/hosting/wopi/sheet/edit\""));
+        assert!(xml.contains("urlsrc=\"https://editor.example.com/hosting/wopi/slide/edit\""));
+        assert!(xml.contains("urlsrc=\"https://editor.example.com/hosting/wopi/diagram/edit\""));
+        assert!(xml.contains("urlsrc=\"https://editor.example.com/hosting/wopi/pdf/view\""));
+        assert!(!xml.contains("WOPISrc="), "discovery urlsrc must not contain WOPISrc");
         assert!(!xml.contains("localhost:8080"));
     }
 
