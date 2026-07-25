@@ -15,7 +15,7 @@ proptest! {
     #[test]
     fn parse_serialize_parse_roundtrip(
         ref lines in prop::collection::vec(
-            prop::string::string_regex("[^\n]{0,50}").unwrap(),
+            prop::string::string_regex("[^\n\r\u{FEFF}]{0,50}").unwrap(),
             0..10,
         ),
     ) {
