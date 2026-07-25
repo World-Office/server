@@ -149,6 +149,92 @@ pub struct CommentEventData {
     pub created_at: String,
 }
 
+/// A spreadsheet-level operation for real-time coauthoring.
+/// Operations are broadcast to all session participants and applied
+/// last-writer-wins (no CRDT — cell edits are applied optimistically).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "action", rename_all = "snake_case")]
+pub enum SpreadsheetOp {
+    SetCellValue {
+        payload: CellValuePayload,
+    },
+    SetCellStyle {
+        payload: CellStylePayload,
+    },
+    SetCellFormula {
+        payload: CellValuePayload,
+    },
+    SheetAction {
+        payload: SheetActionPayload,
+    },
+    InsertRow {
+        sheet_name: String,
+        row: u32,
+        count: u32,
+    },
+    DeleteRow {
+        sheet_name: String,
+        row: u32,
+        count: u32,
+    },
+    InsertColumn {
+        sheet_name: String,
+        col: u32,
+        count: u32,
+    },
+    DeleteColumn {
+        sheet_name: String,
+        col: u32,
+        count: u32,
+    },
+    MergeCells {
+        sheet_name: String,
+        range: String,
+    },
+    UnmergeCells {
+        sheet_name: String,
+        range: String,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CellValuePayload {
+    pub sheet_name: String,
+    pub cell: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub value: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub formula: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CellStylePayload {
+    pub sheet_name: String,
+    pub cell: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bold: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub italic: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_size: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub font_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fill_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub number_format: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SheetActionPayload {
+    pub action: String,
+    pub sheet_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub new_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<u32>,
+}
+
 /// A presentation-level shape operation for real-time coauthoring.
 /// Operations are broadcast to all session participants and applied
 /// last-writer-wins (no CRDT merge — shapes are ID-based).
@@ -234,6 +320,11 @@ enum WsMessage {
         session_id: String,
         user_id: String,
         operation: PresentationOp,
+    },
+    SpreadsheetOp {
+        session_id: String,
+        user_id: String,
+        operation: SpreadsheetOp,
     },
 }
 
@@ -469,6 +560,8 @@ struct AppState {
     presentation_state: Arc<Mutex<HashMap<String, PresentationState>>>,
     /// Broadcast channels per session for presentation operations (shape add/delete/modify).
     presentation_channels: Arc<Mutex<HashMap<String, broadcast::Sender<String>>>>,
+    /// Broadcast channels per session for spreadsheet operations.
+    spreadsheet_channels: Arc<Mutex<HashMap<String, broadcast::Sender<String>>>>,
 }
 
 /// Health check response.
@@ -585,6 +678,13 @@ async fn create_session(
     {
         let mut pchannels = state.presentation_channels.lock().await;
         pchannels.insert(session_id.clone(), presentation_tx);
+    }
+
+    // Create ephemeral spreadsheet broadcast channel for this session
+    let (spreadsheet_tx, _) = broadcast::channel::<String>(256);
+    {
+        let mut schannels = state.spreadsheet_channels.lock().await;
+        schannels.insert(session_id.clone(), spreadsheet_tx);
     }
 
     metrics::gauge!("sessions_active").set(1.0);
@@ -808,6 +908,23 @@ async fn handle_ws(
         }
     };
 
+    let spreadsheet_rx = {
+        let channels = state.spreadsheet_channels.lock().await;
+        channels.get(&session_id).map(|tx| tx.subscribe())
+    };
+
+    let spreadsheet_rx = match spreadsheet_rx {
+        Some(rx) => rx,
+        None => {
+            let _ = socket
+                .send(Message::Text(
+                    format!(r#"{{"error":"Session {} not found"}}"#, session_id).into(),
+                ))
+                .await;
+            return;
+        }
+    };
+
     tracing::info!(session_id = %session_id, user_id = %user_id, "WebSocket connected");
 
     let (mut ws_sender, mut ws_receiver) = socket.split();
@@ -914,6 +1031,15 @@ async fn handle_ws(
         }
     });
 
+    // Forward spreadsheet op broadcasts to the shared outgoing channel
+    let out_tx_spreadsheet = out_tx.clone();
+    let _recv_spreadsheet = tokio::spawn(async move {
+        let mut spreadsheet_rx = spreadsheet_rx;
+        while let Ok(text) = spreadsheet_rx.recv().await {
+            let _ = out_tx_spreadsheet.send(text).await;
+        }
+    });
+
     while let Some(Ok(msg)) = ws_receiver.next().await {
         if let Message::Text(text) = msg {
             if let Ok(ws_msg) = serde_json::from_str::<WsMessage>(&text) {
@@ -968,6 +1094,17 @@ async fn handle_ws(
                         }
                         // Broadcast to all participants via presentation channel
                         let channels = state.presentation_channels.lock().await;
+                        if let Some(tx) = channels.get(&session_id) {
+                            let _ = tx.send(text.to_string());
+                        }
+                    }
+                    WsMessage::SpreadsheetOp {
+                        session_id: _,
+                        user_id: _,
+                        operation: _, // Spreadsheet ops are broadcast as-is with no server-side state
+                    } => {
+                        // Broadcast spreadsheet operations to all participants
+                        let channels = state.spreadsheet_channels.lock().await;
                         if let Some(tx) = channels.get(&session_id) {
                             let _ = tx.send(text.to_string());
                         }
@@ -1053,6 +1190,7 @@ async fn main() {
         documents: Arc::new(Mutex::new(HashMap::new())),
         presentation_state: Arc::new(Mutex::new(HashMap::new())),
         presentation_channels: Arc::new(Mutex::new(HashMap::new())),
+        spreadsheet_channels: Arc::new(Mutex::new(HashMap::new())),
     });
     let app = app(state);
 

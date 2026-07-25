@@ -16,6 +16,7 @@ import {
   type ParticipantUpdate,
   type PresentationOperation,
   type PresentationStateData,
+  type SpreadsheetOperation,
   type WsMessage,
   createDeleteOp,
   createInsertOp,
@@ -36,6 +37,7 @@ export interface WebSocketManagerEvents {
   commentEvent: (data: CommentEventData) => void
   presentationOp: (op: PresentationOperation, userId: string) => void
   presentationState: (state: PresentationStateData) => void
+  spreadsheetOp: (op: SpreadsheetOperation, userId: string) => void
   stateChange: (state: ConnectionState) => void
 }
 
@@ -235,6 +237,22 @@ export class WebSocketManager {
     }
   }
 
+  /** Broadcast a spreadsheet operation to other participants. */
+  sendSpreadsheetOp(operation: SpreadsheetOperation): void {
+    const msg: WsMessage = {
+      type: "spreadsheet_op",
+      session_id: this.sessionId,
+      user_id: this.userId,
+      operation,
+    }
+    const json = JSON.stringify(msg)
+    if (this.ws && this.ws.readyState === WS_OPEN) {
+      this.ws.send(json)
+    } else {
+      this.messageQueue.push(json)
+    }
+  }
+
   /** Broadcast a cursor update to other participants. */
   sendCursorEvent(data: ParticipantUpdate): void {
     const msg: WsMessage = { type: "participant_update", update: data }
@@ -279,6 +297,8 @@ export class WebSocketManager {
       this.emit("presentationOp", op, userId)
     } else if (serverMsg.type === "presentation_state") {
       this.emit("presentationState", serverMsg.state)
+    } else if (serverMsg.type === "spreadsheet_op") {
+      this.emit("spreadsheetOp", serverMsg.operation, serverMsg.user_id)
     }
   }
 
