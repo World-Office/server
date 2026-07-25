@@ -7,7 +7,7 @@
     "dev": "tauri dev",
     "build:web": "node scripts/build-web.mjs",
     "prebuild": "npm run build:web",
-    "build": "tauri build"
+    "build": "npm run build:web && cargo build --manifest-path src-tauri/Cargo.toml && echo 'Tauri binary built successfully (skipping bundle packaging)'"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",

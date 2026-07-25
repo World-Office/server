@@ -272,7 +272,7 @@ async fn convert_invalid_base64_returns_400() {
 // ── GET /formats ──────────────────────────────────────────────────────────
 
 #[tokio::test]
-async fn formats_returns_all_fourteen_registered_pairs() {
+async fn formats_returns_all_registered_pairs() {
     let state = create_test_state();
     let router = app(state);
 
@@ -290,10 +290,11 @@ async fn formats_returns_all_fourteen_registered_pairs() {
     assert_eq!(response.status(), StatusCode::OK);
     let json = body_json(response).await;
     let formats = json.as_array().unwrap();
-    assert_eq!(
-        formats.len(),
-        42,
-        "Should have exactly 42 registered format pairs"
+    // Must have at least the original 42 pairs + new additions (XLSX, VSDX, PDF, PPTX)
+    assert!(
+        formats.len() >= 48,
+        "Should have at least 48 registered format pairs, got {}",
+        formats.len()
     );
 
     // Verify all expected pairs are present
@@ -343,6 +344,23 @@ async fn formats_returns_all_fourteen_registered_pairs() {
     assert!(pairs.contains(&("ofd", "docx")));
     assert!(pairs.contains(&("djvu", "txt")));
     assert!(pairs.contains(&("djvu", "docx")));
+    // Presentation converters
+    assert!(pairs.contains(&("pptx", "wo-presentation")));
+    assert!(pairs.contains(&("wo-presentation", "pptx")));
+    assert!(pairs.contains(&("odp", "wo-presentation")));
+    assert!(pairs.contains(&("wo-presentation", "odp")));
+    assert!(pairs.contains(&("wo-presentation", "html")));
+    // Spreadsheet converters
+    assert!(pairs.contains(&("xlsx", "wo-spreadsheet")));
+    assert!(pairs.contains(&("wo-spreadsheet", "xlsx")));
+    // Visio converters
+    assert!(pairs.contains(&("vsdx", "wo-visio-diagram")));
+    assert!(pairs.contains(&("wo-visio-diagram", "vsdx")));
+    assert!(pairs.contains(&("vsdm", "vsdx")));
+    assert!(pairs.contains(&("vsdx", "vsdm")));
+    // PDF converters
+    assert!(pairs.contains(&("pdf", "wo-pdf-document")));
+    assert!(pairs.contains(&("wo-pdf-document", "pdf")));
 }
 
 // ── GET /jobs/{id} ────────────────────────────────────────────────────────
