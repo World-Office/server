@@ -10,10 +10,30 @@ interface TemplateInfo {
 }
 
 const TEMPLATES: TemplateInfo[] = [
-	{ id: "blank", name: "Blank Workbook", description: "Empty spreadsheet", icon: "📊" },
-	{ id: "budget", name: "Budget Tracker", description: "Personal budget template", icon: "💰" },
-	{ id: "invoice", name: "Invoice", description: "Billing spreadsheet", icon: "📋" },
-	{ id: "schedule", name: "Schedule", description: "Project timeline", icon: "📅" },
+	{
+		id: "blank",
+		name: "Blank Workbook",
+		description: "Empty spreadsheet",
+		icon: "📊",
+	},
+	{
+		id: "budget",
+		name: "Budget Tracker",
+		description: "Personal budget template",
+		icon: "💰",
+	},
+	{
+		id: "invoice",
+		name: "Invoice",
+		description: "Billing spreadsheet",
+		icon: "📋",
+	},
+	{
+		id: "schedule",
+		name: "Schedule",
+		description: "Project timeline",
+		icon: "📅",
+	},
 ];
 
 export function CreateNewPanel({ visible }: { visible: boolean }) {
@@ -38,32 +58,29 @@ export function CreateNewPanel({ visible }: { visible: boolean }) {
 	return (
 		<div
 			className="se-file-menu-content-box"
-			style={{ display: visible ? "block" : "none", padding: "0", flexDirection: "column" }}
+			style={{
+				display: visible ? "block" : "none",
+				padding: "0",
+				flexDirection: "column",
+			}}
 		>
 			<div className="se-file-menu-header">{t("Create New")}</div>
 			<div className="se-file-menu-formats">
 				{TEMPLATES.map((tpl) => (
-					<div
+					<button
+						type="button"
 						key={tpl.id}
 						className="se-template-card"
 						onMouseEnter={() => setPreview(tpl.id)}
 						onMouseLeave={() => setPreview(null)}
 						onClick={() => handleCreateNew(tpl.id)}
-						role="button"
-						tabIndex={0}
-						onKeyDown={(e) => {
-							if (e.key === "Enter" || e.key === " ") {
-								e.preventDefault();
-								handleCreateNew(tpl.id);
-							}
-						}}
 					>
 						<div className="se-template-icon">{tpl.icon}</div>
 						<div className="se-template-info">
 							<div className="se-template-name">{tpl.name}</div>
 							<div className="se-template-desc">{t(tpl.description)}</div>
 						</div>
-					</div>
+					</button>
 				))}
 			</div>
 			{preview && previewHtml && (

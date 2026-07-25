@@ -15,6 +15,7 @@ export function ThumbnailPanel() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const renderedRef = useRef<Set<number>>(new Set())
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pdfStore.pdfDocProxy is a MobX observable
   useEffect(() => {
     const proxy = pdfStore.pdfDocProxy
     if (!proxy) {
@@ -37,7 +38,7 @@ export function ThumbnailPanel() {
       cancelled = true
       renderedRef.current.clear()
     }
-  }, [pdfStore.pdfDocProxy, pdfStore.pageCount])
+  }, [pdfStore.pdfDocProxy])
 
   function scrollToPage(pageNum: number) {
     pdfStore.setCurrentPage(pageNum - 1)
