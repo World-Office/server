@@ -2,6 +2,7 @@ import { detectWopiParams, loadDocument, putFile } from "@world-office/wopi-clie
 import type { WopiConnection, WopiFileInfo } from "@world-office/wopi-client"
 import { makeAutoObservable } from "mobx"
 import type { PDFDocumentProxy } from "pdfjs-dist"
+import { produceAnnotatedPdf } from "../lib/annotation-conversion"
 import type {
   AnnotationTool,
   LeftMenuAction,
@@ -257,10 +258,12 @@ export class PdfStore {
       color: annot.color,
       text: annot.text,
     })
+    this.isModified = true
   }
 
   removeAnnotation(id: string): void {
     this.annotations = this.annotations.filter((a) => a.id !== id)
+    this.isModified = true
   }
 
   setCurrentTool(tool: Tool): void {
@@ -320,7 +323,7 @@ export class PdfStore {
   async saveToWopi(): Promise<void> {
     if (!this.wopiConnection || !this.isModified) return
     if (!this.wopiFileInfo?.UserCanWrite) {
-      this.exportAsDownload()
+      await this.exportAsDownload()
       return
     }
     this.isSaving = true
@@ -329,21 +332,30 @@ export class PdfStore {
       await putFile(this.wopiConnection, blob)
       this.isModified = false
     } catch {
-      this.exportAsDownload()
+      await this.exportAsDownload()
     } finally {
       this.isSaving = false
     }
   }
 
-  buildDocumentBlob(): Blob {
-    if (this.lastLoadedContent) {
+  async buildDocumentBlob(): Promise<Blob> {
+    if (this.annotations.length === 0 && this.lastLoadedContent) {
       return this.lastLoadedContent
+    }
+    if (this.lastLoadedContent) {
+      try {
+        const annotated = await produceAnnotatedPdf(this.lastLoadedContent, this.annotations)
+        return annotated
+      } catch (err) {
+        console.error("Failed to produce annotated PDF, falling back to original:", err)
+        return this.lastLoadedContent
+      }
     }
     return new Blob(["PDF placeholder"], { type: "application/pdf" })
   }
 
-  exportAsDownload(): void {
-    const blob = this.buildDocumentBlob()
+  async exportAsDownload(): Promise<void> {
+    const blob = await this.buildDocumentBlob()
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url

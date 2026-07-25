@@ -21,7 +21,7 @@ export function useKeyboardShortcuts(): void {
             break
           case "s":
             e.preventDefault()
-            pdfStore.saveToWopi()
+            void pdfStore.saveToWopi()
             break
         }
       }

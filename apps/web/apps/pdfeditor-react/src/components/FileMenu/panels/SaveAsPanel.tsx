@@ -3,7 +3,7 @@ import { pdfStore } from "../../../stores/PdfStore"
 export function SaveAsPanel({ visible }: { visible: boolean }) {
   function handleExport(format: string): void {
     if (format === "PDF") {
-      pdfStore.exportAsDownload()
+      void pdfStore.exportAsDownload()
       pdfStore.setFileMenuOpen(false)
       pdfStore.setActiveFileMenuPanel(null)
       return
