@@ -232,6 +232,7 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
   )
 
   // Re-render visible pages when zoom changes
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pdfStore.zoomLevel is a MobX observable; needed for effect reactivity
   useEffect(() => {
     if (!doc) return
 
@@ -286,6 +287,7 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
   }, [doc, renderPage])
 
   // Handle fitToPage / fitToWidth from PdfStore
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pdfStore.fitToPage/fitToWidth are MobX observables
   useEffect(() => {
     if (!doc || !containerRef.current) return
 
@@ -324,6 +326,7 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
   }, [doc, pdfStore.fitToPage, pdfStore.fitToWidth])
 
   // Scroll to current page when changed from toolbar
+  // biome-ignore lint/correctness/useExhaustiveDependencies: pdfStore.currentPage is a MobX observable
   useEffect(() => {
     const pageEl = pageElRefs.current.get(pdfStore.currentPage + 1)
     if (pageEl && containerRef.current) {
@@ -425,11 +428,32 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
                 cursor: pdfStore.activeAnnotationTool ? "crosshair" : "default",
               }}
               onClick={handleAnnotLayerClick(pageNum)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault()
+                  const tool = pdfStore.activeAnnotationTool
+                  if (!tool) return
+                  const color = ANNOTATION_COLORS[tool] ?? "#FF9800"
+                  pdfStore.addAnnotation({
+                    page: pageNum,
+                    x: 20,
+                    y: 20,
+                    width: 150,
+                    height: 40,
+                    color,
+                    text: tool === "text-comment" ? "" : undefined,
+                  })
+                  if (tool !== "highlight" && tool !== "strikeout" && tool !== "underline") {
+                    pdfStore.setAnnotationTool(null)
+                  }
+                }
+              }}
             >
               {pdfStore.annotations
                 .filter((a) => a.page === pageNum)
                 .map((annot) => (
-                  <div
+                  <button
+                    type="button"
                     key={annot.id}
                     style={{
                       position: "absolute",
@@ -437,7 +461,7 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
                       top: annot.y,
                       width: annot.width,
                       height: annot.height,
-                      backgroundColor: annot.color + "40",
+                      backgroundColor: `${annot.color}40`,
                       border: `2px solid ${annot.color}`,
                       borderRadius: 4,
                       cursor: "pointer",
@@ -448,16 +472,24 @@ export const PdfViewer = ({ pdfData }: PdfViewerProps) => {
                       fontSize: 10,
                       color: "#333",
                       overflow: "hidden",
+                      padding: 0,
+                      fontFamily: "inherit",
                     }}
                     title={annot.text ?? ""}
                     onClick={() => pdfStore.removeAnnotation(annot.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        pdfStore.removeAnnotation(annot.id)
+                      }
+                    }}
                   >
                     {annot.text ? (
                       <span style={{ padding: 2, wordBreak: "break-all" }}>{annot.text}</span>
                     ) : (
                       <span style={{ fontSize: 16 }}>📌</span>
                     )}
-                  </div>
+                  </button>
                 ))}
             </div>
           </div>
