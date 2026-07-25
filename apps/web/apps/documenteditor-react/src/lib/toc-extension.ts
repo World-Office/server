@@ -13,11 +13,13 @@ const tocPluginKey = new PluginKey("tableOfContents")
 
 function buildTocFromHeadings(doc: PmNode): TocItem[] {
   const items: TocItem[] = []
+  // biome-ignore lint/complexity/noForEach: ProseMirror Fragment.forEach API
   doc.forEach((node) => {
     if (node.type.name === "heading") {
       const level = node.attrs.level as number | undefined
       if (level && level <= 3) {
         let text = ""
+        // biome-ignore lint/complexity/noForEach: ProseMirror Fragment.forEach API
         node.forEach((child) => {
           if (child.isText) text += child.text
         })

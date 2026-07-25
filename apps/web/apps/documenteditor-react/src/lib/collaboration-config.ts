@@ -27,7 +27,6 @@ export function isCollaborationConfigured(): boolean {
   }
   const ws = import.meta.env?.VITE_COAUTHORING_WS_URL
   const api = import.meta.env?.VITE_COAUTHORING_API_URL
-  const isPlaceholder = (u: string | undefined) =>
-    !u || u.includes("localhost:8004")
+  const isPlaceholder = (u: string | undefined) => !u || u.includes("localhost:8004")
   return !(isPlaceholder(ws) && isPlaceholder(api))
 }

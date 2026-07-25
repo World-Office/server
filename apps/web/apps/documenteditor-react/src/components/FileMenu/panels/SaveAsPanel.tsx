@@ -104,7 +104,7 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
             disabled={converting === format.id}
             onClick={() => handleExport(format)}
           >
-            {converting === format.id ? `Exporting…` : format.label}
+            {converting === format.id ? "Exporting…" : format.label}
           </button>
         ))}
       </div>

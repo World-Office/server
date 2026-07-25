@@ -251,7 +251,9 @@ export const PluginManager = observer(function PluginManager({
 
   return createPortal(
     <>
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: backdrop overlay */}
       <div style={maskStyle} onClick={onClose} role="presentation" />
+      {/* biome-ignore lint/a11y/useSemanticElements: portal dialog, not native <dialog> */}
       <div style={dialogStyle} role="dialog" aria-label="Plugin Manager">
         <div style={headerStyle}>
           <span style={titleStyle}>Plugin Manager</span>

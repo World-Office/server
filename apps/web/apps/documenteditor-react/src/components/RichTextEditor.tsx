@@ -27,8 +27,8 @@ import {
   PlainTextControl,
 } from "../lib/content-controls"
 import { EndnoteMark } from "../lib/endnote-mark"
-import { FootnoteMark } from "../lib/footnote-mark"
 import { FontSize } from "../lib/font-size-extension"
+import { FootnoteMark } from "../lib/footnote-mark"
 import { LineSpacingExtension } from "../lib/line-spacing-extension"
 import { PageNumber } from "../lib/page-number"
 import { ParagraphBorders } from "../lib/paragraph-borders"
@@ -63,7 +63,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       extensions: [
         StarterKit.configure({
           link: false,
-        }),        TextStyle,
+        }),
+        TextStyle,
         Color,
         FontFamily,
         FontSize,

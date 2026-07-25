@@ -64,15 +64,17 @@ export const LineSpacingExtension = Extension.create<LineSpacingOptions>({
 
   addCommands() {
     const setNodeAttr = (
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: ProseMirror Node/Transaction types
       state: any,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // biome-ignore lint/suspicious/noExplicitAny: ProseMirror Node/Transaction types
       tr: any,
       attrName: string,
       value: string | null,
     ) => {
       const { from, to } = state.selection
       const relevantTypes = this.options.types
+      let currentTr = tr
+      // biome-ignore lint/suspicious/noExplicitAny: ProseMirror Node type
       state.doc.nodesBetween(from, to, (node: any, pos: number) => {
         if (relevantTypes.includes(node.type.name)) {
           const attrs = { ...node.attrs }
@@ -81,7 +83,7 @@ export const LineSpacingExtension = Extension.create<LineSpacingOptions>({
           } else {
             attrs[attrName] = value
           }
-          tr = tr.setNodeMarkup(pos, undefined, attrs)
+          currentTr = currentTr.setNodeMarkup(pos, undefined, attrs)
         }
       })
     }

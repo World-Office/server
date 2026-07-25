@@ -37,7 +37,7 @@ export function HeaderFooterEditor({ region }: HeaderFooterProps) {
     if (editor && html !== editor.getHTML()) {
       editor.commands.setContent(html || `<p>${region === "header" ? "Header" : "Footer"}</p>`)
     }
-  }, [html, editor])
+  }, [html, editor, region])
 
   return (
     <div
