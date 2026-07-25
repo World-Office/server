@@ -13,9 +13,23 @@ export class SpellChecker {
     this.currentLanguage = options.language ?? "en-US"
   }
 
-  /** Load a Hunspell dictionary from aff/dic buffers. */
+  /**
+   * Load a Hunspell dictionary from aff/dic buffers.
+   *
+   * nspell uses Node's Buffer API (`buf.toString('utf8')`) and the `is-buffer`
+   * check, which rejects plain browser ArrayBuffers. In browser contexts the
+   * caller typically hands us an ArrayBuffer from `fetch().arrayBuffer()`, so
+   * decode to a UTF-8 string before forwarding — nspell accepts strings and
+   * parses them the same way as Buffers.
+   */
   async loadDictionary(aff: BufferSource, dic: BufferSource): Promise<void> {
-    this.nspellInstance = nspell(aff, dic)
+    const decoder = new TextDecoder("utf-8")
+    const affInput = typeof aff === "string" ? aff : decoder.decode(aff)
+    const dicInput = typeof dic === "string" ? dic : decoder.decode(dic)
+    // nspell's runtime accepts strings natively (it calls `.toString('utf8')`
+    // on Buffers and returns strings unchanged). The @types/nspell typings
+    // only declare BufferSource, so cast through unknown.
+    this.nspellInstance = nspell(affInput as unknown as BufferSource, dicInput as unknown as BufferSource)
   }
 
   /** Check if a word is correctly spelled. */

@@ -13,6 +13,7 @@ import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
 import { usePlugins } from "./hooks/usePlugins"
 import { useSpellchecker } from "./hooks/useSpellchecker"
 import { type RichTextCommand, dispatchRichTextCommand } from "./lib/rte-command"
+import { isCollaborationConfigured } from "./lib/collaboration-config"
 import { SpellcheckContext } from "./lib/spellcheck-context"
 import { documentStore } from "./stores/DocumentStore"
 
@@ -256,7 +257,7 @@ export const App = observer(function App() {
         </div>
       )}
       <Suspense fallback={null}>
-        <DocumentCollaborationProvider />
+        {isCollaborationConfigured() && <DocumentCollaborationProvider />}
       </Suspense>
       <Suspense fallback={null}>
         <ShortcutsOverlay visible={shortcutsVisible} onClose={() => setShortcutsVisible(false)} />

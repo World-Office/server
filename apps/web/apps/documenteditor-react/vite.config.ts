@@ -14,11 +14,14 @@ export default defineConfig({
     "import.meta.env.VITE_WOPI_HOST_URL": JSON.stringify(
       process.env.VITE_WOPI_HOST_URL || "https://cloud.graphwiz.ai",
     ),
-    "import.meta.env.VITE_COLLABORATION_WS_URL": JSON.stringify(
-      process.env.VITE_COLLABORATION_WS_URL || "wss://cloud.graphwiz.ai",
+    // NOTE: names must match collaboration-config.ts (VITE_COAUTHORING_*).
+    // Set to placeholder localhost when no coauthoring service is deployed;
+    // App.tsx skips rendering DocumentCollaborationProvider in that case.
+    "import.meta.env.VITE_COAUTHORING_WS_URL": JSON.stringify(
+      process.env.VITE_COAUTHORING_WS_URL || "ws://localhost:8004/ws/{session_id}",
     ),
-    "import.meta.env.VITE_COLLABORATION_HTTP_URL": JSON.stringify(
-      process.env.VITE_COLLABORATION_HTTP_URL || "https://cloud.graphwiz.ai",
+    "import.meta.env.VITE_COAUTHORING_API_URL": JSON.stringify(
+      process.env.VITE_COAUTHORING_API_URL || "http://localhost:8004",
     ),
   },
   server: {
@@ -32,7 +35,7 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes("monaco-editor")) return "monaco"
-          if (id.includes("node_modules/react") || id.includes("node_modules/mobx") || id.includes("node_modules/scheduler")) return "vendor"
+          if (id.includes("node_modules/react") || id.includes("node_modules/mobx") || id.includes("node_modules/scheduler") || id.includes("node_modules/use-sync-external-store")) return "vendor"
           if (id.includes("node_modules")) return "deps"
         },
       },
