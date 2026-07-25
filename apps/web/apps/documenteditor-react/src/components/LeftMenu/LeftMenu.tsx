@@ -37,6 +37,7 @@ function LeftMenuInner(): JSX.Element {
       </div>
       <div className="de-left-panel-side">
         <ContentLinkPanel
+          active={documentStore.activeLeftPanel === "contentlinks"}
           style={{ display: documentStore.activeLeftPanel === "contentlinks" ? "flex" : "none" }}
         />
         <CommentsPanel

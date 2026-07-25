@@ -9,3 +9,25 @@ export const COAUTHORING_API_URL: string =
     ((window as unknown as Record<string, unknown>).__COAUTHORING_API_URL as string)) ||
   import.meta.env?.VITE_COAUTHORING_API_URL ||
   "http://localhost:8004"
+
+/**
+ * Returns true when a real coauthoring service has been configured.
+ *
+ * The editor bundles with localhost placeholders; when neither the deployer
+ * nor the page (via window.__COAUTHORING_*) has overridden them, we skip
+ * mounting DocumentCollaborationProvider entirely so the editor doesn't
+ * spam ws://localhost:8004 connection attempts and console errors on
+ * deployments that have no coauthoring service (e.g. the WOPI-only OCIS
+ * integration).
+ */
+export function isCollaborationConfigured(): boolean {
+  if (typeof window !== "undefined") {
+    const w = window as unknown as Record<string, unknown>
+    if (w.__COAUTHORING_WS_URL || w.__COAUTHORING_API_URL) return true
+  }
+  const ws = import.meta.env?.VITE_COAUTHORING_WS_URL
+  const api = import.meta.env?.VITE_COAUTHORING_API_URL
+  const isPlaceholder = (u: string | undefined) =>
+    !u || u.includes("localhost:8004")
+  return !(isPlaceholder(ws) && isPlaceholder(api))
+}

@@ -3,6 +3,7 @@ import Focus from "@tiptap/extension-focus"
 import FontFamily from "@tiptap/extension-font-family"
 import Highlight from "@tiptap/extension-highlight"
 import Image from "@tiptap/extension-image"
+import Link from "@tiptap/extension-link"
 import Placeholder from "@tiptap/extension-placeholder"
 import Subscript from "@tiptap/extension-subscript"
 import Superscript from "@tiptap/extension-superscript"
@@ -27,6 +28,7 @@ import {
 } from "../lib/content-controls"
 import { EndnoteMark } from "../lib/endnote-mark"
 import { FootnoteMark } from "../lib/footnote-mark"
+import { FontSize } from "../lib/font-size-extension"
 import { LineSpacingExtension } from "../lib/line-spacing-extension"
 import { PageNumber } from "../lib/page-number"
 import { ParagraphBorders } from "../lib/paragraph-borders"
@@ -60,11 +62,12 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
     const editor = useEditor({
       extensions: [
         StarterKit.configure({
-          link: { openOnClick: true },
-        }),
-        TextStyle,
+          link: false,
+        }),        TextStyle,
         Color,
         FontFamily,
+        FontSize,
+        Link.configure({ openOnClick: true }),
         Highlight.configure({ multicolor: true }),
         Subscript,
         Superscript,
@@ -106,6 +109,9 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       content: html,
       editable: !readOnly,
       autofocus: false,
+      enableCoreExtensions: {
+        textDirection: false,
+      },
       onUpdate({ editor }) {
         const currentHtml = editor.getHTML()
         onChangeRef.current?.(currentHtml)

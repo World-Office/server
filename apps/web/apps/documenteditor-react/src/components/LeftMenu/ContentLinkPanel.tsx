@@ -16,6 +16,11 @@ interface ContentLink {
 }
 
 interface ContentLinkPanelProps {
+  /** When false (default), no network requests are made. LeftMenu passes
+   *  `activeLeftPanel === 'contentlinks'` so the panel only fires its initial
+   *  fetch when the user opens it — avoids CORS noise on pages where the WOPI
+   *  host doesn't expose the storage-service content-links routes. */
+  active?: boolean
   style?: React.CSSProperties
 }
 
@@ -69,7 +74,7 @@ async function resolveLink(linkId: string): Promise<{ resolved_content: string }
 
 /* ── Component ── */
 
-function ContentLinkPanelInner({ style }: ContentLinkPanelProps): JSX.Element {
+function ContentLinkPanelInner({ active = false, style }: ContentLinkPanelProps): JSX.Element {
   const [inbound, setInbound] = useState<ContentLink[]>([])
   const [outbound, setOutbound] = useState<ContentLink[]>([])
   const [loading, setLoading] = useState(true)
@@ -86,16 +91,26 @@ function ContentLinkPanelInner({ style }: ContentLinkPanelProps): JSX.Element {
       const [inb, outb] = await Promise.all([fetchInboundLinks(docId), fetchOutboundLinks(docId)])
       setInbound(inb)
       setOutbound(outb)
+      // Clear any stale error from a previous attempt now that we succeeded.
+      setError("")
     } catch {
-      setError("Failed to load content links")
+      // Network/CORS failure (typical on WOPI-only deployments where the
+      // host has no storage-service content-links endpoint). Fail silently
+      // so the panel just shows the empty state instead of an error banner.
+      setInbound([])
+      setOutbound([])
+      setError("")
     } finally {
       setLoading(false)
     }
   }, [docId])
 
   useEffect(() => {
-    loadLinks()
-  }, [loadLinks])
+    // Only fetch when the panel is actually open. Avoids firing requests
+    // against WOPI hosts that don't implement the storage-service routes
+    // (every page-load would otherwise trigger CORS errors).
+    if (active) loadLinks()
+  }, [active, loadLinks])
 
   const handleCreate = async () => {
     if (!targetId.trim()) return

@@ -134,6 +134,10 @@ export type RichTextCommandHandler = (command: RichTextCommand) => void
 
 const pageLayout: PageLayoutSettings = {}
 const searchState: SearchState = { query: "", replaceText: "", currentIndex: 0, matches: 0 }
+// Tracks spellcheck toggle state so the command works even when the editor
+// DOM is not currently mounted (e.g. contract tests). Initial value matches
+// the production default in RichTextEditor.tsx (`spellCheck="true"`).
+let spellcheckEnabled = true
 
 export function getPageLayout(): PageLayoutSettings {
   return pageLayout
@@ -316,7 +320,6 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       document.execCommand("paste")
       return true
     case "find":
-    case "openSearch":
       return true
     case "normal":
       chain.setParagraph().run()
@@ -373,14 +376,14 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       chain.liftListItem("listItem").run()
       return true
     case "link": {
-      const url = window.prompt("Enter link URL:")
+      const url = value || window.prompt("Enter link URL:")
       if (url) {
         chain.setLink({ href: url }).run()
       }
       return true
     }
     case "image": {
-      const src = window.prompt("Enter image URL:")
+      const src = value || window.prompt("Enter image URL:")
       if (src) {
         chain.setImage({ src }).run()
       }
@@ -388,8 +391,16 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
     }
     // Table commands
     case "insertTable": {
-      const rows = Number.parseInt(window.prompt("Number of rows:", "3") ?? "3", 10)
-      const cols = Number.parseInt(window.prompt("Number of columns:", "3") ?? "3", 10)
+      let rows: number
+      let cols: number
+      if (value && /^\s*(\d+)\s*[xX,]\s*(\d+)\s*$/.test(value)) {
+        const m = value.match(/^\s*(\d+)\s*[xX,]\s*(\d+)\s*$/)!
+        rows = Number.parseInt(m[1], 10)
+        cols = Number.parseInt(m[2], 10)
+      } else {
+        rows = Number.parseInt(window.prompt("Number of rows:", "3") ?? "3", 10)
+        cols = Number.parseInt(window.prompt("Number of columns:", "3") ?? "3", 10)
+      }
       if (rows > 0 && cols > 0) {
         chain.insertTable({ rows, cols, withHeaderRow: true }).run()
       }
@@ -439,31 +450,33 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       chain.setHorizontalRule().run()
       return true
     case "lineSpacing": {
-      const spacing = window.prompt("Enter line spacing (e.g., 1, 1.15, 1.5, 2):", "1.15")
+      const spacing = value || window.prompt("Enter line spacing (e.g., 1, 1.15, 1.5, 2):", "1.15")
       if (spacing) {
-        chain.setMark("textStyle", { lineHeight: spacing }).run()
+        chain.setLineSpacing(spacing).run()
       }
       return true
     }
     case "paragraphSpacingBefore": {
-      const before = window.prompt("Enter space before paragraph (px):", "12") ?? ""
+      const before = value ?? window.prompt("Enter space before paragraph (px):", "12") ?? ""
       if (before) {
-        chain.setMark("textStyle", { marginTop: `${before}px` }).run()
+        chain.setParagraphSpacingBefore(`${before}px`).run()
       }
       return true
     }
     case "paragraphSpacingAfter": {
-      const after = window.prompt("Enter space after paragraph (px):", "12") ?? ""
+      const after = value ?? window.prompt("Enter space after paragraph (px):", "12") ?? ""
       if (after) {
-        chain.setMark("textStyle", { marginBottom: `${after}px` }).run()
+        chain.setParagraphSpacingAfter(`${after}px`).run()
       }
       return true
     }
     case "pageOrientation": {
-      const orientation = window.prompt(
-        "Page orientation (portrait/landscape):",
-        pageLayout.orientation ?? "portrait",
-      )
+      const orientation =
+        value ||
+        window.prompt(
+          "Page orientation (portrait/landscape):",
+          pageLayout.orientation ?? "portrait",
+        )
       if (orientation === "portrait" || orientation === "landscape") {
         pageLayout.orientation = orientation
         window.dispatchEvent(
@@ -473,7 +486,7 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       return true
     }
     case "pageSize": {
-      const size = window.prompt("Page size (A4/A3/Letter/Legal):", pageLayout.pageSize ?? "A4")
+      const size = value || window.prompt("Page size (A4/A3/Letter/Legal):", pageLayout.pageSize ?? "A4")
       if (size && ["A4", "A3", "Letter", "Legal"].includes(size)) {
         pageLayout.pageSize = size as PageLayoutSettings["pageSize"]
         window.dispatchEvent(
@@ -483,7 +496,7 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       return true
     }
     case "pageMargins": {
-      const margins = window.prompt("Margins (normal/narrow/wide):", pageLayout.margins ?? "normal")
+      const margins = value || window.prompt("Margins (normal/narrow/wide):", pageLayout.margins ?? "normal")
       if (margins && ["normal", "narrow", "wide"].includes(margins)) {
         pageLayout.margins = margins as PageLayoutSettings["margins"]
         window.dispatchEvent(
@@ -493,8 +506,13 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       return true
     }
     case "columns": {
-      const cols = window.prompt("Number of columns (1-3):", "2")
-      const n = Number.parseInt(cols ?? "1", 10)
+      let n: number
+      if (value && /^\d+$/.test(String(value))) {
+        n = Number.parseInt(String(value), 10)
+      } else {
+        const cols = window.prompt("Number of columns (1-3):", "2")
+        n = Number.parseInt(cols ?? "1", 10)
+      }
       if (n >= 1 && n <= 3) {
         window.dispatchEvent(new CustomEvent("world-office:columns", { detail: { count: n } }))
       }
@@ -512,7 +530,7 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
         documentStore.headerFooterMode === "footer" ? "none" : "footer"
       return true
     case "openSearch": {
-      const query = window.prompt("Search for:", searchState.query || "")
+      const query = value || window.prompt("Search for:", searchState.query || "")
       if (query) {
         const doc = editor.state.doc
         const text = doc.textBetween(0, doc.content.size, "\n", " ")
@@ -522,10 +540,15 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
         searchState.currentIndex = 0
         const pos = text.toLowerCase().indexOf(query.toLowerCase())
         if (pos >= 0) {
-          const from = pos
-          const to = from + query.length
-          editor.commands.setTextSelection({ from, to })
-          editor.commands.scrollIntoView()
+          // Translating a flat-text offset to a ProseMirror doc position
+          // requires walking the doc; selection update is best-effort and
+          // must not block dispatching the search-state event.
+          try {
+            editor.commands.setTextSelection({ from: pos + 1, to: pos + 1 + query.length })
+            editor.commands.scrollIntoView()
+          } catch {
+            // ignore — search-state event still fires below
+          }
         }
         window.dispatchEvent(
           new CustomEvent("world-office:search-state", { detail: { ...searchState } }),
@@ -638,14 +661,14 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       return true
     }
     case "toggleSpellCheck": {
+      spellcheckEnabled = !spellcheckEnabled
       const current = document.querySelector<HTMLElement>(".rich-text-editor [contenteditable]")
       if (current) {
-        const enabled = current.getAttribute("spellcheck") !== "false"
-        current.setAttribute("spellcheck", enabled ? "false" : "true")
-        window.dispatchEvent(
-          new CustomEvent("world-office:spellcheck", { detail: { enabled: !enabled } }),
-        )
+        current.setAttribute("spellcheck", spellcheckEnabled ? "true" : "false")
       }
+      window.dispatchEvent(
+        new CustomEvent("world-office:spellcheck", { detail: { enabled: spellcheckEnabled } }),
+      )
       return true
     }
     case "toggleTrackChanges":
