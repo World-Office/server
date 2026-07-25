@@ -18,6 +18,8 @@ const {
   parseWopiSession,
   openEditorInBrowser,
   waitForEditorFrame,
+  waitForBodyEditor,
+  focusBodyEditor,
   getEditorState,
   uniqueFilename,
 } = require("../helpers/ocis-helpers")
@@ -209,14 +211,14 @@ test.describe("Co-editing Infrastructure @headed", () => {
       expect(frame1).not.toBeNull()
       expect(frame2).not.toBeNull()
 
-      // Wait for canvases
+      // Wait for body editors
       await Promise.all([
-        frame1.waitForSelector("canvas", { timeout: 30000 }),
-        frame2.waitForSelector("canvas", { timeout: 30000 }),
+        waitForBodyEditor(frame1, 30000),
+        waitForBodyEditor(frame2, 30000),
       ])
 
       // User A types text
-      await frame1.click("canvas")
+      await focusBodyEditor(frame1)
       await pageA.waitForTimeout(1000)
       await frame1.keyboard.type("User A content", { delay: 50 })
       await pageA.waitForTimeout(2000)
@@ -268,18 +270,18 @@ test.describe("Co-editing Infrastructure @headed", () => {
       expect(frame2).not.toBeNull()
 
       await Promise.all([
-        frame1.waitForSelector("canvas", { timeout: 30000 }),
-        frame2.waitForSelector("canvas", { timeout: 30000 }),
+        waitForBodyEditor(frame1, 30000),
+        waitForBodyEditor(frame2, 30000),
       ])
 
       // User A types at the beginning
-      await frame1.click("canvas")
+      await focusBodyEditor(frame1)
       await pageA.waitForTimeout(500)
       await frame1.keyboard.type("User A section", { delay: 50 })
       await pageA.waitForTimeout(500)
 
       // User B types at the end (navigate to end first)
-      await frame2.click("canvas")
+      await focusBodyEditor(frame2)
       await pageB.waitForTimeout(500)
       await frame2.keyboard.press("End")
       await pageB.waitForTimeout(500)
@@ -313,7 +315,7 @@ test.describe("Co-editing Infrastructure @headed", () => {
       const uploadStatus = await uploadTestDoc(pageA, token, filename)
       expect(uploadStatus).toBe(201)
 
-      const fileId = await getFileId(pageA, token, fileId)
+      const fileId = await getFileId(pageA, token, filename)
 
       const session1 = await callAppOpen(pageA, token, fileId)
       const session2 = await callAppOpen(pageA, token, fileId)
@@ -335,13 +337,13 @@ test.describe("Co-editing Infrastructure @headed", () => {
       expect(frame2).not.toBeNull()
 
       await Promise.all([
-        frame1.waitForSelector("canvas", { timeout: 30000 }),
-        frame2.waitForSelector("canvas", { timeout: 30000 }),
+        waitForBodyEditor(frame1, 30000),
+        waitForBodyEditor(frame2, 30000),
       ])
 
       // Both users type at the same position simultaneously
-      await frame1.click("canvas")
-      await frame2.click("canvas")
+      await focusBodyEditor(frame1)
+      await focusBodyEditor(frame2)
       await pageA.waitForTimeout(500)
 
       // Type concurrently — both into the same area

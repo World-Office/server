@@ -17,6 +17,7 @@
 
 const { test, expect } = require("@playwright/test")
 const {
+  EODOCS_URL,
   loginToOCIS,
   uploadTestDoc,
   getFileId,
@@ -130,12 +131,10 @@ test.describe("WOPI Integration @headed", () => {
     expect(state.isError).toBe(false)
     expect(state.isLoading).toBe(false)
 
-    // Verify page title contains the filename
-    expect(state.title).toContain(filename.replace(".docx", ""))
-
-    // Verify the main page title is WORLDOFFICE
+    // Verify the SPA page title — documenteditor-react uses a fixed title
+    // ("World Office Document Editor"), not the filename.
     const mainTitle = await page.title()
-    expect(mainTitle).toContain("WORLDOFFICE")
+    expect(mainTitle).toContain("World Office")
 
     await page.screenshot({ path: "test-results/wopi-editor-canvas.png", fullPage: false })
   })
@@ -156,9 +155,12 @@ test.describe("WOPI Integration @headed", () => {
     expect(session.form_parameters).toBeTruthy()
     expect(session.form_parameters.access_token).toBeTruthy()
 
-    // Verify the app_url points to the Document Server
+    // Verify the app_url points to the Document Server (matches EODOCS_URL host).
+    // Default EODOCS_URL is http://localhost:8082; in live deployments this is
+    // editor.cloud.graphwiz.ai.
     const appUrl = new URL(session.app_url)
-    expect(["localhost:8082", "localhost:8083"]).toContain(appUrl.host)
+    const expectedHosts = [new URL(EODOCS_URL).host, "localhost:8082", "localhost:8083"]
+    expect(expectedHosts).toContain(appUrl.host)
 
     console.log(`App URL host: ${appUrl.host}`)
     console.log(`Method: ${session.method}`)

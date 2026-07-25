@@ -11,6 +11,7 @@
 
 const { test, expect } = require("@playwright/test")
 const {
+  OCIS_URL,
   loginToOCIS,
   uploadTestDoc,
   getFileId,
@@ -18,6 +19,8 @@ const {
   parseWopiSession,
   openEditorInBrowser,
   waitForEditorFrame,
+  waitForBodyEditor,
+  focusBodyEditor,
   getEditorState,
   uniqueFilename,
 } = require("../helpers/ocis-helpers")
@@ -83,9 +86,9 @@ test.describe("Document Editing @headed", () => {
     expect(frame).not.toBeNull()
 
     try {
-      await frame.waitForSelector("canvas", { timeout: 30000 })
+      await waitForBodyEditor(frame, 30000)
     } catch (e) {
-      test.skip(true, `Canvas did not load: ${e.message}`)
+      test.skip(true, `Editor body did not load: ${e.message}`)
       return
     }
 
@@ -146,14 +149,14 @@ test.describe("Document Editing @headed", () => {
     try {
       frame = await waitForEditorFrame(page, 30000)
       expect(frame).not.toBeNull()
-      await frame.waitForSelector("canvas", { timeout: 30000 })
+      await waitForBodyEditor(frame, 30000)
     } catch (e) {
-      test.skip(true, `Editor/canvas not ready: ${e.message}`)
+      test.skip(true, `Editor/body not ready: ${e.message}`)
       return
     }
 
-    // Click canvas to focus the editor, then type text
-    await frame.click("canvas")
+    // Focus the body editor, then type text
+    await focusBodyEditor(frame)
     await page.waitForTimeout(1000)
     await frame.keyboard.type("Test content", { delay: 50 })
     await page.waitForTimeout(1000)
@@ -215,14 +218,14 @@ test.describe("Document Editing @headed", () => {
     try {
       frame = await waitForEditorFrame(page, 30000)
       expect(frame).not.toBeNull()
-      await frame.waitForSelector("canvas", { timeout: 30000 })
+      await waitForBodyEditor(frame, 30000)
     } catch (e) {
-      test.skip(true, `Editor/canvas not ready: ${e.message}`)
+      test.skip(true, `Editor/body not ready: ${e.message}`)
       return
     }
 
     // Type some text first
-    await frame.click("canvas")
+    await focusBodyEditor(frame)
     await page.waitForTimeout(1000)
     await frame.keyboard.type("Save test", { delay: 50 })
 
@@ -290,7 +293,7 @@ test.describe("Document Editing @headed", () => {
 
       let frame = await waitForEditorFrame(page, 30000)
       expect(frame).not.toBeNull()
-      await frame.waitForSelector("canvas", { timeout: 30000 })
+      await waitForBodyEditor(frame, 30000)
 
       let state = await getEditorState(frame)
       expect(state.hasCanvas).toBe(true)
@@ -300,16 +303,12 @@ test.describe("Document Editing @headed", () => {
       // Close the editor page
       await page.close()
 
-      // Reopen — create a new page, login again, open the same file
+      // Reopen — same browser context, so session cookie is already set and
+      // the OIDC token from the first login is still valid. We navigate to
+      // OCIS_URL so the page origin matches (otherwise cross-origin fetch is
+      // blocked); the session cookie skips the login form automatically.
       const page2 = await ctx.newPage()
-
-      try {
-        token = await loginToOCIS(page2)
-      } catch (e) {
-        test.skip(true, `OCIS re-login unavailable: ${e.message}`)
-        await ctx.close()
-        return
-      }
+      await page2.goto(OCIS_URL, { waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => {})
 
       try {
         session = await callAppOpen(page2, token, fileId)
@@ -330,7 +329,7 @@ test.describe("Document Editing @headed", () => {
 
       frame = await waitForEditorFrame(page2, 30000)
       expect(frame).not.toBeNull()
-      await frame.waitForSelector("canvas", { timeout: 30000 })
+      await waitForBodyEditor(frame, 30000)
 
       state = await getEditorState(frame)
       expect(state.hasCanvas).toBe(true)
@@ -394,10 +393,10 @@ test.describe("Document Editing @headed", () => {
 
       let frame = await waitForEditorFrame(page, 30000)
       expect(frame).not.toBeNull()
-      await frame.waitForSelector("canvas", { timeout: 30000 })
+      await waitForBodyEditor(frame, 30000)
 
       // Type text and save
-      await frame.click("canvas")
+      await focusBodyEditor(frame)
       await page.waitForTimeout(1000)
       await frame.keyboard.type("Persistence test", { delay: 50 })
       await page.waitForTimeout(1000)
@@ -412,16 +411,12 @@ test.describe("Document Editing @headed", () => {
       // Close the editor
       await page.close()
 
-      // Reopen the same file
+      // Reopen the same file — same browser context, so session cookie is
+      // already set and the OIDC token from the first login is still valid.
+      // Navigate to OCIS_URL first so the page origin matches (otherwise
+      // cross-origin fetch is blocked).
       const page2 = await ctx.newPage()
-
-      try {
-        token = await loginToOCIS(page2)
-      } catch (e) {
-        test.skip(true, `OCIS re-login unavailable: ${e.message}`)
-        await ctx.close()
-        return
-      }
+      await page2.goto(OCIS_URL, { waitUntil: "domcontentloaded", timeout: 60000 }).catch(() => {})
 
       try {
         session = await callAppOpen(page2, token, fileId)
@@ -442,7 +437,7 @@ test.describe("Document Editing @headed", () => {
 
       frame = await waitForEditorFrame(page2, 30000)
       expect(frame).not.toBeNull()
-      await frame.waitForSelector("canvas", { timeout: 30000 })
+      await waitForBodyEditor(frame, 30000)
 
       state = await getEditorState(frame)
       expect(state.hasCanvas).toBe(true)
