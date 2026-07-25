@@ -32,6 +32,67 @@ export interface Participant {
   selection: Selection | null
 }
 
+// ── Spreadsheet Operation ──
+
+/**
+ * A cell reference in A1 notation (e.g., "A1", "B2", "AA10").
+ */
+export type CellRef = string
+
+/**
+ * A single cell value change.
+ */
+export interface CellValuePayload {
+  sheet_name: string
+  cell: CellRef
+  value?: string | number | boolean | null
+  formula?: string | null
+}
+
+/**
+ * A cell style change.
+ */
+export interface CellStylePayload {
+  sheet_name: string
+  cell: CellRef
+  bold?: boolean | null
+  italic?: boolean | null
+  underline?: boolean | null
+  strikethrough?: boolean | null
+  font_size?: number | null
+  font_name?: string | null
+  font_color?: string | null
+  fill_color?: string | null
+  horizontal_align?: string | null
+  number_format?: string | null
+  wrap?: boolean | null
+}
+
+/**
+ * A sheet-level operation (add, delete, rename).
+ */
+export interface SheetActionPayload {
+  action: "add" | "delete" | "rename" | "reorder"
+  sheet_name: string
+  new_name?: string | null
+  position?: number | null
+}
+
+/**
+ * Operation types for spreadsheet collaboration.
+ */
+export type SpreadsheetOperation =
+  | { action: "set_cell_value"; payload: CellValuePayload }
+  | { action: "set_cell_style"; payload: CellStylePayload }
+  | { action: "set_cell_formula"; payload: CellValuePayload }
+  | { action: "sheet_action"; payload: SheetActionPayload }
+  | { action: "insert_row"; sheet_name: string; row: number; count: number }
+  | { action: "delete_row"; sheet_name: string; row: number; count: number }
+  | { action: "insert_column"; sheet_name: string; col: number; count: number }
+  | { action: "delete_column"; sheet_name: string; col: number; count: number }
+  | { action: "merge_cells"; sheet_name: string; range: string }
+  | { action: "unmerge_cells"; sheet_name: string; range: string }
+
 // ── Presentation Operation ──
 
 export interface ShapePayload {
@@ -141,6 +202,7 @@ export type WsMessage =
   | { type: "participant_update"; update: ParticipantUpdate }
   | { type: "comment_event"; data: CommentEventData }
   | { type: "presentation_op"; operation: PresentationOperation }
+  | { type: "spreadsheet_op"; session_id: string; user_id: string; operation: SpreadsheetOperation }
 
 /**
  * Initial state sent to a new WebSocket client upon connect, containing
@@ -162,6 +224,7 @@ export type ServerMessage =
   | { type: "comment_event"; data: CommentEventData }
   | { type: "presentation_op"; operation: PresentationOperation }
   | { type: "presentation_state"; state: PresentationStateData }
+  | { type: "spreadsheet_op"; session_id: string; user_id: string; operation: SpreadsheetOperation }
 
 export interface PresentationStateData {
   slides: Array<{
@@ -263,6 +326,14 @@ export function parseServerMessage(json: string): ServerMessage | null {
   }
   if (obj.type === "presentation_state" && typeof obj.state === "object") {
     return { type: "presentation_state", state: obj.state as PresentationStateData }
+  }
+  if (obj.type === "spreadsheet_op" && typeof obj.operation === "object") {
+    return {
+      type: "spreadsheet_op",
+      session_id: obj.session_id as string,
+      user_id: obj.user_id as string,
+      operation: obj.operation as SpreadsheetOperation,
+    }
   }
 
   return null

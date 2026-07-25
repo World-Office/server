@@ -5,6 +5,11 @@ export type {
   UsePresentationCollaborationOptions,
   UsePresentationCollaborationResult,
 } from "./hooks/usePresentationCollaboration"
+export { useSpreadsheetCollaboration } from "./hooks/useSpreadsheetCollaboration"
+export type {
+  UseSpreadsheetCollaborationOptions,
+  UseSpreadsheetCollaborationResult,
+} from "./hooks/useSpreadsheetCollaboration"
 export { useConnectionStatus } from "./hooks/useConnectionStatus"
 export type { ConnectionStatusInfo } from "./hooks/useConnectionStatus"
 export { useCollaboratorPresence } from "./hooks/useCollaboratorPresence"
