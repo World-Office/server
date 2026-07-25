@@ -63,9 +63,9 @@ export const SpellcheckExtension = Extension.create<SpellcheckExtensionOptions>(
 
               const text = node.text
               const wordRegex = /\b[a-zA-Z\u00C0-\u024F]+\b/g
-              let match: RegExpExecArray | null
+              const match = wordRegex.exec(text)
 
-              while ((match = wordRegex.exec(text)) !== null) {
+              while (match !== null) {
                 const word = match[0]
                 if (!spellchecker.check(word)) {
                   const from = pos + match.index

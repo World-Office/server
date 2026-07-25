@@ -43,7 +43,7 @@ function PluginIcon({ icon, size = 24 }: { icon: string; size?: number }) {
   return <Package size={size} />
 }
 
-const SPIN_KEYFRAMES = `@keyframes marketplace-spin { to { transform: rotate(360deg); } }`
+const SPIN_KEYFRAMES = "@keyframes marketplace-spin { to { transform: rotate(360deg); } }"
 
 export function PluginMarketplace({ visible, onClose }: PluginMarketplaceProps) {
   const [catalog, setCatalog] = useState<CatalogPlugin[]>([])
@@ -248,6 +248,7 @@ export function PluginMarketplace({ visible, onClose }: PluginMarketplaceProps) 
         fill="none"
         style={{ animation: "marketplace-spin 1s linear infinite", color: colors.neutral[400] }}
       >
+        <title>Loading</title>
         <circle
           cx="12"
           cy="12"
@@ -448,8 +449,9 @@ export function PluginMarketplace({ visible, onClose }: PluginMarketplaceProps) 
                   ✓ Installed
                 </span>
               ) : (
-                <span
-                  role="button"
+                <button
+                  type="button"
+                  tabIndex={-1}
                   onClick={(e) => {
                     e.stopPropagation()
                     handleInstall(plugin)
@@ -468,7 +470,7 @@ export function PluginMarketplace({ visible, onClose }: PluginMarketplaceProps) 
                   }}
                 >
                   Install
-                </span>
+                </button>
               )}
             </div>
           </button>
@@ -628,7 +630,9 @@ export function PluginMarketplace({ visible, onClose }: PluginMarketplaceProps) 
 
   return createPortal(
     <>
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: backdrop overlay */}
       <div style={maskStyle} onClick={onClose} role="presentation" />
+      {/* biome-ignore lint/a11y/useSemanticElements: portal dialog, not native <dialog> */}
       <div style={dialogStyle} role="dialog" aria-label="Plugin Marketplace">
         <div style={headerStyle}>
           <span style={titleStyle}>{selectedPlugin ? "Plugin Details" : "Plugin Marketplace"}</span>

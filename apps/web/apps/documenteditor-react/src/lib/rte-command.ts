@@ -391,15 +391,17 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
     }
     // Table commands
     case "insertTable": {
-      let rows: number
-      let cols: number
+      let rows = 0
+      let cols = 0
       if (value && /^\s*(\d+)\s*[xX,]\s*(\d+)\s*$/.test(value)) {
-        const m = value.match(/^\s*(\d+)\s*[xX,]\s*(\d+)\s*$/)!
-        rows = Number.parseInt(m[1], 10)
-        cols = Number.parseInt(m[2], 10)
-      } else {
-        rows = Number.parseInt(window.prompt("Number of rows:", "3") ?? "3", 10)
-        cols = Number.parseInt(window.prompt("Number of columns:", "3") ?? "3", 10)
+        const m = value.match(/^\s*(\d+)\s*[xX,]\s*(\d+)\s*$/)
+        if (m) {
+          rows = Number.parseInt(m[1], 10)
+          cols = Number.parseInt(m[2], 10)
+        } else {
+          rows = Number.parseInt(window.prompt("Number of rows:", "3") ?? "3", 10)
+          cols = Number.parseInt(window.prompt("Number of columns:", "3") ?? "3", 10)
+        }
       }
       if (rows > 0 && cols > 0) {
         chain.insertTable({ rows, cols, withHeaderRow: true }).run()
@@ -486,7 +488,8 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       return true
     }
     case "pageSize": {
-      const size = value || window.prompt("Page size (A4/A3/Letter/Legal):", pageLayout.pageSize ?? "A4")
+      const size =
+        value || window.prompt("Page size (A4/A3/Letter/Legal):", pageLayout.pageSize ?? "A4")
       if (size && ["A4", "A3", "Letter", "Legal"].includes(size)) {
         pageLayout.pageSize = size as PageLayoutSettings["pageSize"]
         window.dispatchEvent(
@@ -496,7 +499,8 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       return true
     }
     case "pageMargins": {
-      const margins = value || window.prompt("Margins (normal/narrow/wide):", pageLayout.margins ?? "normal")
+      const margins =
+        value || window.prompt("Margins (normal/narrow/wide):", pageLayout.margins ?? "normal")
       if (margins && ["normal", "narrow", "wide"].includes(margins)) {
         pageLayout.margins = margins as PageLayoutSettings["margins"]
         window.dispatchEvent(

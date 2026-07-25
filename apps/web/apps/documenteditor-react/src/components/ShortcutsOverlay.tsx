@@ -43,40 +43,43 @@ export function ShortcutsOverlay({ visible, onClose }: ShortcutsOverlayProps) {
   if (!visible) return null
 
   return (
-    <div
-      className="de-shortcuts-overlay"
-      role="dialog"
-      aria-label={t("Keyboard Shortcuts")}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
-      <div className="de-shortcuts-panel">
-        <div className="de-shortcuts-header">
-          <strong>{t("Keyboard Shortcuts")}</strong>
-          <button type="button" onClick={onClose}>
-            ✕
-          </button>
-        </div>
-        <table className="de-shortcuts-table">
-          <thead>
-            <tr>
-              <th>{t("Shortcut")}</th>
-              <th>{t("Action")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {SHORTCUTS.map((s, i) => (
-              <tr key={i}>
-                <td>
-                  <kbd>{t(s.keys)}</kbd>
-                </td>
-                <td>{t(s.i18n)}</td>
+    <>
+      {/* biome-ignore lint/a11y/useKeyWithClickEvents: backdrop dismiss, Escape handled on window */}
+      <div
+        className="de-shortcuts-overlay"
+        role="dialog"
+        aria-label={t("Keyboard Shortcuts")}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose()
+        }}
+      >
+        <div className="de-shortcuts-panel">
+          <div className="de-shortcuts-header">
+            <strong>{t("Keyboard Shortcuts")}</strong>
+            <button type="button" onClick={onClose}>
+              ✕
+            </button>
+          </div>
+          <table className="de-shortcuts-table">
+            <thead>
+              <tr>
+                <th>{t("Shortcut")}</th>
+                <th>{t("Action")}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {SHORTCUTS.map((s) => (
+                <tr key={s.keys}>
+                  <td>
+                    <kbd>{t(s.keys)}</kbd>
+                  </td>
+                  <td>{t(s.i18n)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </>
   )
 }

@@ -65,6 +65,7 @@ export function CreateNewPanel({ visible }: { visible: boolean }) {
             className="de-template-card"
             onMouseEnter={() => setPreview(tpl.id)}
             onMouseLeave={() => setPreview(null)}
+            // biome-ignore lint/a11y/useSemanticElements: has onKeyDown + tabIndex for full a11y
             onClick={() => handleUseTemplate(tpl.id)}
             role="button"
             tabIndex={0}
@@ -88,6 +89,7 @@ export function CreateNewPanel({ visible }: { visible: boolean }) {
           <div className="de-template-preview-header">Preview</div>
           <div
             className="de-template-preview-body"
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: preview from trusted templates
             dangerouslySetInnerHTML={{ __html: previewHtml }}
           />
         </div>

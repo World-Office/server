@@ -1,15 +1,4 @@
-// @vitest-environment jsdom
-/**
- * Editor contract suite.
- *
- * One test per row in plan/2026-07-25-basic-formatting-spec.md §4. Each test
- * mounts a real TipTap editor with the production extension list, dispatches
- * a toolbar command via `dispatchRichTextCommand` (the actual toolbar entry
- * point), and asserts on the resulting ProseMirror document state.
- *
- * See plan/2026-07-25-basic-formatting-spec.md §2 for the test pyramid.
- */
-import { describe, expect, it, beforeAll, afterAll, beforeEach, vi } from "vitest"
+import { Editor } from "@tiptap/core"
 import Color from "@tiptap/extension-color"
 import Focus from "@tiptap/extension-focus"
 import FontFamily from "@tiptap/extension-font-family"
@@ -28,8 +17,19 @@ import TaskList from "@tiptap/extension-task-list"
 import TextAlign from "@tiptap/extension-text-align"
 import { TextStyle } from "@tiptap/extension-text-style"
 import Typography from "@tiptap/extension-typography"
-import { Editor } from "@tiptap/core"
 import StarterKit from "@tiptap/starter-kit"
+// @vitest-environment jsdom
+/**
+ * Editor contract suite.
+ *
+ * One test per row in plan/2026-07-25-basic-formatting-spec.md §4. Each test
+ * mounts a real TipTap editor with the production extension list, dispatches
+ * a toolbar command via `dispatchRichTextCommand` (the actual toolbar entry
+ * point), and asserts on the resulting ProseMirror document state.
+ *
+ * See plan/2026-07-25-basic-formatting-spec.md §2 for the test pyramid.
+ */
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest"
 
 import { CommentMark } from "../lib/comment-mark"
 import {
@@ -44,14 +44,11 @@ import { FootnoteMark } from "../lib/footnote-mark"
 import { LineSpacingExtension } from "../lib/line-spacing-extension"
 import { PageNumber } from "../lib/page-number"
 import { ParagraphBorders } from "../lib/paragraph-borders"
-import {
-  dispatchRichTextCommand,
-  setActiveRichTextEditor,
-} from "../lib/rte-command"
+import { dispatchRichTextCommand, setActiveRichTextEditor } from "../lib/rte-command"
 import { SpellcheckExtension } from "../lib/spellcheck-extension"
+import { TextDirectionExtension } from "../lib/text-direction-extension"
 import { TableOfContents } from "../lib/toc-extension"
 import { TrackDeleteMark, TrackInsertMark } from "../lib/track-changes"
-import { TextDirectionExtension } from "../lib/text-direction-extension"
 import { documentStore } from "../stores/DocumentStore"
 
 // TipTap v3.27.1 model (verified against @tiptap/core Editor.ts):
@@ -288,17 +285,13 @@ describe("Home tab — inline formatting", () => {
   it("fontFamily renders style=font-family", () => {
     selectFirstTextNode(editor)
     dispatchRichTextCommand("fontFamily", "Arial")
-    expect(normalize(editor.getHTML())).toBe(
-      '<p><span style="font-family:Arial">foo</span></p>',
-    )
+    expect(normalize(editor.getHTML())).toBe('<p><span style="font-family:Arial">foo</span></p>')
   })
 
   it("fontSize renders style=font-size (Fix #1)", () => {
     selectFirstTextNode(editor)
     dispatchRichTextCommand("fontSize", "24px")
-    expect(normalize(editor.getHTML())).toBe(
-      '<p><span style="font-size:24px">foo</span></p>',
-    )
+    expect(normalize(editor.getHTML())).toBe('<p><span style="font-size:24px">foo</span></p>')
   })
 
   it("clearFormatting strips all marks", () => {
@@ -367,9 +360,7 @@ describe("Home tab — blocks", () => {
     ["alignJustify", "justify"],
   ] as const)("align%s sets text-align style", (cmd, value) => {
     dispatchRichTextCommand(cmd)
-    expect(normalize(editor.getHTML())).toBe(
-      `<p style="text-align:${value}">foo</p>`,
-    )
+    expect(normalize(editor.getHTML())).toBe(`<p style="text-align:${value}">foo</p>`)
   })
 
   it("indent nests list item", () => {
@@ -441,7 +432,7 @@ describe("Insert tab", () => {
     selectFirstTextNode(editor)
     dispatchRichTextCommand("link", "https://x.test")
     const html = editor.getHTML()
-    expect(html).toContain('<a ')
+    expect(html).toContain("<a ")
     expect(html).toContain('href="https://x.test"')
     expect(html).toContain(">foo</a>")
   })
@@ -484,7 +475,7 @@ describe("Table commands", () => {
   beforeEach(() => {
     // Seed a 2x2 table with cursor in first body cell
     editor.commands.setContent(
-      '<table><tbody><tr><th>h1</th><th>h2</th></tr><tr><td>a</td><td>b</td></tr></tbody></table>',
+      "<table><tbody><tr><th>h1</th><th>h2</th></tr><tr><td>a</td><td>b</td></tr></tbody></table>",
     )
     // Cursor inside first body <td> ("a") — find its position
     let pos = 0
@@ -517,7 +508,7 @@ describe("Table commands", () => {
 
 describe("Layout tab", () => {
   it("pageOrientation=landscape emits event + updates state", () => {
-    const seen: any[] = []
+    const seen: unknown[] = []
     const handler = (e: Event) => seen.push((e as CustomEvent).detail)
     window.addEventListener("world-office:page-layout", handler)
     dispatchRichTextCommand("pageOrientation", "landscape")
@@ -526,7 +517,7 @@ describe("Layout tab", () => {
   })
 
   it("pageSize=A3 emits event + updates state", () => {
-    const seen: any[] = []
+    const seen: unknown[] = []
     const handler = (e: Event) => seen.push((e as CustomEvent).detail)
     window.addEventListener("world-office:page-layout", handler)
     dispatchRichTextCommand("pageSize", "A3")
@@ -535,7 +526,7 @@ describe("Layout tab", () => {
   })
 
   it("columns=2 emits columns event", () => {
-    const seen: any[] = []
+    const seen: unknown[] = []
     const handler = (e: Event) => seen.push((e as CustomEvent).detail)
     window.addEventListener("world-office:columns", handler)
     dispatchRichTextCommand("columns", "2")
@@ -544,7 +535,7 @@ describe("Layout tab", () => {
   })
 
   it("columnsReset emits count=1 event", () => {
-    const seen: any[] = []
+    const seen: unknown[] = []
     const handler = (e: Event) => seen.push((e as CustomEvent).detail)
     window.addEventListener("world-office:columns", handler)
     dispatchRichTextCommand("columnsReset")
@@ -585,9 +576,7 @@ describe("Header/Footer tab", () => {
   it("editHeader toggles headerFooterMode in store", () => {
     const before = documentStore.headerFooterMode
     dispatchRichTextCommand("editHeader")
-    expect(documentStore.headerFooterMode).toBe(
-      before === "header" ? "none" : "header",
-    )
+    expect(documentStore.headerFooterMode).toBe(before === "header" ? "none" : "header")
   })
 
   it("editFooter toggles headerFooterMode in store", () => {
@@ -648,7 +637,7 @@ describe("Forms tab", () => {
 
 describe("View tab", () => {
   it("toggleSpellCheck flips spellcheck attribute + emits event", () => {
-    const seen: any[] = []
+    const seen: unknown[] = []
     const handler = (e: Event) => seen.push((e as CustomEvent).detail)
     window.addEventListener("world-office:spellcheck", handler)
     dispatchRichTextCommand("toggleSpellCheck")
@@ -659,7 +648,7 @@ describe("View tab", () => {
 
   it("openSearch emits search-state event with match count", () => {
     editor.commands.setContent("<p>foo bar foo baz foo</p>")
-    const seen: any[] = []
+    const seen: unknown[] = []
     const handler = (e: Event) => seen.push((e as CustomEvent).detail)
     window.addEventListener("world-office:search-state", handler)
     dispatchRichTextCommand("openSearch", "foo")

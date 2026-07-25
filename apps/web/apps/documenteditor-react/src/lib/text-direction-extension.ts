@@ -50,7 +50,7 @@ export const TextDirectionExtension = Extension.create<TextDirectionOptions>({
   },
 
   addCommands() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: TipTap command shape
     const cmds: Record<string, (...args: any[]) => any> = {
       setTextDirection:
         (direction: "ltr" | "rtl") =>
