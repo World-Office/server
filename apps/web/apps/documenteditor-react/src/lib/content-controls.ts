@@ -4,6 +4,7 @@ export const PlainTextControl = Node.create({
   name: "plainTextControl",
   group: "inline",
   inline: true,
+  content: "inline*",
   draggable: true,
 
   addAttributes() {

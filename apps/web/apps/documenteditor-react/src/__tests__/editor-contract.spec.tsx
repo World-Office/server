@@ -597,33 +597,32 @@ describe("Header/Footer tab", () => {
 // ----------------------------------------------------------------------
 
 describe("Forms tab", () => {
-  // TODO: All four content-control extensions declare content="" (leaf nodes)
-  // but dispatch inserts child content, triggering "Content hole not allowed
-  // in a leaf node spec" at serialization time. The extensions need to
-  // either declare `content: "inline*"` or render via a NodeView. Tracked
-  // separately from the basic-formatting spec.
-  it.skip("insertPlainTextControl inserts content control span", () => {
+  // Note: PlainTextControl needed `content: "inline*"` added so its content
+  // hole (the `0` in renderHTML) accepts inline children. The three atom
+  // controls (Checkbox/Dropdown/DatePicker) work because atom nodes ignore
+  // child content during parse.
+  it("insertPlainTextControl inserts content control span", () => {
     editor.commands.setTextSelection(4)
     dispatchRichTextCommand("insertPlainTextControl")
     const html = editor.getHTML()
     expect(html).toContain('data-content-control="plain-text"')
   })
 
-  it.skip("insertCheckboxControl inserts checkbox control", () => {
+  it("insertCheckboxControl inserts checkbox control", () => {
     editor.commands.setTextSelection(4)
     dispatchRichTextCommand("insertCheckboxControl")
     const html = editor.getHTML()
     expect(html).toContain('data-content-control="checkbox"')
   })
 
-  it.skip("insertDropdownControl inserts dropdown control", () => {
+  it("insertDropdownControl inserts dropdown control", () => {
     editor.commands.setTextSelection(4)
     dispatchRichTextCommand("insertDropdownControl")
     const html = editor.getHTML()
     expect(html).toContain('data-content-control="dropdown"')
   })
 
-  it.skip("insertDatePickerControl inserts date-picker control", () => {
+  it("insertDatePickerControl inserts date-picker control", () => {
     editor.commands.setTextSelection(4)
     dispatchRichTextCommand("insertDatePickerControl")
     const html = editor.getHTML()
