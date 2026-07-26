@@ -27,6 +27,8 @@ export { DropdownMenu, type DropdownMenuProps, type DropdownMenuItem } from "./D
 export { FlyoutPanel, type FlyoutPanelProps, type FlyoutPosition } from "./FlyoutPanel"
 export { SpinBox, type SpinBoxProps } from "./SpinBox"
 export { ContextMenu, type ContextMenuProps, type ContextMenuItem } from "./ContextMenu"
+export { CloudStatus, type CloudStatusProps } from "./CloudStatus"
+
 export {
   ExportWizard,
   type ExportWizardProps,

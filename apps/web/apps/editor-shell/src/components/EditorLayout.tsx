@@ -33,6 +33,7 @@ interface EditorLayoutProps {
   notFound?: boolean
   isAdmin?: boolean
   isCollaboration?: boolean
+  isWopi?: boolean
   showPluginManager?: boolean
   onClosePluginManager?: () => void
 }
@@ -47,6 +48,7 @@ export function EditorLayout({
   notFound = false,
   isAdmin = false,
   isCollaboration = false,
+  isWopi = false,
   showPluginManager = false,
   onClosePluginManager,
 }: EditorLayoutProps) {
@@ -141,7 +143,12 @@ export function EditorLayout({
         )}
       </main>
       <footer className="editor-statusbar">
-        <StatusBar />
+        <StatusBar
+          isWopi={isWopi}
+          connectionStatus={isCollaboration ? "connected" : undefined}
+          isModified={false}
+          userCount={isCollaboration ? 1 : 0}
+        />
       </footer>
 
       <ShortcutsOverlay visible={showShortcuts} onClose={() => setShowShortcuts(false)} />

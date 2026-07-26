@@ -1,4 +1,4 @@
-import type { RibbonButtonSpec, RibbonContext, RibbonTabSpec } from "../types"
+import type { RibbonButtonSpec, RibbonContext, RibbonGroupSpec, RibbonTabSpec } from "../types"
 
 /**
  * Cloud integration buttons for the ribbon.
@@ -26,19 +26,58 @@ const cloudShareButton: RibbonButtonSpec = {
   visible: (ctx: RibbonContext) => ctx.isWopi,
 }
 
-const cloudStatusIndicator: RibbonButtonSpec = {
-  id: "cloud-status",
+const cloudDownloadButton: RibbonButtonSpec = {
+  id: "cloud-download",
   type: "button",
-  icon: "Cloud",
-  label: "Online",
-  tooltip: "Collaboration status",
-  command: "",
+  icon: "Download",
+  label: "Download",
+  tooltip: "Download document",
+  command: "download",
+  visible: (ctx: RibbonContext) => ctx.isWopi,
+}
+
+const cloudHistoryButton: RibbonButtonSpec = {
+  id: "cloud-history",
+  type: "button",
+  icon: "Clock",
+  label: "History",
+  tooltip: "Version history",
+  command: "openHistory",
   visible: (ctx: RibbonContext) => ctx.isWopi,
 }
 
 /**
+ * Cloud service info group — shows current user, connection info.
+ * Visible only when WOPI is active.
+ */
+const cloudInfoGroup: RibbonGroupSpec = {
+  id: "cloud-info",
+  label: "Session",
+  controls: [
+    {
+      id: "cloud-user",
+      type: "button",
+      icon: "User",
+      label: "",
+      tooltip: "Current user",
+      command: "",
+      visible: (ctx: RibbonContext) => ctx.isWopi,
+    } satisfies RibbonButtonSpec,
+    {
+      id: "cloud-collab-count",
+      type: "button",
+      icon: "Users",
+      label: "",
+      tooltip: "Connected users",
+      command: "",
+      visible: (ctx: RibbonContext) => ctx.isWopi,
+    } satisfies RibbonButtonSpec,
+  ],
+}
+
+/**
  * Collaboration tab shown only when WOPI is active.
- * Contains save, share, and status controls.
+ * Contains save, share, download, history, and status controls.
  */
 export const cloudTab: RibbonTabSpec = {
   id: "cloud",
@@ -48,13 +87,15 @@ export const cloudTab: RibbonTabSpec = {
     {
       id: "cloud-file",
       label: "Cloud",
-      controls: [cloudSaveButton, cloudShareButton, cloudStatusIndicator],
+      controls: [cloudSaveButton, cloudShareButton, cloudDownloadButton, cloudHistoryButton],
     },
+    cloudInfoGroup,
   ],
 }
 
 /**
- * Cloud-aware File tab with save/share actions.
+ * Cloud-aware File group with save/share actions for the File menu.
+ * Returns an empty array if WOPI is not active.
  */
 export function getCloudFileGroup(ctx: RibbonContext): RibbonButtonSpec[] {
   if (!ctx.isWopi) return []
@@ -64,8 +105,8 @@ export function getCloudFileGroup(ctx: RibbonContext): RibbonButtonSpec[] {
       id: "file-save-cloud",
       type: "button",
       icon: "Save",
-      label: "Save",
-      tooltip: "Save to cloud",
+      label: "Save to Cloud",
+      tooltip: "Save document to cloud storage",
       command: "save",
       enabled: (c: RibbonContext) => c.isModified && !c.isSaving,
     },
@@ -76,6 +117,14 @@ export function getCloudFileGroup(ctx: RibbonContext): RibbonButtonSpec[] {
       label: "Download",
       tooltip: "Download document",
       command: "download",
+    },
+    {
+      id: "file-save-copy",
+      type: "button",
+      icon: "Copy",
+      label: "Save Copy to Cloud",
+      tooltip: "Save a copy to cloud storage",
+      command: "saveCopy",
     },
   ]
 }
