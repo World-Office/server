@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest"
 import {
-  type EditOperation,
-  type InsertOperation,
-  type DeleteOperation,
-  type CursorPosition,
-  type Participant,
   type CreateSessionResponse,
-  type JoinSessionResponse,
+  type CursorPosition,
+  type DeleteOperation,
+  type EditOperation,
   type EditorSession,
-  parseMessage,
-  createInsertOp,
+  type InsertOperation,
+  type JoinSessionResponse,
+  type Participant,
   createDeleteOp,
+  createInsertOp,
   isRemoteMessage,
+  parseMessage,
 } from "../src/protocol"
 
 describe("EditOperation types", () => {
@@ -97,8 +97,8 @@ describe("parseMessage", () => {
     })
     const result = parseMessage(json)
     expect(result).not.toBeNull()
-    expect(result!.type).toBe("insert")
-    expect(result!.content).toBe("Hi")
+    expect(result?.type).toBe("insert")
+    expect(result?.content).toBe("Hi")
   })
 
   it("should parse a valid delete message", () => {
@@ -114,8 +114,8 @@ describe("parseMessage", () => {
     })
     const result = parseMessage(json)
     expect(result).not.toBeNull()
-    expect(result!.type).toBe("delete")
-    expect(result!.length).toBe(2)
+    expect(result?.type).toBe("delete")
+    expect(result?.length).toBe(2)
   })
 
   it("should return null for invalid JSON", () => {

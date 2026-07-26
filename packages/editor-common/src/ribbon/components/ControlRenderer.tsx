@@ -206,6 +206,7 @@ function DropdownControl({
           {spec.items.map((item, idx) =>
             item.separator ? (
               <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: Static menu, order never changes
                 key={`sep-${idx}`}
                 style={{ height: 1, background: "#e0e0e0", margin: "4px 8px" }}
               />
@@ -319,6 +320,7 @@ function SplitButtonControl({
           {spec.items.map((item, idx) =>
             item.separator ? (
               <div
+                // biome-ignore lint/suspicious/noArrayIndexKey: Static menu, order never changes
                 key={`sep-${idx}`}
                 style={{ height: 1, background: "#e0e0e0", margin: "4px 8px" }}
               />

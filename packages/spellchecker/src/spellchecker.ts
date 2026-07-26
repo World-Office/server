@@ -29,7 +29,10 @@ export class SpellChecker {
     // nspell's runtime accepts strings natively (it calls `.toString('utf8')`
     // on Buffers and returns strings unchanged). The @types/nspell typings
     // only declare BufferSource, so cast through unknown.
-    this.nspellInstance = nspell(affInput as unknown as BufferSource, dicInput as unknown as BufferSource)
+    this.nspellInstance = nspell(
+      affInput as unknown as BufferSource,
+      dicInput as unknown as BufferSource,
+    )
   }
 
   /** Check if a word is correctly spelled. */

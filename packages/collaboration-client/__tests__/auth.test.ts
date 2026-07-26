@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { AuthClient } from "../src/auth"
 
 describe("AuthClient", () => {
@@ -49,7 +49,7 @@ describe("AuthClient", () => {
       })
 
       await expect(auth.createSession({ userId: "", username: "" })).rejects.toThrow(
-        "Auth error 400: user_id and username are required"
+        "Auth error 400: user_id and username are required",
       )
     })
   })
@@ -84,7 +84,7 @@ describe("AuthClient", () => {
       })
 
       await expect(auth.refreshToken("expired")).rejects.toThrow(
-        "Auth error 401: Invalid or expired refresh token"
+        "Auth error 401: Invalid or expired refresh token",
       )
     })
   })

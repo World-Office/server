@@ -1657,7 +1657,7 @@ const ObservedSlideCanvas = observer(
 			e.preventDefault();
 			setIsDragOver(false);
 			const file = e.dataTransfer.files?.[0];
-			if (file && file.type.startsWith("image/")) {
+			if (file?.type.startsWith("image/")) {
 				presentationStore.addImageToSlide(presentationStore.currentSlide, file);
 			}
 		}, []);

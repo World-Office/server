@@ -1,5 +1,5 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
-import { renderHook, act } from "@testing-library/react"
+import { act, renderHook } from "@testing-library/react"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { useCollaboration } from "../src/hooks/useCollaboration"
 
 function createMockWebSocket() {
@@ -23,8 +23,13 @@ function createMockWebSocket() {
 
   return {
     mockWs,
-    simulateOpen() { mockWs.readyState = 1; onopen?.() },
-    simulateMessage(data: string) { onmessage?.(new MessageEvent("message", { data })) },
+    simulateOpen() {
+      mockWs.readyState = 1
+      onopen?.()
+    },
+    simulateMessage(data: string) {
+      onmessage?.(new MessageEvent("message", { data }))
+    },
     simulateClose(code = 1000, reason = "") {
       mockWs.readyState = 3
       onclose?.(new CloseEvent("close", { code, reason, wasClean: code === 1000 }))
@@ -36,14 +41,20 @@ describe("useCollaboration", () => {
   let wsHelper: ReturnType<typeof createMockWebSocket>
 
   beforeEach(() => {
-    vi.stubGlobal("WebSocket", vi.fn().mockImplementation(() => {
-      wsHelper = createMockWebSocket()
-      return wsHelper.mockWs
-    }))
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ session_id: "test-session" }),
-    }))
+    vi.stubGlobal(
+      "WebSocket",
+      vi.fn().mockImplementation(() => {
+        wsHelper = createMockWebSocket()
+        return wsHelper.mockWs
+      }),
+    )
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ session_id: "test-session" }),
+      }),
+    )
   })
 
   afterEach(() => {
@@ -56,7 +67,7 @@ describe("useCollaboration", () => {
         wsUrl: "ws://localhost:8004/ws/test",
         userId: "u1",
         collaborationStore: null,
-      })
+      }),
     )
 
     expect(result.current.connectionState).toBe("disconnected")
@@ -68,7 +79,7 @@ describe("useCollaboration", () => {
         wsUrl: "ws://localhost:8004/ws/test",
         userId: "u1",
         collaborationStore: null,
-      })
+      }),
     )
 
     await act(async () => {
@@ -84,7 +95,7 @@ describe("useCollaboration", () => {
         wsUrl: "ws://localhost:8004/ws/test",
         userId: "u1",
         collaborationStore: null,
-      })
+      }),
     )
 
     await act(async () => {
@@ -101,7 +112,7 @@ describe("useCollaboration", () => {
         wsUrl: "ws://localhost:8004/ws/test",
         userId: "u1",
         collaborationStore: null,
-      })
+      }),
     )
 
     await act(async () => {
@@ -127,7 +138,7 @@ describe("useCollaboration", () => {
         wsUrl: "ws://localhost:8004/ws/test",
         userId: "u1",
         collaborationStore: mockStore,
-      })
+      }),
     )
 
     await act(async () => {
@@ -144,7 +155,7 @@ describe("useCollaboration", () => {
         wsUrl: "ws://localhost:8004/ws/test",
         userId: "u1",
         collaborationStore: null,
-      })
+      }),
     )
 
     await act(async () => {
@@ -165,25 +176,27 @@ describe("useCollaboration", () => {
         userId: "u1",
         collaborationStore: null,
         onRemoteOperation: onRemoteOp,
-      })
+      }),
     )
 
     await act(async () => {
       await result.current.connect()
       wsHelper.simulateOpen()
-      wsHelper.simulateMessage(JSON.stringify({
-        type: "edit",
-        operation: {
-          session_id: "test",
-          user_id: "u2",
-          revision: 0,
-          type: "insert",
-          position: 0,
-          length: 0,
-          content: "remote",
-          timestamp: "2026-04-18T00:00:00+00:00",
-        },
-      }))
+      wsHelper.simulateMessage(
+        JSON.stringify({
+          type: "edit",
+          operation: {
+            session_id: "test",
+            user_id: "u2",
+            revision: 0,
+            type: "insert",
+            position: 0,
+            length: 0,
+            content: "remote",
+            timestamp: "2026-04-18T00:00:00+00:00",
+          },
+        }),
+      )
     })
 
     expect(onRemoteOp).toHaveBeenCalledOnce()

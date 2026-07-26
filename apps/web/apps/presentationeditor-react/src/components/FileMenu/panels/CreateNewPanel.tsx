@@ -10,9 +10,24 @@ interface TemplateInfo {
 
 const TEMPLATES: TemplateInfo[] = [
 	{ id: "blank", name: "Blank", description: "Empty presentation", icon: "📄" },
-	{ id: "pitch-deck", name: "Pitch Deck", description: "Startup presentation template", icon: "🚀" },
-	{ id: "business-review", name: "Business Review", description: "Quarterly review template", icon: "📊" },
-	{ id: "education", name: "Education", description: "Educational presentation", icon: "🎓" },
+	{
+		id: "pitch-deck",
+		name: "Pitch Deck",
+		description: "Startup presentation template",
+		icon: "🚀",
+	},
+	{
+		id: "business-review",
+		name: "Business Review",
+		description: "Quarterly review template",
+		icon: "📊",
+	},
+	{
+		id: "education",
+		name: "Education",
+		description: "Educational presentation",
+		icon: "🎓",
+	},
 ];
 
 export function CreateNewPanel({ visible }: { visible: boolean }) {
@@ -34,7 +49,11 @@ export function CreateNewPanel({ visible }: { visible: boolean }) {
 	return (
 		<div
 			className="prese-file-menu-content-box"
-			style={{ display: visible ? "block" : "none", padding: "0", flexDirection: "column" }}
+			style={{
+				display: visible ? "block" : "none",
+				padding: "0",
+				flexDirection: "column",
+			}}
 		>
 			<div className="prese-file-menu-header">Create New</div>
 			<div className="prese-file-menu-formats">
@@ -45,6 +64,7 @@ export function CreateNewPanel({ visible }: { visible: boolean }) {
 						onMouseEnter={() => setPreview(tpl.id)}
 						onMouseLeave={() => setPreview(null)}
 						onClick={() => handleUseTemplate(tpl.id)}
+						// biome-ignore lint/a11y/useSemanticElements: Template card needs div for layout
 						role="button"
 						tabIndex={0}
 						onKeyDown={(e) => {

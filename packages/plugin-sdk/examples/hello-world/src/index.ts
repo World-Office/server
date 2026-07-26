@@ -1,4 +1,4 @@
-import type { WorldOfficePlugin, PluginContext } from "@world-office/plugin-sdk"
+import type { PluginContext, WorldOfficePlugin } from "@world-office/plugin-sdk"
 
 const plugin: WorldOfficePlugin = {
   id: "hello-world",

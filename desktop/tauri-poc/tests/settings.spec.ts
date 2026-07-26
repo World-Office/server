@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { describe, expect, it } from "vitest"
 
 describe("Settings API", () => {
   it("get_settings returns default settings when none saved", () => {

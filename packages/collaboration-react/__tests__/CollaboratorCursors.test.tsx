@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest"
 import { render, screen } from "@testing-library/react"
+import { describe, expect, it } from "vitest"
 import { CollaboratorCursors } from "../src/components/CollaboratorCursors"
 
 describe("CollaboratorCursors", () => {
@@ -17,13 +17,7 @@ describe("CollaboratorCursors", () => {
       ["user-3", "Carol"],
     ])
 
-    render(
-      <CollaboratorCursors
-        cursors={cursors}
-        userColors={userColors}
-        userNames={userNames}
-      />
-    )
+    render(<CollaboratorCursors cursors={cursors} userColors={userColors} userNames={userNames} />)
 
     expect(screen.getByText("Bob")).toBeDefined()
     expect(screen.getByText("Carol")).toBeDefined()
@@ -34,13 +28,7 @@ describe("CollaboratorCursors", () => {
     const userColors = new Map([["user-2", "#3498DB"]])
     const userNames = new Map([["user-2", "Bob"]])
 
-    render(
-      <CollaboratorCursors
-        cursors={cursors}
-        userColors={userColors}
-        userNames={userNames}
-      />
-    )
+    render(<CollaboratorCursors cursors={cursors} userColors={userColors} userNames={userNames} />)
 
     const cursor = screen.getByTestId("cursor-user-2")
     expect(cursor.style.left).toBe("150px")
@@ -49,11 +37,7 @@ describe("CollaboratorCursors", () => {
 
   it("should render nothing when no cursors", () => {
     const { container } = render(
-      <CollaboratorCursors
-        cursors={new Map()}
-        userColors={new Map()}
-        userNames={new Map()}
-      />
+      <CollaboratorCursors cursors={new Map()} userColors={new Map()} userNames={new Map()} />,
     )
     expect(container.firstChild).toBeNull()
   })

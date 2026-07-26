@@ -1,7 +1,7 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
-import { WebSocketManager } from "../src/client"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { AuthClient } from "../src/auth"
-import { parseMessage, createInsertOp, createDeleteOp, isRemoteMessage } from "../src/protocol"
+import { WebSocketManager } from "../src/client"
+import { createDeleteOp, createInsertOp, isRemoteMessage, parseMessage } from "../src/protocol"
 
 /** Polyfill CloseEvent for Node.js test environment. */
 class CloseEvent extends Event {
@@ -23,7 +23,13 @@ class CloseEvent extends Event {
 describe("Integration: full collaboration lifecycle", () => {
   let fetchMock: ReturnType<typeof vi.fn>
   let wsHelper: {
-    mockWs: { readyState: number; send: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn>; addEventListener: ReturnType<typeof vi.fn>; removeEventListener: ReturnType<typeof vi.fn> }
+    mockWs: {
+      readyState: number
+      send: ReturnType<typeof vi.fn>
+      close: ReturnType<typeof vi.fn>
+      addEventListener: ReturnType<typeof vi.fn>
+      removeEventListener: ReturnType<typeof vi.fn>
+    }
     simulateOpen: () => void
     simulateMessage: (data: string) => void
     simulateClose: (code?: number, reason?: string) => void
@@ -32,10 +38,13 @@ describe("Integration: full collaboration lifecycle", () => {
   beforeEach(() => {
     fetchMock = vi.fn()
     vi.stubGlobal("fetch", fetchMock)
-    vi.stubGlobal("WebSocket", vi.fn().mockImplementation(() => {
-      wsHelper = createMockWebSocket()
-      return wsHelper.mockWs
-    }))
+    vi.stubGlobal(
+      "WebSocket",
+      vi.fn().mockImplementation(() => {
+        wsHelper = createMockWebSocket()
+        return wsHelper.mockWs
+      }),
+    )
   })
 
   afterEach(() => {
@@ -63,8 +72,13 @@ describe("Integration: full collaboration lifecycle", () => {
 
     return {
       mockWs,
-      simulateOpen() { mockWs.readyState = 1; onopen?.() },
-      simulateMessage(data: string) { onmessage?.(new MessageEvent("message", { data })) },
+      simulateOpen() {
+        mockWs.readyState = 1
+        onopen?.()
+      },
+      simulateMessage(data: string) {
+        onmessage?.(new MessageEvent("message", { data }))
+      },
       simulateClose(code = 1000, reason = "") {
         mockWs.readyState = 3
         onclose?.(new CloseEvent("close", { code, reason, wasClean: code === 1000 }))
@@ -111,19 +125,21 @@ describe("Integration: full collaboration lifecycle", () => {
     expect(sent.session_id).toBe("sess-integration")
 
     // 4. Receive a remote operation
-    wsHelper.simulateMessage(JSON.stringify({
-      type: "edit",
-      operation: {
-        session_id: "sess-integration",
-        user_id: "bob",
-        revision: 0,
-        type: "insert",
-        position: 15,
-        length: 0,
-        content: "Hi from Bob",
-        timestamp: "2026-04-18T00:00:00+00:00",
-      },
-    }))
+    wsHelper.simulateMessage(
+      JSON.stringify({
+        type: "edit",
+        operation: {
+          session_id: "sess-integration",
+          user_id: "bob",
+          revision: 0,
+          type: "insert",
+          position: 15,
+          length: 0,
+          content: "Hi from Bob",
+          timestamp: "2026-04-18T00:00:00+00:00",
+        },
+      }),
+    )
 
     expect(receivedOps).toHaveLength(1)
     const received = receivedOps[0] as { type: string; user_id: string; content: string }

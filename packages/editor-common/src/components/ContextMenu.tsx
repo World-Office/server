@@ -114,7 +114,14 @@ function ContextMenuItemRow({
             }}
           >
             {item.checked && (
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" role="img" aria-label="Checked">
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 10 10"
+                fill="none"
+                role="img"
+                aria-label="Checked"
+              >
                 <title>Checked</title>
                 <path
                   d="M2 5L4 7L8 3"
@@ -262,6 +269,7 @@ function MenuItems({
         if (item.separator) {
           return (
             <li
+              // biome-ignore lint/suspicious/noArrayIndexKey: Static menu, order never changes
               key={`sep-${idx}`}
               style={{
                 height: 1,

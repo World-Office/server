@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest"
 import { render, screen } from "@testing-library/react"
-import { CollaboratorList } from "../src/components/CollaboratorList"
 import type { CollabUser } from "@world-office/editor-stores"
+import { describe, expect, it } from "vitest"
+import { CollaboratorList } from "../src/components/CollaboratorList"
 
 const mockUsers: CollabUser[] = [
   { id: "u1", name: "Alice", color: "#E74C3C", isCurrentUser: true },

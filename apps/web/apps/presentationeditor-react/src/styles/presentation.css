@@ -52,8 +52,7 @@ body,
 	padding: 0;
 }
 
-.viewport-ref {
-}
+/* .viewport-ref placeholder — reserved for future use */
 
 #editor_sdk {
 	width: 100%;

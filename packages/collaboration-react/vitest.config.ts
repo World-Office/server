@@ -1,12 +1,17 @@
-import { defineConfig } from "vitest/config"
 import react from "@vitejs/plugin-react"
+import { defineConfig } from "vitest/config"
 
 export default defineConfig({
   plugins: [react()],
   test: {
     globals: true,
     environment: "jsdom",
-    include: ["src/**/*.test.ts", "src/**/*.test.tsx", "__tests__/**/*.test.ts", "__tests__/**/*.test.tsx"],
+    include: [
+      "src/**/*.test.ts",
+      "src/**/*.test.tsx",
+      "__tests__/**/*.test.ts",
+      "__tests__/**/*.test.tsx",
+    ],
     reporters: process.env.CI ? ["default", "junit"] : ["default"],
     outputFile: process.env.CI ? { junit: "./coverage/junit.xml" } : undefined,
     coverage: {
@@ -14,7 +19,13 @@ export default defineConfig({
       reporter: ["text", "json", "lcov", "html"],
       reportsDirectory: "./coverage",
       include: ["src/**/*.ts", "src/**/*.tsx"],
-      exclude: ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/*.d.ts", "src/index.ts", "src/types/**"],
+      exclude: [
+        "src/**/*.test.ts",
+        "src/**/*.test.tsx",
+        "src/**/*.d.ts",
+        "src/index.ts",
+        "src/types/**",
+      ],
       thresholds: {
         branches: 0,
         functions: 0,

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { WebSocketManager, type WebSocketManagerEvents } from "../src/client"
 
 /** Polyfill CloseEvent for Node.js test environment. */
@@ -61,10 +61,13 @@ describe("WebSocketManager", () => {
   let wsHelper: ReturnType<typeof createMockWebSocket>
 
   beforeEach(() => {
-    vi.stubGlobal("WebSocket", vi.fn().mockImplementation(() => {
-      wsHelper = createMockWebSocket()
-      return wsHelper.mockWs
-    }))
+    vi.stubGlobal(
+      "WebSocket",
+      vi.fn().mockImplementation(() => {
+        wsHelper = createMockWebSocket()
+        return wsHelper.mockWs
+      }),
+    )
     manager = new WebSocketManager({ url: "ws://localhost:8004/ws/test-session", userId: "user-1" })
   })
 
@@ -150,19 +153,21 @@ describe("WebSocketManager", () => {
       manager.connect()
       wsHelper.simulateOpen()
 
-      wsHelper.simulateMessage(JSON.stringify({
-        type: "edit",
-        operation: {
-          session_id: "test-session",
-          user_id: "user-2",
-          revision: 0,
-          type: "insert",
-          position: 0,
-          length: 0,
-          content: "remote",
-          timestamp: "2026-04-18T00:00:00+00:00",
-        },
-      }))
+      wsHelper.simulateMessage(
+        JSON.stringify({
+          type: "edit",
+          operation: {
+            session_id: "test-session",
+            user_id: "user-2",
+            revision: 0,
+            type: "insert",
+            position: 0,
+            length: 0,
+            content: "remote",
+            timestamp: "2026-04-18T00:00:00+00:00",
+          },
+        }),
+      )
 
       expect(onOp).toHaveBeenCalledOnce()
       expect(onOp.mock.calls[0][0].type).toBe("insert")
@@ -175,19 +180,21 @@ describe("WebSocketManager", () => {
       manager.connect()
       wsHelper.simulateOpen()
 
-      wsHelper.simulateMessage(JSON.stringify({
-        type: "edit",
-        operation: {
-          session_id: "test-session",
-          user_id: "user-1",
-          revision: 0,
-          type: "insert",
-          position: 0,
-          length: 0,
-          content: "own",
-          timestamp: "2026-04-18T00:00:00+00:00",
-        },
-      }))
+      wsHelper.simulateMessage(
+        JSON.stringify({
+          type: "edit",
+          operation: {
+            session_id: "test-session",
+            user_id: "user-1",
+            revision: 0,
+            type: "insert",
+            position: 0,
+            length: 0,
+            content: "own",
+            timestamp: "2026-04-18T00:00:00+00:00",
+          },
+        }),
+      )
 
       expect(onOp).not.toHaveBeenCalled()
     })

@@ -13,17 +13,25 @@ export function scaffoldPlugin(manifest: PluginManifest, outputDir: string): voi
 
   fs.writeFileSync(path.join(srcDir, "index.ts"), generatePluginSource(manifest), "utf-8")
   fs.writeFileSync(path.join(outPath, "manifest.json"), JSON.stringify(manifest, null, 2), "utf-8")
-  fs.writeFileSync(path.join(outPath, "package.json"), JSON.stringify(generatePackageJson(manifest), null, 2), "utf-8")
-  fs.writeFileSync(path.join(outPath, "tsconfig.json"), JSON.stringify(generateTsConfig(), null, 2), "utf-8")
+  fs.writeFileSync(
+    path.join(outPath, "package.json"),
+    JSON.stringify(generatePackageJson(manifest), null, 2),
+    "utf-8",
+  )
+  fs.writeFileSync(
+    path.join(outPath, "tsconfig.json"),
+    JSON.stringify(generateTsConfig(), null, 2),
+    "utf-8",
+  )
   fs.writeFileSync(path.join(outPath, "README.md"), generateReadme(manifest), "utf-8")
 
   const relPath = path.relative(process.cwd(), outPath)
   console.log(`\n  ✅ Plugin "${manifest.name}" scaffolded at ${outPath}`)
-  console.log(`\n  Next steps:`)
+  console.log("\n  Next steps:")
   console.log(`    cd ${relPath}`)
-  console.log(`    npm install`)
-  console.log(`    npm run build`)
-  console.log(`    Then load the plugin in World Office via the Plugin Manager.\n`)
+  console.log("    npm install")
+  console.log("    npm run build")
+  console.log("    Then load the plugin in World Office via the Plugin Manager.\n")
 }
 
 function generatePluginSource(manifest: PluginManifest): string {
@@ -119,7 +127,7 @@ function generateTsConfig(): Record<string, unknown> {
 function generateReadme(manifest: PluginManifest): string {
   return `# ${manifest.name}
 
-${manifest.description ?? `A World Office plugin.`}
+${manifest.description ?? "A World Office plugin."}
 
 ## Installation
 
