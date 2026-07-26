@@ -1,5 +1,6 @@
-// Conditional formatting on top of Univer's cell API.
-// Native conditional formatting requires @univerjs/sheets-conditional-format (not yet integrated).
+// Conditional formatting using in-memory rule storage + cell API.
+// Rules are applied programmatically via Univer's cell style setters.
+// Native @univerjs/sheets-conditional-format UI is not yet wired.
 
 import type { UniverRangeFacade } from "./univer-command";
 

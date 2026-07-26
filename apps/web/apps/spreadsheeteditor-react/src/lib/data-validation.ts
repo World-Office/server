@@ -1,5 +1,6 @@
-// Data validation on top of Univer's cell API.
-// Native data validation requires @univerjs/sheets-data-validation (not yet integrated).
+// Data validation using in-memory rule storage.
+// Rules are applied programmatically; native @univerjs/sheets-data-validation UI
+// (dropdown menus, input messages) is not yet wired.
 
 import type { UniverAPIFacade, UniverRangeFacade } from "./univer-command";
 
