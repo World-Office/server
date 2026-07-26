@@ -104,7 +104,8 @@ async function getHealthStatus() {
       OCIS_DOMAIN: process.env.OCIS_DOMAIN || '',
       DOCUMENT_SERVER_DOMAIN: process.env.DOCUMENT_SERVER_DOMAIN || ''
     },
-    version: VERSION
+    version: VERSION,
+    timestamp: new Date().toISOString()
   };
 }
 

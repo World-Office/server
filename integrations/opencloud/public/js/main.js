@@ -13,69 +13,209 @@
     return btoa(String.fromCharCode.apply(null, array));
   }
 
-  // ─── Dashboard: Health Polling ───────────────────────────────────────
+  // ─── Utility: Format relative time ─────────────────────────────────
+
+  function formatRelativeTime(isoString) {
+    const now = Date.now();
+    const then = new Date(isoString).getTime();
+    const diffSec = Math.floor((now - then) / 1000);
+
+    if (diffSec < 5) return 'just now';
+    if (diffSec < 60) return diffSec + 's ago';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return diffMin + 'm ago';
+    return new Date(isoString).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // ─── Utility: Format timestamp ─────────────────────────────────────
+
+  function formatTimestamp(isoString) {
+    try {
+      const d = new Date(isoString);
+      return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    } catch {
+      return '—';
+    }
+  }
+
+  // ─── Dashboard: Full Health Polling ─────────────────────────────────
 
   function initDashboardHealthPolling() {
     const banner = document.getElementById('status-banner');
     const grid = document.getElementById('services-grid');
+    const insightRow = document.getElementById('insight-row');
     if (!banner || !grid) return;
+
+    let countdown = 10;
+    const countdownEl = document.getElementById('refresh-countdown');
+
+    function updateCountdown() {
+      countdown--;
+      if (countdown <= 0) countdown = 10;
+      if (countdownEl) {
+        countdownEl.textContent = countdown;
+        if (countdown <= 3) countdownEl.classList.add('active');
+        else countdownEl.classList.remove('active');
+      }
+    }
+
+    // Update countdown every second
+    setInterval(updateCountdown, 1000);
 
     async function pollHealth() {
       try {
-        const response = await fetch('/api/health');
-        if (!response.ok) return;
-        const data = await response.json();
+        // Fetch full health + wopi + metrics in parallel
+        const [healthRes, wopiRes, metricsRes] = await Promise.all([
+          fetch('/api/health').then(function (r) { return r.ok ? r.json() : null; }),
+          fetch('/api/health/wopi').then(function (r) { return r.ok ? r.json() : null; }),
+          fetch('/api/metrics').then(function (r) { return r.ok ? r.json() : null; }),
+        ]);
 
-        // Update status banner
-        banner.className = 'status-banner status-' + data.status;
-        const label = banner.querySelector('.status-label');
-        const sub = banner.querySelector('.status-sub');
-        const badge = banner.querySelector('.status-badge');
-
-        if (label) {
-          const labels = { ok: 'All Systems Operational', degraded: 'System Degraded', down: 'System Down', unknown: 'Status Unknown' };
-          label.textContent = labels[data.status] || 'Status Unknown';
+        if (healthRes) {
+          updateStatusBanner(banner, healthRes);
+          updateServiceCards(grid, healthRes);
+          updateTimestamp(healthRes);
         }
 
-        const runningCount = Object.values(data.services).filter(function (s) { return s.running; }).length;
-        if (sub) {
-          sub.textContent = runningCount + '/' + Object.keys(data.services).length + ' services running';
+        if (wopiRes && insightRow) {
+          updateWopiCard(wopiRes);
         }
 
-        if (badge) {
-          badge.className = 'status-badge status-' + data.status;
-          badge.textContent = (data.status || 'unknown').toUpperCase();
+        if (metricsRes && insightRow) {
+          updateMetricsCard(metricsRes);
         }
 
-        // Update service cards
-        const cards = grid.querySelectorAll('.service-card');
-        cards.forEach(function (card) {
-          const key = card.getAttribute('data-service');
-          const svc = data.services[key];
-          if (!svc) return;
-
-          const dot = card.querySelector('.status-dot');
-          const statusBadge = card.querySelector('.status-badge');
-
-          if (dot) {
-            dot.className = 'status-dot status-' + (svc.running ? 'running' : (svc.health === 'unknown' ? 'unknown' : 'stopped'));
-          }
-
-          if (statusBadge) {
-            const cls = svc.running ? 'running' : (svc.health === 'unknown' ? 'unknown' : 'stopped');
-            statusBadge.className = 'status-badge status-' + cls;
-            statusBadge.textContent = svc.running ? 'Running' : (svc.health === 'unknown' ? 'Unknown' : 'Stopped');
-          }
-        });
+        if (healthRes && insightRow) {
+          updateHealthScoreCard(healthRes);
+        }
       } catch (err) {
-        // Silently fail — health polling shouldn't break the page
         console.warn('Health poll failed:', err.message);
       }
     }
 
-    // Poll every 10 seconds
+    // Initial poll
     pollHealth();
+    // Poll every 10 seconds
     setInterval(pollHealth, 10000);
+  }
+
+  function updateStatusBanner(banner, health) {
+    const status = health.status || 'unknown';
+    banner.className = 'status-banner status-' + status;
+
+    const label = banner.querySelector('.status-label');
+    const sub = banner.querySelector('.status-sub');
+    const badge = banner.querySelector('.status-badge');
+
+    const labels = { ok: 'All Systems Operational', degraded: 'System Degraded', down: 'System Down', unknown: 'Status Unknown' };
+    if (label) label.textContent = labels[status] || 'Status Unknown';
+
+    const serviceKeys = Object.keys(health.services || {});
+    const runningCount = serviceKeys.filter(function (k) { return health.services[k] && health.services[k].running; }).length;
+    if (sub) sub.textContent = runningCount + '/' + serviceKeys.length + ' services running';
+
+    if (badge) {
+      badge.className = 'status-badge status-' + status;
+      badge.textContent = (status || 'unknown').toUpperCase();
+    }
+  }
+
+  function updateServiceCards(grid, health) {
+    const cards = grid.querySelectorAll('.service-card');
+    cards.forEach(function (card) {
+      const key = card.getAttribute('data-service');
+      const svc = health.services ? health.services[key] : null;
+      if (!svc) return;
+
+      const isRunning = svc.running;
+      const healthClass = isRunning ? 'running' : (svc.health === 'unknown' ? 'unknown' : 'stopped');
+
+      const dot = card.querySelector('.status-dot');
+      const statusBadge = card.querySelector('.status-badge');
+
+      if (dot) {
+        dot.className = 'status-dot status-' + healthClass;
+      }
+
+      if (statusBadge) {
+        statusBadge.className = 'status-badge status-' + healthClass;
+        statusBadge.textContent = isRunning ? 'Running' : (svc.health === 'unknown' ? 'Unknown' : 'Stopped');
+      }
+
+      // Show uptime row if available
+      const uptimeRow = card.querySelector('.service-detail-row--uptime');
+      if (uptimeRow && svc.uptime) {
+        uptimeRow.style.display = 'flex';
+        uptimeRow.querySelector('.service-uptime').textContent = svc.uptime;
+      }
+    });
+  }
+
+  function updateTimestamp(health) {
+    const el = document.getElementById('last-check-time');
+    if (el && health.timestamp) {
+      const abs = formatTimestamp(health.timestamp);
+      const rel = formatRelativeTime(health.timestamp);
+      el.textContent = rel + ' (' + abs + ')';
+    }
+  }
+
+  function updateWopiCard(wopi) {
+    const card = document.getElementById('wopi-card');
+    if (!card) return;
+
+    const statusEl = document.getElementById('wopi-status');
+    const discoveryEl = document.getElementById('wopi-discovery');
+
+    if (wopi.accessible) {
+      statusEl.innerHTML = '<span class="status-dot status-running"></span><span>Accessible</span>';
+      card.style.borderColor = 'var(--success)';
+      if (discoveryEl) {
+        discoveryEl.innerHTML = '<a href="' + wopi.discoveryUrl + '" target="_blank">Discovery endpoint</a> · HTTP ' + wopi.statusCode;
+      }
+    } else {
+      statusEl.innerHTML = '<span class="status-dot status-stopped"></span><span>Unreachable</span>';
+      card.style.borderColor = 'var(--error)';
+      if (discoveryEl) {
+        discoveryEl.textContent = wopi.error || 'Connection failed';
+      }
+    }
+  }
+
+  function updateMetricsCard(metrics) {
+    const statusEl = document.getElementById('metrics-status');
+    const memoryEl = document.getElementById('metrics-memory');
+    if (!statusEl) return;
+
+    const running = metrics.runningContainers || 0;
+    const total = metrics.containers || 0;
+    statusEl.innerHTML = '<span class="insight-value">' + running + '</span><span class="insight-label"> / ' + total + ' containers</span>';
+
+    if (memoryEl) {
+      const mem = metrics.memoryUsage || 0;
+      memoryEl.textContent = 'Memory: ' + mem + ' MiB';
+    }
+  }
+
+  function updateHealthScoreCard(health) {
+    const scoreEl = document.getElementById('health-score-value');
+    const detailEl = document.getElementById('health-detail');
+    if (!scoreEl) return;
+
+    const serviceKeys = Object.keys(health.services || {});
+    const runningCount = serviceKeys.filter(function (k) { return health.services[k] && health.services[k].running; }).length;
+    const total = serviceKeys.length;
+
+    scoreEl.textContent = runningCount;
+    if (detailEl) {
+      detailEl.textContent = runningCount + ' of ' + total + ' services healthy';
+    }
+
+    // Color based on percentage
+    const pct = total > 0 ? runningCount / total : 0;
+    if (pct >= 1) scoreEl.style.color = 'var(--success)';
+    else if (pct >= 0.5) scoreEl.style.color = 'var(--warning)';
+    else scoreEl.style.color = 'var(--error)';
   }
 
   // ─── Setup Wizard: Password visibility toggle ────────────────────────
