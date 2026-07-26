@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest"
-import { spawn, type ChildProcess } from "child_process"
-import { resolve } from "path"
-import { existsSync } from "fs"
+import { type ChildProcess, spawn } from "node:child_process"
+import { existsSync } from "node:fs"
+import { resolve } from "node:path"
+import { afterAll, beforeAll, describe, expect, it } from "vitest"
 
 const APP_PATH = resolve(__dirname, "../src-tauri/target/release/world-office-desktop")
 const HAS_DISPLAY = !!(process.env.DISPLAY || process.env.WAYLAND_DISPLAY)
@@ -11,8 +11,8 @@ if (!existsSync(APP_PATH) || !HAS_DISPLAY) {
     // Placeholder test to keep the describe block valid
     it("should be skipped", () => {
       // This test will be skipped because the describe is skipped.
-    });
-  });
+    })
+  })
 } else {
   let app: ChildProcess
   describe("Desktop App", () => {
@@ -37,5 +37,5 @@ if (!existsSync(APP_PATH) || !HAS_DISPLAY) {
     it("should have a running process", () => {
       expect(app.pid).toBeDefined()
     })
-  });
+  })
 }

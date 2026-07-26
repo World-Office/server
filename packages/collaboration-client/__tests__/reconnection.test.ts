@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { BackoffStrategy, createBackoffStrategy } from "../src/reconnection"
 
 describe("BackoffStrategy", () => {
@@ -9,10 +9,10 @@ describe("BackoffStrategy", () => {
 
   it("should double the delay each time", () => {
     const strategy = new BackoffStrategy({ baseDelay: 1000, maxDelay: 30000, maxRetries: 5 })
-    expect(strategy.next()).toBe(1000)  // 2^0 * 1000
-    expect(strategy.next()).toBe(2000)  // 2^1 * 1000
-    expect(strategy.next()).toBe(4000)  // 2^2 * 1000
-    expect(strategy.next()).toBe(8000)  // 2^3 * 1000
+    expect(strategy.next()).toBe(1000) // 2^0 * 1000
+    expect(strategy.next()).toBe(2000) // 2^1 * 1000
+    expect(strategy.next()).toBe(4000) // 2^2 * 1000
+    expect(strategy.next()).toBe(8000) // 2^3 * 1000
     expect(strategy.next()).toBe(16000) // 2^4 * 1000
   })
 

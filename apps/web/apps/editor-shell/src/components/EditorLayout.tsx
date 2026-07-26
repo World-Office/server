@@ -121,10 +121,10 @@ export function EditorLayout({
 
   return (
     <div className={layoutClass}>
-      <header className="editor-toolbar" role="banner">
+      <header className="editor-toolbar">
         <Toolbar editorType={editorType} />
       </header>
-      <div className="editor-body" role="main">
+      <main className="editor-body">
         {showTabBar && <TabBar editorType={editorType} />}
         {showLeftPanel && (
           <Suspense fallback={<div className="editor-panel-skeleton" />}>
@@ -139,8 +139,8 @@ export function EditorLayout({
             <RightPanel onClose={isMobile ? () => setShowMobileRight(false) : undefined} />
           </Suspense>
         )}
-      </div>
-      <footer className="editor-statusbar" role="contentinfo">
+      </main>
+      <footer className="editor-statusbar">
         <StatusBar />
       </footer>
 

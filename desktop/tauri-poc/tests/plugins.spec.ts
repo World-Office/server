@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { describe, expect, it } from "vitest"
 
 interface PluginInfo {
   id: string
@@ -19,7 +19,9 @@ interface PluginManifest {
 }
 
 function parseManifestFromJsComment(js: string): PluginManifest | null {
-  const match = js.match(/\/\*\s*name:\s*([^,]+),\s*version:\s*([^,]+)(?:,\s*description:\s*([^*]+))?\s*\*\//)
+  const match = js.match(
+    /\/\*\s*name:\s*([^,]+),\s*version:\s*([^,]+)(?:,\s*description:\s*([^*]+))?\s*\*\//,
+  )
   if (!match) return null
   return {
     id: match[1].trim().toLowerCase().replace(/\s+/g, "-"),
@@ -38,7 +40,7 @@ function createPluginFromManifest(manifest: PluginManifest, enabled: boolean): P
     description: manifest.description,
     author: manifest.author,
     enabled,
-    source: manifest.id + ".js",
+    source: `${manifest.id}.js`,
   }
 }
 
@@ -123,11 +125,11 @@ describe("Plugin System", () => {
       })
       const manifest = parseManifestFromJson(json)
       expect(manifest).not.toBeNull()
-      expect(manifest!.id).toBe("hello-world")
-      expect(manifest!.name).toBe("Hello World")
-      expect(manifest!.version).toBe("2.0.0")
-      expect(manifest!.description).toBe("A sample plugin")
-      expect(manifest!.author).toBe("Author Name")
+      expect(manifest?.id).toBe("hello-world")
+      expect(manifest?.name).toBe("Hello World")
+      expect(manifest?.version).toBe("2.0.0")
+      expect(manifest?.description).toBe("A sample plugin")
+      expect(manifest?.author).toBe("Author Name")
     })
 
     it("should reject plugin.json without required fields", () => {
@@ -141,8 +143,8 @@ describe("Plugin System", () => {
       const js = "/* name: Hello World, version: 1.0.0 */\nfunction setup() {}"
       const manifest = parseManifestFromJsComment(js)
       expect(manifest).not.toBeNull()
-      expect(manifest!.name).toBe("Hello World")
-      expect(manifest!.version).toBe("1.0.0")
+      expect(manifest?.name).toBe("Hello World")
+      expect(manifest?.version).toBe("1.0.0")
     })
 
     it("should fall back gracefully when no JS comment exists", () => {
@@ -187,8 +189,24 @@ describe("Plugin System", () => {
   describe("Plugin settings toggle", () => {
     it("should toggle plugin enabled state", () => {
       const plugins: PluginInfo[] = [
-        { id: "a", name: "A", version: "1.0.0", description: "", author: "", enabled: true, source: "a.js" },
-        { id: "b", name: "B", version: "1.0.0", description: "", author: "", enabled: false, source: "b.js" },
+        {
+          id: "a",
+          name: "A",
+          version: "1.0.0",
+          description: "",
+          author: "",
+          enabled: true,
+          source: "a.js",
+        },
+        {
+          id: "b",
+          name: "B",
+          version: "1.0.0",
+          description: "",
+          author: "",
+          enabled: false,
+          source: "b.js",
+        },
       ]
 
       const result = togglePluginEnabled(plugins, "a", false)
@@ -200,7 +218,15 @@ describe("Plugin System", () => {
 
     it("should not mutate the original array", () => {
       const plugins: PluginInfo[] = [
-        { id: "only", name: "Only", version: "1.0.0", description: "", author: "", enabled: true, source: "only.js" },
+        {
+          id: "only",
+          name: "Only",
+          version: "1.0.0",
+          description: "",
+          author: "",
+          enabled: true,
+          source: "only.js",
+        },
       ]
       const result = togglePluginEnabled(plugins, "only", false)
       expect(plugins[0].enabled).toBe(true)
@@ -211,9 +237,33 @@ describe("Plugin System", () => {
   describe("Enabled plugin filtering", () => {
     it("should return only enabled plugins", () => {
       const plugins: PluginInfo[] = [
-        { id: "a", name: "A", version: "1.0.0", description: "", author: "", enabled: true, source: "a.js" },
-        { id: "b", name: "B", version: "1.0.0", description: "", author: "", enabled: false, source: "b.js" },
-        { id: "c", name: "C", version: "1.0.0", description: "", author: "", enabled: true, source: "c.js" },
+        {
+          id: "a",
+          name: "A",
+          version: "1.0.0",
+          description: "",
+          author: "",
+          enabled: true,
+          source: "a.js",
+        },
+        {
+          id: "b",
+          name: "B",
+          version: "1.0.0",
+          description: "",
+          author: "",
+          enabled: false,
+          source: "b.js",
+        },
+        {
+          id: "c",
+          name: "C",
+          version: "1.0.0",
+          description: "",
+          author: "",
+          enabled: true,
+          source: "c.js",
+        },
       ]
 
       const enabled = getEnabledPlugins(plugins)
@@ -224,7 +274,15 @@ describe("Plugin System", () => {
 
     it("should return empty array when no plugins enabled", () => {
       const plugins: PluginInfo[] = [
-        { id: "a", name: "A", version: "1.0.0", description: "", author: "", enabled: false, source: "a.js" },
+        {
+          id: "a",
+          name: "A",
+          version: "1.0.0",
+          description: "",
+          author: "",
+          enabled: false,
+          source: "a.js",
+        },
       ]
       expect(getEnabledPlugins(plugins)).toHaveLength(0)
     })

@@ -20,7 +20,13 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes("monaco-editor")) return "monaco"
-          if (id.includes("node_modules/react") || id.includes("node_modules/mobx") || id.includes("node_modules/scheduler") || id.includes("node_modules/use-sync-external-store")) return "vendor"
+          if (
+            id.includes("node_modules/react") ||
+            id.includes("node_modules/mobx") ||
+            id.includes("node_modules/scheduler") ||
+            id.includes("node_modules/use-sync-external-store")
+          )
+            return "vendor"
           if (id.includes("node_modules")) return "deps"
         },
       },

@@ -48,12 +48,12 @@ export function FileMenu() {
 			</div>
 			<div style={panelContainerStyle}>
 				<div className="visio-file-menu-panel-box" style={contentBoxBaseStyle}>
-				<CreateNewPanel visible={activePanel === "new"} />
-				<SaveAsPanel visible={activePanel === "saveas"} />
-				<SettingsPanel visible={activePanel === "opts"} />
-				<DocumentInfoPanel visible={activePanel === "info"} />
-				<HelpPanel visible={activePanel === "help"} />
-				<PrintPreviewPanel visible={activePanel === "printpreview"} />
+					<CreateNewPanel visible={activePanel === "new"} />
+					<SaveAsPanel visible={activePanel === "saveas"} />
+					<SettingsPanel visible={activePanel === "opts"} />
+					<DocumentInfoPanel visible={activePanel === "info"} />
+					<HelpPanel visible={activePanel === "help"} />
+					<PrintPreviewPanel visible={activePanel === "printpreview"} />
 				</div>
 			</div>
 		</div>

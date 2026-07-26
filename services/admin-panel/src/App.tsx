@@ -1,23 +1,23 @@
-import { Routes, Route } from 'react-router-dom';
-import { Layout } from './components/Layout';
-import { Dashboard } from './pages/Dashboard';
-import { Users } from './pages/Users';
-import { Documents } from './pages/Documents';
-import { Services } from './pages/Services';
-import { Settings } from './pages/Settings';
-import { WOPISettings } from './pages/WOPISettings';
-import { SecuritySettings } from './pages/SecuritySettings';
-import { AccessRules } from './pages/AccessRules';
-import { FileLimits } from './pages/FileLimits';
-import { LoggerConfig } from './pages/LoggerConfig';
-import { Expiration } from './pages/Expiration';
-import { HealthCheck } from './pages/HealthCheck';
-import { RequestFiltering } from './pages/RequestFiltering';
-import { NotificationConfig } from './pages/NotificationConfig';
-import { AiChat } from './pages/AiChat';
-import { AiProviders } from './pages/AiProviders';
-import { AiSettings } from './pages/AiSettings';
-import { SsoProviders } from './pages/SsoProviders';
+import { Route, Routes } from "react-router-dom"
+import { Layout } from "./components/Layout"
+import { AccessRules } from "./pages/AccessRules"
+import { AiChat } from "./pages/AiChat"
+import { AiProviders } from "./pages/AiProviders"
+import { AiSettings } from "./pages/AiSettings"
+import { Dashboard } from "./pages/Dashboard"
+import { Documents } from "./pages/Documents"
+import { Expiration } from "./pages/Expiration"
+import { FileLimits } from "./pages/FileLimits"
+import { HealthCheck } from "./pages/HealthCheck"
+import { LoggerConfig } from "./pages/LoggerConfig"
+import { NotificationConfig } from "./pages/NotificationConfig"
+import { RequestFiltering } from "./pages/RequestFiltering"
+import { SecuritySettings } from "./pages/SecuritySettings"
+import { Services } from "./pages/Services"
+import { Settings } from "./pages/Settings"
+import { SsoProviders } from "./pages/SsoProviders"
+import { Users } from "./pages/Users"
+import { WOPISettings } from "./pages/WOPISettings"
 
 export function App() {
   return (
@@ -43,5 +43,5 @@ export function App() {
         <Route path="/sso/providers" element={<SsoProviders />} />
       </Route>
     </Routes>
-  );
+  )
 }
