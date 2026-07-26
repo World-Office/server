@@ -7,10 +7,7 @@
 //! Broadcast channels (tokio::sync::broadcast) are ephemeral and
 //! reconstructed at runtime — they are not persisted.
 
-// TODO: Update crate edition from 2015 to 2024 to enable async/await syntax
-// Currently blocked by edition compatibility issues. Once edition is updated,
-// remove the clippy::allow directives below.
-#![allow(clippy::let_underscore_future)]
+
 
 use axum::{
     Json, Router,
@@ -1146,7 +1143,7 @@ async fn handle_ws(
 
     // Forward presentation op broadcasts to the shared outgoing channel
     let out_tx_presentation = out_tx.clone();
-    let _recv_presentation = tokio::spawn(async move {
+    let recv_presentation = tokio::spawn(async move {
         let mut presentation_rx = presentation_rx;
         while let Ok(text) = presentation_rx.recv().await {
             let _ = out_tx_presentation.send(text).await;
@@ -1155,7 +1152,7 @@ async fn handle_ws(
 
     // Forward spreadsheet op broadcasts to the shared outgoing channel
     let out_tx_spreadsheet = out_tx.clone();
-    let _recv_spreadsheet = tokio::spawn(async move {
+    let recv_spreadsheet = tokio::spawn(async move {
         let mut spreadsheet_rx = spreadsheet_rx;
         while let Ok(text) = spreadsheet_rx.recv().await {
             let _ = out_tx_spreadsheet.send(text).await;
@@ -1164,7 +1161,7 @@ async fn handle_ws(
 
     // Forward PDF annotation op broadcasts to the shared outgoing channel
     let out_tx_pdf_annotation = out_tx.clone();
-    let _recv_pdf_annotation = tokio::spawn(async move {
+    let recv_pdf_annotation = tokio::spawn(async move {
         let mut rx = pdf_annotation_rx;
         while let Ok(text) = rx.recv().await {
             let _ = out_tx_pdf_annotation.send(text).await;
@@ -1173,7 +1170,7 @@ async fn handle_ws(
 
     // Forward Visio diagram op broadcasts to the shared outgoing channel
     let out_tx_visio_diagram = out_tx.clone();
-    let _recv_visio_diagram = tokio::spawn(async move {
+    let recv_visio_diagram = tokio::spawn(async move {
         let mut rx = visio_diagram_rx;
         while let Ok(text) = rx.recv().await {
             let _ = out_tx_visio_diagram.send(text).await;
@@ -1306,6 +1303,10 @@ async fn handle_ws(
 
     recv_presence.abort();
     recv_edit.abort();
+    recv_presentation.abort();
+    recv_spreadsheet.abort();
+    recv_pdf_annotation.abort();
+    recv_visio_diagram.abort();
 
     tracing::info!(session_id = %session_id, user_id = %user_id, "WebSocket disconnected");
 }
