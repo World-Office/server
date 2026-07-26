@@ -2,7 +2,6 @@ const config = require("config")
 const co = require("co")
 const mailService = require("./../../Common/sources/mailService")
 const operationContext = require("./../../Common/sources/operationContext")
-const utils = require("./../../Common/sources/utils")
 
 exports.sendEmailAttachment = (req, res) =>
   co(function* () {
