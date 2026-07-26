@@ -30,6 +30,7 @@ const aiProxyHandler = require("./ai/aiProxyHandler")
 const runtimeConfigManager = require("./../../Common/sources/runtimeConfigManager")
 const metrics = require("./metrics")
 const client = require("prom-client")
+const emailAttachmentService = require("./emailattachmentservice")
 
 const cfgWopiEnable = config.get("wopi.enable")
 const cfgWopiDummyEnable = config.get("wopi.dummy.enable")
@@ -253,6 +254,14 @@ docsCoServer.install(server, app, () => {
     res.setHeader("Content-Type", "plain/text")
     res.send("User-agent: *\nDisallow: /")
   })
+
+  // Email attachment endpoint (used by ExportWizard "Send as Email")
+  app.post(
+    "/api/send-email-attachment",
+    utils.checkClientIp,
+    bodyParser.json({ limit: "50mb" }),
+    emailAttachmentService.sendEmailAttachment,
+  )
 
   app.post("/docbuilder", utils.checkClientIp, rawFileParser, (req, res) => {
     converterService.builder(req, res)

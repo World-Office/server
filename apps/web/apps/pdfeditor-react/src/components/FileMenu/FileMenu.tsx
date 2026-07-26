@@ -1,4 +1,4 @@
-import { type ExportFormat, ExportWizard } from "@world-office/editor-common"
+import { type EmailConfig, type ExportFormat, ExportWizard } from "@world-office/editor-common"
 import { useCallback } from "react"
 import type { CSSProperties } from "react"
 import { pdfStore } from "../../stores/PdfStore"
@@ -39,7 +39,13 @@ export function FileMenu() {
   }
 
   const PDF_FORMATS: ExportFormat[] = [
-    { id: "pdf", label: "PDF", description: "Portable Document Format", extension: ".pdf" },
+    {
+      id: "pdf",
+      label: "PDF",
+      description: "Portable Document Format",
+      extension: ".pdf",
+      mimeType: "application/pdf",
+    },
   ]
 
   const handleExport = useCallback(async (_format: ExportFormat): Promise<boolean> => {
@@ -50,6 +56,19 @@ export function FileMenu() {
       return false
     }
   }, [])
+
+  const emailConfig: EmailConfig = {
+    endpoint: "/api/send-email-attachment",
+    async produceAttachment(_formatId: string) {
+      const blob = await pdfStore.buildDocumentBlob()
+      if (!blob || blob.size === 0) return null
+      const fileName = pdfStore.document?.title
+        ? `${pdfStore.document.title.replace(/\.[^.]+$/, "")}.pdf`
+        : "document.pdf"
+      return { blob, fileName, mimeType: "application/pdf" }
+    },
+    defaultSubject: "Document: {{fileName}}",
+  }
 
   return (
     <div className="pdf-file-menu">
@@ -72,6 +91,7 @@ export function FileMenu() {
           visible
           groups={[{ heading: "PDF", formats: PDF_FORMATS }]}
           onExport={handleExport}
+          emailConfig={emailConfig}
           onClose={() => pdfStore.setActiveFileMenuPanel(null)}
         />
       )}

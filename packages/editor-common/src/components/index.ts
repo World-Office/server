@@ -32,4 +32,5 @@ export {
   type ExportWizardProps,
   type ExportFormat,
   type ExportFormatGroup,
+  type EmailConfig,
 } from "./ExportWizard"
