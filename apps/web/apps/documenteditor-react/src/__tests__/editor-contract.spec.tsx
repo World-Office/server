@@ -1,4 +1,4 @@
-import { Editor } from "@tiptap/core"
+import { Editor, Extension } from "@tiptap/core"
 import Color from "@tiptap/extension-color"
 import Focus from "@tiptap/extension-focus"
 import FontFamily from "@tiptap/extension-font-family"
@@ -40,7 +40,12 @@ import {
 } from "../lib/content-controls"
 import { EndnoteMark } from "../lib/endnote-mark"
 import { FontSize } from "../lib/font-size-extension"
-import { FootnoteMark } from "../lib/footnote-mark"
+import {
+  FootnoteItem,
+  FootnoteReference,
+  FootnoteSection,
+  footnoteAutoNumberPlugin,
+} from "../lib/footnote-mark"
 import { LineSpacingExtension } from "../lib/line-spacing-extension"
 import { PageNumber } from "../lib/page-number"
 import { ParagraphBorders } from "../lib/paragraph-borders"
@@ -96,7 +101,15 @@ function buildEditor(content: string): Editor {
       Placeholder.configure({ placeholder: "Start typing\u2026" }),
       CommentMark,
       EndnoteMark,
-      FootnoteMark,
+      FootnoteReference,
+      FootnoteSection,
+      FootnoteItem,
+      Extension.create({
+        name: "footnoteAutoNumber",
+        addProseMirrorPlugins() {
+          return [footnoteAutoNumberPlugin]
+        },
+      }),
       LineSpacingExtension.configure({
         types: ["paragraph", "heading"],
         defaultSpacing: "1.15",
