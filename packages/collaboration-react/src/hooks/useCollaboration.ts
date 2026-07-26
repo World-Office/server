@@ -4,7 +4,9 @@ import {
   type EditOperation,
   type InitialState,
   type ParticipantUpdate,
+  type PdfAnnotationOperation,
   type Selection,
+  type VisioDiagramOperation,
   WebSocketManager,
   createSelectionUpdate,
 } from "@world-office/collaboration-client"
@@ -24,6 +26,8 @@ export interface UseCollaborationOptions {
   onParticipantUpdate?: (update: ParticipantUpdate) => void
   onInitialState?: (state: InitialState) => void
   onCommentEvent?: (data: CommentEventData) => void
+  onPdfAnnotationOp?: (op: PdfAnnotationOperation, userId: string) => void
+  onVisioDiagramOp?: (op: VisioDiagramOperation, userId: string) => void
 }
 
 export interface UseCollaborationResult {
@@ -35,6 +39,8 @@ export interface UseCollaborationResult {
   sendParticipantUpdate: (update: ParticipantUpdate) => void
   sendSelectionUpdate: (selection: Selection) => void
   sendCommentEvent: (data: CommentEventData) => void
+  sendPdfAnnotationOp: (op: PdfAnnotationOperation) => void
+  sendVisioDiagramOp: (op: VisioDiagramOperation) => void
 }
 
 export function useCollaboration(options: UseCollaborationOptions): UseCollaborationResult {
@@ -49,6 +55,8 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
     onParticipantUpdate,
     onInitialState,
     onCommentEvent,
+    onPdfAnnotationOp,
+    onVisioDiagramOp,
   } = options
 
   const managerRef = useRef<WebSocketManager | null>(null)
@@ -121,6 +129,14 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
           onInitialState?.(state)
         })
 
+        manager.on("pdfAnnotationOp", (op: PdfAnnotationOperation, userId: string) => {
+          onPdfAnnotationOp?.(op, userId)
+        })
+
+        manager.on("visioDiagramOp", (op: VisioDiagramOperation, userId: string) => {
+          onVisioDiagramOp?.(op, userId)
+        })
+
         manager.on("commentEvent", (data: CommentEventData) => {
           if (data.type === "added") {
             if (data.parent_id) {
@@ -164,6 +180,8 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
       onParticipantUpdate,
       onInitialState,
       onCommentEvent,
+      onPdfAnnotationOp,
+      onVisioDiagramOp,
     ],
   )
 
@@ -233,6 +251,14 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
     managerRef.current?.sendCommentEvent(data)
   }, [])
 
+  const sendPdfAnnotationOp = useCallback((op: PdfAnnotationOperation) => {
+    managerRef.current?.sendPdfAnnotationOp(op)
+  }, [])
+
+  const sendVisioDiagramOp = useCallback((op: VisioDiagramOperation) => {
+    managerRef.current?.sendVisioDiagramOp(op)
+  }, [])
+
   useEffect(() => {
     return () => {
       managerRef.current?.disconnect()
@@ -249,5 +275,7 @@ export function useCollaboration(options: UseCollaborationOptions): UseCollabora
     sendParticipantUpdate,
     sendSelectionUpdate,
     sendCommentEvent,
+    sendPdfAnnotationOp,
+    sendVisioDiagramOp,
   }
 }

@@ -219,3 +219,42 @@ body,
 .pdf-text-layer ::-moz-selection {
   background: rgba(68, 114, 196, 0.4);
 }
+
+@media print {
+  .pdf-toolbar,
+  .pdf-statusbar,
+  .pdf-file-menu,
+  .pdf-left-menu,
+  .pdf-right-menu,
+  .pdf-file-menu-panel,
+  .pdf-shortcuts-overlay,
+  .pdf-thumbnail-panel,
+  .pdf-search-panel {
+    display: none !important;
+  }
+
+  .pdf-viewport {
+    position: static !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .pdf-document-holder {
+    overflow: visible !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    max-width: 100% !important;
+  }
+
+  .pdf-page-canvas {
+    page-break-after: always;
+    break-after: page;
+    box-shadow: none !important;
+    margin: 0 auto !important;
+  }
+
+  @page {
+    margin: 0;
+  }
+}

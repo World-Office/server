@@ -32,6 +32,44 @@ export interface Participant {
   selection: Selection | null
 }
 
+// ── PDF Annotation Operation ──
+
+/**
+ * A single PDF annotation (matching PdfAnnotation in pdfeditor types).
+ */
+export interface PdfAnnotationPayload {
+  id: string
+  page: number
+  type: string
+  x: number
+  y: number
+  width?: number
+  height?: number
+  text?: string
+  color?: string
+  author?: string
+  created_at?: string
+}
+
+/**
+ * Operation types for PDF annotation collaboration.
+ */
+export type PdfAnnotationOperation =
+  | { action: "add_annotation"; payload: PdfAnnotationPayload }
+  | { action: "remove_annotation"; annotation_id: string }
+  | { action: "modify_annotation"; annotation_id: string; changes: Partial<PdfAnnotationPayload> }
+
+// ── Visio Diagram Operation ──
+
+/**
+ * Operation types for Visio diagram collaboration.
+ */
+export type VisioDiagramOperation =
+  | { action: "shape_add"; shape_id: string; shape_data: string }
+  | { action: "shape_delete"; shape_id: string }
+  | { action: "shape_modify"; shape_id: string; changes: Record<string, unknown> }
+  | { action: "shape_move"; shape_id: string; x: number; y: number }
+
 // ── Spreadsheet Operation ──
 
 /**
@@ -203,6 +241,18 @@ export type WsMessage =
   | { type: "comment_event"; data: CommentEventData }
   | { type: "presentation_op"; operation: PresentationOperation }
   | { type: "spreadsheet_op"; session_id: string; user_id: string; operation: SpreadsheetOperation }
+  | {
+      type: "pdf_annotation_op"
+      session_id: string
+      user_id: string
+      operation: PdfAnnotationOperation
+    }
+  | {
+      type: "visio_diagram_op"
+      session_id: string
+      user_id: string
+      operation: VisioDiagramOperation
+    }
 
 /**
  * Initial state sent to a new WebSocket client upon connect, containing
@@ -225,6 +275,18 @@ export type ServerMessage =
   | { type: "presentation_op"; operation: PresentationOperation }
   | { type: "presentation_state"; state: PresentationStateData }
   | { type: "spreadsheet_op"; session_id: string; user_id: string; operation: SpreadsheetOperation }
+  | {
+      type: "pdf_annotation_op"
+      session_id: string
+      user_id: string
+      operation: PdfAnnotationOperation
+    }
+  | {
+      type: "visio_diagram_op"
+      session_id: string
+      user_id: string
+      operation: VisioDiagramOperation
+    }
 
 export interface PresentationStateData {
   slides: Array<{
@@ -333,6 +395,22 @@ export function parseServerMessage(json: string): ServerMessage | null {
       session_id: obj.session_id as string,
       user_id: obj.user_id as string,
       operation: obj.operation as SpreadsheetOperation,
+    }
+  }
+  if (obj.type === "pdf_annotation_op" && typeof obj.operation === "object") {
+    return {
+      type: "pdf_annotation_op",
+      session_id: obj.session_id as string,
+      user_id: obj.user_id as string,
+      operation: obj.operation as PdfAnnotationOperation,
+    }
+  }
+  if (obj.type === "visio_diagram_op" && typeof obj.operation === "object") {
+    return {
+      type: "visio_diagram_op",
+      session_id: obj.session_id as string,
+      user_id: obj.user_id as string,
+      operation: obj.operation as VisioDiagramOperation,
     }
   }
 

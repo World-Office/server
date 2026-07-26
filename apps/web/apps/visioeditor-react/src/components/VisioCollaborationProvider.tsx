@@ -1,9 +1,15 @@
 import type {
 	EditOperation,
 	ParticipantUpdate,
+	VisioDiagramOperation,
 } from "@world-office/collaboration-client";
 import { useCollaboration } from "@world-office/collaboration-react";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
+import {
+	collabSendRef,
+	currentUser,
+	visioCollaborationStore,
+} from "../lib/collaboration";
 import {
 	COAUTHORING_API_URL,
 	COAUTHORING_WS_URL,
@@ -36,16 +42,54 @@ export function VisioCollaborationProvider(): null {
 		wsUrl: COAUTHORING_WS_URL,
 		userId: user.id,
 		username: user.name,
-		collaborationStore: null,
+		collaborationStore: visioCollaborationStore,
 		sessionId: sessionStorage.getItem(SESSION_STORAGE_KEY) ?? undefined,
 		coauthoringServiceUrl: COAUTHORING_API_URL,
 		onRemoteOperation(_op: EditOperation) {
 			visioStore.isModified = true;
 		},
 		onParticipantUpdate(_update: ParticipantUpdate) {
-			// Visio cursor tracking will use FlowchartCanvas API when available
+			// Cursor tracking handled by collaborationStore
+		},
+		onVisioDiagramOp(op: VisioDiagramOperation, _userId: string) {
+			// Dispatch visio diagram operations via global callback so
+			// FlowchartCanvas can subscribe to them
+			const handler = (window as unknown as Record<string, unknown>)
+				.__visioCollabOnOp;
+			if (typeof handler === "function") {
+				(handler as (op: VisioDiagramOperation) => void)(op);
+			}
+			visioStore.isModified = true;
 		},
 	});
+
+	// Expose broadcast function for FlowchartCanvas to call
+	const broadcastVisioOp = useCallback(
+		(op: VisioDiagramOperation) => {
+			collab.sendVisioDiagramOp(op);
+		},
+		[collab.sendVisioDiagramOp],
+	);
+
+	useEffect(() => {
+		(window as unknown as Record<string, unknown>).__visioCollabSendOp =
+			broadcastVisioOp;
+		return () => {
+			(window as unknown as Record<string, unknown>).__visioCollabSendOp =
+				undefined;
+		};
+	}, [broadcastVisioOp]);
+
+	useEffect(() => {
+		currentUser.id = user.id;
+		currentUser.username = user.name;
+	}, [user.id, user.name]);
+
+	useEffect(() => {
+		collabSendRef.send = (update: ParticipantUpdate) => {
+			collab.sendParticipantUpdate(update);
+		};
+	}, [collab.sendParticipantUpdate]);
 
 	useEffect(() => {
 		collab.connect();

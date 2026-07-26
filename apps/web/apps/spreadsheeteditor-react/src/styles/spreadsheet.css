@@ -171,3 +171,35 @@ body,
 		flex-shrink: 0;
 	}
 }
+
+@media print {
+	.se-toolbar,
+	.se-statusbar,
+	.se-file-menu,
+	.se-left-menu,
+	.se-right-menu,
+	.se-file-menu-panel,
+	.se-formula-bar,
+	.se-shortcuts-overlay {
+		display: none !important;
+	}
+
+	.se-viewport {
+		position: static !important;
+		padding: 0 !important;
+		margin: 0 !important;
+	}
+
+	.se-document-holder {
+		overflow: visible !important;
+		padding: 0 !important;
+		box-shadow: none !important;
+		border: none !important;
+		max-width: 100% !important;
+	}
+
+	@page {
+		margin: 1.5cm;
+		size: A4 landscape;
+	}
+}
