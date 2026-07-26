@@ -14,7 +14,7 @@ import type { Editor } from "@tiptap/core"
 import { documentStore } from "../stores/DocumentStore"
 import { currentUser } from "./collaboration"
 import { insertEndnoteCommand } from "./endnote-mark"
-import { insertFootnoteCommand } from "./footnote-mark"
+import { insertFootnoteCommand, updateFootnoteDisplayNumbers } from "./footnote-mark"
 import { insertTableOfContentsCommand, updateTableOfContentsCommand } from "./toc-extension"
 import {
   acceptAllChanges,
@@ -654,6 +654,7 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       return true
     case "insertFootnote":
       insertFootnoteCommand(editor)
+      updateFootnoteDisplayNumbers(editor)
       return true
     case "insertEndnote":
       insertEndnoteCommand(editor)

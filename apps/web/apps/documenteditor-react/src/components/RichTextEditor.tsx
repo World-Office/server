@@ -16,7 +16,7 @@ import TaskList from "@tiptap/extension-task-list"
 import TextAlign from "@tiptap/extension-text-align"
 import { TextStyle } from "@tiptap/extension-text-style"
 import Typography from "@tiptap/extension-typography"
-import { EditorContent, useEditor } from "@tiptap/react"
+import { EditorContent, Extension, useEditor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react"
 import { CommentMark } from "../lib/comment-mark"
@@ -28,7 +28,12 @@ import {
 } from "../lib/content-controls"
 import { EndnoteMark } from "../lib/endnote-mark"
 import { FontSize } from "../lib/font-size-extension"
-import { FootnoteMark } from "../lib/footnote-mark"
+import {
+  FootnoteItem,
+  FootnoteReference,
+  FootnoteSection,
+  footnoteAutoNumberPlugin,
+} from "../lib/footnote-mark"
 import { LineSpacingExtension } from "../lib/line-spacing-extension"
 import { PageNumber } from "../lib/page-number"
 import { ParagraphBorders } from "../lib/paragraph-borders"
@@ -85,13 +90,21 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         Placeholder.configure({ placeholder: "Start typing\u2026" }),
         CommentMark,
         EndnoteMark,
-        FootnoteMark,
+        FootnoteReference,
+        FootnoteSection,
+        FootnoteItem,
         LineSpacingExtension.configure({
           types: ["paragraph", "heading"],
           defaultSpacing: "1.15",
         }),
         TextDirectionExtension.configure({
           types: ["paragraph", "heading", "blockquote", "listItem"],
+        }),
+        Extension.create({
+          name: "footnoteAutoNumber",
+          addProseMirrorPlugins() {
+            return [footnoteAutoNumberPlugin]
+          },
         }),
         TrackInsertMark,
         TrackDeleteMark,
@@ -116,6 +129,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       onUpdate({ editor }) {
         const currentHtml = editor.getHTML()
         onChangeRef.current?.(currentHtml)
+        // Update footnote display numbers after each change
+        import("../lib/footnote-mark").then((mod) => mod.updateFootnoteDisplayNumbers(editor))
       },
       onCreate({ editor }) {
         setActiveRichTextEditor(editor)
