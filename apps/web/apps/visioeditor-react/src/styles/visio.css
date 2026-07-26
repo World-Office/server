@@ -385,3 +385,38 @@ body,
 .fc-context-danger:hover {
 	background: #fef2f2;
 }
+
+@media print {
+	.visio-toolbar,
+	.visio-statusbar,
+	.visio-file-menu,
+	.visio-left-menu,
+	.visio-file-menu-panel,
+	.visio-shortcuts-overlay {
+		display: none !important;
+	}
+
+	.visio-viewport {
+		position: static !important;
+		padding: 0 !important;
+		margin: 0 !important;
+	}
+
+	.visio-document-holder {
+		overflow: visible !important;
+		padding: 0 !important;
+		box-shadow: none !important;
+		border: none !important;
+		max-width: 100% !important;
+	}
+
+	.fc-flowchart-canvas {
+		max-width: 100% !important;
+		height: auto !important;
+	}
+
+	@page {
+		margin: 1.5cm;
+		size: A4 landscape;
+	}
+}

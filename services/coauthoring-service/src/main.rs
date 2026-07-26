@@ -197,6 +197,66 @@ pub enum SpreadsheetOp {
     },
 }
 
+/// PDF annotation collaboration operation (relayed as-is, no server-side state).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "action", rename_all = "snake_case")]
+pub enum PdfAnnotationOp {
+    AddAnnotation {
+        payload: PdfAnnotationPayload,
+    },
+    RemoveAnnotation {
+        annotation_id: String,
+    },
+    ModifyAnnotation {
+        annotation_id: String,
+        changes: serde_json::Value,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PdfAnnotationPayload {
+    pub id: String,
+    pub page: u32,
+    #[serde(rename = "type")]
+    pub annotation_type: String,
+    pub x: f64,
+    pub y: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub width: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub height: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub author: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub created_at: Option<String>,
+}
+
+/// Visio diagram collaboration operation (relayed as-is, no server-side state).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "action", rename_all = "snake_case")]
+pub enum VisioDiagramOp {
+    ShapeAdd {
+        shape_id: String,
+        shape_data: String,
+    },
+    ShapeDelete {
+        shape_id: String,
+    },
+    ShapeModify {
+        shape_id: String,
+        changes: serde_json::Value,
+    },
+    ShapeMove {
+        shape_id: String,
+        x: f64,
+        y: f64,
+    },
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CellValuePayload {
     pub sheet_name: String,
@@ -325,6 +385,16 @@ enum WsMessage {
         session_id: String,
         user_id: String,
         operation: SpreadsheetOp,
+    },
+    PdfAnnotationOp {
+        session_id: String,
+        user_id: String,
+        operation: PdfAnnotationOp,
+    },
+    VisioDiagramOp {
+        session_id: String,
+        user_id: String,
+        operation: VisioDiagramOp,
     },
 }
 
@@ -562,6 +632,10 @@ struct AppState {
     presentation_channels: Arc<Mutex<HashMap<String, broadcast::Sender<String>>>>,
     /// Broadcast channels per session for spreadsheet operations.
     spreadsheet_channels: Arc<Mutex<HashMap<String, broadcast::Sender<String>>>>,
+    /// Broadcast channels per session for PDF annotation operations.
+    pdf_annotation_channels: Arc<Mutex<HashMap<String, broadcast::Sender<String>>>>,
+    /// Broadcast channels per session for Visio diagram operations.
+    visio_diagram_channels: Arc<Mutex<HashMap<String, broadcast::Sender<String>>>>,
 }
 
 /// Health check response.
@@ -685,6 +759,20 @@ async fn create_session(
     {
         let mut schannels = state.spreadsheet_channels.lock().await;
         schannels.insert(session_id.clone(), spreadsheet_tx);
+    }
+
+    // Create ephemeral PDF annotation broadcast channel for this session
+    let (pdf_annotation_tx, _) = broadcast::channel::<String>(256);
+    {
+        let mut pachannels = state.pdf_annotation_channels.lock().await;
+        pachannels.insert(session_id.clone(), pdf_annotation_tx);
+    }
+
+    // Create ephemeral Visio diagram broadcast channel for this session
+    let (visio_diagram_tx, _) = broadcast::channel::<String>(256);
+    {
+        let mut vdchannels = state.visio_diagram_channels.lock().await;
+        vdchannels.insert(session_id.clone(), visio_diagram_tx);
     }
 
     metrics::gauge!("sessions_active").set(1.0);
@@ -925,6 +1013,40 @@ async fn handle_ws(
         }
     };
 
+    let pdf_annotation_rx = {
+        let channels = state.pdf_annotation_channels.lock().await;
+        channels.get(&session_id).map(|tx| tx.subscribe())
+    };
+
+    let pdf_annotation_rx = match pdf_annotation_rx {
+        Some(rx) => rx,
+        None => {
+            let _ = socket
+                .send(Message::Text(
+                    format!(r#"{{"error":"Session {} not found"}}"#, session_id).into(),
+                ))
+                .await;
+            return;
+        }
+    };
+
+    let visio_diagram_rx = {
+        let channels = state.visio_diagram_channels.lock().await;
+        channels.get(&session_id).map(|tx| tx.subscribe())
+    };
+
+    let visio_diagram_rx = match visio_diagram_rx {
+        Some(rx) => rx,
+        None => {
+            let _ = socket
+                .send(Message::Text(
+                    format!(r#"{{"error":"Session {} not found"}}"#, session_id).into(),
+                ))
+                .await;
+            return;
+        }
+    };
+
     tracing::info!(session_id = %session_id, user_id = %user_id, "WebSocket connected");
 
     let (mut ws_sender, mut ws_receiver) = socket.split();
@@ -1040,6 +1162,24 @@ async fn handle_ws(
         }
     });
 
+    // Forward PDF annotation op broadcasts to the shared outgoing channel
+    let out_tx_pdf_annotation = out_tx.clone();
+    let _recv_pdf_annotation = tokio::spawn(async move {
+        let mut rx = pdf_annotation_rx;
+        while let Ok(text) = rx.recv().await {
+            let _ = out_tx_pdf_annotation.send(text).await;
+        }
+    });
+
+    // Forward Visio diagram op broadcasts to the shared outgoing channel
+    let out_tx_visio_diagram = out_tx.clone();
+    let _recv_visio_diagram = tokio::spawn(async move {
+        let mut rx = visio_diagram_rx;
+        while let Ok(text) = rx.recv().await {
+            let _ = out_tx_visio_diagram.send(text).await;
+        }
+    });
+
     while let Some(Ok(msg)) = ws_receiver.next().await {
         if let Message::Text(text) = msg {
             if let Ok(ws_msg) = serde_json::from_str::<WsMessage>(&text) {
@@ -1105,6 +1245,26 @@ async fn handle_ws(
                     } => {
                         // Broadcast spreadsheet operations to all participants
                         let channels = state.spreadsheet_channels.lock().await;
+                        if let Some(tx) = channels.get(&session_id) {
+                            let _ = tx.send(text.to_string());
+                        }
+                    }
+                    WsMessage::PdfAnnotationOp {
+                        session_id: _,
+                        user_id: _,
+                        operation: _, // PDF annotation ops are broadcast as-is
+                    } => {
+                        let channels = state.pdf_annotation_channels.lock().await;
+                        if let Some(tx) = channels.get(&session_id) {
+                            let _ = tx.send(text.to_string());
+                        }
+                    }
+                    WsMessage::VisioDiagramOp {
+                        session_id: _,
+                        user_id: _,
+                        operation: _, // Visio diagram ops are broadcast as-is
+                    } => {
+                        let channels = state.visio_diagram_channels.lock().await;
                         if let Some(tx) = channels.get(&session_id) {
                             let _ = tx.send(text.to_string());
                         }
@@ -1191,6 +1351,8 @@ async fn main() {
         presentation_state: Arc::new(Mutex::new(HashMap::new())),
         presentation_channels: Arc::new(Mutex::new(HashMap::new())),
         spreadsheet_channels: Arc::new(Mutex::new(HashMap::new())),
+        pdf_annotation_channels: Arc::new(Mutex::new(HashMap::new())),
+        visio_diagram_channels: Arc::new(Mutex::new(HashMap::new())),
     });
     let app = app(state);
 

@@ -14,9 +14,11 @@ import {
   type EditOperation,
   type InitialState,
   type ParticipantUpdate,
+  type PdfAnnotationOperation,
   type PresentationOperation,
   type PresentationStateData,
   type SpreadsheetOperation,
+  type VisioDiagramOperation,
   type WsMessage,
   createDeleteOp,
   createInsertOp,
@@ -38,6 +40,8 @@ export interface WebSocketManagerEvents {
   presentationOp: (op: PresentationOperation, userId: string) => void
   presentationState: (state: PresentationStateData) => void
   spreadsheetOp: (op: SpreadsheetOperation, userId: string) => void
+  pdfAnnotationOp: (op: PdfAnnotationOperation, userId: string) => void
+  visioDiagramOp: (op: VisioDiagramOperation, userId: string) => void
   stateChange: (state: ConnectionState) => void
 }
 
@@ -253,6 +257,38 @@ export class WebSocketManager {
     }
   }
 
+  /** Broadcast a PDF annotation operation to other participants. */
+  sendPdfAnnotationOp(operation: PdfAnnotationOperation): void {
+    const msg: WsMessage = {
+      type: "pdf_annotation_op",
+      session_id: this.sessionId,
+      user_id: this.userId,
+      operation,
+    }
+    const json = JSON.stringify(msg)
+    if (this.ws && this.ws.readyState === WS_OPEN) {
+      this.ws.send(json)
+    } else {
+      this.messageQueue.push(json)
+    }
+  }
+
+  /** Broadcast a Visio diagram operation to other participants. */
+  sendVisioDiagramOp(operation: VisioDiagramOperation): void {
+    const msg: WsMessage = {
+      type: "visio_diagram_op",
+      session_id: this.sessionId,
+      user_id: this.userId,
+      operation,
+    }
+    const json = JSON.stringify(msg)
+    if (this.ws && this.ws.readyState === WS_OPEN) {
+      this.ws.send(json)
+    } else {
+      this.messageQueue.push(json)
+    }
+  }
+
   /** Broadcast a cursor update to other participants. */
   sendCursorEvent(data: ParticipantUpdate): void {
     const msg: WsMessage = { type: "participant_update", update: data }
@@ -299,6 +335,10 @@ export class WebSocketManager {
       this.emit("presentationState", serverMsg.state)
     } else if (serverMsg.type === "spreadsheet_op") {
       this.emit("spreadsheetOp", serverMsg.operation, serverMsg.user_id)
+    } else if (serverMsg.type === "pdf_annotation_op") {
+      this.emit("pdfAnnotationOp", serverMsg.operation, serverMsg.user_id)
+    } else if (serverMsg.type === "visio_diagram_op") {
+      this.emit("visioDiagramOp", serverMsg.operation, serverMsg.user_id)
     }
   }
 

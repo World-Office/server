@@ -689,3 +689,39 @@ body,
 	min-width: 40px;
 	text-align: center;
 }
+
+@media print {
+	.prese-toolbar,
+	.prese-statusbar,
+	.prese-file-menu,
+	.prese-left-menu,
+	.prese-right-menu,
+	.prese-file-menu-panel,
+	.prese-shortcuts-overlay {
+		display: none !important;
+	}
+
+	.prese-viewport {
+		position: static !important;
+		padding: 0 !important;
+		margin: 0 !important;
+	}
+
+	.prese-document-holder {
+		overflow: visible !important;
+		padding: 0 !important;
+		box-shadow: none !important;
+		border: none !important;
+		max-width: 100% !important;
+	}
+
+	.prese-slide-container {
+		page-break-after: always;
+		break-after: page;
+	}
+
+	@page {
+		margin: 0;
+		size: landscape;
+	}
+}

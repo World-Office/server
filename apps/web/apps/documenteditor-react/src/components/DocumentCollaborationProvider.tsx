@@ -1,7 +1,12 @@
 import type { EditOperation, ParticipantUpdate } from "@world-office/collaboration-client"
 import { useCollaboration } from "@world-office/collaboration-react"
 import { useEffect } from "react"
-import { collabSendCommentRef, collabSendRef, currentUser } from "../lib/collaboration"
+import {
+  collabSendCommentRef,
+  collabSendRef,
+  collaborationStore,
+  currentUser,
+} from "../lib/collaboration"
 import { COAUTHORING_API_URL, COAUTHORING_WS_URL } from "../lib/collaboration-config"
 import { getActiveRichTextEditor } from "../lib/rte-command"
 import { documentStore } from "../stores/DocumentStore"
@@ -32,7 +37,7 @@ export function DocumentCollaborationProvider(): null {
     wsUrl: COAUTHORING_WS_URL,
     userId: user.id,
     username: user.name,
-    collaborationStore: null,
+    collaborationStore: collaborationStore,
     sessionId: sessionStorage.getItem(SESSION_STORAGE_KEY) ?? undefined,
     coauthoringServiceUrl: COAUTHORING_API_URL,
     onRemoteOperation(op: EditOperation) {
