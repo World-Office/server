@@ -374,5 +374,6 @@
   "ExportWizard.sending": "Sende…",
   "ExportWizard.exportFailed": "Export fehlgeschlagen",
   "ExportWizard.sendFailed": "E-Mail konnte nicht gesendet werden",
+  "ExportWizard.emailBody": "Anbei das angeforderte Dokument.",
   "Zoom Out": "Verkleinern"
 }

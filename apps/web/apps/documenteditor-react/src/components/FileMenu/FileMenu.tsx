@@ -1,4 +1,4 @@
-import { type ExportFormat, ExportWizard } from "@world-office/editor-common"
+import { type EmailConfig, type ExportFormat, ExportWizard } from "@world-office/editor-common"
 import { useCallback } from "react"
 import type { CSSProperties } from "react"
 import { convertFromHtml, downloadBlob } from "../../lib/conversion"
@@ -33,14 +33,50 @@ const contentBoxBaseStyle: CSSProperties = {
 }
 
 const DOCUMENT_FORMATS: ExportFormat[] = [
-  { id: "docx", label: "DOCX", description: "Word Document", extension: ".docx" },
-  { id: "odt", label: "ODT", description: "OpenDocument Text", extension: ".odt" },
-  { id: "pdf", label: "PDF", description: "Portable Document Format", extension: ".pdf" },
-  { id: "rtf", label: "RTF", description: "Rich Text Format", extension: ".rtf" },
-  { id: "txt", label: "TXT", description: "Plain Text", extension: ".txt" },
-  { id: "html", label: "HTML", description: "Web Page", extension: ".html" },
-  { id: "epub", label: "EPUB", description: "Electronic Book", extension: ".epub" },
-  { id: "fb2", label: "FB2", description: "FictionBook", extension: ".fb2" },
+  {
+    id: "docx",
+    label: "DOCX",
+    description: "Word Document",
+    extension: ".docx",
+    mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  },
+  {
+    id: "odt",
+    label: "ODT",
+    description: "OpenDocument Text",
+    extension: ".odt",
+    mimeType: "application/vnd.oasis.opendocument.text",
+  },
+  {
+    id: "pdf",
+    label: "PDF",
+    description: "Portable Document Format",
+    extension: ".pdf",
+    mimeType: "application/pdf",
+  },
+  {
+    id: "rtf",
+    label: "RTF",
+    description: "Rich Text Format",
+    extension: ".rtf",
+    mimeType: "application/rtf",
+  },
+  { id: "txt", label: "TXT", description: "Plain Text", extension: ".txt", mimeType: "text/plain" },
+  { id: "html", label: "HTML", description: "Web Page", extension: ".html", mimeType: "text/html" },
+  {
+    id: "epub",
+    label: "EPUB",
+    description: "Electronic Book",
+    extension: ".epub",
+    mimeType: "application/epub+zip",
+  },
+  {
+    id: "fb2",
+    label: "FB2",
+    description: "FictionBook",
+    extension: ".fb2",
+    mimeType: "application/x-fictionbook+xml",
+  },
 ]
 
 export function FileMenu() {
@@ -74,6 +110,22 @@ export function FileMenu() {
     }
   }, [])
 
+  const emailConfig: EmailConfig = {
+    endpoint: "/api/send-email-attachment",
+    async produceAttachment(formatId: string) {
+      if (!documentStore.richTextHtml) return null
+      const blob = await convertFromHtml(documentStore.richTextHtml, formatId)
+      const ext = DOCUMENT_FORMATS.find((f) => f.id === formatId)?.extension ?? `.${formatId}`
+      const fileName = documentStore.fileName
+        ? documentStore.fileName.replace(/\.[^.]+$/, ext)
+        : `Document${ext}`
+      const mimeType =
+        DOCUMENT_FORMATS.find((f) => f.id === formatId)?.mimeType ?? "application/octet-stream"
+      return { blob, fileName, mimeType }
+    },
+    defaultSubject: "Document: {{fileName}}",
+  }
+
   return (
     <div className="de-file-menu">
       <div className="de-file-menu-list" role="menubar" aria-label="File menu">
@@ -102,6 +154,7 @@ export function FileMenu() {
           visible
           groups={[{ heading: "Document", formats: DOCUMENT_FORMATS }]}
           onExport={handleExport}
+          emailConfig={emailConfig}
           onClose={() => documentStore.setActiveFileMenuPanel(null)}
         />
       )}

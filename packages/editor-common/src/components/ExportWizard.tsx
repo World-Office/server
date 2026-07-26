@@ -26,6 +26,23 @@ export interface ExportFormatGroup {
   formats: ExportFormat[]
 }
 
+/** Email configuration for "Send as Email" section */
+export interface EmailConfig {
+  /** Backend endpoint URL (e.g. "/api/send-email-attachment") */
+  endpoint: string
+  /**
+   * Callback that re-exports the document for the given format id
+   * and returns { blob, fileName, mimeType } or null on failure.
+   */
+  produceAttachment: (formatId: string) => Promise<{
+    blob: Blob
+    fileName: string
+    mimeType: string
+  } | null>
+  /** Default subject line template: "{{fileName}}" is replaced */
+  defaultSubject?: string
+}
+
 export interface ExportWizardProps {
   /** Whether the wizard is open */
   visible: boolean
@@ -33,8 +50,13 @@ export interface ExportWizardProps {
   groups: ExportFormatGroup[]
   /** Called when user selects a format to export. Return true on success. */
   onExport: (format: ExportFormat) => Promise<boolean>
-  /** Called when user chooses "Send as Email" after export */
+  /** Called when user chooses "Send as Email" after export (legacy callback) */
   onEmail?: (format: ExportFormat, email: string) => Promise<boolean>
+  /**
+   * Configures the "Send as Email" flow with attachment re-export + backend API.
+   * If both `onEmail` and `emailConfig` are provided, `emailConfig` takes precedence.
+   */
+  emailConfig?: EmailConfig
   /** Called when wizard is dismissed */
   onClose: () => void
   /** Title for the dialog */
@@ -238,6 +260,7 @@ export function ExportWizard({
   groups,
   onExport,
   onEmail,
+  emailConfig,
   onClose,
   title,
   maxSize,
@@ -269,13 +292,57 @@ export function ExportWizard({
   )
 
   const handleEmail = useCallback(async () => {
-    if (!done || !email.trim() || !onEmail) return
+    if (!done || !email.trim() || (!onEmail && !emailConfig)) return
     setSending(true)
     setError(null)
     try {
-      const group = groups.flatMap((g) => g.formats).find((f) => f.id === done)
-      if (!group) return
-      await onEmail(group, email.trim())
+      if (emailConfig) {
+        // Use the emailConfig pattern: re-export the document, then send
+        const attachment = await emailConfig.produceAttachment(done)
+        if (!attachment) {
+          setError(t("ExportWizard.exportFailed"))
+          return
+        }
+        const fileName = attachment.fileName
+        const subject =
+          emailConfig.defaultSubject?.replace("{{fileName}}", fileName) || `Document: ${fileName}`
+        const body = t("ExportWizard.emailBody", "Please find the attached document.")
+
+        // Read blob as base64
+        const reader = new FileReader()
+        const b64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => {
+            const result = reader.result as string
+            resolve(result.split(",")[1] || "")
+          }
+          reader.onerror = () => reject(reader.error)
+          reader.readAsDataURL(attachment.blob)
+        })
+
+        const res = await fetch(emailConfig.endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to: email.trim(),
+            subject,
+            body,
+            fileName,
+            mimeType: attachment.mimeType,
+            fileData: b64,
+          }),
+        })
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}))
+          throw new Error(errData.error || `HTTP ${res.status}`)
+        }
+      } else if (onEmail) {
+        // Legacy pattern: onEmail callback
+        const group = groups.flatMap((g) => g.formats).find((f) => f.id === done)
+        if (!group) return
+        await onEmail(group, email.trim())
+      }
+
       setDone(null)
       setEmail("")
       onClose()
@@ -284,7 +351,7 @@ export function ExportWizard({
     } finally {
       setSending(false)
     }
-  }, [done, email, onEmail, groups, onClose, t])
+  }, [done, email, onEmail, emailConfig, groups, onClose, t])
 
   const handleBackdropClick = useCallback(
     (e: React.MouseEvent) => {
@@ -408,7 +475,7 @@ export function ExportWizard({
         </div>
 
         {/* ── Email section ── */}
-        {done && onEmail && (
+        {done && (onEmail || emailConfig) && (
           <div style={emailSectionStyle}>
             <input
               type="email"

@@ -1,4 +1,8 @@
-import { type ExportFormat, ExportWizard } from "@world-office/editor-common";
+import {
+	type EmailConfig,
+	type ExportFormat,
+	ExportWizard,
+} from "@world-office/editor-common";
 import { useCallback } from "react";
 import type { CSSProperties } from "react";
 import { presentationStore } from "../../stores/PresentationStore";
@@ -52,18 +56,22 @@ export function FileMenu() {
 			label: "PPTX",
 			description: "PowerPoint Presentation",
 			extension: ".pptx",
+			mimeType:
+				"application/vnd.openxmlformats-officedocument.presentationml.presentation",
 		},
 		{
 			id: "odp",
 			label: "ODP",
 			description: "OpenDocument Presentation",
 			extension: ".odp",
+			mimeType: "application/vnd.oasis.opendocument.presentation",
 		},
 		{
 			id: "pdf",
 			label: "PDF",
 			description: "Portable Document Format",
 			extension: ".pdf",
+			mimeType: "application/pdf",
 		},
 	];
 
@@ -109,6 +117,47 @@ export function FileMenu() {
 		[],
 	);
 
+	const emailConfig: EmailConfig = {
+		endpoint: "/api/send-email-attachment",
+		async produceAttachment(formatId: string) {
+			try {
+				const json = presentationStore.toJSON();
+				const b64 = btoa(json);
+				const { CONVERSION_API_URL } = await import("../../lib/export-service");
+				const convUrl = CONVERSION_API_URL;
+
+				const res = await fetch(`${convUrl}/convert`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						input_format: "wo-presentation",
+						output_format: formatId,
+						data: b64,
+					}),
+				});
+				if (!res.ok) return null;
+				const result = await res.json();
+				const outputB64: string | undefined =
+					result?.data ?? result?.job?.output_data;
+				if (!outputB64) return null;
+				const bin = atob(outputB64);
+				const bytes = new Uint8Array(bin.length);
+				for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+				const fmt = PRESENTATION_FORMATS.find((f) => f.id === formatId);
+				const mime = fmt?.mimeType ?? "application/octet-stream";
+				const blob = new Blob([bytes], { type: mime });
+				return {
+					blob,
+					fileName: `presentation${fmt?.extension ?? `.${formatId}`}`,
+					mimeType: mime,
+				};
+			} catch {
+				return null;
+			}
+		},
+		defaultSubject: "Presentation: {{fileName}}",
+	};
+
 	return (
 		<div className="prese-file-menu">
 			<div
@@ -138,6 +187,7 @@ export function FileMenu() {
 					visible
 					groups={[{ heading: "Presentation", formats: PRESENTATION_FORMATS }]}
 					onExport={handleExport}
+					emailConfig={emailConfig}
 					onClose={() => presentationStore.setActiveFileMenuPanel(null)}
 				/>
 			)}

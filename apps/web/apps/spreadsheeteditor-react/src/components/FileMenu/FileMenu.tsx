@@ -1,4 +1,8 @@
-import { type ExportFormat, ExportWizard } from "@world-office/editor-common";
+import {
+	type EmailConfig,
+	type ExportFormat,
+	ExportWizard,
+} from "@world-office/editor-common";
 import { useCallback } from "react";
 import type { CSSProperties } from "react";
 import { spreadsheetStore } from "../../stores/SpreadsheetStore";
@@ -55,45 +59,55 @@ export function FileMenu() {
 			label: "XLSX",
 			description: "Excel Workbook",
 			extension: ".xlsx",
+			mimeType:
+				"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 		},
 		{
 			id: "ods",
 			label: "ODS",
 			description: "OpenDocument Spreadsheet",
 			extension: ".ods",
+			mimeType: "application/vnd.oasis.opendocument.spreadsheet",
 		},
 		{
 			id: "pdf",
 			label: "PDF",
 			description: "Portable Document Format",
 			extension: ".pdf",
+			mimeType: "application/pdf",
 		},
 		{
 			id: "csv",
 			label: "CSV",
 			description: "Comma-Separated Values",
 			extension: ".csv",
+			mimeType: "text/csv",
 		},
 	];
 
-	const SPREADSHEET_MIME: Record<string, string> = {
-		xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-		ods: "application/vnd.oasis.opendocument.spreadsheet",
-		pdf: "application/pdf",
-		csv: "text/csv",
-	};
-
-	const handleExport = useCallback(
-		async (format: ExportFormat): Promise<boolean> => {
+	// Shared helper to produce an export blob for a given format
+	const produceSpreadsheetBlob = useCallback(
+		async (
+			formatId: string,
+		): Promise<{ blob: Blob; fileName: string; mimeType: string } | null> => {
 			try {
-				// For XLSX, use the existing export flow via the store
-				if (format.id === "xlsx") {
-					await spreadsheetStore.exportAsDownload();
-					return true;
+				// XLSX goes through the store's built-in export
+				if (formatId === "xlsx") {
+					const blob = await spreadsheetStore.buildDocumentBlob();
+					if (!blob || blob.size === 0) return null;
+					const fileName = spreadsheetStore.document?.title
+						? `${spreadsheetStore.document.title.replace(/\.[^.]+$/, "")}.xlsx`
+						: "spreadsheet.xlsx";
+					return {
+						blob,
+						fileName,
+						mimeType:
+							"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+					};
 				}
 
 				const snapshot = getUniverSnapshot();
-				if (!snapshot) return false;
+				if (!snapshot) return null;
 				const json = JSON.stringify(snapshot);
 
 				const CONVERSION_URL =
@@ -107,33 +121,51 @@ export function FileMenu() {
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
 						source_format: "wo-spreadsheet",
-						target_format: format.id,
+						target_format: formatId,
 						data: btoa(json),
 					}),
 				});
-				if (!res.ok) return false;
+				if (!res.ok) return null;
 				const result = await res.json();
-				if (!result.data) return false;
+				if (!result.data) return null;
 				const bin = atob(result.data);
 				const bytes = new Uint8Array(bin.length);
 				for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-				const blob = new Blob([bytes], {
-					type: SPREADSHEET_MIME[format.id] ?? "application/octet-stream",
-				});
-				const fileName = `spreadsheet${format.extension}`;
-				const url = URL.createObjectURL(blob);
-				const a = document.createElement("a");
-				a.href = url;
-				a.download = fileName;
-				a.click();
-				URL.revokeObjectURL(url);
-				return true;
+				const fmt = SPREADSHEET_FORMATS.find((f) => f.id === formatId);
+				const mime = fmt?.mimeType ?? "application/octet-stream";
+				const blob = new Blob([bytes], { type: mime });
+				return {
+					blob,
+					fileName: `spreadsheet${fmt?.extension ?? `.${formatId}`}`,
+					mimeType: mime,
+				};
 			} catch {
-				return false;
+				return null;
 			}
 		},
 		[],
 	);
+
+	const handleExport = useCallback(
+		async (format: ExportFormat): Promise<boolean> => {
+			const result = await produceSpreadsheetBlob(format.id);
+			if (!result) return false;
+			const url = URL.createObjectURL(result.blob);
+			const a = document.createElement("a");
+			a.href = url;
+			a.download = result.fileName;
+			a.click();
+			URL.revokeObjectURL(url);
+			return true;
+		},
+		[produceSpreadsheetBlob],
+	);
+
+	const emailConfig: EmailConfig = {
+		endpoint: "/api/send-email-attachment",
+		produceAttachment: produceSpreadsheetBlob,
+		defaultSubject: "Spreadsheet: {{fileName}}",
+	};
 
 	return (
 		<div className="se-file-menu">
@@ -161,6 +193,7 @@ export function FileMenu() {
 					visible
 					groups={[{ heading: "Spreadsheet", formats: SPREADSHEET_FORMATS }]}
 					onExport={handleExport}
+					emailConfig={emailConfig}
 					onClose={() => spreadsheetStore.setActiveFileMenuPanel(null)}
 				/>
 			)}
