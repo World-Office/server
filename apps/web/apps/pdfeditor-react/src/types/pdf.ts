@@ -80,6 +80,7 @@ export type FileMenuAction =
   | "close-editor"
   | "external-help"
   | "suggest"
+  | "export"
 
 export type LeftMenuAction = "search" | "comments" | "chat" | "navigation" | "thumbnails" | "about"
 

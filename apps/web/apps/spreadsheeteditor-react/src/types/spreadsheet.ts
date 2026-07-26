@@ -94,7 +94,8 @@ export type FileMenuAction =
 	| "suggest"
 	| "create-new"
 	| "open-recent"
-	| "protect";
+	| "protect"
+	| "export";
 
 export type LeftMenuAction =
 	| "search"

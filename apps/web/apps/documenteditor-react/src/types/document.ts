@@ -86,6 +86,7 @@ export type FileMenuAction =
   | "browse"
   | "share"
   | "protect"
+  | "export"
 
 export type LeftMenuAction =
   | "search"

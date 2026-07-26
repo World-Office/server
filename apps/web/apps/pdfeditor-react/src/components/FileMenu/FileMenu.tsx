@@ -1,3 +1,5 @@
+import { type ExportFormat, ExportWizard } from "@world-office/editor-common"
+import { useCallback } from "react"
 import type { CSSProperties } from "react"
 import { pdfStore } from "../../stores/PdfStore"
 import { FileMenuItems } from "./FileMenuItems"
@@ -36,6 +38,19 @@ export function FileMenu() {
     pdfStore.setFileMenuOpen(false)
   }
 
+  const PDF_FORMATS: ExportFormat[] = [
+    { id: "pdf", label: "PDF", description: "Portable Document Format", extension: ".pdf" },
+  ]
+
+  const handleExport = useCallback(async (_format: ExportFormat): Promise<boolean> => {
+    try {
+      await pdfStore.exportAsDownload()
+      return true
+    } catch {
+      return false
+    }
+  }, [])
+
   return (
     <div className="pdf-file-menu">
       <div className="pdf-file-menu-list" role="menubar" aria-label="File menu">
@@ -51,6 +66,15 @@ export function FileMenu() {
           <PrintPreviewPanel visible={activePanel === "printpreview"} />
         </div>
       </div>
+
+      {activePanel === "export" && (
+        <ExportWizard
+          visible
+          groups={[{ heading: "PDF", formats: PDF_FORMATS }]}
+          onExport={handleExport}
+          onClose={() => pdfStore.setActiveFileMenuPanel(null)}
+        />
+      )}
     </div>
   )
 }

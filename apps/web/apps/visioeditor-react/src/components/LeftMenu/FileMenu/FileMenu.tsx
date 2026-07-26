@@ -1,3 +1,5 @@
+import { type ExportFormat, ExportWizard } from "@world-office/editor-common";
+import { useCallback } from "react";
 import type { CSSProperties } from "react";
 import { visioStore } from "../../../stores/VisioStore";
 import { FileMenuItems } from "./FileMenuItems";
@@ -37,6 +39,77 @@ export function FileMenu() {
 		visioStore.setFileMenuOpen(false);
 	}
 
+	const VISIO_FORMATS: ExportFormat[] = [
+		{
+			id: "wo-flowchart",
+			label: "WO Flowchart",
+			description: "World-Office Diagram",
+			extension: ".wo-flowchart",
+		},
+		{
+			id: "vsdx",
+			label: "VSDX",
+			description: "Visio Drawing",
+			extension: ".vsdx",
+		},
+		{
+			id: "pdf",
+			label: "PDF",
+			description: "Portable Document Format",
+			extension: ".pdf",
+		},
+	];
+
+	const handleExport = useCallback(
+		async (format: ExportFormat): Promise<boolean> => {
+			try {
+				if (format.id === "wo-flowchart") {
+					visioStore.exportAsDownload();
+					return true;
+				}
+				// For VSDX/PDF, use conversion service if available
+				const visioBlob = visioStore.buildDocumentBlob();
+				const json = await visioBlob.text();
+				const res = await fetch(
+					import.meta.env?.VITE_CONVERSION_API_URL ??
+						"http://localhost:8003/convert",
+					{
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({
+							input_format: "wo-visio-diagram",
+							output_format: format.id,
+							data: btoa(json),
+						}),
+					},
+				);
+				if (!res.ok) return false;
+				const result = await res.json();
+				const outputB64: string | undefined =
+					result?.data ?? result?.job?.output_data;
+				if (!outputB64) return false;
+				const bin = atob(outputB64);
+				const bytes = new Uint8Array(bin.length);
+				for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+				const mime =
+					format.id === "pdf"
+						? "application/pdf"
+						: "application/vnd.ms-visio.drawing";
+				const blob = new Blob([bytes], { type: mime });
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement("a");
+				a.href = url;
+				a.download = `diagram${format.extension}`;
+				a.click();
+				URL.revokeObjectURL(url);
+				return true;
+			} catch {
+				return false;
+			}
+		},
+		[],
+	);
+
 	return (
 		<div className="visio-file-menu">
 			<div
@@ -56,6 +129,15 @@ export function FileMenu() {
 					<PrintPreviewPanel visible={activePanel === "printpreview"} />
 				</div>
 			</div>
+
+			{activePanel === "export" && (
+				<ExportWizard
+					visible
+					groups={[{ heading: "Diagram", formats: VISIO_FORMATS }]}
+					onExport={handleExport}
+					onClose={() => visioStore.setActiveFileMenuPanel(null)}
+				/>
+			)}
 		</div>
 	);
 }

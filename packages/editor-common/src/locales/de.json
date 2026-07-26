@@ -364,5 +364,15 @@
   "Wrap Text": "Text umbrechen",
   "Zoom": "Zoom",
   "Zoom In": "Vergrößern",
+  "ExportWizard.title": "Herunterladen als",
+  "ExportWizard.close": "Schließen",
+  "ExportWizard.converting": "Konvertiere nach {{format}}…",
+  "ExportWizard.maxSizeWarning": "Maximale Dateigröße: {{size}}",
+  "ExportWizard.downloadStarted": "Download gestartet",
+  "ExportWizard.emailPlaceholder": "E-Mail-Adresse",
+  "ExportWizard.send": "Als E-Mail senden",
+  "ExportWizard.sending": "Sende…",
+  "ExportWizard.exportFailed": "Export fehlgeschlagen",
+  "ExportWizard.sendFailed": "E-Mail konnte nicht gesendet werden",
   "Zoom Out": "Verkleinern"
 }

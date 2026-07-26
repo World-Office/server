@@ -96,7 +96,8 @@ export type FileMenuAction =
 	| "external-help"
 	| "suggest"
 	| "create-new"
-	| "open-recent";
+	| "open-recent"
+	| "export";
 
 export type LeftMenuAction =
 	| "search"
