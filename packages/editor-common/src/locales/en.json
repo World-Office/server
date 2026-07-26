@@ -364,5 +364,15 @@
   "Wrap Text": "Wrap Text",
   "Zoom": "Zoom",
   "Zoom In": "Zoom In",
+  "ExportWizard.title": "Download as",
+  "ExportWizard.close": "Close",
+  "ExportWizard.converting": "Converting to {{format}}…",
+  "ExportWizard.maxSizeWarning": "Max file size: {{size}}",
+  "ExportWizard.downloadStarted": "Download started",
+  "ExportWizard.emailPlaceholder": "Email address",
+  "ExportWizard.send": "Send as Email",
+  "ExportWizard.sending": "Sending…",
+  "ExportWizard.exportFailed": "Export failed",
+  "ExportWizard.sendFailed": "Failed to send email",
   "Zoom Out": "Zoom Out"
 }

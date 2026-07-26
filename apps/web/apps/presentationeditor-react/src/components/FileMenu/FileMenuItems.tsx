@@ -15,6 +15,7 @@ interface MenuItem {
 
 const MENU_ITEMS: MenuItem[] = [
 	{ action: "saveas", caption: "Download as...", hasPanel: true },
+	{ action: "export", caption: "Export Wizard...", hasPanel: true },
 	{ action: "save-copy", caption: "Save Copy as...", hasPanel: true },
 	{ action: "save-desktop", caption: "Save as...", hasPanel: false },
 	{ action: "print", caption: "Print", hasPanel: false },

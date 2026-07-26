@@ -1,3 +1,5 @@
+import { type ExportFormat, ExportWizard } from "@world-office/editor-common";
+import { useCallback } from "react";
 import type { CSSProperties } from "react";
 import { spreadsheetStore } from "../../stores/SpreadsheetStore";
 import { FileMenuItems } from "./FileMenuItems";
@@ -12,6 +14,8 @@ import { SaveAsPanel } from "./panels/SaveAsPanel";
 import { SaveCopyPanel } from "./panels/SaveCopyPanel";
 import { SettingsPanel } from "./panels/SettingsPanel";
 import { SuggestPanel } from "./panels/SuggestPanel";
+
+import { getUniverSnapshot } from "../../lib/univer-command";
 
 const panelContainerStyle: CSSProperties = {
 	width: "100%",
@@ -45,6 +49,92 @@ export function FileMenu() {
 		spreadsheetStore.setFileMenuOpen(false);
 	}
 
+	const SPREADSHEET_FORMATS: ExportFormat[] = [
+		{
+			id: "xlsx",
+			label: "XLSX",
+			description: "Excel Workbook",
+			extension: ".xlsx",
+		},
+		{
+			id: "ods",
+			label: "ODS",
+			description: "OpenDocument Spreadsheet",
+			extension: ".ods",
+		},
+		{
+			id: "pdf",
+			label: "PDF",
+			description: "Portable Document Format",
+			extension: ".pdf",
+		},
+		{
+			id: "csv",
+			label: "CSV",
+			description: "Comma-Separated Values",
+			extension: ".csv",
+		},
+	];
+
+	const SPREADSHEET_MIME: Record<string, string> = {
+		xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+		ods: "application/vnd.oasis.opendocument.spreadsheet",
+		pdf: "application/pdf",
+		csv: "text/csv",
+	};
+
+	const handleExport = useCallback(
+		async (format: ExportFormat): Promise<boolean> => {
+			try {
+				// For XLSX, use the existing export flow via the store
+				if (format.id === "xlsx") {
+					await spreadsheetStore.exportAsDownload();
+					return true;
+				}
+
+				const snapshot = getUniverSnapshot();
+				if (!snapshot) return false;
+				const json = JSON.stringify(snapshot);
+
+				const CONVERSION_URL =
+					(typeof window !== "undefined" &&
+						(window as unknown as Record<string, string | undefined>)
+							.__CONVERSION_API_URL) ||
+					"/api/conversion/convert";
+
+				const res = await fetch(CONVERSION_URL, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						source_format: "wo-spreadsheet",
+						target_format: format.id,
+						data: btoa(json),
+					}),
+				});
+				if (!res.ok) return false;
+				const result = await res.json();
+				if (!result.data) return false;
+				const bin = atob(result.data);
+				const bytes = new Uint8Array(bin.length);
+				for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+				const blob = new Blob([bytes], {
+					type: SPREADSHEET_MIME[format.id] ?? "application/octet-stream",
+				});
+				const fileName = `spreadsheet${format.extension}`;
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement("a");
+				a.href = url;
+				a.download = fileName;
+				a.click();
+				URL.revokeObjectURL(url);
+				return true;
+			} catch {
+				return false;
+			}
+		},
+		[],
+	);
+
 	return (
 		<div className="se-file-menu">
 			<div className="se-file-menu-list" role="menubar" aria-label="File menu">
@@ -65,6 +155,15 @@ export function FileMenu() {
 					<SuggestPanel visible={activePanel === "suggest"} />
 				</div>
 			</div>
+
+			{activePanel === "export" && (
+				<ExportWizard
+					visible
+					groups={[{ heading: "Spreadsheet", formats: SPREADSHEET_FORMATS }]}
+					onExport={handleExport}
+					onClose={() => spreadsheetStore.setActiveFileMenuPanel(null)}
+				/>
+			)}
 		</div>
 	);
 }

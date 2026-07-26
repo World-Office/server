@@ -1,4 +1,7 @@
+import { type ExportFormat, ExportWizard } from "@world-office/editor-common"
+import { useCallback } from "react"
 import type { CSSProperties } from "react"
+import { convertFromHtml, downloadBlob } from "../../lib/conversion"
 import { documentStore } from "../../stores/DocumentStore"
 import { FileMenuItems } from "./FileMenuItems"
 import { CreateNewPanel } from "./panels/CreateNewPanel"
@@ -29,6 +32,17 @@ const contentBoxBaseStyle: CSSProperties = {
   display: "none",
 }
 
+const DOCUMENT_FORMATS: ExportFormat[] = [
+  { id: "docx", label: "DOCX", description: "Word Document", extension: ".docx" },
+  { id: "odt", label: "ODT", description: "OpenDocument Text", extension: ".odt" },
+  { id: "pdf", label: "PDF", description: "Portable Document Format", extension: ".pdf" },
+  { id: "rtf", label: "RTF", description: "Rich Text Format", extension: ".rtf" },
+  { id: "txt", label: "TXT", description: "Plain Text", extension: ".txt" },
+  { id: "html", label: "HTML", description: "Web Page", extension: ".html" },
+  { id: "epub", label: "EPUB", description: "Electronic Book", extension: ".epub" },
+  { id: "fb2", label: "FB2", description: "FictionBook", extension: ".fb2" },
+]
+
 export function FileMenu() {
   const activePanel = documentStore.activeFileMenuPanel
 
@@ -45,6 +59,20 @@ export function FileMenu() {
     documentStore.setActiveFileMenuPanel(null)
     documentStore.setFileMenuOpen(false)
   }
+
+  const handleExport = useCallback(async (format: ExportFormat): Promise<boolean> => {
+    if (!documentStore.richTextHtml) return false
+    try {
+      const blob = await convertFromHtml(documentStore.richTextHtml, format.id)
+      const fileName = documentStore.fileName
+        ? documentStore.fileName.replace(/\.[^.]+$/, format.extension)
+        : `Untitled${format.extension}`
+      downloadBlob(blob, fileName)
+      return true
+    } catch {
+      return false
+    }
+  }, [])
 
   return (
     <div className="de-file-menu">
@@ -68,6 +96,15 @@ export function FileMenu() {
           <VersionHistoryPanel visible={activePanel === "history"} />
         </div>
       </div>
+
+      {activePanel === "export" && (
+        <ExportWizard
+          visible
+          groups={[{ heading: "Document", formats: DOCUMENT_FORMATS }]}
+          onExport={handleExport}
+          onClose={() => documentStore.setActiveFileMenuPanel(null)}
+        />
+      )}
     </div>
   )
 }

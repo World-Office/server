@@ -1,3 +1,5 @@
+import { type ExportFormat, ExportWizard } from "@world-office/editor-common";
+import { useCallback } from "react";
 import type { CSSProperties } from "react";
 import { presentationStore } from "../../stores/PresentationStore";
 import { FileMenuItems } from "./FileMenuItems";
@@ -44,6 +46,69 @@ export function FileMenu() {
 		presentationStore.setFileMenuOpen(false);
 	}
 
+	const PRESENTATION_FORMATS: ExportFormat[] = [
+		{
+			id: "pptx",
+			label: "PPTX",
+			description: "PowerPoint Presentation",
+			extension: ".pptx",
+		},
+		{
+			id: "odp",
+			label: "ODP",
+			description: "OpenDocument Presentation",
+			extension: ".odp",
+		},
+		{
+			id: "pdf",
+			label: "PDF",
+			description: "Portable Document Format",
+			extension: ".pdf",
+		},
+	];
+
+	const handleExport = useCallback(
+		async (format: ExportFormat): Promise<boolean> => {
+			try {
+				const json = presentationStore.toJSON();
+				const b64 = btoa(json);
+				// Get conversion API URL from the export-service module
+				const { CONVERSION_API_URL, downloadBlob: dlBlob } = await import(
+					"../../lib/export-service"
+				);
+				const convUrl = CONVERSION_API_URL;
+
+				const res = await fetch(`${convUrl}/convert`, {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						input_format: "wo-presentation",
+						output_format: format.id,
+						data: b64,
+					}),
+				});
+				if (!res.ok) return false;
+				const result = await res.json();
+				const outputB64: string | undefined =
+					result?.data ?? result?.job?.output_data;
+				if (!outputB64) return false;
+				const bin = atob(outputB64);
+				const bytes = new Uint8Array(bin.length);
+				for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+				const mime =
+					format.id === "pdf"
+						? "application/pdf"
+						: "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+				const blob = new Blob([bytes], { type: mime });
+				dlBlob(blob, `presentation${format.extension}`);
+				return true;
+			} catch {
+				return false;
+			}
+		},
+		[],
+	);
+
 	return (
 		<div className="prese-file-menu">
 			<div
@@ -67,6 +132,15 @@ export function FileMenu() {
 					<PrintPreviewPanel visible={activePanel === "printpreview"} />
 				</div>
 			</div>
+
+			{activePanel === "export" && (
+				<ExportWizard
+					visible
+					groups={[{ heading: "Presentation", formats: PRESENTATION_FORMATS }]}
+					onExport={handleExport}
+					onClose={() => presentationStore.setActiveFileMenuPanel(null)}
+				/>
+			)}
 		</div>
 	);
 }

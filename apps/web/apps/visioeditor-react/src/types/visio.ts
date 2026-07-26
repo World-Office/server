@@ -78,7 +78,8 @@ export type FileMenuAction =
 	| "exit"
 	| "close-editor"
 	| "external-help"
-	| "suggest";
+	| "suggest"
+	| "export";
 
 export type EditorMode = "vsdx" | "vsdm" | "flowchart";
 
