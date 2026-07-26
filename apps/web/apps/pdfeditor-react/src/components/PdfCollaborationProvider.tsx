@@ -4,8 +4,14 @@ import type {
   PdfAnnotationOperation,
 } from "@world-office/collaboration-client"
 import { useCollaboration } from "@world-office/collaboration-react"
-import { useCallback, useEffect } from "react"
-import { collabSendRef, currentUser, pdfCollaborationStore } from "../lib/collaboration"
+import { reaction } from "mobx"
+import { useCallback, useEffect, useRef } from "react"
+import {
+  collabSendRef,
+  currentUser,
+  pdfAnnotationBroadcastRef,
+  pdfCollaborationStore,
+} from "../lib/collaboration"
 import { COAUTHORING_API_URL, COAUTHORING_WS_URL } from "../lib/collaboration-config"
 import { pdfStore } from "../stores/PdfStore"
 
@@ -45,50 +51,90 @@ export function PdfCollaborationProvider(): null {
       // PDF cursor tracking handled by collaborationStore
     },
     onPdfAnnotationOp(op: PdfAnnotationOperation, _userId: string) {
-      switch (op.action) {
-        case "add_annotation": {
-          const p = op.payload
-          pdfStore.annotations.push({
-            id: p.id,
-            page: p.page,
-            x: p.x,
-            y: p.y,
-            width: p.width ?? 0,
-            height: p.height ?? 0,
-            color: p.color ?? "#ff0000",
-            text: p.text,
-          })
-          break
-        }
-        case "remove_annotation":
-          pdfStore.annotations = pdfStore.annotations.filter((a) => a.id !== op.annotation_id)
-          break
-        case "modify_annotation": {
-          const idx = pdfStore.annotations.findIndex((a) => a.id === op.annotation_id)
-          if (idx >= 0) {
-            pdfStore.annotations[idx] = { ...pdfStore.annotations[idx], ...op.changes }
+      applyingRemoteRef.current = true
+      try {
+        switch (op.action) {
+          case "add_annotation": {
+            const p = op.payload
+            pdfStore.annotations.push({
+              id: p.id,
+              page: p.page,
+              x: p.x,
+              y: p.y,
+              width: p.width ?? 0,
+              height: p.height ?? 0,
+              color: p.color ?? "#ff0000",
+              text: p.text,
+            })
+            break
           }
-          break
+          case "remove_annotation":
+            pdfStore.annotations = pdfStore.annotations.filter((a) => a.id !== op.annotation_id)
+            break
+          case "modify_annotation": {
+            const idx = pdfStore.annotations.findIndex((a) => a.id === op.annotation_id)
+            if (idx >= 0) {
+              pdfStore.annotations[idx] = { ...pdfStore.annotations[idx], ...op.changes }
+            }
+            break
+          }
         }
+        pdfStore.isModified = true
+      } finally {
+        applyingRemoteRef.current = false
       }
-      pdfStore.isModified = true
     },
   })
+
+  // Flag to avoid re-broadcasting ops received from remote
+  const applyingRemoteRef = useRef(false)
 
   // Watch for local annotation changes and broadcast them
   const broadcastAnnotationOp = useCallback(
     (op: PdfAnnotationOperation) => {
+      if (applyingRemoteRef.current) return
       collab.sendPdfAnnotationOp(op)
     },
     [collab.sendPdfAnnotationOp],
   )
 
-  // Expose broadcast function so PdfViewer can call it
+  // MobX reaction: auto-broadcast any annotation array change
   useEffect(() => {
-    ;(window as unknown as Record<string, unknown>).__pdfCollabSendAnnotation =
-      broadcastAnnotationOp
+    const disposer = reaction(
+      () => pdfStore.annotations.length,
+      (_len, prevLen) => {
+        if (applyingRemoteRef.current) return
+        const curLen = pdfStore.annotations.length
+        if (curLen > prevLen) {
+          // Annotation was added locally — find the newest one
+          const added = pdfStore.annotations[curLen - 1]
+          if (added) {
+            broadcastAnnotationOp({
+              action: "add_annotation",
+              payload: {
+                id: added.id,
+                page: added.page,
+                type: "text-comment",
+                x: added.x,
+                y: added.y,
+                width: added.width,
+                height: added.height,
+                color: added.color,
+                text: added.text,
+              },
+            })
+          }
+        }
+      },
+    )
+    return () => disposer()
+  }, [broadcastAnnotationOp])
+
+  // Expose broadcast function via typed ref so PdfViewer can call it
+  useEffect(() => {
+    pdfAnnotationBroadcastRef.send = broadcastAnnotationOp
     return () => {
-      ;(window as unknown as Record<string, unknown>).__pdfCollabSendAnnotation = undefined
+      pdfAnnotationBroadcastRef.send = null
     }
   }, [broadcastAnnotationOp])
 
