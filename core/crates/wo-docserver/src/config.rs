@@ -46,6 +46,7 @@ impl DocServerConfig {
                 .or_else(|_| env::var("WOPI_HOST_URL"))
                 .unwrap_or_else(|_| "http://ocis:9200".into()),
             public_url: env::var("DOCSERVER_PUBLIC_URL")
+                .or_else(|_| env::var("PUBLIC_URL"))
                 .unwrap_or_else(|_| "http://localhost:8080".into()),
             editor_ui_dir: env::var("EDITOR_UI_DIR").unwrap_or_else(|_| "./editor-ui".into()),
             data_dir: env::var("DOCSERVER_DATA_DIR").unwrap_or_else(|_| "./data".into()),

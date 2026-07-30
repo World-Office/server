@@ -1,0 +1,81 @@
+{
+  "pages": [
+    {
+      "index": 0,
+      "size": {
+        "width_pt": 612.0,
+        "height_pt": 792.0
+      },
+      "boxes": [
+        {
+          "kind": "paragraph",
+          "origin": {
+            "x_pt": 77.25,
+            "y_pt": 72.49
+          },
+          "size": {
+            "width_pt": 274.43,
+            "height_pt": 26.09
+          },
+          "runs": [
+            {
+              "text": "Cell A1",
+              "font": "DejaVuSerif",
+              "size_pt": 11.0,
+              "weight": 700,
+              "italic": false,
+              "origin": {
+                "x_pt": 77.25,
+                "y_pt": 82.7
+              }
+            },
+            {
+              "text": "Cell B1",
+              "font": "DejaVuSerif",
+              "size_pt": 11.0,
+              "weight": 700,
+              "italic": false,
+              "origin": {
+                "x_pt": 311.2,
+                "y_pt": 82.7
+              }
+            },
+            {
+              "text": "Cell A2",
+              "font": "DejaVuSerif",
+              "size_pt": 11.0,
+              "weight": 700,
+              "italic": false,
+              "origin": {
+                "x_pt": 77.25,
+                "y_pt": 96.0
+              }
+            },
+            {
+              "text": "Cell B2",
+              "font": "DejaVuSerif",
+              "size_pt": 11.0,
+              "weight": 700,
+              "italic": false,
+              "origin": {
+                "x_pt": 311.2,
+                "y_pt": 96.0
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "resolved_fonts": {
+    "requested": [],
+    "resolved": {},
+    "unavailable": []
+  },
+  "metadata": {
+    "engine": "libreoffice",
+    "engine_version": "LibreOffice 26.2.4.2 620(Build:2)",
+    "captured_at": "2026-07-29T19:08:06.333488+00:00",
+    "environment": "PDF\u2192IR extraction via PyMuPDF ('1.28.0', '1.29.0', None)"
+  }
+}

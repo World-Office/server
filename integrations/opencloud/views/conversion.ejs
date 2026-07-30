@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %></title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <link rel="stylesheet" href="/css/file-browser.css">
+  <style>
+    .conv-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--spacing-lg);
+    }
+
+    /* Upload panel */
+    .conv-upload-panel {
+      background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-xl);
+    }
+
+    .conv-upload-panel h2 {
+      font-size: 1.125rem;
+      font-weight: var(--font-weight-light);
+      color: var(--accent);
+      margin-bottom: var(--spacing-lg);
+      letter-spacing: 0.03em;
+    }
+
+    .conv-dropzone {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 1.5rem;
+      border: 2px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      background: rgba(0,0,0,0.15);
+      text-align: center;
+      gap: 0.75rem;
+    }
+
+    .conv-dropzone:hover,
+    .conv-dropzone.dragover {
+      border-color: var(--primary);
+      background: var(--primary-dim);
+    }
+
+    .conv-dropzone-icon {
+      width: 48px;
+      height: 48px;
+      color: var(--text-muted);
+    }
+
+    .conv-dropzone-text {
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+    }
+
+    .conv-dropzone-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .conv-file-info {
+      display: none;
+      margin-top: var(--spacing-lg);
+      padding: var(--spacing-md);
+      background: var(--bg-void);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+    }
+
+    .conv-file-info.visible {
+      display: block;
+    }
+
+    .conv-file-info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.875rem;
+      padding: 0.25rem 0;
+    }
+
+    .conv-file-info-label {
+      color: var(--text-muted);
+    }
+
+    .conv-file-info-value {
+      color: var(--text-primary);
+    }
+
+    .conv-format-select {
+      margin-top: var(--spacing-lg);
+    }
+
+    .conv-format-select label {
+      display: block;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .conv-format-select select {
+      width: 100%;
+      padding: 0.625rem 0.875rem;
+      background: var(--bg-void);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 0.9375rem;
+    }
+
+    .conv-format-select select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-dim);
+    }
+
+    .conv-submit {
+      margin-top: var(--spacing-lg);
+      width: 100%;
+    }
+
+    /* Job list panel */
+    .conv-jobs-panel {
+      background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-xl);
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    .conv-jobs-panel h2 {
+      font-size: 1.125rem;
+      font-weight: var(--font-weight-light);
+      color: var(--accent);
+      margin-bottom: var(--spacing-lg);
+      letter-spacing: 0.03em;
+    }
+
+    .conv-jobs-empty {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .conv-job {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border-light);
+      transition: background var(--transition-fast);
+    }
+
+    .conv-job:last-child {
+      border-bottom: none;
+    }
+
+    .conv-job:hover {
+      background: rgba(255,255,255,0.02);
+    }
+
+    .conv-job-info {
+      display: flex;
+      flex-direction: column;
+      gap: 0.125rem;
+      min-width: 0;
+    }
+
+    .conv-job-name {
+      font-size: 0.875rem;
+      color: var(--text-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .conv-job-formats {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .conv-job-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.2rem 0.625rem;
+      border-radius: 9999px;
+      font-size: 0.6875rem;
+      font-weight: var(--font-weight-bold);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .conv-job-badge.queued {
+      background: rgba(251, 191, 36, 0.1);
+      color: var(--warning);
+      border: 1px solid rgba(251, 191, 36, 0.2);
+    }
+
+    .conv-job-badge.processing {
+      background: rgba(0, 212, 255, 0.1);
+      color: var(--primary);
+      border: 1px solid rgba(0, 212, 255, 0.2);
+    }
+
+    .conv-job-badge.done {
+      background: rgba(74, 222, 128, 0.1);
+      color: var(--success);
+      border: 1px solid rgba(74, 222, 128, 0.2);
+    }
+
+    .conv-job-badge.error {
+      background: rgba(248, 113, 113, 0.1);
+      color: var(--error);
+      border: 1px solid rgba(248, 113, 113, 0.2);
+    }
+
+    .conv-job-actions {
+      display: flex;
+      gap: 0.375rem;
+    }
+
+    .conv-job-actions .btn-icon-sm {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .conv-job-actions .btn-icon-sm:hover {
+      color: var(--primary);
+      border-color: var(--primary);
+      background: var(--primary-dim);
+    }
+
+    .conv-job-duration {
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      white-space: nowrap;
+    }
+
+    /* Progress animation */
+    @keyframes conv-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .conv-job-badge.processing {
+      animation: conv-pulse 1.2s ease-in-out infinite;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .conv-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="dashboard-header">
+    <div class="header-inner">
+      <a href="/dashboard" class="header-brand">
+        <h1 class="header-title">World-Office Cloud</h1>
+      </a>
+      <nav class="header-nav">
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/conversion" class="nav-link active">Conversion</a>
+        <a href="/setup" class="nav-link">Setup</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="dashboard-main">
+    <div class="container">
+      <h1 style="margin-bottom:var(--spacing-lg);font-weight:var(--font-weight-light);">📐 Conversion Center</h1>
+
+      <div class="conv-layout">
+        <!-- Upload panel -->
+        <div class="conv-upload-panel">
+          <h2>New Conversion</h2>
+
+          <div class="conv-dropzone" id="convDropzone">
+            <svg class="conv-dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <div class="conv-dropzone-text">Drop a file here or click to browse</div>
+            <div class="conv-dropzone-hint">Supports documents, spreadsheets, presentations, diagrams, PDF</div>
+            <input type="file" id="convFileInput" style="display:none" accept=".docx,.doc,.odt,.rtf,.txt,.html,.epub,.fb2,.xps,.ofd,.hwp,.djvu,.xlsx,.ods,.csv,.pptx,.odp,.vsdx,.vsdm,.pdf">
+          </div>
+
+          <div class="conv-file-info" id="convFileInfo">
+            <div class="conv-file-info-row">
+              <span class="conv-file-info-label">File</span>
+              <span class="conv-file-info-value" id="convFileName">—</span>
+            </div>
+            <div class="conv-file-info-row">
+              <span class="conv-file-info-label">Size</span>
+              <span class="conv-file-info-value" id="convFileSize">—</span>
+            </div>
+            <div class="conv-file-info-row">
+              <span class="conv-file-info-label">Source format</span>
+              <span class="conv-file-info-value" id="convSourceFormat">—</span>
+            </div>
+          </div>
+
+          <div class="conv-format-select">
+            <label for="convTargetFormat">Convert to</label>
+            <select id="convTargetFormat">
+              <option value="pdf">PDF (.pdf)</option>
+              <option value="docx">Word (.docx)</option>
+              <option value="odt">OpenDocument (.odt)</option>
+              <option value="html">HTML (.html)</option>
+              <option value="txt">Plain Text (.txt)</option>
+              <option value="rtf">Rich Text (.rtf)</option>
+              <option value="epub">EPUB (.epub)</option>
+              <option value="xps">XPS (.xps)</option>
+              <option value="pptx">PowerPoint (.pptx)</option>
+              <option value="odp">OpenDocument Presentation (.odp)</option>
+              <option value="xlsx">Excel (.xlsx)</option>
+              <option value="ods">OpenDocument Spreadsheet (.ods)</option>
+            </select>
+          </div>
+
+          <button class="btn btn-primary conv-submit" id="convSubmitBtn" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10"/>
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            Convert
+          </button>
+        </div>
+
+        <!-- Job list panel -->
+        <div class="conv-jobs-panel">
+          <h2>Recent Conversions</h2>
+          <div id="convJobList">
+            <div class="conv-jobs-empty">No conversions yet. Upload a file to begin.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <p>&copy; 2024 World-Office &mdash; <a href="https://codeberg.org/World-Office">Codeberg</a> &middot; MIT</p>
+  </footer>
+
+  <script src="/js/conversion.js"></script>
+</body>
+</html>

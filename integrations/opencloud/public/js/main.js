@@ -331,6 +331,35 @@
     });
   }
 
+  // ─── Tab Switching ───────────────────────────────────────────────────
+
+  function initTabs() {
+    var tabs = document.querySelectorAll('.dashboard-tab');
+    if (tabs.length === 0) return;
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        var panelId = tab.getAttribute('data-panel');
+        if (!panelId) return;
+
+        // Deactivate all tabs and panels
+        tabs.forEach(function (t) { t.classList.remove('active'); });
+        document.querySelectorAll('.dashboard-panel').forEach(function (p) { p.classList.remove('active'); });
+
+        // Activate clicked tab and its panel
+        tab.classList.add('active');
+        var panel = document.getElementById('panel-' + panelId);
+        if (panel) panel.classList.add('active');
+
+        // Initialize file browser when switching to Files tab
+        if (panelId === 'files' && typeof window.initFileBrowser === 'function') {
+          // Small delay to let DOM render
+          setTimeout(window.initFileBrowser, 50);
+        }
+      });
+    });
+  }
+
   // ─── Initialize ──────────────────────────────────────────────────────
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -339,6 +368,13 @@
     initGenerateSecrets();
     initFormValidation();
     initAlertAutoDismiss();
+    initTabs();
+
+    // If we're on the Files tab already (e.g. from a redirect), init file browser
+    var activeTab = document.querySelector('.dashboard-tab.active');
+    if (activeTab && activeTab.getAttribute('data-panel') === 'files' && typeof window.initFileBrowser === 'function') {
+      setTimeout(window.initFileBrowser, 100);
+    }
   });
 
 })();

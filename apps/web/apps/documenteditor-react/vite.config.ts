@@ -9,6 +9,10 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    // Deduplicate React across all workspace packages.
+    // pnpm may create separate copies in nested node_modules;
+    // this forces Rollup to use a single instance.
+    dedupe: ["react", "react-dom", "react/jsx-runtime", "mobx", "mobx-react-lite"],
   },
   define: {
     "import.meta.env.VITE_WOPI_HOST_URL": JSON.stringify(

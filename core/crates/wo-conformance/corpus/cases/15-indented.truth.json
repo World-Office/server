@@ -1,0 +1,72 @@
+{
+  "pages": [
+    {
+      "index": 0,
+      "size": {
+        "width_pt": 612.0,
+        "height_pt": 792.0
+      },
+      "boxes": [
+        {
+          "kind": "paragraph",
+          "origin": {
+            "x_pt": 72.1,
+            "y_pt": 71.99
+          },
+          "size": {
+            "width_pt": 107.28,
+            "height_pt": 12.79
+          },
+          "runs": [
+            {
+              "text": "Normal paragraph.",
+              "font": "DejaVuSerif",
+              "size_pt": 11.0,
+              "weight": 700,
+              "italic": false,
+              "origin": {
+                "x_pt": 72.1,
+                "y_pt": 82.2
+              }
+            }
+          ]
+        },
+        {
+          "kind": "paragraph",
+          "origin": {
+            "x_pt": 108.1,
+            "y_pt": 84.79
+          },
+          "size": {
+            "width_pt": 115.26,
+            "height_pt": 12.79
+          },
+          "runs": [
+            {
+              "text": "Indented paragraph.",
+              "font": "DejaVuSerif",
+              "size_pt": 11.0,
+              "weight": 700,
+              "italic": false,
+              "origin": {
+                "x_pt": 108.1,
+                "y_pt": 95.0
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "resolved_fonts": {
+    "requested": [],
+    "resolved": {},
+    "unavailable": []
+  },
+  "metadata": {
+    "engine": "libreoffice",
+    "engine_version": "LibreOffice 26.2.4.2 620(Build:2)",
+    "captured_at": "2026-07-29T19:08:05.048819+00:00",
+    "environment": "PDF\u2192IR extraction via PyMuPDF ('1.28.0', '1.29.0', None)"
+  }
+}
