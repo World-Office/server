@@ -14,7 +14,8 @@ function readEnvValues() {
   const keys = [
     'OCIS_DOMAIN', 'DOCUMENT_SERVER_DOMAIN', 'OCIS_JWT_SECRET',
     'DOCUMENT_SERVER_JWT_SECRET', 'OCIS_IMAGE', 'DOCUMENT_SERVER_IMAGE',
-    'TRAEFIK_IMAGE', 'ENABLE_SSL', 'PORT'
+    'TRAEFIK_IMAGE', 'ENABLE_SSL', 'PORT',
+    'OCIS_ADMIN_USER', 'OCIS_ADMIN_PASSWORD'
   ];
   const values = {};
   for (const key of keys) {
@@ -109,6 +110,8 @@ function buildEnvContent(data) {
     OCIS_DATA_DIR: './data/ocis',
     DOCUMENT_SERVER_DATA_DIR: './data/documentserver',
     TRAEFIK_DATA_DIR: './data/traefik',
+    OCIS_ADMIN_USER: (data.OCIS_ADMIN_USER || 'admin').trim(),
+    OCIS_ADMIN_PASSWORD: data.OCIS_ADMIN_PASSWORD || '',
     ENABLE_SSL: data.ENABLE_SSL === 'true' ? 'true' : 'false',
     ENABLE_METRICS: 'true',
     ENABLE_LOGS: 'true'
@@ -136,7 +139,9 @@ router.get('/', async (req, res) => {
       DOCUMENT_SERVER_IMAGE: 'worldoffice/documentserver:latest',
       TRAEFIK_IMAGE: 'traefik:v2.10',
       ENABLE_SSL: 'true',
-      PORT: '3000'
+      PORT: '3000',
+      OCIS_ADMIN_USER: 'admin',
+      OCIS_ADMIN_PASSWORD: ''
     };
 
     const success = req.query.success === 'true';

@@ -4,6 +4,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
+const multer = require('multer');
 
 // Load environment variables early (idempotent)
 dotenv.config();
@@ -58,6 +59,9 @@ app.locals.config = config;
 const setupRoutes = require('./routes/setup.js');
 const dashboardRoutes = require('./routes/dashboard.js');
 const apiRoutes = require('./routes/api.js');
+const filesRoutes = require('./routes/files.js');
+const editorRoutes = require('./routes/editor.js');
+const conversionRoutes = require('./routes/conversion.js');
 
 // ── Mount routes ──────────────────────────────────────────────────────
 // Setup is always available (works without .env)
@@ -67,12 +71,27 @@ app.use('/setup', setupRoutes);
 app.use('/', dashboardRoutes);
 app.use('/api', apiRoutes);
 
+// File browser + editor routes
+app.use('/', filesRoutes);
+app.use('/', editorRoutes);
+
+// Conversion center
+app.use('/', conversionRoutes);
+
 // ── 404 handler ───────────────────────────────────────────────────────
 app.use(function (req, res) {
   res.status(404).render('error', {
     title: '404 — Not Found',
     message: 'The page you are looking for does not exist.'
   });
+});
+
+// ── Multer error handler ──────────────────────────────────────────────
+app.use(function (err, req, res, next) {
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({ error: 'Upload error: ' + err.message });
+  }
+  next(err);
 });
 
 // ── Global error handler ──────────────────────────────────────────────

@@ -169,6 +169,44 @@
         </div>
       </section>
 
+      <!-- OCIS Admin Credentials -->
+      <section class="form-section">
+        <h2 class="form-section-title">OCIS Admin Credentials</h2>
+        <div class="form-hint mb-lg">
+          Used by the dashboard file browser to access OCIS files via WebDAV.
+          These are the OCIS admin username and password (set during OCIS deployment).
+        </div>
+
+        <div class="form-group">
+          <label for="OCIS_ADMIN_USER">Admin Username</label>
+          <input
+            type="text"
+            id="OCIS_ADMIN_USER"
+            name="OCIS_ADMIN_USER"
+            value="<%= config.OCIS_ADMIN_USER || 'admin' %>"
+            placeholder="admin"
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="OCIS_ADMIN_PASSWORD">Admin Password</label>
+          <div class="input-with-action">
+            <input
+              type="password"
+              id="OCIS_ADMIN_PASSWORD"
+              name="OCIS_ADMIN_PASSWORD"
+              value="<%= config.OCIS_ADMIN_PASSWORD || '' %>"
+              placeholder="OCIS admin password"
+              autocomplete="new-password"
+            >
+            <button type="button" class="btn-icon" data-toggle="password" data-target="OCIS_ADMIN_PASSWORD" title="Show/hide">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
       <!-- Features -->
       <section class="form-section">
         <h2 class="form-section-title">Features</h2>

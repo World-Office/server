@@ -27,6 +27,7 @@ members = [
     "crates/wo-wopi",
     "crates/wo-webdav",
     "crates/wo-docserver",
+    "crates/wo-conformance",
 ]
 
 [workspace.dependencies]

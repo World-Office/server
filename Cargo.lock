@@ -5036,6 +5036,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "wo-conformance"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "wo-djvu"
 version = "0.1.0"
 dependencies = [
@@ -5081,8 +5091,10 @@ dependencies = [
  "anyhow",
  "pdf-writer",
  "serde",
+ "serde_json",
  "thiserror 2.0.18",
  "wo-common",
+ "wo-conformance",
  "wo-ooxml",
  "wo-renderer",
  "zip",

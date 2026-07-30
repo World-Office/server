@@ -9,6 +9,8 @@ const defaults = {
   PORT: '3000',
   NODE_ENV: 'development',
   OCIS_IMAGE: 'owncloud/ocis:latest',
+  OCIS_ADMIN_USER: 'admin',
+  OCIS_ADMIN_PASSWORD: '',
   DOCUMENT_SERVER_IMAGE: 'worldoffice/documentserver:latest',
   TRAEFIK_IMAGE: 'traefik:v2.10',
   TRAEFIK_HTTP_PORT: '80',
@@ -29,6 +31,11 @@ const required = [
   'DOCUMENT_SERVER_DOMAIN',
   'OCIS_JWT_SECRET',
   'DOCUMENT_SERVER_JWT_SECRET'
+];
+
+// Semi-optional: admin password required for file browser
+const semiOptional = [
+  'OCIS_ADMIN_PASSWORD'
 ];
 
 function loadConfig() {

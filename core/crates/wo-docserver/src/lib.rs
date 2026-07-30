@@ -478,7 +478,7 @@ async fn serve_dictionary(
         .and_then(|s| s.to_str())
         .unwrap_or("");
     let file_name = if ext.is_empty() {
-        format!("{locale_norm}")
+        locale_norm.clone()
     } else {
         format!("{locale_norm}.{ext}")
     };

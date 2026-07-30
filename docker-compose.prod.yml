@@ -229,7 +229,9 @@ services:
     environment:
       RUST_LOG: ${RUST_LOG:-info}
       JWT_SECRET: ${DOCSERVER_JWT_SECRET:-${JWT_SECRET:-prod-docserver-secret}}
-      WOPI_HOST_URL: ${WOPI_HOST_URL:-http://opencloud:9200}
+      WOPI_HOST_URL: ${WOPI_HOST_URL:-http://collaboration:9300}
+      WOPI_TOKEN_MODE: ${WOPI_TOKEN_MODE:-passthrough}
+      DOCSERVER_PUBLIC_URL: ${PUBLIC_URL:-https://editor.cloud.graphwiz.ai}
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:80/health"]
       interval: 15s

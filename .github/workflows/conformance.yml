@@ -1,0 +1,123 @@
+name: OOXML Conformance
+
+on:
+  schedule:
+    # Weekly: re-capture truth from LibreOffice, compare against renderer
+    - cron: "0 3 * * 1"  # Mondays 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      threshold:
+        description: "Regression threshold (fidelity drop allowed)"
+        required: false
+        default: "0.05"
+      recapture_truth:
+        description: "Re-capture truth from LibreOffice (use on schedule)"
+        required: false
+        default: "false"
+  pull_request:
+    paths:
+      - "server/core/crates/wo-conformance/**"
+      - "server/core/crates/wo-docx-renderer/**"
+      - "server/core/crates/wo-ooxml/**"
+      - "server/core/crates/wo-renderer/**"
+      - "server/core/crates/wo-common/**"
+
+concurrency:
+  group: conformance-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  unit-tests:
+    name: Unit tests (wo-conformance + wo-docx-renderer)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (nightly)
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: server
+
+      - name: Test wo-conformance
+        run: cd server && cargo test -p wo-conformance --lib -- --test-threads=1
+
+      - name: Test wo-docx-renderer
+        run: cd server && cargo test -p wo-docx-renderer --lib -- --test-threads=1
+
+  cross-engine-fidelity:
+    name: Cross-engine fidelity (wo-docx-renderer vs LibreOffice)
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (nightly)
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: server
+
+      - name: Install LibreOffice
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libreoffice-writer-nogui
+          libreoffice --version
+
+      - name: Install Python dependencies
+        run: python3 -m pip install --break-system-packages pymupdf
+
+      - name: Build wo-render-ir
+        run: cd server && cargo build -p wo-docx-renderer --bin wo-render-ir
+
+      - name: Generate corpus (if missing)
+        run: |
+          cd server/core/crates/wo-conformance
+          if [ ! -d corpus/cases ] || [ -z "$(ls corpus/cases/*.docx 2>/dev/null)" ]; then
+            python3 scripts/generate-corpus.py corpus/cases
+          fi
+
+      # Only re-capture truth on schedule or manual dispatch with recapture_truth=true.
+      # On PRs, use the committed truth to compare against the engine.
+      - name: Capture truth from LibreOffice
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.event.inputs.recapture_truth == 'true')
+        run: |
+          cd server/core/crates/wo-conformance
+          python3 scripts/capture-truth.py capture corpus --force
+
+      - name: Render corpus through wo-docx-renderer
+        run: |
+          cd server/core/crates/wo-conformance
+          BIN="$(realpath ../../target/debug/wo-render-ir)"
+          for docx in corpus/cases/*.docx; do
+            stem="$(basename "$docx" .docx)"
+            "$BIN" "$docx" "corpus/cases/${stem}.engine.json"
+          done
+
+      - name: Compare engines
+        run: |
+          cd server/core/crates/wo-conformance
+          python3 scripts/capture-truth.py compare corpus
+
+      - name: Check regression
+        run: |
+          cd server/core/crates/wo-conformance
+          THRESHOLD="${{ github.event.inputs.threshold || '0.05' }}"
+          python3 scripts/capture-truth.py regression corpus --threshold "$THRESHOLD"
+
+      - name: Upload comparison report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conformance-report
+          path: |
+            server/core/crates/wo-conformance/corpus/comparison-*.json
+            server/core/crates/wo-conformance/corpus/baseline.json
+          retention-days: 90

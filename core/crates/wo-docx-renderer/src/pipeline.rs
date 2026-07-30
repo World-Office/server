@@ -28,29 +28,41 @@ impl DocxRenderPipeline {
         Self { config }
     }
 
-    /// Render a DOCX document from raw bytes.
-    pub fn render(&self, docx_data: &[u8]) -> Result<RenderResult> {
-        let start = Instant::now();
-
-        // Stage 1: Parse
+    /// Parse DOCX bytes into the document body (no layout or rendering).
+    ///
+    /// Validates the package is DOCX. Exposed so the conformance adapter can
+    /// inspect font requests without re-parsing.
+    pub fn parse_body(&self, docx_data: &[u8]) -> Result<DocxBody> {
         let parser = OoxmlParser::new();
         let ooxml = parser.parse(docx_data).map_err(|e| CoreError::Parse {
             format: "docx".into(),
             message: format!("Failed to parse DOCX: {}", e),
         })?;
-
         if ooxml.format != OoxmlFormat::Docx {
             return Err(CoreError::Parse {
                 format: "docx".into(),
                 message: format!("Expected DOCX format, got {}", ooxml.format),
             });
         }
+        Ok(ooxml.docx_body.unwrap_or_else(DocxBody::default))
+    }
 
-        let body = ooxml.docx_body.unwrap_or_else(DocxBody::default);
-
-        // Stage 2: Layout
+    /// Parse and lay out a DOCX into pages, without rasterizing.
+    ///
+    /// This structured intermediate is what the conformance harness projects
+    /// into its normalized IR (see [`crate::conformance::DocxConformanceAdapter`]).
+    pub fn layout_pages(&self, docx_data: &[u8]) -> Result<Vec<LayoutPage>> {
+        let body = self.parse_body(docx_data)?;
         let layout_engine = LayoutEngine::new(&self.config);
-        let pages = layout_engine.layout(&body);
+        Ok(layout_engine.layout(&body))
+    }
+
+    /// Render a DOCX document from raw bytes.
+    pub fn render(&self, docx_data: &[u8]) -> Result<RenderResult> {
+        let start = Instant::now();
+
+        // Stage 1+2: parse + layout (shared with the conformance adapter)
+        let pages = self.layout_pages(docx_data)?;
 
         // Stage 3: Render
         let page_count = pages.len() as u32;

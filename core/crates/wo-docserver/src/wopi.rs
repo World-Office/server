@@ -92,7 +92,14 @@ impl WopiClient {
         let http = self.http.clone();
         retry_with_backoff(|| async {
             let resp = http.get(&url).send().await?;
-            let body: serde_json::Value = resp.error_for_status()?.json().await?;
+            if !resp.status().is_success() {
+                let status = resp.status();
+                let body = resp.text().await.unwrap_or_default();
+                return Err(anyhow::anyhow!(
+                    "WOPI CheckFileInfo upstream {status}: {body}"
+                ));
+            }
+            let body: serde_json::Value = resp.json().await?;
             Ok(body)
         })
         .await
@@ -108,7 +115,12 @@ impl WopiClient {
         let http = self.http.clone();
         retry_with_backoff(|| async {
             let resp = http.get(&url).send().await?;
-            let bytes = resp.error_for_status()?.bytes().await?;
+            if !resp.status().is_success() {
+                let status = resp.status();
+                let body = resp.text().await.unwrap_or_default();
+                return Err(anyhow::anyhow!("WOPI GetFile upstream {status}: {body}"));
+            }
+            let bytes = resp.bytes().await?;
             Ok(bytes.to_vec())
         })
         .await
@@ -123,12 +135,17 @@ impl WopiClient {
         );
         let http = self.http.clone();
         retry_with_backoff(|| async {
-            http.post(&url)
+            let resp = http
+                .post(&url)
                 .header("Content-Type", "application/octet-stream")
                 .body(data.clone())
                 .send()
-                .await?
-                .error_for_status()?;
+                .await?;
+            if !resp.status().is_success() {
+                let status = resp.status();
+                let body = resp.text().await.unwrap_or_default();
+                return Err(anyhow::anyhow!("WOPI PutFile upstream {status}: {body}"));
+            }
             Ok(())
         })
         .await
@@ -282,7 +299,10 @@ mod tests {
         assert!(xml.contains("urlsrc=\"https://editor.example.com/hosting/wopi/slide/edit\""));
         assert!(xml.contains("urlsrc=\"https://editor.example.com/hosting/wopi/diagram/edit\""));
         assert!(xml.contains("urlsrc=\"https://editor.example.com/hosting/wopi/pdf/view\""));
-        assert!(!xml.contains("WOPISrc="), "discovery urlsrc must not contain WOPISrc");
+        assert!(
+            !xml.contains("WOPISrc="),
+            "discovery urlsrc must not contain WOPISrc"
+        );
         assert!(!xml.contains("localhost:8080"));
     }
 

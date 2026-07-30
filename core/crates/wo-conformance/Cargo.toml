@@ -1,0 +1,16 @@
+[package]
+name = "wo-conformance"
+version = "0.1.0"
+edition = "2021"
+license = "AGPL-3.0-or-later"
+description = "Engine-agnostic OOXML rendering conformance harness — scores any engine against captured Microsoft Word ground truth."
+
+[dependencies]
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[[bin]]
+name = "wo-conformance"
+path = "src/main.rs"

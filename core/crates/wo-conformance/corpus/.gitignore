@@ -1,0 +1,4 @@
+# Generated artifacts (not committed)
+*.engine.json
+comparison-*.json
+baseline.json

@@ -1,6 +1,7 @@
 // @world-office/i18n — i18next configuration for World Office editors
 
 import i18n from "i18next"
+import { initReactI18next } from "react-i18next"
 
 export interface I18nConfig {
   /** Current language code (e.g. "en", "de") */
@@ -41,6 +42,9 @@ export interface I18nConfig {
  */
 export function createI18n(config: I18nConfig = {}): typeof i18n {
   const { lng = "en", fallbackLng = "en", localePath, resources, debug = false } = config
+
+  // Bind to react-i18next so useTranslation() works in React components.
+  i18n.use(initReactI18next)
 
   // If pre-loaded resources provided, use them directly
   if (resources) {
