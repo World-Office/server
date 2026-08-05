@@ -159,18 +159,13 @@ impl VisioParser {
                 let page = self.parse_page_xml(&xml, id, name, bg_id);
                 pages.push(page);
             } else {
-                // Page file not found — push a stub
-                pages.push(VisioPage {
-                    id: id.clone(),
-                    name: name.clone(),
-                    width: 8.5,
-                    height: 11.0,
-                    shapes: vec![],
-                    connectors: vec![],
-                    background_page_id: bg_id.clone(),
-                });
+                // Page file not found — skip it rather than pushing an empty stub.
+                // This avoids showing blank pages in the editor when the VSDX
+                // archive is incomplete or corrupted.
+                eprintln!("Warning: VSDX page {} ({}) not found in archive, skipping", id, name);
             }
         }
+
 
         Ok(pages)
     }
@@ -366,14 +361,30 @@ impl VisioParser {
         let text = self.extract_shape_text(xml);
 
         let fill_color = self.parse_fill_color(xml);
-        let fill_foreground = self.parse_cell_string(xml, "FillForegnd");
-        let fill_background = self.parse_cell_string(xml, "FillBkgnd");
-        let stroke_color = self.parse_cell_string(xml, "LineColor");
-        let stroke_width = self.parse_cell_f64(xml, "LineWeight");
-        let stroke_pattern = self.parse_cell_u32(xml, "LinePattern");
-        let shadow_color = self.parse_cell_string(xml, "ShdwColor");
-        let shadow_offset_x = self.parse_cell_f64(xml, "ShdwOffsetX");
-        let shadow_offset_y = self.parse_cell_f64(xml, "ShdwOffsetY");
+        let fill_foreground = self
+            .parse_cell_string(xml, "FillForegnd")
+            .or_else(|| self.parse_cell_string_from_section(xml, "Fill", "FillForegnd"));
+        let fill_background = self
+            .parse_cell_string(xml, "FillBkgnd")
+            .or_else(|| self.parse_cell_string_from_section(xml, "Fill", "FillBkgnd"));
+        let stroke_color = self
+            .parse_cell_string(xml, "LineColor")
+            .or_else(|| self.parse_cell_string_from_section(xml, "Line", "LineColor"));
+        let stroke_width = self
+            .parse_cell_f64(xml, "LineWeight")
+            .or_else(|| self.parse_cell_f64_from_section(xml, "Line", "LineWeight"));
+        let stroke_pattern = self
+            .parse_cell_u32(xml, "LinePattern")
+            .or_else(|| self.parse_cell_u32_from_section(xml, "Line", "LinePattern"));
+        let shadow_color = self
+            .parse_cell_string(xml, "ShdwColor")
+            .or_else(|| self.parse_cell_string_from_section(xml, "Shadow", "ShdwColor"));
+        let shadow_offset_x = self
+            .parse_cell_f64(xml, "ShdwOffsetX")
+            .or_else(|| self.parse_cell_f64_from_section(xml, "Shadow", "ShdwOffsetX"));
+        let shadow_offset_y = self
+            .parse_cell_f64(xml, "ShdwOffsetY")
+            .or_else(|| self.parse_cell_f64_from_section(xml, "Shadow", "ShdwOffsetY"));
         let layer_member = self.parse_cell_string(xml, "LayerMember");
         let style = self
             .parse_cell_string(xml, "LineStyle")
@@ -476,8 +487,11 @@ impl VisioParser {
         for (i, _) in bytes.iter().enumerate() {
             if bytes[i..].starts_with(b"<Shapes>") || bytes[i..].starts_with(b"<Shapes ") {
                 in_shapes_section = true;
+                // Skip this byte so <Shapes> isn't also matched by the <Shape check below
+                continue;
             } else if bytes[i..].starts_with(b"</Shapes>") {
                 in_shapes_section = false;
+                continue;
             }
 
             if in_shapes_section {
@@ -701,10 +715,20 @@ impl VisioParser {
             .or_else(|| self.parse_cell_bool_from_section(xml, "Character", "Underline"));
         let align_horizontal = self
             .parse_cell_string(xml, "Para.HorizontalAlign")
-            .or_else(|| self.parse_cell_string_from_section(xml, "Paragraph", "HorizontalAlign"));
+            .or_else(|| self.parse_cell_string_from_section(xml, "Paragraph", "HorizontalAlign"))
+            .map(|v| match v.as_str() {
+                "1" => "Center".to_string(),
+                "2" => "Right".to_string(),
+                _ => "Left".to_string(),
+            });
         let align_vertical = self
             .parse_cell_string(xml, "Char.VerticalAlign")
-            .or_else(|| self.parse_cell_string_from_section(xml, "Paragraph", "VerticalAlign"));
+            .or_else(|| self.parse_cell_string_from_section(xml, "Paragraph", "VerticalAlign"))
+            .map(|v| match v.as_str() {
+                "1" => "Middle".to_string(),
+                "2" => "Bottom".to_string(),
+                _ => "Top".to_string(),
+            });
 
         if font.is_none()
             && font_size.is_none()
@@ -784,7 +808,6 @@ impl VisioParser {
     fn parse_raw_cell(&self, xml: &str, cell_name: &str) -> Option<String> {
         let mut reader = Reader::from_str(xml);
         let mut buf = Vec::new();
-        let mut depth = 0u32;
         let mut in_section = false;
 
         loop {
@@ -795,10 +818,7 @@ impl VisioParser {
                         "Section" => {
                             in_section = true;
                         }
-                        "Shape" | "Shapes" | "PageSheet" => {
-                            depth += 1;
-                        }
-                        "Cell" if depth == 0 && !in_section => {
+                        "Cell" if !in_section => {
                             let n = Self::attr(e, "N")?;
                             if n == cell_name
                                 && let Some(v) = Self::attr(e, "V")
@@ -813,12 +833,8 @@ impl VisioParser {
                 Ok(Event::Text(ref _t)) => {}
                 Ok(Event::End(ref e)) => {
                     let tag = String::from_utf8_lossy(e.name().as_ref()).to_string();
-                    match tag.as_str() {
-                        "Section" => in_section = false,
-                        "Shape" | "Shapes" | "PageSheet" => {
-                            depth = depth.saturating_sub(1);
-                        }
-                        _ => {}
+                    if tag == "Section" {
+                        in_section = false;
                     }
                 }
                 Ok(Event::Eof) => break,
@@ -871,6 +887,17 @@ impl VisioParser {
         let val = self.parse_cell_from_section(xml, section_name, cell_name)?;
         let clean = val.trim_start_matches('=');
         clean.parse::<f64>().ok()
+    }
+
+    fn parse_cell_u32_from_section(
+        &self,
+        xml: &str,
+        section_name: &str,
+        cell_name: &str,
+    ) -> Option<u32> {
+        let val = self.parse_cell_from_section(xml, section_name, cell_name)?;
+        let clean = val.trim_start_matches('=');
+        clean.parse::<u32>().ok()
     }
 
     fn parse_cell_bool_from_section(
@@ -965,9 +992,13 @@ impl VisioParser {
 
     /// Parse fill color from the Fill section.
     fn parse_fill_color(&self, xml: &str) -> Option<String> {
-        // Try FillForegnd first
-        let raw = self.parse_cell_string(xml, "FillForegnd")?;
-        Some(self.normalize_color(&raw))
+        // Try raw cell first (inside Shape, not inside Section)
+        if let Some(raw) = self.parse_cell_string(xml, "FillForegnd") {
+            return Some(self.normalize_color(&raw));
+        }
+        // Fallback: inside <Section N="Fill"><Row><Cell N="FillForegnd"...
+        self.parse_cell_string_from_section(xml, "Fill", "FillForegnd")
+            .map(|v| self.normalize_color(&v))
     }
 
     fn normalize_color(&self, raw: &str) -> String {

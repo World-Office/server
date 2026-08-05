@@ -3,7 +3,12 @@ import {
 	loadDocument,
 	putFile,
 } from "@world-office/wopi-client";
+import type { WopiConnection } from "@world-office/wopi-client";
 import { makeAutoObservable } from "mobx";
+import {
+	convertVsdxToWoDiagram,
+	convertWoDiagramToVsdx,
+} from "../lib/conversion";
 import type {
 	EditorMode,
 	LeftMenuAction,
@@ -30,6 +35,15 @@ export class VisioStore {
 	wopiFileId: string | null = null;
 	wopiAccessToken: string | null = null;
 	docserverBase = "";
+
+	get wopiConnection(): WopiConnection | null {
+		if (!this.wopiFileId || !this.wopiAccessToken) return null;
+		return {
+			wopiFileId: this.wopiFileId,
+			wopiAccessToken: this.wopiAccessToken,
+			docserverBase: this.docserverBase,
+		};
+	}
 	format: "native" | "svg" = "native";
 
 	markModified(): void {
@@ -81,6 +95,7 @@ export class VisioStore {
 			if (this.editorMode === "flowchart") {
 				try {
 					const text = await content.text();
+					// Try parsing as WoDiagram JSON first (VSDX converted by backend)
 					const json = JSON.parse(text) as {
 						flowchart: Parameters<typeof flowchartStore.fromJSON>[0];
 					};
@@ -88,9 +103,21 @@ export class VisioStore {
 						flowchartStore.fromJSON(json.flowchart);
 					}
 				} catch {
-					flowchartStore.clear();
-					flowchartStore.history = [];
-					flowchartStore.future = [];
+					// If JSON parse fails, try VSDX binary conversion
+					try {
+						const buf = await content.arrayBuffer();
+						const json = await convertVsdxToWoDiagram(buf);
+						const parsed = JSON.parse(json) as {
+							flowchart: Parameters<typeof flowchartStore.fromJSON>[0];
+						};
+						if (parsed.flowchart) {
+							flowchartStore.fromJSON(parsed.flowchart);
+						}
+					} catch {
+						flowchartStore.clear();
+						flowchartStore.history = [];
+						flowchartStore.future = [];
+					}
 				}
 			}
 
@@ -116,18 +143,26 @@ export class VisioStore {
 				wopiAccessToken: this.wopiAccessToken,
 				docserverBase: this.docserverBase,
 			};
-			await putFile(conn, this.buildDocumentBlob());
+			await putFile(conn, await this.buildDocumentBlob());
 			this.isModified = false;
 		} finally {
 			this.isSaving = false;
 		}
 	}
 
-	buildDocumentBlob(): Blob {
+	async buildDocumentBlob(): Promise<Blob> {
 		const payload = { flowchart: flowchartStore.toJSON() };
-		return new Blob([JSON.stringify(payload, null, 2)], {
-			type: "application/json",
-		});
+		const json = JSON.stringify(payload, null, 2);
+		// Try VSDX conversion via backend; fall back to JSON if unavailable
+		try {
+			const vsdxBuffer = await convertWoDiagramToVsdx(json);
+			return new Blob([vsdxBuffer], {
+				type: "application/vnd.ms-visio.drawing.main+xml",
+			});
+		} catch (err) {
+			console.warn("VSDX conversion failed, saving as JSON:", err);
+			return new Blob([json], { type: "application/json" });
+		}
 	}
 
 	async save(): Promise<void> {
@@ -140,15 +175,14 @@ export class VisioStore {
 		}
 	}
 
-	exportAsDownload(): void {
-		const blob = this.buildDocumentBlob();
+	async exportAsDownload(): Promise<void> {
+		const blob = await this.buildDocumentBlob();
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement("a");
 		a.href = url;
 		const baseName = this.document?.title?.replace(/\.[^.]+$/, "");
-		a.download = baseName
-			? `${baseName}.wo-flowchart`
-			: "flowchart.wo-flowchart";
+		const ext = blob.type.includes("visio") ? "vsdx" : "wo-flowchart";
+		a.download = baseName ? `${baseName}.${ext}` : `diagram.${ext}`;
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);

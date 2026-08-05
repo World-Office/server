@@ -41,7 +41,7 @@ export function useSdkReady(): boolean {
  * ```tsx
  * function SelectionInfo() {
  *   useSdkCallback("asc_onFocusObject", (objects) => {
- *     console.log("Selection:", objects)
+ *     console.info("Selection:", objects)
  *   })
  *   return <div>...</div>
  * }

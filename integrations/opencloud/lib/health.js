@@ -110,18 +110,19 @@ async function getHealthStatus() {
 }
 
 async function checkWopiConnectivity() {
-  const ocisDomain = process.env.OCIS_DOMAIN;
-  if (!ocisDomain) {
+  const docServerDomain = process.env.DOCUMENT_SERVER_DOMAIN;
+  if (!docServerDomain) {
     return {
       accessible: false,
-      error: 'OCIS_DOMAIN not configured',
+      error: 'DOCUMENT_SERVER_DOMAIN not configured',
       discoveryUrl: null
     };
   }
 
   const useSsl = process.env.ENABLE_SSL !== 'false';
   const scheme = useSsl ? 'https' : 'http';
-  const discoveryUrl = scheme + '://' + ocisDomain + '/wopi/discovery';
+  // The WOPI discovery endpoint is served by the docserver at /hosting/discovery
+  const discoveryUrl = scheme + '://' + docServerDomain + '/hosting/discovery';
 
   try {
     const response = await axios.get(discoveryUrl, {

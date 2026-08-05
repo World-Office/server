@@ -13,6 +13,8 @@
 import type { Editor } from "@tiptap/core"
 import { documentStore } from "../stores/DocumentStore"
 import { currentUser } from "./collaboration"
+import { type CrossRefFormat, resolveRef } from "./cross-ref"
+import { updateIndex as updateDocIndex } from "./document-index"
 import { insertEndnoteCommand } from "./endnote-mark"
 import { insertFootnoteCommand, updateFootnoteDisplayNumbers } from "./footnote-mark"
 import { insertTableOfContentsCommand, updateTableOfContentsCommand } from "./toc-extension"
@@ -90,6 +92,7 @@ export type RichTextCommand =
   | "editHeader"
   | "editFooter"
   | "find"
+  | "openTheme"
   | "openSearch"
   | "findNext"
   | "findPrevious"
@@ -110,12 +113,23 @@ export type RichTextCommand =
   | "rejectAllChanges"
   | "nextChange"
   | "insertPageNumber"
+  | "insertMergeField"
+  | "loadHtml"
+  | "insertSectionBreak"
+  | "insertContinuousSectionBreak"
+  | "insertCaptionFigure"
+  | "insertCaptionTable"
+  | "insertCrossReference"
+  | "resolveCrossReferences"
   | "insertPlainTextControl"
   | "insertDropdownControl"
   | "insertCheckboxControl"
   | "insertDatePickerControl"
   | "setBoxBorder"
   | "removeBorders"
+  | "insertIndexEntry"
+  | "insertIndex"
+  | "updateIndex"
 
 export interface PageLayoutSettings {
   orientation?: "portrait" | "landscape"
@@ -226,12 +240,23 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "rejectAllChanges",
   "nextChange",
   "insertPageNumber",
+  "insertMergeField",
+  "loadHtml",
+  "insertSectionBreak",
+  "insertContinuousSectionBreak",
+  "insertCaptionFigure",
+  "insertCaptionTable",
+  "insertCrossReference",
+  "resolveCrossReferences",
   "insertPlainTextControl",
   "insertDropdownControl",
   "insertCheckboxControl",
   "insertDatePickerControl",
   "setBoxBorder",
   "removeBorders",
+  "insertIndexEntry",
+  "insertIndex",
+  "updateIndex",
 ] as const
 
 export type RichTextCommandSurface = Editor
@@ -320,6 +345,11 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       document.execCommand("paste")
       return true
     case "find":
+      // Alias: toggle the find panel
+      documentStore.setShowFindPanel(!documentStore.showFindPanel)
+      return true
+    case "openTheme":
+      documentStore.toggleRightPanel("theme")
       return true
     case "normal":
       chain.setParagraph().run()
@@ -534,30 +564,29 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
         documentStore.headerFooterMode === "footer" ? "none" : "footer"
       return true
     case "openSearch": {
-      const query = value || window.prompt("Search for:", searchState.query || "")
-      if (query) {
-        const doc = editor.state.doc
-        const text = doc.textBetween(0, doc.content.size, "\n", " ")
-        const matches = text.toLowerCase().split(query.toLowerCase()).length - 1
-        searchState.query = query
-        searchState.matches = matches
-        searchState.currentIndex = 0
-        const pos = text.toLowerCase().indexOf(query.toLowerCase())
-        if (pos >= 0) {
-          // Translating a flat-text offset to a ProseMirror doc position
-          // requires walking the doc; selection update is best-effort and
-          // must not block dispatching the search-state event.
-          try {
-            editor.commands.setTextSelection({ from: pos + 1, to: pos + 1 + query.length })
-            editor.commands.scrollIntoView()
-          } catch {
-            // ignore — search-state event still fires below
-          }
-        }
-        window.dispatchEvent(
-          new CustomEvent("world-office:search-state", { detail: { ...searchState } }),
-        )
+      if (!value) {
+        // Toggle the find panel — the panel itself drives search on input.
+        documentStore.setShowFindPanel(!documentStore.showFindPanel)
+        return true
       }
+      const doc = editor.state.doc
+      const text = doc.textBetween(0, doc.content.size, "\n", " ")
+      const matches = text.toLowerCase().split(value.toLowerCase()).length - 1
+      searchState.query = value
+      searchState.matches = matches
+      searchState.currentIndex = 0
+      const pos = text.toLowerCase().indexOf(value.toLowerCase())
+      if (pos >= 0) {
+        try {
+          editor.commands.setTextSelection({ from: pos + 1, to: pos + 1 + value.length })
+          editor.commands.scrollIntoView()
+        } catch {
+          // ignore
+        }
+      }
+      window.dispatchEvent(
+        new CustomEvent("world-office:search-state", { detail: { ...searchState } }),
+      )
       return true
     }
     case "findNext": {
@@ -593,8 +622,8 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
     }
     case "replace": {
       if (!searchState.query) return true
-      const replaceWith = window.prompt("Replace with:", searchState.replaceText || "")
-      if (replaceWith !== null) {
+      const replaceWith = value ?? searchState.replaceText
+      if (replaceWith) {
         searchState.replaceText = replaceWith
         const { from, to } = editor.state.selection
         if (from !== to) {
@@ -608,8 +637,8 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       return true
     }
     case "replaceAll": {
-      const replaceWith = window.prompt("Replace all matches with:", searchState.replaceText || "")
-      if (replaceWith !== null) {
+      const replaceWith = value ?? searchState.replaceText
+      if (replaceWith) {
         searchState.replaceText = replaceWith
         const doc = editor.state.doc
         const text = doc.textBetween(0, doc.content.size, "\n", " ")
@@ -691,7 +720,90 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
     case "nextChange":
       return nextChange(editor)
     case "insertPageNumber":
-      return editor.chain().focus().insertContent("<span data-page-number>1</span>").run()
+      return editor
+        .chain()
+        .focus()
+        .insertContent(
+          'Page <span data-page-number data-pn-num="1">1</span> of <span data-page-count data-pc-total="1">1</span>',
+        )
+        .run()
+    case "insertMergeField":
+      if (value) {
+        return editor
+          .chain()
+          .focus()
+          .insertContent(
+            `<span data-merge-field data-field-name="${value.replace(/"/g, "&quot;")}">«${value}»</span>`,
+          )
+          .run()
+      }
+      return true
+    case "loadHtml":
+      if (value) {
+        editor.commands.setContent(value)
+        return true
+      }
+      return true
+    case "insertSectionBreak":
+      return editor
+        .chain()
+        .focus()
+        .insertContent(`<div data-section-break data-section-type="next-page"></div>`)
+        .run()
+    case "insertContinuousSectionBreak":
+      return editor
+        .chain()
+        .focus()
+        .insertContent(`<div data-section-break data-section-type="continuous"></div>`)
+        .run()
+    case "insertCaptionFigure":
+      return editor
+        .chain()
+        .focus()
+        .insertContent(
+          `<div data-caption data-caption-type="figure" data-caption-num="1"><span data-caption-text="">${value ?? ""}</span></div>`,
+        )
+        .run()
+    case "insertCaptionTable":
+      return editor
+        .chain()
+        .focus()
+        .insertContent(
+          `<div data-caption data-caption-type="table" data-caption-num="1"><span data-caption-text="">${value ?? ""}</span></div>`,
+        )
+        .run()
+    case "insertCrossReference":
+      if (value) {
+        const parts = value.split("|")
+        const targetId = parts[0] ?? ""
+        const format = parts[1] ?? "text"
+        const display = parts[2] ?? "[Ref]"
+        return editor
+          .chain()
+          .focus()
+          .insertContent(
+            `<span data-cross-ref data-ref-target="${targetId}" data-ref-format="${format}" data-ref-display="${display}">${display}</span>`,
+          )
+          .run()
+      }
+      return true
+    case "resolveCrossReferences":
+      // Re-resolve all cross-references in the document
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name === "crossReference") {
+          const targetId = node.attrs.targetId as string
+          const format = (node.attrs.format as string) ?? "text"
+          const resolved = resolveRef(targetId, format as CrossRefFormat, editor)
+          editor
+            .chain()
+            .focus()
+            .setNodeSelection(pos)
+            .updateAttributes("crossReference", { display: resolved })
+            .run()
+        }
+        return true
+      })
+      return true
     case "insertPlainTextControl":
       return editor
         .chain()
@@ -723,5 +835,24 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       )
     case "removeBorders":
       return editor.commands.removeBorders()
+    case "insertIndexEntry": {
+      const term = value || window.getSelection()?.toString() || "entry"
+      return editor
+        .chain()
+        .focus()
+        .insertContent(
+          `<span data-index-entry data-index-term="${term.replace(/"/g, "&quot;")}">${term}</span>`,
+        )
+        .run()
+    }
+    case "insertIndex":
+      return editor
+        .chain()
+        .focus()
+        .insertContent('<div data-index-list data-index-updated=""></div>')
+        .run()
+    case "updateIndex": {
+      return updateDocIndex(editor)
+    }
   }
 }

@@ -94,6 +94,21 @@ const ObservedSettingsPanel = observer(function ObservedSettingsPanel({
           </tr>
           <tr className="de-file-menu-row">
             <td className="de-file-menu-group td">
+              <span className="de-file-menu-label">{t("AutoCorrect")}</span>
+            </td>
+            <td className="de-file-menu-right">
+              <label className="de-file-menu-checkbox">
+                <input
+                  type="checkbox"
+                  checked={documentStore.autoCorrectEnabled}
+                  onChange={(e) => documentStore.setAutoCorrectEnabled(e.target.checked)}
+                />
+                <span>{t("Auto-correct as you type")}</span>
+              </label>
+            </td>
+          </tr>
+          <tr className="de-file-menu-row">
+            <td className="de-file-menu-group td">
               <span className="de-file-menu-label">{t("Compact Toolbar")}</span>
             </td>
             <td className="de-file-menu-right">

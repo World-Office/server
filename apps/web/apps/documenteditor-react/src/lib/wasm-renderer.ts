@@ -38,14 +38,15 @@ export async function loadWasmRenderer(): Promise<boolean> {
     try {
       const mod = (await import(
         /* @vite-ignore */
-        "@world-office/wo-renderer-wasm/pkg/wo_renderer_wasm.js"
+        "@world-office/wo-renderer-wasm"
       )) as unknown as WasmRenderApi
       mod.init()
       wasmApi = mod
       console.info("[WasmRenderer] WASM module loaded")
       return true
     } catch (err) {
-      console.warn("[WasmRenderer] WASM module not available, using placeholder:", err)
+      // WASM module not built — graceful degradation, not an error
+      console.info("[WasmRenderer] WASM renderer not available, using HTML fallback")
       return false
     } finally {
       loadingPromise = null

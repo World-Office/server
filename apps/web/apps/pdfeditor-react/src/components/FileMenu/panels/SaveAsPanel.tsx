@@ -1,9 +1,23 @@
 import { pdfStore } from "../../../stores/PdfStore"
 
 export function SaveAsPanel({ visible }: { visible: boolean }) {
-  function handleExport(format: string): void {
+  async function handleExport(format: string): Promise<void> {
     if (format === "PDF") {
       void pdfStore.exportAsDownload()
+      pdfStore.setFileMenuOpen(false)
+      pdfStore.setActiveFileMenuPanel(null)
+      return
+    }
+
+    if (format === "PNG") {
+      await pdfStore.exportAsImage("png")
+      pdfStore.setFileMenuOpen(false)
+      pdfStore.setActiveFileMenuPanel(null)
+      return
+    }
+
+    if (format === "JPG") {
+      await pdfStore.exportAsImage("jpg")
       pdfStore.setFileMenuOpen(false)
       pdfStore.setActiveFileMenuPanel(null)
       return
@@ -39,7 +53,19 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
             </div>
           </button>
         ))}
-        {["PDF/A", "XPS", "DjVu", "PNG", "JPG"].map((format) => (
+        {["PNG", "JPG"].map((format) => (
+          <button
+            key={format}
+            type="button"
+            className="pdf-file-menu-format-btn"
+            onClick={() => handleExport(format)}
+          >
+            <div className="pdf-file-menu-format-icon">
+              <span>{format}</span>
+            </div>
+          </button>
+        ))}
+        {["PDF/A", "XPS", "DjVu"].map((format) => (
           <button
             key={format}
             type="button"

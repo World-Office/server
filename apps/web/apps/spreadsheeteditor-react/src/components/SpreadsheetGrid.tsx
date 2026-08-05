@@ -6,7 +6,10 @@ import { usePinchZoom } from "../../../editor-shell/src/hooks/usePinchZoom";
 import { spreadsheetStore } from "../stores/SpreadsheetStore";
 
 import "@univerjs/preset-sheets-core/lib/index.css";
-import { convertXlsxToWoSpreadsheet } from "../lib/conversion";
+import {
+	convertOdsToWoSpreadsheet,
+	convertXlsxToWoSpreadsheet,
+} from "../lib/conversion";
 import {
 	registerUniverChangeHandler,
 	setActiveUniverAPI,
@@ -190,8 +193,15 @@ export function SpreadsheetGrid({ data }: SpreadsheetGridProps) {
 		} catch {
 			// Not JSON — try XLSX binary conversion via API
 		}
-		// Attempt XLSX binary → WoSpreadsheet conversion
-		convertXlsxToWoSpreadsheet(data)
+		// Determine source format from file name extension
+		const fileName = spreadsheetStore.wopiFileInfo?.BaseFileName ?? "";
+		const isOds = fileName.toLowerCase().endsWith(".ods");
+		const converter = isOds
+			? convertOdsToWoSpreadsheet
+			: convertXlsxToWoSpreadsheet;
+
+		// Attempt binary → WoSpreadsheet conversion (ODS or XLSX)
+		converter(data)
 			.then((json) => {
 				try {
 					const wo = JSON.parse(json) as WoSpreadsheet;

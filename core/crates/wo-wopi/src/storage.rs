@@ -180,7 +180,20 @@ impl StorageBackend for FileSystemStorage {
             let version = format!("{:?}", modified);
 
             let sha256 = if !is_directory {
-                let content = self.read_file(entry.path().to_str().unwrap()).await?;
+                let content = match entry.path().to_str() {
+                    Some(path_str) => self.read_file(path_str).await?,
+                    None => {
+                        // Skip files with non-UTF-8 paths
+                        entries.push(FileMetadata {
+                            name: "?".to_string(),
+                            size: metadata.len() as i64,
+                            version: format!("{:?}", modified),
+                            is_directory,
+                            sha256: None,
+                        });
+                        continue;
+                    }
+                };
                 Some(Self::calculate_sha256(&content))
             } else {
                 None

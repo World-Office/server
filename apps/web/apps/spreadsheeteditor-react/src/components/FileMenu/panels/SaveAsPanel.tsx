@@ -1,3 +1,5 @@
+import { convertWoSpreadsheetToCsv } from "../../../lib/conversion";
+import { getUniverSnapshot } from "../../../lib/univer-command";
 import { spreadsheetStore } from "../../../stores/SpreadsheetStore";
 
 const EXPORT_FORMATS = [
@@ -15,10 +17,29 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
 		}
 
 		if (formatId === "csv") {
-			void spreadsheetStore.buildDocumentBlob();
-			alert(
-				"CSV export: Use the XLSX export and open in Excel/Calc to save as CSV.",
-			);
+			try {
+				const snapshot = getUniverSnapshot();
+				const json = snapshot ? JSON.stringify(snapshot) : "{}";
+				const csv = convertWoSpreadsheetToCsv(json);
+				const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement("a");
+				a.href = url;
+				const baseName = spreadsheetStore.document?.title?.replace(
+					/\.[^.]+$/,
+					"",
+				);
+				a.download = baseName ? `${baseName}.csv` : "spreadsheet.csv";
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+				URL.revokeObjectURL(url);
+			} catch (err) {
+				console.error("CSV export failed:", err);
+				alert("CSV export failed. Please try XLSX export instead.");
+			}
+			spreadsheetStore.setFileMenuOpen(false);
+			spreadsheetStore.setActiveFileMenuPanel(null);
 			return;
 		}
 

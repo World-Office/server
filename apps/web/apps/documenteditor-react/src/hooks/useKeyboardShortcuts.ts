@@ -34,10 +34,16 @@ export function useKeyboardShortcuts(): void {
         return
       }
       if (!documentStore.isDesktop) return
+      // Build the document content and write it to the file path
       if (documentStore.filePath) {
-        const content = ""
-        await saveFileToPath(documentStore.filePath, content)
-        documentStore.markSaved()
+        try {
+          const blob = await documentStore.buildDocumentBlob()
+          const text = await blob.text()
+          await saveFileToPath(documentStore.filePath, text)
+          documentStore.markSaved()
+        } catch (err) {
+          console.error("Desktop save failed:", err)
+        }
       } else {
         documentStore.setActiveTab("file")
         documentStore.setActiveFileMenuPanel("saveas")

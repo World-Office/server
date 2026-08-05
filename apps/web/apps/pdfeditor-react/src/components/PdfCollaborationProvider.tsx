@@ -37,6 +37,10 @@ function getOrCreateUser(): { id: string; name: string } {
 export function PdfCollaborationProvider(): null {
   const user = getOrCreateUser()
 
+  // Flag to avoid re-broadcasting ops received from remote
+  // Must be declared before useCollaboration so the callback can reference it
+  const applyingRemoteRef = useRef(false)
+
   const collab = useCollaboration({
     wsUrl: COAUTHORING_WS_URL,
     userId: user.id,
@@ -85,9 +89,6 @@ export function PdfCollaborationProvider(): null {
       }
     },
   })
-
-  // Flag to avoid re-broadcasting ops received from remote
-  const applyingRemoteRef = useRef(false)
 
   // Watch for local annotation changes and broadcast them
   const broadcastAnnotationOp = useCallback(

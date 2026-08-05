@@ -351,7 +351,8 @@ export class PdfStore {
         return this.lastLoadedContent
       }
     }
-    return new Blob(["PDF placeholder"], { type: "application/pdf" })
+    // No content loaded — return empty PDF instead of placeholder text
+    return new Blob([], { type: "application/pdf" })
   }
 
   async exportAsDownload(): Promise<void> {
@@ -363,12 +364,62 @@ export class PdfStore {
     a.click()
     URL.revokeObjectURL(url)
   }
+
+  /**
+   * Export the first page (or all pages) as a PNG or JPG image.
+   * Uses pdfjs-dist to render the page to a canvas.
+   */
+  async exportAsImage(format: "png" | "jpg"): Promise<void> {
+    if (!this.pdfDocProxy) {
+      alert("No PDF loaded to export")
+      return
+    }
+    try {
+      const page = await this.pdfDocProxy.getPage(1)
+      const viewport = page.getViewport({ scale: 2 })
+      const canvas = document.createElement("canvas")
+      canvas.width = viewport.width
+      canvas.height = viewport.height
+      const ctx = canvas.getContext("2d")
+      if (!ctx) {
+        alert("Canvas not supported")
+        return
+      }
+      // Fill white background for JPG (no alpha)
+      if (format === "jpg") {
+        ctx.fillStyle = "#FFFFFF"
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+      }
+      await page.render({
+        canvasContext: ctx as CanvasRenderingContext2D,
+        viewport,
+      } as unknown as Parameters<typeof page.render>[0]).promise
+      const mimeType = format === "png" ? "image/png" : "image/jpeg"
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), mimeType, 0.92)
+      })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      const baseName = this.document?.title?.replace(/\.[^.]+$/, "")
+      a.download = baseName ? `${baseName}.${format}` : `page-1.${format}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error(`Failed to export as ${format}:`, err)
+      alert(`Failed to export as ${format.toUpperCase()}`)
+    }
+  }
 }
 
 function setStorageItem(key: string, value: string): void {
   try {
     localStorage.setItem(`${STORAGE_PREFIX}${key}`, value)
-  } catch {}
+  } catch {
+    // localStorage may be unavailable in private browsing or storage-full contexts
+  }
 }
 
 export const pdfStore = new PdfStore()

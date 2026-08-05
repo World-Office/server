@@ -452,6 +452,46 @@ export const wordRibbonSpec: RibbonSpec = {
           ],
         },
         {
+          id: "breaks",
+          label: "Breaks",
+          controls: [
+            {
+              id: "page-break",
+              type: "button",
+              icon: "Remove",
+              label: "Page Break",
+              command: "pageBreak",
+            },
+            {
+              id: "section-break-next",
+              type: "button",
+              icon: "Remove",
+              label: "Section",
+              command: "insertSectionBreak",
+            },
+            {
+              id: "section-break-continuous",
+              type: "button",
+              icon: "Remove",
+              label: "Continuous",
+              command: "insertContinuousSectionBreak",
+            },
+          ],
+        },
+        {
+          id: "theme",
+          label: "Theme",
+          controls: [
+            {
+              id: "document-theme",
+              type: "button",
+              icon: "StopCircle",
+              label: "Theme",
+              command: "openTheme",
+            },
+          ],
+        },
+        {
           id: "header-footer",
           label: "Header/Footer",
           controls: [
@@ -535,6 +575,33 @@ export const wordRibbonSpec: RibbonSpec = {
               icon: "X",
               label: "Remove",
               command: "toggleComment",
+            },
+          ],
+        },
+        {
+          id: "index",
+          label: "Index",
+          controls: [
+            {
+              id: "mark-index-entry",
+              type: "button",
+              icon: "Plus",
+              label: "Mark Entry",
+              command: "insertIndexEntry",
+            },
+            {
+              id: "insert-index",
+              type: "button",
+              icon: "List",
+              label: "Insert Index",
+              command: "insertIndex",
+            },
+            {
+              id: "update-index",
+              type: "button",
+              icon: "Replace",
+              label: "Update Index",
+              command: "updateIndex",
             },
           ],
         },

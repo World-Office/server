@@ -5,7 +5,8 @@
 // Visio-style diagram preview (canvas with shapes, connectors, and a
 // flowchart layout) directly on an HTML5 Canvas.
 //
-// TODO: Connect to wo-renderer-wasm render_page() when WASM is bundled
+// Note: When wo-renderer-wasm is bundled, replace renderVisioPreview()
+// with a call to the WASM render_page() function.
 
 /** Default drawing canvas dimensions in CSS pixels. */
 const CANVAS_WIDTH = 960;

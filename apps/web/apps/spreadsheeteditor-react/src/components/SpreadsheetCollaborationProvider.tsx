@@ -67,11 +67,43 @@ function applyRemoteOp(op: SpreadsheetOperation): void {
 			case "insert_row":
 			case "delete_row":
 			case "insert_column":
-			case "delete_column":
-				console.debug(
-					`[collab] received ${op.action} — not yet wired to Univer facade`,
-				);
+			case "delete_column": {
+				const sheet = workbook.getActiveSheet();
+				if (!sheet) break;
+				const rowIndex =
+					op.action === "insert_row" || op.action === "delete_row" ? op.row : 0;
+				const colIndex =
+					op.action === "insert_column" || op.action === "delete_column"
+						? op.col
+						: 0;
+				const count = op.count ?? 1;
+				try {
+					if (
+						op.action === "insert_row" &&
+						typeof sheet.insertRow === "function"
+					) {
+						sheet.insertRow(rowIndex, count);
+					} else if (
+						op.action === "delete_row" &&
+						typeof sheet.deleteRow === "function"
+					) {
+						sheet.deleteRow(rowIndex, count);
+					} else if (
+						op.action === "insert_column" &&
+						typeof sheet.insertColumn === "function"
+					) {
+						sheet.insertColumn(colIndex, count);
+					} else if (
+						op.action === "delete_column" &&
+						typeof sheet.deleteColumn === "function"
+					) {
+						sheet.deleteColumn(colIndex, count);
+					}
+				} catch (err) {
+					console.warn(`[collab] ${op.action} failed:`, err);
+				}
 				break;
+			}
 		}
 	} catch (err) {
 		console.warn("[collab] Failed to apply remote spreadsheet op:", err);
@@ -105,6 +137,9 @@ export function SpreadsheetCollaborationProvider(): null {
 		},
 	});
 
+	// Track the last known cell values to detect actual changes
+	const lastCellValuesRef = useRef<Map<string, unknown>>(new Map());
+
 	// Subscribe to local Univer changes and broadcast them
 	useEffect(() => {
 		const unsub = onUniverChange(() => {
@@ -122,12 +157,21 @@ export function SpreadsheetCollaborationProvider(): null {
 			const range = sheet.getSelection().getActiveRange();
 			const cellRef = range?.getCellRef();
 			if (cellRef) {
+				const value = range?.getValue() ?? undefined;
+				const key = `${sheet.getSheetName()}!${cellRef}`;
+				const prevValue = lastCellValuesRef.current.get(key);
+
+				// Only broadcast if the value actually changed (filters out
+				// navigation events that fire onUniverChange without editing)
+				if (prevValue === value) return;
+				lastCellValuesRef.current.set(key, value);
+
 				const op: SpreadsheetOperation = {
 					action: "set_cell_value",
 					payload: {
 						sheet_name: sheet.getSheetName(),
 						cell: cellRef,
-						value: range?.getValue() ?? undefined,
+						value,
 					},
 				};
 				// Debounce: queue ops and send the last one

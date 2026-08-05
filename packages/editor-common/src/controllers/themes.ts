@@ -443,8 +443,7 @@ function createColorsCss(id: string, colors: Record<string, string>): string | u
   const parts: string[] = [":root .", id, "{"]
   for (const c in colors) {
     if (c === "highlight-toolbar-tab-underline") {
-      // eslint-disable-next-line no-console
-      console.log(
+      console.warn(
         "Obsolete: The 'highlight-toolbar-tab-underline' color for interface themes is deprecated. " +
           "Please use 'highlight-toolbar-tab-underline-document', 'highlight-toolbar-tab-underline-presentation', etc. instead.",
       )

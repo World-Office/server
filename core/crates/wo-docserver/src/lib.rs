@@ -11,11 +11,13 @@ use std::sync::Arc;
 
 use axum::{
     extract::{Path, Query, State},
+    http::HeaderMap,
     response::{IntoResponse, Json},
     routing::{any, get, post},
     Router,
 };
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
+use anyhow::Context;
 use metrics_exporter_prometheus::PrometheusBuilder;
 
 use serde::{Deserialize, Serialize};
@@ -61,6 +63,8 @@ pub enum AppError {
     NotFound(String),
     #[error("Conversion error: {0}")]
     Conversion(String),
+    #[error("Internal error: {0}")]
+    InternalError(String),
     #[error("WOPI proxy error: {0}")]
     Wopi(#[from] anyhow::Error),
 }
@@ -71,6 +75,9 @@ impl IntoResponse for AppError {
             AppError::BadRequest(msg) => (axum::http::StatusCode::BAD_REQUEST, msg.clone()),
             AppError::Unauthorized(msg) => (axum::http::StatusCode::UNAUTHORIZED, msg.clone()),
             AppError::NotFound(msg) => (axum::http::StatusCode::NOT_FOUND, msg.clone()),
+            AppError::InternalError(msg) => {
+                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, msg.clone())
+            }
             AppError::Conversion(msg) => {
                 (axum::http::StatusCode::INTERNAL_SERVER_ERROR, msg.clone())
             }
@@ -131,13 +138,27 @@ async fn health_handler() -> &'static str {
 /// The OCIS WOPI host provides this endpoint which lists all supported WOPI
 /// actions and URL templates. We proxy through the docserver so that E2E
 /// health checks (which target the docserver) still pass when OCIS is available.
-async fn discovery_handler(State(state): State<AppState>) -> Result<String, AppError> {
+async fn discovery_handler(State(state): State<AppState>) -> Result<
+    (
+        axum::http::StatusCode,
+        [(axum::http::HeaderName, String); 1],
+        String,
+    ),
+    AppError,
+> {
     let discovery = state
         .wopi_client
         .get_discovery()
         .await
         .map_err(AppError::Wopi)?;
-    Ok(discovery)
+    Ok((
+        axum::http::StatusCode::OK,
+        [(
+            axum::http::header::CONTENT_TYPE,
+            "application/xml; charset=utf-8".into(),
+        )],
+        discovery,
+    ))
 }
 
 /// Resolve the public base URL for a given editor type.
@@ -615,10 +636,16 @@ async fn wopi_get_file(
 }
 
 /// POST /wopi/files/:file_id/contents  →  proxy PutFile to OCIS
+///
+/// Forwards WOPI headers (X-WOPI-Override, X-WOPI-Lock, If-Match) from the
+/// browser request to the upstream OCIS collaboration service. OpenCloud's
+/// collaboration server requires X-WOPI-Override: PUT to identify this as
+/// a WOPI PutFile operation rather than a plain POST.
 async fn wopi_put_file(
     State(state): State<AppState>,
     Path(file_id): Path<String>,
     Query(params): Query<TokenQuery>,
+    headers: HeaderMap,
     body: axum::body::Bytes,
 ) -> Result<(), AppError> {
     if !state.config.is_passthrough_mode() {
@@ -626,9 +653,30 @@ async fn wopi_put_file(
             .map_err(|e| AppError::Unauthorized(e.to_string()))?;
     }
 
+    // Extract WOPI-relevant headers from the incoming browser request
+    let wopi_override = headers
+        .get("x-wopi-override")
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string());
+    let wopi_lock = headers
+        .get("x-wopi-lock")
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string());
+    let if_match = headers
+        .get("if-match")
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string());
+
     state
         .wopi_client
-        .put_file(&file_id, &params.access_token, body.to_vec())
+        .put_file(
+            &file_id,
+            &params.access_token,
+            body.to_vec(),
+            wopi_override,
+            wopi_lock,
+            if_match,
+        )
         .await?;
     Ok(())
 }
@@ -691,6 +739,38 @@ async fn conversion_formats(State(state): State<AppState>) -> Json<FormatsRespon
     Json(FormatsResponse { formats: pairs })
 }
 
+/// Embedded minimal docx for the demo document — served when the file
+/// configured via `DEMO_DOC_PATH` (or `./demo.docx`) is missing.
+///
+/// Generated with: python3 -c "zipfile+base64" (see plan/ for script).
+const EMBEDDED_DEMO_DOCX_BASE64: &str = concat!(
+    "UEsDBBQAAAAIAHV9AV15bjPX6AAAAK0BAAATAAAAW0NvbnRlbnRfVHlwZXNdLnhtbH1QyU7DMBD9",
+    "FWuuKHHggBCK0wPLETiUDxjZk8SqN3nc0v49Tlt6QIXjzFv1+tXeO7GjzDYGBbdtB4KCjsaG",
+    "ScHn+rV5AMEFg0EXAyk4EMNq6NeHRCyqNrCCuZT0KCXrmTxyGxOFiowxeyz1zJNMqDc4kbzr",
+    "unupYygUSlMWDxj6Zxpx64p42df3qUcmxyCeTsQlSwGm5KzGUnG5C+ZXSnNOaKvyyOHZJr6p",
+    "BJBXExbk74Cz7r0Ok60h8YG5vKGvLPkVs5Em6q2vyvZ/mys94zhaTRf94pZy1MRcF/euvSAe",
+    "bfljP49zD99QSwMEFAAAAAgAdX0BXZv9N+qtAAAAKQEAAAsAAABfcmVscy8ucmVsc43POw7CMAyA",
+    "4KtE3mlaBoRQ0y4IqSsqB7ASN61oHkrCo7cnAwNFDIy2f3+W6/ZpZnanECdnBVRFCYysdGqy",
+    "WsClP232wGJCq3B2lgQsFKFt6jPNmPJKHCcfWTZsFDCm5A+cRzmSwVg4TzZPBhcMplwGzT3K",
+    "K2ri27Lc8fBpwNpknRIQOlUB6xdP/9huGCZJRydvhmz6ceIrkWUMmpKAhwuKq3e7yCzwpuar",
+    "F5sXUEsDBBQAAAAIAHV9AV1z1I57zQAAADkBAAARAAAAd29yZC9kb2N1bWVudC54bWxtj0Fr",
+    "wzAMhf+K6vvibIcyQpKetusuLT17ttIYbMnI3tL++9mFMhgD8YT00MfTeLjGAN8o2TNN6rnr",
+    "FSBZdp4ukzod359eFeRiyJnAhJO6YVaHedwGx/YrIhWoAMrDNqm1lDRone2K0eSOE1L1FpZo",
+    "Sh3lojcWl4Qt5lz5MeiXvt/raDyphvxkd2s9NZEmZT5jsBwRCsOZJTj4WBZvcTfq5jaVu6a/",
+    "h8fVZ6hlwGFkeMTt4M35ArUqEa8psFT4ioB1zdL9w9WPZPr36/kHUEsBAhQDFAAAAAgAdX0B",
+    "XXluM9foAAAArQEAABMAAAAAAAAAAAAAAIABAAAAAFtDb250ZW50X1R5cGVzXS54bWxQSwEC",
+    "FAMUAAAACAB1fQFdm/036q0AAAApAQAACwAAAAAAAAAAAAAAgAEZAQAAX3JlbHMvLnJlbHNQ",
+    "SwECFAMUAAAACAB1fQFdc9SOe80AAAA5AQAAEQAAAAAAAAAAAAAAgAHvAQAAd29yZC9kb2N1",
+    "bWVudC54bWxQSwUGAAAAAAMAAwC5AAAA6wIAAAAA",
+);
+
+fn decode_embedded_demo_docx() -> anyhow::Result<Vec<u8>> {
+    let data = BASE64
+        .decode(EMBEDDED_DEMO_DOCX_BASE64)
+        .context("decode embedded demo docx")?;
+    Ok(data)
+}
+
 #[derive(Debug, Serialize)]
 #[allow(non_snake_case)]
 struct DemoFileInfo {
@@ -704,12 +784,20 @@ struct DemoFileInfo {
 }
 
 async fn demo_info_handler() -> Json<DemoFileInfo> {
+    // Try to read the actual file for correct size; fall back to embedded size.
+    let path = std::env::var("DEMO_DOC_PATH").unwrap_or_else(|_| "./demo.docx".into());
+    let size = match tokio::fs::metadata(&path).await {
+        Ok(m) => m.len(),
+        Err(_) => decode_embedded_demo_docx()
+            .map(|b| b.len() as u64)
+            .unwrap_or(0),
+    };
     Json(DemoFileInfo {
         BaseFileName: "demo.docx".into(),
         OwnerId: "demo".into(),
-        Size: 0,
+        Size: size,
         Version: "1.0".into(),
-        UserCanWrite: false,
+        UserCanWrite: true,
         UserId: "demo-user".into(),
         UserFriendlyName: "Demo User".into(),
     })
@@ -724,9 +812,17 @@ async fn demo_document_handler() -> Result<
     AppError,
 > {
     let path = std::env::var("DEMO_DOC_PATH").unwrap_or_else(|_| "./demo.docx".into());
-    let data = tokio::fs::read(&path)
-        .await
-        .map_err(|e| AppError::NotFound(format!("Demo file not found: {e}")))?;
+    let data = match tokio::fs::read(&path).await {
+        Ok(bytes) => bytes,
+        Err(_) => {
+            // File not found — serve the embedded minimal docx.
+            // This ensures /word/ and other direct editor routes never
+            // show a "Failed to load document" error.
+            decode_embedded_demo_docx().map_err(|e| {
+                AppError::InternalError(format!("Failed to decode embedded demo docx: {e}"))
+            })?
+        }
+    };
     Ok((
         axum::http::StatusCode::OK,
         [(
@@ -740,8 +836,11 @@ async fn demo_document_handler() -> Result<
 // ── Router builder ──────────────────────────────────────────────────────
 
 fn init_metrics() {
+    let metrics_addr: SocketAddr = "0.0.0.0:9091"
+        .parse()
+        .unwrap_or_else(|_| SocketAddr::from(([0, 0, 0, 0], 9091)));
     if let Err(e) = PrometheusBuilder::new()
-        .with_http_listener("0.0.0.0:9091".parse::<SocketAddr>().unwrap())
+        .with_http_listener(metrics_addr)
         .install()
     {
         tracing::warn!(

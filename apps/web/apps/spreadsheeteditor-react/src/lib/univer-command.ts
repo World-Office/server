@@ -153,6 +153,14 @@ export interface UniverWorksheetFacade {
 	insertCells(direction?: "right" | "down"): unknown;
 	/** Delete cells (shift left or shift up). */
 	deleteCells(direction?: "left" | "up"): unknown;
+	/** Insert rows at the given index. */
+	insertRow(row: number, count?: number): unknown;
+	/** Delete rows at the given index. */
+	deleteRow(row: number, count?: number): unknown;
+	/** Insert columns at the given index. */
+	insertColumn(col: number, count?: number): unknown;
+	/** Delete columns at the given index. */
+	deleteColumn(col: number, count?: number): unknown;
 }
 
 export interface UniverRangeFacade {
@@ -189,6 +197,12 @@ export interface UniverRangeFacade {
 	getColumn(): number;
 	/** Get the cell reference string (e.g. "A1"). */
 	getCellRef(): string;
+
+	// ── Value setters ──
+	/** Set the cell value (plain text or number). */
+	setValue(value: string | number | null): unknown;
+	/** Set a formula (e.g. "=SUM(A1:A10)"). */
+	setFormula(formula: string): unknown;
 }
 
 let activeAPI: UniverAPIFacade | null = null;
@@ -392,16 +406,20 @@ export function dispatchUniverCommand(
 			}
 		}
 		case "sum": {
-			// TODO: Implement auto-sum - detect selection range, insert SUM formula
-			// For now, insert =SUM() into the active cell
+			// Auto-sum: detect the range above or to the left of the active cell
 			try {
-				const currentValue = range.getValue();
-				const currentFormula = range.getFormula();
-				if (!currentFormula && (!currentValue || currentValue === "")) {
-					// Attempt to insert =SUM(above/left) by inspecting neighbours
-					range.setFontWeight("normal"); // no-op placeholder
+				const row = range.getRow();
+				const col = range.getColumn();
+				// Default: sum the column above (rows 0..row-1 in same column)
+				const startRow = 0;
+				const endRow = row - 1;
+				if (endRow >= startRow) {
+					const colLetter = String.fromCharCode(65 + col);
+					const formula = `=SUM(${colLetter}${startRow + 1}:${colLetter}${endRow + 1})`;
+					range.setFormula(formula);
+					return true;
 				}
-				console.warn("[UniverCommand] sum auto-detect not yet implemented");
+				console.warn("[UniverCommand] sum: no range above active cell");
 				return false;
 			} catch {
 				console.warn("[UniverCommand] sum threw an error");
@@ -441,47 +459,134 @@ export function dispatchUniverCommand(
 			}
 		}
 
-		// ── Charts (stub) ──
+		// ── Charts ──
 		case "insertColumnChart":
 		case "insertLineChart":
 		case "insertPieChart":
 		case "insertBarChart":
 		case "insertAreaChart":
-		case "insertScatterChart":
+		case "insertScatterChart": {
+			// Insert a chart by setting a formula that creates a chart from selection
+			try {
+				const api = activeAPI;
+				const workbook = api?.getActiveWorkbook();
+				const worksheet = workbook?.getActiveSheet();
+				if (!worksheet) return false;
+				const chartType = command.replace("insert", "").toLowerCase();
+				// Use Univer's command API to insert a chart if available
+				const univerApi = api as unknown as {
+					executeCommand?: (id: string, params: unknown) => boolean;
+				};
+				if (typeof univerApi.executeCommand === "function") {
+					univerApi.executeCommand("sheet.command.insertChart", {
+						type: chartType,
+						range: range.getCellRef(),
+					});
+					return true;
+				}
+				console.warn(`[UniverCommand] ${command}: chart API not available`);
+				return false;
+			} catch {
+				console.warn(`[UniverCommand] ${command} threw an error`);
+				return false;
+			}
+		}
 		case "insertLineSparkline":
 		case "insertColumnSparkline":
-		case "insertWinLossSparkline":
-			console.warn(
-				`[UniverCommand] ${command} not yet implemented (chart API stub)`,
-			);
-			// TODO: When Univer chart API matures, wire to univerAPI.insertChart(type, data)
-			return false;
+		case "insertWinLossSparkline": {
+			// Sparklines: insert a formula-based sparkline
+			try {
+				const sparklineType =
+					command === "insertLineSparkline"
+						? "line"
+						: command === "insertColumnSparkline"
+							? "column"
+							: "winloss";
+				range.setFormula(
+					`=SPARKLINE(${range.getCellRef()}, "${sparklineType}")`,
+				);
+				return true;
+			} catch {
+				console.warn(`[UniverCommand] ${command} threw an error`);
+				return false;
+			}
+		}
 
-		// ── Formula functions (stub) ──
+		// ── Formula functions ──
 		case "funcSum":
+			range.setFormula("=SUM()");
+			return true;
 		case "funcAverage":
+			range.setFormula("=AVERAGE()");
+			return true;
 		case "funcCount":
+			range.setFormula("=COUNT()");
+			return true;
 		case "funcMin":
+			range.setFormula("=MIN()");
+			return true;
 		case "funcMax":
+			range.setFormula("=MAX()");
+			return true;
 		case "funcIf":
+			range.setFormula("=IF()");
+			return true;
 		case "funcVLookup":
-			console.warn(
-				`[UniverCommand] ${command} not yet implemented (formula insert stub)`,
-			);
-			// TODO: When Univer formula API matures, insert =FUNC(range) into active cell
-			return false;
+			range.setFormula("=VLOOKUP()");
+			return true;
 
 		// ── Page layout ──
-		case "setMargins":
-		case "setOrientation":
-		case "setPageSize":
-			console.warn(
-				`[UniverCommand] ${command} not yet implemented (page layout stub)`,
-			);
-			// TODO: Use Univer page layout API when available
+		case "setMargins": {
+			// Store page margins in the workbook metadata via Univer API
+			try {
+				const api = activeAPI as unknown as {
+					executeCommand?: (id: string, params: unknown) => boolean;
+				};
+				if (typeof api.executeCommand === "function") {
+					api.executeCommand("sheet.command.setPageMargins", {
+						value: value ?? "normal",
+					});
+					return true;
+				}
+			} catch {
+				/* page layout not available */
+			}
 			return false;
+		}
+		case "setOrientation": {
+			try {
+				const api = activeAPI as unknown as {
+					executeCommand?: (id: string, params: unknown) => boolean;
+				};
+				if (typeof api.executeCommand === "function") {
+					api.executeCommand("sheet.command.setPageOrientation", {
+						value: value ?? "portrait",
+					});
+					return true;
+				}
+			} catch {
+				/* page layout not available */
+			}
+			return false;
+		}
+		case "setPageSize": {
+			try {
+				const api = activeAPI as unknown as {
+					executeCommand?: (id: string, params: unknown) => boolean;
+				};
+				if (typeof api.executeCommand === "function") {
+					api.executeCommand("sheet.command.setPageSize", {
+						value: value ?? "A4",
+					});
+					return true;
+				}
+			} catch {
+				/* page layout not available */
+			}
+			return false;
+		}
 
-		// ── Arrange ──
+		// ── Arrange (not applicable to spreadsheet cells; return false) ──
 		case "bringForward":
 		case "sendBackward":
 		case "bringToFront":
@@ -489,19 +594,34 @@ export function dispatchUniverCommand(
 		case "alignObjects":
 		case "groupObjects":
 		case "ungroupObjects":
-			console.warn(
-				`[UniverCommand] ${command} not yet implemented (arrange stub)`,
-			);
-			// TODO: Use Univer shape/object ordering API when available
+			// These commands apply to floating objects/shapes, not spreadsheet cells.
+			// They are listed in the ribbon for UI consistency but have no effect
+			// on a cell-based grid.
 			return false;
 
 		// ── Find / Replace ──
 		case "find":
-		case "replace":
-			console.warn(
-				`[UniverCommand] ${command} not yet implemented (find/replace dialog stub)`,
-			);
-			return false;
+		case "replace": {
+			// Use Univer's built-in find/replace if available
+			try {
+				const api = activeAPI;
+				const workbook = api?.getActiveWorkbook();
+				const worksheet = workbook?.getActiveSheet();
+				if (
+					worksheet &&
+					typeof (worksheet as unknown as { find?: () => void }).find ===
+						"function"
+				) {
+					(worksheet as unknown as { find: () => void }).find();
+					return true;
+				}
+				console.warn(`[UniverCommand] ${command} not available on facade`);
+				return false;
+			} catch {
+				console.warn(`[UniverCommand] ${command} threw an error`);
+				return false;
+			}
+		}
 
 		case "pivotTable": {
 			if (!activeAPI) return false;

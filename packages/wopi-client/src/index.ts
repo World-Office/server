@@ -19,3 +19,8 @@ export {
   useDocumentLoader,
   type LoadState,
 } from "./use-document-loader"
+
+export {
+  useWoCommandListener,
+  type WoCommandHandlers,
+} from "./use-wo-command"

@@ -174,11 +174,10 @@ impl ScimRepository {
                         if let Some(value) = op.get("value") {
                             apply_patch_to_user(&mut user, value);
                         }
-                        if let Some(path) = op.get("path").and_then(|v| v.as_str()) {
-                            if let Some(value) = op.get("value") {
+                        if let Some(path) = op.get("path").and_then(|v| v.as_str())
+                            && let Some(value) = op.get("value") {
                                 apply_patch_path_to_user(&mut user, path, value);
                             }
-                        }
                     }
                     "remove" => {
                         if let Some(path) = op.get("path").and_then(|v| v.as_str()) {
@@ -365,21 +364,18 @@ fn apply_patch_to_user(user: &mut ScimUser, value: &serde_json::Value) {
         if let Some(v) = obj.get("active").and_then(|v| v.as_bool()) {
             user.active = Some(v);
         }
-        if let Some(v) = obj.get("name") {
-            if let Ok(n) = serde_json::from_value(v.clone()) {
+        if let Some(v) = obj.get("name")
+            && let Ok(n) = serde_json::from_value(v.clone()) {
                 user.name = Some(n);
             }
-        }
-        if let Some(v) = obj.get("emails") {
-            if let Ok(e) = serde_json::from_value(v.clone()) {
+        if let Some(v) = obj.get("emails")
+            && let Ok(e) = serde_json::from_value(v.clone()) {
                 user.emails = Some(e);
             }
-        }
-        if let Some(v) = obj.get("phoneNumbers") {
-            if let Ok(p) = serde_json::from_value(v.clone()) {
+        if let Some(v) = obj.get("phoneNumbers")
+            && let Ok(p) = serde_json::from_value(v.clone()) {
                 user.phone_numbers = Some(p);
             }
-        }
     }
 }
 
@@ -413,7 +409,7 @@ fn apply_patch_path_to_user(user: &mut ScimUser, path: &str, value: &serde_json:
         "name.formatted" => {
             if let Some(v) = value.as_str() {
                 user.name
-                    .get_or_insert_with(|| crate::models::ScimUserName {
+                    .get_or_insert(crate::models::ScimUserName {
                         formatted: None,
                         given_name: None,
                         family_name: None,
@@ -424,7 +420,7 @@ fn apply_patch_path_to_user(user: &mut ScimUser, path: &str, value: &serde_json:
         "name.givenName" => {
             if let Some(v) = value.as_str() {
                 user.name
-                    .get_or_insert_with(|| crate::models::ScimUserName {
+                    .get_or_insert(crate::models::ScimUserName {
                         formatted: None,
                         given_name: None,
                         family_name: None,
@@ -435,7 +431,7 @@ fn apply_patch_path_to_user(user: &mut ScimUser, path: &str, value: &serde_json:
         "name.familyName" => {
             if let Some(v) = value.as_str() {
                 user.name
-                    .get_or_insert_with(|| crate::models::ScimUserName {
+                    .get_or_insert(crate::models::ScimUserName {
                         formatted: None,
                         given_name: None,
                         family_name: None,

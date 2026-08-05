@@ -1,5 +1,9 @@
 import { ThemeProvider } from "@world-office/design-system";
-import { useDocumentLoader } from "@world-office/wopi-client";
+import {
+	useDocumentLoader,
+	useWoCommandListener,
+} from "@world-office/wopi-client";
+import { observer } from "mobx-react-lite";
 import { type JSX, Suspense, lazy, useCallback } from "react";
 import { getActiveEditor } from "./components/MonacoEditor";
 import { SlidePresenter } from "./components/SlidePresenter/SlidePresenter";
@@ -13,6 +17,7 @@ import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge";
 import { useEmbeddedMode } from "./hooks/useEmbeddedMode";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useTheme } from "./hooks/useTheme";
+import { isCollaborationConfigured } from "./lib/collaboration-config";
 import { presentationStore } from "./stores/PresentationStore";
 
 const PresentationCollaborationProvider = lazy(() =>
@@ -35,7 +40,7 @@ function onLoad(): Promise<void> {
 	return Promise.resolve();
 }
 
-export function App(): JSX.Element {
+export const App = observer(function App(): JSX.Element {
 	useKeyboardShortcuts();
 	useTheme();
 
@@ -60,11 +65,23 @@ export function App(): JSX.Element {
 		() => presentationStore.buildDocumentBlob(),
 		bridge.notifyDocumentSaved,
 		bridge.notifyError,
+		undefined,
+		() => {
+			presentationStore.isModified = false;
+		},
 	);
 
 	const handleMonacoCommand = useCallback((command: MonacoCommand) => {
 		dispatchMonacoCommand(command, getActiveEditor());
 	}, []);
+
+	useWoCommandListener({
+		onCommand: (command, _value) => {
+			handleMonacoCommand(command as MonacoCommand);
+		},
+		onSave: () => presentationStore.saveToWopi(),
+		onDownload: () => presentationStore.exportAsDownload(),
+	});
 	const loadState = useDocumentLoader({
 		onLoad,
 		isLoading: presentationStore.isLoading,
@@ -88,9 +105,11 @@ export function App(): JSX.Element {
 
 	return (
 		<ThemeProvider>
-			<Suspense fallback={null}>
-				<PresentationCollaborationProvider />
-			</Suspense>
+			{isCollaborationConfigured() && (
+				<Suspense fallback={null}>
+					<PresentationCollaborationProvider />
+				</Suspense>
+			)}
 			{presentationStore.isPresenting && <SlidePresenter />}
 			<Viewport
 				toolbarVisible={presentationStore.toolbarVisible}
@@ -102,4 +121,4 @@ export function App(): JSX.Element {
 			/>
 		</ThemeProvider>
 	);
-}
+});

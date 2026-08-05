@@ -13,6 +13,7 @@ export function useEmbeddedAutoSave(
 	notifyDocumentSaved: (version: string) => void,
 	notifyError: (code: string, message: string) => void,
 	debounceMs = 3000,
+	onSaved?: () => void,
 ): { forceSave: () => Promise<void> } {
 	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const savingRef = useRef(false);
@@ -24,6 +25,10 @@ export function useEmbeddedAutoSave(
 		try {
 			const blob = await getDocumentBlob();
 			await putFile(wopiConnection, blob);
+			// Reset the modified flag so subsequent edits re-trigger the debounce.
+			// Without this, isModified stays true forever and auto-save fires at
+			// most once per session.
+			onSaved?.();
 			notifyDocumentSaved(Date.now().toString());
 		} catch (err) {
 			console.error("Auto-save failed:", err);
@@ -40,6 +45,7 @@ export function useEmbeddedAutoSave(
 		getDocumentBlob,
 		notifyDocumentSaved,
 		notifyError,
+		onSaved,
 	]);
 
 	// Debounce saves on modification

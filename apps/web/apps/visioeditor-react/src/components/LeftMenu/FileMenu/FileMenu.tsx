@@ -74,14 +74,14 @@ export function FileMenu() {
 		): Promise<{ blob: Blob; fileName: string; mimeType: string } | null> => {
 			try {
 				if (formatId === "wo-flowchart") {
-					const blob = visioStore.buildDocumentBlob();
+					const blob = await visioStore.buildDocumentBlob();
 					const fileName = visioStore.document?.title
 						? `${visioStore.document.title.replace(/\.[^.]+$/, "")}.wo-flowchart`
 						: "diagram.wo-flowchart";
 					return { blob, fileName, mimeType: "application/json" };
 				}
 				// For VSDX/PDF, use conversion service if available
-				const visioBlob = visioStore.buildDocumentBlob();
+				const visioBlob = await visioStore.buildDocumentBlob();
 				const json = await visioBlob.text();
 				const res = await fetch(
 					import.meta.env?.VITE_CONVERSION_API_URL ??

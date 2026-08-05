@@ -1,5 +1,5 @@
 import { ThemeProvider } from "@world-office/design-system"
-import { useDocumentLoader } from "@world-office/wopi-client"
+import { useDocumentLoader, useWoCommandListener } from "@world-office/wopi-client"
 import { observer } from "mobx-react-lite"
 import { Suspense, lazy, useCallback, useEffect, useState } from "react"
 import { isDesktop, listenForMenuEvents, listenForUpdateEvents } from "./bridge"
@@ -61,6 +61,11 @@ export const App = observer(function App() {
     () => documentStore.buildDocumentBlob(),
     bridge.notifyDocumentSaved,
     bridge.notifyError,
+    undefined,
+    () => {
+      documentStore.isModified = false
+      documentStore.isDirty = false
+    },
   )
 
   useEffect(() => {
@@ -84,6 +89,15 @@ export const App = observer(function App() {
   const handleRichTextCommand = useCallback((command: RichTextCommand, value?: string) => {
     dispatchRichTextCommand(command, value)
   }, [])
+
+  useWoCommandListener({
+    onCommand: (command, value) => {
+      handleMonacoCommand(command as MonacoCommand)
+      handleRichTextCommand(command as RichTextCommand, value)
+    },
+    onSave: () => documentStore.saveToWopi(),
+    onDownload: () => documentStore.exportAsDownload(),
+  })
 
   const loadState = useDocumentLoader({
     onLoad: () => documentStore.detectAndLoadWopi(),
@@ -269,6 +283,7 @@ export const App = observer(function App() {
           leftMenuVisible={documentStore.leftMenuVisible}
           rightMenuVisible={documentStore.rightMenuVisible}
           isCompactToolbar={documentStore.isCompactToolbar}
+          embedded={embedded}
           onMonacoCommand={handleMonacoCommand}
           onRichTextCommand={handleRichTextCommand}
         />

@@ -42,8 +42,9 @@ use wo_xps::XpsSerializer;
 
 use wo_odf::model::{
     CellType, OdfContent, OdfDocument, OdfList, OdfListItem, OdfListType, OdfMetadata, OdfTable,
-    OdfTextContent, OdfType, TableCell as OdfTableCell, TableRow as OdfTableRow, TextHeading,
-    TextParagraph, TextSpan,
+    OdfTextContent, OdfType, SpreadsheetCell as OdfSpreadsheetCell,
+    SpreadsheetRow as OdfSpreadsheetRow, SpreadsheetSheet as OdfSpreadsheetSheet,
+    TableCell as OdfTableCell, TableRow as OdfTableRow, TextHeading, TextParagraph, TextSpan,
 };
 use wo_odf::OdfSerializer;
 use wo_ooxml::model::{
@@ -6439,6 +6440,162 @@ impl FormatConverter for XlsxToWoSpreadsheetConverter {
     }
 }
 
+// ── ODS → WoSpreadsheet Converter ───────────────────────────────────
+
+/// Converts ODS (OpenDocument Spreadsheet) bytes → frontend WoSpreadsheet JSON.
+/// Uses the wo-odf parser to read the ODS ZIP archive and extract sheet/row/cell data.
+pub struct OdsToWoSpreadsheetConverter;
+
+/// Convert a 0-based column index to an Excel-style column letter (A, B, ..., Z, AA, AB, ...).
+fn ods_col_to_letter(col: u32) -> String {
+    let mut result = String::new();
+    let mut n = col;
+    loop {
+        result.insert(0, char::from_u32(b'A' as u32 + (n % 26)).unwrap());
+        if n < 26 {
+            break;
+        }
+        n = n / 26 - 1;
+    }
+    result
+}
+
+/// Convert 0-based column and 1-based row to an Excel-style cell reference (e.g., "A1").
+fn ods_cell_ref(row: u32, col: u32) -> String {
+    format!("{}{}", ods_col_to_letter(col), row)
+}
+
+impl FormatConverter for OdsToWoSpreadsheetConverter {
+    fn source_format(&self) -> &str {
+        "ods"
+    }
+    fn target_format(&self) -> &str {
+        "wo-spreadsheet"
+    }
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        let doc = OdfParser::new()
+            .parse(data)
+            .map_err(|e| ConversionError::Parse(e.to_string()))?;
+
+        // Verify this is actually a spreadsheet
+        if !matches!(doc.doc_type, OdfType::Spreadsheet) {
+            return Err(ConversionError::Parse(format!(
+                "Not an ODS file: got {}",
+                doc.doc_type
+            )));
+        }
+
+        let sheets_data = match &doc.content {
+            OdfContent::Spreadsheet { sheets } => sheets,
+            _ => {
+                return Err(ConversionError::Parse(
+                    "ODS file has no spreadsheet content".to_string(),
+                ));
+            }
+        };
+
+        let sheet_order: Vec<String> = sheets_data
+            .iter()
+            .enumerate()
+            .map(|(i, s)| {
+                if s.name.is_empty() {
+                    format!("Sheet{}", i + 1)
+                } else {
+                    s.name.clone()
+                }
+            })
+            .collect();
+
+        let sheets: Vec<WoSheet> = sheets_data
+            .iter()
+            .enumerate()
+            .map(|(i, ods_sheet)| {
+                let rows: Vec<WoRow> = ods_sheet
+                    .rows
+                    .iter()
+                    .map(|row: &OdfSpreadsheetRow| {
+                        let cells: Vec<WoCell> = row
+                            .cells
+                            .iter()
+                            .map(|cell: &OdfSpreadsheetCell| {
+                                let t = match cell.cell_type {
+                                    CellType::Number => "n",
+                                    CellType::Boolean => "b",
+                                    CellType::Date => "d",
+                                    CellType::Percentage => "n",
+                                    CellType::Currency => "n",
+                                    CellType::String => "s",
+                                };
+                                // For numeric types, use the numeric value; for strings, use the text
+                                let v = match cell.cell_type {
+                                    CellType::Number
+                                    | CellType::Percentage
+                                    | CellType::Currency => {
+                                        cell.value
+                                            .map(|n| format!("{}", n))
+                                            .unwrap_or_else(|| cell.text.clone())
+                                    }
+                                    CellType::Boolean => {
+                                        // ODS booleans: value is 1.0/0.0, text might be "TRUE"/"FALSE"
+                                        if cell.value.unwrap_or(0.0) != 0.0 {
+                                            "TRUE".to_string()
+                                        } else {
+                                            "FALSE".to_string()
+                                        }
+                                    }
+                                    CellType::Date => cell.text.clone(),
+                                    CellType::String => cell.text.clone(),
+                                };
+                                WoCell {
+                                    r: ods_cell_ref(cell.row, cell.column),
+                                    t: t.to_string(),
+                                    v,
+                                    s: None,
+                                    f: cell.formula.clone(),
+                                }
+                            })
+                            .collect();
+                        WoRow {
+                            r: row.row_num,
+                            cells,
+                        }
+                    })
+                    .collect();
+
+                let max_col = ods_sheet.max_column as u32;
+                let max_row = ods_sheet.rows.last().map(|r| r.row_num).unwrap_or(0);
+
+                WoSheet {
+                    id: format!("sheet{}", i + 1),
+                    name: if ods_sheet.name.is_empty() {
+                        format!("Sheet{}", i + 1)
+                    } else {
+                        ods_sheet.name.clone()
+                    },
+                    row_count: max_row.max(1),
+                    column_count: max_col.max(1),
+                    rows,
+                    merges: Vec::new(),
+                }
+            })
+            .collect();
+
+        let wo = WoSpreadsheet {
+            version: 1,
+            name: doc
+                .metadata
+                .title
+                .clone()
+                .unwrap_or_else(|| "Spreadsheet".to_string()),
+            sheet_order,
+            sheets,
+            shared_strings: Vec::new(),
+        };
+
+        serde_json::to_vec_pretty(&wo).map_err(|e| ConversionError::Serialize(e.to_string()))
+    }
+}
+
 /// Converts frontend WoSpreadsheet JSON → XLSX bytes.
 pub struct WoSpreadsheetToXlsxConverter;
 
@@ -6565,6 +6722,114 @@ impl FormatConverter for WoSpreadsheetToXlsxConverter {
             .serialize_xlsx(&workbook)
             .map_err(|e| ConversionError::Serialize(e.to_string()))
     }
+}
+
+// ── WoSpreadsheet → ODS Converter ───────────────────────────────────
+
+/// Converts frontend WoSpreadsheet JSON → ODS (OpenDocument Spreadsheet) bytes.
+/// Builds an ODF document with spreadsheet content and serializes it using OdfSerializer.
+pub struct WoSpreadsheetToOdsConverter;
+
+impl FormatConverter for WoSpreadsheetToOdsConverter {
+    fn source_format(&self) -> &str {
+        "wo-spreadsheet"
+    }
+    fn target_format(&self) -> &str {
+        "ods"
+    }
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        let wo: WoSpreadsheet = serde_json::from_slice(data)
+            .map_err(|e| ConversionError::Parse(format!("Invalid WoSpreadsheet JSON: {}", e)))?;
+
+        // Convert WoSpreadsheet sheets → ODF SpreadsheetSheet
+        let odf_sheets: Vec<OdfSpreadsheetSheet> = wo
+            .sheets
+            .iter()
+            .map(|sheet| {
+                let rows: Vec<OdfSpreadsheetRow> = sheet
+                    .rows
+                    .iter()
+                    .map(|row| {
+                        let cells: Vec<OdfSpreadsheetCell> = row
+                            .cells
+                            .iter()
+                            .map(|cell| {
+                                // Parse cell reference (e.g., "A1") to get column and row
+                                let (col, cell_row) = parse_wo_cell_ref(&cell.r);
+                                let cell_type = match cell.t.as_str() {
+                                    "n" => CellType::Number,
+                                    "b" => CellType::Boolean,
+                                    "d" => CellType::Date,
+                                    "s" | "str" => CellType::String,
+                                    _ => CellType::String,
+                                };
+                                let value = if cell_type == CellType::Number {
+                                    cell.v.parse::<f64>().ok()
+                                } else {
+                                    None
+                                };
+                                OdfSpreadsheetCell {
+                                    column: col,
+                                    row: cell_row,
+                                    text: cell.v.clone(),
+                                    value,
+                                    formula: cell.f.clone(),
+                                    cell_type,
+                                }
+                            })
+                            .collect();
+                        OdfSpreadsheetRow {
+                            row_num: row.r,
+                            cells,
+                        }
+                    })
+                    .collect();
+
+                let max_col = sheet.column_count as usize;
+                OdfSpreadsheetSheet {
+                    name: sheet.name.clone(),
+                    rows,
+                    max_column: max_col,
+                }
+            })
+            .collect();
+
+        let odf_doc = OdfDocument {
+            doc_type: OdfType::Spreadsheet,
+            version: "1.2".to_string(),
+            metadata: OdfMetadata {
+                title: Some(wo.name.clone()),
+                ..Default::default()
+            },
+            content: OdfContent::Spreadsheet { sheets: odf_sheets },
+            manifest: Vec::new(),
+            fonts: Vec::new(),
+            styles: Vec::new(),
+        };
+
+        let serializer = OdfSerializer::new();
+        serializer
+            .serialize(&odf_doc)
+            .map_err(|e| ConversionError::Serialize(e.to_string()))
+    }
+}
+
+/// Parse a WoSpreadsheet cell reference (e.g., "A1", "B23") into (0-based column, 1-based row).
+fn parse_wo_cell_ref(ref_str: &str) -> (u32, u32) {
+    let mut col_part = String::new();
+    let mut row_part = String::new();
+    for ch in ref_str.chars() {
+        if ch.is_ascii_uppercase() {
+            col_part.push(ch);
+        } else if ch.is_ascii_digit() {
+            row_part.push(ch);
+        }
+    }
+    let col = col_part
+        .chars()
+        .fold(0u32, |acc, c| acc * 26 + (c as u32 - b'A' as u32));
+    let row = row_part.parse::<u32>().unwrap_or(1);
+    (col, row)
 }
 
 // ── VSDX Visio Format Converters (VSDX ↔ WoVisioDiagram) ──────────
@@ -6911,10 +7176,28 @@ fn geoseg_to_wo(seg: &GeoSegment) -> WoVisioGeoSegment {
             x2: *x2,
             y2: *y2,
         },
-        GeoSegment::SplineStart { .. } | GeoSegment::NURBSTo { .. } => {
-            // Simplified — these complex curves are represented as a degenerate LineTo
-            WoVisioGeoSegment::LineTo { x: 0.0, y: 0.0 }
-        }
+        GeoSegment::SplineStart {
+            x,
+            y,
+            degree,
+            knots,
+        } => WoVisioGeoSegment::SplineStart {
+            x: *x,
+            y: *y,
+            degree: *degree,
+            knots: knots.clone(),
+        },
+        GeoSegment::NURBSTo {
+            x,
+            y,
+            knots,
+            weights,
+        } => WoVisioGeoSegment::NURBSTo {
+            x: *x,
+            y: *y,
+            knots: knots.clone(),
+            weights: weights.clone(),
+        },
     }
 }
 
@@ -7052,6 +7335,28 @@ fn wo_geoseg_to_visio(seg: &WoVisioGeoSegment) -> GeoSegment {
         WoVisioGeoSegment::InfiniteLine { x1, y1, x2, y2 } => {
             GeoSegment::InfiniteLine { x1, y1, x2, y2 }
         }
+        WoVisioGeoSegment::NURBSTo {
+            x,
+            y,
+            ref knots,
+            ref weights,
+        } => GeoSegment::NURBSTo {
+            x,
+            y,
+            knots: knots.clone(),
+            weights: weights.clone(),
+        },
+        WoVisioGeoSegment::SplineStart {
+            x,
+            y,
+            degree,
+            ref knots,
+        } => GeoSegment::SplineStart {
+            x,
+            y,
+            degree,
+            knots: knots.clone(),
+        },
     }
 }
 
@@ -14979,5 +15284,172 @@ mod tests {
         };
         let epub = docx_to_epub(&doc);
         assert_eq!(epub.chapters.len(), 1);
+    }
+
+    // ── ODS ↔ WoSpreadsheet conversion tests ──────────────────────────
+
+    #[test]
+    fn test_ods_to_wo_spreadsheet_basic() {
+        // Build a minimal ODS file (ZIP with mimetype + content.xml)
+        let ods_bytes = build_minimal_ods();
+        let converter = OdsToWoSpreadsheetConverter;
+        let result = converter.convert(&ods_bytes);
+        assert!(result.is_ok(), "ODS conversion should succeed: {:?}", result.err());
+        let json = String::from_utf8(result.unwrap()).unwrap();
+        assert!(json.contains("sheets"));
+        assert!(json.contains("Sheet1"));
+        assert!(json.contains("Hello"));
+    }
+
+    #[test]
+    fn test_ods_to_wo_spreadsheet_format_pair() {
+        let converter = OdsToWoSpreadsheetConverter;
+        assert_eq!(converter.source_format(), "ods");
+        assert_eq!(converter.target_format(), "wo-spreadsheet");
+    }
+
+    #[test]
+    fn test_wo_spreadsheet_to_ods_basic() {
+        let wo = WoSpreadsheet {
+            version: 1,
+            name: "Test".to_string(),
+            sheet_order: vec!["sheet1".to_string()],
+            sheets: vec![WoSheet {
+                id: "sheet1".to_string(),
+                name: "Sheet1".to_string(),
+                row_count: 2,
+                column_count: 2,
+                rows: vec![
+                    WoRow {
+                        r: 1,
+                        cells: vec![
+                            WoCell {
+                                r: "A1".to_string(),
+                                t: "s".to_string(),
+                                v: "Hello".to_string(),
+                                s: None,
+                                f: None,
+                            },
+                            WoCell {
+                                r: "B1".to_string(),
+                                t: "n".to_string(),
+                                v: "42".to_string(),
+                                s: None,
+                                f: None,
+                            },
+                        ],
+                    },
+                    WoRow {
+                        r: 2,
+                        cells: vec![WoCell {
+                            r: "A2".to_string(),
+                            t: "n".to_string(),
+                            v: "3.14".to_string(),
+                            s: None,
+                            f: None,
+                        }],
+                    },
+                ],
+                merges: vec![],
+            }],
+            shared_strings: vec![],
+        };
+        let json = serde_json::to_vec(&wo).unwrap();
+        let converter = WoSpreadsheetToOdsConverter;
+        let result = converter.convert(&json);
+        assert!(result.is_ok(), "WoSpreadsheet → ODS should succeed: {:?}", result.err());
+        let ods_bytes = result.unwrap();
+        // Verify it's a valid ZIP (ODS files are ZIP archives)
+        let cursor = std::io::Cursor::new(ods_bytes);
+        let archive = zip::ZipArchive::new(cursor);
+        assert!(archive.is_ok(), "ODS output should be a valid ZIP");
+        let mut archive = archive.unwrap();
+        // Verify mimetype entry exists
+        assert!(archive.by_name("mimetype").is_ok(), "ODS should have mimetype entry");
+    }
+
+    #[test]
+    fn test_wo_spreadsheet_to_ods_format_pair() {
+        let converter = WoSpreadsheetToOdsConverter;
+        assert_eq!(converter.source_format(), "wo-spreadsheet");
+        assert_eq!(converter.target_format(), "ods");
+    }
+
+    #[test]
+    fn test_ods_roundtrip_preserves_data() {
+        // Build ODS → WoSpreadsheet → ODS → WoSpreadsheet and verify data survives
+        let ods_bytes = build_minimal_ods();
+        let converter = OdsToWoSpreadsheetConverter;
+        let wo_json = converter.convert(&ods_bytes).unwrap();
+
+        // Now convert back to ODS
+        let to_ods = WoSpreadsheetToOdsConverter;
+        let ods2_bytes = to_ods.convert(&wo_json).unwrap();
+
+        // And back to WoSpreadsheet
+        let wo2_json = converter.convert(&ods2_bytes).unwrap();
+        let wo2: WoSpreadsheet = serde_json::from_slice(&wo2_json).unwrap();
+
+        assert!(!wo2.sheets.is_empty());
+        assert_eq!(wo2.sheets[0].name, "Sheet1");
+        // Verify at least one cell with "Hello" survived the roundtrip
+        let has_hello = wo2
+            .sheets
+            .iter()
+            .flat_map(|s| s.rows.iter())
+            .flat_map(|r| r.cells.iter())
+            .any(|c| c.v == "Hello");
+        assert!(has_hello, "'Hello' should survive ODS roundtrip");
+    }
+
+    /// Build a minimal valid ODS file (ZIP with mimetype + content.xml).
+    fn build_minimal_ods() -> Vec<u8> {
+        use std::io::Write;
+        let buf = std::io::Cursor::new(Vec::new());
+        let mut zip = zip::ZipWriter::new(buf);
+        zip.start_file(
+            "mimetype",
+            zip::write::SimpleFileOptions::default()
+                .compression_method(zip::CompressionMethod::Stored),
+        )
+        .unwrap();
+        zip.write_all(b"application/vnd.oasis.opendocument.spreadsheet")
+            .unwrap();
+        zip.start_file(
+            "content.xml",
+            zip::write::SimpleFileOptions::default()
+                .compression_method(zip::CompressionMethod::Deflated),
+        )
+        .unwrap();
+        zip.write_all(
+            b"<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<office:document-content
+  xmlns:office=\"urn:oasis:names:tc:opendocument:xmlns:office:1.0\"
+  xmlns:text=\"urn:oasis:names:tc:opendocument:xmlns:text:1.0\"
+  xmlns:table=\"urn:oasis:names:tc:opendocument:xmlns:table:1.0\"
+  office:version=\"1.2\">
+  <office:body>
+    <office:spreadsheet>
+      <table:table table:name=\"Sheet1\">
+        <table:table-row>
+          <table:table-cell office:value-type=\"string\">
+            <text:p>Hello</text:p>
+          </table:table-cell>
+          <table:table-cell office:value-type=\"float\" office:value=\"42\">
+            <text:p>42</text:p>
+          </table:table-cell>
+        </table:table-row>
+        <table:table-row>
+          <table:table-cell office:value-type=\"float\" office:value=\"3.14\">
+            <text:p>3.14</text:p>
+          </table:table-cell>
+        </table:table-row>
+      </table:table>
+    </office:spreadsheet>
+  </office:body>
+</office:document-content>",
+        )
+        .unwrap();
+        zip.finish().unwrap().into_inner()
     }
 }

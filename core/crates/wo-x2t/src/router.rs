@@ -18,15 +18,15 @@ use crate::converters::{
     EpubToHtmlConverter, EpubToTxtConverter, Fb2ToDocxConverter, Fb2ToTxtConverter,
     HtmlToDocxConverter, HtmlToEpubConverter, HtmlToFb2Converter, HtmlToOdtConverter,
     HtmlToRtfConverter, HtmlToTxtConverter, HwpToDocxConverter, HwpToTxtConverter,
-    OdpToWoPresentationConverter, OdtToDocxConverter, OdtToHtmlConverter, OdtToTxtConverter,
-    OfdToDocxConverter, OfdToHtmlConverter, OfdToTxtConverter, PdfToWoPdfConverter,
-    PptxToWoPresentationConverter, RtfToDocxConverter, RtfToHtmlConverter, RtfToTxtConverter,
-    TxtToDocxConverter, TxtToEpubConverter, TxtToFb2Converter, TxtToHtmlConverter,
-    TxtToOdtConverter, TxtToRtfConverter, VsdmToVsdxConverter, VsdxToVsdmConverter,
-    VsdxToWoDiagramConverter, WoDiagramToVsdxConverter, WoPdfToPdfConverter,
-    WoPresentationToHtmlConverter, WoPresentationToOdpConverter, WoPresentationToPptxConverter,
-    WoSpreadsheetToXlsxConverter, XlsxToWoSpreadsheetConverter, XpsToDocxConverter,
-    XpsToHtmlConverter, XpsToTxtConverter,
+    OdpToWoPresentationConverter, OdsToWoSpreadsheetConverter, OdtToDocxConverter,
+    OdtToHtmlConverter, OdtToTxtConverter, OfdToDocxConverter, OfdToHtmlConverter,
+    OfdToTxtConverter, PdfToWoPdfConverter, PptxToWoPresentationConverter, RtfToDocxConverter,
+    RtfToHtmlConverter, RtfToTxtConverter, TxtToDocxConverter, TxtToEpubConverter,
+    TxtToFb2Converter, TxtToHtmlConverter, TxtToOdtConverter, TxtToRtfConverter,
+    VsdmToVsdxConverter, VsdxToVsdmConverter, VsdxToWoDiagramConverter, WoDiagramToVsdxConverter,
+    WoPdfToPdfConverter, WoPresentationToHtmlConverter, WoPresentationToOdpConverter,
+    WoPresentationToPptxConverter, WoSpreadsheetToOdsConverter, WoSpreadsheetToXlsxConverter,
+    XlsxToWoSpreadsheetConverter, XpsToDocxConverter, XpsToHtmlConverter, XpsToTxtConverter,
 };
 use crate::model::{ConversionOutput, ConversionResult, ConversionStatus};
 use crate::FormatConverter;
@@ -98,6 +98,9 @@ impl ConversionRouter {
         registry.register(OdpToWoPresentationConverter);
         registry.register(WoPresentationToHtmlConverter);
         registry.register(XlsxToWoSpreadsheetConverter);
+        registry.register(OdsToWoSpreadsheetConverter);
+        registry.register(WoSpreadsheetToXlsxConverter);
+        registry.register(WoSpreadsheetToOdsConverter);
         registry.register(WoSpreadsheetToXlsxConverter);
         registry.register(VsdxToWoDiagramConverter);
         registry.register(WoDiagramToVsdxConverter);
@@ -116,8 +119,12 @@ impl ConversionRouter {
         let pairs = self.registry.registered_pairs();
         let mut adj: AdjList<'_> = HashMap::new();
         for (src, dst) in &pairs {
-            // Safe unwrap: we just got these pairs from the registry
-            let converter = self.registry.get(src, dst).unwrap();
+            // registered_pairs() and get() share the same internal storage,
+            // so this should never fail unless the registry was mutated between calls
+            let converter = self
+                .registry
+                .get(src, dst)
+                .expect("registered converter missing from registry");
             adj.entry(src)
                 .or_default()
                 .push((dst, Arc::clone(converter)));
@@ -403,8 +410,9 @@ mod tests {
     #[test]
     fn test_conversion_path_indirect() {
         let router = ConversionRouter::new();
-        // xlsx → ods has no converter, so path should be empty
-        assert_eq!(router.conversion_path("xlsx", "ods"), Vec::<String>::new());
+        // xlsx → ods is now possible via wo-spreadsheet as intermediate
+        let path = router.conversion_path("xlsx", "ods");
+        assert_eq!(path, vec!["xlsx", "wo-spreadsheet", "ods"]);
     }
 
     #[test]
@@ -503,10 +511,13 @@ mod tests {
         // PDF format converters
         assert!(pairs.contains(&("pdf", "wo-pdf-document")));
         assert!(pairs.contains(&("wo-pdf-document", "pdf")));
+        // ODS spreadsheet format converters
+        assert!(pairs.contains(&("ods", "wo-spreadsheet")));
+        assert!(pairs.contains(&("wo-spreadsheet", "ods")));
         assert_eq!(
             pairs.len(),
-            51,
-            "expected 51 registered converters, got {}",
+            53,
+            "expected 53 registered converters, got {}",
             pairs.len()
         );
     }

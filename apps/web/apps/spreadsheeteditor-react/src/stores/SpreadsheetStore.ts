@@ -5,7 +5,10 @@ import {
 } from "@world-office/wopi-client";
 import type { WopiConnection, WopiFileInfo } from "@world-office/wopi-client";
 import { makeAutoObservable } from "mobx";
-import { convertWoSpreadsheetToXlsx } from "../lib/conversion";
+import {
+	convertWoSpreadsheetToXlsx,
+	univerSnapshotToWoSpreadsheet,
+} from "../lib/conversion";
 import { getUniverSnapshot, onUniverChange } from "../lib/univer-command";
 import type {
 	LeftMenuAction,
@@ -360,8 +363,10 @@ export class SpreadsheetStore {
 		const snapshot = getUniverSnapshot();
 		if (snapshot) {
 			try {
-				const json = JSON.stringify(snapshot);
-				const xlsxBuffer = await convertWoSpreadsheetToXlsx(json);
+				// Convert Univer snapshot (IWorkbookData) to WoSpreadsheet JSON
+				// before sending to the backend for XLSX conversion
+				const woJson = univerSnapshotToWoSpreadsheet(snapshot);
+				const xlsxBuffer = await convertWoSpreadsheetToXlsx(woJson);
 				return new Blob([xlsxBuffer], {
 					type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 				});
@@ -372,7 +377,9 @@ export class SpreadsheetStore {
 		if (this.lastLoadedContent) {
 			return this.lastLoadedContent;
 		}
-		return new Blob(["Spreadsheet placeholder"], {
+		// No content loaded — return empty XLSX (minimal valid XLSX is a ZIP)
+		// rather than placeholder text that would corrupt the file
+		return new Blob([], {
 			type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 		});
 	}

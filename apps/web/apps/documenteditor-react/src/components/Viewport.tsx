@@ -5,15 +5,20 @@ import { collaborationStore } from "../lib/collaboration"
 import type { PageLayoutSettings, RichTextCommand } from "../lib/rte-command"
 import { documentStore } from "../stores/DocumentStore"
 import { CommentsPanel } from "./CommentsPanel"
+import { CrossReferencePanel } from "./CrossReferencePanel"
 import { DocumentHolder } from "./DocumentHolder"
 import { FileMenu } from "./FileMenu/FileMenu"
+import { FindReplacePanel } from "./FindReplacePanel"
 import { HeaderFooterEditor } from "./HeaderFooter"
 import { LeftMenu } from "./LeftMenu/LeftMenu"
+import { MailMergePanel } from "./MailMergePanel"
 import { OfflineBadge } from "./OfflineBadge"
 import { AiAssistantPanel } from "./RightMenu/AiAssistantPanel"
 import { RightMenu } from "./RightMenu/RightMenu"
 import { TrackChangesPanel } from "./RightMenu/TrackChangesPanel"
 import { StatusBar } from "./StatusBar/StatusBar"
+import { StylesPanel } from "./StylesPanel"
+import { ThemePanel } from "./ThemePanel"
 import type { MonacoCommand } from "./Toolbar/MonacoCommand"
 import { Toolbar } from "./Toolbar/Toolbar"
 
@@ -23,6 +28,7 @@ interface ViewportProps {
   leftMenuVisible: boolean
   rightMenuVisible: boolean
   isCompactToolbar: boolean
+  embedded: boolean
   onMonacoCommand: (command: MonacoCommand) => void
   onRichTextCommand: (command: RichTextCommand, value?: string) => void
 }
@@ -46,6 +52,7 @@ export function Viewport({
   leftMenuVisible,
   rightMenuVisible,
   isCompactToolbar,
+  embedded,
   onMonacoCommand,
   onRichTextCommand,
 }: ViewportProps): ReactNode {
@@ -138,12 +145,17 @@ export function Viewport({
               }}
             >
               <HeaderFooterEditor region="header" />
-              <DocumentHolder />
+              <DocumentHolder embedded={embedded} />
               <HeaderFooterEditor region="footer" />
               <CollaboratorCursors
                 cursors={collaborationStore.remoteCursors}
                 userColors={new Map(collaborationStore.users.map((u) => [u.id, u.color]))}
                 userNames={new Map(collaborationStore.users.map((u) => [u.id, u.name]))}
+              />
+              <FindReplacePanel
+                visible={documentStore.showFindPanel}
+                onClose={() => documentStore.setShowFindPanel(false)}
+                onCommand={(cmd, value) => onRichTextCommand(cmd as RichTextCommand, value)}
               />
             </div>
           </div>
@@ -161,6 +173,28 @@ export function Viewport({
               <AiAssistantPanel visible={documentStore.activeRightPanel === "ai-assistant"} />
               <CommentsPanel visible={documentStore.activeRightPanel === "comments"} />
               <TrackChangesPanel visible={documentStore.activeRightPanel === "review"} />
+              <StylesPanel
+                visible={documentStore.activeRightPanel === "paragraph"}
+                onCommand={onRichTextCommand}
+              />
+              <CrossReferencePanel
+                visible={documentStore.activeRightPanel === "crossreference"}
+                onInsertCrossReference={(targetId, format, display) => {
+                  onRichTextCommand("insertCrossReference", `${targetId}|${format}|${display}`)
+                }}
+              />
+              <ThemePanel visible={documentStore.activeRightPanel === "theme"} />
+              <MailMergePanel
+                visible={documentStore.activeRightPanel === "mailmerge"}
+                onInsertMergeField={(field) => {
+                  onRichTextCommand("insertMergeField", field)
+                }}
+                onMergeComplete={(mergedHtml) => {
+                  // Set merged content into the document
+                  onRichTextCommand("loadHtml", mergedHtml)
+                  documentStore.setActiveRightPanel(null)
+                }}
+              />
             </div>
           )}
         </div>

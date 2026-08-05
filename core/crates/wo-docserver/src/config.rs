@@ -50,7 +50,9 @@ impl DocServerConfig {
                 .unwrap_or_else(|_| "http://localhost:8080".into()),
             editor_ui_dir: env::var("EDITOR_UI_DIR").unwrap_or_else(|_| "./editor-ui".into()),
             data_dir: env::var("DOCSERVER_DATA_DIR").unwrap_or_else(|_| "./data".into()),
-            wopi_token_mode: env::var("WOPI_TOKEN_MODE").unwrap_or_else(|_| "jwt".into()),
+            wopi_token_mode: env::var("WOPI_TOKEN_MODE")
+                .or_else(|_| env::var("DOCSERVER_WOPI_TOKEN_MODE"))
+                .unwrap_or_else(|_| "jwt".into()),
             wopi_insecure: env::var("WOPI_INSECURE")
                 .map(|v| v == "true" || v == "1")
                 .unwrap_or(false),

@@ -244,10 +244,14 @@ impl VisioSerializer {
       xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
       ID="0" NameU="" IsCustomName="1" IsCustomNameU="1">
   <PageSheet>
-    <Cell N="PageWidth" V="8.5"/>
-    <Cell N="PageHeight" V="11.0"/>
-  </PageSheet>"#,
+    <Cell N="PageWidth" V=""#,
         );
+        xml.push_str(&page.width.to_string());
+        xml.push_str(r#""/>
+    <Cell N="PageHeight" V=""#);
+        xml.push_str(&page.height.to_string());
+        xml.push_str(r#""/>
+  </PageSheet>"#);
 
         if !page.shapes.is_empty() || !page.connectors.is_empty() {
             xml.push_str("\n  <Shapes>");
@@ -311,7 +315,8 @@ impl VisioSerializer {
       <Section N="Fill">
         <Row IX="0">"#,
             );
-            if let Some(ref fg) = shape.fill_foreground {
+            let fg = shape.fill_foreground.as_deref().or(shape.fill_color.as_deref());
+            if let Some(fg) = fg {
                 xml.push_str(&format!(
                     r#"
           <Cell N="FillForegnd" V="{}"/>"#,
@@ -420,6 +425,101 @@ impl VisioSerializer {
       <Cell N="LayerMember" V="{}"/>"#,
                 escape_xml(layer)
             ));
+        }
+
+        // Character formatting section
+        if let Some(ref fmt) = shape.formatting {
+            if fmt.font.is_some()
+                || fmt.font_size.is_some()
+                || fmt.font_color.is_some()
+                || fmt.bold.is_some()
+                || fmt.italic.is_some()
+                || fmt.underline.is_some()
+            {
+                xml.push_str(r#"
+      <Section N="Character">
+        <Row IX="0">"#);
+                if let Some(ref font) = fmt.font {
+                    xml.push_str(&format!(
+                        r#"
+          <Cell N="Font" V="{}"/>"#,
+                        escape_xml(font)
+                    ));
+                }
+                if let Some(size) = fmt.font_size {
+                    xml.push_str(&format!(
+                        r#"
+          <Cell N="Size" V="{}"/>"#,
+                        size
+                    ));
+                }
+                if let Some(ref color) = fmt.font_color {
+                    xml.push_str(&format!(
+                        r#"
+          <Cell N="Color" V="{}"/>"#,
+                        escape_xml(color)
+                    ));
+                }
+                if let Some(b) = fmt.bold {
+                    xml.push_str(&format!(
+                        r#"
+          <Cell N="Bold" V="{}"/>"#,
+                        if b { "1" } else { "0" }
+                    ));
+                }
+                if let Some(i) = fmt.italic {
+                    xml.push_str(&format!(
+                        r#"
+          <Cell N="Italic" V="{}"/>"#,
+                        if i { "1" } else { "0" }
+                    ));
+                }
+                if let Some(u) = fmt.underline {
+                    xml.push_str(&format!(
+                        r#"
+          <Cell N="Underline" V="{}"/>"#,
+                        if u { "1" } else { "0" }
+                    ));
+                }
+                xml.push_str(r#"
+        </Row>
+      </Section>"#);
+            }
+
+            // Paragraph alignment
+            if fmt.align_horizontal.is_some() || fmt.align_vertical.is_some() {
+                xml.push_str(r#"
+      <Section N="Paragraph">
+        <Row IX="0">"#);
+                if let Some(ref ha) = fmt.align_horizontal {
+                    // Map Visio alignment strings to cell values
+                    let val = match ha.as_str() {
+                        "Center" => "1",
+                        "Right" => "2",
+                        _ => "0",  // Left
+                    };
+                    xml.push_str(&format!(
+                        r#"
+          <Cell N="HorizontalAlign" V="{}"/>"#,
+                        val
+                    ));
+                }
+                if let Some(ref va) = fmt.align_vertical {
+                    let val = match va.as_str() {
+                        "Middle" => "1",
+                        "Bottom" => "2",
+                        _ => "0",  // Top
+                    };
+                    xml.push_str(&format!(
+                        r#"
+          <Cell N="VerticalAlign" V="{}"/>"#,
+                        val
+                    ));
+                }
+                xml.push_str(r#"
+        </Row>
+      </Section>"#);
+            }
         }
 
         // Sub-shapes

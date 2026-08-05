@@ -122,9 +122,7 @@ function renderShapeBody({
 	isHighlightTarget,
 }: ShapeRendererProps): React.JSX.Element {
 	const { x, y, width: w, height: h, fillColor, strokeColor } = node;
-	// strokeWidth is not in the FlowchartNode type but IS set by the store at runtime
-	// biome-ignore lint/suspicious/noExplicitAny: runtime property, not in type
-	const strokeWidth = (node as any).strokeWidth;
+	const strokeWidth = node.strokeWidth;
 	const cx = x + w / 2;
 	const cy = y + h / 2;
 	const shapeType = node.shapeType as string;

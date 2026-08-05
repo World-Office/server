@@ -338,6 +338,11 @@ fn build_content_xml(doc: &OdfDocument) -> String {
                 serialize_text_content(item, &mut xml, 3);
             }
         }
+        OdfContent::Spreadsheet { sheets } => {
+            for sheet in sheets {
+                serialize_ods_sheet(sheet, &mut xml, 3);
+            }
+        }
         OdfContent::Presentation { slides } => {
             for slide in slides {
                 serialize_odp_slide(slide, &mut xml, 3);
@@ -545,6 +550,101 @@ fn serialize_text_content(item: &OdfTextContent, xml: &mut String, indent: usize
             writeln!(xml, "{}<text:p>[image]</text:p>", pad).unwrap();
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// ODS spreadsheet serialization
+// ---------------------------------------------------------------------------
+
+/// Serialize an ODS sheet to ODF table XML.
+fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize) {
+    let pad = " ".repeat(indent);
+    let sheet_name = escape_xml(&sheet.name);
+    writeln!(xml, "{}<table:table table:name=\"{}\">", pad, sheet_name).unwrap();
+
+    for row in &sheet.rows {
+        writeln!(xml, "{}  <table:table-row>", pad).unwrap();
+        for cell in &row.cells {
+            let cell_ref = ods_cell_ref(cell.row, cell.column);
+            match cell.cell_type {
+                CellType::Number | CellType::Percentage | CellType::Currency => {
+                    if let Some(v) = cell.value {
+                        writeln!(
+                            xml,
+                            "{}    <table:table-cell table:style-name=\"ce1\" office:value-type=\"float\" office:value=\"{}\">",
+                            pad, v
+                        )
+                        .unwrap();
+                        writeln!(xml, "{}      <text:p>{}</text:p>", pad, escape_xml(&format!("{}", v))).unwrap();
+                        writeln!(xml, "{}    </table:table-cell>", pad).unwrap();
+                    } else {
+                        writeln!(xml, "{}    <table:table-cell table:style-name=\"ce1\" office:value-type=\"float\" office:value=\"0\">", pad).unwrap();
+                        writeln!(xml, "{}      <text:p>0</text:p>", pad).unwrap();
+                        writeln!(xml, "{}    </table:table-cell>", pad).unwrap();
+                    }
+                }
+                CellType::Boolean => {
+                    let val = if cell.value.unwrap_or(0.0) != 0.0 { "true" } else { "false" };
+                    writeln!(
+                        xml,
+                        "{}    <table:table-cell office:value-type=\"boolean\" office:boolean-value=\"{}\">",
+                        pad, val
+                    )
+                    .unwrap();
+                    writeln!(xml, "{}      <text:p>{}</text:p>", pad, val).unwrap();
+                    writeln!(xml, "{}    </table:table-cell>", pad).unwrap();
+                }
+                CellType::Date => {
+                    writeln!(
+                        xml,
+                        "{}    <table:table-cell office:value-type=\"date\" office:date-value=\"{}\">",
+                        pad, escape_xml(&cell.text)
+                    )
+                    .unwrap();
+                    writeln!(xml, "{}      <text:p>{}</text:p>", pad, escape_xml(&cell.text)).unwrap();
+                    writeln!(xml, "{}    </table:table-cell>", pad).unwrap();
+                }
+                CellType::String => {
+                    if let Some(f) = &cell.formula {
+                        writeln!(
+                            xml,
+                            "{}    <table:table-cell table:formula=\"{}\" office:value-type=\"string\">",
+                            pad, escape_xml(f)
+                        )
+                        .unwrap();
+                    } else {
+                        writeln!(
+                            xml,
+                            "{}    <table:table-cell office:value-type=\"string\">",
+                            pad
+                        )
+                        .unwrap();
+                    }
+                    writeln!(xml, "{}      <text:p>{}</text:p>", pad, escape_xml(&cell.text)).unwrap();
+                    writeln!(xml, "{}    </table:table-cell>", pad).unwrap();
+                }
+            }
+            // Suppress unused variable warning for cell_ref in non-string types
+            let _ = cell_ref;
+        }
+        writeln!(xml, "{}  </table:table-row>", pad).unwrap();
+    }
+
+    writeln!(xml, "{}</table:table>", pad).unwrap();
+}
+
+/// Convert 0-based column and 1-based row to an ODS cell reference (e.g., "A1").
+fn ods_cell_ref(row: u32, col: u32) -> String {
+    let mut result = String::new();
+    let mut n = col;
+    loop {
+        result.insert(0, char::from_u32(b'A' as u32 + (n % 26)).unwrap());
+        if n < 26 {
+            break;
+        }
+        n = n / 26 - 1;
+    }
+    format!("{}{}", result, row)
 }
 
 // ---------------------------------------------------------------------------
