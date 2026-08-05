@@ -60,7 +60,7 @@ describe("univerSnapshotToWoSpreadsheet", () => {
 
 		expect(wo.version).toBe(1);
 		expect(wo.name).toBe("Test");
-		expect(wo.sheet_order).toEqual(["sheet-1"]);
+		expect(wo.sheetOrder).toEqual(["sheet-1"]);
 		expect(wo.sheets).toHaveLength(1);
 		expect(wo.sheets[0].id).toBe("sheet-1");
 		expect(wo.sheets[0].name).toBe("Sheet 1");
@@ -95,9 +95,9 @@ describe("univerSnapshotToWoSpreadsheet", () => {
 		const json = univerSnapshotToWoSpreadsheet(snapshot);
 		const wo = JSON.parse(json);
 
-		expect(wo.shared_strings).toHaveLength(2); // "Hello" + "World"
-		expect(wo.shared_strings[0]).toBe("Hello");
-		expect(wo.shared_strings[1]).toBe("World");
+		expect(wo.sharedStrings).toHaveLength(2); // "Hello" + "World"
+		expect(wo.sharedStrings[0]).toBe("Hello");
+		expect(wo.sharedStrings[1]).toBe("World");
 
 		// First row: A1="Hello" (index 0), B1="World" (index 1)
 		expect(wo.sheets[0].rows[0].cells[0].r).toBe("A1");
@@ -192,7 +192,7 @@ describe("univerSnapshotToWoSpreadsheet", () => {
 		expect(wo.version).toBe(1);
 		expect(wo.name).toBe("Spreadsheet");
 		expect(wo.sheets).toEqual([]);
-		expect(wo.sheet_order).toEqual([]);
+		expect(wo.sheetOrder).toEqual([]);
 	});
 
 	it("handles snapshot with no cellData", () => {
@@ -215,8 +215,8 @@ describe("univerSnapshotToWoSpreadsheet", () => {
 		expect(wo.sheets[0].name).toBe("Empty Sheet");
 		expect(wo.sheets[0].rows).toEqual([]);
 		expect(wo.sheets[0].merges).toEqual([]);
-		expect(wo.sheets[0].row_count).toBe(100);
-		expect(wo.sheets[0].column_count).toBe(26);
+		expect(wo.sheets[0].rowCount).toBe(100);
+		expect(wo.sheets[0].columnCount).toBe(26);
 	});
 
 	it("handles multiple sheets", () => {
@@ -242,7 +242,7 @@ describe("univerSnapshotToWoSpreadsheet", () => {
 		expect(wo.sheets).toHaveLength(2);
 		expect(wo.sheets[0].name).toBe("First");
 		expect(wo.sheets[1].name).toBe("Second");
-		expect(wo.sheet_order).toEqual(["s1", "s2"]);
+		expect(wo.sheetOrder).toEqual(["s1", "s2"]);
 	});
 
 	it("converts column indices to Excel letters correctly", () => {
@@ -335,13 +335,13 @@ describe("convertWoSpreadsheetToCsv", () => {
 		const wo = {
 			version: 1,
 			name: "Test",
-			sheet_order: ["s1"],
+			sheetOrder: ["s1"],
 			sheets: [
 				{
 					id: "s1",
 					name: "Sheet 1",
-					row_count: 2,
-					column_count: 2,
+					rowCount: 2,
+					columnCount: 2,
 					rows: [
 						{
 							r: 1,
@@ -354,7 +354,7 @@ describe("convertWoSpreadsheetToCsv", () => {
 					merges: [],
 				},
 			],
-			shared_strings: ["Name"],
+			sharedStrings: ["Name"],
 		};
 
 		const json = JSON.stringify(wo);
@@ -413,9 +413,9 @@ describe("convertOdsToWoSpreadsheet", () => {
 		const woJson = JSON.stringify({
 			version: 1,
 			name: "Test",
-			sheet_order: ["s1"],
+			sheetOrder: ["s1"],
 			sheets: [],
-			shared_strings: [],
+			sharedStrings: [],
 		});
 		mockFetch.mockResolvedValue(mockConversionResponse(woJson));
 
@@ -453,6 +453,15 @@ describe("convertOdsToWoSpreadsheet", () => {
 			convertOdsToWoSpreadsheet(new ArrayBuffer(10)),
 		).rejects.toThrow("Conversion failed");
 	});
+
+	it("returns empty WoSpreadsheet JSON for empty input", async () => {
+		const result = await convertOdsToWoSpreadsheet(new ArrayBuffer(0));
+		const wo = JSON.parse(result);
+		expect(wo.sheetOrder).toEqual(["sheet1"]);
+		expect(wo.sheets).toEqual([]);
+		expect(wo.sharedStrings).toEqual([]);
+		expect(mockFetch).not.toHaveBeenCalled();
+	});
 });
 
 describe("convertXlsxToWoSpreadsheet", () => {
@@ -460,9 +469,9 @@ describe("convertXlsxToWoSpreadsheet", () => {
 		const woJson = JSON.stringify({
 			version: 1,
 			name: "Test",
-			sheet_order: ["s1"],
+			sheetOrder: ["s1"],
 			sheets: [],
-			shared_strings: [],
+			sharedStrings: [],
 		});
 		mockFetch.mockResolvedValue(mockConversionResponse(woJson));
 
@@ -474,6 +483,15 @@ describe("convertXlsxToWoSpreadsheet", () => {
 		expect(callBody.target_format).toBe("wo-spreadsheet");
 		expect(result).toBe(woJson);
 	});
+
+	it("returns empty WoSpreadsheet JSON for empty input", async () => {
+		const result = await convertXlsxToWoSpreadsheet(new ArrayBuffer(0));
+		const wo = JSON.parse(result);
+		expect(wo.sheetOrder).toEqual(["sheet1"]);
+		expect(wo.sheets).toEqual([]);
+		expect(wo.sharedStrings).toEqual([]);
+		expect(mockFetch).not.toHaveBeenCalled();
+	});
 });
 
 describe("convertWoSpreadsheetToOds", () => {
@@ -481,9 +499,9 @@ describe("convertWoSpreadsheetToOds", () => {
 		const woJson = JSON.stringify({
 			version: 1,
 			name: "Test",
-			sheet_order: ["s1"],
+			sheetOrder: ["s1"],
 			sheets: [],
-			shared_strings: [],
+			sharedStrings: [],
 		});
 		const fakeOdsBase64 = btoa("fake-ods-content");
 		mockFetch.mockResolvedValue(mockConversionResponseBinary(fakeOdsBase64));
@@ -529,9 +547,9 @@ describe("convertWoSpreadsheetToXlsx", () => {
 		const woJson = JSON.stringify({
 			version: 1,
 			name: "Test",
-			sheet_order: ["s1"],
+			sheetOrder: ["s1"],
 			sheets: [],
-			shared_strings: [],
+			sharedStrings: [],
 		});
 		const fakeXlsxBase64 = btoa("fake-xlsx-content");
 		mockFetch.mockResolvedValue(mockConversionResponseBinary(fakeXlsxBase64));
