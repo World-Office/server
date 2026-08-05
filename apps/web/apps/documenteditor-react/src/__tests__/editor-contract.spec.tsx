@@ -603,6 +603,34 @@ describe("Header/Footer tab", () => {
     const html = editor.getHTML()
     expect(html).toContain("data-page-number")
   })
+
+  it("removeHeader clears headerHtml and exits header mode", () => {
+    documentStore.headerHtml = "<p>Old header</p>"
+    documentStore.headerFooterMode = "header"
+    dispatchRichTextCommand("removeHeader")
+    expect(documentStore.headerHtml).toBe("")
+    expect(documentStore.headerFooterMode).toBe("none")
+  })
+
+  it("removeFooter clears footerHtml and exits footer mode", () => {
+    documentStore.footerHtml = "<p>Old footer</p>"
+    documentStore.headerFooterMode = "footer"
+    dispatchRichTextCommand("removeFooter")
+    expect(documentStore.footerHtml).toBe("")
+    expect(documentStore.headerFooterMode).toBe("none")
+  })
+
+  it("differentFirstPage toggles the store flag", () => {
+    const before = documentStore.differentFirstPage
+    dispatchRichTextCommand("differentFirstPage")
+    expect(documentStore.differentFirstPage).toBe(!before)
+  })
+
+  it("differentOddEven toggles the store flag", () => {
+    const before = documentStore.differentOddEven
+    dispatchRichTextCommand("differentOddEven")
+    expect(documentStore.differentOddEven).toBe(!before)
+  })
 })
 
 // ----------------------------------------------------------------------
@@ -667,6 +695,24 @@ describe("View tab", () => {
     window.removeEventListener("world-office:search-state", handler)
     expect(seen[0].query).toBe("foo")
     expect(seen[0].matches).toBe(3)
+  })
+
+  it("toggleRuler flips rulerVisible in store", () => {
+    const before = documentStore.rulerVisible
+    dispatchRichTextCommand("toggleRuler")
+    expect(documentStore.rulerVisible).toBe(!before)
+  })
+
+  it("toggleGridlines flips gridlinesVisible in store", () => {
+    const before = documentStore.gridlinesVisible
+    dispatchRichTextCommand("toggleGridlines")
+    expect(documentStore.gridlinesVisible).toBe(!before)
+  })
+
+  it("toggleNavigation flips navigationVisible in store", () => {
+    const before = documentStore.navigationVisible
+    dispatchRichTextCommand("toggleNavigation")
+    expect(documentStore.navigationVisible).toBe(!before)
   })
 })
 

@@ -110,4 +110,37 @@ describe("DocumentStore", () => {
     store.setDocReady(false)
     expect(store.isDocReady).toBe(false)
   })
+
+  it("toggles view options (ruler, gridlines, navigation)", () => {
+    const store = new DocumentStore()
+    expect(store.rulerVisible).toBe(true)
+    expect(store.gridlinesVisible).toBe(false)
+    expect(store.navigationVisible).toBe(false)
+    store.toggleRuler()
+    expect(store.rulerVisible).toBe(false)
+    store.toggleGridlines()
+    expect(store.gridlinesVisible).toBe(true)
+    store.toggleNavigation()
+    expect(store.navigationVisible).toBe(true)
+  })
+
+  it("toggles header/footer different first page and odd/even", () => {
+    const store = new DocumentStore()
+    expect(store.differentFirstPage).toBe(false)
+    expect(store.differentOddEven).toBe(false)
+    store.setDifferentFirstPage(true)
+    expect(store.differentFirstPage).toBe(true)
+    store.setDifferentOddEven(true)
+    expect(store.differentOddEven).toBe(true)
+  })
+
+  it("clears header and footer HTML", () => {
+    const store = new DocumentStore()
+    store.headerHtml = "<p>Header</p>"
+    store.footerHtml = "<p>Footer</p>"
+    store.clearHeader()
+    expect(store.headerHtml).toBe("")
+    store.clearFooter()
+    expect(store.footerHtml).toBe("")
+  })
 })

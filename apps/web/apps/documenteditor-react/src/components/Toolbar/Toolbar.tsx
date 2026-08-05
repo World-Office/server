@@ -32,6 +32,12 @@ const ObservedToolbar = observer(function ObservedToolbar({
     connectionStatus,
     userCount,
     fileName: documentStore.fileName,
+    rulerVisible: documentStore.rulerVisible,
+    gridlinesVisible: documentStore.gridlinesVisible,
+    navigationVisible: documentStore.navigationVisible,
+    spellcheckEnabled: documentStore.spellingEnabled,
+    differentFirstPage: documentStore.differentFirstPage,
+    differentOddEven: documentStore.differentOddEven,
   }
 
   const dispatch: RibbonCommandDispatch = {
@@ -49,6 +55,22 @@ const ObservedToolbar = observer(function ObservedToolbar({
         documentStore.zoomOut()
       } else if (cmd === "download") {
         window.dispatchEvent(new CustomEvent("wo-command", { detail: { command: "download" } }))
+      } else if (cmd === "toggleRuler") {
+        documentStore.toggleRuler()
+      } else if (cmd === "toggleGridlines") {
+        documentStore.toggleGridlines()
+      } else if (cmd === "toggleNavigation") {
+        documentStore.toggleNavigation()
+      } else if (cmd === "removeHeader") {
+        documentStore.clearHeader()
+        documentStore.headerFooterMode = "none"
+      } else if (cmd === "removeFooter") {
+        documentStore.clearFooter()
+        documentStore.headerFooterMode = "none"
+      } else if (cmd === "differentFirstPage") {
+        documentStore.setDifferentFirstPage(!documentStore.differentFirstPage)
+      } else if (cmd === "differentOddEven") {
+        documentStore.setDifferentOddEven(!documentStore.differentOddEven)
       } else {
         onRichTextCommand(cmd as RichTextCommand, value)
       }
