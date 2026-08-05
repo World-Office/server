@@ -33,9 +33,9 @@ export async function convertXlsxToWoSpreadsheet(
 		return JSON.stringify({
 			version: 1,
 			name: "Spreadsheet",
-			sheet_order: ["sheet1"],
+			sheetOrder: ["sheet1"],
 			sheets: [],
-			shared_strings: [],
+			sharedStrings: [],
 		});
 	}
 	const base64 = arrayBufferToBase64(data);
@@ -74,9 +74,9 @@ export async function convertOdsToWoSpreadsheet(
 		return JSON.stringify({
 			version: 1,
 			name: "Spreadsheet",
-			sheet_order: ["sheet1"],
+			sheetOrder: ["sheet1"],
 			sheets: [],
-			shared_strings: [],
+			sharedStrings: [],
 		});
 	}
 	const base64 = arrayBufferToBase64(data);
@@ -236,8 +236,8 @@ interface WoRow {
 interface WoSheet {
 	id: string;
 	name: string;
-	row_count: number;
-	column_count: number;
+	rowCount: number;
+	columnCount: number;
 	rows: WoRow[];
 	merges: string[];
 }
@@ -245,9 +245,9 @@ interface WoSheet {
 interface WoSpreadsheet {
 	version: number;
 	name: string;
-	sheet_order: string[];
+	sheetOrder: string[];
 	sheets: WoSheet[];
-	shared_strings: string[];
+	sharedStrings: string[];
 }
 
 /**
@@ -316,9 +316,9 @@ export function univerSnapshotToWoSpreadsheet(snapshot: unknown): string {
 		return JSON.stringify({
 			version: 1,
 			name: wb?.name ?? "Spreadsheet",
-			sheet_order: [],
+			sheetOrder: [],
 			sheets: [],
-			shared_strings: [],
+			sharedStrings: [],
 		} satisfies WoSpreadsheet);
 	}
 
@@ -387,8 +387,8 @@ export function univerSnapshotToWoSpreadsheet(snapshot: unknown): string {
 			return {
 				id: sheet.id ?? sheetId,
 				name: sheet.name ?? sheetId,
-				row_count: Math.max(sheet.rowCount ?? 0, maxRow + 1, 1),
-				column_count: Math.max(sheet.columnCount ?? 0, maxCol + 1, 1),
+				rowCount: Math.max(sheet.rowCount ?? 0, maxRow + 1, 1),
+				columnCount: Math.max(sheet.columnCount ?? 0, maxCol + 1, 1),
 				rows,
 				merges,
 			} satisfies WoSheet;
@@ -399,9 +399,9 @@ export function univerSnapshotToWoSpreadsheet(snapshot: unknown): string {
 		{
 			version: 1,
 			name: wb.name ?? "Spreadsheet",
-			sheet_order: sheetOrder,
+			sheetOrder: sheetOrder,
 			sheets,
-			shared_strings: sharedStrings,
+			sharedStrings: sharedStrings,
 		} satisfies WoSpreadsheet,
 		null,
 		2,
@@ -506,8 +506,8 @@ function woSpreadsheetToCsv(wo: WoSpreadsheet): string {
 				if (!rows.has(rowIdxFromRef)) rows.set(rowIdxFromRef, new Map());
 				// For shared string cells, the value is the index; we want the actual string
 				const val =
-					cell.t === "s" && wo.shared_strings
-						? (wo.shared_strings[Number.parseInt(cell.v, 10)] ?? cell.v)
+					cell.t === "s" && wo.sharedStrings
+						? (wo.sharedStrings[Number.parseInt(cell.v, 10)] ?? cell.v)
 						: cell.v;
 				rows.get(rowIdxFromRef)?.set(col, val);
 			}
