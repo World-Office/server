@@ -350,6 +350,7 @@ export class DocumentStore {
       const format = this.getDocumentFormat()
       if (format === "docx" || format === "odt") {
         this.richTextFormat = format
+        // convertToHtml returns "" for empty files (0-byte new files from OpenCloud)
         this.richTextHtml = await convertToHtml(content, format)
       }
       this.isDocReady = true

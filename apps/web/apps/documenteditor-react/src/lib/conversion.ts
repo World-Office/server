@@ -30,6 +30,11 @@ function base64ToBlob(b64: string, mimeType: string): Blob {
 }
 
 export async function convertToHtml(blob: Blob, sourceFormat: string): Promise<string> {
+  // Handle empty files gracefully — return empty HTML instead of sending
+  // empty data to the backend (which would fail with a ZIP parse error).
+  if (blob.size === 0) {
+    return ""
+  }
   const data = await blobToBase64(blob)
   const res = await fetch(CONVERSION_ENDPOINT, {
     method: "POST",
