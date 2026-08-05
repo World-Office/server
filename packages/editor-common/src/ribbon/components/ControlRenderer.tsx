@@ -385,8 +385,11 @@ function CheckboxControl({
         disabled={!enabled}
         onChange={(e) => {
           spec.onChange(e.target.checked)
-          dispatch.onRichTextCommand(spec.id ?? "")
-          dispatch.onCommand(spec.id ?? "")
+          if (spec.command) {
+            dispatch.onCommand(spec.command, e.target.checked ? "true" : "false")
+          } else {
+            dispatch.onCommand(spec.id ?? "")
+          }
         }}
       />
       <span>{t(spec.label ?? "")}</span>

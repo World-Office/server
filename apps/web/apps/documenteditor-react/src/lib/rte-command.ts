@@ -91,6 +91,10 @@ export type RichTextCommand =
   | "columnsReset"
   | "editHeader"
   | "editFooter"
+  | "removeHeader"
+  | "removeFooter"
+  | "differentFirstPage"
+  | "differentOddEven"
   | "find"
   | "openTheme"
   | "openSearch"
@@ -106,6 +110,9 @@ export type RichTextCommand =
   | "insertEndnote"
   | "setTextDirection"
   | "toggleSpellCheck"
+  | "toggleRuler"
+  | "toggleGridlines"
+  | "toggleNavigation"
   | "toggleTrackChanges"
   | "acceptChange"
   | "rejectChange"
@@ -220,6 +227,10 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "columnsReset",
   "editHeader",
   "editFooter",
+  "removeHeader",
+  "removeFooter",
+  "differentFirstPage",
+  "differentOddEven",
   "openSearch",
   "findNext",
   "findPrevious",
@@ -233,6 +244,9 @@ export const RICH_TEXT_COMMANDS: readonly RichTextCommand[] = [
   "insertEndnote",
   "setTextDirection",
   "toggleSpellCheck",
+  "toggleRuler",
+  "toggleGridlines",
+  "toggleNavigation",
   "toggleTrackChanges",
   "acceptChange",
   "rejectChange",
@@ -563,6 +577,20 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       documentStore.headerFooterMode =
         documentStore.headerFooterMode === "footer" ? "none" : "footer"
       return true
+    case "removeHeader":
+      documentStore.clearHeader()
+      documentStore.headerFooterMode = "none"
+      return true
+    case "removeFooter":
+      documentStore.clearFooter()
+      documentStore.headerFooterMode = "none"
+      return true
+    case "differentFirstPage":
+      documentStore.setDifferentFirstPage(!documentStore.differentFirstPage)
+      return true
+    case "differentOddEven":
+      documentStore.setDifferentOddEven(!documentStore.differentOddEven)
+      return true
     case "openSearch": {
       if (!value) {
         // Toggle the find panel — the panel itself drives search on input.
@@ -705,6 +733,15 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
       )
       return true
     }
+    case "toggleRuler":
+      documentStore.toggleRuler()
+      return true
+    case "toggleGridlines":
+      documentStore.toggleGridlines()
+      return true
+    case "toggleNavigation":
+      documentStore.toggleNavigation()
+      return true
     case "toggleTrackChanges":
       return toggleTrackChanges(editor, currentUser.username, currentUser.id)
     case "acceptChange":

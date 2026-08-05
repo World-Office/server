@@ -28,6 +28,19 @@ export interface RibbonContext {
   userCount: number
   /** Current file name */
   fileName: string
+  // View options
+  /** Ruler is visible */
+  rulerVisible?: boolean
+  /** Gridlines are visible */
+  gridlinesVisible?: boolean
+  /** Navigation pane is visible */
+  navigationVisible?: boolean
+  /** Spell check is enabled */
+  spellcheckEnabled?: boolean
+  /** Different first page header/footer */
+  differentFirstPage?: boolean
+  /** Different odd/even page header/footer */
+  differentOddEven?: boolean
 }
 
 // ── Command dispatch ────────────────────────────────────────────────────
@@ -127,6 +140,8 @@ export interface RibbonCheckboxSpec extends RibbonControlBase {
   type: "checkbox"
   checked: (ctx: RibbonContext) => boolean
   onChange: (checked: boolean) => void
+  /** Optional command dispatched when checkbox toggles (alternative to onChange) */
+  command?: string
 }
 
 export interface RibbonColorPickerSpec extends RibbonControlBase {

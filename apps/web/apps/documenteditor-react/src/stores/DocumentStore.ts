@@ -83,6 +83,13 @@ export class DocumentStore {
   headerHtml = ""
   footerHtml = ""
   headerFooterMode: "none" | "header" | "footer" = "none"
+  differentFirstPage = false
+  differentOddEven = false
+
+  /* View options */
+  rulerVisible = true
+  gridlinesVisible = false
+  navigationVisible = false
 
   /* Spelling */
   spellingEnabled = true
@@ -270,6 +277,34 @@ export class DocumentStore {
 
   setTrackChanges(enabled: boolean): void {
     this.trackChanges = enabled
+  }
+
+  setDifferentFirstPage(value: boolean): void {
+    this.differentFirstPage = value
+  }
+
+  setDifferentOddEven(value: boolean): void {
+    this.differentOddEven = value
+  }
+
+  clearHeader(): void {
+    this.headerHtml = ""
+  }
+
+  clearFooter(): void {
+    this.footerHtml = ""
+  }
+
+  toggleRuler(): void {
+    this.rulerVisible = !this.rulerVisible
+  }
+
+  toggleGridlines(): void {
+    this.gridlinesVisible = !this.gridlinesVisible
+  }
+
+  toggleNavigation(): void {
+    this.navigationVisible = !this.navigationVisible
   }
 
   setSpellingEnabled(enabled: boolean): void {
