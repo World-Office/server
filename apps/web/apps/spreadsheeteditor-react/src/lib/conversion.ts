@@ -29,6 +29,15 @@ function base64ToBlob(b64: string, mimeType: string): Blob {
 export async function convertXlsxToWoSpreadsheet(
 	data: ArrayBuffer,
 ): Promise<string> {
+	if (data.byteLength === 0) {
+		return JSON.stringify({
+			version: 1,
+			name: "Spreadsheet",
+			sheet_order: ["sheet1"],
+			sheets: [],
+			shared_strings: [],
+		});
+	}
 	const base64 = arrayBufferToBase64(data);
 	const res = await fetch(CONVERSION_ENDPOINT, {
 		method: "POST",
@@ -61,6 +70,15 @@ export async function convertXlsxToWoSpreadsheet(
 export async function convertOdsToWoSpreadsheet(
 	data: ArrayBuffer,
 ): Promise<string> {
+	if (data.byteLength === 0) {
+		return JSON.stringify({
+			version: 1,
+			name: "Spreadsheet",
+			sheet_order: ["sheet1"],
+			sheets: [],
+			shared_strings: [],
+		});
+	}
 	const base64 = arrayBufferToBase64(data);
 	const res = await fetch(CONVERSION_ENDPOINT, {
 		method: "POST",
@@ -112,6 +130,39 @@ export async function convertWoSpreadsheetToXlsx(
 	return base64ToBlob(
 		result.data,
 		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+	).arrayBuffer();
+}
+
+/**
+ * Convert WoSpreadsheet JSON → ODS (OpenDocument Spreadsheet) bytes.
+ * Sends the JSON to the backend conversion API which uses WoSpreadsheetToOdsConverter.
+ */
+export async function convertWoSpreadsheetToOds(
+	json: string,
+): Promise<ArrayBuffer> {
+	const res = await fetch(CONVERSION_ENDPOINT, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			source_format: "wo-spreadsheet",
+			target_format: "ods",
+			data: btoa(json),
+		}),
+	});
+	if (!res.ok) {
+		throw new Error(
+			`Conversion request failed: ${res.status} ${res.statusText}`,
+		);
+	}
+	const result: ConversionResponse = await res.json();
+	if (!result.data) {
+		throw new Error(
+			`Conversion failed: ${result.status} — ${result.error ?? "unknown error"}`,
+		);
+	}
+	return base64ToBlob(
+		result.data,
+		"application/vnd.oasis.opendocument.spreadsheet",
 	).arrayBuffer();
 }
 

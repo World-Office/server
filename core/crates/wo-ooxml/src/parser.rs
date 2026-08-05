@@ -24,6 +24,21 @@ impl OoxmlParser {
 
     /// Parse OOXML data (ZIP bytes) into an OoxmlDocument.
     pub fn parse(&self, data: &[u8]) -> Result<OoxmlDocument> {
+        if data.is_empty() {
+            return Err(CoreError::Parse {
+                format: "ooxml".into(),
+                message: "Empty file: no data received from WOPI source".into(),
+            });
+        }
+        if data.len() < 22 {
+            return Err(CoreError::Parse {
+                format: "ooxml".into(),
+                message: format!(
+                    "File too small ({} bytes) to be a valid OOXML archive",
+                    data.len()
+                ),
+            });
+        }
         let cursor = Cursor::new(data);
         let mut archive = zip::ZipArchive::new(cursor).map_err(|e| CoreError::Parse {
             format: "ooxml".into(),

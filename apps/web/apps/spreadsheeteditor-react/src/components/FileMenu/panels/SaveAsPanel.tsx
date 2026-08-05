@@ -1,10 +1,15 @@
-import { convertWoSpreadsheetToCsv } from "../../../lib/conversion";
+import {
+	convertWoSpreadsheetToCsv,
+	convertWoSpreadsheetToOds,
+} from "../../../lib/conversion";
+import { univerSnapshotToWoSpreadsheet } from "../../../lib/conversion";
 import { getUniverSnapshot } from "../../../lib/univer-command";
 import { spreadsheetStore } from "../../../stores/SpreadsheetStore";
 
 const EXPORT_FORMATS = [
 	{ id: "xlsx", label: "XLSX", description: "Excel Workbook" },
 	{ id: "csv", label: "CSV", description: "Comma-Separated Values" },
+	{ id: "ods", label: "ODS", description: "OpenDocument Spreadsheet" },
 ];
 
 export function SaveAsPanel({ visible }: { visible: boolean }) {
@@ -43,6 +48,39 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
 			return;
 		}
 
+		if (formatId === "ods") {
+			try {
+				const snapshot = getUniverSnapshot();
+				if (!snapshot) {
+					alert("No spreadsheet data to export.");
+					return;
+				}
+				const json = univerSnapshotToWoSpreadsheet(snapshot);
+				const odsBuffer = await convertWoSpreadsheetToOds(json);
+				const blob = new Blob([odsBuffer], {
+					type: "application/vnd.oasis.opendocument.spreadsheet",
+				});
+				const url = URL.createObjectURL(blob);
+				const a = document.createElement("a");
+				a.href = url;
+				const baseName = spreadsheetStore.document?.title?.replace(
+					/\.[^.]+$/,
+					"",
+				);
+				a.download = baseName ? `${baseName}.ods` : "spreadsheet.ods";
+				document.body.appendChild(a);
+				a.click();
+				document.body.removeChild(a);
+				URL.revokeObjectURL(url);
+			} catch (err) {
+				console.error("ODS export failed:", err);
+				alert("ODS export failed. Please try XLSX export instead.");
+			}
+			spreadsheetStore.setFileMenuOpen(false);
+			spreadsheetStore.setActiveFileMenuPanel(null);
+			return;
+		}
+
 		alert(`Export to ${formatId.toUpperCase()} is not yet supported`);
 	}
 
@@ -73,28 +111,20 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
 						{format.label}
 					</button>
 				))}
-				{[
-					"ODS",
-					"PDF",
-					"XLTX",
-					"OTS",
-					"XLSB",
-					"XLSM",
-					"PDFA",
-					"JPG",
-					"PNG",
-				].map((format) => (
-					<button
-						key={format}
-						type="button"
-						className="se-file-menu-format-btn"
-						disabled
-						style={{ opacity: 0.5 }}
-						onClick={() => {}}
-					>
-						{format}
-					</button>
-				))}
+				{["PDF", "XLTX", "OTS", "XLSB", "XLSM", "PDFA", "JPG", "PNG"].map(
+					(format) => (
+						<button
+							key={format}
+							type="button"
+							className="se-file-menu-format-btn"
+							disabled
+							style={{ opacity: 0.5 }}
+							onClick={() => {}}
+						>
+							{format}
+						</button>
+					),
+				)}
 			</div>
 			<div className="se-file-menu-footer">
 				<button type="button" onClick={handleClose}>

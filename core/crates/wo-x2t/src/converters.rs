@@ -8150,6 +8150,15 @@ mod tests {
     }
 
     #[test]
+    fn test_odt_to_html_empty_file() {
+        let converter = OdtToHtmlConverter;
+        let result = converter.convert(&[]);
+        assert!(result.is_err(), "Empty file should fail");
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("Empty file"), "Error should mention empty file");
+    }
+
+    #[test]
     fn test_odt_to_html_heading() {
         let odt = make_minimal_odt();
         let converter = OdtToHtmlConverter;

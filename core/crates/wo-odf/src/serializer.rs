@@ -565,7 +565,6 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
     for row in &sheet.rows {
         writeln!(xml, "{}  <table:table-row>", pad).unwrap();
         for cell in &row.cells {
-            let cell_ref = ods_cell_ref(cell.row, cell.column);
             match cell.cell_type {
                 CellType::Number | CellType::Percentage | CellType::Currency => {
                     if let Some(v) = cell.value {
@@ -624,27 +623,11 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
                     writeln!(xml, "{}    </table:table-cell>", pad).unwrap();
                 }
             }
-            // Suppress unused variable warning for cell_ref in non-string types
-            let _ = cell_ref;
         }
         writeln!(xml, "{}  </table:table-row>", pad).unwrap();
     }
 
     writeln!(xml, "{}</table:table>", pad).unwrap();
-}
-
-/// Convert 0-based column and 1-based row to an ODS cell reference (e.g., "A1").
-fn ods_cell_ref(row: u32, col: u32) -> String {
-    let mut result = String::new();
-    let mut n = col;
-    loop {
-        result.insert(0, char::from_u32(b'A' as u32 + (n % 26)).unwrap());
-        if n < 26 {
-            break;
-        }
-        n = n / 26 - 1;
-    }
-    format!("{}{}", result, row)
 }
 
 // ---------------------------------------------------------------------------

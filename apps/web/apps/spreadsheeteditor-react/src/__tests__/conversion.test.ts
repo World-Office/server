@@ -1,6 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+	convertOdsToWoSpreadsheet,
 	convertWoSpreadsheetToCsv,
+	convertWoSpreadsheetToOds,
+	convertWoSpreadsheetToXlsx,
+	convertXlsxToWoSpreadsheet,
 	univerSnapshotToWoSpreadsheet,
 } from "../lib/conversion";
 
@@ -358,5 +362,186 @@ describe("convertWoSpreadsheetToCsv", () => {
 
 		expect(csv).toContain("Name");
 		expect(csv).toContain("42");
+	});
+});
+
+// ── Fetch-based conversion API tests ─────────────────────────────────
+
+// Mock fetch for conversion API tests
+const mockFetch = vi.fn();
+const originalFetch = globalThis.fetch;
+
+beforeEach(() => {
+	globalThis.fetch = mockFetch;
+});
+
+afterEach(() => {
+	globalThis.fetch = originalFetch;
+	mockFetch.mockReset();
+});
+
+function mockConversionResponse(data: string, status = "ok") {
+	return {
+		ok: true,
+		status: 200,
+		statusText: "OK",
+		json: async () => ({
+			status,
+			data: btoa(data),
+			format: "wo-spreadsheet",
+			duration_ms: 5,
+		}),
+	};
+}
+
+function mockConversionResponseBinary(base64Data: string, status = "ok") {
+	return {
+		ok: true,
+		status: 200,
+		statusText: "OK",
+		json: async () => ({
+			status,
+			data: base64Data,
+			format: "ods",
+			duration_ms: 5,
+		}),
+	};
+}
+
+describe("convertOdsToWoSpreadsheet", () => {
+	it("sends source_format 'ods' to the conversion API", async () => {
+		const woJson = JSON.stringify({
+			version: 1,
+			name: "Test",
+			sheet_order: ["s1"],
+			sheets: [],
+			shared_strings: [],
+		});
+		mockFetch.mockResolvedValue(mockConversionResponse(woJson));
+
+		const result = await convertOdsToWoSpreadsheet(new ArrayBuffer(10));
+
+		expect(mockFetch).toHaveBeenCalledTimes(1);
+		const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+		expect(callBody.source_format).toBe("ods");
+		expect(callBody.target_format).toBe("wo-spreadsheet");
+		expect(result).toBe(woJson);
+	});
+
+	it("throws on HTTP error", async () => {
+		mockFetch.mockResolvedValue({
+			ok: false,
+			status: 500,
+			statusText: "Internal Server Error",
+			json: async () => ({ status: "error", error: "parse failed" }),
+		});
+
+		await expect(
+			convertOdsToWoSpreadsheet(new ArrayBuffer(10)),
+		).rejects.toThrow("Conversion request failed: 500");
+	});
+
+	it("throws when response has no data", async () => {
+		mockFetch.mockResolvedValue({
+			ok: true,
+			status: 200,
+			statusText: "OK",
+			json: async () => ({ status: "error", error: "no data" }),
+		});
+
+		await expect(
+			convertOdsToWoSpreadsheet(new ArrayBuffer(10)),
+		).rejects.toThrow("Conversion failed");
+	});
+});
+
+describe("convertXlsxToWoSpreadsheet", () => {
+	it("sends source_format 'xlsx' to the conversion API", async () => {
+		const woJson = JSON.stringify({
+			version: 1,
+			name: "Test",
+			sheet_order: ["s1"],
+			sheets: [],
+			shared_strings: [],
+		});
+		mockFetch.mockResolvedValue(mockConversionResponse(woJson));
+
+		const result = await convertXlsxToWoSpreadsheet(new ArrayBuffer(10));
+
+		expect(mockFetch).toHaveBeenCalledTimes(1);
+		const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+		expect(callBody.source_format).toBe("xlsx");
+		expect(callBody.target_format).toBe("wo-spreadsheet");
+		expect(result).toBe(woJson);
+	});
+});
+
+describe("convertWoSpreadsheetToOds", () => {
+	it("sends target_format 'ods' to the conversion API", async () => {
+		const woJson = JSON.stringify({
+			version: 1,
+			name: "Test",
+			sheet_order: ["s1"],
+			sheets: [],
+			shared_strings: [],
+		});
+		const fakeOdsBase64 = btoa("fake-ods-content");
+		mockFetch.mockResolvedValue(mockConversionResponseBinary(fakeOdsBase64));
+
+		const result = await convertWoSpreadsheetToOds(woJson);
+
+		expect(mockFetch).toHaveBeenCalledTimes(1);
+		const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+		expect(callBody.source_format).toBe("wo-spreadsheet");
+		expect(callBody.target_format).toBe("ods");
+		expect(result).toBeInstanceOf(ArrayBuffer);
+	});
+
+	it("throws on HTTP error", async () => {
+		mockFetch.mockResolvedValue({
+			ok: false,
+			status: 422,
+			statusText: "Unprocessable Entity",
+			json: async () => ({ status: "error", error: "bad data" }),
+		});
+
+		await expect(convertWoSpreadsheetToOds("{}")).rejects.toThrow(
+			"Conversion request failed: 422",
+		);
+	});
+
+	it("throws when response has no data", async () => {
+		mockFetch.mockResolvedValue({
+			ok: true,
+			status: 200,
+			statusText: "OK",
+			json: async () => ({ status: "error", error: "serialization failed" }),
+		});
+
+		await expect(convertWoSpreadsheetToOds("{}")).rejects.toThrow(
+			"Conversion failed",
+		);
+	});
+});
+
+describe("convertWoSpreadsheetToXlsx", () => {
+	it("sends target_format 'xlsx' to the conversion API", async () => {
+		const woJson = JSON.stringify({
+			version: 1,
+			name: "Test",
+			sheet_order: ["s1"],
+			sheets: [],
+			shared_strings: [],
+		});
+		const fakeXlsxBase64 = btoa("fake-xlsx-content");
+		mockFetch.mockResolvedValue(mockConversionResponseBinary(fakeXlsxBase64));
+
+		const result = await convertWoSpreadsheetToXlsx(woJson);
+
+		expect(mockFetch).toHaveBeenCalledTimes(1);
+		const callBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+		expect(callBody.source_format).toBe("wo-spreadsheet");
+		expect(callBody.target_format).toBe("xlsx");
+		expect(result).toBeInstanceOf(ArrayBuffer);
 	});
 });

@@ -38,6 +38,23 @@ impl OdfParser {
 
     /// Parse ODF data (ZIP bytes) into an OdfDocument.
     pub fn parse(&self, data: &[u8]) -> Result<OdfDocument> {
+        if data.is_empty() {
+            return Err(CoreError::Parse {
+                format: "odf".into(),
+                message: "Empty file: no data received from WOPI source".into(),
+            });
+        }
+        if data.len() < 22 {
+            // A ZIP file's End of Central Directory (EOCD) record is at least 22 bytes.
+            // Files smaller than this cannot be valid ODF/ZIP archives.
+            return Err(CoreError::Parse {
+                format: "odf".into(),
+                message: format!(
+                    "File too small ({} bytes) to be a valid ODF archive — minimum 22 bytes for ZIP EOCD record",
+                    data.len()
+                ),
+            });
+        }
         let cursor = Cursor::new(data);
         let mut archive = zip::ZipArchive::new(cursor).map_err(|e| CoreError::Parse {
             format: "odf".into(),
@@ -1428,5 +1445,23 @@ mod tests {
         assert_eq!(OdfType::Text.to_string(), "odt");
         assert_eq!(OdfType::Spreadsheet.to_string(), "ods");
         assert_eq!(OdfType::Presentation.to_string(), "odp");
+    }
+
+    #[test]
+    fn test_parse_empty_data() {
+        let parser = OdfParser::new();
+        let result = parser.parse(&[]);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("Empty file"));
+    }
+
+    #[test]
+    fn test_parse_too_small_data() {
+        let parser = OdfParser::new();
+        let result = parser.parse(&[0x50, 0x4b, 0x03, 0x04]); // 4 bytes, not a valid ZIP
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("File too small"));
     }
 }

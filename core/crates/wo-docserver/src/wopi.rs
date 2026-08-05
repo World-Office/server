@@ -120,6 +120,20 @@ impl WopiClient {
                 let body = resp.text().await.unwrap_or_default();
                 return Err(anyhow::anyhow!("WOPI GetFile upstream {status}: {body}"));
             }
+            // Detect HTML error pages returned with 200 status (some proxies do this)
+            let content_type = resp
+                .headers()
+                .get("content-type")
+                .and_then(|v| v.to_str().ok())
+                .unwrap_or("")
+                .to_string();
+            if content_type.contains("text/html") {
+                let status = resp.status();
+                let body = resp.text().await.unwrap_or_default();
+                return Err(anyhow::anyhow!(
+                    "WOPI GetFile returned HTML instead of file content (status {status}, content-type: {content_type}): {body}"
+                ));
+            }
             let bytes = resp.bytes().await?;
             Ok(bytes.to_vec())
         })
