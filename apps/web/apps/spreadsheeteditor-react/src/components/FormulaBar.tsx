@@ -46,12 +46,18 @@ export const FormulaBar = observer(function FormulaBar() {
 
 		const text = formulaText.trim();
 		if (text.startsWith("=")) {
-			console.warn("[FormulaBar] Formula commit not yet wired to Univer API");
-		} else if (text) {
+			// Formula: set via Univer formula API
 			try {
-				range.setFontWeight("normal");
-			} catch {
-				/* intentionally empty */
+				range.setFormula(text);
+			} catch (err) {
+				console.warn("[FormulaBar] Failed to set formula:", err);
+			}
+		} else if (text) {
+			// Plain text value
+			try {
+				range.setValue(text);
+			} catch (err) {
+				console.warn("[FormulaBar] Failed to set cell value:", err);
 			}
 		}
 		setIsEditing(false);
@@ -109,8 +115,9 @@ export const FormulaBar = observer(function FormulaBar() {
 	}
 
 	function sheetNavigate(_row: number, _col: number) {
-		// TODO: Use Univer selection API to navigate to cell (row, col)
-		// when the facade exposes selection.setActiveRange(row, col)
+		// Navigate to a cell by row/col. Requires Univer facade to expose
+		// selection.setActiveRange(row, col) — not yet available in the facade.
+		// Currently a no-op; the formula bar still updates the cell value via setFormula().
 	}
 
 	function handleFocus() {

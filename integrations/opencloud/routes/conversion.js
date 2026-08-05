@@ -85,6 +85,7 @@ function extToFormat(ext) {
 /**
  * Get the format key for a given target (user selection).
  */
+// eslint-disable-next-line no-unused-vars
 function targetToFormat(target) {
   // "docx" → "docx", "pdf" → "pdf", etc.
   return target;
@@ -214,7 +215,7 @@ router.post('/api/conversion/submit', upload.single('file'), async (req, res) =>
       }
 
       // Clean up uploaded file
-      try { await fs.unlink(file.path); } catch {}
+      try { await fs.unlink(file.path); } catch { /* file may already be deleted */ }
     });
 
     // Return immediately with job info
@@ -222,7 +223,7 @@ router.post('/api/conversion/submit', upload.single('file'), async (req, res) =>
   } catch (err) {
     // Clean up on error
     if (req.file && req.file.path) {
-      try { await fs.unlink(req.file.path); } catch {}
+      try { await fs.unlink(req.file.path); } catch { /* file may already be deleted */ }
     }
     res.status(500).json({ error: err.message });
   }

@@ -19,13 +19,18 @@ import Typography from "@tiptap/extension-typography"
 import { EditorContent, Extension, useEditor } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react"
+import { registerAutoCorrect } from "../lib/auto-correct"
+import { Caption } from "../lib/caption"
 import { CommentMark } from "../lib/comment-mark"
 import {
   CheckboxControl,
   DatePickerControl,
   DropdownControl,
   PlainTextControl,
+  registerContentControlHandlers,
 } from "../lib/content-controls"
+import { CrossReference } from "../lib/cross-ref"
+import { IndexEntry, IndexListNode } from "../lib/document-index"
 import { EndnoteMark } from "../lib/endnote-mark"
 import { FontSize } from "../lib/font-size-extension"
 import {
@@ -35,9 +40,11 @@ import {
   footnoteAutoNumberPlugin,
 } from "../lib/footnote-mark"
 import { LineSpacingExtension } from "../lib/line-spacing-extension"
-import { PageNumber } from "../lib/page-number"
+import { MergeField } from "../lib/mail-merge"
+import { PageCount, PageNumber } from "../lib/page-number"
 import { ParagraphBorders } from "../lib/paragraph-borders"
 import { setActiveRichTextEditor } from "../lib/rte-command"
+import { SectionBreak } from "../lib/section-break"
 import { SpellcheckExtension } from "../lib/spellcheck-extension"
 import { TextDirectionExtension } from "../lib/text-direction-extension"
 import { TableOfContents } from "../lib/toc-extension"
@@ -111,6 +118,13 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         TableOfContents,
         ParagraphBorders,
         PageNumber,
+        PageCount,
+        SectionBreak,
+        Caption,
+        CrossReference,
+        IndexEntry,
+        IndexListNode,
+        MergeField,
         PlainTextControl,
         DropdownControl,
         CheckboxControl,
@@ -134,6 +148,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       },
       onCreate({ editor }) {
         setActiveRichTextEditor(editor)
+        registerContentControlHandlers(editor)
+        registerAutoCorrect(editor)
       },
     })
 

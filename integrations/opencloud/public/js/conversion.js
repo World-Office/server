@@ -9,7 +9,7 @@
   // ─── State ──────────────────────────────────────────────────────────
 
   var selectedFile = null;
-  var pollTimer = null;
+  // // var pollTimer = null; // reserved for future polling // reserved for future polling interval
   var activeJobIds = {};
 
   // ─── DOM refs ───────────────────────────────────────────────────────
@@ -37,6 +37,7 @@
     return div.innerHTML;
   }
 
+  // eslint-disable-next-line no-unused-vars
   function fileNameFromPath(path) {
     var p = path.replace(/\/+$/, '').split('/');
     return p[p.length - 1] || 'Unknown';

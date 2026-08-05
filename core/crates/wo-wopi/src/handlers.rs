@@ -251,7 +251,118 @@ pub async fn unlock_file<S: StorageBackend>(
     Ok(axum::http::StatusCode::OK.into_response())
 }
 
-/// Generic WOPI operation handler for POST to /wopi/files/{file_id}
+/// DeleteFile handler.
+///
+/// POST /wopi/files/{file_id} with X-WOPI-Override: DELETE_FILE
+pub async fn delete_file<S: StorageBackend>(
+    State(state): State<Arc<WopiState<S>>>,
+    Path(file_id): Path<String>,
+    Query(params): Query<WopiQueryParams>,
+) -> Result<Response> {
+    state.validate_token(&params.access_token)?;
+    state.storage.delete_file(&file_id).await?;
+    tracing::info!("Deleted file {}", file_id);
+    Ok(axum::http::StatusCode::OK.into_response())
+}
+
+/// RenameFile handler.
+///
+/// POST /wopi/files/{file_id} with X-WOPI-Override: RENAME_FILE
+/// Body: { "new_name": "filename.docx" }
+pub async fn rename_file<S: StorageBackend>(
+    State(state): State<Arc<WopiState<S>>>,
+    Path(file_id): Path<String>,
+    Query(params): Query<WopiQueryParams>,
+    _headers: HeaderMap,
+    body: axum::body::Bytes,
+) -> Result<Response> {
+    state.validate_token(&params.access_token)?;
+
+    #[derive(serde::Deserialize)]
+    struct RenameRequest {
+        new_name: String,
+    }
+
+    let request: RenameRequest = serde_json::from_slice(&body)
+        .map_err(|e| WopiError::InvalidRequest(format!("Invalid rename request: {}", e)))?;
+
+    state.storage.rename_file(&file_id, &request.new_name).await?;
+    tracing::info!("Renamed file {} to {}", file_id, request.new_name);
+
+    Ok(Json(serde_json::json!({
+        "status": "ok",
+        "new_name": request.new_name,
+    }))
+    .into_response())
+}
+
+/// PutRelativeFile handler (Save As / Save Copy).
+///
+/// POST /wopi/files/{file_id} with X-WOPI-Override: PUT_RELATIVE_FILE
+/// Body: { "contents": "<base64>", "suggested_name": "copy.docx" }
+pub async fn put_relative_file<S: StorageBackend>(
+    State(state): State<Arc<WopiState<S>>>,
+    Path(file_id): Path<String>,
+    Query(params): Query<WopiQueryParams>,
+    _headers: HeaderMap,
+    body: axum::body::Bytes,
+) -> Result<Response> {
+    state.validate_token(&params.access_token)?;
+
+    #[derive(serde::Deserialize)]
+    struct PutRelativeRequest {
+        contents: String,
+        suggested_name: Option<String>,
+    }
+
+    let request: PutRelativeRequest = serde_json::from_slice(&body)
+        .map_err(|e| WopiError::InvalidRequest(format!("Invalid put_relative_file request: {}", e)))?;
+
+    // Decode base64 contents
+    use base64::Engine;
+    let content = base64::engine::general_purpose::STANDARD
+        .decode(&request.contents)
+        .map_err(|e| WopiError::InvalidRequest(format!("Invalid base64: {}", e)))?;
+
+    // Generate a new file ID based on the suggested name
+    let new_name = request.suggested_name.unwrap_or_else(|| "copy.docx".to_string());
+    let new_file_id = format!("{}-{}", file_id, chrono::Utc::now().timestamp());
+
+    state.storage.write_file(&new_file_id, &content).await?;
+    tracing::info!("PutRelativeFile: created {} as {}", new_file_id, new_name);
+
+    Ok(Json(serde_json::json!({
+        "status": "ok",
+        "file_id": new_file_id,
+        "name": new_name,
+    }))
+    .into_response())
+}
+
+/// GetShareUrl handler.
+///
+/// POST /wopi/files/{file_id} with X-WOPI-Override: GET_SHARE_URL
+/// Returns a share URL for the file.
+pub async fn get_share_url<S: StorageBackend>(
+    State(state): State<Arc<WopiState<S>>>,
+    Path(file_id): Path<String>,
+    Query(params): Query<WopiQueryParams>,
+) -> Result<Response> {
+    state.validate_token(&params.access_token)?;
+
+    // Verify file exists
+    let _info = state.storage.get_file_info(&file_id).await?;
+
+    // Build a share URL — in production this would be a signed URL
+    let share_url = format!("/wopi/share/{}?token={}", file_id, params.access_token);
+    tracing::info!("GetShareUrl for file {}", file_id);
+
+    Ok(Json(serde_json::json!({
+        "status": "ok",
+        "share_url": share_url,
+    }))
+    .into_response())
+}
 pub async fn wopi_operation<S: StorageBackend>(
     State(state): State<Arc<WopiState<S>>>,
     Path(file_id): Path<String>,
@@ -274,6 +385,18 @@ pub async fn wopi_operation<S: StorageBackend>(
         }
         Ok(WopiOverride::Unlock) => {
             unlock_file(State(state), Path(file_id), Query(params), headers, body).await
+        }
+        Ok(WopiOverride::DeleteFile) => {
+            delete_file(State(state), Path(file_id), Query(params)).await
+        }
+        Ok(WopiOverride::RenameFile) => {
+            rename_file(State(state), Path(file_id), Query(params), headers, body).await
+        }
+        Ok(WopiOverride::PutRelativeFile) => {
+            put_relative_file(State(state), Path(file_id), Query(params), headers, body).await
+        }
+        Ok(WopiOverride::GetShareUrl) => {
+            get_share_url(State(state), Path(file_id), Query(params)).await
         }
         Ok(op) => Err(WopiError::InvalidRequest(format!(
             "Operation {:?} not yet implemented",

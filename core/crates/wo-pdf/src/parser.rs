@@ -1052,14 +1052,10 @@ impl PdfParser {
         let mut font_map = HashMap::new();
 
         let resources = match self.get_dict_entry("/Resources", &page_obj.entries) {
-            Some(PdfValue::Reference { .. }) => {
-                let res_obj = self.resolve_ref(
-                    &self
-                        .get_dict_entry("/Resources", &page_obj.entries)
-                        .unwrap(),
-                    objects,
-                    obj_map,
-                );
+            Some(PdfValue::Reference { obj_num, gen_num }) => {
+                // Build a reference to resolve
+                let res_val = PdfValue::Reference { obj_num, gen_num };
+                let res_obj = self.resolve_ref(&res_val, objects, obj_map);
                 match res_obj {
                     Some(obj) => obj.entries.clone(),
                     None => return font_map,
@@ -1070,12 +1066,10 @@ impl PdfParser {
         };
 
         let font_dict = match self.get_dict_entry("/Font", &resources) {
-            Some(PdfValue::Reference { .. }) => {
-                let font_obj = self.resolve_ref(
-                    &self.get_dict_entry("/Font", &resources).unwrap(),
-                    objects,
-                    obj_map,
-                );
+            Some(PdfValue::Reference { obj_num, gen_num }) => {
+                // Build a reference to resolve
+                let font_val = PdfValue::Reference { obj_num, gen_num };
+                let font_obj = self.resolve_ref(&font_val, objects, obj_map);
                 match font_obj {
                     Some(obj) => obj.entries.clone(),
                     None => return font_map,

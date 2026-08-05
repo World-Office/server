@@ -87,6 +87,15 @@ export class DocumentStore {
   /* Spelling */
   spellingEnabled = true
 
+  /* Auto-correction */
+  autoCorrectEnabled = true
+
+  /* Theme */
+  themeId = "office"
+
+  /* Find & Replace panel */
+  showFindPanel = false
+
   /* Desktop integration */
   isDesktop = false
   filePath: string | null = null
@@ -98,6 +107,10 @@ export class DocumentStore {
   /* Rich text editor */
   richTextHtml: string | null = null
   richTextFormat: string | null = null
+
+  /* Monaco (plain text / code) content — serialized verbatim on save */
+  monacoContent: string | null = null
+  monacoMime: string | null = null
 
   get editorType(): "canvas" | "monaco" | "richtext" {
     const ext = this.fileName.toLowerCase().split(".").pop() ?? ""
@@ -263,6 +276,22 @@ export class DocumentStore {
     this.spellingEnabled = enabled
   }
 
+  markModified(): void {
+    this.isModified = true
+  }
+
+  setAutoCorrectEnabled(enabled: boolean): void {
+    this.autoCorrectEnabled = enabled
+  }
+
+  setTheme(themeId: string): void {
+    this.themeId = themeId
+  }
+
+  setShowFindPanel(visible: boolean): void {
+    this.showFindPanel = visible
+  }
+
   setCompactToolbar(compact: boolean): void {
     this.isCompactToolbar = compact
     setStorageItem("compact-toolbar", compact ? "true" : "false")
@@ -387,9 +416,19 @@ export class DocumentStore {
     if (this.editorType === "richtext" && this.richTextHtml && format) {
       return await convertFromHtml(this.richTextHtml, format)
     }
-    return new Blob(["<document serialization placeholder>"], {
-      type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    })
+    // Monaco: serialize the edited text verbatim so saving never corrupts
+    // the file with a placeholder. Type matches the original extension.
+    if (this.editorType === "monaco" && this.monacoContent !== null) {
+      return new Blob([this.monacoContent], {
+        type: this.monacoMime ?? "text/plain; charset=utf-8",
+      })
+    }
+    // Canvas editors (WASM-rendered) are read-only today: fall back to the
+    // original content if present, otherwise a plain-text blob.
+    if (this.lastLoadedContent) {
+      return this.lastLoadedContent
+    }
+    return new Blob([""], { type: "text/plain; charset=utf-8" })
   }
 
   exportAsDownload(): void {
@@ -412,8 +451,24 @@ export class DocumentStore {
     this.isModified = true
   }
 
+  updateMonacoContent(text: string): void {
+    this.monacoContent = text
+    this.isModified = true
+  }
+
   getDocumentFormat(): string | null {
     const ext = this.fileName.toLowerCase().split(".").pop()
+    if (ext === "txt" || ext === "md") {
+      this.monacoMime = "text/plain; charset=utf-8"
+    } else if (ext === "json") {
+      this.monacoMime = "application/json"
+    } else if (ext === "html" || ext === "htm") {
+      this.monacoMime = "text/html; charset=utf-8"
+    } else if (ext === "xml") {
+      this.monacoMime = "application/xml"
+    } else if (["js", "ts", "tsx", "jsx", "css", "scss", "py", "rs"].includes(ext ?? "")) {
+      this.monacoMime = "text/plain; charset=utf-8"
+    }
     return ext ?? null
   }
 }

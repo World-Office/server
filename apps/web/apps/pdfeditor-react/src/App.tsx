@@ -1,10 +1,15 @@
 import { ThemeProvider } from "@world-office/design-system"
-import { useDocumentLoader } from "@world-office/wopi-client"
+import { useDocumentLoader, useWoCommandListener } from "@world-office/wopi-client"
+import { observer } from "mobx-react-lite"
 import { Suspense, lazy, useCallback } from "react"
 import { getActiveEditor } from "./components/MonacoEditor"
 import { type MonacoCommand, dispatchMonacoCommand } from "./components/Toolbar/MonacoCommand"
 import { Viewport } from "./components/Viewport"
+import { useEmbeddedAutoSave } from "./hooks/useEmbeddedAutoSave"
+import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge"
+import { useEmbeddedMode } from "./hooks/useEmbeddedMode"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
+import { isCollaborationConfigured } from "./lib/collaboration-config"
 import { pdfStore } from "./stores/PdfStore"
 
 const PdfCollaborationProvider = lazy(() =>
@@ -13,12 +18,47 @@ const PdfCollaborationProvider = lazy(() =>
   })),
 )
 
-export function App() {
+export const App = observer(function App() {
   useKeyboardShortcuts()
+
+  const { embedded } = useEmbeddedMode(
+    pdfStore.setToolbarVisible.bind(pdfStore),
+    pdfStore.setStatusbarVisible.bind(pdfStore),
+    pdfStore.setLeftMenuVisible.bind(pdfStore),
+    pdfStore.setRightMenuVisible.bind(pdfStore),
+  )
+
+  const bridge = useEmbeddedBridge({
+    embedded,
+    onSave: async () => {
+      await pdfStore.saveToWopi()
+    },
+  })
+
+  useEmbeddedAutoSave(
+    embedded,
+    pdfStore.wopiConnection,
+    pdfStore.isModified,
+    () => pdfStore.buildDocumentBlob(),
+    bridge.notifyDocumentSaved,
+    bridge.notifyError,
+    undefined,
+    () => {
+      pdfStore.isModified = false
+    },
+  )
 
   const handleMonacoCommand = useCallback((command: MonacoCommand) => {
     dispatchMonacoCommand(command, getActiveEditor())
   }, [])
+
+  useWoCommandListener({
+    onCommand: (command, _value) => {
+      handleMonacoCommand(command as MonacoCommand)
+    },
+    onSave: () => pdfStore.saveToWopi(),
+    onDownload: () => pdfStore.exportAsDownload(),
+  })
 
   const loadState = useDocumentLoader({
     onLoad: () => pdfStore.detectAndLoadWopi(),
@@ -67,9 +107,11 @@ export function App() {
 
   return (
     <ThemeProvider>
-      <Suspense fallback={null}>
-        <PdfCollaborationProvider />
-      </Suspense>
+      {isCollaborationConfigured() && (
+        <Suspense fallback={null}>
+          <PdfCollaborationProvider />
+        </Suspense>
+      )}
       <Viewport
         toolbarVisible={pdfStore.toolbarVisible}
         statusbarVisible={pdfStore.statusbarVisible}
@@ -80,4 +122,4 @@ export function App() {
       />
     </ThemeProvider>
   )
-}
+})

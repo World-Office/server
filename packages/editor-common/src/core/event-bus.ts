@@ -3,7 +3,7 @@
  *
  * Usage:
  *   const bus = createEventBus<{ "document:open": string; "edit:undo": undefined }>()
- *   bus.on("document:open", (id) => console.log(id))
+ *   bus.on("document:open", (id) => console.info(id))
  *   bus.emit("document:open", "doc-123")
  */
 

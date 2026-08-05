@@ -18,8 +18,15 @@ function getClient(req) {
   const adminUser = config.OCIS_ADMIN_USER || process.env.OCIS_ADMIN_USER || 'admin';
   const adminPass = config.OCIS_ADMIN_PASSWORD || process.env.OCIS_ADMIN_PASSWORD || '';
 
+  // Use OCIS_INTERNAL_URL if set (for Docker networking);
+  // otherwise default to the published host port so the dashboard
+  // (which typically runs on the host, not in Docker) can reach OCIS.
+  const internalUrl =
+    process.env.OCIS_INTERNAL_URL ||
+    `http://127.0.0.1:${config.OCIS_INTERNAL_PORT || process.env.OCIS_INTERNAL_PORT || '9200'}`;
+
   return new OcisClient({
-    baseUrl: `http://ocis:${config.OCIS_INTERNAL_PORT || '9200'}`,
+    baseUrl: internalUrl,
     publicUrl: `https://${ocisDomain}`,
     username: adminUser,
     password: adminPass,
@@ -179,7 +186,7 @@ router.post('/api/files/mkdir', async (req, res) => {
 
 router.get('/api/files/open', async (req, res) => {
   try {
-    const space = req.query.space || 'personal';
+    // space param reserved for multi-space support
     const filePath = req.query.path || '';
     if (!filePath) return res.status(400).json({ error: 'path required' });
 

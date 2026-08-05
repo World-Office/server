@@ -64,6 +64,7 @@
     }
   }
 
+  // eslint-disable-next-line no-unused-vars
   function fileNameFromPath(path) {
     var parts = path.replace(/\/+$/, '').split('/');
     return parts[parts.length - 1] || 'Untitled';
@@ -230,7 +231,7 @@
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         var path = btn.getAttribute('data-path');
-        var name = btn.getAttribute('data-name');
+        // var name = btn.getAttribute("data-name"); // unused
         var url = '/api/files/download?space=' + encodeURIComponent(state.currentSpace) + '&path=' + encodeURIComponent(path);
         window.open(url, '_blank');
       });

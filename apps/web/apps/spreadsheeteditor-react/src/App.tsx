@@ -1,5 +1,9 @@
 import { ThemeProvider } from "@world-office/design-system";
-import { useDocumentLoader } from "@world-office/wopi-client";
+import {
+	useDocumentLoader,
+	useWoCommandListener,
+} from "@world-office/wopi-client";
+import { observer } from "mobx-react-lite";
 import { Suspense, lazy, useCallback } from "react";
 import { getActiveEditor } from "./components/MonacoEditor";
 import {
@@ -11,6 +15,7 @@ import { useEmbeddedAutoSave } from "./hooks/useEmbeddedAutoSave";
 import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge";
 import { useEmbeddedMode } from "./hooks/useEmbeddedMode";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { isCollaborationConfigured } from "./lib/collaboration-config";
 import { spreadsheetStore } from "./stores/SpreadsheetStore";
 
 const SpreadsheetCollaborationProvider = lazy(() =>
@@ -19,7 +24,7 @@ const SpreadsheetCollaborationProvider = lazy(() =>
 	})),
 );
 
-export function App() {
+export const App = observer(function App() {
 	useKeyboardShortcuts();
 
 	const { embedded } = useEmbeddedMode(
@@ -43,11 +48,23 @@ export function App() {
 		() => spreadsheetStore.buildDocumentBlob(),
 		bridge.notifyDocumentSaved,
 		bridge.notifyError,
+		undefined,
+		() => {
+			spreadsheetStore.isModified = false;
+		},
 	);
 
 	const handleMonacoCommand = useCallback((command: MonacoCommand) => {
 		dispatchMonacoCommand(command, getActiveEditor());
 	}, []);
+
+	useWoCommandListener({
+		onCommand: (command, _value) => {
+			handleMonacoCommand(command as MonacoCommand);
+		},
+		onSave: () => spreadsheetStore.saveToWopi(),
+		onDownload: () => spreadsheetStore.exportAsDownload(),
+	});
 	const loadState = useDocumentLoader({
 		onLoad: () => spreadsheetStore.detectAndLoadWopi(),
 		isLoading: spreadsheetStore.isLoading,
@@ -114,9 +131,11 @@ export function App() {
 				isCompactToolbar={spreadsheetStore.isCompactToolbar}
 				onMonacoCommand={handleMonacoCommand}
 			/>
-			<Suspense fallback={null}>
-				<SpreadsheetCollaborationProvider />
-			</Suspense>
+			{isCollaborationConfigured() && (
+				<Suspense fallback={null}>
+					<SpreadsheetCollaborationProvider />
+				</Suspense>
+			)}
 		</ThemeProvider>
 	);
-}
+});

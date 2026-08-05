@@ -38,6 +38,9 @@ export interface DocumentDocument {
   fileType: string
   info?: {
     author?: string
+    subject?: string
+    keywords?: string
+    comments?: string
     created?: string
     modified?: string
     sharingSettings?: Array<{ user: string; permissions: string }>
@@ -112,6 +115,8 @@ export type RightMenuPanel =
   | "signature"
   | "form"
   | "plugins"
+  | "crossreference"
+  | "theme"
 
 export type SaveAsFormat =
   | "DOCX"

@@ -110,6 +110,20 @@ pub enum WoVisioGeoSegment {
         y: f64,
         points: Vec<(f64, f64)>,
     },
+    /// NURBS (non-uniform rational B-spline) curve.
+    NURBSTo {
+        x: f64,
+        y: f64,
+        knots: Vec<f64>,
+        weights: Vec<f64>,
+    },
+    /// Spline start (degree-n B-spline).
+    SplineStart {
+        x: f64,
+        y: f64,
+        degree: u32,
+        knots: Vec<f64>,
+    },
     Rectangle {
         w: f64,
         h: f64,

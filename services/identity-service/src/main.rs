@@ -170,6 +170,7 @@ impl UserRepository {
         }
     }
 
+    #[allow(dead_code)]
     fn list_users(&self) -> Result<Vec<User>, rusqlite::Error> {
         let mut stmt = self.conn.prepare(
             "SELECT id, username, email, password_hash, role, created_at, sso_provider, external_id
@@ -286,12 +287,11 @@ fn load_sso_config() -> SsoConfig {
         tracing::info!("SAML config loaded from environment variables");
     }
 
-    if let Ok(oidc_json) = std::env::var("OIDC_PROVIDERS") {
-        if let Ok(providers) = serde_json::from_str::<Vec<OidcProvider>>(&oidc_json) {
+    if let Ok(oidc_json) = std::env::var("OIDC_PROVIDERS")
+        && let Ok(providers) = serde_json::from_str::<Vec<OidcProvider>>(&oidc_json) {
             sso.oidc_providers = providers;
             tracing::info!("OIDC providers loaded from environment variables");
         }
-    }
 
     if let Ok(url) = std::env::var("LDAP_URL") {
         sso.ldap = Some(LdapConfig {
@@ -530,6 +530,7 @@ mod oidc_mod {
     static OIDC_SESSIONS: LazyLock<tokio::sync::Mutex<Vec<OidcSession>>> =
         LazyLock::new(|| tokio::sync::Mutex::new(Vec::new()));
 
+    #[allow(dead_code)]
     pub fn list_providers(state: &AppState) -> Vec<&OidcProvider> {
         state
             .sso_config

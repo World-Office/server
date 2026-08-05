@@ -31,7 +31,9 @@ export function useDocumentLoader(config: DocumentLoaderConfig): LoadState {
   useEffect(() => {
     if (loadedRef.current) return
     loadedRef.current = true
-    Promise.resolve(config.onLoad()).catch(() => {})
+    Promise.resolve(config.onLoad()).catch(() => {
+      /* onLoad error is handled by the error state in the store */
+    })
   }, [config.onLoad])
 
   if (config.isLoading) return "loading"

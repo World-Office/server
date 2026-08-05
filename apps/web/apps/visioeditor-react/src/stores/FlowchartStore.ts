@@ -803,9 +803,7 @@ export class FlowchartStore {
 	 * that can be stored in WOPI / saved to the backend.
 	 */
 	toJSON(): FlowchartDocument {
-		return toJS(this.document, {
-			recurseEverything: true,
-		}) as FlowchartDocument;
+		return toJS(this.document) as FlowchartDocument;
 	}
 
 	/**

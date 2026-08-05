@@ -1119,7 +1119,7 @@ async fn handle_ws(
             }
         }
     });
-    let _ = send_task;
+    drop(send_task);
 
     // Forward presence updates to the shared outgoing channel
     let out_tx_presence = out_tx.clone();

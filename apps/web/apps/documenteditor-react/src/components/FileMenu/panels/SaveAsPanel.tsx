@@ -35,16 +35,32 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
         ? documentStore.fileName.replace(/\.[^.]+$/, format.extension)
         : `Untitled${format.extension}`
       const isBinary = ["docx", "odt", "epub", "fb2"].includes(format.id)
-      const result = await saveFile("", {
-        defaultPath: defaultName,
-        filters: [{ name: format.description, extensions: [format.id] }],
-        binary: isBinary,
-      })
-      if (result) {
-        documentStore.setFilePath(result.path)
-        documentStore.markSaved()
-        documentStore.setActiveFileMenuPanel(null)
-        documentStore.setFileMenuOpen(false)
+      setConverting(format.id)
+      setError(null)
+      try {
+        const blob = await convertFromHtml(documentStore.richTextHtml, format.id)
+        let content: string
+        if (isBinary) {
+          const bytes = new Uint8Array(await blob.arrayBuffer())
+          content = btoa(String.fromCharCode(...bytes))
+        } else {
+          content = await blob.text()
+        }
+        const result = await saveFile(content, {
+          defaultPath: defaultName,
+          filters: [{ name: format.description, extensions: [format.id] }],
+          binary: isBinary,
+        })
+        if (result) {
+          documentStore.setFilePath(result.path)
+          documentStore.markSaved()
+          documentStore.setActiveFileMenuPanel(null)
+          documentStore.setFileMenuOpen(false)
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Save failed")
+      } finally {
+        setConverting(null)
       }
       return
     }

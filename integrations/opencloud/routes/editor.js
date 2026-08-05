@@ -17,7 +17,7 @@ router.get('/editor', (req, res) => {
   const config = req.app.locals.config || process.env;
   const ocisDomain = config.OCIS_DOMAIN || '';
   const fileId = req.query.fileId || '';
-  const fileName = req.query.fileName || 'Document';
+  // fileName query param — reserved for future use
 
   if (!ocisDomain) {
     return res.render('error', {
@@ -35,7 +35,8 @@ router.get('/editor', (req, res) => {
 
   // Redirect to OCIS Web UI's file open endpoint.
   // OCIS will redirect to the WOPI app (docserver) with a proper WopiContext JWT.
-  const ocisFileUrl = `https://${ocisDomain}/f/${fileId}`;
+  const cleanFileId = fileId.replace(/^\/+/, '');
+  const ocisFileUrl = `https://${ocisDomain}/f/${cleanFileId}`;
   res.redirect(ocisFileUrl);
 });
 

@@ -18,14 +18,14 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
 		visioStore.setActiveFileMenuPanel(null);
 	}
 
-	function handleExport(format: string): void {
+	async function handleExport(format: string): Promise<void> {
 		if (format === "wo-flowchart" || format === "vsdx") {
-			visioStore.exportAsDownload();
+			await visioStore.exportAsDownload();
 			handleClose();
 			return;
 		}
 
-		alert(`Export to ${format} is not yet supported`);
+		alert(`Export to ${format.toUpperCase()} is not yet supported`);
 	}
 
 	return (
@@ -57,8 +57,7 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
 						key={format.id}
 						type="button"
 						className="visio-file-menu-format-btn"
-						disabled
-						style={{ opacity: 0.5 }}
+						onClick={() => handleExport(format.id)}
 					>
 						<div className="visio-file-menu-format-icon">
 							<span>{format.label}</span>

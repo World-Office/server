@@ -1,4 +1,6 @@
 import { ThemeProvider } from "@world-office/design-system";
+import { useWoCommandListener } from "@world-office/wopi-client";
+import { observer } from "mobx-react-lite";
 import { Suspense, lazy, useCallback, useEffect, useRef } from "react";
 import { getActiveEditor } from "./components/MonacoEditor";
 import {
@@ -7,7 +9,11 @@ import {
 } from "./components/Toolbar/MonacoCommand";
 import { Viewport } from "./components/Viewport";
 import { useDocumentLoader } from "./hooks/useDocumentLoader";
+import { useEmbeddedAutoSave } from "./hooks/useEmbeddedAutoSave";
+import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge";
+import { useEmbeddedMode } from "./hooks/useEmbeddedMode";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { isCollaborationConfigured } from "./lib/collaboration-config";
 import { flowchartStore } from "./stores/FlowchartStore";
 import { visioStore } from "./stores/VisioStore";
 
@@ -43,14 +49,50 @@ function ErrorScreen(): React.JSX.Element {
 	);
 }
 
-export function App() {
+export const App = observer(function App() {
 	const loadState = useDocumentLoader();
 	// Trigger keyboard shortcut registration after mount
 	useKeyboardShortcuts();
 
+	const { embedded } = useEmbeddedMode(
+		visioStore.setToolbarVisible.bind(visioStore),
+		visioStore.setStatusbarVisible.bind(visioStore),
+		visioStore.setLeftMenuVisible.bind(visioStore),
+		// eslint-disable-next-line @typescript-eslint/no-empty-function
+		() => {},
+	);
+
+	const bridge = useEmbeddedBridge({
+		embedded,
+		onSave: async () => {
+			await visioStore.saveToWopi();
+		},
+	});
+
+	useEmbeddedAutoSave(
+		embedded,
+		visioStore.wopiConnection,
+		visioStore.isModified,
+		() => Promise.resolve(visioStore.buildDocumentBlob()),
+		bridge.notifyDocumentSaved,
+		bridge.notifyError,
+		undefined,
+		() => {
+			visioStore.isModified = false;
+		},
+	);
+
 	const handleMonacoCommand = useCallback((command: MonacoCommand) => {
 		dispatchMonacoCommand(command, getActiveEditor());
 	}, []);
+
+	useWoCommandListener({
+		onCommand: (command, _value) => {
+			handleMonacoCommand(command as MonacoCommand);
+		},
+		onSave: () => visioStore.save(),
+		onDownload: () => visioStore.exportAsDownload(),
+	});
 
 	// Track document modifications so VisioStore.isModified stays in sync
 	const cleanupRef = useRef<(() => void) | null>(null);
@@ -71,6 +113,14 @@ export function App() {
 			origRemove(...args);
 			mark();
 		}) as typeof flowchartStore.removeNode;
+		flowchartStore.updateNode = ((...args: Parameters<typeof origUpdate>) => {
+			origUpdate(...args);
+			mark();
+		}) as typeof flowchartStore.updateNode;
+		flowchartStore.moveNode = ((...args: Parameters<typeof origMove>) => {
+			origMove(...args);
+			mark();
+		}) as typeof flowchartStore.moveNode;
 
 		cleanupRef.current = () => {
 			flowchartStore.addNode = origAdd;
@@ -86,9 +136,11 @@ export function App() {
 
 	return (
 		<ThemeProvider>
-			<Suspense fallback={null}>
-				<VisioCollaborationProvider />
-			</Suspense>
+			{isCollaborationConfigured() && (
+				<Suspense fallback={null}>
+					<VisioCollaborationProvider />
+				</Suspense>
+			)}
 			<Viewport
 				toolbarVisible={visioStore.toolbarVisible}
 				statusbarVisible={visioStore.statusbarVisible}
@@ -98,4 +150,4 @@ export function App() {
 			/>
 		</ThemeProvider>
 	);
-}
+});

@@ -19,6 +19,8 @@ const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> = 
   { action: "signature", title: "Signature", icon: "🔑" },
   { action: "form", title: "Form", icon: "📋" },
   { action: "plugins", title: "Plugins", icon: "🧩" },
+  { action: "crossreference", title: "Cross-Ref", icon: "🔗" },
+  { action: "theme", title: "Theme", icon: "🎨" },
 ]
 
 function RightMenuInner(): JSX.Element {

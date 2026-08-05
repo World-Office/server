@@ -128,19 +128,37 @@ impl WopiClient {
     }
 
     /// PUT file contents to the WOPI host.
-    pub async fn put_file(&self, file_id: &str, access_token: &str, data: Vec<u8>) -> Result<()> {
+    ///
+    /// Forwards WOPI-relevant headers (X-WOPI-Override, X-WOPI-Lock, If-Match)
+    /// if provided. The OCIS collaboration service requires `X-WOPI-Override: PUT`
+    /// to identify this as a WOPI PutFile operation.
+    pub async fn put_file(
+        &self,
+        file_id: &str,
+        access_token: &str,
+        data: Vec<u8>,
+        wopi_override: Option<String>,
+        wopi_lock: Option<String>,
+        if_match: Option<String>,
+    ) -> Result<()> {
         let url = format!(
             "{}/wopi/files/{}/contents?access_token={}",
             self.wopi_host_url, file_id, access_token
         );
         let http = self.http.clone();
         retry_with_backoff(|| async {
-            let resp = http
-                .post(&url)
-                .header("Content-Type", "application/octet-stream")
-                .body(data.clone())
-                .send()
-                .await?;
+            let mut req = http.post(&url).header("Content-Type", "application/octet-stream");
+            // Forward WOPI headers from the browser request to the upstream
+            if let Some(ref val) = wopi_override {
+                req = req.header("X-WOPI-Override", val);
+            }
+            if let Some(ref val) = wopi_lock {
+                req = req.header("X-WOPI-Lock", val);
+            }
+            if let Some(ref val) = if_match {
+                req = req.header("If-Match", val);
+            }
+            let resp = req.body(data.clone()).send().await?;
             if !resp.status().is_success() {
                 let status = resp.status();
                 let body = resp.text().await.unwrap_or_default();

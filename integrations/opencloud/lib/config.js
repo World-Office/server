@@ -34,6 +34,7 @@ const required = [
 ];
 
 // Semi-optional: admin password required for file browser
+// eslint-disable-next-line no-unused-vars
 const semiOptional = [
   'OCIS_ADMIN_PASSWORD'
 ];

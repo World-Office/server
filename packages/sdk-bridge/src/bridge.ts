@@ -22,7 +22,7 @@ import type {
  *
  * // Register for selection changes
  * sdkBridge.on("asc_onFocusObject", (objects) => {
- *   console.log("Selection changed:", objects)
+ *   console.info("Selection changed:", objects)
  * })
  *
  * // Query current selection

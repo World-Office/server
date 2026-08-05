@@ -182,7 +182,7 @@ export function getPluginAPI(): PluginAPIConfig {
       },
       ui: {
         showToast(message) {
-          console.log("[Plugin]", message)
+          console.info("[Plugin]", message)
         },
       },
     }

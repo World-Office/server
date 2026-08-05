@@ -23,7 +23,11 @@ async function blobToText(blob: Blob): Promise<string> {
   return await blob.text()
 }
 
-export const DocumentHolder = observer(function DocumentHolder() {
+interface DocumentHolderProps {
+  embedded?: boolean
+}
+
+export const DocumentHolder = observer(function DocumentHolder({ embedded }: DocumentHolderProps) {
   const [value, setValue] = useState<string>("")
   const lastBlobRef = useRef<Blob | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -51,31 +55,48 @@ export const DocumentHolder = observer(function DocumentHolder() {
     [],
   )
 
-  const handleChange = (next: string) => {
-    setValue(next)
-    documentStore.isModified = true
-    if (!documentStore.wopiConnection) return
-    if (documentStore.wopiFileInfo && !documentStore.wopiFileInfo.UserCanWrite) return
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = setTimeout(() => {
-      void documentStore.saveToWopi()
-    }, SAVE_DEBOUNCE_MS)
-  }
+  const handleChange = embedded
+    ? (next: string) => {
+        setValue(next)
+        documentStore.updateMonacoContent(next)
+      }
+    : (next: string) => {
+        setValue(next)
+        documentStore.updateMonacoContent(next)
+        if (!documentStore.wopiConnection) return
+        if (documentStore.wopiFileInfo && !documentStore.wopiFileInfo.UserCanWrite) return
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+        saveTimerRef.current = setTimeout(() => {
+          void documentStore.saveToWopi()
+        }, SAVE_DEBOUNCE_MS)
+      }
 
-  const handleRichTextChange = (html: string) => {
-    documentStore.updateRichText(html)
-    const text = html
-      .replace(/<[^>]*>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-    documentStore.setWordCount(text ? text.split(/\s+/).length : 0)
-    if (!documentStore.wopiConnection) return
-    if (documentStore.wopiFileInfo && !documentStore.wopiFileInfo.UserCanWrite) return
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-    saveTimerRef.current = setTimeout(() => {
-      void documentStore.saveToWopi()
-    }, SAVE_DEBOUNCE_MS)
-  }
+  // Defer to the embedder's auto-save (useEmbeddedAutoSave in App.tsx)
+  // to avoid duplicate saves and ensure the parent frame receives
+  // the document-saved bridge notification.
+  const handleRichTextChange = embedded
+    ? (html: string) => {
+        documentStore.updateRichText(html)
+        const text = html
+          .replace(/<[^>]*>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+        documentStore.setWordCount(text ? text.split(/\s+/).length : 0)
+      }
+    : (html: string) => {
+        documentStore.updateRichText(html)
+        const text = html
+          .replace(/<[^>]*>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim()
+        documentStore.setWordCount(text ? text.split(/\s+/).length : 0)
+        if (!documentStore.wopiConnection) return
+        if (documentStore.wopiFileInfo && !documentStore.wopiFileInfo.UserCanWrite) return
+        if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+        saveTimerRef.current = setTimeout(() => {
+          void documentStore.saveToWopi()
+        }, SAVE_DEBOUNCE_MS)
+      }
 
   if (documentStore.loadError) {
     return (

@@ -58,7 +58,7 @@ impl<S: WebDavStorage + 'static> WebDavServer<S> {
         let addr = format!("{}:{}", self.host, self.port);
         let listener = TcpListener::bind(&addr)
             .await
-            .unwrap_or_else(|_| panic!("Failed to bind to {}", addr));
+            .map_err(|e| anyhow::anyhow!("Failed to bind to {}: {}", addr, e))?;
 
         println!("WebDAV server listening on http://{}", addr);
 

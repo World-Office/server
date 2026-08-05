@@ -165,20 +165,20 @@
 	overflow: visible;
 }
 
-.iconSvg :global(path),
-.iconSvg :global(polygon),
-.iconSvg :global(rect),
-.iconSvg :global(ellipse) {
+.iconSvg path,
+.iconSvg polygon,
+.iconSvg rect,
+.iconSvg ellipse {
 	fill: #ffffff;
 	stroke: var(--wo-visio-accent, #4472c4);
 	stroke-width: 1.5;
 	transition: stroke 0.15s, fill 0.15s;
 }
 
-.shapeItem:hover .iconSvg :global(path),
-.shapeItem:hover .iconSvg :global(polygon),
-.shapeItem:hover .iconSvg :global(rect),
-.shapeItem:hover .iconSvg :global(ellipse) {
+.shapeItem:hover .iconSvg path,
+.shapeItem:hover .iconSvg polygon,
+.shapeItem:hover .iconSvg rect,
+.shapeItem:hover .iconSvg ellipse {
 	stroke: var(--wo-visio-accent-hover, #355d9e);
 	fill: #edf2fa;
 }

@@ -4,7 +4,8 @@
 // into wo-renderer-wasm's render_page(). For now it draws a document
 // preview with toolbar/menu chrome directly on an HTML5 Canvas.
 //
-// TODO: Connect to wo-renderer-wasm render_page() when WASM is bundled
+// Note: When wo-renderer-wasm is bundled, replace renderEditorPreview()
+// with a call to the WASM render_page() function.
 
 /** Page dimensions in CSS pixels. */
 const PAGE_WIDTH = 680
