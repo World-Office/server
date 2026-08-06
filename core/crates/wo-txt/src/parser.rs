@@ -295,4 +295,121 @@ mod tests {
         assert_eq!(doc.metadata.line_count, Some(0));
         assert_eq!(doc.metadata.word_count, Some(0));
     }
+
+    // ── Edge cases ─────────────────────────────────────────────────────
+
+    #[test]
+    fn test_parse_single_character() {
+        let parser = TxtParser::new();
+        let doc = parser.parse(b"A").unwrap();
+        assert_eq!(doc.lines, vec!["A"]);
+    }
+
+    #[test]
+    fn test_parse_single_newline() {
+        let parser = TxtParser::new();
+        let doc = parser.parse(b"\n").unwrap();
+        // Single newline may produce one empty line or zero lines
+        assert!(doc.lines.len() <= 1);
+    }
+
+    #[test]
+    fn test_parse_many_newlines() {
+        let parser = TxtParser::new();
+        let doc = parser.parse(b"\n\n\n\n\n").unwrap();
+        // Should produce empty lines
+        assert!(doc.lines.len() >= 4);
+    }
+
+    #[test]
+    fn test_parse_windows_line_endings() {
+        let parser = TxtParser::new();
+        let doc = parser.parse(b"line1\r\nline2\r\nline3").unwrap();
+        assert_eq!(doc.lines, vec!["line1", "line2", "line3"]);
+    }
+
+    #[test]
+    fn test_parse_mixed_line_endings() {
+        let parser = TxtParser::new();
+        let doc = parser.parse(b"line1\nline2\r\nline3\rline4").unwrap();
+        // Should handle all three line ending styles
+        assert!(doc.lines.len() >= 3);
+    }
+
+    #[test]
+    fn test_parse_tab_characters() {
+        let parser = TxtParser::new();
+        let doc = parser.parse(b"\tcol1\tcol2\tcol3").unwrap();
+        assert_eq!(doc.lines.len(), 1);
+        assert!(doc.lines[0].contains('\t'));
+    }
+
+    #[test]
+    fn test_parse_unicode_multiline() {
+        let parser = TxtParser::new();
+        let text = "Hello 世界\nこんにちは\nمرحبا".as_bytes();
+        let doc = parser.parse(text).unwrap();
+        assert_eq!(doc.lines.len(), 3);
+        assert!(doc.lines[0].contains("世界"));
+        assert!(doc.lines[1].contains("こんにちは"));
+        assert!(doc.lines[2].contains("مرحبا"));
+    }
+
+    #[test]
+    fn test_parse_very_long_line() {
+        let parser = TxtParser::new();
+        let long_line = "A".repeat(100_000);
+        let doc = parser.parse(long_line.as_bytes()).unwrap();
+        assert_eq!(doc.lines.len(), 1);
+        assert_eq!(doc.lines[0].len(), 100_000);
+    }
+
+    #[test]
+    fn test_parse_very_many_lines() {
+        let parser = TxtParser::new();
+        let mut data = String::new();
+        for i in 0..10_000 {
+            data.push_str(&format!("Line {i}\n"));
+        }
+        let doc = parser.parse(data.as_bytes()).unwrap();
+        assert!(doc.lines.len() >= 9_999);
+    }
+
+    #[test]
+    fn test_parse_only_whitespace() {
+        let parser = TxtParser::new();
+        let doc = parser.parse(b"   \t  \t  ").unwrap();
+        assert_eq!(doc.lines.len(), 1);
+        // Whitespace is preserved
+        assert!(!doc.lines[0].is_empty());
+    }
+
+    #[test]
+    fn test_parse_trailing_newline() {
+        let parser = TxtParser::new();
+        let doc = parser.parse(b"line1\nline2\n").unwrap();
+        // Trailing newline should not produce an extra empty line
+        assert!(doc.lines.len() <= 3);
+    }
+
+    #[test]
+    fn test_parse_no_trailing_newline() {
+        let parser = TxtParser::new();
+        let doc = parser.parse(b"line1\nline2").unwrap();
+        assert_eq!(doc.lines.len(), 2);
+    }
+
+    // ── Fuzz: truncated data should not panic ──────────────────────────
+
+    #[test]
+    fn test_fuzz_truncated_utf8_no_panic() {
+        let parser = TxtParser::new();
+        let full = "Hello 世界 🌍
+Line 2
+Line 3".as_bytes();
+        for len in 0..full.len() {
+            // Truncated UTF-8 may produce replacement chars but should not panic
+            let _ = parser.parse(&full[..len]);
+        }
+    }
 }

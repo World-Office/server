@@ -1172,7 +1172,7 @@ const OFFICE_NS_FALLBACK: &str = "urn:oasis:names:tc:opendocument:xmlns:office:1
 mod tests {
     use super::*;
     use crate::is_odf_file;
-    use std::io::Write;
+    use std::io::{Cursor, Write};
 
     fn make_minimal_odt() -> Vec<u8> {
         // Build a minimal ODT (ZIP) with content.xml and mimetype
@@ -1463,5 +1463,107 @@ mod tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(err.to_string().contains("File too small"));
+    }
+
+    // ── Edge cases: malformed and truncated ODF inputs ─────────────────
+
+    #[test]
+    fn test_parse_non_zip_data() {
+        let parser = OdfParser::new();
+        let result = parser.parse(b"This is not a ZIP file");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_random_bytes() {
+        let parser = OdfParser::new();
+        let data: Vec<u8> = (0..255).collect();
+        let result = parser.parse(&data);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_zip_without_content_xml() {
+        // Create a minimal ZIP that doesn't contain content.xml
+        let mut buf = Cursor::new(Vec::new());
+        {
+            let mut zip = zip::ZipWriter::new(&mut buf);
+            let options = zip::write::SimpleFileOptions::default();
+            zip.start_file("mimetype", options).unwrap();
+            zip.write_all(b"application/vnd.oasis.opendocument.text").unwrap();
+            zip.finish().unwrap();
+        }
+        let parser = OdfParser::new();
+        let result = parser.parse(&buf.into_inner());
+        // Should parse the ZIP but may error when content.xml is missing
+        match result {
+            Ok(_) => { /* Some implementations may return empty doc */ }
+            Err(_) => { /* Error is acceptable */ }
+        }
+    }
+
+    #[test]
+    fn test_parse_zip_with_empty_content_xml() {
+        // Create a ZIP with an empty content.xml
+        let mut buf = Cursor::new(Vec::new());
+        {
+            let mut zip = zip::ZipWriter::new(&mut buf);
+            let options = zip::write::SimpleFileOptions::default();
+            zip.start_file("mimetype", options).unwrap();
+            zip.write_all(b"application/vnd.oasis.opendocument.text").unwrap();
+            zip.start_file("content.xml", options).unwrap();
+            zip.finish().unwrap();
+        }
+        let parser = OdfParser::new();
+        let result = parser.parse(&buf.into_inner());
+        // Should not panic; may return empty doc or error
+        match result {
+            Ok(_) => { /* Parsed successfully */ }
+            Err(_) => { /* Error is acceptable for empty content */ }
+        }
+    }
+
+    #[test]
+    fn test_parse_truncated_zip() {
+        // Create a valid ODF ZIP then truncate it
+        let mut buf = Cursor::new(Vec::new());
+        {
+            let mut zip = zip::ZipWriter::new(&mut buf);
+            let options = zip::write::SimpleFileOptions::default();
+            zip.start_file("mimetype", options).unwrap();
+            zip.write_all(b"application/vnd.oasis.opendocument.text").unwrap();
+            zip.start_file("content.xml", options).unwrap();
+            zip.write_all(b"<?xml version=\"1.0\"?><office:document-content xmlns:office=\"urn:oasis:names:tc:opendocument:xmlns:office:1.0\"><office:body><office:text></office:text></office:body></office:document-content>").unwrap();
+            zip.finish().unwrap();
+        }
+        let data = buf.into_inner();
+        // Truncate to various lengths
+        for len in [10, 50, 100, data.len() / 2, data.len() - 1] {
+            let truncated = &data[..len.min(data.len())];
+            let parser = OdfParser::new();
+            // Should not panic
+            let _ = parser.parse(truncated);
+        }
+    }
+
+    #[test]
+    fn test_parse_zip_with_malformed_content_xml() {
+        let mut buf = Cursor::new(Vec::new());
+        {
+            let mut zip = zip::ZipWriter::new(&mut buf);
+            let options = zip::write::SimpleFileOptions::default();
+            zip.start_file("mimetype", options).unwrap();
+            zip.write_all(b"application/vnd.oasis.opendocument.text").unwrap();
+            zip.start_file("content.xml", options).unwrap();
+            zip.write_all(b"<not valid xml <<<").unwrap();
+            zip.finish().unwrap();
+        }
+        let parser = OdfParser::new();
+        let result = parser.parse(&buf.into_inner());
+        // Should not panic; may error on malformed XML
+        match result {
+            Ok(_) => { /* Some parsers may be lenient */ }
+            Err(_) => { /* Error is expected */ }
+        }
     }
 }
