@@ -1456,4 +1456,154 @@ mod tests {
             assert!(full.contains("text3"));
         }
     }
+
+    // ── Edge cases: empty and minimal inputs ────────────────────────────
+
+    #[test]
+    fn test_parse_empty_rtf_string() {
+        let parser = RtfParser::new();
+        let result = parser.parse(b"");
+        // Empty string should not panic; may error or return empty doc
+        match result {
+            Ok(doc) => assert!(doc.body.is_empty()),
+            Err(_) => { /* Error is acceptable */ }
+        }
+    }
+
+    #[test]
+    fn test_parse_rtf_without_header() {
+        let parser = RtfParser::new();
+        let result = parser.parse(b"some plain text without rtf header");
+        match result {
+            Ok(_) => { /* Parsed successfully */ }
+            Err(_) => { /* Error is acceptable */ }
+        }
+    }
+
+    #[test]
+    fn test_parse_rtf_minimal_header_only() {
+        let parser = RtfParser::new();
+        let result = parser.parse(b"{\\rtf1\\ansi}");
+        assert!(result.is_ok());
+        if let Ok(doc) = result {
+            assert!(doc.body.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_parse_rtf_with_only_control_words() {
+        let parser = RtfParser::new();
+        let result = parser.parse(b"{\\rtf1\\ansi\\b\\i\\b0\\i0}");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_rtf_deeply_nested_groups() {
+        let parser = RtfParser::new();
+        let rtf = b"{\\rtf1\\ansi{\\b{\\i{\\b{\\i Deep}}}}}";
+        let result = parser.parse(rtf);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_rtf_unclosed_brace() {
+        let parser = RtfParser::new();
+        let rtf = b"{\\rtf1\\ansi\\b bold text";
+        // Should not panic
+        let _ = parser.parse(rtf);
+    }
+
+    #[test]
+    fn test_parse_rtf_extra_closing_brace() {
+        let parser = RtfParser::new();
+        let rtf = b"{\\rtf1\\ansi} extra}";
+        // Should not panic
+        let _ = parser.parse(rtf);
+    }
+
+    #[test]
+    fn test_parse_rtf_unicode_escape() {
+        let parser = RtfParser::new();
+        let rtf = b"{\\rtf1\\ansi \\u-25745; world}";
+        let result = parser.parse(rtf);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_rtf_hex_escape() {
+        let parser = RtfParser::new();
+        let rtf = b"{\\rtf1\\ansi \\'e9 text}";
+        let result = parser.parse(rtf);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_rtf_with_font_table() {
+        let parser = RtfParser::new();
+        let rtf = b"{\\rtf1\\ansi{\\fonttbl{\\f0 Arial;}{\\f1 Times New Roman;}}\\f0 Hello}";
+        let result = parser.parse(rtf);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_rtf_with_color_table() {
+        let parser = RtfParser::new();
+        let rtf = b"{\\rtf1\\ansi{\\colortbl;\\red255\\green0\\blue0;\\red0\\green255\\blue0;}\\cf1 Red\\cf2 Green}";
+        let result = parser.parse(rtf);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_rtf_with_stylesheet() {
+        let parser = RtfParser::new();
+        let rtf = b"{\\rtf1\\ansi{\\stylesheet{\\s1 Heading 1;}{\\s2 Heading 2;}}\\s1 Title\\s2 Subtitle}";
+        let result = parser.parse(rtf);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_rtf_with_info_group() {
+        let parser = RtfParser::new();
+        let rtf = b"{\\rtf1\\ansi{\\info{\\author John}{\\creatim 20240101}}Hello}";
+        let result = parser.parse(rtf);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_rtf_with_picture() {
+        let parser = RtfParser::new();
+        let rtf = b"{\\rtf1\\ansi{\\pict\\pngblip 89504e470d0a1a0a0000000d49484452}Text after}";
+        let result = parser.parse(rtf);
+        assert!(result.is_ok());
+    }
+
+    // ── Fuzz: truncated RTF should not panic ────────────────────────────
+
+    #[test]
+    fn test_fuzz_truncated_rtf_no_panic() {
+        let parser = RtfParser::new();
+        let full = b"{\\rtf1\\ansi\\b Bold\\b0\\i Italic\\i0\\ul Underline\\ul0\\par\\fs24 Size\\par\\cf1 Color}";
+        for len in 0..full.len() {
+            let truncated = &full[..len];
+            // Should not panic on any truncation point
+            let _ = parser.parse(truncated);
+        }
+    }
+
+    #[test]
+    fn test_fuzz_random_control_words_no_panic() {
+        let parser = RtfParser::new();
+        let control_words = ["\\b", "\\b0", "\\i", "\\i0", "\\ul", "\\ul0", "\\par", "\\line", "\\page", "\\tab", "\\fs24", "\\fs48"];
+        let mut seed: u64 = 42;
+        for _ in 0..50 {
+            let mut rtf = String::from("{\\rtf1\\ansi");
+            for _ in 0..20 {
+                seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+                rtf.push_str(control_words[(seed as usize) % control_words.len()]);
+                rtf.push(' ');
+            }
+            rtf.push('}');
+            let _ = parser.parse(rtf.as_bytes());
+        }
+    }
 }

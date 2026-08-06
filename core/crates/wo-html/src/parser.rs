@@ -1283,4 +1283,251 @@ mod tests {
         // Style content is stripped, so head.styles should be empty
         assert!(doc.head.styles.is_empty());
     }
+
+    // ── Edge-case: empty and minimal inputs ────────────────────────────
+
+    #[test]
+    fn test_parse_empty_string() {
+        let parser = HtmlParser::new();
+        let result = parser.parse(b"");
+        // Empty string should either error or return empty doc
+        match result {
+            Ok(doc) => {
+                assert!(doc.body.elements.is_empty());
+            }
+            Err(_) => { /* Error is also acceptable */ }
+        }
+    }
+
+    #[test]
+    fn test_parse_whitespace_only() {
+        let parser = HtmlParser::new();
+        let result = parser.parse(b"   \n\t  \r\n  ");
+        match result {
+            Ok(doc) => {
+                assert!(doc.body.elements.is_empty());
+            }
+            Err(_) => { /* Error is also acceptable */ }
+        }
+    }
+
+    #[test]
+    fn test_parse_html_without_head() {
+        let html = b"<html><body><p>No head</p></body></html>";
+        let parser = HtmlParser::new();
+        let doc = parser.parse(html).unwrap();
+        assert!(doc.head.title.is_none());
+        assert!(!doc.body.elements.is_empty());
+    }
+
+    #[test]
+    fn test_parse_html_without_body() {
+        let html = b"<html><head><title>Title only</title></head></html>";
+        let parser = HtmlParser::new();
+        let doc = parser.parse(html).unwrap();
+        assert_eq!(doc.head.title.as_deref(), Some("Title only"));
+        assert!(doc.body.elements.is_empty());
+    }
+
+    #[test]
+    fn test_parse_html_without_html_tag() {
+        let html = b"<p>Just a paragraph</p>";
+        let parser = HtmlParser::new();
+        let result = parser.parse(html);
+        // Should either parse as fragment or error gracefully
+        match result {
+            Ok(doc) => {
+                // May be empty if parser requires <html> root
+                // Just verify it didn't panic
+                let _ = doc;
+            }
+            Err(_) => { /* Error is acceptable for fragment */ }
+        }
+    }
+
+    #[test]
+    fn test_parse_deeply_nested_divs() {
+        let html = b"<html><body><div><div><div><p>Deep</p></div></div></div></body></html>";
+        let parser = HtmlParser::new();
+        let doc = parser.parse(html).unwrap();
+        assert!(!doc.body.elements.is_empty());
+    }
+
+    #[test]
+    fn test_parse_self_closing_tags() {
+        let html = b"<html><body><p><br/><hr/><img src=\"test.png\"/></p></body></html>";
+        let parser = HtmlParser::new();
+        let result = parser.parse(html);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_malformed_unclosed_tags() {
+        let html = b"<html><body><p>Unclosed <strong>bold</p></body></html>";
+        let parser = HtmlParser::new();
+        let result = parser.parse(html);
+        // Should not panic; either parse gracefully or error
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_parse_malformed_wrong_nesting() {
+        let html = b"<html><body><b><i>Wrong</b></i></body></html>";
+        let parser = HtmlParser::new();
+        let result = parser.parse(html);
+        // Should not panic
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_parse_html_entities() {
+        let html = b"<html><body><p>&amp; &lt; &gt; &quot; &#39;</p></body></html>";
+        let parser = HtmlParser::new();
+        let result = parser.parse(html);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_unicode_content() {
+        let html = "<html><body><p>Hello 世界 🌍</p></body></html>".as_bytes();
+        let parser = HtmlParser::new();
+        let result = parser.parse(html);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_very_long_document() {
+        // 10,000 paragraphs
+        let mut html = String::from("<html><body>");
+        for i in 0..10_000 {
+            html.push_str(&format!("<p>Paragraph {i}</p>"));
+        }
+        html.push_str("</body></html>");
+        let parser = HtmlParser::new();
+        let result = parser.parse(html.as_bytes());
+        assert!(result.is_ok());
+        if let Ok(doc) = result {
+            assert!(doc.body.elements.len() > 1000);
+        }
+    }
+
+    #[test]
+    fn test_parse_deeply_nested_lists() {
+        let mut html = String::from("<html><body>");
+        for _ in 0..50 {
+            html.push_str("<ul><li>");
+        }
+        html.push_str("Deep");
+        for _ in 0..50 {
+            html.push_str("</li></ul>");
+        }
+        html.push_str("</body></html>");
+        let parser = HtmlParser::new();
+        let result = parser.parse(html.as_bytes());
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_attributes_with_special_chars() {
+        let html = b"<html><body><a href=\"https://example.com?a=1&b=2&c=3\">Link</a></body></html>";
+        let parser = HtmlParser::new();
+        let result = parser.parse(html);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_table_with_merging() {
+        let html = b"<html><body><table><tr><td colspan=\"2\">Merged</td></tr><tr><td>A</td><td>B</td></tr></table></body></html>";
+        let parser = HtmlParser::new();
+        let result = parser.parse(html);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_multiple_headings() {
+        let html = b"<html><body><h1>Title</h1><h2>Section</h2><h3>Subsection</h3><h4>Sub-sub</h4><h5>Deep</h5><h6>Deepest</h6></body></html>";
+        let parser = HtmlParser::new();
+        let doc = parser.parse(html).unwrap();
+        // Should have 6 heading elements
+        let heading_count = doc
+            .body
+            .elements
+            .iter()
+            .filter(|e| matches!(e, BlockElement::Heading { .. }))
+            .count();
+        assert_eq!(heading_count, 6);
+    }
+
+    // ── Property-based: roundtrip HTML parse → serialize ──────────────
+
+    #[test]
+    fn test_roundtrip_simple_paragraph() {
+        let html = b"<html><body><p>Hello world</p></body></html>";
+        let parser = HtmlParser::new();
+        let doc = parser.parse(html).unwrap();
+        // Serialize back and re-parse
+        let serializer = crate::serializer::HtmlSerializer::new();
+        let serialized = serializer.serialize(&doc);
+        let doc2 = parser.parse(serialized.as_bytes()).unwrap();
+        assert_eq!(doc.body.elements.len(), doc2.body.elements.len());
+    }
+
+    #[test]
+    fn test_roundtrip_heading_and_paragraph() {
+        let html = b"<html><body><h1>Title</h1><p>Content</p></body></html>";
+        let parser = HtmlParser::new();
+        let doc = parser.parse(html).unwrap();
+        let serializer = crate::serializer::HtmlSerializer::new();
+        let serialized = serializer.serialize(&doc);
+        let doc2 = parser.parse(serialized.as_bytes()).unwrap();
+        assert_eq!(doc.body.elements.len(), doc2.body.elements.len());
+    }
+
+    // ── Fuzz: random HTML should not panic ─────────────────────────────
+
+    #[test]
+    fn test_fuzz_random_tags_no_panic() {
+        let tags = ["<p>", "</p>", "<div>", "</div>", "<b>", "</b>", "<i>", "</i>", "<br>", "<hr>"];
+        let parser = HtmlParser::new();
+        // Deterministic pseudo-random: use simple LCG
+        let mut seed: u64 = 12345;
+        for _ in 0..100 {
+            let mut html = String::from("<html><body>");
+            for _ in 0..20 {
+                seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+                let tag = tags[(seed as usize) % tags.len()];
+                html.push_str(tag);
+            }
+            html.push_str("</body></html>");
+            // Should not panic
+            let _ = parser.parse(html.as_bytes());
+        }
+    }
+
+    #[test]
+    fn test_fuzz_random_entities_no_panic() {
+        let entities = ["&amp;", "&lt;", "&gt;", "&quot;", "&#39;", "&apos;", "&nbsp;", "&copy;", "&reg;", "&trade;"];
+        let parser = HtmlParser::new();
+        let mut seed: u64 = 98765;
+        for _ in 0..100 {
+            let mut html = String::from("<html><body><p>");
+            for _ in 0..20 {
+                seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1);
+                html.push_str(entities[(seed as usize) % entities.len()]);
+            }
+            html.push_str("</p></body></html>");
+            let _ = parser.parse(html.as_bytes());
+        }
+    }
+
+    #[test]
+    fn test_fuzz_truncated_html_no_panic() {
+        let parser = HtmlParser::new();
+        let full = b"<html><head><title>Test</title></head><body><h1>Heading</h1><p>Paragraph with <strong>bold</strong> text.</p><ul><li>One</li><li>Two</li></ul></body></html>";
+        for len in 0..full.len() {
+            let truncated = &full[..len];
+            // Should not panic on any truncation point
+            let _ = parser.parse(truncated);
+        }
+    }
 }
