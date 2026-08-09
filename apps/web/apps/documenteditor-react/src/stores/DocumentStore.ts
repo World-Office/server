@@ -119,6 +119,12 @@ export class DocumentStore {
   monacoContent: string | null = null
   monacoMime: string | null = null
 
+  /* Undo/redo history */
+  private contentHistory: string[] = []
+  private historyIndex = -1
+  canUndo = false
+  canRedo = false
+
   get editorType(): "canvas" | "monaco" | "richtext" {
     const ext = this.fileName.toLowerCase().split(".").pop() ?? ""
     if (ext === "docx" || ext === "odt") return "richtext"
@@ -372,6 +378,7 @@ export class DocumentStore {
   async loadFromWopi(conn: WopiConnection): Promise<void> {
     this.isLoading = true
     this.loadError = null
+    this.resetHistory()
     try {
       const { info, content } = await loadDocument(conn)
       this.wopiFileInfo = info
@@ -399,6 +406,7 @@ export class DocumentStore {
   async loadFromDemo(): Promise<void> {
     this.isLoading = true
     this.loadError = null
+    this.resetHistory()
     try {
       const base = window.location.origin
       const infoRes = await fetch(`${base}/demo/info`)
@@ -483,12 +491,93 @@ export class DocumentStore {
   }
 
   updateRichText(html: string): void {
+    this.pushSnapshot()
     this.richTextHtml = html
     this.isModified = true
   }
 
   updateMonacoContent(text: string): void {
+    this.pushSnapshot()
     this.monacoContent = text
+    this.isModified = true
+  }
+
+  /* ── Undo/redo ── */
+
+  /** Clear undo/redo history (e.g., when loading a new document). */
+  private resetHistory(): void {
+    this.contentHistory = []
+    this.historyIndex = -1
+    this.canUndo = false
+    this.canRedo = false
+  }
+
+  /** Capture a content snapshot before mutation. */
+  private pushSnapshot(): void {
+    const snapshot = this.editorType === "monaco" ? this.monacoContent : this.richTextHtml
+    if (snapshot == null) return
+
+    // Drop any future history past this point (e.g., after undo, a new action)
+    if (this.historyIndex < this.contentHistory.length - 1) {
+      this.contentHistory = this.contentHistory.slice(0, this.historyIndex + 1)
+    }
+
+    // Deduplicate: don't push if same as last
+    if (this.contentHistory.length > 0 && this.contentHistory[this.historyIndex] === snapshot) {
+      return
+    }
+
+    this.contentHistory.push(snapshot)
+    this.historyIndex = this.contentHistory.length - 1
+
+    this.canUndo = this.historyIndex > 0
+    this.canRedo = false
+  }
+
+  undo(): void {
+    if (this.historyIndex <= 0) return
+
+    // Save current state as pending snapshot before moving back
+    if (this.historyIndex >= this.contentHistory.length - 1) {
+      const current = this.editorType === "monaco" ? this.monacoContent : this.richTextHtml
+      if (current != null) {
+        // Only push if last snapshot differs
+        const last = this.contentHistory[this.contentHistory.length - 1]
+        if (last !== current) {
+          this.contentHistory.push(current)
+          this.historyIndex++
+        }
+      }
+    }
+
+    this.historyIndex--
+    const prev = this.contentHistory[this.historyIndex]
+
+    if (this.editorType === "monaco") {
+      this.monacoContent = prev
+    } else {
+      this.richTextHtml = prev
+    }
+
+    this.canUndo = this.historyIndex > 0
+    this.canRedo = true
+    this.isModified = true
+  }
+
+  redo(): void {
+    if (this.historyIndex >= this.contentHistory.length - 1) return
+
+    this.historyIndex++
+    const next = this.contentHistory[this.historyIndex]
+
+    if (this.editorType === "monaco") {
+      this.monacoContent = next
+    } else {
+      this.richTextHtml = next
+    }
+
+    this.canUndo = true
+    this.canRedo = this.historyIndex < this.contentHistory.length - 1
     this.isModified = true
   }
 

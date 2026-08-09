@@ -393,6 +393,11 @@ fn parse_color(color: &str) -> Result<Color, String> {
     }
 }
 
+/// Public accessor for lib.rs to get the CANVAS_STORE reference.
+pub fn get_canvas_store() -> &'static Mutex<HashMap<u32, Canvas>> {
+    CANVAS_STORE.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

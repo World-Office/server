@@ -1,8 +1,9 @@
 import { observer } from "mobx-react-lite"
 import { Suspense, lazy, useEffect, useRef, useState } from "react"
 import { useSpellcheck } from "../lib/spellcheck-context"
-import { isCanvasFormat } from "../lib/wasm-renderer"
+import { isCanvasFormat, isWasmReady } from "../lib/wasm-renderer"
 import { documentStore } from "../stores/DocumentStore"
+import { CanvasEditor, type CanvasEditorHandle } from "./CanvasEditor"
 import { DocumentCanvas } from "./DocumentCanvas"
 import { RichTextEditor } from "./RichTextEditor"
 
@@ -27,6 +28,68 @@ interface DocumentHolderProps {
   embedded?: boolean
 }
 
+/** Helper component: WASM CanvasEditor with formatting event listener. */
+const WasmEditorCanvas = observer(
+  ({
+    blob,
+    fileName,
+    editorRef,
+  }: {
+    blob: Blob
+    fileName: string
+    editorRef: React.RefObject<CanvasEditorHandle | null>
+  }) => {
+    useEffect(() => {
+      const handler = (e: Event) => {
+        const detail = (e as CustomEvent).detail as Record<string, unknown> | undefined
+        if (!detail || !detail.command) return
+        const cmd = detail.command as string
+        const value = detail.value as string | undefined
+
+        // Map toolbar formatting commands to WASM format JSON
+        let format: Record<string, unknown> | null = null
+        if (cmd === "bold") format = { bold: true }
+        else if (cmd === "italic") format = { italic: true }
+        else if (cmd === "underline") format = { underline: value ?? "single" }
+        else if (cmd === "strikethrough") format = { strikethrough: true }
+        else if (cmd === "fontSize" && value) format = { fontSize: Number.parseInt(value, 10) * 2 }
+        else if (cmd === "fontFamily" && value) format = { fontName: value }
+        else if (cmd === "textColor" && value) format = { textColor: value }
+        else if (cmd === "highlightColor" && value) format = { highlight: value }
+
+        if (format) {
+          editorRef.current?.applyFormatting(format)
+        }
+      }
+
+      window.addEventListener("wo-command", handler)
+      return () => window.removeEventListener("wo-command", handler)
+    }, [editorRef])
+
+    return (
+      <div
+        className="de-document-holder"
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "stretch",
+          overflow: "hidden",
+          height: "100%",
+        }}
+      >
+        <CanvasEditor
+          ref={editorRef}
+          docBlob={blob}
+          fileName={fileName}
+          onChange={() => {
+            documentStore.markModified()
+          }}
+        />
+      </div>
+    )
+  },
+)
+
 export const DocumentHolder = observer(function DocumentHolder({ embedded }: DocumentHolderProps) {
   const [value, setValue] = useState<string>("")
   const lastBlobRef = useRef<Blob | null>(null)
@@ -36,6 +99,7 @@ export const DocumentHolder = observer(function DocumentHolder({ embedded }: Doc
   const fileName = documentStore.fileName ?? ""
   const blob = documentStore.lastLoadedContent
   const editorType = documentStore.editorType
+  const canvasEditorRef = useRef<CanvasEditorHandle | null>(null)
   const useCanvas = blob !== undefined && isCanvasFormat(fileName)
 
   // Document loading is handled by useDocumentLoader in App.tsx
@@ -118,6 +182,12 @@ export const DocumentHolder = observer(function DocumentHolder({ embedded }: Doc
   }
 
   if (editorType === "richtext") {
+    // Try CanvasEditor first when WASM is available
+    if (isWasmReady() && blob) {
+      return <WasmEditorCanvas blob={blob} fileName={fileName} editorRef={canvasEditorRef} />
+    }
+
+    // Fallback: RichTextEditor (TipTap)
     return (
       <div
         className="de-document-holder"

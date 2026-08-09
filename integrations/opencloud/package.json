@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "test": "node --test lib/__tests__/",
+    "test": "node --test 'lib/__tests__/*.test.js'",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
