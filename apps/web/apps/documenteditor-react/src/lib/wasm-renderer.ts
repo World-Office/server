@@ -4,19 +4,70 @@
  * Dynamically loads the WASM rendering engine and renders document pages
  * to HTML5 Canvas elements. Falls back to a placeholder when the WASM
  * module is not available.
+ *
+ * This module provides the bridge between the TypeScript frontend and
+ * the Rust WASM rendering engine. For interactive editing (ONLYOFFICE
+ * style), use the newer CanvasEditor component instead.
  */
 
 /** API surface exposed by wo-renderer-wasm after wasm-pack build. */
-interface WasmRenderApi {
+export interface WasmRenderApi {
   init(): void
+  // Basic canvas operations
+  create_canvas(width: number, height: number): number
+  render_rect(handle: number, x: number, y: number, w: number, h: number, color: string): void
+  render_text(
+    handle: number,
+    text: string,
+    x: number,
+    y: number,
+    color?: string | null,
+    size?: number | null,
+  ): void
+  get_pixel_data(handle: number): Uint8Array
+  get_canvas_size(handle: number): string
+  flush_to_canvas(handle: number, canvas_id: string): void
+  clear_canvas(handle: number): void
+  release_canvas(handle: number): void
+  // Static page rendering (legacy)
   render_page(
     docBytes: Uint8Array,
     format: string,
     width?: number | null,
     height?: number | null,
   ): number
-  get_pixel_data(handle: number): Uint8Array
-  release_canvas(handle: number): void
+  // New: document-level operations (CanvasEditor)
+  create_document(docBytes: Uint8Array, format: string): number
+  layout_document(
+    docHandle: number,
+    pageSize: string,
+    orientation: string,
+    marginPt: number,
+  ): string
+  render_laid_out_page(docHandle: number, pageIndex: number, canvasHandle: number): void
+  release_document(docHandle: number): void
+  // Interactive editing (Phase 2)
+  handle_key_event(
+    docHandle: number,
+    key: string,
+    ctrl: boolean,
+    shift: boolean,
+    pageSize: string,
+    orientation: string,
+    marginPt: number,
+  ): string
+  handle_mouse_event(docHandle: number, pageIndex: number, x: number, y: number): string
+  serialize_document(docHandle: number): Uint8Array
+  get_cursor_position(docHandle: number): string
+  // Formatting (Phase 4)
+  apply_formatting(
+    docHandle: number,
+    formatJson: string,
+    pageSize: string,
+    orientation: string,
+    marginPt: number,
+  ): string
+  get_run_formatting(docHandle: number): string
 }
 
 let wasmApi: WasmRenderApi | null = null
@@ -59,6 +110,11 @@ export async function loadWasmRenderer(): Promise<boolean> {
 /** Check whether the WASM renderer was loaded successfully. */
 export function isWasmReady(): boolean {
   return wasmApi !== null
+}
+
+/** Get the raw WASM API object for advanced use (CanvasEditor). */
+export function getWasmApi(): WasmRenderApi | null {
+  return wasmApi
 }
 
 /**
@@ -140,29 +196,21 @@ function renderPlaceholder(
   const ctx = canvas.getContext("2d")
   if (!ctx) return
 
-  // White page background
   ctx.fillStyle = "#ffffff"
   ctx.fillRect(0, 0, width, height)
-
-  // Subtle page shadow
   ctx.fillStyle = "rgba(0, 0, 0, 0.06)"
   ctx.fillRect(3, 3, width, height)
   ctx.fillStyle = "#ffffff"
   ctx.fillRect(0, 0, width, height)
-
-  // Page border
   ctx.strokeStyle = "#dddddd"
   ctx.lineWidth = 0.5
   ctx.strokeRect(0, 0, width, height)
-
-  // Centered message
   ctx.textAlign = "center"
 
   if (wasmNotBuilt) {
     ctx.fillStyle = "#666666"
     ctx.font = "bold 16px sans-serif"
     ctx.fillText("Document rendering not available", width / 2, height / 2 - 40)
-
     ctx.fillStyle = "#888888"
     ctx.font = "13px sans-serif"
     ctx.fillText(
@@ -170,16 +218,10 @@ function renderPlaceholder(
       width / 2,
       height / 2 - 10,
     )
-    ctx.fillText(
-      "Run: cd core/crates/wo-renderer-wasm && wasm-pack build --target web",
-      width / 2,
-      height / 2 + 16,
-    )
   } else {
     ctx.fillStyle = "#666666"
     ctx.font = "bold 16px sans-serif"
     ctx.fillText(`Rendering for .${format} is not yet supported`, width / 2, height / 2 - 20)
-
     ctx.fillStyle = "#888888"
     ctx.font = "13px sans-serif"
     ctx.fillText(
