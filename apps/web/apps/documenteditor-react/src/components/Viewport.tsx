@@ -9,7 +9,9 @@ import { CrossReferencePanel } from "./CrossReferencePanel"
 import { DocumentHolder } from "./DocumentHolder"
 import { FileMenu } from "./FileMenu/FileMenu"
 import { FindReplacePanel } from "./FindReplacePanel"
+import { FormPanel } from "./FormPanel"
 import { HeaderFooterEditor } from "./HeaderFooter"
+import { ImagePanel } from "./ImagePanel"
 import { LeftMenu } from "./LeftMenu/LeftMenu"
 import { MailMergePanel } from "./MailMergePanel"
 import { OfflineBadge } from "./OfflineBadge"
@@ -18,6 +20,7 @@ import { RightMenu } from "./RightMenu/RightMenu"
 import { TrackChangesPanel } from "./RightMenu/TrackChangesPanel"
 import { StatusBar } from "./StatusBar/StatusBar"
 import { StylesPanel } from "./StylesPanel"
+import { TablePanel } from "./TablePanel"
 import { ThemePanel } from "./ThemePanel"
 import type { MonacoCommand } from "./Toolbar/MonacoCommand"
 import { Toolbar } from "./Toolbar/Toolbar"
@@ -195,6 +198,9 @@ export function Viewport({
                   documentStore.setActiveRightPanel(null)
                 }}
               />
+              <ImagePanel visible={documentStore.activeRightPanel === "image"} />
+              <TablePanel visible={documentStore.activeRightPanel === "table"} />
+              <FormPanel visible={documentStore.activeRightPanel === "form"} />
             </div>
           )}
         </div>
