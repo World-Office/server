@@ -230,7 +230,9 @@ function DropdownControl({
                 }}
                 onClick={() => {
                   if (item.command) {
-                    dispatch.onRichTextCommand(item.command)
+                    window.dispatchEvent(
+                      new CustomEvent("wo-command", { detail: { command: item.command } }),
+                    )
                     dispatch.onCommand(item.command)
                   }
                   setOpen(false)
@@ -344,7 +346,9 @@ function SplitButtonControl({
                 }}
                 onClick={() => {
                   if (item.command) {
-                    dispatch.onRichTextCommand(item.command)
+                    window.dispatchEvent(
+                      new CustomEvent("wo-command", { detail: { command: item.command } }),
+                    )
                     dispatch.onCommand(item.command)
                   }
                   setOpen(false)

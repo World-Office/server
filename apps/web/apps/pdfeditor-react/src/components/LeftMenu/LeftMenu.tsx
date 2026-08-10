@@ -7,12 +7,12 @@ import { LeftMenuButton } from "./LeftMenuButton"
 import { ThumbnailPanel } from "./ThumbnailPanel"
 
 const BUTTONS: Array<{ action: LeftMenuAction; title: string; icon: string }> = [
-  { action: "search", title: "Search", icon: "🔍" },
-  { action: "comments", title: "Comments", icon: "💬" },
-  { action: "chat", title: "Chat", icon: "💬" },
-  { action: "navigation", title: "Navigation", icon: "📑" },
-  { action: "thumbnails", title: "Thumbnails", icon: "📷" },
-  { action: "about", title: "About", icon: "ℹ" },
+  { action: "search", title: "Search", icon: "Search" },
+  { action: "comments", title: "Comments", icon: "MessageSquare" },
+  { action: "chat", title: "Chat", icon: "MessageSquare" },
+  { action: "navigation", title: "Navigation", icon: "FileText" },
+  { action: "thumbnails", title: "Thumbnails", icon: "Image" },
+  { action: "about", title: "About", icon: "File" },
 ]
 
 function LeftMenuInner(): JSX.Element {

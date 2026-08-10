@@ -1,3 +1,4 @@
+import { getInlineIcon } from "@world-office/editor-common";
 import type { JSX } from "react";
 import type { LeftMenuAction } from "../../types/visio";
 
@@ -16,21 +17,27 @@ export function LeftMenuButton({
 	active,
 	onClick,
 }: LeftMenuButtonProps): JSX.Element {
+	const IconComp = getInlineIcon(icon);
+
 	return (
 		<button
 			type="button"
-			className={`visio-left-menu-btn${active ? " active" : ""}`}
+			className={`de-left-menu-btn${active ? " active" : ""}`}
 			data-hint={title}
 			data-action={action}
-			content-target={action === "chat" ? "left-panel-chat" : ""}
 			onClick={onClick}
 			aria-pressed={active}
 		>
-			<svg className="visio-left-menu-icon" aria-hidden="true">
-				<text x="50%" y="55%" textAnchor="middle" fontSize="16">
+			{IconComp ? (
+				<span className="visio-left-menu-icon">{IconComp}</span>
+			) : (
+				<span
+					className="visio-left-menu-icon"
+					style={{ fontSize: 16, lineHeight: 1 }}
+				>
 					{icon}
-				</text>
-			</svg>
+				</span>
+			)}
 		</button>
 	);
 }

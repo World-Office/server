@@ -8,14 +8,14 @@ import { ContentLinkPanel } from "./ContentLinkPanel"
 import { LeftMenuButton } from "./LeftMenuButton"
 
 const BUTTONS: Array<{ action: LeftMenuAction; title: string; icon: string }> = [
-  { action: "search", title: "Search", icon: "🔍" },
-  { action: "comments", title: "Comments", icon: "💬" },
-  { action: "contentlinks", title: "Content Links", icon: "🔗" },
-  { action: "chat", title: "Chat", icon: "💬" },
-  { action: "navigation", title: "Navigation", icon: "☰" },
-  { action: "thumbnails", title: "Thumbnails", icon: "📄" },
-  { action: "support", title: "Support", icon: "❓" },
-  { action: "about", title: "About", icon: "ℹ" },
+  { action: "search", title: "Search", icon: "Search" },
+  { action: "comments", title: "Comments", icon: "MessageSquare" },
+  { action: "contentlinks", title: "Content Links", icon: "Link" },
+  { action: "chat", title: "Chat", icon: "Users" },
+  { action: "navigation", title: "Navigation", icon: "PanelRight" },
+  { action: "thumbnails", title: "Thumbnails", icon: "Grid3x3" },
+  { action: "support", title: "Support", icon: "HelpCircle" },
+  { action: "about", title: "About", icon: "File" },
 ]
 
 function LeftMenuInner(): JSX.Element {

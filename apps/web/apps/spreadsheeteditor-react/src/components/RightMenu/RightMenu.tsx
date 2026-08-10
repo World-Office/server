@@ -7,15 +7,19 @@ import { RightMenuButton } from "./RightMenuButton";
 
 const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> =
 	[
-		{ action: "cellsettings", title: "Cell Settings", icon: "🔢" },
-		{ action: "shapesettings", title: "Shape Settings", icon: "⬡" },
-		{ action: "imagesettings", title: "Image Settings", icon: "🖼" },
-		{ action: "chartsettings", title: "Chart Settings", icon: "📊" },
-		{ action: "textartsettings", title: "TextArt Settings", icon: "Aa" },
-		{ action: "pivottablesettings", title: "Pivot Table Settings", icon: "☰" },
-		{ action: "slicersettings", title: "Slicer Settings", icon: "🔽" },
-		{ action: "signaturesettings", title: "Signature Settings", icon: "🔑" },
-		{ action: "plugins", title: "Plugins", icon: "🧩" },
+		{ action: "cellsettings", title: "Cell Settings", icon: "Hash" },
+		{ action: "shapesettings", title: "Shape Settings", icon: "Shapes" },
+		{ action: "imagesettings", title: "Image Settings", icon: "Image" },
+		{ action: "chartsettings", title: "Chart Settings", icon: "BarChart3" },
+		{ action: "textartsettings", title: "TextArt Settings", icon: "Type" },
+		{
+			action: "pivottablesettings",
+			title: "Pivot Table Settings",
+			icon: "Grid3x3",
+		},
+		{ action: "slicersettings", title: "Slicer Settings", icon: "ChevronDown" },
+		{ action: "signaturesettings", title: "Signature Settings", icon: "Lock" },
+		{ action: "plugins", title: "Plugins", icon: "Settings" },
 	];
 
 function RightMenuInner(): JSX.Element {

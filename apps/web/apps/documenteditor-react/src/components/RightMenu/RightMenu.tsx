@@ -6,21 +6,21 @@ import type { RightMenuPanel } from "../../types/document"
 import { RightMenuButton } from "./RightMenuButton"
 
 const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> = [
-  { action: "ai-assistant", title: "AI Assistant", icon: "✨" },
-  { action: "comments", title: "Comments", icon: "💬" },
-  { action: "review", title: "Review", icon: "✓" },
-  { action: "paragraph", title: "Paragraph", icon: "¶" },
-  { action: "table", title: "Table", icon: "⊞" },
-  { action: "image", title: "Image", icon: "🖼" },
-  { action: "shape", title: "Shape", icon: "⬡" },
-  { action: "chart", title: "Chart", icon: "📊" },
-  { action: "textart", title: "TextArt", icon: "Aa" },
-  { action: "mailmerge", title: "MailMerge", icon: "✉" },
-  { action: "signature", title: "Signature", icon: "🔑" },
-  { action: "form", title: "Form", icon: "📋" },
-  { action: "plugins", title: "Plugins", icon: "🧩" },
-  { action: "crossreference", title: "Cross-Ref", icon: "🔗" },
-  { action: "theme", title: "Theme", icon: "🎨" },
+  { action: "ai-assistant", title: "AI Assistant", icon: "Smile" },
+  { action: "comments", title: "Comments", icon: "MessageSquare" },
+  { action: "review", title: "Review", icon: "CheckCircle" },
+  { action: "paragraph", title: "Paragraph", icon: "Type" },
+  { action: "table", title: "Table", icon: "Table2" },
+  { action: "image", title: "Image", icon: "Image" },
+  { action: "shape", title: "Shape", icon: "Shapes" },
+  { action: "chart", title: "Chart", icon: "LineChart" },
+  { action: "textart", title: "TextArt", icon: "Type" },
+  { action: "mailmerge", title: "MailMerge", icon: "Mail" },
+  { action: "signature", title: "Signature", icon: "Edit3" },
+  { action: "form", title: "Form", icon: "CheckSquare" },
+  { action: "plugins", title: "Plugins", icon: "Settings" },
+  { action: "crossreference", title: "Cross-Ref", icon: "Link" },
+  { action: "theme", title: "Theme", icon: "Palette" },
 ]
 
 function RightMenuInner(): JSX.Element {

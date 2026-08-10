@@ -1,3 +1,4 @@
+import { getInlineIcon } from "@world-office/editor-common"
 import type { JSX } from "react"
 
 export function LeftMenuButton({
@@ -13,6 +14,8 @@ export function LeftMenuButton({
   active: boolean
   onClick: () => void
 }): JSX.Element {
+  const IconComp = getInlineIcon(icon)
+
   return (
     <button
       type="button"
@@ -22,11 +25,13 @@ export function LeftMenuButton({
       onClick={onClick}
       aria-pressed={active}
     >
-      <svg className="de-left-menu-icon" aria-hidden="true">
-        <text x="50%" y="55%" textAnchor="middle" fontSize="16">
+      {IconComp ? (
+        <span className="de-left-menu-icon">{IconComp}</span>
+      ) : (
+        <span className="de-left-menu-icon" style={{ fontSize: 16, lineHeight: 1 }}>
           {icon}
-        </text>
-      </svg>
+        </span>
+      )}
     </button>
   )
 }
