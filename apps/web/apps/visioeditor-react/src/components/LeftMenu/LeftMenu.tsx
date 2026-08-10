@@ -6,11 +6,11 @@ import { ShapePalette } from "../ShapePalette/ShapePalette";
 import { LeftMenuButton } from "./LeftMenuButton";
 
 const BUTTONS = [
-	{ action: "thumbs" as const, title: "Pages", icon: "⊟" },
-	{ action: "shapes" as const, title: "Shapes", icon: "◇" },
-	{ action: "chat" as const, title: "Chat", icon: "💬" },
-	{ action: "support" as const, title: "Support", icon: "❓" },
-	{ action: "about" as const, title: "About", icon: "ℹ" },
+	{ action: "thumbs" as const, title: "Pages", icon: "Minus" },
+	{ action: "shapes" as const, title: "Shapes", icon: "Shapes" },
+	{ action: "chat" as const, title: "Chat", icon: "MessageSquare" },
+	{ action: "support" as const, title: "Support", icon: "HelpCircle" },
+	{ action: "about" as const, title: "About", icon: "File" },
 ];
 
 function LeftMenuInner(): JSX.Element {

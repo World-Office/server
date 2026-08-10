@@ -10,14 +10,14 @@ import { SlidePanel } from "./SlidePanel";
 
 const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> =
 	[
-		{ action: "paragraph", title: "Paragraph", icon: "¶" },
-		{ action: "table", title: "Table", icon: "⊞" },
-		{ action: "image", title: "Image", icon: "🖼" },
-		{ action: "slide", title: "Slide", icon: "📄" },
-		{ action: "chart", title: "Chart", icon: "📊" },
-		{ action: "shape", title: "Shape", icon: "⬡" },
-		{ action: "textart", title: "TextArt", icon: "Aa" },
-		{ action: "animation", title: "Animation Pane", icon: "▶" },
+		{ action: "paragraph", title: "Paragraph", icon: "Type" },
+		{ action: "table", title: "Table", icon: "Table2" },
+		{ action: "image", title: "Image", icon: "Image" },
+		{ action: "slide", title: "Slide", icon: "FileText" },
+		{ action: "chart", title: "Chart", icon: "BarChart3" },
+		{ action: "shape", title: "Shape", icon: "Shapes" },
+		{ action: "textart", title: "TextArt", icon: "Type" },
+		{ action: "animation", title: "Animation Pane", icon: "Play" },
 	];
 
 const PANELS: Record<RightMenuPanel, JSX.Element> = {

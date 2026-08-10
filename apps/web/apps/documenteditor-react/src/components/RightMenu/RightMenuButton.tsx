@@ -1,3 +1,4 @@
+import { getInlineIcon } from "@world-office/editor-common"
 import type { JSX } from "react"
 import type { RightMenuPanel } from "../../types/document"
 
@@ -16,6 +17,8 @@ export function RightMenuButton({
   active,
   onClick,
 }: RightMenuButtonProps): JSX.Element {
+  const IconComp = getInlineIcon(icon)
+
   return (
     <button
       type="button"
@@ -25,11 +28,13 @@ export function RightMenuButton({
       onClick={onClick}
       aria-pressed={active}
     >
-      <svg className="de-right-menu-icon" aria-hidden="true">
-        <text x="50%" y="55%" textAnchor="middle" fontSize="16">
+      {IconComp ? (
+        <span className="de-right-menu-icon">{IconComp}</span>
+      ) : (
+        <span className="de-right-menu-icon" style={{ fontSize: 16, lineHeight: 1 }}>
           {icon}
-        </text>
-      </svg>
+        </span>
+      )}
     </button>
   )
 }

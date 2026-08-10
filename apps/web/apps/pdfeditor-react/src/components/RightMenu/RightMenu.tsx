@@ -6,14 +6,14 @@ import type { RightMenuPanel } from "../../types/pdf"
 import { RightMenuButton } from "./RightMenuButton"
 
 const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> = [
-  { action: "paragraph", title: "Paragraph", icon: "¶" },
-  { action: "image", title: "Image", icon: "🖼" },
-  { action: "shape", title: "Shape", icon: "⬡" },
-  { action: "table", title: "Table", icon: "⊞" },
-  { action: "chart", title: "Chart", icon: "📊" },
-  { action: "textart", title: "TextArt", icon: "Aa" },
-  { action: "form", title: "Form", icon: "📋" },
-  { action: "annotations", title: "Annotations", icon: "💬" },
+  { action: "paragraph", title: "Paragraph", icon: "Type" },
+  { action: "image", title: "Image", icon: "Image" },
+  { action: "shape", title: "Shape", icon: "Shapes" },
+  { action: "table", title: "Table", icon: "Table2" },
+  { action: "chart", title: "Chart", icon: "BarChart3" },
+  { action: "textart", title: "TextArt", icon: "Type" },
+  { action: "form", title: "Form", icon: "CheckSquare" },
+  { action: "annotations", title: "Annotations", icon: "MessageSquare" },
 ]
 
 function RightMenuInner(): JSX.Element {
