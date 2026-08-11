@@ -166,7 +166,7 @@ wo_run() {
     done_n="$(wo_count_status done)"
     failed_n="$(wo_count_status failed)"
     running_n="$(wo_count_status running)"
-    total_n="$(jq 'length' "$STATUS_JSON")"
+    total_n="$(jq '[to_entries[] | select(.value | type=="object" and has("status"))] | length' "$STATUS_JSON")"
 
     wo_info "round $round — done=$done_n failed=$failed_n running=$running_n total=$total_n"
 
