@@ -25,6 +25,7 @@ members = [
     "core/crates/wo-x2t-wasm",
     "core/crates/wo-renderer-wasm",
     "core/crates/wo-conformance",
+    "core/crates/wo-route",
     "services/api-gateway",
     "services/storage-service",
     "services/conversion-service",
