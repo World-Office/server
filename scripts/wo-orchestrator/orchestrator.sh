@@ -35,6 +35,21 @@ command -v pi >/dev/null 2>&1       || { wo_error "pi not on PATH"; exit 1; }
 git -C "$WO_REPO_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
   || { wo_error "WO_REPO_DIR ($WO_REPO_DIR) is not a git repository. Set WO_REPO_DIR to the repo root."; exit 1; }
 
+# --- Startup cleanup: ensure main worktree is pristine ---
+# Failed merges or interrupted runs can leave modified tracked files and
+# untracked artifacts in the main checkout. These block subsequent merges
+# ("Your local changes would be overwritten") and cascade into deadlocks.
+# worktrees/ and state/ are gitignored, so git clean won't touch them.
+(
+  cd "$WO_REPO_DIR"
+  git checkout --quiet main 2>/dev/null || true
+  if [[ -n "$(git status --porcelain)" ]]; then
+    wo_warn "main worktree was dirty at startup — cleaning"
+    git reset --hard --quiet HEAD
+    git clean --quiet -fd
+  fi
+)
+
 # ---------------------------------------------------------------------------
 # Args
 # ---------------------------------------------------------------------------
