@@ -65,10 +65,7 @@ impl CubicBezier {
 ///
 /// **Panics** if `t < 0.0` or `t > 1.0`.
 pub fn cubic_bezier_eval(bezier: &CubicBezier, t: f32) -> Point {
-    assert!(
-        (0.0..=1.0).contains(&t),
-        "t must be in [0, 1], got {t}"
-    );
+    assert!((0.0..=1.0).contains(&t), "t must be in [0, 1], got {t}");
     let u = 1.0 - t;
     let tt = t * t;
     let uu = u * u;
@@ -99,10 +96,7 @@ pub fn cubic_bezier_eval(bezier: &CubicBezier, t: f32) -> Point {
 /// B'(t) = 3(1-t)²(P1-P0) + 6(1-t)t(P2-P1) + 3t²(P3-P2)
 /// ```
 pub fn cubic_bezier_tangent(bezier: &CubicBezier, t: f32) -> Point {
-    assert!(
-        (0.0..=1.0).contains(&t),
-        "t must be in [0, 1], got {t}"
-    );
+    assert!((0.0..=1.0).contains(&t), "t must be in [0, 1], got {t}");
     let u = 1.0 - t;
     Point::new(
         3.0 * u * u * (bezier.p1.x - bezier.p0.x)
@@ -227,11 +221,7 @@ pub fn flatten_bezier(segments: &[CubicBezier], flatness: f32) -> Vec<Point> {
 /// End-to-end convenience: smooth waypoints and return a dense point list.
 ///
 /// Equivalent to `flatten_bezier(&smooth_bezier(waypoints, smoothness), flatness)`.
-pub fn smooth_and_flatten(
-    waypoints: &[Point],
-    smoothness: f32,
-    flatness: f32,
-) -> Vec<Point> {
+pub fn smooth_and_flatten(waypoints: &[Point], smoothness: f32, flatness: f32) -> Vec<Point> {
     let segments = smooth_bezier(waypoints, smoothness);
     flatten_bezier(&segments, flatness)
 }
@@ -276,16 +266,11 @@ mod tests {
     #[test]
     fn eval_straight_line_is_linear() {
         // Degenerate case: all 4 control points form a straight line.
-        let b =
-            CubicBezier::new(pt(0.0, 0.0), pt(10.0, 0.0), pt(20.0, 0.0), pt(30.0, 0.0));
+        let b = CubicBezier::new(pt(0.0, 0.0), pt(10.0, 0.0), pt(20.0, 0.0), pt(30.0, 0.0));
         for t_i in 0..=10 {
             let t = t_i as f32 / 10.0;
             let p = cubic_bezier_eval(&b, t);
-            assert!(
-                (p.y).abs() < 1e-4,
-                "y should be 0 at t={t}, got {}",
-                p.y
-            );
+            assert!((p.y).abs() < 1e-4, "y should be 0 at t={t}, got {}", p.y);
             let expected_x = t * 30.0;
             assert!(
                 (p.x - expected_x).abs() < 1e-4,
@@ -314,16 +299,14 @@ mod tests {
 
     #[test]
     fn eval_out_of_range_panics_low() {
-        let b =
-            CubicBezier::new(pt(0.0, 0.0), pt(1.0, 1.0), pt(2.0, 2.0), pt(3.0, 3.0));
+        let b = CubicBezier::new(pt(0.0, 0.0), pt(1.0, 1.0), pt(2.0, 2.0), pt(3.0, 3.0));
         let result = std::panic::catch_unwind(|| cubic_bezier_eval(&b, -0.1));
         assert!(result.is_err());
     }
 
     #[test]
     fn eval_out_of_range_panics_high() {
-        let b =
-            CubicBezier::new(pt(0.0, 0.0), pt(1.0, 1.0), pt(2.0, 2.0), pt(3.0, 3.0));
+        let b = CubicBezier::new(pt(0.0, 0.0), pt(1.0, 1.0), pt(2.0, 2.0), pt(3.0, 3.0));
         let result = std::panic::catch_unwind(|| cubic_bezier_eval(&b, 1.1));
         assert!(result.is_err());
     }
@@ -352,8 +335,7 @@ mod tests {
 
     #[test]
     fn tangent_straight_line_is_constant_direction() {
-        let b =
-            CubicBezier::new(pt(0.0, 0.0), pt(10.0, 0.0), pt(20.0, 0.0), pt(30.0, 0.0));
+        let b = CubicBezier::new(pt(0.0, 0.0), pt(10.0, 0.0), pt(20.0, 0.0), pt(30.0, 0.0));
         for t_i in 0..=10 {
             let t = t_i as f32 / 10.0;
             let tan = cubic_bezier_tangent(&b, t);
@@ -370,8 +352,12 @@ mod tests {
 
     #[test]
     fn bounding_box_covers_all_control_points() {
-        let b =
-            CubicBezier::new(pt(-10.0, -5.0), pt(5.0, 10.0), pt(15.0, 8.0), pt(20.0, -2.0));
+        let b = CubicBezier::new(
+            pt(-10.0, -5.0),
+            pt(5.0, 10.0),
+            pt(15.0, 8.0),
+            pt(20.0, -2.0),
+        );
         let bb = b.bounding_box();
         assert!(
             bb.x <= -10.0 && bb.x + bb.width >= 20.0,
@@ -536,16 +522,14 @@ mod tests {
 
     #[test]
     fn flatten_zero_flatness_panics() {
-        let b =
-            CubicBezier::new(pt(0.0, 0.0), pt(1.0, 1.0), pt(2.0, 2.0), pt(3.0, 3.0));
+        let b = CubicBezier::new(pt(0.0, 0.0), pt(1.0, 1.0), pt(2.0, 2.0), pt(3.0, 3.0));
         let result = std::panic::catch_unwind(|| flatten_bezier(&[b], 0.0));
         assert!(result.is_err());
     }
 
     #[test]
     fn flatten_straight_line_preserves_linearity() {
-        let b =
-            CubicBezier::new(pt(0.0, 0.0), pt(10.0, 0.0), pt(20.0, 0.0), pt(30.0, 0.0));
+        let b = CubicBezier::new(pt(0.0, 0.0), pt(10.0, 0.0), pt(20.0, 0.0), pt(30.0, 0.0));
         let pts = flatten_bezier(&[b], 2.0);
         for p in &pts {
             assert!(
@@ -572,8 +556,7 @@ mod tests {
     #[test]
     fn flatten_multiple_segments_connected() {
         let b1 = CubicBezier::new(pt(0.0, 0.0), pt(5.0, 10.0), pt(15.0, 10.0), pt(20.0, 0.0));
-        let b2 =
-            CubicBezier::new(pt(20.0, 0.0), pt(25.0, 10.0), pt(35.0, 10.0), pt(40.0, 0.0));
+        let b2 = CubicBezier::new(pt(20.0, 0.0), pt(25.0, 10.0), pt(35.0, 10.0), pt(40.0, 0.0));
         let pts = flatten_bezier(&[b1, b2], 2.0);
         assert_eq!(pts.first().unwrap(), &pt(0.0, 0.0));
         assert_eq!(pts.last().unwrap(), &pt(40.0, 0.0));
@@ -590,10 +573,7 @@ mod tests {
     fn smooth_and_flatten_roundtrip() {
         let waypoints = [pt(0.0, 0.0), pt(50.0, 0.0), pt(50.0, 50.0), pt(100.0, 50.0)];
         let pts = smooth_and_flatten(&waypoints, 0.3, 2.0);
-        assert!(
-            pts.len() > 4,
-            "should have many points from flattening"
-        );
+        assert!(pts.len() > 4, "should have many points from flattening");
         assert_eq!(pts.first().unwrap(), &pt(0.0, 0.0));
         assert_eq!(pts.last().unwrap(), &pt(100.0, 50.0));
     }

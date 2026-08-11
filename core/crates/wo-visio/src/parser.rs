@@ -162,10 +162,12 @@ impl VisioParser {
                 // Page file not found — skip it rather than pushing an empty stub.
                 // This avoids showing blank pages in the editor when the VSDX
                 // archive is incomplete or corrupted.
-                eprintln!("Warning: VSDX page {} ({}) not found in archive, skipping", id, name);
+                eprintln!(
+                    "Warning: VSDX page {} ({}) not found in archive, skipping",
+                    id, name
+                );
             }
         }
-
 
         Ok(pages)
     }

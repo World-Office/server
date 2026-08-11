@@ -15,14 +15,16 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::sync::OnceLock;
 use wasm_bindgen::prelude::*;
+use wo_common::op::EditableModel;
 use wo_ooxml::model::{DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, OoxmlDocument};
 use wo_ooxml::parser::OoxmlParser;
 use wo_ooxml::serializer::OoxmlSerializer;
-use wo_common::op::EditableModel;
 
 // Re-export canvas functions
 pub use canvas_bridge::{create_canvas, flush_to_canvas, get_pixel_data, release_canvas};
-pub use layout::{LaidOutChar, LaidOutLine, LaidOutPage, LaidOutParagraph, LayoutEngine, PageLayout};
+pub use layout::{
+    LaidOutChar, LaidOutLine, LaidOutPage, LaidOutParagraph, LayoutEngine, PageLayout,
+};
 
 /// Global store of document instances (handle → parsed OoxmlDocument).
 static DOC_STORE: OnceLock<Mutex<HashMap<u32, Vec<u8>>>> = OnceLock::new();
@@ -401,7 +403,10 @@ pub fn create_document(doc_bytes: &[u8], format: &str) -> Result<u32, String> {
         return Err("Document bytes are empty".to_string());
     }
     if format != "docx" {
-        return Err(format!("Unsupported format: '{}'. Only 'docx' is supported.", format));
+        return Err(format!(
+            "Unsupported format: '{}'. Only 'docx' is supported.",
+            format
+        ));
     }
 
     // Parse the DOCX
@@ -430,7 +435,12 @@ pub fn create_document(doc_bytes: &[u8], format: &str) -> Result<u32, String> {
 /// Returns a JSON array with page dimensions and line positions.
 /// The layout is cached so subsequent calls are fast.
 #[wasm_bindgen]
-pub fn layout_document(doc_handle: u32, page_size: &str, orientation: &str, margin_pt: f32) -> Result<String, String> {
+pub fn layout_document(
+    doc_handle: u32,
+    page_size: &str,
+    orientation: &str,
+    margin_pt: f32,
+) -> Result<String, String> {
     // Get document bytes
     let store = DOC_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let store = store.lock().unwrap();
@@ -459,10 +469,18 @@ pub fn layout_document(doc_handle: u32, page_size: &str, orientation: &str, marg
     engine_store.insert(doc_handle, engine);
 
     // Serialize to JSON for the frontend
-    let pages_json: Vec<serde_json::Value> = pages.iter().map(|page| {
-        let paras: Vec<serde_json::Value> = page.paragraphs.iter().map(|para| {
-            let lines: Vec<serde_json::Value> = para.lines.iter().map(|line| {
-                let chars: Vec<serde_json::Value> = line.chars.iter().map(|c| {
+    let pages_json: Vec<serde_json::Value> = pages
+        .iter()
+        .map(|page| {
+            let paras: Vec<serde_json::Value> =
+                page.paragraphs
+                    .iter()
+                    .map(|para| {
+                        let lines: Vec<serde_json::Value> =
+                            para.lines
+                                .iter()
+                                .map(|line| {
+                                    let chars: Vec<serde_json::Value> = line.chars.iter().map(|c| {
                     serde_json::json!({
                         "ch": c.ch.to_string(),
                         "x": (c.x * 100.0).round() / 100.0,
@@ -471,34 +489,41 @@ pub fn layout_document(doc_handle: u32, page_size: &str, orientation: &str, marg
                         "color": c.color,
                     })
                 }).collect();
-                serde_json::json!({
-                    "chars": chars,
-                    "x": (line.x * 100.0).round() / 100.0,
-                    "y": (line.y * 100.0).round() / 100.0,
-                    "width": (line.width * 100.0).round() / 100.0,
-                    "height": (line.height * 100.0).round() / 100.0,
-                })
-            }).collect();
+                                    serde_json::json!({
+                                        "chars": chars,
+                                        "x": (line.x * 100.0).round() / 100.0,
+                                        "y": (line.y * 100.0).round() / 100.0,
+                                        "width": (line.width * 100.0).round() / 100.0,
+                                        "height": (line.height * 100.0).round() / 100.0,
+                                    })
+                                })
+                                .collect();
+                        serde_json::json!({
+                            "lines": lines,
+                            "y": (para.y * 100.0).round() / 100.0,
+                            "height": (para.height * 100.0).round() / 100.0,
+                        })
+                    })
+                    .collect();
             serde_json::json!({
-                "lines": lines,
-                "y": (para.y * 100.0).round() / 100.0,
-                "height": (para.height * 100.0).round() / 100.0,
+                "width": page.layout.width_px,
+                "height": page.layout.height_px,
+                "marginPx": (page.layout.margin_px * 100.0).round() / 100.0,
+                "paragraphs": paras,
             })
-        }).collect();
-        serde_json::json!({
-            "width": page.layout.width_px,
-            "height": page.layout.height_px,
-            "marginPx": (page.layout.margin_px * 100.0).round() / 100.0,
-            "paragraphs": paras,
         })
-    }).collect();
+        .collect();
 
     serde_json::to_string(&pages_json).map_err(|e| format!("JSON serialization failed: {}", e))
 }
 
 /// Render a laid-out page to a canvas.
 #[wasm_bindgen]
-pub fn render_laid_out_page(doc_handle: u32, page_index: u32, canvas_handle: u32) -> Result<(), String> {
+pub fn render_laid_out_page(
+    doc_handle: u32,
+    page_index: u32,
+    canvas_handle: u32,
+) -> Result<(), String> {
     // Get layout
     let layout_store = LAYOUT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let layout_store = layout_store.lock().unwrap();
@@ -506,9 +531,13 @@ pub fn render_laid_out_page(doc_handle: u32, page_index: u32, canvas_handle: u32
         .get(&doc_handle)
         .ok_or_else(|| format!("Document handle {} not found", doc_handle))?;
 
-    let page = pages
-        .get(page_index as usize)
-        .ok_or_else(|| format!("Page index {} out of bounds ({} pages)", page_index, pages.len()))?;
+    let page = pages.get(page_index as usize).ok_or_else(|| {
+        format!(
+            "Page index {} out of bounds ({} pages)",
+            page_index,
+            pages.len()
+        )
+    })?;
 
     // Get or create engine
     let engine_store = ENGINE_STORE.get_or_init(|| Mutex::new(HashMap::new()));
@@ -614,14 +643,17 @@ pub fn handle_mouse_event(
     // Store cursor position
     let cursor_store = CURSOR_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let mut cursor_store = cursor_store.lock().unwrap();
-    cursor_store.insert(doc_handle, CursorPos {
-        page: page_index,
-        para: best_para,
-        line: best_line,
-        char_idx: best_char,
-        x: best_x,
-        y: best_y,
-    });
+    cursor_store.insert(
+        doc_handle,
+        CursorPos {
+            page: page_index,
+            para: best_para,
+            line: best_line,
+            char_idx: best_char,
+            x: best_x,
+            y: best_y,
+        },
+    );
 
     serde_json::to_string(&serde_json::json!({
         "para": best_para,
@@ -630,7 +662,8 @@ pub fn handle_mouse_event(
         "x": (best_x * 100.0).round() / 100.0,
         "y": (best_y * 100.0).round() / 100.0,
         "found": found,
-    })).map_err(|e| format!("JSON error: {}", e))
+    }))
+    .map_err(|e| format!("JSON error: {}", e))
 }
 
 /// Helper: extract body from doc model (clone it out to avoid borrow conflicts).
@@ -703,16 +736,19 @@ pub fn handle_key_event(
                 body.paragraphs.insert(insert_before, new_para);
             }
             store_body(doc_handle, body)?;
-            set_cursor(doc_handle, CursorPos {
-                page: cursor.page,
-                para: insert_before,
-                line: 0,
-                char_idx: 0,
-                x: 0.0,
-                y: cursor.y + 20.0,
-            });
+            set_cursor(
+                doc_handle,
+                CursorPos {
+                    page: cursor.page,
+                    para: insert_before,
+                    line: 0,
+                    char_idx: 0,
+                    x: 0.0,
+                    y: cursor.y + 20.0,
+                },
+            );
             layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
-        },
+        }
         "Backspace" => {
             if body.paragraphs.is_empty() {
                 return Ok("{}".to_string());
@@ -738,7 +774,9 @@ pub fn handle_key_event(
                 }
             } else if cursor.char_idx == 0 && pidx > 0 && pidx < body.paragraphs.len() {
                 // Merge with previous paragraph
-                let first_text = body.paragraphs[pidx].runs.first()
+                let first_text = body.paragraphs[pidx]
+                    .runs
+                    .first()
                     .map(|r| r.text.clone())
                     .unwrap_or_default();
                 if let Some(prev_last_run) = body.paragraphs[pidx - 1].runs.last_mut() {
@@ -748,7 +786,7 @@ pub fn handle_key_event(
             }
             store_body(doc_handle, body)?;
             layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
-        },
+        }
         "Delete" => {
             if body.paragraphs.is_empty() {
                 return Ok("{}".to_string());
@@ -775,7 +813,9 @@ pub fn handle_key_event(
                     global_c += run_len;
                 }
                 if !removed && pidx + 1 < body.paragraphs.len() {
-                    let next_text = body.paragraphs[pidx + 1].runs.first()
+                    let next_text = body.paragraphs[pidx + 1]
+                        .runs
+                        .first()
                         .map(|r| r.text.clone())
                         .unwrap_or_default();
                     if let Some(last_run) = body.paragraphs[pidx].runs.last_mut() {
@@ -786,21 +826,27 @@ pub fn handle_key_event(
             }
             store_body(doc_handle, body)?;
             layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
-        },
+        }
         "ArrowLeft" => {
-            set_cursor(doc_handle, CursorPos {
-                char_idx: cursor.char_idx.saturating_sub(1),
-                ..cursor
-            });
+            set_cursor(
+                doc_handle,
+                CursorPos {
+                    char_idx: cursor.char_idx.saturating_sub(1),
+                    ..cursor
+                },
+            );
             Ok("{}".to_string())
-        },
+        }
         "ArrowRight" => {
-            set_cursor(doc_handle, CursorPos {
-                char_idx: cursor.char_idx + 1,
-                ..cursor
-            });
+            set_cursor(
+                doc_handle,
+                CursorPos {
+                    char_idx: cursor.char_idx + 1,
+                    ..cursor
+                },
+            );
             Ok("{}".to_string())
-        },
+        }
         _ => {
             // Insert printable character
             if key.len() == 1 {
@@ -842,14 +888,17 @@ pub fn handle_key_event(
                         }
                     }
                 }
-                set_cursor(doc_handle, CursorPos {
-                    char_idx: cursor.char_idx + 1,
-                    ..cursor
-                });
+                set_cursor(
+                    doc_handle,
+                    CursorPos {
+                        char_idx: cursor.char_idx + 1,
+                        ..cursor
+                    },
+                );
             }
             store_body(doc_handle, body)?;
             layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
-        },
+        }
     }
 }
 
@@ -866,7 +915,10 @@ fn layout_document_and_return_json(
         .get(&doc_handle)
         .ok_or_else(|| format!("Document handle {} not found", doc_handle))?;
 
-    let body = doc.docx_body.as_ref().cloned()
+    let body = doc
+        .docx_body
+        .as_ref()
+        .cloned()
         .unwrap_or_else(DocxBody::default);
     drop(model_store);
 
@@ -883,10 +935,18 @@ fn layout_document_and_return_json(
     engine_store.insert(doc_handle, engine);
 
     // Serialize to JSON
-    let pages_json: Vec<serde_json::Value> = pages.iter().map(|page| {
-        let paras: Vec<serde_json::Value> = page.paragraphs.iter().map(|para| {
-            let lines: Vec<serde_json::Value> = para.lines.iter().map(|line| {
-                let chars: Vec<serde_json::Value> = line.chars.iter().map(|c| {
+    let pages_json: Vec<serde_json::Value> = pages
+        .iter()
+        .map(|page| {
+            let paras: Vec<serde_json::Value> =
+                page.paragraphs
+                    .iter()
+                    .map(|para| {
+                        let lines: Vec<serde_json::Value> =
+                            para.lines
+                                .iter()
+                                .map(|line| {
+                                    let chars: Vec<serde_json::Value> = line.chars.iter().map(|c| {
                     serde_json::json!({
                         "ch": c.ch.to_string(),
                         "x": (c.x * 100.0).round() / 100.0,
@@ -895,27 +955,30 @@ fn layout_document_and_return_json(
                         "color": c.color,
                     })
                 }).collect();
-                serde_json::json!({
-                    "chars": chars,
-                    "x": (line.x * 100.0).round() / 100.0,
-                    "y": (line.y * 100.0).round() / 100.0,
-                    "width": (line.width * 100.0).round() / 100.0,
-                    "height": (line.height * 100.0).round() / 100.0,
-                })
-            }).collect();
+                                    serde_json::json!({
+                                        "chars": chars,
+                                        "x": (line.x * 100.0).round() / 100.0,
+                                        "y": (line.y * 100.0).round() / 100.0,
+                                        "width": (line.width * 100.0).round() / 100.0,
+                                        "height": (line.height * 100.0).round() / 100.0,
+                                    })
+                                })
+                                .collect();
+                        serde_json::json!({
+                            "lines": lines,
+                            "y": (para.y * 100.0).round() / 100.0,
+                            "height": (para.height * 100.0).round() / 100.0,
+                        })
+                    })
+                    .collect();
             serde_json::json!({
-                "lines": lines,
-                "y": (para.y * 100.0).round() / 100.0,
-                "height": (para.height * 100.0).round() / 100.0,
+                "width": page.layout.width_px,
+                "height": page.layout.height_px,
+                "marginPx": (page.layout.margin_px * 100.0).round() / 100.0,
+                "paragraphs": paras,
             })
-        }).collect();
-        serde_json::json!({
-            "width": page.layout.width_px,
-            "height": page.layout.height_px,
-            "marginPx": (page.layout.margin_px * 100.0).round() / 100.0,
-            "paragraphs": paras,
         })
-    }).collect();
+        .collect();
 
     serde_json::to_string(&pages_json).map_err(|e| format!("JSON serialization failed: {}", e))
 }
@@ -952,7 +1015,8 @@ pub fn get_cursor_position(doc_handle: u32) -> String {
             "charIdx": c.char_idx,
             "x": (c.x * 100.0).round() / 100.0,
             "y": (c.y * 100.0).round() / 100.0,
-        }).to_string(),
+        })
+        .to_string(),
         None => "null".to_string(),
     }
 }
@@ -974,8 +1038,8 @@ pub fn apply_formatting(
     orientation: &str,
     margin_pt: f32,
 ) -> Result<String, String> {
-    let format: serde_json::Value = serde_json::from_str(format_json)
-        .map_err(|e| format!("Invalid format JSON: {}", e))?;
+    let format: serde_json::Value =
+        serde_json::from_str(format_json).map_err(|e| format!("Invalid format JSON: {}", e))?;
 
     let mut body = extract_body(doc_handle)?;
     let cursor = get_cursor(doc_handle);
@@ -1095,7 +1159,8 @@ pub fn get_run_formatting(doc_handle: u32) -> Result<String, String> {
                 "fontName": r.font,
                 "textColor": r.color,
                 "highlight": r.highlight,
-            })).map_err(|e| format!("JSON error: {}", e))
+            }))
+            .map_err(|e| format!("JSON error: {}", e))
         }
         None => Ok("{}".to_string()),
     }
@@ -1125,8 +1190,7 @@ pub fn create_model(bytes: &[u8], fmt: &str) -> Result<u32, String> {
                 .map_err(|e| format!("Invalid stub model JSON: {}", e))?;
             let model = stub_model::StubModel::new(paragraphs);
             let handle = unsafe { stub_model::next_stub_handle() };
-            let store =
-                stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+            let store = stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
             let mut store = store.lock().unwrap();
             store.insert(handle, model);
             Ok(handle)
@@ -1148,10 +1212,9 @@ pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
     if op_json.is_empty() {
         return Err("op_json is empty".to_string());
     }
-    let op: wo_common::op::ModelOp = serde_json::from_str(op_json)
-        .map_err(|e| format!("Invalid op JSON: {}", e))?;
-    let store =
-        stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let op: wo_common::op::ModelOp =
+        serde_json::from_str(op_json).map_err(|e| format!("Invalid op JSON: {}", e))?;
+    let store = stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let mut store = store.lock().unwrap();
     let model = store
         .get_mut(&handle)
@@ -1164,14 +1227,12 @@ pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
 /// For the stub model, returns a JSON array of paragraph strings.
 #[wasm_bindgen]
 pub fn model_to_bytes(handle: u32) -> Result<Vec<u8>, String> {
-    let store =
-        stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let store = stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let store = store.lock().unwrap();
     let model = store
         .get(&handle)
         .ok_or_else(|| format!("Stub model handle {} not found", handle))?;
-    serde_json::to_vec(&model.paragraphs)
-        .map_err(|e| format!("Serialization failed: {}", e))
+    serde_json::to_vec(&model.paragraphs).map_err(|e| format!("Serialization failed: {}", e))
 }
 
 /// Layout the model and optionally render to a canvas.
@@ -1188,15 +1249,10 @@ pub fn model_to_bytes(handle: u32) -> Result<Vec<u8>, String> {
 /// { "pages": [{ "width": 794, "height": 1123, "paragraphs": [...] }] }
 /// ```
 #[wasm_bindgen]
-pub fn layout_and_render(
-    handle: u32,
-    opts_json: &str,
-    canvas: u32,
-) -> Result<String, String> {
-    let opts: stub_model::StubLayoutOpts = serde_json::from_str(opts_json)
-        .map_err(|e| format!("Invalid opts JSON: {}", e))?;
-    let store =
-        stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+pub fn layout_and_render(handle: u32, opts_json: &str, canvas: u32) -> Result<String, String> {
+    let opts: stub_model::StubLayoutOpts =
+        serde_json::from_str(opts_json).map_err(|e| format!("Invalid opts JSON: {}", e))?;
+    let store = stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let store = store.lock().unwrap();
     let model = store
         .get(&handle)
@@ -1214,12 +1270,7 @@ pub fn layout_and_render(
             canvas_obj.set_fill(wo_renderer::color::Paint::Color(
                 wo_renderer::color::Color::new(1.0, 1.0, 1.0, 1.0),
             ));
-            canvas_obj.fill_rect(
-                0.0,
-                0.0,
-                opts.width as f32,
-                opts.height as f32,
-            );
+            canvas_obj.fill_rect(0.0, 0.0, opts.width as f32, opts.height as f32);
             // Render each paragraph as a line of text.
             let mut cursor_y = opts.margin_pt * stub_model::PT_TO_PX;
             for para_text in &model.paragraphs {
@@ -1238,8 +1289,7 @@ pub fn layout_and_render(
         drop(canvas_store);
     }
 
-    serde_json::to_string(&layout_json)
-        .map_err(|e| format!("JSON serialization failed: {}", e))
+    serde_json::to_string(&layout_json).map_err(|e| format!("JSON serialization failed: {}", e))
 }
 
 /// Release a stub model and free its resources.
@@ -1257,7 +1307,10 @@ mod tests {
 
     #[test]
     fn test_create_and_release_document() {
-        let doc_data = vec![0x50, 0x4B, 0x05, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00];
+        let doc_data = vec![
+            0x50, 0x4B, 0x05, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        ];
         // create_document should fail for empty/invalid DOCX
         let result = create_document(&doc_data, "docx");
         assert!(result.is_err());
@@ -1275,14 +1328,17 @@ mod tests {
     fn test_cursor_helpers() {
         // These test the helper logic without needing a real DOCX
         let doc_handle = 9999u32;
-        set_cursor(doc_handle, CursorPos {
-            page: 0,
-            para: 1,
-            line: 2,
-            char_idx: 3,
-            x: 100.0,
-            y: 200.0,
-        });
+        set_cursor(
+            doc_handle,
+            CursorPos {
+                page: 0,
+                para: 1,
+                line: 2,
+                char_idx: 3,
+                x: 100.0,
+                y: 200.0,
+            },
+        );
         let c = get_cursor(doc_handle);
         assert_eq!(c.para, 1);
         assert_eq!(c.char_idx, 3);
@@ -1390,13 +1446,13 @@ mod tests {
         let handle = create_model(bytes, "stub").unwrap();
 
         // Insert "Hello" at para 0, char 0.
-        let op = r#"{"op":"insert","at":{"kind":"text","para":0,"run":0,"char":0},"content":"Hello"}"#;
+        let op =
+            r#"{"op":"insert","at":{"kind":"text","para":0,"run":0,"char":0},"content":"Hello"}"#;
         apply_op(handle, op).unwrap();
 
         // Read back.
         let out = model_to_bytes(handle).unwrap();
-        let paragraphs: Vec<String> =
-            serde_json::from_slice(&out).unwrap();
+        let paragraphs: Vec<String> = serde_json::from_slice(&out).unwrap();
         assert_eq!(paragraphs.len(), 1);
         assert_eq!(paragraphs[0], "Hello");
 
@@ -1412,8 +1468,7 @@ mod tests {
         apply_op(handle, op).unwrap();
 
         let out = model_to_bytes(handle).unwrap();
-        let paragraphs: Vec<String> =
-            serde_json::from_slice(&out).unwrap();
+        let paragraphs: Vec<String> = serde_json::from_slice(&out).unwrap();
         assert_eq!(paragraphs[0], "ADE");
 
         release_stub_model(handle).ok();
@@ -1428,8 +1483,7 @@ mod tests {
         apply_op(handle, op).unwrap();
 
         let out = model_to_bytes(handle).unwrap();
-        let paragraphs: Vec<String> =
-            serde_json::from_slice(&out).unwrap();
+        let paragraphs: Vec<String> = serde_json::from_slice(&out).unwrap();
         assert_eq!(paragraphs[0], "AXCD");
 
         release_stub_model(handle).ok();
@@ -1444,8 +1498,7 @@ mod tests {
         apply_op(handle, op).unwrap();
 
         let out = model_to_bytes(handle).unwrap();
-        let paragraphs: Vec<String> =
-            serde_json::from_slice(&out).unwrap();
+        let paragraphs: Vec<String> = serde_json::from_slice(&out).unwrap();
         assert_eq!(paragraphs[0], "Hello"); // unchanged
 
         release_stub_model(handle).ok();
@@ -1540,18 +1593,19 @@ mod tests {
         apply_op(
             handle,
             r#"{"op":"insert","at":{"kind":"text","para":0,"run":0,"char":0},"content":"Hello"}"#,
-        ).unwrap();
+        )
+        .unwrap();
 
         // Insert " world" at para 0, char 5.
         apply_op(
             handle,
             r#"{"op":"insert","at":{"kind":"text","para":0,"run":0,"char":5},"content":" world"}"#,
-        ).unwrap();
+        )
+        .unwrap();
 
         // Serialize and verify.
         let out = model_to_bytes(handle).unwrap();
-        let paragraphs: Vec<String> =
-            serde_json::from_slice(&out).unwrap();
+        let paragraphs: Vec<String> = serde_json::from_slice(&out).unwrap();
         assert_eq!(paragraphs[0], "Hello world");
 
         // Layout and verify structure.
@@ -1562,9 +1616,15 @@ mod tests {
         )
         .unwrap();
         let layout: serde_json::Value = serde_json::from_str(&layout_json).unwrap();
-        assert!(layout["pages"].as_array().unwrap()[0]["paragraphs"]
-            .as_array().unwrap()[0]["lines"][0]["chars"]
-            .as_array().unwrap().len() > 0);
+        assert!(
+            layout["pages"].as_array().unwrap()[0]["paragraphs"]
+                .as_array()
+                .unwrap()[0]["lines"][0]["chars"]
+                .as_array()
+                .unwrap()
+                .len()
+                > 0
+        );
 
         release_stub_model(handle).ok();
     }
@@ -1576,4 +1636,3 @@ mod tests {
         assert!(result.unwrap_err().contains("Invalid stub model JSON"));
     }
 }
-

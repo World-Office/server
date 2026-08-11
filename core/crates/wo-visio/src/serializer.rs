@@ -247,11 +247,15 @@ impl VisioSerializer {
     <Cell N="PageWidth" V=""#,
         );
         xml.push_str(&page.width.to_string());
-        xml.push_str(r#""/>
-    <Cell N="PageHeight" V=""#);
+        xml.push_str(
+            r#""/>
+    <Cell N="PageHeight" V=""#,
+        );
         xml.push_str(&page.height.to_string());
-        xml.push_str(r#""/>
-  </PageSheet>"#);
+        xml.push_str(
+            r#""/>
+  </PageSheet>"#,
+        );
 
         if !page.shapes.is_empty() || !page.connectors.is_empty() {
             xml.push_str("\n  <Shapes>");
@@ -315,7 +319,10 @@ impl VisioSerializer {
       <Section N="Fill">
         <Row IX="0">"#,
             );
-            let fg = shape.fill_foreground.as_deref().or(shape.fill_color.as_deref());
+            let fg = shape
+                .fill_foreground
+                .as_deref()
+                .or(shape.fill_color.as_deref());
             if let Some(fg) = fg {
                 xml.push_str(&format!(
                     r#"
@@ -436,9 +443,11 @@ impl VisioSerializer {
                 || fmt.italic.is_some()
                 || fmt.underline.is_some()
             {
-                xml.push_str(r#"
+                xml.push_str(
+                    r#"
       <Section N="Character">
-        <Row IX="0">"#);
+        <Row IX="0">"#,
+                );
                 if let Some(ref font) = fmt.font {
                     xml.push_str(&format!(
                         r#"
@@ -481,22 +490,26 @@ impl VisioSerializer {
                         if u { "1" } else { "0" }
                     ));
                 }
-                xml.push_str(r#"
+                xml.push_str(
+                    r#"
         </Row>
-      </Section>"#);
+      </Section>"#,
+                );
             }
 
             // Paragraph alignment
             if fmt.align_horizontal.is_some() || fmt.align_vertical.is_some() {
-                xml.push_str(r#"
+                xml.push_str(
+                    r#"
       <Section N="Paragraph">
-        <Row IX="0">"#);
+        <Row IX="0">"#,
+                );
                 if let Some(ref ha) = fmt.align_horizontal {
                     // Map Visio alignment strings to cell values
                     let val = match ha.as_str() {
                         "Center" => "1",
                         "Right" => "2",
-                        _ => "0",  // Left
+                        _ => "0", // Left
                     };
                     xml.push_str(&format!(
                         r#"
@@ -508,7 +521,7 @@ impl VisioSerializer {
                     let val = match va.as_str() {
                         "Middle" => "1",
                         "Bottom" => "2",
-                        _ => "0",  // Top
+                        _ => "0", // Top
                     };
                     xml.push_str(&format!(
                         r#"
@@ -516,9 +529,11 @@ impl VisioSerializer {
                         val
                     ));
                 }
-                xml.push_str(r#"
+                xml.push_str(
+                    r#"
         </Row>
-      </Section>"#);
+      </Section>"#,
+                );
             }
         }
 

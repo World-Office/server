@@ -9,6 +9,7 @@ pub mod wopi;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
+use anyhow::Context;
 use axum::{
     extract::{Path, Query, State},
     http::HeaderMap,
@@ -17,7 +18,6 @@ use axum::{
     Router,
 };
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
-use anyhow::Context;
 use metrics_exporter_prometheus::PrometheusBuilder;
 
 use serde::{Deserialize, Serialize};
@@ -138,7 +138,9 @@ async fn health_handler() -> &'static str {
 /// The OCIS WOPI host provides this endpoint which lists all supported WOPI
 /// actions and URL templates. We proxy through the docserver so that E2E
 /// health checks (which target the docserver) still pass when OCIS is available.
-async fn discovery_handler(State(state): State<AppState>) -> Result<
+async fn discovery_handler(
+    State(state): State<AppState>,
+) -> Result<
     (
         axum::http::StatusCode,
         [(axum::http::HeaderName, String); 1],

@@ -100,12 +100,7 @@ pub struct ModelOpEnvelope {
 impl ModelOpEnvelope {
     /// Create a new envelope with the current [`WIRE_SCHEMA_VERSION`] and
     /// an auto-generated UTC timestamp.
-    pub fn new(
-        session_id: String,
-        user_id: String,
-        revision: u64,
-        op: ModelOp,
-    ) -> Self {
+    pub fn new(session_id: String, user_id: String, revision: u64, op: ModelOp) -> Self {
         Self {
             version: WIRE_SCHEMA_VERSION,
             session_id,
@@ -170,10 +165,7 @@ mod model_op_schema {
     }
 
     fn text_range(para: usize, start_char: usize, end_char: usize) -> Range {
-        Range::new(
-            text_path(para, 0, start_char),
-            text_path(para, 0, end_char),
-        )
+        Range::new(text_path(para, 0, start_char), text_path(para, 0, end_char))
     }
 
     fn make_insert_envelope(revision: u64) -> ModelOpEnvelope {

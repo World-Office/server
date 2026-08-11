@@ -1429,7 +1429,8 @@ mod tests {
 
     #[test]
     fn test_parse_attributes_with_special_chars() {
-        let html = b"<html><body><a href=\"https://example.com?a=1&b=2&c=3\">Link</a></body></html>";
+        let html =
+            b"<html><body><a href=\"https://example.com?a=1&b=2&c=3\">Link</a></body></html>";
         let parser = HtmlParser::new();
         let result = parser.parse(html);
         assert!(result.is_ok());
@@ -1487,7 +1488,9 @@ mod tests {
 
     #[test]
     fn test_fuzz_random_tags_no_panic() {
-        let tags = ["<p>", "</p>", "<div>", "</div>", "<b>", "</b>", "<i>", "</i>", "<br>", "<hr>"];
+        let tags = [
+            "<p>", "</p>", "<div>", "</div>", "<b>", "</b>", "<i>", "</i>", "<br>", "<hr>",
+        ];
         let parser = HtmlParser::new();
         // Deterministic pseudo-random: use simple LCG
         let mut seed: u64 = 12345;
@@ -1506,7 +1509,10 @@ mod tests {
 
     #[test]
     fn test_fuzz_random_entities_no_panic() {
-        let entities = ["&amp;", "&lt;", "&gt;", "&quot;", "&#39;", "&apos;", "&nbsp;", "&copy;", "&reg;", "&trade;"];
+        let entities = [
+            "&amp;", "&lt;", "&gt;", "&quot;", "&#39;", "&apos;", "&nbsp;", "&copy;", "&reg;",
+            "&trade;",
+        ];
         let parser = HtmlParser::new();
         let mut seed: u64 = 98765;
         for _ in 0..100 {

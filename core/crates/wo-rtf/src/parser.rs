@@ -1593,7 +1593,10 @@ mod tests {
     #[test]
     fn test_fuzz_random_control_words_no_panic() {
         let parser = RtfParser::new();
-        let control_words = ["\\b", "\\b0", "\\i", "\\i0", "\\ul", "\\ul0", "\\par", "\\line", "\\page", "\\tab", "\\fs24", "\\fs48"];
+        let control_words = [
+            "\\b", "\\b0", "\\i", "\\i0", "\\ul", "\\ul0", "\\par", "\\line", "\\page", "\\tab",
+            "\\fs24", "\\fs48",
+        ];
         let mut seed: u64 = 42;
         for _ in 0..50 {
             let mut rtf = String::from("{\\rtf1\\ansi");

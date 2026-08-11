@@ -406,7 +406,8 @@ mod tests {
         let parser = TxtParser::new();
         let full = "Hello 世界 🌍
 Line 2
-Line 3".as_bytes();
+Line 3"
+            .as_bytes();
         for len in 0..full.len() {
             // Truncated UTF-8 may produce replacement chars but should not panic
             let _ = parser.parse(&full[..len]);

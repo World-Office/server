@@ -51,7 +51,12 @@ pub struct Rect {
 impl Rect {
     /// Create a new rectangle from top-left corner and dimensions.
     pub const fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
-        Self { x, y, width, height }
+        Self {
+            x,
+            y,
+            width,
+            height,
+        }
     }
 
     /// Center point of the rectangle.
@@ -141,7 +146,10 @@ impl Side {
 /// Panics if `index >= count` or `count == 0`.
 pub fn anchor_at(rect: &Rect, side: Side, index: usize, count: usize) -> (Point, Point) {
     assert!(count > 0, "count must be > 0");
-    assert!(index < count, "index {index} out of range for count {count}");
+    assert!(
+        index < count,
+        "index {index} out of range for count {count}"
+    );
 
     let t = if count == 1 {
         0.5 // single anchor → center of side

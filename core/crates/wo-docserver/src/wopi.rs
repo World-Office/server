@@ -161,7 +161,9 @@ impl WopiClient {
         );
         let http = self.http.clone();
         retry_with_backoff(|| async {
-            let mut req = http.post(&url).header("Content-Type", "application/octet-stream");
+            let mut req = http
+                .post(&url)
+                .header("Content-Type", "application/octet-stream");
             // Forward WOPI headers from the browser request to the upstream
             if let Some(ref val) = wopi_override {
                 req = req.header("X-WOPI-Override", val);

@@ -5,9 +5,7 @@
 //!
 //! This is the "C++ layout engine" equivalent in ONLYOFFICE's architecture.
 
-use wo_ooxml::model::{
-    DocxBody, DocxParagraph,
-};
+use wo_ooxml::model::{DocxBody, DocxParagraph};
 use wo_renderer::canvas::Canvas;
 use wo_renderer::color::Color;
 use wo_renderer::fonts::FontLibrary;
@@ -107,15 +105,29 @@ impl LayoutEngine {
     }
 
     /// Measure text width in points using real font metrics.
-    pub fn measure_text_width_pt(&mut self, text: &str, font_size_pt: f32, _bold: bool, _italic: bool) -> f32 {
+    pub fn measure_text_width_pt(
+        &mut self,
+        text: &str,
+        font_size_pt: f32,
+        _bold: bool,
+        _italic: bool,
+    ) -> f32 {
         if text.is_empty() {
             return 0.0;
         }
-        let key = (text.to_string(), (font_size_pt * 100.0).round() as u32, _bold, _italic);
+        let key = (
+            text.to_string(),
+            (font_size_pt * 100.0).round() as u32,
+            _bold,
+            _italic,
+        );
         if let Some(&w) = self.width_cache.get(&key) {
             return w;
         }
-        let width: f32 = text.chars().map(|c| self.font_library.char_advance(c, font_size_pt)).sum();
+        let width: f32 = text
+            .chars()
+            .map(|c| self.font_library.char_advance(c, font_size_pt))
+            .sum();
         self.width_cache.insert(key, width);
         width
     }
@@ -157,37 +169,83 @@ impl LayoutEngine {
 
         let max_content_y = pl.content_y + pl.content_height;
         let mut pages: Vec<LaidOutPage> = Vec::new();
-        let mut page = LaidOutPage { layout: pl.clone(), paragraphs: Vec::new() };
+        let mut page = LaidOutPage {
+            layout: pl.clone(),
+            paragraphs: Vec::new(),
+        };
         let mut cursor_y = pl.content_y;
 
         for para in &body.paragraphs {
             // Page break
             if para.properties.page_break_before && cursor_y > pl.content_y + 5.0 {
-                pages.push(LaidOutPage { layout: pl.clone(), paragraphs: std::mem::take(&mut page.paragraphs) });
+                pages.push(LaidOutPage {
+                    layout: pl.clone(),
+                    paragraphs: std::mem::take(&mut page.paragraphs),
+                });
                 cursor_y = pl.content_y;
             }
 
             // Spacing before
-            cursor_y += para.properties.spacing_before.map(|v| v as f32 * PT_TO_PX / 20.0).unwrap_or(0.0);
+            cursor_y += para
+                .properties
+                .spacing_before
+                .map(|v| v as f32 * PT_TO_PX / 20.0)
+                .unwrap_or(0.0);
 
-            let indent_left = para.properties.indent_left.map(|v| v as f32 * PT_TO_PX / 20.0).unwrap_or(0.0);
-            let indent_first = para.properties.indent_first_line.map(|v| v as f32 * PT_TO_PX / 20.0);
+            let indent_left = para
+                .properties
+                .indent_left
+                .map(|v| v as f32 * PT_TO_PX / 20.0)
+                .unwrap_or(0.0);
+            let indent_first = para
+                .properties
+                .indent_first_line
+                .map(|v| v as f32 * PT_TO_PX / 20.0);
 
-            let default_fs = para.runs.first().and_then(|r| r.font_size).map(|s| s as f32 / 2.0).unwrap_or(12.0).max(6.0);
-            let spacing_line_factor = para.properties.spacing_line.map(|v| v as f32 / 240.0).unwrap_or(1.15);
+            let default_fs = para
+                .runs
+                .first()
+                .and_then(|r| r.font_size)
+                .map(|s| s as f32 / 2.0)
+                .unwrap_or(12.0)
+                .max(6.0);
+            let spacing_line_factor = para
+                .properties
+                .spacing_line
+                .map(|v| v as f32 / 240.0)
+                .unwrap_or(1.15);
             let line_h_pt = default_fs * spacing_line_factor;
 
             // Layout the paragraph
             let max_row_w = pl.content_width - indent_left * PT_TO_PX;
-            let (laid_paras, para_h) = self.layout_paragraph(para, cursor_y, indent_left * PT_TO_PX,
-                indent_first.unwrap_or(0.0) * PT_TO_PX, max_row_w, max_content_y, default_fs, line_h_pt);
+            let (laid_paras, para_h) = self.layout_paragraph(
+                para,
+                cursor_y,
+                indent_left * PT_TO_PX,
+                indent_first.unwrap_or(0.0) * PT_TO_PX,
+                max_row_w,
+                max_content_y,
+                default_fs,
+                line_h_pt,
+            );
 
             // Check if paragraph fits on current page
             if cursor_y + para_h > max_content_y && cursor_y > pl.content_y + 5.0 {
-                pages.push(LaidOutPage { layout: pl.clone(), paragraphs: std::mem::take(&mut page.paragraphs) });
+                pages.push(LaidOutPage {
+                    layout: pl.clone(),
+                    paragraphs: std::mem::take(&mut page.paragraphs),
+                });
                 cursor_y = pl.content_y;
-                let (relaid, _) = self.layout_paragraph(para, cursor_y, indent_left * PT_TO_PX,
-                    indent_first.unwrap_or(0.0) * PT_TO_PX, max_row_w, max_content_y, default_fs, line_h_pt);
+                let (relaid, _) = self.layout_paragraph(
+                    para,
+                    cursor_y,
+                    indent_left * PT_TO_PX,
+                    indent_first.unwrap_or(0.0) * PT_TO_PX,
+                    max_row_w,
+                    max_content_y,
+                    default_fs,
+                    line_h_pt,
+                );
                 if let Some(p) = relaid.first() {
                     cursor_y = p.y + p.height;
                 }
@@ -201,37 +259,75 @@ impl LayoutEngine {
                 page.paragraphs.extend(laid_paras);
             }
 
-            cursor_y += para.properties.spacing_after.map(|v| v as f32 * PT_TO_PX / 20.0).unwrap_or(0.0);
+            cursor_y += para
+                .properties
+                .spacing_after
+                .map(|v| v as f32 * PT_TO_PX / 20.0)
+                .unwrap_or(0.0);
             cursor_y += default_fs * PT_TO_PX * 0.3;
         }
 
         // Layout tables
         for table in &body.tables {
             if cursor_y > max_content_y - 20.0 {
-                pages.push(LaidOutPage { layout: pl.clone(), paragraphs: std::mem::take(&mut page.paragraphs) });
+                pages.push(LaidOutPage {
+                    layout: pl.clone(),
+                    paragraphs: std::mem::take(&mut page.paragraphs),
+                });
                 cursor_y = pl.content_y;
             }
 
-            let table_w = table.properties.width.map(|w| w as f32 * PT_TO_PX / 20.0).unwrap_or(pl.content_width);
-            let col_count = table.rows.first().map(|r| r.cells.len()).unwrap_or(1).max(1);
+            let table_w = table
+                .properties
+                .width
+                .map(|w| w as f32 * PT_TO_PX / 20.0)
+                .unwrap_or(pl.content_width);
+            let col_count = table
+                .rows
+                .first()
+                .map(|r| r.cells.len())
+                .unwrap_or(1)
+                .max(1);
             let col_w = table_w / col_count as f32;
-            let table_indent = table.properties.indent.map(|i| i as f32 * PT_TO_PX / 20.0).unwrap_or(0.0) + pl.content_x;
+            let table_indent = table
+                .properties
+                .indent
+                .map(|i| i as f32 * PT_TO_PX / 20.0)
+                .unwrap_or(0.0)
+                + pl.content_x;
 
             for row in &table.rows {
                 let row_h_pt = row.height.map(|h| h as f32).unwrap_or(24.0);
                 let row_h_px = row_h_pt * PT_TO_PX;
 
                 if cursor_y + row_h_px > max_content_y {
-                    pages.push(LaidOutPage { layout: pl.clone(), paragraphs: std::mem::take(&mut page.paragraphs) });
+                    pages.push(LaidOutPage {
+                        layout: pl.clone(),
+                        paragraphs: std::mem::take(&mut page.paragraphs),
+                    });
                     cursor_y = pl.content_y;
                 }
 
                 for (ci, cell) in row.cells.iter().enumerate() {
                     let cell_x = table_indent + ci as f32 * col_w;
                     for cp in &cell.paragraphs {
-                        let cf = cp.runs.first().and_then(|r| r.font_size).map(|s| s as f32 / 2.0).unwrap_or(11.0);
+                        let cf = cp
+                            .runs
+                            .first()
+                            .and_then(|r| r.font_size)
+                            .map(|s| s as f32 / 2.0)
+                            .unwrap_or(11.0);
                         let cell_max_w = col_w - 8.0;
-                        let (cl, _) = self.layout_paragraph(cp, cursor_y, cell_x, 0.0, cell_max_w, cursor_y + row_h_px, cf, cf * 1.15);
+                        let (cl, _) = self.layout_paragraph(
+                            cp,
+                            cursor_y,
+                            cell_x,
+                            0.0,
+                            cell_max_w,
+                            cursor_y + row_h_px,
+                            cf,
+                            cf * 1.15,
+                        );
                         page.paragraphs.extend(cl);
                     }
                 }
@@ -272,18 +368,37 @@ impl LayoutEngine {
             underline: bool,
         }
 
-        let chunks: Vec<FormattedChunk> = para.runs.iter().filter(|r| !r.text.is_empty()).map(|r| {
-            let fs = r.font_size.map(|s| s as f32 / 2.0).unwrap_or(default_fs_pt).max(6.0);
-            let c = r.color.as_ref().map(|c| if c.starts_with('#') { c.clone() } else { format!("#{}", c) }).unwrap_or_else(|| "#000000".into());
-            FormattedChunk {
-                text: &r.text,
-                font_size_pt: fs,
-                color: c,
-                bold: r.bold,
-                italic: r.italic,
-                underline: r.underline.is_some(),
-            }
-        }).collect();
+        let chunks: Vec<FormattedChunk> = para
+            .runs
+            .iter()
+            .filter(|r| !r.text.is_empty())
+            .map(|r| {
+                let fs = r
+                    .font_size
+                    .map(|s| s as f32 / 2.0)
+                    .unwrap_or(default_fs_pt)
+                    .max(6.0);
+                let c = r
+                    .color
+                    .as_ref()
+                    .map(|c| {
+                        if c.starts_with('#') {
+                            c.clone()
+                        } else {
+                            format!("#{}", c)
+                        }
+                    })
+                    .unwrap_or_else(|| "#000000".into());
+                FormattedChunk {
+                    text: &r.text,
+                    font_size_pt: fs,
+                    color: c,
+                    bold: r.bold,
+                    italic: r.italic,
+                    underline: r.underline.is_some(),
+                }
+            })
+            .collect();
 
         if chunks.is_empty() {
             let empty_line = LaidOutLine {
@@ -293,7 +408,15 @@ impl LayoutEngine {
                 width: 0.0,
                 height: base_lh_px,
             };
-            return (vec![LaidOutParagraph { lines: vec![empty_line], y: start_y, height: base_lh_px, style_id: para.style_id.clone() }], base_lh_px);
+            return (
+                vec![LaidOutParagraph {
+                    lines: vec![empty_line],
+                    y: start_y,
+                    height: base_lh_px,
+                    style_id: para.style_id.clone(),
+                }],
+                base_lh_px,
+            );
         }
 
         let mut current_line_chars: Vec<LaidOutChar> = Vec::new();
@@ -306,13 +429,16 @@ impl LayoutEngine {
             let mut ci = 0;
 
             while ci < chars.len() {
-                if cursor_y > max_y { break; }
+                if cursor_y > max_y {
+                    break;
+                }
 
                 let ch = chars[ci];
 
                 if ch == '\n' {
                     // Force line break
-                    let line_w = cur_x - (indent_px + if line_num == 0 { first_indent_px } else { 0.0 });
+                    let line_w =
+                        cur_x - (indent_px + if line_num == 0 { first_indent_px } else { 0.0 });
                     if !current_line_chars.is_empty() {
                         lines.push(LaidOutLine {
                             chars: std::mem::take(&mut current_line_chars),
@@ -339,7 +465,8 @@ impl LayoutEngine {
                             chars: std::mem::take(&mut current_line_chars),
                             x: indent_px + if line_num == 0 { first_indent_px } else { 0.0 },
                             y: cursor_y,
-                            width: cur_x - (indent_px + if line_num == 0 { first_indent_px } else { 0.0 }),
+                            width: cur_x
+                                - (indent_px + if line_num == 0 { first_indent_px } else { 0.0 }),
                             height: base_lh_px,
                         });
                         cursor_y += base_lh_px;
@@ -353,15 +480,18 @@ impl LayoutEngine {
                 // For non-space: check if word exceeds line width
                 if ch != ' ' && cur_x + ch_w > max_width_px && !current_line_chars.is_empty() {
                     // Check if this char starts a new word (preceded by space)
-                    let starts_new_word = current_line_chars.last().map(|lc| lc.ch == ' ').unwrap_or(true);
-                    
+                    let starts_new_word = current_line_chars
+                        .last()
+                        .map(|lc| lc.ch == ' ')
+                        .unwrap_or(true);
+
                     if starts_new_word && current_line_chars.len() == 1 {
                         // Single space on line — add the word anyway (it's wider than the line)
                     } else if !starts_new_word {
                         // We're mid-word — wrap before this word
                         // Find where the word starts (after the last space)
                         let word_start = current_line_chars.iter().rposition(|lc| lc.ch == ' ');
-                        
+
                         if let Some(ws) = word_start {
                             // Split: first part (up to and including space) stays, rest goes to next line
                             let (keep, rest) = if ws + 1 < current_line_chars.len() {
@@ -374,10 +504,17 @@ impl LayoutEngine {
                             };
 
                             if !keep.is_empty() {
-                                let line_w: f32 = keep.iter().map(|lc| self.font_library.char_advance(lc.ch, lc.font_size_pt) * PT_TO_PX).sum();
+                                let line_w: f32 = keep
+                                    .iter()
+                                    .map(|lc| {
+                                        self.font_library.char_advance(lc.ch, lc.font_size_pt)
+                                            * PT_TO_PX
+                                    })
+                                    .sum();
                                 lines.push(LaidOutLine {
                                     chars: keep,
-                                    x: indent_px + if line_num == 0 { first_indent_px } else { 0.0 },
+                                    x: indent_px
+                                        + if line_num == 0 { first_indent_px } else { 0.0 },
                                     y: cursor_y,
                                     width: line_w,
                                     height: base_lh_px,
@@ -386,16 +523,30 @@ impl LayoutEngine {
                             cursor_y += base_lh_px;
                             line_num += 1;
                             current_line_chars = rest;
-                            cur_x = indent_px + current_line_chars.iter().map(|lc| self.font_library.char_advance(lc.ch, lc.font_size_pt) * PT_TO_PX).sum::<f32>();
+                            cur_x = indent_px
+                                + current_line_chars
+                                    .iter()
+                                    .map(|lc| {
+                                        self.font_library.char_advance(lc.ch, lc.font_size_pt)
+                                            * PT_TO_PX
+                                    })
+                                    .sum::<f32>();
                             // Don't advance ci — re-process this char in new line context
                             continue;
                         } else {
                             // No space in current line — line is full, start new one
                             if !current_line_chars.is_empty() {
-                                let line_w: f32 = current_line_chars.iter().map(|lc| self.font_library.char_advance(lc.ch, lc.font_size_pt) * PT_TO_PX).sum();
+                                let line_w: f32 = current_line_chars
+                                    .iter()
+                                    .map(|lc| {
+                                        self.font_library.char_advance(lc.ch, lc.font_size_pt)
+                                            * PT_TO_PX
+                                    })
+                                    .sum();
                                 lines.push(LaidOutLine {
                                     chars: std::mem::take(&mut current_line_chars),
-                                    x: indent_px + if line_num == 0 { first_indent_px } else { 0.0 },
+                                    x: indent_px
+                                        + if line_num == 0 { first_indent_px } else { 0.0 },
                                     y: cursor_y,
                                     width: line_w,
                                     height: base_lh_px,
@@ -425,12 +576,17 @@ impl LayoutEngine {
                 ci += 1;
             }
 
-            if cursor_y > max_y { break; }
+            if cursor_y > max_y {
+                break;
+            }
         }
 
         // Finalize last line
         if !current_line_chars.is_empty() {
-            let line_w: f32 = current_line_chars.iter().map(|lc| self.font_library.char_advance(lc.ch, lc.font_size_pt) * PT_TO_PX).sum();
+            let line_w: f32 = current_line_chars
+                .iter()
+                .map(|lc| self.font_library.char_advance(lc.ch, lc.font_size_pt) * PT_TO_PX)
+                .sum();
             lines.push(LaidOutLine {
                 chars: std::mem::take(&mut current_line_chars),
                 x: indent_px + if line_num == 0 { first_indent_px } else { 0.0 },
@@ -442,14 +598,29 @@ impl LayoutEngine {
         }
 
         let para_h = cursor_y - start_y;
-        (vec![LaidOutParagraph { lines, y: start_y, height: para_h.max(base_lh_px), style_id: para.style_id.clone() }], para_h.max(base_lh_px))
+        (
+            vec![LaidOutParagraph {
+                lines,
+                y: start_y,
+                height: para_h.max(base_lh_px),
+                style_id: para.style_id.clone(),
+            }],
+            para_h.max(base_lh_px),
+        )
     }
 
     /// Render a laid-out page onto a `wo_renderer::Canvas`.
     pub fn render_page_to_canvas(&self, page: &LaidOutPage, canvas: &mut Canvas) {
         // White background
-        canvas.set_fill(wo_renderer::color::Paint::Color(Color::new(1.0, 1.0, 1.0, 1.0)));
-        canvas.fill_rect(0.0, 0.0, page.layout.width_px as f32, page.layout.height_px as f32);
+        canvas.set_fill(wo_renderer::color::Paint::Color(Color::new(
+            1.0, 1.0, 1.0, 1.0,
+        )));
+        canvas.fill_rect(
+            0.0,
+            0.0,
+            page.layout.width_px as f32,
+            page.layout.height_px as f32,
+        );
 
         for para in &page.paragraphs {
             for line in &para.lines {
@@ -459,14 +630,7 @@ impl LayoutEngine {
                     let text = lc.ch.to_string();
                     let font_size_px = (lc.font_size_pt * PT_TO_PX) as f64;
                     let y_pos = (lc.y + lc.font_size_pt * PT_TO_PX * 0.8) as f64;
-                    canvas.draw_text(
-                        &text,
-                        lc.x as f64,
-                        y_pos,
-                        font_size_px,
-                        "sans-serif",
-                        color,
-                    );
+                    canvas.draw_text(&text, lc.x as f64, y_pos, font_size_px, "sans-serif", color);
                 }
             }
         }
@@ -475,11 +639,16 @@ impl LayoutEngine {
     // ── Helpers ──────────────────────────────────────────────────────
 
     fn page_dimensions_pt(&self, page_size: &str, orientation: &str) -> (f32, f32) {
-        let (w, h) = PAGE_SIZES_PT.iter()
+        let (w, h) = PAGE_SIZES_PT
+            .iter()
             .find(|(n, _, _)| n.eq_ignore_ascii_case(page_size))
             .map(|(_, w, h)| (*w, *h))
             .unwrap_or((595.0, 842.0));
-        if orientation == "landscape" { (h, w) } else { (w, h) }
+        if orientation == "landscape" {
+            (h, w)
+        } else {
+            (w, h)
+        }
     }
 }
 
@@ -491,12 +660,22 @@ fn parse_color_hex(hex: &str) -> Option<Color> {
         let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
         let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
         let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
-        Some(Color::new(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0))
+        Some(Color::new(
+            r as f32 / 255.0,
+            g as f32 / 255.0,
+            b as f32 / 255.0,
+            1.0,
+        ))
     } else if hex.len() == 3 {
         let r = u8::from_str_radix(&hex[0..1], 16).ok()? * 17;
         let g = u8::from_str_radix(&hex[1..2], 16).ok()? * 17;
         let b = u8::from_str_radix(&hex[2..3], 16).ok()? * 17;
-        Some(Color::new(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0, 1.0))
+        Some(Color::new(
+            r as f32 / 255.0,
+            g as f32 / 255.0,
+            b as f32 / 255.0,
+            1.0,
+        ))
     } else {
         None
     }
@@ -513,7 +692,10 @@ mod tests {
         let engine = LayoutEngine::new();
         assert_eq!(engine.page_dimensions_pt("A4", "portrait"), (595.0, 842.0));
         assert_eq!(engine.page_dimensions_pt("A4", "landscape"), (842.0, 595.0));
-        assert_eq!(engine.page_dimensions_pt("Letter", "portrait"), (612.0, 792.0));
+        assert_eq!(
+            engine.page_dimensions_pt("Letter", "portrait"),
+            (612.0, 792.0)
+        );
     }
 
     #[test]

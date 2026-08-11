@@ -96,12 +96,13 @@ pub async fn list_users(
                 .unwrap_or_default();
             if let Some(obj) = val.as_object_mut()
                 && let Some(meta) = obj.get_mut("meta")
-                    && let Some(m) = meta.as_object_mut() {
-                        m.insert(
-                            "location".into(),
-                            serde_json::Value::String(format!("/v2/Users/{}", id)),
-                        );
-                    }
+                && let Some(m) = meta.as_object_mut()
+            {
+                m.insert(
+                    "location".into(),
+                    serde_json::Value::String(format!("/v2/Users/{}", id)),
+                );
+            }
             val
         })
         .collect();
@@ -175,7 +176,9 @@ pub async fn create_user(
     })?;
 
     if let Some(mut user) = created {
-        if let Some(m) = user.meta.as_mut() { m.location = Some(format!("/v2/Users/{}", id)); }
+        if let Some(m) = user.meta.as_mut() {
+            m.location = Some(format!("/v2/Users/{}", id));
+        }
         let val = serde_json::to_value(user).unwrap_or_default();
         tracing::info!(user_id = %id, user_name = %payload["userName"], "user created");
         Ok((StatusCode::CREATED, Json(val)))
@@ -203,7 +206,9 @@ pub async fn get_user(
         )
     })? {
         Some(mut user) => {
-            if let Some(m) = user.meta.as_mut() { m.location = Some(format!("/v2/Users/{}", user_id)); }
+            if let Some(m) = user.meta.as_mut() {
+                m.location = Some(format!("/v2/Users/{}", user_id));
+            }
             let val = serde_json::to_value(user).unwrap_or_default();
             Ok(Json(val))
         }
@@ -271,7 +276,9 @@ pub async fn update_user(
             )
         })?;
 
-    if let Some(m) = result.meta.as_mut() { m.location = Some(format!("/v2/Users/{}", user_id)); }
+    if let Some(m) = result.meta.as_mut() {
+        m.location = Some(format!("/v2/Users/{}", user_id));
+    }
     let val = serde_json::to_value(result).unwrap_or_default();
     tracing::info!(user_id = %user_id, "user updated");
     Ok(Json(val))
@@ -323,7 +330,9 @@ pub async fn patch_user(
             )
         })?;
 
-    if let Some(m) = result.meta.as_mut() { m.location = Some(format!("/v2/Users/{}", user_id)); }
+    if let Some(m) = result.meta.as_mut() {
+        m.location = Some(format!("/v2/Users/{}", user_id));
+    }
     let val = serde_json::to_value(result).unwrap_or_default();
     tracing::info!(user_id = %user_id, "user patched");
     Ok(Json(val))
@@ -391,12 +400,13 @@ pub async fn list_groups(
                 .unwrap_or_default();
             if let Some(obj) = val.as_object_mut()
                 && let Some(meta) = obj.get_mut("meta")
-                    && let Some(m) = meta.as_object_mut() {
-                        m.insert(
-                            "location".into(),
-                            serde_json::Value::String(format!("/v2/Groups/{}", id)),
-                        );
-                    }
+                && let Some(m) = meta.as_object_mut()
+            {
+                m.insert(
+                    "location".into(),
+                    serde_json::Value::String(format!("/v2/Groups/{}", id)),
+                );
+            }
             val
         })
         .collect();
@@ -474,7 +484,9 @@ pub async fn create_group(
             )
         })?;
 
-    if let Some(m) = created.meta.as_mut() { m.location = Some(format!("/v2/Groups/{}", id)); }
+    if let Some(m) = created.meta.as_mut() {
+        m.location = Some(format!("/v2/Groups/{}", id));
+    }
     let val = serde_json::to_value(created).unwrap_or_default();
     tracing::info!(group_id = %id, display_name = %group.display_name, "group created");
     Ok((StatusCode::CREATED, Json(val)))
@@ -492,7 +504,9 @@ pub async fn get_group(
         )
     })? {
         Some(mut group) => {
-            if let Some(m) = group.meta.as_mut() { m.location = Some(format!("/v2/Groups/{}", group_id)); }
+            if let Some(m) = group.meta.as_mut() {
+                m.location = Some(format!("/v2/Groups/{}", group_id));
+            }
             let val = serde_json::to_value(group).unwrap_or_default();
             Ok(Json(val))
         }
@@ -560,7 +574,9 @@ pub async fn update_group(
             )
         })?;
 
-    if let Some(m) = result.meta.as_mut() { m.location = Some(format!("/v2/Groups/{}", group_id)); }
+    if let Some(m) = result.meta.as_mut() {
+        m.location = Some(format!("/v2/Groups/{}", group_id));
+    }
     let val = serde_json::to_value(result).unwrap_or_default();
     tracing::info!(group_id = %group_id, "group updated");
     Ok(Json(val))

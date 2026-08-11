@@ -435,8 +435,9 @@ impl EditableModel for Chart {
         match op {
             ModelOp::Insert { at, content } => {
                 // Serialize content as Series data from JSON
-                let parsed: Series = serde_json::from_str(content)
-                    .map_err(|e| ChartError::InvalidOperation(format!("invalid series JSON: {e}")))?;
+                let parsed: Series = serde_json::from_str(content).map_err(|e| {
+                    ChartError::InvalidOperation(format!("invalid series JSON: {e}"))
+                })?;
 
                 match at {
                     Path::Sheet { row, col: _, .. } => {
@@ -463,9 +464,10 @@ impl EditableModel for Chart {
                         let point_idx = *col as usize;
                         // If col > 0, delete a data point from the series
                         if point_idx > 0 {
-                            let series = self.series.get_mut(series_idx).ok_or(
-                                ChartError::SeriesIndexOutOfRange(series_idx),
-                            )?;
+                            let series = self
+                                .series
+                                .get_mut(series_idx)
+                                .ok_or(ChartError::SeriesIndexOutOfRange(series_idx))?;
                             let dp_idx = point_idx - 1; // convert 1-based col to 0-based
                             if dp_idx >= series.data.len() {
                                 return Err(ChartError::DataPointIndexOutOfRange(dp_idx));
@@ -496,9 +498,10 @@ impl EditableModel for Chart {
                         let point_idx = *point_idx as usize;
                         if point_idx > 0 {
                             // Replace a data point value (col=1 → index 0)
-                            let series = self.series.get_mut(series_idx).ok_or(
-                                ChartError::SeriesIndexOutOfRange(series_idx),
-                            )?;
+                            let series = self
+                                .series
+                                .get_mut(series_idx)
+                                .ok_or(ChartError::SeriesIndexOutOfRange(series_idx))?;
                             let dp_idx = point_idx - 1;
                             if dp_idx >= series.data.len() {
                                 return Err(ChartError::DataPointIndexOutOfRange(dp_idx));
@@ -514,12 +517,9 @@ impl EditableModel for Chart {
                             if series_idx >= self.series.len() {
                                 return Err(ChartError::SeriesIndexOutOfRange(series_idx));
                             }
-                            let parsed: Series =
-                                serde_json::from_str(content).map_err(|e| {
-                                    ChartError::InvalidOperation(format!(
-                                        "invalid series JSON: {e}"
-                                    ))
-                                })?;
+                            let parsed: Series = serde_json::from_str(content).map_err(|e| {
+                                ChartError::InvalidOperation(format!("invalid series JSON: {e}"))
+                            })?;
                             self.series[series_idx] = parsed;
                         }
                     }
@@ -536,9 +536,10 @@ impl EditableModel for Chart {
                 match &range.start {
                     Path::Sheet { row, col: _, .. } => {
                         let series_idx = *row as usize;
-                        let series = self.series.get_mut(series_idx).ok_or(
-                            ChartError::SeriesIndexOutOfRange(series_idx),
-                        )?;
+                        let series = self
+                            .series
+                            .get_mut(series_idx)
+                            .ok_or(ChartError::SeriesIndexOutOfRange(series_idx))?;
                         for (key, val) in attrs {
                             match key.as_str() {
                                 "color" => {
@@ -1000,11 +1001,8 @@ mod tests {
     fn model_insert_series() {
         let mut chart = Chart::new(ChartKind::Bar);
 
-        let series_json = serde_json::to_string(&Series::new(
-            "New Series",
-            vec![DataPoint::new(100.0)],
-        ))
-        .unwrap();
+        let series_json =
+            serde_json::to_string(&Series::new("New Series", vec![DataPoint::new(100.0)])).unwrap();
 
         let op = ModelOp::Insert {
             at: Path::Sheet {
@@ -1026,11 +1024,8 @@ mod tests {
         let mut chart = Chart::new(ChartKind::Bar);
         chart.add_series(Series::new("Existing", vec![DataPoint::new(1.0)]));
 
-        let series_json = serde_json::to_string(&Series::new(
-            "Inserted",
-            vec![DataPoint::new(2.0)],
-        ))
-        .unwrap();
+        let series_json =
+            serde_json::to_string(&Series::new("Inserted", vec![DataPoint::new(2.0)])).unwrap();
 
         // Insert at index 0 (before existing)
         let op = ModelOp::Insert {
@@ -1338,16 +1333,22 @@ mod tests {
         let inv = chart.invert(&op);
         match inv {
             ModelOp::Move { from, to } => {
-                assert_eq!(from, Path::Sheet {
-                    sheet: "Chart1".into(),
-                    row: 5,
-                    col: 0,
-                });
-                assert_eq!(to, Path::Sheet {
-                    sheet: "Chart1".into(),
-                    row: 2,
-                    col: 0,
-                });
+                assert_eq!(
+                    from,
+                    Path::Sheet {
+                        sheet: "Chart1".into(),
+                        row: 5,
+                        col: 0,
+                    }
+                );
+                assert_eq!(
+                    to,
+                    Path::Sheet {
+                        sheet: "Chart1".into(),
+                        row: 2,
+                        col: 0,
+                    }
+                );
             }
             _ => panic!("inverse of Move should be Move"),
         }
@@ -1367,8 +1368,8 @@ mod tests {
     #[test]
     fn model_to_ops_since_future_revision() {
         let mut chart = Chart::new(ChartKind::Bar);
-        let series_json = serde_json::to_string(&Series::new("S1", vec![DataPoint::new(1.0)]))
-            .unwrap();
+        let series_json =
+            serde_json::to_string(&Series::new("S1", vec![DataPoint::new(1.0)])).unwrap();
         chart
             .apply(&ModelOp::Insert {
                 at: Path::Sheet {
@@ -1499,7 +1500,11 @@ mod tests {
         let mut chart = Chart::new(ChartKind::Bar);
         chart.add_series(Series::new(
             "S1",
-            vec![DataPoint::new(10.0), DataPoint::new(20.0), DataPoint::new(30.0)],
+            vec![
+                DataPoint::new(10.0),
+                DataPoint::new(20.0),
+                DataPoint::new(30.0),
+            ],
         ));
 
         // Delete data point at series 0, point index 0 (col=1)

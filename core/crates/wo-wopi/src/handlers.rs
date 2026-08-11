@@ -286,7 +286,10 @@ pub async fn rename_file<S: StorageBackend>(
     let request: RenameRequest = serde_json::from_slice(&body)
         .map_err(|e| WopiError::InvalidRequest(format!("Invalid rename request: {}", e)))?;
 
-    state.storage.rename_file(&file_id, &request.new_name).await?;
+    state
+        .storage
+        .rename_file(&file_id, &request.new_name)
+        .await?;
     tracing::info!("Renamed file {} to {}", file_id, request.new_name);
 
     Ok(Json(serde_json::json!({
@@ -315,8 +318,9 @@ pub async fn put_relative_file<S: StorageBackend>(
         suggested_name: Option<String>,
     }
 
-    let request: PutRelativeRequest = serde_json::from_slice(&body)
-        .map_err(|e| WopiError::InvalidRequest(format!("Invalid put_relative_file request: {}", e)))?;
+    let request: PutRelativeRequest = serde_json::from_slice(&body).map_err(|e| {
+        WopiError::InvalidRequest(format!("Invalid put_relative_file request: {}", e))
+    })?;
 
     // Decode base64 contents
     use base64::Engine;
@@ -325,7 +329,9 @@ pub async fn put_relative_file<S: StorageBackend>(
         .map_err(|e| WopiError::InvalidRequest(format!("Invalid base64: {}", e)))?;
 
     // Generate a new file ID based on the suggested name
-    let new_name = request.suggested_name.unwrap_or_else(|| "copy.docx".to_string());
+    let new_name = request
+        .suggested_name
+        .unwrap_or_else(|| "copy.docx".to_string());
     let new_file_id = format!("{}-{}", file_id, chrono::Utc::now().timestamp());
 
     state.storage.write_file(&new_file_id, &content).await?;
