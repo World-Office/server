@@ -91,14 +91,25 @@ wo_worktree_merge() {
   (
     flock 9
     cd "$WO_REPO_DIR" || return 1
+    # Ensure main is on a clean working tree: failed merges can leave
+    # untracked artifacts (e.g. op.rs from a partially-applied merge) and
+    # modifications (conflict markers in shared lib.rs). Without cleaning,
+    # subsequent merges fail with "Your local changes would be overwritten".
+    # worktrees/ and orchestrator state/ are gitignored → safe from git clean.
     git checkout --quiet main 2>/dev/null || true
+    git reset --hard --quiet main
+    git clean --quiet -fd
     if git merge --ff-only "$branch" >/dev/null 2>&1; then
       return 0
     fi
     if git merge --no-ff -m "merge($id): agent task completed" "$branch" >/dev/null 2>&1; then
       return 0
     fi
+    # Clean up the failed merge's working tree artifacts so the next
+    # merge doesn't inherit them.
     git merge --abort 2>/dev/null || true
+    git reset --hard --quiet main
+    git clean --quiet -fd
     return 1
   ) 9>"$merge_lock"
 }
