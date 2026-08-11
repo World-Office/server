@@ -41,7 +41,7 @@
   "defaults": {
     "dispatch_timeout_s": 1800,
     "accept_timeout_s": 600,
-    "max_attempts": 2,
+    "max_attempts": 3,
     "retry_cooldown_s": 30
   }
 }

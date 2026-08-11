@@ -66,17 +66,19 @@ wo_worktree_delete_branch T1
 wo_assert_not "branch deleted"         git -C "$WO_REPO_DIR" rev-parse --verify --quiet agent/T1
 wo_group_end
 
-wo_group_begin; wo_test "re-create worktree on existing branch (retry path)"
-# Simulate a prior failed attempt leaving a branch
+wo_group_begin; wo_test "re-create worktree resets stale branch to base (retry path)"
+# Simulate a prior failed attempt leaving a branch based on old main
 git -C "$WO_REPO_DIR" worktree add -q -b agent/T2 "$WO_WORKTREE_ROOT/T2" main
-echo "v1" > "$WO_WORKTREE_ROOT/T2/a.rs"
+echo "v1" > "$WO_WORKTREE_ROOT/T2/stale.rs"
 git -C "$WO_WORKTREE_ROOT/T2" add -A && git -C "$WO_WORKTREE_ROOT/T2" commit -qm "attempt1"
 wo_worktree_remove T2
-# now branch exists but worktree doesn't — create should re-add on existing branch
+# now branch exists but worktree doesn't — create should RESET it to base so the
+# retry starts fresh from current main (stale state would re-conflict on merge)
 WT2="$(wo_worktree_create T2)"
 wo_assert "worktree re-created on existing branch" test -d "$WT2"
-wo_assert_eq "prior commit preserved" "v1" "$(cat "$WT2/a.rs")"
+wo_assert "stale commit discarded (fresh retry from base)" test ! -f "$WT2/stale.rs"
 wo_worktree_remove T2
+wo_worktree_delete_branch T2
 wo_group_end
 
 wo_test_summary

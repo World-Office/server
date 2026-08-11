@@ -50,7 +50,13 @@ wo_worktree_create() {
       return 1
     }
   else
-    # branch exists (retry) — re-add worktree on it
+    # branch exists (interrupted prior run) — reset to fresh base so the retry
+    # starts from current main, NOT stale state. A stale branch would re-conflict
+    # on merge because main has advanced since the branch was created.
+    (cd "$WO_REPO_DIR" && git branch -f "$branch" "$base" >/dev/null 2>&1) || {
+      wo_error "$id: git branch -f (reset stale branch) failed"
+      return 1
+    }
     (cd "$WO_REPO_DIR" && git worktree add "$wt" "$branch" >/dev/null 2>&1) || {
       wo_error "$id: git worktree add (existing branch) failed"
       return 1
