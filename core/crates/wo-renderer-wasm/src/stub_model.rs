@@ -196,7 +196,9 @@ impl EditableModel for StubModel {
             ModelOp::Insert { at, content } => {
                 let len = content.chars().count();
                 match at {
-                    Path::Text { para, run, char, .. } => ModelOp::Delete {
+                    Path::Text {
+                        para, run, char, ..
+                    } => ModelOp::Delete {
                         range: Range::new(
                             at.clone(),
                             Path::Text {
@@ -313,10 +315,7 @@ pub(crate) const PT_TO_PX: f32 = 96.0 / 72.0;
 /// Each paragraph becomes a single line (no word-wrap in the stub).
 /// Character positions are estimated using a proportional character-width
 /// heuristic (`font_size * 0.5`).
-pub fn layout_stub_model(
-    model: &StubModel,
-    opts: &StubLayoutOpts,
-) -> serde_json::Value {
+pub fn layout_stub_model(model: &StubModel, opts: &StubLayoutOpts) -> serde_json::Value {
     let margin_px = opts.margin_pt * PT_TO_PX;
     let line_height = opts.font_size * 1.2;
     let _content_width = (opts.width as f32) - 2.0 * margin_px;
@@ -383,12 +382,7 @@ pub fn layout_stub_model(
 
     // Emit at least one empty page if model has no content.
     if pages_json.is_empty() {
-        pages_json.push(build_page_json(
-            &[],
-            opts.width,
-            opts.height,
-            margin_px,
-        ));
+        pages_json.push(build_page_json(&[], opts.width, opts.height, margin_px));
     }
 
     serde_json::json!({ "pages": pages_json })
@@ -548,10 +542,7 @@ mod tests {
             content: "x".into(),
         });
         assert!(r.is_err());
-        assert_eq!(
-            r.unwrap_err(),
-            StubModelError::CharOutOfRange(99, 2)
-        );
+        assert_eq!(r.unwrap_err(), StubModelError::CharOutOfRange(99, 2));
     }
 
     #[test]
@@ -745,7 +736,10 @@ mod tests {
     #[test]
     fn stub_model_error_impl_display() {
         let e = StubModelError::CharOutOfRange(5, 3);
-        assert_eq!(format!("{e}"), "char 5 out of range (paragraph has 3 chars)");
+        assert_eq!(
+            format!("{e}"),
+            "char 5 out of range (paragraph has 3 chars)"
+        );
 
         let e = StubModelError::ParagraphOutOfRange(99);
         assert_eq!(format!("{e}"), "paragraph 99 out of range");

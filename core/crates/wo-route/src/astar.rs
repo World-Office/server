@@ -283,8 +283,7 @@ pub fn astar_manhattan(from: Point, to: Point, obstacles: &[Rect], grid_size: f3
 
     match astar_search(start, goal, &blocked, max_steps) {
         Some(cells) => {
-            let mut waypoints: Vec<Point> =
-                cells.iter().map(|&c| c.to_point(grid_size)).collect();
+            let mut waypoints: Vec<Point> = cells.iter().map(|&c| c.to_point(grid_size)).collect();
 
             // Simplify the grid path (all Manhattan segments) first,
             // then anchor endpoints to original coordinates.
@@ -580,7 +579,11 @@ mod tests {
         let to = Point::new(60.0, 40.0);
         let path = astar_manhattan(from, to, &[], 10.0);
         // With no obstacles, the path should be a simple L-shape (≤ 4 waypoints)
-        assert!(path.len() <= 4, "expected ≤ 4 waypoints, got {}", path.len());
+        assert!(
+            path.len() <= 4,
+            "expected ≤ 4 waypoints, got {}",
+            path.len()
+        );
     }
 
     #[test]
@@ -588,7 +591,11 @@ mod tests {
         let from = Point::new(0.0, 50.0);
         let to = Point::new(200.0, 50.0);
         let path = astar_manhattan(from, to, &[], 10.0);
-        assert!(path.len() <= 3, "horizontal should have ≤ 3 points, got {}", path.len());
+        assert!(
+            path.len() <= 3,
+            "horizontal should have ≤ 3 points, got {}",
+            path.len()
+        );
     }
 
     #[test]
@@ -596,7 +603,11 @@ mod tests {
         let from = Point::new(50.0, 0.0);
         let to = Point::new(50.0, 200.0);
         let path = astar_manhattan(from, to, &[], 10.0);
-        assert!(path.len() <= 3, "vertical should have ≤ 3 points, got {}", path.len());
+        assert!(
+            path.len() <= 3,
+            "vertical should have ≤ 3 points, got {}",
+            path.len()
+        );
     }
 
     #[test]
@@ -619,7 +630,7 @@ mod tests {
         // Two obstacles with a gap between them
         let obstacles = [
             rect(80.0, 0.0, 40.0, 40.0),  // top block
-            rect(80.0, 60.0, 40.0, 40.0),  // bottom block — gap at y 40–60
+            rect(80.0, 60.0, 40.0, 40.0), // bottom block — gap at y 40–60
         ];
         let from = Point::new(0.0, 50.0);
         let to = Point::new(200.0, 50.0);
@@ -671,8 +682,8 @@ mod tests {
     fn narrow_passage_between_obstacles() {
         // Two obstacles with a narrow vertical gap (1 cell wide)
         let obstacles = [
-            rect(90.0, 0.0, 20.0, 45.0),   // top block
-            rect(90.0, 55.0, 20.0, 45.0),   // bottom block
+            rect(90.0, 0.0, 20.0, 45.0),  // top block
+            rect(90.0, 55.0, 20.0, 45.0), // bottom block
         ];
         let from = Point::new(0.0, 50.0);
         let to = Point::new(200.0, 50.0);
@@ -710,9 +721,9 @@ mod tests {
         assert_eq!(*path.first().unwrap(), from);
         assert_eq!(*path.last().unwrap(), to);
         // The path should not pass through the obstacle center
-        let through_obstacle = path.iter().any(|p| {
-            p.x >= 40.0 && p.x <= 60.0 && p.y >= 40.0 && p.y <= 60.0
-        });
+        let through_obstacle = path
+            .iter()
+            .any(|p| p.x >= 40.0 && p.x <= 60.0 && p.y >= 40.0 && p.y <= 60.0);
         assert!(!through_obstacle, "path should not cross obstacle interior");
     }
 }

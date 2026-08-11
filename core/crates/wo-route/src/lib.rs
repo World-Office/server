@@ -59,13 +59,11 @@ impl Router {
                 astar::astar_manhattan(from, to, &self.obstacles, self.grid_size)
             }
             RouteMode::Bezier => {
-                let waypoints =
-                    astar::astar_manhattan(from, to, &self.obstacles, self.grid_size);
+                let waypoints = astar::astar_manhattan(from, to, &self.obstacles, self.grid_size);
                 if waypoints.len() < 2 {
                     waypoints
                 } else {
-                    let segs =
-                        bezier::smooth_bezier(&waypoints, bezier::DEFAULT_SMOOTHNESS);
+                    let segs = bezier::smooth_bezier(&waypoints, bezier::DEFAULT_SMOOTHNESS);
                     bezier::flatten_bezier(&segs, 2.0)
                 }
             }

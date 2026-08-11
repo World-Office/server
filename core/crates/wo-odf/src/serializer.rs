@@ -574,7 +574,13 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
                             pad, v
                         )
                         .unwrap();
-                        writeln!(xml, "{}      <text:p>{}</text:p>", pad, escape_xml(&format!("{}", v))).unwrap();
+                        writeln!(
+                            xml,
+                            "{}      <text:p>{}</text:p>",
+                            pad,
+                            escape_xml(&format!("{}", v))
+                        )
+                        .unwrap();
                         writeln!(xml, "{}    </table:table-cell>", pad).unwrap();
                     } else {
                         writeln!(xml, "{}    <table:table-cell table:style-name=\"ce1\" office:value-type=\"float\" office:value=\"0\">", pad).unwrap();
@@ -583,7 +589,11 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
                     }
                 }
                 CellType::Boolean => {
-                    let val = if cell.value.unwrap_or(0.0) != 0.0 { "true" } else { "false" };
+                    let val = if cell.value.unwrap_or(0.0) != 0.0 {
+                        "true"
+                    } else {
+                        "false"
+                    };
                     writeln!(
                         xml,
                         "{}    <table:table-cell office:value-type=\"boolean\" office:boolean-value=\"{}\">",
@@ -600,7 +610,13 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
                         pad, escape_xml(&cell.text)
                     )
                     .unwrap();
-                    writeln!(xml, "{}      <text:p>{}</text:p>", pad, escape_xml(&cell.text)).unwrap();
+                    writeln!(
+                        xml,
+                        "{}      <text:p>{}</text:p>",
+                        pad,
+                        escape_xml(&cell.text)
+                    )
+                    .unwrap();
                     writeln!(xml, "{}    </table:table-cell>", pad).unwrap();
                 }
                 CellType::String => {
@@ -619,7 +635,13 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
                         )
                         .unwrap();
                     }
-                    writeln!(xml, "{}      <text:p>{}</text:p>", pad, escape_xml(&cell.text)).unwrap();
+                    writeln!(
+                        xml,
+                        "{}      <text:p>{}</text:p>",
+                        pad,
+                        escape_xml(&cell.text)
+                    )
+                    .unwrap();
                     writeln!(xml, "{}    </table:table-cell>", pad).unwrap();
                 }
             }

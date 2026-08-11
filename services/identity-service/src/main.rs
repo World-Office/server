@@ -288,10 +288,11 @@ fn load_sso_config() -> SsoConfig {
     }
 
     if let Ok(oidc_json) = std::env::var("OIDC_PROVIDERS")
-        && let Ok(providers) = serde_json::from_str::<Vec<OidcProvider>>(&oidc_json) {
-            sso.oidc_providers = providers;
-            tracing::info!("OIDC providers loaded from environment variables");
-        }
+        && let Ok(providers) = serde_json::from_str::<Vec<OidcProvider>>(&oidc_json)
+    {
+        sso.oidc_providers = providers;
+        tracing::info!("OIDC providers loaded from environment variables");
+    }
 
     if let Ok(url) = std::env::var("LDAP_URL") {
         sso.ldap = Some(LdapConfig {

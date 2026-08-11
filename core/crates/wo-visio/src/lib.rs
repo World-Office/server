@@ -274,7 +274,9 @@ mod tests {
         let parser = VisioParser::new();
         let parsed = parser.parse(&bytes).expect("parsing");
 
-        let parsed_geom = parsed.pages[0].shapes[0].geometry.as_ref()
+        let parsed_geom = parsed.pages[0].shapes[0]
+            .geometry
+            .as_ref()
             .expect("geometry should survive roundtrip");
         let original_segs = &doc.pages[0].shapes[0].geometry.as_ref().unwrap().segments;
 
@@ -290,19 +292,55 @@ mod tests {
         assert!(matches!(parsed_geom.segments[0], GeoSegment::MoveTo { .. }));
         assert!(matches!(parsed_geom.segments[1], GeoSegment::LineTo { .. }));
         assert!(matches!(parsed_geom.segments[5], GeoSegment::ArcTo { .. }));
-        assert!(matches!(parsed_geom.segments[6], GeoSegment::EllipticalArcTo { .. }));
-        assert!(matches!(parsed_geom.segments[7], GeoSegment::BezierTo { .. }));
-        assert!(matches!(parsed_geom.segments[8], GeoSegment::NURBSTo { .. }));
-        assert!(matches!(parsed_geom.segments[9], GeoSegment::PolylineTo { .. }));
-        assert!(matches!(parsed_geom.segments[10], GeoSegment::SplineStart { .. }));
-        assert!(matches!(parsed_geom.segments[11], GeoSegment::InfiniteLine { .. }));
-        assert!(matches!(parsed_geom.segments[12], GeoSegment::Ellipse { .. }));
+        assert!(matches!(
+            parsed_geom.segments[6],
+            GeoSegment::EllipticalArcTo { .. }
+        ));
+        assert!(matches!(
+            parsed_geom.segments[7],
+            GeoSegment::BezierTo { .. }
+        ));
+        assert!(matches!(
+            parsed_geom.segments[8],
+            GeoSegment::NURBSTo { .. }
+        ));
+        assert!(matches!(
+            parsed_geom.segments[9],
+            GeoSegment::PolylineTo { .. }
+        ));
+        assert!(matches!(
+            parsed_geom.segments[10],
+            GeoSegment::SplineStart { .. }
+        ));
+        assert!(matches!(
+            parsed_geom.segments[11],
+            GeoSegment::InfiniteLine { .. }
+        ));
+        assert!(matches!(
+            parsed_geom.segments[12],
+            GeoSegment::Ellipse { .. }
+        ));
         // Rectangle expanded to 5 segments: MoveTo + 4x LineTo
-        assert!(matches!(parsed_geom.segments[13], GeoSegment::MoveTo { .. }));
-        assert!(matches!(parsed_geom.segments[14], GeoSegment::LineTo { .. }));
-        assert!(matches!(parsed_geom.segments[15], GeoSegment::LineTo { .. }));
-        assert!(matches!(parsed_geom.segments[16], GeoSegment::LineTo { .. }));
-        assert!(matches!(parsed_geom.segments[17], GeoSegment::LineTo { .. }));
+        assert!(matches!(
+            parsed_geom.segments[13],
+            GeoSegment::MoveTo { .. }
+        ));
+        assert!(matches!(
+            parsed_geom.segments[14],
+            GeoSegment::LineTo { .. }
+        ));
+        assert!(matches!(
+            parsed_geom.segments[15],
+            GeoSegment::LineTo { .. }
+        ));
+        assert!(matches!(
+            parsed_geom.segments[16],
+            GeoSegment::LineTo { .. }
+        ));
+        assert!(matches!(
+            parsed_geom.segments[17],
+            GeoSegment::LineTo { .. }
+        ));
     }
 
     #[test]
@@ -362,8 +400,14 @@ mod tests {
 
         assert_eq!(parsed.pages[0].connectors.len(), 1);
         assert_eq!(parsed.pages[0].connectors[0].id, "c1");
-        assert_eq!(parsed.pages[0].connectors[0].name.as_deref(), Some("Connector"));
-        assert_eq!(parsed.pages[0].connectors[0].from_shape_id.as_deref(), Some("1"));
+        assert_eq!(
+            parsed.pages[0].connectors[0].name.as_deref(),
+            Some("Connector")
+        );
+        assert_eq!(
+            parsed.pages[0].connectors[0].from_shape_id.as_deref(),
+            Some("1")
+        );
         assert_eq!(parsed.pages[0].connectors[0].text.as_deref(), Some("edge"));
     }
 
@@ -423,7 +467,10 @@ mod tests {
 
         let shape = &parsed.pages[0].shapes[0];
         assert_eq!(shape.text.as_deref(), Some("Styled Text"));
-        assert!((shape.rotation - 45.0).abs() < 0.001, "rotation should be ~45 deg");
+        assert!(
+            (shape.rotation - 45.0).abs() < 0.001,
+            "rotation should be ~45 deg"
+        );
         assert_eq!(shape.fill_color.as_deref(), Some("#FF0000"));
         assert_eq!(shape.stroke_color.as_deref(), Some("#00FF00"));
         assert_eq!(shape.layer_member.as_deref(), Some("0"));
@@ -543,9 +590,7 @@ mod tests {
             parsed.pages[0].shapes[0].sub_shapes[1].name.as_deref(),
             Some("Child2")
         );
-        assert!(
-            (parsed.pages[0].shapes[0].sub_shapes[1].rotation - 90.0).abs() < 0.001
-        );
+        assert!((parsed.pages[0].shapes[0].sub_shapes[1].rotation - 90.0).abs() < 0.001);
     }
 
     #[test]
@@ -708,9 +753,8 @@ mod tests {
         // should parse successfully but produce an empty document
         let parser = VisioParser::new();
         let result = parser.parse(&[
-            0x50, 0x4B, 0x05, 0x06, 0x00, 0x00, 0x00, 0x00,
+            0x50, 0x4B, 0x05, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         ]);
         match result {
             Ok(doc) => {
@@ -744,7 +788,7 @@ mod tests {
                     name: Some("Offset".to_string()),
                     unique_id: None,
                     master_id: None,
-                    x: 2.5,  // upper-left corner
+                    x: 2.5, // upper-left corner
                     y: 1.5,
                     width: 3.0,
                     height: 2.0,
@@ -777,8 +821,16 @@ mod tests {
 
         let shape = &parsed.pages[0].shapes[0];
         // Position should survive roundtrip
-        assert!((shape.x - 2.5).abs() < 0.01, "x should be ~2.5, got {}", shape.x);
-        assert!((shape.y - 1.5).abs() < 0.01, "y should be ~1.5, got {}", shape.y);
+        assert!(
+            (shape.x - 2.5).abs() < 0.01,
+            "x should be ~2.5, got {}",
+            shape.x
+        );
+        assert!(
+            (shape.y - 1.5).abs() < 0.01,
+            "y should be ~1.5, got {}",
+            shape.y
+        );
         assert!((shape.width - 3.0).abs() < 0.01);
         assert!((shape.height - 2.0).abs() < 0.01);
     }

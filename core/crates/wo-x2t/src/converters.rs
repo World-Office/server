@@ -6530,11 +6530,10 @@ impl FormatConverter for OdsToWoSpreadsheetConverter {
                                 let v = match cell.cell_type {
                                     CellType::Number
                                     | CellType::Percentage
-                                    | CellType::Currency => {
-                                        cell.value
-                                            .map(|n| format!("{}", n))
-                                            .unwrap_or_else(|| cell.text.clone())
-                                    }
+                                    | CellType::Currency => cell
+                                        .value
+                                        .map(|n| format!("{}", n))
+                                        .unwrap_or_else(|| cell.text.clone()),
                                     CellType::Boolean => {
                                         // ODS booleans: value is 1.0/0.0, text might be "TRUE"/"FALSE"
                                         if cell.value.unwrap_or(0.0) != 0.0 {
@@ -8155,7 +8154,10 @@ mod tests {
         let result = converter.convert(&[]);
         assert!(result.is_err(), "Empty file should fail");
         let err = result.unwrap_err();
-        assert!(err.to_string().contains("Empty file"), "Error should mention empty file");
+        assert!(
+            err.to_string().contains("Empty file"),
+            "Error should mention empty file"
+        );
     }
 
     #[test]
@@ -15303,7 +15305,11 @@ mod tests {
         let ods_bytes = build_minimal_ods();
         let converter = OdsToWoSpreadsheetConverter;
         let result = converter.convert(&ods_bytes);
-        assert!(result.is_ok(), "ODS conversion should succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "ODS conversion should succeed: {:?}",
+            result.err()
+        );
         let json = String::from_utf8(result.unwrap()).unwrap();
         assert!(json.contains("sheets"));
         assert!(json.contains("Sheet1"));
@@ -15366,7 +15372,11 @@ mod tests {
         let json = serde_json::to_vec(&wo).unwrap();
         let converter = WoSpreadsheetToOdsConverter;
         let result = converter.convert(&json);
-        assert!(result.is_ok(), "WoSpreadsheet → ODS should succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "WoSpreadsheet → ODS should succeed: {:?}",
+            result.err()
+        );
         let ods_bytes = result.unwrap();
         // Verify it's a valid ZIP (ODS files are ZIP archives)
         let cursor = std::io::Cursor::new(ods_bytes);
@@ -15374,7 +15384,10 @@ mod tests {
         assert!(archive.is_ok(), "ODS output should be a valid ZIP");
         let mut archive = archive.unwrap();
         // Verify mimetype entry exists
-        assert!(archive.by_name("mimetype").is_ok(), "ODS should have mimetype entry");
+        assert!(
+            archive.by_name("mimetype").is_ok(),
+            "ODS should have mimetype entry"
+        );
     }
 
     #[test]

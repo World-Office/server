@@ -1490,7 +1490,8 @@ mod tests {
             let mut zip = zip::ZipWriter::new(&mut buf);
             let options = zip::write::SimpleFileOptions::default();
             zip.start_file("mimetype", options).unwrap();
-            zip.write_all(b"application/vnd.oasis.opendocument.text").unwrap();
+            zip.write_all(b"application/vnd.oasis.opendocument.text")
+                .unwrap();
             zip.finish().unwrap();
         }
         let parser = OdfParser::new();
@@ -1510,7 +1511,8 @@ mod tests {
             let mut zip = zip::ZipWriter::new(&mut buf);
             let options = zip::write::SimpleFileOptions::default();
             zip.start_file("mimetype", options).unwrap();
-            zip.write_all(b"application/vnd.oasis.opendocument.text").unwrap();
+            zip.write_all(b"application/vnd.oasis.opendocument.text")
+                .unwrap();
             zip.start_file("content.xml", options).unwrap();
             zip.finish().unwrap();
         }
@@ -1531,7 +1533,8 @@ mod tests {
             let mut zip = zip::ZipWriter::new(&mut buf);
             let options = zip::write::SimpleFileOptions::default();
             zip.start_file("mimetype", options).unwrap();
-            zip.write_all(b"application/vnd.oasis.opendocument.text").unwrap();
+            zip.write_all(b"application/vnd.oasis.opendocument.text")
+                .unwrap();
             zip.start_file("content.xml", options).unwrap();
             zip.write_all(b"<?xml version=\"1.0\"?><office:document-content xmlns:office=\"urn:oasis:names:tc:opendocument:xmlns:office:1.0\"><office:body><office:text></office:text></office:body></office:document-content>").unwrap();
             zip.finish().unwrap();
@@ -1553,7 +1556,8 @@ mod tests {
             let mut zip = zip::ZipWriter::new(&mut buf);
             let options = zip::write::SimpleFileOptions::default();
             zip.start_file("mimetype", options).unwrap();
-            zip.write_all(b"application/vnd.oasis.opendocument.text").unwrap();
+            zip.write_all(b"application/vnd.oasis.opendocument.text")
+                .unwrap();
             zip.start_file("content.xml", options).unwrap();
             zip.write_all(b"<not valid xml <<<").unwrap();
             zip.finish().unwrap();

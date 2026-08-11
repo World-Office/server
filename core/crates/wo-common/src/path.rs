@@ -40,11 +40,7 @@ pub enum Path {
         char: usize,
     },
     /// Address within a spreadsheet: sheet name (for named sheets), row and column.
-    Sheet {
-        sheet: String,
-        row: u32,
-        col: u32,
-    },
+    Sheet { sheet: String, row: u32, col: u32 },
 }
 
 /// A half-open range [start, end) over two [`Path`] addresses.

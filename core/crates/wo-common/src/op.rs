@@ -161,10 +161,7 @@ mod tests {
     }
 
     fn text_range(para: usize, start_char: usize, end_char: usize) -> Range {
-        Range::new(
-            text_path(para, 0, start_char),
-            text_path(para, 0, end_char),
-        )
+        Range::new(text_path(para, 0, start_char), text_path(para, 0, end_char))
     }
 
     // =========================================================================
@@ -469,10 +466,7 @@ mod tests {
                             return Err(MockError::OutOfRange);
                         }
                         let chars: Vec<char> = self.content.chars().collect();
-                        self.content = chars[..*start]
-                            .iter()
-                            .chain(chars[*end..].iter())
-                            .collect();
+                        self.content = chars[..*start].iter().chain(chars[*end..].iter()).collect();
                     }
                 }
                 ModelOp::Replace { at, content } => {
