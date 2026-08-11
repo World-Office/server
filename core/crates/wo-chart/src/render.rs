@@ -37,7 +37,10 @@ pub fn render(chart: &Chart, canvas: &mut Canvas, rect: Rect) -> Result<(), Char
         ChartKind::Column => render_column_chart(chart, canvas, inner_rect),
         ChartKind::Line => render_line_chart(chart, canvas, inner_rect),
         ChartKind::Pie => render_pie_chart(chart, canvas, inner_rect),
-        _ => Ok(()),
+        ChartKind::Scatter => render_scatter_chart(chart, canvas, inner_rect),
+        ChartKind::Area => render_area_chart(chart, canvas, inner_rect),
+        ChartKind::Radar => render_radar_chart(chart, canvas, inner_rect),
+        ChartKind::Doughnut => render_doughnut_chart(chart, canvas, inner_rect),
     }?;
     render_data_labels(chart, canvas, inner_rect)?;
     render_legend(chart, canvas, rect)?;
@@ -262,6 +265,185 @@ fn render_pie_chart(chart: &Chart, canvas: &mut Canvas, rect: Rect) -> Result<()
     Ok(())
 }
 
+fn render_scatter_chart(chart: &Chart, canvas: &mut Canvas, rect: Rect) -> Result<(), ChartError> {
+    if chart.series.is_empty() { return Ok(()); }
+    let x = rect.x; let y = rect.y; let width = rect.width; let height = rect.height;
+    let num_points = chart.series[0].data.len().max(1);
+    let max_value = chart.series.iter().filter(|s| s.visible).flat_map(|s| s.data.iter()).map(|p| p.value as f32).fold(0.0f32, f32::max);
+    if max_value <= 0.0 { return Ok(()); }
+    let point_spacing = width * 0.95 / (num_points as f32 - 1.0).max(1.0);
+    let y_scale = height * 0.95 / max_value.max(1.0);
+    for (series_idx, series) in chart.series.iter().enumerate() {
+        if !series.visible { continue; }
+        let marker_color = series.color.as_ref().and_then(|c| parse_hex_color(c)).unwrap_or_else(|| default_series_color(series_idx));
+        let white_style = StrokeStyle { line_width: 2.0, ..Default::default() };
+        for (point_idx, point) in series.data.iter().enumerate() {
+            let px = x + 10.0 + (point_idx as f32) * point_spacing;
+            let py = y + height - (point.value as f32 * y_scale) - 10.0;
+            let radius = 6.0;
+            canvas.set_fill(wo_renderer::color::Paint::Color(marker_color));
+            canvas.begin_path(); canvas.circle(px, py, radius); canvas.fill();
+            canvas.set_stroke(wo_renderer::color::Paint::Color(Color::WHITE));
+            canvas.set_stroke_style(white_style.clone());
+            canvas.begin_path(); canvas.circle(px, py, radius); canvas.stroke();
+        }
+    }
+    Ok(())
+}
+
+fn render_area_chart(chart: &Chart, canvas: &mut Canvas, rect: Rect) -> Result<(), ChartError> {
+    if chart.series.is_empty() { return Ok(()); }
+    let x = rect.x; let y = rect.y; let width = rect.width; let height = rect.height;
+    let num_points = chart.series[0].data.len().max(1);
+    let max_value = find_max_value(chart);
+    if max_value <= 0.0 { return Ok(()); }
+    let point_spacing = width * 0.95 / (num_points as f32 - 1.0).max(1.0);
+    let scale = height * 0.95 / max_value;
+    for (series_idx, series) in chart.series.iter().enumerate() {
+        if !series.visible { continue; }
+        let fill_color = series.color.as_ref().and_then(|c| parse_hex_color(c)).unwrap_or_else(|| default_series_color(series_idx));
+        let alpha_color = Color::new(fill_color.r, fill_color.g, fill_color.b, 0.6);
+        let line_color = series.color.as_ref().and_then(|c| parse_hex_color(c)).unwrap_or_else(|| default_series_color(series_idx));
+        let line_style = StrokeStyle { line_width: 2.0, ..Default::default() };
+        if series.data.len() >= 2 {
+            canvas.set_fill(wo_renderer::color::Paint::Color(alpha_color));
+            canvas.begin_path();
+            let first_x = x + 10.0;
+            let first_y = y + height - (series.data[0].value as f32 * scale) - 10.0;
+            canvas.move_to(first_x, first_y);
+            for (point_idx, point) in series.data.iter().enumerate() {
+                let px = x + 10.0 + (point_idx as f32) * point_spacing;
+                let py = y + height - (point.value as f32 * scale) - 10.0;
+                canvas.line_to(px, py);
+            }
+            for (point_idx, _) in series.data.iter().enumerate().rev() {
+                let px = x + 10.0 + (point_idx as f32) * point_spacing;
+                let bottom_y = y + height - 10.0;
+                canvas.line_to(px, bottom_y);
+            }
+            canvas.close_path();
+            canvas.fill();
+            canvas.set_stroke(wo_renderer::color::Paint::Color(line_color));
+            canvas.set_stroke_style(line_style.clone());
+            canvas.begin_path();
+            let mut first_point = true;
+            for (point_idx, point) in series.data.iter().enumerate() {
+                let px = x + 10.0 + (point_idx as f32) * point_spacing;
+                let py = y + height - (point.value as f32 * scale) - 10.0;
+                if first_point { canvas.move_to(px, py); first_point = false; } else { canvas.line_to(px, py); }
+            }
+            canvas.stroke();
+        }
+    }
+    Ok(())
+}
+
+fn render_radar_chart(chart: &Chart, canvas: &mut Canvas, rect: Rect) -> Result<(), ChartError> {
+    if chart.series.is_empty() { return Ok(()); }
+    let center_x = rect.x + rect.width / 2.0;
+    let center_y = rect.y + rect.height / 2.0;
+    let radius = (rect.width.min(rect.height) / 2.0) * 0.85;
+    let max_value = find_max_value(chart);
+    if max_value <= 0.0 { return Ok(()); }
+    let scale = radius / max_value;
+    let white_style = StrokeStyle { line_width: 1.0, ..Default::default() };
+    let line_style = StrokeStyle { line_width: 2.0, ..Default::default() };
+    let num_points = chart.series[0].data.len().max(1);
+    let point_angle_step = 2.0 * std::f32::consts::PI / (num_points as f32);
+    for (series_idx, series) in chart.series.iter().enumerate() {
+        if !series.visible { continue; }
+        let series_color = series.color.as_ref().and_then(|c| parse_hex_color(c)).unwrap_or_else(|| default_series_color(series_idx));
+        let alpha_color = Color::new(series_color.r, series_color.g, series_color.b, 0.4);
+        canvas.set_fill(wo_renderer::color::Paint::Color(alpha_color));
+        canvas.begin_path();
+        for (point_idx, point) in series.data.iter().enumerate() {
+            let angle = (point_idx as f32) * point_angle_step - std::f32::consts::PI / 2.0;
+            let value_radius = (point.value as f32 * scale).clamp(0.0, radius);
+            let px = center_x + angle.cos() * value_radius;
+            let py = center_y + angle.sin() * value_radius;
+            if point_idx == 0 { canvas.move_to(px, py); } else { canvas.line_to(px, py); }
+        }
+        canvas.close_path();
+        canvas.fill();
+        canvas.set_stroke(wo_renderer::color::Paint::Color(series_color));
+        canvas.set_stroke_style(line_style.clone());
+        canvas.begin_path();
+        for (point_idx, point) in series.data.iter().enumerate() {
+            let angle = (point_idx as f32) * point_angle_step - std::f32::consts::PI / 2.0;
+            let value_radius = (point.value as f32 * scale).clamp(0.0, radius);
+            let px = center_x + angle.cos() * value_radius;
+            let py = center_y + angle.sin() * value_radius;
+            if point_idx == 0 { canvas.move_to(px, py); } else { canvas.line_to(px, py); }
+        }
+        canvas.close_path();
+        canvas.stroke();
+        let marker_radius = 4.0;
+        for (point_idx, point) in series.data.iter().enumerate() {
+            let angle = (point_idx as f32) * point_angle_step - std::f32::consts::PI / 2.0;
+            let value_radius = (point.value as f32 * scale).clamp(0.0, radius);
+            let px = center_x + angle.cos() * value_radius;
+            let py = center_y + angle.sin() * value_radius;
+            canvas.set_fill(wo_renderer::color::Paint::Color(series_color));
+            canvas.begin_path(); canvas.circle(px, py, marker_radius); canvas.fill();
+            canvas.set_stroke(wo_renderer::color::Paint::Color(Color::WHITE));
+            canvas.set_stroke_style(white_style.clone());
+            canvas.begin_path(); canvas.circle(px, py, marker_radius); canvas.stroke();
+        }
+    }
+    Ok(())
+}
+
+fn render_doughnut_chart(chart: &Chart, canvas: &mut Canvas, rect: Rect) -> Result<(), ChartError> {
+    if chart.series.is_empty() { return Ok(()); }
+    let center_x = rect.x + rect.width / 2.0;
+    let center_y = rect.y + rect.height / 2.0;
+    let outer_radius = (rect.width.min(rect.height) / 2.0) * 0.9;
+    let inner_radius = outer_radius * 0.5;
+    let data_points = &chart.series[0].data;
+    if data_points.is_empty() { return Ok(()); }
+    let total: f32 = data_points.iter().map(|p| p.value as f32).sum();
+    if total <= 0.0 { return Ok(()); }
+    let mut current_angle = -std::f32::consts::PI / 2.0;
+    let white_style = StrokeStyle { line_width: 1.0, ..Default::default() };
+    for (point_idx, point) in data_points.iter().enumerate() {
+        let point_value = point.value as f32;
+        let slice_angle = (point_value / total) * 2.0 * std::f32::consts::PI;
+        let series_idx = 0;
+        let slice_color = chart.series[series_idx].color.as_ref().and_then(|c| parse_hex_color(c)).unwrap_or_else(|| default_series_color(point_idx));
+        let end_angle = current_angle + slice_angle;
+        canvas.set_fill(wo_renderer::color::Paint::Color(slice_color));
+        canvas.begin_path();
+        canvas.move_to(center_x + (current_angle.cos() * outer_radius), center_y + (current_angle.sin() * outer_radius));
+        let num_segments = 32;
+        for i in 1..=num_segments {
+            let angle = current_angle + (i as f32) * slice_angle / (num_segments as f32);
+            canvas.line_to(center_x + (angle.cos() * outer_radius), center_y + (angle.sin() * outer_radius));
+        }
+        for i in (0..=num_segments).rev() {
+            let angle = current_angle + (i as f32) * slice_angle / (num_segments as f32);
+            canvas.line_to(center_x + (angle.cos() * inner_radius), center_y + (angle.sin() * inner_radius));
+        }
+        canvas.close_path();
+        canvas.fill();
+        canvas.set_stroke(wo_renderer::color::Paint::Color(Color::WHITE));
+        canvas.set_stroke_style(white_style.clone());
+        canvas.begin_path();
+        canvas.move_to(center_x + (current_angle.cos() * outer_radius), center_y + (current_angle.sin() * outer_radius));
+        for i in 1..=num_segments {
+            let angle = current_angle + (i as f32) * slice_angle / (num_segments as f32);
+            canvas.line_to(center_x + (angle.cos() * outer_radius), center_y + (angle.sin() * outer_radius));
+        }
+        for i in (0..=num_segments).rev() {
+            let angle = current_angle + (i as f32) * slice_angle / (num_segments as f32);
+            canvas.line_to(center_x + (angle.cos() * inner_radius), center_y + (angle.sin() * inner_radius));
+        }
+        canvas.close_path();
+        canvas.stroke();
+        current_angle = end_angle;
+    }
+    Ok(())
+}
+
 fn render_data_labels(chart: &Chart, _canvas: &mut Canvas, _rect: Rect) -> Result<(), ChartError> {
     if let Some(labels) = &chart.data_labels { if labels.visible { } } Ok(())
 }
@@ -379,6 +561,113 @@ mod tests {
             visible_series.visible = true; chart.add_series(visible_series);
             let mut hidden_series = Series::new("Hidden", vec![DataPoint::new(5.0), DataPoint::new(15.0)]);
             hidden_series.visible = false; chart.add_series(hidden_series);
+            let mut canvas = Canvas::new(800, 600);
+            let rect = Rect::new(50.0, 50.0, 700.0, 500.0);
+            assert!(render(&chart, &mut canvas, rect).is_ok());
+        }
+    }
+
+    mod render_scatter_area_radar {
+        use super::*;
+
+        #[test] fn render_scatter_chart_basic() {
+            let mut chart = Chart::new(ChartKind::Scatter);
+            chart.add_series(Series::new("Test", vec![
+                DataPoint::new(10.0),
+                DataPoint::new(20.0),
+                DataPoint::new(15.0),
+                DataPoint::new(25.0),
+                DataPoint::new(5.0),
+            ]));
+            let mut canvas = Canvas::new(800, 600);
+            let rect = Rect::new(50.0, 50.0, 700.0, 500.0);
+            assert!(render(&chart, &mut canvas, rect).is_ok());
+        }
+
+        #[test] fn render_area_chart_basic() {
+            let mut chart = Chart::new(ChartKind::Area);
+            chart.add_series(Series::new("Test", vec![
+                DataPoint::new(10.0),
+                DataPoint::new(20.0),
+                DataPoint::new(15.0),
+                DataPoint::new(25.0),
+            ]));
+            let mut canvas = Canvas::new(800, 600);
+            let rect = Rect::new(50.0, 50.0, 700.0, 500.0);
+            assert!(render(&chart, &mut canvas, rect).is_ok());
+        }
+
+        #[test] fn render_radar_chart_basic() {
+            let mut chart = Chart::new(ChartKind::Radar);
+            chart.add_series(Series::new("Test", vec![
+                DataPoint::new(80.0),
+                DataPoint::new(90.0),
+                DataPoint::new(70.0),
+                DataPoint::new(85.0),
+                DataPoint::new(88.0),
+            ]));
+            let mut canvas = Canvas::new(800, 600);
+            let rect = Rect::new(50.0, 50.0, 700.0, 500.0);
+            assert!(render(&chart, &mut canvas, rect).is_ok());
+        }
+
+        #[test] fn render_doughnut_chart_basic() {
+            let mut chart = Chart::new(ChartKind::Doughnut);
+            chart.add_series(Series::new("Test", vec![
+                DataPoint::new(25.0),
+                DataPoint::new(35.0),
+                DataPoint::new(40.0),
+            ]));
+            let mut canvas = Canvas::new(800, 600);
+            let rect = Rect::new(50.0, 50.0, 700.0, 500.0);
+            assert!(render(&chart, &mut canvas, rect).is_ok());
+        }
+
+        #[test] fn render_scatter_chart_with_multiple_series() {
+            let mut chart = Chart::new(ChartKind::Scatter);
+            let mut series1 = Series::new("Series A", vec![DataPoint::new(10.0), DataPoint::new(20.0), DataPoint::new(30.0)]);
+            series1.color = Some("#FF0000".to_string()); chart.add_series(series1);
+            let mut series2 = Series::new("Series B", vec![DataPoint::new(15.0), DataPoint::new(25.0), DataPoint::new(35.0)]);
+            series2.color = Some("#0000FF".to_string()); chart.add_series(series2);
+            let mut canvas = Canvas::new(800, 600);
+            let rect = Rect::new(50.0, 50.0, 700.0, 500.0);
+            assert!(render(&chart, &mut canvas, rect).is_ok());
+        }
+
+        #[test] fn render_area_chart_with_multiple_series() {
+            let mut chart = Chart::new(ChartKind::Area);
+            let mut series1 = Series::new("Series A", vec![DataPoint::new(10.0), DataPoint::new(20.0), DataPoint::new(15.0)]);
+            series1.color = Some("#FF0000".to_string()); chart.add_series(series1);
+            let mut series2 = Series::new("Series B", vec![DataPoint::new(15.0), DataPoint::new(25.0), DataPoint::new(30.0)]);
+            series2.color = Some("#00FF00".to_string()); chart.add_series(series2);
+            let mut canvas = Canvas::new(800, 600);
+            let rect = Rect::new(50.0, 50.0, 700.0, 500.0);
+            assert!(render(&chart, &mut canvas, rect).is_ok());
+        }
+
+        #[test] fn render_radar_chart_with_categories() {
+            let mut chart = Chart::new(ChartKind::Radar);
+            let mut series = Series::new("Skills", vec![
+                DataPoint::with_category(85.0, "Speed"),
+                DataPoint::with_category(90.0, "Power"),
+                DataPoint::with_category(75.0, "Defense"),
+                DataPoint::with_category(80.0, "Stamina"),
+                DataPoint::with_category(95.0, "Agility"),
+            ]);
+            series.color = Some("#FF5733".to_string()); chart.add_series(series);
+            let mut canvas = Canvas::new(800, 600);
+            let rect = Rect::new(50.0, 50.0, 700.0, 500.0);
+            assert!(render(&chart, &mut canvas, rect).is_ok());
+        }
+
+        #[test] fn render_doughnut_chart_with_categories() {
+            let mut chart = Chart::new(ChartKind::Doughnut);
+            let mut series = Series::new("Expenses", vec![
+                DataPoint::with_category(45.0, "Rent"),
+                DataPoint::with_category(30.0, "Food"),
+                DataPoint::with_category(25.0, "Entertainment"),
+            ]);
+            series.color = Some("#C70039".to_string()); chart.add_series(series);
             let mut canvas = Canvas::new(800, 600);
             let rect = Rect::new(50.0, 50.0, 700.0, 500.0);
             assert!(render(&chart, &mut canvas, rect).is_ok());
