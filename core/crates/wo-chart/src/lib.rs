@@ -6,8 +6,10 @@
 // collaboration.
 
 pub mod model;
+pub mod render;
 
 pub use model::{
     Axis, AxisPosition, AxisScale, Chart, ChartDataLabel, ChartError, ChartKind, ChartTitle,
     DataPoint, Legend, LegendPosition, Series,
 };
+pub use render::{render, Point, Rect};
