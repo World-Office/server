@@ -125,11 +125,13 @@ wo_dispatch_one() {
     else
       wo_fail_task "$id" "merge conflict (gate passed but main diverged)"
       wo_worktree_remove "$id" --force
+      wo_worktree_delete_branch "$id"   # delete so retry branches fresh from current main
       return 1
     fi
   else
     wo_fail_task "$id" "acceptance gate: $verdict"
     wo_worktree_remove "$id" --force
+    wo_worktree_delete_branch "$id"   # fresh retry from current main
     return 1
   fi
 }
