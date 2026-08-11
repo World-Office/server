@@ -3,6 +3,7 @@ import { visioStore } from "../stores/VisioStore";
 import { DocumentHolder } from "./DocumentHolder";
 import { FileMenu } from "./LeftMenu/FileMenu/FileMenu";
 import { LeftMenu } from "./LeftMenu/LeftMenu";
+import { RightMenu } from "./RightMenu/RightMenu";
 import { StatusBar } from "./StatusBar/StatusBar";
 import type { MonacoCommand } from "./Toolbar/MonacoCommand";
 import { Toolbar } from "./Toolbar/Toolbar";
@@ -75,6 +76,14 @@ export function Viewport({
 					{/* Editor container */}
 					<div className="visio-viewport-editor">
 						<DocumentHolder />
+					</div>
+
+					{/* Right menu */}
+					<div
+						className="visio-viewport-right-menu"
+						style={{ width: "var(--wo-visio-rightmenu-width, 40px)" }}
+					>
+						<RightMenu />
 					</div>
 				</div>
 

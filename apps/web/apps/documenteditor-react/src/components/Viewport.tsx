@@ -4,6 +4,7 @@ import type { ReactNode } from "react"
 import { collaborationStore } from "../lib/collaboration"
 import type { PageLayoutSettings, RichTextCommand } from "../lib/rte-command"
 import { documentStore } from "../stores/DocumentStore"
+import { ChartPanel } from "./ChartPanel"
 import { CommentsPanel } from "./CommentsPanel"
 import { CrossReferencePanel } from "./CrossReferencePanel"
 import { DocumentHolder } from "./DocumentHolder"
@@ -15,12 +16,16 @@ import { ImagePanel } from "./ImagePanel"
 import { LeftMenu } from "./LeftMenu/LeftMenu"
 import { MailMergePanel } from "./MailMergePanel"
 import { OfflineBadge } from "./OfflineBadge"
+import { PluginsPanel } from "./PluginsPanel"
 import { AiAssistantPanel } from "./RightMenu/AiAssistantPanel"
 import { RightMenu } from "./RightMenu/RightMenu"
 import { TrackChangesPanel } from "./RightMenu/TrackChangesPanel"
+import { ShapePanel } from "./ShapePanel"
+import { SignaturePanel } from "./SignaturePanel"
 import { StatusBar } from "./StatusBar/StatusBar"
 import { StylesPanel } from "./StylesPanel"
 import { TablePanel } from "./TablePanel"
+import { TextArtPanel } from "./TextArtPanel"
 import { ThemePanel } from "./ThemePanel"
 import type { MonacoCommand } from "./Toolbar/MonacoCommand"
 import { Toolbar } from "./Toolbar/Toolbar"
@@ -201,6 +206,11 @@ export function Viewport({
               <ImagePanel visible={documentStore.activeRightPanel === "image"} />
               <TablePanel visible={documentStore.activeRightPanel === "table"} />
               <FormPanel visible={documentStore.activeRightPanel === "form"} />
+              <ShapePanel visible={documentStore.activeRightPanel === "shape"} />
+              <ChartPanel visible={documentStore.activeRightPanel === "chart"} />
+              <TextArtPanel visible={documentStore.activeRightPanel === "textart"} />
+              <SignaturePanel visible={documentStore.activeRightPanel === "signature"} />
+              <PluginsPanel visible={documentStore.activeRightPanel === "plugins"} />
             </div>
           )}
         </div>

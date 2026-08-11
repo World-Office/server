@@ -229,6 +229,9 @@ export class VisioStore {
 	/* File menu */
 	activeFileMenuPanel: string | null = null;
 
+	/* Right menu */
+	activeRightPanel: string | null = null;
+
 	/* Search (commented out in original — skip) */
 
 	constructor() {
@@ -315,6 +318,14 @@ export class VisioStore {
 
 	toggleLeftPanel(action: LeftMenuAction): void {
 		this.setActiveLeftPanel(this.activeLeftPanel === action ? null : action);
+	}
+
+	setActiveRightPanel(panel: string | null): void {
+		this.activeRightPanel = panel;
+	}
+
+	toggleRightPanel(panel: string): void {
+		this.setActiveRightPanel(this.activeRightPanel === panel ? null : panel);
 	}
 
 	setPageTabs(tabs: PageTab[], currentIndex: number): void {
