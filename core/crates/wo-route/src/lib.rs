@@ -9,6 +9,7 @@
 
 pub mod anchor;
 pub mod astar;
+pub mod bezier;
 
 // Re-export foundational geometry types used throughout the routing engine.
 pub use anchor::{Anchor, AnchorId, Point, Rect, Side};
@@ -57,7 +58,18 @@ impl Router {
             RouteMode::Manhattan => {
                 astar::astar_manhattan(from, to, &self.obstacles, self.grid_size)
             }
-            // Orthogonal and Bezier will be implemented in RT-2 / RT-4.
+            RouteMode::Bezier => {
+                let waypoints =
+                    astar::astar_manhattan(from, to, &self.obstacles, self.grid_size);
+                if waypoints.len() < 2 {
+                    waypoints
+                } else {
+                    let segs =
+                        bezier::smooth_bezier(&waypoints, bezier::DEFAULT_SMOOTHNESS);
+                    bezier::flatten_bezier(&segs, 2.0)
+                }
+            }
+            // Orthogonal will be implemented in RT-2.
             _ => vec![from, to],
         }
     }
