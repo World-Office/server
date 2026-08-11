@@ -180,10 +180,10 @@ impl CursorTracker {
     /// assert!(!tracker.update_cursor("alice", CursorState::caret(Path::Text { para: 0, run: 0, char: 5 })));
     /// ```
     pub fn update_cursor(&mut self, user_id: &str, cursor: CursorState) -> bool {
-        if let Some(existing) = self.cursors.get(user_id) {
-            if *existing == cursor {
-                return false;
-            }
+        if let Some(existing) = self.cursors.get(user_id)
+            && *existing == cursor
+        {
+            return false;
         }
         self.cursors.insert(user_id.to_string(), cursor);
         true
