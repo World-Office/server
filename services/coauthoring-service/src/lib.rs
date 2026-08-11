@@ -4,6 +4,7 @@
 // for use by other services and WASM bindings. The binary entry point
 // lives in main.rs.
 
+pub mod cursor;
 pub mod document;
 pub mod model_op;
 
