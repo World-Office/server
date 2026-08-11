@@ -24,6 +24,7 @@ members = [
     "core/crates/wo-docserver",
     "core/crates/wo-x2t-wasm",
     "core/crates/wo-renderer-wasm",
+    "core/crates/wo-chart",
     "core/crates/wo-conformance",
     "core/crates/wo-route",
     "services/api-gateway",

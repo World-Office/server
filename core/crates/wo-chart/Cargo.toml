@@ -1,0 +1,16 @@
+[package]
+name = "wo-chart"
+version.workspace = true
+edition = "2021"
+license.workspace = true
+description = "Chart model, serde, and rendering for the World-Office document editing suite"
+repository = "https://codeberg.org/World-Office/server"
+homepage = "https://codeberg.org/World-Office/server"
+keywords = ["chart", "bar", "line", "pie", "office"]
+categories = ["data-visualization"]
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+wo-common = { path = "../wo-common", version = "0.1.0" }
