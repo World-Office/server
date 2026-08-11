@@ -13,9 +13,10 @@ WO_STATE_DIR="${WO_STATE_DIR:-$WO_ORCH_DIR/state}"
 WO_LOG_DIR="${WO_LOG_DIR:-$WO_STATE_DIR/logs}"
 WO_PROMPT_DIR="${WO_PROMPT_DIR:-$WO_ORCH_DIR/prompts}"
 
-# The git repo we edit. Located by walking up from the server/ checkout.
-# server/ is the repo root (has its own .git, separate from workspace plan/).
-WO_REPO_DIR="${WO_REPO_DIR:-$(cd "$WO_ORCH_DIR/../../.." && pwd)}"
+# The git repo we edit. server/ is the repo root (has its own .git, separate
+# from workspace plan/). WO_ORCH_DIR = server/scripts/wo-orchestrator, so the
+# repo root is two levels up.
+WO_REPO_DIR="${WO_REPO_DIR:-$(cd "$WO_ORCH_DIR/../.." && pwd)}"
 
 # Worktrees live OUTSIDE the repo to avoid polluting status. .wo-worktrees/
 # is gitignored at repo root.

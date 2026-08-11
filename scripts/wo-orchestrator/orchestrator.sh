@@ -32,6 +32,8 @@ WO_ORCH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 wo_require_jq || exit 1
 command -v pi >/dev/null 2>&1       || { wo_error "pi not on PATH"; exit 1; }
+git -C "$WO_REPO_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
+  || { wo_error "WO_REPO_DIR ($WO_REPO_DIR) is not a git repository. Set WO_REPO_DIR to the repo root."; exit 1; }
 
 # ---------------------------------------------------------------------------
 # Args
