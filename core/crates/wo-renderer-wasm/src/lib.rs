@@ -9,6 +9,7 @@
 
 pub mod canvas_bridge;
 pub mod layout;
+pub mod stub_model;
 
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -17,9 +18,10 @@ use wasm_bindgen::prelude::*;
 use wo_ooxml::model::{DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, OoxmlDocument};
 use wo_ooxml::parser::OoxmlParser;
 use wo_ooxml::serializer::OoxmlSerializer;
+use wo_common::op::EditableModel;
 
 // Re-export canvas functions
-pub use canvas_bridge::{create_canvas, flush_to_canvas, get_pixel_data};
+pub use canvas_bridge::{create_canvas, flush_to_canvas, get_pixel_data, release_canvas};
 pub use layout::{LaidOutChar, LaidOutLine, LaidOutPage, LaidOutParagraph, LayoutEngine, PageLayout};
 
 /// Global store of document instances (handle → parsed OoxmlDocument).
@@ -1099,6 +1101,154 @@ pub fn get_run_formatting(doc_handle: u32) -> Result<String, String> {
     }
 }
 
+// ── Uniform WASM export convention (§2.3) ────────────────────────────
+//
+// Four identical-signature functions shared by every editable model.
+// The stub model (Vec<String> paragraphs) demonstrates the convention;
+// engine-specific models (DOCX, XLSX, …) replace the internal dispatch
+// while keeping the same JS-callable signatures.
+
+/// Create a model from bytes and return a handle.
+///
+/// For the stub model (`fmt = "stub"`), `bytes` must be a JSON array
+/// of paragraph strings: `"[\"Hello\", \"World\"]"`.
+///
+/// Future engines will accept their own formats ("docx", "xlsx", …).
+#[wasm_bindgen]
+pub fn create_model(bytes: &[u8], fmt: &str) -> Result<u32, String> {
+    if bytes.is_empty() {
+        return Err("Model bytes are empty".to_string());
+    }
+    match fmt {
+        "stub" => {
+            let paragraphs: Vec<String> = serde_json::from_slice(bytes)
+                .map_err(|e| format!("Invalid stub model JSON: {}", e))?;
+            let model = stub_model::StubModel::new(paragraphs);
+            let handle = unsafe { stub_model::next_stub_handle() };
+            let store =
+                stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+            let mut store = store.lock().unwrap();
+            store.insert(handle, model);
+            Ok(handle)
+        }
+        other => Err(format!(
+            "Unsupported format: '{}'. Supported: 'stub'.",
+            other
+        )),
+    }
+}
+
+/// Apply a [`ModelOp`] (JSON) to the model identified by `handle`.
+///
+/// Deserializes the JSON string into a [`wo_common::op::ModelOp`],
+/// applies it via [`EditableModel::apply`](wo_common::op::EditableModel::apply),
+/// and stores the result back.
+#[wasm_bindgen]
+pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
+    if op_json.is_empty() {
+        return Err("op_json is empty".to_string());
+    }
+    let op: wo_common::op::ModelOp = serde_json::from_str(op_json)
+        .map_err(|e| format!("Invalid op JSON: {}", e))?;
+    let store =
+        stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut store = store.lock().unwrap();
+    let model = store
+        .get_mut(&handle)
+        .ok_or_else(|| format!("Stub model handle {} not found", handle))?;
+    model.apply(&op).map_err(|e| e.to_string())
+}
+
+/// Serialize the model back to bytes.
+///
+/// For the stub model, returns a JSON array of paragraph strings.
+#[wasm_bindgen]
+pub fn model_to_bytes(handle: u32) -> Result<Vec<u8>, String> {
+    let store =
+        stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let store = store.lock().unwrap();
+    let model = store
+        .get(&handle)
+        .ok_or_else(|| format!("Stub model handle {} not found", handle))?;
+    serde_json::to_vec(&model.paragraphs)
+        .map_err(|e| format!("Serialization failed: {}", e))
+}
+
+/// Layout the model and optionally render to a canvas.
+///
+/// `opts_json` — layout options (see [`StubLayoutOpts`](stub_model::StubLayoutOpts)):
+/// ```json
+/// { "width": 794, "height": 1123, "fontSize": 12, "marginPt": 72 }
+/// ```
+///
+/// `canvas` — canvas handle (0 = layout only, no rendering).
+///
+/// Returns layout JSON:
+/// ```json
+/// { "pages": [{ "width": 794, "height": 1123, "paragraphs": [...] }] }
+/// ```
+#[wasm_bindgen]
+pub fn layout_and_render(
+    handle: u32,
+    opts_json: &str,
+    canvas: u32,
+) -> Result<String, String> {
+    let opts: stub_model::StubLayoutOpts = serde_json::from_str(opts_json)
+        .map_err(|e| format!("Invalid opts JSON: {}", e))?;
+    let store =
+        stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let store = store.lock().unwrap();
+    let model = store
+        .get(&handle)
+        .ok_or_else(|| format!("Stub model handle {} not found", handle))?;
+
+    let layout_json = stub_model::layout_stub_model(model, &opts);
+
+    // Optionally render to canvas.
+    if canvas != 0 {
+        let canvas_store = canvas_bridge::get_canvas_store();
+        let mut canvas_store = canvas_store.lock().unwrap();
+        let canvas_obj = canvas_store.get_mut(&canvas);
+        if let Some(canvas_obj) = canvas_obj {
+            // White background.
+            canvas_obj.set_fill(wo_renderer::color::Paint::Color(
+                wo_renderer::color::Color::new(1.0, 1.0, 1.0, 1.0),
+            ));
+            canvas_obj.fill_rect(
+                0.0,
+                0.0,
+                opts.width as f32,
+                opts.height as f32,
+            );
+            // Render each paragraph as a line of text.
+            let mut cursor_y = opts.margin_pt * stub_model::PT_TO_PX;
+            for para_text in &model.paragraphs {
+                let baseline_y = cursor_y + opts.font_size * 0.8;
+                let _ = canvas_bridge::render_text(
+                    canvas,
+                    para_text,
+                    opts.margin_pt * stub_model::PT_TO_PX,
+                    baseline_y,
+                    None,
+                    Some(opts.font_size),
+                );
+                cursor_y += opts.font_size * 1.2;
+            }
+        }
+        drop(canvas_store);
+    }
+
+    serde_json::to_string(&layout_json)
+        .map_err(|e| format!("JSON serialization failed: {}", e))
+}
+
+/// Release a stub model and free its resources.
+#[wasm_bindgen]
+pub fn release_stub_model(handle: u32) -> Result<(), String> {
+    stub_model::StubModel::release(handle);
+    Ok(())
+}
+
 // ── Tests ────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -1208,6 +1358,222 @@ mod tests {
 
         // Cleanup
         release_document(doc_handle).ok();
+    }
+
+    // ── Uniform WASM export convention (§2.3) tests ───────────────
+
+    #[test]
+    fn test_create_model_stub() {
+        let bytes = br#"["Hello", "World"]"#;
+        let handle = create_model(bytes, "stub").unwrap();
+        assert!(handle >= 5000);
+        release_stub_model(handle).ok();
+    }
+
+    #[test]
+    fn test_create_model_empty_bytes() {
+        let result = create_model(&[], "stub");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_create_model_unsupported_format() {
+        let result = create_model(b"[]", "docx");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Unsupported format"));
+    }
+
+    #[test]
+    fn test_apply_op_insert_and_read_back() {
+        // Acceptance: JS inserts 1 op, reads back 1 paragraph.
+        let bytes = br#"[""]"#;
+        let handle = create_model(bytes, "stub").unwrap();
+
+        // Insert "Hello" at para 0, char 0.
+        let op = r#"{"op":"insert","at":{"kind":"text","para":0,"run":0,"char":0},"content":"Hello"}"#;
+        apply_op(handle, op).unwrap();
+
+        // Read back.
+        let out = model_to_bytes(handle).unwrap();
+        let paragraphs: Vec<String> =
+            serde_json::from_slice(&out).unwrap();
+        assert_eq!(paragraphs.len(), 1);
+        assert_eq!(paragraphs[0], "Hello");
+
+        release_stub_model(handle).ok();
+    }
+
+    #[test]
+    fn test_apply_op_delete() {
+        let bytes = br#"["ABCDE"]"#;
+        let handle = create_model(bytes, "stub").unwrap();
+
+        let op = r#"{"op":"delete","range":{"start":{"kind":"text","para":0,"run":0,"char":1},"end":{"kind":"text","para":0,"run":0,"char":3}}}"#;
+        apply_op(handle, op).unwrap();
+
+        let out = model_to_bytes(handle).unwrap();
+        let paragraphs: Vec<String> =
+            serde_json::from_slice(&out).unwrap();
+        assert_eq!(paragraphs[0], "ADE");
+
+        release_stub_model(handle).ok();
+    }
+
+    #[test]
+    fn test_apply_op_replace() {
+        let bytes = br#"["ABCD"]"#;
+        let handle = create_model(bytes, "stub").unwrap();
+
+        let op = r#"{"op":"replace","at":{"kind":"text","para":0,"run":0,"char":1},"content":"X"}"#;
+        apply_op(handle, op).unwrap();
+
+        let out = model_to_bytes(handle).unwrap();
+        let paragraphs: Vec<String> =
+            serde_json::from_slice(&out).unwrap();
+        assert_eq!(paragraphs[0], "AXCD");
+
+        release_stub_model(handle).ok();
+    }
+
+    #[test]
+    fn test_apply_op_format_no_op() {
+        let bytes = br#"["Hello"]"#;
+        let handle = create_model(bytes, "stub").unwrap();
+
+        let op = r#"{"op":"format","range":{"start":{"kind":"text","para":0,"run":0,"char":0},"end":{"kind":"text","para":0,"run":0,"char":5}},"attrs":{"bold":true}}"#;
+        apply_op(handle, op).unwrap();
+
+        let out = model_to_bytes(handle).unwrap();
+        let paragraphs: Vec<String> =
+            serde_json::from_slice(&out).unwrap();
+        assert_eq!(paragraphs[0], "Hello"); // unchanged
+
+        release_stub_model(handle).ok();
+    }
+
+    #[test]
+    fn test_apply_op_invalid_json() {
+        let bytes = br#"["A"]"#;
+        let handle = create_model(bytes, "stub").unwrap();
+
+        let result = apply_op(handle, "not json");
+        assert!(result.is_err());
+
+        release_stub_model(handle).ok();
+    }
+
+    #[test]
+    fn test_apply_op_empty_json() {
+        let bytes = br#"["A"]"#;
+        let handle = create_model(bytes, "stub").unwrap();
+
+        let result = apply_op(handle, "");
+        assert!(result.is_err());
+
+        release_stub_model(handle).ok();
+    }
+
+    #[test]
+    fn test_model_to_bytes_nonexistent_handle() {
+        let result = model_to_bytes(99999);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_layout_and_render_layout_only() {
+        let bytes = br#"["Hello world", "Second line"]"#;
+        let handle = create_model(bytes, "stub").unwrap();
+
+        let opts = r#"{"width":794,"height":1123,"fontSize":12,"marginPt":72}"#;
+        let json = layout_and_render(handle, opts, 0).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+
+        assert!(parsed["pages"].is_array());
+        let pages = parsed["pages"].as_array().unwrap();
+        assert_eq!(pages.len(), 1);
+        assert_eq!(pages[0]["width"], 794);
+        let paras = pages[0]["paragraphs"].as_array().unwrap();
+        assert_eq!(paras.len(), 2);
+
+        release_stub_model(handle).ok();
+    }
+
+    #[test]
+    fn test_layout_and_render_with_canvas() {
+        let bytes = br#"["Hello"]"#;
+        let handle = create_model(bytes, "stub").unwrap();
+        let canvas = create_canvas(100, 100);
+
+        let opts = r#"{"width":100,"height":100,"fontSize":12,"marginPt":10}"#;
+        let json = layout_and_render(handle, opts, canvas).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert!(parsed["pages"].is_array());
+
+        // Verify canvas has content (white background was painted).
+        let pixels = get_pixel_data(canvas).unwrap();
+        assert_eq!(pixels.len(), 100 * 100 * 4);
+
+        release_canvas(canvas).ok();
+        release_stub_model(handle).ok();
+    }
+
+    #[test]
+    fn test_layout_and_render_nonexistent_handle() {
+        let opts = r#"{}"#;
+        let result = layout_and_render(99999, opts, 0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_release_stub_model_nonexistent() {
+        // Should not panic.
+        assert!(release_stub_model(99999).is_ok());
+    }
+
+    #[test]
+    fn test_full_roundtrip_create_apply_serialize() {
+        // End-to-end: create → apply multiple ops → serialize → verify.
+        let bytes = br#"[""]"#;
+        let handle = create_model(bytes, "stub").unwrap();
+
+        // Insert "Hello" at para 0.
+        apply_op(
+            handle,
+            r#"{"op":"insert","at":{"kind":"text","para":0,"run":0,"char":0},"content":"Hello"}"#,
+        ).unwrap();
+
+        // Insert " world" at para 0, char 5.
+        apply_op(
+            handle,
+            r#"{"op":"insert","at":{"kind":"text","para":0,"run":0,"char":5},"content":" world"}"#,
+        ).unwrap();
+
+        // Serialize and verify.
+        let out = model_to_bytes(handle).unwrap();
+        let paragraphs: Vec<String> =
+            serde_json::from_slice(&out).unwrap();
+        assert_eq!(paragraphs[0], "Hello world");
+
+        // Layout and verify structure.
+        let layout_json = layout_and_render(
+            handle,
+            r#"{"width":794,"height":1123,"fontSize":12,"marginPt":72}"#,
+            0,
+        )
+        .unwrap();
+        let layout: serde_json::Value = serde_json::from_str(&layout_json).unwrap();
+        assert!(layout["pages"].as_array().unwrap()[0]["paragraphs"]
+            .as_array().unwrap()[0]["lines"][0]["chars"]
+            .as_array().unwrap().len() > 0);
+
+        release_stub_model(handle).ok();
+    }
+
+    #[test]
+    fn test_create_model_invalid_json() {
+        let result = create_model(b"not json", "stub");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Invalid stub model JSON"));
     }
 }
 
