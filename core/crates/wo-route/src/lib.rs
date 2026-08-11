@@ -8,6 +8,7 @@
 //! but owns all geometric computation internally.
 
 pub mod anchor;
+pub mod astar;
 
 // Re-export foundational geometry types used throughout the routing engine.
 pub use anchor::{Anchor, AnchorId, Point, Rect, Side};
@@ -53,7 +54,10 @@ impl Router {
     pub fn route(&self, from: Point, to: Point, mode: RouteMode) -> Vec<Point> {
         match mode {
             RouteMode::Straight => vec![from, to],
-            // Other modes will be implemented in RT-2..RT-4.
+            RouteMode::Manhattan => {
+                astar::astar_manhattan(from, to, &self.obstacles, self.grid_size)
+            }
+            // Orthogonal and Bezier will be implemented in RT-2 / RT-4.
             _ => vec![from, to],
         }
     }
