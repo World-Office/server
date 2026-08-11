@@ -33,6 +33,17 @@ export {
   type EditorType,
 } from "./core/application-context"
 
+export {
+  registerEditorRouter,
+  registerCommands,
+  unregisterCommands,
+  isCommandRegistered,
+  getRegisteredCommands,
+  resetRouter,
+  type WoCommand,
+  type CommandHandler,
+} from "./core/command-router"
+
 export * from "./components"
 
 export * from "./controllers"
