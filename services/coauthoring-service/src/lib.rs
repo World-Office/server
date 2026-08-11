@@ -4,7 +4,9 @@
 // for use by other services and WASM bindings. The binary entry point
 // lives in main.rs.
 
+pub mod document;
 pub mod model_op;
 
 // Re-export the wire envelope for convenience.
+pub use document::Document;
 pub use model_op::{EnvelopeError, ModelOpEnvelope, WIRE_SCHEMA_VERSION};
