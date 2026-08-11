@@ -35,7 +35,9 @@ wo_verify() {
   (
     cd "$wt" || exit 127
     # export so openspec/wo commands resolve; server/ is the CWD inside worktree
-    timeout "$timeout_s" bash -lc "$accept"
+    # Prepend cargo bin so rustup's rustc is found before /usr/bin/rustc.
+    # Force nightly toolchain for wasm-pack (which ignores rust-toolchain.toml).
+    timeout "$timeout_s" bash -lc "export PATH=\$HOME/.cargo/bin:\$PATH RUSTUP_TOOLCHAIN=nightly; $accept"
   ) >> "$log" 2>&1 || rc=$?
 
   if [[ $rc -eq 0 ]]; then
