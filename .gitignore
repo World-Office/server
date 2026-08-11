@@ -127,3 +127,7 @@ yarn-error.log*
 *.temp
 *.swp
 .nul
+
+# wo-orchestrator runtime state
+scripts/wo-orchestrator/state/
+.wo-worktrees/
