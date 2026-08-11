@@ -1,0 +1,10 @@
+[package]
+name = "wo-route"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Connector routing engine for World-Office (Visio-style diagrams)"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
