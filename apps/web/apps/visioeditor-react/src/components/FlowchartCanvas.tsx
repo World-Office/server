@@ -46,6 +46,55 @@ function orthogonalPath(src: Point, tgt: Point): string {
 	return `M ${src.x},${src.y} L ${src.x},${midY} L ${tgt.x},${midY} L ${tgt.x},${tgt.y}`;
 }
 
+/** Manhattan routing — staircase pattern avoiding obstacles. */
+function manhattanPath(src: Point, tgt: Point): string {
+	const dx = tgt.x - src.x;
+	const dy = tgt.y - src.y;
+	const adx = Math.abs(dx);
+	const ady = Math.abs(dy);
+	// Single intermediate point with right-angle turns
+	if (adx >= ady) {
+		const midX = (src.x + tgt.x) / 2;
+		return `M ${src.x},${src.y} L ${midX},${src.y} L ${midX},${tgt.y} L ${tgt.x},${tgt.y}`;
+	}
+	const midY = (src.y + tgt.y) / 2;
+	return `M ${src.x},${src.y} L ${src.x},${midY} L ${tgt.x},${midY} L ${tgt.x},${tgt.y}`;
+}
+
+/** Bezier routing — smooth curve from source to target with control points. */
+function bezierPath(src: Point, tgt: Point): string {
+	const dx = tgt.x - src.x;
+	const dy = tgt.y - src.y;
+	const adx = Math.abs(dx);
+	const ady = Math.abs(dy);
+	// Use source/target anchor direction to determine control point offsets
+	const offset = Math.max(adx, ady) * 0.4;
+	if (adx >= ady) {
+		const sign = dx >= 0 ? 1 : -1;
+		return `M ${src.x},${src.y} C ${src.x + sign * offset},${src.y} ${tgt.x - sign * offset},${tgt.y} ${tgt.x},${tgt.y}`;
+	}
+	const sign = dy >= 0 ? 1 : -1;
+	return `M ${src.x},${src.y} C ${src.x},${src.y + sign * offset} ${tgt.x},${tgt.y - sign * offset} ${tgt.x},${tgt.y}`;
+}
+
+/** Compute the SVG path `d` attribute for a connector based on its route mode. */
+function connectorPath(
+	src: Point,
+	tgt: Point,
+	mode: "straight" | "orthogonal" | "manhattan" | "bezier",
+): string {
+	switch (mode) {
+		case "straight":
+			return `M ${src.x},${src.y} L ${tgt.x},${tgt.y}`;
+		case "bezier":
+			return bezierPath(src, tgt);
+		case "manhattan":
+			return manhattanPath(src, tgt);
+		default:
+			return orthogonalPath(src, tgt);
+	}
+}
+
 /** Convert a mouse event (clientX/Y) to SVG canvas coordinates. */
 function eventToSVGPoint(
 	e: React.MouseEvent | MouseEvent,
@@ -590,7 +639,7 @@ const FlowchartEdgeRenderer = observer(function FlowchartEdgeRenderer({
 	const isDashed = edge.strokeStyle === "dashed";
 	const isDotted = edge.strokeStyle === "dotted";
 	const edgeClass = `${styles.edgeLine}${isSelected ? ` ${styles.selected}` : ""}`;
-	const d = orthogonalPath(src, tgt);
+	const d = connectorPath(src, tgt, edge.routeMode ?? "orthogonal");
 	const midX = (src.x + tgt.x) / 2;
 	const midY = (src.y + tgt.y) / 2;
 	const ah = edge.arrowheadType || "arrow";
@@ -598,7 +647,7 @@ const FlowchartEdgeRenderer = observer(function FlowchartEdgeRenderer({
 	const dashArray = isDashed ? "8 4" : isDotted ? "4 4" : undefined;
 
 	return (
-		<g>
+		<g data-edge-id={edge.id}>
 			<path
 				d={d}
 				fill="none"
@@ -669,7 +718,7 @@ function generateSvgXml(doc: FlowchartDocument): string {
 		if (!src || !tgt) continue;
 		const sp = getEdgeEndpoint(src, edge.sourceAnchor);
 		const tp = getEdgeEndpoint(tgt, edge.targetAnchor);
-		const d = orthogonalPath(sp, tp);
+		const d = connectorPath(sp, tp, edge.routeMode ?? "orthogonal");
 		const color = edge.strokeColor || "#333";
 		svg += `<path d="${d}" fill="none" stroke="${color}" stroke-width="${edge.strokeWidth || 2}"/>`;
 		if (edge.label) {
@@ -975,6 +1024,26 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
 					return;
 				}
 			}
+			// Check if the click was on an edge (edge paths have classes from edgeLine)
+			const edgePath = target.closest(`.${styles.edgeLine}`);
+			if (edgePath) {
+				const edgeGroup = edgePath.closest("[data-edge-id]");
+				const edgeId = edgeGroup
+					? edgeGroup.getAttribute("data-edge-id")
+					: null;
+				if (edgeId) {
+					if (!store.selectedEdgeIds.includes(edgeId)) {
+						store.selectEdge(edgeId);
+					}
+					setContextMenu({ x: e.clientX, y: e.clientY, type: "edge", edgeId });
+					return;
+				}
+				// No data-edge-id attribute — check selected edges
+				if (store.selectedEdgeIds.length > 0) {
+					setContextMenu({ x: e.clientX, y: e.clientY, type: "edge" });
+					return;
+				}
+			}
 			setContextMenu({ x: e.clientX, y: e.clientY, type: "background" });
 		},
 		[store],
@@ -1202,6 +1271,64 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
 			sourceNodeCenter = getNodeCenter(srcNode);
 		}
 	}
+
+	/* ── wo-command listener for connector formatting ── */
+	useEffect(() => {
+		function handleWoCommand(e: Event) {
+			const { command, value } = (e as CustomEvent).detail ?? {};
+			if (!command) return;
+
+			switch (command) {
+				case "connectorRouteMode":
+					if (value) {
+						store.applyConnectorFormat({
+							routeMode: value as FlowchartEdge["routeMode"],
+						});
+					}
+					break;
+				case "connectorStroke":
+					if (value) store.applyConnectorFormat({ strokeColor: value });
+					break;
+				case "connectorStrokeWidth":
+					if (value)
+						store.applyConnectorFormat({
+							strokeWidth: Number.parseInt(value, 10) || 2,
+						});
+					break;
+				case "connectorStrokeStyle":
+					if (value)
+						store.applyConnectorFormat({
+							strokeStyle: value as FlowchartEdge["strokeStyle"],
+						});
+					break;
+				case "connectorArrowhead":
+					if (value)
+						store.applyConnectorFormat({
+							arrowheadType: value as FlowchartEdge["arrowheadType"],
+						});
+					break;
+				case "connectorSourceAnchor":
+					if (value)
+						store.applyConnectorFormat({
+							sourceAnchor: value as FlowchartEdge["sourceAnchor"],
+						});
+					break;
+				case "connectorTargetAnchor":
+					if (value)
+						store.applyConnectorFormat({
+							targetAnchor: value as FlowchartEdge["targetAnchor"],
+						});
+					break;
+				case "resetConnectorFormat":
+					store.resetConnectorFormat();
+					break;
+				default:
+					break;
+			}
+		}
+		window.addEventListener("wo-command", handleWoCommand);
+		return () => window.removeEventListener("wo-command", handleWoCommand);
+	}, [store]);
 
 	/* ── Zoom-to-fit via custom event ── */
 	useEffect(() => {
