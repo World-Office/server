@@ -24,8 +24,8 @@
       "provider": "opencode-free",
       "model": "deepseek-v4-flash",
       "endpoint": "https://opencode.ai/zen/v1",
-      "note": "OpenCode Zen free tier DeepSeek V4 Flash",
-      "enabled": true,
+      "note": "OpenCode Zen free tier DeepSeek V4 Flash — DISABLED: needs OAuth login (no API key), re-enable after `pi --provider opencode-free /login`",
+      "enabled": false,
       "max_concurrent": 1
     },
     {
