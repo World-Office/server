@@ -3,7 +3,16 @@ import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 import { spreadsheetStore } from "../../stores/SpreadsheetStore";
 import type { RightMenuPanel } from "../../types/spreadsheet";
+import { CellSettingsPanel } from "./CellSettingsPanel";
+import { ChartSettingsPanel } from "./ChartSettingsPanel";
+import { ImageSettingsPanel } from "./ImageSettingsPanel";
+import { PivotTableSettingsPanel } from "./PivotTableSettingsPanel";
+import { PluginsPanel } from "./PluginsPanel";
 import { RightMenuButton } from "./RightMenuButton";
+import { ShapeSettingsPanel } from "./ShapeSettingsPanel";
+import { SignatureSettingsPanel } from "./SignatureSettingsPanel";
+import { SlicerSettingsPanel } from "./SlicerSettingsPanel";
+import { TextArtSettingsPanel } from "./TextArtSettingsPanel";
 
 const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> =
 	[
@@ -44,7 +53,35 @@ function RightMenuInner(): JSX.Element {
 					/>
 				))}
 			</div>
-			<div className="se-right-panel-side" />
+			<div className="se-right-panel-side">
+				<CellSettingsPanel
+					visible={spreadsheetStore.activeRightPanel === "cellsettings"}
+				/>
+				<ShapeSettingsPanel
+					visible={spreadsheetStore.activeRightPanel === "shapesettings"}
+				/>
+				<ImageSettingsPanel
+					visible={spreadsheetStore.activeRightPanel === "imagesettings"}
+				/>
+				<ChartSettingsPanel
+					visible={spreadsheetStore.activeRightPanel === "chartsettings"}
+				/>
+				<TextArtSettingsPanel
+					visible={spreadsheetStore.activeRightPanel === "textartsettings"}
+				/>
+				<PivotTableSettingsPanel
+					visible={spreadsheetStore.activeRightPanel === "pivottablesettings"}
+				/>
+				<SlicerSettingsPanel
+					visible={spreadsheetStore.activeRightPanel === "slicersettings"}
+				/>
+				<SignatureSettingsPanel
+					visible={spreadsheetStore.activeRightPanel === "signaturesettings"}
+				/>
+				<PluginsPanel
+					visible={spreadsheetStore.activeRightPanel === "plugins"}
+				/>
+			</div>
 		</div>
 	);
 }

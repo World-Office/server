@@ -3,7 +3,14 @@ import type { JSX } from "react"
 import { useTranslation } from "react-i18next"
 import { pdfStore } from "../../stores/PdfStore"
 import type { RightMenuPanel } from "../../types/pdf"
+import { ChartPanel } from "./ChartPanel"
+import { FormPanel } from "./FormPanel"
+import { ImagePanel } from "./ImagePanel"
+import { ParagraphPanel } from "./ParagraphPanel"
 import { RightMenuButton } from "./RightMenuButton"
+import { ShapePanel } from "./ShapePanel"
+import { TablePanel } from "./TablePanel"
+import { TextArtPanel } from "./TextArtPanel"
 
 const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> = [
   { action: "paragraph", title: "Paragraph", icon: "Type" },
@@ -37,7 +44,15 @@ function RightMenuInner(): JSX.Element {
           />
         ))}
       </div>
-      <div className="pdf-right-panel-side" />
+      <div className="pdf-right-panel-side">
+        <ParagraphPanel visible={pdfStore.activeRightPanel === "paragraph"} />
+        <ImagePanel visible={pdfStore.activeRightPanel === "image"} />
+        <ShapePanel visible={pdfStore.activeRightPanel === "shape"} />
+        <TablePanel visible={pdfStore.activeRightPanel === "table"} />
+        <ChartPanel visible={pdfStore.activeRightPanel === "chart"} />
+        <TextArtPanel visible={pdfStore.activeRightPanel === "textart"} />
+        <FormPanel visible={pdfStore.activeRightPanel === "form"} />
+      </div>
     </div>
   )
 }

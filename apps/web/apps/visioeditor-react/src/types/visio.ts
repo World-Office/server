@@ -85,6 +85,8 @@ export type EditorMode = "vsdx" | "vsdm" | "flowchart";
 
 export type LeftMenuAction = "thumbs" | "chat" | "support" | "about" | "shapes";
 
+export type RightMenuPanel = "shapeformat" | "properties" | "layers";
+
 export type FlowchartShapeType =
 	| "start-end"
 	| "terminator"

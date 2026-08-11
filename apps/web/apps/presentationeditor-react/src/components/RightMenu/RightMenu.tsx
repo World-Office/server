@@ -4,9 +4,14 @@ import { useTranslation } from "react-i18next";
 import { presentationStore } from "../../stores/PresentationStore";
 import type { RightMenuPanel } from "../../types/presentation";
 import { AnimationPanel } from "./AnimationPanel";
+import { ChartPanel } from "./ChartPanel";
+import { ImagePanel } from "./ImagePanel";
+import { ParagraphPanel } from "./ParagraphPanel";
 import { RightMenuButton } from "./RightMenuButton";
 import { ShapePanel } from "./ShapePanel";
 import { SlidePanel } from "./SlidePanel";
+import { TablePanel } from "./TablePanel";
+import { TextArtPanel } from "./TextArtPanel";
 
 const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> =
 	[
@@ -21,13 +26,13 @@ const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> =
 	];
 
 const PANELS: Record<RightMenuPanel, JSX.Element> = {
-	paragraph: <div />,
-	table: <div />,
-	image: <div />,
+	paragraph: <ParagraphPanel visible={true} />,
+	table: <TablePanel visible={true} />,
+	image: <ImagePanel visible={true} />,
 	slide: <SlidePanel />,
-	chart: <div />,
+	chart: <ChartPanel visible={true} />,
 	shape: <ShapePanel />,
-	textart: <div />,
+	textart: <TextArtPanel visible={true} />,
 	animation: <AnimationPanel />,
 };
 
