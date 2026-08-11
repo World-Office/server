@@ -78,13 +78,15 @@ wo_status_set() {
   local id="$1" status="$2" extra="${3:-}"
   local tmp now
   tmp="$(mktemp)"; now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  local ts_assign=""
+  local ts=""
   case "$status" in
-    running|verifying) ts_assign='|.started_at=$now' ;;
-    done|failed|blocked) ts_assign='|.finished_at=$now' ;;
+    running|verifying) ts=' | .[$id].started_at=$now' ;;
+    done|failed|blocked) ts=' | .[$id].finished_at=$now' ;;
   esac
+  local ex=""
+  [[ -n "$extra" ]] && ex=" | $extra"
   jq --arg id "$id" --arg status "$status" --arg now "$now" \
-    '.[$id].status=$status '"$ts_assign"' '"$extra" "$STATUS_JSON" > "$tmp"
+    '.[$id].status=$status'"$ts""$ex" "$STATUS_JSON" > "$tmp"
   wo_locked_mv "$tmp" "$STATUS_JSON"
 }
 
@@ -129,13 +131,15 @@ wo_ready_task_ids() {
 # List ids of all currently-running/verifying tasks.
 wo_running_task_ids() {
   wo_require_jq || return 1
-  jq -r 'to_entries[] | select(.value.status=="running" or .value.status=="verifying") | .key' "$STATUS_JSON"
+  jq -r 'to_entries[] | select(.value | type=="object" and has("status")) | select(.value.status=="running" or .value.status=="verifying") | .key' "$STATUS_JSON"
 }
 
 # Count tasks by status. Usage: wo_count_status done
+# Robust: only counts entries that are objects with a status field (ignores
+# any stray metadata keys).
 wo_count_status() {
   wo_require_jq || return 1
-  jq -r --arg s "$1" '[to_entries[] | select(.value.status==$s)] | length' "$STATUS_JSON"
+  jq -r --arg s "$1" '[to_entries[] | select(.value | type=="object" and has("status")) | select(.value.status==$s)] | length' "$STATUS_JSON"
 }
 
 # Pretty-print the current status board.
@@ -146,7 +150,7 @@ wo_status_board() {
     printf '%-8s %-12s %-10s %-8s %s\n' "----" "------" "-------" "-----" "------------"
     jq -r --slurpfile tasks "$TASKS_JSON" '
       ($tasks[0].tasks | map({key:.id, value:.}) | from_entries) as $meta
-      | to_entries | sort_by(.key)
+      | [to_entries[] | select(.value | type=="object" and has("status"))] | sort_by(.key)
       | .[] | "\(.key)\t\(.value.status)\t\(.value.worker // "-")\t\(.value.attempts)\t\($meta[.key].engine // "?")/\($meta[.key].title // "?")"
     ' "$STATUS_JSON" | while IFS=$'\t' read -r id status worker attempts title; do
       printf '%-8s %-12s %-10s %-8s %s\n' "$id" "$status" "${worker:- -}" "${attempts:-0}" "$title"
