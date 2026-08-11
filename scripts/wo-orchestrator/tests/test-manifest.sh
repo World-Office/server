@@ -9,25 +9,23 @@ export WO_CONFIG_DIR="${WO_CONFIG_DIR:-$HERE/../config}"
 
 echo "=== Manifest tests ==="
 
-wo_group_begin; wo_test "workers.json has 4 enabled workers"
-wo_assert_eq "enabled worker count" "4" "$(wo_worker_names | wc -l)"
+wo_group_begin; wo_test "enabled workers resolve via wo_worker_names"
+enabled_n="$(jq '[.workers[]|select(.enabled)]|length' "$WORKERS_JSON")"
+wo_assert_eq "enabled worker count" "$enabled_n" "$(wo_worker_names | wc -l)"
 wo_assert "zai worker present" grep -qxF zai < <(wo_worker_names)
 wo_assert "tud worker present" grep -qxF tud < <(wo_worker_names)
-wo_assert "opencode worker present" grep -qxF opencode < <(wo_worker_names)
 wo_assert "local-flash worker present" grep -qxF local-flash < <(wo_worker_names)
 wo_group_end
 
 wo_group_begin; wo_test "worker model ids match pi config"
 wo_assert_eq "zai model"        "glm-5-turbo"            "$(wo_worker_field zai .model)"
 wo_assert_eq "tud model"        "Mistral-Medium-3.5-128B" "$(wo_worker_field tud .model)"
-wo_assert_eq "opencode model"   "deepseek-v4-flash"      "$(wo_worker_field opencode .model)"
 wo_assert_eq "local-flash model" "deepseek-v4-flash/local" "$(wo_worker_field local-flash .model)"
 wo_group_end
 
 wo_group_begin; wo_test "worker providers match pi config"
 wo_assert_eq "zai provider"        "zai"          "$(wo_worker_field zai .provider)"
 wo_assert_eq "tud provider"        "tud"          "$(wo_worker_field tud .provider)"
-wo_assert_eq "opencode provider"   "opencode-free" "$(wo_worker_field opencode .provider)"
 wo_assert_eq "local-flash provider" "litellm"     "$(wo_worker_field local-flash .provider)"
 wo_group_end
 

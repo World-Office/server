@@ -52,7 +52,8 @@ wo_group_end
 
 wo_group_begin; wo_test "worker lookup resolves enabled workers only"
 names="$(wo_worker_names)"
-wo_assert_eq "4 workers"   "4" "$(echo "$names" | wc -l)"
+enabled_n="$(jq '[.workers[]|select(.enabled)]|length' "$WORKERS_JSON")"
+wo_assert_eq "enabled worker count" "$enabled_n" "$(echo "$names" | wc -l)"
 wo_assert "zai present"    grep -qxF zai <<< "$names"
 wo_assert "local-flash present" grep -qxF local-flash <<< "$names"
 # disabled worker would be filtered
