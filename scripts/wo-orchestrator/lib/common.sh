@@ -34,6 +34,10 @@ WO_BRANCH_PREFIX="${WO_BRANCH_PREFIX:-agent}"
 # Ensure runtime dirs exist
 mkdir -p "$WO_STATE_DIR" "$WO_LOG_DIR" "$WO_WORKTREE_ROOT"
 
+# Project requires nightly Rust (rust-toolchain.toml). Export so wasm-pack and
+# all subprocesses pick it up even when they don't respect rust-toolchain.toml.
+export RUSTUP_TOOLCHAIN="${RUSTUP_TOOLCHAIN:-nightly}"
+
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
