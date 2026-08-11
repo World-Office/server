@@ -2,6 +2,7 @@ import { makeAutoObservable } from "mobx";
 import { toJS } from "mobx";
 import type {
 	ArrowheadType,
+	ConnectorRouteMode,
 	FlowchartDocument,
 	FlowchartEdge,
 	FlowchartNode,
@@ -37,6 +38,9 @@ export class FlowchartStore {
 	/* Grid */
 	gridSize = 20;
 	snapToGridEnabled = true;
+
+	/* Connector routing */
+	defaultRouteMode: ConnectorRouteMode = "orthogonal";
 
 	constructor() {
 		makeAutoObservable(this);
@@ -154,6 +158,7 @@ export class FlowchartStore {
 			strokeColor: "#333333",
 			strokeWidth: 2,
 			strokeStyle: "solid",
+			routeMode: this.defaultRouteMode,
 		};
 		this.document.edges.push(edge);
 		this.autoAnchorEdge(edge.id);
@@ -179,6 +184,7 @@ export class FlowchartStore {
 			strokeColor: "#333333",
 			strokeWidth: 2,
 			strokeStyle: "solid",
+			routeMode: this.defaultRouteMode,
 		};
 		this.document.edges.push(edge);
 		this.connectSourceId = null;
@@ -789,6 +795,62 @@ export class FlowchartStore {
 		this.selectedEdgeIds = [];
 	}
 
+	/* ── Connector formatting (wo-command dispatch target) ── */
+
+	/**
+	 * Apply connector format properties to the currently selected edge(s).
+	 * Dispatched via `wo-command` events from the ConnectorFormatPanel.
+	 */
+	applyConnectorFormat(patch: Partial<FlowchartEdge>): void {
+		this.pushHistory();
+		for (const edgeId of this.selectedEdgeIds) {
+			const edge = this.document.edges.find((e) => e.id === edgeId);
+			if (edge) Object.assign(edge, patch);
+		}
+	}
+
+	/** Reset the selected edge(s) to default connector format. */
+	resetConnectorFormat(): void {
+		this.pushHistory();
+		for (const edgeId of this.selectedEdgeIds) {
+			const edge = this.document.edges.find((e) => e.id === edgeId);
+			if (edge) {
+				edge.strokeColor = "#333333";
+				edge.strokeWidth = 2;
+				edge.strokeStyle = "solid";
+				edge.arrowheadType = "arrow";
+				edge.routeMode = undefined;
+			}
+		}
+	}
+
+	/** Set the default routing mode for new connectors. */
+	setDefaultRouteMode(mode: ConnectorRouteMode): void {
+		this.defaultRouteMode = mode;
+	}
+
+	/** Get a description of the selected edge for the properties panel. */
+	getSelectedEdgeInfo(): {
+		label: string;
+		sourceId: string;
+		targetId: string;
+		routeMode: ConnectorRouteMode;
+		connectedNodes: number;
+	} | null {
+		if (this.selectedEdgeIds.length !== 1) return null;
+		const edge = this.document.edges.find(
+			(e) => e.id === this.selectedEdgeIds[0],
+		);
+		if (!edge) return null;
+		return {
+			label: edge.label,
+			sourceId: edge.sourceId,
+			targetId: edge.targetId,
+			routeMode: edge.routeMode ?? this.defaultRouteMode,
+			connectedNodes: 2,
+		};
+	}
+
 	/* ── Document ── */
 
 	clear(): void {
@@ -828,6 +890,7 @@ export class FlowchartStore {
 				strokeWidth: e.strokeWidth ?? 2,
 				strokeStyle: e.strokeStyle ?? "solid",
 				arrowheadType: (e.arrowheadType ?? "arrow") as ArrowheadType,
+				routeMode: e.routeMode,
 			})),
 		};
 		this.clearSelection();

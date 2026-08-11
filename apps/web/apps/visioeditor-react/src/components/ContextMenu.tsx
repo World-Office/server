@@ -1,5 +1,6 @@
 import { type JSX, useCallback, useEffect, useRef, useState } from "react";
 import { THEMES, flowchartStore } from "../stores/FlowchartStore";
+import type { FlowchartEdge } from "../types/visio";
 import {
 	exportFlowchartAsPdf,
 	exportFlowchartAsPng,
@@ -9,8 +10,9 @@ import {
 export interface ContextMenuState {
 	x: number;
 	y: number;
-	type: "node" | "background";
+	type: "node" | "edge" | "background";
 	nodeId?: string;
+	edgeId?: string;
 }
 
 interface ContextMenuProps {
@@ -70,6 +72,55 @@ export function ContextMenu({ state, onClose }: ContextMenuProps): JSX.Element {
 					>
 						{store.currentThemeId === t.id ? "\u2713 " : ""}
 						{t.name}
+					</button>
+				))}
+				<div className="fc-context-sep" />
+				<button
+					type="button"
+					className="fc-context-item"
+					onClick={() => setSubmenu(null)}
+				>
+					Back
+				</button>
+			</div>
+		);
+	}
+
+	if (submenu === "routing") {
+		const edge =
+			store.selectedEdgeIds.length === 1
+				? store.document.edges.find((e) => e.id === store.selectedEdgeIds[0])
+				: null;
+		const modes: Array<{
+			mode: string;
+			label: string;
+		}> = [
+			{ mode: "orthogonal", label: "Orthogonal (Right Angle)" },
+			{ mode: "straight", label: "Straight" },
+			{ mode: "manhattan", label: "Manhattan" },
+			{ mode: "bezier", label: "Bezier (Smooth)" },
+		];
+		return (
+			<div
+				ref={ref}
+				className="fc-context-menu"
+				style={{ left: state.x, top: state.y }}
+			>
+				{modes.map(({ mode, label }) => (
+					<button
+						type="button"
+						key={mode}
+						className="fc-context-item"
+						onClick={() =>
+							run(() => {
+								store.applyConnectorFormat({
+									routeMode: mode as FlowchartEdge["routeMode"],
+								});
+							})
+						}
+					>
+						{edge?.routeMode === mode ? "\u2713 " : ""}
+						{label}
 					</button>
 				))}
 				<div className="fc-context-sep" />
@@ -267,6 +318,55 @@ export function ContextMenu({ state, onClose }: ContextMenuProps): JSX.Element {
 						}
 					>
 						Delete
+					</button>
+				</>
+			)}
+			{state.type === "edge" && (
+				<>
+					<button
+						type="button"
+						className="fc-context-item"
+						onClick={() => run(() => store.copySelection())}
+					>
+						Copy
+					</button>
+					<button
+						type="button"
+						className="fc-context-item"
+						onClick={() => run(() => store.duplicateSelection())}
+					>
+						Duplicate
+					</button>
+					<div className="fc-context-sep" />
+					<button
+						type="button"
+						className="fc-context-item"
+						onClick={() => setSubmenu("routing")}
+					>
+						Routing Mode &rarr;
+					</button>
+					<button
+						type="button"
+						className="fc-context-item"
+						onClick={() =>
+							run(() => {
+								store.applyConnectorFormat({ routeMode: "straight" });
+							})
+						}
+					>
+						Straighten Connector
+					</button>
+					<div className="fc-context-sep" />
+					<button
+						type="button"
+						className="fc-context-item fc-context-danger"
+						onClick={() =>
+							run(() => {
+								for (const eid of store.selectedEdgeIds) store.removeEdge(eid);
+							})
+						}
+					>
+						Delete Connector
 					</button>
 				</>
 			)}

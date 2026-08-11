@@ -85,7 +85,18 @@ export type EditorMode = "vsdx" | "vsdm" | "flowchart";
 
 export type LeftMenuAction = "thumbs" | "chat" | "support" | "about" | "shapes";
 
-export type RightMenuPanel = "shapeformat" | "properties" | "layers";
+export type RightMenuPanel =
+	| "shapeformat"
+	| "connectorformat"
+	| "properties"
+	| "layers";
+
+/** Connector routing algorithm. Mirrors wo-route::RouteMode. */
+export type ConnectorRouteMode =
+	| "straight"
+	| "orthogonal"
+	| "manhattan"
+	| "bezier";
 
 export type FlowchartShapeType =
 	| "start-end"
@@ -139,6 +150,8 @@ export interface FlowchartEdge {
 	sourceAnchor?: "top" | "right" | "bottom" | "left";
 	targetAnchor?: "top" | "right" | "bottom" | "left";
 	arrowheadType?: ArrowheadType;
+	/** Routing algorithm for this connector. Defaults to "orthogonal". */
+	routeMode?: ConnectorRouteMode;
 }
 
 export interface FlowchartDocument {
