@@ -412,6 +412,47 @@ pub struct XlsxDefinedName {
     pub comment: Option<String>,
 }
 
+// --- Header/Footer Model ---
+
+/// A header or footer content structure (mirrors DocxBody structure).
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct HeaderFooter {
+    /// The blocks that make up this header or footer
+    pub blocks: Vec<DocxBlock>,
+    /// Optional style ID
+    pub style_id: Option<String>,
+}
+
+impl HeaderFooter {
+    pub fn new() -> Self {
+        Self {
+            blocks: Vec::new(),
+            style_id: None,
+        }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.blocks.is_empty()
+    }
+}
+
+/// Section-level properties including header/footer references.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct SectionProperties {
+    /// Header for first page (if different from default)
+    pub header_first: Option<HeaderFooter>,
+    /// Header for even pages (if different from default)
+    pub header_even: Option<HeaderFooter>,
+    /// Header for odd pages / default header
+    pub header: Option<HeaderFooter>,
+    /// Footer for first page (if different from default)
+    pub footer_first: Option<HeaderFooter>,
+    /// Footer for even pages (if different from default)
+    pub footer_even: Option<HeaderFooter>,
+    /// Footer for odd pages / default footer
+    pub footer: Option<HeaderFooter>,
+}
+
 // --- DOCX Body Model ---
 
 /// A block in the document body - either a paragraph or a table.

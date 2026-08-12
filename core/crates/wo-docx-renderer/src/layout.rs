@@ -669,6 +669,142 @@ enum BodyItem<'a> {
     Table(&'a DocxTable),
 }
 
+/// A laid-out header or footer element on a page.
+#[derive(Debug, Clone)]
+pub struct LayoutHeaderFooter {
+    pub elements: Vec<LayoutElement>,
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
+    pub is_header: bool,
+}
+
+/// Layout engine implementation for header/footer
+impl LayoutEngine {
+    /// Layout a header or footer for a specific page and section.
+    /// 
+    /// The section parameter is used to identify which section's header/footer to use.
+    /// The h and f parameters provide the header and footer content directly.
+    /// 
+    /// For page selection:
+    /// - page_number: 1-indexed page number
+    /// - If page is 1 and header_first exists in section_props, use it
+    /// - If page is even and header_even exists, use it
+    /// - Otherwise use the default header
+    pub fn layout_header_footer(
+        &self,
+        page_number: u32,
+        section_props: &SectionProperties,
+    ) -> Vec<LayoutHeaderFooter> {
+        let mut results = Vec::new();
+        
+        // Helper to layout a single header or footer
+        fn layout_hf_content(
+            engine: &LayoutEngine,
+            hf: &HeaderFooter,
+            is_header: bool,
+        ) -> LayoutHeaderFooter {
+            // Create a sub-engine for the header/footer content
+            let hf_engine = LayoutEngine {
+                page_width: engine.content_width,
+                page_height: 100.0, // Arbitrary large value for header/footer
+                margin_top: 0.0,
+                margin_right: 0.0,
+                margin_bottom: 0.0,
+                margin_left: 0.0,
+                content_width: engine.content_width,
+                content_height: 100.0,
+            };
+
+            // Create a temporary body from the header/footer blocks
+            let body = DocxBody {
+                blocks: hf.blocks.clone(),
+            };
+
+            // Layout the body content
+            let pages = hf_engine.layout(&body);
+            
+            // Take all elements from the first page
+            let elements = if !pages.is_empty() {
+                pages[0].elements.clone()
+            } else {
+                Vec::new()
+            };
+
+            // Calculate the actual height used
+            let height = elements.iter().fold(0.0, |acc, elem| {
+                acc + match elem {
+                    LayoutElement::Paragraph { lines, .. } => {
+                        lines.iter().fold(0.0, |h, line| h + line.height)
+                    }
+                    LayoutElement::Table { row_heights, .. } => {
+                        row_heights.iter().sum::<f32>()
+                    }
+                    LayoutElement::PageBreak => 0.0,
+                }
+            });
+
+            let (x, y) = if is_header {
+                (engine.margin_left, engine.margin_top)
+            } else {
+                (engine.margin_left, engine.page_height - engine.margin_bottom - height)
+            };
+
+            LayoutHeaderFooter {
+                elements,
+                x,
+                y,
+                width: engine.content_width,
+                height,
+                is_header,
+            }
+        }
+
+        // Determine which header to use
+        let header = if let Some(hf) = &section_props.header_first {
+            if page_number == 1 {
+                Some(hf)
+            } else {
+                None
+            }
+        } else if page_number % 2 == 0 {
+            section_props.header_even.as_ref()
+        } else {
+            section_props.header.as_ref()
+        };
+        
+        // Determine which footer to use
+        let footer = if let Some(hf) = &section_props.footer_first {
+            if page_number == 1 {
+                Some(hf)
+            } else {
+                None
+            }
+        } else if page_number % 2 == 0 {
+            section_props.footer_even.as_ref()
+        } else {
+            section_props.footer.as_ref()
+        };
+        
+        // Layout header if present
+        if let Some(hf_content) = header {
+            if !hf_content.is_empty() {
+                results.push(layout_hf_content(self, hf_content, true));
+            }
+        }
+        
+        // Layout footer if present
+        if let Some(hf_content) = footer {
+            if !hf_content.is_empty() {
+                results.push(layout_hf_content(self, hf_content, false));
+            }
+        }
+        
+        results
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -903,5 +1039,261 @@ mod tests {
         // Should produce exactly 1 empty page (placeholder)
         assert_eq!(pages.len(), 1);
         assert!(pages[0].elements.is_empty());
+    }
+}
+
+#[cfg(test)]
+mod header_footer {
+    use super::*;
+    use wo_ooxml::model::{DocxBlock, HeaderFooter, SectionProperties};
+    use crate::model::RenderConfig;
+
+    fn default_config() -> RenderConfig {
+        RenderConfig::default()
+    }
+
+    #[test]
+    fn test_layout_header_footer_default() {
+        let engine = LayoutEngine::new(&default_config());
+        
+        // Create section properties with a default header
+        let mut section_props = SectionProperties::default();
+        let mut header = HeaderFooter::new();
+        header.blocks.push(DocxBlock::Paragraph(DocxParagraph {
+            style_id: None,
+            properties: DocxParagraphProperties::default(),
+            runs: vec![DocxRun {
+                text: "Default Header".to_string(),
+                bold: false,
+                italic: false,
+                underline: None,
+                strikethrough: false,
+                double_strikethrough: false,
+                font: None,
+                font_size: Some(24),
+                font_size_cs: None,
+                color: None,
+                highlight: None,
+                vertical_alignment: None,
+                small_caps: false,
+                all_caps: false,
+            }],
+        }));
+        section_props.header = Some(header);
+        
+        // Layout header/footer for page 1 (should use default header)
+        let hf_layouts = engine.layout_header_footer(1, &section_props);
+        assert_eq!(hf_layouts.len(), 1); // Only header, no footer
+        assert!(hf_layouts[0].is_header);
+        assert_eq!(hf_layouts[0].elements.len(), 1);
+    }
+
+    #[test]
+    fn test_layout_header_footer_first_page() {
+        let engine = LayoutEngine::new(&default_config());
+        
+        // Create section properties with first-page-specific header
+        let mut section_props = SectionProperties::default();
+        let mut first_header = HeaderFooter::new();
+        first_header.blocks.push(DocxBlock::Paragraph(DocxParagraph {
+            style_id: None,
+            properties: DocxParagraphProperties::default(),
+            runs: vec![DocxRun {
+                text: "First Page Header".to_string(),
+                bold: false,
+                italic: false,
+                underline: None,
+                strikethrough: false,
+                double_strikethrough: false,
+                font: None,
+                font_size: Some(24),
+                font_size_cs: None,
+                color: None,
+                highlight: None,
+                vertical_alignment: None,
+                small_caps: false,
+                all_caps: false,
+            }],
+        }));
+        section_props.header_first = Some(first_header);
+        
+        let mut default_header = HeaderFooter::new();
+        default_header.blocks.push(DocxBlock::Paragraph(DocxParagraph {
+            style_id: None,
+            properties: DocxParagraphProperties::default(),
+            runs: vec![DocxRun {
+                text: "Default Header".to_string(),
+                bold: false,
+                italic: false,
+                underline: None,
+                strikethrough: false,
+                double_strikethrough: false,
+                font: None,
+                font_size: Some(24),
+                font_size_cs: None,
+                color: None,
+                highlight: None,
+                vertical_alignment: None,
+                small_caps: false,
+                all_caps: false,
+            }],
+        }));
+        section_props.header = Some(default_header);
+        
+        // Page 1 should use first page header
+        let hf_layouts = engine.layout_header_footer(1, &section_props);
+        assert_eq!(hf_layouts.len(), 1);
+        assert!(hf_layouts[0].is_header);
+        if let LayoutElement::Paragraph { lines, .. } = &hf_layouts[0].elements[0] {
+            assert_eq!(lines[0].text, "First Page Header");
+        } else {
+            panic!("Expected Paragraph element");
+        }
+    }
+
+    #[test]
+    fn test_layout_header_footer_even_odd() {
+        let engine = LayoutEngine::new(&default_config());
+        
+        // Create section properties with even and odd page headers
+        let mut section_props = SectionProperties::default();
+        
+        let mut odd_header = HeaderFooter::new();
+        odd_header.blocks.push(DocxBlock::Paragraph(DocxParagraph {
+            style_id: None,
+            properties: DocxParagraphProperties::default(),
+            runs: vec![DocxRun {
+                text: "Odd Page Header".to_string(),
+                bold: false,
+                italic: false,
+                underline: None,
+                strikethrough: false,
+                double_strikethrough: false,
+                font: None,
+                font_size: Some(24),
+                font_size_cs: None,
+                color: None,
+                highlight: None,
+                vertical_alignment: None,
+                small_caps: false,
+                all_caps: false,
+            }],
+        }));
+        section_props.header = Some(odd_header);
+        
+        let mut even_header = HeaderFooter::new();
+        even_header.blocks.push(DocxBlock::Paragraph(DocxParagraph {
+            style_id: None,
+            properties: DocxParagraphProperties::default(),
+            runs: vec![DocxRun {
+                text: "Even Page Header".to_string(),
+                bold: false,
+                italic: false,
+                underline: None,
+                strikethrough: false,
+                double_strikethrough: false,
+                font: None,
+                font_size: Some(24),
+                font_size_cs: None,
+                color: None,
+                highlight: None,
+                vertical_alignment: None,
+                small_caps: false,
+                all_caps: false,
+            }],
+        }));
+        section_props.header_even = Some(even_header);
+        
+        // Page 1 (odd) should use odd header
+        let hf_layouts_1 = engine.layout_header_footer(1, &section_props);
+        assert_eq!(hf_layouts_1.len(), 1);
+        if let LayoutElement::Paragraph { lines, .. } = &hf_layouts_1[0].elements[0] {
+            assert_eq!(lines[0].text, "Odd Page Header");
+        } else {
+            panic!("Expected Paragraph element");
+        }
+        
+        // Page 2 (even) should use even header
+        let hf_layouts_2 = engine.layout_header_footer(2, &section_props);
+        assert_eq!(hf_layouts_2.len(), 1);
+        if let LayoutElement::Paragraph { lines, .. } = &hf_layouts_2[0].elements[0] {
+            assert_eq!(lines[0].text, "Even Page Header");
+        } else {
+            panic!("Expected Paragraph element");
+        }
+    }
+
+    #[test]
+    fn test_layout_header_footer_with_footer() {
+        let engine = LayoutEngine::new(&default_config());
+        
+        // Create section properties with both header and footer
+        let mut section_props = SectionProperties::default();
+        
+        let mut header = HeaderFooter::new();
+        header.blocks.push(DocxBlock::Paragraph(DocxParagraph {
+            style_id: None,
+            properties: DocxParagraphProperties::default(),
+            runs: vec![DocxRun {
+                text: "Header Text".to_string(),
+                bold: false,
+                italic: false,
+                underline: None,
+                strikethrough: false,
+                double_strikethrough: false,
+                font: None,
+                font_size: Some(24),
+                font_size_cs: None,
+                color: None,
+                highlight: None,
+                vertical_alignment: None,
+                small_caps: false,
+                all_caps: false,
+            }],
+        }));
+        section_props.header = Some(header);
+        
+        let mut footer = HeaderFooter::new();
+        footer.blocks.push(DocxBlock::Paragraph(DocxParagraph {
+            style_id: None,
+            properties: DocxParagraphProperties::default(),
+            runs: vec![DocxRun {
+                text: "Footer Text".to_string(),
+                bold: false,
+                italic: false,
+                underline: None,
+                strikethrough: false,
+                double_strikethrough: false,
+                font: None,
+                font_size: Some(24),
+                font_size_cs: None,
+                color: None,
+                highlight: None,
+                vertical_alignment: None,
+                small_caps: false,
+                all_caps: false,
+            }],
+        }));
+        section_props.footer = Some(footer);
+        
+        // Layout should produce both header and footer
+        let hf_layouts = engine.layout_header_footer(1, &section_props);
+        assert_eq!(hf_layouts.len(), 2);
+        assert!(hf_layouts[0].is_header);
+        assert!(!hf_layouts[1].is_header);
+        
+        // Check header text
+        if let LayoutElement::Paragraph { lines, .. } = &hf_layouts[0].elements[0] {
+            assert_eq!(lines[0].text, "Header Text");
+        } else {
+            panic!("Expected Paragraph element in header");
+        }
+        
+        // Check footer text
+        if let LayoutElement::Paragraph { lines, .. } = &hf_layouts[1].elements[0] {
+            assert_eq!(lines[0].text, "Footer Text");
+        } else {
+            panic!("Expected Paragraph element in footer");
+        }
     }
 }
