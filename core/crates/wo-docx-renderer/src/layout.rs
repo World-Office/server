@@ -195,39 +195,67 @@ impl LayoutEngine {
                     cursor_y += spacing_after_pt;
                 }
                 BodyItem::Table(table) => {
-                    let layout_table = self.layout_table(table, cursor_y);
+                    let num_rows = table.rows.len();
+                    if num_rows == 0 {
+                        continue;
+                    }
 
-                    let table_height = layout_table.height;
+                    // Determine column count from the first row
+                    let num_cols = table.rows.first().map(|r| r.cells.len()).unwrap_or(0);
+                    if num_cols == 0 {
+                        continue;
+                    }
+                    let col_width = self.content_width / num_cols as f32;
+                    let max_y = self.page_height - self.margin_bottom;
 
-                    // Check page overflow
-                    if cursor_y + table_height > self.page_height - self.margin_bottom
-                        && !current_page.elements.is_empty()
-                    {
-                        pages.push(current_page);
-                        current_page = LayoutPage {
-                            elements: Vec::new(),
-                            width: self.page_width,
-                            height: self.page_height,
-                        };
-                        cursor_y = self.margin_top;
-                        let layout_table = self.layout_table(table, cursor_y);
+                    // Identify header row indices (rows with is_header == true)
+                    let header_indices: Vec<usize> = table
+                        .rows
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, r)| r.is_header)
+                        .map(|(i, _)| i)
+                        .collect();
+
+                    let mut data_row_idx: usize = 0; // next non-header row to place
+                    let mut is_first_table_page = true;
+
+                    loop {
+                        if data_row_idx >= num_rows {
+                            break;
+                        }
+
+                        let layout = self.layout_table_chunk(
+                            table,
+                            cursor_y,
+                            max_y,
+                            data_row_idx,
+                            &header_indices,
+                            !is_first_table_page,
+                            col_width,
+                        );
+
                         current_page.elements.push(LayoutElement::Table {
-                            cells: layout_table.cells,
-                            row_heights: layout_table.row_heights,
-                            x: layout_table.x,
-                            y: layout_table.y,
-                            width: layout_table.width,
+                            cells: layout.cells,
+                            row_heights: layout.row_heights.clone(),
+                            x: layout.x,
+                            y: layout.y,
+                            width: layout.width,
                         });
-                        cursor_y += layout_table.height;
-                    } else {
-                        current_page.elements.push(LayoutElement::Table {
-                            cells: layout_table.cells,
-                            row_heights: layout_table.row_heights.clone(),
-                            x: layout_table.x,
-                            y: layout_table.y,
-                            width: layout_table.width,
-                        });
-                        cursor_y += table_height;
+                        cursor_y += layout.height;
+                        data_row_idx += layout.placed_rows;
+
+                        if data_row_idx < num_rows {
+                            // Need a new page
+                            pages.push(current_page);
+                            current_page = LayoutPage {
+                                elements: Vec::new(),
+                                width: self.page_width,
+                                height: self.page_height,
+                            };
+                            cursor_y = self.margin_top;
+                            is_first_table_page = false;
+                        }
                     }
                 }
             }
@@ -493,10 +521,21 @@ impl LayoutEngine {
         text.chars().count() as f32 * font_size_pt * CHAR_WIDTH_FACTOR
     }
 
-    /// Layout a table into a positioned table element.
-    fn layout_table(&self, table: &DocxTable, cursor_y: f32) -> LayoutTable {
+    /// Layout a chunk of a table starting from a given row index, optionally
+    /// prepending header rows. Places rows until max_y is exceeded.
+    #[allow(clippy::too_many_arguments)]
+    fn layout_table_chunk(
+        &self,
+        table: &DocxTable,
+        cursor_y: f32,
+        max_y: f32,
+        start_row: usize,
+        header_indices: &[usize],
+        repeat_headers: bool,
+        col_width: f32,
+    ) -> LayoutTable {
         let num_rows = table.rows.len();
-        if num_rows == 0 {
+        if num_rows == 0 || start_row >= num_rows {
             return LayoutTable {
                 cells: Vec::new(),
                 row_heights: Vec::new(),
@@ -504,67 +543,85 @@ impl LayoutEngine {
                 y: cursor_y,
                 width: 0.0,
                 height: 0.0,
+                placed_rows: 0,
+                has_repeated_headers: false,
             };
         }
 
-        // Determine column count from the first row
-        let num_cols = table.rows.first().map(|r| r.cells.len()).unwrap_or(0);
+        // Determine which rows to place: first repeated headers, then data rows
+        let mut place_rows: Vec<usize> = Vec::new();
 
-        if num_cols == 0 {
-            return LayoutTable {
-                cells: Vec::new(),
-                row_heights: Vec::new(),
-                x: self.content_width,
-                y: cursor_y,
-                width: self.content_width,
-                height: 0.0,
-            };
+        // Prepend header rows if repeating
+        if repeat_headers && !header_indices.is_empty() {
+            place_rows.extend_from_slice(header_indices);
         }
 
-        let col_width = self.content_width / num_cols as f32;
-
-        // Compute row heights
-        let mut row_heights: Vec<f32> = Vec::with_capacity(num_rows);
-        let mut total_height = 0.0;
-        let default_row_height = 20.0; // points
-
-        for row in &table.rows {
-            // Try to use specified height (twips → points)
-            let h = row
-                .height
-                .map(|h| h as f32 / 20.0)
-                .unwrap_or(default_row_height)
-                .max(default_row_height);
-
-            // If row has paragraphs, estimate height from text
-            let max_para_height = row
-                .cells
-                .iter()
-                .flat_map(|c| c.paragraphs.iter())
-                .map(|p| {
-                    let font_size =
-                        p.runs.iter().find_map(|r| r.font_size).unwrap_or(24) as f32 / 2.0;
-                    let run_count = p.runs.len().max(1);
-                    let total_text: String = p.runs.iter().map(|r| r.text.as_str()).collect();
-                    let num_lines = ((self.measure_text_width(&total_text, font_size) / col_width)
-                        .ceil() as usize)
-                        .max(run_count)
-                        .max(1);
-                    num_lines as f32 * font_size * DEFAULT_LINE_HEIGHT_FACTOR * 2.0
-                })
-                .fold(0.0_f32, |a, b| a.max(b));
-
-            let row_h = h.max(max_para_height + 8.0); // 8pt cell padding
-            row_heights.push(row_h);
-            total_height += row_h;
-        }
-
-        // Build cell layout items
-        let mut cells = Vec::new();
+        // Add data rows starting from start_row
+        let mut placed_data = 0usize;
         let mut y = cursor_y;
-        for (row_idx, row) in table.rows.iter().enumerate() {
+
+        // First pass: compute heights for all candidate rows to determine fit
+        // We compute row heights for header rows and for data rows up to what fits
+        let mut chunk_row_heights: Vec<f32> = Vec::new();
+        let mut chunk_source_indices: Vec<usize> = Vec::new();
+
+        // Add header rows (if repeating) with their computed heights
+        if repeat_headers {
+            for &hdr_idx in header_indices {
+                if hdr_idx < num_rows {
+                    let rh = self.compute_row_height(&table.rows[hdr_idx], col_width);
+                    if y + rh > max_y && !chunk_row_heights.is_empty() {
+                        // Header rows don't fit on this page — that's OK for now,
+                        // we just try to place them even if it pushes over;
+                        // this is better than having no headers at all.
+                    }
+                    chunk_row_heights.push(rh);
+                    chunk_source_indices.push(hdr_idx);
+                    y += rh;
+                }
+            }
+        }
+
+        // Add data rows from start_row
+        for i in start_row..num_rows {
+            // Skip rows that are headers (they're handled above if repeating)
+            if header_indices.contains(&i) && repeat_headers {
+                // Header rows were already placed above; skip them as data rows
+                placed_data += 1;
+                continue;
+            }
+
+            let rh = self.compute_row_height(&table.rows[i], col_width);
+
+            if y + rh > max_y && !chunk_row_heights.is_empty() {
+                // Row doesn't fit — stop here
+                break;
+            }
+
+            chunk_row_heights.push(rh);
+            chunk_source_indices.push(i);
+            y += rh;
+            placed_data += 1;
+        }
+
+        // If nothing placed at all (e.g., only row doesn't fit), force-place it
+        if chunk_row_heights.is_empty() && start_row < num_rows {
+            let i = start_row;
+            if !(header_indices.contains(&i) && repeat_headers) {
+                let rh = self.compute_row_height(&table.rows[i], col_width);
+                chunk_row_heights.push(rh);
+                chunk_source_indices.push(i);
+                placed_data += 1;
+            }
+        }
+
+        // Build cells for placed rows
+        let mut cells = Vec::new();
+        let mut y_pos = cursor_y;
+        for (chunk_idx, &row_idx) in chunk_source_indices.iter().enumerate() {
+            let row = &table.rows[row_idx];
             let mut x = self.margin_left;
-            let row_h = row_heights[row_idx];
+            let row_h = chunk_row_heights[chunk_idx];
             for cell in row.cells.iter() {
                 let cell_w = cell.width.map(|w| w as f32 / 20.0).unwrap_or(col_width);
                 cells.push(LayoutCell {
@@ -572,23 +629,63 @@ impl LayoutEngine {
                     column_span: cell.column_span,
                     row_span: cell.row_span,
                     x,
-                    y,
+                    y: y_pos,
                     width: cell_w,
                     height: row_h,
                 });
                 x += cell_w;
             }
-            y += row_h;
+            y_pos += row_h;
         }
+
+        let total_height = if chunk_row_heights.is_empty() {
+            0.0
+        } else {
+            y_pos - cursor_y
+        };
 
         LayoutTable {
             cells,
-            row_heights,
+            row_heights: chunk_row_heights,
             x: self.margin_left,
             y: cursor_y,
             width: self.content_width,
             height: total_height,
+            placed_rows: placed_data,
+            has_repeated_headers: repeat_headers,
         }
+    }
+
+    /// Compute the height of a single table row based on content.
+    fn compute_row_height(&self, row: &DocxTableRow, col_width: f32) -> f32 {
+        let default_row_height = 20.0;
+
+        // Try to use specified height (twips → points)
+        let h = row
+            .height
+            .map(|h| h as f32 / 20.0)
+            .unwrap_or(default_row_height)
+            .max(default_row_height);
+
+        // If row has paragraphs, estimate height from text
+        let max_para_height = row
+            .cells
+            .iter()
+            .flat_map(|c| c.paragraphs.iter())
+            .map(|p| {
+                let font_size =
+                    p.runs.iter().find_map(|r| r.font_size).unwrap_or(24) as f32 / 2.0;
+                let run_count = p.runs.len().max(1);
+                let total_text: String = p.runs.iter().map(|r| r.text.as_str()).collect();
+                let num_lines = ((self.measure_text_width(&total_text, font_size) / col_width)
+                    .ceil() as usize)
+                    .max(run_count)
+                    .max(1);
+                num_lines as f32 * font_size * DEFAULT_LINE_HEIGHT_FACTOR * 2.0
+            })
+            .fold(0.0_f32, |a, b| a.max(b));
+
+        h.max(max_para_height + 8.0) // 8pt cell padding
     }
 }
 
@@ -640,6 +737,10 @@ pub struct LayoutTable {
     pub y: f32,
     pub width: f32,
     pub height: f32,
+    /// Number of rows from the original table placed in this layout.
+    pub placed_rows: usize,
+    /// Whether header rows have been prepended (for pages after the first).
+    pub has_repeated_headers: bool,
 }
 
 /// A laid-out table cell.
