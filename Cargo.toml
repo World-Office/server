@@ -14,6 +14,7 @@ members = [
     "core/crates/wo-rtf",
     "core/crates/wo-hwp",
     "core/crates/wo-pdf",
+    "core/crates/wo-pdf-render",
     "core/crates/wo-odf",
     "core/crates/wo-ooxml",
     "core/crates/wo-msbinary",
