@@ -678,4 +678,96 @@ mod tests {
         let mut collection = ChartCollection::new();
         assert!(collection.get_mut("ghost").is_none());
     }
+
+    // -----------------------------------------------------------------------
+    // render_embedded_chart tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn render_embedded_bar_chart() {
+        let mut chart = Chart::new(ChartKind::Bar);
+        chart.add_series(Series::new(
+            "Sales",
+            vec![
+                DataPoint::with_category(100.0, "Q1"),
+                DataPoint::with_category(150.0, "Q2"),
+            ],
+        ));
+        let chart_ref = ChartRef::Inline {
+            chart: Box::new(chart),
+        };
+        let collection = ChartCollection::new();
+        let mut canvas = Canvas::new(800, 600);
+        let rect = Rect::new(50.0, 50.0, 700.0, 500.0);
+        assert!(render_embedded_chart(&chart_ref, &collection, &mut canvas, rect).is_ok());
+    }
+
+    #[test]
+    fn render_embedded_line_chart() {
+        let mut chart = Chart::new(ChartKind::Line);
+        chart.add_series(Series::new(
+            "Revenue",
+            vec![
+                DataPoint::with_category(100.0, "Jan"),
+                DataPoint::with_category(150.0, "Feb"),
+                DataPoint::with_category(200.0, "Mar"),
+            ],
+        ));
+        let chart_ref = ChartRef::Inline {
+            chart: Box::new(chart),
+        };
+        let collection = ChartCollection::new();
+        let mut canvas = Canvas::new(800, 600);
+        let rect = Rect::new(50.0, 50.0, 700.0, 500.0);
+        assert!(render_embedded_chart(&chart_ref, &collection, &mut canvas, rect).is_ok());
+    }
+
+    #[test]
+    fn render_embedded_pie_chart() {
+        let mut chart = Chart::new(ChartKind::Pie);
+        chart.add_series(Series::new(
+            "Market Share",
+            vec![
+                DataPoint::with_category(45.0, "Company A"),
+                DataPoint::with_category(30.0, "Company B"),
+                DataPoint::with_category(25.0, "Company C"),
+            ],
+        ));
+        let chart_ref = ChartRef::Inline {
+            chart: Box::new(chart),
+        };
+        let collection = ChartCollection::new();
+        let mut canvas = Canvas::new(800, 600);
+        let rect = Rect::new(50.0, 50.0, 700.0, 500.0);
+        assert!(render_embedded_chart(&chart_ref, &collection, &mut canvas, rect).is_ok());
+    }
+
+    #[test]
+    fn render_embedded_stored_chart() {
+        let mut chart = Chart::new(ChartKind::Bar);
+        chart.add_series(Series::new("Data", vec![DataPoint::new(50.0), DataPoint::new(75.0)]));
+        
+        let mut collection = ChartCollection::new();
+        collection.insert("stored_chart".into(), chart);
+        
+        let chart_ref = ChartRef::Stored {
+            id: "stored_chart".into(),
+        };
+        let mut canvas = Canvas::new(800, 600);
+        let rect = Rect::new(50.0, 50.0, 700.0, 500.0);
+        assert!(render_embedded_chart(&chart_ref, &collection, &mut canvas, rect).is_ok());
+    }
+
+    #[test]
+    fn render_embedded_chart_not_found_error() {
+        let chart_ref = ChartRef::Stored {
+            id: "nonexistent".into(),
+        };
+        let collection = ChartCollection::new();
+        let mut canvas = Canvas::new(800, 600);
+        let rect = Rect::new(50.0, 50.0, 700.0, 500.0);
+        let result = render_embedded_chart(&chart_ref, &collection, &mut canvas, rect);
+        assert!(result.is_err());
+        assert!(matches!(result, Err(EmbedError::ChartNotFound)));
+    }
 }
