@@ -20,6 +20,29 @@ pub use pdfium_render as pdfium;
 mod renderer;
 pub use renderer::{Annotation, PdfRenderer, PdfiumBackend, Rect};
 
+mod text;
+mod annotation;
+
+// Test utilities: Pdfium can only be initialized once per process,
+// so we provide a global backend for tests to share.
+#[cfg(test)]
+use std::sync::OnceLock;
+#[cfg(test)]
+static TEST_BACKEND: OnceLock<Result<PdfiumBackend, String>> = OnceLock::new();
+
+/// Get or initialize the global PdfiumBackend for testing.
+/// Returns an error if Pdfium is already initialized elsewhere.
+#[cfg(test)]
+pub fn test_backend() -> Result<&'static PdfiumBackend, String> {
+    let result = TEST_BACKEND.get_or_init(|| {
+        // Try to create a backend. If Pdfium is already initialized,
+        // this will fail with "PdfiumLibraryBindingsAlreadyInitialized"
+        PdfiumBackend::new().map_err(|e| e.to_string())
+    });
+    result.as_ref().map_err(|e| e.clone())?;
+    Ok(result.as_ref().unwrap())
+}
+
 /// Error types for PDF rendering operations.
 ///
 /// Concrete render methods (added in PDF-2) will return this type.
