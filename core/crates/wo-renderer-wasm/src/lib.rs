@@ -60,6 +60,154 @@ unsafe fn next_doc_handle() -> u32 {
     h
 }
 
+// ── PDF Model (§2.3) ──────────────────────────────────────────────
+
+/// Global store of PDF document instances (handle → PDF bytes).
+static PDF_STORE: OnceLock<Mutex<HashMap<u32, Vec<u8>>>> = OnceLock::new();
+/// Global store of PDF document information (handle → PdfDocInfo).
+static PDF_INFO_STORE: OnceLock<Mutex<HashMap<u32, PdfDocInfo>>> = OnceLock::new();
+
+/// Next available PDF handle (separate namespace starting at 2000
+/// to avoid collisions with other stores).
+static mut NEXT_PDF_HANDLE: u32 = 2000;
+
+/// PDF document information.
+#[derive(Debug, Clone)]
+struct PdfDocInfo {
+    /// Number of pages in the PDF.
+    pub page_count: u32,
+    /// Width and height of each page in pixels.
+    pub pages: Vec<PdfPageInfo>,
+}
+
+/// Page information.
+#[derive(Debug, Clone)]
+struct PdfPageInfo {
+    /// Page width in pixels.
+    pub width: u32,
+    /// Page height in pixels.
+    pub height: u32,
+}
+
+/// Layout options for PDF rendering.
+#[derive(Debug, Clone, serde::Deserialize)]
+struct PdfLayoutOpts {
+    /// Canvas width in pixels.
+    #[allow(dead_code)]
+    pub width: u32,
+    /// Canvas height in pixels.
+    #[allow(dead_code)]
+    pub height: u32,
+    /// DPI for rendering.
+    #[serde(default = "default_dpi")]
+    #[allow(dead_code)]
+    pub dpi: f32,
+    /// Page index to render (0-based).
+    #[serde(default)]
+    pub page: usize,
+}
+
+fn default_dpi() -> f32 {
+    96.0
+}
+
+/// Allocate the next PDF handle.
+///
+/// # Safety
+/// WASM is single-threaded; the mutable static is safe in that context.
+unsafe fn next_pdf_handle() -> u32 {
+    let h = NEXT_PDF_HANDLE;
+    NEXT_PDF_HANDLE += 1;
+    h
+}
+
+/// Check if bytes represent a valid PDF file.
+fn is_valid_pdf(bytes: &[u8]) -> bool {
+    bytes.len() >= 5 && bytes.starts_with(b"%PDF-")
+}
+
+/// Count pages in a PDF by searching for page objects.
+///
+/// This is a simple heuristic that counts "/Type /Page" occurrences.
+/// For a more accurate count, use wo-pdf crate.
+fn count_pdf_pages(bytes: &[u8]) -> u32 {
+    // Count occurrences of "/Type /Page"
+    let mut count = 0u32;
+    for window in bytes.windows(10) {
+        if window == b"/Type /Page" {
+            count += 1;
+        }
+    }
+    count.max(1) // At least 1 page
+}
+
+/// Create a PDF model from bytes and return a handle.
+///
+/// Stores the PDF bytes and extracts basic information like page count.
+fn create_pdf_model(bytes: &[u8]) -> Result<u32, String> {
+    if bytes.is_empty() {
+        return Err("PDF bytes are empty".to_string());
+    }
+    if !is_valid_pdf(bytes) {
+        return Err("Invalid PDF header: does not start with %PDF-".to_string());
+    }
+
+    let handle = unsafe { next_pdf_handle() };
+
+    // Store raw bytes
+    let store = PDF_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut store = store.lock().unwrap();
+    store.insert(handle, bytes.to_vec());
+
+    // Extract basic PDF info
+    let page_count = count_pdf_pages(bytes);
+    let pages = vec![PdfPageInfo {
+        width: 794,  // Default A4 width at 96 DPI
+        height: 1123, // Default A4 height at 96 DPI
+    }; page_count as usize];
+
+    let info_store = PDF_INFO_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut info_store = info_store.lock().unwrap();
+    info_store.insert(
+        handle,
+        PdfDocInfo {
+            page_count,
+            pages,
+        },
+    );
+
+    Ok(handle)
+}
+
+/// Layout a PDF document and return JSON with page information.
+fn layout_pdf_document(handle: u32, opts: &PdfLayoutOpts) -> Result<String, String> {
+    let info_store = PDF_INFO_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let info_store = info_store.lock().unwrap();
+    let info = info_store
+        .get(&handle)
+        .ok_or_else(|| format!("PDF handle {} not found", handle))?;
+
+    // Build page JSON
+    let mut pages_json: Vec<serde_json::Value> = Vec::new();
+    for (i, page) in info.pages.iter().enumerate() {
+        let is_active = i == opts.page;
+        pages_json.push(serde_json::json!({
+            "width": page.width,
+            "height": page.height,
+            "index": i,
+            "active": is_active,
+        }));
+    }
+
+    let result = serde_json::json!({
+        "pages": pages_json,
+        "pageCount": info.page_count,
+        "currentPage": opts.page,
+    });
+
+    serde_json::to_string(&result).map_err(|e| format!("JSON serialization failed: {}", e))
+}
+
 /// Initialize the WASM module.
 ///
 /// Sets up panic hook for better error messages in the browser.
@@ -781,17 +929,16 @@ pub fn handle_key_event(
                 }
             } else if cursor.char_idx == 0 && pidx > 0 && pidx < body.paragraphs().len() {
                 // Merge with previous paragraph
-                if let (Some(DocxBlock::Paragraph(prev_para)), Some(DocxBlock::Paragraph(curr_para))) = (
-                    body.blocks.get_mut(pidx - 1),
-                    body.blocks.get(pidx)
-                ) {
+                if let Some(DocxBlock::Paragraph(curr_para)) = body.blocks.get(pidx) {
                     let first_text = curr_para
                         .runs
                         .first()
                         .map(|r| r.text.clone())
                         .unwrap_or_default();
-                    if let Some(prev_last_run) = prev_para.runs.last_mut() {
-                        prev_last_run.text.push_str(&first_text);
+                    if let Some(DocxBlock::Paragraph(prev_para)) = body.blocks.get_mut(pidx - 1) {
+                        if let Some(prev_last_run) = prev_para.runs.last_mut() {
+                            prev_last_run.text.push_str(&first_text);
+                        }
                     }
                 }
                 body.blocks.remove(pidx);
@@ -825,17 +972,16 @@ pub fn handle_key_event(
                         global_c += run_len;
                     }
                     if !removed && pidx + 1 < body.paragraphs().len() {
-                        if let (Some(DocxBlock::Paragraph(curr_para)), Some(DocxBlock::Paragraph(next_para))) = (
-                            body.blocks.get_mut(pidx),
-                            body.blocks.get(pidx + 1)
-                        ) {
+                        if let Some(DocxBlock::Paragraph(next_para)) = body.blocks.get(pidx + 1) {
                             let next_text = next_para
                                 .runs
                                 .first()
                                 .map(|r| r.text.clone())
                                 .unwrap_or_default();
-                            if let Some(last_run) = curr_para.runs.last_mut() {
-                                last_run.text.push_str(&next_text);
+                            if let Some(DocxBlock::Paragraph(curr_para)) = body.blocks.get_mut(pidx) {
+                                if let Some(last_run) = curr_para.runs.last_mut() {
+                                    last_run.text.push_str(&next_text);
+                                }
                             }
                         }
                         body.blocks.remove(pidx + 1);
@@ -1217,8 +1363,9 @@ pub fn create_model(bytes: &[u8], fmt: &str) -> Result<u32, String> {
             store.insert(handle, model);
             Ok(handle)
         }
+        "pdf" => create_pdf_model(bytes),
         other => Err(format!(
-            "Unsupported format: '{}'. Supported: 'stub'.",
+            "Unsupported format: '{}'. Supported: 'stub', 'pdf'.",
             other
         )),
     }
@@ -1236,12 +1383,26 @@ pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
     }
     let op: wo_common::op::ModelOp =
         serde_json::from_str(op_json).map_err(|e| format!("Invalid op JSON: {}", e))?;
-    let store = stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
-    let mut store = store.lock().unwrap();
-    let model = store
-        .get_mut(&handle)
-        .ok_or_else(|| format!("Stub model handle {} not found", handle))?;
-    model.apply(&op).map_err(|e| e.to_string())
+    
+    // Try stub model first
+    {
+        let store = stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+        let mut store = store.lock().unwrap();
+        if let Some(model) = store.get_mut(&handle) {
+            return model.apply(&op).map_err(|e| e.to_string());
+        }
+    }
+    
+    // Try PDF model - for now, PDF doesn't support operations, return error
+    {
+        let store = PDF_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+        let store = store.lock().unwrap();
+        if store.contains_key(&handle) {
+            return Err(format!("PDF model does not support operations yet: {}", op_json));
+        }
+    }
+    
+    Err(format!("Model handle {} not found", handle))
 }
 
 /// Serialize the model back to bytes.
@@ -1249,12 +1410,25 @@ pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
 /// For the stub model, returns a JSON array of paragraph strings.
 #[wasm_bindgen]
 pub fn model_to_bytes(handle: u32) -> Result<Vec<u8>, String> {
-    let store = stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
-    let store = store.lock().unwrap();
-    let model = store
-        .get(&handle)
-        .ok_or_else(|| format!("Stub model handle {} not found", handle))?;
-    serde_json::to_vec(&model.paragraphs).map_err(|e| format!("Serialization failed: {}", e))
+    // Try stub model first
+    {
+        let store = stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+        let store = store.lock().unwrap();
+        if let Some(model) = store.get(&handle) {
+            return serde_json::to_vec(&model.paragraphs).map_err(|e| format!("Serialization failed: {}", e));
+        }
+    }
+    
+    // Try PDF model - return the raw bytes
+    {
+        let store = PDF_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+        let store = store.lock().unwrap();
+        if let Some(bytes) = store.get(&handle) {
+            return Ok(bytes.clone());
+        }
+    }
+    
+    Err(format!("Model handle {} not found", handle))
 }
 
 /// Layout the model and optionally render to a canvas.
@@ -1272,6 +1446,18 @@ pub fn model_to_bytes(handle: u32) -> Result<Vec<u8>, String> {
 /// ```
 #[wasm_bindgen]
 pub fn layout_and_render(handle: u32, opts_json: &str, canvas: u32) -> Result<String, String> {
+    // Try PDF model first (handles start at 2000)
+    if handle >= 2000 {
+        let pdf_opts: PdfLayoutOpts =
+            serde_json::from_str(opts_json).map_err(|e| format!("Invalid opts JSON: {}", e))?;
+        let info_store = PDF_INFO_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+        let info_store = info_store.lock().unwrap();
+        if info_store.contains_key(&handle) {
+            return layout_pdf_document(handle, &pdf_opts);
+        }
+    }
+
+    // Try stub model
     let opts: stub_model::StubLayoutOpts =
         serde_json::from_str(opts_json).map_err(|e| format!("Invalid opts JSON: {}", e))?;
     let store = stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
@@ -1318,6 +1504,20 @@ pub fn layout_and_render(handle: u32, opts_json: &str, canvas: u32) -> Result<St
 #[wasm_bindgen]
 pub fn release_stub_model(handle: u32) -> Result<(), String> {
     stub_model::StubModel::release(handle);
+    Ok(())
+}
+
+/// Release a PDF model and free its resources.
+#[wasm_bindgen]
+pub fn release_pdf_model(handle: u32) -> Result<(), String> {
+    let store = PDF_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut store = store.lock().unwrap();
+    store.remove(&handle);
+    
+    let info_store = PDF_INFO_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut info_store = info_store.lock().unwrap();
+    info_store.remove(&handle);
+    
     Ok(())
 }
 
@@ -2101,5 +2301,114 @@ SFX N e ness e
         let points_json = spell_hyphenate("project", "nonexistent");
         let points: Vec<usize> = serde_json::from_str(&points_json).expect("valid JSON");
         assert!(points.is_empty());
+    }
+
+    // ── Uniform WASM export convention (§2.3) tests for PDF ───────
+
+    #[test]
+    fn test_create_pdf_model_valid() {
+        // Minimal valid PDF header
+        let pdf_bytes = b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\nstartxref\n0\n%%EOF";
+        let handle = create_model(pdf_bytes, "pdf").unwrap();
+        assert!(handle >= 2000);
+        release_pdf_model(handle).ok();
+    }
+
+    #[test]
+    fn test_create_pdf_model_empty_bytes() {
+        let result = create_model(&[], "pdf");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("empty"));
+    }
+
+    #[test]
+    fn test_create_pdf_model_invalid_header() {
+        let result = create_model(b"not a pdf", "pdf");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Invalid PDF header"));
+    }
+
+    #[test]
+    fn test_create_pdf_model_empty_format() {
+        let result = create_model(b"%PDF-1.4", "");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_model_to_bytes_pdf() {
+        let pdf_bytes = b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\nstartxref\n0\n%%EOF";
+        let handle = create_model(pdf_bytes, "pdf").unwrap();
+        let result = model_to_bytes(handle).unwrap();
+        assert_eq!(result, pdf_bytes);
+        release_pdf_model(handle).ok();
+    }
+
+    #[test]
+    fn test_model_to_bytes_pdf_nonexistent() {
+        let result = model_to_bytes(99999);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_layout_and_render_pdf() {
+        let pdf_bytes = b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\nstartxref\n0\n%%EOF";
+        let handle = create_model(pdf_bytes, "pdf").unwrap();
+        let opts = r#"{"width":794,"height":1123,"dpi":96,"page":0}"#;
+        let json = layout_and_render(handle, opts, 0).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert!(parsed["pages"].is_array());
+        assert!(parsed["pageCount"].is_number());
+        release_pdf_model(handle).ok();
+    }
+
+    #[test]
+    fn test_layout_and_render_pdf_nonexistent() {
+        let opts = r#"{}"#;
+        let result = layout_and_render(99999, opts, 0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_release_pdf_model() {
+        let pdf_bytes = b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\nstartxref\n0\n%%EOF";
+        let handle = create_model(pdf_bytes, "pdf").unwrap();
+        let result = release_pdf_model(handle);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_release_pdf_model_nonexistent() {
+        let result = release_pdf_model(99999);
+        assert!(result.is_ok()); // Should not panic
+    }
+
+    #[test]
+    fn test_apply_op_pdf_not_supported() {
+        let pdf_bytes = b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\nstartxref\n0\n%%EOF";
+        let handle = create_model(pdf_bytes, "pdf").unwrap();
+        let op = r#"{"op":"insert","at":{"kind":"text","para":0,"run":0,"char":0},"content":"test"}"#;
+        let result = apply_op(handle, op);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("PDF model does not support operations"));
+        release_pdf_model(handle).ok();
+    }
+
+    #[test]
+    fn test_create_model_pdf_with_pages() {
+        // PDF with multiple page objects
+        let pdf_bytes = b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\n2 0 obj\n<<>>\nendobj\n/Type /Page\n3 0 obj\n/Type /Page\n4 0 obj\n/Type /Page\ntrailer\n<<>>\nstartxref\n0\n%%EOF";
+        let handle = create_model(pdf_bytes, "pdf").unwrap();
+        let json = layout_and_render(handle, r#"{"width":794,"height":1123,"page":0}"#, 0).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let page_count = parsed["pageCount"].as_u64().unwrap();
+        assert!(page_count >= 1, "Should have at least 1 page");
+        release_pdf_model(handle).ok();
+    }
+
+    #[test]
+    fn test_create_model_unsupported_format_pdf() {
+        let result = create_model(b"[]", "xlsx");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Unsupported format"));
     }
 }
