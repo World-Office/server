@@ -78,6 +78,10 @@ impl LayoutEngine {
                 DocxBlock::Table(t) => {
                     body_items.push(BodyItem::Table(t));
                 }
+                DocxBlock::Image(_) => {
+                    // Images are not yet supported in layout
+                    // This is a placeholder for future image layout support
+                }
             }
         }
 
@@ -893,6 +897,143 @@ enum BodyItem<'a> {
     Table(&'a DocxTable),
 }
 
+/// A DOCX footnote definition (local to layout module).
+/// In real DOCX files, footnotes are stored in word/footnotes.xml.
+#[derive(Debug, Clone)]
+pub struct DocxFootnote {
+    /// Unique footnote ID (from the document).
+    pub id: u32,
+    /// The content paragraphs of this footnote.
+    pub content: Vec<DocxParagraph>,
+    /// Custom number override (None means use auto-numbering).
+    pub number: Option<usize>,
+    /// Numbering format (decimal, lowercaseRoman, etc.).
+    pub number_format: FootnoteNumberFormat,
+}
+
+/// A DOCX endnote definition (local to layout module).
+#[derive(Debug, Clone)]
+pub struct DocxEndnote {
+    /// Unique endnote ID (from the document).
+    pub id: u32,
+    /// The content paragraphs of this endnote.
+    pub content: Vec<DocxParagraph>,
+    /// Custom number override (None means use auto-numbering).
+    pub number: Option<usize>,
+    /// Numbering format.
+    pub number_format: FootnoteNumberFormat,
+}
+
+/// Numbering format for footnotes and endnotes.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum FootnoteNumberFormat {
+    /// Decimal numbers: 1, 2, 3, ...
+    #[default]
+    Decimal,
+    /// Lowercase Roman numerals: i, ii, iii, ...
+    LowercaseRoman,
+    /// Uppercase Roman numerals: I, II, III, ...
+    UppercaseRoman,
+    /// Lowercase letters: a, b, c, ...
+    LowercaseLetter,
+    /// Uppercase letters: A, B, C, ...
+    UppercaseLetter,
+    /// Custom symbol (stored as string).
+    Custom(String),
+}
+
+/// Convert a footnote number to its formatted string representation.
+fn format_footnote_number(num: usize, format: FootnoteNumberFormat) -> String {
+    match format {
+        FootnoteNumberFormat::Decimal => num.to_string(),
+        FootnoteNumberFormat::LowercaseRoman => {
+            let roman_digits = [
+                (1000, "m"), (900, "cm"), (500, "d"), (400, "cd"),
+                (100, "c"), (90, "xc"), (50, "l"), (40, "xl"),
+                (10, "x"), (9, "ix"), (5, "v"), (4, "iv"), (1, "i"),
+            ];
+            let mut n = num;
+            let mut result = String::new();
+            for &(value, symbol) in &roman_digits {
+                while n >= value {
+                    result.push_str(symbol);
+                    n -= value;
+                }
+            }
+            result
+        }
+        FootnoteNumberFormat::UppercaseRoman => {
+            format_footnote_number(num, FootnoteNumberFormat::LowercaseRoman).to_uppercase()
+        }
+        FootnoteNumberFormat::LowercaseLetter => {
+            let mut n = num;
+            let mut result = String::new();
+            loop {
+                n -= 1;
+                let remainder = n % 26;
+                result.insert(0, (b'a' + remainder as u8) as char);
+                n /= 26;
+                if n == 0 {
+                    break;
+                }
+            }
+            result
+        }
+        FootnoteNumberFormat::UppercaseLetter => {
+            format_footnote_number(num, FootnoteNumberFormat::LowercaseLetter).to_uppercase()
+        }
+        FootnoteNumberFormat::Custom(symbol) => symbol.clone(),
+    }
+}
+
+/// Footnote renumbering state.
+/// Tracks the current footnote number for automatic renumbering.
+#[derive(Debug, Clone)]
+pub struct FootnoteRenumberState {
+    pub current_number: usize,
+    pub format: FootnoteNumberFormat,
+    pub start_number: usize,
+}
+
+impl Default for FootnoteRenumberState {
+    fn default() -> Self {
+        Self {
+            current_number: 1,
+            format: FootnoteNumberFormat::Decimal,
+            start_number: 1,
+        }
+    }
+}
+
+impl FootnoteRenumberState {
+    /// Create a new renumbering state with specified start number and format.
+    pub fn new(start_number: usize, format: FootnoteNumberFormat) -> Self {
+        Self {
+            current_number: start_number,
+            format,
+            start_number,
+        }
+    }
+
+    /// Get the next footnote number and advance the counter.
+    #[allow(clippy::should_implement_trait)]
+    pub fn next(&mut self) -> usize {
+        let num = self.current_number;
+        self.current_number += 1;
+        num
+    }
+
+    /// Format the current footnote number.
+    pub fn format_current(&self) -> String {
+        format_footnote_number(self.current_number, self.format.clone())
+    }
+
+    /// Reset to the start number.
+    pub fn reset(&mut self) {
+        self.current_number = self.start_number;
+    }
+}
+
 /// A laid-out header or footer element on a page.
 #[derive(Debug, Clone)]
 pub struct LayoutHeaderFooter {
@@ -902,6 +1043,65 @@ pub struct LayoutHeaderFooter {
     pub width: f32,
     pub height: f32,
     pub is_header: bool,
+}
+
+/// Layout engine implementation for footnotes and endnotes
+impl LayoutEngine {
+    /// Renumber footnotes sequentially.
+    /// This is used when footnotes are added, removed, or reordered.
+    /// The renumbering follows the specified format and starting number.
+    /// 
+    /// # Arguments
+    /// * `footnotes` - The footnotes to renumber
+    /// * `start_number` - The starting number (default: 1)
+    /// * `format` - The numbering format
+    /// 
+    /// # Returns
+    /// A vector of footnotes with updated numbers
+    pub fn renumber_footnotes(
+        &self,
+        footnotes: &[DocxFootnote],
+        start_number: usize,
+        format: FootnoteNumberFormat,
+    ) -> Vec<DocxFootnote> {
+        footnotes
+            .iter()
+            .enumerate()
+            .map(|(idx, fn_)| {
+                let mut new_fn = fn_.clone();
+                new_fn.number = Some(idx + start_number);
+                new_fn.number_format = format.clone();
+                new_fn
+            })
+            .collect()
+    }
+
+    /// Renumber endnotes sequentially.
+    /// 
+    /// # Arguments
+    /// * `endnotes` - The endnotes to renumber
+    /// * `start_number` - The starting number (default: 1)
+    /// * `format` - The numbering format
+    /// 
+    /// # Returns
+    /// A vector of endnotes with updated numbers
+    pub fn renumber_endnotes(
+        &self,
+        endnotes: &[DocxEndnote],
+        start_number: usize,
+        format: FootnoteNumberFormat,
+    ) -> Vec<DocxEndnote> {
+        endnotes
+            .iter()
+            .enumerate()
+            .map(|(idx, en)| {
+                let mut new_en = en.clone();
+                new_en.number = Some(idx + start_number);
+                new_en.number_format = format.clone();
+                new_en
+            })
+            .collect()
+    }
 }
 
 /// Layout engine implementation for header/footer
@@ -1739,5 +1939,110 @@ mod header_footer {
         } else {
             panic!("Expected Paragraph element in footer");
         }
+    }
+}
+
+// ============================================================================
+// Footnote and Endnote Test Module
+// ============================================================================
+
+#[cfg(test)]
+mod footnote {
+    use super::*;
+
+    /// Helper to create a DocxParagraph with text
+    fn para(text: &str) -> DocxParagraph {
+        DocxParagraph {
+            style_id: None,
+            properties: DocxParagraphProperties::default(),
+            runs: vec![DocxRun {
+                text: text.to_string(),
+                bold: false,
+                italic: false,
+                underline: None,
+                strikethrough: false,
+                double_strikethrough: false,
+                font: None,
+                font_size: None,
+                font_size_cs: None,
+                color: None,
+                highlight: None,
+                vertical_alignment: None,
+                small_caps: false,
+                all_caps: false,
+            }],
+        }
+    }
+
+    #[test]
+    fn test_footnote_renumber_sequential() {
+        let engine = LayoutEngine::new(&RenderConfig::default());
+        
+        // Create 3 footnotes without numbers (auto-numbering)
+        let footnotes = vec![
+            DocxFootnote {
+                id: 1,
+                content: vec![para("First footnote")],
+                number: None,
+                number_format: FootnoteNumberFormat::Decimal,
+            },
+            DocxFootnote {
+                id: 2,
+                content: vec![para("Second footnote")],
+                number: None,
+                number_format: FootnoteNumberFormat::Decimal,
+            },
+            DocxFootnote {
+                id: 3,
+                content: vec![para("Third footnote")],
+                number: None,
+                number_format: FootnoteNumberFormat::Decimal,
+            },
+        ];
+
+        // Renumber them starting from 1 with decimal format
+        let numbered = engine.renumber_footnotes(&footnotes, 1, FootnoteNumberFormat::Decimal);
+        
+        assert_eq!(numbered.len(), 3);
+        assert_eq!(numbered[0].number, Some(1));
+        assert_eq!(numbered[1].number, Some(2));
+        assert_eq!(numbered[2].number, Some(3));
+    }
+
+    #[test]
+    fn test_footnote_renumber_with_roman_numerals() {
+        let engine = LayoutEngine::new(&RenderConfig::default());
+        
+        let footnotes = vec![
+            DocxFootnote {
+                id: 1,
+                content: vec![para("First")],
+                number: None,
+                number_format: FootnoteNumberFormat::Decimal,
+            },
+            DocxFootnote {
+                id: 2,
+                content: vec![para("Second")],
+                number: None,
+                number_format: FootnoteNumberFormat::Decimal,
+            },
+            DocxFootnote {
+                id: 3,
+                content: vec![para("Third")],
+                number: None,
+                number_format: FootnoteNumberFormat::Decimal,
+            },
+        ];
+
+        // Renumber with lowercase Roman numerals starting from 1
+        let numbered = engine.renumber_footnotes(&footnotes, 1, FootnoteNumberFormat::LowercaseRoman);
+        
+        assert_eq!(numbered.len(), 3);
+        assert_eq!(numbered[0].number, Some(1));
+        assert_eq!(numbered[1].number, Some(2));
+        assert_eq!(numbered[2].number, Some(3));
+        assert_eq!(format_footnote_number(1, FootnoteNumberFormat::LowercaseRoman), "i");
+        assert_eq!(format_footnote_number(2, FootnoteNumberFormat::LowercaseRoman), "ii");
+        assert_eq!(format_footnote_number(3, FootnoteNumberFormat::LowercaseRoman), "iii");
     }
 }
