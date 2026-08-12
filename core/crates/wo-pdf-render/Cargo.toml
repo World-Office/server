@@ -1,0 +1,40 @@
+[package]
+name = "wo-pdf-render"
+version = "0.1.0"
+edition = "2024"
+license = "AGPL-3.0-or-later"
+description = "PDF rendering engine for World-Office, backed by pdfium"
+
+[lib]
+crate-type = ["lib", "cdylib", "staticlib"]
+
+[dependencies]
+# pdfium-render: high-level Rust wrapper around Pdfium (BSD-3).
+# `static` enables static linking when PDFIUM_STATIC_LIB_PATH is set;
+# falls back to dynamic loading via libloading otherwise.
+# `pdfium_latest` pins the API to chromium/7881.
+# `thread_safe` wraps the global Pdfium state in a mutex.
+pdfium-render = { version = "0.9", default-features = false, features = [
+    "pdfium_latest",
+    "static",
+    "thread_safe",
+] }
+wo-common = { path = "../wo-common" }
+thiserror = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# WASM target dependencies.
+# pdfium-render on wasm32 uses js-sys/wasm-bindgen to call an external
+# Pdfium WASM module at runtime; our build.rs vendors that module.
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen = { workspace = true }
+js-sys = { workspace = true }
+console_error_panic_hook = { workspace = true }
+
+[build-dependencies]
+flate2 = { workspace = true }
+tar = "0.4"
+
+[features]
+default = []
