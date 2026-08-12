@@ -5383,6 +5383,7 @@ dependencies = [
  "wo-common",
  "wo-ooxml",
  "wo-renderer",
+ "wo-spell",
 ]
 
 [[package]]

@@ -15,10 +15,14 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 use std::sync::OnceLock;
 use wasm_bindgen::prelude::*;
+use std::collections::HashSet;
 use wo_common::op::EditableModel;
 use wo_ooxml::model::{DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, OoxmlDocument};
 use wo_ooxml::parser::OoxmlParser;
 use wo_ooxml::serializer::OoxmlSerializer;
+use wo_spell::dic::Dictionary;
+use wo_spell::hyphenate::{HyphenationDict, Hyphenator};
+use wo_spell::suggest::Suggester;
 
 // Re-export canvas functions
 pub use canvas_bridge::{create_canvas, flush_to_canvas, get_pixel_data, release_canvas};
@@ -1299,6 +1303,295 @@ pub fn release_stub_model(handle: u32) -> Result<(), String> {
     Ok(())
 }
 
+// ── WASM Spellchecker exports (SP-4) ────────────────────────────────
+
+/// Global store of loaded spellchecker dictionaries (lang → Dictionary + Suggester).
+static SPELL_DICT_STORE: OnceLock<Mutex<HashMap<String, SpellDictEntry>>> = OnceLock::new();
+
+/// Global store of hyphenation dictionaries (lang → Hyphenator).
+static HYPHEN_STORE: OnceLock<Mutex<HashMap<String, Hyphenator>>> = OnceLock::new();
+
+/// Global per-language user dictionaries (session-scoped, replaces localStorage).
+static SPELL_USER_DICT_STORE: OnceLock<Mutex<HashMap<String, HashSet<String>>>> =
+    OnceLock::new();
+
+/// Internal entry: dictionary + pre-built suggester.
+#[derive(Clone)]
+struct SpellDictEntry {
+    _dict: Dictionary,
+    suggester: Suggester,
+}
+
+/// Load a Hunspell dictionary for a given language.
+///
+/// Parses the `.aff` and `.dic` bytes using `wo-spell`, builds the expanded
+/// dictionary and suggestion engine, and stores them under `lang`.
+///
+/// # Arguments
+/// * `aff_bytes` — Raw `.aff` file content (UTF-8).
+/// * `dic_bytes` — Raw `.dic` file content (UTF-8).
+/// * `lang` — Language tag (e.g. `"en-US", "de-DE"`).
+///
+/// # Returns
+/// Ok on success, error string on parse failure.
+///
+/// # Example (JavaScript)
+/// ```javascript
+/// const aff = await fetch('/dictionaries/en-US.aff').then(r => r.arrayBuffer());
+/// const dic = await fetch('/dictionaries/en-US.dic').then(r => r.arrayBuffer());
+/// spell_load_dictionary(new Uint8Array(aff), new Uint8Array(dic), 'en-US');
+/// ```
+#[wasm_bindgen]
+pub fn spell_load_dictionary(aff_bytes: &[u8], dic_bytes: &[u8], lang: &str) -> Result<(), String> {
+    if aff_bytes.is_empty() {
+        return Err("aff_bytes are empty".to_string());
+    }
+    if dic_bytes.is_empty() {
+        return Err("dic_bytes are empty".to_string());
+    }
+    let aff_str = std::str::from_utf8(aff_bytes)
+        .map_err(|e| format!("aff bytes are not valid UTF-8: {}", e))?;
+    let dic_str = std::str::from_utf8(dic_bytes)
+        .map_err(|e| format!("dic bytes are not valid UTF-8: {}", e))?;
+
+    let dict = Dictionary::from_strs(aff_str, dic_str);
+    let suggester = Suggester::new(dict.clone());
+
+    let store = SPELL_DICT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut store = store.lock().unwrap();
+    store.insert(
+        lang.to_string(),
+        SpellDictEntry {
+            _dict: dict,
+            suggester,
+        },
+    );
+
+    // Initialize empty user dict for this language.
+    let user_store = SPELL_USER_DICT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut user_store = user_store.lock().unwrap();
+    user_store.entry(lang.to_string()).or_default();
+
+    Ok(())
+}
+
+/// Check if a single word is correctly spelled.
+///
+/// Returns `true` if the word is in the dictionary (case-insensitive) or in
+/// the per-language user dictionary. Returns `true` if no dictionary is loaded
+/// (fail-open, never blocks typing).
+///
+/// # Example
+/// ```javascript
+/// spell_check_word('hello', 'en-US'); // true
+/// spell_check_word('helo',  'en-US'); // false
+/// ```
+#[wasm_bindgen]
+pub fn spell_check_word(word: &str, lang: &str) -> bool {
+    let word_lower = word.to_ascii_lowercase();
+
+    // Check user dictionary first.
+    let user_store = SPELL_USER_DICT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let user_store = user_store.lock().unwrap();
+    if let Some(user_words) = user_store.get(lang) {
+        if user_words.contains(&word_lower) {
+            return true;
+        }
+    }
+    drop(user_store);
+
+    // Check main dictionary.
+    let dict_store = SPELL_DICT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let dict_store = dict_store.lock().unwrap();
+    if let Some(entry) = dict_store.get(lang) {
+        entry.suggester.is_correct(word)
+    } else {
+        true // fail-open: no dictionary loaded
+    }
+}
+
+/// Get spelling suggestions for a misspelled word.
+///
+/// Returns a JSON array of suggestion strings (up to 8). Returns an empty
+/// array if the word is correct or no dictionary is loaded.
+///
+/// # Example
+/// ```javascript
+/// const suggestions = spell_suggest('helo', 'en-US');
+/// // => '["hello"]'
+/// ```
+#[wasm_bindgen]
+pub fn spell_suggest(word: &str, lang: &str) -> String {
+    let dict_store = SPELL_DICT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let dict_store = dict_store.lock().unwrap();
+    if let Some(entry) = dict_store.get(lang) {
+        let suggestions = entry.suggester.suggest(word);
+        serde_json::to_string(&suggestions).unwrap_or_else(|_| "[]".to_string())
+    } else {
+        "[]".to_string()
+    }
+}
+
+/// Check a text segment and return all misspelled words with positions.
+///
+/// Scans `text` for word boundaries (ASCII letters + common accented Latin),
+/// checks each word, and returns a JSON array of misspelling results:
+/// ```json
+/// [{"word":"helo","offset":5,"suggestions":["hello"]}]
+/// ```
+///
+/// # Example
+/// ```javascript
+/// const results = spell_check_text('The quick brown fox jumped over the lazzy dog', 'en-US');
+/// ```
+#[wasm_bindgen]
+pub fn spell_check_text(text: &str, lang: &str) -> String {
+    let dict_store = SPELL_DICT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let dict_store = dict_store.lock().unwrap();
+    let entry = dict_store.get(lang).cloned();
+    drop(dict_store);
+
+    let entry = match entry {
+        Some(e) => e,
+        None => return "[]".to_string(),
+    };
+
+    // Check user dictionary.
+    let user_store = SPELL_USER_DICT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let user_store = user_store.lock().unwrap();
+    let user_words: HashSet<String> = user_store
+        .get(lang)
+        .cloned()
+        .unwrap_or_default();
+    drop(user_store);
+
+    // Word-boundary extraction: sequences of letters (Latin + accented).
+    let mut results: Vec<serde_json::Value> = Vec::new();
+    let mut word_start: Option<usize> = None;
+    let mut byte_offset = 0usize;
+
+    for ch in text.chars() {
+        let is_word_char = ch.is_ascii_alphabetic()
+            || matches!(ch, '\u{00C0}'..='\u{024F}' | '\u{1E00}'..='\u{1EFF}');
+
+        if is_word_char {
+            if word_start.is_none() {
+                word_start = Some(byte_offset);
+            }
+        } else if let Some(start) = word_start.take() {
+            let word: String = text[start..byte_offset].to_string();
+            let word_lower = word.to_ascii_lowercase();
+            if !user_words.contains(&word_lower) && !entry.suggester.is_correct(&word) {
+                let suggestions = entry.suggester.suggest(&word);
+                results.push(serde_json::json!({
+                    "word": word,
+                    "offset": start,
+                    "suggestions": suggestions,
+                }));
+            }
+        }
+        byte_offset += ch.len_utf8();
+    }
+    // Flush trailing word.
+    if let Some(start) = word_start {
+        let word: String = text[start..].to_string();
+        let word_lower = word.to_ascii_lowercase();
+        if !user_words.contains(&word_lower) && !entry.suggester.is_correct(&word) {
+            let suggestions = entry.suggester.suggest(&word);
+            results.push(serde_json::json!({
+                "word": word,
+                "offset": start,
+                "suggestions": suggestions,
+            }));
+        }
+    }
+
+    serde_json::to_string(&results).unwrap_or_else(|_| "[]".to_string())
+}
+
+/// Add a word to the per-language user dictionary.
+///
+/// Words added here are checked before the main dictionary.
+/// This replaces the `localStorage`-backed user dict for WASM sessions.
+#[wasm_bindgen]
+pub fn spell_add_to_user_dict(word: &str, lang: &str) {
+    let word_lower = word.to_ascii_lowercase();
+    let user_store = SPELL_USER_DICT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut user_store = user_store.lock().unwrap();
+    user_store.entry(lang.to_string()).or_default().insert(word_lower);
+}
+
+/// Load a hyphenation dictionary for a given language.
+///
+/// Parses TEX hyphenation pattern bytes and stores the hyphenator under `lang`.
+/// After loading, call `spell_hyphenate` to find hyphenation points.
+///
+/// # Arguments
+/// * `hyph_bytes` — Raw hyphenation pattern file content (UTF-8).
+/// * `lang` — Language tag.
+///
+/// # Returns
+/// Ok on success, error string on parse failure.
+#[wasm_bindgen]
+pub fn spell_load_hyphenation(hyph_bytes: &[u8], lang: &str) -> Result<(), String> {
+    let hyph_str = std::str::from_utf8(hyph_bytes)
+        .map_err(|e| format!("hyph bytes are not valid UTF-8: {}", e))?;
+    let dict = HyphenationDict::from_str(hyph_str)
+        .map_err(|errs| format!("hyphenation parse errors: {:?}", errs))?;
+    let hyphenator = Hyphenator::new(dict);
+
+    let store = HYPHEN_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut store = store.lock().unwrap();
+    store.insert(lang.to_string(), hyphenator);
+    Ok(())
+}
+
+/// Find hyphenation points in a word.
+///
+/// Returns a JSON array of character indices after which hyphens may be
+/// inserted. E.g. `"project"` → `[4]` meaning `proj-ect`.
+///
+/// Requires `spell_load_hyphenation` to have been called for the language.
+/// Returns an empty array if no hyphenation dict is loaded.
+///
+/// # Example
+/// ```javascript
+/// spell_hyphenate('project', 'en-US'); // => '[4]'
+/// ```
+#[wasm_bindgen]
+pub fn spell_hyphenate(word: &str, lang: &str) -> String {
+    let store = HYPHEN_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let store = store.lock().unwrap();
+    if let Some(hyphenator) = store.get(lang) {
+        let points = hyphenator.hyphenate(word);
+        let indices: Vec<usize> = points.iter().map(|p| p.index).collect();
+        serde_json::to_string(&indices).unwrap_or_else(|_| "[]".to_string())
+    } else {
+        "[]".to_string()
+    }
+}
+
+/// Release a spellchecker dictionary and its user words.
+///
+/// Frees the dictionary, suggester, hyphenator, and user dict for the
+/// given language. Call this when switching languages to free memory.
+#[wasm_bindgen]
+pub fn spell_release(lang: &str) -> Result<(), String> {
+    let dict_store = SPELL_DICT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut dict_store = dict_store.lock().unwrap();
+    dict_store.remove(lang);
+
+    let hyph_store = HYPHEN_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut hyph_store = hyph_store.lock().unwrap();
+    hyph_store.remove(lang);
+
+    let user_store = SPELL_USER_DICT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut user_store = user_store.lock().unwrap();
+    user_store.remove(lang);
+
+    Ok(())
+}
+
 // ── Tests ────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -1634,5 +1927,161 @@ mod tests {
         let result = create_model(b"not json", "stub");
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Invalid stub model JSON"));
+    }
+
+    // ── WASM Spellchecker tests (SP-4) ─────────────────────────────
+
+    fn mini_aff() -> &'static str {
+        r#"
+REP 1
+REP ph f
+TRY esianrtolcdugmphbyfvkwz
+SFX N Y 1
+SFX N e ness e
+"#
+    }
+
+    fn mini_dic() -> &'static str {
+        "5\nhello\nworld\nfine/N\nrun\nproject"
+    }
+
+    #[test]
+    fn spell_test_load_dictionary() {
+        let aff = mini_aff();
+        let dic = mini_dic();
+        let result = spell_load_dictionary(aff.as_bytes(), dic.as_bytes(), "test");
+        assert!(result.is_ok());
+        // Cleanup.
+        spell_release("test").ok();
+    }
+
+    #[test]
+    fn spell_test_load_empty_aff_fails() {
+        let result = spell_load_dictionary(&[], b"hello", "test");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("aff_bytes are empty"));
+    }
+
+    #[test]
+    fn spell_test_load_empty_dic_fails() {
+        let result = spell_load_dictionary(b"SET UTF-8", &[], "test");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("dic_bytes are empty"));
+    }
+
+    #[test]
+    fn spell_test_check_word_correct() {
+        spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
+        assert!(spell_check_word("hello", "test"));
+        assert!(spell_check_word("Hello", "test")); // case-insensitive
+        assert!(spell_check_word("world", "test"));
+        spell_release("test").ok();
+    }
+
+    #[test]
+    fn spell_test_check_word_misspelled() {
+        spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
+        assert!(!spell_check_word("helo", "test"));
+        assert!(!spell_check_word("xyzzy", "test"));
+        spell_release("test").ok();
+    }
+
+    #[test]
+    fn spell_test_check_word_no_dict_loaded() {
+        // Fail-open: returns true when no dictionary is loaded.
+        assert!(spell_check_word("anything", "nonexistent-lang"));
+    }
+
+    #[test]
+    fn spell_test_suggest() {
+        spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
+        let suggestions_json = spell_suggest("helo", "test");
+        let suggestions: Vec<String> =
+            serde_json::from_str(&suggestions_json).expect("valid JSON");
+        assert!(suggestions.contains(&String::from("hello")), "got: {suggestions:?}");
+        spell_release("test").ok();
+    }
+
+    #[test]
+    fn spell_test_suggest_correct_word_empty() {
+        spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
+        let suggestions_json = spell_suggest("hello", "test");
+        let suggestions: Vec<String> =
+            serde_json::from_str(&suggestions_json).expect("valid JSON");
+        assert!(suggestions.is_empty());
+        spell_release("test").ok();
+    }
+
+    #[test]
+    fn spell_test_suggest_no_dict_loaded() {
+        let suggestions_json = spell_suggest("helo", "nonexistent-lang");
+        let suggestions: Vec<String> =
+            serde_json::from_str(&suggestions_json).expect("valid JSON");
+        assert!(suggestions.is_empty());
+    }
+
+    #[test]
+    fn spell_test_check_text() {
+        spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
+        let results_json = spell_check_text("hello wrld foo", "test");
+        let results: Vec<serde_json::Value> =
+            serde_json::from_str(&results_json).expect("valid JSON");
+        // "wrld" is misspelled, "hello" and "foo" are correct or unknown.
+        let misspelled: Vec<&str> = results
+            .iter()
+            .filter_map(|r| r["word"].as_str())
+            .collect();
+        assert!(misspelled.contains(&"wrld"), "got: {misspelled:?}");
+        // "hello" should NOT be in the results.
+        assert!(!misspelled.contains(&"hello"));
+        spell_release("test").ok();
+    }
+
+    #[test]
+    fn spell_test_user_dict_override() {
+        spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
+        // "xyzzy" is not in the dictionary.
+        assert!(!spell_check_word("xyzzy", "test"));
+        // Add it to user dict.
+        spell_add_to_user_dict("xyzzy", "test");
+        // Now it should pass.
+        assert!(spell_check_word("xyzzy", "test"));
+        spell_release("test").ok();
+    }
+
+    #[test]
+    fn spell_test_user_dict_case_insensitive() {
+        spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
+        spell_add_to_user_dict("CustomWord", "test");
+        assert!(spell_check_word("customword", "test"));
+        assert!(spell_check_word("CUSTOMWORD", "test"));
+        spell_release("test").ok();
+    }
+
+    #[test]
+    fn spell_test_release_frees_resources() {
+        spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
+        assert!(spell_check_word("hello", "test"));
+        spell_release("test").unwrap();
+        // After release, should fail-open.
+        assert!(spell_check_word("hello", "test"));
+    }
+
+    #[test]
+    fn spell_test_load_hyphenation() {
+        let patterns = "LEFTHYPHENMIN 2\nRIGHTHYPHENMIN 3\n.pr4o1j4e4c4t\n";
+        let result = spell_load_hyphenation(patterns.as_bytes(), "test");
+        assert!(result.is_ok());
+        let points_json = spell_hyphenate("project", "test");
+        let points: Vec<usize> = serde_json::from_str(&points_json).expect("valid JSON");
+        assert_eq!(points, vec![4]); // proj-ect
+        spell_release("test").ok();
+    }
+
+    #[test]
+    fn spell_test_hyphenate_no_dict() {
+        let points_json = spell_hyphenate("project", "nonexistent");
+        let points: Vec<usize> = serde_json::from_str(&points_json).expect("valid JSON");
+        assert!(points.is_empty());
     }
 }
