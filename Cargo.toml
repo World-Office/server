@@ -29,6 +29,7 @@ members = [
     "core/crates/wo-conformance",
     "core/crates/wo-route",
     "core/crates/wo-spell",
+    "core/crates/wo-slide",
     "services/api-gateway",
     "services/storage-service",
     "services/conversion-service",
