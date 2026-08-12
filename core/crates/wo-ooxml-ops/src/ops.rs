@@ -21,7 +21,7 @@ pub enum WrapMode {
 pub struct RunAttrs {
     #[serde(skip_serializing_if = "Option::is_none")] pub bold: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")] pub italic: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")] pub underline: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")] pub underline: Option<wo_ooxml::model::UnderlineType>,
     #[serde(skip_serializing_if = "Option::is_none")] pub strikethrough: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")] pub font: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")] pub font_size: Option<u32>,
@@ -91,89 +91,16 @@ impl<'a> DocModel<'a> {
             DocOp::DeleteParagraph { para } => self.apply_delete_paragraph(*para),
             DocOp::SetParagraphProps { para, props } => self.apply_set_paragraph_props(*para, props.clone()),
             DocOp::FormatRun { para, start_char, end_char, attrs } => self.apply_format_run(*para, *start_char, *end_char, attrs.clone()),
-            DocOp::InsertTableRow { table, after_row } => self.apply_insert_table_row(*table, *after_row),
-            DocOp::DeleteTableRow { table, row } => self.apply_delete_table_row(*table, *row),
-            DocOp::InsertTableColumn { table, after_col } => self.apply_insert_table_column(*table, *after_col),
-            DocOp::DeleteTableColumn { table, col } => self.apply_delete_table_column(*table, *col),
-            DocOp::MergeCells { table, r1, c1, r2, c2 } => self.apply_merge_cells(*table, *r1, *c1, *r2, *c2),
-            DocOp::SplitCell { table, row, col, horizontal } => self.apply_split_cell(*table, *row, *col, *horizontal),
-            DocOp::SetCellShading { table, row, col, hex } => self.apply_set_cell_shading(*table, *row, *col, hex.clone()),
-            DocOp::InsertImage { after_para, bytes, width_emu, height_emu, wrap } => self.apply_insert_image(*after_para, bytes.clone(), *width_emu, *height_emu, *wrap),
-            DocOp::SetListLevel { para, level, num_id } => self.apply_set_list_level(*para, *level, *num_id),
-            DocOp::InsertSectionBreak { after_para, cols } => self.apply_insert_section_break(*after_para, *cols),
+            DocOp::InsertTableRow { table, after_row } => self.table_apply_insert_row(*table, *after_row),
+            DocOp::DeleteTableRow { table, row } => self.table_apply_delete_row(*table, *row),
+            DocOp::InsertTableColumn { table, after_col } => self.table_apply_insert_column(*table, *after_col),
+            DocOp::DeleteTableColumn { table, col } => self.table_apply_delete_column(*table, *col),
+            DocOp::MergeCells { table, r1, c1, r2, c2 } => self.table_apply_merge_cells(*table, *r1, *c1, *r2, *c2),
+            DocOp::SplitCell { table, row, col, horizontal } => self.table_apply_split_cell(*table, *row, *col, *horizontal),
+            DocOp::SetCellShading { table, row, col, hex } => self.table_apply_set_cell_shading(*table, *row, *col, hex.clone()),
+            DocOp::InsertImage { after_para, bytes, width_emu, height_emu, wrap } => self.image_apply_insert(*after_para, bytes.clone(), *width_emu, *height_emu, *wrap),
+            DocOp::SetListLevel { para, level, num_id } => self.list_apply_set_level(*para, *level, *num_id),
+            DocOp::InsertSectionBreak { after_para, cols } => self.section_apply_insert_break(*after_para, *cols),
         }
-    }
-    
-    // Placeholder methods - will be implemented in respective modules
-    fn apply_insert_text(&mut self, _para: usize, _char: usize, _text: String) -> Result<DocOp, DocOpError> {
-        unimplemented!()
-    }
-    
-    fn apply_delete_text(&mut self, _para: usize, _start_char: usize, _end_char: usize) -> Result<DocOp, DocOpError> {
-        unimplemented!()
-    }
-    
-    fn apply_split_paragraph(&mut self, _para: usize, _char: usize) -> Result<DocOp, DocOpError> {
-        unimplemented!()
-    }
-    
-    fn apply_merge_with_previous(&mut self, _para: usize) -> Result<DocOp, DocOpError> {
-        unimplemented!()
-    }
-    
-    fn apply_insert_paragraph(&mut self, _after: usize, _para: DocxParagraph) -> Result<DocOp, DocOpError> {
-        unimplemented!()
-    }
-    
-    fn apply_delete_paragraph(&mut self, _para: usize) -> Result<DocOp, DocOpError> {
-        unimplemented!()
-    }
-    
-    fn apply_set_paragraph_props(&mut self, _para: usize, _props: DocxParagraphProperties) -> Result<DocOp, DocOpError> {
-        unimplemented!()
-    }
-    
-    fn apply_format_run(&mut self, _para: usize, _start_char: usize, _end_char: usize, _attrs: RunAttrs) -> Result<DocOp, DocOpError> {
-        unimplemented!()
-    }
-    
-    fn apply_insert_table_row(&mut self, table: usize, after_row: usize) -> Result<DocOp, DocOpError> {
-        self.table_apply_insert_row(table, after_row)
-    }
-    
-    fn apply_delete_table_row(&mut self, table: usize, row: usize) -> Result<DocOp, DocOpError> {
-        self.table_apply_delete_row(table, row)
-    }
-    
-    fn apply_insert_table_column(&mut self, table: usize, after_col: usize) -> Result<DocOp, DocOpError> {
-        self.table_apply_insert_column(table, after_col)
-    }
-    
-    fn apply_delete_table_column(&mut self, table: usize, col: usize) -> Result<DocOp, DocOpError> {
-        self.table_apply_delete_column(table, col)
-    }
-    
-    fn apply_merge_cells(&mut self, table: usize, r1: usize, c1: usize, r2: usize, c2: usize) -> Result<DocOp, DocOpError> {
-        self.table_apply_merge_cells(table, r1, c1, r2, c2)
-    }
-    
-    fn apply_split_cell(&mut self, table: usize, row: usize, col: usize, horizontal: bool) -> Result<DocOp, DocOpError> {
-        self.table_apply_split_cell(table, row, col, horizontal)
-    }
-    
-    fn apply_set_cell_shading(&mut self, table: usize, row: usize, col: usize, hex: String) -> Result<DocOp, DocOpError> {
-        self.table_apply_set_cell_shading(table, row, col, hex)
-    }
-    
-    fn apply_insert_image(&mut self, _after_para: usize, _bytes: Vec<u8>, _width_emu: u32, _height_emu: u32, _wrap: WrapMode) -> Result<DocOp, DocOpError> {
-        unimplemented!()
-    }
-    
-    fn apply_set_list_level(&mut self, _para: usize, _level: u8, _num_id: u32) -> Result<DocOp, DocOpError> {
-        unimplemented!()
-    }
-    
-    fn apply_insert_section_break(&mut self, _after_para: usize, _cols: u8) -> Result<DocOp, DocOpError> {
-        unimplemented!()
     }
 }
