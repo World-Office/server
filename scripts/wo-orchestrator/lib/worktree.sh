@@ -27,10 +27,14 @@ tf_worktree_ensure_gitignore() {
   } >> "$gi"
 }
 
-# tf_worktree_create <task_id> [base_ref]
+# tf_worktree_create <task_id> [base_ref] [--keep-branch]
 #   Prints the worktree path. Creates branch $TF_BRANCH_PREFIX/<task_id>.
+#   --keep-branch: reuse an existing branch (its commits are preserved) instead
+#   of resetting it to the base — used when retrying a merge-conflict failure so
+#   the agent resumes its own work rather than starting from scratch.
 tf_worktree_create() {
-  local id="$1" base="${2:-main}"
+  local id="$1" base="${2:-main}" keep=0
+  [[ "${3:-}" == "--keep-branch" ]] && keep=1
   local branch="$TF_BRANCH_PREFIX/$id"
   local wt="$TF_WORKTREE_ROOT/$id"
   tf_worktree_ensure_gitignore
@@ -47,6 +51,15 @@ tf_worktree_create() {
   if ! (cd "$TF_REPO_DIR" && git rev-parse --verify --quiet "$branch" >/dev/null); then
     (cd "$TF_REPO_DIR" && git worktree add -b "$branch" "$wt" "$base" >/dev/null 2>&1) || {
       tf_error "$id: git worktree add failed for $branch from $base"
+      return 1
+    }
+  elif [[ "$keep" == "1" ]]; then
+    # Resume preserved work: attach a worktree to the existing branch. The
+    # agent (guided by PREVIOUS_ERROR) will rebase onto main and resolve the
+    # conflict in-place.
+    tf_info "$id: resuming preserved branch $branch (merge-conflict retry)"
+    (cd "$TF_REPO_DIR" && git worktree add "$wt" "$branch" >/dev/null 2>&1) || {
+      tf_error "$id: git worktree add (preserved branch) failed"
       return 1
     }
   else
@@ -101,6 +114,7 @@ tf_worktree_merge() {
     git clean --quiet -fd
     local before
     before="$(git rev-parse HEAD)"
+    # Fast path: branch is already based on current main → plain ff-only.
     if git merge --ff-only "$branch" >/dev/null 2>&1; then
       # Verify merge actually advanced main (not a no-op): after an ff-only
       # merge HEAD always equals the branch — the no-op case is when HEAD did
@@ -111,16 +125,55 @@ tf_worktree_merge() {
       fi
       return 0
     fi
-    if git merge --no-ff -m "merge($id): agent task completed" "$branch" >/dev/null 2>&1; then
-      return 0
+    # Diverged path: rebase the task branch onto the latest main, then
+    # ff-only merge. 3-way rebase auto-resolves the common case where the
+    # task and other tasks touched DIFFERENT files (main moved while the
+    # agent was working) — the main source of "merge conflict (gate passed
+    # but main diverged)" failures.
+    #
+    # NOTE: the branch is checked out in the task's worktree, so git refuses
+    # to rebase it from here ("branch already used by worktree"). The rebase
+    # must run from INSIDE the worktree.
+    local wt
+    wt="$TF_WORKTREE_ROOT/$id"
+    # Rebase path (worktree present): rebase runs from INSIDE the worktree
+    # because git refuses to rebase a branch checked out in another worktree.
+    if [[ -d "$wt" ]] && (cd "$wt" && git rebase --autostash main >/dev/null 2>&1); then
+      cd "$TF_REPO_DIR"
+      if git merge --ff-only "$branch" >/dev/null 2>&1; then
+        if [[ "$before" != "$(git rev-parse HEAD)" ]]; then
+          tf_info "$id: rebased onto main and merged (ff-only)"
+          return 0
+        fi
+      fi
+      (cd "$wt" 2>/dev/null && git rebase --abort 2>/dev/null) || true
+      cd "$TF_REPO_DIR"
     fi
-    # Clean up the failed merge's working tree artifacts so the next
-    # merge doesn't inherit them.
+    # No-ff fallback (worktree absent or rebase refused): 3-way merge handles
+    # non-overlapping changes without needing the worktree.
+    if git merge --no-ff -m "merge($id): agent task completed" "$branch" >/dev/null 2>&1; then
+      if [[ "$before" != "$(git rev-parse HEAD)" ]]; then
+        return 0
+      fi
+    fi
+    # Merge/rebase conflicted or produced nothing. Abort cleanly but KEEP the
+    # branch and worktree so the agent's work is preserved for retry/manual
+    # resolution (never delete on merge failure).
     git merge --abort 2>/dev/null || true
+    git checkout --quiet main 2>/dev/null || true
     git reset --hard --quiet main
     git clean --quiet -fd
     return 1
   ) 9>"$merge_lock"
+}
+
+# tf_worktree_conflicts <task_id> → names of files with unresolved conflict
+# markers in the task's worktree (empty if none). Run AFTER a failed merge
+# but BEFORE aborting, or in the worktree after a conflicted rebase.
+tf_worktree_conflicts() {
+  local id="$1"
+  local wt="$TF_WORKTREE_ROOT/$id"
+  (cd "$wt" 2>/dev/null && git diff --name-only --diff-filter=U 2>/dev/null) || true
 }
 
 # Delete the task branch (after successful merge). Keeps the reflog for recovery.
