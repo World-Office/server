@@ -23,7 +23,7 @@ impl<'a> DocModel<'a> {
     /// Deletes the paragraph at the specified index.
     pub fn apply_delete_paragraph(&mut self, para: usize) -> Result<DocOp, DocOpError> {
         if para >= self.body.blocks.len() {
-            return Err(DocOpError::OutOfRange(format!("paragraph {}", para)));
+            return Err(DocOpError::OutOfRange(format!("paragraph {} (body has {} blocks)", para, self.body.blocks.len())));
         }
 
         // Cannot delete the last paragraph
