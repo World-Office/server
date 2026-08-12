@@ -93,6 +93,7 @@ mod tests {
                 small_caps: false,
                 all_caps: false,
             }],
+            section_properties: None,
         }
     }
 

@@ -962,6 +962,7 @@ impl OoxmlParser {
                 style_id: None,
                 properties: DocxParagraphProperties::default(),
                 runs,
+                section_properties: None,
             });
         }
 
@@ -1408,6 +1409,7 @@ impl OoxmlParser {
             style_id,
             properties,
             runs,
+            section_properties: None,
         }
     }
 

@@ -225,6 +225,7 @@ impl<'a> DocModel<'a> {
             style_id: paragraph.style_id.clone(),
             properties: paragraph.properties.clone(),
             runs: Vec::new(),
+            section_properties: None,
         });
 
         let mut new_runs: Vec<DocxRun> = Vec::new();
@@ -259,6 +260,7 @@ impl<'a> DocModel<'a> {
             style_id: old_paragraph.style_id.clone(),
             properties: old_paragraph.properties.clone(),
             runs: runs_before_split,
+            section_properties: None,
         };
 
         // Create new paragraph with content after split
@@ -266,6 +268,7 @@ impl<'a> DocModel<'a> {
             style_id: old_paragraph.style_id,
             properties: old_paragraph.properties,
             runs: new_runs,
+            section_properties: None,
         };
 
         // Insert the new paragraph after the current one
@@ -516,6 +519,7 @@ mod tests {
                 small_caps: false,
                 all_caps: false,
             }],
+            section_properties: None,
         }
     }
 
