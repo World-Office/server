@@ -17,6 +17,9 @@
 // Re-export pdfium-render so consumers don't need a separate dependency.
 pub use pdfium_render as pdfium;
 
+mod renderer;
+pub use renderer::{Annotation, PdfRenderer, PdfiumBackend, Rect};
+
 /// Error types for PDF rendering operations.
 ///
 /// Concrete render methods (added in PDF-2) will return this type.
