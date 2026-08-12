@@ -5,7 +5,7 @@
 //!
 //! This is the "C++ layout engine" equivalent in ONLYOFFICE's architecture.
 
-use wo_ooxml::model::{DocxBody, DocxParagraph};
+use wo_ooxml::model::{DocxBlock, DocxBody, DocxParagraph};
 use wo_renderer::canvas::Canvas;
 use wo_renderer::color::Color;
 use wo_renderer::fonts::FontLibrary;
@@ -175,189 +175,191 @@ impl LayoutEngine {
         };
         let mut cursor_y = pl.content_y;
 
-        for para in &body.paragraphs {
-            // Page break
-            if para.properties.page_break_before && cursor_y > pl.content_y + 5.0 {
-                pages.push(LaidOutPage {
-                    layout: pl.clone(),
-                    paragraphs: std::mem::take(&mut page.paragraphs),
-                });
-                cursor_y = pl.content_y;
-            }
+        for block in &body.blocks {
+            match block {
+                DocxBlock::Paragraph(para) => {
+                    // Page break
+                    if para.properties.page_break_before && cursor_y > pl.content_y + 5.0 {
+                        pages.push(LaidOutPage {
+                            layout: pl.clone(),
+                            paragraphs: std::mem::take(&mut page.paragraphs),
+                        });
+                        cursor_y = pl.content_y;
+                    }
 
-            // Spacing before
-            cursor_y += para
-                .properties
-                .spacing_before
-                .map(|v| v as f32 * PT_TO_PX / 20.0)
-                .unwrap_or(0.0);
+                    // Spacing before
+                    cursor_y += para
+                        .properties
+                        .spacing_before
+                        .map(|v| v as f32 * PT_TO_PX / 20.0)
+                        .unwrap_or(0.0);
 
-            let indent_left = para
-                .properties
-                .indent_left
-                .map(|v| v as f32 * PT_TO_PX / 20.0)
-                .unwrap_or(0.0);
-            let indent_first = para
-                .properties
-                .indent_first_line
-                .map(|v| v as f32 * PT_TO_PX / 20.0);
+                    let indent_left = para
+                        .properties
+                        .indent_left
+                        .map(|v| v as f32 * PT_TO_PX / 20.0)
+                        .unwrap_or(0.0);
+                    let indent_first = para
+                        .properties
+                        .indent_first_line
+                        .map(|v| v as f32 * PT_TO_PX / 20.0);
 
-            let default_fs = para
-                .runs
-                .first()
-                .and_then(|r| r.font_size)
-                .map(|s| s as f32 / 2.0)
-                .unwrap_or(12.0)
-                .max(6.0);
-            let spacing_line_factor = para
-                .properties
-                .spacing_line
-                .map(|v| v as f32 / 240.0)
-                .unwrap_or(1.15);
-            let line_h_pt = default_fs * spacing_line_factor;
+                    let default_fs = para
+                        .runs
+                        .first()
+                        .and_then(|r| r.font_size)
+                        .map(|s| s as f32 / 2.0)
+                        .unwrap_or(12.0)
+                        .max(6.0);
+                    let spacing_line_factor = para
+                        .properties
+                        .spacing_line
+                        .map(|v| v as f32 / 240.0)
+                        .unwrap_or(1.15);
+                    let line_h_pt = default_fs * spacing_line_factor;
 
-            // Layout the paragraph
-            let max_row_w = pl.content_width - indent_left * PT_TO_PX;
-            let (laid_paras, para_h) = self.layout_paragraph(
-                para,
-                cursor_y,
-                indent_left * PT_TO_PX,
-                indent_first.unwrap_or(0.0) * PT_TO_PX,
-                max_row_w,
-                max_content_y,
-                default_fs,
-                line_h_pt,
-            );
+                    // Layout the paragraph
+                    let max_row_w = pl.content_width - indent_left * PT_TO_PX;
+                    let (laid_paras, para_h) = self.layout_paragraph(
+                        para,
+                        cursor_y,
+                        indent_left * PT_TO_PX,
+                        indent_first.unwrap_or(0.0) * PT_TO_PX,
+                        max_row_w,
+                        max_content_y,
+                        default_fs,
+                        line_h_pt,
+                    );
 
-            // Check if paragraph fits on current page
-            if cursor_y + para_h > max_content_y && cursor_y > pl.content_y + 5.0 {
-                pages.push(LaidOutPage {
-                    layout: pl.clone(),
-                    paragraphs: std::mem::take(&mut page.paragraphs),
-                });
-                cursor_y = pl.content_y;
-                let (relaid, _) = self.layout_paragraph(
-                    para,
-                    cursor_y,
-                    indent_left * PT_TO_PX,
-                    indent_first.unwrap_or(0.0) * PT_TO_PX,
-                    max_row_w,
-                    max_content_y,
-                    default_fs,
-                    line_h_pt,
-                );
-                if let Some(p) = relaid.first() {
-                    cursor_y = p.y + p.height;
+                    // Check if paragraph fits on current page
+                    if cursor_y + para_h > max_content_y && cursor_y > pl.content_y + 5.0 {
+                        pages.push(LaidOutPage {
+                            layout: pl.clone(),
+                            paragraphs: std::mem::take(&mut page.paragraphs),
+                        });
+                        cursor_y = pl.content_y;
+                        let (relaid, _) = self.layout_paragraph(
+                            para,
+                            cursor_y,
+                            indent_left * PT_TO_PX,
+                            indent_first.unwrap_or(0.0) * PT_TO_PX,
+                            max_row_w,
+                            max_content_y,
+                            default_fs,
+                            line_h_pt,
+                        );
+                        if let Some(p) = relaid.first() {
+                            cursor_y = p.y + p.height;
+                        }
+                        page.paragraphs.extend(relaid);
+                    } else {
+                        if let Some(p) = laid_paras.first() {
+                            cursor_y = p.y + p.height;
+                        } else {
+                            cursor_y += line_h_pt * PT_TO_PX;
+                        }
+                        page.paragraphs.extend(laid_paras);
+                    }
+
+                    cursor_y += para
+                        .properties
+                        .spacing_after
+                        .map(|v| v as f32 * PT_TO_PX / 20.0)
+                        .unwrap_or(0.0);
+                    cursor_y += default_fs * PT_TO_PX * 0.3;
                 }
-                page.paragraphs.extend(relaid);
-            } else {
-                if let Some(p) = laid_paras.first() {
-                    cursor_y = p.y + p.height;
-                } else {
-                    cursor_y += line_h_pt * PT_TO_PX;
-                }
-                page.paragraphs.extend(laid_paras);
-            }
-
-            cursor_y += para
-                .properties
-                .spacing_after
-                .map(|v| v as f32 * PT_TO_PX / 20.0)
-                .unwrap_or(0.0);
-            cursor_y += default_fs * PT_TO_PX * 0.3;
-        }
-
-        // Layout tables
-        for table in &body.tables {
-            if cursor_y > max_content_y - 20.0 {
-                pages.push(LaidOutPage {
-                    layout: pl.clone(),
-                    paragraphs: std::mem::take(&mut page.paragraphs),
-                });
-                cursor_y = pl.content_y;
-            }
-
-            let table_w = table
-                .properties
-                .width
-                .map(|w| w as f32 * PT_TO_PX / 20.0)
-                .unwrap_or(pl.content_width);
-            let col_count = table
-                .rows
-                .first()
-                .map(|r| r.cells.len())
-                .unwrap_or(1)
-                .max(1);
-            let col_w = table_w / col_count as f32;
-            let table_indent = table
-                .properties
-                .indent
-                .map(|i| i as f32 * PT_TO_PX / 20.0)
-                .unwrap_or(0.0)
-                + pl.content_x;
-
-            for row in &table.rows {
-                let row_h_pt = row.height.map(|h| h as f32).unwrap_or(24.0);
-                let row_h_px = row_h_pt * PT_TO_PX;
-
-                if cursor_y + row_h_px > max_content_y {
+                DocxBlock::Table(table) => {
+                        if cursor_y > max_content_y - 20.0 {
                     pages.push(LaidOutPage {
                         layout: pl.clone(),
                         paragraphs: std::mem::take(&mut page.paragraphs),
                     });
                     cursor_y = pl.content_y;
                 }
-
-                for (ci, cell) in row.cells.iter().enumerate() {
-                    let cell_x = table_indent + ci as f32 * col_w;
-                    for cp in &cell.paragraphs {
-                        let cf = cp
-                            .runs
-                            .first()
-                            .and_then(|r| r.font_size)
-                            .map(|s| s as f32 / 2.0)
-                            .unwrap_or(11.0);
-                        let cell_max_w = col_w - 8.0;
-                        let (cl, _) = self.layout_paragraph(
-                            cp,
-                            cursor_y,
-                            cell_x,
-                            0.0,
-                            cell_max_w,
-                            cursor_y + row_h_px,
-                            cf,
-                            cf * 1.15,
-                        );
-                        page.paragraphs.extend(cl);
+    
+                let table_w = table
+                    .properties
+                    .width
+                    .map(|w| w as f32 * PT_TO_PX / 20.0)
+                    .unwrap_or(pl.content_width);
+                let col_count = table
+                    .rows
+                    .first()
+                    .map(|r| r.cells.len())
+                    .unwrap_or(1)
+                    .max(1);
+                let col_w = table_w / col_count as f32;
+                let table_indent = table
+                    .properties
+                    .indent
+                    .map(|i| i as f32 * PT_TO_PX / 20.0)
+                    .unwrap_or(0.0)
+                    + pl.content_x;
+    
+                for row in &table.rows {
+                    let row_h_pt = row.height.map(|h| h as f32).unwrap_or(24.0);
+                    let row_h_px = row_h_pt * PT_TO_PX;
+    
+                    if cursor_y + row_h_px > max_content_y {
+                        pages.push(LaidOutPage {
+                            layout: pl.clone(),
+                            paragraphs: std::mem::take(&mut page.paragraphs),
+                        });
+                        cursor_y = pl.content_y;
                     }
+    
+                    for (ci, cell) in row.cells.iter().enumerate() {
+                        let cell_x = table_indent + ci as f32 * col_w;
+                        for cp in &cell.paragraphs {
+                            let cf = cp
+                                .runs
+                                .first()
+                                .and_then(|r| r.font_size)
+                                .map(|s| s as f32 / 2.0)
+                                .unwrap_or(11.0);
+                            let cell_max_w = col_w - 8.0;
+                            let (cl, _) = self.layout_paragraph(
+                                cp,
+                                cursor_y,
+                                cell_x,
+                                0.0,
+                                cell_max_w,
+                                cursor_y + row_h_px,
+                                cf,
+                                cf * 1.15,
+                            );
+                            page.paragraphs.extend(cl);
+                        }
+                    }
+                    cursor_y += row_h_px;
                 }
-                cursor_y += row_h_px;
+                cursor_y += 12.0 * PT_TO_PX;
             }
-            cursor_y += 12.0 * PT_TO_PX;
         }
-
+    
+        }
         pages.push(page);
-        pages
-    }
-
-    /// Layout a single paragraph into lines with character-level positioning.
-    #[allow(clippy::too_many_arguments)]
-    fn layout_paragraph(
-        &mut self,
-        para: &DocxParagraph,
-        start_y: f32,
-        indent_px: f32,
-        first_indent_px: f32,
-        max_width_px: f32,
-        max_y: f32,
-        default_fs_pt: f32,
-        line_h_pt: f32,
-    ) -> (Vec<LaidOutParagraph>, f32) {
-        let base_lh_px = line_h_pt * PT_TO_PX;
-        let mut lines: Vec<LaidOutLine> = Vec::new();
-        let mut cursor_y = start_y;
-        let mut line_num = 0u32;
-
+            pages
+        }
+    
+        /// Layout a single paragraph into lines with character-level positioning.
+        #[allow(clippy::too_many_arguments)]
+        fn layout_paragraph(
+            &mut self,
+            para: &DocxParagraph,
+            start_y: f32,
+            indent_px: f32,
+            first_indent_px: f32,
+            max_width_px: f32,
+            max_y: f32,
+            default_fs_pt: f32,
+            line_h_pt: f32,
+        ) -> (Vec<LaidOutParagraph>, f32) {
+            let base_lh_px = line_h_pt * PT_TO_PX;
+            let mut lines: Vec<LaidOutLine> = Vec::new();
+            let mut cursor_y = start_y;
+            let mut line_num = 0u32;
+    
         // Collect formatted runs
         struct FormattedChunk<'a> {
             text: &'a str,

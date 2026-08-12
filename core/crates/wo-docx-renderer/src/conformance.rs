@@ -89,7 +89,7 @@ impl RenderEngine for DocxConformanceAdapter {
 fn collect_requested_fonts(body: &DocxBody) -> BTreeSet<String> {
     let mut set = BTreeSet::new();
 
-    for para in &body.paragraphs {
+    for para in body.paragraphs() {
         for run in &para.runs {
             if let Some(f) = &run.font {
                 if !f.is_empty() {
@@ -99,7 +99,7 @@ fn collect_requested_fonts(body: &DocxBody) -> BTreeSet<String> {
         }
     }
 
-    for table in &body.tables {
+    for table in body.tables() {
         for row in &table.rows {
             for cell in &row.cells {
                 for para in &cell.paragraphs {
