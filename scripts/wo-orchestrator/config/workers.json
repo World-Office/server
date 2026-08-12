@@ -36,6 +36,15 @@
       "note": "Local DeepSeek V4 Flash via LiteLLM gateway (AI cluster / legion)",
       "enabled": true,
       "max_concurrent": 1
+    },
+    {
+      "name": "local-flash-2",
+      "provider": "litellm",
+      "model": "deepseek-v4-flash/local",
+      "endpoint": "http://127.0.0.1:4000/v1",
+      "note": "Second slot on the local AI cluster vLLM (DeepSeek-V4-Flash, idle capacity, batches concurrent requests ~32% faster than serial)",
+      "enabled": true,
+      "max_concurrent": 1
     }
   ],
   "defaults": {
