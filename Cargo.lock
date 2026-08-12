@@ -5403,6 +5403,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "wo-spell"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "serde_json",
+ "serial_test",
+ "thiserror 2.0.18",
+ "wo-common",
+ "wo-unicode",
+]
+
+[[package]]
 name = "wo-txt"
 version = "0.1.0"
 dependencies = [

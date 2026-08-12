@@ -1,0 +1,16 @@
+[package]
+name = "wo-spell"
+version = "0.1.0"
+edition = "2024"
+license = "AGPL-3.0-or-later"
+
+[dependencies]
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+wo-common = { path = "../wo-common" }
+wo-unicode = { path = "../wo-unicode" }
+serde = { workspace = true, features = ["derive"] }
+
+[dev-dependencies]
+serial_test = { workspace = true }
+serde_json = { workspace = true }
