@@ -5329,6 +5329,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "wo-ooxml-ops"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "wo-common",
+ "wo-ooxml",
+]
+
+[[package]]
 name = "wo-pdf"
 version = "0.1.0"
 dependencies = [
