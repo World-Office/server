@@ -1,0 +1,3 @@
+[submodule "scripts/taskfleet"]
+	path = scripts/taskfleet
+	url = https://github.com/tobias-weiss-ai-xr/taskfleet.git
