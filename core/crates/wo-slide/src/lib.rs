@@ -9,6 +9,7 @@
 
 pub mod chart_embed;
 pub mod model;
+pub mod ops;
 
 pub use chart_embed::{render_embedded_chart, ChartCollection, ChartRef, EmbedError};
 pub use model::{
@@ -20,3 +21,4 @@ pub use model::{
     SlideTransition, SmartArtShape, TableCell, TableColumn, TableRow, TableShape,
     TextBody, TextBoxShape, Theme, ThemeColor, ThemeFont, TransitionEffect,
 };
+pub use ops::{SlideOp, SlideOpError};

@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 /// A complete presentation document.
 ///
 /// Matches the SL engine contract: Presentation { slides, masters, theme }
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Presentation {
     /// Slide dimensions (default: 4:3 standard)
     #[serde(default = "SlideSize::standard")]
@@ -99,7 +99,7 @@ impl Presentation {
 pub type Master = SlideMaster;
 
 /// Slide master definition.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SlideMaster {
     /// Unique identifier for the master
     pub id: u32,
@@ -110,7 +110,7 @@ pub struct SlideMaster {
 }
 
 /// Slide layout definition.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SlideLayout {
     /// Unique identifier for the layout
     pub id: u32,
@@ -127,7 +127,7 @@ pub struct SlideLayout {
 /// A single slide in the presentation.
 ///
 /// Matches the SL engine contract: Slide { layout_id, shapes, transition, bg }
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Slide {
     /// Unique slide identifier
     pub id: u32,
@@ -161,7 +161,7 @@ pub struct Slide {
 /// Shape types that can appear on a slide.
 ///
 /// Matches the SL engine contract Shape enum.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Shape {
     /// A text box shape
@@ -183,7 +183,7 @@ pub enum Shape {
 }
 
 /// A text box shape on a slide.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TextBoxShape {
     pub id: String,
     pub bounds: Bounds,
@@ -195,7 +195,7 @@ pub struct TextBoxShape {
 }
 
 /// An image shape on a slide.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PictureShape {
     pub id: String,
     pub bounds: Bounds,
@@ -207,7 +207,7 @@ pub struct PictureShape {
 }
 
 /// A placeholder shape (title, subtitle, content).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PlaceholderShape {
     pub id: String,
     pub bounds: Bounds,
@@ -221,7 +221,7 @@ pub struct PlaceholderShape {
 }
 
 /// A table shape on a slide.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableShape {
     pub id: String,
     pub bounds: Bounds,
@@ -230,20 +230,20 @@ pub struct TableShape {
 }
 
 /// A column definition in a table.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableColumn {
     pub width: i64,
 }
 
 /// A row in a table.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableRow {
     pub height: i64,
     pub cells: Vec<TableCell>,
 }
 
 /// A single cell in a table.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TableCell {
     pub text_body: TextBody,
     pub row_span: Option<i64>,
@@ -252,7 +252,7 @@ pub struct TableCell {
 }
 
 /// A connector/cxnSp shape — line with optional arrowheads connecting shapes.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConnectorShape {
     pub id: String,
     pub bounds: Bounds,
@@ -267,7 +267,7 @@ pub struct ConnectorShape {
 }
 
 /// Predefined geometry for connector shapes.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ConnectorShapeType {
     Straight,
     Bent1,
@@ -297,7 +297,7 @@ impl std::fmt::Display for ConnectorShapeType {
 }
 
 /// Reference to a chart (for embedding in slides).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ChartRef {
     /// Unique identifier for the chart
     pub id: String,
@@ -310,7 +310,7 @@ pub struct ChartRef {
 /// An auto-shape with predefined geometry.
 ///
 /// Represents one of the 187 DrawingML preset shapes.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct AutoShape {
     /// Unique identifier
     pub id: String,
@@ -330,7 +330,7 @@ pub struct AutoShape {
 }
 
 /// A SmartArt diagram shape on a slide.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SmartArtShape {
     pub id: String,
     pub bounds: Bounds,
@@ -339,7 +339,7 @@ pub struct SmartArtShape {
 }
 
 /// 2D bounds in EMU units (1/914400 inch).
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Bounds {
     pub x: i64,
     pub y: i64,
@@ -348,13 +348,13 @@ pub struct Bounds {
 }
 
 /// Text content for a shape.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct TextBody {
     pub paragraphs: Vec<DocxParagraph>,
 }
 
 /// Background for a slide (solid, gradient, or image).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SlideBackground {
     pub background_type: SlideBackgroundType,
     pub color: Option<String>,
@@ -364,7 +364,7 @@ pub struct SlideBackground {
 }
 
 /// Background type.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum SlideBackgroundType {
     None,
     Solid,
@@ -448,7 +448,7 @@ pub enum AdvanceMode {
 }
 
 /// Animation data for a single shape on a slide.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct AnimationData {
     pub id: String,
     #[serde(default)]
@@ -467,7 +467,7 @@ pub struct AnimationData {
 }
 
 /// Fill type for a shape — solid color or gradient.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Fill {
     /// Solid color fill (#RRGGBB or named).
     Solid(String),
@@ -476,7 +476,7 @@ pub enum Fill {
 }
 
 /// A gradient fill definition.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GradientFill {
     /// Linear or radial gradient.
     pub kind: GradientKind,
@@ -487,7 +487,7 @@ pub struct GradientFill {
 }
 
 /// Kind of gradient.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum GradientKind {
     /// Linear gradient along an angle.
     Linear,
@@ -496,7 +496,7 @@ pub enum GradientKind {
 }
 
 /// A single color stop in a gradient.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GradientStop {
     /// Position 0.0–1.0.
     pub position: f64,
@@ -505,7 +505,7 @@ pub struct GradientStop {
 }
 
 /// List of visual effects applied to a shape.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct EffectList {
     /// Outer shadow effect.
     pub shadow: Option<ShadowEffect>,
@@ -516,7 +516,7 @@ pub struct EffectList {
 }
 
 /// Shadow effect applied to a shape.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ShadowEffect {
     /// Horizontal offset in EMU.
     pub dx: i64,
@@ -531,7 +531,7 @@ pub struct ShadowEffect {
 }
 
 /// Glow effect applied to a shape.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct GlowEffect {
     /// Blur radius in EMU.
     pub radius: i64,
@@ -542,7 +542,7 @@ pub struct GlowEffect {
 }
 
 /// Reflection effect applied to a shape.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ReflectionEffect {
     /// Blur radius in EMU.
     pub blur_radius: i64,
@@ -567,7 +567,7 @@ pub enum ReflectionDirection {
 }
 
 /// Slide dimensions.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct SlideSize {
     pub cx: i64,
     pub cy: i64,
@@ -592,7 +592,7 @@ impl SlideSize {
 }
 
 /// A theme (from ppt/theme/theme*.xml) defining colors, fonts, effects.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Theme {
     pub name: String,
     pub color_scheme: ColorScheme,
@@ -612,7 +612,7 @@ impl Default for Theme {
 }
 
 /// Color scheme from a theme (a:clrScheme).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ColorScheme {
     pub name: String,
     /// 12 theme colors: dark1, light1, dark2, light2, accent1-6, hlink, folHlink
@@ -678,14 +678,14 @@ impl Default for ColorScheme {
 }
 
 /// A single theme color entry.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ThemeColor {
     pub name: String,
     pub color: String,
 }
 
 /// Font scheme from a theme (a:fontScheme).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FontScheme {
     pub name: String,
     pub major_font: ThemeFont,
@@ -711,7 +711,7 @@ impl Default for FontScheme {
 }
 
 /// Font definition for a theme font slot (major/minor).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ThemeFont {
     pub latin: Option<String>,
     pub east_asian: Option<String>,
