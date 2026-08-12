@@ -1,0 +1,17 @@
+[package]
+name = "wo-formula"
+version = "0.1.0"
+edition = "2024"
+license = "AGPL-3.0-or-later"
+description = "Formula parsing and evaluation engine for World-Office spreadsheet"
+repository = "https://codeberg.org/World-Office/server"
+homepage = "https://codeberg.org/World-Office/server"
+keywords = ["formula", "spreadsheet", "excel", "parser"]
+categories = ["parser-implementations"]
+
+[dependencies]
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+chrono = { workspace = true }
