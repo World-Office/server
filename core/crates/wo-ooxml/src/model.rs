@@ -451,6 +451,8 @@ pub struct SectionProperties {
     pub footer_even: Option<HeaderFooter>,
     /// Footer for odd pages / default footer
     pub footer: Option<HeaderFooter>,
+    /// Number of columns in this section.
+    pub cols: Option<u8>,
 }
 
 // --- DOCX Body Model ---
@@ -566,7 +568,7 @@ impl DocxBody {
 }
 
 /// A paragraph in the document.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct DocxParagraph {
     /// Paragraph style name.
     pub style_id: Option<String>,
@@ -574,6 +576,8 @@ pub struct DocxParagraph {
     pub properties: DocxParagraphProperties,
     /// Runs within this paragraph.
     pub runs: Vec<DocxRun>,
+    /// Section properties for this paragraph (if it starts a new section).
+    pub section_properties: Option<SectionProperties>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -593,6 +597,9 @@ pub struct DocxParagraphProperties {
     pub outline_level: Option<u32>,
     /// Tab stops for this paragraph.
     pub tab_stops: Vec<TabStop>,
+    /// List/numbering properties
+    pub num_id: Option<u32>,
+    pub ilvl: Option<u8>,
 }
 
 /// Kind of tab stop.

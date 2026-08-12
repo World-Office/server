@@ -34,6 +34,7 @@ fn default_paragraph() -> DocxParagraph {
             small_caps: false,
             all_caps: false,
         }],
+        section_properties: None,
     }
 }
 
@@ -468,6 +469,7 @@ mod tests {
                             small_caps: false,
                             all_caps: false,
                         }],
+                        section_properties: None,
                     }],
                     column_span: 1,
                     row_span: 1,
