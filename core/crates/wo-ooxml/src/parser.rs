@@ -1322,8 +1322,7 @@ impl OoxmlParser {
     }
 
     fn parse_body_node(&self, body: &roxmltree::Node) -> DocxBody {
-        let mut paragraphs = Vec::new();
-        let mut tables = Vec::new();
+        let mut blocks = Vec::new();
 
         for child in body.children() {
             if !child.is_element() {
@@ -1334,11 +1333,11 @@ impl OoxmlParser {
 
             match (ns, local_name) {
                 (Some(Self::W_NS), "p") => {
-                    paragraphs.push(self.parse_paragraph(&child));
+                    blocks.push(DocxBlock::Paragraph(self.parse_paragraph(&child)));
                 }
                 (Some(Self::W_NS), "tbl") => {
                     if let Some(table) = self.parse_table(&child) {
-                        tables.push(table);
+                        blocks.push(DocxBlock::Table(table));
                     }
                 }
                 (Some(Self::W_NS), "sdt") => {
@@ -1347,7 +1346,7 @@ impl OoxmlParser {
                         if inner.has_tag_name("p")
                             && inner.tag_name().namespace() == Some(Self::W_NS)
                         {
-                            paragraphs.push(self.parse_paragraph(&inner));
+                            blocks.push(DocxBlock::Paragraph(self.parse_paragraph(&inner)));
                         }
                     }
                 }
@@ -1355,7 +1354,7 @@ impl OoxmlParser {
             }
         }
 
-        DocxBody { paragraphs, tables }
+        DocxBody { blocks }
     }
 
     fn parse_paragraph(&self, p_node: &roxmltree::Node) -> DocxParagraph {

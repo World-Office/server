@@ -986,11 +986,15 @@ impl OoxmlSerializer {
         );
 
         if let Some(ref body) = doc.docx_body {
-            for para in &body.paragraphs {
-                xml.push_str(&self.serialize_paragraph(para));
-            }
-            for table in &body.tables {
-                xml.push_str(&self.serialize_table(table));
+            for block in &body.blocks {
+                match block {
+                    DocxBlock::Paragraph(para) => {
+                        xml.push_str(&self.serialize_paragraph(para));
+                    }
+                    DocxBlock::Table(table) => {
+                        xml.push_str(&self.serialize_table(table));
+                    }
+                }
             }
         }
 

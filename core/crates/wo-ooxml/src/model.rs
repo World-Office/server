@@ -414,11 +414,90 @@ pub struct XlsxDefinedName {
 
 // --- DOCX Body Model ---
 
+/// A block in the document body - either a paragraph or a table.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum DocxBlock {
+    /// A paragraph block
+    Paragraph(DocxParagraph),
+    /// A table block
+    Table(DocxTable),
+}
+
 /// Document body content.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DocxBody {
-    pub paragraphs: Vec<DocxParagraph>,
-    pub tables: Vec<DocxTable>,
+    /// Blocks preserving document order (paragraphs and tables interleaved)
+    pub blocks: Vec<DocxBlock>,
+}
+
+impl DocxBody {
+    /// Create a new empty DocxBody
+    pub fn new() -> Self {
+        Self { blocks: Vec::new() }
+    }
+
+    /// Get all paragraphs in the body (in order)
+    pub fn paragraphs(&self) -> Vec<&DocxParagraph> {
+        self.blocks.iter().filter_map(|b| match b {
+            DocxBlock::Paragraph(p) => Some(p),
+            DocxBlock::Table(_) => None,
+        }).collect()
+    }
+
+    /// Get all paragraphs in the body (in order, mutable)
+    pub fn paragraphs_mut(&mut self) -> Vec<&mut DocxParagraph> {
+        self.blocks.iter_mut().filter_map(|b| match b {
+            DocxBlock::Paragraph(p) => Some(p),
+            DocxBlock::Table(_) => None,
+        }).collect()
+    }
+
+    /// Get all tables in the body (in order)
+    pub fn tables(&self) -> Vec<&DocxTable> {
+        self.blocks.iter().filter_map(|b| match b {
+            DocxBlock::Paragraph(_) => None,
+            DocxBlock::Table(t) => Some(t),
+        }).collect()
+    }
+
+    /// Get all tables in the body (in order, mutable)
+    pub fn tables_mut(&mut self) -> Vec<&mut DocxTable> {
+        self.blocks.iter_mut().filter_map(|b| match b {
+            DocxBlock::Paragraph(_) => None,
+            DocxBlock::Table(t) => Some(t),
+        }).collect()
+    }
+
+    /// Check if the body is empty
+    pub fn is_empty(&self) -> bool {
+        self.blocks.is_empty()
+    }
+
+    /// Get the number of blocks
+    pub fn len(&self) -> usize {
+        self.blocks.len()
+    }
+
+    /// Get block at index
+    pub fn get_block(&self, index: usize) -> Option<&DocxBlock> {
+        self.blocks.get(index)
+    }
+
+    /// Get block at index (mutable)
+    pub fn get_block_mut(&mut self, index: usize) -> Option<&mut DocxBlock> {
+        self.blocks.get_mut(index)
+    }
+
+    /// Push a paragraph block
+    pub fn push_paragraph(&mut self, para: DocxParagraph) {
+        self.blocks.push(DocxBlock::Paragraph(para));
+    }
+
+    /// Push a table block
+    pub fn push_table(&mut self, table: DocxTable) {
+        self.blocks.push(DocxBlock::Table(table));
+    }
 }
 
 /// A paragraph in the document.

@@ -62,14 +62,17 @@ impl LayoutEngine {
         };
         let mut cursor_y = self.margin_top;
 
-        // Maintain parallel body-item ordering: paragraphs and tables appear in sequence
-        // as they do in the DocxBody children. Build a flattened event stream preserving order.
+        // Build a flattened event stream from blocks preserving document order
         let mut body_items: Vec<BodyItem> = Vec::new();
-        for p in &body.paragraphs {
-            body_items.push(BodyItem::Paragraph(p));
-        }
-        for t in &body.tables {
-            body_items.push(BodyItem::Table(t));
+        for block in &body.blocks {
+            match block {
+                DocxBlock::Paragraph(p) => {
+                    body_items.push(BodyItem::Paragraph(p));
+                }
+                DocxBlock::Table(t) => {
+                    body_items.push(BodyItem::Table(t));
+                }
+            }
         }
 
         for item in body_items {
@@ -685,29 +688,27 @@ mod tests {
     #[test]
     fn test_layout_single_paragraph() {
         let engine = LayoutEngine::new(&default_config());
-        let body = DocxBody {
-            paragraphs: vec![DocxParagraph {
-                style_id: None,
-                properties: DocxParagraphProperties::default(),
-                runs: vec![DocxRun {
-                    text: "Hello World".to_string(),
-                    bold: false,
-                    italic: false,
-                    underline: None,
-                    strikethrough: false,
-                    double_strikethrough: false,
-                    font: None,
-                    font_size: Some(24),
-                    font_size_cs: None,
-                    color: None,
-                    highlight: None,
-                    vertical_alignment: None,
-                    small_caps: false,
-                    all_caps: false,
-                }],
+        let mut body = DocxBody::new();
+        body.push_paragraph(DocxParagraph {
+            style_id: None,
+            properties: DocxParagraphProperties::default(),
+            runs: vec![DocxRun {
+                text: "Hello World".to_string(),
+                bold: false,
+                italic: false,
+                underline: None,
+                strikethrough: false,
+                double_strikethrough: false,
+                font: None,
+                font_size: Some(24),
+                font_size_cs: None,
+                color: None,
+                highlight: None,
+                vertical_alignment: None,
+                small_caps: false,
+                all_caps: false,
             }],
-            tables: vec![],
-        };
+        });
 
         let pages = engine.layout(&body);
         assert_eq!(pages.len(), 1);
@@ -724,29 +725,27 @@ mod tests {
     fn test_layout_text_wrapping() {
         let engine = LayoutEngine::new(&default_config());
         let long_text = "AAAAAAAAAA ".repeat(50); // 500 chars with word boundaries for wrapping
-        let body = DocxBody {
-            paragraphs: vec![DocxParagraph {
-                style_id: None,
-                properties: DocxParagraphProperties::default(),
-                runs: vec![DocxRun {
-                    text: long_text,
-                    bold: false,
-                    italic: false,
-                    underline: None,
-                    strikethrough: false,
-                    double_strikethrough: false,
-                    font: None,
-                    font_size: Some(24),
-                    font_size_cs: None,
-                    color: None,
-                    highlight: None,
-                    vertical_alignment: None,
-                    small_caps: false,
-                    all_caps: false,
-                }],
+        let mut body = DocxBody::new();
+        body.push_paragraph(DocxParagraph {
+            style_id: None,
+            properties: DocxParagraphProperties::default(),
+            runs: vec![DocxRun {
+                text: long_text,
+                bold: false,
+                italic: false,
+                underline: None,
+                strikethrough: false,
+                double_strikethrough: false,
+                font: None,
+                font_size: Some(24),
+                font_size_cs: None,
+                color: None,
+                highlight: None,
+                vertical_alignment: None,
+                small_caps: false,
+                all_caps: false,
             }],
-            tables: vec![],
-        };
+        });
 
         let pages = engine.layout(&body);
         assert_eq!(pages.len(), 1);

@@ -131,3 +131,6 @@ yarn-error.log*
 # wo-orchestrator runtime state
 scripts/wo-orchestrator/state/
 .wo-worktrees/
+
+# taskfleet worktrees (do not commit)
+.tf-worktrees/
