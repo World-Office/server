@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# test-integration.sh — full wo_dispatch_one pipeline end-to-end with a STUB pi.
+# test-integration.sh — full tf_dispatch_one pipeline end-to-end with a STUB pi.
 #
 # Proves: worktree create → pi invoked in worktree → worker prompt rendered →
 # accept gate run → status set → merge to main → branch/worktree cleanup.
@@ -10,22 +10,22 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 
 SBOX="$(mktemp -d)"
 trap 'rm -rf "$SBOX"' EXIT
-export WO_REPO_DIR="$SBOX/repo"
-export WO_WORKTREE_ROOT="$WO_REPO_DIR/.wo-worktrees"
-export WO_STATE_DIR="$SBOX/state"; export WO_LOG_DIR="$SBOX/logs"
-export WO_BRANCH_PREFIX="agent"
-export WO_MAX_PARALLEL=1
-mkdir -p "$WO_REPO_DIR/.wo-worktrees" "$WO_STATE_DIR/logs"
+export TF_REPO_DIR="$SBOX/repo"
+export TF_WORKTREE_ROOT="$TF_REPO_DIR/.tf-worktrees"
+export TF_STATE_DIR="$SBOX/state"; export TF_LOG_DIR="$SBOX/logs"
+export TF_BRANCH_PREFIX="agent"
+export TF_MAX_PARALLEL=1
+mkdir -p "$TF_REPO_DIR/.tf-worktrees" "$TF_STATE_DIR/logs"
 
-git -C "$WO_REPO_DIR" init -q -b main
-git -C "$WO_REPO_DIR" config user.email t@t.t; git -C "$WO_REPO_DIR" config user.name test
-echo base > "$WO_REPO_DIR/README.md"
-git -C "$WO_REPO_DIR" add -A && git -C "$WO_REPO_DIR" commit -qm init
+git -C "$TF_REPO_DIR" init -q -b main
+git -C "$TF_REPO_DIR" config user.email t@t.t; git -C "$TF_REPO_DIR" config user.name test
+echo base > "$TF_REPO_DIR/README.md"
+git -C "$TF_REPO_DIR" add -A && git -C "$TF_REPO_DIR" commit -qm init
 
-export WO_CONFIG_DIR="$SBOX/config"; mkdir -p "$WO_CONFIG_DIR"
+export TF_CONFIG_DIR="$SBOX/config"; mkdir -p "$TF_CONFIG_DIR"
 echo '{"workers":[{"name":"stub","provider":"p","model":"m","enabled":true}],
        "defaults":{"max_attempts":2,"retry_cooldown_s":1,"accept_timeout_s":30,"dispatch_timeout_s":60}}' \
-  > "$WO_CONFIG_DIR/workers.json"
+  > "$TF_CONFIG_DIR/workers.json"
 
 # A fake pi: it "implements" the task by writing the file named in the prompt's
 # scope block, then commits. We embed the scope→filename mapping in tasks.json.
@@ -56,7 +56,7 @@ chmod +x "$STUBBIN/pi"
 export PATH="$STUBBIN:$PATH"
 
 # Worker prompt dir: copy the real template
-export WO_PROMPT_DIR="$HERE/../prompts"
+export TF_PROMPT_DIR="$HERE/../prompts"
 
 . "$HERE/../lib/common.sh"
 . "$HERE/../lib/status.sh"
@@ -67,7 +67,7 @@ export WO_PROMPT_DIR="$HERE/../prompts"
 # Both tasks defined upfront with file-based gates (clean isolation):
 #   GOOD writes a.rs → `test -f a.rs` passes
 #   BAD  writes nothing → `test -f b.rs` fails
-cat > "$WO_CONFIG_DIR/tasks.json" <<'JSON'
+cat > "$TF_CONFIG_DIR/tasks.json" <<'JSON'
 {"_meta":{"task_count":2},"tasks":[
 {"id":"GOOD","engine":"t","title":"good task","section":"§1","deps":[],
  "scope":["a.rs"],"accept":"test -f a.rs","manual":false},
@@ -75,24 +75,24 @@ cat > "$WO_CONFIG_DIR/tasks.json" <<'JSON'
  "scope":["b.rs"],"accept":"test -f b.rs","manual":false}
 ]}
 JSON
-wo_status_init
+tf_status_init
 
 echo "=== Integration: full dispatch_one pipeline (stub pi) ==="
 
-wo_group_begin; wo_test "GOOD: dispatch → gate PASS → merge → done"
-wo_dispatch_one GOOD stub
-wo_assert_eq "status done"  "done" "$(wo_status_get GOOD .status)"
-wo_assert "a.rs merged to main"    git -C "$WO_REPO_DIR" show main:a.rs >/dev/null
-wo_assert_not "worktree removed"   test -d "$WO_REPO_DIR/.wo-worktrees/GOOD"
-wo_assert_not "branch deleted"     git -C "$WO_REPO_DIR" rev-parse --verify --quiet agent/GOOD
-wo_group_end
+tf_group_begin; tf_test "GOOD: dispatch → gate PASS → merge → done"
+tf_dispatch_one GOOD stub
+tf_assert_eq "status done"  "done" "$(tf_status_get GOOD .status)"
+tf_assert "a.rs merged to main"    git -C "$TF_REPO_DIR" show main:a.rs >/dev/null
+tf_assert_not "worktree removed"   test -d "$TF_REPO_DIR/.tf-worktrees/GOOD"
+tf_assert_not "branch deleted"     git -C "$TF_REPO_DIR" rev-parse --verify --quiet agent/GOOD
+tf_group_end
 
-wo_group_begin; wo_test "BAD: dispatch → gate FAIL → status failed (attempt 1)"
-wo_dispatch_one BAD stub
-wo_assert_eq "status failed" "failed" "$(wo_status_get BAD .status)"
-wo_assert_eq "attempts incremented" "1" "$(wo_status_get BAD .attempts)"
-wo_assert_not "b.rs absent from main"   git -C "$WO_REPO_DIR" cat-file -e main:b.rs
-wo_assert_not "worktree cleaned up"  test -d "$WO_REPO_DIR/.wo-worktrees/BAD"
-wo_group_end
+tf_group_begin; tf_test "BAD: dispatch → gate FAIL → status failed (attempt 1)"
+tf_dispatch_one BAD stub
+tf_assert_eq "status failed" "failed" "$(tf_status_get BAD .status)"
+tf_assert_eq "attempts incremented" "1" "$(tf_status_get BAD .attempts)"
+tf_assert_not "b.rs absent from main"   git -C "$TF_REPO_DIR" cat-file -e main:b.rs
+tf_assert_not "worktree cleaned up"  test -d "$TF_REPO_DIR/.tf-worktrees/BAD"
+tf_group_end
 
-wo_test_summary
+tf_test_summary

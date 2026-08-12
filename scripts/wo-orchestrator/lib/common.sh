@@ -8,16 +8,17 @@ set -uo pipefail
 # Paths (resolve relative to this file so the script is location-independent)
 # ---------------------------------------------------------------------------
 TF_DIR="${TF_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-
-# WO backward-compat: map WO_* env vars to TF_* if not already set
-TF_CONFIG_DIR="${TF_CONFIG_DIR:-${WO_CONFIG_DIR:-$TF_DIR/config}}"
-TF_STATE_DIR="${TF_STATE_DIR:-${WO_STATE_DIR:-$TF_DIR/state}}"
-TF_LOG_DIR="${TF_LOG_DIR:-${WO_LOG_DIR:-$TF_STATE_DIR/logs}}"
+TF_CONFIG_DIR="${TF_CONFIG_DIR:-$TF_DIR/config}"
+TF_STATE_DIR="${TF_STATE_DIR:-$TF_DIR/state}"
+TF_LOG_DIR="${TF_LOG_DIR:-$TF_STATE_DIR/logs}"
 TF_PROMPT_DIR="${TF_PROMPT_DIR:-$TF_DIR/prompts}"
 
 # The git repo being modified. Defaults to 2 levels up from taskfleet/ (typical
 # layout: repo/scripts/taskfleet/). Override via TF_REPO_DIR env var.
-TF_REPO_DIR="${TF_REPO_DIR:-${WO_REPO_DIR:-$(cd "$TF_DIR/../.." && pwd)}}"
+TF_REPO_DIR="${TF_REPO_DIR:-$(cd "$TF_DIR/../.." && pwd)}"
+
+# Worktrees live inside the repo at .tf-worktrees/ (gitignored).
+# Override via TF_WORKTREE_ROOT if you prefer them outside the repo.
 TF_WORKTREE_ROOT="${TF_WORKTREE_ROOT:-$TF_REPO_DIR/.tf-worktrees}"
 
 # Config files
@@ -27,7 +28,7 @@ STATUS_JSON="${STATUS_JSON:-$TF_STATE_DIR/task-status.json}"
 RUNSTATE_JSON="$TF_STATE_DIR/run-state.json"   # pid/workers-in-use, transient
 
 # Branch prefix for agent work
-TF_BRANCH_PREFIX="${TF_BRANCH_PREFIX:-${WO_BRANCH_PREFIX:-tf}}"
+TF_BRANCH_PREFIX="${TF_BRANCH_PREFIX:-tf}"
 
 # Ensure runtime dirs exist
 mkdir -p "$TF_STATE_DIR" "$TF_LOG_DIR" "$TF_WORKTREE_ROOT"
@@ -110,3 +111,31 @@ tf_default() {
   jq -r --arg k "$1" '.defaults[$k] // empty' "$WORKERS_JSON"
 }
 wo_default() { tf_default "$@"; }
+
+# --- Backward-compatible wo_* aliases for the WO orchestrator ---
+wo_render_prompt() { tf_render_prompt "$@"; }
+wo_dispatch_one() { tf_dispatch_one "$@"; }
+wo_dispatch_one_dryrun() { tf_dispatch_one "$@" --dryrun; }
+wo_verify() { tf_verify_task "$@"; }
+wo_verify_scope() { tf_verify_scope "$@"; }
+wo_worktree_create() { tf_worktree_create "$@"; }
+wo_worktree_remove() { tf_worktree_remove "$@"; }
+wo_worktree_merge() { tf_worktree_merge "$@"; }
+wo_worktree_delete_branch() { tf_worktree_delete_branch "$@"; }
+wo_worktree_ensure_gitignore() { tf_worktree_ensure_gitignore "$@"; }
+wo_status_init() { tf_status_init "$@"; }
+wo_status_get() { tf_task_status "$@"; }
+wo_status_set() { tf_status_set "$@"; }
+wo_done_task() { tf_done_task "$@"; }
+wo_fail_task() { tf_fail_task "$@"; }
+wo_count_status() { tf_count_status "$@"; }
+wo_status_board() { tf_status_board "$@"; }
+wo_is_ready() { tf_is_ready "$@"; }
+wo_ready_task_ids() { tf_ready_task_ids "$@"; }
+wo_group_begin() { tf_group_begin "$@"; }
+wo_group_end() { tf_group_end "$@"; }
+wo_test() { tf_test "$@"; }
+wo_test_summary() { tf_test_summary "$@"; }
+wo_assert() { tf_assert "$@"; }
+wo_assert_eq() { tf_assert_eq "$@"; }
+wo_assert_not() { tf_assert_not "$@"; }
