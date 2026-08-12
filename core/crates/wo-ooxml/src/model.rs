@@ -567,6 +567,41 @@ pub struct DocxParagraphProperties {
     pub keep_next: bool,
     pub page_break_before: bool,
     pub outline_level: Option<u32>,
+    /// Tab stops for this paragraph.
+    pub tab_stops: Vec<TabStop>,
+}
+
+/// Kind of tab stop.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TabStopKind {
+    /// Left-aligned tab (default).
+    Left,
+    /// Center-aligned tab.
+    Center,
+    /// Right-aligned tab.
+    Right,
+    /// Decimal-aligned tab (aligns on decimal point).
+    Decimal,
+    /// Bar tab (draws a vertical bar).
+    Bar,
+}
+
+impl Default for TabStopKind {
+    fn default() -> Self {
+        TabStopKind::Left
+    }
+}
+
+/// A single tab stop definition.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TabStop {
+    /// Position of the tab stop in twips.
+    pub pos: i32,
+    /// Kind of tab stop.
+    pub kind: TabStopKind,
+    /// Leader character (optional: "dot", "hyphen", "underscore", "middleDot", "none").
+    pub leader: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

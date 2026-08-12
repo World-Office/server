@@ -18,6 +18,9 @@ const DEFAULT_LINE_HEIGHT_FACTOR: f32 = 1.2;
 /// Approximate character width as a fraction of font size.
 const CHAR_WIDTH_FACTOR: f32 = 0.5;
 
+/// Default tab stop interval in points (0.5 inch = 36 pt).
+const DEFAULT_TAB_INTERVAL_PT: f32 = 36.0;
+
 /// Layout engine that converts DOCX body into paged layout.
 #[allow(dead_code)]
 pub struct LayoutEngine {
@@ -29,6 +32,8 @@ pub struct LayoutEngine {
     margin_left: f32,
     content_width: f32,
     content_height: f32,
+    /// Default tab stops for the document (used when a paragraph has no explicit tab stops).
+    tab_stops: Vec<TabStop>,
 }
 
 impl LayoutEngine {
@@ -49,6 +54,7 @@ impl LayoutEngine {
             margin_left,
             content_width,
             content_height,
+            tab_stops: Vec::new(),
         }
     }
 
@@ -279,6 +285,48 @@ impl LayoutEngine {
     }
 
     #[allow(clippy::too_many_arguments)]
+    /// Set default tab stops for the engine.
+    /// Used when a paragraph does not specify its own tab stops.
+    pub fn set_tab_stops(&mut self, tabs: &[TabStop]) {
+        self.tab_stops = tabs.to_vec();
+    }
+
+    /// Get the effective tab stops for a paragraph: paragraph-level if set,
+    /// otherwise engine defaults, otherwise built-in defaults (every 0.5 inch).
+    fn effective_tab_stops(&self, para: &DocxParagraph) -> Vec<TabStop> {
+        if !para.properties.tab_stops.is_empty() {
+            para.properties.tab_stops.clone()
+        } else if !self.tab_stops.is_empty() {
+            self.tab_stops.clone()
+        } else {
+            // Build default tab stops every 0.5 inch across the page width
+            let mut defaults = Vec::new();
+            let interval_twips = (DEFAULT_TAB_INTERVAL_PT * 20.0) as i32;
+            let mut pos = interval_twips;
+            let max_pos = (self.content_width * 20.0) as i32;
+            while pos < max_pos {
+                defaults.push(TabStop {
+                    pos,
+                    kind: TabStopKind::Left,
+                    leader: None,
+                });
+                pos += interval_twips;
+            }
+            defaults
+        }
+    }
+
+    /// Find the next tab stop position after `current_x_pt` (in points) from the given tab stops.
+    /// Returns None if no further tab stop is found.
+    fn next_tab_stop_x<'a>(&self, current_x_pt: f32, tabs: &'a [TabStop]) -> Option<(f32, &'a TabStop)> {
+        let twips_per_pt = 20.0;
+        let current_twips = (current_x_pt * twips_per_pt) as i32;
+        tabs.iter()
+            .filter(|t| t.pos > current_twips)
+            .min_by_key(|t| t.pos)
+            .map(|t| (t.pos as f32 / twips_per_pt, t))
+    }
+
     /// Wrap paragraph text into lines using character-level width estimation.
     fn wrap_paragraph_into_lines(
         &self,
@@ -358,6 +406,81 @@ impl LayoutEngine {
                         alignment,
                     );
                     current_line_width = 0.0;
+                    word_start = i + ch.len_utf8();
+                } else if ch == '\t' {
+                    // Tab character: flush current word if any, then advance to next tab stop.
+                    let word = &text[word_start..i];
+                    if !word.is_empty() {
+                        let word_width = self.measure_text_width(word, font_size);
+                        if current_line_width == 0.0
+                            || current_line_width + word_width <= available_width
+                        {
+                            current_line_width += word_width;
+                            line_runs.push(LineRunInfo {
+                                text: word.to_string(),
+                                font_size,
+                                bold: run.bold,
+                                italic: run.italic,
+                                color: color.clone(),
+                            });
+                        } else {
+                            self.flush_line(
+                                &mut lines,
+                                &mut line_runs,
+                                current_line_width,
+                                available_width,
+                                x_start,
+                                y_start,
+                                line_height,
+                                alignment,
+                            );
+                            current_line_width = word_width;
+                            line_runs.push(LineRunInfo {
+                                text: word.to_string(),
+                                font_size,
+                                bold: run.bold,
+                                italic: run.italic,
+                                color: color.clone(),
+                            });
+                        }
+                    } else if current_line_width == 0.0 && !line_runs.is_empty() {
+                        // If we're at the start of accumulated text but not the line start,
+                        // flush accumulated runs first so the tab takes effect after them.
+                        self.flush_line(
+                            &mut lines,
+                            &mut line_runs,
+                            current_line_width,
+                            available_width,
+                            x_start,
+                            y_start,
+                            line_height,
+                            alignment,
+                        );
+                        current_line_width = 0.0;
+                    }
+
+                    // Advance to the next tab stop position
+                    // Tab stops are relative to the paragraph's left edge (x_start).
+                    // current_line_width is already relative to x_start.
+                    let tabs = self.effective_tab_stops(para);
+                    if let Some((tab_x, tab_stop)) = self.next_tab_stop_x(
+                        current_line_width,
+                        &tabs,
+                    ) {
+                        // Compute the distance from current position to the tab stop
+                        let tab_width = tab_x - current_line_width;
+                        current_line_width += tab_width;
+                        // Tab stop kind stored for future rendering (left/center/right/decimal/bar)
+                        let _ = tab_stop;
+                    } else {
+                        // No more tab stops: move to the end of the content area
+                        let target_x = available_width;
+                        let tab_width = target_x - current_line_width;
+                        if tab_width > 0.0 {
+                            current_line_width += tab_width;
+                        }
+                    }
+
                     word_start = i + ch.len_utf8();
                 } else if ch == ' ' {
                     let word = &text[word_start..=i]; // include the space
@@ -816,6 +939,7 @@ impl LayoutEngine {
                 margin_left: 0.0,
                 content_width: engine.content_width,
                 content_height: 100.0,
+                tab_stops: Vec::new(),
             };
 
             // Create a temporary body from the header/footer blocks
@@ -1140,6 +1264,225 @@ mod tests {
         // Should produce exactly 1 empty page (placeholder)
         assert_eq!(pages.len(), 1);
         assert!(pages[0].elements.is_empty());
+    }
+
+    // --- Tab stop tests ---
+
+    #[test]
+    fn tab_stop_set_tab_stops_stores_tabs() {
+        let mut engine = LayoutEngine::new(&default_config());
+        let tabs = vec![
+            TabStop { pos: 1440, kind: TabStopKind::Left, leader: None },
+            TabStop { pos: 2880, kind: TabStopKind::Center, leader: None },
+            TabStop { pos: 4320, kind: TabStopKind::Right, leader: None },
+        ];
+        engine.set_tab_stops(&tabs);
+        assert_eq!(engine.tab_stops.len(), 3);
+        assert_eq!(engine.tab_stops[0].pos, 1440);
+        assert_eq!(engine.tab_stops[1].kind, TabStopKind::Center);
+        assert_eq!(engine.tab_stops[2].kind, TabStopKind::Right);
+    }
+
+    #[test]
+    fn tab_stop_advances_position() {
+        let mut engine = LayoutEngine::new(&default_config());
+        // Set a tab stop at 2 inches (2880 twips = 144 pt)
+        let tabs = vec![
+            TabStop { pos: 2880, kind: TabStopKind::Left, leader: None },
+        ];
+        engine.set_tab_stops(&tabs);
+
+        // Text: "A\tB" — tab should advance past "A" to the tab stop at 144pt
+        let mut body = DocxBody::new();
+        body.push_paragraph(DocxParagraph {
+            style_id: None,
+            properties: DocxParagraphProperties::default(),
+            runs: vec![DocxRun {
+                text: "A\tB".to_string(),
+                bold: false,
+                italic: false,
+                underline: None,
+                strikethrough: false,
+                double_strikethrough: false,
+                font: None,
+                font_size: Some(24),
+                font_size_cs: None,
+                color: None,
+                highlight: None,
+                vertical_alignment: None,
+                small_caps: false,
+                all_caps: false,
+            }],
+        });
+
+        let pages = engine.layout(&body);
+        assert_eq!(pages.len(), 1);
+        if let LayoutElement::Paragraph { lines, .. } = &pages[0].elements[0] {
+            assert_eq!(lines.len(), 1);
+            // Tab should not appear in the output text
+            assert_eq!(lines[0].text, "AB");
+            // The line width should be greater than just "AB" width because tab adds space
+            let ab_width = engine.measure_text_width("AB", 12.0);
+            assert!(
+                lines[0].width > ab_width,
+                "Line width {} should exceed {} when tab advances position",
+                lines[0].width,
+                ab_width
+            );
+        } else {
+            panic!("Expected Paragraph element");
+        }
+    }
+
+    #[test]
+    fn tab_stop_uses_paragraph_tabs() {
+        let engine = LayoutEngine::new(&default_config());
+        // Paragraph with its OWN tab stops (should override engine defaults)
+        let mut props = DocxParagraphProperties::default();
+        props.tab_stops.push(TabStop {
+            pos: 1440, // 1 inch = 72 pt
+            kind: TabStopKind::Left,
+            leader: None,
+        });
+
+        let mut body = DocxBody::new();
+        body.push_paragraph(DocxParagraph {
+            style_id: None,
+            properties: props,
+            runs: vec![DocxRun {
+                text: "X\tY".to_string(),
+                bold: false,
+                italic: false,
+                underline: None,
+                strikethrough: false,
+                double_strikethrough: false,
+                font: None,
+                font_size: Some(24),
+                font_size_cs: None,
+                color: None,
+                highlight: None,
+                vertical_alignment: None,
+                small_caps: false,
+                all_caps: false,
+            }],
+        });
+
+        let pages = engine.layout(&body);
+        assert_eq!(pages.len(), 1);
+        if let LayoutElement::Paragraph { lines, .. } = &pages[0].elements[0] {
+            assert_eq!(lines.len(), 1);
+            // Tab should not appear in text
+            assert_eq!(lines[0].text, "XY");
+            // Width should include the tab advance (to 72pt from ~9pt for "X")
+            let _x_width = engine.measure_text_width("X", 12.0);
+            assert!(
+                lines[0].width > 72.0,
+                "Line width {} should exceed 72pt (1-inch tab stop)",
+                lines[0].width
+            );
+        } else {
+            panic!("Expected Paragraph element");
+        }
+    }
+
+    #[test]
+    fn tab_stop_tab_at_start_of_line() {
+        let mut engine = LayoutEngine::new(&default_config());
+        // Set tab stop at 1 inch (1440 twips)
+        let tabs = vec![
+            TabStop { pos: 1440, kind: TabStopKind::Left, leader: None },
+        ];
+        engine.set_tab_stops(&tabs);
+
+        // Text starting with tab: "\tHello"
+        let mut body = DocxBody::new();
+        body.push_paragraph(DocxParagraph {
+            style_id: None,
+            properties: DocxParagraphProperties::default(),
+            runs: vec![DocxRun {
+                text: "\tHello".to_string(),
+                bold: false,
+                italic: false,
+                underline: None,
+                strikethrough: false,
+                double_strikethrough: false,
+                font: None,
+                font_size: Some(24),
+                font_size_cs: None,
+                color: None,
+                highlight: None,
+                vertical_alignment: None,
+                small_caps: false,
+                all_caps: false,
+            }],
+        });
+
+        let pages = engine.layout(&body);
+        assert_eq!(pages.len(), 1);
+        if let LayoutElement::Paragraph { lines, .. } = &pages[0].elements[0] {
+            assert_eq!(lines.len(), 1);
+            assert_eq!(lines[0].text, "Hello");
+            // Width should exceed just "Hello"
+            let hello_width = engine.measure_text_width("Hello", 12.0);
+            assert!(
+                lines[0].width > hello_width,
+                "Line width {} should exceed {} when tab at start",
+                lines[0].width,
+                hello_width
+            );
+        } else {
+            panic!("Expected Paragraph element");
+        }
+    }
+
+    #[test]
+    fn tab_stop_multiple_tabs() {
+        let mut engine = LayoutEngine::new(&default_config());
+        // Set tab stops at 1 inch, 2 inch, 3 inch
+        let tabs = vec![
+            TabStop { pos: 1440, kind: TabStopKind::Left, leader: None },
+            TabStop { pos: 2880, kind: TabStopKind::Left, leader: None },
+            TabStop { pos: 4320, kind: TabStopKind::Left, leader: None },
+        ];
+        engine.set_tab_stops(&tabs);
+
+        // Text: "A\tB\tC" — two tabs advancing to 1in then 2in
+        let mut body = DocxBody::new();
+        body.push_paragraph(DocxParagraph {
+            style_id: None,
+            properties: DocxParagraphProperties::default(),
+            runs: vec![DocxRun {
+                text: "A\tB\tC".to_string(),
+                bold: false,
+                italic: false,
+                underline: None,
+                strikethrough: false,
+                double_strikethrough: false,
+                font: None,
+                font_size: Some(24),
+                font_size_cs: None,
+                color: None,
+                highlight: None,
+                vertical_alignment: None,
+                small_caps: false,
+                all_caps: false,
+            }],
+        });
+
+        let pages = engine.layout(&body);
+        assert_eq!(pages.len(), 1);
+        if let LayoutElement::Paragraph { lines, .. } = &pages[0].elements[0] {
+            assert_eq!(lines.len(), 1);
+            assert_eq!(lines[0].text, "ABC");
+            // Width should cover the last tab stop position (144pt = 2in) plus "C"
+            assert!(
+                lines[0].width >= 150.0,
+                "Line width {} should be >= 150pt for 2-inch tab stops",
+                lines[0].width
+            );
+        } else {
+            panic!("Expected Paragraph element");
+        }
     }
 }
 
