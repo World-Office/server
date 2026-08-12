@@ -11,9 +11,9 @@ use std::collections::BTreeMap;
 
 use wo_common::op::{EditableModel, ModelOp};
 use wo_common::path::{Path, Range};
-use wo_ooxml::model::DocxBody;
+use wo_ooxml::model::{DocxBlock, DocxBody};
 
-use crate::ops::{DocModel, DocOp, DocOpError};
+use crate::ops::{DocModel, DocOp, DocOpError, RunAttrs};
 
 /// Error type for EditableModel operations on EditableDocxBody
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -77,27 +77,52 @@ impl EditableDocxBody {
         Ok(())
     }
 
+    /// Validate that a run index exists within a paragraph at the given block position.
+    fn validate_run_index(&self, para: usize, run: usize) -> Result<(), EditableModelError> {
+        if para >= self.0.blocks.len() {
+            return Err(EditableModelError::OutOfRange(format!(
+                "paragraph {para} out of range (block count: {})",
+                self.0.blocks.len()
+            )));
+        }
+        match &self.0.blocks[para] {
+            DocxBlock::Paragraph(p) => {
+                if run >= p.runs.len() {
+                    return Err(EditableModelError::OutOfRange(format!(
+                        "run {run} out of range in paragraph {para} (run count: {})",
+                        p.runs.len()
+                    )));
+                }
+                Ok(())
+            }
+            DocxBlock::Table(_) => Err(EditableModelError::InvalidOp(format!(
+                "block {para} is a table, not a paragraph"
+            ))),
+            DocxBlock::Image(_) => Err(EditableModelError::InvalidOp(format!(
+                "block {para} is an image, not a paragraph"
+            ))),
+        }
+    }
+
     /// Map a generic ModelOp to a domain-specific DocOp
     fn map_model_op_to_doc_op(&self, op: &ModelOp) -> Result<DocOp, EditableModelError> {
         match op {
             ModelOp::Insert { at, content } => {
                 match at {
-                    Path::Text { para, run: _, char } => {
-                        // For text insert, we insert at the paragraph level
-                        // The run parameter is used to identify which run to insert into
-                        // For now, we'll insert at the character position in the paragraph
+                    Path::Text { para, run, char } => {
+                        // Validate that the paragraph and run indices exist
+                        self.validate_run_index(*para, *run)?;
+                        // DocOp::InsertText uses character position within the paragraph;
+                        // the DocModel locates the correct run automatically from char offset.
                         Ok(DocOp::InsertText {
                             para: *para,
                             char: *char,
                             text: content.clone(),
                         })
                     }
-                    Path::Table { .. } => {
-                        // For table insert, we need to handle table content
-                        Err(EditableModelError::InvalidOp(
-                            "Table insert not yet implemented".to_string(),
-                        ))
-                    }
+                    Path::Table { .. } => Err(EditableModelError::InvalidOp(
+                        "Table insert not yet implemented".to_string(),
+                    )),
                     _ => Err(EditableModelError::InvalidOp(
                         "Unsupported path type for insert".to_string(),
                     )),
@@ -105,13 +130,16 @@ impl EditableDocxBody {
             }
             ModelOp::Delete { range } => {
                 match (&range.start, &range.end) {
-                    (Path::Text { para: start_para, char: start_char, .. }, Path::Text { para: end_para, char: end_char, .. }) => {
-                        // Only support intra-paragraph deletion for now
+                    (Path::Text { para: start_para, run: start_run, char: start_char },
+                     Path::Text { para: end_para, run: end_run, char: end_char }) => {
                         if start_para != end_para {
                             return Err(EditableModelError::InvalidOp(
                                 "Cross-paragraph delete not yet supported".to_string(),
                             ));
                         }
+                        // Validate run indices exist
+                        self.validate_run_index(*start_para, *start_run)?;
+                        self.validate_run_index(*end_para, *end_run)?;
                         Ok(DocOp::DeleteText {
                             para: *start_para,
                             start_char: *start_char,
@@ -124,10 +152,9 @@ impl EditableDocxBody {
                 }
             }
             ModelOp::Replace { at, content } => {
-                // Replace is delete then insert
-                // For now, use the insert approach
                 match at {
-                    Path::Text { para, char, .. } => {
+                    Path::Text { para, run, char } => {
+                        self.validate_run_index(*para, *run)?;
                         Ok(DocOp::InsertText {
                             para: *para,
                             char: *char,
@@ -144,8 +171,7 @@ impl EditableDocxBody {
                     Path::Text { para, char: start_char, .. } => {
                         match &range.end {
                             Path::Text { char: end_char, .. } => {
-                                // Convert format attrs to RunAttrs
-                                let mut run_attrs = crate::ops::RunAttrs::default();
+                                let mut run_attrs = RunAttrs::default();
                                 for (key, value) in attrs {
                                     match key.as_str() {
                                         "bold" => {
@@ -160,8 +186,8 @@ impl EditableDocxBody {
                                         }
                                         "underline" => {
                                             if let Some(s) = value.as_str() {
-                                                run_attrs.underline = 
-                                                    Some(wo_ooxml::model::UnderlineType::from_str(s));
+                                                run_attrs.underline =
+                                                    Some(parse_underline_type(s));
                                             }
                                         }
                                         "strikethrough" => {
@@ -177,6 +203,9 @@ impl EditableDocxBody {
                                         "font_size" => {
                                             if let Some(n) = value.as_u64() {
                                                 run_attrs.font_size = Some(n as u32);
+                                            } else if let Some(f) = value.as_f64() {
+                                                let rounded = (f.round() as u32).max(1).min(32767);
+                                                run_attrs.font_size = Some(rounded);
                                             }
                                         }
                                         "color" => {
@@ -209,12 +238,9 @@ impl EditableDocxBody {
                     )),
                 }
             }
-            ModelOp::Move { from: _, to: _ } => {
-                // Move is not directly supported by DocOp
-                Err(EditableModelError::InvalidOp(
-                    "Move operation not yet supported".to_string(),
-                ))
-            }
+            ModelOp::Move { from: _, to: _ } => Err(EditableModelError::InvalidOp(
+                "Move operation not yet supported".to_string(),
+            )),
         }
     }
 }
@@ -303,23 +329,31 @@ impl EditableModel for EditableDocxBody {
     }
 }
 
-/// Helper trait for parsing underline type from string
+/// Parse an underline type string into UnderlineType.
+pub fn parse_underline_type(s: &str) -> wo_ooxml::model::UnderlineType {
+    match s.to_lowercase().as_str() {
+        "single" => wo_ooxml::model::UnderlineType::Single,
+        "double" => wo_ooxml::model::UnderlineType::Double,
+        "thick" => wo_ooxml::model::UnderlineType::Thick,
+        "dotted" => wo_ooxml::model::UnderlineType::Dotted,
+        "dashed" => wo_ooxml::model::UnderlineType::Dashed,
+        "dashdot" => wo_ooxml::model::UnderlineType::DashDot,
+        "wave" => wo_ooxml::model::UnderlineType::Wave,
+        _ => wo_ooxml::model::UnderlineType::None,
+    }
+}
+
+/// Helper trait for parsing underline type from string.
+///
+/// Retained for backward compatibility with re-exports in lib.rs.
+/// New code should use [`parse_underline_type`] directly.
 pub trait UnderlineTypeFromStr {
     fn from_str(s: &str) -> wo_ooxml::model::UnderlineType;
 }
 
 impl UnderlineTypeFromStr for wo_ooxml::model::UnderlineType {
     fn from_str(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
-            "single" => Self::Single,
-            "double" => Self::Double,
-            "thick" => Self::Thick,
-            "dotted" => Self::Dotted,
-            "dashed" => Self::Dashed,
-            "dashdot" => Self::DashDot,
-            "wave" => Self::Wave,
-            _ => Self::None,
-        }
+        parse_underline_type(s)
     }
 }
 
