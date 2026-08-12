@@ -16,7 +16,6 @@ crate-type = ["lib", "cdylib", "staticlib"]
 # `thread_safe` wraps the global Pdfium state in a mutex.
 pdfium-render = { version = "0.9", default-features = false, features = [
     "pdfium_latest",
-    "static",
     "thread_safe",
 ] }
 wo-common = { path = "../wo-common" }
