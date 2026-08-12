@@ -501,7 +501,7 @@ impl DocxBody {
 }
 
 /// A paragraph in the document.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DocxParagraph {
     /// Paragraph style name.
     pub style_id: Option<String>,
@@ -511,7 +511,7 @@ pub struct DocxParagraph {
     pub runs: Vec<DocxRun>,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct DocxParagraphProperties {
     pub alignment: Option<TextAlignment>,
     pub indent_left: Option<i32>,
@@ -544,7 +544,7 @@ pub enum LineSpacingRule {
 }
 
 /// A run of text with formatting.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct DocxRun {
     pub text: String,
     pub bold: bool,
@@ -582,13 +582,13 @@ pub enum VerticalAlignment {
 }
 
 /// A table in the document.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DocxTable {
     pub rows: Vec<DocxTableRow>,
     pub properties: DocxTableProperties,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct DocxTableProperties {
     pub width: Option<i32>,
     pub indent: Option<i32>,
@@ -596,7 +596,7 @@ pub struct DocxTableProperties {
     pub borders: Option<DocxTableBorders>,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct DocxTableBorders {
     pub top: Option<DocxBorder>,
     pub left: Option<DocxBorder>,
@@ -606,7 +606,7 @@ pub struct DocxTableBorders {
     pub inside_v: Option<DocxBorder>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DocxBorder {
     pub style: String, // single, double, dashed, etc.
     pub size: Option<u32>,
@@ -614,14 +614,14 @@ pub struct DocxBorder {
     pub space: Option<u32>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DocxTableRow {
     pub cells: Vec<DocxTableCell>,
     pub height: Option<i32>,
     pub is_header: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DocxTableCell {
     pub paragraphs: Vec<DocxParagraph>,
     pub column_span: u32,
@@ -1087,7 +1087,7 @@ pub struct Bounds {
 }
 
 /// Text content for a shape.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TextBody {
     pub paragraphs: Vec<DocxParagraph>,
 }

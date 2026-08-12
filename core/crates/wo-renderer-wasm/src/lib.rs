@@ -17,7 +17,7 @@ use std::sync::OnceLock;
 use wasm_bindgen::prelude::*;
 use std::collections::HashSet;
 use wo_common::op::EditableModel;
-use wo_ooxml::model::{DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, OoxmlDocument};
+use wo_ooxml::model::{DocxBlock, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, OoxmlDocument};
 use wo_ooxml::parser::OoxmlParser;
 use wo_ooxml::serializer::OoxmlSerializer;
 use wo_spell::dic::Dictionary;
@@ -156,225 +156,227 @@ pub fn render_page(
     let content_width = (canvas_width as f32) - 2.0 * margin;
     let mut cursor_y = margin;
 
-    for para in &body.paragraphs {
-        // Handle page breaks
-        if para.properties.page_break_before && cursor_y > margin {
-            cursor_y = margin;
-        }
+    for block in &body.blocks {
+        match block {
+            DocxBlock::Paragraph(para) => {
+                // Handle page breaks
+                if para.properties.page_break_before && cursor_y > margin {
+                    cursor_y = margin;
+                }
 
-        // Spacing before paragraph
-        if let Some(spacing_before) = para.properties.spacing_before {
-            cursor_y += spacing_before as f32 / 20.0; // twips to points-ish
-        }
+                // Spacing before paragraph
+                if let Some(spacing_before) = para.properties.spacing_before {
+                    cursor_y += spacing_before as f32 / 20.0; // twips to points-ish
+                }
 
-        // Indentation
-        let indent_left = para
-            .properties
-            .indent_left
-            .map(|v| v as f32 / 20.0)
-            .unwrap_or(0.0);
-        let indent_first = if let Some(first) = para.properties.indent_first_line {
-            Some(first as f32 / 20.0)
-        } else {
-            para.properties
-                .indent_hanging
-                .map(|hanging| -(hanging as f32 / 20.0))
-        };
+                // Indentation
+                let indent_left = para
+                    .properties
+                    .indent_left
+                    .map(|v| v as f32 / 20.0)
+                    .unwrap_or(0.0);
+                let indent_first = if let Some(first) = para.properties.indent_first_line {
+                    Some(first as f32 / 20.0)
+                } else {
+                    para.properties
+                        .indent_hanging
+                        .map(|hanging| -(hanging as f32 / 20.0))
+                };
 
-        // Determine default font size from runs (half-points → points)
-        let default_font_size: f32 = para
-            .runs
-            .iter()
-            .find_map(|r| r.font_size)
-            .map(|sz| sz as f32 / 2.0)
-            .unwrap_or(12.0)
-            .max(6.0);
+                // Determine default font size from runs (half-points → points)
+                let default_font_size: f32 = para
+                    .runs
+                    .iter()
+                    .find_map(|r| r.font_size)
+                    .map(|sz| sz as f32 / 2.0)
+                    .unwrap_or(12.0)
+                    .max(6.0);
 
-        let line_height = default_font_size * 1.2;
+                let line_height = default_font_size * 1.2;
 
-        // Render runs — simple per-run rendering with word wrap
-        let mut line_x = margin + indent_left;
-        // Apply first-line indent to the initial position
-        if let Some(first_indent) = indent_first {
-            line_x += first_indent;
-        }
+                // Render runs — simple per-run rendering with word wrap
+                let mut line_x = margin + indent_left;
+                // Apply first-line indent to the initial position
+                if let Some(first_indent) = indent_first {
+                    line_x += first_indent;
+                }
 
-        for run in &para.runs {
-            if run.text.is_empty() {
-                continue;
-            }
-
-            let font_size = run
-                .font_size
-                .map(|sz| (sz as f32 / 2.0).max(6.0))
-                .unwrap_or(default_font_size);
-            let color = run_color_hex(run);
-            let _font_family = run.font.as_deref().unwrap_or("sans-serif");
-
-            // Word-wrap the run text
-            let words: Vec<&str> = run.text.split_whitespace().collect();
-            let mut word_idx = 0;
-
-            while word_idx < words.len() {
-                // Build a line of words that fits
-                let mut line_text = String::new();
-                let line_start_x = line_x;
-                let mut estimated_width = 0.0f32;
-                let char_width_est = font_size * 0.5; // rough proportional estimate
-
-                while word_idx < words.len() {
-                    let word = words[word_idx];
-                    let word_width = (word.len() as f32) * char_width_est;
-                    let separator_width = if line_text.is_empty() {
-                        0.0
-                    } else {
-                        char_width_est
-                    };
-
-                    if estimated_width + separator_width + word_width > content_width - indent_left
-                        && !line_text.is_empty()
-                    {
-                        break; // Line full
+                for run in &para.runs {
+                    if run.text.is_empty() {
+                        continue;
                     }
 
-                    if !line_text.is_empty() {
-                        line_text.push(' ');
-                        estimated_width += separator_width;
+                    let font_size = run
+                        .font_size
+                        .map(|sz| (sz as f32 / 2.0).max(6.0))
+                        .unwrap_or(default_font_size);
+                    let color = run_color_hex(run);
+                    let _font_family = run.font.as_deref().unwrap_or("sans-serif");
+
+                    // Word-wrap the run text
+                    let words: Vec<&str> = run.text.split_whitespace().collect();
+                    let mut word_idx = 0;
+
+                    while word_idx < words.len() {
+                        // Build a line of words that fits
+                        let mut line_text = String::new();
+                        let line_start_x = line_x;
+                        let mut estimated_width = 0.0f32;
+                        let char_width_est = font_size * 0.5; // rough proportional estimate
+
+                        while word_idx < words.len() {
+                            let word = words[word_idx];
+                            let word_width = (word.len() as f32) * char_width_est;
+                            let separator_width = if line_text.is_empty() {
+                                0.0
+                            } else {
+                                char_width_est
+                            };
+
+                            if estimated_width + separator_width + word_width > content_width - indent_left
+                                && !line_text.is_empty()
+                            {
+                                break; // Line full
+                            }
+
+                            if !line_text.is_empty() {
+                                line_text.push(' ');
+                                estimated_width += separator_width;
+                            }
+                            line_text.push_str(word);
+                            estimated_width += word_width;
+                            word_idx += 1;
+                        }
+
+                        if line_text.is_empty() {
+                            // Single word wider than content area — force it on its own line
+                            line_text = words[word_idx].to_string();
+                            word_idx += 1;
+                        }
+
+                        // Check if we need a new line before rendering
+                        if cursor_y + font_size > (canvas_height as f32) - margin {
+                            break; // Past bottom margin, stop rendering
+                        }
+
+                        // Baseline y = top + ascent (~80% of font size)
+                        let baseline_y = cursor_y + font_size * 0.8;
+
+                        let _ = canvas_bridge::render_text(
+                            handle,
+                            &line_text,
+                            line_start_x,
+                            baseline_y,
+                            Some(color.clone()),
+                            Some(font_size),
+                        );
+
+                        cursor_y += line_height;
+                        line_x = margin + indent_left;
                     }
-                    line_text.push_str(word);
-                    estimated_width += word_width;
-                    word_idx += 1;
                 }
 
-                if line_text.is_empty() {
-                    // Single word wider than content area — force it on its own line
-                    line_text = words[word_idx].to_string();
-                    word_idx += 1;
+                // If paragraph had no runs, still advance for empty paragraph spacing
+                if para.runs.is_empty() {
+                    cursor_y += line_height;
                 }
 
-                // Check if we need a new line before rendering
-                if cursor_y + font_size > (canvas_height as f32) - margin {
-                    break; // Past bottom margin, stop rendering
+                // Spacing after paragraph
+                if let Some(spacing_after) = para.properties.spacing_after {
+                    cursor_y += spacing_after as f32 / 20.0;
+                } else {
+                    cursor_y += default_font_size * 0.5; // default paragraph spacing
                 }
-
-                // Baseline y = top + ascent (~80% of font size)
-                let baseline_y = cursor_y + font_size * 0.8;
-
-                let _ = canvas_bridge::render_text(
-                    handle,
-                    &line_text,
-                    line_start_x,
-                    baseline_y,
-                    Some(color.clone()),
-                    Some(font_size),
-                );
-
-                cursor_y += line_height;
-                line_x = margin + indent_left;
             }
-        }
+            DocxBlock::Table(table) => {
+                if cursor_y + 40.0 > (canvas_height as f32) - margin {
+                    continue;
+                }
 
-        // If paragraph had no runs, still advance for empty paragraph spacing
-        if para.runs.is_empty() {
-            cursor_y += line_height;
-        }
+                let table_width = table
+                    .properties
+                    .width
+                    .map(|w| w as f32 / 20.0)
+                    .unwrap_or(content_width);
+                let col_count = table
+                    .rows
+                    .first()
+                    .map(|r| r.cells.len() as f32)
+                    .unwrap_or(1.0);
+                let col_width = table_width / col_count;
 
-        // Spacing after paragraph
-        if let Some(spacing_after) = para.properties.spacing_after {
-            cursor_y += spacing_after as f32 / 20.0;
-        } else {
-            cursor_y += default_font_size * 0.5; // default paragraph spacing
-        }
-    }
+                let table_x = margin
+                    + table
+                        .properties
+                        .indent
+                        .map(|i| i as f32 / 20.0)
+                        .unwrap_or(0.0);
 
-    // Render tables
-    for table in &body.tables {
-        if cursor_y + 40.0 > (canvas_height as f32) - margin {
-            break;
-        }
+                for row in &table.rows {
+                    let row_height = row.height.map(|h| h as f32 / 20.0).unwrap_or(24.0);
 
-        let table_width = table
-            .properties
-            .width
-            .map(|w| w as f32 / 20.0)
-            .unwrap_or(content_width);
-        let col_count = table
-            .rows
-            .first()
-            .map(|r| r.cells.len() as f32)
-            .unwrap_or(1.0);
-        let col_width = table_width / col_count;
+                    if cursor_y + row_height > (canvas_height as f32) - margin {
+                        break;
+                    }
 
-        let table_x = margin
-            + table
-                .properties
-                .indent
-                .map(|i| i as f32 / 20.0)
-                .unwrap_or(0.0);
+                    for (col_idx, cell) in row.cells.iter().enumerate() {
+                        let cell_x = table_x + (col_idx as f32) * col_width;
 
-        for row in &table.rows {
-            let row_height = row.height.map(|h| h as f32 / 20.0).unwrap_or(24.0);
+                        // Draw cell border
+                        let _ = canvas_bridge::render_rect(
+                            handle, cell_x, cursor_y, col_width, row_height, "#FFFFFF",
+                        );
+                        let _ = canvas_bridge::render_rect(
+                            handle, cell_x, cursor_y, 1.0, row_height, "#999999",
+                        );
+                        let _ = canvas_bridge::render_rect(
+                            handle,
+                            cell_x,
+                            cursor_y + row_height - 1.0,
+                            col_width,
+                            1.0,
+                            "#999999",
+                        );
+                        let _ = canvas_bridge::render_rect(
+                            handle,
+                            cell_x + col_width - 1.0,
+                            cursor_y,
+                            1.0,
+                            row_height,
+                            "#999999",
+                        );
+                        let _ =
+                            canvas_bridge::render_rect(handle, cell_x, cursor_y, col_width, 1.0, "#999999");
 
-            if cursor_y + row_height > (canvas_height as f32) - margin {
-                break;
-            }
-
-            for (col_idx, cell) in row.cells.iter().enumerate() {
-                let cell_x = table_x + (col_idx as f32) * col_width;
-
-                // Draw cell border
-                let _ = canvas_bridge::render_rect(
-                    handle, cell_x, cursor_y, col_width, row_height, "#FFFFFF",
-                );
-                let _ = canvas_bridge::render_rect(
-                    handle, cell_x, cursor_y, 1.0, row_height, "#999999",
-                );
-                let _ = canvas_bridge::render_rect(
-                    handle,
-                    cell_x,
-                    cursor_y + row_height - 1.0,
-                    col_width,
-                    1.0,
-                    "#999999",
-                );
-                let _ = canvas_bridge::render_rect(
-                    handle,
-                    cell_x + col_width - 1.0,
-                    cursor_y,
-                    1.0,
-                    row_height,
-                    "#999999",
-                );
-                let _ =
-                    canvas_bridge::render_rect(handle, cell_x, cursor_y, col_width, 1.0, "#999999");
-
-                // Render first run of first paragraph as cell text
-                if let Some(first_para) = cell.paragraphs.first() {
-                    if let Some(first_run) = first_para.runs.first() {
-                        if !first_run.text.is_empty() {
-                            let font_size = first_run
-                                .font_size
-                                .map(|sz| (sz as f32 / 2.0).max(6.0))
-                                .unwrap_or(11.0);
-                            let baseline_y = cursor_y + font_size * 0.8 + 4.0;
-                            let color = run_color_hex(first_run);
-                            let _ = canvas_bridge::render_text(
-                                handle,
-                                &first_run.text,
-                                cell_x + 4.0,
-                                baseline_y,
-                                Some(color),
-                                Some(font_size),
-                            );
+                        // Render first run of first paragraph as cell text
+                        if let Some(first_para) = cell.paragraphs.first() {
+                            if let Some(first_run) = first_para.runs.first() {
+                                if !first_run.text.is_empty() {
+                                    let font_size = first_run
+                                        .font_size
+                                        .map(|sz| (sz as f32 / 2.0).max(6.0))
+                                        .unwrap_or(11.0);
+                                    let baseline_y = cursor_y + font_size * 0.8 + 4.0;
+                                    let color = run_color_hex(first_run);
+                                    let _ = canvas_bridge::render_text(
+                                        handle,
+                                        &first_run.text,
+                                        cell_x + 4.0,
+                                        baseline_y,
+                                        Some(color),
+                                        Some(font_size),
+                                    );
+                                }
+                            }
                         }
                     }
+
+                    cursor_y += row_height;
                 }
+
+                cursor_y += 12.0; // spacing after table
             }
-
-            cursor_y += row_height;
         }
-
-        cursor_y += 12.0; // spacing after table
     }
 
     Ok(handle)
@@ -721,7 +723,7 @@ pub fn handle_key_event(
 ) -> Result<String, String> {
     let mut body = extract_body(doc_handle)?;
     let cursor = get_cursor(doc_handle);
-    let paras_len = body.paragraphs.len();
+    let paras_len = body.paragraphs().len();
 
     match key {
         "Enter" | "Return" => {
@@ -736,8 +738,8 @@ pub fn handle_key_event(
             } else {
                 insert_idx + 1
             };
-            if insert_before <= body.paragraphs.len() {
-                body.paragraphs.insert(insert_before, new_para);
+            if insert_before <= body.blocks.len() {
+                body.blocks.insert(insert_before, DocxBlock::Paragraph(new_para));
             }
             store_body(doc_handle, body)?;
             set_cursor(
@@ -754,78 +756,90 @@ pub fn handle_key_event(
             layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
         }
         "Backspace" => {
-            if body.paragraphs.is_empty() {
+            if body.paragraphs().is_empty() {
                 return Ok("{}".to_string());
             }
             let pidx = cursor.para.min(paras_len.saturating_sub(1));
-            if cursor.char_idx > 0 && pidx < body.paragraphs.len() {
-                let para = &mut body.paragraphs[pidx];
-                let mut global_c = 0usize;
-                for run in &mut para.runs {
-                    let run_len = run.text.chars().count();
-                    if global_c + run_len > cursor.char_idx.saturating_sub(1) {
-                        let remove_idx = cursor.char_idx.saturating_sub(1) - global_c;
-                        if remove_idx < run_len && remove_idx < run.text.chars().count() {
-                            let mut chars: Vec<char> = run.text.chars().collect();
-                            if remove_idx < chars.len() {
-                                chars.remove(remove_idx);
-                                run.text = chars.into_iter().collect();
+            if cursor.char_idx > 0 && pidx < body.paragraphs().len() {
+                if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
+                    let mut global_c = 0usize;
+                    for run in &mut para.runs {
+                        let run_len = run.text.chars().count();
+                        if global_c + run_len > cursor.char_idx.saturating_sub(1) {
+                            let remove_idx = cursor.char_idx.saturating_sub(1) - global_c;
+                            if remove_idx < run_len && remove_idx < run.text.chars().count() {
+                                let mut chars: Vec<char> = run.text.chars().collect();
+                                if remove_idx < chars.len() {
+                                    chars.remove(remove_idx);
+                                    run.text = chars.into_iter().collect();
+                                }
                             }
+                            break;
                         }
-                        break;
+                        global_c += run_len;
                     }
-                    global_c += run_len;
                 }
-            } else if cursor.char_idx == 0 && pidx > 0 && pidx < body.paragraphs.len() {
+            } else if cursor.char_idx == 0 && pidx > 0 && pidx < body.paragraphs().len() {
                 // Merge with previous paragraph
-                let first_text = body.paragraphs[pidx]
-                    .runs
-                    .first()
-                    .map(|r| r.text.clone())
-                    .unwrap_or_default();
-                if let Some(prev_last_run) = body.paragraphs[pidx - 1].runs.last_mut() {
-                    prev_last_run.text.push_str(&first_text);
+                if let (Some(DocxBlock::Paragraph(prev_para)), Some(DocxBlock::Paragraph(curr_para))) = (
+                    body.blocks.get_mut(pidx - 1),
+                    body.blocks.get(pidx)
+                ) {
+                    let first_text = curr_para
+                        .runs
+                        .first()
+                        .map(|r| r.text.clone())
+                        .unwrap_or_default();
+                    if let Some(prev_last_run) = prev_para.runs.last_mut() {
+                        prev_last_run.text.push_str(&first_text);
+                    }
                 }
-                body.paragraphs.remove(pidx);
+                body.blocks.remove(pidx);
             }
             store_body(doc_handle, body)?;
             layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
         }
         "Delete" => {
-            if body.paragraphs.is_empty() {
+            if body.paragraphs().is_empty() {
                 return Ok("{}".to_string());
             }
             let pidx = cursor.para.min(paras_len.saturating_sub(1));
-            if pidx < body.paragraphs.len() {
-                let para = &mut body.paragraphs[pidx];
-                let mut global_c = 0usize;
-                let mut removed = false;
-                for run in &mut para.runs {
-                    let run_len = run.text.chars().count();
-                    if global_c + run_len > cursor.char_idx {
-                        let remove_idx = cursor.char_idx - global_c;
-                        if remove_idx < run_len && remove_idx < run.text.chars().count() {
-                            let mut chars: Vec<char> = run.text.chars().collect();
-                            if remove_idx < chars.len() {
-                                chars.remove(remove_idx);
-                                run.text = chars.into_iter().collect();
+            if pidx < body.paragraphs().len() {
+                if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
+                    let mut global_c = 0usize;
+                    let mut removed = false;
+                    for run in &mut para.runs {
+                        let run_len = run.text.chars().count();
+                        if global_c + run_len > cursor.char_idx {
+                            let remove_idx = cursor.char_idx - global_c;
+                            if remove_idx < run_len && remove_idx < run.text.chars().count() {
+                                let mut chars: Vec<char> = run.text.chars().collect();
+                                if remove_idx < chars.len() {
+                                    chars.remove(remove_idx);
+                                    run.text = chars.into_iter().collect();
+                                }
+                            }
+                            removed = true;
+                            break;
+                        }
+                        global_c += run_len;
+                    }
+                    if !removed && pidx + 1 < body.paragraphs().len() {
+                        if let (Some(DocxBlock::Paragraph(curr_para)), Some(DocxBlock::Paragraph(next_para))) = (
+                            body.blocks.get_mut(pidx),
+                            body.blocks.get(pidx + 1)
+                        ) {
+                            let next_text = next_para
+                                .runs
+                                .first()
+                                .map(|r| r.text.clone())
+                                .unwrap_or_default();
+                            if let Some(last_run) = curr_para.runs.last_mut() {
+                                last_run.text.push_str(&next_text);
                             }
                         }
-                        removed = true;
-                        break;
+                        body.blocks.remove(pidx + 1);
                     }
-                    global_c += run_len;
-                }
-                if !removed && pidx + 1 < body.paragraphs.len() {
-                    let next_text = body.paragraphs[pidx + 1]
-                        .runs
-                        .first()
-                        .map(|r| r.text.clone())
-                        .unwrap_or_default();
-                    if let Some(last_run) = body.paragraphs[pidx].runs.last_mut() {
-                        last_run.text.push_str(&next_text);
-                    }
-                    body.paragraphs.remove(pidx + 1);
                 }
             }
             store_body(doc_handle, body)?;
@@ -855,40 +869,41 @@ pub fn handle_key_event(
             // Insert printable character
             if key.len() == 1 {
                 let ch = key.chars().next().unwrap();
-                if body.paragraphs.is_empty() {
-                    body.paragraphs.push(DocxParagraph {
+                if body.paragraphs().is_empty() {
+                    body.blocks.push(DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
                         runs: vec![DocxRun {
                             text: ch.to_string(),
                             ..Default::default()
                         }],
-                    });
+                    }));
                 } else {
                     let pidx = cursor.para.min(paras_len.saturating_sub(1));
-                    let para = &mut body.paragraphs[pidx];
-                    let mut global_c = 0usize;
-                    let mut inserted = false;
-                    for run in &mut para.runs {
-                        let run_len = run.text.chars().count();
-                        if global_c + run_len >= cursor.char_idx {
-                            let insert_idx = cursor.char_idx - global_c;
-                            let mut chars: Vec<char> = run.text.chars().collect();
-                            chars.insert(insert_idx.min(chars.len()), ch);
-                            run.text = chars.into_iter().collect();
-                            inserted = true;
-                            break;
+                    if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
+                        let mut global_c = 0usize;
+                        let mut inserted = false;
+                        for run in &mut para.runs {
+                            let run_len = run.text.chars().count();
+                            if global_c + run_len >= cursor.char_idx {
+                                let insert_idx = cursor.char_idx - global_c;
+                                let mut chars: Vec<char> = run.text.chars().collect();
+                                chars.insert(insert_idx.min(chars.len()), ch);
+                                run.text = chars.into_iter().collect();
+                                inserted = true;
+                                break;
+                            }
+                            global_c += run_len;
                         }
-                        global_c += run_len;
-                    }
-                    if !inserted && para.runs.is_empty() {
-                        para.runs.push(DocxRun {
-                            text: ch.to_string(),
-                            ..Default::default()
-                        });
-                    } else if !inserted {
-                        if let Some(last) = para.runs.last_mut() {
-                            last.text.push(ch);
+                        if !inserted && para.runs.is_empty() {
+                            para.runs.push(DocxRun {
+                                text: ch.to_string(),
+                                ..Default::default()
+                            });
+                        } else if !inserted {
+                            if let Some(last) = para.runs.last_mut() {
+                                last.text.push(ch);
+                            }
                         }
                     }
                 }
@@ -1048,32 +1063,31 @@ pub fn apply_formatting(
     let mut body = extract_body(doc_handle)?;
     let cursor = get_cursor(doc_handle);
 
-    if body.paragraphs.is_empty() {
+    if body.paragraphs().is_empty() {
         return Err("Document body is empty".to_string());
     }
 
-    let pidx = cursor.para.min(body.paragraphs.len().saturating_sub(1));
-    let para = &mut body.paragraphs[pidx];
-
-    // Find or create the run at cursor position
-    if para.runs.is_empty() {
-        para.runs.push(DocxRun::default());
-    }
-
-    // Determine which run contains the cursor
-    let mut global_c = 0usize;
-    let mut target_run_idx = para.runs.len().saturating_sub(1);
-    for (ri, run) in para.runs.iter().enumerate() {
-        let run_len = run.text.chars().count();
-        if global_c + run_len > cursor.char_idx || ri == para.runs.len() - 1 {
-            target_run_idx = ri;
-            break;
+    let pidx = cursor.para.min(body.paragraphs().len().saturating_sub(1));
+    if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
+        // Find or create the run at cursor position
+        if para.runs.is_empty() {
+            para.runs.push(DocxRun::default());
         }
-        global_c += run_len;
-    }
 
-    // Apply formatting to the target run
-    if let Some(run) = para.runs.get_mut(target_run_idx) {
+        // Determine which run contains the cursor
+        let mut global_c = 0usize;
+        let mut target_run_idx = para.runs.len().saturating_sub(1);
+        for (ri, run) in para.runs.iter().enumerate() {
+            let run_len = run.text.chars().count();
+            if global_c + run_len > cursor.char_idx || ri == para.runs.len() - 1 {
+                target_run_idx = ri;
+                break;
+            }
+            global_c += run_len;
+        }
+
+        // Apply formatting to the target run
+        if let Some(run) = para.runs.get_mut(target_run_idx) {
         if let Some(bold) = format.get("bold").and_then(|v| v.as_bool()) {
             run.bold = bold;
         }
@@ -1109,6 +1123,7 @@ pub fn apply_formatting(
             let clean = highlight.trim_start_matches('#');
             run.highlight = Some(clean.to_string());
         }
+        }
     }
 
     store_body(doc_handle, body)?;
@@ -1123,12 +1138,15 @@ pub fn get_run_formatting(doc_handle: u32) -> Result<String, String> {
     let body = extract_body(doc_handle)?;
     let cursor = get_cursor(doc_handle);
 
-    if body.paragraphs.is_empty() {
+    if body.paragraphs().is_empty() {
         return Ok("{}".to_string());
     }
 
-    let pidx = cursor.para.min(body.paragraphs.len().saturating_sub(1));
-    let para = &body.paragraphs[pidx];
+    let pidx = cursor.para.min(body.paragraphs().len().saturating_sub(1));
+    let para = match body.blocks.get(pidx) {
+        Some(DocxBlock::Paragraph(p)) => p,
+        _ => return Ok("{}".to_string()),
+    };
 
     let mut global_c = 0usize;
     let mut target_run_idx = para.runs.len().saturating_sub(1);

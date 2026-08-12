@@ -765,8 +765,8 @@ mod tests {
         };
 
         let body = DocxBody {
-            paragraphs: vec![
-                DocxParagraph {
+            blocks: vec![
+                DocxBlock::Paragraph(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
                     runs: vec![DocxRun {
@@ -785,8 +785,8 @@ mod tests {
                         small_caps: false,
                         all_caps: false,
                     }],
-                },
-                DocxParagraph {
+                }),
+                DocxBlock::Paragraph(DocxParagraph {
                     style_id: None,
                     properties: props2,
                     runs: vec![DocxRun {
@@ -805,9 +805,8 @@ mod tests {
                         small_caps: false,
                         all_caps: false,
                     }],
-                },
+                }),
             ],
-            tables: vec![],
         };
 
         let pages = engine.layout(&body);
@@ -821,8 +820,7 @@ mod tests {
     fn test_layout_table() {
         let engine = LayoutEngine::new(&default_config());
         let body = DocxBody {
-            paragraphs: vec![],
-            tables: vec![DocxTable {
+            blocks: vec![DocxBlock::Table(DocxTable {
                 rows: vec![DocxTableRow {
                     cells: vec![
                         DocxTableCell {
@@ -882,7 +880,7 @@ mod tests {
                     is_header: false,
                 }],
                 properties: DocxTableProperties::default(),
-            }],
+            })],
         };
 
         let pages = engine.layout(&body);
@@ -898,8 +896,7 @@ mod tests {
     fn test_layout_empty_body() {
         let engine = LayoutEngine::new(&default_config());
         let body = DocxBody {
-            paragraphs: vec![],
-            tables: vec![],
+            blocks: vec![],
         };
 
         let pages = engine.layout(&body);

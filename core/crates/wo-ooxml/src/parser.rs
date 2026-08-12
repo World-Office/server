@@ -1313,8 +1313,7 @@ impl OoxmlParser {
         let body = match body_node {
             Some(node) => self.parse_body_node(&node),
             None => DocxBody {
-                paragraphs: Vec::new(),
-                tables: Vec::new(),
+                blocks: Vec::new(),
             },
         };
 
@@ -2846,9 +2845,9 @@ mod tests {
         let parser = OoxmlParser::new();
         let doc = parser.parse(&docx).unwrap();
         let body = doc.docx_body.unwrap();
-        assert_eq!(body.paragraphs.len(), 2);
-        assert_eq!(body.paragraphs[0].runs[0].text, "First paragraph");
-        assert_eq!(body.paragraphs[1].runs[0].text, "Second paragraph");
+        assert_eq!(body.paragraphs().len(), 2);
+        assert_eq!(body.paragraphs()[0].runs[0].text, "First paragraph");
+        assert_eq!(body.paragraphs()[1].runs[0].text, "Second paragraph");
     }
 
     #[test]
@@ -2873,15 +2872,15 @@ mod tests {
         let parser = OoxmlParser::new();
         let doc = parser.parse(&docx).unwrap();
         let body = doc.docx_body.unwrap();
-        assert_eq!(body.paragraphs.len(), 1);
+        assert_eq!(body.paragraphs().len(), 1);
 
-        let r1 = &body.paragraphs[0].runs[0];
+        let r1 = &body.paragraphs()[0].runs[0];
         assert!(r1.bold);
         assert!(r1.italic);
         assert_eq!(r1.font_size, Some(28));
         assert_eq!(r1.font.as_deref(), Some("Arial"));
 
-        let r2 = &body.paragraphs[0].runs[1];
+        let r2 = &body.paragraphs()[0].runs[1];
         assert_eq!(r2.underline, Some(UnderlineType::Dotted));
         assert_eq!(r2.color.as_deref(), Some("FF0000"));
     }
@@ -2908,18 +2907,18 @@ mod tests {
         let body = doc.docx_body.unwrap();
 
         assert_eq!(
-            body.paragraphs[0].properties.alignment,
+            body.paragraphs()[0].properties.alignment,
             Some(TextAlignment::Center)
         );
-        assert_eq!(body.paragraphs[0].properties.spacing_after, Some(200));
-        assert_eq!(body.paragraphs[0].properties.spacing_before, Some(100));
+        assert_eq!(body.paragraphs()[0].properties.spacing_after, Some(200));
+        assert_eq!(body.paragraphs()[0].properties.spacing_before, Some(100));
 
         assert_eq!(
-            body.paragraphs[1].properties.alignment,
+            body.paragraphs()[1].properties.alignment,
             Some(TextAlignment::Right)
         );
-        assert_eq!(body.paragraphs[1].properties.indent_left, Some(720));
-        assert_eq!(body.paragraphs[1].properties.indent_first_line, Some(360));
+        assert_eq!(body.paragraphs()[1].properties.indent_left, Some(720));
+        assert_eq!(body.paragraphs()[1].properties.indent_first_line, Some(360));
     }
 
     #[test]
@@ -2946,18 +2945,18 @@ mod tests {
         let doc = parser.parse(&docx).unwrap();
         let body = doc.docx_body.unwrap();
 
-        assert_eq!(body.tables.len(), 1);
-        assert_eq!(body.tables[0].rows.len(), 2);
-        assert_eq!(body.tables[0].rows[0].cells.len(), 2);
+        assert_eq!(body.tables().len(), 1);
+        assert_eq!(body.tables()[0].rows.len(), 2);
+        assert_eq!(body.tables()[0].rows[0].cells.len(), 2);
         assert_eq!(
-            body.tables[0].rows[0].cells[0].paragraphs[0].runs[0].text,
+            body.tables()[0].rows[0].cells[0].paragraphs[0].runs[0].text,
             "Cell 1"
         );
         assert_eq!(
-            body.tables[0].rows[1].cells[1].paragraphs[0].runs[0].text,
+            body.tables()[0].rows[1].cells[1].paragraphs[0].runs[0].text,
             "Cell 4"
         );
-        assert_eq!(body.tables[0].properties.width, Some(5000));
+        assert_eq!(body.tables()[0].properties.width, Some(5000));
     }
 
     #[test]
@@ -2975,10 +2974,10 @@ mod tests {
         let parser = OoxmlParser::new();
         let doc = parser.parse(&docx).unwrap();
         let body = doc.docx_body.unwrap();
-        assert_eq!(body.paragraphs.len(), 3);
-        assert!(body.paragraphs[0].runs.is_empty());
-        assert_eq!(body.paragraphs[1].runs[0].text, "Not empty");
-        assert!(body.paragraphs[2].runs.is_empty());
+        assert_eq!(body.paragraphs().len(), 3);
+        assert!(body.paragraphs()[0].runs.is_empty());
+        assert_eq!(body.paragraphs()[1].runs[0].text, "Not empty");
+        assert!(body.paragraphs()[2].runs.is_empty());
     }
 
     #[test]
@@ -3000,7 +2999,7 @@ mod tests {
         let parser = OoxmlParser::new();
         let doc = parser.parse(&docx).unwrap();
         let body = doc.docx_body.unwrap();
-        let runs = &body.paragraphs[0].runs;
+        let runs = &body.paragraphs()[0].runs;
         assert_eq!(runs.len(), 5);
         assert_eq!(
             runs[1].vertical_alignment,
@@ -3028,7 +3027,7 @@ mod tests {
         let parser = OoxmlParser::new();
         let doc = parser.parse(&docx).unwrap();
         let body = doc.docx_body.unwrap();
-        assert_eq!(body.paragraphs[0].style_id.as_deref(), Some("Heading1"));
+        assert_eq!(body.paragraphs()[0].style_id.as_deref(), Some("Heading1"));
     }
 
     // --- PPTX test helpers ---

@@ -2396,7 +2396,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
-                paragraphs: vec![DocxParagraph {
+                blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
                     runs: vec![DocxRun {
@@ -2415,8 +2415,7 @@ mod tests {
                         small_caps: false,
                         all_caps: false,
                     }],
-                }],
-                tables: vec![],
+                })],
             }),
         }
     }
@@ -2479,7 +2478,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
-                paragraphs: vec![DocxParagraph {
+                blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
                     runs: vec![
@@ -2532,8 +2531,7 @@ mod tests {
                             all_caps: false,
                         },
                     ],
-                }],
-                tables: vec![],
+                })],
             }),
         };
         let ser = OoxmlSerializer::new();
@@ -2561,8 +2559,8 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
-                paragraphs: vec![
-                    DocxParagraph {
+                blocks: vec![
+                    DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
                         runs: vec![DocxRun {
@@ -2581,8 +2579,8 @@ mod tests {
                             small_caps: false,
                             all_caps: false,
                         }],
-                    },
-                    DocxParagraph {
+                    }),
+                    DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties {
                             alignment: Some(TextAlignment::Center),
@@ -2604,8 +2602,8 @@ mod tests {
                             small_caps: false,
                             all_caps: false,
                         }],
-                    },
-                    DocxParagraph {
+                    }),
+                    DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties {
                             alignment: Some(TextAlignment::Right),
@@ -2627,9 +2625,8 @@ mod tests {
                             small_caps: false,
                             all_caps: false,
                         }],
-                    },
+                    }),
                 ],
-                tables: vec![],
             }),
         };
         let ser = OoxmlSerializer::new();
@@ -2658,8 +2655,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
-                paragraphs: vec![],
-                tables: vec![DocxTable {
+                blocks: vec![DocxBlock::Table(DocxTable {
                     rows: vec![
                         DocxTableRow {
                             cells: vec![
@@ -2779,7 +2775,7 @@ mod tests {
                         },
                     ],
                     properties: DocxTableProperties::default(),
-                }],
+                })],
             }),
         };
         let ser = OoxmlSerializer::new();
@@ -3586,7 +3582,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
-                paragraphs: vec![DocxParagraph {
+                blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
                     runs: vec![DocxRun {
@@ -3605,8 +3601,7 @@ mod tests {
                         small_caps: false,
                         all_caps: false,
                     }],
-                }],
-                tables: vec![],
+                })],
             }),
         };
         let ser = OoxmlSerializer::new();
@@ -3637,8 +3632,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
-                paragraphs: vec![],
-                tables: vec![],
+                blocks: vec![],
             }),
         };
         let ser = OoxmlSerializer::new();
