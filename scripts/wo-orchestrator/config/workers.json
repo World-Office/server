@@ -6,8 +6,8 @@
       "provider": "zai",
       "model": "glm-5-turbo",
       "endpoint": "https://api.z.ai/api/coding/paas/v4",
-      "note": "Z.AI GLM 5 Turbo — fast, good for text-heavy tasks",
-      "enabled": true,
+      "note": "rate-limited (usage limit reached 2026-08-12); re-enable after 21:23 UTC",
+      "enabled": false,
       "max_concurrent": 1
     },
     {
@@ -15,7 +15,7 @@
       "provider": "tud",
       "model": "Mistral-Medium-3.5-128B",
       "endpoint": "https://llm-service.ai.tu-darmstadt.de/v1",
-      "note": "TU Darmstadt Mistral Medium 3.5 128B — strong reasoning",
+      "note": "TU Darmstadt Mistral Medium 3.5 128B \u2014 strong reasoning",
       "enabled": true,
       "max_concurrent": 1
     },
@@ -24,7 +24,7 @@
       "provider": "opencode-free",
       "model": "deepseek-v4-flash",
       "endpoint": "https://opencode.ai/zen/v1",
-      "note": "OpenCode Zen free tier DeepSeek V4 Flash — DISABLED: needs OAuth login (no API key), re-enable after `pi --provider opencode-free /login`",
+      "note": "OpenCode Zen free tier DeepSeek V4 Flash \u2014 DISABLED: needs OAuth login (no API key), re-enable after `pi --provider opencode-free /login`",
       "enabled": false,
       "max_concurrent": 1
     },
