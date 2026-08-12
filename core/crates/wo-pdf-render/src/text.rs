@@ -11,8 +11,10 @@ use crate::{PdfError, PdfRenderer};
 /// section §10 of the execution plan. The primary interface is through the
 /// PdfRenderer trait methods (extract_text), with additional utility functions
 /// for enhanced text processing.
+#[allow(dead_code)]
 pub struct TextExtractor;
 
+#[allow(dead_code)]
 impl TextExtractor {
     /// Extracts text from a specific page using a PdfRenderer backend.
     ///
@@ -42,7 +44,6 @@ impl TextExtractor {
     ///
     /// # Returns
     /// A vector of strings, one for each page.
-    #[allow(dead_code)]
     pub fn extract_text_all_pages(
         backend: &impl PdfRenderer,
         bytes: &[u8],
@@ -74,10 +75,8 @@ impl TextExtractor {
             return false;
         }
 
-        if let Some(min_length) = expected_length {
-            if text.len() < min_length {
-                return false;
-            }
+        if let Some(min_length) = expected_length && text.len() < min_length {
+            return false;
         }
 
         // Check for at least one alphabetic character
@@ -89,6 +88,7 @@ impl TextExtractor {
 ///
 /// This struct is used for advanced text extraction scenarios where
 /// position information is needed (e.g., for text selection in the editor).
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct TextSpan {
     /// The text content.
@@ -97,6 +97,7 @@ pub struct TextSpan {
     pub char_offset: usize,
 }
 
+#[allow(dead_code)]
 impl TextSpan {
     /// Creates a new TextSpan.
     pub fn new(text: String, char_offset: usize) -> Self {
@@ -108,6 +109,7 @@ impl TextSpan {
 ///
 /// This utility function processes extracted text and splits it into
 /// individual line spans, which is useful for line-based operations.
+#[allow(dead_code)]
 pub fn split_text_into_lines(text: &str) -> Vec<TextSpan> {
     text.lines()
         .enumerate()
@@ -126,6 +128,7 @@ pub fn split_text_into_lines(text: &str) -> Vec<TextSpan> {
 ///
 /// This is the correct way to count characters in UTF-8 text, as required
 /// by the World-Office mutation idiom (INV-4).
+#[allow(dead_code)]
 pub fn count_characters(text: &str) -> usize {
     text.chars().count()
 }
