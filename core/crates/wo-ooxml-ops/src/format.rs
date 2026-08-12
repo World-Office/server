@@ -38,6 +38,7 @@ impl<'a> DocModel<'a> {
         let paragraph = match block {
             DocxBlock::Paragraph(p) => p,
             DocxBlock::Table(_) => {
+            DocxBlock::Image(_) => return Err(DocOpError::Invalid("Cannot operate on an image block".to_string())),
                 return Err(DocOpError::OutOfRange(format!(
                     "block {} is a table, not a paragraph",
                     para
