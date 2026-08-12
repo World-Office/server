@@ -791,4 +791,86 @@ mod tests {
             _ => panic!("Expected paragraph"),
         }
     }
+
+    // ========================================================================
+    // Additional tests for completeness
+    // ========================================================================
+
+    #[test]
+    fn test_insert_text_into_empty_paragraph() {
+        // Create a body with an empty paragraph
+        let mut body = create_test_body_with_paragraph("");
+        let mut model = DocModel { body: &mut body };
+
+        let op = DocOp::InsertText { para: 0, char: 0, text: "Hello".to_string() };
+        let inverse = model.apply(&op).unwrap();
+
+        match &body.blocks[0] {
+            DocxBlock::Paragraph(p) => {
+                assert_eq!(p.runs[0].text, "Hello");
+            }
+            _ => panic!("Expected paragraph"),
+        }
+
+        // Check inverse
+        if let DocOp::DeleteText { para: p, start_char: s, end_char: e } = inverse {
+            assert_eq!(p, 0);
+            assert_eq!(s, 0);
+            assert_eq!(e, 5); // "Hello" is 5 chars
+        } else {
+            panic!("Expected DeleteText inverse");
+        }
+    }
+
+    #[test]
+    fn test_merge_with_empty_first_paragraph() {
+        // Create body with empty first paragraph and non-empty second
+        let mut body = wo_ooxml::model::DocxBody::new();
+        body.push_paragraph(create_test_paragraph(""));
+        body.push_paragraph(create_test_paragraph("CD"));
+
+        let mut model = DocModel { body: &mut body };
+
+        let op = DocOp::MergeWithPrevious { para: 1 };
+        let inverse = model.apply(&op).unwrap();
+
+        assert_eq!(body.blocks.len(), 1);
+        
+        match &body.blocks[0] {
+            DocxBlock::Paragraph(p) => {
+                assert_eq!(p.runs.len(), 2);
+                assert_eq!(p.runs[0].text, "");
+                assert_eq!(p.runs[1].text, "CD");
+            }
+            _ => panic!("Expected paragraph"),
+        }
+
+        // Check inverse - should split at char 0 (empty first paragraph)
+        if let DocOp::SplitParagraph { para: p, char: c } = inverse {
+            assert_eq!(p, 0);
+            assert_eq!(c, 0);
+        } else {
+            panic!("Expected SplitParagraph inverse");
+        }
+    }
+
+    #[test]
+    fn test_insert_text_out_of_range_paragraph() {
+        let mut body = create_test_body_with_paragraph("Hello");
+        let mut model = DocModel { body: &mut body };
+
+        // Try to insert into non-existent paragraph 5
+        let op = DocOp::InsertText { para: 5, char: 0, text: "X".to_string() };
+        let result = model.apply(&op);
+
+        assert!(result.is_err());
+        if let Err(DocOpError::OutOfRange(msg)) = result {
+            assert!(msg.contains("paragraph 5"));
+        } else {
+            panic!("Expected OutOfRange error");
+        }
+        
+        // Body should be unchanged
+        assert_eq!(body.blocks.len(), 1);
+    }
 }
