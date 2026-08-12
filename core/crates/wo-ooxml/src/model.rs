@@ -463,6 +463,8 @@ pub enum DocxBlock {
     Paragraph(DocxParagraph),
     /// A table block
     Table(DocxTable),
+    /// An image block
+    Image(DocxImage),
 }
 
 /// Document body content.
@@ -483,6 +485,7 @@ impl DocxBody {
         self.blocks.iter().filter_map(|b| match b {
             DocxBlock::Paragraph(p) => Some(p),
             DocxBlock::Table(_) => None,
+            DocxBlock::Image(_) => None,
         }).collect()
     }
 
@@ -491,6 +494,7 @@ impl DocxBody {
         self.blocks.iter_mut().filter_map(|b| match b {
             DocxBlock::Paragraph(p) => Some(p),
             DocxBlock::Table(_) => None,
+            DocxBlock::Image(_) => None,
         }).collect()
     }
 
@@ -499,6 +503,7 @@ impl DocxBody {
         self.blocks.iter().filter_map(|b| match b {
             DocxBlock::Paragraph(_) => None,
             DocxBlock::Table(t) => Some(t),
+            DocxBlock::Image(_) => None,
         }).collect()
     }
 
@@ -507,6 +512,25 @@ impl DocxBody {
         self.blocks.iter_mut().filter_map(|b| match b {
             DocxBlock::Paragraph(_) => None,
             DocxBlock::Table(t) => Some(t),
+            DocxBlock::Image(_) => None,
+        }).collect()
+    }
+
+    /// Get all images in the body (in order)
+    pub fn images(&self) -> Vec<&DocxImage> {
+        self.blocks.iter().filter_map(|b| match b {
+            DocxBlock::Paragraph(_) => None,
+            DocxBlock::Table(_) => None,
+            DocxBlock::Image(i) => Some(i),
+        }).collect()
+    }
+
+    /// Get all images in the body (in order, mutable)
+    pub fn images_mut(&mut self) -> Vec<&mut DocxImage> {
+        self.blocks.iter_mut().filter_map(|b| match b {
+            DocxBlock::Paragraph(_) => None,
+            DocxBlock::Table(_) => None,
+            DocxBlock::Image(i) => Some(i),
         }).collect()
     }
 
@@ -662,6 +686,15 @@ pub enum VerticalAlignment {
 pub struct DocxTable {
     pub rows: Vec<DocxTableRow>,
     pub properties: DocxTableProperties,
+}
+
+/// An image in the document body.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DocxImage {
+    pub bytes: Vec<u8>,
+    pub width_emu: u32,
+    pub height_emu: u32,
+    pub wrap_mode: String,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

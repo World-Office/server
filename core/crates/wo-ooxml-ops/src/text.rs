@@ -17,6 +17,7 @@ impl<'a> DocModel<'a> {
         let paragraph = match block {
             DocxBlock::Paragraph(p) => p,
             DocxBlock::Table(_) => return Err(DocOpError::OutOfRange(format!("block {} is a table, not a paragraph", para))),
+            DocxBlock::Image(_) => return Err(DocOpError::Invalid("Cannot operate on an image block".to_string())),
         };
 
         // Count total characters in the paragraph
@@ -94,6 +95,7 @@ impl<'a> DocModel<'a> {
         let paragraph = match block {
             DocxBlock::Paragraph(p) => p,
             DocxBlock::Table(_) => return Err(DocOpError::OutOfRange(format!("block {} is a table, not a paragraph", para))),
+            DocxBlock::Image(_) => return Err(DocOpError::Invalid("Cannot operate on an image block".to_string())),
         };
 
         // Count total characters in the paragraph
@@ -179,6 +181,7 @@ impl<'a> DocModel<'a> {
         let paragraph = match block {
             DocxBlock::Paragraph(p) => p,
             DocxBlock::Table(_) => return Err(DocOpError::OutOfRange(format!("block {} is a table, not a paragraph", para))),
+            DocxBlock::Image(_) => return Err(DocOpError::Invalid("Cannot operate on an image block".to_string())),
         };
 
         // Count total characters in the paragraph
@@ -289,6 +292,7 @@ impl<'a> DocModel<'a> {
             match &self.body.blocks[para - 1] {
                 DocxBlock::Paragraph(p) => p.runs.iter().map(|r| r.text.chars().count()).sum(),
                 DocxBlock::Table(_) => return Err(DocOpError::Invalid("Cannot merge a paragraph with a table".to_string())),
+                DocxBlock::Image(_) => return Err(DocOpError::Invalid("Cannot operate on an image block".to_string())),
             }
         } else {
             return Err(DocOpError::EmptyMerge);
@@ -304,11 +308,13 @@ impl<'a> DocModel<'a> {
         let prev_para = match prev_block {
             DocxBlock::Paragraph(p) => p,
             DocxBlock::Table(_) => return Err(DocOpError::Invalid("Cannot merge a paragraph with a table".to_string())),
+            DocxBlock::Image(_) => return Err(DocOpError::Invalid("Cannot operate on an image block".to_string())),
         };
 
         let curr_para = match curr_block {
             DocxBlock::Paragraph(p) => p,
             DocxBlock::Table(_) => return Err(DocOpError::Invalid("Cannot merge a table with a paragraph".to_string())),
+            DocxBlock::Image(_) => return Err(DocOpError::Invalid("Cannot operate on an image block".to_string())),
         };
 
         // Take ownership of runs from current paragraph
@@ -340,6 +346,7 @@ impl<'a> DocModel<'a> {
         let paragraph = match block {
             DocxBlock::Paragraph(p) => p,
             DocxBlock::Table(_) => return Err(DocOpError::OutOfRange(format!("block {} is a table, not a paragraph", para))),
+            DocxBlock::Image(_) => return Err(DocOpError::Invalid("Cannot operate on an image block".to_string())),
         };
 
         // Count total characters in the paragraph

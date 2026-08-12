@@ -46,6 +46,7 @@ impl<'a> DocModel<'a> {
         
         let table = match table_block {
             DocxBlock::Table(t) => t,
+            DocxBlock::Image(_) => return Err(DocOpError::TableIndexOutOfRange(table_idx, 0, 0)),
             DocxBlock::Paragraph(_) => return Err(DocOpError::TableIndexOutOfRange(table_idx, 0, 0)),
         };
         
@@ -84,6 +85,7 @@ impl<'a> DocModel<'a> {
         
         let table = match table_block {
             DocxBlock::Table(t) => t,
+            DocxBlock::Image(_) => return Err(DocOpError::TableIndexOutOfRange(table_idx, 0, 0)),
             DocxBlock::Paragraph(_) => return Err(DocOpError::TableIndexOutOfRange(table_idx, 0, 0)),
         };
         
@@ -112,6 +114,7 @@ impl<'a> DocModel<'a> {
         
         let table = match table_block {
             DocxBlock::Table(t) => t,
+            DocxBlock::Image(_) => return Err(DocOpError::TableIndexOutOfRange(table_idx, 0, 0)),
             DocxBlock::Paragraph(_) => return Err(DocOpError::TableIndexOutOfRange(table_idx, 0, 0)),
         };
         
@@ -161,6 +164,7 @@ impl<'a> DocModel<'a> {
         
         let table = match table_block {
             DocxBlock::Table(t) => t,
+            DocxBlock::Image(_) => return Err(DocOpError::TableIndexOutOfRange(table_idx, 0, 0)),
             DocxBlock::Paragraph(_) => return Err(DocOpError::TableIndexOutOfRange(table_idx, 0, 0)),
         };
         
@@ -198,6 +202,7 @@ impl<'a> DocModel<'a> {
         
         let table = match table_block {
             DocxBlock::Table(t) => t,
+            DocxBlock::Image(_) => return Err(DocOpError::TableIndexOutOfRange(table_idx, 0, 0)),
             DocxBlock::Paragraph(_) => return Err(DocOpError::TableIndexOutOfRange(table_idx, 0, 0)),
         };
         
@@ -272,6 +277,7 @@ impl<'a> DocModel<'a> {
         
         let table = match table_block {
             DocxBlock::Table(t) => t,
+            DocxBlock::Image(_) => return Err(DocOpError::TableIndexOutOfRange(table_idx, 0, 0)),
             DocxBlock::Paragraph(_) => return Err(DocOpError::TableIndexOutOfRange(table_idx, 0, 0)),
         };
         
@@ -404,6 +410,7 @@ impl<'a> DocModel<'a> {
         
         let table = match table_block {
             DocxBlock::Table(t) => t,
+            DocxBlock::Image(_) => return Err(DocOpError::TableIndexOutOfRange(table_idx, 0, 0)),
             DocxBlock::Paragraph(_) => return Err(DocOpError::TableIndexOutOfRange(table_idx, 0, 0)),
         };
         

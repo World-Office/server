@@ -35,6 +35,7 @@ impl<'a> DocModel<'a> {
         let deleted_para = match block {
             DocxBlock::Paragraph(p) => p.clone(),
             DocxBlock::Table(_) => return Err(DocOpError::Invalid("Cannot delete a table as a paragraph".to_string())),
+            DocxBlock::Image(_) => return Err(DocOpError::Invalid("Cannot operate on an image block".to_string())),
         };
 
         // Remove the paragraph
@@ -56,6 +57,7 @@ impl<'a> DocModel<'a> {
         let paragraph = match block {
             DocxBlock::Paragraph(p) => p,
             DocxBlock::Table(_) => return Err(DocOpError::OutOfRange(format!("block {} is a table, not a paragraph", para))),
+            DocxBlock::Image(_) => return Err(DocOpError::Invalid("Cannot operate on an image block".to_string())),
         };
 
         // Get old properties for inverse

@@ -994,6 +994,10 @@ impl OoxmlSerializer {
                     DocxBlock::Table(table) => {
                         xml.push_str(&self.serialize_table(table));
                     }
+                    DocxBlock::Image(_) => {
+                        // Image serialization placeholder - full implementation would require
+                        // creating w:drawing elements with proper OOXML structure
+                    }
                 }
             }
         }
