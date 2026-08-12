@@ -17,3 +17,34 @@ export type {
   CommonEditorApiStatic,
   AscGlobalNamespace,
 } from "./types"
+
+// Collaboration client exports
+export {
+  WIRE_SCHEMA_VERSION,
+  textPath,
+  tablePath,
+  slidePath,
+  sheetPath,
+  createRange,
+  textRange,
+  createInsertOpEnvelope,
+  createDeleteOpEnvelope,
+  createReplaceOpEnvelope,
+  createFormatOpEnvelope,
+  createMoveOpEnvelope,
+  serializeModelOpEnvelope,
+  deserializeModelOpEnvelope,
+  extractModelOp,
+  modelOpToEnvelope,
+  isLegacyOperation,
+  isModelOpEnvelope,
+  legacyToModelOpEnvelope,
+} from "./collaboration-client"
+export type {
+  Path,
+  Range,
+  FormatAttrs,
+  ModelOp,
+  ModelOpEnvelope,
+  LegacyEditOperation,
+} from "./collaboration-client"
