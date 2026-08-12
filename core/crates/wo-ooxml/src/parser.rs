@@ -1457,6 +1457,25 @@ impl OoxmlParser {
                 "outlineLvl" => {
                     props.outline_level = child.attribute("val").and_then(|v| v.parse().ok());
                 }
+                "tabs" => {
+                    for tab_child in child.children() {
+                        if !tab_child.is_element() {
+                            continue;
+                        }
+                        if tab_child.tag_name().name() == "tab" {
+                            let pos: i32 = tab_child.attribute("pos").and_then(|v| v.parse::<i32>().ok()).unwrap_or(0);
+                            let kind = match tab_child.attribute("val") {
+                                Some("center") => TabStopKind::Center,
+                                Some("right") => TabStopKind::Right,
+                                Some("decimal") => TabStopKind::Decimal,
+                                Some("bar") => TabStopKind::Bar,
+                                _ => TabStopKind::Left,
+                            };
+                            let leader = tab_child.attribute("leader").map(|s| s.to_string());
+                            props.tab_stops.push(TabStop { pos, kind, leader });
+                        }
+                    }
+                }
                 _ => {}
             }
         }
