@@ -11,8 +11,10 @@ use crate::{PdfError, PdfRenderer};
 /// section §10 of the execution plan. The primary interface is through the
 /// PdfRenderer trait methods (annotations), with additional utility functions
 /// for enhanced annotation processing.
+#[allow(dead_code)]
 pub struct AnnotationParser;
 
+#[allow(dead_code)]
 impl AnnotationParser {
     /// Extracts annotations from a specific page using a PdfRenderer backend.
     ///
@@ -43,7 +45,6 @@ impl AnnotationParser {
     ///
     /// # Returns
     /// The number of annotations on the page, or an error.
-    #[allow(dead_code)]
     pub fn count_annotations(
         backend: &impl PdfRenderer,
         bytes: &[u8],
@@ -84,7 +85,6 @@ impl AnnotationParser {
     ///
     /// # Returns
     /// True if the page has at least one annotation.
-    #[allow(dead_code)]
     pub fn has_annotations(
         backend: &impl PdfRenderer,
         bytes: &[u8],
@@ -112,6 +112,7 @@ pub mod annotation_types {
 /// A rectangle extension trait for annotation bounding boxes.
 ///
 /// Provides utility methods for working with annotation rectangles.
+#[allow(dead_code)]
 pub trait RectExt {
     /// Returns the center point of the rectangle.
     fn center(&self) -> (f32, f32);
@@ -129,10 +130,7 @@ impl RectExt for crate::renderer::Rect {
     }
 
     fn contains_point(&self, x: f32, y: f32) -> bool {
-        x >= self.x &&
-            x <= self.x + self.width &&
-            y >= self.y &&
-            y <= self.y + self.height
+        x >= self.x && x <= self.x + self.width && y >= self.y && y <= self.y + self.height
     }
 
     fn area(&self) -> f32 {
@@ -245,7 +243,7 @@ mod tests {
         // Filter for Text annotations
         let text_annotations = AnnotationParser::filter_by_type(
             annotations.clone(),
-            annotation_types::TEXT
+            annotation_types::TEXT,
         );
         assert_eq!(text_annotations.len(), 1);
         assert_eq!(text_annotations[0].annotation_type, "Text");
@@ -253,17 +251,13 @@ mod tests {
         // Filter for Link annotations
         let link_annotations = AnnotationParser::filter_by_type(
             annotations.clone(),
-            annotation_types::LINK
+            annotation_types::LINK,
         );
         assert_eq!(link_annotations.len(), 1);
         assert_eq!(link_annotations[0].annotation_type, "Link");
 
         // Filter for non-existent type
-        let no_matches = AnnotationParser::filter_by_type(
-            annotations,
-            annotation_types::STAMP
-        );
+        let no_matches = AnnotationParser::filter_by_type(annotations, annotation_types::STAMP);
         assert_eq!(no_matches.len(), 0);
     }
-
-    }
+}
