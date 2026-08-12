@@ -5,6 +5,8 @@
 
 pub mod aff;
 pub mod error;
+pub mod hyphenate;
 
 pub use aff::{AffixFile, Flag, Prefix, Replacement, Suffix};
 pub use error::AffParseError;
+pub use hyphenate::{HyphenationDict, HyphenParseError, HyphenPoint, Hyphenator};
