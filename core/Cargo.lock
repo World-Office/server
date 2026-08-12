@@ -3681,6 +3681,7 @@ dependencies = [
  "wo-common",
  "wo-ooxml",
  "wo-renderer",
+ "wo-spell",
 ]
 
 [[package]]
@@ -3691,6 +3692,19 @@ dependencies = [
  "serde",
  "thiserror 2.0.18",
  "wo-common",
+]
+
+[[package]]
+name = "wo-spell"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "serde_json",
+ "serial_test",
+ "thiserror 2.0.18",
+ "wo-common",
+ "wo-unicode",
 ]
 
 [[package]]

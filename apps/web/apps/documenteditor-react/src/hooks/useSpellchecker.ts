@@ -1,23 +1,82 @@
-import {
-  LocalStorageUserDict,
-  PreloadedDictionaryStore,
-  SpellChecker,
-} from "@world-office/spellchecker"
 import { useCallback, useEffect, useRef, useState } from "react"
 
-const DICTIONARIES: Record<string, { aff: string; dic: string }> = {
-  "en-US": { aff: "/dictionaries/en-US.aff", dic: "/dictionaries/en-US.dic" },
-  "de-DE": { aff: "/dictionaries/de-DE.aff", dic: "/dictionaries/de-DE.dic" },
+/**
+ * WASM spellchecker hook — replaces the nspell-based `@world-office/spellchecker`.
+ *
+ * Calls the `wo-spell` engine through WASM exports in `wo-renderer-wasm`:
+ *
+ * - `spell_load_dictionary(affBytes, dicBytes, lang)`
+ * - `spell_check_word(word, lang)`
+ * - `spell_suggest(word, lang)`
+ * - `spell_check_text(text, lang)`
+ * - `spell_add_to_user_dict(word, lang)`
+ * - `spell_load_hyphenation(hyphBytes, lang)`
+ * - `spell_hyphenate(word, lang)`
+ * - `spell_release(lang)`
+ *
+ * The WASM module is loaded lazily from `wo-renderer-wasm`.
+ */
+
+export interface SpellCheckResult {
+  word: string
+  offset: number
+  suggestions: string[]
 }
 
-const userDict = new LocalStorageUserDict()
+export interface SpellcheckerState {
+  spellchecker: {
+    check: (word: string) => boolean
+    suggest: (word: string) => string[]
+    checkText: (text: string) => SpellCheckResult[]
+    addToDictionary: (word: string) => void
+    hyphenate: (word: string) => number[]
+  } | null
+  language: string
+  enabled: boolean
+  loading: boolean
+  switchLanguage: (lang: string) => void
+  toggleEnabled: () => void
+  addToDictionary: (word: string) => void
+  availableLanguages: string[]
+}
 
-export function useSpellchecker() {
-  const [spellchecker, setSpellchecker] = useState<SpellChecker | null>(null)
+const DICTIONARIES: Record<string, { aff: string; dic: string; hyph?: string }> = {
+  "en-US": {
+    aff: "/dictionaries/en-US.aff",
+    dic: "/dictionaries/en-US.dic",
+    hyph: "/dictionaries/en-US/hyph_en_US.dic",
+  },
+  "de-DE": {
+    aff: "/dictionaries/de-DE.aff",
+    dic: "/dictionaries/de-DE.dic",
+  },
+}
+
+/** Lazy-loaded WASM module reference. */
+let wasmModule: typeof import("../../../../core/crates/wo-renderer-wasm/pkg/wo_renderer_wasm") | null =
+  null
+let wasmLoadPromise: Promise<typeof import("../../../../core/crates/wo-renderer-wasm/pkg/wo_renderer_wasm")> | null =
+  null
+
+async function loadWasm(): Promise<typeof import("../../../../core/crates/wo-renderer-wasm/pkg/wo_renderer_wasm")> {
+  if (wasmModule) return wasmModule
+  if (!wasmLoadPromise) {
+    wasmLoadPromise = import(
+      /* @vite-ignore */
+      "../../../../core/crates/wo-renderer-wasm/pkg/wo_renderer_wasm"
+    ) as Promise<typeof import("../../../../core/crates/wo-renderer-wasm/pkg/wo_renderer_wasm")>
+    wasmLoadPromise.then((mod) => {
+      wasmModule = mod
+    })
+  }
+  return wasmLoadPromise
+}
+
+export function useSpellchecker(): SpellcheckerState {
   const [language, setLanguage] = useState("en-US")
   const [enabled, setEnabled] = useState(true)
   const [loading, setLoading] = useState(false)
-  const storeRef = useRef(new PreloadedDictionaryStore())
+  const checkerRef = useRef<SpellcheckerState["spellchecker"]>(null)
 
   const loadDictionary = useCallback(async (lang: string) => {
     const dict = DICTIONARIES[lang]
@@ -25,21 +84,77 @@ export function useSpellchecker() {
 
     setLoading(true)
     try {
+      const wasm = await loadWasm()
+
+      // Load spell dictionary.
       const [affResp, dicResp] = await Promise.all([fetch(dict.aff), fetch(dict.dic)])
-      const aff = await affResp.arrayBuffer()
-      const dic = await dicResp.arrayBuffer()
+      const aff = new Uint8Array(await affResp.arrayBuffer())
+      const dic = new Uint8Array(await dicResp.arrayBuffer())
 
-      storeRef.current.add(lang, aff, dic)
+      // Release previous dictionary for this language if already loaded.
+      wasm.spell_release(lang)
 
-      const checker = new SpellChecker({ language: lang })
-      await checker.loadDictionary(aff, dic)
-      setSpellchecker(checker)
+      wasm.spell_load_dictionary(aff, dic, lang)
+
+      // Optionally load hyphenation patterns.
+      if (dict.hyph) {
+        try {
+          const hyphResp = await fetch(dict.hyph)
+          const hyph = new Uint8Array(await hyphResp.arrayBuffer())
+          wasm.spell_load_hyphenation(hyph, lang)
+        } catch {
+          // Hyphenation is optional — don't block spellchecking if it fails.
+        }
+      }
+
+      checkerRef.current = {
+        check: (word: string) => {
+          if (!enabled) return true
+          return wasm.spell_check_word(word, lang)
+        },
+        suggest: (word: string) => {
+          try {
+            const json = wasm.spell_suggest(word, lang)
+            return JSON.parse(json)
+          } catch {
+            return []
+          }
+        },
+        checkText: (text: string) => {
+          if (!enabled) return []
+          try {
+            const json = wasm.spell_check_text(text, lang)
+            return JSON.parse(json)
+          } catch {
+            return []
+          }
+        },
+        addToDictionary: (word: string) => {
+          wasm.spell_add_to_user_dict(word, lang)
+        },
+        hyphenate: (word: string) => {
+          try {
+            const json = wasm.spell_hyphenate(word, lang)
+            return JSON.parse(json)
+          } catch {
+            return []
+          }
+        },
+        isEnabled: () => enabled,
+        setEnabled: (v: boolean) => setEnabled(v),
+        setLanguage: (l: string) => setLanguage(l),
+        getLanguage: () => lang,
+        destroy: () => {
+          wasm.spell_release(lang)
+          checkerRef.current = null
+        },
+      }
     } catch (err) {
-      console.error(`Failed to load dictionary ${lang}:`, err)
+      console.error(`Failed to load WASM spellchecker for ${lang}:`, err)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [enabled])
 
   useEffect(() => {
     loadDictionary(language)
@@ -53,24 +168,15 @@ export function useSpellchecker() {
     setEnabled((prev) => !prev)
   }, [])
 
-  useEffect(() => {
-    if (spellchecker) {
-      spellchecker.setEnabled(enabled)
-    }
-  }, [spellchecker, enabled])
-
   const addToDictionary = useCallback(
     (word: string) => {
-      userDict.add(word)
-      if (spellchecker) {
-        spellchecker.addToDictionary(word)
-      }
+      checkerRef.current?.addToDictionary(word)
     },
-    [spellchecker],
+    [],
   )
 
   return {
-    spellchecker,
+    spellchecker: checkerRef.current,
     language,
     enabled,
     loading,
