@@ -15,7 +15,7 @@
       "provider": "tud",
       "model": "Mistral-Medium-3.5-128B",
       "endpoint": "https://llm-service.ai.tu-darmstadt.de/v1",
-      "note": "TU Darmstadt Mistral Medium 3.5 128B \u2014 strong reasoning",
+      "note": "TU Darmstadt Mistral Medium 3.5 128B — strong reasoning",
       "enabled": true,
       "max_concurrent": 1
     },
@@ -24,7 +24,7 @@
       "provider": "opencode-free",
       "model": "deepseek-v4-flash",
       "endpoint": "https://opencode.ai/zen/v1",
-      "note": "OpenCode Zen free tier DeepSeek V4 Flash \u2014 DISABLED: needs OAuth login (no API key), re-enable after `pi --provider opencode-free /login`",
+      "note": "OpenCode Zen free tier DeepSeek V4 Flash — DISABLED: needs OAuth login (no API key), re-enable after `pi --provider opencode-free /login`",
       "enabled": false,
       "max_concurrent": 1
     },
@@ -48,8 +48,8 @@
     }
   ],
   "defaults": {
-    "dispatch_timeout_s": 1800,
-    "accept_timeout_s": 600,
+    "dispatch_timeout_s": 3600,
+    "accept_timeout_s": 900,
     "max_attempts": 3,
     "retry_cooldown_s": 30
   }
