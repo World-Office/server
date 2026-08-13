@@ -6,6 +6,7 @@ import {
 import { observer } from "mobx-react-lite";
 import { Suspense, lazy, useCallback } from "react";
 import { getActiveEditor } from "./components/MonacoEditor";
+import { handlePanelCommand } from "./components/RightMenu/spreadsheet-command-router";
 import {
 	type MonacoCommand,
 	dispatchMonacoCommand,
@@ -59,7 +60,12 @@ export const App = observer(function App() {
 	}, []);
 
 	useWoCommandListener({
-		onCommand: (command, _value) => {
+		onCommand: (command, value) => {
+			// SS-8: route right-menu panel commands to the spreadsheet engine
+			// (Univer) first; fall back to the Monaco handler for legacy commands.
+			if (handlePanelCommand(command, value)) {
+				return;
+			}
 			handleMonacoCommand(command as MonacoCommand);
 		},
 		onSave: () => spreadsheetStore.saveToWopi(),
