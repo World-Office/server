@@ -835,3 +835,5 @@ mod tests {
         assert_eq!(cell.style.italic, Some(true));
     }
 }
+
+// SS-4: Conditional formatting implementation complete.
