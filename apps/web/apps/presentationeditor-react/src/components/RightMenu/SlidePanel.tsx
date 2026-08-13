@@ -3,6 +3,16 @@ import type { JSX } from "react";
 import { presentationStore } from "../../stores/PresentationStore";
 import type { SlideLayout } from "../../types/presentation";
 
+/**
+ * Dispatch a slide command through the FC-4 command router.
+ * These commands will eventually be translated to ModelOp and sent to apply_op (SL-6).
+ */
+function dispatchSlideCommand(command: string, value?: unknown): void {
+	window.dispatchEvent(
+		new CustomEvent("wo-command", { detail: { command, value } }),
+	);
+}
+
 const LAYOUTS: SlideLayout[] = [
 	"blank",
 	"title",
@@ -17,8 +27,7 @@ const LAYOUTS: SlideLayout[] = [
 ];
 
 function SlidePanelInner(): JSX.Element {
-	const { slides, currentSlide, setSlideLayout, setSlideNotes } =
-		presentationStore;
+	const { slides, currentSlide } = presentationStore;
 	const slide = slides[currentSlide];
 	if (!slide)
 		return <div className="prese-slide-panel-empty">No slide selected</div>;
@@ -36,9 +45,12 @@ function SlidePanelInner(): JSX.Element {
 				<select
 					className="prese-slide-panel-select"
 					value={slide.layout}
-					onChange={(e) =>
-						setSlideLayout(currentSlide, e.target.value as SlideLayout)
-					}
+					onChange={(e) => {
+						dispatchSlideCommand("slideSetLayout", {
+							slideIndex: currentSlide,
+							layout: e.target.value as SlideLayout,
+						});
+					}}
 				>
 					{LAYOUTS.map((l) => (
 						<option key={l} value={l}>
@@ -55,7 +67,12 @@ function SlidePanelInner(): JSX.Element {
 				<textarea
 					className="prese-slide-panel-notes"
 					value={slide.notes || ""}
-					onChange={(e) => setSlideNotes(currentSlide, e.target.value)}
+					onChange={(e) => {
+						dispatchSlideCommand("slideSetNotes", {
+							slideIndex: currentSlide,
+							notes: e.target.value,
+						});
+					}}
 					placeholder="Add speaker notes…"
 					rows={6}
 				/>
