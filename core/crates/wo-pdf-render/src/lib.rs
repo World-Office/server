@@ -22,6 +22,7 @@ pub use renderer::{Annotation, PdfRenderer, PdfiumBackend, Rect};
 
 mod text;
 mod annotation;
+mod acroform;
 
 // Test utilities: Pdfium can only be initialized once per process,
 // so we provide a global backend for tests to share.

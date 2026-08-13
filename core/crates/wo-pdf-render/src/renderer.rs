@@ -199,6 +199,15 @@ impl PdfiumBackend {
     ///
     /// Pdfium renders at 72 DPI by default (1 point = 1 pixel).
     /// To render at a different DPI, we scale the output dimensions.
+    /// Returns a reference to the underlying Pdfium library instance.
+    ///
+    /// This is `pub(crate)` to allow sibling modules (e.g., acroform) to
+    /// access the Pdfium instance directly for operations that require
+    /// the full pdfium-render API.
+    pub(crate) fn pdfium_ref(&self) -> &Pdfium {
+        &self.pdfium
+    }
+
     fn dpi_to_scale(dpi: f32) -> f32 {
         // 72 DPI is the base resolution in PDF (1 point = 1/72 inch)
         dpi / 72.0
