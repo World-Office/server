@@ -13,6 +13,7 @@ use wo_formula::ast::CellValue;
 use super::model::{
     Cell, CellStyle, MergeRange, Range2d, Sheet, SheetOp, SortKey, SortOrder, Workbook,
 };
+use crate::conditional::apply_conditional_format;
 
 /// Error type for SheetOp execution.
 #[derive(Debug, Clone, PartialEq, thiserror::Error, Serialize, Deserialize)]
@@ -376,10 +377,8 @@ pub fn apply_to_sheet(sheet: &mut Sheet, op: &SheetOp) -> SheetOpResult<()> {
         SheetOp::Sort { range, keys } => {
             apply_sort(sheet, range, keys)
         }
-        SheetOp::ApplyConditionalFormat { .. } => {
-            // Save the conditional format rule on the sheet
-            // For now, we'll store it in a new field or handle it specially
-            // This is a simplified implementation
+        SheetOp::ApplyConditionalFormat { range, rule } => {
+            apply_conditional_format(sheet, range, rule)?;
             Ok(())
         }
         SheetOp::Clear { range } => {
