@@ -1,10 +1,10 @@
 import { Extension } from "@tiptap/core"
 import { Plugin, PluginKey } from "@tiptap/pm/state"
 import { Decoration, DecorationSet } from "@tiptap/pm/view"
-import type { SpellChecker } from "@world-office/spellchecker"
+import type { WasmSpellChecker } from "./spellcheck-context"
 
 export interface SpellcheckExtensionOptions {
-  spellchecker: SpellChecker | null
+  spellchecker: WasmSpellChecker | null
   enabled: boolean
 }
 
@@ -52,8 +52,8 @@ export const SpellcheckExtension = Extension.create<SpellcheckExtensionOptions>(
         },
         props: {
           decorations(state) {
-            const spellchecker = this.spec.options?.spellchecker as SpellChecker | undefined
-            if (!spellchecker || !spellchecker.isEnabled()) return DecorationSet.empty
+            const spellchecker = this.spec.options?.spellchecker as WasmSpellChecker | undefined
+            if (!spellchecker || !spellchecker.isEnabled?.()) return DecorationSet.empty
 
             const decorations: Decoration[] = []
             const doc = state.doc

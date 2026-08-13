@@ -1,8 +1,22 @@
-import type { SpellChecker } from "@world-office/spellchecker"
 import { createContext, useContext } from "react"
 
+/**
+ * Spellchecker surface provided by the WASM SP engine (wo-renderer-wasm).
+ * Consumers only need check/suggest/checkText/hyphenate — the rich
+ * nspell-based @world-office/spellchecker type was replaced by SP-1..SP-4.
+ */
+export interface WasmSpellChecker {
+  check: (word: string) => boolean
+  suggest: (word: string) => string[]
+  checkText: (text: string) => Array<{ word: string; offset: number; suggestions: string[] }>
+  addToDictionary: (word: string) => void
+  hyphenate: (word: string) => number[]
+  /** Optional control surface (full WASM checker provides it). */
+  isEnabled?: () => boolean
+}
+
 export interface SpellcheckContextValue {
-  spellchecker: SpellChecker | null
+  spellchecker: WasmSpellChecker | null
   enabled: boolean
   loading: boolean
   language: string

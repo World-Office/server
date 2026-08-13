@@ -1,9 +1,9 @@
+import { registerEditorRouter } from "@world-office/editor-common"
 import { observer } from "mobx-react-lite"
 import { Suspense, lazy, useEffect, useRef, useState } from "react"
-import { useSpellcheck } from "../lib/spellcheck-context"
-import { registerEditorRouter } from "@world-office/editor-common"
-import { isCanvasFormat, isWasmReady } from "../lib/wasm-renderer"
 import { createRichTextRouterHandler } from "../lib/rte-command"
+import { useSpellcheck } from "../lib/spellcheck-context"
+import { isCanvasFormat, isWasmReady } from "../lib/wasm-renderer"
 import { documentStore } from "../stores/DocumentStore"
 import { CanvasEditor, type CanvasEditorHandle } from "./CanvasEditor"
 import { DocumentCanvas } from "./DocumentCanvas"
@@ -53,7 +53,8 @@ const WasmEditorCanvas = observer(
         else if (command === "italic") format = { italic: true }
         else if (command === "underline") format = { underline: value ?? "single" }
         else if (command === "strikethrough") format = { strikethrough: true }
-        else if (command === "fontSize" && value) format = { fontSize: Number.parseInt(value as string, 10) * 2 }
+        else if (command === "fontSize" && value)
+          format = { fontSize: Number.parseInt(value as string, 10) * 2 }
         else if (command === "fontFamily" && value) format = { fontName: value }
         else if (command === "textColor" && value) format = { textColor: value }
         else if (command === "highlight" && value) format = { highlight: value }
@@ -101,7 +102,7 @@ const RichTextEditorWithRouter = observer(function RichTextEditorWithRouter({
 }: {
   html: string
   onChange: (html: string) => void
-  spellchecker: any
+  spellchecker: import("../lib/spellcheck-context").WasmSpellChecker | null
 }) {
   useEffect(() => {
     // Register the TipTap editor with the command router
@@ -109,13 +110,7 @@ const RichTextEditorWithRouter = observer(function RichTextEditorWithRouter({
     return () => unregister()
   }, [])
 
-  return (
-    <RichTextEditor
-      html={html}
-      onChange={onChange}
-      spellchecker={spellchecker}
-    />
-  )
+  return <RichTextEditor html={html} onChange={onChange} spellchecker={spellchecker} />
 })
 
 export const DocumentHolder = observer(function DocumentHolder({ embedded }: DocumentHolderProps) {

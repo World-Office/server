@@ -55,7 +55,7 @@ const ObservedToolbar = observer(function ObservedToolbar({
     onCommand: (cmd: string, value?: string) => {
       // Convert kebab-case command IDs to camelCase for compatibility
       const commandName = toCamelCase(cmd)
-      
+
       if (cmd === "save") {
         window.dispatchEvent(new CustomEvent("wo-command", { detail: { command: "save" } }))
       } else if (cmd === "share") {
@@ -85,7 +85,9 @@ const ObservedToolbar = observer(function ObservedToolbar({
       } else {
         // Dispatch via wo-command event for formatting and other commands
         // Convert kebab-case to camelCase for compatibility with existing command names
-        window.dispatchEvent(new CustomEvent("wo-command", { detail: { command: commandName, value } }))
+        window.dispatchEvent(
+          new CustomEvent("wo-command", { detail: { command: commandName, value } }),
+        )
       }
     },
   }

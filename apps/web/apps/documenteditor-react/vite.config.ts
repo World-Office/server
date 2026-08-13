@@ -5,6 +5,12 @@ import { defineConfig } from "vite"
 export default defineConfig({
   base: "/word/",
   plugins: [react()],
+  test: {
+    // Only run this app's own tests. WASM contract tests (apply-op) require
+    // a browser runtime (wasm-pack / browser), not node vitest — see AGENTS.md.
+    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    exclude: ["src/__tests__/apply-op.test.ts"],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

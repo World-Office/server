@@ -26,7 +26,10 @@ createI18n({
 // This removes TipTap from the default path by overriding editorType getter
 const tiptapEnabled = import.meta.env.VITE_WO_TIPTAP
 if (!tiptapEnabled) {
-  const originalGetEditorType = Object.getOwnPropertyDescriptor(DocumentStore.prototype, "editorType")?.get
+  const originalGetEditorType = Object.getOwnPropertyDescriptor(
+    DocumentStore.prototype,
+    "editorType",
+  )?.get
   if (originalGetEditorType) {
     Object.defineProperty(DocumentStore.prototype, "editorType", {
       get(): "canvas" | "monaco" | "richtext" {
