@@ -5407,6 +5407,7 @@ dependencies = [
  "wo-ooxml-ops",
  "wo-renderer",
  "wo-spell",
+ "zip",
 ]
 
 [[package]]

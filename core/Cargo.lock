@@ -3547,6 +3547,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "wo-formula"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "wo-html"
 version = "0.1.0"
 dependencies = [
@@ -3633,6 +3644,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "wo-ooxml-ops"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "wo-common",
+ "wo-ooxml",
+]
+
+[[package]]
 name = "wo-pdf"
 version = "0.1.0"
 dependencies = [
@@ -3680,8 +3702,10 @@ dependencies = [
  "web-sys",
  "wo-common",
  "wo-ooxml",
+ "wo-ooxml-ops",
  "wo-renderer",
  "wo-spell",
+ "zip",
 ]
 
 [[package]]
