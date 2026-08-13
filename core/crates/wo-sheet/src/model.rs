@@ -1175,4 +1175,505 @@ mod tests {
         wb.set_active_sheet(2).unwrap();
         assert_eq!(wb.active_sheet(), Some(&wb.sheets[2]));
     }
+
+    // Test 21: Workbook serde round-trip
+    #[test]
+    fn test_workbook_serde_roundtrip() {
+        let mut wb = Workbook::new();
+        wb.add_sheet(Sheet::new("Sheet1"));
+        wb.add_sheet(Sheet::new("Data"));
+        wb.add_defined_name(DefinedName::new("Header", "Sheet1!A1:Z1"));
+        wb.active_sheet = 1;
+
+        let json = serde_json::to_string(&wb).unwrap();
+        let back: Workbook = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(back.sheets.len(), 2);
+        assert_eq!(back.sheets[0].name, "Sheet1");
+        assert_eq!(back.sheets[1].name, "Data");
+        assert_eq!(back.active_sheet, 1);
+        assert_eq!(back.defined_names.len(), 1);
+        assert_eq!(back.defined_names[0].name, "Header");
+    }
+
+    // Test 22: EditableModel delete operation
+    #[test]
+    fn test_editable_model_delete() {
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("Sheet1");
+        sheet.set_cell(0, 0, Cell::with_text("A1"));
+        sheet.set_cell(1, 1, Cell::with_num(42.0));
+        wb.add_sheet(sheet);
+
+        let op = ModelOp::Delete {
+            range: Range {
+                start: Path::Sheet {
+                    sheet: "Sheet1".to_string(),
+                    row: 0,
+                    col: 0,
+                },
+                end: Path::Sheet {
+                    sheet: "Sheet1".to_string(),
+                    row: 1,
+                    col: 1,
+                },
+            },
+        };
+
+        wb.apply(&op).unwrap();
+        assert!(
+            wb.get_cell(0, 0).is_none() || wb.get_cell(0, 0).unwrap().raw.is_empty()
+        );
+        assert_eq!(wb.current_revision(), 1);
+    }
+
+    // Test 23: EditableModel apply + invert round-trip
+    #[test]
+    fn test_editable_model_insert_invert_roundtrip() {
+        let mut wb = Workbook::new();
+        wb.add_sheet(Sheet::new("Sheet1"));
+
+        // Insert a cell
+        let insert = ModelOp::Insert {
+            at: Path::Sheet {
+                sheet: "Sheet1".to_string(),
+                row: 2,
+                col: 3,
+            },
+            content: "Hello".to_string(),
+        };
+        wb.apply(&insert).unwrap();
+        assert_eq!(wb.get_cell(2, 3).unwrap().raw, "Hello");
+        assert_eq!(wb.current_revision(), 1);
+
+        // Invert the insert
+        let delete = wb.invert(&insert);
+        assert!(matches!(delete, ModelOp::Delete { .. }));
+    }
+
+    // Test 24: EditableModel format operation
+    #[test]
+    fn test_editable_model_format() {
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("Sheet1");
+        sheet.set_cell(0, 0, Cell::with_text("Test"));
+        wb.add_sheet(sheet);
+
+        let mut attrs = std::collections::BTreeMap::new();
+        attrs.insert("bold".to_string(), serde_json::Value::Bool(true));
+        attrs.insert("font_size".to_string(), serde_json::Value::Number(serde_json::Number::from_f64(14.0).unwrap()));
+
+        let op = ModelOp::Format {
+            range: Range {
+                start: Path::Sheet {
+                    sheet: "Sheet1".to_string(),
+                    row: 0,
+                    col: 0,
+                },
+                end: Path::Sheet {
+                    sheet: "Sheet1".to_string(),
+                    row: 0,
+                    col: 0,
+                },
+            },
+            attrs,
+        };
+
+        wb.apply(&op).unwrap();
+        assert_eq!(wb.current_revision(), 1);
+        let cell = wb.get_cell(0, 0).unwrap();
+        assert_eq!(cell.style.bold, Some(true));
+        assert_eq!(cell.style.font_size, Some(14.0));
+    }
+
+    // Test 25: SheetOp all basic variants serde
+    #[test]
+    fn test_sheet_op_all_variants_serde() {
+        let ops: Vec<SheetOp> = vec![
+            SheetOp::SetCell {
+                row: 1,
+                col: 2,
+                raw: "Hello".to_string(),
+            },
+            SheetOp::InsertRow {
+                after: 0,
+                count: 1,
+            },
+            SheetOp::DeleteRow { row: 0, count: 1 },
+            SheetOp::InsertCol {
+                after: 0,
+                count: 2,
+            },
+            SheetOp::DeleteCol { col: 0, count: 2 },
+            SheetOp::Merge(MergeRange::new(0, 0, 2, 2)),
+            SheetOp::Unmerge(MergeRange::new(0, 0, 2, 2)),
+            SheetOp::SetStyle {
+                range: Range2d::new(0, 0, 10, 10),
+                style: CellStyle::default(),
+            },
+            SheetOp::Sort {
+                range: Range2d::new(0, 0, 100, 10),
+                keys: vec![SortKey {
+                    col: 0,
+                    order: SortOrder::Ascending,
+                }],
+            },
+            SheetOp::ApplyConditionalFormat {
+                range: Range2d::new(0, 0, 50, 5),
+                rule: ConditionalRule::GreaterThan {
+                    value: 100.0,
+                    style: CellStyle::default(),
+                },
+            },
+        ];
+
+        for op in &ops {
+            let json = serde_json::to_string(op).unwrap();
+            let back: SheetOp = serde_json::from_str(&json).unwrap();
+            assert_eq!(*op, back, "serde round-trip failed for {:?}", op);
+        }
+    }
+
+    // Test 26: ConditionalRule all variants serde
+    #[test]
+    fn test_conditional_rule_all_variants_serde() {
+        let style = CellStyle {
+            bold: Some(true),
+            ..Default::default()
+        };
+        let rules: Vec<ConditionalRule> = vec![
+            ConditionalRule::GreaterThan {
+                value: 10.0,
+                style: style.clone(),
+            },
+            ConditionalRule::LessThan {
+                value: 0.5,
+                style: style.clone(),
+            },
+            ConditionalRule::Between {
+                min: 1.0,
+                max: 100.0,
+                style: style.clone(),
+            },
+            ConditionalRule::EqualTo {
+                value: "Yes".to_string(),
+                style: style.clone(),
+            },
+            ConditionalRule::ContainsText {
+                text: "error".to_string(),
+                style: style.clone(),
+            },
+            ConditionalRule::Empty { style: style.clone() },
+            ConditionalRule::TopN {
+                n: 10,
+                style: style.clone(),
+            },
+            ConditionalRule::BottomN {
+                n: 5,
+                style: style.clone(),
+            },
+            ConditionalRule::AboveAverage { style: style.clone() },
+            ConditionalRule::BelowAverage { style: style.clone() },
+            ConditionalRule::Formula {
+                formula: "A1>10".to_string(),
+                style: style.clone(),
+            },
+            ConditionalRule::DatePeriod {
+                period: DatePeriod::Today,
+                style: style.clone(),
+            },
+            ConditionalRule::Duplicate { style },
+        ];
+
+        for rule in &rules {
+            let json = serde_json::to_string(rule).unwrap();
+            let back: ConditionalRule = serde_json::from_str(&json).unwrap();
+            assert_eq!(*rule, back, "serde round-trip failed for {:?}", rule);
+        }
+    }
+
+    // Test 27: CellStyle skip_serializing_if for None fields
+    #[test]
+    fn test_cell_style_default_serde_compact() {
+        let style = CellStyle::default();
+        let json = serde_json::to_string(&style).unwrap();
+        // Default style should serialize to empty JSON object
+        // since all fields are None/skipped
+        assert_eq!(json, "{}");
+    }
+
+    // Test 28: Workbook get_sheet_by_name
+    #[test]
+    fn test_workbook_get_sheet_by_name() {
+        let mut wb = Workbook::new();
+        wb.add_sheet(Sheet::new("Sheet1"));
+        wb.add_sheet(Sheet::new("Data"));
+
+        let s = wb.get_sheet_by_name("Data").unwrap();
+        assert_eq!(s.name, "Data");
+
+        let s_mut = wb.get_sheet_by_name_mut("Sheet1").unwrap();
+        s_mut.set_cell(0, 0, Cell::with_text("A1"));
+        assert_eq!(wb.sheets[0].get_cell(0, 0).unwrap().raw, "A1");
+
+        assert!(wb.get_sheet_by_name("NonExistent").is_none());
+    }
+
+    // Test 29: Workbook remove_sheet
+    #[test]
+    fn test_workbook_remove_sheet() {
+        let mut wb = Workbook::new();
+        wb.add_sheet(Sheet::new("Sheet1"));
+        wb.add_sheet(Sheet::new("Sheet2"));
+        wb.add_sheet(Sheet::new("Sheet3"));
+
+        wb.remove_sheet(1);
+        assert_eq!(wb.sheets.len(), 2);
+        assert_eq!(wb.sheets[0].name, "Sheet1");
+        assert_eq!(wb.sheets[1].name, "Sheet3");
+    }
+
+    // Test 30: CellValue conversion from wo-formula
+    #[test]
+    fn test_cell_value_from_formula() {
+        // Numeric cell
+        let cell = Cell::with_num(3.14);
+        assert_eq!(cell.value, CellValue::Num(3.14));
+        assert_eq!(cell.raw, "3.14");
+
+        // Text cell
+        let cell = Cell::with_text("Hello");
+        assert_eq!(cell.value, CellValue::Text("Hello".to_string()));
+
+        // Formula cell
+        use wo_formula::parse;
+        let expr = parse("SUM(A1:A10)").unwrap();
+        let cell = Cell::with_formula("SUM(A1:A10)", expr, CellValue::Num(55.0));
+        assert_eq!(cell.raw, "SUM(A1:A10)");
+        assert!(cell.formula.is_some());
+    }
+
+    // Test 31: Range2d edge cases
+    #[test]
+    fn test_range2d_edge_cases() {
+        // Single cell range
+        let range = Range2d::new(5, 5, 5, 5);
+        assert!(range.contains(5, 5));
+        assert!(!range.contains(5, 6));
+
+        // Zero-based range
+        let range = Range2d::new(0, 0, 0, 0);
+        assert!(range.contains(0, 0));
+        assert!(!range.contains(0, 1));
+
+        // Large range
+        let range = Range2d::new(0, 0, 65535, 255);
+        assert!(range.contains(32000, 100));
+        assert!(!range.contains(65536, 256));
+    }
+
+    // Test 32: DefinedName serde with optional fields
+    #[test]
+    fn test_defined_name_serde_optional_fields() {
+        let name = DefinedName {
+            name: "MyRange".to_string(),
+            refs: "Sheet1!A1:B10".to_string(),
+            scope: Some("Sheet1".to_string()),
+            comment: Some("Header range".to_string()),
+        };
+        let json = serde_json::to_string(&name).unwrap();
+        let back: DefinedName = serde_json::from_str(&json).unwrap();
+        assert_eq!(name.name, back.name);
+        assert_eq!(name.refs, back.refs);
+        assert_eq!(name.scope, back.scope);
+        assert_eq!(name.comment, back.comment);
+
+        // Test without optional fields
+        let simple = DefinedName::new("Test", "Data!A1");
+        let json = serde_json::to_string(&simple).unwrap();
+        let back: DefinedName = serde_json::from_str(&json).unwrap();
+        assert!(back.scope.is_none());
+        assert!(back.comment.is_none());
+    }
+
+    // Test 33: Sheet visible flag
+    #[test]
+    fn test_sheet_visibility() {
+        let mut sheet = Sheet::new("Visible");
+        assert!(sheet.visible);
+
+        sheet.visible = false;
+        assert!(!sheet.visible);
+
+        let json = serde_json::to_string(&sheet).unwrap();
+        let back: Sheet = serde_json::from_str(&json).unwrap();
+        assert!(!back.visible);
+        assert_eq!(back.name, "Visible");
+    }
+
+    // Test 34: CalcMode serde
+    #[test]
+    fn test_calc_mode_serde() {
+        let modes = vec![
+            CalcMode::Automatic,
+            CalcMode::Manual,
+            CalcMode::SemiAutomatic,
+        ];
+        for mode in &modes {
+            let json = serde_json::to_string(mode).unwrap();
+            let back: CalcMode = serde_json::from_str(&json).unwrap();
+            assert_eq!(*mode, back);
+        }
+    }
+
+    // Test 35: Workbook get_sheet
+    #[test]
+    fn test_workbook_get_sheet_by_index() {
+        let mut wb = Workbook::new();
+        wb.add_sheet(Sheet::new("Sheet1"));
+        wb.add_sheet(Sheet::new("Sheet2"));
+
+        let s0 = wb.get_sheet(0).unwrap();
+        assert_eq!(s0.name, "Sheet1");
+
+        let s1 = wb.get_sheet_mut(1).unwrap();
+        s1.set_cell(0, 0, Cell::with_num(99.0));
+
+        assert_eq!(wb.sheets[1].get_cell(0, 0).unwrap().raw, "99");
+        assert!(wb.get_sheet(5).is_none());
+    }
+
+    // Test 36: Sheet cell_value_string
+    #[test]
+    fn test_sheet_cell_value_string() {
+        let mut sheet = Sheet::new("Test");
+        sheet.set_cell(0, 0, Cell::with_text("Hello"));
+        sheet.set_cell(1, 0, Cell::with_num(42.0));
+
+        assert_eq!(sheet.cell_value_string(0, 0), "Hello");
+        assert_eq!(sheet.cell_value_string(1, 0), "42");
+        assert_eq!(sheet.cell_value_string(99, 99), "");
+    }
+
+    // Test 37: SortOrder serde
+    #[test]
+    fn test_sort_order_serde() {
+        let orders = vec![
+            (SortOrder::Ascending, "\"ascending\""),
+            (SortOrder::Descending, "\"descending\""),
+        ];
+        for (order, expected) in &orders {
+            let json = serde_json::to_string(order).unwrap();
+            assert_eq!(json, *expected);
+            let back: SortOrder = serde_json::from_str(&json).unwrap();
+            assert_eq!(*order, back);
+        }
+    }
+
+    // Test 38: EditableModel to_ops_since returns empty
+    #[test]
+    fn test_editable_model_to_ops_since() {
+        let wb = Workbook::new();
+        let ops = wb.to_ops_since(0);
+        assert!(ops.is_empty());
+    }
+
+    // Test 39: EditableModel Move returns NotSupported
+    #[test]
+    fn test_editable_model_move_unsupported() {
+        let mut wb = Workbook::new();
+        wb.add_sheet(Sheet::new("Sheet1"));
+
+        let op = ModelOp::Move {
+            from: Path::Sheet {
+                sheet: "Sheet1".to_string(),
+                row: 0,
+                col: 0,
+            },
+            to: Path::Sheet {
+                sheet: "Sheet1".to_string(),
+                row: 1,
+                col: 0,
+            },
+        };
+
+        let result = wb.apply(&op);
+        assert!(matches!(result, Err(SheetError::NotSupported)));
+    }
+
+    // Test 40: SheetOp extended variants serde
+    #[test]
+    fn test_sheet_op_extended_serde() {
+        let ops: Vec<SheetOp> = vec![
+            SheetOp::Clear {
+                range: Range2d::new(0, 0, 10, 10),
+            },
+            SheetOp::Copy {
+                from: Range2d::new(0, 0, 2, 2),
+                to: (5, 5),
+            },
+            SheetOp::Paste {
+                at: (10, 10),
+                data: vec![
+                    vec![Cell::with_text("A"), Cell::with_text("B")],
+                    vec![Cell::with_num(1.0), Cell::with_num(2.0)],
+                ],
+            },
+            SheetOp::SetColWidth {
+                col: 0,
+                width: 100.0,
+            },
+            SheetOp::SetRowHeight {
+                row: 1,
+                height: 30.0,
+            },
+            SheetOp::FreezePanes { row: 1, col: 1 },
+            SheetOp::UnfreezePanes,
+            SheetOp::RenameSheet {
+                old_name: "Sheet1".to_string(),
+                new_name: "Data".to_string(),
+            },
+            SheetOp::AddSheet {
+                name: "NewSheet".to_string(),
+            },
+            SheetOp::RemoveSheet {
+                name: "OldSheet".to_string(),
+            },
+            SheetOp::SetSheetVisibility {
+                name: "Sheet1".to_string(),
+                visible: false,
+            },
+        ];
+
+        for op in &ops {
+            let json = serde_json::to_string(op).unwrap();
+            let back: SheetOp = serde_json::from_str(&json).unwrap();
+            assert_eq!(*op, back, "serde round-trip failed for {:?}", op);
+        }
+    }
+
+    // Test 41: DatePeriod all variants serde
+    #[test]
+    fn test_date_period_serde() {
+        let periods = vec![
+            DatePeriod::Today,
+            DatePeriod::Yesterday,
+            DatePeriod::Tomorrow,
+            DatePeriod::Last7Days,
+            DatePeriod::Last30Days,
+            DatePeriod::Next7Days,
+            DatePeriod::Next30Days,
+            DatePeriod::ThisMonth,
+            DatePeriod::LastMonth,
+            DatePeriod::NextMonth,
+            DatePeriod::ThisYear,
+            DatePeriod::LastYear,
+            DatePeriod::NextYear,
+        ];
+        for period in &periods {
+            let json = serde_json::to_string(period).unwrap();
+            let back: DatePeriod = serde_json::from_str(&json).unwrap();
+            assert_eq!(*period, back);
+        }
+    }
 }
