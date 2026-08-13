@@ -5426,6 +5426,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "wo-sheet"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "rustc-hash",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "wo-common",
+ "wo-formula",
+]
+
+[[package]]
 name = "wo-slide"
 version = "0.1.0"
 dependencies = [

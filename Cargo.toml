@@ -30,6 +30,7 @@ members = [
     "core/crates/wo-conformance",
     "core/crates/wo-formula",
     "core/crates/wo-route",
+    "core/crates/wo-sheet",
     "core/crates/wo-spell",
     "core/crates/wo-slide",
     "services/api-gateway",
@@ -114,3 +115,4 @@ rusqlite = { version = "0.32", features = ["bundled"] }
 diamond-types = "1"
 proptest = "1"
 wasm-bindgen-test = "0.3"
+rustc-hash = "2"
