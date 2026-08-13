@@ -6,6 +6,7 @@
 pub mod format;
 pub mod model;
 pub mod ops;
+pub mod pivot;
 
 pub use format::{format_number, format_value, FormatContext, FormatPattern};
 pub use model::{
