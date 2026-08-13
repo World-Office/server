@@ -183,8 +183,10 @@ fn create_pdf_model(bytes: &[u8]) -> Result<u32, String> {
     Ok(handle)
 }
 
-/// Layout a PDF document and return JSON with page information.
-fn layout_pdf_document(handle: u32, opts: &PdfLayoutOpts) -> Result<String, String> {
+/// Layout a PDF document and optionally render page info to a canvas.
+///
+/// When `canvas` is non-zero, renders basic page outlines and labels.
+fn layout_pdf_document(handle: u32, opts: &PdfLayoutOpts, canvas: u32) -> Result<String, String> {
     let info_store = PDF_INFO_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let info_store = info_store.lock().unwrap();
     let info = info_store
@@ -201,6 +203,41 @@ fn layout_pdf_document(handle: u32, opts: &PdfLayoutOpts) -> Result<String, Stri
             "index": i,
             "active": is_active,
         }));
+    }
+
+    // Optionally render page outlines to canvas.
+    if canvas != 0 {
+        let canvas_store = canvas_bridge::get_canvas_store();
+        let mut canvas_store = canvas_store.lock().unwrap();
+        if let Some(canvas_obj) = canvas_store.get_mut(&canvas) {
+            // White background
+            canvas_obj.set_fill(wo_renderer::color::Paint::Color(
+                wo_renderer::color::Color::new(1.0, 1.0, 1.0, 1.0),
+            ));
+            let total_w = info.pages.iter().map(|p| p.width).max().unwrap_or(794) as f32;
+            let total_h = info.pages.iter().map(|p| p.height).max().unwrap_or(1123) as f32;
+            canvas_obj.fill_rect(0.0, 0.0, total_w, total_h);
+
+            // Draw page outlines
+            for (i, page) in info.pages.iter().enumerate() {
+                let is_active = i == opts.page;
+                let border_color = if is_active { "#2563EB" } else { "#D1D5DB" };
+                let _ = canvas_bridge::render_rect(
+                    canvas, 0.0, 0.0, page.width as f32, page.height as f32, border_color,
+                );
+                // Page number label
+                let label = format!("Page {}/{}", i + 1, info.page_count);
+                let _ = canvas_bridge::render_text(
+                    canvas,
+                    &label,
+                    8.0,
+                    20.0,
+                    Some(if is_active { "#2563EB".to_string() } else { "#6B7280".to_string() }),
+                    Some(14.0),
+                );
+            }
+        }
+        drop(canvas_store);
     }
 
     let result = serde_json::json!({
@@ -1786,7 +1823,7 @@ pub fn layout_and_render(handle: u32, opts_json: &str, canvas: u32) -> Result<St
         let info_store = PDF_INFO_STORE.get_or_init(|| Mutex::new(HashMap::new()));
         let info_store = info_store.lock().unwrap();
         if info_store.contains_key(&handle) {
-            return layout_pdf_document(handle, &pdf_opts);
+            return layout_pdf_document(handle, &pdf_opts, canvas);
         }
     }
 
@@ -2699,6 +2736,27 @@ SFX N e ness e
         let opts = r#"{}"#;
         let result = layout_and_render(99999, opts, 0);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_layout_and_render_pdf_with_canvas() {
+        let pdf_bytes = b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\nstartxref\n0\n%%EOF";
+        let handle = create_model(pdf_bytes, "pdf").unwrap();
+        let c = create_canvas(800, 600);
+        assert!(c > 0, "canvas creation should succeed");
+
+        let opts = r#"{"width":800,"height":600,"dpi":96,"page":0}"#;
+        let json = layout_and_render(handle, opts, c).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert!(parsed["pages"].is_array());
+        assert!(parsed["pageCount"].is_number());
+
+        // Verify canvas has pixel data (white background was painted)
+        let pixels = get_pixel_data(c).unwrap();
+        assert_eq!(pixels.len(), 800 * 600 * 4);
+
+        release_canvas(c).ok();
+        release_pdf_model(handle).ok();
     }
 
     #[test]
