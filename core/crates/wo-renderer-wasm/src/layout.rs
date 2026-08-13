@@ -335,6 +335,10 @@ impl LayoutEngine {
                 }
                 cursor_y += 12.0 * PT_TO_PX;
             }
+            DocxBlock::Image(_image) => {
+                // Image rendering for DM-7; placeholder for now
+                cursor_y += 20.0 * PT_TO_PX;
+            }
         }
     
         }
