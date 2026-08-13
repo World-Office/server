@@ -5404,6 +5404,7 @@ dependencies = [
  "web-sys",
  "wo-common",
  "wo-ooxml",
+ "wo-ooxml-ops",
  "wo-renderer",
  "wo-spell",
 ]
