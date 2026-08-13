@@ -1,8 +1,8 @@
-import type { SpellChecker } from "@world-office/spellchecker"
 import { useEffect, useRef, useState } from "react"
+import type { WasmSpellChecker } from "../lib/spellcheck-context"
 
 interface SpellcheckContextMenuProps {
-  spellchecker: SpellChecker | null
+  spellchecker: WasmSpellChecker | null
   editorElement: HTMLElement | null
   addToDictionary: (word: string) => void
 }

@@ -59,7 +59,7 @@ interface RichTextEditorProps {
   html: string
   onChange?: (html: string) => void
   readOnly?: boolean
-  spellchecker?: import("@world-office/spellchecker").SpellChecker | null
+  spellchecker?: import("../lib/spellcheck-context").WasmSpellChecker | null
 }
 
 export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
@@ -131,7 +131,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
         DatePickerControl,
         SpellcheckExtension.configure({
           spellchecker: spellchecker ?? null,
-          enabled: spellchecker?.isEnabled() ?? true,
+          enabled: spellchecker?.isEnabled?.() ?? true,
         }),
       ],
       content: html,
