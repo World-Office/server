@@ -19,7 +19,7 @@ const BUTTONS: Array<{ action: RightMenuPanel; title: string; icon: string }> = 
   { action: "shape", title: "Shape", icon: "Shapes" },
   { action: "table", title: "Table", icon: "Table2" },
   { action: "chart", title: "Chart", icon: "BarChart3" },
-  { action: "textart", title: "TextArt", icon: "Type" },
+  { action: "textart", title: "TextArt", icon: "Text" },
   { action: "form", title: "Form", icon: "CheckSquare" },
   { action: "annotations", title: "Annotations", icon: "MessageSquare" },
 ]
