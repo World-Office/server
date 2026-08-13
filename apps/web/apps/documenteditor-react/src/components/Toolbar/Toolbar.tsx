@@ -9,6 +9,14 @@ import { documentStore } from "../../stores/DocumentStore"
 import { FileTab } from "./FileTab"
 import type { MonacoCommand } from "./MonacoCommand"
 
+/**
+ * Convert kebab-case to camelCase
+ * Example: "font-family" -> "fontFamily"
+ */
+function toCamelCase(str: string): string {
+  return str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
+}
+
 interface ToolbarProps {
   onMonacoCommand: (command: MonacoCommand) => void
   onRichTextCommand: (command: RichTextCommand, value?: string) => void
@@ -45,6 +53,9 @@ const ObservedToolbar = observer(function ObservedToolbar({
     onRichTextCommand: (cmd: string, value?: string) =>
       onRichTextCommand(cmd as RichTextCommand, value),
     onCommand: (cmd: string, value?: string) => {
+      // Convert kebab-case command IDs to camelCase for compatibility
+      const commandName = toCamelCase(cmd)
+      
       if (cmd === "save") {
         window.dispatchEvent(new CustomEvent("wo-command", { detail: { command: "save" } }))
       } else if (cmd === "share") {
@@ -72,7 +83,9 @@ const ObservedToolbar = observer(function ObservedToolbar({
       } else if (cmd === "differentOddEven") {
         documentStore.setDifferentOddEven(!documentStore.differentOddEven)
       } else {
-        onRichTextCommand(cmd as RichTextCommand, value)
+        // Dispatch via wo-command event for formatting and other commands
+        // Convert kebab-case to camelCase for compatibility with existing command names
+        window.dispatchEvent(new CustomEvent("wo-command", { detail: { command: commandName, value } }))
       }
     },
   }

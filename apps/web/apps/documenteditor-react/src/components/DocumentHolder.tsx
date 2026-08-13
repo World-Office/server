@@ -1,7 +1,9 @@
 import { observer } from "mobx-react-lite"
 import { Suspense, lazy, useEffect, useRef, useState } from "react"
 import { useSpellcheck } from "../lib/spellcheck-context"
+import { registerEditorRouter } from "@world-office/editor-common"
 import { isCanvasFormat, isWasmReady } from "../lib/wasm-renderer"
+import { createRichTextRouterHandler } from "../lib/rte-command"
 import { documentStore } from "../stores/DocumentStore"
 import { CanvasEditor, type CanvasEditorHandle } from "./CanvasEditor"
 import { DocumentCanvas } from "./DocumentCanvas"
@@ -40,30 +42,29 @@ const WasmEditorCanvas = observer(
     editorRef: React.RefObject<CanvasEditorHandle | null>
   }) => {
     useEffect(() => {
-      const handler = (e: Event) => {
-        const detail = (e as CustomEvent).detail as Record<string, unknown> | undefined
-        if (!detail || !detail.command) return
-        const cmd = detail.command as string
-        const value = detail.value as string | undefined
+      // Register the WASM editor with the command router
+      const unregister = registerEditorRouter("doc", (cmd) => {
+        const command = cmd.command
+        const value = cmd.value
 
         // Map toolbar formatting commands to WASM format JSON
         let format: Record<string, unknown> | null = null
-        if (cmd === "bold") format = { bold: true }
-        else if (cmd === "italic") format = { italic: true }
-        else if (cmd === "underline") format = { underline: value ?? "single" }
-        else if (cmd === "strikethrough") format = { strikethrough: true }
-        else if (cmd === "fontSize" && value) format = { fontSize: Number.parseInt(value, 10) * 2 }
-        else if (cmd === "fontFamily" && value) format = { fontName: value }
-        else if (cmd === "textColor" && value) format = { textColor: value }
-        else if (cmd === "highlightColor" && value) format = { highlight: value }
+        if (command === "bold") format = { bold: true }
+        else if (command === "italic") format = { italic: true }
+        else if (command === "underline") format = { underline: value ?? "single" }
+        else if (command === "strikethrough") format = { strikethrough: true }
+        else if (command === "fontSize" && value) format = { fontSize: Number.parseInt(value as string, 10) * 2 }
+        else if (command === "fontFamily" && value) format = { fontName: value }
+        else if (command === "textColor" && value) format = { textColor: value }
+        else if (command === "highlight" && value) format = { highlight: value }
+        else if (command === "highlightColor" && value) format = { highlight: value }
 
         if (format) {
           editorRef.current?.applyFormatting(format)
         }
-      }
+      })
 
-      window.addEventListener("wo-command", handler)
-      return () => window.removeEventListener("wo-command", handler)
+      return () => unregister()
     }, [editorRef])
 
     return (
@@ -89,6 +90,33 @@ const WasmEditorCanvas = observer(
     )
   },
 )
+
+/**
+ * RichTextEditor wrapper that registers with the command router.
+ */
+const RichTextEditorWithRouter = observer(function RichTextEditorWithRouter({
+  html,
+  onChange,
+  spellchecker,
+}: {
+  html: string
+  onChange: (html: string) => void
+  spellchecker: any
+}) {
+  useEffect(() => {
+    // Register the TipTap editor with the command router
+    const unregister = registerEditorRouter("doc", createRichTextRouterHandler())
+    return () => unregister()
+  }, [])
+
+  return (
+    <RichTextEditor
+      html={html}
+      onChange={onChange}
+      spellchecker={spellchecker}
+    />
+  )
+})
 
 export const DocumentHolder = observer(function DocumentHolder({ embedded }: DocumentHolderProps) {
   const [value, setValue] = useState<string>("")
@@ -200,7 +228,7 @@ export const DocumentHolder = observer(function DocumentHolder({ embedded }: Doc
           backgroundColor: "#e8e8e8",
         }}
       >
-        <RichTextEditor
+        <RichTextEditorWithRouter
           html={documentStore.richTextHtml ?? ""}
           onChange={handleRichTextChange}
           spellchecker={spellcheck.spellchecker}
