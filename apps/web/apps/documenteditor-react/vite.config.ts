@@ -27,6 +27,7 @@ export default defineConfig({
     "import.meta.env.VITE_COAUTHORING_API_URL": JSON.stringify(
       process.env.VITE_COAUTHORING_API_URL || "http://localhost:8004",
     ),
+    "import.meta.env.VITE_WO_TIPTAP": JSON.stringify(process.env.WO_TIPTAP === "1"),
   },
   server: {
     port: 3006,
