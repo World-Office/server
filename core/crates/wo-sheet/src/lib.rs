@@ -1,0 +1,11 @@
+//! World-Office Spreadsheet Engine
+//!
+//! This crate provides the spreadsheet model with full serde support,
+//! implementing the SS (Spreadsheet) engine contract from the execution plan.
+
+pub mod model;
+
+pub use model::{
+    Cell, CellStyle, ConditionalRule, DefinedName, MergeRange, Range2d, Sheet, SheetOp,
+    SortKey, Workbook,
+};
