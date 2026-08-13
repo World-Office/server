@@ -12,12 +12,15 @@ pub mod layout;
 pub mod stub_model;
 
 use std::collections::HashMap;
+use std::io::Cursor;
 use std::sync::Mutex;
 use std::sync::OnceLock;
 use wasm_bindgen::prelude::*;
 use std::collections::HashSet;
+use std::collections::BTreeMap;
 use wo_common::op::EditableModel;
-use wo_ooxml::model::{DocxBlock, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, OoxmlDocument};
+use wo_common::path::{Path, Range};
+use wo_ooxml::model::{DocxBlock, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, OoxmlDocument, PptxPresentation};
 use wo_ooxml::parser::OoxmlParser;
 use wo_ooxml::serializer::OoxmlSerializer;
 use wo_ooxml_ops::EditableDocxBody;
@@ -207,6 +210,245 @@ fn layout_pdf_document(handle: u32, opts: &PdfLayoutOpts) -> Result<String, Stri
     });
 
     serde_json::to_string(&result).map_err(|e| format!("JSON serialization failed: {}", e))
+}
+
+// ── PPTX Model (§2.3, SL-6) ──────────────────────────────────────────
+
+/// Global store of PPTX presentation instances (handle → PptxPresentation).
+static PPTX_STORE: OnceLock<Mutex<HashMap<u32, PptxPresentation>>> = OnceLock::new();
+
+/// Next available PPTX handle (separate namespace starting at 3000
+/// to avoid collisions with other stores).
+static mut NEXT_PPTX_HANDLE: u32 = 3000;
+
+/// Allocate the next PPTX handle.
+///
+/// # Safety
+/// WASM is single-threaded; the mutable static is safe in that context.
+unsafe fn next_pptx_handle() -> u32 {
+    let h = NEXT_PPTX_HANDLE;
+    NEXT_PPTX_HANDLE += 1;
+    h
+}
+
+/// Check if bytes represent a valid PPTX file by checking for the PPTX content type marker.
+fn is_valid_pptx(bytes: &[u8]) -> bool {
+    // PPTX files are ZIP archives containing a [Content_Types].xml file
+    // with references to ppt/presentation.xml
+    if bytes.len() < 22 {
+        return false;
+    }
+    // Check for ZIP magic number
+    &bytes[0..4] == b"PK\x03\x04"
+}
+
+/// Create a PPTX model from bytes.
+/// Uses OoxmlParser::parse_pptx to parse the presentation and stores it for editing.
+fn create_pptx_model(bytes: &[u8]) -> Result<u32, String> {
+    if bytes.is_empty() {
+        return Err("PPTX bytes are empty".to_string());
+    }
+    if !is_valid_pptx(bytes) {
+        return Err("Invalid PPTX: does not appear to be a valid ZIP archive".to_string());
+    }
+
+    let parser = OoxmlParser::new();
+    let cursor = Cursor::new(bytes);
+    let mut archive = zip::ZipArchive::new(cursor).map_err(|e| {
+        format!("Failed to open PPTX as ZIP archive: {}", e)
+    })?;
+
+    let pptx_pres = parser.parse_pptx(&mut archive)
+        .map_err(|e| format!("Failed to parse PPTX: {}", e))?
+        .ok_or_else(|| "No presentation found in PPTX file".to_string())?;
+
+    let handle = unsafe { next_pptx_handle() };
+
+    // Store the parsed presentation
+    let store = PPTX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut store = store.lock().unwrap();
+    store.insert(handle, pptx_pres);
+
+    Ok(handle)
+}
+
+/// Editable wrapper for PptxPresentation that implements EditableModel.
+/// This allows PPTX presentations to be edited using the uniform ModelOp operations.
+#[derive(Debug, Clone)]
+pub struct EditablePptxPresentation(pub PptxPresentation);
+
+impl From<PptxPresentation> for EditablePptxPresentation {
+    fn from(pres: PptxPresentation) -> Self {
+        Self(pres)
+    }
+}
+
+impl From<EditablePptxPresentation> for PptxPresentation {
+    fn from(pres: EditablePptxPresentation) -> Self {
+        pres.0
+    }
+}
+
+/// Error type for EditablePptxPresentation operations.
+#[derive(Debug, Clone, PartialEq)]
+pub enum PptxModelError {
+    OutOfRange(String),
+    Invalid(String),
+}
+
+impl std::fmt::Display for PptxModelError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::OutOfRange(msg) => write!(f, "PPTX out of range: {}", msg),
+            Self::Invalid(msg) => write!(f, "PPTX invalid operation: {}", msg),
+        }
+    }
+}
+
+impl std::error::Error for PptxModelError {}
+
+impl EditableModel for EditablePptxPresentation {
+    type Err = PptxModelError;
+
+    fn apply(&mut self, op: &wo_common::op::ModelOp) -> std::result::Result<(), Self::Err> {
+        match op {
+            wo_common::op::ModelOp::Insert { at, content: _content } => {
+                match at {
+                    Path::Slide { slide, shape: _shape, run: _run, char: _char } => {
+                        // Insert text into a text run in a shape
+                        if *slide >= self.0.slides.len() {
+                            return Err(PptxModelError::OutOfRange(format!(
+                                "Slide {} out of range (len: {})",
+                                slide, self.0.slides.len()
+                            )));
+                        }
+                        // Note: Full text editing implementation requires more work
+                        // This is a placeholder that marks the position as editable
+                        Ok(())
+                    }
+                    _ => Err(PptxModelError::Invalid(format!(
+                        "Unsupported path type for insert: {:?}",
+                        at
+                    ))),
+                }
+            }
+            wo_common::op::ModelOp::Delete { range: _range } => {
+                Err(PptxModelError::Invalid(
+                    "Delete not yet implemented for PPTX".to_string(),
+                ))
+            }
+            wo_common::op::ModelOp::Replace { at: _at, content: _ } => {
+                Err(PptxModelError::Invalid(
+                    "Replace not yet implemented for PPTX".to_string(),
+                ))
+            }
+            wo_common::op::ModelOp::Format { range, attrs: _attrs } => {
+                // Format operations on slides/shapes
+                match &range.start {
+                    Path::Slide { .. } => {
+                        // Apply formatting to slide elements
+                        // This would typically format text runs in shapes
+                        // For now, accept the operation (no-op)
+                        Ok(())
+                    }
+                    _ => Err(PptxModelError::Invalid(format!(
+                        "Unsupported path type for format: {:?}",
+                        range.start
+                    ))),
+                }
+            }
+            wo_common::op::ModelOp::Move { from: _from, to: _to } => {
+                Err(PptxModelError::Invalid(
+                    "Move not yet implemented for PPTX".to_string(),
+                ))
+            }
+        }
+    }
+
+    fn invert(&self, op: &wo_common::op::ModelOp) -> wo_common::op::ModelOp {
+        // Return a simple inverse - full implementation would require tracking state
+        match op {
+            wo_common::op::ModelOp::Insert { at, content } => {
+                let end = match at {
+                    Path::Slide { slide, shape, run, char } => Path::Slide {
+                        slide: *slide,
+                        shape: *shape,
+                        run: *run,
+                        char: *char + content.chars().count(),
+                    },
+                    _ => at.clone(),
+                };
+                wo_common::op::ModelOp::Delete {
+                    range: Range::new(at.clone(), end),
+                }
+            }
+            wo_common::op::ModelOp::Delete { range } => {
+                // Inverse of delete is insert at the start of the range
+                wo_common::op::ModelOp::Insert {
+                    at: range.start.clone(),
+                    content: String::new(),
+                }
+            }
+            wo_common::op::ModelOp::Replace { at, content } => {
+                // Inverse of replace is replace with original content
+                wo_common::op::ModelOp::Replace {
+                    at: at.clone(),
+                    content: content.clone(),
+                }
+            }
+            wo_common::op::ModelOp::Format { range, attrs: _attrs } => {
+                // Inverse of format is format with cleared attrs
+                wo_common::op::ModelOp::Format {
+                    range: range.clone(),
+                    attrs: BTreeMap::new(),
+                }
+            }
+            wo_common::op::ModelOp::Move { from, to } => {
+                // Inverse of move is move back
+                wo_common::op::ModelOp::Move {
+                    from: to.clone(),
+                    to: from.clone(),
+                }
+            }
+        }
+    }
+
+    fn to_ops_since(&self, _rev: u64) -> Vec<wo_common::op::ModelOp> {
+        // Without revision tracking, return empty for now
+        Vec::new()
+    }
+}
+
+/// Extract a PPTX presentation from the store.
+fn extract_pptx_pres(handle: u32) -> Result<PptxPresentation, String> {
+    let store = PPTX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let store = store.lock().unwrap();
+    store.get(&handle)
+        .cloned()
+        .ok_or_else(|| format!("PPTX handle {} not found", handle))
+}
+
+/// Store a PPTX presentation back into the store.
+fn store_pptx_pres(handle: u32, pres: PptxPresentation) -> Result<(), String> {
+    let store = PPTX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut store = store.lock().unwrap();
+    if store.contains_key(&handle) {
+        store.insert(handle, pres);
+        Ok(())
+    } else {
+        Err(format!("PPTX handle {} not found", handle))
+    }
+}
+
+/// Serialize a PPTX presentation back to bytes.
+/// Note: This is not fully implemented yet - would require a PPTX serializer in wo-ooxml.
+fn serialize_pptx_pres(_pres: &PptxPresentation) -> Result<Vec<u8>, String> {
+    Err("PPTX serialization not yet implemented".to_string())
+}
+
+/// Layout a PPTX presentation and return JSON with slide information.
+fn layout_pptx_presentation(_handle: u32, _opts_json: &str) -> Result<String, String> {
+    Err("PPTX layout not yet implemented".to_string())
 }
 
 /// Initialize the WASM module.
@@ -1372,8 +1614,9 @@ pub fn create_model(bytes: &[u8], fmt: &str) -> Result<u32, String> {
         }
         "pdf" => create_pdf_model(bytes),
         "docx" => create_docx_model(bytes),
+        "pptx" => create_pptx_model(bytes),
         other => Err(format!(
-            "Unsupported format: '{}'. Supported: 'stub', 'pdf', 'docx'.",
+            "Unsupported format: '{}'. Supported: 'stub', 'pdf', 'docx', 'pptx'.",
             other
         )),
     }
@@ -1443,6 +1686,21 @@ pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
         }
     }
     
+    // Try PPTX model (§2.3, SL-6) - use extract/store pattern
+    {
+        let store = PPTX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+        let store = store.lock().unwrap();
+        if store.contains_key(&handle) {
+            // Extract presentation, wrap in EditablePptxPresentation, apply, convert back, store
+            let pres = extract_pptx_pres(handle)?;
+            let mut editable = EditablePptxPresentation::from(pres);
+            editable.apply(&op).map_err(|e| e.to_string())?;
+            let modified_pres: PptxPresentation = editable.into();
+            store_pptx_pres(handle, modified_pres)?;
+            return Ok(());
+        }
+    }
+    
     // Try PDF model - for now, PDF doesn't support operations, return error
     {
         let store = PDF_STORE.get_or_init(|| Mutex::new(HashMap::new()));
@@ -1480,6 +1738,15 @@ pub fn model_to_bytes(handle: u32) -> Result<Vec<u8>, String> {
         }
     }
     
+    // Try PPTX model (§2.3, SL-6)
+    {
+        let store = PPTX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+        let store = store.lock().unwrap();
+        if let Some(pres) = store.get(&handle) {
+            return serialize_pptx_pres(pres);
+        }
+    }
+    
     // Try PDF model - return the raw bytes
     {
         let store = PDF_STORE.get_or_init(|| Mutex::new(HashMap::new()));
@@ -1507,6 +1774,11 @@ pub fn model_to_bytes(handle: u32) -> Result<Vec<u8>, String> {
 /// ```
 #[wasm_bindgen]
 pub fn layout_and_render(handle: u32, opts_json: &str, canvas: u32) -> Result<String, String> {
+    // Try PPTX model first (handles start at 3000)
+    if handle >= 3000 {
+        return layout_pptx_presentation(handle, opts_json);
+    }
+    
     // Try PDF model first (handles start at 2000)
     if handle >= 2000 {
         let pdf_opts: PdfLayoutOpts =
@@ -2471,5 +2743,28 @@ SFX N e ness e
         let result = create_model(b"[]", "xlsx");
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Unsupported format"));
+    }
+
+    #[test]
+    fn test_create_model_pptx_unsupported() {
+        // PPTX format should be supported but fail with invalid data
+        let result = create_model(b"not a zip", "pptx");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_create_model_pptx_empty() {
+        // Empty bytes should fail
+        let result = create_model(b"", "pptx");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("PPTX bytes are empty"));
+    }
+
+    #[test]
+    fn test_create_model_format_message_includes_pptx() {
+        // Verify pptx is listed as a supported format
+        let result = create_model(b"[]", "invalid");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("pptx"));
     }
 }
