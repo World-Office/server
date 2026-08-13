@@ -63,7 +63,7 @@ pub type SheetOpResult<T = ()> = Result<T, SheetOpError>;
 fn shift_cells_horizontal(
     cells: &mut FxHashMap<(u32, u32), Cell>,
     start_col: u32,
-    count: u32,
+    _count: u32,
     delta: i64,
 ) {
     // delta: +1 for insert (shift right), -1 for delete (shift left)
@@ -95,7 +95,7 @@ fn shift_cells_horizontal(
 fn shift_cells_vertical(
     cells: &mut FxHashMap<(u32, u32), Cell>,
     start_row: u32,
-    count: u32,
+    _count: u32,
     delta: i64,
 ) {
     // delta: positive for insert (shift down), negative for delete (shift up)
@@ -173,7 +173,7 @@ pub fn apply_to_sheet(sheet: &mut Sheet, op: &SheetOp) -> SheetOpResult<()> {
                 return Ok(());
             }
             // Shift all cells below the insertion point down
-            shift_cells_vertical(&mut sheet.cells, after + 1, *count, *count as i64);
+            shift_cells_vertical(&mut sheet.cells, *after + 1, *count, *count as i64);
             
             // Shift row heights
             let mut new_heights = BTreeMap::new();
@@ -376,7 +376,7 @@ pub fn apply_to_sheet(sheet: &mut Sheet, op: &SheetOp) -> SheetOpResult<()> {
         SheetOp::Sort { range, keys } => {
             apply_sort(sheet, range, keys)
         }
-        SheetOp::ApplyConditionalFormat { range, rule } => {
+        SheetOp::ApplyConditionalFormat { .. } => {
             // Save the conditional format rule on the sheet
             // For now, we'll store it in a new field or handle it specially
             // This is a simplified implementation
@@ -560,7 +560,7 @@ pub fn apply_to_workbook(wb: &mut Workbook, op: &SheetOp) -> SheetOpResult {
 /// Invert a SheetOp to create the undo operation.
 pub fn invert_sheetop(op: &SheetOp, _sheet: &Sheet) -> SheetOp {
     match op {
-        SheetOp::SetCell { row, col, raw } => {
+        SheetOp::SetCell { row, col, .. } => {
             // Inverse of SetCell is SetCell with the previous value
             // Since we don't have the previous value in the op, we return Clear
             SheetOp::Clear {
@@ -603,7 +603,7 @@ pub fn invert_sheetop(op: &SheetOp, _sheet: &Sheet) -> SheetOp {
             // Inverse of Unmerge is Merge
             SheetOp::Merge(range.clone())
         }
-        SheetOp::SetStyle { range, style } => {
+        SheetOp::SetStyle { range, .. } => {
             // Inverse of SetStyle is SetStyle with a default (empty) style
             // This resets the style to default
             SheetOp::SetStyle {
@@ -618,7 +618,7 @@ pub fn invert_sheetop(op: &SheetOp, _sheet: &Sheet) -> SheetOp {
                 keys: keys.clone(),
             }
         }
-        SheetOp::ApplyConditionalFormat { range, rule } => {
+        SheetOp::ApplyConditionalFormat { range, .. } => {
             // Inverse is to remove conditional format (would need a RemoveConditionalFormat op)
             // For now, we'll use Clear which removes the formatting
             SheetOp::Clear {
@@ -655,7 +655,7 @@ pub fn invert_sheetop(op: &SheetOp, _sheet: &Sheet) -> SheetOp {
                 range: Range2d::new(start_row, start_col, start_row + rows - 1, start_col + cols - 1),
             }
         }
-        SheetOp::SetColWidth { col, width } => {
+        SheetOp::SetColWidth { col, .. } => {
             // Inverse doesn't restore previous width, but we can't know it
             // Return a no-op
             SheetOp::SetColWidth {
@@ -663,14 +663,14 @@ pub fn invert_sheetop(op: &SheetOp, _sheet: &Sheet) -> SheetOp {
                 width: 8.43f32, // Default column width
             }
         }
-        SheetOp::SetRowHeight { row, height } => {
+        SheetOp::SetRowHeight { row, .. } => {
             // Inverse doesn't restore previous height, but we can't know it
             SheetOp::SetRowHeight {
                 row: *row,
                 height: 15.0, // Default row height
             }
         }
-        SheetOp::FreezePanes { row, col } => {
+        SheetOp::FreezePanes { .. } => {
             // Inverse of FreezePanes is UnfreezePanes
             SheetOp::UnfreezePanes
         }
@@ -723,7 +723,7 @@ fn shift_merge_ranges(
     merges: &mut Vec<MergeRange>,
     shift_row: u32,
     shift_col: u32,
-    row_delta: u32,
+    _row_delta: u32,
     col_delta: i32,
 ) {
     for merge in merges.iter_mut() {
@@ -739,62 +739,78 @@ fn shift_merge_ranges(
 }
 
 /// Helper function to apply sorting to a sheet.
+///
+/// Sort operation rearranges entire rows within the range based on the values
+/// in the specified key column(s). Rows are reordered as whole rows, preserving
+/// the column structure within each row.
 fn apply_sort(sheet: &mut Sheet, range: &Range2d, keys: &[SortKey]) -> SheetOpResult {
-    // Collect all cells in the range
-    let mut cells: Vec<((u32, u32), Cell)> = Vec::new();
-    
-    for row in range.start_row..=range.end_row {
-        for col in range.start_col..=range.end_col {
-            if let Some(cell) = sheet.cells.get(&(row, col)) {
-                cells.push(((row, col), cell.clone()));
-            }
-        }
+    if keys.is_empty() {
+        return Err(SheetOpError::InvalidSort {
+            reason: "no sort keys provided".to_string(),
+        });
     }
-    
-    // Sort cells based on the sort keys
-    // For simplicity, we'll sort by cell value as string
-    // A more complete implementation would handle different value types
-    cells.sort_by(|((r1, c1), _), ((r2, c2), _)| {
-        // For multi-key sort, we'd need to implement properly
-        // For now, just sort by the first key
-        if let Some(key) = keys.first() {
-            let val1 = get_cell_sort_value(sheet, *r1, *c1);
-            let val2 = get_cell_sort_value(sheet, *r2, *c2);
-            
-            match key.order {
-                SortOrder::Ascending => val1.cmp(&val2),
-                SortOrder::Descending => val2.cmp(&val1),
-            }
-        } else {
-            std::cmp::Ordering::Equal
-        }
-    });
-    
-    // Clear the range
-    for row in range.start_row..=range.end_row {
-        for col in range.start_col..=range.end_col {
-            sheet.cells.remove(&(row, col));
-        }
-    }
-    
-    // Re-insert sorted cells
-    // For now, just insert them back in order (simplified - doesn't preserve column structure)
-    for (idx, ((row, col), cell)) in cells.iter().enumerate() {
-        let new_row = range.start_row + (idx as u32) / (range.end_col - range.start_col + 1);
-        let new_col = range.start_col + (idx as u32) % (range.end_col - range.start_col + 1);
-        if new_row <= range.end_row && new_col <= range.end_col {
-            sheet.cells.insert((new_row, new_col), cell.clone());
-        }
-    }
-    
-    Ok(())
-}
 
-/// Helper to get cell value as string for sorting.
-fn get_cell_sort_value(sheet: &Sheet, row: u32, col: u32) -> String {
-    sheet.cells.get(&(row, col))
-        .map(|c| c.raw.clone())
-        .unwrap_or_default()
+    let num_cols = range.end_col - range.start_col + 1;
+    if num_cols == 0 {
+        return Ok(());
+    }
+
+    // Collect rows from the range. Each row is a map of column -> (cell, raw_value)
+    struct SortRow {
+        /// Column offset -> cell data for this row within the range
+        cells: Vec<Option<Cell>>,
+    }
+
+    let mut rows: Vec<SortRow> = Vec::new();
+    for r in range.start_row..=range.end_row {
+        let mut row_cells: Vec<Option<Cell>> = Vec::new();
+        for c in range.start_col..=range.end_col {
+            row_cells.push(sheet.cells.remove(&(r, c)));
+        }
+        rows.push(SortRow {
+            cells: row_cells,
+        });
+    }
+
+    // Sort rows based on key columns
+    rows.sort_by(|a, b| {
+        for key in keys {
+            let key_col_offset = (key.col - range.start_col) as usize;
+            let val_a = a
+                .cells
+                .get(key_col_offset)
+                .and_then(|c| c.as_ref().map(|c| c.raw.as_str()))
+                .unwrap_or("");
+            let val_b = b
+                .cells
+                .get(key_col_offset)
+                .and_then(|c| c.as_ref().map(|c| c.raw.as_str()))
+                .unwrap_or("");
+
+            let cmp = val_a.cmp(val_b);
+            if cmp != std::cmp::Ordering::Equal {
+                return match key.order {
+                    SortOrder::Ascending => cmp,
+                    SortOrder::Descending => cmp.reverse(),
+                };
+            }
+        }
+        // If all keys compare equal, preserve original order (stable sort)
+        std::cmp::Ordering::Equal
+    });
+
+    // Write sorted rows back to the range
+    for (dest_row_offset, row) in rows.iter().enumerate() {
+        let dest_row = range.start_row + dest_row_offset as u32;
+        for (col_offset, maybe_cell) in row.cells.iter().enumerate() {
+            let dest_col = range.start_col + col_offset as u32;
+            if let Some(cell) = maybe_cell {
+                sheet.cells.insert((dest_row, dest_col), cell.clone());
+            }
+        }
+    }
+
+    Ok(())
 }
 
 /// Parse a raw string value into CellValue and optional formula.
@@ -1219,5 +1235,217 @@ mod tests {
         } else {
             panic!("Expected RenameSheet inversion");
         }
+    }
+
+    // Test 21: Sort apply — single column, ascending
+    #[test]
+    fn test_sort_apply_single_column() {
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("Sheet1");
+        // Set up 3 rows of data: C, A, B in column 0
+        sheet.set_cell(0, 0, Cell::with_text("C"));
+        sheet.set_cell(0, 1, Cell::with_text("x"));
+        sheet.set_cell(1, 0, Cell::with_text("A"));
+        sheet.set_cell(1, 1, Cell::with_text("y"));
+        sheet.set_cell(2, 0, Cell::with_text("B"));
+        sheet.set_cell(2, 1, Cell::with_text("z"));
+        wb.add_sheet(sheet);
+
+        let op = SheetOp::Sort {
+            range: Range2d::new(0, 0, 2, 1),
+            keys: vec![SortKey {
+                col: 0,
+                order: SortOrder::Ascending,
+            }],
+        };
+
+        apply_to_workbook(&mut wb, &op).unwrap();
+
+        // After ascending sort by col 0: A, B, C
+        assert_eq!(wb.sheets[0].get_cell(0, 0).unwrap().raw, "A");
+        assert_eq!(wb.sheets[0].get_cell(0, 1).unwrap().raw, "y");
+        assert_eq!(wb.sheets[0].get_cell(1, 0).unwrap().raw, "B");
+        assert_eq!(wb.sheets[0].get_cell(1, 1).unwrap().raw, "z");
+        assert_eq!(wb.sheets[0].get_cell(2, 0).unwrap().raw, "C");
+        assert_eq!(wb.sheets[0].get_cell(2, 1).unwrap().raw, "x");
+    }
+
+    // Test 22: Sort apply — descending order
+    #[test]
+    fn test_sort_apply_descending() {
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("Sheet1");
+        sheet.set_cell(0, 0, Cell::with_text("A"));
+        sheet.set_cell(1, 0, Cell::with_text("C"));
+        sheet.set_cell(2, 0, Cell::with_text("B"));
+        wb.add_sheet(sheet);
+
+        let op = SheetOp::Sort {
+            range: Range2d::new(0, 0, 2, 0),
+            keys: vec![SortKey {
+                col: 0,
+                order: SortOrder::Descending,
+            }],
+        };
+
+        apply_to_workbook(&mut wb, &op).unwrap();
+
+        // After descending sort by col 0: C, B, A
+        assert_eq!(wb.sheets[0].get_cell(0, 0).unwrap().raw, "C");
+        assert_eq!(wb.sheets[0].get_cell(1, 0).unwrap().raw, "B");
+        assert_eq!(wb.sheets[0].get_cell(2, 0).unwrap().raw, "A");
+    }
+
+    // Test 23: Sort invert — returns Sort with same keys (structural self-inverse)
+    #[test]
+    fn test_sort_invert_returns_sort() {
+        let mut wb = Workbook::new();
+        wb.add_sheet(Sheet::new("Sheet1"));
+
+        let op = SheetOp::Sort {
+            range: Range2d::new(0, 0, 100, 5),
+            keys: vec![SortKey {
+                col: 1,
+                order: SortOrder::Ascending,
+            }],
+        };
+
+        let inverted = invert_sheetop(&op, &wb.sheets[0]);
+        match inverted {
+            SheetOp::Sort { range, keys } => {
+                assert_eq!(range, Range2d::new(0, 0, 100, 5));
+                assert_eq!(keys.len(), 1);
+                assert_eq!(keys[0].col, 1);
+                assert_eq!(keys[0].order, SortOrder::Ascending);
+            }
+            _ => panic!("Expected Sort operation as inverse of Sort"),
+        }
+    }
+
+    // Test 24: Sort self-inverse — applying sort, then its inverse (same sort) does not crash
+    // and the data remains in sorted order. Sort's inverse is Sort with the same keys.
+    #[test]
+    fn test_sort_self_inverse() {
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("Sheet1");
+        // Set up rows with unique values in col 0
+        sheet.set_cell(0, 0, Cell::with_text("delta"));
+        sheet.set_cell(0, 1, Cell::with_text("first"));
+        sheet.set_cell(1, 0, Cell::with_text("alpha"));
+        sheet.set_cell(1, 1, Cell::with_text("second"));
+        sheet.set_cell(2, 0, Cell::with_text("gamma"));
+        sheet.set_cell(2, 1, Cell::with_text("third"));
+        sheet.set_cell(3, 0, Cell::with_text("beta"));
+        sheet.set_cell(3, 1, Cell::with_text("fourth"));
+        wb.add_sheet(sheet);
+
+        let op = SheetOp::Sort {
+            range: Range2d::new(0, 0, 3, 1),
+            keys: vec![SortKey {
+                col: 0,
+                order: SortOrder::Ascending,
+            }],
+        };
+
+        // Apply sort: rows become alpha, beta, delta, gamma
+        apply_to_workbook(&mut wb, &op).unwrap();
+
+        // Verify sorted order: alpha (row 1), beta (row 3), delta (row 0), gamma (row 2)
+        assert_eq!(wb.sheets[0].get_cell(0, 0).unwrap().raw, "alpha");
+        assert_eq!(wb.sheets[0].get_cell(1, 0).unwrap().raw, "beta");
+        assert_eq!(wb.sheets[0].get_cell(2, 0).unwrap().raw, "delta");
+        assert_eq!(wb.sheets[0].get_cell(3, 0).unwrap().raw, "gamma");
+        // col1 values stay with their rows
+        assert_eq!(wb.sheets[0].get_cell(0, 1).unwrap().raw, "second");  // alpha's pair
+        assert_eq!(wb.sheets[0].get_cell(1, 1).unwrap().raw, "fourth");  // beta's pair
+        assert_eq!(wb.sheets[0].get_cell(2, 1).unwrap().raw, "first");   // delta's pair
+        assert_eq!(wb.sheets[0].get_cell(3, 1).unwrap().raw, "third");   // gamma's pair
+
+        // Get the inverse of sort (should be Sort with same keys)
+        let inverted = invert_sheetop(&op, &wb.sheets[0]);
+        match &inverted {
+            SheetOp::Sort { range: _, keys } => {
+                assert_eq!(keys.len(), 1);
+                assert_eq!(keys[0].col, 0);
+                assert_eq!(keys[0].order, SortOrder::Ascending);
+            }
+            _ => panic!("Expected Sort inverse"),
+        }
+
+        // Apply the inverse (sort ascending again) — should not crash
+        // Since data is already sorted, second sort preserves the order
+        apply_to_workbook(&mut wb, &inverted).unwrap();
+
+        // Order must remain alpha, beta, delta, gamma (stable sort preserves)
+        assert_eq!(wb.sheets[0].get_cell(0, 0).unwrap().raw, "alpha");
+        assert_eq!(wb.sheets[0].get_cell(1, 0).unwrap().raw, "beta");
+        assert_eq!(wb.sheets[0].get_cell(2, 0).unwrap().raw, "delta");
+        assert_eq!(wb.sheets[0].get_cell(3, 0).unwrap().raw, "gamma");
+        // col1 values: second, fourth, first, third
+        assert_eq!(wb.sheets[0].get_cell(0, 1).unwrap().raw, "second");
+        assert_eq!(wb.sheets[0].get_cell(1, 1).unwrap().raw, "fourth");
+        assert_eq!(wb.sheets[0].get_cell(2, 1).unwrap().raw, "first");
+        assert_eq!(wb.sheets[0].get_cell(3, 1).unwrap().raw, "third");
+    }
+
+    // Test 25: Sort with empty sort keys returns error
+    #[test]
+    fn test_sort_empty_keys_error() {
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("Sheet1");
+        sheet.set_cell(0, 0, Cell::with_text("A"));
+        wb.add_sheet(sheet);
+
+        let op = SheetOp::Sort {
+            range: Range2d::new(0, 0, 0, 0),
+            keys: vec![],
+        };
+
+        let result = apply_to_workbook(&mut wb, &op);
+        assert!(result.is_err());
+        match result {
+            Err(SheetOpError::InvalidSort { .. }) => {} // expected
+            _ => panic!("Expected InvalidSort error"),
+        }
+    }
+
+    // Test 26: Sort preserves column structure within each row
+    #[test]
+    fn test_sort_preserves_column_structure() {
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("Sheet1");
+        // Row 0: name=Zoe, age=25
+        // Row 1: name=Alice, age=30
+        // Row 2: name=Bob, age=20
+        sheet.set_cell(0, 0, Cell::with_text("Zoe"));
+        sheet.set_cell(0, 1, Cell::with_num(25.0));
+        sheet.set_cell(1, 0, Cell::with_text("Alice"));
+        sheet.set_cell(1, 1, Cell::with_num(30.0));
+        sheet.set_cell(2, 0, Cell::with_text("Bob"));
+        sheet.set_cell(2, 1, Cell::with_num(20.0));
+        wb.add_sheet(sheet);
+
+        // Sort by name ascending
+        let op = SheetOp::Sort {
+            range: Range2d::new(0, 0, 2, 1),
+            keys: vec![SortKey {
+                col: 0,
+                order: SortOrder::Ascending,
+            }],
+        };
+
+        apply_to_workbook(&mut wb, &op).unwrap();
+
+        // After sort: Alice(30), Bob(20), Zoe(25)
+        assert_eq!(wb.sheets[0].get_cell(0, 0).unwrap().raw, "Alice");
+        assert_eq!(wb.sheets[0].get_cell(0, 1).unwrap().raw, "30");
+        assert_eq!(wb.sheets[0].get_cell(1, 0).unwrap().raw, "Bob");
+        assert_eq!(wb.sheets[0].get_cell(1, 1).unwrap().raw, "20");
+        assert_eq!(wb.sheets[0].get_cell(2, 0).unwrap().raw, "Zoe");
+        assert_eq!(wb.sheets[0].get_cell(2, 1).unwrap().raw, "25");
+
+        // Column structure preserved: name at col 0, age at col 1
+        // Age values: Alice=30, Bob=20, Zoe=25 (ages stay with their names)
+        assert_eq!(wb.sheets[0].get_cell(0, 1).unwrap().value, CellValue::Num(30.0));
     }
 }
