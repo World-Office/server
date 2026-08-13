@@ -3,6 +3,7 @@ import type { JSX } from "react"
 import { useTranslation } from "react-i18next"
 import { pdfStore } from "../../stores/PdfStore"
 import type { RightMenuPanel } from "../../types/pdf"
+import { AnnotationPanel } from "./AnnotationPanel"
 import { ChartPanel } from "./ChartPanel"
 import { FormPanel } from "./FormPanel"
 import { ImagePanel } from "./ImagePanel"
@@ -52,6 +53,7 @@ function RightMenuInner(): JSX.Element {
         <ChartPanel visible={pdfStore.activeRightPanel === "chart"} />
         <TextArtPanel visible={pdfStore.activeRightPanel === "textart"} />
         <FormPanel visible={pdfStore.activeRightPanel === "form"} />
+        <AnnotationPanel visible={pdfStore.activeRightPanel === "annotations"} />
       </div>
     </div>
   )

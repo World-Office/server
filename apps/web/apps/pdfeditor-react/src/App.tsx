@@ -9,6 +9,7 @@ import { useEmbeddedAutoSave } from "./hooks/useEmbeddedAutoSave"
 import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge"
 import { useEmbeddedMode } from "./hooks/useEmbeddedMode"
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts"
+import { usePdfCommandRouter } from "./hooks/usePdfCommandRouter"
 import { isCollaborationConfigured } from "./lib/collaboration-config"
 import { pdfStore } from "./stores/PdfStore"
 
@@ -20,6 +21,7 @@ const PdfCollaborationProvider = lazy(() =>
 
 export const App = observer(function App() {
   useKeyboardShortcuts()
+  usePdfCommandRouter()
 
   const { embedded } = useEmbeddedMode(
     pdfStore.setToolbarVisible.bind(pdfStore),
