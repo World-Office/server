@@ -20,6 +20,7 @@ use wo_common::op::EditableModel;
 use wo_ooxml::model::{DocxBlock, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, OoxmlDocument};
 use wo_ooxml::parser::OoxmlParser;
 use wo_ooxml::serializer::OoxmlSerializer;
+use wo_ooxml_ops::EditableDocxBody;
 use wo_spell::dic::Dictionary;
 use wo_spell::hyphenate::{HyphenationDict, Hyphenator};
 use wo_spell::suggest::Suggester;
@@ -524,6 +525,10 @@ pub fn render_page(
 
                 cursor_y += 12.0; // spacing after table
             }
+            DocxBlock::Image(_image) => {
+                // Image rendering for DM-7; placeholder for now
+                cursor_y += 20.0; // placeholder spacing
+            }
         }
     }
 
@@ -879,6 +884,7 @@ pub fn handle_key_event(
                 style_id: None,
                 properties: DocxParagraphProperties::default(),
                 runs: vec![DocxRun::default()],
+                section_properties: None,
             };
             let insert_idx = cursor.para.min(paras_len.saturating_sub(1));
             let insert_before = if cursor.char_idx == 0 && insert_idx > 0 {
@@ -1023,6 +1029,7 @@ pub fn handle_key_event(
                             text: ch.to_string(),
                             ..Default::default()
                         }],
+                        section_properties: None,
                     }));
                 } else {
                     let pidx = cursor.para.min(paras_len.saturating_sub(1));
@@ -1364,11 +1371,35 @@ pub fn create_model(bytes: &[u8], fmt: &str) -> Result<u32, String> {
             Ok(handle)
         }
         "pdf" => create_pdf_model(bytes),
+        "docx" => create_docx_model(bytes),
         other => Err(format!(
-            "Unsupported format: '{}'. Supported: 'stub', 'pdf'.",
+            "Unsupported format: '{}'. Supported: 'stub', 'pdf', 'docx'.",
             other
         )),
     }
+}
+
+/// Create a DOCX model from bytes (§2.3 convention).
+/// Parses the DOCX using wo-ooxml and stores the full OoxmlDocument.
+fn create_docx_model(bytes: &[u8]) -> Result<u32, String> {
+    let parser = OoxmlParser::new();
+    let ooxml = parser
+        .parse(bytes)
+        .map_err(|e| format!("Failed to parse DOCX: {}", e))?;
+    
+    let handle = unsafe { next_doc_handle() };
+    
+    // Store the raw bytes
+    let raw_store = DOC_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut raw_store = raw_store.lock().unwrap();
+    raw_store.insert(handle, bytes.to_vec());
+    
+    // Store the parsed OoxmlDocument (for compatibility with existing code)
+    let model_store = DOC_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut model_store = model_store.lock().unwrap();
+    model_store.insert(handle, ooxml);
+    
+    Ok(handle)
 }
 
 /// Apply a [`ModelOp`] (JSON) to the model identified by `handle`.
@@ -1376,6 +1407,8 @@ pub fn create_model(bytes: &[u8], fmt: &str) -> Result<u32, String> {
 /// Deserializes the JSON string into a [`wo_common::op::ModelOp`],
 /// applies it via [`EditableModel::apply`](wo_common::op::EditableModel::apply),
 /// and stores the result back.
+/// 
+/// For DOCX models, uses the extract_body/store_body pattern (§4).
 #[wasm_bindgen]
 pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
     if op_json.is_empty() {
@@ -1390,6 +1423,23 @@ pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
         let mut store = store.lock().unwrap();
         if let Some(model) = store.get_mut(&handle) {
             return model.apply(&op).map_err(|e| e.to_string());
+        }
+    }
+    
+    // Try DOCX model (§2.3) - use extract_body/store_body pattern
+    {
+        // Check if this is a DOCX document handle
+        // We check DOC_MODEL_STORE which contains OoxmlDocument with optional docx_body
+        let model_store = DOC_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+        let model_store = model_store.lock().unwrap();
+        if model_store.contains_key(&handle) {
+            // Extract body, wrap in EditableDocxBody, apply, convert back, store
+            let body = extract_body(handle)?;
+            let mut editable = EditableDocxBody::from(body);
+            editable.apply(&op).map_err(|e| e.to_string())?;
+            let modified_body: DocxBody = editable.into();
+            store_body(handle, modified_body)?;
+            return Ok(());
         }
     }
     
@@ -1408,6 +1458,7 @@ pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
 /// Serialize the model back to bytes.
 ///
 /// For the stub model, returns a JSON array of paragraph strings.
+/// For DOCX, serializes using the stored OoxmlDocument via wo-ooxml serializer (§2.3).
 #[wasm_bindgen]
 pub fn model_to_bytes(handle: u32) -> Result<Vec<u8>, String> {
     // Try stub model first
@@ -1416,6 +1467,16 @@ pub fn model_to_bytes(handle: u32) -> Result<Vec<u8>, String> {
         let store = store.lock().unwrap();
         if let Some(model) = store.get(&handle) {
             return serde_json::to_vec(&model.paragraphs).map_err(|e| format!("Serialization failed: {}", e));
+        }
+    }
+    
+    // Try DOCX model (§2.3) - use existing DOC_MODEL_STORE
+    {
+        let model_store = DOC_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+        let model_store = model_store.lock().unwrap();
+        if let Some(doc) = model_store.get(&handle) {
+            let serializer = OoxmlSerializer::new();
+            return serializer.serialize(doc).map_err(|e| format!("Serialization failed: {}", e));
         }
     }
     
