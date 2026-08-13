@@ -4,22 +4,28 @@ import { pdfStore } from "../../stores/PdfStore"
 import type { PdfAnnotation } from "../../stores/PdfStore"
 import { AnnotationEditor } from "../AnnotationEditor"
 
-function AnnotationPanelInner(): JSX.Element {
+interface Props {
+  visible: boolean
+}
+
+function AnnotationPanelInner({ visible }: Props): JSX.Element | null {
   const annotations = pdfStore.annotations
   const currentPage = pdfStore.currentPage + 1
 
   const pageAnnotations = annotations.filter((a) => a.page === currentPage)
 
+  if (!visible) return null
+
+  const dispatchCommand = (command: string, value?: string | object) => {
+    window.dispatchEvent(
+      new CustomEvent("wo-command", {
+        detail: { command, value },
+      }),
+    )
+  }
+
   const handleAdd = () => {
-    pdfStore.addAnnotation({
-      page: currentPage,
-      x: 50,
-      y: 50,
-      width: 200,
-      height: 100,
-      color: "#f59e0b",
-      text: "<p>New annotation</p>",
-    })
+    dispatchCommand("addAnnotation", "<p>New annotation</p>")
   }
 
   return (
@@ -68,7 +74,7 @@ function AnnotationPanelInner(): JSX.Element {
             <span style={{ fontWeight: 500 }}>{annot.id.slice(0, 12)}</span>
             <button
               type="button"
-              onClick={() => pdfStore.removeAnnotation(annot.id)}
+              onClick={() => dispatchCommand("removeAnnotation", annot.id)}
               style={{
                 background: "none",
                 border: "none",
@@ -84,10 +90,7 @@ function AnnotationPanelInner(): JSX.Element {
             <AnnotationEditor
               value={annot.text ?? ""}
               onChange={(html: string) => {
-                const idx = pdfStore.annotations.findIndex((a) => a.id === annot.id)
-                if (idx >= 0) {
-                  pdfStore.annotations[idx] = { ...pdfStore.annotations[idx], text: html }
-                }
+                dispatchCommand("updateAnnotation", { id: annot.id, text: html })
               }}
             />
           </div>
@@ -97,10 +100,7 @@ function AnnotationPanelInner(): JSX.Element {
                 key={c}
                 type="button"
                 onClick={() => {
-                  const idx = pdfStore.annotations.findIndex((a) => a.id === annot.id)
-                  if (idx >= 0) {
-                    pdfStore.annotations[idx] = { ...pdfStore.annotations[idx], color: c }
-                  }
+                  dispatchCommand("setAnnotationColor", { id: annot.id, color: c })
                 }}
                 style={{
                   width: 16,

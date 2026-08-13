@@ -3,7 +3,6 @@ import { pdfStore } from "../stores/PdfStore"
 import { DocumentHolder } from "./DocumentHolder"
 import { FileMenu } from "./FileMenu/FileMenu"
 import { LeftMenu } from "./LeftMenu/LeftMenu"
-import { AnnotationPanel } from "./RightMenu/AnnotationPanel"
 import { RightMenu } from "./RightMenu/RightMenu"
 import { StatusBar } from "./StatusBar/StatusBar"
 import type { MonacoCommand } from "./Toolbar/MonacoCommand"
@@ -77,19 +76,6 @@ export function Viewport({
               style={{ width: "var(--wo-pdf-rightmenu-width, 40px)" }}
             >
               <RightMenu />
-            </div>
-          )}
-          {pdfStore.activeRightPanel === "annotations" && (
-            <div
-              className="pdf-right-panel"
-              style={{
-                width: 340,
-                borderLeft: "1px solid #ddd",
-                overflow: "auto",
-                background: "#fff",
-              }}
-            >
-              <AnnotationPanel />
             </div>
           )}
         </div>
