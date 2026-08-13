@@ -375,6 +375,7 @@ dependencies = [
  "iana-time-zone",
  "js-sys",
  "num-traits",
+ "serde",
  "wasm-bindgen",
  "windows-link",
 ]
@@ -3704,6 +3705,7 @@ dependencies = [
  "wo-ooxml",
  "wo-ooxml-ops",
  "wo-renderer",
+ "wo-sheet",
  "wo-spell",
  "zip",
 ]
@@ -3716,6 +3718,19 @@ dependencies = [
  "serde",
  "thiserror 2.0.18",
  "wo-common",
+]
+
+[[package]]
+name = "wo-sheet"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "rustc-hash",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.18",
+ "wo-common",
+ "wo-formula",
 ]
 
 [[package]]

@@ -18,6 +18,7 @@ wo-renderer = { path = "../wo-renderer" }
 wo-common = { path = "../wo-common" }
 wo-ooxml = { path = "../wo-ooxml" }
 wo-ooxml-ops = { path = "../wo-ooxml-ops" }
+wo-sheet = { path = "../wo-sheet" }
 wo-spell = { path = "../wo-spell" }
 console_error_panic_hook = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"] }

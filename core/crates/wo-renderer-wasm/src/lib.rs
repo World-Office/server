@@ -20,7 +20,7 @@ use std::collections::HashSet;
 use std::collections::BTreeMap;
 use wo_common::op::EditableModel;
 use wo_common::path::{Path, Range};
-use wo_ooxml::model::{DocxBlock, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, OoxmlDocument, PptxPresentation};
+use wo_ooxml::model::{DocxBlock, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, OoxmlDocument, PptxPresentation, XlsxWorkbook};
 use wo_ooxml::parser::OoxmlParser;
 use wo_ooxml::serializer::OoxmlSerializer;
 use wo_ooxml_ops::EditableDocxBody;
@@ -269,8 +269,7 @@ unsafe fn next_pptx_handle() -> u32 {
 }
 
 /// Check if bytes represent a valid PPTX file by checking for the PPTX content type marker.
-fn is_valid_pptx(bytes: &[u8]) -> bool {
-    // PPTX files are ZIP archives containing a [Content_Types].xml file
+fn is_valid_pptx(bytes: &[u8]) -> bool {    // PPTX files are ZIP archives containing a [Content_Types].xml file
     // with references to ppt/presentation.xml
     if bytes.len() < 22 {
         return false;
@@ -486,6 +485,342 @@ fn serialize_pptx_pres(_pres: &PptxPresentation) -> Result<Vec<u8>, String> {
 /// Layout a PPTX presentation and return JSON with slide information.
 fn layout_pptx_presentation(_handle: u32, _opts_json: &str) -> Result<String, String> {
     Err("PPTX layout not yet implemented".to_string())
+}
+
+// ============================================================================
+// XLSX Model (§2.3, SS-7)
+// ============================================================================
+
+/// Global store of XLSX workbook instances (handle → EditableXlsxWorkbook).
+static XLSX_STORE: OnceLock<Mutex<HashMap<u32, EditableXlsxWorkbook>>> = OnceLock::new();
+
+/// Next available XLSX handle (separate namespace starting at 6000
+/// to avoid collisions with other stores).
+static mut NEXT_XLSX_HANDLE: u32 = 6000;
+
+/// Allocate the next XLSX handle.
+///
+/// # Safety
+/// WASM is single-threaded; the mutable static is safe in that context.
+unsafe fn next_xlsx_handle() -> u32 {
+    let h = NEXT_XLSX_HANDLE;
+    NEXT_XLSX_HANDLE += 1;
+    h
+}
+
+
+/// Error type for XlsxWorkbook model operations.
+#[derive(Debug, Clone, PartialEq)]
+pub enum XlsxModelError {
+    OutOfRange(String),
+    Invalid(String),
+}
+
+impl std::fmt::Display for XlsxModelError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::OutOfRange(msg) => write!(f, "XLSX out of range: {}", msg),
+            Self::Invalid(msg) => write!(f, "XLSX invalid operation: {}", msg),
+        }
+    }
+}
+
+impl std::error::Error for XlsxModelError {}
+
+/// Editable wrapper for XlsxWorkbook that implements EditableModel.
+/// This allows XLSX workbooks to be edited using the uniform ModelOp operations.
+#[derive(Debug, Clone)]
+pub struct EditableXlsxWorkbook(pub XlsxWorkbook);
+
+impl From<XlsxWorkbook> for EditableXlsxWorkbook {
+    fn from(wb: XlsxWorkbook) -> Self {
+        Self(wb)
+    }
+}
+
+impl From<EditableXlsxWorkbook> for XlsxWorkbook {
+    fn from(wb: EditableXlsxWorkbook) -> Self {
+        wb.0
+    }
+}
+
+impl EditableModel for EditableXlsxWorkbook {
+    type Err = XlsxModelError;
+
+    fn apply(&mut self, op: &wo_common::op::ModelOp) -> std::result::Result<(), Self::Err> {
+        match op {
+            wo_common::op::ModelOp::Insert { at, content } => {
+                match at {
+                    Path::Sheet { sheet, row, col } => {
+                        let sheet_idx = self.0.sheets.iter()
+                            .position(|s| s.name == *sheet)
+                            .ok_or_else(|| XlsxModelError::OutOfRange(format!("Sheet '{}' not found", sheet)))?;
+                        
+                        let row_idx = *row as usize;
+                        while self.0.sheets[sheet_idx].rows.len() <= row_idx {
+                            self.0.sheets[sheet_idx].rows.push(Default::default());
+                        }
+                        
+                        let col_idx = *col as usize;
+                        while self.0.sheets[sheet_idx].rows[row_idx].cells.len() <= col_idx {
+                            self.0.sheets[sheet_idx].rows[row_idx].cells.push(Default::default());
+                        }
+                        
+                        if let Some(cell) = self.0.sheets[sheet_idx].rows[row_idx].cells.get_mut(col_idx) {
+                            cell.v = content.clone();
+                            if cell.t == wo_ooxml::model::CellType::N && cell.v.parse::<f64>().is_err() {
+                                cell.t = wo_ooxml::model::CellType::Str;
+                            }
+                        }
+                        Ok(())
+                    }
+                    Path::Text { para: row, char: col, .. } => {
+                        if self.0.sheets.is_empty() {
+                            return Err(XlsxModelError::OutOfRange("No sheets in workbook".to_string()));
+                        }
+                        let sheet_idx = 0;
+                        let row_idx = *row as usize;
+                        let col_idx = *col as usize;
+                        
+                        while self.0.sheets[sheet_idx].rows.len() <= row_idx {
+                            self.0.sheets[sheet_idx].rows.push(Default::default());
+                        }
+                        while self.0.sheets[sheet_idx].rows[row_idx].cells.len() <= col_idx {
+                            self.0.sheets[sheet_idx].rows[row_idx].cells.push(Default::default());
+                        }
+                        
+                        if let Some(cell) = self.0.sheets[sheet_idx].rows[row_idx].cells.get_mut(col_idx) {
+                            cell.v = content.clone();
+                        }
+                        Ok(())
+                    }
+                    _ => Err(XlsxModelError::Invalid(format!("Unsupported path type for insert: {:?}", at))),
+                }
+            }
+            wo_common::op::ModelOp::Delete { range } => {
+                match (&range.start, &range.end) {
+                    (Path::Sheet { sheet: sheet_start, row: row_start, col: col_start },
+                     Path::Sheet { sheet: sheet_end, row: row_end, col: col_end }) => {
+                        if sheet_start != sheet_end {
+                            return Err(XlsxModelError::Invalid("Cross-sheet delete not supported".to_string()));
+                        }
+                        let sheet_idx = self.0.sheets.iter()
+                            .position(|s| s.name == *sheet_start)
+                            .ok_or_else(|| XlsxModelError::OutOfRange(format!("Sheet '{}' not found", sheet_start)))?;
+                        
+                        let row_start = *row_start as usize;
+                        let row_end = *row_end as usize;
+                        let col_start = *col_start as usize;
+                        let col_end = *col_end as usize;
+                        
+                        for row in row_start..=row_end.min(self.0.sheets[sheet_idx].rows.len().saturating_sub(1)) {
+                            for col in col_start..=col_end.min(self.0.sheets[sheet_idx].rows[row].cells.len().saturating_sub(1)) {
+                                if let Some(cell) = self.0.sheets[sheet_idx].rows[row].cells.get_mut(col) {
+                                    cell.v = String::new();
+                                }
+                            }
+                        }
+                        Ok(())
+                    }
+                    _ => Err(XlsxModelError::Invalid("Unsupported range type for delete".to_string())),
+                }
+            }
+            wo_common::op::ModelOp::Replace { at, content } => {
+                self.apply(&wo_common::op::ModelOp::Delete {
+                    range: Range::new(at.clone(), at.clone()),
+                })?;
+                self.apply(&wo_common::op::ModelOp::Insert {
+                    at: at.clone(),
+                    content: content.clone(),
+                })
+            }
+            wo_common::op::ModelOp::Format { range, attrs: _ } => {
+                Ok(())
+            }
+            wo_common::op::ModelOp::Move { from: _, to: _ } => {
+                Err(XlsxModelError::Invalid("Move not yet implemented for XLSX".to_string()))
+            }
+        }
+    }
+
+    fn invert(&self, op: &wo_common::op::ModelOp) -> wo_common::op::ModelOp {
+        match op {
+            wo_common::op::ModelOp::Insert { at, content } => {
+                wo_common::op::ModelOp::Delete {
+                    range: Range::new(at.clone(), at.clone()),
+                }
+            }
+            wo_common::op::ModelOp::Delete { range } => {
+                wo_common::op::ModelOp::Insert {
+                    at: range.start.clone(),
+                    content: String::new(),
+                }
+            }
+            wo_common::op::ModelOp::Replace { at, content } => {
+                wo_common::op::ModelOp::Replace {
+                    at: at.clone(),
+                    content: content.clone(),
+                }
+            }
+            wo_common::op::ModelOp::Format { range, attrs } => {
+                wo_common::op::ModelOp::Format {
+                    range: range.clone(),
+                    attrs: attrs.clone(),
+                }
+            }
+            wo_common::op::ModelOp::Move { from, to } => {
+                wo_common::op::ModelOp::Move {
+                    from: to.clone(),
+                    to: from.clone(),
+                }
+            }
+        }
+    }
+
+    fn to_ops_since(&self, _rev: u64) -> Vec<wo_common::op::ModelOp> {
+        Vec::new()
+    }
+}
+
+/// Extract an EditableXlsxWorkbook from the store.
+fn extract_xlsx_workbook(handle: u32) -> Result<EditableXlsxWorkbook, String> {
+    let store = XLSX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let store = store.lock().unwrap();
+    store.get(&handle)
+        .cloned()
+        .ok_or_else(|| format!("XLSX handle {} not found", handle))
+}
+
+/// Store an EditableXlsxWorkbook back into the store.
+fn store_xlsx_workbook(handle: u32, wb: EditableXlsxWorkbook) -> Result<(), String> {
+    let store = XLSX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut store = store.lock().unwrap();
+    if store.contains_key(&handle) {
+        store.insert(handle, wb);
+        Ok(())
+    } else {
+        Err(format!("XLSX handle {} not found", handle))
+    }
+}
+
+/// Check if bytes represent a valid XLSX file.
+fn is_valid_xlsx(bytes: &[u8]) -> bool {
+    if bytes.len() < 4 {
+        return false;
+    }
+    &bytes[0..4] == b"PK\x03\x04"
+}
+
+/// Convert cell reference (e.g., "A1", "B2") to (row, col) coordinates.
+fn cell_ref_to_coords(ref_str: &str) -> (u32, u32) {
+    // Simple parser for cell references like "A1", "B2", etc.
+    let mut chars = ref_str.chars();
+    let mut col_str = String::new();
+    let mut row_str = String::new();
+    
+    // Collect letters for column
+    while let Some(c) = chars.next() {
+        if c.is_ascii_alphabetic() {
+            col_str.push(c.to_ascii_uppercase());
+        } else if c.is_ascii_digit() {
+            row_str.push(c);
+        } else {
+            break;
+        }
+    }
+    
+    // Convert column letters to number (A=0, B=1, ..., Z=25, AA=26, etc.)
+    let col = col_str.chars().fold(0u32, |acc, c| {
+        acc * 26 + (c as u32 - 'A' as u32)
+    });
+    
+    // Convert row string to number
+    let row = row_str.parse::<u32>().unwrap_or(0);
+    
+    (row, col)
+}
+
+/// Create an XLSX model from bytes.
+fn create_xlsx_model(bytes: &[u8]) -> Result<u32, String> {
+    if bytes.is_empty() {
+        return Err("XLSX bytes are empty".to_string());
+    }
+    if !is_valid_xlsx(bytes) {
+        return Err("Invalid XLSX: does not appear to be a valid ZIP archive".to_string());
+    }
+
+    let parser = OoxmlParser::new();
+    let ooxml = parser
+        .parse(bytes)
+        .map_err(|e| format!("Failed to parse XLSX: {}", e))?;
+
+    let workbook = ooxml.xlsx_workbook
+        .ok_or_else(|| "No workbook found in XLSX file".to_string())?;
+
+    let handle = unsafe { next_xlsx_handle() };
+
+    let store = XLSX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut store = store.lock().unwrap();
+    store.insert(handle, EditableXlsxWorkbook::from(workbook));
+
+    Ok(handle)
+}
+
+/// Serialize an XlsxWorkbook back to XLSX bytes (ZIP archive) via the
+/// wo-ooxml serializer.
+fn serialize_xlsx_workbook(wb: &XlsxWorkbook) -> Result<Vec<u8>, String> {
+    // Create an OoxmlDocument with the XlsxWorkbook
+    let doc = OoxmlDocument {
+        format: wo_ooxml::model::OoxmlFormat::Xlsx,
+        version: "1.0".to_string(),
+        content_types: Vec::new(),
+        main_part: None,
+        shared_strings: Vec::new(),
+        part_count: 0,
+        core_properties: Default::default(),
+        relationships: Vec::new(),
+        docx_body: None,
+        xlsx_workbook: Some(wb.clone()),
+    };
+    let serializer = OoxmlSerializer::new();
+    serializer
+        .serialize(&doc)
+        .map_err(|e| format!("XLSX serialization failed: {}", e))
+}
+
+/// Layout an XlsxWorkbook and return JSON with sheet information:
+/// `{ "kind": "spreadsheet", "sheets": { name: { "row": { "col": "value" } } } }`.
+fn layout_xlsx_workbook(handle: u32, _opts_json: &str) -> Result<String, String> {
+    let store = XLSX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let store = store.lock().unwrap();
+    let editable_wb = store
+        .get(&handle)
+        .ok_or_else(|| format!("Spreadsheet model handle {} not found", handle))?;
+    let wb = &editable_wb.0;
+
+    let mut sheets_json = serde_json::Map::new();
+    for sheet in &wb.sheets {
+        let mut rows: std::collections::BTreeMap<u32, serde_json::Map<String, serde_json::Value>> =
+            std::collections::BTreeMap::new();
+        for row in &sheet.rows {
+            for cell in &row.cells {
+                let (r, c) = cell_ref_to_coords(&cell.r);
+                let row_map = rows.entry(r).or_default();
+                row_map.insert(c.to_string(), serde_json::Value::String(cell.v.clone()));
+            }
+        }
+        let row_val = rows
+            .into_iter()
+            .map(|(r, cells)| (r.to_string(), serde_json::Value::Object(cells)))
+            .collect::<serde_json::Map<_, _>>();
+        sheets_json.insert(sheet.name.clone(), serde_json::Value::Object(row_val));
+    }
+    let layout = serde_json::json!({
+        "kind": "spreadsheet",
+        "sheets": sheets_json,
+        "sheetCount": wb.sheets.len(),
+    });
+    serde_json::to_string(&layout).map_err(|e| format!("JSON serialization failed: {}", e))
 }
 
 /// Initialize the WASM module.
@@ -1652,8 +1987,9 @@ pub fn create_model(bytes: &[u8], fmt: &str) -> Result<u32, String> {
         "pdf" => create_pdf_model(bytes),
         "docx" => create_docx_model(bytes),
         "pptx" => create_pptx_model(bytes),
+        "xlsx" => create_xlsx_model(bytes),
         other => Err(format!(
-            "Unsupported format: '{}'. Supported: 'stub', 'pdf', 'docx', 'pptx'.",
+            "Unsupported format: '{}'. Supported: 'stub', 'pdf', 'docx', 'pptx', 'xlsx'.",
             other
         )),
     }
@@ -1737,6 +2073,16 @@ pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
             return Ok(());
         }
     }
+
+    // Try XLSX / spreadsheet model (SS-7) — EditableXlsxWorkbook implements EditableModel
+    {
+        let store = XLSX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+        let mut store = store.lock().unwrap();
+        if let Some(editable_wb) = store.get_mut(&handle) {
+            editable_wb.apply(&op).map_err(|e| e.to_string())?;
+            return Ok(());
+        }
+    }
     
     // Try PDF model - for now, PDF doesn't support operations, return error
     {
@@ -1783,6 +2129,15 @@ pub fn model_to_bytes(handle: u32) -> Result<Vec<u8>, String> {
             return serialize_pptx_pres(pres);
         }
     }
+
+    // Try XLSX / spreadsheet model (SS-7)
+    {
+        let store = XLSX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+        let store = store.lock().unwrap();
+        if let Some(editable_wb) = store.get(&handle) {
+            return serialize_xlsx_workbook(&editable_wb.0);
+        }
+    }
     
     // Try PDF model - return the raw bytes
     {
@@ -1811,6 +2166,11 @@ pub fn model_to_bytes(handle: u32) -> Result<Vec<u8>, String> {
 /// ```
 #[wasm_bindgen]
 pub fn layout_and_render(handle: u32, opts_json: &str, canvas: u32) -> Result<String, String> {
+    // Try XLSX / spreadsheet model first (handles start at 6000).
+    if handle >= 6000 {
+        return layout_xlsx_workbook(handle, opts_json);
+    }
+
     // Try PPTX model first (handles start at 3000)
     if handle >= 3000 {
         return layout_pptx_presentation(handle, opts_json);
@@ -2315,7 +2675,7 @@ mod tests {
 
     #[test]
     fn test_create_model_unsupported_format() {
-        let result = create_model(b"[]", "docx");
+        let result = create_model(b"[]", "ods");
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Unsupported format"));
     }
@@ -2797,8 +3157,8 @@ SFX N e ness e
     }
 
     #[test]
-    fn test_create_model_unsupported_format_pdf() {
-        let result = create_model(b"[]", "xlsx");
+    fn test_create_model_unsupported_format_xlsx() {
+        let result = create_model(b"[]", "ods");
         assert!(result.is_err());
         assert!(result.unwrap_err().contains("Unsupported format"));
     }
@@ -2819,10 +3179,30 @@ SFX N e ness e
     }
 
     #[test]
-    fn test_create_model_format_message_includes_pptx() {
-        // Verify pptx is listed as a supported format
+    fn test_create_model_format_message_includes_all_formats() {
+        // Verify supported formats are listed in the error message
         let result = create_model(b"[]", "invalid");
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("pptx"));
+        let err_msg = result.unwrap_err();
+        assert!(err_msg.contains("stub"));
+        assert!(err_msg.contains("pdf"));
+        assert!(err_msg.contains("docx"));
+        assert!(err_msg.contains("pptx"));
+        assert!(err_msg.contains("xlsx"));
+    }
+
+    #[test]
+    fn test_create_model_xlsx_valid() {
+        // Test that XLSX format is now supported
+        // For now, just test that it doesn't error on the format
+        // A real test would need actual XLSX bytes
+        let result = create_model(b"PK\x03\x04", "xlsx");
+        // This will likely fail because b"PK\x03\x04" is not a valid XLSX
+        // but it should at least recognize the format and try to parse it
+        // The error should NOT be "Unsupported format"
+        if result.is_err() {
+            let err = result.unwrap_err();
+            assert!(!err.contains("Unsupported format"), "XLSX should be a supported format, got error: {}", err);
+        }
     }
 }
