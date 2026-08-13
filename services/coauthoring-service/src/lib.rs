@@ -9,6 +9,9 @@ pub mod document;
 pub mod model_op;
 pub mod replay;
 
+#[cfg(test)]
+pub mod integration;
+
 // Re-export the wire envelope for convenience.
 pub use document::Document;
 pub use model_op::{EnvelopeError, ModelOpEnvelope, WIRE_SCHEMA_VERSION};
