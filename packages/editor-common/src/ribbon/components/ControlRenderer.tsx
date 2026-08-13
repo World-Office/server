@@ -130,7 +130,7 @@ function SelectControl({
       style={spec.width ? { width: spec.width } : undefined}
       onChange={(e) => {
         spec.onChange(e.target.value)
-        dispatch.onRichTextCommand(e.target.value)
+        dispatch.onCommand(spec.id, e.target.value)
       }}
     >
       {spec.options.map((opt) => (
