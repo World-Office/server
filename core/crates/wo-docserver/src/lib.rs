@@ -630,6 +630,95 @@ async fn serve_editor_assets(
     Ok((axum::http::StatusCode::OK, headers, data))
 }
 
+// Direct-editor-path wrappers (frontend uses vite base /word/ etc.). The
+// browser never hits /editors/{type}/; these hardcode the editor type so
+// the cache-aware handlers serve the real paths.
+async fn serve_word_index(State(state): State<AppState>) -> Result<
+    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
+    axum::http::StatusCode,
+> {
+    serve_editor_index(Path("word".to_string()), axum::extract::State(state)).await
+}
+
+async fn serve_word_assets(
+    Path(asset_path): Path<String>,
+    State(state): State<AppState>,
+) -> Result<
+    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
+    axum::http::StatusCode,
+> {
+    serve_editor_assets(Path(("word".to_string(), asset_path)), axum::extract::State(state)).await
+}
+
+async fn serve_sheet_index(State(state): State<AppState>) -> Result<
+    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
+    axum::http::StatusCode,
+> {
+    serve_editor_index(Path("sheet".to_string()), axum::extract::State(state)).await
+}
+
+async fn serve_sheet_assets(
+    Path(asset_path): Path<String>,
+    State(state): State<AppState>,
+) -> Result<
+    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
+    axum::http::StatusCode,
+> {
+    serve_editor_assets(Path(("sheet".to_string(), asset_path)), axum::extract::State(state)).await
+}
+
+async fn serve_slide_index(State(state): State<AppState>) -> Result<
+    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
+    axum::http::StatusCode,
+> {
+    serve_editor_index(Path("slide".to_string()), axum::extract::State(state)).await
+}
+
+async fn serve_slide_assets(
+    Path(asset_path): Path<String>,
+    State(state): State<AppState>,
+) -> Result<
+    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
+    axum::http::StatusCode,
+> {
+    serve_editor_assets(Path(("slide".to_string(), asset_path)), axum::extract::State(state)).await
+}
+
+async fn serve_diagram_index(State(state): State<AppState>) -> Result<
+    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
+    axum::http::StatusCode,
+> {
+    serve_editor_index(Path("diagram".to_string()), axum::extract::State(state)).await
+}
+
+async fn serve_diagram_assets(
+    Path(asset_path): Path<String>,
+    State(state): State<AppState>,
+) -> Result<
+    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
+    axum::http::StatusCode,
+> {
+    serve_editor_assets(Path(("diagram".to_string(), asset_path)), axum::extract::State(state)).await
+}
+
+async fn serve_pdf_index(State(state): State<AppState>) -> Result<
+    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
+    axum::http::StatusCode,
+> {
+    serve_editor_index(Path("pdf".to_string()), axum::extract::State(state)).await
+}
+
+async fn serve_pdf_assets(
+    Path(asset_path): Path<String>,
+    State(state): State<AppState>,
+) -> Result<
+    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
+    axum::http::StatusCode,
+> {
+    serve_editor_assets(Path(("pdf".to_string(), asset_path)), axum::extract::State(state)).await
+}
+
+
 /// GET /wopi/files/:file_id  →  proxy CheckFileInfo to OCIS
 async fn wopi_check_file_info(
     State(state): State<AppState>,
@@ -906,16 +995,16 @@ pub fn create_app(config: DocServerConfig) -> Router {
         // Direct editor paths the frontend actually uses (vite base: /word/).
         // These must hit the cache-aware handlers, NOT the ServeDir fallback,
         // so hashed assets get immutable caching and index.html revalidates.
-        .route("/word/", get(serve_editor_index))
-        .route("/word/assets/{*asset_path}", get(serve_editor_assets))
-        .route("/sheet/", get(serve_editor_index))
-        .route("/sheet/assets/{*asset_path}", get(serve_editor_assets))
-        .route("/slide/", get(serve_editor_index))
-        .route("/slide/assets/{*asset_path}", get(serve_editor_assets))
-        .route("/diagram/", get(serve_editor_index))
-        .route("/diagram/assets/{*asset_path}", get(serve_editor_assets))
-        .route("/pdf/", get(serve_editor_index))
-        .route("/pdf/assets/{*asset_path}", get(serve_editor_assets))
+        .route("/word/", get(serve_word_index))
+        .route("/word/assets/{*asset_path}", get(serve_word_assets))
+        .route("/sheet/", get(serve_sheet_index))
+        .route("/sheet/assets/{*asset_path}", get(serve_sheet_assets))
+        .route("/slide/", get(serve_slide_index))
+        .route("/slide/assets/{*asset_path}", get(serve_slide_assets))
+        .route("/diagram/", get(serve_diagram_index))
+        .route("/diagram/assets/{*asset_path}", get(serve_diagram_assets))
+        .route("/pdf/", get(serve_pdf_index))
+        .route("/pdf/assets/{*asset_path}", get(serve_pdf_assets))
         .with_state(state);
 
     // Serve editor UI if the directory exists, otherwise fall back to landing page
