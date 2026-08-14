@@ -152,9 +152,13 @@ export function Viewport({
                 position: "relative",
               }}
             >
-              <HeaderFooterEditor region="header" />
+              {documentStore.headerFooterMode === "header" || documentStore.headerHtml ? (
+                <HeaderFooterEditor region="header" />
+              ) : null}
               <DocumentHolder embedded={embedded} />
-              <HeaderFooterEditor region="footer" />
+              {documentStore.headerFooterMode === "footer" || documentStore.footerHtml ? (
+                <HeaderFooterEditor region="footer" />
+              ) : null}
               <CollaboratorCursors
                 cursors={collaborationStore.remoteCursors}
                 userColors={new Map(collaborationStore.users.map((u) => [u.id, u.color]))}
