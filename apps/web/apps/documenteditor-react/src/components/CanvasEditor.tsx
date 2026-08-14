@@ -193,7 +193,9 @@ const CanvasEditorInternal = (
 
         if (cancelled) return
         setPages(layoutPages)
-        setStatus("rendering")
+        // Go straight to "ready" — the page canvases render in the ready
+        // branch, so their refs exist when the render effect runs.
+        setStatus("ready")
 
         // Set cursor to start of first page
         cursorPosRef.current = { page: 0, para: 0, line: 0, charIdx: 0, x: 0, y: 0 }
@@ -213,7 +215,7 @@ const CanvasEditorInternal = (
 
   // ── Step 3: Render pages to canvas elements ───────────────────────
   useEffect(() => {
-    if (status !== "rendering" || !isWasmReady() || docHandleRef.current === null) return
+    if (status !== "ready" || !isWasmReady() || docHandleRef.current === null || pages.length === 0) return
 
     const wasmApi = getWasmApi()
     if (!wasmApi) {
@@ -261,10 +263,6 @@ const CanvasEditorInternal = (
         page.height,
       )
       ctx.putImageData(imageData, 0, 0)
-    }
-
-    if (!cancelled) {
-      setStatus("ready")
     }
 
     return () => {
