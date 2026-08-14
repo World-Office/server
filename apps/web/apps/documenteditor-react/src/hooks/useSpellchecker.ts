@@ -75,9 +75,13 @@ async function loadWasm(): Promise<
         "../../../../../../core/crates/wo-renderer-wasm/pkg/wo_renderer_wasm"
       )
       // wasm-bindgen web target: the wasm binary is NOT instantiated on
-      // import — call init() (idempotent) before using any exported fn.
+      // import — call the default loader (idempotent) first, which sets
+      // the internal wasm instance. Then Rust's init() works.
+      if (typeof mod.default === "function") {
+        await mod.default()
+      }
       if (typeof mod.init === "function") {
-        await mod.init()
+        mod.init()
       }
       wasmModule = mod
       return mod

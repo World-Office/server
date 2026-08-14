@@ -12,6 +12,8 @@
 
 /** API surface exposed by wo-renderer-wasm after wasm-pack build. */
 export interface WasmRenderApi {
+  /** Async wasm loader (wasm-bindgen web target default export). */
+  default?: () => Promise<void>
   init(): void
   // Basic canvas operations
   create_canvas(width: number, height: number): number
@@ -91,6 +93,9 @@ export async function loadWasmRenderer(): Promise<boolean> {
         /* @vite-ignore */
         "@world-office/wo-renderer-wasm"
       )) as unknown as WasmRenderApi
+      if (typeof mod.default === "function") {
+        await mod.default()
+      }
       mod.init()
       wasmApi = mod
       console.info("[WasmRenderer] WASM module loaded")
