@@ -159,7 +159,13 @@ tf_verify() {
   local rc=0
   (
     cd "$wt" || exit 127
-    timeout "$timeout_s" bash -lc "${TF_GATE_ENV:+export $TF_GATE_ENV; }$accept"
+    # Write the accept command to a temp file to avoid quoting issues with
+    # backticks and special characters inside bash -lc "...$accept...".
+    local gate_script="$TF_STATE_DIR/.gate-$id.sh"
+    { echo '#!/bin/bash'; echo "export PATH=\$HOME/.cargo/bin:\$PATH"; [[ -n "${TF_GATE_ENV:-}" ]] && echo "export $TF_GATE_ENV"; echo "$accept"; } > "$gate_script"
+    chmod +x "$gate_script"
+    timeout "$timeout_s" bash -l "$gate_script"
+    rm -f "$gate_script"
   ) >> "$log" 2>&1 || rc=$?
 
   if [[ $rc -eq 0 ]]; then
