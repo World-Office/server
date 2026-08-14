@@ -647,7 +647,7 @@ async fn serve_word_assets(
     (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
     axum::http::StatusCode,
 > {
-    serve_editor_assets(Path(("word".to_string(), asset_path)), axum::extract::State(state)).await
+    serve_editor_assets(Path(("word".to_string(), format!("assets/{asset_path}"))), axum::extract::State(state)).await
 }
 
 async fn serve_sheet_index(State(state): State<AppState>) -> Result<
@@ -664,7 +664,7 @@ async fn serve_sheet_assets(
     (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
     axum::http::StatusCode,
 > {
-    serve_editor_assets(Path(("sheet".to_string(), asset_path)), axum::extract::State(state)).await
+    serve_editor_assets(Path(("sheet".to_string(), format!("assets/{asset_path}"))), axum::extract::State(state)).await
 }
 
 async fn serve_slide_index(State(state): State<AppState>) -> Result<
@@ -681,7 +681,7 @@ async fn serve_slide_assets(
     (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
     axum::http::StatusCode,
 > {
-    serve_editor_assets(Path(("slide".to_string(), asset_path)), axum::extract::State(state)).await
+    serve_editor_assets(Path(("slide".to_string(), format!("assets/{asset_path}"))), axum::extract::State(state)).await
 }
 
 async fn serve_diagram_index(State(state): State<AppState>) -> Result<
@@ -698,7 +698,7 @@ async fn serve_diagram_assets(
     (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
     axum::http::StatusCode,
 > {
-    serve_editor_assets(Path(("diagram".to_string(), asset_path)), axum::extract::State(state)).await
+    serve_editor_assets(Path(("diagram".to_string(), format!("assets/{asset_path}"))), axum::extract::State(state)).await
 }
 
 async fn serve_pdf_index(State(state): State<AppState>) -> Result<
@@ -715,7 +715,7 @@ async fn serve_pdf_assets(
     (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
     axum::http::StatusCode,
 > {
-    serve_editor_assets(Path(("pdf".to_string(), asset_path)), axum::extract::State(state)).await
+    serve_editor_assets(Path(("pdf".to_string(), format!("assets/{asset_path}"))), axum::extract::State(state)).await
 }
 
 
