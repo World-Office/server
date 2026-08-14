@@ -1,13 +1,10 @@
 import { registerEditorRouter } from "@world-office/editor-common"
 import { observer } from "mobx-react-lite"
 import { Suspense, lazy, useEffect, useRef, useState } from "react"
-import { createRichTextRouterHandler } from "../lib/rte-command"
-import { useSpellcheck } from "../lib/spellcheck-context"
-import { isCanvasFormat, isWasmReady } from "../lib/wasm-renderer"
+import { isCanvasFormat } from "../lib/wasm-renderer"
 import { documentStore } from "../stores/DocumentStore"
 import { CanvasEditor, type CanvasEditorHandle } from "./CanvasEditor"
 import { DocumentCanvas } from "./DocumentCanvas"
-import { RichTextEditor } from "./RichTextEditor"
 
 const MonacoEditor = lazy(() => import("./MonacoEditor").then((m) => ({ default: m.MonacoEditor })))
 
@@ -92,32 +89,10 @@ const WasmEditorCanvas = observer(
   },
 )
 
-/**
- * RichTextEditor wrapper that registers with the command router.
- */
-const RichTextEditorWithRouter = observer(function RichTextEditorWithRouter({
-  html,
-  onChange,
-  spellchecker,
-}: {
-  html: string
-  onChange: (html: string) => void
-  spellchecker: import("../lib/spellcheck-context").WasmSpellChecker | null
-}) {
-  useEffect(() => {
-    // Register the TipTap editor with the command router
-    const unregister = registerEditorRouter("doc", createRichTextRouterHandler())
-    return () => unregister()
-  }, [])
-
-  return <RichTextEditor html={html} onChange={onChange} spellchecker={spellchecker} />
-})
-
 export const DocumentHolder = observer(function DocumentHolder({ embedded }: DocumentHolderProps) {
   const [value, setValue] = useState<string>("")
   const lastBlobRef = useRef<Blob | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const spellcheck = useSpellcheck()
 
   const fileName = documentStore.fileName ?? ""
   const blob = documentStore.lastLoadedContent
@@ -158,33 +133,6 @@ export const DocumentHolder = observer(function DocumentHolder({ embedded }: Doc
         }, SAVE_DEBOUNCE_MS)
       }
 
-  // Defer to the embedder's auto-save (useEmbeddedAutoSave in App.tsx)
-  // to avoid duplicate saves and ensure the parent frame receives
-  // the document-saved bridge notification.
-  const handleRichTextChange = embedded
-    ? (html: string) => {
-        documentStore.updateRichText(html)
-        const text = html
-          .replace(/<[^>]*>/g, " ")
-          .replace(/\s+/g, " ")
-          .trim()
-        documentStore.setWordCount(text ? text.split(/\s+/).length : 0)
-      }
-    : (html: string) => {
-        documentStore.updateRichText(html)
-        const text = html
-          .replace(/<[^>]*>/g, " ")
-          .replace(/\s+/g, " ")
-          .trim()
-        documentStore.setWordCount(text ? text.split(/\s+/).length : 0)
-        if (!documentStore.wopiConnection) return
-        if (documentStore.wopiFileInfo && !documentStore.wopiFileInfo.UserCanWrite) return
-        if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
-        saveTimerRef.current = setTimeout(() => {
-          void documentStore.saveToWopi()
-        }, SAVE_DEBOUNCE_MS)
-      }
-
   if (documentStore.loadError) {
     return (
       <div className="de-document-holder de-document-holder--error">
@@ -205,29 +153,14 @@ export const DocumentHolder = observer(function DocumentHolder({ embedded }: Doc
   }
 
   if (editorType === "richtext") {
-    // Try CanvasEditor first when WASM is available
-    if (isWasmReady() && blob) {
+    // Canvas-native rendering (canvas/OOXML via WASM). CanvasEditor loads
+    // the wasm itself; no TipTap fallback — TipTap was removed (A1).
+    if (blob) {
       return <WasmEditorCanvas blob={blob} fileName={fileName} editorRef={canvasEditorRef} />
     }
-
-    // Fallback: RichTextEditor (TipTap)
     return (
-      <div
-        className="de-document-holder"
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "stretch",
-          overflow: "hidden",
-          height: "100%",
-          backgroundColor: "#e8e8e8",
-        }}
-      >
-        <RichTextEditorWithRouter
-          html={documentStore.richTextHtml ?? ""}
-          onChange={handleRichTextChange}
-          spellchecker={spellcheck.spellchecker}
-        />
+      <div className="de-document-holder de-document-holder--loading">
+        <p>Loading document...</p>
       </div>
     )
   }
