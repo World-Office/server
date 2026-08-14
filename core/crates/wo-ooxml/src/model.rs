@@ -482,6 +482,19 @@ impl DocxBody {
         Self { blocks: Vec::new() }
     }
 
+    /// Build a DocxBody from separate paragraph/table vectors. Conversion
+    /// code paths that never interleave content use this; tables follow
+    /// paragraphs.
+    pub fn from_parts(
+        paragraphs: Vec<DocxParagraph>,
+        tables: Vec<DocxTable>,
+    ) -> Self {
+        let mut blocks: Vec<DocxBlock> =
+            paragraphs.into_iter().map(DocxBlock::Paragraph).collect();
+        blocks.extend(tables.into_iter().map(DocxBlock::Table));
+        Self { blocks }
+    }
+
     /// Get all paragraphs in the body (in order)
     pub fn paragraphs(&self) -> Vec<&DocxParagraph> {
         self.blocks.iter().filter_map(|b| match b {
