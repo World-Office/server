@@ -69,15 +69,19 @@ async function loadWasm(): Promise<
 > {
   if (wasmModule) return wasmModule
   if (!wasmLoadPromise) {
-    wasmLoadPromise = import(
-      /* @vite-ignore */
-      "../../../../../../core/crates/wo-renderer-wasm/pkg/wo_renderer_wasm"
-    ) as Promise<
-      typeof import("../../../../../../core/crates/wo-renderer-wasm/pkg/wo_renderer_wasm")
-    >
-    wasmLoadPromise.then((mod) => {
+    wasmLoadPromise = (async () => {
+      const mod = await import(
+        /* @vite-ignore */
+        "../../../../../../core/crates/wo-renderer-wasm/pkg/wo_renderer_wasm"
+      )
+      // wasm-bindgen web target: the wasm binary is NOT instantiated on
+      // import — call init() (idempotent) before using any exported fn.
+      if (typeof mod.init === "function") {
+        await mod.init()
+      }
       wasmModule = mod
-    })
+      return mod
+    })()
   }
   return wasmLoadPromise
 }
