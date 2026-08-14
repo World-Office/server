@@ -903,6 +903,19 @@ pub fn create_app(config: DocServerConfig) -> Router {
         // Editor bundle routes (WOPI-first bridge) — before fallback ServeDir
         .route("/editors/{type}/", get(serve_editor_index))
         .route("/editors/{type}/{*asset_path}", get(serve_editor_assets))
+        // Direct editor paths the frontend actually uses (vite base: /word/).
+        // These must hit the cache-aware handlers, NOT the ServeDir fallback,
+        // so hashed assets get immutable caching and index.html revalidates.
+        .route("/word/", get(serve_editor_index))
+        .route("/word/assets/{*asset_path}", get(serve_editor_assets))
+        .route("/sheet/", get(serve_editor_index))
+        .route("/sheet/assets/{*asset_path}", get(serve_editor_assets))
+        .route("/slide/", get(serve_editor_index))
+        .route("/slide/assets/{*asset_path}", get(serve_editor_assets))
+        .route("/diagram/", get(serve_editor_index))
+        .route("/diagram/assets/{*asset_path}", get(serve_editor_assets))
+        .route("/pdf/", get(serve_editor_index))
+        .route("/pdf/assets/{*asset_path}", get(serve_editor_assets))
         .with_state(state);
 
     // Serve editor UI if the directory exists, otherwise fall back to landing page
