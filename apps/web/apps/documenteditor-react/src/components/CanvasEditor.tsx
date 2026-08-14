@@ -72,7 +72,10 @@ const CanvasEditorInternal = (
   const blinkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const cursorVisibleRef = useRef(true)
 
-  const format = fileName.toLowerCase().split(".").pop() ?? ""
+  // The wasm renderer accepts docx natively; odt blobs are converted to
+  // docx in the DocumentStore load flow, so map odt→docx here too.
+  const rawFormat = fileName.toLowerCase().split(".").pop() ?? ""
+  const format = rawFormat === "odt" ? "docx" : rawFormat
 
   // ── Cursor blink ──────────────────────────────────────────────────
   useEffect(() => {
