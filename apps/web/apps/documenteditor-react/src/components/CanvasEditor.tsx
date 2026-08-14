@@ -215,7 +215,8 @@ const CanvasEditorInternal = (
 
   // ── Step 3: Render pages to canvas elements ───────────────────────
   useEffect(() => {
-    if (status !== "ready" || !isWasmReady() || docHandleRef.current === null || pages.length === 0) return
+    if (status !== "ready" || !isWasmReady() || docHandleRef.current === null || pages.length === 0)
+      return
 
     const wasmApi = getWasmApi()
     if (!wasmApi) {
