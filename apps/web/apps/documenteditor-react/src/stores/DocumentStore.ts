@@ -6,7 +6,7 @@ import {
   putFile,
 } from "@world-office/wopi-client"
 import { makeAutoObservable } from "mobx"
-import { convertFromHtml, convertToHtml } from "../lib/conversion"
+import { convertFromHtml, convertToHtml, toDocxForCanvas } from "../lib/conversion"
 import type {
   DocumentDocument,
   DocumentMode,
@@ -394,6 +394,9 @@ export class DocumentStore {
         this.richTextFormat = format
         // convertToHtml returns "" for empty files (0-byte new files from OpenCloud)
         this.richTextHtml = await convertToHtml(content, format)
+        // Canvas-native: the WASM renderer accepts docx only — convert odt
+        // to docx so the canvas can render it.
+        this.lastLoadedContent = await toDocxForCanvas(content, format)
       }
       this.isDocReady = true
     } catch (err) {

@@ -104,3 +104,31 @@ export function downloadBlob(blob: Blob, fileName: string): void {
   a.click()
   URL.revokeObjectURL(url)
 }
+
+/**
+ * Convert a word-processing document (odt) to DOCX bytes so the canvas
+ * renderer can process it (the WASM renderer accepts docx natively).
+ * Returns the original blob for formats that need no conversion.
+ */
+export async function toDocxForCanvas(blob: Blob, sourceFormat: string): Promise<Blob> {
+  if (sourceFormat === "docx" || blob.size === 0) {
+    return blob
+  }
+  const data = await blobToBase64(blob)
+  const res = await fetch(CONVERSION_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ source_format: sourceFormat, target_format: "docx", data }),
+  })
+  if (!res.ok) {
+    throw new Error(`Conversion to docx failed: ${res.status} ${res.statusText}`)
+  }
+  const json: ConversionResponse = await res.json()
+  if (json.status !== "Success" || !json.data) {
+    throw new Error(json.error ?? "Conversion to docx failed")
+  }
+  const bytes = Uint8Array.from(atob(json.data), (c) => c.charCodeAt(0))
+  return new Blob([bytes], {
+    type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  })
+}

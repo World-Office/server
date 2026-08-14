@@ -481,7 +481,7 @@ const CanvasEditorInternal = (
             Failed to render document: {errorMsg}
           </p>
           <p style={{ color: "#666", fontSize: "12px", margin: "8px 0 0 0" }}>
-            The canvas renderer could not process this file. Falling back to HTML editor.
+            The canvas renderer could not process this file.
           </p>
         </div>
       </div>
