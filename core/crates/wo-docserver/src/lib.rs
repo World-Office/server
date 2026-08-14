@@ -143,7 +143,7 @@ async fn discovery_handler(
 ) -> Result<
     (
         axum::http::StatusCode,
-        [(axum::http::HeaderName, String); 1],
+        axum::http::HeaderMap,
         String,
     ),
     AppError,
@@ -153,14 +153,12 @@ async fn discovery_handler(
         .get_discovery()
         .await
         .map_err(AppError::Wopi)?;
-    Ok((
-        axum::http::StatusCode::OK,
-        [(
-            axum::http::header::CONTENT_TYPE,
-            "application/xml; charset=utf-8".into(),
-        )],
-        discovery,
-    ))
+    let mut headers = axum::http::HeaderMap::new();
+    headers.insert(
+        axum::http::header::CONTENT_TYPE,
+        axum::http::HeaderValue::from_static("application/xml; charset=utf-8"),
+    );
+    Ok((axum::http::StatusCode::OK, headers, discovery))
 }
 
 /// Resolve the public base URL for a given editor type.
@@ -476,7 +474,7 @@ async fn serve_dictionary(
 ) -> Result<
     (
         axum::http::StatusCode,
-        [(axum::http::HeaderName, String); 1],
+        axum::http::HeaderMap,
         Vec<u8>,
     ),
     axum::http::StatusCode,
@@ -531,11 +529,11 @@ async fn serve_dictionary(
         _ => "application/octet-stream",
     };
 
-    Ok((
-        axum::http::StatusCode::OK,
-        [(axum::http::header::CONTENT_TYPE, content_type.to_string())],
-        data,
-    ))
+    let mut headers = axum::http::HeaderMap::new();
+    if let Ok(v) = axum::http::HeaderValue::from_str(content_type) {
+        headers.insert(axum::http::header::CONTENT_TYPE, v);
+    }
+    Ok((axum::http::StatusCode::OK, headers, data))
 }
 
 // ── Editor bundle serving handlers ──────────────────────────────────
@@ -550,7 +548,7 @@ async fn serve_editor_index(
 ) -> Result<
     (
         axum::http::StatusCode,
-        [(axum::http::HeaderName, String); 1],
+        axum::http::HeaderMap,
         Vec<u8>,
     ),
     axum::http::StatusCode,
@@ -564,14 +562,16 @@ async fn serve_editor_index(
         .await
         .map_err(|_| axum::http::StatusCode::NOT_FOUND)?;
 
-    Ok((
-        axum::http::StatusCode::OK,
-        [(
-            axum::http::header::CONTENT_TYPE,
-            "text/html; charset=utf-8".into(),
-        )],
-        data,
-    ))
+    let mut headers = axum::http::HeaderMap::new();
+    headers.insert(
+        axum::http::header::CONTENT_TYPE,
+        axum::http::HeaderValue::from_static("text/html; charset=utf-8"),
+    );
+    headers.insert(
+        axum::http::header::CACHE_CONTROL,
+        axum::http::HeaderValue::from_static("no-cache, no-store, must-revalidate"),
+    );
+    Ok((axum::http::StatusCode::OK, headers, data))
 }
 
 /// GET /editors/{type}/{*asset_path}
@@ -584,7 +584,7 @@ async fn serve_editor_assets(
 ) -> Result<
     (
         axum::http::StatusCode,
-        [(axum::http::HeaderName, String); 1],
+        axum::http::HeaderMap,
         Vec<u8>,
     ),
     axum::http::StatusCode,
@@ -606,11 +606,28 @@ async fn serve_editor_assets(
 
     let content_type = mime_for_filename(&file_path);
 
-    Ok((
-        axum::http::StatusCode::OK,
-        [(axum::http::header::CONTENT_TYPE, content_type.to_string())],
-        data,
-    ))
+    // Cache policy: hashed build assets (index-XXXX.js, vendor-XXXX.js, *.wasm)
+    // are immutable — cache aggressively. Everything else (index.html) must
+    // revalidate so fresh builds are picked up immediately.
+    let is_hashed = asset_path
+        .rsplit('/')
+        .next()
+        .map(|f| f.contains("-") && (f.ends_with(".js") || f.ends_with(".css") || f.ends_with(".wasm")))
+        .unwrap_or(false);
+    let cache_header = if is_hashed {
+        "public, max-age=31536000, immutable".to_string()
+    } else {
+        "no-cache, no-store, must-revalidate".to_string()
+    };
+
+    let mut headers = axum::http::HeaderMap::new();
+    if let Ok(v) = axum::http::HeaderValue::from_str(content_type) {
+        headers.insert(axum::http::header::CONTENT_TYPE, v);
+    }
+    if let Ok(v) = axum::http::HeaderValue::from_str(&cache_header) {
+        headers.insert(axum::http::header::CACHE_CONTROL, v);
+    }
+    Ok((axum::http::StatusCode::OK, headers, data))
 }
 
 /// GET /wopi/files/:file_id  →  proxy CheckFileInfo to OCIS
@@ -820,7 +837,7 @@ async fn demo_info_handler() -> Json<DemoFileInfo> {
 async fn demo_document_handler() -> Result<
     (
         axum::http::StatusCode,
-        [(axum::http::HeaderName, String); 1],
+        axum::http::HeaderMap,
         Vec<u8>,
     ),
     AppError,
@@ -837,17 +854,15 @@ async fn demo_document_handler() -> Result<
             })?
         }
     };
-    Ok((
-        axum::http::StatusCode::OK,
-        [(
-            axum::http::header::CONTENT_TYPE,
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document".into(),
-        )],
-        data,
-    ))
+    let mut headers = axum::http::HeaderMap::new();
+    headers.insert(
+        axum::http::header::CONTENT_TYPE,
+        axum::http::HeaderValue::from_static(
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ),
+    );
+    Ok((axum::http::StatusCode::OK, headers, data))
 }
-
-// ── Router builder ──────────────────────────────────────────────────────
 
 fn init_metrics() {
     let metrics_addr: SocketAddr = "0.0.0.0:9091"
