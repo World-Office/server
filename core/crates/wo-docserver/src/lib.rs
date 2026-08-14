@@ -488,26 +488,38 @@ async fn serve_dictionary(
     let dict_dir =
         std::env::var("DICTIONARIES_DIR").unwrap_or_else(|_| "/app/assets/dictionaries".into());
 
-    // Parse the path as "{locale}.{ext}" — e.g. "en-US.aff" → locale="en-US", ext="aff"
-    let file_stem = std::path::Path::new(&path)
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or(&path);
-    let locale_norm = file_stem.replace('-', "_");
-
-    // Build path: dictionaries/{locale}/{locale}.{ext}
+    // Two accepted forms:
+    //   1. Flat  "en-US.aff"  → dictionaries/en_US/en_US.aff   (locale.{ext})
+    //   2. Subdir "en-US/hyph_en_US.dic" → dictionaries/en_US/hyph_en_US.dic
+    //      (frontend hyphenation path, locale dir segment with a dash)
     let ext = std::path::Path::new(&path)
         .extension()
         .and_then(|s| s.to_str())
         .unwrap_or("");
-    let file_name = if ext.is_empty() {
-        locale_norm.clone()
+    let file_path = if path.contains('/') {
+        // Subdir form: normalize ONLY the locale directory segment
+        // ("en-US/hyph_en_US.dic" → "en_US/hyph_en_US.dic").
+        let mut segs: Vec<String> = path.split('/').map(String::from).collect();
+        if let Some(first) = segs.first_mut() {
+            *first = first.replace('-', "_");
+        }
+        std::path::Path::new(&dict_dir).join(segs.join("/"))
     } else {
-        format!("{locale_norm}.{ext}")
+        // Flat form: dictionaries/{locale}/{locale}.{ext}
+        let file_stem = std::path::Path::new(&path)
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or(&path);
+        let locale_norm = file_stem.replace('-', "_");
+        let file_name = if ext.is_empty() {
+            locale_norm.clone()
+        } else {
+            format!("{locale_norm}.{ext}")
+        };
+        std::path::Path::new(&dict_dir)
+            .join(&locale_norm)
+            .join(&file_name)
     };
-    let file_path = std::path::Path::new(&dict_dir)
-        .join(&locale_norm)
-        .join(&file_name);
 
     let data = tokio::fs::read(&file_path)
         .await
