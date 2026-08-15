@@ -241,18 +241,14 @@ mod tests {
         ];
 
         // Filter for Text annotations
-        let text_annotations = AnnotationParser::filter_by_type(
-            annotations.clone(),
-            annotation_types::TEXT,
-        );
+        let text_annotations =
+            AnnotationParser::filter_by_type(annotations.clone(), annotation_types::TEXT);
         assert_eq!(text_annotations.len(), 1);
         assert_eq!(text_annotations[0].annotation_type, "Text");
 
         // Filter for Link annotations
-        let link_annotations = AnnotationParser::filter_by_type(
-            annotations.clone(),
-            annotation_types::LINK,
-        );
+        let link_annotations =
+            AnnotationParser::filter_by_type(annotations.clone(), annotation_types::LINK);
         assert_eq!(link_annotations.len(), 1);
         assert_eq!(link_annotations[0].annotation_type, "Link");
 

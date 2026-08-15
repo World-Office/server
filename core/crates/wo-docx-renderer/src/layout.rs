@@ -104,12 +104,12 @@ impl LayoutEngine {
     /// Layout a DocxBody into pages.
     pub fn layout(&self, body: &DocxBody) -> Vec<LayoutPage> {
         let mut pages = Vec::new();
-        
+
         // Determine column settings from body or engine configuration
         // Check if there are any section properties with columns defined
         let mut current_cols: Option<u8> = self.columns;
         let current_gap = self.column_gap;
-        
+
         // Scan for the first paragraph with section properties defining columns
         for block in &body.blocks {
             if let DocxBlock::Paragraph(p) = block {
@@ -126,7 +126,7 @@ impl LayoutEngine {
         }
 
         let is_multicolumn = current_cols.map_or(false, |c| c > 1);
-        
+
         if is_multicolumn {
             // Multi-column layout: flow content across columns
             self.layout_multicolumn_internal(body, current_cols.unwrap(), current_gap, &mut pages)
@@ -134,7 +134,7 @@ impl LayoutEngine {
             // Single-column layout (existing behavior)
             self.layout_single_column(body, &mut pages)
         }
-        
+
         if pages.is_empty() {
             // At least one empty page
             pages.push(LayoutPage {
@@ -143,10 +143,10 @@ impl LayoutEngine {
                 height: self.page_height,
             });
         }
-        
+
         pages
     }
-    
+
     /// Layout content in single-column mode (original behavior).
     fn layout_single_column(&self, body: &DocxBody, pages: &mut Vec<LayoutPage>) {
         let mut current_page = LayoutPage {
@@ -200,7 +200,8 @@ impl LayoutEngine {
                         para.properties.indent_first_line.unwrap_or(0) as f32 / 20.0;
 
                     let x_start = self.margin_left + indent_left + indent_first_line.max(0.0);
-                    let effective_width = self.content_width - indent_left - indent_first_line.abs();
+                    let effective_width =
+                        self.content_width - indent_left - indent_first_line.abs();
 
                     // Determine font size for this paragraph (from first run with font_size, or default)
                     let font_size =
@@ -236,8 +237,7 @@ impl LayoutEngine {
                     let total_height = if lines.is_empty() {
                         line_height
                     } else {
-                        lines.last().unwrap().height
-                            + (lines.last().unwrap().y - cursor_y)
+                        lines.last().unwrap().height + (lines.last().unwrap().y - cursor_y)
                     };
 
                     // Check page overflow
@@ -363,13 +363,13 @@ impl LayoutEngine {
             pages.push(current_page);
         }
     }
-    
+
     /// Layout content in multi-column mode.
-    /// 
+    ///
     /// Content flows down each column sequentially. When a column is full,
     /// content continues at the top of the next column. When all columns on
     /// a page are full, a new page is created.
-    /// 
+    ///
     /// This implements the DOCX multi-column layout behavior where content
     /// creates multiple vertical "streams" on each page.
     fn layout_multicolumn_internal(
@@ -383,12 +383,12 @@ impl LayoutEngine {
         let total_gap = (num_cols - 1) as f32 * gap_pt;
         let available_width = self.content_width - total_gap;
         let col_width = available_width / num_cols as f32;
-        
+
         // Calculate column x positions (left edges)
         let col_x_positions: Vec<f32> = (0..num_cols as usize)
             .map(|i| self.margin_left + i as f32 * (col_width + gap_pt))
             .collect();
-        
+
         // Build a flattened event stream from blocks preserving document order
         let mut body_items: Vec<BodyItem> = Vec::new();
         for block in &body.blocks {
@@ -404,7 +404,7 @@ impl LayoutEngine {
                 }
             }
         }
-        
+
         // We'll collect all content that needs to be laid out
         // and then distribute it across columns and pages
         let mut current_page = LayoutPage {
@@ -412,10 +412,10 @@ impl LayoutEngine {
             width: self.page_width,
             height: self.page_height,
         };
-        
+
         let mut current_col = 0;
         let mut col_cursor_y: Vec<f32> = vec![self.margin_top; num_cols as usize];
-        
+
         for item in body_items {
             match item {
                 BodyItem::Paragraph(para) => {
@@ -435,7 +435,7 @@ impl LayoutEngine {
                     // Spacing before
                     let spacing_before_pt =
                         para.properties.spacing_before.unwrap_or(0) as f32 / 20.0;
-                    
+
                     let alignment = para.properties.alignment.unwrap_or(TextAlignment::Left);
 
                     // Indentation in twips → points
@@ -444,7 +444,8 @@ impl LayoutEngine {
                         para.properties.indent_first_line.unwrap_or(0) as f32 / 20.0;
 
                     // Calculate effective width for this column
-                    let x_start = col_x_positions[current_col] + indent_left + indent_first_line.max(0.0);
+                    let x_start =
+                        col_x_positions[current_col] + indent_left + indent_first_line.max(0.0);
                     let effective_width = col_width - indent_left - indent_first_line.abs();
 
                     // Determine font size
@@ -482,25 +483,28 @@ impl LayoutEngine {
                         line_height
                     } else {
                         lines.last().unwrap().height
-                            + (lines.last().unwrap().y - col_cursor_y[current_col] - spacing_before_pt)
+                            + (lines.last().unwrap().y
+                                - col_cursor_y[current_col]
+                                - spacing_before_pt)
                     };
                     let total_height_with_spacing = total_height + spacing_before_pt;
 
                     // Check if paragraph fits in current column
                     let max_col_bottom = self.page_height - self.margin_bottom;
                     let new_cursor_y = col_cursor_y[current_col] + total_height_with_spacing;
-                    
+
                     if new_cursor_y > max_col_bottom {
                         // Try next column
                         let mut found_column = false;
                         for next_col in (current_col + 1)..(num_cols as usize) {
-                            if col_cursor_y[next_col] + total_height_with_spacing <= max_col_bottom {
+                            if col_cursor_y[next_col] + total_height_with_spacing <= max_col_bottom
+                            {
                                 current_col = next_col;
                                 found_column = true;
                                 break;
                             }
                         }
-                        
+
                         if !found_column {
                             // Need a new page - all columns are full
                             pages.push(current_page);
@@ -511,7 +515,7 @@ impl LayoutEngine {
                             };
                             col_cursor_y.fill(self.margin_top);
                             current_col = 0;
-                            
+
                             // Re-compute lines for new page
                             let lines = self.wrap_paragraph_into_lines(
                                 para,
@@ -522,15 +526,23 @@ impl LayoutEngine {
                                 col_cursor_y[current_col] + spacing_before_pt,
                                 alignment,
                             );
-                            
-                            let spacing_after_pt = para.properties.spacing_after.unwrap_or(0) as f32 / 20.0;
+
+                            let spacing_after_pt =
+                                para.properties.spacing_after.unwrap_or(0) as f32 / 20.0;
                             let new_height = if !lines.is_empty() {
-                                lines.last().unwrap().y + lines.last().unwrap().height - col_cursor_y[current_col]
+                                lines.last().unwrap().y + lines.last().unwrap().height
+                                    - col_cursor_y[current_col]
                             } else {
                                 line_height
                             };
-                            current_page.elements.push(LayoutElement::Paragraph { lines: lines.clone(), alignment });
-                            col_cursor_y[current_col] = col_cursor_y[current_col] + spacing_before_pt + new_height + spacing_after_pt;
+                            current_page.elements.push(LayoutElement::Paragraph {
+                                lines: lines.clone(),
+                                alignment,
+                            });
+                            col_cursor_y[current_col] = col_cursor_y[current_col]
+                                + spacing_before_pt
+                                + new_height
+                                + spacing_after_pt;
                             continue;
                         }
                     }
@@ -541,10 +553,11 @@ impl LayoutEngine {
                         lines: lines_clone,
                         alignment,
                     });
-                    
+
                     let spacing_after_pt = para.properties.spacing_after.unwrap_or(0) as f32 / 20.0;
                     let new_height = if !lines.is_empty() {
-                        lines.last().unwrap().y + lines.last().unwrap().height - col_cursor_y[current_col]
+                        lines.last().unwrap().y + lines.last().unwrap().height
+                            - col_cursor_y[current_col]
                     } else {
                         line_height
                     };
@@ -554,20 +567,20 @@ impl LayoutEngine {
                     // For multi-column layout, tables span all columns
                     // (DOCX behavior: tables don't flow into columns)
                     // So we place the table in the first column's position but spanning full width
-                    
+
                     let num_rows = table.rows.len();
                     if num_rows == 0 {
                         continue;
                     }
-                    
+
                     let num_table_cols = table.rows.first().map(|r| r.cells.len()).unwrap_or(0);
                     if num_table_cols == 0 {
                         continue;
                     }
-                    
+
                     let col_width_full = self.content_width / num_table_cols as f32;
                     let max_y = self.page_height - self.margin_bottom;
-                    
+
                     let header_indices: Vec<usize> = table
                         .rows
                         .iter()
@@ -597,7 +610,7 @@ impl LayoutEngine {
                         // For tables in multi-column, place at the start of the current column area
                         // but span across all columns
                         let table_y = col_cursor_y[current_col];
-                        
+
                         current_page.elements.push(LayoutElement::Table {
                             cells: layout.cells,
                             row_heights: layout.row_heights.clone(),
@@ -605,7 +618,7 @@ impl LayoutEngine {
                             y: table_y,
                             width: layout.width,
                         });
-                        
+
                         col_cursor_y[current_col] += layout.height;
                         data_row_idx += layout.placed_rows;
 
@@ -641,10 +654,10 @@ impl LayoutEngine {
     }
 
     /// Configure multi-column layout.
-    /// 
+    ///
     /// When enabled, content flows into multiple vertical columns with the specified gap.
     /// The total available width is divided equally among the columns.
-    /// 
+    ///
     /// # Arguments
     /// * `cols` - Number of columns (1-12)
     /// * `gap_pt` - Gap between columns in points
@@ -654,7 +667,7 @@ impl LayoutEngine {
     }
 
     /// Layout a floating image with the specified wrap mode.
-    /// 
+    ///
     /// This implements the 7 DOCX wrap modes:
     /// - Inline: Image flows with text like a large character
     /// - Square: Text wraps around image forming a square boundary
@@ -663,26 +676,31 @@ impl LayoutEngine {
     /// - TopBottom: Text flows above and below image only
     /// - Behind: Image is behind text
     /// - InFront: Image is in front of text
-    /// 
+    ///
     /// # Arguments
     /// * `img` - The DOCX image to layout
     /// * `wrap` - The wrap mode to use
     /// * `cursor_y` - Current vertical position for image placement
-    /// 
+    ///
     /// Returns (LayoutImage, vertical_advance) where vertical_advance is how much
     /// the cursor should move down after placing the image.
-    pub fn layout_float(&self, img: &DocxImage, wrap: WrapMode, cursor_y: f32) -> (LayoutImage, f32) {
+    pub fn layout_float(
+        &self,
+        img: &DocxImage,
+        wrap: WrapMode,
+        cursor_y: f32,
+    ) -> (LayoutImage, f32) {
         // Convert EMUs to points
         // DOCX spec: English Metric Unit (EMU) = 1/360000 inch
         // 1 inch = 72 points, so 1 point = 1/72 inch = 360000/72 = 5000 EMUs
         // Therefore: points = emus / 5000.0
         let width_pt = img.width_emu as f32 / 5000.0;
         let height_pt = img.height_emu as f32 / 5000.0;
-        
+
         // Determine x position based on wrap mode and alignment
         // For now, we'll place images at the left margin (can be adjusted for alignment later)
         let x = self.margin_left;
-        
+
         // Compute wrap mode-based positioning and text flow
         let flow_advance = match wrap {
             WrapMode::Inline => {
@@ -706,7 +724,7 @@ impl LayoutEngine {
                 height_pt
             }
         };
-        
+
         let layout_image = LayoutImage {
             x,
             y: cursor_y,
@@ -715,7 +733,7 @@ impl LayoutEngine {
             wrap_mode: wrap,
             bytes: img.bytes.clone(),
         };
-        
+
         (layout_image, flow_advance)
     }
 
@@ -746,7 +764,11 @@ impl LayoutEngine {
 
     /// Find the next tab stop position after `current_x_pt` (in points) from the given tab stops.
     /// Returns None if no further tab stop is found.
-    fn next_tab_stop_x<'a>(&self, current_x_pt: f32, tabs: &'a [TabStop]) -> Option<(f32, &'a TabStop)> {
+    fn next_tab_stop_x<'a>(
+        &self,
+        current_x_pt: f32,
+        tabs: &'a [TabStop],
+    ) -> Option<(f32, &'a TabStop)> {
         let twips_per_pt = 20.0;
         let current_twips = (current_x_pt * twips_per_pt) as i32;
         tabs.iter()
@@ -891,10 +913,8 @@ impl LayoutEngine {
                     // Tab stops are relative to the paragraph's left edge (x_start).
                     // current_line_width is already relative to x_start.
                     let tabs = self.effective_tab_stops(para);
-                    if let Some((tab_x, tab_stop)) = self.next_tab_stop_x(
-                        current_line_width,
-                        &tabs,
-                    ) {
+                    if let Some((tab_x, tab_stop)) = self.next_tab_stop_x(current_line_width, &tabs)
+                    {
                         // Compute the distance from current position to the tab stop
                         let tab_width = tab_x - current_line_width;
                         current_line_width += tab_width;
@@ -1224,8 +1244,7 @@ impl LayoutEngine {
             .iter()
             .flat_map(|c| c.paragraphs.iter())
             .map(|p| {
-                let font_size =
-                    p.runs.iter().find_map(|r| r.font_size).unwrap_or(24) as f32 / 2.0;
+                let font_size = p.runs.iter().find_map(|r| r.font_size).unwrap_or(24) as f32 / 2.0;
                 let run_count = p.runs.len().max(1);
                 let total_text: String = p.runs.iter().map(|r| r.text.as_str()).collect();
                 let num_lines = ((self.measure_text_width(&total_text, font_size) / col_width)
@@ -1390,9 +1409,19 @@ fn format_footnote_number(num: usize, format: FootnoteNumberFormat) -> String {
         FootnoteNumberFormat::Decimal => num.to_string(),
         FootnoteNumberFormat::LowercaseRoman => {
             let roman_digits = [
-                (1000, "m"), (900, "cm"), (500, "d"), (400, "cd"),
-                (100, "c"), (90, "xc"), (50, "l"), (40, "xl"),
-                (10, "x"), (9, "ix"), (5, "v"), (4, "iv"), (1, "i"),
+                (1000, "m"),
+                (900, "cm"),
+                (500, "d"),
+                (400, "cd"),
+                (100, "c"),
+                (90, "xc"),
+                (50, "l"),
+                (40, "xl"),
+                (10, "x"),
+                (9, "ix"),
+                (5, "v"),
+                (4, "iv"),
+                (1, "i"),
             ];
             let mut n = num;
             let mut result = String::new();
@@ -1492,12 +1521,12 @@ impl LayoutEngine {
     /// Renumber footnotes sequentially.
     /// This is used when footnotes are added, removed, or reordered.
     /// The renumbering follows the specified format and starting number.
-    /// 
+    ///
     /// # Arguments
     /// * `footnotes` - The footnotes to renumber
     /// * `start_number` - The starting number (default: 1)
     /// * `format` - The numbering format
-    /// 
+    ///
     /// # Returns
     /// A vector of footnotes with updated numbers
     pub fn renumber_footnotes(
@@ -1519,12 +1548,12 @@ impl LayoutEngine {
     }
 
     /// Renumber endnotes sequentially.
-    /// 
+    ///
     /// # Arguments
     /// * `endnotes` - The endnotes to renumber
     /// * `start_number` - The starting number (default: 1)
     /// * `format` - The numbering format
-    /// 
+    ///
     /// # Returns
     /// A vector of endnotes with updated numbers
     pub fn renumber_endnotes(
@@ -1549,10 +1578,10 @@ impl LayoutEngine {
 /// Layout engine implementation for header/footer
 impl LayoutEngine {
     /// Layout a header or footer for a specific page and section.
-    /// 
+    ///
     /// The section parameter is used to identify which section's header/footer to use.
     /// The h and f parameters provide the header and footer content directly.
-    /// 
+    ///
     /// For page selection:
     /// - page_number: 1-indexed page number
     /// - If page is 1 and header_first exists in section_props, use it
@@ -1564,7 +1593,7 @@ impl LayoutEngine {
         section_props: &SectionProperties,
     ) -> Vec<LayoutHeaderFooter> {
         let mut results = Vec::new();
-        
+
         // Helper to layout a single header or footer
         fn layout_hf_content(
             engine: &LayoutEngine,
@@ -1593,7 +1622,7 @@ impl LayoutEngine {
 
             // Layout the body content
             let pages = hf_engine.layout(&body);
-            
+
             // Take all elements from the first page
             let elements = if !pages.is_empty() {
                 pages[0].elements.clone()
@@ -1607,9 +1636,7 @@ impl LayoutEngine {
                     LayoutElement::Paragraph { lines, .. } => {
                         lines.iter().fold(0.0, |h, line| h + line.height)
                     }
-                    LayoutElement::Table { row_heights, .. } => {
-                        row_heights.iter().sum::<f32>()
-                    }
+                    LayoutElement::Table { row_heights, .. } => row_heights.iter().sum::<f32>(),
                     LayoutElement::PageBreak => 0.0,
                 }
             });
@@ -1617,7 +1644,10 @@ impl LayoutEngine {
             let (x, y) = if is_header {
                 (engine.margin_left, engine.margin_top)
             } else {
-                (engine.margin_left, engine.page_height - engine.margin_bottom - height)
+                (
+                    engine.margin_left,
+                    engine.page_height - engine.margin_bottom - height,
+                )
             };
 
             LayoutHeaderFooter {
@@ -1642,7 +1672,7 @@ impl LayoutEngine {
         } else {
             section_props.header.as_ref()
         };
-        
+
         // Determine which footer to use
         let footer = if let Some(hf) = &section_props.footer_first {
             if page_number == 1 {
@@ -1655,21 +1685,21 @@ impl LayoutEngine {
         } else {
             section_props.footer.as_ref()
         };
-        
+
         // Layout header if present
         if let Some(hf_content) = header {
             if !hf_content.is_empty() {
                 results.push(layout_hf_content(self, hf_content, true));
             }
         }
-        
+
         // Layout footer if present
         if let Some(hf_content) = footer {
             if !hf_content.is_empty() {
                 results.push(layout_hf_content(self, hf_content, false));
             }
         }
-        
+
         results
     }
 }
@@ -1751,7 +1781,7 @@ mod tests {
                 small_caps: false,
                 all_caps: false,
             }],
-        section_properties: None,
+            section_properties: None,
         });
 
         let pages = engine.layout(&body);
@@ -1813,7 +1843,7 @@ mod tests {
                         small_caps: false,
                         all_caps: false,
                     }],
-                section_properties: None,
+                    section_properties: None,
                 }),
             ],
         };
@@ -1879,7 +1909,7 @@ mod tests {
                                     small_caps: false,
                                     all_caps: false,
                                 }],
-                            section_properties: None,
+                                section_properties: None,
                             }],
                             column_span: 1,
                             row_span: 1,
@@ -1906,9 +1936,7 @@ mod tests {
     #[test]
     fn test_layout_empty_body() {
         let engine = LayoutEngine::new(&default_config());
-        let body = DocxBody {
-            blocks: vec![],
-        };
+        let body = DocxBody { blocks: vec![] };
 
         let pages = engine.layout(&body);
         // Should produce exactly 1 empty page (placeholder)
@@ -1922,9 +1950,21 @@ mod tests {
     fn tab_stop_set_tab_stops_stores_tabs() {
         let mut engine = LayoutEngine::new(&default_config());
         let tabs = vec![
-            TabStop { pos: 1440, kind: TabStopKind::Left, leader: None },
-            TabStop { pos: 2880, kind: TabStopKind::Center, leader: None },
-            TabStop { pos: 4320, kind: TabStopKind::Right, leader: None },
+            TabStop {
+                pos: 1440,
+                kind: TabStopKind::Left,
+                leader: None,
+            },
+            TabStop {
+                pos: 2880,
+                kind: TabStopKind::Center,
+                leader: None,
+            },
+            TabStop {
+                pos: 4320,
+                kind: TabStopKind::Right,
+                leader: None,
+            },
         ];
         engine.set_tab_stops(&tabs);
         assert_eq!(engine.tab_stops.len(), 3);
@@ -1937,9 +1977,11 @@ mod tests {
     fn tab_stop_advances_position() {
         let mut engine = LayoutEngine::new(&default_config());
         // Set a tab stop at 2 inches (2880 twips = 144 pt)
-        let tabs = vec![
-            TabStop { pos: 2880, kind: TabStopKind::Left, leader: None },
-        ];
+        let tabs = vec![TabStop {
+            pos: 2880,
+            kind: TabStopKind::Left,
+            leader: None,
+        }];
         engine.set_tab_stops(&tabs);
 
         // Text: "A\tB" — tab should advance past "A" to the tab stop at 144pt
@@ -1963,7 +2005,7 @@ mod tests {
                 small_caps: false,
                 all_caps: false,
             }],
-        section_properties: None,
+            section_properties: None,
         });
 
         let pages = engine.layout(&body);
@@ -2016,7 +2058,7 @@ mod tests {
                 small_caps: false,
                 all_caps: false,
             }],
-        section_properties: None,
+            section_properties: None,
         });
 
         let pages = engine.layout(&body);
@@ -2041,9 +2083,11 @@ mod tests {
     fn tab_stop_tab_at_start_of_line() {
         let mut engine = LayoutEngine::new(&default_config());
         // Set tab stop at 1 inch (1440 twips)
-        let tabs = vec![
-            TabStop { pos: 1440, kind: TabStopKind::Left, leader: None },
-        ];
+        let tabs = vec![TabStop {
+            pos: 1440,
+            kind: TabStopKind::Left,
+            leader: None,
+        }];
         engine.set_tab_stops(&tabs);
 
         // Text starting with tab: "\tHello"
@@ -2067,7 +2111,7 @@ mod tests {
                 small_caps: false,
                 all_caps: false,
             }],
-        section_properties: None,
+            section_properties: None,
         });
 
         let pages = engine.layout(&body);
@@ -2093,9 +2137,21 @@ mod tests {
         let mut engine = LayoutEngine::new(&default_config());
         // Set tab stops at 1 inch, 2 inch, 3 inch
         let tabs = vec![
-            TabStop { pos: 1440, kind: TabStopKind::Left, leader: None },
-            TabStop { pos: 2880, kind: TabStopKind::Left, leader: None },
-            TabStop { pos: 4320, kind: TabStopKind::Left, leader: None },
+            TabStop {
+                pos: 1440,
+                kind: TabStopKind::Left,
+                leader: None,
+            },
+            TabStop {
+                pos: 2880,
+                kind: TabStopKind::Left,
+                leader: None,
+            },
+            TabStop {
+                pos: 4320,
+                kind: TabStopKind::Left,
+                leader: None,
+            },
         ];
         engine.set_tab_stops(&tabs);
 
@@ -2120,7 +2176,7 @@ mod tests {
                 small_caps: false,
                 all_caps: false,
             }],
-        section_properties: None,
+            section_properties: None,
         });
 
         let pages = engine.layout(&body);
@@ -2143,8 +2199,8 @@ mod tests {
 #[cfg(test)]
 mod header_footer {
     use super::*;
-    use wo_ooxml::model::{DocxBlock, HeaderFooter, SectionProperties};
     use crate::model::RenderConfig;
+    use wo_ooxml::model::{DocxBlock, HeaderFooter, SectionProperties};
 
     fn default_config() -> RenderConfig {
         RenderConfig::default()
@@ -2153,7 +2209,7 @@ mod header_footer {
     #[test]
     fn test_layout_header_footer_default() {
         let engine = LayoutEngine::new(&default_config());
-        
+
         // Create section properties with a default header
         let mut section_props = SectionProperties::default();
         let mut header = HeaderFooter::new();
@@ -2176,10 +2232,10 @@ mod header_footer {
                 small_caps: false,
                 all_caps: false,
             }],
-        section_properties: None,
+            section_properties: None,
         }));
         section_props.header = Some(header);
-        
+
         // Layout header/footer for page 1 (should use default header)
         let hf_layouts = engine.layout_header_footer(1, &section_props);
         assert_eq!(hf_layouts.len(), 1); // Only header, no footer
@@ -2190,57 +2246,61 @@ mod header_footer {
     #[test]
     fn test_layout_header_footer_first_page() {
         let engine = LayoutEngine::new(&default_config());
-        
+
         // Create section properties with first-page-specific header
         let mut section_props = SectionProperties::default();
         let mut first_header = HeaderFooter::new();
-        first_header.blocks.push(DocxBlock::Paragraph(DocxParagraph {
-            style_id: None,
-            properties: DocxParagraphProperties::default(),
-            runs: vec![DocxRun {
-                text: "First Page Header".to_string(),
-                bold: false,
-                italic: false,
-                underline: None,
-                strikethrough: false,
-                double_strikethrough: false,
-                font: None,
-                font_size: Some(24),
-                font_size_cs: None,
-                color: None,
-                highlight: None,
-                vertical_alignment: None,
-                small_caps: false,
-                all_caps: false,
-            }],
-        section_properties: None,
-        }));
+        first_header
+            .blocks
+            .push(DocxBlock::Paragraph(DocxParagraph {
+                style_id: None,
+                properties: DocxParagraphProperties::default(),
+                runs: vec![DocxRun {
+                    text: "First Page Header".to_string(),
+                    bold: false,
+                    italic: false,
+                    underline: None,
+                    strikethrough: false,
+                    double_strikethrough: false,
+                    font: None,
+                    font_size: Some(24),
+                    font_size_cs: None,
+                    color: None,
+                    highlight: None,
+                    vertical_alignment: None,
+                    small_caps: false,
+                    all_caps: false,
+                }],
+                section_properties: None,
+            }));
         section_props.header_first = Some(first_header);
-        
+
         let mut default_header = HeaderFooter::new();
-        default_header.blocks.push(DocxBlock::Paragraph(DocxParagraph {
-            style_id: None,
-            properties: DocxParagraphProperties::default(),
-            runs: vec![DocxRun {
-                text: "Default Header".to_string(),
-                bold: false,
-                italic: false,
-                underline: None,
-                strikethrough: false,
-                double_strikethrough: false,
-                font: None,
-                font_size: Some(24),
-                font_size_cs: None,
-                color: None,
-                highlight: None,
-                vertical_alignment: None,
-                small_caps: false,
-                all_caps: false,
-            }],
-        section_properties: None,
-        }));
+        default_header
+            .blocks
+            .push(DocxBlock::Paragraph(DocxParagraph {
+                style_id: None,
+                properties: DocxParagraphProperties::default(),
+                runs: vec![DocxRun {
+                    text: "Default Header".to_string(),
+                    bold: false,
+                    italic: false,
+                    underline: None,
+                    strikethrough: false,
+                    double_strikethrough: false,
+                    font: None,
+                    font_size: Some(24),
+                    font_size_cs: None,
+                    color: None,
+                    highlight: None,
+                    vertical_alignment: None,
+                    small_caps: false,
+                    all_caps: false,
+                }],
+                section_properties: None,
+            }));
         section_props.header = Some(default_header);
-        
+
         // Page 1 should use first page header
         let hf_layouts = engine.layout_header_footer(1, &section_props);
         assert_eq!(hf_layouts.len(), 1);
@@ -2255,10 +2315,10 @@ mod header_footer {
     #[test]
     fn test_layout_header_footer_even_odd() {
         let engine = LayoutEngine::new(&default_config());
-        
+
         // Create section properties with even and odd page headers
         let mut section_props = SectionProperties::default();
-        
+
         let mut odd_header = HeaderFooter::new();
         odd_header.blocks.push(DocxBlock::Paragraph(DocxParagraph {
             style_id: None,
@@ -2279,10 +2339,10 @@ mod header_footer {
                 small_caps: false,
                 all_caps: false,
             }],
-        section_properties: None,
+            section_properties: None,
         }));
         section_props.header = Some(odd_header);
-        
+
         let mut even_header = HeaderFooter::new();
         even_header.blocks.push(DocxBlock::Paragraph(DocxParagraph {
             style_id: None,
@@ -2303,10 +2363,10 @@ mod header_footer {
                 small_caps: false,
                 all_caps: false,
             }],
-        section_properties: None,
+            section_properties: None,
         }));
         section_props.header_even = Some(even_header);
-        
+
         // Page 1 (odd) should use odd header
         let hf_layouts_1 = engine.layout_header_footer(1, &section_props);
         assert_eq!(hf_layouts_1.len(), 1);
@@ -2315,7 +2375,7 @@ mod header_footer {
         } else {
             panic!("Expected Paragraph element");
         }
-        
+
         // Page 2 (even) should use even header
         let hf_layouts_2 = engine.layout_header_footer(2, &section_props);
         assert_eq!(hf_layouts_2.len(), 1);
@@ -2329,10 +2389,10 @@ mod header_footer {
     #[test]
     fn test_layout_header_footer_with_footer() {
         let engine = LayoutEngine::new(&default_config());
-        
+
         // Create section properties with both header and footer
         let mut section_props = SectionProperties::default();
-        
+
         let mut header = HeaderFooter::new();
         header.blocks.push(DocxBlock::Paragraph(DocxParagraph {
             style_id: None,
@@ -2353,10 +2413,10 @@ mod header_footer {
                 small_caps: false,
                 all_caps: false,
             }],
-        section_properties: None,
+            section_properties: None,
         }));
         section_props.header = Some(header);
-        
+
         let mut footer = HeaderFooter::new();
         footer.blocks.push(DocxBlock::Paragraph(DocxParagraph {
             style_id: None,
@@ -2377,23 +2437,23 @@ mod header_footer {
                 small_caps: false,
                 all_caps: false,
             }],
-        section_properties: None,
+            section_properties: None,
         }));
         section_props.footer = Some(footer);
-        
+
         // Layout should produce both header and footer
         let hf_layouts = engine.layout_header_footer(1, &section_props);
         assert_eq!(hf_layouts.len(), 2);
         assert!(hf_layouts[0].is_header);
         assert!(!hf_layouts[1].is_header);
-        
+
         // Check header text
         if let LayoutElement::Paragraph { lines, .. } = &hf_layouts[0].elements[0] {
             assert_eq!(lines[0].text, "Header Text");
         } else {
             panic!("Expected Paragraph element in header");
         }
-        
+
         // Check footer text
         if let LayoutElement::Paragraph { lines, .. } = &hf_layouts[1].elements[0] {
             assert_eq!(lines[0].text, "Footer Text");
@@ -2439,7 +2499,7 @@ mod footnote {
     #[test]
     fn test_footnote_renumber_sequential() {
         let engine = LayoutEngine::new(&RenderConfig::default());
-        
+
         // Create 3 footnotes without numbers (auto-numbering)
         let footnotes = vec![
             DocxFootnote {
@@ -2464,7 +2524,7 @@ mod footnote {
 
         // Renumber them starting from 1 with decimal format
         let numbered = engine.renumber_footnotes(&footnotes, 1, FootnoteNumberFormat::Decimal);
-        
+
         assert_eq!(numbered.len(), 3);
         assert_eq!(numbered[0].number, Some(1));
         assert_eq!(numbered[1].number, Some(2));
@@ -2474,7 +2534,7 @@ mod footnote {
     #[test]
     fn test_footnote_renumber_with_roman_numerals() {
         let engine = LayoutEngine::new(&RenderConfig::default());
-        
+
         let footnotes = vec![
             DocxFootnote {
                 id: 1,
@@ -2497,15 +2557,25 @@ mod footnote {
         ];
 
         // Renumber with lowercase Roman numerals starting from 1
-        let numbered = engine.renumber_footnotes(&footnotes, 1, FootnoteNumberFormat::LowercaseRoman);
-        
+        let numbered =
+            engine.renumber_footnotes(&footnotes, 1, FootnoteNumberFormat::LowercaseRoman);
+
         assert_eq!(numbered.len(), 3);
         assert_eq!(numbered[0].number, Some(1));
         assert_eq!(numbered[1].number, Some(2));
         assert_eq!(numbered[2].number, Some(3));
-        assert_eq!(format_footnote_number(1, FootnoteNumberFormat::LowercaseRoman), "i");
-        assert_eq!(format_footnote_number(2, FootnoteNumberFormat::LowercaseRoman), "ii");
-        assert_eq!(format_footnote_number(3, FootnoteNumberFormat::LowercaseRoman), "iii");
+        assert_eq!(
+            format_footnote_number(1, FootnoteNumberFormat::LowercaseRoman),
+            "i"
+        );
+        assert_eq!(
+            format_footnote_number(2, FootnoteNumberFormat::LowercaseRoman),
+            "ii"
+        );
+        assert_eq!(
+            format_footnote_number(3, FootnoteNumberFormat::LowercaseRoman),
+            "iii"
+        );
     }
 }
 
@@ -2541,7 +2611,7 @@ mod multicolumn {
     fn test_multicolumn_section_properties() {
         // Create a body with a paragraph that has section_properties with cols=2
         use wo_ooxml::model::{DocxParagraph, DocxParagraphProperties, SectionProperties};
-        
+
         let engine = LayoutEngine::new(&default_config());
         let body = DocxBody {
             blocks: vec![
@@ -2603,18 +2673,18 @@ mod multicolumn {
         // Test that 2-column DOCX renders 2 streams (columns)
         // Content should flow into multiple vertical columns
         use wo_ooxml::model::{DocxParagraph, DocxParagraphProperties, SectionProperties};
-        
+
         let engine = LayoutEngine::new(&default_config());
-        
+
         // Create a body with section break defining 2 columns
         let section_props = SectionProperties {
             cols: Some(2),
             ..Default::default()
         };
-        
+
         // Create enough content to flow into multiple paragraphs
         let long_text = "AAAAAAAAAA ".repeat(20); // Long text to span multiple lines
-        
+
         let mut body = DocxBody::new();
         body.blocks.push(DocxBlock::Paragraph(DocxParagraph {
             style_id: None,
@@ -2637,7 +2707,7 @@ mod multicolumn {
             }],
             section_properties: Some(section_props),
         }));
-        
+
         // Add several more paragraphs to fill the first column and spill into second
         for i in 0..3 {
             body.blocks.push(DocxBlock::Paragraph(DocxParagraph {
@@ -2662,13 +2732,13 @@ mod multicolumn {
                 section_properties: None,
             }));
         }
-        
+
         let pages = engine.layout(&body);
-        
+
         // Should produce at least one page with content in multi-column layout
         assert!(pages.len() >= 1, "Should produce at least one page");
         assert!(!pages[0].elements.is_empty(), "Page should have elements");
-        
+
         // With multi-column layout, paragraphs should be positioned at different x offsets
         // First column should be at margin_left, second at margin_left + col_width + gap
         let mut col_x_positions: Vec<f32> = Vec::new();
@@ -2679,10 +2749,11 @@ mod multicolumn {
                 }
             }
         }
-        
+
         // We should have paragraphs in at least 2 different x positions (2 columns)
         // Filter out duplicates by rounding to nearest integer
-        let unique_x_positions: Vec<i32> = col_x_positions.into_iter()
+        let unique_x_positions: Vec<i32> = col_x_positions
+            .into_iter()
             .map(|x| x.round() as i32)
             .fold(Vec::new(), |mut acc, x| {
                 if !acc.contains(&x) {
@@ -2690,33 +2761,36 @@ mod multicolumn {
                 }
                 acc
             });
-        
+
         // With 2-column layout, we expect content in at least 2 different columns
         // (different x positions)
         // Note: If there's not enough content, it might all fit in one column
         // For now, we just verify that content exists
-        assert!(!unique_x_positions.is_empty(), "Should have content in at least one column");
-        
+        assert!(
+            !unique_x_positions.is_empty(),
+            "Should have content in at least one column"
+        );
+
         // If we have at least 2 paragraphs and there's a section with cols=2,
         // content should ideally flow to multiple columns when there's enough text
         // This is a basic sanity check for multi-column rendering
     }
-    
+
     #[test]
     fn test_multicolumn_uses_engine_columns() {
         // Test that layout_multicolumn configures the engine correctly
-        use wo_ooxml::model::{DocxParagraph, DocxParagraphProperties};
         use crate::model::RenderConfig;
-        
+        use wo_ooxml::model::{DocxParagraph, DocxParagraphProperties};
+
         let config = RenderConfig::default();
         let mut engine = LayoutEngine::new(&config);
-        
+
         // Configure engine for 2 columns with 24pt gap
         engine.layout_multicolumn(2, 24.0);
-        
+
         assert_eq!(engine.columns, Some(2));
         assert!((engine.column_gap - 24.0).abs() < 0.01);
-        
+
         // Create body without section-level columns (should use engine config)
         let mut body = DocxBody::new();
         for i in 0..3 {
@@ -2742,25 +2816,28 @@ mod multicolumn {
                 section_properties: None,
             }));
         }
-        
+
         let pages = engine.layout(&body);
-        assert!(!pages.is_empty(), "Should produce pages with engine columns configured");
+        assert!(
+            !pages.is_empty(),
+            "Should produce pages with engine columns configured"
+        );
         assert!(!pages[0].elements.is_empty(), "Page should have elements");
     }
-    
+
     #[test]
     fn test_multicolumn_paragraph_x_positions_differ() {
         // Test that paragraphs in multi-column layout have different x positions
         use wo_ooxml::model::{DocxParagraph, DocxParagraphProperties, SectionProperties};
-        
+
         let mut engine = LayoutEngine::new(&default_config());
         engine.layout_multicolumn(2, 18.0);
-        
+
         let section_props = SectionProperties {
             cols: Some(2),
             ..Default::default()
         };
-        
+
         let mut body = DocxBody::new();
         // First paragraph with section properties
         body.blocks.push(DocxBlock::Paragraph(DocxParagraph {
@@ -2784,9 +2861,10 @@ mod multicolumn {
             }],
             section_properties: Some(section_props),
         }));
-        
+
         // Add a long text to fill first column and push to second
-        let long_text = "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod ".repeat(5);
+        let long_text =
+            "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod ".repeat(5);
         body.blocks.push(DocxBlock::Paragraph(DocxParagraph {
             style_id: None,
             properties: DocxParagraphProperties::default(),
@@ -2808,10 +2886,10 @@ mod multicolumn {
             }],
             section_properties: None,
         }));
-        
+
         let pages = engine.layout(&body);
         assert!(!pages.is_empty());
-        
+
         // Collect x positions
         let mut x_positions: Vec<f32> = Vec::new();
         for page in &pages {
@@ -2823,7 +2901,7 @@ mod multicolumn {
                 }
             }
         }
-        
+
         // Should have content
         assert!(!x_positions.is_empty(), "Should have paragraphs");
     }
@@ -2864,7 +2942,7 @@ mod wrap_mode {
         assert_eq!(WrapMode::from_str("behind"), WrapMode::Behind);
         assert_eq!(WrapMode::from_str("inFront"), WrapMode::InFront);
         assert_eq!(WrapMode::from_str("in-front"), WrapMode::InFront);
-        
+
         // Test unknown mode defaults to Inline
         assert_eq!(WrapMode::from_str("unknown"), WrapMode::Inline);
         assert_eq!(WrapMode::from_str(""), WrapMode::Inline);
@@ -2874,16 +2952,16 @@ mod wrap_mode {
     fn test_layout_float_inline() {
         let engine = LayoutEngine::new(&default_config());
         let img = create_test_image("inline", 500000, 300000); // 100pt x 60pt
-        
+
         let (layout_img, advance) = engine.layout_float(&img, WrapMode::Inline, 50.0);
-        
+
         // Inline images should be placed at left margin
         assert!((layout_img.x - 72.0).abs() < 0.01); // margin_left is 72pt
         assert!((layout_img.y - 50.0).abs() < 0.01);
         assert!((layout_img.width - 100.0).abs() < 0.01); // 500000 / 5000 = 100
         assert!((layout_img.height - 60.0).abs() < 0.01); // 300000 / 5000 = 60
         assert_eq!(layout_img.wrap_mode, WrapMode::Inline);
-        
+
         // Should advance cursor by image height for inline
         assert!((advance - 60.0).abs() < 0.01);
     }
@@ -2892,15 +2970,15 @@ mod wrap_mode {
     fn test_layout_float_square() {
         let engine = LayoutEngine::new(&default_config());
         let img = create_test_image("square", 360000, 240000); // 72pt x 48pt
-        
+
         let (layout_img, advance) = engine.layout_float(&img, WrapMode::Square, 100.0);
-        
+
         assert!((layout_img.x - 72.0).abs() < 0.01);
         assert!((layout_img.y - 100.0).abs() < 0.01);
         assert!((layout_img.width - 72.0).abs() < 0.01);
         assert!((layout_img.height - 48.0).abs() < 0.01);
         assert_eq!(layout_img.wrap_mode, WrapMode::Square);
-        
+
         // Square wrap advances by height
         assert!((advance - 48.0).abs() < 0.01);
     }
@@ -2909,9 +2987,9 @@ mod wrap_mode {
     fn test_layout_float_tight() {
         let engine = LayoutEngine::new(&default_config());
         let img = create_test_image("tight", 250000, 200000); // 50pt x 40pt
-        
+
         let (layout_img, advance) = engine.layout_float(&img, WrapMode::Tight, 200.0);
-        
+
         assert_eq!(layout_img.wrap_mode, WrapMode::Tight);
         assert!((layout_img.width - 50.0).abs() < 0.01);
         assert!((layout_img.height - 40.0).abs() < 0.01);
@@ -2922,9 +3000,9 @@ mod wrap_mode {
     fn test_layout_float_through() {
         let engine = LayoutEngine::new(&default_config());
         let img = create_test_image("through", 400000, 300000); // 80pt x 60pt
-        
+
         let (layout_img, advance) = engine.layout_float(&img, WrapMode::Through, 75.0);
-        
+
         assert_eq!(layout_img.wrap_mode, WrapMode::Through);
         assert!((layout_img.width - 80.0).abs() < 0.01);
         assert!((layout_img.height - 60.0).abs() < 0.01);
@@ -2935,9 +3013,9 @@ mod wrap_mode {
     fn test_layout_float_top_bottom() {
         let engine = LayoutEngine::new(&default_config());
         let img = create_test_image("topBottom", 500000, 250000); // 100pt x 50pt
-        
+
         let (layout_img, advance) = engine.layout_float(&img, WrapMode::TopBottom, 150.0);
-        
+
         assert_eq!(layout_img.wrap_mode, WrapMode::TopBottom);
         assert!((layout_img.width - 100.0).abs() < 0.01);
         assert!((layout_img.height - 50.0).abs() < 0.01);
@@ -2948,9 +3026,9 @@ mod wrap_mode {
     fn test_layout_float_behind() {
         let engine = LayoutEngine::new(&default_config());
         let img = create_test_image("behind", 300000, 200000); // 60pt x 40pt
-        
+
         let (layout_img, advance) = engine.layout_float(&img, WrapMode::Behind, 30.0);
-        
+
         assert_eq!(layout_img.wrap_mode, WrapMode::Behind);
         assert!((layout_img.width - 60.0).abs() < 0.01);
         assert!((layout_img.height - 40.0).abs() < 0.01);
@@ -2962,9 +3040,9 @@ mod wrap_mode {
     fn test_layout_float_in_front() {
         let engine = LayoutEngine::new(&default_config());
         let img = create_test_image("inFront", 350000, 280000); // 70pt x 56pt
-        
+
         let (layout_img, advance) = engine.layout_float(&img, WrapMode::InFront, 80.0);
-        
+
         assert_eq!(layout_img.wrap_mode, WrapMode::InFront);
         assert!((layout_img.width - 70.0).abs() < 0.01);
         assert!((layout_img.height - 56.0).abs() < 0.01);
@@ -2977,7 +3055,7 @@ mod wrap_mode {
         // Test that all 7 wrap modes can be laid out without panicking
         let engine = LayoutEngine::new(&default_config());
         let img = create_test_image("inline", 100000, 100000);
-        
+
         let modes = [
             WrapMode::Inline,
             WrapMode::Square,
@@ -2987,7 +3065,7 @@ mod wrap_mode {
             WrapMode::Behind,
             WrapMode::InFront,
         ];
-        
+
         for &mode in &modes {
             let (layout_img, advance) = engine.layout_float(&img, mode, 0.0);
             assert_eq!(layout_img.wrap_mode, mode);

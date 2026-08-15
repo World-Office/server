@@ -389,10 +389,12 @@ pub fn validate_cell(
 
         // Evaluate the rule against the cell's raw value
         if !evaluate_rule(raw, rule) {
-            let message = rule
-                .error_message
-                .clone()
-                .or_else(|| Some(format!("Validation failed: {:?} {:?}", rule.validation_type, rule.operator)));
+            let message = rule.error_message.clone().or_else(|| {
+                Some(format!(
+                    "Validation failed: {:?} {:?}",
+                    rule.validation_type, rule.operator
+                ))
+            });
             return ValidationResult::fail(index, message);
         }
     }
@@ -441,7 +443,9 @@ fn evaluate_rule(raw: &str, rule: &DataValidation) -> bool {
         }
         ValidationType::List => {
             // Split formula1 by comma (or newline) and check if raw matches any item
-            let items: Vec<&str> = rule.formula1.split(|c| c == ',' || c == '\n')
+            let items: Vec<&str> = rule
+                .formula1
+                .split(|c| c == ',' || c == '\n')
                 .map(|s| s.trim())
                 .filter(|s| !s.is_empty())
                 .collect();
@@ -517,20 +521,21 @@ fn evaluate_rule(raw: &str, rule: &DataValidation) -> bool {
 }
 
 /// Compare a value using the given operator and bounds.
-fn compare_value(value: f64, formula1: f64, formula2: Option<f64>, operator: ValidationOperator) -> bool {
+fn compare_value(
+    value: f64,
+    formula1: f64,
+    formula2: Option<f64>,
+    operator: ValidationOperator,
+) -> bool {
     match operator {
-        ValidationOperator::Between => {
-            match formula2 {
-                Some(f2) => value >= formula1 && value <= f2,
-                None => value == formula1,
-            }
-        }
-        ValidationOperator::NotBetween => {
-            match formula2 {
-                Some(f2) => value < formula1 || value > f2,
-                None => value != formula1,
-            }
-        }
+        ValidationOperator::Between => match formula2 {
+            Some(f2) => value >= formula1 && value <= f2,
+            None => value == formula1,
+        },
+        ValidationOperator::NotBetween => match formula2 {
+            Some(f2) => value < formula1 || value > f2,
+            None => value != formula1,
+        },
         ValidationOperator::EqualTo => value == formula1,
         ValidationOperator::NotEqualTo => value != formula1,
         ValidationOperator::GreaterThan => value > formula1,
@@ -541,8 +546,15 @@ fn compare_value(value: f64, formula1: f64, formula2: Option<f64>, operator: Val
 }
 
 /// Find all validation rules that apply to a given cell position.
-pub fn rules_for_cell<'a>(row: u32, col: u32, rules: &'a [DataValidation]) -> Vec<&'a DataValidation> {
-    rules.iter().filter(|r| r.range.contains(row, col)).collect()
+pub fn rules_for_cell<'a>(
+    row: u32,
+    col: u32,
+    rules: &'a [DataValidation],
+) -> Vec<&'a DataValidation> {
+    rules
+        .iter()
+        .filter(|r| r.range.contains(row, col))
+        .collect()
 }
 
 /// Check if a cell with the given raw value is valid according to the applicable rules.
@@ -638,10 +650,7 @@ mod tests {
         );
         let cell = Cell::with_text("Hello World");
         let result = validate_cell(Some(&cell), 0, 0, &[rule]);
-        assert!(
-            !result.valid,
-            "'Hello World' length 11 should exceed 5"
-        );
+        assert!(!result.valid, "'Hello World' length 11 should exceed 5");
         assert_eq!(result.rejected_by, Some(0));
     }
 
@@ -808,6 +817,9 @@ mod tests {
         );
         let cell = Cell::with_text("not a number");
         let result = validate_cell(Some(&cell), 0, 0, &[rule]);
-        assert!(!result.valid, "Non-numeric input should fail whole number validation");
+        assert!(
+            !result.valid,
+            "Non-numeric input should fail whole number validation"
+        );
     }
 }

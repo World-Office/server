@@ -25,7 +25,11 @@ pub enum FormulaError {
     #[error("Function not found: {0}")]
     FunctionNotFound(String),
     #[error("Wrong number of arguments for {func}: expected {expected}, got {actual}")]
-    WrongArgCount { func: String, expected: usize, actual: usize },
+    WrongArgCount {
+        func: String,
+        expected: usize,
+        actual: usize,
+    },
     #[error("Type mismatch: {0}")]
     TypeMismatch(String),
     #[error("#VALUE!")]
@@ -126,8 +130,18 @@ pub struct CellRef {
 }
 
 impl CellRef {
-    pub fn new(sheet: Option<String>, row: CellRefCoord, col: CellRefCoord, style: RefStyle) -> Self {
-        Self { sheet, row, col, style }
+    pub fn new(
+        sheet: Option<String>,
+        row: CellRefCoord,
+        col: CellRefCoord,
+        style: RefStyle,
+    ) -> Self {
+        Self {
+            sheet,
+            row,
+            col,
+            style,
+        }
     }
 
     pub fn a1(sheet: Option<String>, row: u32, col: u32) -> Self {
@@ -161,11 +175,23 @@ impl fmt::Display for CellRef {
             RefStyle::A1 => {
                 let col = match self.col {
                     CellRefCoord::Absolute(c) => c,
-                    CellRefCoord::Relative(c) => if c >= 0 { c as u32 } else { 0 },
+                    CellRefCoord::Relative(c) => {
+                        if c >= 0 {
+                            c as u32
+                        } else {
+                            0
+                        }
+                    }
                 };
                 let row = match self.row {
                     CellRefCoord::Absolute(r) => r,
-                    CellRefCoord::Relative(r) => if r >= 0 { r as u32 } else { 0 },
+                    CellRefCoord::Relative(r) => {
+                        if r >= 0 {
+                            r as u32
+                        } else {
+                            0
+                        }
+                    }
                 };
                 write!(f, "{}{}", col_to_a1(col), row + 1)
             }
@@ -316,13 +342,11 @@ impl fmt::Display for Expr {
             Expr::Binary { op, lhs, rhs } => {
                 write!(f, "{lhs} {op} {rhs}")
             }
-            Expr::Unary { op, operand } => {
-                match op {
-                    UnaryOp::Not => write!(f, "NOT {operand}"),
-                    UnaryOp::Percent => write!(f, "{operand}%"),
-                    _ => write!(f, "{op}{operand}"),
-                }
-            }
+            Expr::Unary { op, operand } => match op {
+                UnaryOp::Not => write!(f, "NOT {operand}"),
+                UnaryOp::Percent => write!(f, "{operand}%"),
+                _ => write!(f, "{op}{operand}"),
+            },
             Expr::Func { name, args } => {
                 write!(f, "{name}(")?;
                 for (i, arg) in args.iter().enumerate() {
@@ -370,11 +394,20 @@ pub fn col_to_a1(col: u32) -> String {
 
 /// Convert A1 column notation to index (0-based)
 pub fn a1_to_col(s: &str) -> Result<u32, FormulaError> {
+    // Excel columns are at most 3 letters (A..XFD = 1..16383). Reject longer
+    // runs so names like ATAN2 are not misread as a column "ATAN" + row 2.
+    if s.len() > 3 {
+        return Err(FormulaError::InvalidReference(format!(
+            "Invalid column: {s}"
+        )));
+    }
     let mut col = 0;
 
     for c in s.chars() {
         if !c.is_ascii_alphabetic() || !c.is_ascii_uppercase() {
-            return Err(FormulaError::InvalidReference(format!("Invalid column: {s}")));
+            return Err(FormulaError::InvalidReference(format!(
+                "Invalid column: {s}"
+            )));
         }
         col = col * 26 + (c as u32 - 'A' as u32 + 1);
     }

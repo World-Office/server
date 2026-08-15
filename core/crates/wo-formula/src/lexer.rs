@@ -1,6 +1,6 @@
 //! Lexer for Excel-style spreadsheet formulas.
 
-use crate::ast::{a1_to_col, CellRef, CellRefCoord, FormulaError, RangeRef, RefStyle};
+use crate::ast::{CellRef, CellRefCoord, FormulaError, RangeRef, RefStyle, a1_to_col};
 
 /// Token types produced by the lexer
 #[derive(Debug, Clone, PartialEq)]
@@ -19,7 +19,7 @@ pub enum Token {
     Power,
     Concatenate,
     Range,
-    
+
     // Grouping
     LParen,
     RParen,
@@ -27,12 +27,12 @@ pub enum Token {
     Semicolon,
     LBrace,
     RBrace,
-    
+
     // Special
     Bang,
     Dollar,
     FormulaStart,
-    
+
     // Literals
     True,
     False,
@@ -40,11 +40,11 @@ pub enum Token {
     Text(String),
     Error(String),
     Identifier(String),
-    
+
     // References
     CellRef(CellRef),
     RangeRef(RangeRef),
-    
+
     // End
     Eof,
 }
@@ -91,11 +91,19 @@ impl Token {
 pub struct Lexer<'a> {
     input: &'a str,
     pos: usize,
+    /// Whether any real token has been produced. Distinguishes the leading
+    /// formula-start '=' from an infix equality operator (Excel: '=' after
+    /// the first token is comparison).
+    seen_token: bool,
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(input: &'a str) -> Self {
-        Self { input, pos: 0 }
+        Self {
+            input,
+            pos: 0,
+            seen_token: false,
+        }
     }
 
     fn current(&self) -> Option<char> {
@@ -235,7 +243,7 @@ impl<'a> Lexer<'a> {
 
         // Now read the actual cell reference (column + row)
         let mut col_dollar = false;
-        
+
         // Check for leading $
         if let Some('$') = self.current() {
             self.advance();
@@ -260,12 +268,13 @@ impl<'a> Lexer<'a> {
         }
 
         // Check for $ between column and row
-        let mut col_absolute = col_dollar || if let Some('$') = self.current() {
-            self.advance();
-            true
-        } else {
-            false
-        };
+        let mut col_absolute = col_dollar
+            || if let Some('$') = self.current() {
+                self.advance();
+                true
+            } else {
+                false
+            };
 
         let col = match a1_to_col(&col_name) {
             Ok(c) => c,
@@ -304,8 +313,16 @@ impl<'a> Lexer<'a> {
 
         Token::CellRef(CellRef {
             sheet,
-            row: if row_absolute { CellRefCoord::Absolute(row) } else { CellRefCoord::Relative(row as i32) },
-            col: if col_absolute { CellRefCoord::Absolute(col) } else { CellRefCoord::Relative(col as i32) },
+            row: if row_absolute {
+                CellRefCoord::Absolute(row)
+            } else {
+                CellRefCoord::Relative(row as i32)
+            },
+            col: if col_absolute {
+                CellRefCoord::Absolute(col)
+            } else {
+                CellRefCoord::Relative(col as i32)
+            },
             style: RefStyle::A1,
         })
     }
@@ -317,36 +334,106 @@ impl<'a> Lexer<'a> {
             return Token::Eof;
         }
 
+        // Capture whether this is the very first token before marking seen;
+        // the leading formula '=' must still emit FormulaStart.
+        let first_token = !self.seen_token;
+        self.seen_token = true;
+
         let c = self.current().unwrap();
 
         // Two-character operators
         if let Some(next_c) = self.peek() {
             match (c, next_c) {
-                ('=', '=') => { self.advance(); self.advance(); return Token::Equal; }
-                ('<', '>') => { self.advance(); self.advance(); return Token::NotEqual; }
-                ('<', '=') => { self.advance(); self.advance(); return Token::LessThanOrEqual; }
-                ('>', '=') => { self.advance(); self.advance(); return Token::GreaterThanOrEqual; }
+                ('=', '=') => {
+                    self.advance();
+                    self.advance();
+                    return Token::Equal;
+                }
+                ('<', '>') => {
+                    self.advance();
+                    self.advance();
+                    return Token::NotEqual;
+                }
+                ('<', '=') => {
+                    self.advance();
+                    self.advance();
+                    return Token::LessThanOrEqual;
+                }
+                ('>', '=') => {
+                    self.advance();
+                    self.advance();
+                    return Token::GreaterThanOrEqual;
+                }
                 _ => {}
             }
         }
 
         // Single-character tokens
         match c {
-            '=' => { self.advance(); Token::FormulaStart }
-            '+' => { self.advance(); Token::Plus }
-            '-' => { self.advance(); Token::Minus }
-            '*' => { self.advance(); Token::Multiply }
-            '/' => { self.advance(); Token::Divide }
-            '^' => { self.advance(); Token::Power }
-            '&' => { self.advance(); Token::Concatenate }
-            ':' => { self.advance(); Token::Range }
-            '(' => { self.advance(); Token::LParen }
-            ')' => { self.advance(); Token::RParen }
-            ',' => { self.advance(); Token::Comma }
-            ';' => { self.advance(); Token::Semicolon }
-            '{' => { self.advance(); Token::LBrace }
-            '}' => { self.advance(); Token::RBrace }
-            '!' => { self.advance(); Token::Bang }
+            '=' => {
+                self.advance();
+                if first_token {
+                    Token::FormulaStart
+                } else {
+                    Token::Equal
+                }
+            }
+            '+' => {
+                self.advance();
+                Token::Plus
+            }
+            '-' => {
+                self.advance();
+                Token::Minus
+            }
+            '*' => {
+                self.advance();
+                Token::Multiply
+            }
+            '/' => {
+                self.advance();
+                Token::Divide
+            }
+            '^' => {
+                self.advance();
+                Token::Power
+            }
+            '&' => {
+                self.advance();
+                Token::Concatenate
+            }
+            ':' => {
+                self.advance();
+                Token::Range
+            }
+            '(' => {
+                self.advance();
+                Token::LParen
+            }
+            ')' => {
+                self.advance();
+                Token::RParen
+            }
+            ',' => {
+                self.advance();
+                Token::Comma
+            }
+            ';' => {
+                self.advance();
+                Token::Semicolon
+            }
+            '{' => {
+                self.advance();
+                Token::LBrace
+            }
+            '}' => {
+                self.advance();
+                Token::RBrace
+            }
+            '!' => {
+                self.advance();
+                Token::Bang
+            }
             '$' => {
                 // Check if this $ is part of a cell reference like $A1 or A$1
                 let saved_pos = self.pos;
@@ -367,16 +454,21 @@ impl<'a> Lexer<'a> {
                 Token::Dollar
             }
             '"' => return self.read_string(),
-            '<' => { self.advance(); Token::LessThan }
-            '>' => { self.advance(); Token::GreaterThan }
+            '<' => {
+                self.advance();
+                Token::LessThan
+            }
+            '>' => {
+                self.advance();
+                Token::GreaterThan
+            }
             c if c.is_ascii_digit() => return self.read_number(),
             c if c.is_ascii_alphabetic() => {
-                // Could be cell ref or identifier
+                // Could be cell ref or identifier (function name)
                 let saved_pos = self.pos;
                 self.advance();
-                
-                // Check if followed by digits (cell ref pattern)
-                let mut has_alpha = true;
+
+                // Scan the letter run, then any digits, then look ahead.
                 while let Some(c) = self.current() {
                     if c.is_ascii_alphabetic() {
                         self.advance();
@@ -384,10 +476,23 @@ impl<'a> Lexer<'a> {
                         break;
                     }
                 }
-                
-                let has_digit = self.current().map(|c| c.is_ascii_digit()).unwrap_or(false);
-                
-                if has_digit {
+                let letters: String = self.input[saved_pos..self.pos].to_string();
+
+                let mut has_digit = false;
+                while let Some(c) = self.current() {
+                    if c.is_ascii_digit() {
+                        has_digit = true;
+                        self.advance();
+                    } else {
+                        break;
+                    }
+                }
+
+                // A name directly followed by '(' is a function call (e.g.
+                // LOG10(100), ATAN2(1,1)) — never a cell reference.
+                let followed_by_paren = self.current().map(|c| c == '(').unwrap_or(false);
+
+                if has_digit && !followed_by_paren {
                     self.pos = saved_pos;
                     self.read_cell_ref()
                 } else {
@@ -450,7 +555,8 @@ mod tests {
     #[test]
     fn test_numbers() {
         let tokens = Lexer::new("123 456.789 1.2 .5").tokenize().unwrap();
-        let numbers: Vec<_> = tokens.iter()
+        let numbers: Vec<_> = tokens
+            .iter()
             .filter(|t| matches!(t, Token::Number(_)))
             .collect();
         assert_eq!(numbers.len(), 4);
@@ -459,7 +565,8 @@ mod tests {
     #[test]
     fn test_strings() {
         let tokens = Lexer::new(r#""Hello" "World""#).tokenize().unwrap();
-        let texts: Vec<_> = tokens.iter()
+        let texts: Vec<_> = tokens
+            .iter()
             .filter(|t| matches!(t, Token::Text(_)))
             .collect();
         assert_eq!(texts.len(), 2);
@@ -475,11 +582,13 @@ mod tests {
     #[test]
     fn test_functions() {
         let tokens = Lexer::new("SUM(A1,B2)").tokenize().unwrap();
-        let identifiers: Vec<_> = tokens.iter()
+        let identifiers: Vec<_> = tokens
+            .iter()
             .filter(|t| matches!(t, Token::Identifier(_)))
             .collect();
         assert_eq!(identifiers.len(), 1);
-        let cell_refs: Vec<_> = tokens.iter()
+        let cell_refs: Vec<_> = tokens
+            .iter()
             .filter(|t| matches!(t, Token::CellRef(_)))
             .collect();
         assert_eq!(cell_refs.len(), 2);
@@ -490,7 +599,8 @@ mod tests {
         let tokens = Lexer::new("  =  A1  +  B1  ").tokenize().unwrap();
         assert!(tokens.contains(&Token::FormulaStart));
         // Find first CellRef token
-        let cell_refs: Vec<_> = tokens.iter()
+        let cell_refs: Vec<_> = tokens
+            .iter()
             .filter(|t| matches!(t, Token::CellRef(_)))
             .collect();
         assert!(!cell_refs.is_empty());

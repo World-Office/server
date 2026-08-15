@@ -19,6 +19,16 @@ import {
 declare global {
   interface Window {
     dispatchEvent(event: CustomEvent): void
+    /**
+     * Chrome DevTools-only API (not in lib.dom). Used by tests to clean up
+     * listeners between cases; must be optional so it compiles everywhere.
+     */
+    getEventListeners?: (
+      type: string,
+    ) => Array<{
+      listener: EventListenerOrEventListenerObject
+      options?: AddEventListenerOptions | boolean
+    }>
   }
 }
 
@@ -410,7 +420,7 @@ describe("command-router", () => {
 
       // Assert receipt
       expect(receivedCommand).not.toBeNull()
-      expect(receivedCommand?.command).toBe("bold")
+      expect((receivedCommand as WoCommand | null)?.command).toBe("bold")
 
       unregister()
     })

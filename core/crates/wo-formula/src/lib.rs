@@ -9,9 +9,9 @@ pub mod lexer;
 pub mod parser;
 
 pub use ast::{
-    a1_to_col, CellErr, CellRef, CellRefCoord, CellValue, Expr, FormulaError, RangeRef, RefStyle,
+    CellErr, CellRef, CellRefCoord, CellValue, Expr, FormulaError, RangeRef, RefStyle, a1_to_col,
 };
 pub use dep_graph::DepGraph;
-pub use eval::{eval, recalc_all, Sheet};
+pub use eval::{Sheet, eval, recalc_all};
 pub use lexer::{Lexer, Token};
 pub use parser::parse;
