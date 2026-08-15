@@ -13,12 +13,11 @@ pub mod ops;
 
 pub use chart_embed::{render_embedded_chart, ChartCollection, ChartRef, EmbedError};
 pub use model::{
-    AdvanceMode, AnimationData, AutoShape, Bounds, ChartRef as PresentationChartRef,
-    ColorScheme, ConnectorShape, ConnectorShapeType, EffectList, Fill, FontScheme,
-    GradientFill, GradientKind, GradientStop, Master, ModelError, PlaceholderShape,
-    Presentation, ReflectionDirection, ReflectionEffect, ShadowEffect, Shape,
-    SlideBackground, SlideBackgroundType, SlideLayout, SlideMaster, SlideSize,
-    SlideTransition, SmartArtShape, TableCell, TableColumn, TableRow, TableShape,
-    TextBody, TextBoxShape, Theme, ThemeColor, ThemeFont, TransitionEffect,
+    AdvanceMode, AnimationData, AutoShape, Bounds, ChartRef as PresentationChartRef, ColorScheme,
+    ConnectorShape, ConnectorShapeType, EffectList, Fill, FontScheme, GradientFill, GradientKind,
+    GradientStop, Master, ModelError, PlaceholderShape, Presentation, ReflectionDirection,
+    ReflectionEffect, ShadowEffect, Shape, SlideBackground, SlideBackgroundType, SlideLayout,
+    SlideMaster, SlideSize, SlideTransition, SmartArtShape, TableCell, TableColumn, TableRow,
+    TableShape, TextBody, TextBoxShape, Theme, ThemeColor, ThemeFont, TransitionEffect,
 };
 pub use ops::{SlideOp, SlideOpError};

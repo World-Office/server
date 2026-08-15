@@ -75,7 +75,9 @@ impl TextExtractor {
             return false;
         }
 
-        if let Some(min_length) = expected_length && text.len() < min_length {
+        if let Some(min_length) = expected_length
+            && text.len() < min_length
+        {
             return false;
         }
 
@@ -151,8 +153,8 @@ mod tests {
         let backend = crate::test_backend().expect("Pdfium not available for tests");
         let pdf_bytes = std::fs::read(test_pdf_path()).expect("Failed to read test PDF");
 
-        let text = TextExtractor::extract_text(backend, &pdf_bytes, 0)
-            .expect("Failed to extract text");
+        let text =
+            TextExtractor::extract_text(backend, &pdf_bytes, 0).expect("Failed to extract text");
 
         // Verify we got some text
         assert!(!text.is_empty(), "Extracted text should not be empty");
@@ -189,8 +191,8 @@ mod tests {
         let backend = crate::test_backend().expect("Pdfium not available for tests");
         let pdf_bytes = std::fs::read(test_pdf_path()).expect("Failed to read test PDF");
 
-        let text = TextExtractor::extract_text(backend, &pdf_bytes, 0)
-            .expect("Failed to extract text");
+        let text =
+            TextExtractor::extract_text(backend, &pdf_bytes, 0).expect("Failed to extract text");
 
         // Verify the text meets our criteria
         assert!(

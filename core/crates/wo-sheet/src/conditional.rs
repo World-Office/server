@@ -35,71 +35,61 @@ pub struct AppliedConditionalFormat {
 /// Returns true if the cell matches the condition, false otherwise.
 pub fn evaluate_rule(rule: &ConditionalRule, cell: &Cell) -> bool {
     match rule {
-        ConditionalRule::GreaterThan { value, .. } => {
-            match &cell.value {
-                CellValue::Num(n) => n > value,
-                CellValue::Text(t) => {
-                    if let Ok(n) = t.parse::<f64>() {
-                        n > *value
-                    } else {
-                        false
-                    }
+        ConditionalRule::GreaterThan { value, .. } => match &cell.value {
+            CellValue::Num(n) => n > value,
+            CellValue::Text(t) => {
+                if let Ok(n) = t.parse::<f64>() {
+                    n > *value
+                } else {
+                    false
                 }
-                _ => false,
             }
-        }
-        ConditionalRule::LessThan { value, .. } => {
-            match &cell.value {
-                CellValue::Num(n) => n < value,
-                CellValue::Text(t) => {
-                    if let Ok(n) = t.parse::<f64>() {
-                        n < *value
-                    } else {
-                        false
-                    }
+            _ => false,
+        },
+        ConditionalRule::LessThan { value, .. } => match &cell.value {
+            CellValue::Num(n) => n < value,
+            CellValue::Text(t) => {
+                if let Ok(n) = t.parse::<f64>() {
+                    n < *value
+                } else {
+                    false
                 }
-                _ => false,
             }
-        }
-        ConditionalRule::Between { min, max, .. } => {
-            match &cell.value {
-                CellValue::Num(n) => n >= min && n <= max,
-                CellValue::Text(t) => {
-                    if let Ok(n) = t.parse::<f64>() {
-                        n >= *min && n <= *max
-                    } else {
-                        false
-                    }
+            _ => false,
+        },
+        ConditionalRule::Between { min, max, .. } => match &cell.value {
+            CellValue::Num(n) => n >= min && n <= max,
+            CellValue::Text(t) => {
+                if let Ok(n) = t.parse::<f64>() {
+                    n >= *min && n <= *max
+                } else {
+                    false
                 }
-                _ => false,
             }
-        }
-        ConditionalRule::EqualTo { value, .. } => {
-            match &cell.value {
-                CellValue::Num(n) => {
-                    if let Ok(v) = value.parse::<f64>() {
-                        (n - v).abs() < f64::EPSILON
-                    } else {
-                        false
-                    }
+            _ => false,
+        },
+        ConditionalRule::EqualTo { value, .. } => match &cell.value {
+            CellValue::Num(n) => {
+                if let Ok(v) = value.parse::<f64>() {
+                    (n - v).abs() < f64::EPSILON
+                } else {
+                    false
                 }
-                CellValue::Text(t) => t == value,
-                CellValue::Bool(b) => {
-                    if let Ok(v) = value.parse::<bool>() {
-                        b == &v
-                    } else {
-                        false
-                    }
+            }
+            CellValue::Text(t) => t == value,
+            CellValue::Bool(b) => {
+                if let Ok(v) = value.parse::<bool>() {
+                    b == &v
+                } else {
+                    false
                 }
-                _ => false,
             }
-        }
-        ConditionalRule::ContainsText { text, .. } => {
-            match &cell.value {
-                CellValue::Text(t) => t.contains(text.as_str()),
-                _ => false,
-            }
-        }
+            _ => false,
+        },
+        ConditionalRule::ContainsText { text, .. } => match &cell.value {
+            CellValue::Text(t) => t.contains(text.as_str()),
+            _ => false,
+        },
         ConditionalRule::Empty { .. } => {
             matches!(&cell.value, CellValue::Empty) && cell.raw.is_empty()
         }
@@ -119,23 +109,19 @@ pub fn evaluate_rule(rule: &ConditionalRule, cell: &Cell) -> bool {
             // BelowAverage is evaluated across the range, not per-cell
             false
         }
-        ConditionalRule::Formula { formula, .. } => {
-            evaluate_formula_condition(formula, cell)
-        }
-        ConditionalRule::DatePeriod { period, .. } => {
-            match &cell.value {
-                CellValue::Text(t) => {
-                    if let Ok(date) = NaiveDate::parse_from_str(t, "%Y-%m-%d") {
-                        check_date_period(&date, period)
-                    } else if let Ok(date) = NaiveDate::parse_from_str(t, "%m/%d/%Y") {
-                        check_date_period(&date, period)
-                    } else {
-                        false
-                    }
+        ConditionalRule::Formula { formula, .. } => evaluate_formula_condition(formula, cell),
+        ConditionalRule::DatePeriod { period, .. } => match &cell.value {
+            CellValue::Text(t) => {
+                if let Ok(date) = NaiveDate::parse_from_str(t, "%Y-%m-%d") {
+                    check_date_period(&date, period)
+                } else if let Ok(date) = NaiveDate::parse_from_str(t, "%m/%d/%Y") {
+                    check_date_period(&date, period)
+                } else {
+                    false
                 }
-                _ => false,
             }
-        }
+            _ => false,
+        },
         ConditionalRule::Duplicate { .. } => {
             // Duplicate is evaluated across the range, not per-cell
             false
@@ -152,13 +138,17 @@ fn evaluate_formula_condition(_formula: &str, _cell: &Cell) -> bool {
 /// Checks if a date falls within the specified period.
 fn check_date_period(date: &NaiveDate, period: &DatePeriod) -> bool {
     let today = chrono::Local::now().naive_local().date();
-    
+
     match period {
         DatePeriod::Today => *date == today,
         DatePeriod::Yesterday => *date == today.pred_opt().unwrap_or(today),
         DatePeriod::Tomorrow => *date == today.succ_opt().unwrap_or(today),
         DatePeriod::Last7Days => {
-            let start = today.pred_opt().unwrap_or(today).pred_opt().unwrap_or(today);
+            let start = today
+                .pred_opt()
+                .unwrap_or(today)
+                .pred_opt()
+                .unwrap_or(today);
             *date >= start && *date <= today
         }
         DatePeriod::Last30Days => {
@@ -182,9 +172,7 @@ fn check_date_period(date: &NaiveDate, period: &DatePeriod) -> bool {
             }
             *date >= today && *date <= end
         }
-        DatePeriod::ThisMonth => {
-            date.year() == today.year() && date.month() == today.month()
-        }
+        DatePeriod::ThisMonth => date.year() == today.year() && date.month() == today.month(),
         DatePeriod::LastMonth => {
             if today.month() == 1 {
                 date.year() == today.year() - 1 && date.month() == 12
@@ -260,10 +248,15 @@ pub fn apply_conditional_format(
                 .collect();
 
             // Sort by value descending
-            numeric_cells.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+            numeric_cells
+                .sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
             // Take top N positions
-            numeric_cells.into_iter().take(*n).map(|((r, c), _)| (r, c)).collect()
+            numeric_cells
+                .into_iter()
+                .take(*n)
+                .map(|((r, c), _)| (r, c))
+                .collect()
         }
         ConditionalRule::BottomN { n, .. } => {
             // Get all numeric cells and sort them
@@ -289,35 +282,43 @@ pub fn apply_conditional_format(
                 .collect();
 
             // Sort by value ascending
-            numeric_cells.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+            numeric_cells
+                .sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
 
             // Take bottom N positions
-            numeric_cells.into_iter().take(*n).map(|((r, c), _)| (r, c)).collect()
+            numeric_cells
+                .into_iter()
+                .take(*n)
+                .map(|((r, c), _)| (r, c))
+                .collect()
         }
         ConditionalRule::AboveAverage { .. } => {
             // Calculate average of numeric cells
-            let (sum, count) = cell_positions.iter().fold((0.0, 0), |(sum, count), &(r, c)| {
-                if let Some(cell) = sheet.cells.get(&(r, c)) {
-                    match &cell.value {
-                        CellValue::Num(n) => (sum + n, count + 1),
-                        CellValue::Text(t) => {
-                            if let Ok(n) = t.parse::<f64>() {
-                                (sum + n, count + 1)
-                            } else {
-                                (sum, count)
+            let (sum, count) = cell_positions
+                .iter()
+                .fold((0.0, 0), |(sum, count), &(r, c)| {
+                    if let Some(cell) = sheet.cells.get(&(r, c)) {
+                        match &cell.value {
+                            CellValue::Num(n) => (sum + n, count + 1),
+                            CellValue::Text(t) => {
+                                if let Ok(n) = t.parse::<f64>() {
+                                    (sum + n, count + 1)
+                                } else {
+                                    (sum, count)
+                                }
                             }
+                            _ => (sum, count),
                         }
-                        _ => (sum, count),
+                    } else {
+                        (sum, count)
                     }
-                } else {
-                    (sum, count)
-                }
-            });
+                });
 
             let average = if count > 0 { sum / count as f64 } else { 0.0 };
 
             // Filter cells above average
-            cell_positions.into_iter()
+            cell_positions
+                .into_iter()
                 .filter(|&(r, c)| {
                     if let Some(cell) = sheet.cells.get(&(r, c)) {
                         match &cell.value {
@@ -339,28 +340,31 @@ pub fn apply_conditional_format(
         }
         ConditionalRule::BelowAverage { .. } => {
             // Calculate average of numeric cells
-            let (sum, count) = cell_positions.iter().fold((0.0, 0), |(sum, count), &(r, c)| {
-                if let Some(cell) = sheet.cells.get(&(r, c)) {
-                    match &cell.value {
-                        CellValue::Num(n) => (sum + n, count + 1),
-                        CellValue::Text(t) => {
-                            if let Ok(n) = t.parse::<f64>() {
-                                (sum + n, count + 1)
-                            } else {
-                                (sum, count)
+            let (sum, count) = cell_positions
+                .iter()
+                .fold((0.0, 0), |(sum, count), &(r, c)| {
+                    if let Some(cell) = sheet.cells.get(&(r, c)) {
+                        match &cell.value {
+                            CellValue::Num(n) => (sum + n, count + 1),
+                            CellValue::Text(t) => {
+                                if let Ok(n) = t.parse::<f64>() {
+                                    (sum + n, count + 1)
+                                } else {
+                                    (sum, count)
+                                }
                             }
+                            _ => (sum, count),
                         }
-                        _ => (sum, count),
+                    } else {
+                        (sum, count)
                     }
-                } else {
-                    (sum, count)
-                }
-            });
+                });
 
             let average = if count > 0 { sum / count as f64 } else { 0.0 };
 
             // Filter cells below average
-            cell_positions.into_iter()
+            cell_positions
+                .into_iter()
                 .filter(|&(r, c)| {
                     if let Some(cell) = sheet.cells.get(&(r, c)) {
                         match &cell.value {
@@ -391,10 +395,14 @@ pub fn apply_conditional_format(
             }
 
             // Filter cells with duplicate values (count > 1)
-            cell_positions.into_iter()
+            cell_positions
+                .into_iter()
                 .filter(|&(r, c)| {
                     if let Some(cell) = sheet.cells.get(&(r, c)) {
-                        value_counts.get(&cell.raw).map(|&count| count > 1).unwrap_or(false)
+                        value_counts
+                            .get(&cell.raw)
+                            .map(|&count| count > 1)
+                            .unwrap_or(false)
                     } else {
                         false
                     }
@@ -403,7 +411,8 @@ pub fn apply_conditional_format(
         }
         _ => {
             // For simple per-cell rules, just evaluate each cell by position
-            cell_positions.into_iter()
+            cell_positions
+                .into_iter()
                 .filter(|&(r, c)| {
                     if let Some(cell) = sheet.cells.get(&(r, c)) {
                         evaluate_rule(rule, cell)
@@ -526,10 +535,10 @@ mod tests {
         };
 
         let count = apply_conditional_format(&mut sheet, &range, &rule).unwrap();
-        
+
         // Should match cells with values > 35: (1,0)=40, (1,1)=50, (1,2)=60
         assert_eq!(count, 3);
-        
+
         assert_eq!(
             sheet.get_cell(1, 0).unwrap().style.background_color,
             Some("#FF0000".to_string())
@@ -551,7 +560,7 @@ mod tests {
         };
 
         let count = apply_conditional_format(&mut sheet, &range, &rule).unwrap();
-        
+
         assert_eq!(count, 2);
         assert_eq!(sheet.get_cell(0, 0).unwrap().style.bold, Some(true));
         assert_eq!(sheet.get_cell(1, 2).unwrap().style.bold, None);
@@ -645,7 +654,7 @@ mod tests {
         sheet.set_cell(1, 0, Cell::with_num(70.0));
         sheet.set_cell(1, 1, Cell::with_num(60.0));
         sheet.set_cell(1, 2, Cell::with_num(50.0));
-        
+
         let range = Range2d::new(0, 0, 1, 2);
         let rule = ConditionalRule::TopN {
             n: 3,
@@ -657,7 +666,7 @@ mod tests {
 
         let count = apply_conditional_format(&mut sheet, &range, &rule).unwrap();
         assert_eq!(count, 3);
-        
+
         assert_eq!(
             sheet.get_cell(0, 0).unwrap().style.background_color,
             Some("#00FF00".to_string())
@@ -683,7 +692,7 @@ mod tests {
         sheet.set_cell(1, 0, Cell::with_num(40.0));
         sheet.set_cell(1, 1, Cell::with_num(50.0));
         sheet.set_cell(1, 2, Cell::with_num(60.0));
-        
+
         let range = Range2d::new(0, 0, 1, 2);
         let rule = ConditionalRule::BottomN {
             n: 3,
@@ -695,7 +704,7 @@ mod tests {
 
         let count = apply_conditional_format(&mut sheet, &range, &rule).unwrap();
         assert_eq!(count, 3);
-        
+
         assert_eq!(
             sheet.get_cell(0, 0).unwrap().style.background_color,
             Some("#0000FF".to_string())
@@ -720,7 +729,7 @@ mod tests {
         sheet.set_cell(1, 0, Cell::with_num(40.0));
         sheet.set_cell(1, 1, Cell::with_num(50.0));
         sheet.set_cell(1, 2, Cell::with_num(60.0));
-        
+
         let range = Range2d::new(0, 0, 1, 2);
         let rule = ConditionalRule::AboveAverage {
             style: CellStyle {
@@ -731,7 +740,7 @@ mod tests {
 
         let count = apply_conditional_format(&mut sheet, &range, &rule).unwrap();
         assert_eq!(count, 3);
-        
+
         assert_eq!(sheet.get_cell(1, 0).unwrap().style.bold, Some(true));
         assert_eq!(sheet.get_cell(0, 2).unwrap().style.bold, None);
     }
@@ -746,7 +755,7 @@ mod tests {
         sheet.set_cell(1, 0, Cell::with_num(40.0));
         sheet.set_cell(1, 1, Cell::with_num(50.0));
         sheet.set_cell(1, 2, Cell::with_num(60.0));
-        
+
         let range = Range2d::new(0, 0, 1, 2);
         let rule = ConditionalRule::BelowAverage {
             style: CellStyle {
@@ -757,7 +766,7 @@ mod tests {
 
         let count = apply_conditional_format(&mut sheet, &range, &rule).unwrap();
         assert_eq!(count, 3);
-        
+
         assert_eq!(sheet.get_cell(0, 0).unwrap().style.italic, Some(true));
         assert_eq!(sheet.get_cell(1, 0).unwrap().style.italic, None);
     }
@@ -794,7 +803,7 @@ mod tests {
 
         let count = apply_conditional_format(&mut sheet, &range, &rule).unwrap();
         assert_eq!(count, 2);
-        
+
         assert_eq!(
             sheet.get_cell(2, 0).unwrap().style.background_color,
             Some("#FFFF00".to_string())
@@ -814,7 +823,7 @@ mod tests {
         cell.style.bold = Some(true);
         cell.style.font_size = Some(12.0);
         sheet.set_cell(0, 0, cell);
-        
+
         let range = Range2d::new(0, 0, 0, 0);
         let rule = ConditionalRule::GreaterThan {
             value: 40.0,
@@ -828,7 +837,7 @@ mod tests {
         let count = apply_conditional_format(&mut sheet, &range, &rule).unwrap();
         assert_eq!(count, 1);
         let cell = sheet.get_cell(0, 0).unwrap();
-        
+
         assert_eq!(cell.style.bold, Some(true));
         assert_eq!(cell.style.font_size, Some(12.0));
         assert_eq!(cell.style.background_color, Some("#FF00FF".to_string()));

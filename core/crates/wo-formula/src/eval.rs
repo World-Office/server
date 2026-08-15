@@ -4,9 +4,7 @@
 //! implementing Excel-compatible math, logical, statistical, and
 //! text-processing functions.
 
-use crate::ast::{
-    BinaryOp, CellErr, CellValue, Expr, FormulaError, UnaryOp,
-};
+use crate::ast::{BinaryOp, CellErr, CellValue, Expr, FormulaError, UnaryOp};
 
 /// Trait representing a spreadsheet-like data source.
 pub trait Sheet {
@@ -31,10 +29,7 @@ fn eval_expr(expr: &Expr, sheet: &impl Sheet) -> Result<CellValue, FormulaError>
 
         Expr::CellRef(cell_ref) => {
             let (row, col) = cell_ref.resolve(0, 0);
-            sheet
-                .cell(row, col)
-                .cloned()
-                .ok_or(FormulaError::RefError)
+            sheet.cell(row, col).cloned().ok_or(FormulaError::RefError)
         }
         Expr::RangeRef(range_ref) => {
             let (start_row, start_col) = range_ref.start.resolve(0, 0);
@@ -56,10 +51,7 @@ fn eval_expr(expr: &Expr, sheet: &impl Sheet) -> Result<CellValue, FormulaError>
                 (UnaryOp::Minus, CellValue::Num(n)) => Ok(CellValue::Num(-n)),
                 (UnaryOp::Not, CellValue::Bool(b)) => Ok(CellValue::Bool(!b)),
                 (UnaryOp::Not, CellValue::Num(n)) => Ok(CellValue::Bool(n == 0.0)),
-                (
-                    UnaryOp::Percent,
-                    CellValue::Num(n),
-                ) => Ok(CellValue::Num(n / 100.0)),
+                (UnaryOp::Percent, CellValue::Num(n)) => Ok(CellValue::Num(n / 100.0)),
                 _ => Err(FormulaError::TypeMismatch(
                     "Unary operator type mismatch".to_string(),
                 )),
@@ -71,9 +63,7 @@ fn eval_expr(expr: &Expr, sheet: &impl Sheet) -> Result<CellValue, FormulaError>
             let right = eval_expr(rhs, sheet)?;
 
             match (op, left, right) {
-                (BinaryOp::Add, CellValue::Num(a), CellValue::Num(b)) => {
-                    Ok(CellValue::Num(a + b))
-                }
+                (BinaryOp::Add, CellValue::Num(a), CellValue::Num(b)) => Ok(CellValue::Num(a + b)),
                 (BinaryOp::Subtract, CellValue::Num(a), CellValue::Num(b)) => {
                     Ok(CellValue::Num(a - b))
                 }
@@ -90,43 +80,29 @@ fn eval_expr(expr: &Expr, sheet: &impl Sheet) -> Result<CellValue, FormulaError>
                 (BinaryOp::Power, CellValue::Num(a), CellValue::Num(b)) => {
                     Ok(CellValue::Num(a.powf(b)))
                 }
-                (
-                    BinaryOp::Concatenate,
-                    CellValue::Text(a),
-                    CellValue::Text(b),
-                ) => Ok(CellValue::Text(a + &b)),
-                (
-                    BinaryOp::Concatenate,
-                    CellValue::Text(a),
-                    CellValue::Num(b),
-                ) => Ok(CellValue::Text(a + &b.to_string())),
-                (
-                    BinaryOp::Concatenate,
-                    CellValue::Num(a),
-                    CellValue::Text(b),
-                ) => Ok(CellValue::Text(a.to_string() + &b)),
+                (BinaryOp::Concatenate, CellValue::Text(a), CellValue::Text(b)) => {
+                    Ok(CellValue::Text(a + &b))
+                }
+                (BinaryOp::Concatenate, CellValue::Text(a), CellValue::Num(b)) => {
+                    Ok(CellValue::Text(a + &b.to_string()))
+                }
+                (BinaryOp::Concatenate, CellValue::Num(a), CellValue::Text(b)) => {
+                    Ok(CellValue::Text(a.to_string() + &b))
+                }
                 (BinaryOp::Equal, a, b) => Ok(CellValue::Bool(a == b)),
                 (BinaryOp::NotEqual, a, b) => Ok(CellValue::Bool(a != b)),
-                (
-                    BinaryOp::LessThan,
-                    CellValue::Num(a),
-                    CellValue::Num(b),
-                ) => Ok(CellValue::Bool(a < b)),
-                (
-                    BinaryOp::LessThanOrEqual,
-                    CellValue::Num(a),
-                    CellValue::Num(b),
-                ) => Ok(CellValue::Bool(a <= b)),
-                (
-                    BinaryOp::GreaterThan,
-                    CellValue::Num(a),
-                    CellValue::Num(b),
-                ) => Ok(CellValue::Bool(a > b)),
-                (
-                    BinaryOp::GreaterThanOrEqual,
-                    CellValue::Num(a),
-                    CellValue::Num(b),
-                ) => Ok(CellValue::Bool(a >= b)),
+                (BinaryOp::LessThan, CellValue::Num(a), CellValue::Num(b)) => {
+                    Ok(CellValue::Bool(a < b))
+                }
+                (BinaryOp::LessThanOrEqual, CellValue::Num(a), CellValue::Num(b)) => {
+                    Ok(CellValue::Bool(a <= b))
+                }
+                (BinaryOp::GreaterThan, CellValue::Num(a), CellValue::Num(b)) => {
+                    Ok(CellValue::Bool(a > b))
+                }
+                (BinaryOp::GreaterThanOrEqual, CellValue::Num(a), CellValue::Num(b)) => {
+                    Ok(CellValue::Bool(a >= b))
+                }
                 (BinaryOp::Range, _, _) => Ok(CellValue::Empty),
                 _ => Err(FormulaError::TypeMismatch(
                     "Binary operator type mismatch".to_string(),
@@ -145,10 +121,7 @@ fn eval_expr(expr: &Expr, sheet: &impl Sheet) -> Result<CellValue, FormulaError>
 // Helper: collect numeric values from arguments (flattening ranges)
 // ---------------------------------------------------------------------------
 
-fn collect_nums<'a>(
-    args: &'a [Expr],
-    sheet: &'a impl Sheet,
-) -> Result<Vec<f64>, FormulaError> {
+fn collect_nums<'a>(args: &'a [Expr], sheet: &'a impl Sheet) -> Result<Vec<f64>, FormulaError> {
     let mut nums = Vec::new();
     for arg in args {
         let val = eval_expr(arg, sheet)?;
@@ -203,10 +176,7 @@ fn single_num(args: &[Expr], sheet: &impl Sheet) -> Result<f64, FormulaError> {
     vals.first().copied().ok_or(FormulaError::ValueError)
 }
 
-fn single_val<'a>(
-    args: &'a [Expr],
-    sheet: &'a impl Sheet,
-) -> Result<CellValue, FormulaError> {
+fn single_val<'a>(args: &'a [Expr], sheet: &'a impl Sheet) -> Result<CellValue, FormulaError> {
     if args.is_empty() {
         return Err(FormulaError::WrongArgCount {
             func: "?".to_string(),
@@ -596,6 +566,10 @@ fn fn_roundup(args: &[Expr], sheet: &impl Sheet) -> Result<CellValue, FormulaErr
 
 fn fn_sign(args: &[Expr], sheet: &impl Sheet) -> Result<CellValue, FormulaError> {
     let n = single_num(args, sheet)?;
+    // f64::signum() returns 1.0 for +0.0 and -1.0 for -0.0; Excel SIGN(0) = 0.
+    if n == 0.0 {
+        return Ok(CellValue::Num(0.0));
+    }
     Ok(CellValue::Num(n.signum()))
 }
 
@@ -786,19 +760,21 @@ fn fn_switch(args: &[Expr], sheet: &impl Sheet) -> Result<CellValue, FormulaErro
     }
     let expression = eval_expr(&args[0], sheet)?;
 
-    // Process pairs (value1, result1, value2, result2, ...)
+    // Process pairs (value1, result1, value2, result2, ...). Only treat an
+    // argument as a case value when a result follows it; a trailing single
+    // argument is the default (previous code returned the last case value as
+    // the default, e.g. SWITCH(2,1,"one",2,"two") returned 2 instead of "two").
     let mut i = 1;
     while i + 1 < args.len() {
         let case_val = eval_expr(&args[i], sheet)?;
-        // Check last argument (default) or paired cases
-        if i + 2 >= args.len() {
-            // Last value is the default
-            return Ok(case_val);
-        }
         if expression == case_val {
             return eval_expr(&args[i + 1], sheet);
         }
         i += 2;
+    }
+    // No case matched: a trailing single argument is the default
+    if i < args.len() {
+        return eval_expr(&args[i], sheet);
     }
     // No match and no default
     Ok(CellValue::Err(CellErr::NA))
@@ -858,9 +834,7 @@ fn fn_islogical(args: &[Expr], sheet: &impl Sheet) -> Result<CellValue, FormulaE
 
 fn fn_isna(args: &[Expr], sheet: &impl Sheet) -> Result<CellValue, FormulaError> {
     let val = single_val(args, sheet)?;
-    Ok(CellValue::Bool(
-        matches!(val, CellValue::Err(CellErr::NA)),
-    ))
+    Ok(CellValue::Bool(matches!(val, CellValue::Err(CellErr::NA))))
 }
 
 fn fn_n(args: &[Expr], sheet: &impl Sheet) -> Result<CellValue, FormulaError> {
@@ -929,7 +903,9 @@ fn fn_mina(args: &[Expr], sheet: &impl Sheet) -> Result<CellValue, FormulaError>
     if nums.is_empty() {
         return Ok(CellValue::Num(0.0));
     }
-    Ok(CellValue::Num(nums.into_iter().fold(f64::INFINITY, f64::min)))
+    Ok(CellValue::Num(
+        nums.into_iter().fold(f64::INFINITY, f64::min),
+    ))
 }
 
 fn fn_maxa(args: &[Expr], sheet: &impl Sheet) -> Result<CellValue, FormulaError> {

@@ -38,10 +38,7 @@ impl Range2d {
 
     /// Check if a cell is within this range.
     pub fn contains(&self, row: u32, col: u32) -> bool {
-        row >= self.start_row
-            && row <= self.end_row
-            && col >= self.start_col
-            && col <= self.end_col
+        row >= self.start_row && row <= self.end_row && col >= self.start_col && col <= self.end_col
     }
 }
 
@@ -282,10 +279,7 @@ impl Sheet {
     /// Check if a cell is in a merged range.
     pub fn is_merged(&self, row: u32, col: u32) -> bool {
         self.merges.iter().any(|m| {
-            row >= m.start_row
-                && row <= m.end_row
-                && col >= m.start_col
-                && col <= m.end_col
+            row >= m.start_row && row <= m.end_row && col >= m.start_col && col <= m.end_col
         })
     }
 
@@ -365,7 +359,11 @@ pub enum ConditionalRule {
     /// Cell value is less than a constant
     LessThan { value: f64, style: CellStyle },
     /// Cell value is between two values
-    Between { min: f64, max: f64, style: CellStyle },
+    Between {
+        min: f64,
+        max: f64,
+        style: CellStyle,
+    },
     /// Cell value equals a constant
     EqualTo { value: String, style: CellStyle },
     /// Cell contains text
@@ -383,7 +381,10 @@ pub enum ConditionalRule {
     /// Custom formula
     Formula { formula: String, style: CellStyle },
     /// Date is within a period
-    DatePeriod { period: DatePeriod, style: CellStyle },
+    DatePeriod {
+        period: DatePeriod,
+        style: CellStyle,
+    },
     /// Duplicate values
     Duplicate { style: CellStyle },
 }
@@ -412,99 +413,53 @@ pub enum DatePeriod {
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum SheetOp {
     /// Set the value of a cell
-    SetCell {
-        row: u32,
-        col: u32,
-        raw: String,
-    },
+    SetCell { row: u32, col: u32, raw: String },
     /// Insert rows
-    InsertRow {
-        after: u32,
-        count: u32,
-    },
+    InsertRow { after: u32, count: u32 },
     /// Delete rows
-    DeleteRow {
-        row: u32,
-        count: u32,
-    },
+    DeleteRow { row: u32, count: u32 },
     /// Insert columns
-    InsertCol {
-        after: u32,
-        count: u32,
-    },
+    InsertCol { after: u32, count: u32 },
     /// Delete columns
-    DeleteCol {
-        col: u32,
-        count: u32,
-    },
+    DeleteCol { col: u32, count: u32 },
     /// Merge cells
     Merge(MergeRange),
     /// Unmerge cells
     Unmerge(MergeRange),
     /// Apply styling to a range
-    SetStyle {
-        range: Range2d,
-        style: CellStyle,
-    },
+    SetStyle { range: Range2d, style: CellStyle },
     /// Sort a range
-    Sort {
-        range: Range2d,
-        keys: Vec<SortKey>,
-    },
+    Sort { range: Range2d, keys: Vec<SortKey> },
     /// Apply conditional formatting to a range
     ApplyConditionalFormat {
         range: Range2d,
         rule: ConditionalRule,
     },
     /// Clear cells
-    Clear {
-        range: Range2d,
-    },
+    Clear { range: Range2d },
     /// Copy cells
-    Copy {
-        from: Range2d,
-        to: (u32, u32),
-    },
+    Copy { from: Range2d, to: (u32, u32) },
     /// Paste cells
     Paste {
         at: (u32, u32),
         data: Vec<Vec<Cell>>,
     },
     /// Set column width
-    SetColWidth {
-        col: u32,
-        width: f32,
-    },
+    SetColWidth { col: u32, width: f32 },
     /// Set row height
-    SetRowHeight {
-        row: u32,
-        height: f32,
-    },
+    SetRowHeight { row: u32, height: f32 },
     /// Freeze panes
-    FreezePanes {
-        row: u32,
-        col: u32,
-    },
+    FreezePanes { row: u32, col: u32 },
     /// Unfreeze panes
     UnfreezePanes,
     /// Rename sheet
-    RenameSheet {
-        old_name: String,
-        new_name: String,
-    },
+    RenameSheet { old_name: String, new_name: String },
     /// Add a new sheet
-    AddSheet {
-        name: String,
-    },
+    AddSheet { name: String },
     /// Remove a sheet
-    RemoveSheet {
-        name: String,
-    },
+    RemoveSheet { name: String },
     /// Set sheet visibility
-    SetSheetVisibility {
-        name: String,
-        visible: bool,
-    },
+    SetSheetVisibility { name: String, visible: bool },
 }
 
 /// The main workbook structure.
@@ -641,7 +596,9 @@ pub enum SheetError {
     SheetNotFound { name: String },
     #[error("cell not found at ({row}, {col})")]
     CellNotFound { row: u32, col: u32 },
-    #[error("invalid range: start ({start_row}, {start_col}) must be <= end ({end_row}, {end_col})")]
+    #[error(
+        "invalid range: start ({start_row}, {start_col}) must be <= end ({end_row}, {end_col})"
+    )]
     InvalidRange {
         start_row: u32,
         start_col: u32,
@@ -680,7 +637,9 @@ impl EditableModel for Workbook {
                         self.revision += 1;
                         Ok(())
                     } else {
-                        Err(SheetError::SheetNotFound { name: sheet.clone() })
+                        Err(SheetError::SheetNotFound {
+                            name: sheet.clone(),
+                        })
                     }
                 } else {
                     Err(SheetError::NotSupported)
@@ -688,7 +647,19 @@ impl EditableModel for Workbook {
             }
             ModelOp::Delete { range } => {
                 // Delete over a range
-                if let (Path::Sheet { sheet: s1, row: r1, col: c1 }, Path::Sheet { sheet: s2, row: r2, col: c2 }) = (&range.start, &range.end) {
+                if let (
+                    Path::Sheet {
+                        sheet: s1,
+                        row: r1,
+                        col: c1,
+                    },
+                    Path::Sheet {
+                        sheet: s2,
+                        row: r2,
+                        col: c2,
+                    },
+                ) = (&range.start, &range.end)
+                {
                     if s1 != s2 {
                         return Err(SheetError::NotSupported);
                     }
@@ -717,7 +688,9 @@ impl EditableModel for Workbook {
                         self.revision += 1;
                         Ok(())
                     } else {
-                        Err(SheetError::SheetNotFound { name: sheet.clone() })
+                        Err(SheetError::SheetNotFound {
+                            name: sheet.clone(),
+                        })
                     }
                 } else {
                     Err(SheetError::NotSupported)
@@ -738,7 +711,19 @@ impl EditableModel for Workbook {
                 }
                 // Apply more formatting as needed...
 
-                if let (Path::Sheet { sheet: s1, row: r1, col: c1 }, Path::Sheet { sheet: s2, row: r2, col: c2 }) = (&range.start, &range.end) {
+                if let (
+                    Path::Sheet {
+                        sheet: s1,
+                        row: r1,
+                        col: c1,
+                    },
+                    Path::Sheet {
+                        sheet: s2,
+                        row: r2,
+                        col: c2,
+                    },
+                ) = (&range.start, &range.end)
+                {
                     if s1 != s2 {
                         return Err(SheetError::NotSupported);
                     }
@@ -1058,7 +1043,7 @@ mod tests {
         let inverted = wb.invert(&op);
         // Inverse of insert should be delete
         match inverted {
-            ModelOp::Delete { .. } => {},
+            ModelOp::Delete { .. } => {}
             _ => panic!("Expected Delete op as inverse of Insert"),
         }
     }
@@ -1221,9 +1206,7 @@ mod tests {
         };
 
         wb.apply(&op).unwrap();
-        assert!(
-            wb.get_cell(0, 0).is_none() || wb.get_cell(0, 0).unwrap().raw.is_empty()
-        );
+        assert!(wb.get_cell(0, 0).is_none() || wb.get_cell(0, 0).unwrap().raw.is_empty());
         assert_eq!(wb.current_revision(), 1);
     }
 
@@ -1261,7 +1244,10 @@ mod tests {
 
         let mut attrs = std::collections::BTreeMap::new();
         attrs.insert("bold".to_string(), serde_json::Value::Bool(true));
-        attrs.insert("font_size".to_string(), serde_json::Value::Number(serde_json::Number::from_f64(14.0).unwrap()));
+        attrs.insert(
+            "font_size".to_string(),
+            serde_json::Value::Number(serde_json::Number::from_f64(14.0).unwrap()),
+        );
 
         let op = ModelOp::Format {
             range: Range {
@@ -1295,15 +1281,9 @@ mod tests {
                 col: 2,
                 raw: "Hello".to_string(),
             },
-            SheetOp::InsertRow {
-                after: 0,
-                count: 1,
-            },
+            SheetOp::InsertRow { after: 0, count: 1 },
             SheetOp::DeleteRow { row: 0, count: 1 },
-            SheetOp::InsertCol {
-                after: 0,
-                count: 2,
-            },
+            SheetOp::InsertCol { after: 0, count: 2 },
             SheetOp::DeleteCol { col: 0, count: 2 },
             SheetOp::Merge(MergeRange::new(0, 0, 2, 2)),
             SheetOp::Unmerge(MergeRange::new(0, 0, 2, 2)),
@@ -1363,7 +1343,9 @@ mod tests {
                 text: "error".to_string(),
                 style: style.clone(),
             },
-            ConditionalRule::Empty { style: style.clone() },
+            ConditionalRule::Empty {
+                style: style.clone(),
+            },
             ConditionalRule::TopN {
                 n: 10,
                 style: style.clone(),
@@ -1372,8 +1354,12 @@ mod tests {
                 n: 5,
                 style: style.clone(),
             },
-            ConditionalRule::AboveAverage { style: style.clone() },
-            ConditionalRule::BelowAverage { style: style.clone() },
+            ConditionalRule::AboveAverage {
+                style: style.clone(),
+            },
+            ConditionalRule::BelowAverage {
+                style: style.clone(),
+            },
             ConditionalRule::Formula {
                 formula: "A1>10".to_string(),
                 style: style.clone(),

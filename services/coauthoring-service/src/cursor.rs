@@ -76,7 +76,10 @@ impl CursorState {
     /// assert!(!caret.is_selection());
     /// ```
     pub fn caret(anchor: Path) -> Self {
-        Self { anchor, focus: None }
+        Self {
+            anchor,
+            focus: None,
+        }
     }
 
     /// Create an expanded cursor (range selection) from anchor to focus.
@@ -115,7 +118,9 @@ impl CursorState {
     /// The range spans from `anchor` to `focus`. Callers should normalize
     /// (ensure `start <= end` in document order) if needed.
     pub fn range(&self) -> Option<Range> {
-        self.focus.as_ref().map(|f| Range::new(self.anchor.clone(), f.clone()))
+        self.focus
+            .as_ref()
+            .map(|f| Range::new(self.anchor.clone(), f.clone()))
     }
 
     /// Convert to a collapsed caret, discarding the selection.
@@ -333,12 +338,30 @@ mod tests {
         Path::Text { para, run, char }
     }
 
-    fn table_path(table: usize, row: usize, cell: usize, para: usize, run: usize, char: usize) -> Path {
-        Path::Table { table, row, cell, para, run, char }
+    fn table_path(
+        table: usize,
+        row: usize,
+        cell: usize,
+        para: usize,
+        run: usize,
+        char: usize,
+    ) -> Path {
+        Path::Table {
+            table,
+            row,
+            cell,
+            para,
+            run,
+            char,
+        }
     }
 
     fn sheet_path(sheet: &str, row: u32, col: u32) -> Path {
-        Path::Sheet { sheet: sheet.to_string(), row, col }
+        Path::Sheet {
+            sheet: sheet.to_string(),
+            row,
+            col,
+        }
     }
 
     // =========================================================================
@@ -355,10 +378,7 @@ mod tests {
 
     #[test]
     fn selection_is_expanded() {
-        let cursor = CursorState::selection(
-            text_path(0, 0, 5),
-            text_path(0, 0, 10),
-        );
+        let cursor = CursorState::selection(text_path(0, 0, 5), text_path(0, 0, 10));
         assert!(cursor.is_selection());
         assert!(!cursor.is_caret());
     }
@@ -371,10 +391,7 @@ mod tests {
 
     #[test]
     fn selection_anchor_and_focus_correct() {
-        let cursor = CursorState::selection(
-            text_path(1, 0, 0),
-            text_path(1, 0, 20),
-        );
+        let cursor = CursorState::selection(text_path(1, 0, 0), text_path(1, 0, 20));
         assert_eq!(cursor.anchor, text_path(1, 0, 0));
         assert_eq!(cursor.focus, Some(text_path(1, 0, 20)));
     }
@@ -391,10 +408,7 @@ mod tests {
 
     #[test]
     fn selection_has_range() {
-        let cursor = CursorState::selection(
-            text_path(0, 0, 2),
-            text_path(0, 0, 8),
-        );
+        let cursor = CursorState::selection(text_path(0, 0, 2), text_path(0, 0, 8));
         let range = cursor.range().unwrap();
         assert_eq!(range.start, text_path(0, 0, 2));
         assert_eq!(range.end, text_path(0, 0, 8));
@@ -406,10 +420,7 @@ mod tests {
 
     #[test]
     fn collapse_to_caret_discards_focus() {
-        let cursor = CursorState::selection(
-            text_path(1, 0, 0),
-            text_path(1, 0, 10),
-        );
+        let cursor = CursorState::selection(text_path(1, 0, 0), text_path(1, 0, 10));
         let collapsed = cursor.collapse_to_caret();
         assert!(collapsed.is_caret());
         assert_eq!(collapsed.anchor, text_path(1, 0, 0));
@@ -469,10 +480,7 @@ mod tests {
 
     #[test]
     fn selection_serde_roundtrip() {
-        let cursor = CursorState::selection(
-            text_path(0, 0, 5),
-            text_path(2, 0, 0),
-        );
+        let cursor = CursorState::selection(text_path(0, 0, 5), text_path(2, 0, 0));
         let json = serde_json::to_string(&cursor).unwrap();
         let back: CursorState = serde_json::from_str(&json).unwrap();
         assert_eq!(cursor, back);
@@ -489,10 +497,7 @@ mod tests {
 
     #[test]
     fn selection_json_has_focus_field() {
-        let cursor = CursorState::selection(
-            text_path(0, 0, 0),
-            text_path(0, 0, 5),
-        );
+        let cursor = CursorState::selection(text_path(0, 0, 0), text_path(0, 0, 5));
         let val = serde_json::to_value(&cursor).unwrap();
         assert!(val.get("focus").is_some());
     }
@@ -510,10 +515,8 @@ mod tests {
 
     #[test]
     fn selection_table_path_serde() {
-        let cursor = CursorState::selection(
-            table_path(0, 2, 1, 0, 0, 0),
-            table_path(0, 2, 1, 0, 0, 10),
-        );
+        let cursor =
+            CursorState::selection(table_path(0, 2, 1, 0, 0, 0), table_path(0, 2, 1, 0, 0, 10));
         let json = serde_json::to_string(&cursor).unwrap();
         let back: CursorState = serde_json::from_str(&json).unwrap();
         assert_eq!(cursor, back);
@@ -531,10 +534,8 @@ mod tests {
 
     #[test]
     fn selection_sheet_path_serde() {
-        let cursor = CursorState::selection(
-            sheet_path("Revenue", 10, 3),
-            sheet_path("Revenue", 10, 7),
-        );
+        let cursor =
+            CursorState::selection(sheet_path("Revenue", 10, 3), sheet_path("Revenue", 10, 7));
         let json = serde_json::to_string(&cursor).unwrap();
         let back: CursorState = serde_json::from_str(&json).unwrap();
         assert_eq!(cursor, back);
@@ -546,10 +547,7 @@ mod tests {
 
     #[test]
     fn clone_preserves_state() {
-        let cursor = CursorState::selection(
-            text_path(1, 0, 0),
-            text_path(1, 0, 10),
-        );
+        let cursor = CursorState::selection(text_path(1, 0, 0), text_path(1, 0, 10));
         let cloned = cursor.clone();
         assert_eq!(cursor, cloned);
     }
@@ -874,11 +872,7 @@ mod tests {
 
     #[test]
     fn selection_event_convenience() {
-        let event = CursorEvent::selection(
-            "alice".into(),
-            text_path(0, 0, 5),
-            text_path(0, 0, 10),
-        );
+        let event = CursorEvent::selection("alice".into(), text_path(0, 0, 5), text_path(0, 0, 10));
         assert_eq!(event.focus, Some(text_path(0, 0, 10)));
     }
 
@@ -896,11 +890,7 @@ mod tests {
 
     #[test]
     fn selection_event_to_state() {
-        let event = CursorEvent::selection(
-            "alice".into(),
-            text_path(0, 0, 5),
-            text_path(0, 0, 10),
-        );
+        let event = CursorEvent::selection("alice".into(), text_path(0, 0, 5), text_path(0, 0, 10));
         let state = event.to_cursor_state();
         assert!(state.is_selection());
         assert_eq!(state.range().unwrap().start, text_path(0, 0, 5));
@@ -920,11 +910,7 @@ mod tests {
 
     #[test]
     fn selection_event_serde_roundtrip() {
-        let event = CursorEvent::selection(
-            "bob".into(),
-            text_path(0, 0, 5),
-            text_path(0, 0, 10),
-        );
+        let event = CursorEvent::selection("bob".into(), text_path(0, 0, 5), text_path(0, 0, 10));
         let json = serde_json::to_string(&event).unwrap();
         let back: CursorEvent = serde_json::from_str(&json).unwrap();
         assert_eq!(event, back);
@@ -941,11 +927,7 @@ mod tests {
 
     #[test]
     fn event_json_has_focus_when_selection() {
-        let event = CursorEvent::selection(
-            "alice".into(),
-            text_path(0, 0, 5),
-            text_path(0, 0, 10),
-        );
+        let event = CursorEvent::selection("alice".into(), text_path(0, 0, 5), text_path(0, 0, 10));
         let val = serde_json::to_value(&event).unwrap();
         assert!(val.get("focus").is_some());
         assert_eq!(val["focus"]["kind"], "text");
@@ -957,10 +939,7 @@ mod tests {
 
     #[test]
     fn event_table_path_roundtrip() {
-        let event = CursorEvent::caret(
-            "alice".into(),
-            table_path(0, 2, 1, 0, 0, 5),
-        );
+        let event = CursorEvent::caret("alice".into(), table_path(0, 2, 1, 0, 0, 5));
         let json = serde_json::to_string(&event).unwrap();
         let back: CursorEvent = serde_json::from_str(&json).unwrap();
         assert_eq!(event, back);
@@ -1052,10 +1031,7 @@ mod tests {
             assert_eq!(alice_state.anchor, text_path(0, 0, 10));
 
             // --- Bob selects text from char 50 to char 75 ---
-            let bob_selected = CursorState::selection(
-                text_path(0, 0, 50),
-                text_path(0, 0, 75),
-            );
+            let bob_selected = CursorState::selection(text_path(0, 0, 50), text_path(0, 0, 75));
             let changed = server_tracker.update_cursor("bob", bob_selected);
             assert!(changed);
 
@@ -1117,8 +1093,14 @@ mod tests {
             assert!(server_tracker.has_cursor("bob"));
 
             // Final state: Alice at caret(0,0,3), Bob at caret(0,0,48)
-            assert_eq!(server_tracker.get("alice").unwrap().anchor, text_path(0, 0, 3));
-            assert_eq!(server_tracker.get("bob").unwrap().anchor, text_path(0, 0, 48));
+            assert_eq!(
+                server_tracker.get("alice").unwrap().anchor,
+                text_path(0, 0, 3)
+            );
+            assert_eq!(
+                server_tracker.get("bob").unwrap().anchor,
+                text_path(0, 0, 48)
+            );
         }
 
         /// Verify cursor events can be serialized and deserialized correctly
@@ -1136,11 +1118,8 @@ mod tests {
             assert!(received.focus.is_none());
 
             // Bob sends selection event
-            let bob_event = CursorEvent::selection(
-                "bob".into(),
-                text_path(1, 0, 0),
-                text_path(1, 0, 20),
-            );
+            let bob_event =
+                CursorEvent::selection("bob".into(), text_path(1, 0, 0), text_path(1, 0, 20));
             let bob_json = serde_json::to_string(&bob_event).unwrap();
 
             // Alice receives
@@ -1168,7 +1147,10 @@ mod tests {
             assert!(!server_tracker.update_cursor("alice", cursor.clone()));
 
             // Position unchanged
-            assert_eq!(server_tracker.get("alice").unwrap().anchor, text_path(0, 0, 10));
+            assert_eq!(
+                server_tracker.get("alice").unwrap().anchor,
+                text_path(0, 0, 10)
+            );
 
             // Only one entry for alice
             assert_eq!(server_tracker.cursor_count(), 1);
@@ -1212,15 +1194,9 @@ mod tests {
         fn users_in_different_paths() {
             let mut server_tracker = CursorTracker::new();
 
-            server_tracker.update_cursor("alice", CursorState::caret(
-                text_path(0, 0, 5),
-            ));
-            server_tracker.update_cursor("bob", CursorState::caret(
-                table_path(0, 2, 1, 0, 0, 3),
-            ));
-            server_tracker.update_cursor("carol", CursorState::caret(
-                sheet_path("Revenue", 10, 5),
-            ));
+            server_tracker.update_cursor("alice", CursorState::caret(text_path(0, 0, 5)));
+            server_tracker.update_cursor("bob", CursorState::caret(table_path(0, 2, 1, 0, 0, 3)));
+            server_tracker.update_cursor("carol", CursorState::caret(sheet_path("Revenue", 10, 5)));
 
             assert_eq!(server_tracker.cursor_count(), 3);
 

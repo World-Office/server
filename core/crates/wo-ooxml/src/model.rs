@@ -485,68 +485,82 @@ impl DocxBody {
     /// Build a DocxBody from separate paragraph/table vectors. Conversion
     /// code paths that never interleave content use this; tables follow
     /// paragraphs.
-    pub fn from_parts(
-        paragraphs: Vec<DocxParagraph>,
-        tables: Vec<DocxTable>,
-    ) -> Self {
-        let mut blocks: Vec<DocxBlock> =
-            paragraphs.into_iter().map(DocxBlock::Paragraph).collect();
+    pub fn from_parts(paragraphs: Vec<DocxParagraph>, tables: Vec<DocxTable>) -> Self {
+        let mut blocks: Vec<DocxBlock> = paragraphs.into_iter().map(DocxBlock::Paragraph).collect();
         blocks.extend(tables.into_iter().map(DocxBlock::Table));
         Self { blocks }
     }
 
     /// Get all paragraphs in the body (in order)
     pub fn paragraphs(&self) -> Vec<&DocxParagraph> {
-        self.blocks.iter().filter_map(|b| match b {
-            DocxBlock::Paragraph(p) => Some(p),
-            DocxBlock::Table(_) => None,
-            DocxBlock::Image(_) => None,
-        }).collect()
+        self.blocks
+            .iter()
+            .filter_map(|b| match b {
+                DocxBlock::Paragraph(p) => Some(p),
+                DocxBlock::Table(_) => None,
+                DocxBlock::Image(_) => None,
+            })
+            .collect()
     }
 
     /// Get all paragraphs in the body (in order, mutable)
     pub fn paragraphs_mut(&mut self) -> Vec<&mut DocxParagraph> {
-        self.blocks.iter_mut().filter_map(|b| match b {
-            DocxBlock::Paragraph(p) => Some(p),
-            DocxBlock::Table(_) => None,
-            DocxBlock::Image(_) => None,
-        }).collect()
+        self.blocks
+            .iter_mut()
+            .filter_map(|b| match b {
+                DocxBlock::Paragraph(p) => Some(p),
+                DocxBlock::Table(_) => None,
+                DocxBlock::Image(_) => None,
+            })
+            .collect()
     }
 
     /// Get all tables in the body (in order)
     pub fn tables(&self) -> Vec<&DocxTable> {
-        self.blocks.iter().filter_map(|b| match b {
-            DocxBlock::Paragraph(_) => None,
-            DocxBlock::Table(t) => Some(t),
-            DocxBlock::Image(_) => None,
-        }).collect()
+        self.blocks
+            .iter()
+            .filter_map(|b| match b {
+                DocxBlock::Paragraph(_) => None,
+                DocxBlock::Table(t) => Some(t),
+                DocxBlock::Image(_) => None,
+            })
+            .collect()
     }
 
     /// Get all tables in the body (in order, mutable)
     pub fn tables_mut(&mut self) -> Vec<&mut DocxTable> {
-        self.blocks.iter_mut().filter_map(|b| match b {
-            DocxBlock::Paragraph(_) => None,
-            DocxBlock::Table(t) => Some(t),
-            DocxBlock::Image(_) => None,
-        }).collect()
+        self.blocks
+            .iter_mut()
+            .filter_map(|b| match b {
+                DocxBlock::Paragraph(_) => None,
+                DocxBlock::Table(t) => Some(t),
+                DocxBlock::Image(_) => None,
+            })
+            .collect()
     }
 
     /// Get all images in the body (in order)
     pub fn images(&self) -> Vec<&DocxImage> {
-        self.blocks.iter().filter_map(|b| match b {
-            DocxBlock::Paragraph(_) => None,
-            DocxBlock::Table(_) => None,
-            DocxBlock::Image(i) => Some(i),
-        }).collect()
+        self.blocks
+            .iter()
+            .filter_map(|b| match b {
+                DocxBlock::Paragraph(_) => None,
+                DocxBlock::Table(_) => None,
+                DocxBlock::Image(i) => Some(i),
+            })
+            .collect()
     }
 
     /// Get all images in the body (in order, mutable)
     pub fn images_mut(&mut self) -> Vec<&mut DocxImage> {
-        self.blocks.iter_mut().filter_map(|b| match b {
-            DocxBlock::Paragraph(_) => None,
-            DocxBlock::Table(_) => None,
-            DocxBlock::Image(i) => Some(i),
-        }).collect()
+        self.blocks
+            .iter_mut()
+            .filter_map(|b| match b {
+                DocxBlock::Paragraph(_) => None,
+                DocxBlock::Table(_) => None,
+                DocxBlock::Image(i) => Some(i),
+            })
+            .collect()
     }
 
     /// Check if the body is empty
