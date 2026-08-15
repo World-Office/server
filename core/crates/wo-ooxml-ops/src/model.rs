@@ -50,7 +50,7 @@ impl From<EditableDocxBody> for DocxBody {
 
 impl std::ops::Deref for EditableDocxBody {
     type Target = DocxBody;
-    
+
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -61,8 +61,6 @@ impl std::ops::DerefMut for EditableDocxBody {
         &mut self.0
     }
 }
-
-
 
 impl EditableDocxBody {
     /// Create a new empty EditableDocxBody
@@ -130,8 +128,18 @@ impl EditableDocxBody {
             }
             ModelOp::Delete { range } => {
                 match (&range.start, &range.end) {
-                    (Path::Text { para: start_para, run: start_run, char: start_char },
-                     Path::Text { para: end_para, run: end_run, char: end_char }) => {
+                    (
+                        Path::Text {
+                            para: start_para,
+                            run: start_run,
+                            char: start_char,
+                        },
+                        Path::Text {
+                            para: end_para,
+                            run: end_run,
+                            char: end_char,
+                        },
+                    ) => {
                         if start_para != end_para {
                             return Err(EditableModelError::InvalidOp(
                                 "Cross-paragraph delete not yet supported".to_string(),
@@ -151,93 +159,90 @@ impl EditableDocxBody {
                     )),
                 }
             }
-            ModelOp::Replace { at, content } => {
-                match at {
-                    Path::Text { para, run, char } => {
-                        self.validate_run_index(*para, *run)?;
-                        Ok(DocOp::InsertText {
+            ModelOp::Replace { at, content } => match at {
+                Path::Text { para, run, char } => {
+                    self.validate_run_index(*para, *run)?;
+                    Ok(DocOp::InsertText {
+                        para: *para,
+                        char: *char,
+                        text: content.clone(),
+                    })
+                }
+                _ => Err(EditableModelError::InvalidOp(
+                    "Unsupported path type for replace".to_string(),
+                )),
+            },
+            ModelOp::Format { range, attrs } => match &range.start {
+                Path::Text {
+                    para,
+                    char: start_char,
+                    ..
+                } => match &range.end {
+                    Path::Text { char: end_char, .. } => {
+                        let mut run_attrs = RunAttrs::default();
+                        for (key, value) in attrs {
+                            match key.as_str() {
+                                "bold" => {
+                                    if let Some(b) = value.as_bool() {
+                                        run_attrs.bold = Some(b);
+                                    }
+                                }
+                                "italic" => {
+                                    if let Some(b) = value.as_bool() {
+                                        run_attrs.italic = Some(b);
+                                    }
+                                }
+                                "underline" => {
+                                    if let Some(s) = value.as_str() {
+                                        run_attrs.underline = Some(parse_underline_type(s));
+                                    }
+                                }
+                                "strikethrough" => {
+                                    if let Some(b) = value.as_bool() {
+                                        run_attrs.strikethrough = Some(b);
+                                    }
+                                }
+                                "font" => {
+                                    if let Some(s) = value.as_str() {
+                                        run_attrs.font = Some(s.to_string());
+                                    }
+                                }
+                                "font_size" => {
+                                    if let Some(n) = value.as_u64() {
+                                        run_attrs.font_size = Some(n as u32);
+                                    } else if let Some(f) = value.as_f64() {
+                                        let rounded = (f.round() as u32).max(1).min(32767);
+                                        run_attrs.font_size = Some(rounded);
+                                    }
+                                }
+                                "color" => {
+                                    if let Some(s) = value.as_str() {
+                                        run_attrs.color = Some(s.to_string());
+                                    }
+                                }
+                                "highlight" => {
+                                    if let Some(s) = value.as_str() {
+                                        run_attrs.highlight = Some(s.to_string());
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                        Ok(DocOp::FormatRun {
                             para: *para,
-                            char: *char,
-                            text: content.clone(),
+                            start_char: *start_char,
+                            end_char: *end_char,
+                            attrs: run_attrs,
                         })
                     }
                     _ => Err(EditableModelError::InvalidOp(
-                        "Unsupported path type for replace".to_string(),
+                        "Format range end must be Text path".to_string(),
                     )),
-                }
-            }
-            ModelOp::Format { range, attrs } => {
-                match &range.start {
-                    Path::Text { para, char: start_char, .. } => {
-                        match &range.end {
-                            Path::Text { char: end_char, .. } => {
-                                let mut run_attrs = RunAttrs::default();
-                                for (key, value) in attrs {
-                                    match key.as_str() {
-                                        "bold" => {
-                                            if let Some(b) = value.as_bool() {
-                                                run_attrs.bold = Some(b);
-                                            }
-                                        }
-                                        "italic" => {
-                                            if let Some(b) = value.as_bool() {
-                                                run_attrs.italic = Some(b);
-                                            }
-                                        }
-                                        "underline" => {
-                                            if let Some(s) = value.as_str() {
-                                                run_attrs.underline =
-                                                    Some(parse_underline_type(s));
-                                            }
-                                        }
-                                        "strikethrough" => {
-                                            if let Some(b) = value.as_bool() {
-                                                run_attrs.strikethrough = Some(b);
-                                            }
-                                        }
-                                        "font" => {
-                                            if let Some(s) = value.as_str() {
-                                                run_attrs.font = Some(s.to_string());
-                                            }
-                                        }
-                                        "font_size" => {
-                                            if let Some(n) = value.as_u64() {
-                                                run_attrs.font_size = Some(n as u32);
-                                            } else if let Some(f) = value.as_f64() {
-                                                let rounded = (f.round() as u32).max(1).min(32767);
-                                                run_attrs.font_size = Some(rounded);
-                                            }
-                                        }
-                                        "color" => {
-                                            if let Some(s) = value.as_str() {
-                                                run_attrs.color = Some(s.to_string());
-                                            }
-                                        }
-                                        "highlight" => {
-                                            if let Some(s) = value.as_str() {
-                                                run_attrs.highlight = Some(s.to_string());
-                                            }
-                                        }
-                                        _ => {}
-                                    }
-                                }
-                                Ok(DocOp::FormatRun {
-                                    para: *para,
-                                    start_char: *start_char,
-                                    end_char: *end_char,
-                                    attrs: run_attrs,
-                                })
-                            }
-                            _ => Err(EditableModelError::InvalidOp(
-                                "Format range end must be Text path".to_string(),
-                            )),
-                        }
-                    }
-                    _ => Err(EditableModelError::InvalidOp(
-                        "Format range start must be Text path".to_string(),
-                    )),
-                }
-            }
+                },
+                _ => Err(EditableModelError::InvalidOp(
+                    "Format range start must be Text path".to_string(),
+                )),
+            },
             ModelOp::Move { from: _, to: _ } => Err(EditableModelError::InvalidOp(
                 "Move operation not yet supported".to_string(),
             )),
@@ -416,7 +421,7 @@ mod editable_model {
             content: "Start ".to_string(),
         };
         body.apply(&op).unwrap();
-        
+
         // Verify the text was inserted
         match &body.0.blocks[0] {
             DocxBlock::Paragraph(p) => {
@@ -434,7 +439,7 @@ mod editable_model {
             content: " End".to_string(),
         };
         body.apply(&op).unwrap();
-        
+
         match &body.0.blocks[0] {
             DocxBlock::Paragraph(p) => {
                 assert_eq!(p.runs[0].text, "Hello World End");
@@ -451,7 +456,7 @@ mod editable_model {
             content: "Small ".to_string(),
         };
         body.apply(&op).unwrap();
-        
+
         match &body.0.blocks[0] {
             DocxBlock::Paragraph(p) => {
                 assert_eq!(p.runs[0].text, "Hello Small World");
@@ -468,7 +473,7 @@ mod editable_model {
             content: "😀".to_string(),
         };
         body.apply(&op).unwrap();
-        
+
         match &body.0.blocks[0] {
             DocxBlock::Paragraph(p) => {
                 assert_eq!(p.runs[0].text, "Hello 😀World");
@@ -501,7 +506,7 @@ mod editable_model {
             range: text_range(0, 6, 11), // Delete "World"
         };
         body.apply(&op).unwrap();
-        
+
         match &body.0.blocks[0] {
             DocxBlock::Paragraph(p) => {
                 assert_eq!(p.runs[0].text, "Hello ");
@@ -517,7 +522,7 @@ mod editable_model {
             range: text_range(0, 0, 5), // Delete "Hello"
         };
         body.apply(&op).unwrap();
-        
+
         match &body.0.blocks[0] {
             DocxBlock::Paragraph(p) => {
                 assert_eq!(p.runs[0].text, " World");
@@ -536,12 +541,12 @@ mod editable_model {
             }],
             ..Default::default()
         });
-        
+
         let op = ModelOp::Delete {
             range: text_range(0, 1, 2), // Delete the emoji (char index 1)
         };
         body.apply(&op).unwrap();
-        
+
         match &body.0.blocks[0] {
             DocxBlock::Paragraph(p) => {
                 assert_eq!(p.runs[0].text, "AB");
@@ -569,17 +574,20 @@ mod editable_model {
         let mut body = create_test_body();
         let mut attrs = BTreeMap::new();
         attrs.insert("bold".to_string(), serde_json::Value::Bool(true));
-        
+
         let op = ModelOp::Format {
             range: text_range(0, 0, 5), // Format "Hello"
             attrs,
         };
         body.apply(&op).unwrap();
-        
+
         match &body.0.blocks[0] {
             DocxBlock::Paragraph(p) => {
                 // FormatRun should have split the run
-                assert!(p.runs.len() >= 2, "Expected at least 2 runs after formatting");
+                assert!(
+                    p.runs.len() >= 2,
+                    "Expected at least 2 runs after formatting"
+                );
                 // First run should be bold
                 // Note: The exact behavior depends on the DocModel implementation
             }
@@ -593,14 +601,17 @@ mod editable_model {
         let mut attrs = BTreeMap::new();
         attrs.insert("bold".to_string(), serde_json::Value::Bool(true));
         attrs.insert("italic".to_string(), serde_json::Value::Bool(true));
-        attrs.insert("color".to_string(), serde_json::Value::String("#FF0000".to_string()));
-        
+        attrs.insert(
+            "color".to_string(),
+            serde_json::Value::String("#FF0000".to_string()),
+        );
+
         let op = ModelOp::Format {
             range: text_range(0, 0, 11), // Format entire first paragraph
             attrs,
         };
         body.apply(&op).unwrap();
-        
+
         // Just verify it doesn't panic
     }
 
@@ -703,24 +714,24 @@ mod editable_model {
         // Test: Insert text, then delete it, should yield original
         let mut body = create_test_body();
         let original_text = body.0.blocks[0].to_owned();
-        
+
         let text_to_insert = "TEST".to_string();
         let insert_op = ModelOp::Insert {
             at: text_path(0, 0, 5),
             content: text_to_insert.clone(),
         };
-        
+
         // Apply insert
         body.apply(&insert_op).unwrap();
-        
+
         // Manually create the proper delete op since invert doesn't capture content
         let delete_op = ModelOp::Delete {
             range: text_range(0, 5, 5 + text_to_insert.chars().count()),
         };
-        
+
         // Apply delete
         body.apply(&delete_op).unwrap();
-        
+
         // Verify we're back to original
         match (&body.0.blocks[0], &original_text) {
             (DocxBlock::Paragraph(p1), DocxBlock::Paragraph(p2)) => {
@@ -734,24 +745,26 @@ mod editable_model {
     fn test_roundtrip_delete_insert_text() {
         // Test: Delete text (with known content), then insert it back
         let mut body = create_test_body();
-        
+
         let deleted_text = " World".to_string();
         let delete_range = text_range(0, 5, 11); // Delete " World"
-        let delete_op = ModelOp::Delete { range: delete_range.clone() };
-        
+        let delete_op = ModelOp::Delete {
+            range: delete_range.clone(),
+        };
+
         // Save original
         let original_text = body.0.blocks[0].to_owned();
-        
+
         // Apply delete
         body.apply(&delete_op).unwrap();
-        
+
         // Apply inverse (insert with saved content)
         let insert_op = ModelOp::Insert {
             at: delete_range.start.clone(),
             content: deleted_text,
         };
         body.apply(&insert_op).unwrap();
-        
+
         // Verify we're back to original
         match (&body.0.blocks[0], &original_text) {
             (DocxBlock::Paragraph(p1), DocxBlock::Paragraph(p2)) => {
@@ -766,22 +779,22 @@ mod editable_model {
         // Test: Insert unicode (emoji), then delete it
         let mut body = create_test_body();
         let original_text = body.0.blocks[0].to_owned();
-        
+
         let emoji = "😀".to_string();
         let insert_op = ModelOp::Insert {
             at: text_path(0, 0, 5),
             content: emoji.clone(),
         };
-        
+
         body.apply(&insert_op).unwrap();
-        
+
         // Manually create delete op
         let delete_op = ModelOp::Delete {
             range: text_range(0, 5, 5 + emoji.chars().count()),
         };
-        
+
         body.apply(&delete_op).unwrap();
-        
+
         match (&body.0.blocks[0], &original_text) {
             (DocxBlock::Paragraph(p1), DocxBlock::Paragraph(p2)) => {
                 assert_eq!(p1.runs[0].text, p2.runs[0].text);
@@ -795,7 +808,7 @@ mod editable_model {
         // Test: Apply format, then clear it (approximate round-trip)
         let mut body = create_test_body();
         let original = body.0.blocks[0].to_owned();
-        
+
         // Apply bold format
         let mut attrs = BTreeMap::new();
         attrs.insert("bold".to_string(), serde_json::Value::Bool(true));
@@ -804,14 +817,14 @@ mod editable_model {
             attrs,
         };
         body.apply(&format_op).unwrap();
-        
+
         // Apply inverse (format with empty attrs - clears formatting)
         let clear_op = ModelOp::Format {
             range: text_range(0, 0, 5),
             attrs: BTreeMap::new(),
         };
         body.apply(&clear_op).unwrap();
-        
+
         // Note: FormatRun splits runs, so we can't easily verify exact equality
         // But we can verify the text content is unchanged
         match (&body.0.blocks[0], &original) {

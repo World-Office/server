@@ -220,17 +220,14 @@ pub fn read_fields(bytes: &[u8], backend: &PdfiumBackend) -> Result<Vec<AcroForm
                 };
 
                 // Get the annotation bounds if available
-                let rect = annotation
-                    .bounds()
-                    .ok()
-                    .map(|r| {
-                        Rect::new(
-                            r.left().value,
-                            r.bottom().value,
-                            r.width().value,
-                            r.height().value,
-                        )
-                    });
+                let rect = annotation.bounds().ok().map(|r| {
+                    Rect::new(
+                        r.left().value,
+                        r.bottom().value,
+                        r.width().value,
+                        r.height().value,
+                    )
+                });
 
                 let is_read_only = form_field.is_read_only();
                 let is_required = form_field.is_required();
@@ -268,11 +265,9 @@ pub fn get_field(
     field_name: &str,
 ) -> Result<Option<AcroFormField>, FormError> {
     let fields = read_fields(bytes, backend)?;
-    Ok(fields.into_iter().find(|f| {
-        f.name
-            .as_ref()
-            .is_some_and(|n| n == field_name)
-    }))
+    Ok(fields
+        .into_iter()
+        .find(|f| f.name.as_ref().is_some_and(|n| n == field_name)))
 }
 
 /// Sets the value of an AcroForm text field and returns the modified PDF bytes.
@@ -336,9 +331,7 @@ pub fn set_field_value(
                                 .set_value(value)
                                 .map_err(|e| FormError::Pdfium(e.to_string()))?;
                         } else {
-                            return Err(FormError::UnsupportedFieldType(
-                                AcroFormFieldType::Text,
-                            ));
+                            return Err(FormError::UnsupportedFieldType(AcroFormFieldType::Text));
                         }
                     }
                     PdfFormFieldType::ComboBox => {
@@ -346,9 +339,7 @@ pub fn set_field_value(
                         // We set the value using the PdfFormField's set_value_impl
                         // through the annotation's form field mutation API
                         // For now, ComboBox set_value uses the same approach as Text
-                        return Err(FormError::UnsupportedFieldType(
-                            AcroFormFieldType::ComboBox,
-                        ));
+                        return Err(FormError::UnsupportedFieldType(AcroFormFieldType::ComboBox));
                     }
                     PdfFormFieldType::Checkbox => {
                         if let Some(checkbox_field) = form_field.as_checkbox_field_mut() {
@@ -407,8 +398,6 @@ pub fn set_field_value(
     Ok(result)
 }
 
-
-
 /// Collects form field names from a PDF document.
 ///
 /// This is a convenience function for quickly listing all field names
@@ -421,15 +410,9 @@ pub fn set_field_value(
 /// # Returns
 /// A list of field names, or a `FormError`.
 #[allow(dead_code)]
-pub fn field_names(
-    bytes: &[u8],
-    backend: &PdfiumBackend,
-) -> Result<Vec<String>, FormError> {
+pub fn field_names(bytes: &[u8], backend: &PdfiumBackend) -> Result<Vec<String>, FormError> {
     let fields = read_fields(bytes, backend)?;
-    Ok(fields
-        .into_iter()
-        .filter_map(|f| f.name)
-        .collect())
+    Ok(fields.into_iter().filter_map(|f| f.name).collect())
 }
 
 /// Counts the number of AcroForm fields in a document.
@@ -441,10 +424,7 @@ pub fn field_names(
 /// # Returns
 /// The number of form fields, or a `FormError`.
 #[allow(dead_code)]
-pub fn field_count(
-    bytes: &[u8],
-    backend: &PdfiumBackend,
-) -> Result<usize, FormError> {
+pub fn field_count(bytes: &[u8], backend: &PdfiumBackend) -> Result<usize, FormError> {
     let fields = read_fields(bytes, backend)?;
     Ok(fields.len())
 }
@@ -458,10 +438,7 @@ pub fn field_count(
 /// # Returns
 /// `true` if the document has at least one form field.
 #[allow(dead_code)]
-pub fn has_form(
-    bytes: &[u8],
-    backend: &PdfiumBackend,
-) -> Result<bool, FormError> {
+pub fn has_form(bytes: &[u8], backend: &PdfiumBackend) -> Result<bool, FormError> {
     match read_fields(bytes, backend) {
         Ok(fields) => Ok(!fields.is_empty()),
         Err(FormError::NoForm) => Ok(false),
@@ -476,7 +453,7 @@ pub fn has_form(
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     use std::path::PathBuf;
 
     /// Helper to get the path to the test PDF file.
@@ -693,7 +670,7 @@ mod tests {
         // 1. A PDF file with at least one AcroForm text field
         // 2. PDFIUM_BINDINGS_LIBRARY_PATH to be set
         // In a real test environment, a form-enabled test PDF would be used.
-        
+
         if std::env::var("PDFIUM_BINDINGS_LIBRARY_PATH").is_err() {
             return;
         }
@@ -712,8 +689,10 @@ mod tests {
 
         // Should fail with NoForm since hello-world PDF has no form
         let result = set_field_value(&pdf_bytes, &backend, "AnyField", "test");
-        assert!(matches!(result, Err(FormError::NoForm)),
-            "Expected NoForm error for PDF without AcroForm");
+        assert!(
+            matches!(result, Err(FormError::NoForm)),
+            "Expected NoForm error for PDF without AcroForm"
+        );
 
         // Verify bytes are unchanged
         let original_len = pdf_bytes.len();

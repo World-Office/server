@@ -32,8 +32,7 @@ use std::path::{Path, PathBuf};
 
 // Keep in sync with the `pdfium_latest` feature in Cargo.toml.
 const PDFIUM_VERSION: &str = "7881";
-const BASE_URL: &str =
-    "https://github.com/bblanchon/pdfium-binaries/releases/download";
+const BASE_URL: &str = "https://github.com/bblanchon/pdfium-binaries/releases/download";
 
 // ── Platform metadata ────────────────────────────────────────────────────
 
@@ -134,14 +133,10 @@ fn download(url: &str, dest: &Path) {
     match result {
         Ok(s) if s.success() => return,
         Ok(s) => {
-            println!(
-                "cargo:warning=wo-pdf-render: curl exited {s}, trying wget…"
-            )
+            println!("cargo:warning=wo-pdf-render: curl exited {s}, trying wget…")
         }
         Err(e) => {
-            println!(
-                "cargo:warning=wo-pdf-render: curl unavailable ({e}), trying wget…"
-            )
+            println!("cargo:warning=wo-pdf-render: curl unavailable ({e}), trying wget…")
         }
     }
 
@@ -167,12 +162,8 @@ fn download(url: &str, dest: &Path) {
 // ── Extraction helper ─────────────────────────────────────────────────────
 
 fn extract_lib(tgz_path: &Path, lib_path_in_archive: &str, dest: &Path) {
-    let file = std::fs::File::open(tgz_path).unwrap_or_else(|e| {
-        panic!(
-            "wo-pdf-render: cannot open {}: {e}",
-            tgz_path.display()
-        )
-    });
+    let file = std::fs::File::open(tgz_path)
+        .unwrap_or_else(|e| panic!("wo-pdf-render: cannot open {}: {e}", tgz_path.display()));
     let gz = flate2::read::GzDecoder::new(file);
     let mut archive = tar::Archive::new(gz);
 
@@ -180,21 +171,16 @@ fn extract_lib(tgz_path: &Path, lib_path_in_archive: &str, dest: &Path) {
         .entries()
         .expect("wo-pdf-render: failed to iterate tar archive")
     {
-        let mut entry = entry_result
-            .expect("wo-pdf-render: failed to read tar entry");
+        let mut entry = entry_result.expect("wo-pdf-render: failed to read tar entry");
         let path = entry
             .path()
             .expect("wo-pdf-render: invalid tar entry path")
             .to_path_buf();
 
         if path.to_str() == Some(lib_path_in_archive) {
-            entry
-                .unpack(dest)
-                .unwrap_or_else(|e| {
-                    panic!(
-                        "wo-pdf-render: failed to extract '{lib_path_in_archive}': {e}"
-                    )
-                });
+            entry.unpack(dest).unwrap_or_else(|e| {
+                panic!("wo-pdf-render: failed to extract '{lib_path_in_archive}': {e}")
+            });
             return;
         }
     }
@@ -214,18 +200,14 @@ fn resolve_native(os: &str, arch: &str) -> PathBuf {
     if let Ok(p) = std::env::var("PDFIUM_STATIC_LIB_PATH")
         && !p.is_empty()
     {
-        println!(
-            "cargo:warning=wo-pdf-render: using PDFIUM_STATIC_LIB_PATH={p}"
-        );
+        println!("cargo:warning=wo-pdf-render: using PDFIUM_STATIC_LIB_PATH={p}");
         return PathBuf::from(p);
     }
 
     if let Ok(p) = std::env::var("PDFIUM_BINDINGS_LIBRARY_PATH")
         && !p.is_empty()
     {
-        println!(
-            "cargo:warning=wo-pdf-render: using PDFIUM_BINDINGS_LIBRARY_PATH={p}"
-        );
+        println!("cargo:warning=wo-pdf-render: using PDFIUM_BINDINGS_LIBRARY_PATH={p}");
         return PathBuf::from(p);
     }
 
@@ -275,8 +257,7 @@ fn resolve_native(os: &str, arch: &str) -> PathBuf {
 // ── WASM vendored path ───────────────────────────────────────────────────
 
 fn check_wasm_vendor() {
-    let manifest_dir =
-        std::env::var("CARGO_MANIFEST_DIR").unwrap_or_default();
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_default();
     let vendor_dir = PathBuf::from(manifest_dir)
         .join("vendor")
         .join("pdfium-wasm");
@@ -296,10 +277,7 @@ fn check_wasm_vendor() {
             "cargo:warning=wo-pdf-render: to vendor pdfium for WASM, build pdfium \
              with Emscripten and place the output .wasm file at:"
         );
-        println!(
-            "cargo:warning=wo-pdf-render:   {}",
-            wasm_file.display()
-        );
+        println!("cargo:warning=wo-pdf-render:   {}", wasm_file.display());
         println!(
             "cargo:warning=wo-pdf-render: the build will succeed (WASM bindings \
              compile), but runtime loading will fail without the module."
@@ -314,16 +292,14 @@ fn main() {
     println!("cargo:rerun-if-env-changed=PDFIUM_BINDINGS_LIBRARY_PATH");
     println!("cargo:rerun-if-env-changed=PDFIUM_VENDORED_CACHE_DIR");
 
-    let target_arch =
-        std::env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
+    let target_arch = std::env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
 
     if target_arch == "wasm32" {
         check_wasm_vendor();
         return;
     }
 
-    let target_os =
-        std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
+    let target_os = std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default();
 
     let lib_path = resolve_native(&target_os, &target_arch);
 

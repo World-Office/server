@@ -1,12 +1,23 @@
 //! Image operations for DOCX document mutation
 
-use super::ops::{DocOp, DocOpError, DocModel, WrapMode};
+use super::ops::{DocModel, DocOp, DocOpError, WrapMode};
 use wo_ooxml::model::{DocxBlock, DocxImage};
 
 impl<'a> DocModel<'a> {
-    pub fn image_apply_insert(&mut self, after_para: usize, bytes: Vec<u8>, width_emu: u32, height_emu: u32, wrap: WrapMode) -> Result<DocOp, DocOpError> {
+    pub fn image_apply_insert(
+        &mut self,
+        after_para: usize,
+        bytes: Vec<u8>,
+        width_emu: u32,
+        height_emu: u32,
+        wrap: WrapMode,
+    ) -> Result<DocOp, DocOpError> {
         if after_para > self.body.blocks.len() {
-            return Err(DocOpError::OutOfRange(format!("after_para {} exceeds body length {}", after_para, self.body.blocks.len())));
+            return Err(DocOpError::OutOfRange(format!(
+                "after_para {} exceeds body length {}",
+                after_para,
+                self.body.blocks.len()
+            )));
         }
 
         let wrap_mode_str = match wrap {
@@ -17,7 +28,8 @@ impl<'a> DocModel<'a> {
             WrapMode::TopBottom => "topBottom",
             WrapMode::Behind => "behind",
             WrapMode::InFront => "inFront",
-        }.to_string();
+        }
+        .to_string();
 
         let image = DocxImage {
             bytes,
@@ -33,14 +45,16 @@ impl<'a> DocModel<'a> {
             self.body.blocks.insert(insert_at, DocxBlock::Image(image));
         }
 
-        Ok(DocOp::DeleteParagraph { para: after_para + 1 })
+        Ok(DocOp::DeleteParagraph {
+            para: after_para + 1,
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wo_ooxml::model::{DocxBody, DocxParagraph, DocxRun, DocxParagraphProperties};
+    use wo_ooxml::model::{DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun};
 
     fn create_test_paragraph(text: &str) -> DocxParagraph {
         DocxParagraph {
@@ -75,24 +89,18 @@ mod tests {
         let mut model = DocModel { body: &mut body };
 
         let image_bytes = vec![1, 2, 3, 4, 5];
-        let result = model.image_apply_insert(
-            1,
-            image_bytes.clone(),
-            1000,
-            2000,
-            WrapMode::Inline,
-        );
+        let result = model.image_apply_insert(1, image_bytes.clone(), 1000, 2000, WrapMode::Inline);
 
         assert!(result.is_ok());
         let inverse = result.unwrap();
-        
+
         match inverse {
             DocOp::DeleteParagraph { para } => assert_eq!(para, 2),
             _ => panic!("Expected DeleteParagraph as inverse"),
         }
 
         assert_eq!(body.blocks.len(), 3);
-        
+
         match &body.blocks[2] {
             DocxBlock::Image(img) => {
                 assert_eq!(img.bytes, image_bytes);
@@ -114,24 +122,18 @@ mod tests {
         let mut model = DocModel { body: &mut body };
 
         let image_bytes = vec![10, 20, 30];
-        let result = model.image_apply_insert(
-            1,
-            image_bytes.clone(),
-            500,
-            600,
-            WrapMode::Square,
-        );
+        let result = model.image_apply_insert(1, image_bytes.clone(), 500, 600, WrapMode::Square);
 
         assert!(result.is_ok());
         let inverse = result.unwrap();
-        
+
         match inverse {
             DocOp::DeleteParagraph { para } => assert_eq!(para, 2),
             _ => panic!("Expected DeleteParagraph as inverse"),
         }
 
         assert_eq!(body.blocks.len(), 4);
-        
+
         match &body.blocks[2] {
             DocxBlock::Image(img) => {
                 assert_eq!(img.bytes, image_bytes);
@@ -157,13 +159,7 @@ mod tests {
 
         let mut model = DocModel { body: &mut body };
 
-        let result = model.image_apply_insert(
-            5,
-            vec![1, 2, 3],
-            100,
-            100,
-            WrapMode::Inline,
-        );
+        let result = model.image_apply_insert(5, vec![1, 2, 3], 100, 100, WrapMode::Inline);
 
         assert!(result.is_err());
         match result.unwrap_err() {

@@ -745,11 +745,14 @@ mod tests {
     #[test]
     fn render_embedded_stored_chart() {
         let mut chart = Chart::new(ChartKind::Bar);
-        chart.add_series(Series::new("Data", vec![DataPoint::new(50.0), DataPoint::new(75.0)]));
-        
+        chart.add_series(Series::new(
+            "Data",
+            vec![DataPoint::new(50.0), DataPoint::new(75.0)],
+        ));
+
         let mut collection = ChartCollection::new();
         collection.insert("stored_chart".into(), chart);
-        
+
         let chart_ref = ChartRef::Stored {
             id: "stored_chart".into(),
         };

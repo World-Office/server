@@ -49,10 +49,10 @@ use wo_odf::model::{
 use wo_odf::OdfSerializer;
 use wo_ooxml::model::{
     AdvanceMode, AnimationData as OoxmlAnimData, Bounds, ConnectorShape, ConnectorShapeType,
-    CoreProperties, DocxBlock, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, DocxTable,
-    DocxTableCell, DocxTableRow, Fill, OoxmlDocument, OoxmlFormat, PictureShape, PptxPresentation,
-    Slide, SlideShape, SlideSize, SlideTransition, TextBody as OoxmlTextBody, TextBoxShape,
-    TransitionEffect, UnderlineType,
+    CoreProperties, DocxBlock, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun,
+    DocxTable, DocxTableCell, DocxTableRow, Fill, OoxmlDocument, OoxmlFormat, PictureShape,
+    PptxPresentation, Slide, SlideShape, SlideSize, SlideTransition, TextBody as OoxmlTextBody,
+    TextBoxShape, TransitionEffect, UnderlineType,
 };
 use wo_ooxml::{OoxmlParser, OoxmlSerializer};
 
@@ -2119,7 +2119,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                 paragraphs.push(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                    section_properties: None,
                     runs: vec![DocxRun {
                         text,
                         bold: true,
@@ -2158,7 +2158,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                             indent_left: Some(720),
                             ..Default::default()
                         },
-            section_properties: None,
+                        section_properties: None,
                         runs: vec![DocxRun {
                             text: format!("\u{2022} {}", text),
                             bold: false,
@@ -2188,7 +2188,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                             indent_left: Some(720),
                             ..Default::default()
                         },
-            section_properties: None,
+                        section_properties: None,
                         runs: vec![DocxRun {
                             text: format!("{}. {}", num, text),
                             bold: false,
@@ -2221,7 +2221,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                                     paragraphs: vec![DocxParagraph {
                                         style_id: None,
                                         properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                                        section_properties: None,
                                         runs: vec![DocxRun {
                                             text,
                                             bold: false,
@@ -2259,7 +2259,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                 paragraphs.push(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                    section_properties: None,
                     runs: vec![DocxRun {
                         text: "\u{2500}".repeat(24),
                         bold: false,
@@ -2283,7 +2283,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                     paragraphs.push(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                        section_properties: None,
                         runs: vec![DocxRun {
                             text: line.to_string(),
                             bold: false,
@@ -2323,7 +2323,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                     paragraphs.push(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                        section_properties: None,
                         runs: vec![DocxRun {
                             text: content.trim().to_string(),
                             bold: false,
@@ -3192,7 +3192,7 @@ fn odf_to_ooxml(doc: &OdfDocument) -> OoxmlDocument {
                     paragraphs.push(DocxParagraph {
                         style_id: Some(format!("Heading{}", h.level)),
                         properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                        section_properties: None,
                         runs: vec![DocxRun {
                             text: h.text.clone(),
                             bold: true,
@@ -3217,7 +3217,7 @@ fn odf_to_ooxml(doc: &OdfDocument) -> OoxmlDocument {
                             paragraphs.push(DocxParagraph {
                                 style_id: None,
                                 properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                                section_properties: None,
                                 runs: vec![DocxRun {
                                     text: p.text.clone(),
                                     bold: false,
@@ -3287,7 +3287,7 @@ fn odf_to_ooxml(doc: &OdfDocument) -> OoxmlDocument {
                                         indent_left: Some(720),
                                         ..Default::default()
                                     },
-            section_properties: None,
+                                    section_properties: None,
                                     runs: vec![DocxRun {
                                         text: format!("{}{}", prefix, p.text),
                                         bold: false,
@@ -3321,7 +3321,7 @@ fn odf_to_ooxml(doc: &OdfDocument) -> OoxmlDocument {
                                     paragraphs: vec![DocxParagraph {
                                         style_id: None,
                                         properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                                        section_properties: None,
                                         runs: vec![DocxRun {
                                             text: c.text.clone(),
                                             bold: false,
@@ -3434,7 +3434,7 @@ fn rtf_to_ooxml(rtf_doc: &RtfDocument) -> OoxmlDocument {
                 paragraphs.push(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                    section_properties: None,
                     runs: vec![],
                 });
                 // Tables are collected separately
@@ -4148,7 +4148,7 @@ fn epub_to_ooxml(epub_doc: &EpubDocument) -> OoxmlDocument {
             paragraphs.push(DocxParagraph {
                 style_id: None,
                 properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                section_properties: None,
                 runs: vec![DocxRun {
                     text: chapter.title.clone(),
                     bold: true,
@@ -4175,7 +4175,7 @@ fn epub_to_ooxml(epub_doc: &EpubDocument) -> OoxmlDocument {
                 paragraphs.push(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                    section_properties: None,
                     runs: vec![DocxRun {
                         text: line.to_string(),
                         bold: false,
@@ -4253,7 +4253,7 @@ fn fb2_to_ooxml(fb2_doc: &Fb2Document) -> OoxmlDocument {
             paragraphs.push(DocxParagraph {
                 style_id: None,
                 properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                section_properties: None,
                 runs: vec![DocxRun {
                     text: book_title.clone(),
                     bold: true,
@@ -4348,7 +4348,7 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
             paragraphs.push(DocxParagraph {
                 style_id: None,
                 properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                section_properties: None,
                 runs: vec![DocxRun {
                     text: title_text,
                     bold: true,
@@ -4386,7 +4386,7 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
                 paragraphs.push(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                    section_properties: None,
                     runs: vec![],
                 });
             }
@@ -4438,7 +4438,7 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
                 paragraphs.push(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                    section_properties: None,
                     runs: vec![DocxRun {
                         text: value.clone(),
                         bold: false,
@@ -4463,7 +4463,7 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
                         paragraphs.push(DocxParagraph {
                             style_id: None,
                             properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                            section_properties: None,
                             runs: vec![DocxRun {
                                 text: format!("[image: {}]", alt_text),
                                 bold: false,
@@ -4498,7 +4498,7 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
                                 indent_left: Some(720),
                                 ..Default::default()
                             },
-            section_properties: None,
+                            section_properties: None,
                             runs: vec![DocxRun {
                                 text: title_text.trim().to_string(),
                                 bold: true,
@@ -4528,7 +4528,7 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
                                     indent_left: Some(1080),
                                     ..Default::default()
                                 },
-            section_properties: None,
+                                section_properties: None,
                                 runs: vec![DocxRun {
                                     text,
                                     bold: false,
@@ -4551,7 +4551,7 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
                     paragraphs.push(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                        section_properties: None,
                         runs: vec![],
                     });
                 }
@@ -4837,7 +4837,7 @@ fn xps_to_ooxml(xps_doc: &wo_xps::model::XpsDocument) -> OoxmlDocument {
                 paragraphs.push(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                    section_properties: None,
                     runs: vec![DocxRun {
                         text: glyph.text.clone(),
                         bold: false,
@@ -4917,7 +4917,7 @@ fn ofd_to_ooxml(ofd_doc: &wo_ofd::model::OfdDocument) -> OoxmlDocument {
             paragraphs.push(DocxParagraph {
                 style_id: None,
                 properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                section_properties: None,
                 runs: vec![DocxRun {
                     text: text_obj.text.clone(),
                     bold: text_obj.bold,
@@ -4994,7 +4994,7 @@ fn hwp_to_ooxml(hwp_doc: &wo_hwp::model::HwpDocument) -> OoxmlDocument {
                 paragraphs.push(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                    section_properties: None,
                     runs: vec![DocxRun {
                         text: title.clone(),
                         bold: true,
@@ -5107,7 +5107,7 @@ fn djvu_to_ooxml(djvu_doc: &wo_djvu::model::DjvuDocument) -> OoxmlDocument {
             paragraphs.push(DocxParagraph {
                 style_id: None,
                 properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                section_properties: None,
                 runs: vec![DocxRun {
                     text: title.clone(),
                     bold: true,
@@ -5132,7 +5132,7 @@ fn djvu_to_ooxml(djvu_doc: &wo_djvu::model::DjvuDocument) -> OoxmlDocument {
     paragraphs.push(DocxParagraph {
         style_id: None,
         properties: DocxParagraphProperties::default(),
-            section_properties: None,
+        section_properties: None,
         runs: vec![DocxRun {
             text: format!(
                 "DjVu Document — {} pages, version {}, subtype {}",
@@ -5427,7 +5427,7 @@ fn wo_shape_to_slide_shape(
                     paragraphs: vec![DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                        section_properties: None,
                         runs: vec![DocxRun {
                             text: text.clone(),
                             font_size: shape.font_size.map(|fs| (fs * 100.0) as u32),
@@ -5444,7 +5444,7 @@ fn wo_shape_to_slide_shape(
                     paragraphs: vec![DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                        section_properties: None,
                         runs: vec![],
                     }],
                 }
@@ -10671,16 +10671,15 @@ mod tests {
             },
             relationships: vec![],
             xlsx_workbook: None,
-            docx_body: Some(DocxBody { blocks: vec![
-
-    DocxBlock::Table(DocxTable {
+            docx_body: Some(DocxBody {
+                blocks: vec![DocxBlock::Table(DocxTable {
                     rows: vec![DocxTableRow {
                         cells: vec![
                             DocxTableCell {
                                 paragraphs: vec![DocxParagraph {
                                     style_id: None,
                                     properties: Default::default(),
-            section_properties: None,
+                                    section_properties: None,
                                     runs: vec![DocxRun {
                                         text: "Cell A1".into(),
                                         bold: false,
@@ -10735,8 +10734,8 @@ mod tests {
                         is_header: true,
                     }],
                     properties: Default::default(),
-                }),
-] }),
+                })],
+            }),
         };
         let odf = docx_to_odf(&doc);
         assert_eq!(odf.metadata.title, Some("Doc Title".into()));
@@ -10772,12 +10771,12 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-            docx_body: Some(DocxBody { blocks: vec![
-
-    DocxBlock::Paragraph(DocxParagraph {
+            docx_body: Some(DocxBody {
+                blocks: vec![
+                    DocxBlock::Paragraph(DocxParagraph {
                         style_id: Some("Heading1".into()),
                         properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                        section_properties: None,
                         runs: vec![DocxRun {
                             text: "Chapter".into(),
                             bold: true,
@@ -10795,7 +10794,7 @@ mod tests {
                             all_caps: false,
                         }],
                     }),
-    DocxBlock::Paragraph(DocxParagraph {
+                    DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
                         section_properties: None,
@@ -10816,7 +10815,8 @@ mod tests {
                             all_caps: false,
                         }],
                     }),
-] }),
+                ],
+            }),
         };
         let odf = docx_to_odf(&doc);
         match &odf.content {
@@ -13600,12 +13600,12 @@ mod tests {
             },
             relationships: vec![],
             xlsx_workbook: None,
-            docx_body: Some(DocxBody { blocks: vec![
-
-    DocxBlock::Paragraph(DocxParagraph {
+            docx_body: Some(DocxBody {
+                blocks: vec![
+                    DocxBlock::Paragraph(DocxParagraph {
                         style_id: Some("Heading1".into()),
                         properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                        section_properties: None,
                         runs: vec![DocxRun {
                             text: "Chapter 1".into(),
                             bold: true,
@@ -13623,7 +13623,7 @@ mod tests {
                             all_caps: false,
                         }],
                     }),
-    DocxBlock::Paragraph(DocxParagraph {
+                    DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
                         section_properties: None,
@@ -13644,7 +13644,8 @@ mod tests {
                             all_caps: false,
                         }],
                     }),
-] }),
+                ],
+            }),
         };
         let serialized = OoxmlSerializer::new()
             .serialize(&ooxml)
@@ -13691,12 +13692,12 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-            docx_body: Some(DocxBody { blocks: vec![
-
-    DocxBlock::Paragraph(DocxParagraph {
+            docx_body: Some(DocxBody {
+                blocks: vec![
+                    DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                        section_properties: None,
                         runs: vec![DocxRun {
                             text: "First line".into(),
                             bold: false,
@@ -13714,7 +13715,7 @@ mod tests {
                             all_caps: false,
                         }],
                     }),
-    DocxBlock::Paragraph(DocxParagraph {
+                    DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
                         section_properties: None,
@@ -13735,7 +13736,8 @@ mod tests {
                             all_caps: false,
                         }],
                     }),
-] }),
+                ],
+            }),
         };
         let serialized = OoxmlSerializer::new().serialize(&ooxml).expect("serialize");
         let result = DocxToEpubConverter.convert(&serialized).expect("convert");
@@ -13998,7 +14000,7 @@ mod tests {
                 DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                    section_properties: None,
                     runs: vec![DocxRun {
                         text: "Hello ".into(),
                         ..DocxRun::default()
@@ -14025,7 +14027,7 @@ mod tests {
             paragraphs: vec![DocxParagraph {
                 style_id: None,
                 properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                section_properties: None,
                 runs: vec![DocxRun {
                     text: "Styled".into(),
                     font_size: Some(2400), // 24pt in half-points
@@ -14046,7 +14048,7 @@ mod tests {
             paragraphs: vec![DocxParagraph {
                 style_id: None,
                 properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                section_properties: None,
                 runs: vec![
                     DocxRun {
                         text: "".into(),
@@ -14076,7 +14078,7 @@ mod tests {
             paragraphs: vec![DocxParagraph {
                 style_id: None,
                 properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                section_properties: None,
                 runs: vec![
                     DocxRun {
                         text: "one".into(),
@@ -14163,18 +14165,17 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-            docx_body: Some(DocxBody { blocks: vec![
-
-    DocxBlock::Paragraph(DocxParagraph {
+            docx_body: Some(DocxBody {
+                blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                    section_properties: None,
                     runs: vec![DocxRun {
                         text: "Hello XPS".into(),
                         ..DocxRun::default()
                     }],
-                }),
-] }),
+                })],
+            }),
         };
         let xps = docx_to_xps(&doc);
         assert_eq!(xps.page_count, 1);
@@ -14194,18 +14195,18 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-            docx_body: Some(DocxBody { blocks: vec![
-
-    DocxBlock::Paragraph(DocxParagraph {
+            docx_body: Some(DocxBody {
+                blocks: vec![
+                    DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                        section_properties: None,
                         runs: vec![DocxRun {
                             text: "First line".into(),
                             ..DocxRun::default()
                         }],
                     }),
-    DocxBlock::Paragraph(DocxParagraph {
+                    DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
                         section_properties: None,
@@ -14214,7 +14215,8 @@ mod tests {
                             ..DocxRun::default()
                         }],
                     }),
-] }),
+                ],
+            }),
         };
         let xps = docx_to_xps(&doc);
         assert_eq!(xps.page_count, 1);
@@ -14236,18 +14238,17 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-            docx_body: Some(DocxBody { blocks: vec![
-
-    DocxBlock::Paragraph(DocxParagraph {
+            docx_body: Some(DocxBody {
+                blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                    section_properties: None,
                     runs: vec![DocxRun {
                         text: "Part1\nPart2".into(),
                         ..DocxRun::default()
                     }],
-                }),
-] }),
+                })],
+            }),
         };
         let xps = docx_to_xps(&doc);
         // Both parts on same page
@@ -14269,18 +14270,18 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-            docx_body: Some(DocxBody { blocks: vec![
-
-    DocxBlock::Paragraph(DocxParagraph {
+            docx_body: Some(DocxBody {
+                blocks: vec![
+                    DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                        section_properties: None,
                         runs: vec![DocxRun {
                             text: "".into(),
                             ..DocxRun::default()
                         }],
                     }),
-    DocxBlock::Paragraph(DocxParagraph {
+                    DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
                         section_properties: None,
@@ -14289,7 +14290,8 @@ mod tests {
                             ..DocxRun::default()
                         }],
                     }),
-] }),
+                ],
+            }),
         };
         let xps = docx_to_xps(&doc);
         assert_eq!(xps.pages[0].content.glyphs.len(), 1);
@@ -14367,7 +14369,7 @@ mod tests {
             paragraphs: vec![DocxParagraph {
                 style_id: None,
                 properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                section_properties: None,
                 runs: vec![
                     DocxRun {
                         text: "Hello ".into(),
@@ -14566,18 +14568,18 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-            docx_body: Some(DocxBody { blocks: vec![
-
-    DocxBlock::Paragraph(DocxParagraph {
+            docx_body: Some(DocxBody {
+                blocks: vec![
+                    DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                        section_properties: None,
                         runs: vec![DocxRun {
                             text: "Line1".into(),
                             ..DocxRun::default()
                         }],
                     }),
-    DocxBlock::Paragraph(DocxParagraph {
+                    DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
                         section_properties: None,
@@ -14586,7 +14588,8 @@ mod tests {
                             ..DocxRun::default()
                         }],
                     }),
-] }),
+                ],
+            }),
         };
         let lines = docx_body_to_text_lines(&doc);
         assert_eq!(lines, vec!["Line1", "Line2"]);
@@ -14617,9 +14620,8 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-            docx_body: Some(DocxBody { blocks: vec![
-
-    DocxBlock::Table(DocxTable {
+            docx_body: Some(DocxBody {
+                blocks: vec![DocxBlock::Table(DocxTable {
                     rows: vec![DocxTableRow {
                         cells: vec![
                             DocxTableCell {
@@ -14657,8 +14659,8 @@ mod tests {
                         is_header: false,
                     }],
                     properties: DocxTableProperties::default(),
-                }),
-] }),
+                })],
+            }),
         };
         let table_lines = docx_body_to_text_lines(&doc_with_table);
         assert_eq!(table_lines, vec!["A\tB"]);
@@ -15178,18 +15180,17 @@ mod tests {
 
     #[test]
     fn test_docx_body_to_epub_chapters_no_headings() {
-        let body = DocxBody { blocks: vec![
-
-    DocxBlock::Paragraph(DocxParagraph {
+        let body = DocxBody {
+            blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                 style_id: None,
                 properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                section_properties: None,
                 runs: vec![DocxRun {
                     text: "Line1".into(),
                     ..DocxRun::default()
                 }],
-            }),
-] };
+            })],
+        };
         let ch = docx_body_to_epub_chapters(&body);
         assert_eq!(ch.len(), 1);
         assert_eq!(ch[0].0, "Line1");
@@ -15198,18 +15199,18 @@ mod tests {
 
     #[test]
     fn test_docx_body_to_epub_chapters_with_headings() {
-        let body = DocxBody { blocks: vec![
-
-    DocxBlock::Paragraph(DocxParagraph {
+        let body = DocxBody {
+            blocks: vec![
+                DocxBlock::Paragraph(DocxParagraph {
                     style_id: Some("Heading1".into()),
                     properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                    section_properties: None,
                     runs: vec![DocxRun {
                         text: "Ch1".into(),
                         ..DocxRun::default()
                     }],
                 }),
-    DocxBlock::Paragraph(DocxParagraph {
+                DocxBlock::Paragraph(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
                     section_properties: None,
@@ -15218,7 +15219,7 @@ mod tests {
                         ..DocxRun::default()
                     }],
                 }),
-    DocxBlock::Paragraph(DocxParagraph {
+                DocxBlock::Paragraph(DocxParagraph {
                     style_id: Some("Heading2".into()),
                     properties: DocxParagraphProperties::default(),
                     section_properties: None,
@@ -15227,7 +15228,8 @@ mod tests {
                         ..DocxRun::default()
                     }],
                 }),
-] };
+            ],
+        };
         let ch = docx_body_to_epub_chapters(&body);
         assert_eq!(ch.len(), 3);
         assert_eq!(ch[0].0, "Untitled");
@@ -15257,18 +15259,18 @@ mod tests {
             },
             relationships: vec![],
             xlsx_workbook: None,
-            docx_body: Some(DocxBody { blocks: vec![
-
-    DocxBlock::Paragraph(DocxParagraph {
+            docx_body: Some(DocxBody {
+                blocks: vec![
+                    DocxBlock::Paragraph(DocxParagraph {
                         style_id: Some("Heading1".into()),
                         properties: DocxParagraphProperties::default(),
-            section_properties: None,
+                        section_properties: None,
                         runs: vec![DocxRun {
                             text: "Ch1".into(),
                             ..DocxRun::default()
                         }],
                     }),
-    DocxBlock::Paragraph(DocxParagraph {
+                    DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
                         section_properties: None,
@@ -15277,7 +15279,8 @@ mod tests {
                             ..DocxRun::default()
                         }],
                     }),
-] }),
+                ],
+            }),
         };
         let epub = docx_to_epub(&doc);
         assert_eq!(epub.version, "3.0");

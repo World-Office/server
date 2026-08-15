@@ -4,6 +4,9 @@
   "collaborators": ["World Office Contributors"],
   "description": "WASM bindings for World-Office rendering engine",
   "type": "module",
+  "scripts": {
+    "build": "wasm-pack build --target web --out-dir pkg"
+  },
   "files": ["pkg"],
   "main": "pkg/wo_renderer_wasm.js",
   "module": "pkg/wo_renderer_wasm.js",

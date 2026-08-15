@@ -49,12 +49,7 @@ pub trait PdfRenderer {
     /// - Pixels are in row-major order.
     /// - The width and height of the rendered page can be determined from the
     ///   PDF page dimensions at the given DPI.
-    fn render_page(
-        &self,
-        bytes: &[u8],
-        page: u32,
-        dpi: f32,
-    ) -> Result<Vec<u8>, crate::PdfError>;
+    fn render_page(&self, bytes: &[u8], page: u32, dpi: f32) -> Result<Vec<u8>, crate::PdfError>;
 
     /// Extracts text content from a specific page.
     ///
@@ -174,9 +169,8 @@ impl PdfiumBackend {
         // Initialize Pdfium
         // Pdfium::new() returns Pdfium directly, not a Result
         // It will panic if initialization fails, so we need to handle that
-        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            Pdfium::new(bindings)
-        }));
+        let result =
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| Pdfium::new(bindings)));
 
         match result {
             Ok(pdfium) => Ok(Self { pdfium }),
@@ -226,12 +220,7 @@ impl PdfRenderer for PdfiumBackend {
         Ok(page_count as u32)
     }
 
-    fn render_page(
-        &self,
-        bytes: &[u8],
-        page: u32,
-        dpi: f32,
-    ) -> Result<Vec<u8>, crate::PdfError> {
+    fn render_page(&self, bytes: &[u8], page: u32, dpi: f32) -> Result<Vec<u8>, crate::PdfError> {
         let document = self
             .pdfium
             .load_pdf_from_byte_slice(bytes, None)
@@ -335,11 +324,9 @@ impl PdfRenderer for PdfiumBackend {
             let annotation_type = format!("{:?}", annot.annotation_type());
 
             // Get the bounds using PdfPageAnnotationCommon trait
-            let pdf_rect = annot
-                .bounds()
-                .map_err(|e| {
-                    crate::PdfError::PdfiumError(format!("Failed to get annotation bounds: {e}"))
-                })?;
+            let pdf_rect = annot.bounds().map_err(|e| {
+                crate::PdfError::PdfiumError(format!("Failed to get annotation bounds: {e}"))
+            })?;
 
             // Get the contents if available
             let content = annot.contents();
@@ -383,17 +370,17 @@ mod render_page {
         if std::env::var("PDFIUM_BINDINGS_LIBRARY_PATH").is_err() {
             return;
         }
-        
+
         // Try to create a minimal PDF for testing
         // For now, we just test that the backend can be created
         // In a real CI environment, a test PDF would be available
         let _backend = PdfiumBackend::new().expect("Failed to initialize Pdfium");
-        
+
         // The actual test would use a real PDF file
         // For the acceptance gate, we just verify the backend exists
         assert!(true, "Backend initialized successfully");
     }
-    
+
     /// Test that the PdfRenderer trait has the required methods
     #[test]
     fn test_trait_contract() {
@@ -452,7 +439,7 @@ mod tests {
     }
 
     /// Integration test: render a page from a test PDF.
-    /// 
+    ///
     /// This test is ignored by default as it requires:
     /// 1. A test PDF file at tests/corpus/pdf/01-hello-world.pdf
     /// 2. PDFIUM_BINDINGS_LIBRARY_PATH to be set
@@ -478,7 +465,10 @@ mod tests {
             .expect("Failed to render page");
 
         // Verify we got some pixels
-        assert!(!rgba_bytes.is_empty(), "Rendered page should have some pixels");
+        assert!(
+            !rgba_bytes.is_empty(),
+            "Rendered page should have some pixels"
+        );
         assert!(
             rgba_bytes.len() % 4 == 0,
             "RGBA bytes should be divisible by 4"
@@ -499,7 +489,10 @@ mod tests {
 
         // Try to render a page that doesn't exist
         let result = backend.render_page(&pdf_bytes, total_pages, 96.0);
-        assert!(matches!(result, Err(crate::PdfError::PageOutOfRange { .. })));
+        assert!(matches!(
+            result,
+            Err(crate::PdfError::PageOutOfRange { .. })
+        ));
     }
 
     /// Test text extraction.
