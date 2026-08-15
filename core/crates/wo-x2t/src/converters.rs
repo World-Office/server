@@ -6391,7 +6391,10 @@ impl FormatConverter for XlsxToWoSpreadsheetConverter {
             .xlsx_workbook
             .ok_or_else(|| ConversionError::Parse("Not a valid XLSX file".to_string()))?;
 
-        let sheet_order: Vec<String> = wb.sheets.iter().map(|s| s.name.clone()).collect();
+        // sheet_order MUST match WoSheet.id (the sheets map keys): Univer's
+        // createWorkbook looks up sheets by these IDs, so using sheet names
+        // here (when they differ from sheet_id) breaks every workbook.
+        let sheet_order: Vec<String> = wb.sheets.iter().map(|s| s.sheet_id.to_string()).collect();
 
         let sheets: Vec<WoSheet> = wb
             .sheets
@@ -6514,16 +6517,13 @@ impl FormatConverter for OdsToWoSpreadsheetConverter {
             }
         };
 
+        // sheet_order MUST match WoSheet.id (the sheets map keys): Univer's
+        // createWorkbook looks up sheets by these IDs, so using sheet names
+        // here (when they differ from the ids) breaks every workbook.
         let sheet_order: Vec<String> = sheets_data
             .iter()
             .enumerate()
-            .map(|(i, s)| {
-                if s.name.is_empty() {
-                    format!("Sheet{}", i + 1)
-                } else {
-                    s.name.clone()
-                }
-            })
+            .map(|(i, _s)| format!("sheet{}", i + 1))
             .collect();
 
         let sheets: Vec<WoSheet> = sheets_data
