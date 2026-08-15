@@ -14,13 +14,10 @@ export const DocumentHolder = observer(function DocumentHolder() {
 	const [viewMode, setViewMode] = useState<ViewMode>("source");
 	const lastSerializedRef = useRef<string | null>(null);
 	const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const initializedRef = useRef(false);
 
-	useEffect(() => {
-		if (initializedRef.current) return;
-		initializedRef.current = true;
-		void presentationStore.loadFromWopi();
-	}, []);
+	// Document loading is handled by useDocumentLoader in App.tsx — calling
+	// loadFromWopi() here as well caused an infinite remount loop:
+	// loading → App hides DocumentHolder → unmount → mount → load again…
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: re-serialize whenever the structured presentation document changes
 	useEffect(() => {
