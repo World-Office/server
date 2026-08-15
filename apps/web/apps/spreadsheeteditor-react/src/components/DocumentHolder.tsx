@@ -30,13 +30,10 @@ export const DocumentHolder = observer(function DocumentHolder() {
 	const [viewMode, setViewMode] = useState<"grid" | "source">("grid");
 	const lastBlobRef = useRef<Blob | null>(null);
 	const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	const initializedRef = useRef(false);
 
-	useEffect(() => {
-		if (initializedRef.current) return;
-		initializedRef.current = true;
-		void spreadsheetStore.detectAndLoadWopi();
-	}, []);
+	// Document loading is handled by useDocumentLoader in App.tsx — calling
+	// detectAndLoadWopi() here as well caused an infinite remount loop:
+	// loading → App hides DocumentHolder → unmount → mount → load again…
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: trigger on WOPI blob changes
 	useEffect(() => {

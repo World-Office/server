@@ -1162,10 +1162,9 @@ function InlineEditOverlay({
 	);
 }
 
-const slideRef = useRef<HTMLDivElement>(null);
-
 const ObservedSlideCanvas = observer(
 	function ObservedSlideCanvas(): JSX.Element {
+		const slideRef = useRef<HTMLDivElement>(null);
 		usePresentationKeyboard();
 		useSwipe(slideRef, {
 			onSwipeLeft: () => {
