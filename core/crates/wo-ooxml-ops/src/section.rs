@@ -1,6 +1,6 @@
 //! Section operations for DOCX document mutation
 
-use super::ops::{DocOp, DocOpError, DocModel};
+use super::ops::{DocModel, DocOp, DocOpError};
 use wo_ooxml::model::{DocxBlock, DocxParagraph, SectionProperties};
 
 impl<'a> DocModel<'a> {
@@ -8,7 +8,11 @@ impl<'a> DocModel<'a> {
     /// Inserts a section break after the specified paragraph by setting section properties
     /// on the next paragraph. If there is no next paragraph, creates a new empty one.
     /// The `cols` parameter specifies the number of columns for the new section.
-    pub fn section_apply_insert_break(&mut self, after_para: usize, cols: u8) -> Result<DocOp, DocOpError> {
+    pub fn section_apply_insert_break(
+        &mut self,
+        after_para: usize,
+        cols: u8,
+    ) -> Result<DocOp, DocOpError> {
         if after_para >= self.body.blocks.len() {
             return Err(DocOpError::OutOfRange(format!("after_para {}", after_para)));
         }
@@ -36,23 +40,28 @@ impl<'a> DocModel<'a> {
             self.body.blocks.push(DocxBlock::Paragraph(new_para));
 
             // Return inverse: DeleteParagraph for the newly created paragraph
-            Ok(DocOp::DeleteParagraph { para: after_para + 1 })
+            Ok(DocOp::DeleteParagraph {
+                para: after_para + 1,
+            })
         } else {
             // Insert section properties on the next block (if it's a paragraph)
             let next_block = &mut self.body.blocks[after_para + 1];
-            
+
             let section_props = match next_block {
                 DocxBlock::Paragraph(p) => {
                     // Get existing section properties for inverse
-                    let old_section_props = std::mem::replace(&mut p.section_properties, Some(SectionProperties {
-                        header_first: None,
-                        header_even: None,
-                        header: None,
-                        footer_first: None,
-                        footer_even: None,
-                        footer: None,
-                        cols: Some(cols),
-                    }));
+                    let old_section_props = std::mem::replace(
+                        &mut p.section_properties,
+                        Some(SectionProperties {
+                            header_first: None,
+                            header_even: None,
+                            header: None,
+                            footer_first: None,
+                            footer_even: None,
+                            footer: None,
+                            cols: Some(cols),
+                        }),
+                    );
                     old_section_props
                 }
                 DocxBlock::Table(_) => {
@@ -67,7 +76,10 @@ impl<'a> DocModel<'a> {
 
             // Return inverse: Set section properties back to old value
             // For now, we return a simplified inverse
-            Ok(DocOp::InsertSectionBreak { after_para, cols: section_props.and_then(|s| s.cols).unwrap_or(1) })
+            Ok(DocOp::InsertSectionBreak {
+                after_para,
+                cols: section_props.and_then(|s| s.cols).unwrap_or(1),
+            })
         }
     }
 }
@@ -75,7 +87,7 @@ impl<'a> DocModel<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wo_ooxml::model::{DocxBody, DocxParagraph, DocxRun, DocxParagraphProperties};
+    use wo_ooxml::model::{DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun};
 
     fn create_test_paragraph(text: &str) -> DocxParagraph {
         DocxParagraph {
@@ -111,7 +123,7 @@ mod tests {
 
         let result = model.section_apply_insert_break(1, 2);
         assert!(result.is_ok());
-        
+
         let inverse = result.unwrap();
         match inverse {
             DocOp::DeleteParagraph { para: 2 } => {}

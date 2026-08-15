@@ -67,9 +67,19 @@ fn integration_doc_two_agents_coedit_text() {
     doc.register_agent("bob");
 
     // Alice types paragraph 0.
-    let r1 = coedit(&mut doc, "alice", "s-doc", insert_op(text_path(0, 0, 0), "Hello"));
+    let r1 = coedit(
+        &mut doc,
+        "alice",
+        "s-doc",
+        insert_op(text_path(0, 0, 0), "Hello"),
+    );
     // Bob appends to the same paragraph.
-    let r2 = coedit(&mut doc, "bob", "s-doc", insert_op(text_path(0, 0, 5), " World"));
+    let r2 = coedit(
+        &mut doc,
+        "bob",
+        "s-doc",
+        insert_op(text_path(0, 0, 5), " World"),
+    );
     // Alice deletes " World" (chars 5..11).
     let r3 = coedit(
         &mut doc,
@@ -116,8 +126,20 @@ fn integration_sheet_cells_coedit_and_merge() {
     assert_eq!(doc.op_count(), 2);
     // Late joiner replays the full history.
     let ops: Vec<_> = doc.ops().iter().map(|e| e.op.clone()).collect();
-    assert!(ops.iter().any(|op| matches!(op, ModelOp::Insert { at: Path::Sheet { row: 0, col: 0, .. }, .. })));
-    assert!(ops.iter().any(|op| matches!(op, ModelOp::Insert { at: Path::Sheet { row: 1, col: 1, .. }, .. })));
+    assert!(ops.iter().any(|op| matches!(
+        op,
+        ModelOp::Insert {
+            at: Path::Sheet { row: 0, col: 0, .. },
+            ..
+        }
+    )));
+    assert!(ops.iter().any(|op| matches!(
+        op,
+        ModelOp::Insert {
+            at: Path::Sheet { row: 1, col: 1, .. },
+            ..
+        }
+    )));
 }
 
 #[test]
@@ -141,9 +163,17 @@ fn integration_slide_shapes_coedit() {
 
     assert_eq!(doc.op_count(), 2);
     let ops: Vec<_> = doc.ops().iter().map(|e| e.op.clone()).collect();
-    assert!(ops
-        .iter()
-        .any(|op| matches!(op, ModelOp::Insert { at: Path::Slide { slide: 0, shape: 1, .. }, .. })));
+    assert!(ops.iter().any(|op| matches!(
+        op,
+        ModelOp::Insert {
+            at: Path::Slide {
+                slide: 0,
+                shape: 1,
+                ..
+            },
+            ..
+        }
+    )));
 }
 
 #[test]
@@ -152,8 +182,18 @@ fn integration_roundtrip_serialize_load() {
     doc.register_agent("alice");
     doc.register_agent("bob");
 
-    coedit(&mut doc, "alice", "s1", insert_op(text_path(0, 0, 0), "Round"));
-    coedit(&mut doc, "bob", "s1", insert_op(sheet_path("S", 0, 0), "trip"));
+    coedit(
+        &mut doc,
+        "alice",
+        "s1",
+        insert_op(text_path(0, 0, 0), "Round"),
+    );
+    coedit(
+        &mut doc,
+        "bob",
+        "s1",
+        insert_op(sheet_path("S", 0, 0), "trip"),
+    );
 
     let json = doc.serialize_ops().expect("serialize op-log");
     let mut restored = Document::new();
@@ -172,8 +212,18 @@ fn integration_merge_from_other_session() {
     let mut branch = Document::new();
     branch.register_agent("bob");
 
-    coedit(&mut main, "alice", "s-main", insert_op(text_path(0, 0, 0), "A"));
-    coedit(&mut branch, "bob", "s-branch", insert_op(text_path(0, 0, 1), "B"));
+    coedit(
+        &mut main,
+        "alice",
+        "s-main",
+        insert_op(text_path(0, 0, 0), "A"),
+    );
+    coedit(
+        &mut branch,
+        "bob",
+        "s-branch",
+        insert_op(text_path(0, 0, 1), "B"),
+    );
 
     main.merge_from(&branch);
     assert_eq!(main.op_count(), 2);
@@ -206,9 +256,24 @@ fn integration_envelope_wire_roundtrip() {
 fn integration_replay_manager_for_engine_ops() {
     let mut doc = Document::new();
     doc.register_agent("alice");
-    coedit(&mut doc, "alice", "s-replay", insert_op(text_path(0, 0, 0), "one"));
-    coedit(&mut doc, "alice", "s-replay", insert_op(sheet_path("S", 0, 0), "two"));
-    coedit(&mut doc, "alice", "s-replay", insert_op(slide_path(0, 0, 0, 0), "three"));
+    coedit(
+        &mut doc,
+        "alice",
+        "s-replay",
+        insert_op(text_path(0, 0, 0), "one"),
+    );
+    coedit(
+        &mut doc,
+        "alice",
+        "s-replay",
+        insert_op(sheet_path("S", 0, 0), "two"),
+    );
+    coedit(
+        &mut doc,
+        "alice",
+        "s-replay",
+        insert_op(slide_path(0, 0, 0, 0), "three"),
+    );
 
     // A late joiner replays everything since revision 0.
     let mut rm = ReplayManager::new("s-replay".to_string());

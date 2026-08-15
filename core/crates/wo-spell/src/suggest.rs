@@ -94,7 +94,9 @@ fn collect_edit_distance(
 
         let dist = damerau_levenshtein(word, expanded);
         if dist <= EDIT_DISTANCE_THRESHOLD {
-            let entry = candidates.entry(expanded.clone()).or_insert((usize::MAX, false));
+            let entry = candidates
+                .entry(expanded.clone())
+                .or_insert((usize::MAX, false));
             if dist < entry.0 {
                 entry.0 = dist;
             }
@@ -131,7 +133,11 @@ fn damerau_levenshtein(a: &str, b: &str) -> usize {
 
     for i in 1..=m {
         for j in 1..=n {
-            let cost = if a_chars[i - 1] == b_chars[j - 1] { 0 } else { 1 };
+            let cost = if a_chars[i - 1] == b_chars[j - 1] {
+                0
+            } else {
+                1
+            };
 
             let del = d[i - 1][j] + 1;
             let ins = d[i][j - 1] + 1;
@@ -299,7 +305,9 @@ fn collect_affix_variants(
         let stripped = &word[..word.len() - sfx.affix.len()];
         if !stripped.is_empty() && dict.contains(stripped) {
             let dist = damerau_levenshtein(word, stripped);
-            let entry = candidates.entry(stripped.to_string()).or_insert((usize::MAX, false));
+            let entry = candidates
+                .entry(stripped.to_string())
+                .or_insert((usize::MAX, false));
             if dist < entry.0 {
                 entry.0 = dist;
             }
@@ -314,7 +322,9 @@ fn collect_affix_variants(
         let stripped = &word[pfx.affix.len()..];
         if !stripped.is_empty() && dict.contains(stripped) {
             let dist = damerau_levenshtein(word, stripped);
-            let entry = candidates.entry(stripped.to_string()).or_insert((usize::MAX, false));
+            let entry = candidates
+                .entry(stripped.to_string())
+                .or_insert((usize::MAX, false));
             if dist < entry.0 {
                 entry.0 = dist;
             }
@@ -441,21 +451,30 @@ running"#;
     fn suggest_test_edit_distance_one() {
         let dict = mini_dict();
         let suggestions = suggest(&dict, "helo");
-        assert!(suggestions.contains(&String::from("hello")), "got: {suggestions:?}");
+        assert!(
+            suggestions.contains(&String::from("hello")),
+            "got: {suggestions:?}"
+        );
     }
 
     #[test]
     fn suggest_test_edit_distance_two() {
         let dict = mini_dict();
         let suggestions = suggest(&dict, "hallo");
-        assert!(suggestions.contains(&String::from("hello")), "got: {suggestions:?}");
+        assert!(
+            suggestions.contains(&String::from("hello")),
+            "got: {suggestions:?}"
+        );
     }
 
     #[test]
     fn suggest_test_transposition() {
         let dict = mini_dict();
         let suggestions = suggest(&dict, "wolrd");
-        assert!(suggestions.contains(&String::from("world")), "got: {suggestions:?}");
+        assert!(
+            suggestions.contains(&String::from("world")),
+            "got: {suggestions:?}"
+        );
     }
 
     // ---- Phonetic (REP rules) ------------------------------------------------
@@ -479,7 +498,10 @@ REP ph f
 fone"#;
         let dict = Dictionary::from_strs(aff_str, dic_str);
         let suggestions = suggest(&dict, "phone");
-        assert!(suggestions.contains(&String::from("fone")), "got: {suggestions:?}");
+        assert!(
+            suggestions.contains(&String::from("fone")),
+            "got: {suggestions:?}"
+        );
     }
 
     // ---- Affix stripping -----------------------------------------------------
@@ -494,7 +516,10 @@ fone"#;
         assert!(dict.contains("fineness"));
         // And suggestions for a typo of it should find "fineness".
         let suggestions = suggest(&dict, "fineneess");
-        assert!(suggestions.contains(&String::from("fineness")), "got: {suggestions:?}");
+        assert!(
+            suggestions.contains(&String::from("fineness")),
+            "got: {suggestions:?}"
+        );
     }
 
     #[test]
@@ -515,7 +540,10 @@ fone"#;
         // "wrld" → insert 'o' at position 2 → "world"
         let dict = mini_dict();
         let suggestions = suggest(&dict, "wrld");
-        assert!(suggestions.contains(&String::from("world")), "got: {suggestions:?}");
+        assert!(
+            suggestions.contains(&String::from("world")),
+            "got: {suggestions:?}"
+        );
     }
 
     // ---- Suggester convenience struct ----------------------------------------
@@ -530,10 +558,7 @@ fone"#;
 
     #[test]
     fn suggest_test_suggester_from_strs() {
-        let suggester = Suggester::from_strs(
-            "REP 1\nREP ph f",
-            "1\nfone",
-        );
+        let suggester = Suggester::from_strs("REP 1\nREP ph f", "1\nfone");
         assert!(!suggester.is_correct("phone"));
         assert!(suggester.suggest("phone").contains(&String::from("fone")));
     }
@@ -591,7 +616,10 @@ fone"#;
         let dic_str = "1\ncity";
         let dict = Dictionary::from_strs(aff_str, dic_str);
         let suggestions = suggest(&dict, "sity");
-        assert!(suggestions.contains(&String::from("city")), "got: {suggestions:?}");
+        assert!(
+            suggestions.contains(&String::from("city")),
+            "got: {suggestions:?}"
+        );
     }
 
     #[test]
@@ -600,7 +628,10 @@ fone"#;
         let dic_str = "1\ncat";
         let dict = Dictionary::from_strs(aff_str, dic_str);
         let suggestions = suggest(&dict, "kat");
-        assert!(suggestions.contains(&String::from("cat")), "got: {suggestions:?}");
+        assert!(
+            suggestions.contains(&String::from("cat")),
+            "got: {suggestions:?}"
+        );
     }
 
     // ---- Adjacent swap -------------------------------------------------------
@@ -609,7 +640,10 @@ fone"#;
     fn suggest_test_adjacent_swap() {
         let dict = mini_dict();
         let suggestions = suggest(&dict, "ehllo");
-        assert!(suggestions.contains(&String::from("hello")), "got: {suggestions:?}");
+        assert!(
+            suggestions.contains(&String::from("hello")),
+            "got: {suggestions:?}"
+        );
     }
 
     // ---- Common confusion replacements ---------------------------------------
@@ -620,7 +654,10 @@ fone"#;
         let dic_str = "1\nreceipt";
         let dict = Dictionary::from_strs(aff_str, dic_str);
         let suggestions = suggest(&dict, "reciept");
-        assert!(suggestions.contains(&String::from("receipt")), "got: {suggestions:?}");
+        assert!(
+            suggestions.contains(&String::from("receipt")),
+            "got: {suggestions:?}"
+        );
     }
 
     // ---- Max suggestions limit -----------------------------------------------
@@ -629,7 +666,9 @@ fone"#;
     fn suggest_test_max_limit() {
         // Create a dictionary where "helo" is very close to many words.
         let mut dic_lines = String::from("100\n");
-        for word in ["halo", "hallo", "helo", "help", "held", "hell", "helm", "hemp", "hemo", "heal"] {
+        for word in [
+            "halo", "hallo", "helo", "help", "held", "hell", "helm", "hemp", "hemo", "heal",
+        ] {
             dic_lines.push_str(word);
             dic_lines.push('\n');
         }
@@ -670,7 +709,10 @@ fone"#;
 
         // "recieve" → "receive" (ie/ei confusion).
         let s = suggest(&dict, "recieve");
-        assert!(s.iter().any(|w| w == "receive"), "expected 'receive' in {s:?}");
+        assert!(
+            s.iter().any(|w| w == "receive"),
+            "expected 'receive' in {s:?}"
+        );
 
         // "wrold" → "world" (transposition).
         let s = suggest(&dict, "wrold");

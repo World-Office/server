@@ -895,7 +895,7 @@ mod tests {
 
         // Serialize to JSON
         let json = serde_json::to_string(&pres).expect("Failed to serialize");
-        
+
         // Deserialize back
         let pres2: Presentation = serde_json::from_str(&json).expect("Failed to deserialize");
 
@@ -916,16 +916,14 @@ mod tests {
                 cx: 1000,
                 cy: 500,
             },
-            text_body: TextBody {
-                paragraphs: vec![],
-            },
+            text_body: TextBody { paragraphs: vec![] },
             fill: None,
             effect: None,
         });
 
         let json = serde_json::to_string(&text_box).expect("Failed to serialize TextBox");
         let shape2: Shape = serde_json::from_str(&json).expect("Failed to deserialize TextBox");
-        
+
         match shape2 {
             Shape::TextBox(t) => {
                 assert_eq!(t.id, "txt1");
@@ -949,7 +947,8 @@ mod tests {
         };
 
         let json = serde_json::to_string(&chart_ref).expect("Failed to serialize ChartRef");
-        let chart_ref2: ChartRef = serde_json::from_str(&json).expect("Failed to deserialize ChartRef");
+        let chart_ref2: ChartRef =
+            serde_json::from_str(&json).expect("Failed to deserialize ChartRef");
 
         assert_eq!(chart_ref.id, chart_ref2.id);
         assert_eq!(chart_ref.chart_type, chart_ref2.chart_type);
@@ -973,7 +972,8 @@ mod tests {
         };
 
         let json = serde_json::to_string(&auto_shape).expect("Failed to serialize AutoShape");
-        let auto_shape2: AutoShape = serde_json::from_str(&json).expect("Failed to deserialize AutoShape");
+        let auto_shape2: AutoShape =
+            serde_json::from_str(&json).expect("Failed to deserialize AutoShape");
 
         assert_eq!(auto_shape.id, auto_shape2.id);
         assert_eq!(auto_shape.preset_type, auto_shape2.preset_type);
@@ -987,7 +987,8 @@ mod tests {
     fn test_slide_size_serde() {
         let widescreen = SlideSize::widescreen();
         let json = serde_json::to_string(&widescreen).expect("Failed to serialize SlideSize");
-        let size2: SlideSize = serde_json::from_str(&json).expect("Failed to deserialize SlideSize");
+        let size2: SlideSize =
+            serde_json::from_str(&json).expect("Failed to deserialize SlideSize");
 
         assert_eq!(widescreen.cx, size2.cx);
         assert_eq!(widescreen.cy, size2.cy);
@@ -1005,7 +1006,7 @@ mod tests {
     #[test]
     fn test_presentation_with_masters_serde() {
         let mut pres = Presentation::new();
-        
+
         let master = SlideMaster {
             id: 1,
             name: "Title Master".to_string(),
@@ -1020,7 +1021,8 @@ mod tests {
         pres.add_master(master);
 
         let json = serde_json::to_string(&pres).expect("Failed to serialize with masters");
-        let pres2: Presentation = serde_json::from_str(&json).expect("Failed to deserialize with masters");
+        let pres2: Presentation =
+            serde_json::from_str(&json).expect("Failed to deserialize with masters");
 
         assert_eq!(pres.masters.len(), pres2.masters.len());
         assert_eq!(pres.masters[0].name, pres2.masters[0].name);
@@ -1029,7 +1031,7 @@ mod tests {
     #[test]
     fn test_presentation_with_background_serde() {
         let mut pres = Presentation::new();
-        
+
         let slide = Slide {
             id: 1,
             name: "Slide 1".to_string(),
@@ -1051,11 +1053,12 @@ mod tests {
         pres.add_slide(slide);
 
         let json = serde_json::to_string(&pres).expect("Failed to serialize with background");
-        let pres2: Presentation = serde_json::from_str(&json).expect("Failed to deserialize with background");
+        let pres2: Presentation =
+            serde_json::from_str(&json).expect("Failed to deserialize with background");
 
         assert!(pres2.slides[0].background.is_some());
         match pres2.slides[0].background.as_ref().unwrap().background_type {
-            SlideBackgroundType::Solid => {},
+            SlideBackgroundType::Solid => {}
             _ => panic!("Expected solid background"),
         }
     }
@@ -1063,7 +1066,7 @@ mod tests {
     #[test]
     fn test_presentation_with_transition_serde() {
         let mut pres = Presentation::new();
-        
+
         let slide = Slide {
             id: 1,
             name: "Slide 1".to_string(),
@@ -1084,7 +1087,8 @@ mod tests {
         pres.add_slide(slide);
 
         let json = serde_json::to_string(&pres).expect("Failed to serialize with transition");
-        let pres2: Presentation = serde_json::from_str(&json).expect("Failed to deserialize with transition");
+        let pres2: Presentation =
+            serde_json::from_str(&json).expect("Failed to deserialize with transition");
 
         assert!(pres2.slides[0].transition.is_some());
         assert_eq!(
@@ -1099,10 +1103,7 @@ mod tests {
             format!("{}", ConnectorShapeType::Straight),
             "straightConnector1"
         );
-        assert_eq!(
-            format!("{}", ConnectorShapeType::Bent1),
-            "bentConnector2"
-        );
+        assert_eq!(format!("{}", ConnectorShapeType::Bent1), "bentConnector2");
         assert_eq!(
             format!("{}", ConnectorShapeType::Curved1),
             "curvedConnector2"
@@ -1123,7 +1124,7 @@ mod tests {
     fn test_presentation_contract_compliance() {
         // Test that the model matches the SL-1 contract:
         // Presentation { slides: Vec<Slide>, masters: Vec<Master>, theme: Theme }
-        
+
         let slides = vec![Slide {
             id: 1,
             name: "Slide 1".to_string(),
@@ -1161,7 +1162,7 @@ mod tests {
         assert_eq!(pres.slides.len(), 1);
         assert_eq!(pres.masters.len(), 1);
         assert!(pres.theme.is_some());
-        
+
         // Verify Slide has the required fields from contract
         assert!(pres.slides[0].layout_id.is_some());
         assert!(pres.slides[0].master_id.is_some());
@@ -1174,18 +1175,28 @@ mod tests {
     fn test_shape_enum_completeness() {
         // Test that Shape enum has all required variants from SL-1 contract
         // TextBox, Picture, Table, Chart, Connector, Auto, Placeholder
-        
+
         let shapes: Vec<Shape> = vec![
             Shape::TextBox(TextBoxShape {
                 id: "txt".to_string(),
-                bounds: Bounds { x: 0, y: 0, cx: 100, cy: 100 },
+                bounds: Bounds {
+                    x: 0,
+                    y: 0,
+                    cx: 100,
+                    cy: 100,
+                },
                 text_body: TextBody { paragraphs: vec![] },
                 fill: None,
                 effect: None,
             }),
             Shape::Picture(PictureShape {
                 id: "pic".to_string(),
-                bounds: Bounds { x: 0, y: 0, cx: 100, cy: 100 },
+                bounds: Bounds {
+                    x: 0,
+                    y: 0,
+                    cx: 100,
+                    cy: 100,
+                },
                 name: "test".to_string(),
                 image_extension: "png".to_string(),
                 image_data: vec![],
@@ -1193,18 +1204,33 @@ mod tests {
             }),
             Shape::Table(TableShape {
                 id: "tbl".to_string(),
-                bounds: Bounds { x: 0, y: 0, cx: 100, cy: 100 },
+                bounds: Bounds {
+                    x: 0,
+                    y: 0,
+                    cx: 100,
+                    cy: 100,
+                },
                 columns: vec![],
                 rows: vec![],
             }),
             Shape::Chart(ChartRef {
                 id: "chart".to_string(),
                 chart_type: "bar".to_string(),
-                bounds: Bounds { x: 0, y: 0, cx: 100, cy: 100 },
+                bounds: Bounds {
+                    x: 0,
+                    y: 0,
+                    cx: 100,
+                    cy: 100,
+                },
             }),
             Shape::Connector(ConnectorShape {
                 id: "conn".to_string(),
-                bounds: Bounds { x: 0, y: 0, cx: 100, cy: 100 },
+                bounds: Bounds {
+                    x: 0,
+                    y: 0,
+                    cx: 100,
+                    cy: 100,
+                },
                 connector_type: ConnectorShapeType::Straight,
                 line_width: None,
                 has_start_arrow: false,
@@ -1214,7 +1240,12 @@ mod tests {
             }),
             Shape::Auto(AutoShape {
                 id: "auto".to_string(),
-                bounds: Bounds { x: 0, y: 0, cx: 100, cy: 100 },
+                bounds: Bounds {
+                    x: 0,
+                    y: 0,
+                    cx: 100,
+                    cy: 100,
+                },
                 preset_type: "rect".to_string(),
                 text_body: None,
                 fill: None,
@@ -1222,7 +1253,12 @@ mod tests {
             }),
             Shape::Placeholder(PlaceholderShape {
                 id: "ph".to_string(),
-                bounds: Bounds { x: 0, y: 0, cx: 100, cy: 100 },
+                bounds: Bounds {
+                    x: 0,
+                    y: 0,
+                    cx: 100,
+                    cy: 100,
+                },
                 placeholder_type: "title".to_string(),
                 text_body: None,
                 fill: None,

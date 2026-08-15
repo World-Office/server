@@ -187,11 +187,7 @@ impl HyphenationDict {
 
         let left_dot = trimmed.starts_with('.');
         let right_dot = trimmed.ends_with('.');
-        let trimmed = if left_dot {
-            &trimmed[1..]
-        } else {
-            trimmed
-        };
+        let trimmed = if left_dot { &trimmed[1..] } else { trimmed };
         let trimmed = if right_dot {
             &trimmed[..trimmed.len() - right_dot as usize]
         } else {
@@ -273,9 +269,7 @@ impl Hyphenator {
         let padded_len = char_count + 2;
         let mut weight = vec![0u8; padded_len];
 
-        for ((letter_key, left_anchor, right_anchor), pattern_values) in
-            &self.dict.patterns
-        {
+        for ((letter_key, left_anchor, right_anchor), pattern_values) in &self.dict.patterns {
             let key_chars: Vec<char> = letter_key.chars().collect();
             let key_len = key_chars.len();
 
@@ -327,9 +321,7 @@ impl Hyphenator {
             let p = p + 1; // offset back to padded position
             if w % 2 == 1 {
                 let char_idx = p - 1;
-                if char_idx >= self.dict.left_min
-                    && char_count - char_idx >= self.dict.right_min
-                {
+                if char_idx >= self.dict.left_min && char_count - char_idx >= self.dict.right_min {
                     points.push(HyphenPoint { index: char_idx });
                 }
             }

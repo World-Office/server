@@ -10,8 +10,8 @@
 //! If `A1 = B1+1` and `B1 = A1+1`, the graph contains a cycle. `detect_cycle()`
 //! finds the first cycle using DFS and returns `#REF!` to the caller.
 
-use std::collections::{HashMap, HashSet, VecDeque};
 use crate::ast::Expr;
+use std::collections::{HashMap, HashSet, VecDeque};
 
 /// A dependency graph for spreadsheet cell formulas.
 ///
@@ -90,7 +90,11 @@ impl DepGraph {
     /// first cycle found (a list of cells in the cycle) otherwise.
     pub fn detect_cycle(&self) -> Option<Vec<(u32, u32)>> {
         // DFS with three colours: White (unvisited), Gray (in-progress), Black (done)
-        enum Color { White, Gray, Black }
+        enum Color {
+            White,
+            Gray,
+            Black,
+        }
 
         let all_nodes: HashSet<(u32, u32)> = self
             .forward
@@ -198,11 +202,7 @@ impl DepGraph {
 
         let mut in_degree: HashMap<(u32, u32), usize> = HashMap::new();
         for node in &all_nodes {
-            let degree = self
-                .forward
-                .get(node)
-                .map(|deps| deps.len())
-                .unwrap_or(0);
+            let degree = self.forward.get(node).map(|deps| deps.len()).unwrap_or(0);
             in_degree.insert(*node, degree);
         }
 
@@ -307,7 +307,13 @@ fn collect_refs(expr: &Expr, base: (u32, u32), refs: &mut HashSet<(u32, u32)>) {
             }
         }
         // Literals and named ranges do not produce cell references
-        Expr::Empty | Expr::Bool(_) | Expr::Num(_) | Expr::Text(_) | Expr::Date(_) | Expr::NamedRange(_) | Expr::Error(_) => {}
+        Expr::Empty
+        | Expr::Bool(_)
+        | Expr::Num(_)
+        | Expr::Text(_)
+        | Expr::Date(_)
+        | Expr::NamedRange(_)
+        | Expr::Error(_) => {}
     }
 }
 
@@ -451,10 +457,7 @@ mod tests {
         // C1 = A1 + B1
         g.add_formula((0, 2), &add_expr(cell_expr(0, 0), cell_expr(0, 1)));
         // D1 = C1 * 2
-        g.add_formula(
-            (0, 3),
-            &mul_expr(cell_expr(0, 2), Expr::Num(2.0)),
-        );
+        g.add_formula((0, 3), &mul_expr(cell_expr(0, 2), Expr::Num(2.0)));
 
         let order = g.topological_order();
 
