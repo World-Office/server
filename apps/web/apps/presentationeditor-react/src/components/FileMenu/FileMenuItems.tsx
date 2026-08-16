@@ -59,7 +59,7 @@ const useStyles = makeStyles({
     backgroundColor: tokens.colorBrandBackgroundSelected,
     color: tokens.colorNeutralForegroundOnBrand,
     ":hover": {
-      backgroundColor: tokens.colorBrandBackgroundSelectedHover,
+      backgroundColor: tokens.colorBrandBackgroundHover,
       color: tokens.colorNeutralForegroundOnBrand,
     },
   },
