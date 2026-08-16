@@ -25,6 +25,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@fluentui/react-components": "^9.74.0",
     "i18next": "^24.0.0",
     "react-i18next": "^15.0.0"
   },
