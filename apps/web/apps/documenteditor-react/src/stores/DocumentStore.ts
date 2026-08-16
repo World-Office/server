@@ -385,6 +385,10 @@ export class DocumentStore {
       this.lastLoadedContent = content
       this.fileName = info.BaseFileName ?? "Untitled Document"
       this.filePath = conn.wopiFileId
+      // WOPI UserCanWrite drives edit mode: enables Insert/Layout tabs and
+      // all edit-dependent ribbon controls (was never wired up — isEditMode
+      // stayed false, hiding tabs and making documents appear uneditable).
+      this.setEditMode(info.UserCanWrite ?? false)
       this.setDocument({
         title: this.fileName,
         fileType: this.fileName.split(".").pop() ?? "docx",
@@ -420,6 +424,7 @@ export class DocumentStore {
       this.lastLoadedContent = content
       this.fileName = info.BaseFileName ?? "demo.docx"
       this.wopiConnection = null
+      this.setEditMode(info.UserCanWrite ?? true)
       this.setDocument({
         title: this.fileName,
         fileType: "docx",
