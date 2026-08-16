@@ -2,45 +2,63 @@ import {
 	type EmailConfig,
 	type ExportFormat,
 	ExportWizard,
-} from "@world-office/editor-common";
-import { useCallback } from "react";
-import type { CSSProperties } from "react";
-import { visioStore } from "../../../stores/VisioStore";
-import { FileMenuItems } from "./FileMenuItems";
-import { CreateNewPanel } from "./panels/CreateNewPanel";
-import { DocumentInfoPanel } from "./panels/DocumentInfoPanel";
-import { HelpPanel } from "./panels/HelpPanel";
-import { SaveAsPanel } from "./panels/SaveAsPanel";
-import { SettingsPanel } from "./panels/SettingsPanel";
+	makeStyles,
+	tokens,
+} from "@fluentui/react-components"
+import { useCallback } from "react"
+import { visioStore } from "../../../stores/VisioStore"
+import { FileMenuItems } from "./FileMenuItems"
+import { CreateNewPanel } from "./panels/CreateNewPanel"
+import { DocumentInfoPanel } from "./panels/DocumentInfoPanel"
+import { HelpPanel } from "./panels/HelpPanel"
+import { SaveAsPanel } from "./panels/SaveAsPanel"
+import { SettingsPanel } from "./panels/SettingsPanel"
 
-const panelContainerStyle: CSSProperties = {
-	width: "100%",
-	paddingLeft: "260px",
-	backgroundColor: "var(--wo-color-bg-primary, #ffffff)",
-};
-
-const contentBoxBaseStyle: CSSProperties = {
-	height: "100%",
-	padding: "0 20px",
-	position: "relative",
-	overflow: "hidden",
-	display: "none",
-};
+const useStyles = makeStyles({
+	root: {
+		display: "flex",
+		width: "100%",
+		height: "100%",
+		backgroundColor: tokens.colorNeutralBackground1,
+	},
+	list: {
+		display: "flex",
+		flexDirection: "column",
+		width: "260px",
+		flexShrink: 0,
+		backgroundColor: tokens.colorNeutralBackground1,
+		borderRight: `1px solid ${tokens.colorNeutralStroke1}`,
+		overflowY: "auto",
+		userSelect: "none",
+	},
+	panelContainer: {
+		width: "100%",
+		paddingLeft: "260px",
+		backgroundColor: tokens.colorNeutralBackground1,
+	},
+	panelBox: {
+		height: "100%",
+		padding: "0 20px",
+		position: "relative",
+		overflow: "hidden",
+		display: "none",
+	},
+})
 
 export function FileMenu() {
-	const activePanel = visioStore.activeFileMenuPanel;
+	const styles = useStyles()
+	const activePanel = visioStore.activeFileMenuPanel
 
 	function handleMenuClick(action: string, hasPanel: boolean): void {
 		if (hasPanel) {
-			const newPanel =
-				visioStore.activeFileMenuPanel === action ? null : action;
-			visioStore.setActiveFileMenuPanel(newPanel);
+			const newPanel = visioStore.activeFileMenuPanel === action ? null : action
+			visioStore.setActiveFileMenuPanel(newPanel)
 		}
 	}
 
 	function handleBack(): void {
-		visioStore.setActiveFileMenuPanel(null);
-		visioStore.setFileMenuOpen(false);
+		visioStore.setActiveFileMenuPanel(null)
+		visioStore.setFileMenuOpen(false)
 	}
 
 	const VISIO_FORMATS: ExportFormat[] = [
@@ -65,24 +83,22 @@ export function FileMenu() {
 			extension: ".pdf",
 			mimeType: "application/pdf",
 		},
-	];
+	]
 
-	// Shared helper to produce an export blob for a given format
 	const produceVisioBlob = useCallback(
 		async (
 			formatId: string,
 		): Promise<{ blob: Blob; fileName: string; mimeType: string } | null> => {
 			try {
 				if (formatId === "wo-flowchart") {
-					const blob = await visioStore.buildDocumentBlob();
+					const blob = await visioStore.buildDocumentBlob()
 					const fileName = visioStore.document?.title
 						? `${visioStore.document.title.replace(/\.[^.]+$/, "")}.wo-flowchart`
-						: "diagram.wo-flowchart";
-					return { blob, fileName, mimeType: "application/json" };
+						: "diagram.wo-flowchart"
+					return { blob, fileName, mimeType: "application/json" }
 				}
-				// For VSDX/PDF, use conversion service if available
-				const visioBlob = await visioStore.buildDocumentBlob();
-				const json = await visioBlob.text();
+				const visioBlob = await visioStore.buildDocumentBlob()
+				const json = await visioBlob.text()
 				const res = await fetch(
 					import.meta.env?.VITE_CONVERSION_API_URL ??
 						"http://localhost:8003/convert",
@@ -95,62 +111,57 @@ export function FileMenu() {
 							data: btoa(json),
 						}),
 					},
-				);
-				if (!res.ok) return null;
-				const result = await res.json();
-				const outputB64: string | undefined =
-					result?.data ?? result?.job?.output_data;
-				if (!outputB64) return null;
-				const bin = atob(outputB64);
-				const bytes = new Uint8Array(bin.length);
-				for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-				const fmt = VISIO_FORMATS.find((f) => f.id === formatId);
-				const mime = fmt?.mimeType ?? "application/octet-stream";
-				const blob = new Blob([bytes], { type: mime });
+				)
+				if (!res.ok) return null
+				const result = await res.json()
+				const outputB64: string | undefined = result?.data ?? result?.job?.output_data
+				if (!outputB64) return null
+				const bin = atob(outputB64)
+				const bytes = new Uint8Array(bin.length)
+				for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+				const fmt = VISIO_FORMATS.find((f) => f.id === formatId)
+				const mime = fmt?.mimeType ?? "application/octet-stream"
+				const blob = new Blob([bytes], { type: mime })
 				return {
 					blob,
 					fileName: `diagram${fmt?.extension ?? `.${formatId}`}`,
 					mimeType: mime,
-				};
+				}
 			} catch {
-				return null;
+				return null
 			}
 		},
 		[],
-	);
+	)
 
 	const handleExport = useCallback(
 		async (format: ExportFormat): Promise<boolean> => {
-			const result = await produceVisioBlob(format.id);
-			if (!result) return false;
-			const url = URL.createObjectURL(result.blob);
-			const a = document.createElement("a");
-			a.href = url;
-			a.download = result.fileName;
-			a.click();
-			URL.revokeObjectURL(url);
-			return true;
+			const result = await produceVisioBlob(format.id)
+			if (!result) return false
+			const url = URL.createObjectURL(result.blob)
+			const a = document.createElement("a")
+			a.href = url
+			a.download = result.fileName
+			a.click()
+			URL.revokeObjectURL(url)
+			return true
 		},
 		[produceVisioBlob],
-	);
+	)
 
 	const emailConfig: EmailConfig = {
 		endpoint: "/api/send-email-attachment",
 		produceAttachment: produceVisioBlob,
 		defaultSubject: "Diagram: {{fileName}}",
-	};
+	}
 
 	return (
-		<div className="visio-file-menu">
-			<div
-				className="visio-file-menu-list"
-				role="menubar"
-				aria-label="File menu"
-			>
+		<div className={styles.root}>
+			<div className={styles.list} role="menubar" aria-label="File menu">
 				<FileMenuItems onMenuClick={handleMenuClick} onBack={handleBack} />
 			</div>
-			<div style={panelContainerStyle}>
-				<div className="visio-file-menu-panel-box" style={contentBoxBaseStyle}>
+			<div className={styles.panelContainer}>
+				<div className={styles.panelBox}>
 					<CreateNewPanel visible={activePanel === "new"} />
 					<SaveAsPanel visible={activePanel === "saveas"} />
 					<SettingsPanel visible={activePanel === "opts"} />
@@ -170,20 +181,30 @@ export function FileMenu() {
 				/>
 			)}
 		</div>
-	);
+	)
 }
 
+const usePrintPreviewStyles = makeStyles({
+	wrapper: {
+		height: "100%",
+		padding: 0,
+		position: "relative",
+		overflow: "hidden",
+	},
+	header: {
+		fontSize: tokens.fontSizeHero800,
+		fontWeight: tokens.fontWeightSemibold,
+		color: tokens.colorNeutralForeground1,
+		padding: "24px 20px 20px 0",
+		whiteSpace: "nowrap",
+	},
+})
+
 function PrintPreviewPanel({ visible }: { visible: boolean }) {
+	const styles = usePrintPreviewStyles()
 	return (
-		<div
-			className="visio-file-menu-content-box"
-			style={{
-				...contentBoxBaseStyle,
-				display: visible ? "block" : "none",
-				padding: 0,
-			}}
-		>
-			<div className="visio-file-menu-header">Print Preview</div>
+		<div className={styles.wrapper} style={{ display: visible ? "block" : "none" }}>
+			<div className={styles.header}>Print Preview</div>
 		</div>
-	);
+	)
 }
