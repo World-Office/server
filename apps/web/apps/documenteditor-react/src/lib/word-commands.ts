@@ -121,8 +121,12 @@ export function commandToFormat(
       return { heading: 5 }
     case "heading6":
       return { heading: 6 }
-    case "lineSpacing":
-      return value ? { lineSpacing: Number.parseInt(value, 10) } : { lineSpacing: 360 }
+    case "lineSpacing": {
+      // value is a line-spacing factor like "1", "1.15", "1.5", "2"
+      // → OOXML spacing_line in 240ths (1.15 = 276, 1.5 = 360, 2 = 480).
+      const factor = value ? Number.parseFloat(value) : 1.15
+      return { lineSpacing: Math.round(factor * 240) }
+    }
     default:
       return null
   }
