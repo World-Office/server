@@ -2092,6 +2092,143 @@ pub fn get_run_formatting(doc_handle: u32) -> Result<String, String> {
 // while keeping the same JS-callable signatures.
 
 /// Create a model from bytes and return a handle.
+
+/// Apply a structure operation (list, table, section break, horizontal rule,
+/// page break, indent) at the current cursor paragraph.
+///
+/// op is one of: "bullet-list" | "ordered-list" | "task-list" | "indent" |
+/// "outdent" | "insert-table" | "insert-section-break" |
+/// "insert-continuous-section-break" | "horizontal-rule" | "page-break"
+#[wasm_bindgen]
+pub fn apply_structure_op(
+    doc_handle: u32,
+    op: &str,
+    page_size: &str,
+    orientation: &str,
+    margin_pt: f32,
+) -> Result<String, String> {
+    let mut body = extract_body(doc_handle)?;
+    let cursor = get_cursor(doc_handle);
+    let paras_len = body.paragraphs().len();
+    if paras_len == 0 {
+        return Err("Document body is empty".to_string());
+    }
+    let pidx = cursor.para.min(paras_len.saturating_sub(1));
+
+    match op {
+        "bullet-list" | "ordered-list" | "task-list" => {
+            // num_id: 1 = bullet, 2 = decimal, 3 = task (checkbox style)
+            let (num_id, level) = match op {
+                "bullet-list" => (1u32, 0u8),
+                "ordered-list" => (2u32, 0u8),
+                _ => (3u32, 0u8),
+            };
+            if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
+                para.properties.num_id = Some(num_id);
+                para.properties.ilvl = Some(level);
+            }
+        }
+        "indent" => {
+            if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
+                let cur = para.properties.ilvl.unwrap_or(0);
+                para.properties.ilvl = Some(cur.saturating_add(1));
+                if para.properties.num_id.is_none() {
+                    para.properties.num_id = Some(1);
+                }
+            }
+        }
+        "outdent" => {
+            if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
+                let cur = para.properties.ilvl.unwrap_or(0);
+                para.properties.ilvl = Some(cur.saturating_sub(1));
+            }
+        }
+        "insert-table" => {
+            // Insert a 2x2 table after the cursor paragraph
+            use wo_ooxml::model::{DocxTable, DocxTableCell, DocxTableProperties, DocxTableRow};
+            let make_cell = || DocxTableCell {
+                paragraphs: vec![DocxParagraph {
+                    style_id: None,
+                    properties: DocxParagraphProperties::default(),
+                    runs: vec![DocxRun::default()],
+                    section_properties: None,
+                }],
+                column_span: 1,
+                row_span: 1,
+                width: None,
+                shading: None,
+            };
+            let rows = vec![
+                DocxTableRow {
+                    cells: vec![make_cell(), make_cell()],
+                    height: None,
+                    is_header: false,
+                },
+                DocxTableRow {
+                    cells: vec![make_cell(), make_cell()],
+                    height: None,
+                    is_header: false,
+                },
+            ];
+            let table = DocxTable {
+                rows,
+                properties: DocxTableProperties::default(),
+            };
+            let insert_at = (pidx + 1).min(body.blocks.len());
+            body.blocks.insert(insert_at, DocxBlock::Table(table));
+        }
+        "insert-section-break" | "insert-continuous-section-break" => {
+            let new_para = DocxParagraph {
+                style_id: None,
+                properties: DocxParagraphProperties {
+                    page_break_before: true,
+                    ..Default::default()
+                },
+                runs: vec![DocxRun::default()],
+                section_properties: None,
+            };
+            let insert_at = (pidx + 1).min(body.blocks.len());
+            body.blocks.insert(insert_at, DocxBlock::Paragraph(new_para));
+        }
+        "horizontal-rule" => {
+            // Horizontal rule = paragraph with a bottom border rendered via
+            // a paragraph of underscores fallback; use page_break_before-like
+            // block with a border marker paragraph (renderer draws text only,
+            // so we insert a full-width run of box-drawing chars).
+            let rule_para = DocxParagraph {
+                style_id: None,
+                properties: DocxParagraphProperties::default(),
+                runs: vec![DocxRun {
+                    text: "─".repeat(80),
+                    ..Default::default()
+                }],
+                section_properties: None,
+            };
+            let insert_at = (pidx + 1).min(body.blocks.len());
+            body.blocks.insert(insert_at, DocxBlock::Paragraph(rule_para));
+        }
+        "page-break" => {
+            let new_para = DocxParagraph {
+                style_id: None,
+                properties: DocxParagraphProperties {
+                    page_break_before: true,
+                    ..Default::default()
+                },
+                runs: vec![DocxRun::default()],
+                section_properties: None,
+            };
+            let insert_at = (pidx + 1).min(body.blocks.len());
+            body.blocks.insert(insert_at, DocxBlock::Paragraph(new_para));
+        }
+        _ => {
+            return Err(format!("Unknown structure op: {}", op));
+        }
+    }
+
+    store_body(doc_handle, body)?;
+    layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
+}
+
 ///
 /// For the stub model (`fmt = "stub"`), `bytes` must be a JSON array
 /// of paragraph strings: `"[\"Hello\", \"World\"]"`.

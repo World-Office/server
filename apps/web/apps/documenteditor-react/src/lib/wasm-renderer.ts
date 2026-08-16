@@ -70,6 +70,14 @@ export interface WasmRenderApi {
     marginPt: number,
   ): string
   get_run_formatting(docHandle: number): string
+  // Structure ops (K4: lists, tables, section breaks, rules)
+  apply_structure_op(
+    docHandle: number,
+    op: string,
+    pageSize: string,
+    orientation: string,
+    marginPt: number,
+  ): string
 }
 
 let wasmApi: WasmRenderApi | null = null
