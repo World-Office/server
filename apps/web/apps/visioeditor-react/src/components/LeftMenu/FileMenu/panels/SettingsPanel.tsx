@@ -1,30 +1,63 @@
-import i18n from "i18next";
-import { useTranslation } from "react-i18next";
+import { Checkbox, Divider, makeStyles, Select, tokens } from "@fluentui/react-components"
+import i18n from "i18next"
+import { useTranslation } from "react-i18next"
+
+const useStyles = makeStyles({
+	wrapper: {
+		height: "100%",
+		overflowY: "auto",
+		position: "relative",
+	},
+	header: {
+		fontSize: tokens.fontSizeHero800,
+		fontWeight: tokens.fontWeightSemibold,
+		color: tokens.colorNeutralForeground1,
+		padding: "24px 20px 20px 0",
+		whiteSpace: "nowrap",
+	},
+	table: {
+		width: "100%",
+		borderCollapse: "collapse",
+		marginTop: "8px",
+	},
+	row: {
+		"& td": {
+			padding: "12px 0 4px 0",
+			fontSize: tokens.fontSizeBase200,
+			fontWeight: tokens.fontWeightSemibold,
+			color: tokens.colorNeutralForeground1,
+		},
+	},
+	leftCell: {
+		"& label": {
+			color: tokens.colorNeutralForeground3,
+			fontSize: tokens.fontSizeBase100,
+		},
+	},
+	rightCell: {
+		textAlign: "right",
+	},
+})
 
 export function SettingsPanel({ visible }: { visible: boolean }) {
-	const { t } = useTranslation();
+	const { t } = useTranslation()
+	const styles = useStyles()
 
 	return (
-		<div
-			className="visio-file-menu-content-box"
-			style={{
-				display: visible ? "block" : "none",
-				padding: 0,
-				flexDirection: "column",
-			}}
-		>
-			<div className="visio-file-menu-header">{t("Advanced Settings")}</div>
-			<table className="visio-file-menu-settings-table">
+		<div className={styles.wrapper} style={{ display: visible ? "block" : "none", padding: 0 }}>
+			<div className={styles.header}>{t("Advanced Settings")}</div>
+			<table className={styles.table}>
 				<tbody>
-					<tr className="visio-file-menu-settings-group">
-						<td className="visio-file-menu-settings-left">
+					<tr className={styles.row}>
+						<td className={styles.leftCell}>
 							<span>{t("Language")}</span>
 						</td>
-						<td className="visio-file-menu-settings-right">
-							<select
-								className="visio-file-menu-select"
+						<td className={styles.rightCell}>
+							<Select
+								size="small"
 								value={i18n.language?.substring(0, 2) || "en"}
 								onChange={(e) => i18n.changeLanguage(e.target.value)}
+								style={{ minWidth: "120px" }}
 							>
 								<option value="en">English</option>
 								<option value="de">Deutsch</option>
@@ -40,34 +73,46 @@ export function SettingsPanel({ visible }: { visible: boolean }) {
 								<option value="pl">Polski</option>
 								<option value="tr">Türkçe</option>
 								<option value="ar">العربية</option>
-							</select>
+							</Select>
 						</td>
 					</tr>
-					<tr className="visio-file-menu-settings-divider" />
-					<tr className="visio-file-menu-settings-group">
-						<td className="visio-file-menu-settings-left">
+					<tr>
+						<td colSpan={2}>
+							<Divider />
+						</td>
+					</tr>
+					<tr className={styles.row}>
+						<td className={styles.leftCell}>
 							<span>{t("Interface Theme")}</span>
 						</td>
-						<td className="visio-file-menu-settings-right">
-							<select className="visio-file-menu-select" defaultValue="default">
+						<td className={styles.rightCell}>
+							<Select
+								size="small"
+								defaultValue="default"
+								style={{ minWidth: "120px" }}
+							>
 								<option value="default">{t("Standard")}</option>
 								<option value="light">{t("Light")}</option>
 								<option value="dark">{t("Dark")}</option>
 								<option value="dark-contrast">{t("Dark")} Contrast</option>
-							</select>
+							</Select>
 						</td>
 					</tr>
-					<tr className="visio-file-menu-settings-divider" />
-					<tr className="visio-file-menu-settings-group">
-						<td className="visio-file-menu-settings-left">
+					<tr>
+						<td colSpan={2}>
+							<Divider />
+						</td>
+					</tr>
+					<tr className={styles.row}>
+						<td className={styles.leftCell}>
 							<span>{t("Spell Checking")}</span>
 						</td>
-						<td className="visio-file-menu-settings-right">
-							<input type="checkbox" defaultChecked />
+						<td className={styles.rightCell}>
+							<Checkbox defaultChecked label="" />
 						</td>
 					</tr>
 				</tbody>
 			</table>
 		</div>
-	);
+	)
 }
