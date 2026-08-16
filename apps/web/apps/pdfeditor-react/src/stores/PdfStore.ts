@@ -308,6 +308,9 @@ export class PdfStore {
       const { info, content } = await loadDocument(conn)
       this.wopiFileInfo = info
       this.lastLoadedContent = content
+      // WOPI UserCanWrite drives edit mode (was never wired — tabs/controls
+      // stayed hidden and docs appeared uneditable).
+      this.setEditMode(info.UserCanWrite ?? false)
       this.document = {
         title: info.BaseFileName || "Untitled",
         fileType: "pdf",
