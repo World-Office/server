@@ -67,7 +67,7 @@ const WIRING = {
     alignLeft: { target: "wasm", implemented: true }, alignCenter: { target: "wasm", implemented: true },
     alignRight: { target: "wasm", implemented: true }, alignJustify: { target: "wasm", implemented: true },
     indent: { target: "wasm", implemented: true }, outdent: { target: "wasm", implemented: true },
-    lineSpacing: { target: "wasm", implemented: false },
+    lineSpacing: { target: "wasm", implemented: true },
     blockquote: { target: "lib", implemented: false }, codeBlock: { target: "lib", implemented: false },
     setTextDirection: { target: "lib", implemented: false },
     // home — styles

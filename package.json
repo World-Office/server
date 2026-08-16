@@ -18,7 +18,8 @@
     "cargo:test": "cargo test --workspace",
     "cargo:lint": "cargo clippy --workspace -- -D warnings",
     "cargo:fmt": "cargo fmt --all -- --check",
-    "cargo:fmt:fix": "cargo fmt --all"
+    "cargo:fmt:fix": "cargo fmt --all",
+    "ribbon-coverage": "node tools/ribbon-coverage.mjs"
   },
   "devDependencies": {
     "turbo": "^2.4.4",
