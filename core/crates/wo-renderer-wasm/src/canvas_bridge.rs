@@ -15,6 +15,17 @@ use wo_renderer::{Canvas, Color, FontLibrary};
 static FALLBACK_FONT_BYTES: &[u8] =
     include_bytes!("../../../../assets/fonts/liberation/LiberationSans-Regular.ttf");
 
+/// Liberation Sans family — regular, bold, italic, bold-italic.
+/// These are loaded into the FontLibrary so bold/italic text renders with
+/// real font faces instead of falling back to the regular weight.
+#[cfg(target_arch = "wasm32")]
+pub const LIBERATION_FONTS: &[&[u8]] = &[
+    include_bytes!("../../../../assets/fonts/liberation/LiberationSans-Regular.ttf"),
+    include_bytes!("../../../../assets/fonts/liberation/LiberationSans-Bold.ttf"),
+    include_bytes!("../../../../assets/fonts/liberation/LiberationSans-Italic.ttf"),
+    include_bytes!("../../../../assets/fonts/liberation/LiberationSans-BoldItalic.ttf"),
+];
+
 /// Global canvas instance store.
 ///
 /// Maps canvas handles to Canvas instances. Uses OnceLock for lazy initialization

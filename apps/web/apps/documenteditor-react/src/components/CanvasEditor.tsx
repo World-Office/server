@@ -286,6 +286,7 @@ const CanvasEditorInternal = (
         "portrait",
         72.0,
       )
+      console.info("[CanvasEditor] apply_formatting result:", result?.substring(0, 80))
       if (result && result !== "{}") {
         const layoutPages: PageInfo[] = JSON.parse(result).map(
           (p: { width: number; height: number; marginPx: number }, i: number) => ({
@@ -361,6 +362,7 @@ const CanvasEditorInternal = (
       )
 
       // Parse updated layout
+      console.info("[CanvasEditor] apply_formatting result:", result?.substring(0, 80))
       if (result && result !== "{}") {
         const layoutPages: PageInfo[] = JSON.parse(result).map(
           (p: { width: number; height: number; marginPx: number }, i: number) => ({

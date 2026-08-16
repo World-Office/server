@@ -640,13 +640,29 @@ impl Canvas {
         _font: &str,
         color: Color,
     ) {
+        self.draw_text_weighted(text, x, y, font_size, _font, color, false)
+    }
+
+    /// Like [`draw_text`](Canvas::draw_text) but with an explicit bold flag.
+    /// Bold is rendered by selecting a heavier font face from the library
+    /// (fontdb weight query) rather than synthesizing.
+    pub fn draw_text_weighted(
+        &mut self,
+        text: &str,
+        x: f64,
+        y: f64,
+        font_size: f64,
+        font: &str,
+        color: Color,
+        bold: bool,
+    ) {
         let font_library = match &self.font_library {
             Some(lib) => lib,
             None => return,
         };
 
-        // Get font data from library
-        let (font_data, face_index) = match font_library.query_face() {
+        // Get font data from library — select a heavier face for bold
+        let (font_data, face_index) = match font_library.query_face_weighted(bold) {
             Some(data) => data,
             None => return,
         };

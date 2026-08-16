@@ -635,7 +635,15 @@ impl LayoutEngine {
                     let text = lc.ch.to_string();
                     let font_size_px = (lc.font_size_pt * PT_TO_PX) as f64;
                     let y_pos = (lc.y + lc.font_size_pt * PT_TO_PX * 0.8) as f64;
-                    canvas.draw_text(&text, lc.x as f64, y_pos, font_size_px, "sans-serif", color);
+                    canvas.draw_text_weighted(
+                        &text,
+                        lc.x as f64,
+                        y_pos,
+                        font_size_px,
+                        "sans-serif",
+                        color,
+                        lc.bold,
+                    );
                 }
             }
         }

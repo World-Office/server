@@ -1303,6 +1303,12 @@ pub fn layout_document(
     let body = ooxml.docx_body.unwrap_or_else(DocxBody::default);
 
     let mut engine = LayoutEngine::new();
+    // Load the Liberation font family so bold/italic text renders with real
+    // faces (previously the library was empty → everything drew regular).
+    #[cfg(target_arch = "wasm32")]
+    for font in crate::canvas_bridge::LIBERATION_FONTS {
+        engine.load_font(font);
+    }
     let pages = engine.layout_document(&body, page_size, orientation, margin_pt);
 
     // Cache layout and engine
@@ -1965,6 +1971,54 @@ pub fn apply_formatting(
                 let clean = highlight.trim_start_matches('#');
                 run.highlight = Some(clean.to_string());
             }
+            if let Some(clear) = format.get("clearFormatting").and_then(|v| v.as_bool()) {
+                if clear {
+                    use wo_ooxml::model::UnderlineType;
+                    run.bold = false;
+                    run.italic = false;
+                    run.underline = Some(UnderlineType::None);
+                    run.strikethrough = false;
+                    run.font = None;
+                    run.font_size = None;
+                    run.color = None;
+                    run.highlight = None;
+                    run.vertical_alignment = None;
+                    run.small_caps = false;
+                    run.all_caps = false;
+                }
+            }
+            if let Some(vert) = format.get("verticalAlignment").and_then(|v| v.as_str()) {
+                use wo_ooxml::model::VerticalAlignment;
+                run.vertical_alignment = Some(match vert {
+                    "subscript" => VerticalAlignment::Subscript,
+                    "superscript" => VerticalAlignment::Superscript,
+                    _ => VerticalAlignment::Baseline,
+                });
+            }
+        }
+
+        // Paragraph-level formatting (alignment, heading level, line spacing)
+        if let Some(align) = format.get("align").and_then(|v| v.as_str()) {
+            use wo_ooxml::model::TextAlignment;
+            para.properties.alignment = Some(match align {
+                "left" => TextAlignment::Left,
+                "center" => TextAlignment::Center,
+                "right" => TextAlignment::Right,
+                "justify" => TextAlignment::Both,
+                _ => TextAlignment::Left,
+            });
+        }
+        if let Some(heading) = format.get("heading").and_then(|v| v.as_u64()) {
+            para.properties.outline_level = Some(heading as u32);
+        }
+        if let Some(line_spacing) = format.get("lineSpacing").and_then(|v| v.as_u64()) {
+            para.properties.spacing_line = Some(line_spacing as i32);
+        }
+        if let Some(spacing_before) = format.get("spacingBefore").and_then(|v| v.as_u64()) {
+            para.properties.spacing_before = Some(spacing_before as i32);
+        }
+        if let Some(spacing_after) = format.get("spacingAfter").and_then(|v| v.as_u64()) {
+            para.properties.spacing_after = Some(spacing_after as i32);
         }
     }
 
