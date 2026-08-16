@@ -269,101 +269,100 @@ impl LayoutEngine {
                     cursor_y += default_fs * PT_TO_PX * 0.3;
                 }
                 DocxBlock::Table(table) => {
-                        if cursor_y > max_content_y - 20.0 {
-                    pages.push(LaidOutPage {
-                        layout: pl.clone(),
-                        paragraphs: std::mem::take(&mut page.paragraphs),
-                    });
-                    cursor_y = pl.content_y;
-                }
-    
-                let table_w = table
-                    .properties
-                    .width
-                    .map(|w| w as f32 * PT_TO_PX / 20.0)
-                    .unwrap_or(pl.content_width);
-                let col_count = table
-                    .rows
-                    .first()
-                    .map(|r| r.cells.len())
-                    .unwrap_or(1)
-                    .max(1);
-                let col_w = table_w / col_count as f32;
-                let table_indent = table
-                    .properties
-                    .indent
-                    .map(|i| i as f32 * PT_TO_PX / 20.0)
-                    .unwrap_or(0.0)
-                    + pl.content_x;
-    
-                for row in &table.rows {
-                    let row_h_pt = row.height.map(|h| h as f32).unwrap_or(24.0);
-                    let row_h_px = row_h_pt * PT_TO_PX;
-    
-                    if cursor_y + row_h_px > max_content_y {
+                    if cursor_y > max_content_y - 20.0 {
                         pages.push(LaidOutPage {
                             layout: pl.clone(),
                             paragraphs: std::mem::take(&mut page.paragraphs),
                         });
                         cursor_y = pl.content_y;
                     }
-    
-                    for (ci, cell) in row.cells.iter().enumerate() {
-                        let cell_x = table_indent + ci as f32 * col_w;
-                        for cp in &cell.paragraphs {
-                            let cf = cp
-                                .runs
-                                .first()
-                                .and_then(|r| r.font_size)
-                                .map(|s| s as f32 / 2.0)
-                                .unwrap_or(11.0);
-                            let cell_max_w = col_w - 8.0;
-                            let (cl, _) = self.layout_paragraph(
-                                cp,
-                                cursor_y,
-                                cell_x,
-                                0.0,
-                                cell_max_w,
-                                cursor_y + row_h_px,
-                                cf,
-                                cf * 1.15,
-                            );
-                            page.paragraphs.extend(cl);
+
+                    let table_w = table
+                        .properties
+                        .width
+                        .map(|w| w as f32 * PT_TO_PX / 20.0)
+                        .unwrap_or(pl.content_width);
+                    let col_count = table
+                        .rows
+                        .first()
+                        .map(|r| r.cells.len())
+                        .unwrap_or(1)
+                        .max(1);
+                    let col_w = table_w / col_count as f32;
+                    let table_indent = table
+                        .properties
+                        .indent
+                        .map(|i| i as f32 * PT_TO_PX / 20.0)
+                        .unwrap_or(0.0)
+                        + pl.content_x;
+
+                    for row in &table.rows {
+                        let row_h_pt = row.height.map(|h| h as f32).unwrap_or(24.0);
+                        let row_h_px = row_h_pt * PT_TO_PX;
+
+                        if cursor_y + row_h_px > max_content_y {
+                            pages.push(LaidOutPage {
+                                layout: pl.clone(),
+                                paragraphs: std::mem::take(&mut page.paragraphs),
+                            });
+                            cursor_y = pl.content_y;
                         }
+
+                        for (ci, cell) in row.cells.iter().enumerate() {
+                            let cell_x = table_indent + ci as f32 * col_w;
+                            for cp in &cell.paragraphs {
+                                let cf = cp
+                                    .runs
+                                    .first()
+                                    .and_then(|r| r.font_size)
+                                    .map(|s| s as f32 / 2.0)
+                                    .unwrap_or(11.0);
+                                let cell_max_w = col_w - 8.0;
+                                let (cl, _) = self.layout_paragraph(
+                                    cp,
+                                    cursor_y,
+                                    cell_x,
+                                    0.0,
+                                    cell_max_w,
+                                    cursor_y + row_h_px,
+                                    cf,
+                                    cf * 1.15,
+                                );
+                                page.paragraphs.extend(cl);
+                            }
+                        }
+                        cursor_y += row_h_px;
                     }
-                    cursor_y += row_h_px;
+                    cursor_y += 12.0 * PT_TO_PX;
                 }
-                cursor_y += 12.0 * PT_TO_PX;
+                DocxBlock::Image(_image) => {
+                    // Image rendering for DM-7; placeholder for now
+                    cursor_y += 20.0 * PT_TO_PX;
+                }
             }
-            DocxBlock::Image(_image) => {
-                // Image rendering for DM-7; placeholder for now
-                cursor_y += 20.0 * PT_TO_PX;
-            }
-        }
-    
         }
         pages.push(page);
-            pages
-        }
-    
-        /// Layout a single paragraph into lines with character-level positioning.
-        #[allow(clippy::too_many_arguments)]
-        fn layout_paragraph(
-            &mut self,
-            para: &DocxParagraph,
-            start_y: f32,
-            indent_px: f32,
-            first_indent_px: f32,
-            max_width_px: f32,
-            max_y: f32,
-            default_fs_pt: f32,
-            line_h_pt: f32,
-        ) -> (Vec<LaidOutParagraph>, f32) {
-            let base_lh_px = line_h_pt * PT_TO_PX;
-            let mut lines: Vec<LaidOutLine> = Vec::new();
-            let mut cursor_y = start_y;
-            let mut line_num = 0u32;
-    
+        pages
+    }
+
+    /// Layout a single paragraph into lines with character-level positioning.
+    #[allow(clippy::too_many_arguments)]
+    fn layout_paragraph(
+        &mut self,
+        para: &DocxParagraph,
+        start_y: f32,
+        indent_px: f32,
+        first_indent_px: f32,
+        max_width_px: f32,
+        max_y: f32,
+        default_fs_pt: f32,
+        line_h_pt: f32,
+    ) -> (Vec<LaidOutParagraph>, f32) {
+        let base_lh_px = line_h_pt * PT_TO_PX;
+        let mut lines: Vec<LaidOutLine> = Vec::new();
+        let mut cursor_y = start_y;
+        let mut line_num = 0u32;
+
         // Collect formatted runs
         struct FormattedChunk<'a> {
             text: &'a str,

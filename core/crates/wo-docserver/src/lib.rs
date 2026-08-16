@@ -140,14 +140,7 @@ async fn health_handler() -> &'static str {
 /// health checks (which target the docserver) still pass when OCIS is available.
 async fn discovery_handler(
     State(state): State<AppState>,
-) -> Result<
-    (
-        axum::http::StatusCode,
-        axum::http::HeaderMap,
-        String,
-    ),
-    AppError,
-> {
+) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, String), AppError> {
     let discovery = state
         .wopi_client
         .get_discovery()
@@ -471,14 +464,7 @@ fn wopi_type_to_local_route(editor_type: &str) -> Option<&'static str> {
 /// `{locale}/{locale}.{ext}`.
 async fn serve_dictionary(
     Path(path): Path<String>,
-) -> Result<
-    (
-        axum::http::StatusCode,
-        axum::http::HeaderMap,
-        Vec<u8>,
-    ),
-    axum::http::StatusCode,
-> {
+) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), axum::http::StatusCode> {
     if path.split('/').any(|seg| seg == "..") {
         return Err(axum::http::StatusCode::FORBIDDEN);
     }
@@ -545,14 +531,7 @@ async fn serve_dictionary(
 async fn serve_editor_index(
     Path(type_path): Path<String>,
     State(state): State<AppState>,
-) -> Result<
-    (
-        axum::http::StatusCode,
-        axum::http::HeaderMap,
-        Vec<u8>,
-    ),
-    axum::http::StatusCode,
-> {
+) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), axum::http::StatusCode> {
     let dir_name = resolve_editor_dir(&type_path).ok_or(axum::http::StatusCode::NOT_FOUND)?;
     let index_path = std::path::Path::new(&state.config.editor_ui_dir)
         .join(dir_name)
@@ -581,14 +560,7 @@ async fn serve_editor_index(
 async fn serve_editor_assets(
     Path((type_path, asset_path)): Path<(String, String)>,
     State(state): State<AppState>,
-) -> Result<
-    (
-        axum::http::StatusCode,
-        axum::http::HeaderMap,
-        Vec<u8>,
-    ),
-    axum::http::StatusCode,
-> {
+) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), axum::http::StatusCode> {
     let dir_name = resolve_editor_dir(&type_path).ok_or(axum::http::StatusCode::NOT_FOUND)?;
 
     // Prevent directory traversal
@@ -612,7 +584,9 @@ async fn serve_editor_assets(
     let is_hashed = asset_path
         .rsplit('/')
         .next()
-        .map(|f| f.contains("-") && (f.ends_with(".js") || f.ends_with(".css") || f.ends_with(".wasm")))
+        .map(|f| {
+            f.contains("-") && (f.ends_with(".js") || f.ends_with(".css") || f.ends_with(".wasm"))
+        })
         .unwrap_or(false);
     let cache_header = if is_hashed {
         "public, max-age=31536000, immutable".to_string()
@@ -633,91 +607,90 @@ async fn serve_editor_assets(
 // Direct-editor-path wrappers (frontend uses vite base /word/ etc.). The
 // browser never hits /editors/{type}/; these hardcode the editor type so
 // the cache-aware handlers serve the real paths.
-async fn serve_word_index(State(state): State<AppState>) -> Result<
-    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
-    axum::http::StatusCode,
-> {
+async fn serve_word_index(
+    State(state): State<AppState>,
+) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), axum::http::StatusCode> {
     serve_editor_index(Path("word".to_string()), axum::extract::State(state)).await
 }
 
 async fn serve_word_assets(
     Path(asset_path): Path<String>,
     State(state): State<AppState>,
-) -> Result<
-    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
-    axum::http::StatusCode,
-> {
-    serve_editor_assets(Path(("word".to_string(), format!("assets/{asset_path}"))), axum::extract::State(state)).await
+) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), axum::http::StatusCode> {
+    serve_editor_assets(
+        Path(("word".to_string(), format!("assets/{asset_path}"))),
+        axum::extract::State(state),
+    )
+    .await
 }
 
-async fn serve_sheet_index(State(state): State<AppState>) -> Result<
-    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
-    axum::http::StatusCode,
-> {
+async fn serve_sheet_index(
+    State(state): State<AppState>,
+) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), axum::http::StatusCode> {
     serve_editor_index(Path("sheet".to_string()), axum::extract::State(state)).await
 }
 
 async fn serve_sheet_assets(
     Path(asset_path): Path<String>,
     State(state): State<AppState>,
-) -> Result<
-    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
-    axum::http::StatusCode,
-> {
-    serve_editor_assets(Path(("sheet".to_string(), format!("assets/{asset_path}"))), axum::extract::State(state)).await
+) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), axum::http::StatusCode> {
+    serve_editor_assets(
+        Path(("sheet".to_string(), format!("assets/{asset_path}"))),
+        axum::extract::State(state),
+    )
+    .await
 }
 
-async fn serve_slide_index(State(state): State<AppState>) -> Result<
-    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
-    axum::http::StatusCode,
-> {
+async fn serve_slide_index(
+    State(state): State<AppState>,
+) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), axum::http::StatusCode> {
     serve_editor_index(Path("slide".to_string()), axum::extract::State(state)).await
 }
 
 async fn serve_slide_assets(
     Path(asset_path): Path<String>,
     State(state): State<AppState>,
-) -> Result<
-    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
-    axum::http::StatusCode,
-> {
-    serve_editor_assets(Path(("slide".to_string(), format!("assets/{asset_path}"))), axum::extract::State(state)).await
+) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), axum::http::StatusCode> {
+    serve_editor_assets(
+        Path(("slide".to_string(), format!("assets/{asset_path}"))),
+        axum::extract::State(state),
+    )
+    .await
 }
 
-async fn serve_diagram_index(State(state): State<AppState>) -> Result<
-    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
-    axum::http::StatusCode,
-> {
+async fn serve_diagram_index(
+    State(state): State<AppState>,
+) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), axum::http::StatusCode> {
     serve_editor_index(Path("diagram".to_string()), axum::extract::State(state)).await
 }
 
 async fn serve_diagram_assets(
     Path(asset_path): Path<String>,
     State(state): State<AppState>,
-) -> Result<
-    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
-    axum::http::StatusCode,
-> {
-    serve_editor_assets(Path(("diagram".to_string(), format!("assets/{asset_path}"))), axum::extract::State(state)).await
+) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), axum::http::StatusCode> {
+    serve_editor_assets(
+        Path(("diagram".to_string(), format!("assets/{asset_path}"))),
+        axum::extract::State(state),
+    )
+    .await
 }
 
-async fn serve_pdf_index(State(state): State<AppState>) -> Result<
-    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
-    axum::http::StatusCode,
-> {
+async fn serve_pdf_index(
+    State(state): State<AppState>,
+) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), axum::http::StatusCode> {
     serve_editor_index(Path("pdf".to_string()), axum::extract::State(state)).await
 }
 
 async fn serve_pdf_assets(
     Path(asset_path): Path<String>,
     State(state): State<AppState>,
-) -> Result<
-    (axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>),
-    axum::http::StatusCode,
-> {
-    serve_editor_assets(Path(("pdf".to_string(), format!("assets/{asset_path}"))), axum::extract::State(state)).await
+) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), axum::http::StatusCode> {
+    serve_editor_assets(
+        Path(("pdf".to_string(), format!("assets/{asset_path}"))),
+        axum::extract::State(state),
+    )
+    .await
 }
-
 
 /// GET /wopi/files/:file_id  →  proxy CheckFileInfo to OCIS
 async fn wopi_check_file_info(
@@ -923,14 +896,8 @@ async fn demo_info_handler() -> Json<DemoFileInfo> {
     })
 }
 
-async fn demo_document_handler() -> Result<
-    (
-        axum::http::StatusCode,
-        axum::http::HeaderMap,
-        Vec<u8>,
-    ),
-    AppError,
-> {
+async fn demo_document_handler(
+) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), AppError> {
     let path = std::env::var("DEMO_DOC_PATH").unwrap_or_else(|_| "./demo.docx".into());
     let data = match tokio::fs::read(&path).await {
         Ok(bytes) => bytes,

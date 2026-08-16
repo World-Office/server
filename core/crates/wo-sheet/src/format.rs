@@ -113,11 +113,17 @@ impl FormatPattern {
     /// Get the format string for a given value type.
     pub fn get_section(&self, is_negative: bool, is_zero: bool, is_text: bool) -> &str {
         if is_text {
-            self.text.as_deref().unwrap_or(self.positive.as_deref().unwrap_or(""))
+            self.text
+                .as_deref()
+                .unwrap_or(self.positive.as_deref().unwrap_or(""))
         } else if is_zero {
-            self.zero.as_deref().unwrap_or(self.positive.as_deref().unwrap_or(""))
+            self.zero
+                .as_deref()
+                .unwrap_or(self.positive.as_deref().unwrap_or(""))
         } else if is_negative {
-            self.negative.as_deref().unwrap_or(self.positive.as_deref().unwrap_or(""))
+            self.negative
+                .as_deref()
+                .unwrap_or(self.positive.as_deref().unwrap_or(""))
         } else {
             self.positive.as_deref().unwrap_or("")
         }
@@ -152,7 +158,11 @@ pub fn detect_context(format_str: &str) -> FormatContext {
         FormatContext::Time
     } else if lower.contains('%') {
         FormatContext::Percentage
-    } else if lower.contains('$') || lower.contains("£") || lower.contains("€") || lower.contains("¥") {
+    } else if lower.contains('$')
+        || lower.contains("£")
+        || lower.contains("€")
+        || lower.contains("¥")
+    {
         FormatContext::Currency
     } else if lower.contains("e+") || lower.contains("e-") || lower.contains("0.00e+00") {
         FormatContext::Scientific
@@ -375,15 +385,29 @@ fn format_currency(value: f64, format_code: &str) -> String {
         .unwrap_or_else(|| "$".to_string());
 
     // Remove currency symbol for numeric formatting
-    let numeric_part: String = format_code.chars().filter(|c| !c.is_alphabetic() || c == &'0' || c == &'#' || c == &',' || c == &'.' || c == &'(' || c == &')' || c == &'-').collect();
-    
+    let numeric_part: String = format_code
+        .chars()
+        .filter(|c| {
+            !c.is_alphabetic()
+                || c == &'0'
+                || c == &'#'
+                || c == &','
+                || c == &'.'
+                || c == &'('
+                || c == &')'
+                || c == &'-'
+        })
+        .collect();
+
     // Format the numeric value
     let formatted = format_numeric(value, &numeric_part);
 
     // Insert currency symbol
     if format_code.starts_with(&symbol) {
         format!("{}{}", symbol, formatted)
-    } else if format_code.contains(&format!("{} ", symbol)) || format_code.contains(&format!(" {} ", symbol)) {
+    } else if format_code.contains(&format!("{} ", symbol))
+        || format_code.contains(&format!(" {} ", symbol))
+    {
         format!("{} {}", symbol, formatted)
     } else {
         format!("{}{}", formatted, symbol)
@@ -398,7 +422,7 @@ fn format_scientific(value: f64, format_code: &str) -> String {
     // Check if format specifies precision
     if let Some(start) = format_code.find("0.") {
         if let Some(end) = format_code.find('e') {
-            let prec_str = &format_code[start+2..end];
+            let prec_str = &format_code[start + 2..end];
             if let Ok(prec) = prec_str.parse::<usize>() {
                 result = format!("{:.1$e}", value, prec + 1);
             }
@@ -639,24 +663,37 @@ fn format_time_internal(time: &NaiveTime, format_code: &str) -> String {
 
 /// Month abbreviations.
 const MONTH_ABBR: [&str; 12] = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
 /// Month names.
 const MONTH_NAMES: [&str; 12] = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
 ];
 
 /// Day abbreviations.
-const DAY_ABBR: [&str; 7] = [
-    "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat",
-];
+const DAY_ABBR: [&str; 7] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 /// Day names.
 const DAY_NAMES: [&str; 7] = [
-    "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
 ];
 
 /// Format a value according to its type and format code.
@@ -700,193 +737,229 @@ mod tests {
     use super::*;
 
     // Test 1: General format integer
-    #[test] fn test_general_int() {
+    #[test]
+    fn test_general_int() {
         assert_eq!(format_number(123.0, "General"), "123");
     }
 
     // Test 2: General format float
-    #[test] fn test_general_float() {
+    #[test]
+    fn test_general_float() {
         assert_eq!(format_number(123.45, "General"), "123.45");
     }
 
     // Test 3: Integer formatting
-    #[test] fn test_integer_format() {
+    #[test]
+    fn test_integer_format() {
         assert_eq!(format_number(12345.0, "0"), "12345");
     }
 
     // Test 4: Two decimal places
-    #[test] fn test_two_decimal_places() {
+    #[test]
+    fn test_two_decimal_places() {
         assert_eq!(format_number(123.456, "0.00"), "123.46");
     }
 
     // Test 5: Trailing zeros
-    #[test] fn test_trailing_zeros() {
+    #[test]
+    fn test_trailing_zeros() {
         assert_eq!(format_number(123.4, "0.00"), "123.40");
     }
 
     // Test 6: Thousands separator
-    #[test] fn test_thousands_separator() {
+    #[test]
+    fn test_thousands_separator() {
         assert_eq!(format_number(1234567.0, "#,##0"), "1,234,567");
     }
 
     // Test 7: Thousands with decimals
-    #[test] fn test_thousands_with_decimals() {
+    #[test]
+    fn test_thousands_with_decimals() {
         assert_eq!(format_number(1234567.89, "#,##0.00"), "1,234,567.89");
     }
 
     // Test 8: Negative number default
-    #[test] fn test_negative_default() {
+    #[test]
+    fn test_negative_default() {
         assert_eq!(format_number(-123.45, "0.00"), "-123.45");
     }
 
     // Test 9: Negative in parentheses
-    #[test] fn test_negative_parentheses() {
+    #[test]
+    fn test_negative_parentheses() {
         assert_eq!(format_number(-123.45, "0.00;(0.00)"), "(123.45)");
     }
 
     // Test 10: Zero formatting
-    #[test] fn test_zero_format() {
+    #[test]
+    fn test_zero_format() {
         assert_eq!(format_number(0.0, "0"), "0");
     }
 
     // Test 11: Hash placeholder with zero
-    #[test] fn test_hash_zero() {
+    #[test]
+    fn test_hash_zero() {
         assert_eq!(format_number(0.0, "#"), "");
     }
 
     // Test 12: Percentage
-    #[test] fn test_percentage() {
+    #[test]
+    fn test_percentage() {
         assert_eq!(format_number(0.1234, "0%"), "12%");
     }
 
     // Test 13: Percentage with decimals
-    #[test] fn test_percentage_decimals() {
+    #[test]
+    fn test_percentage_decimals() {
         assert_eq!(format_number(0.123456, "0.00%"), "12.35%");
     }
 
     // Test 14: Currency
-    #[test] fn test_currency() {
+    #[test]
+    fn test_currency() {
         assert_eq!(format_number(1234.56, "$#,##0.00"), "$1,234.56");
     }
 
     // Test 15: Euro currency
-    #[test] fn test_euro_currency() {
+    #[test]
+    fn test_euro_currency() {
         assert_eq!(format_number(1234.56, "€#,##0.00"), "€1,234.56");
     }
 
     // Test 16: Scientific notation
-    #[test] fn test_scientific() {
+    #[test]
+    fn test_scientific() {
         let result = format_number(1234567.0, "0.00E+00");
         assert!(!result.is_empty());
     }
 
     // Test 17: Four section format positive
-    #[test] fn test_four_section_positive() {
+    #[test]
+    fn test_four_section_positive() {
         assert_eq!(format_number(123.0, "#,##0;[Red]#,##0;0;@"), "123");
     }
 
     // Test 18: Four section format negative
-    #[test] fn test_four_section_negative() {
+    #[test]
+    fn test_four_section_negative() {
         let result = format_number(-123.0, "#,##0;[Red]#,##0;0;@");
         assert!(result.contains("123"));
     }
 
     // Test 19: Four section format zero
-    #[test] fn test_four_section_zero() {
+    #[test]
+    fn test_four_section_zero() {
         let result = format_number(0.0, "#,##0;[Red]#,##0;zero;@");
         assert_eq!(result, "0");
     }
 
     // Test 20: Text placeholder
-    #[test] fn test_text_placeholder() {
+    #[test]
+    fn test_text_placeholder() {
         assert_eq!(format_number(123.0, "@"), "123");
     }
 
     // Test 21: Date format mm/dd/yyyy
-    #[test] fn test_date_slash() {
+    #[test]
+    fn test_date_slash() {
         // Excel date 44927 = 2023-01-01
         let result = format_number(44927.0, "mm/dd/yyyy");
         assert!(!result.is_empty());
     }
 
     // Test 22: Date format with leading zeros
-    #[test] fn test_date_leading_zeros() {
+    #[test]
+    fn test_date_leading_zeros() {
         let result = format_number(44927.0, "mm/dd/yyyy");
         assert!(result.len() >= 8); // At least 8 chars: 01/01/2023
     }
 
     // Test 23: Time format 12-hour
-    #[test] fn test_time_12hr() {
+    #[test]
+    fn test_time_12hr() {
         // 0.5 = 12:00:00 PM
         let result = format_number(0.5, "h:mm AM/PM");
         assert!(result.contains("12") && (result.contains("PM") || result.contains("AM")));
     }
 
     // Test 24: Time format 24-hour
-    #[test] fn test_time_24hr() {
+    #[test]
+    fn test_time_24hr() {
         let result = format_number(0.75, "hh:mm"); // 18:00
         assert!(result.contains("18") || result.contains("06"));
     }
 
     // Test 25: Large number
-    #[test] fn test_large_number() {
+    #[test]
+    fn test_large_number() {
         assert_eq!(format_number(1234567890.0, "#,##0"), "1,234,567,890");
     }
 
     // Test 26: Small positive number
-    #[test] fn test_small_positive() {
+    #[test]
+    fn test_small_positive() {
         assert_eq!(format_number(0.1, "0.00"), "0.10");
     }
 
     // Test 27: Builtin constant GENERAL
-    #[test] fn test_builtin_general() {
+    #[test]
+    fn test_builtin_general() {
         assert_eq!(builtin::GENERAL, "General");
     }
 
     // Test 28: Builtin NUMBER_0
-    #[test] fn test_builtin_number_0() {
+    #[test]
+    fn test_builtin_number_0() {
         assert_eq!(builtin::NUMBER_0, "0");
     }
 
     // Test 29: Builtin CURRENCY
-    #[test] fn test_builtin_currency() {
+    #[test]
+    fn test_builtin_currency() {
         assert_eq!(builtin::CURRENCY, "$#,##0.00");
     }
 
     // Test 30: Builtin PERCENT
-    #[test] fn test_builtin_percent() {
+    #[test]
+    fn test_builtin_percent() {
         assert_eq!(builtin::PERCENT, "0%");
     }
 
     // Test 31: NaN handling
-    #[test] fn test_nan() {
+    #[test]
+    fn test_nan() {
         assert_eq!(format_number(f64::NAN, "0"), "#NUM!");
     }
 
     // Test 32: Infinity handling
-    #[test] fn test_infinity() {
+    #[test]
+    fn test_infinity() {
         assert_eq!(format_number(f64::INFINITY, "0"), "Infinity");
     }
 
     // Test 33: Negative infinity
-    #[test] fn test_negative_infinity() {
+    #[test]
+    fn test_negative_infinity() {
         assert_eq!(format_number(f64::NEG_INFINITY, "0"), "-Infinity");
     }
 
     // Test 34: Empty format string
-    #[test] fn test_empty_format() {
+    #[test]
+    fn test_empty_format() {
         let result = format_number(123.0, "");
         assert!(!result.is_empty());
     }
 
     // Test 35: Literal text in format
-    #[test] fn test_literal_text() {
+    #[test]
+    fn test_literal_text() {
         let result = format_number(42.0, "Total: 0");
         assert!(!result.is_empty());
     }
 
     // Test 36: Multiple sections with semicolon
-    #[test] fn test_multiple_sections() {
+    #[test]
+    fn test_multiple_sections() {
         let pattern = FormatPattern::parse("positive;negative;zero;text");
         assert_eq!(pattern.positive, Some("positive".to_string()));
         assert_eq!(pattern.negative, Some("negative".to_string()));
@@ -895,25 +968,29 @@ mod tests {
     }
 
     // Test 37: get_section for positive
-    #[test] fn test_get_section_positive() {
+    #[test]
+    fn test_get_section_positive() {
         let pattern = FormatPattern::parse("pos;neg;zero;text");
         assert_eq!(pattern.get_section(false, false, false), "pos");
     }
 
     // Test 38: get_section for negative
-    #[test] fn test_get_section_negative() {
+    #[test]
+    fn test_get_section_negative() {
         let pattern = FormatPattern::parse("pos;neg;zero;text");
         assert_eq!(pattern.get_section(true, false, false), "neg");
     }
 
     // Test 39: get_section for zero
-    #[test] fn test_get_section_zero() {
+    #[test]
+    fn test_get_section_zero() {
         let pattern = FormatPattern::parse("pos;neg;zero;text");
         assert_eq!(pattern.get_section(false, true, false), "zero");
     }
 
     // Test 40: detect_context for number
-    #[test] fn test_detect_number_context() {
+    #[test]
+    fn test_detect_number_context() {
         assert_eq!(detect_context("#.00"), FormatContext::Number);
     }
 }

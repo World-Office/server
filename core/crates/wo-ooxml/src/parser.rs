@@ -1313,9 +1313,7 @@ impl OoxmlParser {
 
         let body = match body_node {
             Some(node) => self.parse_body_node(&node),
-            None => DocxBody {
-                blocks: Vec::new(),
-            },
+            None => DocxBody { blocks: Vec::new() },
         };
 
         Ok(Some(body))
@@ -1465,7 +1463,10 @@ impl OoxmlParser {
                             continue;
                         }
                         if tab_child.tag_name().name() == "tab" {
-                            let pos: i32 = tab_child.attribute("pos").and_then(|v| v.parse::<i32>().ok()).unwrap_or(0);
+                            let pos: i32 = tab_child
+                                .attribute("pos")
+                                .and_then(|v| v.parse::<i32>().ok())
+                                .unwrap_or(0);
                             let kind = match tab_child.attribute("val") {
                                 Some("center") => TabStopKind::Center,
                                 Some("right") => TabStopKind::Right,

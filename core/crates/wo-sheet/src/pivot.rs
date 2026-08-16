@@ -230,7 +230,11 @@ impl AggAccumulator {
                 }
                 self.product *= *n;
             }
-            CellValue::Empty | CellValue::Text(_) | CellValue::Bool(_) | CellValue::Err(_) | CellValue::Date(_) => {
+            CellValue::Empty
+            | CellValue::Text(_)
+            | CellValue::Bool(_)
+            | CellValue::Err(_)
+            | CellValue::Date(_) => {
                 // For COUNT, we count every non-empty value regardless of type
             }
         }
@@ -411,13 +415,14 @@ impl PivotEngine {
         // --- 2. Accumulate values ---
         // accumulator[row_idx][col_idx][val_field_idx]
         let num_value_fields = self.config.value_fields.len();
-        let mut accumulators: Vec<Vec<Vec<AggAccumulator>>> = vec![
+        let mut accumulators: Vec<Vec<Vec<AggAccumulator>>> =
             vec![
-                vec![AggAccumulator::new(AggFunc::Sum); num_value_fields];
-                col_keys_ordered.len()
+                vec![
+                    vec![AggAccumulator::new(AggFunc::Sum); num_value_fields];
+                    col_keys_ordered.len()
+                ];
+                row_keys_ordered.len()
             ];
-            row_keys_ordered.len()
-        ];
 
         // Build accumulators with the correct aggregation function per value field
         for r in 0..row_keys_ordered.len() {
@@ -434,10 +439,9 @@ impl PivotEngine {
             vec![vec![AggAccumulator::new(AggFunc::Sum); num_value_fields]; row_keys_ordered.len()];
         let mut col_grand_accums: Vec<Vec<AggAccumulator>> =
             vec![vec![AggAccumulator::new(AggFunc::Sum); num_value_fields]; col_keys_ordered.len()];
-        let mut total_grand_accums: Vec<AggAccumulator> =
-            (0..num_value_fields)
-                .map(|_| AggAccumulator::new(AggFunc::Sum))
-                .collect();
+        let mut total_grand_accums: Vec<AggAccumulator> = (0..num_value_fields)
+            .map(|_| AggAccumulator::new(AggFunc::Sum))
+            .collect();
 
         // Fix aggregation functions for grand accumulators
         for v in 0..num_value_fields {
@@ -647,10 +651,7 @@ fn value_to_sort_key(value: &CellValue) -> String {
 /// Create a pivot table from the given source data and configuration.
 ///
 /// This is a convenience wrapper around `PivotEngine`.
-pub fn create_pivot(
-    config: &PivotTableConfig,
-    source_data: &[Vec<CellValue>],
-) -> PivotResult {
+pub fn create_pivot(config: &PivotTableConfig, source_data: &[Vec<CellValue>]) -> PivotResult {
     let engine = PivotEngine::new(config.clone());
     engine.execute(source_data)
 }
@@ -699,10 +700,10 @@ mod tests {
         ];
 
         let config = PivotTableConfig::new(
-            vec![PivotField::new("Region", 0)],           // row: Region (col 0)
-            vec![],                                        // no column fields
+            vec![PivotField::new("Region", 0)], // row: Region (col 0)
+            vec![],                             // no column fields
             vec![PivotValueField::new(
-                PivotField::new("Amount", 2),              // value: Amount (col 2)
+                PivotField::new("Amount", 2), // value: Amount (col 2)
                 AggFunc::Sum,
             )],
         );
@@ -763,10 +764,10 @@ mod tests {
         ];
 
         let config = PivotTableConfig::new(
-            vec![PivotField::new("Dept", 0)],             // row: Department (col 0)
-            vec![PivotField::new("Gender", 1)],           // column: Gender (col 1)
+            vec![PivotField::new("Dept", 0)],   // row: Department (col 0)
+            vec![PivotField::new("Gender", 1)], // column: Gender (col 1)
             vec![PivotValueField::new(
-                PivotField::new("Name", 2),                // value: Name (col 2)
+                PivotField::new("Name", 2), // value: Name (col 2)
                 AggFunc::Count,
             )],
         );
@@ -789,11 +790,7 @@ mod tests {
         let _hr_idx = dept_names.iter().position(|d| d == "HR").unwrap();
 
         // Column count = unique genders = 2
-        assert_eq!(
-            result.data[0].len(),
-            2,
-            "should have 2 columns (M, F)"
-        );
+        assert_eq!(result.data[0].len(), 2, "should have 2 columns (M, F)");
 
         // Collect values per dept per gender
         let get_val = |row: usize, col: usize| -> f64 {
@@ -805,8 +802,7 @@ mod tests {
 
         // Engineering: M=3, F=1
         assert!(
-            (get_val(eng_idx, 0) - 3.0).abs() < 0.001
-                || (get_val(eng_idx, 1) - 3.0).abs() < 0.001,
+            (get_val(eng_idx, 0) - 3.0).abs() < 0.001 || (get_val(eng_idx, 1) - 3.0).abs() < 0.001,
             "Engineering M should be 3"
         );
         // Sales: M=1, F=2
@@ -842,12 +838,12 @@ mod tests {
 
         let config = PivotTableConfig::new(
             vec![
-                PivotField::new("Region", 0),       // row level 1
-                PivotField::new("Category", 1),     // row level 2
+                PivotField::new("Region", 0),   // row level 1
+                PivotField::new("Category", 1), // row level 2
             ],
-            vec![],                                  // no column fields
+            vec![], // no column fields
             vec![PivotValueField::new(
-                PivotField::new("Revenue", 3),       // value: Revenue (col 3)
+                PivotField::new("Revenue", 3), // value: Revenue (col 3)
                 AggFunc::Average,
             )],
         );
@@ -960,7 +956,10 @@ mod tests {
         let config = PivotTableConfig::new(
             vec![PivotField::new("Group", 0)],
             vec![],
-            vec![PivotValueField::new(PivotField::new("Value", 1), AggFunc::Max)],
+            vec![PivotValueField::new(
+                PivotField::new("Value", 1),
+                AggFunc::Max,
+            )],
         );
 
         let result = create_pivot(&config, &source);
@@ -993,7 +992,10 @@ mod tests {
         let config = PivotTableConfig::new(
             vec![PivotField::new("Item", 0)],
             vec![],
-            vec![PivotValueField::new(PivotField::new("Score", 1), AggFunc::Min)],
+            vec![PivotValueField::new(
+                PivotField::new("Score", 1),
+                AggFunc::Min,
+            )],
         );
 
         let result = create_pivot(&config, &source);
@@ -1018,10 +1020,7 @@ mod tests {
         assert_eq!(field.name, "Sales");
         assert_eq!(field.source_index, 2);
 
-        let value_field = PivotValueField::new(
-            PivotField::new("Revenue", 3),
-            AggFunc::Sum,
-        );
+        let value_field = PivotValueField::new(PivotField::new("Revenue", 3), AggFunc::Sum);
         assert_eq!(value_field.field.name, "Revenue");
         assert_eq!(value_field.agg_func, AggFunc::Sum);
         assert_eq!(value_field.display_name(), "Sum of Revenue");
@@ -1157,7 +1156,10 @@ mod tests {
         let config = PivotTableConfig::new(
             vec![PivotField::new("Product", 0)],
             vec![PivotField::new("Quarter", 1)],
-            vec![PivotValueField::new(PivotField::new("Sales", 2), AggFunc::Sum)],
+            vec![PivotValueField::new(
+                PivotField::new("Sales", 2),
+                AggFunc::Sum,
+            )],
         );
 
         let result = create_pivot(&config, &source);
@@ -1168,8 +1170,16 @@ mod tests {
 
         // Widget: Q1=150, Q2=150
         // Gadget: Q1=200, Q2=250
-        let widget_idx = result.row_headers.iter().position(|h| h[0] == "Widget").unwrap();
-        let gadget_idx = result.row_headers.iter().position(|h| h[0] == "Gadget").unwrap();
+        let widget_idx = result
+            .row_headers
+            .iter()
+            .position(|h| h[0] == "Widget")
+            .unwrap();
+        let gadget_idx = result
+            .row_headers
+            .iter()
+            .position(|h| h[0] == "Gadget")
+            .unwrap();
 
         // Note: column ordering is by BTreeMap (lexicographic), so Q1=col0, Q2=col1
         if let CellValue::Num(v) = result.data[widget_idx][0] {

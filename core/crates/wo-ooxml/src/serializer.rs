@@ -2419,7 +2419,8 @@ mod tests {
                         small_caps: false,
                         all_caps: false,
                     }],
-                    section_properties: None,})],
+                    section_properties: None,
+                })],
             }),
         }
     }
@@ -2535,7 +2536,8 @@ mod tests {
                             all_caps: false,
                         },
                     ],
-                    section_properties: None,})],
+                    section_properties: None,
+                })],
             }),
         };
         let ser = OoxmlSerializer::new();
@@ -2583,7 +2585,8 @@ mod tests {
                             small_caps: false,
                             all_caps: false,
                         }],
-                        section_properties: None,}),
+                        section_properties: None,
+                    }),
                     DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties {
@@ -2606,7 +2609,8 @@ mod tests {
                             small_caps: false,
                             all_caps: false,
                         }],
-                        section_properties: None,}),
+                        section_properties: None,
+                    }),
                     DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties {
@@ -2629,7 +2633,8 @@ mod tests {
                             small_caps: false,
                             all_caps: false,
                         }],
-                        section_properties: None,}),
+                        section_properties: None,
+                    }),
                 ],
             }),
         };
@@ -2683,7 +2688,8 @@ mod tests {
                                             small_caps: false,
                                             all_caps: false,
                                         }],
-                                        section_properties: None,}],
+                                        section_properties: None,
+                                    }],
                                     column_span: 1,
                                     row_span: 1,
                                     width: None,
@@ -2709,7 +2715,8 @@ mod tests {
                                             small_caps: false,
                                             all_caps: false,
                                         }],
-                                        section_properties: None,}],
+                                        section_properties: None,
+                                    }],
                                     column_span: 1,
                                     row_span: 1,
                                     width: None,
@@ -2741,7 +2748,8 @@ mod tests {
                                             small_caps: false,
                                             all_caps: false,
                                         }],
-                                        section_properties: None,}],
+                                        section_properties: None,
+                                    }],
                                     column_span: 1,
                                     row_span: 1,
                                     width: None,
@@ -2767,7 +2775,8 @@ mod tests {
                                             small_caps: false,
                                             all_caps: false,
                                         }],
-                                        section_properties: None,}],
+                                        section_properties: None,
+                                    }],
                                     column_span: 1,
                                     row_span: 1,
                                     width: None,
@@ -2914,7 +2923,8 @@ mod tests {
                                 text: "Hello PPTX".to_string(),
                                 ..DocxRun::default()
                             }],
-                            section_properties: None,}],
+                            section_properties: None,
+                        }],
                     },
                     fill: None,
                     effect: None,
@@ -2983,7 +2993,8 @@ mod tests {
                                     text: "Slide One".to_string(),
                                     ..DocxRun::default()
                                 }],
-                                section_properties: None,}],
+                                section_properties: None,
+                            }],
                         },
                         fill: None,
                         effect: None,
@@ -3015,7 +3026,8 @@ mod tests {
                                     text: "Slide Two".to_string(),
                                     ..DocxRun::default()
                                 }],
-                                section_properties: None,}],
+                                section_properties: None,
+                            }],
                         },
                         fill: None,
                         effect: None,
@@ -3136,7 +3148,8 @@ mod tests {
                                 text: "Title Placeholder".to_string(),
                                 ..DocxRun::default()
                             }],
-                            section_properties: None,}],
+                            section_properties: None,
+                        }],
                     }),
                     fill: None,
                     effect: None,
@@ -3270,7 +3283,8 @@ mod tests {
                                     ..DocxRun::default()
                                 },
                             ],
-                            section_properties: None,}],
+                            section_properties: None,
+                        }],
                     },
                     fill: None,
                     effect: None,
@@ -3395,7 +3409,8 @@ mod tests {
                                 text: "Animated".to_string(),
                                 ..DocxRun::default()
                             }],
-                            section_properties: None,}],
+                            section_properties: None,
+                        }],
                     },
                     fill: None,
                     effect: None,
@@ -3605,7 +3620,8 @@ mod tests {
                         small_caps: false,
                         all_caps: false,
                     }],
-                    section_properties: None,})],
+                    section_properties: None,
+                })],
             }),
         };
         let ser = OoxmlSerializer::new();
@@ -3635,9 +3651,7 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-            docx_body: Some(DocxBody {
-                blocks: vec![],
-            }),
+            docx_body: Some(DocxBody { blocks: vec![] }),
         };
         let ser = OoxmlSerializer::new();
         let bytes = ser.serialize(&doc).unwrap();

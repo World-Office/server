@@ -11,16 +11,19 @@ pub mod canvas_bridge;
 pub mod layout;
 pub mod stub_model;
 
+use std::collections::BTreeMap;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::io::Cursor;
 use std::sync::Mutex;
 use std::sync::OnceLock;
 use wasm_bindgen::prelude::*;
-use std::collections::HashSet;
-use std::collections::BTreeMap;
 use wo_common::op::EditableModel;
 use wo_common::path::{Path, Range};
-use wo_ooxml::model::{DocxBlock, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, OoxmlDocument, PptxPresentation, XlsxWorkbook};
+use wo_ooxml::model::{
+    DocxBlock, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, OoxmlDocument,
+    PptxPresentation, XlsxWorkbook,
+};
 use wo_ooxml::parser::OoxmlParser;
 use wo_ooxml::serializer::OoxmlSerializer;
 use wo_ooxml_ops::EditableDocxBody;
@@ -165,20 +168,17 @@ fn create_pdf_model(bytes: &[u8]) -> Result<u32, String> {
 
     // Extract basic PDF info
     let page_count = count_pdf_pages(bytes);
-    let pages = vec![PdfPageInfo {
-        width: 794,  // Default A4 width at 96 DPI
-        height: 1123, // Default A4 height at 96 DPI
-    }; page_count as usize];
+    let pages = vec![
+        PdfPageInfo {
+            width: 794,   // Default A4 width at 96 DPI
+            height: 1123, // Default A4 height at 96 DPI
+        };
+        page_count as usize
+    ];
 
     let info_store = PDF_INFO_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let mut info_store = info_store.lock().unwrap();
-    info_store.insert(
-        handle,
-        PdfDocInfo {
-            page_count,
-            pages,
-        },
-    );
+    info_store.insert(handle, PdfDocInfo { page_count, pages });
 
     Ok(handle)
 }
@@ -223,7 +223,12 @@ fn layout_pdf_document(handle: u32, opts: &PdfLayoutOpts, canvas: u32) -> Result
                 let is_active = i == opts.page;
                 let border_color = if is_active { "#2563EB" } else { "#D1D5DB" };
                 let _ = canvas_bridge::render_rect(
-                    canvas, 0.0, 0.0, page.width as f32, page.height as f32, border_color,
+                    canvas,
+                    0.0,
+                    0.0,
+                    page.width as f32,
+                    page.height as f32,
+                    border_color,
                 );
                 // Page number label
                 let label = format!("Page {}/{}", i + 1, info.page_count);
@@ -232,7 +237,11 @@ fn layout_pdf_document(handle: u32, opts: &PdfLayoutOpts, canvas: u32) -> Result
                     &label,
                     8.0,
                     20.0,
-                    Some(if is_active { "#2563EB".to_string() } else { "#6B7280".to_string() }),
+                    Some(if is_active {
+                        "#2563EB".to_string()
+                    } else {
+                        "#6B7280".to_string()
+                    }),
                     Some(14.0),
                 );
             }
@@ -269,7 +278,8 @@ unsafe fn next_pptx_handle() -> u32 {
 }
 
 /// Check if bytes represent a valid PPTX file by checking for the PPTX content type marker.
-fn is_valid_pptx(bytes: &[u8]) -> bool {    // PPTX files are ZIP archives containing a [Content_Types].xml file
+fn is_valid_pptx(bytes: &[u8]) -> bool {
+    // PPTX files are ZIP archives containing a [Content_Types].xml file
     // with references to ppt/presentation.xml
     if bytes.len() < 22 {
         return false;
@@ -290,11 +300,11 @@ fn create_pptx_model(bytes: &[u8]) -> Result<u32, String> {
 
     let parser = OoxmlParser::new();
     let cursor = Cursor::new(bytes);
-    let mut archive = zip::ZipArchive::new(cursor).map_err(|e| {
-        format!("Failed to open PPTX as ZIP archive: {}", e)
-    })?;
+    let mut archive = zip::ZipArchive::new(cursor)
+        .map_err(|e| format!("Failed to open PPTX as ZIP archive: {}", e))?;
 
-    let pptx_pres = parser.parse_pptx(&mut archive)
+    let pptx_pres = parser
+        .parse_pptx(&mut archive)
         .map_err(|e| format!("Failed to parse PPTX: {}", e))?
         .ok_or_else(|| "No presentation found in PPTX file".to_string())?;
 
@@ -348,14 +358,23 @@ impl EditableModel for EditablePptxPresentation {
 
     fn apply(&mut self, op: &wo_common::op::ModelOp) -> std::result::Result<(), Self::Err> {
         match op {
-            wo_common::op::ModelOp::Insert { at, content: _content } => {
+            wo_common::op::ModelOp::Insert {
+                at,
+                content: _content,
+            } => {
                 match at {
-                    Path::Slide { slide, shape: _shape, run: _run, char: _char } => {
+                    Path::Slide {
+                        slide,
+                        shape: _shape,
+                        run: _run,
+                        char: _char,
+                    } => {
                         // Insert text into a text run in a shape
                         if *slide >= self.0.slides.len() {
                             return Err(PptxModelError::OutOfRange(format!(
                                 "Slide {} out of range (len: {})",
-                                slide, self.0.slides.len()
+                                slide,
+                                self.0.slides.len()
                             )));
                         }
                         // Note: Full text editing implementation requires more work
@@ -368,17 +387,19 @@ impl EditableModel for EditablePptxPresentation {
                     ))),
                 }
             }
-            wo_common::op::ModelOp::Delete { range: _range } => {
-                Err(PptxModelError::Invalid(
-                    "Delete not yet implemented for PPTX".to_string(),
-                ))
-            }
-            wo_common::op::ModelOp::Replace { at: _at, content: _ } => {
-                Err(PptxModelError::Invalid(
-                    "Replace not yet implemented for PPTX".to_string(),
-                ))
-            }
-            wo_common::op::ModelOp::Format { range, attrs: _attrs } => {
+            wo_common::op::ModelOp::Delete { range: _range } => Err(PptxModelError::Invalid(
+                "Delete not yet implemented for PPTX".to_string(),
+            )),
+            wo_common::op::ModelOp::Replace {
+                at: _at,
+                content: _,
+            } => Err(PptxModelError::Invalid(
+                "Replace not yet implemented for PPTX".to_string(),
+            )),
+            wo_common::op::ModelOp::Format {
+                range,
+                attrs: _attrs,
+            } => {
                 // Format operations on slides/shapes
                 match &range.start {
                     Path::Slide { .. } => {
@@ -393,11 +414,12 @@ impl EditableModel for EditablePptxPresentation {
                     ))),
                 }
             }
-            wo_common::op::ModelOp::Move { from: _from, to: _to } => {
-                Err(PptxModelError::Invalid(
-                    "Move not yet implemented for PPTX".to_string(),
-                ))
-            }
+            wo_common::op::ModelOp::Move {
+                from: _from,
+                to: _to,
+            } => Err(PptxModelError::Invalid(
+                "Move not yet implemented for PPTX".to_string(),
+            )),
         }
     }
 
@@ -406,7 +428,12 @@ impl EditableModel for EditablePptxPresentation {
         match op {
             wo_common::op::ModelOp::Insert { at, content } => {
                 let end = match at {
-                    Path::Slide { slide, shape, run, char } => Path::Slide {
+                    Path::Slide {
+                        slide,
+                        shape,
+                        run,
+                        char,
+                    } => Path::Slide {
                         slide: *slide,
                         shape: *shape,
                         run: *run,
@@ -432,7 +459,10 @@ impl EditableModel for EditablePptxPresentation {
                     content: content.clone(),
                 }
             }
-            wo_common::op::ModelOp::Format { range, attrs: _attrs } => {
+            wo_common::op::ModelOp::Format {
+                range,
+                attrs: _attrs,
+            } => {
                 // Inverse of format is format with cleared attrs
                 wo_common::op::ModelOp::Format {
                     range: range.clone(),
@@ -459,7 +489,8 @@ impl EditableModel for EditablePptxPresentation {
 fn extract_pptx_pres(handle: u32) -> Result<PptxPresentation, String> {
     let store = PPTX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let store = store.lock().unwrap();
-    store.get(&handle)
+    store
+        .get(&handle)
         .cloned()
         .ok_or_else(|| format!("PPTX handle {} not found", handle))
 }
@@ -508,7 +539,6 @@ unsafe fn next_xlsx_handle() -> u32 {
     h
 }
 
-
 /// Error type for XlsxWorkbook model operations.
 #[derive(Debug, Clone, PartialEq)]
 pub enum XlsxModelError {
@@ -549,82 +579,133 @@ impl EditableModel for EditableXlsxWorkbook {
 
     fn apply(&mut self, op: &wo_common::op::ModelOp) -> std::result::Result<(), Self::Err> {
         match op {
-            wo_common::op::ModelOp::Insert { at, content } => {
-                match at {
-                    Path::Sheet { sheet, row, col } => {
-                        let sheet_idx = self.0.sheets.iter()
-                            .position(|s| s.name == *sheet)
-                            .ok_or_else(|| XlsxModelError::OutOfRange(format!("Sheet '{}' not found", sheet)))?;
-                        
-                        let row_idx = *row as usize;
-                        while self.0.sheets[sheet_idx].rows.len() <= row_idx {
-                            self.0.sheets[sheet_idx].rows.push(Default::default());
+            wo_common::op::ModelOp::Insert { at, content } => match at {
+                Path::Sheet { sheet, row, col } => {
+                    let sheet_idx = self
+                        .0
+                        .sheets
+                        .iter()
+                        .position(|s| s.name == *sheet)
+                        .ok_or_else(|| {
+                            XlsxModelError::OutOfRange(format!("Sheet '{}' not found", sheet))
+                        })?;
+
+                    let row_idx = *row as usize;
+                    while self.0.sheets[sheet_idx].rows.len() <= row_idx {
+                        self.0.sheets[sheet_idx].rows.push(Default::default());
+                    }
+
+                    let col_idx = *col as usize;
+                    while self.0.sheets[sheet_idx].rows[row_idx].cells.len() <= col_idx {
+                        self.0.sheets[sheet_idx].rows[row_idx]
+                            .cells
+                            .push(Default::default());
+                    }
+
+                    if let Some(cell) = self.0.sheets[sheet_idx].rows[row_idx]
+                        .cells
+                        .get_mut(col_idx)
+                    {
+                        cell.v = content.clone();
+                        if cell.t == wo_ooxml::model::CellType::N && cell.v.parse::<f64>().is_err()
+                        {
+                            cell.t = wo_ooxml::model::CellType::Str;
                         }
-                        
-                        let col_idx = *col as usize;
-                        while self.0.sheets[sheet_idx].rows[row_idx].cells.len() <= col_idx {
-                            self.0.sheets[sheet_idx].rows[row_idx].cells.push(Default::default());
-                        }
-                        
-                        if let Some(cell) = self.0.sheets[sheet_idx].rows[row_idx].cells.get_mut(col_idx) {
-                            cell.v = content.clone();
-                            if cell.t == wo_ooxml::model::CellType::N && cell.v.parse::<f64>().is_err() {
-                                cell.t = wo_ooxml::model::CellType::Str;
+                    }
+                    Ok(())
+                }
+                Path::Text {
+                    para: row,
+                    char: col,
+                    ..
+                } => {
+                    if self.0.sheets.is_empty() {
+                        return Err(XlsxModelError::OutOfRange(
+                            "No sheets in workbook".to_string(),
+                        ));
+                    }
+                    let sheet_idx = 0;
+                    let row_idx = *row as usize;
+                    let col_idx = *col as usize;
+
+                    while self.0.sheets[sheet_idx].rows.len() <= row_idx {
+                        self.0.sheets[sheet_idx].rows.push(Default::default());
+                    }
+                    while self.0.sheets[sheet_idx].rows[row_idx].cells.len() <= col_idx {
+                        self.0.sheets[sheet_idx].rows[row_idx]
+                            .cells
+                            .push(Default::default());
+                    }
+
+                    if let Some(cell) = self.0.sheets[sheet_idx].rows[row_idx]
+                        .cells
+                        .get_mut(col_idx)
+                    {
+                        cell.v = content.clone();
+                    }
+                    Ok(())
+                }
+                _ => Err(XlsxModelError::Invalid(format!(
+                    "Unsupported path type for insert: {:?}",
+                    at
+                ))),
+            },
+            wo_common::op::ModelOp::Delete { range } => match (&range.start, &range.end) {
+                (
+                    Path::Sheet {
+                        sheet: sheet_start,
+                        row: row_start,
+                        col: col_start,
+                    },
+                    Path::Sheet {
+                        sheet: sheet_end,
+                        row: row_end,
+                        col: col_end,
+                    },
+                ) => {
+                    if sheet_start != sheet_end {
+                        return Err(XlsxModelError::Invalid(
+                            "Cross-sheet delete not supported".to_string(),
+                        ));
+                    }
+                    let sheet_idx = self
+                        .0
+                        .sheets
+                        .iter()
+                        .position(|s| s.name == *sheet_start)
+                        .ok_or_else(|| {
+                            XlsxModelError::OutOfRange(format!("Sheet '{}' not found", sheet_start))
+                        })?;
+
+                    let row_start = *row_start as usize;
+                    let row_end = *row_end as usize;
+                    let col_start = *col_start as usize;
+                    let col_end = *col_end as usize;
+
+                    for row in row_start
+                        ..=row_end.min(self.0.sheets[sheet_idx].rows.len().saturating_sub(1))
+                    {
+                        for col in col_start
+                            ..=col_end.min(
+                                self.0.sheets[sheet_idx].rows[row]
+                                    .cells
+                                    .len()
+                                    .saturating_sub(1),
+                            )
+                        {
+                            if let Some(cell) =
+                                self.0.sheets[sheet_idx].rows[row].cells.get_mut(col)
+                            {
+                                cell.v = String::new();
                             }
                         }
-                        Ok(())
                     }
-                    Path::Text { para: row, char: col, .. } => {
-                        if self.0.sheets.is_empty() {
-                            return Err(XlsxModelError::OutOfRange("No sheets in workbook".to_string()));
-                        }
-                        let sheet_idx = 0;
-                        let row_idx = *row as usize;
-                        let col_idx = *col as usize;
-                        
-                        while self.0.sheets[sheet_idx].rows.len() <= row_idx {
-                            self.0.sheets[sheet_idx].rows.push(Default::default());
-                        }
-                        while self.0.sheets[sheet_idx].rows[row_idx].cells.len() <= col_idx {
-                            self.0.sheets[sheet_idx].rows[row_idx].cells.push(Default::default());
-                        }
-                        
-                        if let Some(cell) = self.0.sheets[sheet_idx].rows[row_idx].cells.get_mut(col_idx) {
-                            cell.v = content.clone();
-                        }
-                        Ok(())
-                    }
-                    _ => Err(XlsxModelError::Invalid(format!("Unsupported path type for insert: {:?}", at))),
+                    Ok(())
                 }
-            }
-            wo_common::op::ModelOp::Delete { range } => {
-                match (&range.start, &range.end) {
-                    (Path::Sheet { sheet: sheet_start, row: row_start, col: col_start },
-                     Path::Sheet { sheet: sheet_end, row: row_end, col: col_end }) => {
-                        if sheet_start != sheet_end {
-                            return Err(XlsxModelError::Invalid("Cross-sheet delete not supported".to_string()));
-                        }
-                        let sheet_idx = self.0.sheets.iter()
-                            .position(|s| s.name == *sheet_start)
-                            .ok_or_else(|| XlsxModelError::OutOfRange(format!("Sheet '{}' not found", sheet_start)))?;
-                        
-                        let row_start = *row_start as usize;
-                        let row_end = *row_end as usize;
-                        let col_start = *col_start as usize;
-                        let col_end = *col_end as usize;
-                        
-                        for row in row_start..=row_end.min(self.0.sheets[sheet_idx].rows.len().saturating_sub(1)) {
-                            for col in col_start..=col_end.min(self.0.sheets[sheet_idx].rows[row].cells.len().saturating_sub(1)) {
-                                if let Some(cell) = self.0.sheets[sheet_idx].rows[row].cells.get_mut(col) {
-                                    cell.v = String::new();
-                                }
-                            }
-                        }
-                        Ok(())
-                    }
-                    _ => Err(XlsxModelError::Invalid("Unsupported range type for delete".to_string())),
-                }
-            }
+                _ => Err(XlsxModelError::Invalid(
+                    "Unsupported range type for delete".to_string(),
+                )),
+            },
             wo_common::op::ModelOp::Replace { at, content } => {
                 self.apply(&wo_common::op::ModelOp::Delete {
                     range: Range::new(at.clone(), at.clone()),
@@ -634,46 +715,34 @@ impl EditableModel for EditableXlsxWorkbook {
                     content: content.clone(),
                 })
             }
-            wo_common::op::ModelOp::Format { range, attrs: _ } => {
-                Ok(())
-            }
-            wo_common::op::ModelOp::Move { from: _, to: _ } => {
-                Err(XlsxModelError::Invalid("Move not yet implemented for XLSX".to_string()))
-            }
+            wo_common::op::ModelOp::Format { range, attrs: _ } => Ok(()),
+            wo_common::op::ModelOp::Move { from: _, to: _ } => Err(XlsxModelError::Invalid(
+                "Move not yet implemented for XLSX".to_string(),
+            )),
         }
     }
 
     fn invert(&self, op: &wo_common::op::ModelOp) -> wo_common::op::ModelOp {
         match op {
-            wo_common::op::ModelOp::Insert { at, content } => {
-                wo_common::op::ModelOp::Delete {
-                    range: Range::new(at.clone(), at.clone()),
-                }
-            }
-            wo_common::op::ModelOp::Delete { range } => {
-                wo_common::op::ModelOp::Insert {
-                    at: range.start.clone(),
-                    content: String::new(),
-                }
-            }
-            wo_common::op::ModelOp::Replace { at, content } => {
-                wo_common::op::ModelOp::Replace {
-                    at: at.clone(),
-                    content: content.clone(),
-                }
-            }
-            wo_common::op::ModelOp::Format { range, attrs } => {
-                wo_common::op::ModelOp::Format {
-                    range: range.clone(),
-                    attrs: attrs.clone(),
-                }
-            }
-            wo_common::op::ModelOp::Move { from, to } => {
-                wo_common::op::ModelOp::Move {
-                    from: to.clone(),
-                    to: from.clone(),
-                }
-            }
+            wo_common::op::ModelOp::Insert { at, content } => wo_common::op::ModelOp::Delete {
+                range: Range::new(at.clone(), at.clone()),
+            },
+            wo_common::op::ModelOp::Delete { range } => wo_common::op::ModelOp::Insert {
+                at: range.start.clone(),
+                content: String::new(),
+            },
+            wo_common::op::ModelOp::Replace { at, content } => wo_common::op::ModelOp::Replace {
+                at: at.clone(),
+                content: content.clone(),
+            },
+            wo_common::op::ModelOp::Format { range, attrs } => wo_common::op::ModelOp::Format {
+                range: range.clone(),
+                attrs: attrs.clone(),
+            },
+            wo_common::op::ModelOp::Move { from, to } => wo_common::op::ModelOp::Move {
+                from: to.clone(),
+                to: from.clone(),
+            },
         }
     }
 
@@ -686,7 +755,8 @@ impl EditableModel for EditableXlsxWorkbook {
 fn extract_xlsx_workbook(handle: u32) -> Result<EditableXlsxWorkbook, String> {
     let store = XLSX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let store = store.lock().unwrap();
-    store.get(&handle)
+    store
+        .get(&handle)
         .cloned()
         .ok_or_else(|| format!("XLSX handle {} not found", handle))
 }
@@ -717,7 +787,7 @@ fn cell_ref_to_coords(ref_str: &str) -> (u32, u32) {
     let mut chars = ref_str.chars();
     let mut col_str = String::new();
     let mut row_str = String::new();
-    
+
     // Collect letters for column
     while let Some(c) = chars.next() {
         if c.is_ascii_alphabetic() {
@@ -728,15 +798,15 @@ fn cell_ref_to_coords(ref_str: &str) -> (u32, u32) {
             break;
         }
     }
-    
+
     // Convert column letters to number (A=0, B=1, ..., Z=25, AA=26, etc.)
-    let col = col_str.chars().fold(0u32, |acc, c| {
-        acc * 26 + (c as u32 - 'A' as u32)
-    });
-    
+    let col = col_str
+        .chars()
+        .fold(0u32, |acc, c| acc * 26 + (c as u32 - 'A' as u32));
+
     // Convert row string to number
     let row = row_str.parse::<u32>().unwrap_or(0);
-    
+
     (row, col)
 }
 
@@ -754,7 +824,8 @@ fn create_xlsx_model(bytes: &[u8]) -> Result<u32, String> {
         .parse(bytes)
         .map_err(|e| format!("Failed to parse XLSX: {}", e))?;
 
-    let workbook = ooxml.xlsx_workbook
+    let workbook = ooxml
+        .xlsx_workbook
         .ok_or_else(|| "No workbook found in XLSX file".to_string())?;
 
     let handle = unsafe { next_xlsx_handle() };
@@ -996,7 +1067,8 @@ pub fn render_page(
                                 char_width_est
                             };
 
-                            if estimated_width + separator_width + word_width > content_width - indent_left
+                            if estimated_width + separator_width + word_width
+                                > content_width - indent_left
                                 && !line_text.is_empty()
                             {
                                 break; // Line full
@@ -1108,8 +1180,9 @@ pub fn render_page(
                             row_height,
                             "#999999",
                         );
-                        let _ =
-                            canvas_bridge::render_rect(handle, cell_x, cursor_y, col_width, 1.0, "#999999");
+                        let _ = canvas_bridge::render_rect(
+                            handle, cell_x, cursor_y, col_width, 1.0, "#999999",
+                        );
 
                         // Render first run of first paragraph as cell text
                         if let Some(first_para) = cell.paragraphs.first() {
@@ -1507,7 +1580,8 @@ pub fn handle_key_event(
                 insert_idx + 1
             };
             if insert_before <= body.blocks.len() {
-                body.blocks.insert(insert_before, DocxBlock::Paragraph(new_para));
+                body.blocks
+                    .insert(insert_before, DocxBlock::Paragraph(new_para));
             }
             store_body(doc_handle, body)?;
             set_cursor(
@@ -1598,7 +1672,8 @@ pub fn handle_key_event(
                                 .first()
                                 .map(|r| r.text.clone())
                                 .unwrap_or_default();
-                            if let Some(DocxBlock::Paragraph(curr_para)) = body.blocks.get_mut(pidx) {
+                            if let Some(DocxBlock::Paragraph(curr_para)) = body.blocks.get_mut(pidx)
+                            {
                                 if let Some(last_run) = curr_para.runs.last_mut() {
                                     last_run.text.push_str(&next_text);
                                 }
@@ -1855,41 +1930,41 @@ pub fn apply_formatting(
 
         // Apply formatting to the target run
         if let Some(run) = para.runs.get_mut(target_run_idx) {
-        if let Some(bold) = format.get("bold").and_then(|v| v.as_bool()) {
-            run.bold = bold;
-        }
-        if let Some(italic) = format.get("italic").and_then(|v| v.as_bool()) {
-            run.italic = italic;
-        }
-        if let Some(underline) = format.get("underline").and_then(|v| v.as_str()) {
-            use wo_ooxml::model::UnderlineType;
-            run.underline = Some(match underline {
-                "single" => UnderlineType::Single,
-                "double" => UnderlineType::Double,
-                "thick" => UnderlineType::Thick,
-                "dotted" => UnderlineType::Dotted,
-                "dashed" => UnderlineType::Dashed,
-                "wave" => UnderlineType::Wave,
-                _ => UnderlineType::None,
-            });
-        }
-        if let Some(strike) = format.get("strikethrough").and_then(|v| v.as_bool()) {
-            run.strikethrough = strike;
-        }
-        if let Some(font_size) = format.get("fontSize").and_then(|v| v.as_u64()) {
-            run.font_size = Some(font_size as u32); // half-points
-        }
-        if let Some(font_name) = format.get("fontName").and_then(|v| v.as_str()) {
-            run.font = Some(font_name.to_string());
-        }
-        if let Some(color) = format.get("textColor").and_then(|v| v.as_str()) {
-            let clean = color.trim_start_matches('#');
-            run.color = Some(clean.to_string());
-        }
-        if let Some(highlight) = format.get("highlight").and_then(|v| v.as_str()) {
-            let clean = highlight.trim_start_matches('#');
-            run.highlight = Some(clean.to_string());
-        }
+            if let Some(bold) = format.get("bold").and_then(|v| v.as_bool()) {
+                run.bold = bold;
+            }
+            if let Some(italic) = format.get("italic").and_then(|v| v.as_bool()) {
+                run.italic = italic;
+            }
+            if let Some(underline) = format.get("underline").and_then(|v| v.as_str()) {
+                use wo_ooxml::model::UnderlineType;
+                run.underline = Some(match underline {
+                    "single" => UnderlineType::Single,
+                    "double" => UnderlineType::Double,
+                    "thick" => UnderlineType::Thick,
+                    "dotted" => UnderlineType::Dotted,
+                    "dashed" => UnderlineType::Dashed,
+                    "wave" => UnderlineType::Wave,
+                    _ => UnderlineType::None,
+                });
+            }
+            if let Some(strike) = format.get("strikethrough").and_then(|v| v.as_bool()) {
+                run.strikethrough = strike;
+            }
+            if let Some(font_size) = format.get("fontSize").and_then(|v| v.as_u64()) {
+                run.font_size = Some(font_size as u32); // half-points
+            }
+            if let Some(font_name) = format.get("fontName").and_then(|v| v.as_str()) {
+                run.font = Some(font_name.to_string());
+            }
+            if let Some(color) = format.get("textColor").and_then(|v| v.as_str()) {
+                let clean = color.trim_start_matches('#');
+                run.color = Some(clean.to_string());
+            }
+            if let Some(highlight) = format.get("highlight").and_then(|v| v.as_str()) {
+                let clean = highlight.trim_start_matches('#');
+                run.highlight = Some(clean.to_string());
+            }
         }
     }
 
@@ -2002,19 +2077,19 @@ fn create_docx_model(bytes: &[u8]) -> Result<u32, String> {
     let ooxml = parser
         .parse(bytes)
         .map_err(|e| format!("Failed to parse DOCX: {}", e))?;
-    
+
     let handle = unsafe { next_doc_handle() };
-    
+
     // Store the raw bytes
     let raw_store = DOC_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let mut raw_store = raw_store.lock().unwrap();
     raw_store.insert(handle, bytes.to_vec());
-    
+
     // Store the parsed OoxmlDocument (for compatibility with existing code)
     let model_store = DOC_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let mut model_store = model_store.lock().unwrap();
     model_store.insert(handle, ooxml);
-    
+
     Ok(handle)
 }
 
@@ -2023,7 +2098,7 @@ fn create_docx_model(bytes: &[u8]) -> Result<u32, String> {
 /// Deserializes the JSON string into a [`wo_common::op::ModelOp`],
 /// applies it via [`EditableModel::apply`](wo_common::op::EditableModel::apply),
 /// and stores the result back.
-/// 
+///
 /// For DOCX models, uses the extract_body/store_body pattern (§4).
 #[wasm_bindgen]
 pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
@@ -2032,7 +2107,7 @@ pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
     }
     let op: wo_common::op::ModelOp =
         serde_json::from_str(op_json).map_err(|e| format!("Invalid op JSON: {}", e))?;
-    
+
     // Try stub model first
     {
         let store = stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
@@ -2041,7 +2116,7 @@ pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
             return model.apply(&op).map_err(|e| e.to_string());
         }
     }
-    
+
     // Try DOCX model (§2.3) - use extract_body/store_body pattern
     {
         // Check if this is a DOCX document handle
@@ -2058,7 +2133,7 @@ pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
             return Ok(());
         }
     }
-    
+
     // Try PPTX model (§2.3, SL-6) - use extract/store pattern
     {
         let store = PPTX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
@@ -2083,16 +2158,19 @@ pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
             return Ok(());
         }
     }
-    
+
     // Try PDF model - for now, PDF doesn't support operations, return error
     {
         let store = PDF_STORE.get_or_init(|| Mutex::new(HashMap::new()));
         let store = store.lock().unwrap();
         if store.contains_key(&handle) {
-            return Err(format!("PDF model does not support operations yet: {}", op_json));
+            return Err(format!(
+                "PDF model does not support operations yet: {}",
+                op_json
+            ));
         }
     }
-    
+
     Err(format!("Model handle {} not found", handle))
 }
 
@@ -2107,20 +2185,23 @@ pub fn model_to_bytes(handle: u32) -> Result<Vec<u8>, String> {
         let store = stub_model::STUB_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
         let store = store.lock().unwrap();
         if let Some(model) = store.get(&handle) {
-            return serde_json::to_vec(&model.paragraphs).map_err(|e| format!("Serialization failed: {}", e));
+            return serde_json::to_vec(&model.paragraphs)
+                .map_err(|e| format!("Serialization failed: {}", e));
         }
     }
-    
+
     // Try DOCX model (§2.3) - use existing DOC_MODEL_STORE
     {
         let model_store = DOC_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
         let model_store = model_store.lock().unwrap();
         if let Some(doc) = model_store.get(&handle) {
             let serializer = OoxmlSerializer::new();
-            return serializer.serialize(doc).map_err(|e| format!("Serialization failed: {}", e));
+            return serializer
+                .serialize(doc)
+                .map_err(|e| format!("Serialization failed: {}", e));
         }
     }
-    
+
     // Try PPTX model (§2.3, SL-6)
     {
         let store = PPTX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
@@ -2138,7 +2219,7 @@ pub fn model_to_bytes(handle: u32) -> Result<Vec<u8>, String> {
             return serialize_xlsx_workbook(&editable_wb.0);
         }
     }
-    
+
     // Try PDF model - return the raw bytes
     {
         let store = PDF_STORE.get_or_init(|| Mutex::new(HashMap::new()));
@@ -2147,7 +2228,7 @@ pub fn model_to_bytes(handle: u32) -> Result<Vec<u8>, String> {
             return Ok(bytes.clone());
         }
     }
-    
+
     Err(format!("Model handle {} not found", handle))
 }
 
@@ -2175,7 +2256,7 @@ pub fn layout_and_render(handle: u32, opts_json: &str, canvas: u32) -> Result<St
     if handle >= 3000 {
         return layout_pptx_presentation(handle, opts_json);
     }
-    
+
     // Try PDF model first (handles start at 2000)
     if handle >= 2000 {
         let pdf_opts: PdfLayoutOpts =
@@ -2243,11 +2324,11 @@ pub fn release_pdf_model(handle: u32) -> Result<(), String> {
     let store = PDF_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let mut store = store.lock().unwrap();
     store.remove(&handle);
-    
+
     let info_store = PDF_INFO_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let mut info_store = info_store.lock().unwrap();
     info_store.remove(&handle);
-    
+
     Ok(())
 }
 
@@ -2260,8 +2341,7 @@ static SPELL_DICT_STORE: OnceLock<Mutex<HashMap<String, SpellDictEntry>>> = Once
 static HYPHEN_STORE: OnceLock<Mutex<HashMap<String, Hyphenator>>> = OnceLock::new();
 
 /// Global per-language user dictionaries (session-scoped, replaces localStorage).
-static SPELL_USER_DICT_STORE: OnceLock<Mutex<HashMap<String, HashSet<String>>>> =
-    OnceLock::new();
+static SPELL_USER_DICT_STORE: OnceLock<Mutex<HashMap<String, HashSet<String>>>> = OnceLock::new();
 
 /// Internal entry: dictionary + pre-built suggester.
 #[derive(Clone)]
@@ -2407,10 +2487,7 @@ pub fn spell_check_text(text: &str, lang: &str) -> String {
     // Check user dictionary.
     let user_store = SPELL_USER_DICT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let user_store = user_store.lock().unwrap();
-    let user_words: HashSet<String> = user_store
-        .get(lang)
-        .cloned()
-        .unwrap_or_default();
+    let user_words: HashSet<String> = user_store.get(lang).cloned().unwrap_or_default();
     drop(user_store);
 
     // Word-boundary extraction: sequences of letters (Latin + accented).
@@ -2466,7 +2543,10 @@ pub fn spell_add_to_user_dict(word: &str, lang: &str) {
     let word_lower = word.to_ascii_lowercase();
     let user_store = SPELL_USER_DICT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let mut user_store = user_store.lock().unwrap();
-    user_store.entry(lang.to_string()).or_default().insert(word_lower);
+    user_store
+        .entry(lang.to_string())
+        .or_default()
+        .insert(word_lower);
 }
 
 /// Load a hyphenation dictionary for a given language.
@@ -2944,9 +3024,11 @@ SFX N e ness e
     fn spell_test_suggest() {
         spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
         let suggestions_json = spell_suggest("helo", "test");
-        let suggestions: Vec<String> =
-            serde_json::from_str(&suggestions_json).expect("valid JSON");
-        assert!(suggestions.contains(&String::from("hello")), "got: {suggestions:?}");
+        let suggestions: Vec<String> = serde_json::from_str(&suggestions_json).expect("valid JSON");
+        assert!(
+            suggestions.contains(&String::from("hello")),
+            "got: {suggestions:?}"
+        );
         spell_release("test").ok();
     }
 
@@ -2954,8 +3036,7 @@ SFX N e ness e
     fn spell_test_suggest_correct_word_empty() {
         spell_load_dictionary(mini_aff().as_bytes(), mini_dic().as_bytes(), "test").unwrap();
         let suggestions_json = spell_suggest("hello", "test");
-        let suggestions: Vec<String> =
-            serde_json::from_str(&suggestions_json).expect("valid JSON");
+        let suggestions: Vec<String> = serde_json::from_str(&suggestions_json).expect("valid JSON");
         assert!(suggestions.is_empty());
         spell_release("test").ok();
     }
@@ -2963,8 +3044,7 @@ SFX N e ness e
     #[test]
     fn spell_test_suggest_no_dict_loaded() {
         let suggestions_json = spell_suggest("helo", "nonexistent-lang");
-        let suggestions: Vec<String> =
-            serde_json::from_str(&suggestions_json).expect("valid JSON");
+        let suggestions: Vec<String> = serde_json::from_str(&suggestions_json).expect("valid JSON");
         assert!(suggestions.is_empty());
     }
 
@@ -2975,10 +3055,7 @@ SFX N e ness e
         let results: Vec<serde_json::Value> =
             serde_json::from_str(&results_json).expect("valid JSON");
         // "wrld" is misspelled, "hello" and "foo" are correct or unknown.
-        let misspelled: Vec<&str> = results
-            .iter()
-            .filter_map(|r| r["word"].as_str())
-            .collect();
+        let misspelled: Vec<&str> = results.iter().filter_map(|r| r["word"].as_str()).collect();
         assert!(misspelled.contains(&"wrld"), "got: {misspelled:?}");
         // "hello" should NOT be in the results.
         assert!(!misspelled.contains(&"hello"));
@@ -3137,10 +3214,13 @@ SFX N e ness e
     fn test_apply_op_pdf_not_supported() {
         let pdf_bytes = b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\nstartxref\n0\n%%EOF";
         let handle = create_model(pdf_bytes, "pdf").unwrap();
-        let op = r#"{"op":"insert","at":{"kind":"text","para":0,"run":0,"char":0},"content":"test"}"#;
+        let op =
+            r#"{"op":"insert","at":{"kind":"text","para":0,"run":0,"char":0},"content":"test"}"#;
         let result = apply_op(handle, op);
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("PDF model does not support operations"));
+        assert!(result
+            .unwrap_err()
+            .contains("PDF model does not support operations"));
         release_pdf_model(handle).ok();
     }
 
@@ -3202,7 +3282,11 @@ SFX N e ness e
         // The error should NOT be "Unsupported format"
         if result.is_err() {
             let err = result.unwrap_err();
-            assert!(!err.contains("Unsupported format"), "XLSX should be a supported format, got error: {}", err);
+            assert!(
+                !err.contains("Unsupported format"),
+                "XLSX should be a supported format, got error: {}",
+                err
+            );
         }
     }
 }
