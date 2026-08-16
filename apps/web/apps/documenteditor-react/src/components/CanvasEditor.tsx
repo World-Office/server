@@ -52,6 +52,8 @@ import { forwardRef, useImperativeHandle } from "react"
 
 export interface CanvasEditorHandle {
   applyFormatting: (format: Record<string, unknown>) => void
+  /** Apply a structure op (list, table, section break, rule, indent). */
+  applyStructureOp: (op: string) => void
 }
 
 // Named function gives forwardRef a proper displayName
@@ -316,12 +318,56 @@ const CanvasEditorInternal = (
     }
   }, [])
 
+  /** Apply a structure op (list/table/section/rule/indent) at the cursor. */
+  const applyWasmStructureOp = useCallback((op: string) => {
+    if (!isWasmReady() || docHandleRef.current === null) return
+    const wasmApi = getWasmApi()
+    if (!wasmApi) return
+    const api = wasmApi
+
+    try {
+      const result = api.apply_structure_op(
+        docHandleRef.current,
+        op,
+        "A4",
+        "portrait",
+        72.0,
+      )
+      if (result && result !== "{}") {
+        const layoutPages: PageInfo[] = JSON.parse(result).map(
+          (p: { width: number; height: number; marginPx: number }, i: number) => ({
+            width: p.width,
+            height: p.height,
+            marginPx: p.marginPx,
+            index: i,
+          }),
+        )
+        for (let i = 0; i < layoutPages.length; i++) {
+          if (canvasHandlesRef.current[i] === undefined) {
+            const h = api.create_canvas(layoutPages[i].width, layoutPages[i].height)
+            canvasHandlesRef.current[i] = h
+          }
+          try {
+            const h = canvasHandlesRef.current[i]
+            api.render_laid_out_page(docHandleRef.current, i, h)
+          } catch (err) {
+            console.error(`[CanvasEditor] Re-render page ${i} failed:`, err)
+          }
+        }
+        setPages(layoutPages)
+      }
+    } catch (err) {
+      console.error("[CanvasEditor] apply_structure_op failed:", err)
+    }
+  }, [])
+
   useImperativeHandle(
     ref,
     () => ({
       applyFormatting: applyWasmFormatting,
+      applyStructureOp: applyWasmStructureOp,
     }),
-    [applyWasmFormatting],
+    [applyWasmFormatting, applyWasmStructureOp],
   )
 
   // ── Key handler — sends key to WASM engine ────────────────────────

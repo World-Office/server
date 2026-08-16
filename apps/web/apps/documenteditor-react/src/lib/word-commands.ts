@@ -30,6 +30,45 @@ export interface WordCommandDeps {
 }
 
 /**
+ * Map a ribbon command to a WASM structure op (list, table, break, rule).
+ * Returns null when the command is not a structure op.
+ */
+export function structureOpForCommand(command: string): string | null {
+  switch (command) {
+    case "bulletList":
+    case "bullet-list":
+      return "bullet-list"
+    case "orderedList":
+    case "ordered-list":
+      return "ordered-list"
+    case "taskList":
+    case "task-list":
+      return "task-list"
+    case "indent":
+      return "indent"
+    case "outdent":
+      return "outdent"
+    case "insertTable":
+    case "insert-table":
+      return "insert-table"
+    case "insertSectionBreak":
+    case "insert-section-break":
+      return "insert-section-break"
+    case "insertContinuousSectionBreak":
+    case "insert-continuous-section-break":
+      return "insert-continuous-section-break"
+    case "horizontalRule":
+    case "horizontal-rule":
+      return "horizontal-rule"
+    case "pageBreak":
+    case "page-break":
+      return "page-break"
+    default:
+      return null
+  }
+}
+
+/**
  * Map a ribbon command + value to a WASM applyFormatting JSON object.
  * Returns null when the command is not a formatting op.
  */
@@ -106,7 +145,14 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       return
     }
 
-    // 2. Clipboard / edit → monaco or rich-text bridge
+    // 2. Structure ops → WASM apply_structure_op (lists, tables, breaks)
+    const structureOp = structureOpForCommand(command)
+    if (structureOp) {
+      editorRef.current?.applyStructureOp(structureOp)
+      return
+    }
+
+    // 3. Clipboard / edit → monaco or rich-text bridge
     if (
       command === "cut" ||
       command === "copy" ||
@@ -204,15 +250,8 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
     //    (future) canvas-backed lib implementations can hook in; today they
     //    fall through to Monaco/text mode when that's the active editor.
     const libCommands = new Set([
-      "bulletList",
-      "orderedList",
-      "taskList",
-      "indent",
-      "outdent",
       "blockquote",
       "codeBlock",
-      "horizontalRule",
-      "pageBreak",
       "insertFootnote",
       "insertEndnote",
       "insertToc",
@@ -226,8 +265,6 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       "acceptAllChanges",
       "rejectAllChanges",
       "nextChange",
-      "insertSectionBreak",
-      "insertContinuousSectionBreak",
       "insertCheckboxControl",
       "insertDropdownControl",
       "insertDatePickerControl",
