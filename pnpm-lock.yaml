@@ -20,6 +20,9 @@ importers:
 
   apps/web/apps/documenteditor-react:
     dependencies:
+      '@fluentui/react-components':
+        specifier: ^9.74.0
+        version: 9.74.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(scheduler@0.27.0)
       '@tauri-apps/api':
         specifier: ^2
         version: 2.11.0
@@ -199,6 +202,9 @@ importers:
 
   apps/web/apps/pdfeditor-react:
     dependencies:
+      '@fluentui/react-components':
+        specifier: ^9.74.0
+        version: 9.74.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(scheduler@0.27.0)
       '@tiptap/core':
         specifier: ^3.27.1
         version: 3.27.1(@tiptap/pm@3.27.1)
@@ -284,6 +290,9 @@ importers:
 
   apps/web/apps/presentationeditor-react:
     dependencies:
+      '@fluentui/react-components':
+        specifier: ^9.74.0
+        version: 9.74.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(scheduler@0.27.0)
       '@tiptap/core':
         specifier: ^3.27.1
         version: 3.27.1(@tiptap/pm@3.27.1)
@@ -366,6 +375,9 @@ importers:
 
   apps/web/apps/spreadsheeteditor-react:
     dependencies:
+      '@fluentui/react-components':
+        specifier: ^9.74.0
+        version: 9.74.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(scheduler@0.27.0)
       '@tiptap/core':
         specifier: ^3.27.1
         version: 3.27.1(@tiptap/pm@3.27.1)
@@ -454,6 +466,9 @@ importers:
 
   apps/web/apps/visioeditor-react:
     dependencies:
+      '@fluentui/react-components':
+        specifier: ^9.74.0
+        version: 9.74.6(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(scheduler@0.27.0)
       '@tiptap/core':
         specifier: ^3.27.1
         version: 3.27.1(@tiptap/pm@3.27.1)
