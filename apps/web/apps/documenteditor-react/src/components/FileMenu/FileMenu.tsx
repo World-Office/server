@@ -1,6 +1,6 @@
+import { makeStyles, tokens } from "@fluentui/react-components"
 import { type EmailConfig, type ExportFormat, ExportWizard } from "@world-office/editor-common"
 import { useCallback } from "react"
-import type { CSSProperties } from "react"
 import { convertFromHtml, downloadBlob } from "../../lib/conversion"
 import { documentStore } from "../../stores/DocumentStore"
 import { FileMenuItems } from "./FileMenuItems"
@@ -18,19 +18,36 @@ import { SettingsPanel } from "./panels/SettingsPanel"
 import { SharePanel } from "./panels/SharePanel"
 import { VersionHistoryPanel } from "./panels/VersionHistoryPanel"
 
-const panelContainerStyle: CSSProperties = {
-  width: "100%",
-  paddingLeft: "260px",
-  backgroundColor: "var(--wo-color-bg-primary, #ffffff)",
-}
-
-const contentBoxBaseStyle: CSSProperties = {
-  height: "100%",
-  padding: "0 20px",
-  position: "relative",
-  overflow: "hidden",
-  display: "none",
-}
+const useStyles = makeStyles({
+  root: {
+    display: "flex",
+    width: "100%",
+    height: "100%",
+    backgroundColor: tokens.colorNeutralBackground1,
+  },
+  sidebar: {
+    display: "flex",
+    flexDirection: "column",
+    width: "260px",
+    flexShrink: 0,
+    backgroundColor: tokens.colorNeutralBackground1,
+    borderRight: `1px solid ${tokens.colorNeutralStroke2}`,
+    overflowY: "auto",
+    userSelect: "none",
+  },
+  panelContainer: {
+    width: "100%",
+    paddingLeft: "260px",
+    backgroundColor: tokens.colorNeutralBackground1,
+  },
+  panelBox: {
+    height: "100%",
+    padding: "0 20px",
+    position: "relative",
+    overflow: "hidden",
+    display: "none",
+  },
+})
 
 const DOCUMENT_FORMATS: ExportFormat[] = [
   {
@@ -80,6 +97,7 @@ const DOCUMENT_FORMATS: ExportFormat[] = [
 ]
 
 export function FileMenu() {
+  const styles = useStyles()
   const activePanel = documentStore.activeFileMenuPanel
 
   function handleMenuClick(action: string, hasPanel: boolean): void {
@@ -127,12 +145,12 @@ export function FileMenu() {
   }
 
   return (
-    <div className="de-file-menu">
-      <div className="de-file-menu-list" role="menubar" aria-label="File menu">
+    <div className={styles.root}>
+      <div className={styles.sidebar} role="menubar" aria-label="File menu">
         <FileMenuItems onMenuClick={handleMenuClick} onBack={handleBack} />
       </div>
-      <div style={panelContainerStyle}>
-        <div className="de-file-menu-panel-box" style={contentBoxBaseStyle}>
+      <div className={styles.panelContainer}>
+        <div className={styles.panelBox}>
           <SaveAsPanel visible={activePanel === "saveas"} />
           <SaveCopyPanel visible={activePanel === "save-copy"} />
           <RecentFilesPanel visible={activePanel === "recent"} />

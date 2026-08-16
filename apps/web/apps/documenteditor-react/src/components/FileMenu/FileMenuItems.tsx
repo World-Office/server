@@ -1,3 +1,4 @@
+import { Button, Divider, makeStyles, mergeClasses, tokens } from "@fluentui/react-components"
 import { useTranslation } from "react-i18next"
 import { openFile } from "../../bridge/file-operations"
 import { documentStore } from "../../stores/DocumentStore"
@@ -38,9 +39,50 @@ const MENU_ITEMS: MenuItem[] = [
   { action: "protect", caption: "Protect Document", hasPanel: true },
 ]
 
+const useStyles = makeStyles({
+  root: {
+    display: "block",
+    listStyle: "none",
+    margin: 0,
+    padding: "8px 0",
+  },
+  backIcon: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "20px",
+    marginRight: "10px",
+    fontSize: "16px",
+  },
+  item: {
+    minHeight: "36px",
+    width: "100%",
+    padding: "0 20px",
+    justifyContent: "flex-start",
+    borderRadius: 0,
+    fontSize: tokens.fontSizeBase200,
+    color: tokens.colorNeutralForeground1,
+    whiteSpace: "nowrap",
+    ":hover": {
+      backgroundColor: tokens.colorSubtleBackgroundHover,
+    },
+  },
+  active: {
+    backgroundColor: tokens.colorBrandBackground,
+    color: tokens.colorNeutralForegroundOnBrand,
+    ":hover": {
+      backgroundColor: tokens.colorBrandBackgroundHover,
+    },
+  },
+  divider: {
+    margin: "4px 12px",
+  },
+})
+
 export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
   const { t } = useTranslation()
   const activePanel = documentStore.activeFileMenuPanel
+  const styles = useStyles()
 
   function handleBack(): void {
     onBack()
@@ -82,39 +124,44 @@ export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
   }
 
   return (
-    <ul className="de-file-menu-items">
-      <div
-        className="de-file-menu-item"
-        role="menuitem"
-        tabIndex={0}
+    <ul className={styles.root}>
+      <Button
+        appearance="subtle"
+        className={styles.item}
         onClick={handleBack}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault()
-            handleBack()
-          }
-        }}
+        aria-label={t("Back")}
       >
-        <span className="de-file-menu-item-icon">←</span>
-        <span className="de-file-menu-item-caption">{t("Back")}</span>
-      </div>
-      <li className="de-file-menu-divider" />
+        <span className={styles.backIcon}>
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            role="img"
+            aria-label="ArrowLeft"
+          >
+            <path d="M15 6l-6 6 6 6" />
+          </svg>
+        </span>
+        {t("Back")}
+      </Button>
+      <Divider className={styles.divider} />
       {MENU_ITEMS.map((item) => (
-        <div
+        <Button
           key={item.action}
-          className={`de-file-menu-item${activePanel === item.action ? " active" : ""}`}
-          role="menuitem"
-          tabIndex={0}
+          appearance="subtle"
+          className={mergeClasses(
+            styles.item,
+            activePanel === item.action ? styles.active : undefined,
+          )}
           onClick={() => handleDesktopAction(item.action)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault()
-              handleDesktopAction(item.action)
-            }
-          }}
         >
-          <span className="de-file-menu-item-caption">{t(item.caption)}</span>
-        </div>
+          {t(item.caption)}
+        </Button>
       ))}
     </ul>
   )
