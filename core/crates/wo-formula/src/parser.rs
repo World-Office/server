@@ -93,7 +93,11 @@ impl<'a> Parser<'a> {
         if !self.current_is(token) {
             return Err(FormulaError::Syntax {
                 pos: self.lexer.position(),
-                message: format!("Expected {:?}, got {:?}", token.to_string(), self.current_token.to_string()),
+                message: format!(
+                    "Expected {:?}, got {:?}",
+                    token.to_string(),
+                    self.current_token.to_string()
+                ),
             });
         }
         self.advance();
@@ -127,8 +131,12 @@ impl<'a> Parser<'a> {
             Token::Multiply | Token::Divide => 6,
             Token::Plus | Token::Minus => 5,
             Token::Concatenate => 4,
-            Token::Equal | Token::NotEqual | Token::LessThan | 
-            Token::LessThanOrEqual | Token::GreaterThan | Token::GreaterThanOrEqual => 3,
+            Token::Equal
+            | Token::NotEqual
+            | Token::LessThan
+            | Token::LessThanOrEqual
+            | Token::GreaterThan
+            | Token::GreaterThanOrEqual => 3,
             _ => 0,
         }
     }
@@ -143,10 +151,19 @@ impl<'a> Parser<'a> {
 
     fn get_infix_operator(&self) -> Option<Token> {
         match &self.current_token {
-            Token::Plus | Token::Minus | Token::Multiply | Token::Divide |
-            Token::Power | Token::Concatenate | Token::Equal | Token::NotEqual |
-            Token::LessThan | Token::LessThanOrEqual | Token::GreaterThan |
-            Token::GreaterThanOrEqual | Token::Range => Some(self.current_token.clone()),
+            Token::Plus
+            | Token::Minus
+            | Token::Multiply
+            | Token::Divide
+            | Token::Power
+            | Token::Concatenate
+            | Token::Equal
+            | Token::NotEqual
+            | Token::LessThan
+            | Token::LessThanOrEqual
+            | Token::GreaterThan
+            | Token::GreaterThanOrEqual
+            | Token::Range => Some(self.current_token.clone()),
             _ => None,
         }
     }
@@ -191,7 +208,11 @@ impl<'a> Parser<'a> {
             Token::GreaterThan => BinaryOp::GreaterThan,
             Token::GreaterThanOrEqual => BinaryOp::GreaterThanOrEqual,
             Token::Range => BinaryOp::Range,
-            _ => return Err(FormulaError::InvalidToken("Invalid binary operator".to_string())),
+            _ => {
+                return Err(FormulaError::InvalidToken(
+                    "Invalid binary operator".to_string(),
+                ));
+            }
         };
 
         Ok(Expr::Binary {
@@ -261,12 +282,10 @@ impl<'a> Parser<'a> {
                 self.advance();
                 self.parse_expression(0)
             }
-            _ => {
-                Err(FormulaError::Syntax {
-                    pos: self.lexer.position(),
-                    message: format!("Unexpected token: {:?}", self.current_token.to_string()),
-                })
-            }
+            _ => Err(FormulaError::Syntax {
+                pos: self.lexer.position(),
+                message: format!("Unexpected token: {:?}", self.current_token.to_string()),
+            }),
         }
     }
 
@@ -309,10 +328,7 @@ impl<'a> Parser<'a> {
 
         self.expect(&Token::RParen)?;
 
-        Ok(Expr::Func {
-            name,
-            args,
-        })
+        Ok(Expr::Func { name, args })
     }
 
     fn parse_array_literal(&mut self) -> Result<Expr, FormulaError> {
@@ -348,8 +364,10 @@ impl<'a> Parser<'a> {
                 _ => {
                     return Err(FormulaError::Syntax {
                         pos: self.lexer.position(),
-                        message: format!("Expected comma, semicolon, or }}: {:?}", 
-                            self.current_token.to_string()),
+                        message: format!(
+                            "Expected comma, semicolon, or }}: {:?}",
+                            self.current_token.to_string()
+                        ),
                     });
                 }
             }
@@ -379,7 +397,10 @@ mod tests {
     // Basic text tests
     #[test]
     fn test_parse_text() {
-        assert_eq!(parse(r#""Hello""#).unwrap(), Expr::Text("Hello".to_string()));
+        assert_eq!(
+            parse(r#""Hello""#).unwrap(),
+            Expr::Text("Hello".to_string())
+        );
     }
 
     // Boolean tests
@@ -388,8 +409,6 @@ mod tests {
         assert_eq!(parse("TRUE").unwrap(), Expr::Bool(true));
         assert_eq!(parse("FALSE").unwrap(), Expr::Bool(false));
     }
-
-
 
     // Binary operator tests
     #[test]
@@ -409,7 +428,10 @@ mod tests {
     fn test_parse_multiplication() {
         let expr = parse("2*3").unwrap();
         match expr {
-            Expr::Binary { op: BinaryOp::Multiply, .. } => {}
+            Expr::Binary {
+                op: BinaryOp::Multiply,
+                ..
+            } => {}
             _ => panic!("Expected Multiplication"),
         }
     }
@@ -442,45 +464,140 @@ mod tests {
     fn test_operator_precedence() {
         let expr = parse("1+2*3").unwrap();
         match expr {
-            Expr::Binary { op: BinaryOp::Add, rhs, .. } => {
-                match *rhs {
-                    Expr::Binary { op: BinaryOp::Multiply, .. } => {}
-                    _ => panic!("Expected multiplication in right side"),
-                }
-            }
+            Expr::Binary {
+                op: BinaryOp::Add,
+                rhs,
+                ..
+            } => match *rhs {
+                Expr::Binary {
+                    op: BinaryOp::Multiply,
+                    ..
+                } => {}
+                _ => panic!("Expected multiplication in right side"),
+            },
             _ => panic!("Expected addition"),
         }
     }
 
     // 30 grammar tests from contract
-    #[test] fn grammar_test_01() { assert!(parse("1+2").is_ok()); }
-    #[test] fn grammar_test_02() { assert!(parse("5-3").is_ok()); }
-    #[test] fn grammar_test_03() { assert!(parse("2*3").is_ok()); }
-    #[test] fn grammar_test_04() { assert!(parse("10/2").is_ok()); }
-    #[test] fn grammar_test_05() { assert!(parse("2^3").is_ok()); }
-    #[test] fn grammar_test_06() { assert!(parse("A1=B1").is_ok()); }
-    #[test] fn grammar_test_07() { assert!(parse("A1<>B1").is_ok()); }
-    #[test] fn grammar_test_08() { assert!(parse("A1<B1").is_ok()); }
-    #[test] fn grammar_test_09() { assert!(parse("A1<=B1").is_ok()); }
-    #[test] fn grammar_test_10() { assert!(parse("A1>B1").is_ok()); }
-    #[test] fn grammar_test_11() { assert!(parse("A1>=B1").is_ok()); }
-    #[test] fn grammar_test_12() { assert!(parse(r#""A"&"B""#).is_ok()); }
-    #[test] fn grammar_test_13() { assert!(parse("A1").is_ok()); }
-    #[test] fn grammar_test_14() { assert!(parse("$A$1").is_ok()); }
-    #[test] fn grammar_test_15() { assert!(parse("A$1").is_ok()); }
-    #[test] fn grammar_test_16() { assert!(parse("$A1").is_ok()); }
-    #[test] fn grammar_test_17() { assert!(parse("R1C1").is_ok()); }
-    #[test] fn grammar_test_18() { assert!(parse("R[1]C[1]").is_ok()); }
-    #[test] fn grammar_test_19() { assert!(parse("Sheet1!A1").is_ok()); }
-    #[test] fn grammar_test_20() { assert!(parse("Sheet1!$A$1").is_ok()); }
-    #[test] fn grammar_test_21() { assert!(parse("A1:B2").is_ok()); }
-    #[test] fn grammar_test_22() { assert!(parse("Sheet1!A1:B2").is_ok()); }
-    #[test] fn grammar_test_23() { assert!(parse("{1,2,3}").is_ok()); }
-    #[test] fn grammar_test_24() { assert!(parse("{1,2;3,4}").is_ok()); }
-    #[test] fn grammar_test_25() { assert!(parse("NOW()").is_ok()); }
-    #[test] fn grammar_test_26() { assert!(parse("SUM(A1)").is_ok()); }
-    #[test] fn grammar_test_27() { assert!(parse("SUM(A1,B2)").is_ok()); }
-    #[test] fn grammar_test_28() { assert!(parse("SUM(SUM(A1))").is_ok()); }
-    #[test] fn grammar_test_29() { assert!(parse("=A1+B1").is_ok()); }
-    #[test] fn grammar_test_30() { assert!(parse("=SUM(A1:B2)*MAX(C1:C10)").is_ok()); }
+    #[test]
+    fn grammar_test_01() {
+        assert!(parse("1+2").is_ok());
+    }
+    #[test]
+    fn grammar_test_02() {
+        assert!(parse("5-3").is_ok());
+    }
+    #[test]
+    fn grammar_test_03() {
+        assert!(parse("2*3").is_ok());
+    }
+    #[test]
+    fn grammar_test_04() {
+        assert!(parse("10/2").is_ok());
+    }
+    #[test]
+    fn grammar_test_05() {
+        assert!(parse("2^3").is_ok());
+    }
+    #[test]
+    fn grammar_test_06() {
+        assert!(parse("A1=B1").is_ok());
+    }
+    #[test]
+    fn grammar_test_07() {
+        assert!(parse("A1<>B1").is_ok());
+    }
+    #[test]
+    fn grammar_test_08() {
+        assert!(parse("A1<B1").is_ok());
+    }
+    #[test]
+    fn grammar_test_09() {
+        assert!(parse("A1<=B1").is_ok());
+    }
+    #[test]
+    fn grammar_test_10() {
+        assert!(parse("A1>B1").is_ok());
+    }
+    #[test]
+    fn grammar_test_11() {
+        assert!(parse("A1>=B1").is_ok());
+    }
+    #[test]
+    fn grammar_test_12() {
+        assert!(parse(r#""A"&"B""#).is_ok());
+    }
+    #[test]
+    fn grammar_test_13() {
+        assert!(parse("A1").is_ok());
+    }
+    #[test]
+    fn grammar_test_14() {
+        assert!(parse("$A$1").is_ok());
+    }
+    #[test]
+    fn grammar_test_15() {
+        assert!(parse("A$1").is_ok());
+    }
+    #[test]
+    fn grammar_test_16() {
+        assert!(parse("$A1").is_ok());
+    }
+    #[test]
+    fn grammar_test_17() {
+        assert!(parse("R1C1").is_ok());
+    }
+    #[test]
+    fn grammar_test_18() {
+        assert!(parse("R[1]C[1]").is_ok());
+    }
+    #[test]
+    fn grammar_test_19() {
+        assert!(parse("Sheet1!A1").is_ok());
+    }
+    #[test]
+    fn grammar_test_20() {
+        assert!(parse("Sheet1!$A$1").is_ok());
+    }
+    #[test]
+    fn grammar_test_21() {
+        assert!(parse("A1:B2").is_ok());
+    }
+    #[test]
+    fn grammar_test_22() {
+        assert!(parse("Sheet1!A1:B2").is_ok());
+    }
+    #[test]
+    fn grammar_test_23() {
+        assert!(parse("{1,2,3}").is_ok());
+    }
+    #[test]
+    fn grammar_test_24() {
+        assert!(parse("{1,2;3,4}").is_ok());
+    }
+    #[test]
+    fn grammar_test_25() {
+        assert!(parse("NOW()").is_ok());
+    }
+    #[test]
+    fn grammar_test_26() {
+        assert!(parse("SUM(A1)").is_ok());
+    }
+    #[test]
+    fn grammar_test_27() {
+        assert!(parse("SUM(A1,B2)").is_ok());
+    }
+    #[test]
+    fn grammar_test_28() {
+        assert!(parse("SUM(SUM(A1))").is_ok());
+    }
+    #[test]
+    fn grammar_test_29() {
+        assert!(parse("=A1+B1").is_ok());
+    }
+    #[test]
+    fn grammar_test_30() {
+        assert!(parse("=SUM(A1:B2)*MAX(C1:C10)").is_ok());
+    }
 }

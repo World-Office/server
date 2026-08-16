@@ -1,12 +1,17 @@
 //! List operations for DOCX document mutation
 
-use super::ops::{DocOp, DocOpError, DocModel};
+use super::ops::{DocModel, DocOp, DocOpError};
 use wo_ooxml::model::DocxBlock;
 
 impl<'a> DocModel<'a> {
     /// Apply SetListLevel operation.
     /// Sets the list level and numbering ID for the specified paragraph.
-    pub fn list_apply_set_level(&mut self, para: usize, level: u8, num_id: u32) -> Result<DocOp, DocOpError> {
+    pub fn list_apply_set_level(
+        &mut self,
+        para: usize,
+        level: u8,
+        num_id: u32,
+    ) -> Result<DocOp, DocOpError> {
         if para >= self.body.blocks.len() {
             return Err(DocOpError::OutOfRange(format!("paragraph {}", para)));
         }
@@ -14,8 +19,17 @@ impl<'a> DocModel<'a> {
         let block = &mut self.body.blocks[para];
         let paragraph = match block {
             DocxBlock::Paragraph(p) => p,
-            DocxBlock::Table(_) => return Err(DocOpError::OutOfRange(format!("block {} is a table, not a paragraph", para))),
-            DocxBlock::Image(_) => return Err(DocOpError::Invalid("Cannot operate on an image block".to_string())),
+            DocxBlock::Table(_) => {
+                return Err(DocOpError::OutOfRange(format!(
+                    "block {} is a table, not a paragraph",
+                    para
+                )))
+            }
+            DocxBlock::Image(_) => {
+                return Err(DocOpError::Invalid(
+                    "Cannot operate on an image block".to_string(),
+                ))
+            }
         };
 
         // Get old values for inverse operation
@@ -30,14 +44,18 @@ impl<'a> DocModel<'a> {
         // If there were no old values, the inverse should clear them (use None which becomes 0)
         let inverse_num_id = old_num_id.unwrap_or(0);
         let inverse_level = old_ilvl.unwrap_or(0);
-        Ok(DocOp::SetListLevel { para, level: inverse_level, num_id: inverse_num_id })
+        Ok(DocOp::SetListLevel {
+            para,
+            level: inverse_level,
+            num_id: inverse_num_id,
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wo_ooxml::model::{DocxBody, DocxParagraph, DocxRun, DocxParagraphProperties};
+    use wo_ooxml::model::{DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun};
 
     fn create_test_paragraph(text: &str) -> DocxParagraph {
         DocxParagraph {
@@ -73,10 +91,14 @@ mod tests {
 
         let result = model.list_apply_set_level(0, 1, 5);
         assert!(result.is_ok());
-        
+
         let inverse = result.unwrap();
         match inverse {
-            DocOp::SetListLevel { para: 0, level: 0, num_id: 0 } => {}
+            DocOp::SetListLevel {
+                para: 0,
+                level: 0,
+                num_id: 0,
+            } => {}
             _ => panic!("Expected inverse SetListLevel with level=0, num_id=0"),
         }
 
@@ -108,7 +130,7 @@ mod tests {
     #[test]
     fn test_set_list_level_roundtrip() {
         let mut body = DocxBody::new();
-        
+
         // Create a paragraph with existing list properties
         let mut para = create_test_paragraph("First");
         para.properties.num_id = Some(5);
@@ -132,7 +154,11 @@ mod tests {
         }
 
         // Apply inverse
-        let inverse_op = DocOp::SetListLevel { para: 0, level: 1, num_id: 5 };
+        let inverse_op = DocOp::SetListLevel {
+            para: 0,
+            level: 1,
+            num_id: 5,
+        };
         {
             let mut model = DocModel { body: &mut body };
             let op2 = model.apply(&inverse_op);

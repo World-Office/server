@@ -24,12 +24,10 @@ pub enum SheetOpError {
     #[error("sheet index {index} out of range (max: {max})")]
     SheetIndexOutOfRange { index: usize, max: usize },
     #[error("cell not found at ({row}, {col}) in sheet '{sheet}'")]
-    CellNotFound {
-        sheet: String,
-        row: u32,
-        col: u32,
-    },
-    #[error("invalid range: start ({start_row}, {start_col}) must be <= end ({end_row}, {end_col})")]
+    CellNotFound { sheet: String, row: u32, col: u32 },
+    #[error(
+        "invalid range: start ({start_row}, {start_col}) must be <= end ({end_row}, {end_col})"
+    )]
     InvalidRange {
         start_row: u32,
         start_col: u32,
@@ -70,7 +68,7 @@ fn shift_cells_horizontal(
     // delta: +1 for insert (shift right), -1 for delete (shift left)
     let mut new_cells: Vec<((u32, u32), Cell)> = Vec::new();
     let mut keys_to_remove: Vec<(u32, u32)> = Vec::new();
-    
+
     // Collect cells that need to be moved
     for ((row, col), cell) in cells.iter() {
         if *col >= start_col {
@@ -81,12 +79,12 @@ fn shift_cells_horizontal(
             }
         }
     }
-    
+
     // Remove old cells
     for key in keys_to_remove {
         cells.remove(&key);
     }
-    
+
     // Add new cells
     for ((new_col, row), cell) in new_cells {
         cells.insert((row, new_col), cell);
@@ -102,7 +100,7 @@ fn shift_cells_vertical(
     // delta: positive for insert (shift down), negative for delete (shift up)
     let mut new_cells: Vec<((u32, u32), Cell)> = Vec::new();
     let mut keys_to_remove: Vec<(u32, u32)> = Vec::new();
-    
+
     // Collect cells that need to be moved
     for ((row, col), cell) in cells.iter() {
         if *row >= start_row {
@@ -113,12 +111,12 @@ fn shift_cells_vertical(
             }
         }
     }
-    
+
     // Remove old cells
     for key in keys_to_remove {
         cells.remove(&key);
     }
-    
+
     // Add new cells
     for ((new_row, col), cell) in new_cells {
         cells.insert((new_row, col), cell);
@@ -175,7 +173,7 @@ pub fn apply_to_sheet(sheet: &mut Sheet, op: &SheetOp) -> SheetOpResult<()> {
             }
             // Shift all cells below the insertion point down
             shift_cells_vertical(&mut sheet.cells, *after + 1, *count, *count as i64);
-            
+
             // Shift row heights
             let mut new_heights = BTreeMap::new();
             for (row, height) in &sheet.row_heights {
@@ -186,10 +184,10 @@ pub fn apply_to_sheet(sheet: &mut Sheet, op: &SheetOp) -> SheetOpResult<()> {
             for (row, height) in new_heights {
                 sheet.row_heights.insert(row, height);
             }
-            
+
             // Shift merge ranges
             shift_merge_ranges(&mut sheet.merges, after + 1, 0, *count, 0);
-            
+
             Ok(())
         }
         SheetOp::DeleteRow { row, count } => {
@@ -206,10 +204,10 @@ pub fn apply_to_sheet(sheet: &mut Sheet, op: &SheetOp) -> SheetOpResult<()> {
             for key in keys {
                 sheet.cells.remove(&key);
             }
-            
+
             // Shift cells above the deletion up
             shift_cells_vertical(&mut sheet.cells, *row + *count, *count, -(*count as i64));
-            
+
             // Shift row heights
             let mut new_heights = BTreeMap::new();
             for (r, height) in &sheet.row_heights {
@@ -223,10 +221,10 @@ pub fn apply_to_sheet(sheet: &mut Sheet, op: &SheetOp) -> SheetOpResult<()> {
             for r in *row..(*row + *count) {
                 sheet.row_heights.remove(&r);
             }
-            
+
             // Shift merge ranges
-            shift_merge_ranges(&mut sheet.merges, *row, 0, *count, -( *count as i32));
-            
+            shift_merge_ranges(&mut sheet.merges, *row, 0, *count, -(*count as i32));
+
             Ok(())
         }
         SheetOp::InsertCol { after, count } => {
@@ -235,7 +233,7 @@ pub fn apply_to_sheet(sheet: &mut Sheet, op: &SheetOp) -> SheetOpResult<()> {
             }
             // Shift all cells to the right of the insertion point
             shift_cells_horizontal(&mut sheet.cells, after + 1, *count, *count as i64);
-            
+
             // Shift column widths
             let mut new_widths = BTreeMap::new();
             for (col, width) in &sheet.col_widths {
@@ -246,10 +244,10 @@ pub fn apply_to_sheet(sheet: &mut Sheet, op: &SheetOp) -> SheetOpResult<()> {
             for (col, width) in new_widths {
                 sheet.col_widths.insert(col, width);
             }
-            
+
             // Shift merge ranges
             shift_merge_ranges(&mut sheet.merges, 0, after + 1, 0, *count as i32);
-            
+
             Ok(())
         }
         SheetOp::DeleteCol { col, count } => {
@@ -266,10 +264,10 @@ pub fn apply_to_sheet(sheet: &mut Sheet, op: &SheetOp) -> SheetOpResult<()> {
             for key in keys {
                 sheet.cells.remove(&key);
             }
-            
+
             // Shift cells to the left
             shift_cells_horizontal(&mut sheet.cells, *col + *count, *count, -(*count as i64));
-            
+
             // Shift column widths
             let mut new_widths = BTreeMap::new();
             for (c, width) in &sheet.col_widths {
@@ -283,20 +281,20 @@ pub fn apply_to_sheet(sheet: &mut Sheet, op: &SheetOp) -> SheetOpResult<()> {
             for c in *col..(*col + *count) {
                 sheet.col_widths.remove(&c);
             }
-            
+
             // Shift merge ranges
             shift_merge_ranges(&mut sheet.merges, 0, *col, 0, -(*count as i32));
-            
+
             Ok(())
         }
         SheetOp::Merge(range) => {
             validate_merge_range(range)?;
-            
+
             // Check for overlapping merges
             if check_merge_overlap(&sheet.merges, range) {
                 return Err(SheetOpError::MergeOverlap);
             }
-            
+
             // Check that we're not merging an already merged range
             for existing in &sheet.merges {
                 if existing.start_row == range.start_row
@@ -307,7 +305,7 @@ pub fn apply_to_sheet(sheet: &mut Sheet, op: &SheetOp) -> SheetOpResult<()> {
                     return Ok(()); // Already merged, no-op
                 }
             }
-            
+
             sheet.merges.push(range.clone());
             Ok(())
         }
@@ -319,7 +317,7 @@ pub fn apply_to_sheet(sheet: &mut Sheet, op: &SheetOp) -> SheetOpResult<()> {
                     && m.end_row == range.end_row
                     && m.end_col == range.end_col
             });
-            
+
             if let Some(idx) = index {
                 sheet.merges.remove(idx);
                 Ok(())
@@ -374,9 +372,7 @@ pub fn apply_to_sheet(sheet: &mut Sheet, op: &SheetOp) -> SheetOpResult<()> {
             }
             Ok(())
         }
-        SheetOp::Sort { range, keys } => {
-            apply_sort(sheet, range, keys)
-        }
+        SheetOp::Sort { range, keys } => apply_sort(sheet, range, keys),
         SheetOp::ApplyConditionalFormat { range, rule } => {
             apply_conditional_format(sheet, range, rule)?;
             Ok(())
@@ -403,29 +399,35 @@ pub fn apply_to_sheet(sheet: &mut Sheet, op: &SheetOp) -> SheetOpResult<()> {
             // Copy cells from one range to another
             let (dest_row, dest_col) = *to;
             let mut copied_cells = Vec::new();
-            
+
             for row in from.start_row..=from.end_row {
                 for col in from.start_col..=from.end_col {
                     if let Some(cell) = sheet.cells.get(&(row, col)) {
-                        copied_cells.push(((dest_row + (row - from.start_row), dest_col + (col - from.start_col)), cell.clone()));
+                        copied_cells.push((
+                            (
+                                dest_row + (row - from.start_row),
+                                dest_col + (col - from.start_col),
+                            ),
+                            cell.clone(),
+                        ));
                     }
                 }
             }
-            
+
             for ((r, c), cell) in copied_cells {
                 sheet.cells.insert((r, c), cell);
             }
-            
+
             Ok(())
         }
         SheetOp::Paste { at, data } => {
             let (start_row, start_col) = *at;
             for (row_offset, row) in data.iter().enumerate() {
                 for (col_offset, cell) in row.iter().enumerate() {
-                    sheet.cells.insert((
-                        start_row + row_offset as u32,
-                        start_col + col_offset as u32,
-                    ), cell.clone());
+                    sheet.cells.insert(
+                        (start_row + row_offset as u32, start_col + col_offset as u32),
+                        cell.clone(),
+                    );
                 }
             }
             Ok(())
@@ -485,7 +487,7 @@ pub fn apply_to_workbook(wb: &mut Workbook, op: &SheetOp) -> SheetOpResult {
                     name: new_name.clone(),
                 });
             }
-            
+
             if let Some(sheet) = wb.sheets.iter_mut().find(|s| s.name == *old_name) {
                 sheet.name = new_name.clone();
                 wb.revision += 1;
@@ -499,11 +501,9 @@ pub fn apply_to_workbook(wb: &mut Workbook, op: &SheetOp) -> SheetOpResult {
         SheetOp::AddSheet { name } => {
             // Check if name already exists
             if wb.sheets.iter().any(|s| s.name == *name) {
-                return Err(SheetOpError::DuplicateSheetName {
-                    name: name.clone(),
-                });
+                return Err(SheetOpError::DuplicateSheetName { name: name.clone() });
             }
-            
+
             wb.add_sheet(Sheet::new(name.clone()));
             wb.revision += 1;
             Ok(())
@@ -512,16 +512,14 @@ pub fn apply_to_workbook(wb: &mut Workbook, op: &SheetOp) -> SheetOpResult {
             if wb.sheets.len() <= 1 {
                 return Err(SheetOpError::CannotDeleteOnlySheet);
             }
-            
+
             let index = wb.sheets.iter().position(|s| s.name == *name);
             if let Some(idx) = index {
                 wb.remove_sheet(idx);
                 wb.revision += 1;
                 Ok(())
             } else {
-                Err(SheetOpError::SheetNotFound {
-                    name: name.clone(),
-                })
+                Err(SheetOpError::SheetNotFound { name: name.clone() })
             }
         }
         SheetOp::SetSheetVisibility { name, visible } => {
@@ -530,9 +528,7 @@ pub fn apply_to_workbook(wb: &mut Workbook, op: &SheetOp) -> SheetOpResult {
                 wb.revision += 1;
                 Ok(())
             } else {
-                Err(SheetOpError::SheetNotFound {
-                    name: name.clone(),
-                })
+                Err(SheetOpError::SheetNotFound { name: name.clone() })
             }
         }
         _ => {
@@ -651,7 +647,12 @@ pub fn invert_sheetop(op: &SheetOp, _sheet: &Sheet) -> SheetOp {
             let rows = data.len() as u32;
             let cols = data.get(0).map(|row| row.len() as u32).unwrap_or(0);
             SheetOp::Clear {
-                range: Range2d::new(start_row, start_col, start_row + rows - 1, start_col + cols - 1),
+                range: Range2d::new(
+                    start_row,
+                    start_col,
+                    start_row + rows - 1,
+                    start_col + cols - 1,
+                ),
             }
         }
         SheetOp::SetColWidth { col, .. } => {
@@ -675,10 +676,7 @@ pub fn invert_sheetop(op: &SheetOp, _sheet: &Sheet) -> SheetOp {
         }
         SheetOp::UnfreezePanes => {
             // Inverse of UnfreezePanes is to restore freeze (but we don't know the position)
-            SheetOp::FreezePanes {
-                row: 0,
-                col: 0,
-            }
+            SheetOp::FreezePanes { row: 0, col: 0 }
         }
         SheetOp::RenameSheet { old_name, new_name } => {
             // Inverse is to rename back
@@ -689,16 +687,12 @@ pub fn invert_sheetop(op: &SheetOp, _sheet: &Sheet) -> SheetOp {
         }
         SheetOp::AddSheet { name } => {
             // Inverse is to remove the sheet
-            SheetOp::RemoveSheet {
-                name: name.clone(),
-            }
+            SheetOp::RemoveSheet { name: name.clone() }
         }
         SheetOp::RemoveSheet { name } => {
             // Inverse is to add the sheet back (but we don't have the data)
             // This is a limitation - we'd need to store the sheet data
-            SheetOp::AddSheet {
-                name: name.clone(),
-            }
+            SheetOp::AddSheet { name: name.clone() }
         }
         SheetOp::SetSheetVisibility { name, visible } => {
             // Inverse is to toggle visibility back
@@ -766,9 +760,7 @@ fn apply_sort(sheet: &mut Sheet, range: &Range2d, keys: &[SortKey]) -> SheetOpRe
         for c in range.start_col..=range.end_col {
             row_cells.push(sheet.cells.remove(&(r, c)));
         }
-        rows.push(SortRow {
-            cells: row_cells,
-        });
+        rows.push(SortRow { cells: row_cells });
     }
 
     // Sort rows based on key columns
@@ -813,12 +805,12 @@ fn apply_sort(sheet: &mut Sheet, range: &Range2d, keys: &[SortKey]) -> SheetOpRe
 }
 
 /// Parse a raw string value into CellValue and optional formula.
-fn parse_raw_value(raw: &str) -> (CellValue, Option< wo_formula::ast::Expr>) {
+fn parse_raw_value(raw: &str) -> (CellValue, Option<wo_formula::ast::Expr>) {
     // Try to parse as a number
     if let Ok(num) = raw.parse::<f64>() {
         return (CellValue::Num(num), None);
     }
-    
+
     // Try to parse as boolean
     if raw.eq_ignore_ascii_case("true") {
         return (CellValue::Bool(true), None);
@@ -826,7 +818,7 @@ fn parse_raw_value(raw: &str) -> (CellValue, Option< wo_formula::ast::Expr>) {
     if raw.eq_ignore_ascii_case("false") {
         return (CellValue::Bool(false), None);
     }
-    
+
     // Try to parse as formula
     if raw.starts_with('=') {
         if let Ok(expr) = wo_formula::parse(&raw[1..]) {
@@ -834,7 +826,7 @@ fn parse_raw_value(raw: &str) -> (CellValue, Option< wo_formula::ast::Expr>) {
             return (CellValue::Text(raw.to_string()), Some(expr));
         }
     }
-    
+
     // Default to text
     (CellValue::Text(raw.to_string()), None)
 }
@@ -852,13 +844,13 @@ mod tests {
     fn test_set_cell_apply() {
         let mut wb = Workbook::new();
         wb.add_sheet(Sheet::new("Sheet1"));
-        
+
         let op = SheetOp::SetCell {
             row: 0,
             col: 0,
             raw: "Hello".to_string(),
         };
-        
+
         apply_to_workbook(&mut wb, &op).unwrap();
         assert_eq!(wb.revision, 1);
         let cell = wb.sheets[0].get_cell(0, 0).unwrap();
@@ -870,13 +862,13 @@ mod tests {
     fn test_set_cell_invert() {
         let mut wb = Workbook::new();
         wb.add_sheet(Sheet::new("Sheet1"));
-        
+
         let op = SheetOp::SetCell {
             row: 0,
             col: 0,
             raw: "Hello".to_string(),
         };
-        
+
         let inverted = invert_sheetop(&op, &wb.sheets[0]);
         matches!(inverted, SheetOp::Clear { .. });
     }
@@ -889,14 +881,11 @@ mod tests {
         sheet.set_cell(0, 0, Cell::with_text("A1"));
         sheet.set_cell(1, 0, Cell::with_text("A2"));
         wb.add_sheet(sheet);
-        
-        let op = SheetOp::InsertRow {
-            after: 0,
-            count: 1,
-        };
-        
+
+        let op = SheetOp::InsertRow { after: 0, count: 1 };
+
         apply_to_workbook(&mut wb, &op).unwrap();
-        
+
         // A1 should still exist
         assert!(wb.sheets[0].get_cell(0, 0).is_some());
         // A2 should now be at row 2
@@ -909,12 +898,9 @@ mod tests {
     fn test_insert_row_invert() {
         let mut wb = Workbook::new();
         wb.add_sheet(Sheet::new("Sheet1"));
-        
-        let op = SheetOp::InsertRow {
-            after: 0,
-            count: 2,
-        };
-        
+
+        let op = SheetOp::InsertRow { after: 0, count: 2 };
+
         let inverted = invert_sheetop(&op, &wb.sheets[0]);
         matches!(inverted, SheetOp::DeleteRow { row: 1, count: 2 });
     }
@@ -928,22 +914,19 @@ mod tests {
         sheet.set_cell(1, 0, Cell::with_text("A2"));
         sheet.set_cell(2, 0, Cell::with_text("A3"));
         wb.add_sheet(sheet);
-        
-        let op = SheetOp::DeleteRow {
-            row: 1,
-            count: 1,
-        };
-        
+
+        let op = SheetOp::DeleteRow { row: 1, count: 1 };
+
         apply_to_workbook(&mut wb, &op).unwrap();
-        
+
         // A1 should still exist at row 0
         assert!(wb.sheets[0].get_cell(0, 0).is_some());
         assert_eq!(wb.sheets[0].get_cell(0, 0).unwrap().raw, "A1");
-        
+
         // A3 should now be at row 1 (shifted from row 2)
         assert!(wb.sheets[0].get_cell(1, 0).is_some());
         assert_eq!(wb.sheets[0].get_cell(1, 0).unwrap().raw, "A3");
-        
+
         // Row 2 should now be empty
         assert!(wb.sheets[0].get_cell(2, 0).is_none());
     }
@@ -953,12 +936,9 @@ mod tests {
     fn test_delete_row_invert() {
         let mut wb = Workbook::new();
         wb.add_sheet(Sheet::new("Sheet1"));
-        
-        let op = SheetOp::DeleteRow {
-            row: 5,
-            count: 3,
-        };
-        
+
+        let op = SheetOp::DeleteRow { row: 5, count: 3 };
+
         let inverted = invert_sheetop(&op, &wb.sheets[0]);
         matches!(inverted, SheetOp::InsertRow { after: 4, count: 3 });
     }
@@ -971,18 +951,15 @@ mod tests {
         sheet.set_cell(0, 0, Cell::with_text("A1"));
         sheet.set_cell(0, 1, Cell::with_text("B1"));
         wb.add_sheet(sheet);
-        
-        let op = SheetOp::InsertCol {
-            after: 0,
-            count: 1,
-        };
-        
+
+        let op = SheetOp::InsertCol { after: 0, count: 1 };
+
         apply_to_workbook(&mut wb, &op).unwrap();
-        
+
         // A1 should still be at col 0
         assert!(wb.sheets[0].get_cell(0, 0).is_some());
         assert_eq!(wb.sheets[0].get_cell(0, 0).unwrap().raw, "A1");
-        
+
         // B1 should now be at col 2
         assert!(wb.sheets[0].get_cell(0, 2).is_some());
         assert_eq!(wb.sheets[0].get_cell(0, 2).unwrap().raw, "B1");
@@ -993,12 +970,9 @@ mod tests {
     fn test_insert_col_invert() {
         let mut wb = Workbook::new();
         wb.add_sheet(Sheet::new("Sheet1"));
-        
-        let op = SheetOp::InsertCol {
-            after: 2,
-            count: 1,
-        };
-        
+
+        let op = SheetOp::InsertCol { after: 2, count: 1 };
+
         let inverted = invert_sheetop(&op, &wb.sheets[0]);
         matches!(inverted, SheetOp::DeleteCol { col: 3, count: 1 });
     }
@@ -1012,22 +986,19 @@ mod tests {
         sheet.set_cell(0, 1, Cell::with_text("B1"));
         sheet.set_cell(0, 2, Cell::with_text("C1"));
         wb.add_sheet(sheet);
-        
-        let op = SheetOp::DeleteCol {
-            col: 1,
-            count: 1,
-        };
-        
+
+        let op = SheetOp::DeleteCol { col: 1, count: 1 };
+
         apply_to_workbook(&mut wb, &op).unwrap();
-        
+
         // A1 should still exist at col 0
         assert!(wb.sheets[0].get_cell(0, 0).is_some());
         assert_eq!(wb.sheets[0].get_cell(0, 0).unwrap().raw, "A1");
-        
+
         // C1 should now be at col 1 (shifted from col 2)
         assert!(wb.sheets[0].get_cell(0, 1).is_some());
         assert_eq!(wb.sheets[0].get_cell(0, 1).unwrap().raw, "C1");
-        
+
         // Col 2 should now be empty
         assert!(wb.sheets[0].get_cell(0, 2).is_none());
     }
@@ -1037,12 +1008,9 @@ mod tests {
     fn test_delete_col_invert() {
         let mut wb = Workbook::new();
         wb.add_sheet(Sheet::new("Sheet1"));
-        
-        let op = SheetOp::DeleteCol {
-            col: 3,
-            count: 2,
-        };
-        
+
+        let op = SheetOp::DeleteCol { col: 3, count: 2 };
+
         let inverted = invert_sheetop(&op, &wb.sheets[0]);
         matches!(inverted, SheetOp::InsertCol { after: 2, count: 2 });
     }
@@ -1052,12 +1020,12 @@ mod tests {
     fn test_merge_apply() {
         let mut wb = Workbook::new();
         wb.add_sheet(Sheet::new("Sheet1"));
-        
+
         let merge_range = MergeRange::new(0, 0, 2, 2);
         let op = SheetOp::Merge(merge_range.clone());
-        
+
         apply_to_workbook(&mut wb, &op).unwrap();
-        
+
         assert_eq!(wb.sheets[0].merges.len(), 1);
         assert_eq!(wb.sheets[0].merges[0].start_row, 0);
         assert_eq!(wb.sheets[0].merges[0].start_col, 0);
@@ -1070,10 +1038,10 @@ mod tests {
     fn test_merge_invert() {
         let mut wb = Workbook::new();
         wb.add_sheet(Sheet::new("Sheet1"));
-        
+
         let merge_range = MergeRange::new(0, 0, 1, 1);
         let op = SheetOp::Merge(merge_range.clone());
-        
+
         let inverted = invert_sheetop(&op, &wb.sheets[0]);
         matches!(inverted, SheetOp::Unmerge(range) if range.start_row == 0 && range.start_col == 0);
     }
@@ -1085,11 +1053,11 @@ mod tests {
         let mut sheet = Sheet::new("Sheet1");
         sheet.add_merge(MergeRange::new(0, 0, 2, 2));
         wb.add_sheet(sheet);
-        
+
         let op = SheetOp::Unmerge(MergeRange::new(0, 0, 2, 2));
-        
+
         apply_to_workbook(&mut wb, &op).unwrap();
-        
+
         assert_eq!(wb.sheets[0].merges.len(), 0);
     }
 
@@ -1098,10 +1066,10 @@ mod tests {
     fn test_unmerge_invert() {
         let mut wb = Workbook::new();
         wb.add_sheet(Sheet::new("Sheet1"));
-        
+
         let merge_range = MergeRange::new(0, 0, 1, 1);
         let op = SheetOp::Unmerge(merge_range.clone());
-        
+
         let inverted = invert_sheetop(&op, &wb.sheets[0]);
         matches!(inverted, SheetOp::Merge(range) if range.start_row == 0 && range.start_col == 0);
     }
@@ -1114,24 +1082,24 @@ mod tests {
         sheet.set_cell(0, 0, Cell::with_text("A1"));
         sheet.set_cell(1, 1, Cell::with_text("B2"));
         wb.add_sheet(sheet);
-        
+
         let style = CellStyle {
             bold: Some(true),
             font_size: Some(14.0),
             ..Default::default()
         };
-        
+
         let op = SheetOp::SetStyle {
             range: Range2d::new(0, 0, 1, 1),
             style,
         };
-        
+
         apply_to_workbook(&mut wb, &op).unwrap();
-        
+
         let cell = wb.sheets[0].get_cell(0, 0).unwrap();
         assert_eq!(cell.style.bold, Some(true));
         assert_eq!(cell.style.font_size, Some(14.0));
-        
+
         let cell2 = wb.sheets[0].get_cell(1, 1).unwrap();
         assert_eq!(cell2.style.bold, Some(true));
     }
@@ -1141,19 +1109,25 @@ mod tests {
     fn test_set_style_invert() {
         let mut wb = Workbook::new();
         wb.add_sheet(Sheet::new("Sheet1"));
-        
+
         let style = CellStyle {
             bold: Some(true),
             ..Default::default()
         };
-        
+
         let op = SheetOp::SetStyle {
             range: Range2d::new(0, 0, 5, 5),
             style,
         };
-        
+
         let inverted = invert_sheetop(&op, &wb.sheets[0]);
-        matches!(inverted, SheetOp::SetStyle { style: CellStyle { .. }, .. });
+        matches!(
+            inverted,
+            SheetOp::SetStyle {
+                style: CellStyle { .. },
+                ..
+            }
+        );
     }
 
     // Test 17: Clear apply
@@ -1164,13 +1138,13 @@ mod tests {
         sheet.set_cell(0, 0, Cell::with_text("A1"));
         sheet.set_cell(0, 1, Cell::with_text("B1"));
         wb.add_sheet(sheet);
-        
+
         let op = SheetOp::Clear {
             range: Range2d::new(0, 0, 0, 1),
         };
-        
+
         apply_to_workbook(&mut wb, &op).unwrap();
-        
+
         assert!(wb.sheets[0].get_cell(0, 0).is_none());
         assert!(wb.sheets[0].get_cell(0, 1).is_none());
     }
@@ -1180,11 +1154,11 @@ mod tests {
     fn test_clear_invert() {
         let mut wb = Workbook::new();
         wb.add_sheet(Sheet::new("Sheet1"));
-        
+
         let op = SheetOp::Clear {
             range: Range2d::new(0, 0, 10, 10),
         };
-        
+
         let inverted = invert_sheetop(&op, &wb.sheets[0]);
         matches!(inverted, SheetOp::SetStyle { .. });
     }
@@ -1197,17 +1171,17 @@ mod tests {
         sheet.set_cell(0, 0, Cell::with_text("A1"));
         sheet.set_cell(0, 1, Cell::with_text("B1"));
         wb.add_sheet(sheet);
-        
+
         let op = SheetOp::Copy {
             from: Range2d::new(0, 0, 0, 1),
             to: (5, 5),
         };
-        
+
         apply_to_workbook(&mut wb, &op).unwrap();
-        
+
         // Original should still exist
         assert_eq!(wb.sheets[0].get_cell(0, 0).unwrap().raw, "A1");
-        
+
         // Copied cells should exist at new location
         assert_eq!(wb.sheets[0].get_cell(5, 5).unwrap().raw, "A1");
         assert_eq!(wb.sheets[0].get_cell(5, 6).unwrap().raw, "B1");
@@ -1218,15 +1192,15 @@ mod tests {
     fn test_rename_sheet_roundtrip() {
         let mut wb = Workbook::new();
         wb.add_sheet(Sheet::new("OldName"));
-        
+
         let op = SheetOp::RenameSheet {
             old_name: "OldName".to_string(),
             new_name: "NewName".to_string(),
         };
-        
+
         apply_to_workbook(&mut wb, &op).unwrap();
         assert_eq!(wb.sheets[0].name, "NewName");
-        
+
         let inverted = invert_sheetop(&op, &wb.sheets[0]);
         if let SheetOp::RenameSheet { old_name, new_name } = inverted {
             apply_to_workbook(&mut wb, &SheetOp::RenameSheet { old_name, new_name }).unwrap();
@@ -1355,10 +1329,10 @@ mod tests {
         assert_eq!(wb.sheets[0].get_cell(2, 0).unwrap().raw, "delta");
         assert_eq!(wb.sheets[0].get_cell(3, 0).unwrap().raw, "gamma");
         // col1 values stay with their rows
-        assert_eq!(wb.sheets[0].get_cell(0, 1).unwrap().raw, "second");  // alpha's pair
-        assert_eq!(wb.sheets[0].get_cell(1, 1).unwrap().raw, "fourth");  // beta's pair
-        assert_eq!(wb.sheets[0].get_cell(2, 1).unwrap().raw, "first");   // delta's pair
-        assert_eq!(wb.sheets[0].get_cell(3, 1).unwrap().raw, "third");   // gamma's pair
+        assert_eq!(wb.sheets[0].get_cell(0, 1).unwrap().raw, "second"); // alpha's pair
+        assert_eq!(wb.sheets[0].get_cell(1, 1).unwrap().raw, "fourth"); // beta's pair
+        assert_eq!(wb.sheets[0].get_cell(2, 1).unwrap().raw, "first"); // delta's pair
+        assert_eq!(wb.sheets[0].get_cell(3, 1).unwrap().raw, "third"); // gamma's pair
 
         // Get the inverse of sort (should be Sort with same keys)
         let inverted = invert_sheetop(&op, &wb.sheets[0]);
@@ -1445,6 +1419,9 @@ mod tests {
 
         // Column structure preserved: name at col 0, age at col 1
         // Age values: Alice=30, Bob=20, Zoe=25 (ages stay with their names)
-        assert_eq!(wb.sheets[0].get_cell(0, 1).unwrap().value, CellValue::Num(30.0));
+        assert_eq!(
+            wb.sheets[0].get_cell(0, 1).unwrap().value,
+            CellValue::Num(30.0)
+        );
     }
 }

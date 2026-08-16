@@ -21,14 +21,14 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          channel: nightly
+          toolchain: nightly
           targets: wasm32-unknown-unknown
         timeout-minutes: 10
 
       - name: Install system dependencies
         run: |
           if command -v apt-get &> /dev/null; then
-            sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev libxml2-dev libxmlsec1-dev
           elif command -v pacman &> /dev/null; then
             sudo pacman -S --noconfirm pkg-config openssl
           elif command -v apk &> /dev/null; then
@@ -68,14 +68,14 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          channel: nightly
+          toolchain: nightly
           targets: wasm32-unknown-unknown
         timeout-minutes: 10
 
       - name: Install system dependencies
         run: |
           if command -v apt-get &> /dev/null; then
-            sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends pkg-config libssl-dev libxml2-dev libxmlsec1-dev
           elif command -v pacman &> /dev/null; then
             sudo pacman -S --noconfirm pkg-config openssl
           elif command -v apk &> /dev/null; then

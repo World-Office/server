@@ -421,7 +421,11 @@ mod tests {
         );
         let content = std::fs::read_to_string(dic_path).expect("en_US.dic");
         let result = DicParseResult::from_str(&content);
-        assert!(result.entries.len() > 40_000, "expected > 40k entries, got {}", result.entries.len());
+        assert!(
+            result.entries.len() > 40_000,
+            "expected > 40k entries, got {}",
+            result.entries.len()
+        );
     }
 
     #[test]
