@@ -1,10 +1,5 @@
-import {
-	type EmailConfig,
-	type ExportFormat,
-	ExportWizard,
-	makeStyles,
-	tokens,
-} from "@fluentui/react-components"
+import { makeStyles, tokens } from "@fluentui/react-components"
+import { type EmailConfig, type ExportFormat, ExportWizard } from "@world-office/editor-common"
 import { useCallback } from "react"
 import { pdfStore } from "../../stores/PdfStore"
 import { FileMenuItems } from "./FileMenuItems"
