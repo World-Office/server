@@ -1,3 +1,4 @@
+import { FluentProvider, makeStyles, tokens, webLightTheme } from "@fluentui/react-components"
 import { useCallback, useMemo, useState } from "react"
 import type { RibbonCommandDispatch, RibbonContext, RibbonSpec } from "../types"
 import { RibbonPanel } from "./RibbonPanel"
@@ -12,6 +13,17 @@ interface RibbonProps {
   /** Optional extra content to render in the tab bar's right area (e.g. collaboration status) */
   tabBarExtra?: React.ReactNode
 }
+
+const useStyles = makeStyles({
+  root: {
+    display: "flex",
+    flexDirection: "column",
+    height: "100%",
+    background: tokens.colorNeutralBackground1,
+    borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+    userSelect: "none",
+  },
+})
 
 export function Ribbon({ spec, context, dispatch, beforeTabs, tabBarExtra }: RibbonProps) {
   const visibleTabs = useMemo(
@@ -30,24 +42,27 @@ export function Ribbon({ spec, context, dispatch, beforeTabs, tabBarExtra }: Rib
   const handleTabChange = useCallback((tabId: string) => setActiveTabId(tabId), [])
 
   const enrichedContext: RibbonContext = { ...context, activeTab: activeTab?.id ?? "" }
+  const styles = useStyles()
 
   return (
-    <div className="de-toolbar">
-      <RibbonTabBar
-        tabs={visibleTabs}
-        activeTabId={activeTab?.id ?? ""}
-        onTabChange={handleTabChange}
-        beforeTabs={beforeTabs}
-        extra={tabBarExtra}
-      />
-      {activeTab && (
-        <RibbonPanel
-          key={activeTab.id}
-          tab={activeTab}
-          context={enrichedContext}
-          dispatch={dispatch}
+    <FluentProvider theme={webLightTheme}>
+      <div className={styles.root}>
+        <RibbonTabBar
+          tabs={visibleTabs}
+          activeTabId={activeTab?.id ?? ""}
+          onTabChange={handleTabChange}
+          beforeTabs={beforeTabs}
+          extra={tabBarExtra}
         />
-      )}
-    </div>
+        {activeTab && (
+          <RibbonPanel
+            key={activeTab.id}
+            tab={activeTab}
+            context={enrichedContext}
+            dispatch={dispatch}
+          />
+        )}
+      </div>
+    </FluentProvider>
   )
 }
