@@ -74,16 +74,29 @@ impl FontLibrary {
     ///
     /// Tries sans-serif first, then falls back to any face in the database.
     fn best_face_id(&self) -> Option<fontdb::ID> {
-        // Try sans-serif as the default
+        self.best_face_id_for_weight(fontdb::Weight::NORMAL)
+    }
+
+    /// Best face for a given weight (e.g. bold), falling back to the normal
+    /// face and then the first available face.
+    fn best_face_id_for_weight(&self, weight: fontdb::Weight) -> Option<fontdb::ID> {
         let query = Query {
             families: &[Family::SansSerif],
+            weight,
             ..Self::default_query()
         };
         if let Some(id) = self.db.query(&query) {
             return Some(id);
         }
 
-        // Fall back to the first available face
+        // Fall back: normal-weight sans-serif, then first available face
+        let query_normal = Query {
+            families: &[Family::SansSerif],
+            ..Self::default_query()
+        };
+        if let Some(id) = self.db.query(&query_normal) {
+            return Some(id);
+        }
         self.db.faces().next().map(|info| info.id)
     }
 
@@ -168,6 +181,17 @@ impl FontLibrary {
     /// face is available.
     pub fn query_face(&self) -> Option<(Vec<u8>, u32)> {
         self.with_best_face_data(|data, index| (data.to_vec(), index))
+    }
+
+    /// Get the raw font data for a specific weight (e.g. bold).
+    pub fn query_face_weighted(&self, bold: bool) -> Option<(Vec<u8>, u32)> {
+        let weight = if bold {
+            fontdb::Weight::BOLD
+        } else {
+            fontdb::Weight::NORMAL
+        };
+        let id = self.best_face_id_for_weight(weight)?;
+        self.db.with_face_data(id, |data, index| (data.to_vec(), index))
     }
 }
 

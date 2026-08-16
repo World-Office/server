@@ -2,6 +2,7 @@ import { registerEditorRouter } from "@world-office/editor-common"
 import { observer } from "mobx-react-lite"
 import { Suspense, lazy, useEffect, useRef, useState } from "react"
 import { isCanvasFormat } from "../lib/wasm-renderer"
+import { createWordCommandHandler } from "../lib/word-commands"
 import { documentStore } from "../stores/DocumentStore"
 import { CanvasEditor, type CanvasEditorHandle } from "./CanvasEditor"
 import { DocumentCanvas } from "./DocumentCanvas"
@@ -39,28 +40,15 @@ const WasmEditorCanvas = observer(
     editorRef: React.RefObject<CanvasEditorHandle | null>
   }) => {
     useEffect(() => {
-      // Register the WASM editor with the command router
-      const unregister = registerEditorRouter("doc", (cmd) => {
-        const command = cmd.command
-        const value = cmd.value
-
-        // Map toolbar formatting commands to WASM format JSON
-        let format: Record<string, unknown> | null = null
-        if (command === "bold") format = { bold: true }
-        else if (command === "italic") format = { italic: true }
-        else if (command === "underline") format = { underline: value ?? "single" }
-        else if (command === "strikethrough") format = { strikethrough: true }
-        else if (command === "fontSize" && value)
-          format = { fontSize: Number.parseInt(value as string, 10) * 2 }
-        else if (command === "fontFamily" && value) format = { fontName: value }
-        else if (command === "textColor" && value) format = { textColor: value }
-        else if (command === "highlight" && value) format = { highlight: value }
-        else if (command === "highlightColor" && value) format = { highlight: value }
-
-        if (format) {
-          editorRef.current?.applyFormatting(format)
-        }
+      // Register the WASM editor with the command router — the full 78-command
+      // bridge (K3): WASM formatting, store toggles, panels, lib functions.
+      const handler = createWordCommandHandler({
+        editorRef,
+        onRichTextCommand: () => {
+          /* monaco/text-mode fallback is wired in App.tsx via useWoCommandListener */
+        },
       })
+      const unregister = registerEditorRouter("doc", handler)
 
       return () => unregister()
     }, [editorRef])
