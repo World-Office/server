@@ -1,19 +1,57 @@
+import { makeStyles, mergeClasses, tokens } from "@fluentui/react-components"
 import { useTranslation } from "react-i18next"
 import type { RibbonCommandDispatch, RibbonContext, RibbonGroupSpec } from "../types"
 import { ControlRenderer } from "./ControlRenderer"
+
+const useStyles = makeStyles({
+  group: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "2px",
+    padding: "0 8px",
+    borderRight: `1px solid ${tokens.colorNeutralStroke1}`,
+    minHeight: "100%",
+  },
+  groupLast: {
+    borderRight: "none",
+  },
+  elset: {
+    display: "flex",
+    alignItems: "center",
+    gap: "1px",
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  label: {
+    display: "block",
+    fontSize: tokens.fontSizeBase100,
+    color: tokens.colorNeutralForeground3,
+    textAlign: "center",
+    lineHeight: 1.2,
+    whiteSpace: "nowrap",
+    padding: "0 2px",
+    marginTop: "1px",
+    maxWidth: "64px",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
+})
 
 interface RibbonGroupProps {
   group: RibbonGroupSpec
   context: RibbonContext
   dispatch: RibbonCommandDispatch
+  isLast?: boolean
 }
 
-export function RibbonGroup({ group, context, dispatch }: RibbonGroupProps) {
+export function RibbonGroup({ group, context, dispatch, isLast }: RibbonGroupProps) {
   const { t } = useTranslation()
+  const styles = useStyles()
 
   return (
-    <div className="de-ribbon-group">
-      <div className="de-ribbon-elset">
+    <div className={mergeClasses(styles.group, isLast ? styles.groupLast : undefined)}>
+      <div className={styles.elset}>
         {group.controls.map((control) => (
           <ControlRenderer
             key={control.id}
@@ -23,7 +61,7 @@ export function RibbonGroup({ group, context, dispatch }: RibbonGroupProps) {
           />
         ))}
       </div>
-      <span className="de-ribbon-label">{t(group.label)}</span>
+      <span className={styles.label}>{t(group.label)}</span>
     </div>
   )
 }
