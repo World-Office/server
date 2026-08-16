@@ -1,22 +1,18 @@
-import type { JSX } from "react";
-import { useTranslation } from "react-i18next";
-import { visioStore } from "../../../stores/VisioStore";
-import type { FileMenuAction } from "../../../types/visio";
+import { Button, Divider, makeStyles, mergeClasses, tokens } from "@fluentui/react-components"
+import type { JSX } from "react"
+import { useTranslation } from "react-i18next"
+import { visioStore } from "../../../stores/VisioStore"
+import type { FileMenuAction } from "../../../types/visio"
 
 interface FileMenuItemsProps {
-	onMenuClick: (action: string, hasPanel: boolean) => void;
-	onBack: () => void;
+	onMenuClick: (action: string, hasPanel: boolean) => void
+	onBack: () => void
 }
 
 interface MenuItem {
-	action:
-		| FileMenuAction
-		| "close-editor"
-		| "external-help"
-		| "file:open"
-		| "file:exit";
-	caption: string;
-	hasPanel: boolean;
+	action: FileMenuAction | "close-editor" | "external-help" | "file:open" | "file:exit"
+	caption: string
+	hasPanel: boolean
 }
 
 const MENU_ITEMS: MenuItem[] = [
@@ -30,55 +26,83 @@ const MENU_ITEMS: MenuItem[] = [
 	{ action: "opts", caption: "Advanced Settings...", hasPanel: true },
 	{ action: "help", caption: "Help...", hasPanel: true },
 	{ action: "exit", caption: "Go to Documents", hasPanel: false },
-];
+]
 
-export function FileMenuItems({
-	onMenuClick,
-	onBack,
-}: FileMenuItemsProps): JSX.Element {
-	const { t } = useTranslation();
-	const activePanel = visioStore.activeFileMenuPanel;
+const useStyles = makeStyles({
+	list: {
+		display: "block",
+		listStyle: "none",
+		margin: 0,
+		padding: "8px 0",
+	},
+	item: {
+		display: "flex",
+		alignItems: "center",
+		height: "36px",
+		padding: "0 20px",
+		cursor: "pointer",
+		whiteSpace: "nowrap",
+		fontSize: tokens.fontSizeBase200,
+		color: tokens.colorNeutralForeground1,
+		":hover": {
+			backgroundColor: tokens.colorNeutralBackground1Hover,
+		},
+	},
+	itemActive: {
+		backgroundColor: tokens.colorBrandBackground,
+		color: tokens.colorNeutralForegroundOnBrand,
+		":hover": {
+			backgroundColor: tokens.colorBrandBackgroundHover,
+		},
+	},
+	backIcon: {
+		display: "inline-flex",
+		alignItems: "center",
+		justifyContent: "center",
+		width: "20px",
+		marginRight: "10px",
+		fontSize: tokens.fontSizeBase300,
+	},
+	caption: {
+		display: "inline-block",
+		overflow: "hidden",
+		textOverflow: "ellipsis",
+	},
+})
+
+export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps): JSX.Element {
+	const { t } = useTranslation()
+	const styles = useStyles()
+	const activePanel = visioStore.activeFileMenuPanel
 
 	function handleBack(): void {
-		onBack();
-	}
-
-	function handleKeyDown(e: React.KeyboardEvent, action: () => void): void {
-		if (e.key === "Enter" || e.key === " ") {
-			e.preventDefault();
-			action();
-		}
+		onBack()
 	}
 
 	return (
-		<ul className="visio-file-menu-items">
-			<div
-				className="visio-file-menu-item"
-				role="menuitem"
-				tabIndex={0}
+		<ul className={styles.list}>
+			<Button
+				appearance="subtle"
+				size="large"
+				icon={<span className={styles.backIcon}>←</span>}
+				className={styles.item}
 				onClick={handleBack}
-				onKeyDown={(e) => handleKeyDown(e, handleBack)}
+				aria-label={t("Back")}
 			>
-				<span className="visio-file-menu-item-icon">←</span>
-				<span className="visio-file-menu-item-caption">{t("Back")}</span>
-			</div>
-			<li className="visio-file-menu-divider" />
+				{t("Back")}
+			</Button>
+			<Divider />
 			{MENU_ITEMS.map((item) => (
-				<div
+				<Button
 					key={item.action}
-					className={`visio-file-menu-item${activePanel === item.action ? " active" : ""}`}
-					role="menuitem"
-					tabIndex={0}
+					appearance="subtle"
+					size="large"
+					className={mergeClasses(styles.item, activePanel === item.action ? styles.itemActive : undefined)}
 					onClick={() => onMenuClick(item.action, item.hasPanel)}
-					onKeyDown={(e) =>
-						handleKeyDown(e, () => onMenuClick(item.action, item.hasPanel))
-					}
 				>
-					<span className="visio-file-menu-item-caption">
-						{t(item.caption)}
-					</span>
-				</div>
+					<span className={styles.caption}>{t(item.caption)}</span>
+				</Button>
 			))}
 		</ul>
-	);
+	)
 }
