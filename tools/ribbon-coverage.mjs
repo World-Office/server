@@ -72,7 +72,8 @@ const WIRING = {
     setTextDirection: { target: "lib", implemented: false },
     // home — styles
     heading1: { target: "wasm", implemented: true }, heading2: { target: "wasm", implemented: true },
-    heading3: { target: "wasm", implemented: true },
+    heading3: { target: "wasm", implemented: true }, heading4: { target: "wasm", implemented: true },
+    heading5: { target: "wasm", implemented: true }, heading6: { target: "wasm", implemented: true },
     // home — editing
     find: { target: "panel", implemented: true }, replace: { target: "panel", implemented: true },
     // insert
@@ -80,14 +81,14 @@ const WIRING = {
     link: { target: "panel", implemented: true }, insertTable: { target: "wasm", implemented: true },
     pageBreak: { target: "wasm", implemented: true },
     // layout
-    columns: { target: "panel", implemented: false },
+    columns: { target: "panel", implemented: true },
     differentFirstPage: { target: "store", implemented: true }, differentOddEven: { target: "store", implemented: true },
     editFooter: { target: "store", implemented: true }, editHeader: { target: "store", implemented: true },
     insertContinuousSectionBreak: { target: "wasm", implemented: true },
-    insertPageNumber: { target: "store", implemented: false },
+    insertPageNumber: { target: "store", implemented: true },
     insertSectionBreak: { target: "wasm", implemented: true }, openTheme: { target: "panel", implemented: true },
-    pageMargins: { target: "panel", implemented: false }, pageOrientation: { target: "panel", implemented: false },
-    pageSize: { target: "panel", implemented: false },
+    pageMargins: { target: "panel", implemented: true }, pageOrientation: { target: "panel", implemented: true },
+    pageSize: { target: "panel", implemented: true },
     removeFooter: { target: "store", implemented: true }, removeHeader: { target: "store", implemented: true },
     // references
     addComment: { target: "panel", implemented: true }, insertEndnote: { target: "lib", implemented: false },
