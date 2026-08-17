@@ -1,10 +1,11 @@
 import { ThemeProvider } from "@world-office/design-system";
+import { registerEditorRouter } from "@world-office/editor-common";
 import {
 	useDocumentLoader,
 	useWoCommandListener,
 } from "@world-office/wopi-client";
 import { observer } from "mobx-react-lite";
-import { type JSX, Suspense, lazy, useCallback } from "react";
+import { type JSX, Suspense, lazy, useCallback, useEffect } from "react";
 import { getActiveEditor } from "./components/MonacoEditor";
 import { SlidePresenter } from "./components/SlidePresenter/SlidePresenter";
 import {
@@ -19,6 +20,7 @@ import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useTheme } from "./hooks/useTheme";
 import { isCollaborationConfigured } from "./lib/collaboration-config";
 import { presentationStore } from "./stores/PresentationStore";
+import { createPresentationCommandHandler } from "./lib/presentation-commands";
 
 const PresentationCollaborationProvider = lazy(() =>
 	import("./components/PresentationCollaborationProvider").then((m) => ({
@@ -74,6 +76,12 @@ export const App = observer(function App(): JSX.Element {
 	const handleMonacoCommand = useCallback((command: MonacoCommand) => {
 		dispatchMonacoCommand(command, getActiveEditor());
 	}, []);
+
+	// K6: route ribbon wo-command events to the presentation store
+	useEffect(() => {
+		const unregister = registerEditorRouter("slide", createPresentationCommandHandler())
+		return () => unregister()
+	}, [])
 
 	useWoCommandListener({
 		onCommand: (command, _value) => {
