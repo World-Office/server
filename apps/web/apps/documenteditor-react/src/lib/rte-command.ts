@@ -894,12 +894,4 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
   }
 }
 
-/**
- * Command handler for the router that executes TipTap commands.
- * This can be registered with the command router for the 'doc' editor kind.
- */
-export function createRichTextRouterHandler(): (cmd: { command: string; value?: unknown }) => void {
-  return (cmd: { command: string; value?: unknown }) => {
-    dispatchRichTextCommand(cmd.command as RichTextCommand, cmd.value as string | undefined)
-  }
-}
+

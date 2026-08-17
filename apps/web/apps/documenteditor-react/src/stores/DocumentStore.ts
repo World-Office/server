@@ -62,6 +62,12 @@ export class DocumentStore {
   rightMenuMinWidth = 40
   rightMenuExpandedWidth = 300
 
+  /* Page layout */
+  pageOrientation: "portrait" | "landscape" = "portrait"
+  pageSize: "A4" | "A3" | "Letter" | "Legal" = "A4"
+  pageMargins: "normal" | "narrow" | "wide" = "normal"
+  columns: number = 1
+
   /* Page navigation */
   currentPage = 0
   totalPages = 0

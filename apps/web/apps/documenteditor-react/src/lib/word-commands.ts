@@ -222,7 +222,61 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         break
     }
 
-    // 4. Panel-opening commands
+    // 4. Page-layout commands — dispatch CustomEvents directly
+    //    (works without TipTap; Viewport.tsx listens for these)
+    switch (command) {
+      case "pageOrientation": {
+        const orientation =
+          value || documentStore.pageOrientation || "portrait"
+        window.dispatchEvent(
+          new CustomEvent("world-office:page-layout", {
+            detail: {
+              orientation,
+              pageSize: documentStore.pageSize || "A4",
+              margins: documentStore.pageMargins || "normal",
+            },
+          }),
+        )
+        return
+      }
+      case "pageSize": {
+        const size = value || documentStore.pageSize || "A4"
+        window.dispatchEvent(
+          new CustomEvent("world-office:page-layout", {
+            detail: {
+              orientation: documentStore.pageOrientation || "portrait",
+              pageSize: size,
+              margins: documentStore.pageMargins || "normal",
+            },
+          }),
+        )
+        return
+      }
+      case "pageMargins": {
+        const margins = value || documentStore.pageMargins || "normal"
+        window.dispatchEvent(
+          new CustomEvent("world-office:page-layout", {
+            detail: {
+              orientation: documentStore.pageOrientation || "portrait",
+              pageSize: documentStore.pageSize || "A4",
+              margins,
+            },
+          }),
+        )
+        return
+      }
+      case "columns": {
+        const n = value ? Number.parseInt(value, 10) : 2
+        window.dispatchEvent(
+          new CustomEvent("world-office:columns", { detail: { count: Math.min(Math.max(n, 1), 3) } }),
+        )
+        return
+      }
+      default:
+        break
+    }
+
+    // 5. Panel-opening commands
     switch (command) {
       case "find":
         onFind?.(false)
@@ -250,7 +304,7 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         break
     }
 
-    // 5. lib-backed commands — forwarded to the rich-text bridge so the
+    // 6. lib-backed commands — forwarded to the rich-text bridge so the
     //    (future) canvas-backed lib implementations can hook in; today they
     //    fall through to Monaco/text mode when that's the active editor.
     const libCommands = new Set([
@@ -273,10 +327,6 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       "insertDropdownControl",
       "insertDatePickerControl",
       "insertPlainTextControl",
-      "columns",
-      "pageMargins",
-      "pageOrientation",
-      "pageSize",
       "insertTextDirection",
       "setTextDirection",
     ])
