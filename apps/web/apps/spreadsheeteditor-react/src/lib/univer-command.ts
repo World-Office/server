@@ -276,6 +276,32 @@ function getActiveRange(): UniverRangeFacade | null {
 }
 
 /**
+ * Build a cell reference string (e.g. "A1") from a range facade.
+ * The facade declares getCellRef(), but the real Univer range does not
+ * implement it — derive from getRow()/getColumn() instead.
+ */
+function rangeToRef(range: UniverRangeFacade): string {
+	if (typeof range.getCellRef === "function") {
+		try {
+			const ref = range.getCellRef()
+			if (ref && ref.length > 0) return ref
+		} catch {
+			/* fall through to row/column derivation */
+		}
+	}
+	const row = typeof range.getRow === "function" ? range.getRow() : 0
+	const col = typeof range.getColumn === "function" ? range.getColumn() : 0
+	let colStr = ""
+	let c = col
+	while (c >= 0) {
+		colStr = String.fromCharCode(65 + (c % 26)) + colStr
+		c = Math.floor(c / 26) - 1
+		if (c < 0) break
+	}
+	return `${colStr}${row + 1}`
+}
+
+/**
  * Dispatch a formatting command to the active Univer instance.
  * Returns true if the command was handled, false if no Univer is active.
  */
@@ -480,7 +506,7 @@ export function dispatchUniverCommand(
 				if (typeof univerApi.executeCommand === "function") {
 					univerApi.executeCommand("sheet.command.insertChart", {
 						type: chartType,
-						range: range.getCellRef(),
+						range: rangeToRef(range),
 					});
 					return true;
 				}
@@ -503,7 +529,7 @@ export function dispatchUniverCommand(
 							? "column"
 							: "winloss";
 				range.setFormula(
-					`=SPARKLINE(${range.getCellRef()}, "${sparklineType}")`,
+					`=SPARKLINE(${rangeToRef(range)}, "${sparklineType}")`,
 				);
 				return true;
 			} catch {
@@ -634,7 +660,7 @@ export function dispatchUniverCommand(
 		case "conditionalFormat": {
 			if (range) {
 				applyConditionalFormatting(
-					range.getCellRef(),
+					rangeToRef(range),
 					{ type: "greaterThan", value: 0, format: { bold: true } },
 					range,
 				);
@@ -648,7 +674,7 @@ export function dispatchUniverCommand(
 		case "dataValidation": {
 			if (range) {
 				applyDataValidation(
-					range.getCellRef(),
+					rangeToRef(range),
 					{ type: "list", listItems: [] },
 					range,
 				);

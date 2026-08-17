@@ -1,10 +1,11 @@
 import { ThemeProvider } from "@world-office/design-system";
+import { registerEditorRouter } from "@world-office/editor-common";
 import {
 	useDocumentLoader,
 	useWoCommandListener,
 } from "@world-office/wopi-client";
 import { observer } from "mobx-react-lite";
-import { Suspense, lazy, useCallback } from "react";
+import { Suspense, lazy, useCallback, useEffect } from "react";
 import { getActiveEditor } from "./components/MonacoEditor";
 import { handlePanelCommand } from "./components/RightMenu/spreadsheet-command-router";
 import {
@@ -17,6 +18,7 @@ import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge";
 import { useEmbeddedMode } from "./hooks/useEmbeddedMode";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { isCollaborationConfigured } from "./lib/collaboration-config";
+import { createSpreadsheetCommandHandler } from "./lib/spreadsheet-commands";
 import { spreadsheetStore } from "./stores/SpreadsheetStore";
 
 const SpreadsheetCollaborationProvider = lazy(() =>
@@ -58,6 +60,12 @@ export const App = observer(function App() {
 	const handleMonacoCommand = useCallback((command: MonacoCommand) => {
 		dispatchMonacoCommand(command, getActiveEditor());
 	}, []);
+
+	// K5: route ribbon wo-command events not covered by Univer/panel paths
+	useEffect(() => {
+		const unregister = registerEditorRouter("sheet", createSpreadsheetCommandHandler())
+		return () => unregister()
+	}, [])
 
 	useWoCommandListener({
 		onCommand: (command, value) => {
