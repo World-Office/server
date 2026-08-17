@@ -4,6 +4,7 @@
  */
 
 import { type WoCommand, registerEditorRouter } from "@world-office/editor-common"
+import { createPdfCommandHandler } from "../lib/pdf-commands"
 import { useEffect } from "react"
 import { pdfStore } from "../stores/PdfStore"
 
@@ -128,7 +129,8 @@ function handlePdfCommand(cmd: WoCommand): void {
       break
 
     default:
-      console.warn(`PDF: Unknown command "${command}"`)
+      // K7: fall through to the ribbon spec command handler
+      createPdfCommandHandler()(cmd)
   }
 }
 
@@ -188,6 +190,19 @@ export function usePdfCommandRouter(): void {
       "tableBorderColor",
       "tableShading",
       "toggleHeaderRow",
+      // K7: ribbon spec commands
+      "goToFirstPage", "goToNextPage", "goToPrevPage", "goToLastPage",
+      "setZoom", "toggleFitToPage", "toggleFitToWidth",
+      "toggleLeftPanel", "toggleRightPanel", "toggleMinimap",
+      "toggleStatusbar", "toggleCompactToolbar", "toggleTheme",
+      "toggleWordWrap", "toggleEditMode",
+      "annotationHighlight", "annotationUnderline", "annotationStrikeout",
+      "annotationTextComment", "annotationShapeComment", "annotationStamp",
+      "insertImage", "insertText", "insertShape", "insertTable", "insertChart",
+      "insertHyperlink", "insertEquation", "insertSymbol", "insertSmartArt",
+      "insertTextArt", "addFormField", "find", "replace", "findRedact",
+      "redactPages", "markRedaction", "applyRedactions",
+      "cut", "copy", "paste", "selectAll",
     ])
 
     return unregister

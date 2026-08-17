@@ -213,6 +213,9 @@ export class VisioStore {
 	toolbarVisible = true;
 	statusbarVisible = true;
 	leftMenuVisible = true;
+	minimapVisible = true;
+	wordWrap = true;
+	themeMode: "light" | "dark" = "light";
 	isCompactToolbar = false;
 	isCompactStatusbar = true;
 
@@ -296,6 +299,18 @@ export class VisioStore {
 
 	setToolbarVisible(visible: boolean): void {
 		this.toolbarVisible = visible;
+	}
+
+	setMinimapVisible(visible: boolean): void {
+		this.minimapVisible = visible;
+	}
+
+	setWordWrap(wrap: boolean): void {
+		this.wordWrap = wrap;
+	}
+
+	setThemeMode(mode: "light" | "dark"): void {
+		this.themeMode = mode;
 	}
 
 	setStatusbarVisible(visible: boolean): void {
