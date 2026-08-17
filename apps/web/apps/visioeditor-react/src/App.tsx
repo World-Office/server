@@ -88,6 +88,20 @@ export const App = observer(function App() {
 
 	useWoCommandListener({
 		onCommand: (command, _value) => {
+			// K8: visio ribbon view toggles
+			switch (command) {
+				case "toggleMinimap":
+					visioStore.setMinimapVisible(!visioStore.minimapVisible);
+					return;
+				case "toggleThemeVisio":
+					visioStore.setThemeMode(visioStore.themeMode === "dark" ? "light" : "dark");
+					return;
+				case "toggleWordWrap":
+					visioStore.setWordWrap(!visioStore.wordWrap);
+					return;
+				default:
+					break;
+			}
 			handleMonacoCommand(command as MonacoCommand);
 		},
 		onSave: () => visioStore.save(),

@@ -1,6 +1,7 @@
 import { observer } from "mobx-react-lite";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { flowchartStore } from "../stores/FlowchartStore";
+import { visioStore } from "../stores/VisioStore";
 import type {
 	FlowchartDocument,
 	FlowchartEdge,
@@ -1530,10 +1531,12 @@ export const FlowchartCanvas = observer(function FlowchartCanvas() {
 			{contextMenu && (
 				<ContextMenu state={contextMenu} onClose={closeContextMenu} />
 			)}
-			<MiniMap
-				containerWidth={containerSize.width}
-				containerHeight={containerSize.height}
-			/>
+			{visioStore.minimapVisible && (
+				<MiniMap
+					containerWidth={containerSize.width}
+					containerHeight={containerSize.height}
+				/>
+			)}
 		</div>
 	);
 });
