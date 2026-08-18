@@ -167,15 +167,39 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       return
     }
 
-    // 3. Clipboard / edit → monaco or rich-text bridge
-    if (
-      command === "cut" ||
-      command === "copy" ||
-      command === "paste" ||
-      command === "undo" ||
-      command === "redo" ||
-      command === "selectAll"
-    ) {
+    // 3. Clipboard commands → native browser APIs for canvas mode,
+    //    or TipTap bridge for rich-text mode
+    if (command === "copy" || command === "cut" || command === "paste") {
+      // For canvas mode, use native clipboard API
+      // document.execCommand is legacy and may not work in all contexts
+      if (command === "copy") {
+        const selectedText = window.getSelection()?.toString()
+        if (selectedText) {
+          void navigator.clipboard.writeText(selectedText)
+          return
+        }
+      } else if (command === "paste") {
+        void navigator.clipboard.readText().then((text) => {
+          if (text && editorRef.current) {
+            // Insert pasted text via WASM applyFormatting insertText
+            editorRef.current.applyFormatting({ insertText: text })
+          }
+        })
+        return
+      } else if (command === "cut") {
+        const selectedText = window.getSelection()?.toString()
+        if (selectedText && editorRef.current) {
+          // Copy to clipboard
+          void navigator.clipboard.writeText(selectedText)
+          // Then delete selection via WASM
+          editorRef.current.applyFormatting({ bold: false, _deleteSelection: true })
+        }
+        return
+      }
+    }
+
+    // 4. Edit history → TipTap bridge (for Monaco editor)
+    if (command === "undo" || command === "redo" || command === "selectAll") {
       onRichTextCommand(command as RichTextCommand, value)
       return
     }
@@ -311,35 +335,33 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "openTheme":
         documentStore.toggleRightPanel("theme")
         return
+      case "insertPlainTextControl":
+      case "insertCheckboxControl":
+      case "insertDropdownControl":
+      case "insertDatePickerControl":
+        documentStore.toggleRightPanel("form")
+        return
+      // Track Changes commands open the review panel
+      case "toggleTrackChanges":
+      case "acceptChange":
+      case "acceptAllChanges":
+      case "rejectChange":
+      case "rejectAllChanges":
+      case "nextChange":
+        documentStore.toggleRightPanel("review")
+        return
+      // Reference commands open the crossreference panel
+      case "insertFootnote":
+      case "insertEndnote":
+      case "insertToc":
+      case "updateToc":
+      case "insertIndex":
+      case "updateIndex":
+      case "insertIndexEntry":
+        documentStore.toggleRightPanel("crossreference")
+        return
       default:
         break
-    }
-
-    // 6. lib-backed commands — forwarded to the rich-text bridge so the
-    //    (future) canvas-backed lib implementations can hook in; today they
-    //    fall through to Monaco/text mode when that's the active editor.
-    const libCommands = new Set([
-      "insertFootnote",
-      "insertEndnote",
-      "insertToc",
-      "updateToc",
-      "insertIndex",
-      "updateIndex",
-      "insertIndexEntry",
-      "toggleTrackChanges",
-      "acceptChange",
-      "rejectChange",
-      "acceptAllChanges",
-      "rejectAllChanges",
-      "nextChange",
-      "insertCheckboxControl",
-      "insertDropdownControl",
-      "insertDatePickerControl",
-      "insertPlainTextControl",
-    ])
-    if (libCommands.has(command)) {
-      onRichTextCommand(command as RichTextCommand, value)
-      return
     }
 
     // 6. Unknown command — log so the coverage audit can flag it
