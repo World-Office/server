@@ -1,11 +1,13 @@
 import { registerEditorRouter } from "@world-office/editor-common"
 import { observer } from "mobx-react-lite"
-import { Suspense, lazy, useEffect, useRef, useState } from "react"
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react"
 import { isCanvasFormat } from "../lib/wasm-renderer"
 import { createWordCommandHandler } from "../lib/word-commands"
 import { documentStore } from "../stores/DocumentStore"
 import { CanvasEditor, type CanvasEditorHandle } from "./CanvasEditor"
 import { DocumentCanvas } from "./DocumentCanvas"
+import { isCollaborationConfigured } from "../lib/collaboration-config"
+import { useCanvasCollaboration } from "../hooks/useCanvasCollaboration"
 
 const MonacoEditor = lazy(() => import("./MonacoEditor").then((m) => ({ default: m.MonacoEditor })))
 
@@ -39,6 +41,19 @@ const WasmEditorCanvas = observer(
     fileName: string
     editorRef: React.RefObject<CanvasEditorHandle | null>
   }) => {
+    const collaborationEnabled = isCollaborationConfigured()
+
+    const {
+      state: collabState,
+      connect: connectCollab,
+      sendModelOp,
+    } = useCanvasCollaboration({
+      editorRef,
+      onLocalModelOp: (op) => {
+        console.debug("[WasmEditorCanvas] Local ModelOp broadcast:", op.revision)
+      },
+    })
+
     useEffect(() => {
       // Register the WASM editor with the command router — the full 78-command
       // bridge (K3): WASM formatting, store toggles, panels, lib functions.
@@ -53,6 +68,21 @@ const WasmEditorCanvas = observer(
       return () => unregister()
     }, [editorRef])
 
+    // Connect collaboration when editor is mounted and configured
+    useEffect(() => {
+      if (collaborationEnabled && editorRef.current) {
+        // Collaboration session management would come from the backend
+        // For now, the user can call connectCollab() with a session ID
+      }
+    }, [collaborationEnabled, editorRef, connectCollab])
+
+    const handleModelOp = useCallback(
+      (op: unknown, _docHandle: number) => {
+        sendModelOp(op)
+      },
+      [sendModelOp],
+    )
+
     return (
       <div
         className="de-document-holder"
@@ -64,6 +94,41 @@ const WasmEditorCanvas = observer(
           height: "100%",
         }}
       >
+        {collaborationEnabled && collabState !== "disabled" && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "flex-end",
+              padding: "4px 12px",
+              gap: "6px",
+              fontSize: "11px",
+              color: collabState === "connected" ? "#2e7d32" : "#999",
+              backgroundColor: "#fafafa",
+              borderBottom: "1px solid #e0e0e0",
+            }}
+          >
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                backgroundColor:
+                  collabState === "connected"
+                    ? "#2e7d32"
+                    : collabState === "connecting"
+                      ? "#f57f17"
+                      : "#ccc",
+                display: "inline-block",
+              }}
+            />
+            {collabState === "connected"
+              ? "Collaboration: connected"
+              : collabState === "connecting"
+                ? "Connecting..."
+                : "Offline"}
+          </div>
+        )}
         <CanvasEditor
           ref={editorRef}
           docBlob={blob}
@@ -71,6 +136,7 @@ const WasmEditorCanvas = observer(
           onChange={() => {
             documentStore.markModified()
           }}
+          onModelOp={collaborationEnabled ? handleModelOp : undefined}
         />
       </div>
     )
