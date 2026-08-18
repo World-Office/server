@@ -78,6 +78,8 @@ export interface WasmRenderApi {
     orientation: string,
     marginPt: number,
   ): string
+  // Collaboration support (Phase X)
+  apply_op(docHandle: number, opJson: string): boolean
 }
 
 let wasmApi: WasmRenderApi | null = null
@@ -128,6 +130,28 @@ export function isWasmReady(): boolean {
 /** Get the raw WASM API object for advanced use (CanvasEditor). */
 export function getWasmApi(): WasmRenderApi | null {
   return wasmApi
+}
+
+/**
+ * Apply a ModelOp to a document in WASM for collaboration.
+ * Used by CanvasEditor when receiving remote operations from coauthoring service.
+ */
+export function applyOpToDocument(docHandle: number, opJson: string): boolean {
+  const api = wasmApi
+  if (!api) {
+    console.warn("[WasmRenderer] apply_op called but WASM not loaded")
+    return false
+  }
+  if (typeof api.apply_op !== "function") {
+    console.warn("[WasmRenderer] apply_op not available in WASM API")
+    return false
+  }
+  try {
+    return api.apply_op(docHandle, opJson)
+  } catch (err) {
+    console.error("[WasmRenderer] apply_op failed:", err)
+    return false
+  }
 }
 
 /**
