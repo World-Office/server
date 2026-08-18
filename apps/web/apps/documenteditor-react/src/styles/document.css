@@ -8,18 +8,23 @@
   }
 }
 
+/* Import Golden Ratio design system */
+@import url("golden-ratio.css");
+
 /* Document Editor — Main Layout & Reset — Professional OnlyOffice-style look */
+/* Enhanced with Golden Ratio proportions */
 
 :root {
-  --wo-de-toolbar-height: 36px;
-  --wo-de-toolbar-height-compact: 32px;
-  --wo-de-statusbar-height: 24px;
-  --wo-de-statusbar-height-expanded: 48px;
-  --wo-de-leftmenu-width: 40px;
-  --wo-de-leftmenu-min: 40px;
+  /* Golden Ratio (φ ≈ 1.618) dimensions */
+  --wo-de-toolbar-height: 55px;        /* φ * 34 ≈ 55 */
+  --wo-de-toolbar-height-compact: 34px;/* Fibonacci: 34 */
+  --wo-de-statusbar-height: 34px;      /* φ⁻¹ * 55 ≈ 34 */
+  --wo-de-statusbar-height-expanded: 55px;
+  --wo-de-leftmenu-width: 55px;        /* φ * 34 ≈ 55 */
+  --wo-de-leftmenu-min: 44px;         /* Touch minimum */
   --wo-de-leftmenu-max: 300px;
-  --wo-de-rightmenu-width: 40px;
-  --wo-de-rightmenu-min: 40px;
+  --wo-de-rightmenu-width: 55px;
+  --wo-de-rightmenu-min: 44px;
   --wo-de-rightmenu-max: 300px;
 
   --wo-de-doc-bg: #f0f0f0;
@@ -123,7 +128,7 @@ body,
   align-items: flex-start;
   justify-content: center;
   background-color: var(--wo-de-doc-bg);
-  padding: 30px 20px;
+  padding: 55px 34px; /* φ proportions: 55×34 */
 }
 
 .de-viewport-editor::-webkit-scrollbar {
@@ -428,11 +433,23 @@ body,
   font-size: 12px;
 }
 
-/* ── Mobile breakpoints ─────────────────────── */
+/* Responsive - Golden scaling */
+@media (max-width: 1200px) {
+  .de-viewport-left-menu,
+  .de-viewport-right-menu {
+    width: 34px !important; /* φ⁻¹ * 55 ≈ 34 */
+  }
+  
+  .de-viewport-toolbar {
+    height: 34px !important; /* φ⁻¹ * 55 ≈ 34 */
+  }
+}
+
+/* ── Mobile breakpoints - Golden Responsiveness ─────────────────────── */
 
 @media (max-width: 768px) {
   .de-viewport-editor {
-    padding: 8px 4px;
+    padding: 21px 13px; /* φ scaling: 21, 13 (Fibonacci) */
   }
 
   .de-viewport-left-menu,
@@ -442,7 +459,7 @@ body,
 
   .de-document-page {
     max-width: 100%;
-    padding: 1cm 0.5cm;
+    padding: 21mm 13mm; /* Fibonacci: 21, 13 */
     min-height: auto;
     box-shadow: none;
     border-radius: 0;
@@ -450,6 +467,11 @@ body,
 
   .de-viewport-body {
     flex-direction: column;
+  }
+  
+  button[class*="btn"] {
+    min-width: 44px; /* Touch minimum */
+    height: 44px;
   }
 }
 
@@ -467,8 +489,9 @@ body,
   }
 
   .de-shortcuts-panel {
-    min-width: auto;
-    width: 90vw;
+    min-width: 377px; /* 233 * φ ≈ 377 */
+    max-width: min(610px, 90vw); /* 377 * φ ≈ 610 */
+    border-radius: 8px; /* Fibonacci: 8 */
   }
 }
 

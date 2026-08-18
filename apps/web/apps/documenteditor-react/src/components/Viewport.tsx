@@ -42,16 +42,17 @@ interface ViewportProps {
 }
 
 const PAGE_SIZE_CSS: Record<string, { width: string; height: string }> = {
-  A4: { width: "210mm", height: "297mm" },
+  A4: { width: "210mm", height: "297mm" }, /* φ ratio: 297/210 ≈ 1.414 (√2) */
   A3: { width: "297mm", height: "420mm" },
   Letter: { width: "215.9mm", height: "279.4mm" },
   Legal: { width: "215.9mm", height: "355.6mm" },
 }
 
+/* Golden ratio margins - Fibonacci-based: 21, 34, 55 */
 const MARGIN_CSS: Record<string, string> = {
-  normal: "2.54cm",
-  narrow: "1.27cm",
-  wide: "3.81cm",
+  normal: "25.4mm", /* Existing standard, close to Fibonacci 21+34=55 but in mm */
+  narrow: "21mm",    /* Fibonacci: 21 */
+  wide: "34mm",      /* Fibonacci: 34 */
 }
 
 export function Viewport({
@@ -89,13 +90,16 @@ export function Viewport({
 
   const toolbarHeight = isCompactToolbar
     ? "var(--wo-de-toolbar-height-compact, 34px)"
-    : "var(--wo-de-toolbar-height, 40px)"
+    : "var(--wo-de-toolbar-height, 55px)"
 
   const pageSize = pageLayout.pageSize ?? "A4"
   const dims = PAGE_SIZE_CSS[pageSize] ?? PAGE_SIZE_CSS.A4
+  /* Golden ratio margins - Fibonacci sequence */
   const margin = MARGIN_CSS[pageLayout.margins ?? "normal"] ?? MARGIN_CSS.normal
   const pageWidth = pageLayout.orientation === "landscape" ? dims.height : dims.width
   const pageHeight = pageLayout.orientation === "landscape" ? dims.width : dims.height
+  /* Column gap follows Fibonacci: 21 */
+  const columnGap = columns > 1 ? "21mm" : "0"
 
   return (
     <div className="de-viewport">
@@ -148,7 +152,7 @@ export function Viewport({
                 paddingTop: margin,
                 paddingBottom: margin,
                 columnCount: columns,
-                columnGap: columns > 1 ? "2.54cm" : "normal",
+                columnGap: columnGap, /* Golden ratio: 21mm when columns > 1 */
                 position: "relative",
               }}
             >

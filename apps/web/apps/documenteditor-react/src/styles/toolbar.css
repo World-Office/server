@@ -1,9 +1,11 @@
 /* Toolbar — Professional Office Ribbon Style */
+/* Golden Ratio proportions applied */
 
 .de-toolbar {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: var(--wo-de-toolbar-height);
   background-color: var(--wo-de-bg-toolbar);
   border-bottom: 1px solid var(--wo-de-border);
   user-select: none;
@@ -32,13 +34,13 @@
   padding-right: 4px;
 }
 
-/* Tab button */
+/* Tab button - Golden height */
 .de-toolbar-tab {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   height: 100%;
-  padding: 0 14px;
+  padding: 0 21px; /* Fibonacci: 21 */
   border: none;
   border-bottom: 2px solid transparent;
   background: transparent;
@@ -92,13 +94,13 @@ section[class*="tab-panel"] {
   border-bottom: 1px solid var(--wo-de-border-light);
 }
 
-/* Group container */
+/* Group container - Golden spacing */
 div[class*="group"] {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
-  padding: 0 8px;
+  gap: 3px; /* Fibonacci: 3 */
+  padding: 0 13px; /* Fibonacci: 13 */
   border-right: 1px solid var(--wo-de-border-light);
   min-height: 100%;
 }
@@ -107,42 +109,43 @@ div[class*="group"]:last-child {
   border-right: none;
 }
 
-/* Button set within a group */
+/* Button set within a group - Golden grouping */
 div[class*="elset"] {
   display: flex;
   align-items: center;
-  gap: 1px;
+  gap: 3px; /* Fibonacci: 3 */
   flex-wrap: wrap;
   justify-content: center;
 }
 
-/* Group label */
+/* Group label - Golden text */
 span[class*="label"] {
   display: block;
   font-size: 9px;
   color: var(--wo-de-text-muted);
   text-align: center;
-  line-height: 1.2;
+  line-height: 1.618; /* φ for vertical rhythm */
   white-space: nowrap;
-  padding: 0 2px;
-  margin-top: 1px;
-  max-width: 64px;
+  padding: 0 5px; /* Fibonacci: 5 */
+  margin-top: 2px; /* Fibonacci: 2 */
+  max-width: 89px; /* Fibonacci: 89 */
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Ribbon button */
+/* Ribbon button - Golden Ratio proportions */
+/* 55px width × 55px height = φ:1 square */
 button[class*="btn"] {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  min-width: 40px;
-  height: 52px;
-  padding: 4px 6px 2px;
+  gap: 3px; /* Fibonacci: 3 */
+  min-width: 55px; /* φ * 34 ≈ 55 */
+  height: 55px; /* Matched for square harmony */
+  padding: 8px 8px 5px; /* Fibonacci spacing: 8, 8, 5 */
   border: 1px solid transparent;
-  border-radius: 4px;
+  border-radius: 5px; /* Fibonacci: 5 */
   background: transparent;
   color: var(--wo-de-text-primary);
   font-size: 9px;
@@ -156,8 +159,8 @@ button[class*="btn"] {
 
 button[class*="btn"] svg,
 button[class*="btn"] .lucide {
-  width: var(--wo-de-icon-size);
-  height: var(--wo-de-icon-size);
+  width: 21px; /* Fibonacci: 21, φ * 13 ≈ 21 */
+  height: 21px;
   stroke-width: 1.8;
   color: var(--wo-de-text-secondary);
   flex-shrink: 0;
