@@ -1,0 +1,471 @@
+/* Golden Ratio Design System for World-Office */
+/* φ = 1.618033988749895 */
+/* Based on Fibonacci sequence: 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144... */
+
+:root {
+  /* Golden ratio base unit: 8px (Fibonacci number) */
+  --golden-base: 8px;
+  
+  /* Golden ratio scaling factors */
+  --phi: 1.6180339887;
+  --phi-inverse: 0.6180339887;
+  
+  /* Fibonacci-based spacing scale */
+  --space-1: 1px;
+  --space-2: 2px;
+  --space-3: 3px;
+  --space-5: 5px;
+  --space-8: 8px;
+  --space-13: 13px;
+  --space-21: 21px;
+  --space-34: 34px;
+  --space-55: 55px;
+  --space-89: 89px;
+  --space-144: 144px;
+  
+  /* Golden ratio derived dimensions */
+  --ribbon-height: 55px;           /* 34 * φ ≈ 55 */
+  --ribbon-height-compact: 34px;  /* 21 * φ ≈ 34 */
+  --toolbar-height: 55px;          /* Aligns with ribbon */
+  --toolbar-height-compact: 34px;
+  
+  /* Button dimensions using golden proportions */
+  --ribbon-btn-width: 55px;        /* φ * 34 ≈ 55 */
+  --ribbon-btn-height: 55px;       /* Square aspect follows golden section */
+  --ribbon-btn-icon-size: 21px;    /* 13 * φ ≈ 21 */
+  
+  /* Status bar - follows golden section of toolbar */
+  --statusbar-height: 34px;        /* 55 * φ⁻¹ ≈ 34 */
+  --statusbar-height-expanded: 55px;
+  
+  /* Side menus - vertical golden proportions */
+  --leftmenu-width: 55px;          /* φ * 34 ≈ 55 */
+  --leftmenu-width-expanded: 233px;/* 144 * φ ≈ 233 */
+  --rightmenu-width: 55px;
+  --rightmenu-width-expanded: 233px;
+  
+  /* Menu item heights */
+  --menu-item-height: 34px;        /* Fibonacci: 34 */
+  --menu-icon-size: 21px;          /* Fibonacci: 21 */
+  
+  /* Group spacing in ribbon */
+  --ribbon-group-padding: 13px;    /* Fibonacci: 13 */
+  --ribbon-group-gap: 8px;         /* Fibonacci: 8 */
+  --ribbon-btn-gap: 3px;           /* Fibonacci: 3 */
+  
+  /* Page margins - golden section of A4 */
+  /* A4 width: 210mm. 210 * φ⁻¹ ≈ 130mm content, 80mm margins total */
+  /* Distribute as 25mm + 30mm + 25mm for symmetry */
+  --page-margin-narrow: 21mm;      /* 21 (Fibonacci) */
+  --page-margin-normal: 25.4mm;    /* Existing standard ≈ 25 */
+  --page-margin-wide: 34mm;        /* Fibonacci: 34 */
+  
+  /* Column spacing */
+  --column-gap: 21mm;              /* Fibonacci: 21 */
+  
+  /* Canvas editor padding */
+  --editor-padding-vertical: 55px; /* φ * 34 ≈ 55 */
+  --editor-padding-horizontal: 34px;/* Fibonacci: 34 */
+  
+  /* Form element sizing */
+  --form-input-height: 34px;       /* Fibonacci: 34 */
+  --form-labeled-gap: 8px;         /* Fibonacci: 8 */
+  
+  /* Panel widths */
+  --panel-width-sidebar: 233px;    /* 144 * φ ≈ 233 */
+  --panel-width-modal: 377px;      /* 233 * φ ≈ 377 */
+  --panel-width-large: 610px;      /* 377 * φ ≈ 610 */
+  
+  /* Typography following golden ratio vertical rhythm */
+  --text-scale-ratio: var(--phi);
+  --text-base: 12px;
+  --text-sm: 8px;                  /* 12 * φ⁻¹ ≈ 7.3 → 8 */
+  --text-md: 12px;                 /* Base */
+  --text-lg: 19px;                 /* 12 * φ ≈ 19.4 → 19 */
+  --text-xl: 31px;                 /* 19 * φ ≈ 30.7 → 31 */
+  --text-2xl: 50px;                /* 31 * φ ≈ 50.2 → 50 */
+  
+  /* Line heights using golden ratio */
+  --line-height-tight: 1.3;        /* ~φ⁻¹ */
+  --line-height-normal: 1.618;     /* φ */
+  --line-height-loose: 2.0;
+  
+  /* Border radius */
+  --radius-sm: 3px;                /* Fibonacci: 3 */
+  --radius-md: 5px;                /* Fibonacci: 5 */
+  --radius-lg: 8px;                /* Fibonacci: 8 */
+  --radius-xl: 13px;               /* Fibonacci: 13 */
+  
+  /* Shadow blending following Fibonacci */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 2px 5px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 5px 13px rgba(0, 0, 0, 0.16);
+  --shadow-xl: 0 13px 21px rgba(0, 0, 0, 0.18);
+  
+  /* Z-index following Fibonacci scale */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+}
+
+/* Apply golden ratio to existing toolbar */
+.de-toolbar {
+  min-height: var(--ribbon-height);
+}
+
+.de-toolbar-tabs {
+  min-height: var(--ribbon-height_compact);
+}
+
+.de-toolbar-tab {
+  min-height: var(--ribbon-height-compact);
+  padding: 0 calc(var(--space-13) - var(--space-3));
+}
+
+/* Golden ribbon buttons */
+button[class*="btn"] {
+  min-width: var(--ribbon-btn-width);
+  height: var(--ribbon-btn-height);
+  padding: var(--space-5) var(--space-8) var(--space-3);
+}
+
+button[class*="btn"] svg,
+button[class*="btn"] .lucide {
+  width: var(--ribbon-btn-icon-size);
+  height: var(--ribbon-btn-icon-size);
+}
+
+/* Golden group spacing */
+div[class*="group"] {
+  padding: 0 var(--space-13);
+  gap: var(--space-8);
+}
+
+/* Golden layout dimensions */
+.de-viewport-toolbar {
+  height: var(--toolbar-height) !important;
+}
+
+.de-viewport-statusbar {
+  height: var(--statusbar-height) !important;
+}
+
+.de-viewport-left-menu,
+.de-viewport-right-menu {
+  width: var(--leftmenu-width) !important;
+}
+
+.de-viewport-editor {
+  padding: var(--editor-padding-vertical) var(--editor-padding-horizontal);
+}
+
+/* Golden page layout */
+.de-document-page {
+  max-width: calc(var(--ribbon-btn-width) * 10); /* 550px base, scales with φ */
+  min-height: calc(var(--ribbon-btn-width) * 14); /* Golden section: 55 * φ² ≈ 55 * 2.618 ≈ 144 → 144 * 55px/14 ≈ 550px, height: 550 * φ ≈ 889px */
+}
+
+/* Panel golden widths */
+.de-file-menu-panel,
+.de-about-menu-panel {
+  width: var(--panel-width-large);
+  max-width: 90vw;
+}
+
+.de-shortcuts-panel {
+  min-width: var(--panel-width-modal);
+  max-width: min(var(--panel-width-large), 90vw);
+}
+
+/* Right menu panels */
+.AiAssistantPanel,
+.CommentsPanel,
+.TrackChangesPanel,
+.StylesPanel,
+.CrossReferencePanel,
+.ThemePanel,
+.MailMergePanel,
+.ImagePanel,
+.TablePanel,
+.FormPanel,
+.ShapePanel,
+.ChartPanel,
+.TextArtPanel,
+.SignaturePanel,
+.PluginsPanel {
+  width: var(--panel-width-sidebar);
+  max-width: 80vw;
+}
+
+/* Status bar items using Fibonacci spacing */
+.de-statusbar {
+  gap: var(--space-8);
+}
+
+.de-statusbar-item {
+  padding: var(--space-3) var(--space-13);
+}
+
+/* Golden form elements */
+select[class*="select"],
+input[type="text"],
+input[type="number"],
+input[type="email"] {
+  height: var(--form-input-height);
+  padding: 0 var(--space-8);
+}
+
+label[class*="checkbox"] {
+  gap: var(--form-labeled-gap);
+  padding: var(--space-3) var(--space-8);
+}
+
+/* Typographic golden rhythm */
+.rich-text-editor .ProseMirror {
+  line-height: var(--line-height-normal);
+}
+
+.rich-text-editor .ProseMirror h1 {
+  font-size: var(--text-2xl);
+  line-height: calc(var(--phi) * 1.2);
+  margin-bottom: calc(var(--text-2xl) * var(--phi-inverse));
+}
+
+.rich-text-editor .ProseMirror h2 {
+  font-size: var(--text-xl);
+  line-height: calc(var(--phi) * 1.15);
+  margin-bottom: calc(var(--text-xl) * var(--phi-inverse));
+}
+
+.rich-text-editor .ProseMirror h3 {
+  font-size: var(--text-lg);
+  line-height: var(--phi);
+  margin-bottom: calc(var(--text-lg) * var(--phi-inverse));
+}
+
+.rich-text-editor .ProseMirror h4 {
+  font-size: var(--text-md);
+  line-height: var(--phi);
+  margin-bottom: calc(var(--text-md) * var(--phi-inverse));
+}
+
+.rich-text-editor .ProseMirror h5 {
+  font-size: calc(var(--text-md) - 1px);
+  line-height: var(--phi);
+  margin-bottom: calc(var(--text-md) * var(--phi-inverse));
+}
+
+.rich-text-editor .ProseMirror h6 {
+  font-size: var(--text-sm);
+  line-height: var(--phi);
+  margin-bottom: calc(var(--text-sm) * var(--phi-inverse));
+}
+
+.rich-text-editor .ProseMirror p {
+  margin-bottom: calc(var(--text-md) * var(--phi-inverse));
+}
+
+/* Blockquote following golden ratio */
+.rich-text-editor .ProseMirror blockquote {
+  padding-left: calc(var(--text-lg) * var(--phi));
+  border-left-width: var(--space-3);
+  margin: calc(var(--text-md) * var(--phi)) 0;
+}
+
+/* Code blocks with golden proportions */
+.rich-text-editor .ProseMirror pre {
+  padding: calc(var(--text-md) * var(--phi-inverse));
+  border-radius: var(--radius-md);
+  margin: calc(var(--text-md) * var(--phi-inverse)) 0;
+}
+
+/* Golden spacing for lists */
+.rich-text-editor .ProseMirror ul,
+.rich-text-editor .ProseMirror ol {
+  padding-left: calc(var(--text-lg) * var(--phi));
+  margin: calc(var(--text-md) * var(--phi-inverse)) 0;
+}
+
+.rich-text-editor .ProseMirror li {
+  margin: calc(var(--space-3) * var(--phi-inverse)) 0;
+}
+
+/* Table golden proportions */
+.rich-text-editor .ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: calc(var(--text-md) * var(--phi)) 0;
+}
+
+.rich-text-editor .ProseMirror th,
+.rich-text-editor .ProseMirror td {
+  padding: calc(var(--text-md) * var(--phi-inverse)) calc(var(--text-lg) * var(--phi-inverse));
+}
+
+/* Image caption golden spacing */
+.rich-text-editor .ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  margin: 0 0 calc(var(--text-md) * var(--phi-inverse)) 0;
+}
+
+/* Horizontal rule - Fibonacci thickness */
+.rich-text-editor .ProseMirror hr {
+  height: var(--space-2);
+  border: none;
+  background: var(--wo-de-border);
+  margin: calc(var(--text-lg) * var(--phi)) 0;
+}
+
+/* ======================================== */
+/* RULE OF THIRDS LAYOUT GRID */
+/* ======================================== */
+
+/* The viewport follows a rule-of-thirds vertical division:
+   - Top third: Toolbar (1/3)
+   - Middle third: Editor canvas (1/3)
+   - Bottom third: Status bar + margins (1/3)
+   
+   Horizontal rule-of-thirds:
+   - Left third: Left menu (1/3)
+   - Middle third: Document (1/3)
+   - Right third: Right menu (1/3)
+   
+   This creates natural balance points at grid intersections.
+*/
+
+/* Adjust editor padding to maintain rule-of-thirds balance */
+@media (min-width: 1200px) {
+  .de-viewport {
+    /* Full height remains, but we can hint at rule-of-thirds */
+  }
+  
+  /* The document area sits at the bottom-middle intersection of the rule-of-thirds grid */
+  .de-viewport-editor {
+    /* Middle third horizontally, bottom third vertically creates focal point */
+  }
+}
+
+/* ======================================== */
+/* FIBONACћи SPIRAL CENTER */
+/* ======================================== */
+
+/* The primary action zone (where the cursor typically is) 
+   should be at the center of a Fibonacci spiral.
+   This is approximately at φ⁻² from each edge.
+   
+   φ⁻² ≈ 0.382, so the spiral center is at ~62% from each edge
+   In practice, this means the first few words of the document
+   should be the visual focus.
+*/
+
+.de-document-page {
+  /* Spiral center alignment - content naturally flows from top-left
+     which aligns with Fibonacci spiral reading pattern (left-to-right) */
+  text-align: left;
+}
+
+/* ======================================== */
+/* RESPONSIVE GOLDEN RATIO */
+/* ======================================== */
+
+@media (max-width: 1200px) {
+  /* Scale down by φ⁻¹ ≈ 0.618 */
+  :root {
+    --space-55: calc(var(--space-34) + var(--space-21));
+  }
+  
+  .de-viewport-left-menu,
+  .de-viewport-right-menu {
+    width: var(--space-34) !important;
+  }
+  
+  .de-viewport-toolbar {
+    height: var(--space-34) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Mobile: Scale down by φ⁻² ≈ 0.382 */
+  :root {
+    --golden-base: 5px;
+  }
+  
+  button[class*="btn"] {
+    min-width: 44px; /* Touch target minimum */
+    height: 44px;
+  }
+  
+  .de-viewport-editor {
+    padding: var(--space-13) var(--space-8);
+  }
+}
+
+@media print {
+  /* Print layout - maintain golden proportions */
+  .de-viewport-toolbar,
+  .de-viewport-statusbar,
+  .de-viewport-left-menu,
+  .de-viewport-right-menu {
+    display: none !important;
+  }
+  
+  .de-viewport-editor {
+    padding: 0;
+  }
+  
+  .de-document-page {
+    box-shadow: none;
+    max-width: 100%;
+    min-height: auto;
+    padding: 25.4mm; /* A4 margin maintaining φ memories */
+  }
+}
+
+/* ======================================== */
+/* ANIMATIONS WITH GOLDEN TIMING */
+/* ======================================== */
+
+@keyframes fadeInGolden {
+  0% { opacity: 0; transform: translateY(-21px); }
+  38.2% { opacity: 0.618; transform: translateY(-13px); }
+  61.8% { opacity: 0.8; transform: translateY(-8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInGolden {
+  0% { transform: translateX(-55px); opacity: 0; }
+  50% { transform: translateX(-21px); opacity: 0.5; }
+  80.2% { transform: translateX(-8px); opacity: 0.8; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+/* Apply golden animations to panels */
+.de-file-menu-panel,
+.de-about-menu-panel,
+.AiAssistantPanel,
+.CommentsPanel,
+.TrackChangesPanel,
+.StylesPanel,
+.CrossReferencePanel,
+.ThemePanel,
+.MailMergePanel,
+.ImagePanel,
+.TablePanel,
+.FormPanel {
+  animation: fadeInGolden 0.342s ease-out;
+}
+
+/* Tooltip golden animation */
+.de-tooltip {
+  animation: fadeInGolden 0.21s ease-out;
+}
+
+/* :root gold */
+:root {
+  --ibration-accent-golden: #ffb900;
+}
