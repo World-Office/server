@@ -91,22 +91,22 @@ const WIRING = {
     pageSize: { target: "panel", implemented: true },
     removeFooter: { target: "store", implemented: true }, removeHeader: { target: "store", implemented: true },
     // references
-    addComment: { target: "panel", implemented: true }, insertEndnote: { target: "lib", implemented: false },
-    insertFootnote: { target: "lib", implemented: false }, insertIndex: { target: "lib", implemented: false },
-    insertIndexEntry: { target: "lib", implemented: false }, insertToc: { target: "lib", implemented: false },
-    toggleComment: { target: "panel", implemented: true }, updateIndex: { target: "lib", implemented: false },
-    updateToc: { target: "lib", implemented: false },
+    addComment: { target: "panel", implemented: true }, insertEndnote: { target: "wasm", implemented: false },
+    insertFootnote: { target: "wasm", implemented: false }, insertIndex: { target: "wasm", implemented: false },
+    insertIndexEntry: { target: "wasm", implemented: false }, insertToc: { target: "wasm", implemented: false },
+    toggleComment: { target: "panel", implemented: true }, updateIndex: { target: "wasm", implemented: false },
+    updateToc: { target: "wasm", implemented: false },
     // review
-    acceptAllChanges: { target: "lib", implemented: false }, acceptChange: { target: "lib", implemented: false },
-    nextChange: { target: "lib", implemented: false }, rejectAllChanges: { target: "lib", implemented: false },
-    rejectChange: { target: "lib", implemented: false }, toggleTrackChanges: { target: "lib", implemented: false },
+    acceptAllChanges: { target: "wasm", implemented: false }, acceptChange: { target: "wasm", implemented: false },
+    nextChange: { target: "wasm", implemented: false }, rejectAllChanges: { target: "wasm", implemented: false },
+    rejectChange: { target: "wasm", implemented: false }, toggleTrackChanges: { target: "wasm", implemented: false },
     // view
     toggleGridlines: { target: "store", implemented: true }, toggleNavigation: { target: "store", implemented: true },
     toggleRuler: { target: "store", implemented: true }, toggleSpellCheck: { target: "store", implemented: true },
     zoomIn: { target: "store", implemented: true }, zoomOut: { target: "store", implemented: true },
     // forms
-    insertCheckboxControl: { target: "panel", implemented: false }, insertDatePickerControl: { target: "panel", implemented: false },
-    insertDropdownControl: { target: "panel", implemented: false }, insertPlainTextControl: { target: "panel", implemented: false },
+    insertCheckboxControl: { target: "wasm", implemented: false }, insertDatePickerControl: { target: "wasm", implemented: false },
+    insertDropdownControl: { target: "wasm", implemented: false }, insertPlainTextControl: { target: "wasm", implemented: false },
   },
   sheet: {
     cut: { target: "router", implemented: true }, copy: { target: "router", implemented: true },
