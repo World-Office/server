@@ -24,8 +24,10 @@ interface CanvasEditorProps {
   onChange?: () => void
   /** Called to get the current document bytes for saving */
   onSerialize?: (bytes: Uint8Array) => void
-  /** Called when a local edit occurs for collaboration broadcast */
+  /** Called when a local edit occurs for collaboration broadcast (legacy) */
   onLocalOp?: (op: unknown, docHandle: number) => void
+  /** Called with ModelOp when a local edit occurs (new collaboration format) */
+  onModelOp?: (op: unknown, docHandle: number) => void
   /** Receive remote operations from collaboration service */
   onRemoteOp?: (op: unknown) => void
 }
@@ -69,7 +71,7 @@ const CanvasEditorInternal = (
   props: CanvasEditorProps,
   ref: React.Ref<CanvasEditorHandle>,
 ) => {
-  const { docBlob, fileName, onChange: _onChange, onSerialize: _onSerialize, onLocalOp } = props
+  const { docBlob, fileName, onChange: _onChange, onSerialize: _onSerialize, onLocalOp, onModelOp } = props
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
   const [status, setStatus] = useState<
@@ -370,42 +372,6 @@ const CanvasEditorInternal = (
     }
   }, [])
 
-  /** Apply a ModelOp for collaboration (insert, delete, format, etc.). */
-  const applyOp = useCallback((op: unknown): boolean => {
-    if (!isWasmReady() || docHandleRef.current === null) {
-      console.warn("[CanvasEditor] applyOp: WASM not ready or no document handle")
-      return false
-    }
-
-    try {
-      const opJson = JSON.stringify(op)
-      const success = applyOpToDocument(docHandleRef.current, opJson)
-
-      if (success) {
-        // Re-render the document to show changes
-        void reRenderAfterLayoutChange()
-        // Broadcast to collaboration peers (if callback provided)
-        if (onLocalOp && docHandleRef.current) {
-          onLocalOp(op, docHandleRef.current)
-        }
-        // Mark document as modified
-        if (_onChange) {
-          _onChange()
-        }
-        return true
-      }
-      return false
-    } catch (err) {
-      console.error("[CanvasEditor] applyOp failed:", err)
-      return false
-    }
-  }, [onLocalOp, _onChange])
-
-  /** Get the current WASM document handle. */
-  const getDocHandle = useCallback((): number | null => {
-    return docHandleRef.current
-  }, [])
-
   // Helper to re-render after any layout-changing operation
   const reRenderAfterLayoutChange = useCallback(async (): Promise<void> => {
     if (!isWasmReady() || docHandleRef.current === null) return
@@ -455,6 +421,42 @@ const CanvasEditorInternal = (
         console.error(`[CanvasEditor] Re-render page ${i} failed:`, err)
       }
     }
+  }, [])
+
+  /** Apply a ModelOp for collaboration (insert, delete, format, etc.). */
+  const applyOp = useCallback((op: unknown): boolean => {
+    if (!isWasmReady() || docHandleRef.current === null) {
+      console.warn("[CanvasEditor] applyOp: WASM not ready or no document handle")
+      return false
+    }
+
+    try {
+      const opJson = JSON.stringify(op)
+      const success = applyOpToDocument(docHandleRef.current, opJson)
+
+      if (success) {
+        void reRenderAfterLayoutChange()
+        if (onLocalOp && docHandleRef.current) {
+          onLocalOp(op, docHandleRef.current)
+        }
+        if (onModelOp && docHandleRef.current) {
+          onModelOp(op, docHandleRef.current)
+        }
+        if (_onChange) {
+          _onChange()
+        }
+        return true
+      }
+      return false
+    } catch (err) {
+      console.error("[CanvasEditor] applyOp failed:", err)
+      return false
+    }
+  }, [onLocalOp, onModelOp, _onChange, reRenderAfterLayoutChange])
+
+  /** Get the current WASM document handle. */
+  const getDocHandle = useCallback((): number | null => {
+    return docHandleRef.current
   }, [])
 
   useImperativeHandle(
