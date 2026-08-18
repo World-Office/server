@@ -63,6 +63,10 @@ export function structureOpForCommand(command: string): string | null {
     case "pageBreak":
     case "page-break":
       return "page-break"
+    case "blockquote":
+      return "blockquote"
+    case "codeBlock":
+      return "code-block"
     default:
       return null
   }
@@ -150,6 +154,13 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
     }
 
     // 2. Structure ops → WASM apply_structure_op (lists, tables, breaks)
+    //    setTextDirection has a value param (ltr/rtl), handle separately
+    if (command === "setTextDirection") {
+      editorRef.current?.applyStructureOp(
+        value === "rtl" ? "set-text-direction-rtl" : "set-text-direction-ltr",
+      )
+      return
+    }
     const structureOp = structureOpForCommand(command)
     if (structureOp) {
       editorRef.current?.applyStructureOp(structureOp)
@@ -308,8 +319,6 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
     //    (future) canvas-backed lib implementations can hook in; today they
     //    fall through to Monaco/text mode when that's the active editor.
     const libCommands = new Set([
-      "blockquote",
-      "codeBlock",
       "insertFootnote",
       "insertEndnote",
       "insertToc",
@@ -327,8 +336,6 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       "insertDropdownControl",
       "insertDatePickerControl",
       "insertPlainTextControl",
-      "insertTextDirection",
-      "setTextDirection",
     ])
     if (libCommands.has(command)) {
       onRichTextCommand(command as RichTextCommand, value)

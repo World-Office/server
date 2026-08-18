@@ -2220,6 +2220,36 @@ pub fn apply_structure_op(
             let insert_at = (pidx + 1).min(body.blocks.len());
             body.blocks.insert(insert_at, DocxBlock::Paragraph(new_para));
         }
+        "blockquote" => {
+            if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
+                // In OOXML, blockquote is a paragraph with: left indent (0.5 in),
+                // spacing before/after, and optionally a left border.
+                para.properties.indent_left = Some(720);
+                para.properties.spacing_before = Some(120);
+                para.properties.spacing_after = Some(120);
+            }
+        }
+        "code-block" => {
+            if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
+                // codeBlock = paragraph with monospace font + light background
+                for run in &mut para.runs {
+                    run.font = Some("Consolas".to_string());
+                    run.highlight = Some("#F5F5F5".to_string());
+                }
+                para.properties.spacing_before = Some(80);
+                para.properties.spacing_after = Some(80);
+            }
+        }
+        "set-text-direction-ltr" => {
+            if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
+                para.properties.bidi = false;
+            }
+        }
+        "set-text-direction-rtl" => {
+            if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
+                para.properties.bidi = true;
+            }
+        }
         _ => {
             return Err(format!("Unknown structure op: {}", op));
         }

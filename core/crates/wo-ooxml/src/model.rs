@@ -627,6 +627,9 @@ pub struct DocxParagraphProperties {
     /// List/numbering properties
     pub num_id: Option<u32>,
     pub ilvl: Option<u8>,
+    /// Text direction (left-to-right, right-to-left).
+    /// OOXML w:bidi (right-to-left) as a bool.
+    pub bidi: bool,
 }
 
 /// Kind of tab stop.
