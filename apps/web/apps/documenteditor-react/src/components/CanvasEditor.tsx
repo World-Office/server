@@ -12,8 +12,8 @@
  * Phase 2 complete: Keyboard/mouse event handling, cursor rendering.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react"
-import { getWasmApi, isWasmReady, loadWasmRenderer } from "../lib/wasm-renderer"
+import { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react"
+import { applyOpToDocument, getWasmApi, isWasmReady, loadWasmRenderer } from "../lib/wasm-renderer"
 
 interface CanvasEditorProps {
   /** DOCX blob to render */
@@ -24,6 +24,10 @@ interface CanvasEditorProps {
   onChange?: () => void
   /** Called to get the current document bytes for saving */
   onSerialize?: (bytes: Uint8Array) => void
+  /** Called when a local edit occurs for collaboration broadcast */
+  onLocalOp?: (op: unknown, docHandle: number) => void
+  /** Receive remote operations from collaboration service */
+  onRemoteOp?: (op: unknown) => void
 }
 
 interface PageInfo {
@@ -48,19 +52,24 @@ interface CursorPos {
  */
 // Expose imperative methods via useImperativeHandle
 // Use forwardRef so the parent can call applyFormatting, etc.
-import { forwardRef, useImperativeHandle } from "react"
+import { forwardRef } from "react"
 
 export interface CanvasEditorHandle {
   applyFormatting: (format: Record<string, unknown>) => void
   /** Apply a structure op (list, table, section break, rule, indent). */
   applyStructureOp: (op: string) => void
+  /** Apply a ModelOp for collaboration (insert, delete, format, etc.). */
+  applyOp: (op: unknown) => boolean
+  /** Get the current WASM document handle. */
+  getDocHandle: () => number | null
 }
 
 // Named function gives forwardRef a proper displayName
 const CanvasEditorInternal = (
-  { docBlob, fileName, onChange: _onChange, onSerialize: _onSerialize }: CanvasEditorProps,
+  props: CanvasEditorProps,
   ref: React.Ref<CanvasEditorHandle>,
 ) => {
+  const { docBlob, fileName, onChange: _onChange, onSerialize: _onSerialize, onLocalOp } = props
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
   const [status, setStatus] = useState<
@@ -361,13 +370,102 @@ const CanvasEditorInternal = (
     }
   }, [])
 
+  /** Apply a ModelOp for collaboration (insert, delete, format, etc.). */
+  const applyOp = useCallback((op: unknown): boolean => {
+    if (!isWasmReady() || docHandleRef.current === null) {
+      console.warn("[CanvasEditor] applyOp: WASM not ready or no document handle")
+      return false
+    }
+
+    try {
+      const opJson = JSON.stringify(op)
+      const success = applyOpToDocument(docHandleRef.current, opJson)
+
+      if (success) {
+        // Re-render the document to show changes
+        void reRenderAfterLayoutChange()
+        // Broadcast to collaboration peers (if callback provided)
+        if (onLocalOp && docHandleRef.current) {
+          onLocalOp(op, docHandleRef.current)
+        }
+        // Mark document as modified
+        if (_onChange) {
+          _onChange()
+        }
+        return true
+      }
+      return false
+    } catch (err) {
+      console.error("[CanvasEditor] applyOp failed:", err)
+      return false
+    }
+  }, [onLocalOp, _onChange])
+
+  /** Get the current WASM document handle. */
+  const getDocHandle = useCallback((): number | null => {
+    return docHandleRef.current
+  }, [])
+
+  // Helper to re-render after any layout-changing operation
+  const reRenderAfterLayoutChange = useCallback(async (): Promise<void> => {
+    if (!isWasmReady() || docHandleRef.current === null) return
+    const wasmApi = getWasmApi()
+    if (!wasmApi) return
+
+    const api = wasmApi
+    const docHandle = docHandleRef.current
+
+    // Re-layout and re-render all pages
+    const layoutJson = api.layout_document(docHandle, "A4", "portrait", 72.0)
+    const layoutPages: PageInfo[] = JSON.parse(layoutJson).map(
+      (p: { width: number; height: number; marginPx: number }, i: number) => ({
+        width: p.width,
+        height: p.height,
+        marginPx: p.marginPx,
+        index: i,
+      }),
+    )
+    setPages(layoutPages)
+
+    // Re-render all pages
+    for (let i = 0; i < layoutPages.length; i++) {
+      if (canvasHandlesRef.current[i] === undefined) {
+        const h = api.create_canvas(layoutPages[i].width, layoutPages[i].height)
+        canvasHandlesRef.current[i] = h
+      }
+      try {
+        api.render_laid_out_page(docHandle, i, canvasHandlesRef.current[i])
+        const canvasEl = canvasRefs.current[i]
+        if (canvasEl) {
+          const pixels = api.get_pixel_data(canvasHandlesRef.current[i])
+          const ctx = canvasEl.getContext("2d")
+          if (ctx) {
+            const page = layoutPages[i]
+            const imageData = new ImageData(
+              new Uint8ClampedArray(pixels.buffer as ArrayBuffer, pixels.byteOffset, pixels.byteLength),
+              page.width,
+              page.height,
+            )
+            canvasEl.width = page.width
+            canvasEl.height = page.height
+            ctx.putImageData(imageData, 0, 0)
+          }
+        }
+      } catch (err) {
+        console.error(`[CanvasEditor] Re-render page ${i} failed:`, err)
+      }
+    }
+  }, [])
+
   useImperativeHandle(
     ref,
     () => ({
       applyFormatting: applyWasmFormatting,
       applyStructureOp: applyWasmStructureOp,
+      applyOp,
+      getDocHandle,
     }),
-    [applyWasmFormatting, applyWasmStructureOp],
+    [applyWasmFormatting, applyWasmStructureOp, applyOp, getDocHandle],
   )
 
   // ── Key handler — sends key to WASM engine ────────────────────────
