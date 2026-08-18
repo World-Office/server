@@ -1,3 +1,7 @@
+/* Import Golden Ratio design system */
+/* MUST be first line - CSS @import rules cannot come after other rules */
+@import url("golden-ratio.css");
+
 /* CanvasEditor spinner animation */
 @keyframes canvas-editor-spin {
   0% {
@@ -7,9 +11,6 @@
     transform: rotate(360deg);
   }
 }
-
-/* Import Golden Ratio design system */
-@import url("golden-ratio.css");
 
 /* Document Editor — Main Layout & Reset — Professional OnlyOffice-style look */
 /* Enhanced with Golden Ratio proportions */
