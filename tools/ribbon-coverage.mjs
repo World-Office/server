@@ -68,8 +68,8 @@ const WIRING = {
     alignRight: { target: "wasm", implemented: true }, alignJustify: { target: "wasm", implemented: true },
     indent: { target: "wasm", implemented: true }, outdent: { target: "wasm", implemented: true },
     lineSpacing: { target: "wasm", implemented: true },
-    blockquote: { target: "lib", implemented: false }, codeBlock: { target: "lib", implemented: false },
-    setTextDirection: { target: "lib", implemented: false },
+    blockquote: { target: "wasm", implemented: true }, codeBlock: { target: "wasm", implemented: true },
+    setTextDirection: { target: "wasm", implemented: true },
     // home — styles
     heading1: { target: "wasm", implemented: true }, heading2: { target: "wasm", implemented: true },
     heading3: { target: "wasm", implemented: true }, heading4: { target: "wasm", implemented: true },
