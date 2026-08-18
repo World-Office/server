@@ -20,11 +20,12 @@ The World-Office codebase **has** a sophisticated real-time collaboration system
 | **Backend Service** | `coauthoring-service` | ✅ Implemented | Rust, Axum, WebSocket, CRDT (diamond_types) |
 | **Wire Protocol** | `ModelOpEnvelope` | ✅ Implemented | JSON, wraps ModelOp with session metadata |
 | **Core Ops** | `ModelOp` enum | ✅ Implemented | 5 ops: Insert, Delete, Replace, Format, Move |
-| **WASM Bindings** | `apply_op` function | ⚠️ Rust-only | Exists in Rust, NOT exposed to TypeScript |
+| **WASM Bindings** | `apply_op` function | ✅ Implemented | Exposed to TypeScript via `wasm-renderer.ts` |
 | **TypeScript Client** | `@world-office/collaboration-client` | ✅ Partially Implemented | WebSocket manager, protocols |
-| **React Provider** | `DocumentCollaborationProvider` | ✅ Implemented | Connects to coauthoring service |
+| **React Provider** | `DocumentCollaborationProvider` | ✅ Implemented | Connects to coauthoring service (TipTap-based) |
+| **Canvas Collab Hook** | `useCanvasCollaboration` | ✅ Implemented | New hook bridging CanvasEditor ↔ WebSocket with ModelOpEnvelope |
 | **RichTextEditor** | TipTap/ProseMirror editor | ❌ NOT rendered | Defined but not used in DocumentHolder |
-| **CanvasEditor** | WASM-based DOCX editor | ❌ No collaboration | No integration with coauthoring |
+| **CanvasEditor** | WASM-based DOCX editor | ⚠️ Partial | `applyOp()` method + `onModelOp` prop added; WebSocket hook wired |
 | **MonacoEditor** | Monaco code editor | ❌ No collaboration | Different editing paradigm |
 
 ### Data Flow (INTENDED)
