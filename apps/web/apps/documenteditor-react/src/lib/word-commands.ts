@@ -48,9 +48,6 @@ export function structureOpForCommand(command: string): string | null {
       return "indent"
     case "outdent":
       return "outdent"
-    case "insertTable":
-    case "insert-table":
-      return "insert-table"
     case "insertSectionBreak":
     case "insert-section-break":
       return "insert-section-break"
@@ -191,8 +188,10 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         if (selectedText && editorRef.current) {
           // Copy to clipboard
           void navigator.clipboard.writeText(selectedText)
-          // Then delete selection via WASM
-          editorRef.current.applyFormatting({ bold: false, _deleteSelection: true })
+          // Then delete selection via WASM by inserting empty text
+          editorRef.current.applyFormatting({ insertText: "" })
+          // NOTE: Full cut support requires WASM delete_selection API
+          // Current workaround: copy + insert empty text
         }
         return
       }
