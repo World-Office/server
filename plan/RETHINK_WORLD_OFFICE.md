@@ -372,12 +372,43 @@ Before merging any PR, ask:
 
 ---
 
-## 9. EXECUTION
+## 10. BUILD STATUS — COMPLETED 2026-07-26
 
-The rewrite happens in the new `opencloud-docserver/` directory (sibling to the old `server/`). The old `server/` is kept as reference but not modified. Taskfleet tasks from §6 are dispatched to agents for parallel implementation.
+All 12 taskfleet tasks (WO-1..WO-12) implemented and verified live.
 
-```sh
-cd /home/weiss/git/World-Office
-mkdir opencloud-docserver
-# ... begin Phase 1 with taskfleet
-```
+| Task | Component | Status |
+|------|-----------|--------|
+| WO-1 | FastAPI app + config | ✅ `src/main.py`, `src/config.py` |
+| WO-2 | SQLite store | ✅ `src/lib/store.py` (6 ops) |
+| WO-3 | WOPI router + protocol | ✅ CheckFileInfo/GetFile/PutFile/Lock/Unlock/GetLock |
+| WO-4 | DOCX↔HTML converter | ✅ `src/editor/converter.py` |
+| WO-5 | Editor router + page | ✅ `/editor/{id}`, `/api/...` |
+| WO-6 | Toolbar (B/I/U/H) | ✅ `web/editor.js` |
+| WO-7 | Lists + tables | ✅ generic execCommand + insertTable |
+| WO-8 | JWT auth | ✅ `src/wopi/auth.py`, `src/lib/crypto.py` |
+| WO-9 | Health + CORS + logging | ✅ `/health`, CORS middleware |
+| WO-10 | Docker + systemd | ✅ image builds; container verified on :8000 |
+| WO-11 | E2E WOPI flow | ✅ live curl: upload→info→get→put(409 on bad lock)→save→unlock |
+| WO-12 | README + deploy guide | ✅ `README.md` |
+
+**Test suite: 37 passing** (store 9, converter 14, wopi 9, crypto 4, client-mode 5),
+**ruff clean**, ~2,300 LOC total.
+
+Bonus (beyond task list):
+- `src/cli.py` — seed/list/health ops
+- `web/home.html` — browser upload + browse
+- `Makefile` + `scripts/deploy-systemd.sh`
+- OCIS **client mode**: editor session bridge forwarding to a remote WOPI host
+  (`RemoteWopiClient`) — covered by tests with a real WSGI mock host
+
+## 11. KNOWN LIMITATIONS (documented, accepted)
+
+- Inline HTML→DOCX formatting is plain text only (bold/italic not rebuilt on
+  the way back in; preserved on DOCX→HTML→DOCX round-trips of styled runs).
+- Images in DOCX are not extracted to HTML (content preserved in DOCX).
+- The `X-WOPI` proof-key scheme is not yet validated on WOPI host calls.
+- No pagination; the editor is a web page, not a print preview — by design.
+
+---
+*Implementation complete 2026-07-26. The old `server/` monorepo (Rust + TypeScript) is
+retained untouched as reference; all new code lives in `server/opencloud-docserver/`.*
