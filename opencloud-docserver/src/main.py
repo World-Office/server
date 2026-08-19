@@ -16,6 +16,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from .config import Config, load_config
 from .editor.router import router as editor_router
@@ -64,12 +65,9 @@ def create_app(config: Config | None = None) -> FastAPI:
         return JSONResponse(status_code=exc.status, content={"error": exc.message})
 
     @app.get("/", response_class=HTMLResponse)
-    async def index() -> str:
-        return (
-            "<html><body><h1>opencloud-docserver</h1>"
-            "<p>Stoic document server for OpenCloud. "
-            "<a href='/docs'>API docs</a> · <a href='/health'>health</a></p></body></html>"
-        )
+    async def index(request: Request) -> HTMLResponse:
+        templates = Jinja2Templates(directory=str(web_dir))
+        return templates.TemplateResponse(request, "home.html", {})
 
     @app.get("/health")
     async def health(request: Request) -> dict:
