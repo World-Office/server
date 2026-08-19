@@ -48,6 +48,7 @@ async fn metrics_handler() -> String {
 
 use tokio::sync::{Mutex, broadcast};
 
+use coauthoring_service::cursor::CursorEvent;
 use coauthoring_service::model_op::ModelOpEnvelope;
 
 /// A connected editor session.
@@ -398,6 +399,11 @@ enum WsMessage {
     DocumentOp {
         envelope: ModelOpEnvelope,
     },
+    /// Cursor/selection update from a user. The server re-broadcasts to all
+    /// other participants so they can render remote cursors.
+    CursorUpdate {
+        event: CursorEvent,
+    },
 }
 
 /// A collaborative document backed by diamond-types CRDT.
@@ -640,6 +646,10 @@ struct AppState {
     visio_diagram_channels: Arc<Mutex<HashMap<String, broadcast::Sender<String>>>>,
     /// Broadcast channels per session for DocumentOp (ModelOp) operations.
     document_op_channels: Arc<Mutex<HashMap<String, broadcast::Sender<String>>>>,
+    /// Per-session cursor trackers for remote cursor/selection sharing.
+    cursor_trackers: Arc<Mutex<HashMap<String, coauthoring_service::cursor::CursorTracker>>>,
+    /// Broadcast channels per session for cursor updates.
+    cursor_channels: Arc<Mutex<HashMap<String, broadcast::Sender<String>>>>,
 }
 
 /// Health check response.
@@ -787,6 +797,19 @@ async fn create_session(
     }
 
     metrics::gauge!("sessions_active").set(1.0);
+
+    // Initialize cursor tracker for this session
+    {
+        let mut trackers = state.cursor_trackers.lock().await;
+        trackers.insert(session_id.clone(), coauthoring_service::cursor::CursorTracker::new());
+    }
+
+    // Create ephemeral cursor broadcast channel for this session
+    let (cursor_tx, _) = broadcast::channel::<String>(256);
+    {
+        let mut cchannels = state.cursor_channels.lock().await;
+        cchannels.insert(session_id.clone(), cursor_tx);
+    }
 
     // Initialize presentation state (will be populated as operations arrive)
     {
@@ -1075,6 +1098,23 @@ async fn handle_ws(
         }
     };
 
+    let cursor_rx = {
+        let channels = state.cursor_channels.lock().await;
+        channels.get(&session_id).map(|tx| tx.subscribe())
+    };
+
+    let cursor_rx = match cursor_rx {
+        Some(rx) => rx,
+        None => {
+            let _ = socket
+                .send(Message::Text(
+                    format!(r#"{{"error":"Session {} not found"}}"#, session_id).into(),
+                ))
+                .await;
+            return;
+        }
+    };
+
     tracing::info!(session_id = %session_id, user_id = %user_id, "WebSocket connected");
 
     let (mut ws_sender, mut ws_receiver) = socket.split();
@@ -1217,6 +1257,15 @@ async fn handle_ws(
         }
     });
 
+    // Forward cursor update broadcasts to the shared outgoing channel
+    let out_tx_cursor = out_tx.clone();
+    let recv_cursor = tokio::spawn(async move {
+        let mut rx = cursor_rx;
+        while let Ok(text) = rx.recv().await {
+            let _ = out_tx_cursor.send(text).await;
+        }
+    });
+
     while let Some(Ok(msg)) = ws_receiver.next().await {
         if let Message::Text(text) = msg {
             if let Ok(ws_msg) = serde_json::from_str::<WsMessage>(&text) {
@@ -1313,6 +1362,17 @@ async fn handle_ws(
                             let _ = tx.send(text.to_string());
                         }
                     }
+                    // CursorUpdate — update tracker and broadcast to other participants
+                    WsMessage::CursorUpdate { event } => {
+                        let mut trackers = state.cursor_trackers.lock().await;
+                        if let Some(tracker) = trackers.get_mut(&session_id) {
+                            tracker.update_cursor(&event.user_id, event.to_cursor_state());
+                        }
+                        let channels = state.cursor_channels.lock().await;
+                        if let Some(tx) = channels.get(&session_id) {
+                            let _ = tx.send(text.to_string());
+                        }
+                    }
                 }
             } else if let Ok(edit_op) = serde_json::from_str::<EditOperation>(&text) {
                 let applied = {
@@ -1355,6 +1415,7 @@ async fn handle_ws(
     recv_pdf_annotation.abort();
     recv_visio_diagram.abort();
     recv_document_op.abort();
+    recv_cursor.abort();
 
     tracing::info!(session_id = %session_id, user_id = %user_id, "WebSocket disconnected");
 }
@@ -1403,6 +1464,8 @@ async fn main() {
         pdf_annotation_channels: Arc::new(Mutex::new(HashMap::new())),
         visio_diagram_channels: Arc::new(Mutex::new(HashMap::new())),
         document_op_channels: Arc::new(Mutex::new(HashMap::new())),
+        cursor_trackers: Arc::new(Mutex::new(HashMap::new())),
+        cursor_channels: Arc::new(Mutex::new(HashMap::new())),
     });
     let app = app(state);
 

@@ -33,6 +33,27 @@ export interface ModelOpEnvelope {
   payload: unknown
 }
 
+/** Cursor position as Path (mirrors Rust wo_common::Path). */
+export interface CursorPosition {
+  kind: string
+  para?: number
+  run?: number
+  char?: number
+  table?: number
+  row?: number
+  cell?: number
+  sheet?: string
+  col?: number
+}
+
+export interface RemoteCursor {
+  userId: string
+  username: string
+  color: string
+  anchor: CursorPosition
+  focus?: CursorPosition | null
+}
+
 /** Connection states for the collaboration WebSocket. */
 export type CollaborationState =
   | "disabled"
@@ -73,6 +94,10 @@ export interface UseCanvasCollaborationResult {
   disconnect: () => void
   /** Send a local ModelOp to all peers. */
   sendModelOp: (payload: unknown) => void
+  /** Send cursor/selection update to peers. */
+  sendCursorUpdate: (anchor: CursorPosition, focus?: CursorPosition | null) => void
+  /** Remote cursors from other participants (userId → cursor). */
+  remoteCursors: Map<string, RemoteCursor>
 }
 
 // ── REST API helpers ────────────────────────────────────────────────
@@ -146,6 +171,9 @@ export function useCanvasCollaboration(
   const [participantCount, setParticipantCount] = useState(0)
   const [sessionColor, setSessionColor] = useState("#E74C3C")
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [remoteCursors, setRemoteCursors] = useState<Map<string, RemoteCursor>>(
+    () => new Map(),
+  )
   const sessionIdRef = useRef<string | undefined>(propSessionId)
   const revisionRef = useRef(0)
   const apiUrlRef = useRef(COAUTHORING_API_URL)
@@ -252,6 +280,14 @@ export function useCanvasCollaboration(
               ) {
                 setSessionColor(update.color)
               }
+              // If a participant left, remove their cursor
+              if (update.event === "left") {
+                setRemoteCursors((prev) => {
+                  const next = new Map(prev)
+                  next.delete(update.user_id)
+                  return next
+                })
+              }
             }
             break
           }
@@ -276,6 +312,34 @@ export function useCanvasCollaboration(
 
           case "edit": {
             // CRDT EditOperation — ignore for CanvasEditor (handled by DocumentCollaborationProvider)
+            break
+          }
+
+          case "cursor_update": {
+            const event = msg.event as {
+              user_id: string
+              anchor: CursorPosition
+              focus?: CursorPosition | null
+              username?: string
+              color?: string
+            } | undefined
+            if (!event?.user_id || !event?.anchor) break
+
+            // Skip our own cursor updates (echoed back by server)
+            if (event.user_id === userIdRef.current) break
+
+            setRemoteCursors((prev) => {
+              const next = new Map(prev)
+              const existing = next.get(event.user_id)
+              next.set(event.user_id, {
+                userId: event.user_id,
+                username: event.username ?? existing?.username ?? "User",
+                color: event.color ?? existing?.color ?? "#E74C3C",
+                anchor: event.anchor,
+                focus: event.focus ?? null,
+              })
+              return next
+            })
             break
           }
 
@@ -399,6 +463,21 @@ export function useCanvasCollaboration(
     [sendMessage, onLocalModelOp],
   )
 
+  // ── Send cursor/selection update to peers ──
+  const sendCursorUpdate = useCallback(
+    (anchor: CursorPosition, focus?: CursorPosition | null) => {
+      sendMessage({
+        type: "cursor_update",
+        event: {
+          user_id: userIdRef.current,
+          anchor,
+          focus: focus ?? undefined,
+        },
+      })
+    },
+    [sendMessage],
+  )
+
   // ── Auto-connect on mount when documentId provided ──
   useEffect(() => {
     if (documentId || propSessionId) {
@@ -427,5 +506,7 @@ export function useCanvasCollaboration(
     connect,
     disconnect: disconnectFn,
     sendModelOp,
+    sendCursorUpdate,
+    remoteCursors,
   }
 }

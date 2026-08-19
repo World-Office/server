@@ -30,6 +30,14 @@ interface CanvasEditorProps {
   onModelOp?: (op: unknown, docHandle: number) => void
   /** Receive remote operations from collaboration service */
   onRemoteOp?: (op: unknown) => void
+  /** Called when the user's cursor/selection changes position */
+  onCursorChange?: (
+    page: number,
+    para: number,
+    charIdx: number,
+    x: number,
+    y: number,
+  ) => void
 }
 
 interface PageInfo {
@@ -71,7 +79,7 @@ const CanvasEditorInternal = (
   props: CanvasEditorProps,
   ref: React.Ref<CanvasEditorHandle>,
 ) => {
-  const { docBlob, fileName, onChange: _onChange, onSerialize: _onSerialize, onLocalOp, onModelOp } = props
+  const { docBlob, fileName, onChange: _onChange, onSerialize: _onSerialize, onLocalOp, onModelOp, onCursorChange } = props
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
   const [status, setStatus] = useState<
@@ -585,6 +593,11 @@ const CanvasEditorInternal = (
 
       // Force cursor visible
       cursorVisibleRef.current = true
+
+      // Notify parent about cursor position change (for collaboration)
+      if (onCursorChange && pos.found) {
+        onCursorChange(pageIndex, pos.para, pos.charIdx, pos.x, pos.y)
+      }
     } catch (err) {
       console.error("[CanvasEditor] handle_mouse_event failed:", err)
     }
