@@ -17,7 +17,7 @@ The World-Office codebase **has** a sophisticated real-time collaboration system
 ### Components
 | Layer | Component | Status | Notes |
 |-------|-----------|--------|-------|
-| **Backend Service** | `coauthoring-service` | ✅ Implemented | Rust, Axum, WebSocket, CRDT (diamond_types) |
+| **Backend Service** | `coauthoring-service` | ✅ Implemented | Rust, Axum, WebSocket, CRDT (diamond_types), DocumentOp (ModelOp) variant added for CanvasEditor |
 | **Wire Protocol** | `ModelOpEnvelope` | ✅ Implemented | JSON, wraps ModelOp with session metadata |
 | **Core Ops** | `ModelOp` enum | ✅ Implemented | 5 ops: Insert, Delete, Replace, Format, Move |
 | **WASM Bindings** | `apply_op` function | ✅ Implemented | Exposed to TypeScript via `wasm-renderer.ts` |
@@ -496,7 +496,7 @@ The collaboration system is **architecturally sound** and **well-designed**, but
 
 ## 🎉 Summary
 
-**World-Office has excellent collaboration infrastructure** (backend service, ModelOp system, client libraries) **but it's not yet connected to any editor**.
+**World-Office now has end-to-end collaboration infrastructure** connecting CanvasEditor ↔ coauthoring service. The `DocumentOp` WebSocket message type carries `ModelOpEnvelope` payloads, the `useCanvasCollaboration` hook handles the full 3-step protocol (create session, join, WebSocket), and `CanvasEditor.applyOp()` applies remote operations via WASM. Remaining work: session management from deployment, remote cursor rendering, and production verification.
 
 The collaboration system is like a beautiful bridge that's been built but hasn't been connected to either side of the river yet.
 
