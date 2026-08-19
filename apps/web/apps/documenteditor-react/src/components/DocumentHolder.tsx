@@ -43,12 +43,16 @@ const WasmEditorCanvas = observer(
   }) => {
     const collaborationEnabled = isCollaborationConfigured()
 
+    // Generate a stable document ID from the filename
+    const docId = fileName.split(".")[0] ?? `doc-${Date.now()}`
+
     const {
       state: collabState,
-      connect: connectCollab,
       sendModelOp,
     } = useCanvasCollaboration({
       editorRef,
+      documentId: collaborationEnabled ? docId : undefined,
+      username: "User",
       onLocalModelOp: (op) => {
         console.debug("[WasmEditorCanvas] Local ModelOp broadcast:", op.revision)
       },
@@ -67,14 +71,6 @@ const WasmEditorCanvas = observer(
 
       return () => unregister()
     }, [editorRef])
-
-    // Connect collaboration when editor is mounted and configured
-    useEffect(() => {
-      if (collaborationEnabled && editorRef.current) {
-        // Collaboration session management would come from the backend
-        // For now, the user can call connectCollab() with a session ID
-      }
-    }, [collaborationEnabled, editorRef, connectCollab])
 
     const handleModelOp = useCallback(
       (op: unknown, _docHandle: number) => {
