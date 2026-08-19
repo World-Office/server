@@ -8,8 +8,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install uv (small, fast, modern)
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# Install uv (small, fast, modern) via pip — avoids GHCR registry dependency
+RUN pip install --no-cache-dir uv
 
 # Dependencies first — layer caching means edits to src/ don't re-fetch deps
 COPY pyproject.toml uv.lock ./
