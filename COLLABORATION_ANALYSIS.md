@@ -369,12 +369,12 @@ Make existing collaboration work with TipTap for HTML texts:
 3. Verify collaboration works with TipTap
 
 ### Phase 2: Full CanvasEditor Support (3-5 days)
-1. Expose `apply_op` in TypeScript wasm-renderer.ts
-2. Add WebSocket connection to CanvasEditor
-3. Implement ModelOp → CanvasEditor integration
-4. Implement CanvasEditor → ModelOp broadcast
-5. Add cursor/selection sharing for CanvasEditor
-6. Test end-to-end collaboration
+1. ✅ Expose `apply_op` in TypeScript wasm-renderer.ts
+2. ✅ Add WebSocket connection to CanvasEditor (useCanvasCollaboration hook)
+3. ✅ Implement ModelOp → CanvasEditor integration (DocumentOp WS message)
+4. ✅ Implement CanvasEditor → ModelOp broadcast (onModelOp → sendModelOp)
+5. ✅ Add cursor/selection sharing for CanvasEditor (CursorUpdate WS message)
+6. ⏳ Test end-to-end collaboration
 
 ### Phase 3: Monaco Editor Support (2-3 days)
 1. Implement Monaco → ModelOp mapping
@@ -393,33 +393,36 @@ Make existing collaboration work with TipTap for HTML texts:
 
 | Task | Effort | Status |
 |------|--------|--------|
-| Expose apply_op TypeScript binding | 5-10 min | ⏳ Not done |
-| Wire CanvasEditor to collaboration | 1-2 days | ⏳ Not done |
+| Expose apply_op TypeScript binding | 5-10 min | ✅ Done |
+| Wire CanvasEditor to collaboration | 1-2 days | ✅ Done |
+| Add DocumentOp to Rust WS protocol | 1-2 hrs | ✅ Done |
+| Add cursor/selection sharing | 1 day | ✅ Done |
 | Enable RichTextEditor for some files | 1-2 days | ⏳ Not done |
-| Fix collaboration provider format | 1-2 days | ⏳ Not done |
 | Test all collaboration flows | 1 day | ⏳ Not done |
-| **Total** | **5-7 days** | ⏳ Not done |
+| **Total remaining** | **2-3 days** | ⏳ In progress |
 
 ---
 
 ## 🎯 Current State Assessment
 
 ### ✅ What We Have
-1. **Complete backend** - Coauthoring service is production-ready
+1. **Complete backend** - Coauthoring service is production-ready (DocumentOp + CursorUpdate)
 2. **Complete model** - ModelOp system is fully implemented
-3. **Complete WASM** - apply_op exists in Rust
-4. **Partial frontend** - Client libraries exist but not integrated
+3. **Complete WASM** - apply_op exists in Rust + TypeScript binding
+4. **CanvasEditor integration** - useCanvasCollaboration hook + DocumentOp protocol
+5. **Cursor sharing** - CursorUpdate WS message + per-session CursorTracker
+6. **Partial frontend** - Hook sends/receives ModelOps and cursor updates
 
-### ❌ What We Don't Have
-1. **No working collaboration** for any editor type
-2. **No TypeScript apply_op** binding
-3. **No RichTextEditor** rendering
-4. **No CanvasEditor** collaboration integration
+### ❌ What We Still Need
+1. **No working collaboration** — needs deployment session management
+2. **No remote cursor rendering** in correct canvas positions (overlay done, needs path→pixel conversion)
+3. **No E2E test** for collaboration flows
+4. **No RichTextEditor** fallback for HTML/RTF files
 
 ### ⚠️ What's Blocking Production
-1. **Missing TypeScript binding** for apply_op
-2. **Missing editor integration** with coauthoring service
-3. **Missing RichTextEditor** in the rendering pipeline
+1. **Session ID from deployment** — document ID must come from backend deployment
+2. **Remote cursor pixel positioning** — need WASM path→pixel conversion for precise cursor rendering
+3. **E2E verification** — need automated tests with 2+ WebSocket clients
 
 ---
 
