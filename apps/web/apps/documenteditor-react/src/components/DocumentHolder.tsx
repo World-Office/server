@@ -49,6 +49,8 @@ const WasmEditorCanvas = observer(
     const {
       state: collabState,
       sendModelOp,
+      sendCursorUpdate,
+      remoteCursors,
     } = useCanvasCollaboration({
       editorRef,
       documentId: collaborationEnabled ? docId : undefined,
@@ -79,6 +81,18 @@ const WasmEditorCanvas = observer(
       [sendModelOp],
     )
 
+    const handleCursorChange = useCallback(
+      (_page: number, para: number, charIdx: number, _x: number, _y: number) => {
+        sendCursorUpdate({
+          kind: "text",
+          para,
+          run: 0,
+          char: charIdx,
+        })
+      },
+      [sendCursorUpdate],
+    )
+
     return (
       <div
         className="de-document-holder"
@@ -88,6 +102,7 @@ const WasmEditorCanvas = observer(
           alignItems: "stretch",
           overflow: "hidden",
           height: "100%",
+          position: "relative",
         }}
       >
         {collaborationEnabled && collabState !== "disabled" && (
@@ -133,7 +148,40 @@ const WasmEditorCanvas = observer(
             documentStore.markModified()
           }}
           onModelOp={collaborationEnabled ? handleModelOp : undefined}
+          onCursorChange={collaborationEnabled ? handleCursorChange : undefined}
         />
+        {/* Remote cursor overlay */}
+        {collaborationEnabled && collabState === "connected" && remoteCursors.size > 0 && (
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              pointerEvents: "none",
+              zIndex: 10,
+            }}
+          >
+            {Array.from(remoteCursors.values()).map((cursor) => (
+              <div
+                key={cursor.userId}
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  top: "50%",
+                  width: 2,
+                  height: 20,
+                  backgroundColor: cursor.color,
+                  transform: "translate(-1px, -20px)",
+                  opacity: 0.8,
+                  pointerEvents: "none",
+                }}
+                title={`${cursor.username}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
     )
   },
