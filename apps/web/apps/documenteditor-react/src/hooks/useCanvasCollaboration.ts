@@ -2,83 +2,163 @@
  * useCanvasCollaboration — WebSocket-based collaboration for CanvasEditor
  *
  * Bridges the CanvasEditor (which uses ModelOp operations) with the
- * coauthoring WebSocket service. Unlike the TipTap-based
- * DocumentCollaborationProvider (which uses EditOperation insert/delete),
- * this hook sends/receives ModelOpEnvelope messages that match the
- * Rust ModelOp struct in services/coauthoring-service/src/model_op.rs.
+ * coauthoring WebSocket service. Handles the full three-step flow:
+ *
+ *   1. REST: POST /sessions  → create session with document_id
+ *   2. REST: POST /sessions/{id}/join → register user, get assigned color
+ *   3. WebSocket: connect to /ws/{session_id}?user_id=X&username=Y
+ *
+ * Operations are sent as WsMessage::DocumentOp (type: "document_op")
+ * containing a ModelOpEnvelope payload. This matches the Rust protocol
+ * defined in services/coauthoring-service/src/main.rs.
  *
  * Architecture:
- *   CanvasEditor (local edit) → onModelOp → hook sends ModelOp via WebSocket
- *   WebSocket receives ModelOp → hook calls editorRef.applyOp() →
- *   CanvasEditor re-renders pages
+ *   CanvasEditor (local edit) → onModelOp → hook sends DocumentOp via WS
+ *   WS receives DocumentOp → hook calls editorRef.applyOp() → re-render
  */
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import {
-  COAUTHORING_WS_URL,
-} from "../lib/collaboration-config"
+import { COAUTHORING_API_URL, COAUTHORING_WS_URL } from "../lib/collaboration-config"
 import type { CanvasEditorHandle } from "../components/CanvasEditor"
 
-/** ModeOpEnvelope — matches the Rust struct in model_op.rs. */
+// ── Types matching the Rust coauthoring protocol ─────────────────────
+
+/** ModeOpEnvelope — wraps a ModelOp with session/user metadata. */
 export interface ModelOpEnvelope {
-  /** Unique session ID from the coauthoring service. */
   session_id: string
-  /** User who performed this operation. */
   user_id: string
-  /** Monotonic revision number. */
   revision: number
-  /** ISO-8601 timestamp. */
   timestamp: string
-  /** The operation payload as JSON — applied via WASM apply_op. */
+  /** JSON payload applied via WASM apply_op. */
   payload: unknown
 }
 
 /** Connection states for the collaboration WebSocket. */
-export type CollaborationState = "disabled" | "connecting" | "connected" | "disconnected" | "error"
+export type CollaborationState =
+  | "disabled"
+  | "creating-session"
+  | "joining-session"
+  | "connecting"
+  | "connected"
+  | "disconnected"
+  | "error"
 
 export interface UseCanvasCollaborationOptions {
-  /** Document session ID from the coauthoring service REST API. */
-  sessionId?: string
-  /** Current user ID. */
+  /** Ref to the CanvasEditor handle for remote op application. */
+  editorRef: React.RefObject<CanvasEditorHandle | null>
+  /** Current user ID (generated client-side if not provided). */
   userId?: string
   /** Current username (display name). */
   username?: string
-  /** Ref to the CanvasEditor handle for sending remote ops. */
-  editorRef: React.RefObject<CanvasEditorHandle | null>
-  /** Called when a local ModelOp should be broadcast to peers. */
+  /** Document ID used to create collaboration sessions. */
+  documentId?: string
+  /** Pre-created session ID (skips REST creation). */
+  sessionId?: string
+  /** Called when a local ModelOp is sent to peers. */
   onLocalModelOp?: (op: ModelOpEnvelope) => void
 }
 
 export interface UseCanvasCollaborationResult {
-  /** Connection state. */
+  /** Current connection state. */
   state: CollaborationState
   /** Number of connected participants (excluding self). */
   participantCount: number
-  /** Connect to the coauthoring service. */
-  connect: (sessionId: string) => void
+  /** Current session color (assigned by server on join). */
+  sessionColor: string
+  /** Error message if state is "error". */
+  errorMessage: string | null
+  /** Manually connect (auto-connects if documentId provided). */
+  connect: () => Promise<void>
   /** Disconnect from the coauthoring service. */
   disconnect: () => void
   /** Send a local ModelOp to all peers. */
   sendModelOp: (payload: unknown) => void
 }
 
-/**
- * Hook that manages a WebSocket connection for CanvasEditor collaboration.
- * Returns connection controls and state.
- */
+// ── REST API helpers ────────────────────────────────────────────────
+
+interface CreateSessionResponse {
+  session_id: string
+  document_id: string
+  message: string
+}
+
+interface JoinSessionResponse {
+  session_id: string
+  participants: Array<{
+    user_id: string
+    username: string
+    color: string
+  }>
+  message: string
+}
+
+async function createSession(
+  apiUrl: string,
+  documentId: string,
+): Promise<CreateSessionResponse> {
+  const res = await fetch(`${apiUrl}/sessions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ document_id: documentId }),
+  })
+  if (!res.ok) {
+    const err = (await res.json()) as { error?: string }
+    throw new Error(err.error ?? `HTTP ${res.status}`)
+  }
+  return (await res.json()) as CreateSessionResponse
+}
+
+async function joinSession(
+  apiUrl: string,
+  sessionId: string,
+  userId: string,
+  username: string,
+): Promise<JoinSessionResponse> {
+  const res = await fetch(`${apiUrl}/sessions/${sessionId}/join`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId, username }),
+  })
+  if (!res.ok) {
+    const err = (await res.json()) as { error?: string }
+    throw new Error(err.error ?? `HTTP ${res.status}`)
+  }
+  return (await res.json()) as JoinSessionResponse
+}
+
+// ── Hook ────────────────────────────────────────────────────────────
+
 export function useCanvasCollaboration(
   options: UseCanvasCollaborationOptions,
 ): UseCanvasCollaborationResult {
-  const { sessionId: initialSessionId, userId, username, editorRef, onLocalModelOp } = options
+  const {
+    editorRef,
+    userId: propUserId,
+    username: propUsername,
+    documentId,
+    sessionId: propSessionId,
+    onLocalModelOp,
+  } = options
 
   const wsRef = useRef<WebSocket | null>(null)
   const [state, setState] = useState<CollaborationState>("disabled")
   const [participantCount, setParticipantCount] = useState(0)
-  const sessionIdRef = useRef<string | undefined>(initialSessionId)
+  const [sessionColor, setSessionColor] = useState("#E74C3C")
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const sessionIdRef = useRef<string | undefined>(propSessionId)
   const revisionRef = useRef(0)
+  const apiUrlRef = useRef(COAUTHORING_API_URL)
 
-  // ── Helper: send a JSON message ──
-  const sendMessage = useCallback((msg: Record<string, unknown>) => {
+  // Generate stable user ID (persisted across sessions)
+  const userIdRef = useRef<string>(
+    propUserId ??
+      `user_${Math.random().toString(36).slice(2, 10)}`,
+  )
+  const usernameRef = useRef<string>(propUsername ?? "Anonymous")
+
+  // ── Send a JSON message over WebSocket ──
+  const sendMessage = useCallback((msg: Record<string, unknown>): boolean => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(msg))
       return true
@@ -86,146 +166,264 @@ export function useCanvasCollaboration(
     return false
   }, [])
 
+  // ── Reconnect logic ──
+  const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const attemptReconnect = useCallback(() => {
+    if (reconnectRef.current) return // already scheduled
+    const sid = sessionIdRef.current
+    if (!sid) return
+
+    reconnectRef.current = setTimeout(() => {
+      reconnectRef.current = null
+      const uid = userIdRef.current
+      const uname = usernameRef.current
+      const wsUrl = `${COAUTHORING_WS_URL.replace("{session_id}", sid)}?user_id=${uid}&username=${encodeURIComponent(uname)}`
+
+      setState("connecting")
+      try {
+        const ws = new WebSocket(wsUrl)
+
+        ws.onopen = () => {
+          setState("connected")
+        }
+
+        ws.onmessage = handleMessageRef.current
+
+        ws.onclose = () => {
+          setState("disconnected")
+          wsRef.current = null
+          // Auto-reconnect after delay
+          attemptReconnect()
+        }
+
+        ws.onerror = () => {
+          setState("error")
+        }
+
+        wsRef.current = ws
+      } catch {
+        setState("error")
+      }
+    }, 2000)
+  }, [])
+
   // ── Handle incoming WebSocket messages ──
-  const handleMessage = useCallback(
+  // Stored in a ref to avoid stale closures in reconnect
+  const handleMessageRef = useRef<(event: MessageEvent) => void>(() => {})
+
+  const handleMessageImpl = useCallback(
     (event: MessageEvent) => {
       try {
         const msg = JSON.parse(event.data as string) as Record<string, unknown>
 
-        if (msg.type === "model_op") {
-          // Remote ModelOp received — apply to CanvasEditor
-          const envelope = msg.envelope as ModelOpEnvelope
-          if (!envelope || !envelope.payload) return
-
-          // Don't apply our own ops (echoed back)
-          if (userId && envelope.user_id === userId) return
-
-          // Apply remote operation to CanvasEditor
-          editorRef.current?.applyOp(envelope.payload)
-
-          // Update revision
-          if (envelope.revision > revisionRef.current) {
-            revisionRef.current = envelope.revision
-          }
-        } else if (msg.type === "participant_update") {
-          const update = msg.update as { event: string; user_id: string }
-          if (update) {
-            setParticipantCount((prev) =>
-              update.event === "joined" ? prev + 1 : Math.max(0, prev - 1),
+        switch (msg.type) {
+          case "initial_state_msg": {
+            // Server sent initial state with participant list
+            const s = msg.state as { participants?: Array<Record<string, unknown>> }
+            const participants = s?.participants ?? []
+            setParticipantCount(participants.length)
+            // Find our color
+            const us = participants.find(
+              (p) => p.user_id === userIdRef.current,
             )
+            if (us?.color) {
+              setSessionColor(us.color as string)
+            }
+            break
           }
-        } else if (msg.type === "initial_state_msg") {
-          const state = msg.state as { participants?: Array<unknown> }
-          setParticipantCount(state?.participants?.length ?? 0)
+
+          case "participant_update": {
+            const update = msg.update as {
+              event: string
+              user_id: string
+              color?: string
+            }
+            if (update) {
+              setParticipantCount((prev) =>
+                update.event === "joined"
+                  ? prev + 1
+                  : Math.max(0, prev - 1),
+              )
+              // If it's us joining, grab our color
+              if (
+                update.event === "joined" &&
+                update.user_id === userIdRef.current &&
+                update.color
+              ) {
+                setSessionColor(update.color)
+              }
+            }
+            break
+          }
+
+          case "document_op": {
+            // Remote DocumentOp (ModelOp wrapper) received
+            const envelope = msg.envelope as ModelOpEnvelope
+            if (!envelope || !envelope.payload) break
+
+            // Skip our own ops (echoed back by server)
+            if (envelope.user_id === userIdRef.current) break
+
+            // Apply remote operation to CanvasEditor
+            editorRef.current?.applyOp(envelope.payload)
+
+            // Track revision
+            if (envelope.revision > revisionRef.current) {
+              revisionRef.current = envelope.revision
+            }
+            break
+          }
+
+          case "edit": {
+            // CRDT EditOperation — ignore for CanvasEditor (handled by DocumentCollaborationProvider)
+            break
+          }
+
+          default:
+            // Unknown message types are ignored
+            break
         }
       } catch (err) {
         console.error("[useCanvasCollaboration] Failed to parse message:", err)
       }
     },
-    [editorRef, userId],
+    [editorRef],
   )
+
+  // Keep the ref updated so reconnect uses the latest handler
+  handleMessageRef.current = handleMessageImpl
 
   // ── Connect to coauthoring service ──
-  const connect = useCallback(
-    (sessionId: string) => {
-      if (wsRef.current?.readyState === WebSocket.OPEN) return
+  const connect = useCallback(async () => {
+    // Already connected
+    if (wsRef.current?.readyState === WebSocket.OPEN) return
 
-      sessionIdRef.current = sessionId
-      const wsUrl = COAUTHORING_WS_URL.replace("{session_id}", sessionId)
-      revisionRef.current = 0
+    const apiUrl = apiUrlRef.current
+    const uid = userIdRef.current
+    const uname = usernameRef.current
 
-      try {
-        setState("connecting")
-        const ws = new WebSocket(wsUrl)
+    try {
+      let sid = sessionIdRef.current
 
-        ws.onopen = () => {
-          console.info("[useCanvasCollaboration] Connected to coauthoring service")
-          setState("connected")
+      // Step 1: Create session if we don't have one
+      if (!sid && documentId) {
+        setState("creating-session")
+        const created = await createSession(apiUrl, documentId)
+        sid = created.session_id
+        sessionIdRef.current = sid
+      }
 
-          // Send join event
-          sendMessage({
-            type: "join",
-            user_id: userId,
-            username: username ?? "Anonymous",
-          })
-        }
+      if (!sid) {
+        setErrorMessage("No session ID or document ID provided")
+        setState("error")
+        return
+      }
 
-        ws.onmessage = handleMessage
+      // Step 2: Join session via REST API
+      setState("joining-session")
+      const joined = await joinSession(apiUrl, sid, uid, uname)
+      if (joined.participants.length > 0) {
+        setParticipantCount(joined.participants.length)
+        const us = joined.participants.find((p) => p.user_id === uid)
+        if (us?.color) setSessionColor(us.color)
+      }
 
-        ws.onclose = (event) => {
-          console.info("[useCanvasCollaboration] Disconnected:", event.reason)
-          setState("disconnected")
-          wsRef.current = null
-        }
+      // Step 3: Connect WebSocket
+      setState("connecting")
+      const wsUrl = `${COAUTHORING_WS_URL.replace("{session_id}", sid)}?user_id=${uid}&username=${encodeURIComponent(uname)}`
 
-        ws.onerror = () => {
-          console.error("[useCanvasCollaboration] WebSocket error")
-          setState("error")
-        }
+      const ws = new WebSocket(wsUrl)
 
-        wsRef.current = ws
-      } catch (err) {
-        console.error("[useCanvasCollaboration] Failed to connect:", err)
+      ws.onopen = () => {
+        setState("connected")
+      }
+
+      ws.onmessage = handleMessageRef.current
+
+      ws.onclose = () => {
+        setState("disconnected")
+        wsRef.current = null
+        attemptReconnect()
+      }
+
+      ws.onerror = () => {
+        setErrorMessage("WebSocket connection error")
         setState("error")
       }
-    },
-    [userId, username, handleMessage, sendMessage],
-  )
+
+      wsRef.current = ws
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setErrorMessage(msg)
+      setState("error")
+    }
+  }, [documentId, attemptReconnect])
 
   // ── Disconnect ──
   const disconnectFn = useCallback(() => {
+    if (reconnectRef.current) {
+      clearTimeout(reconnectRef.current)
+      reconnectRef.current = null
+    }
     if (wsRef.current) {
       wsRef.current.close(1000, "Client disconnect")
       wsRef.current = null
     }
     setState("disconnected")
+    setParticipantCount(0)
   }, [])
 
   // ── Send a local ModelOp to peers ──
   const sendModelOp = useCallback(
     (payload: unknown) => {
-      if (!sessionIdRef.current || !userId) return
+      const sid = sessionIdRef.current
+      if (!sid) return
 
       revisionRef.current += 1
       const envelope: ModelOpEnvelope = {
-        session_id: sessionIdRef.current,
-        user_id: userId,
+        session_id: sid,
+        user_id: userIdRef.current,
         revision: revisionRef.current,
         timestamp: new Date().toISOString(),
         payload,
       }
 
-      // Broadcast via WebSocket
-      const sent = sendMessage({
-        type: "model_op",
+      // Broadcast as WsMessage::DocumentOp
+      sendMessage({
+        type: "document_op",
         envelope,
       })
 
-      // Also fire the callback for local tracking
       onLocalModelOp?.(envelope)
-
-      if (!sent) {
-        console.warn("[useCanvasCollaboration] Cannot send: WebSocket not connected")
-      }
     },
-    [userId, sendMessage, onLocalModelOp],
+    [sendMessage, onLocalModelOp],
   )
 
-  // ── Connect if initial sessionId provided ──
+  // ── Auto-connect on mount when documentId provided ──
   useEffect(() => {
-    if (initialSessionId) {
-      connect(initialSessionId)
+    if (documentId || propSessionId) {
+      void connect()
     }
     return () => {
       disconnectFn()
     }
-    // Only run on mount with an initial sessionId
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── Cleanup on unmount ──
+  useEffect(() => {
+    return () => {
+      if (reconnectRef.current) {
+        clearTimeout(reconnectRef.current)
+      }
+    }
   }, [])
 
   return {
     state,
     participantCount,
+    sessionColor,
+    errorMessage,
     connect,
     disconnect: disconnectFn,
     sendModelOp,

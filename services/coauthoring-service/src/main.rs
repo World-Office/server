@@ -48,6 +48,8 @@ async fn metrics_handler() -> String {
 
 use tokio::sync::{Mutex, broadcast};
 
+use coauthoring_service::model_op::ModelOpEnvelope;
+
 /// A connected editor session.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct EditorSession {
@@ -391,6 +393,11 @@ enum WsMessage {
         user_id: String,
         operation: VisioDiagramOp,
     },
+    /// Document operations using ModelOp format (new path-addressed mutation engine).
+    /// Used by CanvasEditor — wraps a ModelOpEnvelope with session/user metadata.
+    DocumentOp {
+        envelope: ModelOpEnvelope,
+    },
 }
 
 /// A collaborative document backed by diamond-types CRDT.
@@ -631,6 +638,8 @@ struct AppState {
     pdf_annotation_channels: Arc<Mutex<HashMap<String, broadcast::Sender<String>>>>,
     /// Broadcast channels per session for Visio diagram operations.
     visio_diagram_channels: Arc<Mutex<HashMap<String, broadcast::Sender<String>>>>,
+    /// Broadcast channels per session for DocumentOp (ModelOp) operations.
+    document_op_channels: Arc<Mutex<HashMap<String, broadcast::Sender<String>>>>,
 }
 
 /// Health check response.
@@ -768,6 +777,13 @@ async fn create_session(
     {
         let mut vdchannels = state.visio_diagram_channels.lock().await;
         vdchannels.insert(session_id.clone(), visio_diagram_tx);
+    }
+
+    // Create ephemeral DocumentOp broadcast channel for this session
+    let (document_op_tx, _) = broadcast::channel::<String>(256);
+    {
+        let mut dochannels = state.document_op_channels.lock().await;
+        dochannels.insert(session_id.clone(), document_op_tx);
     }
 
     metrics::gauge!("sessions_active").set(1.0);
@@ -1042,6 +1058,23 @@ async fn handle_ws(
         }
     };
 
+    let document_op_rx = {
+        let channels = state.document_op_channels.lock().await;
+        channels.get(&session_id).map(|tx| tx.subscribe())
+    };
+
+    let document_op_rx = match document_op_rx {
+        Some(rx) => rx,
+        None => {
+            let _ = socket
+                .send(Message::Text(
+                    format!(r#"{{"error":"Session {} not found"}}"#, session_id).into(),
+                ))
+                .await;
+            return;
+        }
+    };
+
     tracing::info!(session_id = %session_id, user_id = %user_id, "WebSocket connected");
 
     let (mut ws_sender, mut ws_receiver) = socket.split();
@@ -1175,6 +1208,15 @@ async fn handle_ws(
         }
     });
 
+    // Forward DocumentOp broadcasts to the shared outgoing channel
+    let out_tx_document_op = out_tx.clone();
+    let recv_document_op = tokio::spawn(async move {
+        let mut rx = document_op_rx;
+        while let Ok(text) = rx.recv().await {
+            let _ = out_tx_document_op.send(text).await;
+        }
+    });
+
     while let Some(Ok(msg)) = ws_receiver.next().await {
         if let Message::Text(text) = msg {
             if let Ok(ws_msg) = serde_json::from_str::<WsMessage>(&text) {
@@ -1264,6 +1306,13 @@ async fn handle_ws(
                             let _ = tx.send(text.to_string());
                         }
                     }
+                    // DocumentOp (ModelOp) — broadcast to all session participants as-is
+                    WsMessage::DocumentOp { envelope: _ } => {
+                        let channels = state.document_op_channels.lock().await;
+                        if let Some(tx) = channels.get(&session_id) {
+                            let _ = tx.send(text.to_string());
+                        }
+                    }
                 }
             } else if let Ok(edit_op) = serde_json::from_str::<EditOperation>(&text) {
                 let applied = {
@@ -1305,6 +1354,7 @@ async fn handle_ws(
     recv_spreadsheet.abort();
     recv_pdf_annotation.abort();
     recv_visio_diagram.abort();
+    recv_document_op.abort();
 
     tracing::info!(session_id = %session_id, user_id = %user_id, "WebSocket disconnected");
 }
@@ -1352,6 +1402,7 @@ async fn main() {
         spreadsheet_channels: Arc::new(Mutex::new(HashMap::new())),
         pdf_annotation_channels: Arc::new(Mutex::new(HashMap::new())),
         visio_diagram_channels: Arc::new(Mutex::new(HashMap::new())),
+        document_op_channels: Arc::new(Mutex::new(HashMap::new())),
     });
     let app = app(state);
 
