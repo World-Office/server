@@ -26,11 +26,19 @@ class _MockHost:
     def __init__(self) -> None:
         self.content: bytes | None = None
         self.auth_seen: list[str] = []
+        self.query_seen: list[str] = []
+        self.override_seen: list[str] = []
 
     def __call__(self, environ, start_response):
         token = environ.get("HTTP_AUTHORIZATION", "")
         if token:
             self.auth_seen.append(token)
+        q = environ.get("QUERY_STRING", "")
+        if q:
+            self.query_seen.append(q)
+        override = environ.get("HTTP_X_WOPI_OVERRIDE", "")
+        if override:
+            self.override_seen.append(override)
 
         path = environ.get("PATH_INFO", "")
         method = environ.get("REQUEST_METHOD", "GET")
@@ -38,7 +46,7 @@ class _MockHost:
         if path == "/wopi/files/doc1/contents" and method == "GET":
             start_response("200 OK", [("Content-Type", "application/octet-stream")])
             return [self.content or b""]
-        if path == "/wopi/files/doc1/contents" and method == "POST":
+        if path == "/wopi/files/doc1" and method == "POST" and override == "PUT":
             length = int(environ.get("CONTENT_LENGTH", "0"))
             self.content = environ["wsgi.input"].read(length)
             start_response("200 OK", [("Content-Type", "application/json")])
@@ -84,7 +92,10 @@ def test_remote_client_get_and_put():
         assert env.host.content == b"hello from editor"
         got = env.client.get_contents("doc1")
         assert got == b"hello from editor"
-        assert any(a.startswith("Bearer") for a in env.host.auth_seen)
+        # WOPI hosts receive the access token as a query parameter.
+        assert any("access_token=token-123" in q for q in env.host.query_seen)
+        # OpenCloud/OCIS wopiserver expects the unified endpoint + override.
+        assert "PUT" in env.host.override_seen
 
 
 def test_remote_client_sends_lock_on_put():

@@ -1,5 +1,7 @@
 # World-Office WORKSPACE
 
+> ⚠️ **DEPRECATED — reference only.** This document describes the old Rust + TypeScript stack, which is superseded by the minimal Stoic Unix rewrite at **`server/opencloud-docserver/`** (Python + FastAPI + WOPI). Do not start new work on the crates/apps/services described here. The build that matters is `opencloud-docserver`.
+
 **Updated:** 2026-07-21
 **Source:** codeberg.org/World-Office/server (independent project)
 **License:** AGPL-3.0-or-later (enterprise extensions in separate private repo)
