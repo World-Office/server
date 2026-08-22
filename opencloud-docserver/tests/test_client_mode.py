@@ -46,7 +46,7 @@ class _MockHost:
         if path == "/wopi/files/doc1/contents" and method == "GET":
             start_response("200 OK", [("Content-Type", "application/octet-stream")])
             return [self.content or b""]
-        if path == "/wopi/files/doc1" and method == "POST" and override == "PUT":
+        if path == "/wopi/files/doc1/contents" and method == "POST" and override == "PUT":
             length = int(environ.get("CONTENT_LENGTH", "0"))
             self.content = environ["wsgi.input"].read(length)
             start_response("200 OK", [("Content-Type", "application/json")])
@@ -94,7 +94,8 @@ def test_remote_client_get_and_put():
         assert got == b"hello from editor"
         # WOPI hosts receive the access token as a query parameter.
         assert any("access_token=token-123" in q for q in env.host.query_seen)
-        # OpenCloud/OCIS wopiserver expects the unified endpoint + override.
+        # OpenCloud/OCIS wopiserver expects PUT on /wopi/files/{id}/contents
+        # with the X-WOPI-Override: PUT header.
         assert "PUT" in env.host.override_seen
 
 

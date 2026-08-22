@@ -67,15 +67,15 @@ class RemoteWopiClient:
             return resp.read()
 
     def put_contents(self, doc_id: str, data: bytes) -> None:
-        """POST new bytes to the remote host (respecting our lock token).
+        """POST new bytes back to the remote host (respecting our lock token).
 
-        OpenCloud/OCIS wopiserver expects the unified endpoint
-        `POST /wopi/files/{id}` with the `X-WOPI-Override: PUT` header
-        (the same pattern its LOCK/UNLOCK operations use), not the
-        separate `/contents` endpoint.
+        OpenCloud/OCIS wopiserver requires the `X-WOPI-Override: PUT`
+        header on the `POST /wopi/files/{id}/contents` endpoint. The bare
+        `POST /wopi/files/{id}` form (no `/contents`) returns HTTP 500 on
+        OpenCloud 7.3.0, so we must include the `/contents` segment.
         """
         req = urllib.request.Request(
-            self._url(doc_id), data=data, method="POST"
+            self._url(doc_id, "contents"), data=data, method="POST"
         )
         req.add_header("Content-Type", "application/octet-stream")
         req.add_header("X-WOPI-Override", "PUT")
