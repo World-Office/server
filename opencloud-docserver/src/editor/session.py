@@ -56,22 +56,29 @@ class RemoteWopiClient:
         base = f"{self.host}/wopi/files/{urllib.parse.quote(doc_id)}"
         if action:
             base += f"/{action}"
-        return base
+        # WOPI hosts expect the access token as a query parameter.
+        sep = "?" if "?" not in base else "&"
+        return f"{base}{sep}access_token={urllib.parse.quote(self.access_token, safe='')}"
 
     def get_contents(self, doc_id: str) -> bytes:
         """GET the raw file bytes from the remote host."""
         req = urllib.request.Request(self._url(doc_id, "contents"))
-        req.add_header("Authorization", f"Bearer {self.access_token}")
         with urllib.request.urlopen(req, timeout=self.timeout) as resp:
             return resp.read()
 
     def put_contents(self, doc_id: str, data: bytes) -> None:
-        """POST new bytes to the remote host (respecting our lock token)."""
+        """POST new bytes to the remote host (respecting our lock token).
+
+        OpenCloud/OCIS wopiserver expects the unified endpoint
+        `POST /wopi/files/{id}` with the `X-WOPI-Override: PUT` header
+        (the same pattern its LOCK/UNLOCK operations use), not the
+        separate `/contents` endpoint.
+        """
         req = urllib.request.Request(
-            self._url(doc_id, "contents"), data=data, method="POST"
+            self._url(doc_id), data=data, method="POST"
         )
-        req.add_header("Authorization", f"Bearer {self.access_token}")
         req.add_header("Content-Type", "application/octet-stream")
+        req.add_header("X-WOPI-Override", "PUT")
         if self.lock_token:
             req.add_header("X-WOPI-Lock", self.lock_token)
         with urllib.request.urlopen(req, timeout=self.timeout) as resp:

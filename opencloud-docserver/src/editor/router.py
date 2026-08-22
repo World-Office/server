@@ -14,6 +14,8 @@ Endpoints:
 from __future__ import annotations
 
 import json
+import time
+import urllib.parse
 from pathlib import Path
 
 from fastapi import APIRouter, Request, UploadFile
@@ -22,6 +24,7 @@ from fastapi.templating import Jinja2Templates
 
 from ..editor.converter import docx_to_html, html_to_docx
 from ..editor.session import (
+    EditorSession,
     RemoteWopiClient,
     SessionRegistry,
     session_from_token,
@@ -56,16 +59,66 @@ def _client(request: Request, doc_id: str) -> RemoteWopiClient | None:
 # Editor page
 # ----------------------------------------------------------------------
 
+WOPI_DISCOVERY_XML = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<wopi-discovery>
+  <net-zone name="external-http">
+    <app name="WorldOffice" favIconUrl="https://worldoffice.org/favicon.ico">
+      <action name="view" ext="docx" urlsrc="{public_url}/editor?access_token={{access_token}}"/>
+      <action name="edit" ext="docx" urlsrc="{public_url}/editor?access_token={{access_token}}"/>
+      <action name="view" ext="odt" urlsrc="{public_url}/editor?access_token={{access_token}}"/>
+      <action name="edit" ext="odt" urlsrc="{public_url}/editor?access_token={{access_token}}"/>
+    </app>
+  </net-zone>
+</wopi-discovery>"""
+
+
+@router.get("/hosting/discovery")
+async def wopi_discovery(request: Request) -> Response:
+    """WOPI discovery XML consumed by OpenCloud's collaboration/app-provider.
+
+    OpenCloud appends `?WOPISrc=<host wopi file url>&access_token=<token>` to the
+    urlsrc, launching our editor at `/editor?WOPISrc=...&access_token=...`.
+    """
+    from fastapi.responses import Response
+
+    xml = WOPI_DISCOVERY_XML.format(public_url=request.app.state.config.public_url)
+    return Response(content=xml, media_type="text/xml")
+
+
+@router.get("/editor", response_class=HTMLResponse)
+async def editor_page_root(request: Request) -> HTMLResponse:
+    """WOPI launch entry point (no path segment); file id comes from WOPISrc."""
+    return await editor_page("", request)
+
+
 @router.get("/editor/{doc_id}", response_class=HTMLResponse)
 async def editor_page(doc_id: str, request: Request) -> HTMLResponse:
-    """Serve the editor page. In client mode we register a session from
-    the OCIS-issued access_token before serving."""
+    """Serve the editor page. In client mode we register a session from the
+    OCIS-issued access_token before serving. OpenCloud launches us either with
+    an explicit `wopi_host` (legacy) or, per WOPI spec, with `WOPISrc` carrying
+    both the file id and the WOPI host."""
     token = request.query_params.get("access_token")
+    wopi_src = request.query_params.get("WOPISrc")
     wopi_host = (
         request.app.state.config.wopi_host or request.query_params.get("wopi_host")
     )
 
-    if token and wopi_host:
+    if wopi_src and token:
+        # WOPI launch: extract file id + host from the WOPISrc URL.
+        parsed = urllib.parse.urlparse(wopi_src)
+        wopi_host = f"{parsed.scheme}://{parsed.netloc}"
+        doc_id_resolved = wopi_src.rstrip("/").split("/")[-1]
+        session = EditorSession(
+            doc_id=doc_id_resolved,
+            name="document.docx",
+            size=0,
+            version="1",
+            last_modified=int(time.time()),
+            remote_host=wopi_host,
+            access_token=token,
+        )
+        _registry(request).register(session)
+    elif token and wopi_host:
         session = session_from_token(token, request.app.state.config.jwt_secret)
         if session and session.doc_id:
             session.remote_host = wopi_host

@@ -21,6 +21,8 @@
 
 ---
 
+> ⚠️ **DEPRECATED — reference only.** This Rust + TypeScript suite is superseded by the minimal Stoic Unix rewrite at **[`server/opencloud-docserver/`](opencloud-docserver/README.md)** — a single Python/FastAPI WOPI docserver for OpenCloud. That is the active project; this README documents the legacy stack.
+
 ## What Is This
 
 World-Office is an independent, open-source document editing suite. The core is written in Rust: format parsers for 15+ document formats, a canvas rendering engine, a format conversion pipeline, and protocol servers (WOPI, WebDAV). The web editors and desktop shell use TypeScript and React. Everything is AGPL-3.0-or-later licensed.
