@@ -19,7 +19,7 @@ import urllib.parse
 from pathlib import Path
 
 from fastapi import APIRouter, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from ..editor.converter import docx_to_html, html_to_docx
@@ -48,10 +48,14 @@ def _registry(request: Request) -> SessionRegistry:
 def _client(request: Request, doc_id: str) -> RemoteWopiClient | None:
     session = _registry(request).get(doc_id)
     if session and session.in_client_mode:
-        return RemoteWopiClient(
+        client = RemoteWopiClient(
             session.remote_host or "",
             session.access_token or "",
         )
+        # The WOPI lock lives on the session (taken at launch); without it
+        # the wopiserver refuses PutFile (409 unlocked file).
+        client.lock_token = session.lock_token
+        return client
     return None
 
 
@@ -63,10 +67,8 @@ WOPI_DISCOVERY_XML = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <wopi-discovery>
   <net-zone name="external-http">
     <app name="WorldOffice" favIconUrl="https://worldoffice.org/favicon.ico">
-      <action name="view" ext="docx" urlsrc="{public_url}/editor?access_token={{access_token}}"/>
-      <action name="edit" ext="docx" urlsrc="{public_url}/editor?access_token={{access_token}}"/>
-      <action name="view" ext="odt" urlsrc="{public_url}/editor?access_token={{access_token}}"/>
-      <action name="edit" ext="odt" urlsrc="{public_url}/editor?access_token={{access_token}}"/>
+      <action name="view" ext="docx" urlsrc="{public_url}/editor"/>
+      <action name="edit" ext="docx" urlsrc="{public_url}/editor"/>
     </app>
   </net-zone>
 </wopi-discovery>"""
@@ -76,54 +78,99 @@ WOPI_DISCOVERY_XML = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 async def wopi_discovery(request: Request) -> Response:
     """WOPI discovery XML consumed by OpenCloud's collaboration/app-provider.
 
-    OpenCloud appends `?WOPISrc=<host wopi file url>&access_token=<token>` to the
-    urlsrc, launching our editor at `/editor?WOPISrc=...&access_token=...`.
+    IMPORTANT (validated against real OpenCloud 7.3.0):
+    - urlsrc must NOT contain an `access_token=` query param. OpenCloud appends
+      `WOPISrc` (plus optional lang params) itself and then POSTs an
+      urlencoded form to the resolved URL with the REAL access_token
+      (plus file_id/embedded) in the body (see `editor_page`).
+    - Do not use str.format() with the XML: it mangles braces; use replace().
     """
-    from fastapi.responses import Response
-
-    xml = WOPI_DISCOVERY_XML.format(public_url=request.app.state.config.public_url)
+    xml = WOPI_DISCOVERY_XML.replace("{public_url}", request.app.state.config.public_url)
     return Response(content=xml, media_type="text/xml")
 
 
-@router.get("/editor", response_class=HTMLResponse)
-async def editor_page_root(request: Request) -> HTMLResponse:
-    """WOPI launch entry point (no path segment); file id comes from WOPISrc."""
-    return await editor_page("", request)
+def _parse_launch(request: Request, form: dict | None):
+    """Resolve (token, wopi_src, doc_id) from a WOPI launch request.
 
-
-@router.get("/editor/{doc_id}", response_class=HTMLResponse)
-async def editor_page(doc_id: str, request: Request) -> HTMLResponse:
-    """Serve the editor page. In client mode we register a session from the
-    OCIS-issued access_token before serving. OpenCloud launches us either with
-    an explicit `wopi_host` (legacy) or, per WOPI spec, with `WOPISrc` carrying
-    both the file id and the WOPI host."""
-    token = request.query_params.get("access_token")
-    wopi_src = request.query_params.get("WOPISrc")
-    wopi_host = (
-        request.app.state.config.wopi_host or request.query_params.get("wopi_host")
-    )
-
-    if wopi_src and token:
-        # WOPI launch: extract file id + host from the WOPISrc URL.
+    OpenCloud POSTs a urlencoded form to the app URL: `access_token`,
+    `file_id` and `embedded` live in the body; `WOPISrc`/`UI_LLCC` ride in
+    the query string. GET launches (dev/local curl) put everything in the
+    query string. Returns None when no usable launch params were found.
+    """
+    q = request.query_params
+    token = (form or {}).get("access_token") or q.get("access_token")
+    wopi_src = q.get("WOPISrc") or (form or {}).get("WOPISrc")
+    doc_id = (form or {}).get("file_id")
+    if wopi_src:
         parsed = urllib.parse.urlparse(wopi_src)
-        wopi_host = f"{parsed.scheme}://{parsed.netloc}"
-        doc_id_resolved = wopi_src.rstrip("/").split("/")[-1]
+        if parsed.scheme and parsed.netloc:
+            wopi_host = f"{parsed.scheme}://{parsed.netloc}"
+        else:
+            wopi_host = request.app.state.config.wopi_host or q.get("wopi_host")
+        if not doc_id:
+            doc_id = wopi_src.rstrip("/").split("/")[-1]
+        if not doc_id:
+            return None
         session = EditorSession(
-            doc_id=doc_id_resolved,
+            doc_id=doc_id,
             name="document.docx",
             size=0,
             version="1",
             last_modified=int(time.time()),
             remote_host=wopi_host,
-            access_token=token,
+            access_token=token or "",
         )
         _registry(request).register(session)
-    elif token and wopi_host:
+        # Take the WOPI lock on the remote host so saves (PutFile) succeed —
+        # the wopiserver refuses PutFile on unlocked files (409). Best effort:
+        # launch must never fail because of locking.
+        if token:
+            try:
+                session.lock_token = RemoteWopiClient(wopi_host, token).acquire_or_adopt_lock(doc_id)
+            except Exception:
+                session.lock_token = ""
+        return session
+    # Legacy launch: signed token + explicit wopi_host (query params).
+    wopi_host = request.app.state.config.wopi_host or q.get("wopi_host")
+    if token and wopi_host:
         session = session_from_token(token, request.app.state.config.jwt_secret)
         if session and session.doc_id:
             session.remote_host = wopi_host
             session.access_token = token
             _registry(request).register(session)
+            return session
+    return None
+
+
+@router.get("/editor")
+@router.post("/editor")
+async def editor_page_root(request: Request) -> HTMLResponse:
+    """WOPI launch entry point (no path segment). OpenCloud POSTs a form
+    here with the real access_token; the file id comes from WOPISrc."""
+    return await editor_page("", request)
+
+
+@router.get("/editor/{doc_id}")
+@router.post("/editor/{doc_id}")
+async def editor_page(doc_id: str, request: Request) -> HTMLResponse:
+    """Serve the editor page.
+
+    In client mode we register a session from the OCIS-issued access_token
+    (form body on POST, query string on GET) before serving, so the editor's
+    API calls can read/write through the remote WOPI host.
+    """
+    form = None
+    if request.method == "POST":
+        try:
+            form = await request.form()
+        except Exception:
+            form = {}
+    session = _parse_launch(request, form)
+    # The editor resolves its doc id from the launch (form file_id or the last
+    # segment of WOPISrc). At the root /editor path the path param is empty,
+    # so use the resolved id (the editor JS reads __DOC_ID__).
+    if session and session.doc_id:
+        doc_id = session.doc_id
 
     return _templates.TemplateResponse(
         request,
@@ -254,6 +301,13 @@ async def acquire_lock(doc_id: str, request: Request) -> JSONResponse:
 
 @router.post("/api/documents/{doc_id}/unlock")
 async def release_lock(doc_id: str, request: Request) -> JSONResponse:
+    """Release the editing lock. In client mode this unlocks the remote WOPI
+    host (called via a sendBeacon on editor unload); in host mode it clears
+    the local store lock."""
+    client = _client(request, doc_id)
+    if client:
+        client.release_lock(doc_id)
+        return JSONResponse({"ok": True})
     _store(request).release_lock(doc_id)
     return JSONResponse({"ok": True})
 

@@ -141,5 +141,13 @@
     saveTimer = setTimeout(saveDocument, 30000);
   });
 
+  // Release the WOPI lock on the remote host when the editor is closed
+  // (client mode). Best effort: sendBeacon survives navigation/unload.
+  window.addEventListener("beforeunload", () => {
+    if (typeof navigator.sendBeacon === "function") {
+      navigator.sendBeacon(`/api/documents/${encodeURIComponent(DOC_ID)}/unlock`, "");
+    }
+  });
+
   loadDocument();
 })();
