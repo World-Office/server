@@ -34,6 +34,8 @@
   <script>
     window.__DOC_ID__ = {{ doc_id | tojson }};
     window.__DOC_NAME__ = {{ name | tojson }};
+    window.__READ_ONLY__ = {{ read_only | tojson }};
+    window.__SESSION__ = {{ session_id | tojson }};
   </script>
   <script src="/static/editor.js"></script>
 </body>

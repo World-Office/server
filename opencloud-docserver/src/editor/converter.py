@@ -13,6 +13,7 @@ from __future__ import annotations
 import io
 import re
 from html import escape
+from html.parser import HTMLParser
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -134,31 +135,42 @@ def html_to_docx(html_fragment: str) -> bytes:
     doc = Document()
 
     block_re = re.compile(r"<(p|h[1-6]|ul|ol|li|table)[^>]*>(.*?)</\1>", re.S)
-    for m in block_re.finditer(body):
+    blocks = list(block_re.finditer(body))
+    for m in blocks:
         tag, inner = m.group(1), m.group(2)
         if tag == "ul" or tag == "ol":
             # extract the <li> items contained in this list block
             for li in re.finditer(r"<li[^>]*>(.*?)</li>", inner, re.S):
-                doc.add_paragraph(
-                    _inline_to_text(li.group(1)),
-                    style="List Bullet" if tag == "ul" else "List Number",
+                p = doc.add_paragraph(
+                    "", style="List Bullet" if tag == "ul" else "List Number"
                 )
+                _add_styled_runs(p, li.group(1))
             continue
         if tag == "li":
             continue
         if tag.startswith("h"):
             level = int(tag[1])
-            doc.add_heading(_inline_to_text(inner), level=level)
+            p = doc.add_heading("", level=level)
+            _add_styled_runs(p, inner)
             continue
         # paragraph
         if "text-align:center" in m.group(0):
-            p = doc.add_paragraph(_inline_to_text(inner))
+            p = doc.add_paragraph("")
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            _add_styled_runs(p, inner)
         elif "text-align:right" in m.group(0):
-            p = doc.add_paragraph(_inline_to_text(inner))
+            p = doc.add_paragraph("")
             p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+            _add_styled_runs(p, inner)
         else:
-            doc.add_paragraph(_inline_to_text(inner))
+            p = doc.add_paragraph("")
+            _add_styled_runs(p, inner)
+
+    # Tag-less input (e.g. raw text typed into an empty contenteditable):
+    # keep it as a single paragraph instead of dropping it silently.
+    if not blocks and body.strip():
+        p = doc.add_paragraph("")
+        _add_styled_runs(p, body)
 
     for tbl_html in tables_html:
         _append_table(doc, tbl_html)
@@ -171,13 +183,79 @@ def html_to_docx(html_fragment: str) -> bytes:
 def _inline_to_text(html: str) -> str:
     """Strip tags into plain text and unescape HTML entities.
 
-    Inline formatting (bold/italic/underline) is intentionally not
-    reconstructed — plain text keeps the converter simple and predictable.
+    Kept as a fallback for contexts where run-level formatting is not
+    supported (e.g. table cell text fallback).
     """
     from html import unescape
 
     text = re.sub(r"<[^>]+>", "", html)
     return unescape(text)
+
+
+class _InlineRunBuilder(HTMLParser):
+    """Parse an inline HTML fragment into (text, bold, italic, underline) runs."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.runs: list[tuple[str, bool, bool, bool]] = []
+        self._bold = 0
+        self._italic = 0
+        self._underline = 0
+        self._buf: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        if tag in ("b", "strong"):
+            self._flush()
+            self._bold += 1
+        elif tag in ("i", "em"):
+            self._flush()
+            self._italic += 1
+        elif tag == "u":
+            self._flush()
+            self._underline += 1
+        else:
+            self._flush()
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in ("b", "strong"):
+            self._flush()
+            self._bold = max(0, self._bold - 1)
+        elif tag in ("i", "em"):
+            self._flush()
+            self._italic = max(0, self._italic - 1)
+        elif tag == "u":
+            self._flush()
+            self._underline = max(0, self._underline - 1)
+        else:
+            self._flush()
+
+    def handle_data(self, data: str) -> None:
+        self._buf.append(data)
+
+    def _flush(self) -> None:
+        text = "".join(self._buf)
+        if text:
+            self.runs.append((text, self._bold > 0, self._italic > 0, self._underline > 0))
+        self._buf = []
+
+
+def _styled_runs(html: str) -> list[tuple[str, bool, bool, bool]]:
+    builder = _InlineRunBuilder()
+    builder.feed(html)
+    builder._flush()
+    return builder.runs
+
+
+def _add_styled_runs(paragraph, html: str) -> None:
+    """Add runs parsed from an inline HTML fragment to a paragraph."""
+    for text, bold, italic, underline in _styled_runs(html):
+        run = paragraph.add_run(text)
+        if bold:
+            run.bold = True
+        if italic:
+            run.italic = True
+        if underline:
+            run.underline = True
 
 
 def _append_table(doc: Document, tbl_html: str) -> None:
@@ -193,11 +271,8 @@ def _append_table(doc: Document, tbl_html: str) -> None:
         cells = re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", r, re.S)
         for j, c in enumerate(cells):
             if j < ncols:
-                table.cell(i, j).text = _unescape(re.sub(r"<[^>]+>", "", c))
+                cell = table.cell(i, j)
+                cell.paragraphs[0].clear()
+                _add_styled_runs(cell.paragraphs[0], c)
 
 
-def _unescape(text: str) -> str:
-    """Reduce common HTML entities to text (stdlib-only)."""
-    from html import unescape
-
-    return unescape(text)

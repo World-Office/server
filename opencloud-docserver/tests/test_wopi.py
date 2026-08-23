@@ -244,3 +244,25 @@ def test_editor_launch_get_uses_wopisrc_doc_id(client):
     assert session.access_token == "tok-9"
     assert session.remote_host == "http://collaboration:9300"
     assert '"fid-77"' in resp.text
+
+
+def test_document_html_empty_file_returns_blank(client):
+    """A 0-byte file must open as a blank document (start-typing UX), not
+    fail with 'File is not a zip file' (US-3)."""
+    store = client.test_store  # type: ignore[attr-defined]
+    store.init("e1", "empty.docx")
+    store.put_content("e1", b"")
+    r = client.get("/api/documents/e1/html")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["html"] == ""
+    assert body["blank"] is True
+
+
+def test_document_html_corrupt_nonempty_still_errors(client):
+    store = client.test_store  # type: ignore[attr-defined]
+    store.init("e2", "corrupt.docx")
+    store.put_content("e2", b"this is not a zip file, just text bytes")
+    r = client.get("/api/documents/e2/html")
+    assert r.status_code == 500
+    assert "conversion failed" in r.json()["error"]
