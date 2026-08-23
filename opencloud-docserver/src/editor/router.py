@@ -45,8 +45,19 @@ def _registry(request: Request) -> SessionRegistry:
     return request.app.state.sessions
 
 
+def _session_for(request: Request, doc_id: str) -> EditorSession | None:
+    """Resolve the active session, preferring the per-launch session id (so
+    concurrent editors of the same file never borrow each other's session)."""
+    sid = request.query_params.get("session")
+    if sid:
+        session = _registry(request).get_by_id(sid)
+        if session:
+            return session
+    return _registry(request).get(doc_id)
+
+
 def _client(request: Request, doc_id: str) -> RemoteWopiClient | None:
-    session = _registry(request).get(doc_id)
+    session = _session_for(request, doc_id)
     if session and session.in_client_mode:
         client = RemoteWopiClient(
             session.remote_host or "",
@@ -122,12 +133,30 @@ def _parse_launch(request: Request, form: dict | None):
         )
         _registry(request).register(session)
         # Take the WOPI lock on the remote host so saves (PutFile) succeed —
-        # the wopiserver refuses PutFile on unlocked files (409). Best effort:
-        # launch must never fail because of locking.
+        # the wopiserver refuses PutFile on unlocked files (409). The lock is
+        # owner-named (wo:{user}:{uuid}); if another user already holds it,
+        # the session is served read-only instead of clobbering their edits.
+        # Best effort: launch must never fail because of locking.
         if token:
             try:
-                session.lock_token = RemoteWopiClient(wopi_host, token).acquire_or_adopt_lock(doc_id)
-            except Exception:
+                host = RemoteWopiClient(wopi_host, token)
+                owner = ""
+                try:
+                    owner = (host.check_file_info(doc_id) or {}).get("UserId") or ""
+                except Exception as exc:
+                    print(f"[launch] CFI failed for {doc_id}: {exc!r}")
+                # Unknown owner still gets an owner-named token (wo:unknown:…)
+                # so other users can never steal the lock out from under us.
+                lock_token, writable = host.acquire_or_adopt_lock(doc_id, owner=owner or "unknown")
+                print(
+                    f"[launch] doc={doc_id} owner={owner[:40]!r} writable={writable} "
+                    f"lock={lock_token[:32] if lock_token else ''}"
+                )
+                session.lock_token = lock_token
+                session.read_only = not writable
+                session.user_id = owner
+            except Exception as exc:
+                print(f"[launch] lock failed for {doc_id}: {exc!r}")
                 session.lock_token = ""
         return session
     # Legacy launch: signed token + explicit wopi_host (query params).
@@ -169,13 +198,22 @@ async def editor_page(doc_id: str, request: Request) -> HTMLResponse:
     # The editor resolves its doc id from the launch (form file_id or the last
     # segment of WOPISrc). At the root /editor path the path param is empty,
     # so use the resolved id (the editor JS reads __DOC_ID__).
+    read_only = False
+    session_id = ""
     if session and session.doc_id:
         doc_id = session.doc_id
+        read_only = session.read_only
+        session_id = session.session_id
 
     return _templates.TemplateResponse(
         request,
         "index.html",
-        {"doc_id": doc_id, "name": _doc_name(request, doc_id)},
+        {
+            "doc_id": doc_id,
+            "name": _doc_name(request, doc_id),
+            "read_only": read_only,
+            "session_id": session_id,
+        },
     )
 
 
@@ -201,6 +239,10 @@ async def document_html(doc_id: str, request: Request) -> JSONResponse:
     data = _load_bytes(request, doc_id)
     if data is None:
         return JSONResponse({"error": "not found"}, status_code=404)
+    if not data:
+        # 0-byte file: start from a blank document so the user can just write;
+        # the first save re-encodes the (now non-empty) HTML into a valid DOCX.
+        return JSONResponse({"html": "", "name": _doc_name(request, doc_id), "blank": True})
     try:
         html = docx_to_html(data)
     except Exception as exc:
@@ -217,6 +259,13 @@ async def save_document(doc_id: str, request: Request) -> JSONResponse:
     except json.JSONDecodeError:
         return JSONResponse({"error": "invalid JSON"}, status_code=400)
     html = payload.get("html", "")
+
+    session = _session_for(request, doc_id)
+    if session and session.read_only:
+        return JSONResponse(
+            {"error": "read-only: another user is editing this document"},
+            status_code=403,
+        )
 
     try:
         docx_bytes = html_to_docx(html)

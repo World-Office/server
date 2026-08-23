@@ -12,9 +12,20 @@
 (function () {
   const DOC_ID = window.__DOC_ID__ || "unknown";
   const DOC_NAME = window.__DOC_NAME__ || "document.docx";
+  const READ_ONLY = window.__READ_ONLY__ === true;
+  const SESSION = window.__SESSION__ || "";
+  const api = (path) => `/api/documents/${encodeURIComponent(DOC_ID)}/${path}?session=${encodeURIComponent(SESSION)}`;
   const editor = document.getElementById("editor");
   const status = document.getElementById("status");
   const saveBtn = document.getElementById("btn-save");
+
+  if (READ_ONLY) {
+    editor.contentEditable = "false";
+    saveBtn.disabled = true;
+    const toolbar = document.getElementById("toolbar");
+    if (toolbar) toolbar.querySelectorAll("button").forEach((b) => (b.disabled = true));
+    setStatus("Read-only — another user is editing this document");
+  }
 
   // ------------------------------------------------------------------
   // Status helpers
@@ -30,11 +41,13 @@
   async function loadDocument() {
     setStatus("Loading…");
     try {
-      const res = await fetch(`/api/documents/${encodeURIComponent(DOC_ID)}/html`);
+      const res = await fetch(api("html"));
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "load failed");
-      editor.innerHTML = data.html;
-      setStatus("Ready");
+      // Anchor: an empty/blank document still needs a block element so
+      // typing produces <p>…</p> (bare text would be lost in DOCX conversion).
+      editor.innerHTML = data.html || "<p><br></p>";
+      setStatus(data.blank ? "Empty document — start typing" : "Ready");
     } catch (err) {
       editor.innerHTML = "<p><em>Could not load document.</em></p>";
       setStatus("Load failed: " + err.message, true);
@@ -45,10 +58,11 @@
   // Save
   // ------------------------------------------------------------------
   async function saveDocument() {
+    if (READ_ONLY) return;
     setStatus("Saving…");
     try {
       const res = await fetch(
-        `/api/documents/${encodeURIComponent(DOC_ID)}/save`,
+        api("save"),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -145,7 +159,7 @@
   // (client mode). Best effort: sendBeacon survives navigation/unload.
   window.addEventListener("beforeunload", () => {
     if (typeof navigator.sendBeacon === "function") {
-      navigator.sendBeacon(`/api/documents/${encodeURIComponent(DOC_ID)}/unlock`, "");
+      navigator.sendBeacon(api("unlock"), "");
     }
   });
 

@@ -15,6 +15,7 @@ from __future__ import annotations
 import time
 import urllib.parse
 import urllib.request
+import uuid
 from dataclasses import dataclass, field
 
 from ..lib.crypto import decode_token
@@ -35,6 +36,8 @@ class EditorSession:
     remote_host: str | None = None
     access_token: str | None = None
     lock_token: str = ""
+    read_only: bool = False
+    session_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     created_at: float = field(default_factory=time.time)
 
     @property
@@ -84,19 +87,27 @@ class RemoteWopiClient:
         with urllib.request.urlopen(req, timeout=self.timeout) as resp:
             resp.read()
 
-    def acquire_or_adopt_lock(self, doc_id: str) -> str:
-        """Lock the remote file, or adopt the current lock if one exists.
+    def acquire_or_adopt_lock(self, doc_id: str, owner: str = "") -> tuple[str, bool]:
+        """Lock the remote file, or adopt/reject an existing lock by owner.
 
         OpenCloud/OCIS wopiserver refuses PutFile on an unlocked file
         (409 "Cannot PutFile on unlocked file"), so the docserver must take
         the WOPI lock at launch and present `X-WOPI-Lock` on every save.
-        If another session already holds the lock (e.g. re-open), adopt it
-        via GET_LOCK so saves still succeed. Returns the lock token ("" if
-        the host has no locking).
+
+        Locks are named `wo:{owner}:{uuid}` so a second session can decide:
+        - same owner (same user re-opening, or an orphan lock left by the
+          same user's crashed session)  -> adopt, stay writable;
+        - different owner (another user currently editing) -> return
+          writable=False so the session is served read-only;
+        - owner unknown or legacy lock format -> adopt, stay writable
+          (best effort; prevents breaking the happy path over a stale lock).
+
+        Returns (lock_token, writable). "" if the host has no locking.
         """
         import uuid
 
-        lock_token = uuid.uuid4().hex
+        owner = owner or ""
+        lock_token = f"wo:{owner}:{uuid.uuid4().hex}" if owner else uuid.uuid4().hex
         req = urllib.request.Request(self._url(doc_id), data=b"", method="POST")
         req.add_header("X-WOPI-Override", "LOCK")
         req.add_header("X-WOPI-Lock", lock_token)
@@ -104,19 +115,57 @@ class RemoteWopiClient:
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 resp.read()
             self.lock_token = lock_token
-            return lock_token
+            return lock_token, True
         except urllib.error.HTTPError:
-            # Already locked elsewhere — adopt the existing lock.
+            # Already locked — inspect the current lock's owner.
             try:
                 req2 = urllib.request.Request(self._url(doc_id), data=b"", method="POST")
                 req2.add_header("X-WOPI-Override", "GET_LOCK")
                 with urllib.request.urlopen(req2, timeout=self.timeout) as resp:
                     current = resp.headers.get("X-WOPI-Lock", "")
-                self.lock_token = current
-                return current
             except Exception:
+                current = ""
+            own_owner = current.split(":", 2)[1] if current.startswith("wo:") else ""
+            if owner and own_owner and own_owner != owner:
+                # Held by another user: serve read-only, do not steal the lock.
                 self.lock_token = ""
-                return ""
+                return "", False
+            if current.startswith("wo:"):
+                # Same owner: share the token (same user, multiple tabs)
+                # so every one of their sessions keeps saving.
+                self.lock_token = current
+                return current, True
+            # Legacy/unknown-format lock (pre-upgrade or crashed session):
+            # take it over with an owner-named lock so LATER opens can
+            # enforce cross-user read-only.
+            try:
+                requ = urllib.request.Request(self._url(doc_id), data=b"", method="POST")
+                requ.add_header("X-WOPI-Override", "UNLOCK")
+                requ.add_header("X-WOPI-Lock", current)
+                urllib.request.urlopen(requ, timeout=self.timeout).read()
+            except Exception:
+                pass
+            try:
+                reql = urllib.request.Request(self._url(doc_id), data=b"", method="POST")
+                reql.add_header("X-WOPI-Override", "LOCK")
+                reql.add_header("X-WOPI-Lock", lock_token)
+                urllib.request.urlopen(reql, timeout=self.timeout).read()
+                self.lock_token = lock_token
+                return lock_token, True
+            except urllib.error.HTTPError:
+                # Lock changed under us (race) — evaluate the new owner.
+                try:
+                    req3 = urllib.request.Request(self._url(doc_id), data=b"", method="POST")
+                    req3.add_header("X-WOPI-Override", "GET_LOCK")
+                    with urllib.request.urlopen(req3, timeout=self.timeout) as resp:
+                        raced = resp.headers.get("X-WOPI-Lock", "")
+                except Exception:
+                    raced = ""
+                if owner and raced.startswith("wo:") and raced.split(":", 2)[1] != owner:
+                    self.lock_token = ""
+                    return "", False
+                self.lock_token = raced
+                return raced, True
 
     def release_lock(self, doc_id: str) -> None:
         """Release the WOPI lock on the remote host (best effort)."""
@@ -153,13 +202,21 @@ class SessionRegistry:
         self._sessions: dict[str, EditorSession] = {}
 
     def register(self, session: EditorSession) -> None:
-        self._sessions[session.doc_id] = session
+        # Key by unique session id so concurrent launches for the SAME file
+        # (e.g. two users or two tabs) don't clobber one another's session.
+        self._sessions[session.session_id] = session
 
     def get(self, doc_id: str) -> EditorSession | None:
-        return self._sessions.get(doc_id)
+        """Latest session for a doc id (backward-compatible shortcut)."""
+        matches = [s for s in self._sessions.values() if s.doc_id == doc_id]
+        return max(matches, key=lambda s: s.created_at) if matches else None
+
+    def get_by_id(self, session_id: str) -> EditorSession | None:
+        return self._sessions.get(session_id)
 
     def drop(self, doc_id: str) -> None:
-        self._sessions.pop(doc_id, None)
+        for sid in [k for k, s in self._sessions.items() if s.doc_id == doc_id]:
+            self._sessions.pop(sid, None)
 
     def all(self) -> list[EditorSession]:
         return sorted(self._sessions.values(), key=lambda s: s.created_at)

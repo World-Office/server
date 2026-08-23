@@ -101,3 +101,42 @@ def test_list_grouped_in_ul():
     html = docx_to_html(buf.getvalue())
     assert "<ul>" in html and "</ul>" in html
     assert html.count("<ul>") == 1
+
+
+def test_html_to_docx_preserves_bold_italic_underline():
+    docx_bytes = html_to_docx("<p>plain <b>bold</b> <i>italic</i> <u>under</u> tail</p>")
+    doc = Document(io.BytesIO(docx_bytes))
+    runs = [(r.text, r.bold, r.italic, r.underline) for r in doc.paragraphs[0].runs]
+    by_text = {r[0].strip(): r for r in runs}
+    assert by_text["bold"][1] is True, runs
+    assert by_text["italic"][2] is True, runs
+    assert by_text["under"][3] is True, runs
+    assert by_text["plain"][1] is None and by_text["tail"][1] is None, runs
+
+
+def test_html_to_docx_nested_inline_formatting():
+    docx_bytes = html_to_docx("<p><b>both <i>nested</i></b> end</p>")
+    doc = Document(io.BytesIO(docx_bytes))
+    runs = {(r.text): r for r in doc.paragraphs[0].runs}
+    assert runs["both "].bold is True
+    assert runs["nested"].bold is True and runs["nested"].italic is True
+    assert runs[" end"].bold is None
+
+
+def test_full_roundtrip_keeps_bold():
+    """DOCX(bold) -> HTML -> DOCX must keep the bold run (US-2 fidelity)."""
+    original = _simple_docx()  # contains a bold run "bold and "
+    html = docx_to_html(original)
+    assert "<b>bold and </b>" in html
+    roundtrip = html_to_docx(html)
+    doc = Document(io.BytesIO(roundtrip))
+    bold = [r.text for p in doc.paragraphs for r in p.runs if r.bold]
+    assert "bold and " in bold, bold
+
+
+def test_html_to_docx_keeps_tagless_text():
+    """Raw text without block tags must survive (typed into an empty#editor)."""
+    docx_bytes = html_to_docx("FRISCHER INHALT X.&nbsp;")
+    doc = Document(io.BytesIO(docx_bytes))
+    text = " ".join(p.text for p in doc.paragraphs)
+    assert "FRISCHER INHALT X." in text, text
