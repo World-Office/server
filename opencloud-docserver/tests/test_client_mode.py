@@ -6,6 +6,7 @@ run the docserver against it through the editor API.
 
 from __future__ import annotations
 
+import io
 import threading
 from wsgiref.simple_server import make_server
 
@@ -28,6 +29,7 @@ class _MockHost:
         self.auth_seen: list[str] = []
         self.query_seen: list[str] = []
         self.override_seen: list[str] = []
+        self.lock_token: str | None = None
 
     def __call__(self, environ, start_response):
         token = environ.get("HTTP_AUTHORIZATION", "")
@@ -48,7 +50,33 @@ class _MockHost:
             return [self.content or b""]
         if path == "/wopi/files/doc1/contents" and method == "POST" and override == "PUT":
             length = int(environ.get("CONTENT_LENGTH", "0"))
+            lock_hdr = environ.get("HTTP_X_WOPI_LOCK", "")
+            if lock_hdr != (self.lock_token or ""):
+                # wopiserver behaviour: unlocked file -> 409, mismatched -> 500
+                if not self.lock_token:
+                    start_response(
+                        "409 Conflict", [("Content-Type", "text/plain"), ("X-WOPI-Lock", ""), ("X-WOPI-LockFailureReason", "Cannot PutFile on unlocked file")]
+                    )
+                    return [b"conflict"]
+                start_response("500 Internal Server Error", [("Content-Type", "text/plain")])
+                return [b"lock mismatch"]
             self.content = environ["wsgi.input"].read(length)
+            start_response("200 OK", [("Content-Type", "application/json")])
+            return [b"{}"]
+        if path == "/wopi/files/doc1" and method == "POST" and override == "LOCK":
+            tok = environ.get("HTTP_X_WOPI_LOCK", "")
+            if self.lock_token and self.lock_token != tok:
+                start_response("409 Conflict", [("Content-Type", "text/plain"), ("X-WOPI-Lock", self.lock_token)])
+                return [b"locked by other"]
+            self.lock_token = tok
+            start_response("200 OK", [("Content-Type", "application/json"), ("X-WOPI-ItemVersion", "v1")])
+            return [b"{}"]
+        if path == "/wopi/files/doc1" and method == "POST" and override == "GET_LOCK":
+            start_response("200 OK", [("Content-Type", "application/json"), ("X-WOPI-Lock", self.lock_token or "")])
+            return [b"{}"]
+        if path == "/wopi/files/doc1" and method == "POST" and override == "UNLOCK":
+            if environ.get("HTTP_X_WOPI_LOCK", "") == self.lock_token:
+                self.lock_token = None
             start_response("200 OK", [("Content-Type", "application/json")])
             return [b"{}"]
         if path == "/wopi/files/doc1" and method == "GET":
@@ -101,9 +129,12 @@ def test_remote_client_get_and_put():
 
 def test_remote_client_sends_lock_on_put():
     with _RealWopiClientTest() as env:
-        env.client.lock_token = "LOCK-9"
-        # can't easily assert header after fact; just ensure no crash
+        lock = env.client.acquire_or_adopt_lock("doc1")
         env.client.put_contents("doc1", b"x")
+        assert env.host.content == b"x"
+        assert env.host.override_seen.count("PUT") >= 1
+        assert env.host.override_seen.count("LOCK") >= 1
+        assert env.host.lock_token == lock
 
 
 # ----------------------------------------------------------------------
@@ -135,3 +166,96 @@ def test_session_registry():
     assert reg.get("doc1") is s
     reg.drop("doc1")
     assert reg.get("doc1") is None
+
+
+def test_remote_client_acquire_lock_and_put():
+    """Client-mode save path: lock first, then PutFile with the lock (the
+    wopiserver refuses PutFile on unlocked files)."""
+    with _RealWopiClientTest() as env:
+        lock = env.client.acquire_or_adopt_lock("doc1")
+        assert lock and env.host.lock_token == lock
+        env.client.put_contents("doc1", b"locked write")
+        assert env.host.content == b"locked write"
+        env.client.release_lock("doc1")
+        assert env.host.lock_token is None
+
+
+def test_remote_client_adopts_existing_lock():
+    with _RealWopiClientTest() as env:
+        other = env.client.acquire_or_adopt_lock("doc1")  # first holds lock
+        env2 = RemoteWopiClient(env.client.host, "token-456")
+        adopted = env2.acquire_or_adopt_lock("doc1")  # LOCK fails -> adopt
+        assert adopted == other
+        assert env2.lock_token == other
+        env2.put_contents("doc1", b"adopted write")  # save succeeds with adopted lock
+        assert env.host.content == b"adopted write"
+        env2.release_lock("doc1")
+        assert env.host.lock_token is None
+
+
+def test_editor_save_uses_session_lock_in_client_mode(tmp_path):
+    """Regression: the client-mode save path must carry the session's WOPI
+    lock to the remote PutFile (otherwise the wopiserver answers 409
+    \"Cannot PutFile on unlocked file\")."""
+    import threading
+    from contextlib import asynccontextmanager
+    from wsgiref.simple_server import make_server
+
+    from docx import Document
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    from src.config import Config
+    from src.editor.router import router as editor_router
+    from src.lib.store import DocumentStore, wipe_db, wipe_dir
+    from src.wopi.router import router as wopi_router
+
+    seed = Document()
+    seed.add_paragraph("hello remote")
+    buf = io.BytesIO()
+    seed.save(buf)
+
+    host = _MockHost()
+    httpd = make_server("127.0.0.1", 0, host)
+    port = httpd.server_address[1]
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    try:
+        host.content = buf.getvalue()
+        db = str(tmp_path / "t.db")
+        content = str(tmp_path / "content")
+        store = DocumentStore(db, content)
+        cfg = Config(database=db, content_dir=content, jwt_secret="test-secret")
+
+        @asynccontextmanager
+        async def lifespan(app):
+            app.state.store = store
+            app.state.sessions = SessionRegistry()
+            app.state.config = cfg
+            yield
+
+        app = FastAPI(lifespan=lifespan)
+        app.include_router(wopi_router)
+        app.include_router(editor_router)
+        with TestClient(app) as c:
+            resp = c.post(
+                "/editor",
+                data={"access_token": "tok-1"},
+                params={"WOPISrc": f"http://127.0.0.1:{port}/wopi/files/doc1"},
+            )
+            assert resp.status_code == 200
+            assert host.lock_token, "launch must take the WOPI lock on the remote host"
+
+            r = c.get("/api/documents/doc1/html")
+            assert r.status_code == 200, r.text
+
+            r = c.post("/api/documents/doc1/save", json={"html": "<p>saved via lock</p>"})
+            assert r.status_code == 200, r.text
+            saved = Document(io.BytesIO(host.content))
+            assert "saved via lock" in "\n".join(p.text for p in saved.paragraphs)
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+        thread.join(timeout=2)
+        wipe_db(str(tmp_path / "t.db"))
+        wipe_dir(str(tmp_path / "content"))

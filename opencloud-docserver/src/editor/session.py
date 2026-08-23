@@ -84,6 +84,54 @@ class RemoteWopiClient:
         with urllib.request.urlopen(req, timeout=self.timeout) as resp:
             resp.read()
 
+    def acquire_or_adopt_lock(self, doc_id: str) -> str:
+        """Lock the remote file, or adopt the current lock if one exists.
+
+        OpenCloud/OCIS wopiserver refuses PutFile on an unlocked file
+        (409 "Cannot PutFile on unlocked file"), so the docserver must take
+        the WOPI lock at launch and present `X-WOPI-Lock` on every save.
+        If another session already holds the lock (e.g. re-open), adopt it
+        via GET_LOCK so saves still succeed. Returns the lock token ("" if
+        the host has no locking).
+        """
+        import uuid
+
+        lock_token = uuid.uuid4().hex
+        req = urllib.request.Request(self._url(doc_id), data=b"", method="POST")
+        req.add_header("X-WOPI-Override", "LOCK")
+        req.add_header("X-WOPI-Lock", lock_token)
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                resp.read()
+            self.lock_token = lock_token
+            return lock_token
+        except urllib.error.HTTPError:
+            # Already locked elsewhere — adopt the existing lock.
+            try:
+                req2 = urllib.request.Request(self._url(doc_id), data=b"", method="POST")
+                req2.add_header("X-WOPI-Override", "GET_LOCK")
+                with urllib.request.urlopen(req2, timeout=self.timeout) as resp:
+                    current = resp.headers.get("X-WOPI-Lock", "")
+                self.lock_token = current
+                return current
+            except Exception:
+                self.lock_token = ""
+                return ""
+
+    def release_lock(self, doc_id: str) -> None:
+        """Release the WOPI lock on the remote host (best effort)."""
+        if not self.lock_token:
+            return
+        try:
+            req = urllib.request.Request(self._url(doc_id), data=b"", method="POST")
+            req.add_header("X-WOPI-Override", "UNLOCK")
+            req.add_header("X-WOPI-Lock", self.lock_token)
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                resp.read()
+        except Exception:
+            pass
+        self.lock_token = ""
+
     def check_file_info(self, doc_id: str) -> dict:
         """GET CheckFileInfo from the remote host."""
         req = urllib.request.Request(self._url(doc_id))

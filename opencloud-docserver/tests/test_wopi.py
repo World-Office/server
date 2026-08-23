@@ -198,3 +198,49 @@ def test_editor_page_served(client):
     res = client.get("/editor/doc1")
     assert res.status_code == 200
     assert "contenteditable" in res.text
+
+
+def test_hosting_discovery_clean_urlsrc_no_access_token(client):
+    """Validated against real OpenCloud 7.3.0: OpenCloud appends WOPISrc to
+    the urlsrc itself and POSTs a form with the real access_token in the
+    body. urlsrc must therefore contain NO access_token placeholder/param."""
+    r = client.get("/hosting/discovery")
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/xml")
+    xml = r.text
+    assert "access_token" not in xml, "urlsrc must not carry an access_token param"
+    assert 'urlsrc="http://localhost:8000/editor"' in xml
+    assert 'ext="docx"' in xml
+
+
+def test_editor_launch_accepts_ocis_form_post(client):
+    """OpenCloud launches the app by POSTing an urlencoded form with the real
+    access_token in the body and WOPISrc in the query string (WOPI handshake)."""
+    resp = client.post(
+        "/editor",
+        data={"access_token": "tok-123", "file_id": "doc-client", "embedded": "true"},
+        params={"WOPISrc": "http://collaboration:9300/wopi/files/abc123"},
+    )
+    assert resp.status_code == 200
+    # form `file_id` takes precedence as the session id
+    session = client.app.state.sessions.get("doc-client")
+    assert session is not None, "client-mode session must be registered from POST body"
+    assert session.remote_host == "http://collaboration:9300"
+    assert session.access_token == "tok-123"
+    # Editor page must be wired to the resolved doc id (root path has no id):
+    assert '"doc-client"' in resp.text
+
+
+def test_editor_launch_get_uses_wopisrc_doc_id(client):
+    """GET launches (dev/local) carry everything in the query string; the
+    doc id is derived from the last segment of WOPISrc."""
+    resp = client.get("/editor", params={
+        "access_token": "tok-9",
+        "WOPISrc": "http://collaboration:9300/wopi/files/fid-77",
+    })
+    assert resp.status_code == 200
+    session = client.app.state.sessions.get("fid-77")
+    assert session is not None
+    assert session.access_token == "tok-9"
+    assert session.remote_host == "http://collaboration:9300"
+    assert '"fid-77"' in resp.text
