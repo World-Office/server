@@ -316,3 +316,29 @@ def test_table_roundtrip_through_html_is_stable():
     docx_bytes = html_to_docx(source)
     rebuilt = docx_to_html(docx_bytes)
     assert rebuilt == source, f"\ninput:   {source}\nrebuilt: {rebuilt}"
+
+
+# --------------------------------------------------------------------------
+# Converter performance regression (converter-benchmark)
+# --------------------------------------------------------------------------
+
+
+def test_converter_roundtrip_has_no_perf_regression():
+    """The 100-paragraph roundtrip must stay within the benchmark bound.
+
+    Delegates to the shared benchmark harness (``tests/bench/``) so the
+    bound lives in exactly one place; a regression in converter
+    throughput (e.g. an O(n^2) body scan) fails both here and in the
+    standalone benchmark run.
+    """
+    from tests.bench.benchmark_converter import (
+        BOUND_SECONDS,
+        best_roundtrip_time,
+        make_document_docx,
+    )
+
+    elapsed = best_roundtrip_time(make_document_docx(100), iterations=3)
+    assert elapsed <= BOUND_SECONDS, (
+        f"100-paragraph DOCX<->HTML roundtrip took {elapsed:.2f}s "
+        f"— exceeds the {BOUND_SECONDS}s benchmark ceiling, perf regression"
+    )
