@@ -166,10 +166,33 @@
       if (bucket[k] === undefined) bucket[k] = pair[k];
     });
   }
+  // Accessibility strings (skip link, document label, toolbar region)
+  // referenced by data-i18n / data-i18n-aria-label markers that are not yet
+  // in the shipped catalog. Same seed pattern as the toolbar/find strings;
+  // only missing keys are filled, so catalog entries still win when added.
+  const A11Y_UI_STRINGS = {
+    "A11y.SkipToDocument": "Skip to document",
+    "A11y.EditorLabel": "Document",
+    "Toolbar.Region": "Formatting toolbar",
+  };
+  const A11Y_UI_STRINGS_DE = {
+    "A11y.SkipToDocument": "Zum Dokument springen",
+    "A11y.EditorLabel": "Dokument",
+    "Toolbar.Region": "Formatierungsleiste",
+  };
+  function seedA11yStrings(tFn) {
+    const bucket = tFn && tFn.resources && tFn.resources[tFn.lng] && tFn.resources[tFn.lng].translation;
+    if (!bucket) return;
+    const pair = detectedLng.indexOf("de") === 0 ? A11Y_UI_STRINGS_DE : A11Y_UI_STRINGS;
+    Object.keys(pair).forEach((k) => {
+      if (bucket[k] === undefined) bucket[k] = pair[k];
+    });
+  }
   const t = (window.createI18n && window.createI18n({ lng: detectedLng })) || ((k) => k);
   seedUiStrings(t);
   seedFindStrings(t);
   seedToolbarStrings(t);
+  seedA11yStrings(t);
   // Localize static HTML (toolbar tooltips, Save label, ready status) and
   // keep the <html lang> attribute in sync for a11y & spell-check.
   if (window.applyTranslations) {
@@ -183,6 +206,7 @@
 
   if (READ_ONLY) {
     editor.contentEditable = "false";
+    editor.setAttribute("aria-readonly", "true");
     saveBtn.disabled = true;
     const toolbar = document.getElementById("toolbar");
     if (toolbar) toolbar.querySelectorAll("button").forEach((b) => (b.disabled = true));
@@ -501,6 +525,13 @@
         active = false;
       }
       btn.classList.toggle("active", !!active);
+      // Mirror the active state on the accessible name so screen readers
+      // announce toggle-format buttons (bold, align, lists, headings) as
+      // pressed/released. Only buttons that declare aria-pressed in the
+      // markup are touched (indent/outdent etc. are not toggles).
+      if (btn.hasAttribute("aria-pressed")) {
+        btn.setAttribute("aria-pressed", active ? "true" : "false");
+      }
     });
     // Mirror the formatting at the caret in the full-toolbar dropdowns
     // (best effort — engines disagree on queryCommandValue formats, so a
@@ -516,7 +547,16 @@
       let fam = "";
       try { fam = document.queryCommandValue("fontName"); } catch (err) { /* best effort */ }
       fam = String(fam || "").replace(/^["']|["']$/g, "");
-      if (fam && famEl.querySelector('option[value="' + fam + '"]')) famEl.value = fam;
+      // Match against the option list by value, not by building a CSS
+      // selector: fontName can return a full font stack like
+      // `system-ui, -apple-system, "Segoe UI", ...` whose embedded quotes
+      // would make a querySelector value argument invalid (and spam errors
+      // on every selectionchange).
+      if (fam) {
+        for (let i = 0; i < famEl.options.length; i++) {
+          if (famEl.options[i].value === fam) { famEl.value = fam; break; }
+        }
+      }
     }
     // Line spacing: resolve the block's computed line-height into the
     // nearest preset in the dropdown (default 1.0 / single = placeholder).
@@ -551,6 +591,47 @@
     return "P";
   }
 
+  // Accessibility: track which element opened a modal so closing returns
+  // focus to it (WCAG 2.4.3 Focus Order), and keep Tab inside the open
+  // dialog (modal-dialog pattern, WCAG 2.1.1/1.3.2). restoreFocus() is also
+  // the fallback target when no dialog trigger is known.
+  let lastFocusedEl = null;
+  function rememberFocus() {
+    lastFocusedEl = document.activeElement;
+  }
+  function restoreFocus() {
+    const el = lastFocusedEl && document.body.contains(lastFocusedEl) ? lastFocusedEl : editor;
+    lastFocusedEl = null;
+    el.focus();
+  }
+  const DIALOG_IDS = ["find-dialog", "table-dialog", "image-dialog"];
+  function getOpenDialog() {
+    for (let i = 0; i < DIALOG_IDS.length; i++) {
+      const d = document.getElementById(DIALOG_IDS[i]);
+      if (d && d.classList.contains("open")) return d;
+    }
+    return null;
+  }
+  // Trap Tab / Shift+Tab inside the open modal overlay.
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Tab") return;
+    const dialog = getOpenDialog();
+    if (!dialog) return;
+    const focusables = dialog.querySelectorAll(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"]):not([disabled])'
+    );
+    if (focusables.length === 0) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (ev.shiftKey && (document.activeElement === first || document.activeElement === dialog)) {
+      ev.preventDefault();
+      last.focus();
+    } else if (!ev.shiftKey && document.activeElement === last) {
+      ev.preventDefault();
+      first.focus();
+    }
+  });
+
   // ------------------------------------------------------------------
   // Insert-table dialog
   // ------------------------------------------------------------------
@@ -569,6 +650,7 @@
     rowsInput.value = "2";
     colsInput.value = "3";
     saveTableSelection();
+    rememberFocus();
     dialog.classList.add("open");
     colsInput.focus();
   }
@@ -617,7 +699,7 @@
     const dialog = document.getElementById("table-dialog");
     if (dialog) dialog.classList.remove("open");
     tableSelRange = null;
-    editor.focus();
+    restoreFocus();
   }
 
   // ------------------------------------------------------------------
@@ -650,6 +732,7 @@
     if (okBtn) okBtn.disabled = true;
     if (previewWrap) previewWrap.hidden = true;
     if (errEl) errEl.textContent = "";
+    rememberFocus();
     dialog.classList.add("open");
     if (fileInput) fileInput.focus();
   }
@@ -751,7 +834,7 @@
     if (dialog) dialog.classList.remove("open");
     imageSelRange = null;
     imageDataUrl = null;
-    editor.focus();
+    restoreFocus();
   }
 
   // wo-command event bus (project-wide invariant)
@@ -1069,6 +1152,7 @@
       const selText = editorSelectionText();
       if (selText) qInput.value = selText.slice(0, 200);
     }
+    rememberFocus();
     dialog.classList.add("open");
     if (qInput) {
       qInput.focus();
@@ -1082,7 +1166,7 @@
   function closeFindDialog() {
     const dialog = document.getElementById("find-dialog");
     if (dialog) dialog.classList.remove("open");
-    editor.focus();
+    restoreFocus();
   }
 
   function findNav(forward) {
@@ -1367,7 +1451,25 @@
         emitCommand("justifyRight");
         return;
       }
-      if (k === "b" || k === "i" || k === "u") ev.preventDefault();
+      if (k === "b") {
+        // Bold/italic/underline route through the wo-command bus (project
+        // invariant) instead of the browser's native shortcut handling, so
+        // the editor's execCommand path records history/active states
+        // (aria-pressed included) exactly like the toolbar buttons do.
+        ev.preventDefault();
+        emitCommand("bold");
+        return;
+      }
+      if (k === "i") {
+        ev.preventDefault();
+        emitCommand("italic");
+        return;
+      }
+      if (k === "u") {
+        ev.preventDefault();
+        emitCommand("underline");
+        return;
+      }
     }
   });
 
