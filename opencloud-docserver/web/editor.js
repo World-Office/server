@@ -16,7 +16,16 @@
   const READ_ONLY = window.__READ_ONLY__ === true;
   const SESSION = window.__SESSION__ || "";
   const api = (path) => `/api/documents/${encodeURIComponent(DOC_ID)}/${path}?session=${encodeURIComponent(SESSION)}`;
-  const t = window.createI18n && window.createI18n({ lng: "en" }) || ((k) => k);
+  // Resolve the UI language from the browser (falls back to English).
+  const detectedLng = window.detectLocale ? window.detectLocale() : (navigator.language || "en");
+  const t = (window.createI18n && window.createI18n({ lng: detectedLng })) || ((k) => k);
+  // Localize static HTML (toolbar tooltips, Save label, ready status) and
+  // keep the <html lang> attribute in sync for a11y & spell-check.
+  if (window.applyTranslations) {
+    window.applyTranslations(document, t);
+  }
+  const htmlEl = document.documentElement;
+  if (htmlEl) htmlEl.setAttribute("lang", t.lng);
   const editor = document.getElementById("editor");
   const status = document.getElementById("status");
   const saveBtn = document.getElementById("btn-save");
@@ -112,8 +121,8 @@
   }
 
   function insertTable() {
-    const cols = prompt(t("Table.Columns"), "3");
-    const rows = prompt(t("Table.Rows"), "2");
+    const cols = prompt(t("Prompt.TableColumns"), "3");
+    const rows = prompt(t("Prompt.TableRows"), "2");
     if (!cols || !rows) return;
     const c = Math.min(parseInt(cols, 10) || 3, 10);
     const r = Math.min(parseInt(rows, 10) || 2, 20);
