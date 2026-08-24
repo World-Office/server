@@ -1,23 +1,38 @@
 """ODT <-> HTML conversion using odfpy.
 
 Stoic goals (same as the DOCX converter): preserve text,
-bold/italic/underline, headings, lists, and tables. We do NOT attempt
-pagination or print-fidelity — the editor is a web page, not a print
-preview.
+bold/italic/underline, headings, lists, tables, and images. We do NOT
+attempt pagination or print-fidelity — the editor is a web page, not a
+print preview.
 
 HTML -> ODT is lossy by nature (web HTML is richer than we map); we map
 only the subset our editor produces, plus whatever reasonable tags appear.
+
+Images survive as self-contained data URIs on the HTML side and as
+``draw:frame``/``draw:image`` (package-embedded binary) on the ODT side.
 """
 
 from __future__ import annotations
 
+import base64
 import io
+import mimetypes
 import re
+import zipfile
 from html import escape
 from html.parser import HTMLParser
 
+from odf.draw import Frame, Image
 from odf.element import Node
-from odf.namespaces import STYLENS, TABLENS, TEXTNS
+from odf.namespaces import (
+    DRAWNS,
+    OFFICENS,
+    STYLENS,
+    SVGNS,
+    TABLENS,
+    TEXTNS,
+    XLINKNS,
+)
 from odf.opendocument import OpenDocumentText, load
 from odf.style import ParagraphProperties, Style, TextProperties
 from odf.table import Table, TableCell, TableRow
@@ -126,11 +141,190 @@ def _list_kinds(doc) -> dict[str, str]:
     return kinds
 
 
+# --------------------------------------------------------------------------
+# Image handling (draw:frame / draw:image <-> <img>)
+# --------------------------------------------------------------------------
+
+
+def _get_attr(el, ns: str, name: str) -> str | None:
+    """Read a namespaced attribute from a loaded ODF element."""
+    return dict(el.attributes).get((ns, name))
+
+
+def _picture_mime(name: str) -> str:
+    """Best-effort media type for a Pictures/ member from its extension."""
+    return mimetypes.guess_type(name)[0] or "application/octet-stream"
+
+
+def _extract_pictures(data: bytes) -> dict[str, tuple[str, bytes]]:
+    """Map every ``Pictures/`` member of the ODT package to (mime, bytes).
+
+    ODF stores referenced images under ``Pictures/``; ``draw:image``
+    xlink:hrefs point at those paths. Best-effort: on any zip problem we
+    simply get no pictures and the text still converts.
+    """
+    try:
+        z = zipfile.ZipFile(io.BytesIO(data))
+    except Exception:
+        return {}
+    pictures: dict[str, tuple[str, bytes]] = {}
+    for name in z.namelist():
+        if name.startswith("Pictures/"):
+            pictures[name] = (_picture_mime(name), z.read(name))
+    return pictures
+
+
+def _data_uri(mime: str, content: bytes) -> str:
+    """Encode image bytes as a self-contained ``data:`` URI for the editor."""
+    b64 = base64.b64encode(content).decode("ascii")
+    return f"data:{mime};base64,{b64}"
+
+
+_DATA_URI_RE = re.compile(r"^data:([^;,\s]+)(;[^,]*)?,(.*)$", re.S)
+
+
+def _decode_data_uri(src: str) -> tuple[str | None, bytes | None]:
+    """Decode a ``data:`` URI into (mime, bytes).
+
+    Returns (None, None) when the value is not an embeddable data URI (e.g.
+    an http(s) src that a server-side converter cannot fetch).
+    """
+    if not src:
+        return None, None
+    m = _DATA_URI_RE.match(src)
+    if not m:
+        return None, None
+    mime = (m.group(1) or "image/png").lower()
+    meta = m.group(2) or ""
+    payload = m.group(3)
+    try:
+        if "base64" in meta:
+            content = base64.b64decode(payload, validate=True)
+        else:
+            from urllib.parse import unquote
+
+            content = unquote(payload).encode("utf-8")
+    except Exception:
+        return None, None
+    if not content:
+        return None, None
+    return mime, content
+
+
+def _sniff_mime(data: bytes) -> str:
+    """Detect an image media type from its magic bytes."""
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return "image/png"
+    if data[:3] == b"GIF":
+        return "image/gif"
+    if data[:2] == b"\xff\xd8":
+        return "image/jpeg"
+    if data[:2] == b"BM":
+        return "image/bmp"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    if data[:5] in (b"<?xml", b"<svg "):
+        return "image/svg+xml"
+    return "image/png"
+
+
+_SOF_MARKERS = frozenset({0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7,
+                          0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF})
+
+
+def _jpeg_dimensions(data: bytes) -> tuple[int, int] | None:
+    """Read pixel dimensions out of a JPEG's SOF marker."""
+    i = 2
+    n = len(data)
+    while i + 3 < n:
+        if data[i] != 0xFF:
+            i += 1
+            continue
+        marker = data[i + 1]
+        if marker in _SOF_MARKERS:
+            if i + 9 <= n:
+                return (int.from_bytes(data[i + 7:i + 9], "big"),
+                        int.from_bytes(data[i + 5:i + 7], "big"))
+            return None
+        if marker == 0xFF or 0xD0 <= marker <= 0xD7:
+            i += 2
+            continue
+        seglen = int.from_bytes(data[i + 2:i + 4], "big")
+        i += 2 + seglen
+    return None
+
+
+def _image_dimensions(mime: str, data: bytes) -> tuple[int, int] | None:
+    """Best-effort intrinsic pixel size for common raster formats."""
+    mime = (mime or "").lower()
+    if mime == "image/png" and data[:8] == b"\x89PNG\r\n\x1a\n" and len(data) >= 24:
+        return (int.from_bytes(data[16:20], "big"),
+                int.from_bytes(data[20:24], "big"))
+    if mime == "image/gif" and data[:6] in (b"GIF87a", b"GIF89a") and len(data) >= 10:
+        return (int.from_bytes(data[6:8], "little"),
+                int.from_bytes(data[8:10], "little"))
+    if mime == "image/jpeg" and data[:2] == b"\xff\xd8":
+        return _jpeg_dimensions(data)
+    if mime == "image/bmp" and data[:2] == b"BM" and len(data) >= 26:
+        w = int.from_bytes(data[18:22], "little")
+        h = int.from_bytes(data[22:26], "little")
+        return (w, abs(h))
+    return None
+
+
+def _frame_to_html(frame_el, pictures: dict) -> str:
+    """Render a draw:frame (holding a draw:image) as an <img> data URI.
+
+    Handles both package-referenced images (xlink:href into ``Pictures/``)
+    and ``office:binary-data`` embedded directly in content.xml.
+    """
+    for child in frame_el.childNodes:
+        if child.nodeType != Node.ELEMENT_NODE or child.qname != (DRAWNS, "image"):
+            continue
+        mime, content = None, None
+        href = _get_attr(child, XLINKNS, "href")
+        if href:
+            key = href[2:] if href.startswith("./") else href
+            key = key.lstrip("/")
+            entry = pictures.get(href) or pictures.get(key)
+            if entry:
+                mime, content = entry
+        if content is None:
+            for sub in child.childNodes:
+                if sub.nodeType == Node.ELEMENT_NODE and sub.qname == (OFFICENS, "binary-data"):
+                    raw = "".join(n.data for n in sub.childNodes
+                                   if n.nodeType == Node.TEXT_NODE)
+                    try:
+                        content = base64.b64decode(raw)
+                        mime = _sniff_mime(content)
+                    except Exception:
+                        content = None
+                    break
+        if content:
+            attrs = []
+            for key in ("width", "height"):
+                val = _get_attr(frame_el, SVGNS, key)
+                m = re.fullmatch(r"\s*(\d+)\s*px\s*", val or "")
+                if m:
+                    attrs.append(f' {key}="{m.group(1)}"')
+            return f'<img src="{_data_uri(mime or "image/png", content)}"' + "".join(attrs) + "/>"
+    return ""
+
+
+def _parse_px(value) -> int | None:
+    """Parse an integer pixel length from an HTML attribute (e.g. '120')."""
+    if value is None:
+        return None
+    m = re.fullmatch(r"\s*(\d+)\s*(?:px)?\s*", value)
+    return int(m.group(1)) if m else None
+
+
 def odt_to_html(data: bytes) -> str:
     """Convert ODT bytes to an HTML fragment (content only, no <html>)."""
     doc = load(io.BytesIO(data))
     resolve = _build_style_resolver(doc)
     kinds = _list_kinds(doc)
+    pictures = _extract_pictures(data)
 
     parts: list[str] = []
     pending_list: str | None = None  # 'ul' | 'ol' while collecting <li>s
@@ -147,26 +341,26 @@ def odt_to_html(data: bytes) -> str:
         qname = child.qname
         if qname in ((TEXTNS, "p"), (TEXTNS, "h")):
             flush_list()
-            parts.append(_paragraph_to_html(child, resolve))
+            parts.append(_paragraph_to_html(child, resolve, pictures))
         elif qname == (TEXTNS, "list"):
             kind = kinds.get(child.getAttribute("stylename"), "ul")
             if pending_list != kind:
                 flush_list()
                 pending_list = kind
                 parts.append(f"<{kind}>")
-            for item in _list_items_to_html(child, resolve, kinds):
+            for item in _list_items_to_html(child, resolve, kinds, pictures):
                 parts.append(item)
         elif qname == (TABLENS, "table"):
             flush_list()
-            parts.append(_table_to_html(child, resolve))
+            parts.append(_table_to_html(child, resolve, pictures))
 
     flush_list()
     return "\n".join(p for p in parts if p)
 
 
-def _paragraph_to_html(el, resolve) -> str:
+def _paragraph_to_html(el, resolve, pictures) -> str:
     """Render a text:p or text:h element as a block-level HTML tag."""
-    inner = _paragraph_inner_html(el, resolve)
+    inner = _paragraph_inner_html(el, resolve, pictures)
     if el.qname == (TEXTNS, "h"):
         try:
             level = max(1, min(int(el.getAttribute("outlinelevel") or 1), 6))
@@ -176,17 +370,19 @@ def _paragraph_to_html(el, resolve) -> str:
     return f"<p>{inner}</p>"
 
 
-def _paragraph_inner_html(el, resolve) -> str:
+def _paragraph_inner_html(el, resolve, pictures) -> str:
     """Render paragraph/heading inline content (no <p>/<h> wrapper)."""
     style = resolve(el.getAttribute("stylename"))
-    return _inline_html(el, resolve, style)
+    return _inline_html(el, resolve, style, pictures)
 
 
-def _inline_html(el, resolve, base) -> str:
+def _inline_html(el, resolve, base, pictures) -> str:
     """Render the inline (run-level) content of an element to HTML.
 
     ``base`` is the effective character-flag dict inherited from the
     paragraph style; character styles on <span> override per property.
+    ``pictures`` maps ODT package paths to (mime, bytes) for draw:image
+    lookups.
     """
     out: list[str] = []
     for child in el.childNodes:
@@ -210,17 +406,19 @@ def _inline_html(el, resolve, base) -> str:
                 for key in ("bold", "italic", "underline"):
                     if span_flags[key] is not None:
                         flags[key] = span_flags[key]
-                out.append(_inline_html(child, resolve, flags))
+                out.append(_inline_html(child, resolve, flags, pictures))
             elif qname == (TEXTNS, "a"):
                 href = child.getAttribute("href")
-                inner = _inline_html(child, resolve, base)
+                inner = _inline_html(child, resolve, base, pictures)
                 if href:
                     inner = f'<a href="{escape(href)}">{inner}</a>'
                 out.append(inner)
+            elif qname == (DRAWNS, "frame"):
+                out.append(_frame_to_html(child, pictures))
             else:
                 # Unknown inline node (footnote body, drawing text-box…):
                 # descend so its text is not silently dropped.
-                out.append(_inline_html(child, resolve, base))
+                out.append(_inline_html(child, resolve, base, pictures))
     return "".join(out)
 
 
@@ -231,7 +429,7 @@ def _wrap(text: str, flags: dict) -> str:
     return text
 
 
-def _list_items_to_html(list_el, resolve, kinds) -> list[str]:
+def _list_items_to_html(list_el, resolve, kinds, pictures) -> list[str]:
     items: list[str] = []
     for child in list_el.childNodes:
         if child.qname == (TEXTNS, "list-item"):
@@ -240,18 +438,18 @@ def _list_items_to_html(list_el, resolve, kinds) -> list[str]:
                 if c.nodeType != Node.ELEMENT_NODE:
                     continue
                 if c.qname == (TEXTNS, "p"):
-                    body.append(_paragraph_inner_html(c, resolve))
+                    body.append(_paragraph_inner_html(c, resolve, pictures))
                 elif c.qname == (TEXTNS, "h"):
-                    body.append(_paragraph_inner_html(c, resolve))
+                    body.append(_paragraph_inner_html(c, resolve, pictures))
                 elif c.qname == (TEXTNS, "list"):
                     # nested list: its own <ul>/<ol> inside this <li>
-                    nested = odt_list_to_html(c, resolve, kinds)
+                    nested = odt_list_to_html(c, resolve, kinds, pictures)
                     body.append(nested)
             items.append("<li>" + "".join(body) + "</li>")
     return items
 
 
-def _table_to_html(table_el, resolve) -> str:
+def _table_to_html(table_el, resolve, pictures) -> str:
     rows: list[str] = []
     for row in table_el.childNodes:
         if row.qname != (TABLENS, "table-row"):
@@ -263,13 +461,13 @@ def _table_to_html(table_el, resolve) -> str:
             paras: list[str] = []
             for c in cell.childNodes:
                 if c.nodeType == Node.ELEMENT_NODE and c.qname == (TEXTNS, "p"):
-                    paras.append(_paragraph_to_html(c, resolve))
+                    paras.append(_paragraph_to_html(c, resolve, pictures))
             cells.append("<td>" + "<br/>".join(paras) + "</td>")
         rows.append("<tr>" + "".join(cells) + "</tr>")
     return "<table>" + "".join(rows) + "</table>"
 
 
-def odt_list_to_html(list_el, resolve, kinds) -> str:
+def odt_list_to_html(list_el, resolve, kinds, pictures) -> str:
     """Render a (possibly nested) text:list element as a <ul>/<ol> block."""
     kind = kinds.get(list_el.getAttribute("stylename"), "ul")
     items = []
@@ -280,9 +478,9 @@ def odt_list_to_html(list_el, resolve, kinds) -> str:
                 if c.nodeType != Node.ELEMENT_NODE:
                     continue
                 if c.qname in ((TEXTNS, "p"), (TEXTNS, "h")):
-                    body.append(_paragraph_inner_html(c, resolve))
+                    body.append(_paragraph_inner_html(c, resolve, pictures))
                 elif c.qname == (TEXTNS, "list"):
-                    body.append(odt_list_to_html(c, resolve, kinds))
+                    body.append(odt_list_to_html(c, resolve, kinds, pictures))
             items.append("<li>" + "".join(body) + "</li>")
     return f"<{kind}>" + "".join(items) + f"</{kind}>"
 
@@ -349,6 +547,7 @@ class _OdtWriter:
         self._char_styles: dict[tuple[bool, bool, bool], str] = {}
         self._para_styles: dict[str, str] = {}
         self._ol_style: str | None = None
+        self._img_n = 0
 
     # -- character styles -------------------------------------------------
     def char_style(self, bold: bool, italic: bool, underline: bool) -> str | None:
@@ -397,13 +596,45 @@ class _OdtWriter:
         self.doc.text.addElement(el)
 
     def _fill(self, el, html: str) -> None:
-        """Add styled runs parsed from an inline HTML fragment to an element."""
-        for text, bold, italic, underline in _styled_runs(html):
-            style_name = self.char_style(bold, italic, underline)
+        """Add styled text runs and images parsed from an inline HTML fragment."""
+        for token in _inline_tokens(html):
+            if token["type"] == "image":
+                self.add_image(el, token)
+                continue
+            text = token["text"]
+            style_name = self.char_style(token["bold"], token["italic"], token["underline"])
             if style_name:
                 el.addElement(Span(text=text, stylename=style_name))
             else:
                 el.addText(text)
+
+    def add_image(self, para_el, token: dict) -> None:
+        """Embed a data-URI <img> as a draw:frame/draw:image in the paragraph.
+
+        Only ``data:`` URIs are embeddable server-side; http(s)/relative
+        src values are skipped (no network fetching in a converter).
+        Dimensions come from the <img> attributes or the image's intrinsic
+        pixel size when it can be sniffed.
+        """
+        mime, content = _decode_data_uri(token.get("src") or "")
+        if content is None:
+            return
+        width = token.get("width")
+        height = token.get("height")
+        if not width or not height:
+            dims = _image_dimensions(mime, content)
+            if dims:
+                width = width or dims[0]
+                height = height or dims[1]
+        manifest = self.doc.addPictureFromString(content, mime)
+        self._img_n += 1
+        frame = Frame(name=f"WO_Picture_{self._img_n}", anchortype="as-char")
+        if width:
+            frame.setAttribute("width", f"{width}px")
+        if height:
+            frame.setAttribute("height", f"{height}px")
+        frame.addElement(Image(href=manifest))
+        para_el.addElement(frame)
 
     def add_list(self, html: str, ordered: bool) -> None:
         list_el = List()
@@ -447,18 +678,33 @@ class _OdtWriter:
 # --------------------------------------------------------------------------
 
 class _InlineRunBuilder(HTMLParser):
-    """Parse an inline HTML fragment into (text, bold, italic, underline) runs."""
+    """Parse an inline HTML fragment into text tokens and image tokens.
+
+    Text tokens are dicts with ``text`` / ``bold`` / ``italic`` /
+    ``underline`` keys; image tokens have ``type: "image"`` plus the
+    ``src`` / ``alt`` / ``width`` / ``height`` attributes.
+    """
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
-        self.runs: list[tuple[str, bool, bool, bool]] = []
+        self.tokens: list[dict] = []
         self._bold = 0
         self._italic = 0
         self._underline = 0
         self._buf: list[str] = []
 
     def handle_starttag(self, tag: str, attrs) -> None:
-        if tag in ("b", "strong"):
+        if tag == "img":
+            self._flush()
+            a = dict(attrs)
+            self.tokens.append({
+                "type": "image",
+                "src": a.get("src", ""),
+                "alt": a.get("alt", ""),
+                "width": _parse_px(a.get("width")),
+                "height": _parse_px(a.get("height")),
+            })
+        elif tag in ("b", "strong"):
             self._flush()
             self._bold += 1
         elif tag in ("i", "em"):
@@ -489,12 +735,26 @@ class _InlineRunBuilder(HTMLParser):
     def _flush(self) -> None:
         text = "".join(self._buf)
         if text:
-            self.runs.append((text, self._bold > 0, self._italic > 0, self._underline > 0))
+            self.tokens.append({
+                "type": "text",
+                "text": text,
+                "bold": self._bold > 0,
+                "italic": self._italic > 0,
+                "underline": self._underline > 0,
+            })
         self._buf = []
 
 
-def _styled_runs(html: str) -> list[tuple[str, bool, bool, bool]]:
+def _inline_tokens(html: str) -> list[dict]:
+    """Tokenize an inline HTML fragment into text and image tokens."""
     builder = _InlineRunBuilder()
     builder.feed(html)
     builder._flush()
-    return builder.runs
+    return builder.tokens
+
+
+def _styled_runs(html: str) -> list[tuple[str, bool, bool, bool]]:
+    """Legacy view: text-only runs (images excluded), used by callers that
+    only care about character formatting."""
+    return [(t["text"], t["bold"], t["italic"], t["underline"])
+            for t in _inline_tokens(html) if t["type"] == "text"]
