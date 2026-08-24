@@ -7,24 +7,24 @@
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <header class="toolbar">
-    <button data-cmd="bold" title="Bold (Ctrl+B)">B</button>
-    <button data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
-    <button data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+  <header id="toolbar" class="toolbar">
+    <button data-cmd="bold" title="Bold (Ctrl+B)" data-i18n-title="Toolbar.BoldTitle">B</button>
+    <button data-cmd="italic" title="Italic (Ctrl+I)" data-i18n-title="Toolbar.ItalicTitle"><i>I</i></button>
+    <button data-cmd="underline" title="Underline (Ctrl+U)" data-i18n-title="Toolbar.UnderlineTitle"><u>U</u></button>
     <span class="sep"></span>
-    <button data-cmd="formatBlock" data-value="H1" title="Heading 1">H1</button>
-    <button data-cmd="formatBlock" data-value="H2" title="Heading 2">H2</button>
-    <button data-cmd="formatBlock" data-value="P" title="Paragraph">¶</button>
+    <button data-cmd="formatBlock" data-value="H1" title="Heading 1" data-i18n-title="Toolbar.Heading1Title">H1</button>
+    <button data-cmd="formatBlock" data-value="H2" title="Heading 2" data-i18n-title="Toolbar.Heading2Title">H2</button>
+    <button data-cmd="formatBlock" data-value="P" title="Paragraph" data-i18n-title="Toolbar.ParagraphTitle">¶</button>
     <span class="sep"></span>
-    <button data-cmd="insertUnorderedList" title="Bullet list">•≡</button>
-    <button data-cmd="insertOrderedList" title="Numbered list">1≡</button>
-    <button id="btn-table" title="Insert table">▦</button>
+    <button data-cmd="insertUnorderedList" title="Bullet list" data-i18n-title="Toolbar.BulletListTitle">•≡</button>
+    <button data-cmd="insertOrderedList" title="Numbered list" data-i18n-title="Toolbar.NumberedListTitle">1≡</button>
+    <button id="btn-table" title="Insert table" data-i18n-title="Toolbar.InsertTableTitle">▦</button>
     <span class="sep"></span>
-    <button data-cmd="undo" title="Undo (Ctrl+Z)">↶</button>
-    <button data-cmd="redo" title="Redo (Ctrl+Y)">↷</button>
+    <button data-cmd="undo" title="Undo (Ctrl+Z)" data-i18n-title="Toolbar.UndoTitle">↶</button>
+    <button data-cmd="redo" title="Redo (Ctrl+Y)" data-i18n-title="Toolbar.RedoTitle">↷</button>
     <span class="spacer"></span>
-    <span id="status" class="status">Ready</span>
-    <button id="btn-save" class="primary" title="Save (Ctrl+S)">Save</button>
+    <span id="status" class="status" data-i18n="Status.Ready">Ready</span>
+    <button id="btn-save" class="primary" title="Save (Ctrl+S)" data-i18n="Toolbar.Save" data-i18n-title="Toolbar.SaveTitle">Save</button>
   </header>
 
   <main>
