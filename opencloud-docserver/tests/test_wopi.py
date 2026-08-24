@@ -14,6 +14,7 @@ from odf.opendocument import load
 from src.config import Config
 from src.editor.odt_converter import html_to_odt
 from src.editor.router import router as editor_router
+from src.editor.sanitize import sanitize_html
 from src.editor.session import SessionRegistry
 from src.lib.store import DocumentStore, wipe_db, wipe_dir
 from src.wopi.router import router as wopi_router
@@ -699,3 +700,139 @@ def test_save_document_sanitizes_meta_refresh(client):
     assert "meta" not in text.lower()
     assert "refresh" not in text.lower()
     assert "Safe" in text
+
+
+# ----------------------------------------------------------------------
+# Direct sanitizer tests (US-44: functional preservation + evasion)
+# Test the sanitizer directly — not through the DOCX pipeline, which
+# masks attribute-level bugs (only extracts text).
+# ----------------------------------------------------------------------
+
+def test_sanitize_preserves_img_with_data_url():
+    """img with data:image src must be preserved (editor image feature)."""
+    out = sanitize_html('<img src="data:image/png;base64,AAAA">')
+    assert "<img" in out
+    assert 'src="data:image/png;base64,AAAA"' in out
+
+
+def test_sanitize_preserves_a_href_https():
+    """a with https href must be preserved."""
+    out = sanitize_html('<a href="https://example.com">Link</a>')
+    assert "<a" in out
+    assert 'href="https://example.com"' in out
+    assert "Link" in out
+
+
+def test_sanitize_preserves_a_href_relative():
+    """a with relative href must be preserved."""
+    out = sanitize_html('<a href="/doc/123">Link</a>')
+    assert 'href="/doc/123"' in out
+
+
+def test_sanitize_preserves_a_href_mailto():
+    """a with mailto: href must be preserved."""
+    out = sanitize_html('<a href="mailto:a@b.de">Mail</a>')
+    assert "mailto:" in out
+
+
+def test_sanitize_strips_javascript_href_direct():
+    """javascript: href must be removed directly by the sanitizer."""
+    out = sanitize_html('<a href="javascript:alert(1)">Click</a>')
+    assert "javascript" not in out.lower()
+
+
+def test_sanitize_strips_javascript_src_direct():
+    """javascript: src on img must be removed directly."""
+    out = sanitize_html('<img src="javascript:alert(1)">')
+    assert "javascript" not in out.lower()
+
+
+def test_sanitize_strips_mixed_case_javascript_direct():
+    """JaVaScRiPt: scheme must be removed (case-insensitive)."""
+    out = sanitize_html('<img src="JaVaScRiPt:alert(1)">')
+    assert "javascript" not in out.lower()
+
+
+def test_sanitize_strips_data_text_html_direct():
+    """data:text/html src must be removed (only data:image allowed)."""
+    out = sanitize_html('<img src="data:text/html,<script>alert(1)</script>">')
+    assert "data:text/html" not in out.lower()
+
+
+def test_sanitize_strips_onerror_direct():
+    """onerror attribute must be removed but img kept."""
+    out = sanitize_html('<img src="data:image/png;base64,x" onerror="alert(1)">')
+    assert "onerror" not in out
+    assert "<img" in out
+
+
+def test_sanitize_strips_vbscript_direct():
+    """vbscript: scheme must be removed."""
+    out = sanitize_html('<img src="vbscript:msgbox(1)">')
+    assert "vbscript" not in out.lower()
+
+
+def test_sanitize_strips_css_expression_direct():
+    """CSS expression() in style must be removed directly."""
+    out = sanitize_html('<p style="width:expression(alert(1))">Test</p>')
+    assert "expression" not in out.lower()
+    assert "Test" in out
+
+
+def test_sanitize_strips_html_encoded_script_direct():
+    """HTML entity encoded script must not survive as a real HTML element."""
+    out = sanitize_html("&#60;script&#62;alert(1)&#60;/script&#62;")
+    # No real <script> tag may survive as a parseable element
+    assert "<script" not in out.lower()
+    # The angle brackets must be escaped in the data (round-trip safe)
+    assert "&lt;" in out
+
+
+def test_sanitize_preserves_safe_styles():
+    """Safe inline styles (color, font-size) must be preserved."""
+    out = sanitize_html('<p style="color:red; font-size:14pt">Text</p>')
+    assert "color" in out
+    assert "font-size" in out
+    assert "Text" in out
+
+
+def test_sanitize_strips_style_url_direct():
+    """url() in style must be removed directly."""
+    out = sanitize_html('<p style="background:url(https://evil.com/x.png)">Test</p>')
+    assert "url(" not in out.lower()
+
+
+def test_sanitize_strips_svg_direct():
+    """SVG tags must be removed (not in safe list)."""
+    out = sanitize_html('<svg><script>alert(1)</script></svg>')
+    assert "svg" not in out.lower()
+    assert "script" not in out.lower()
+
+
+def test_sanitize_preserves_formatting():
+    """Core formatting must survive: bold, italic, headings, lists."""
+    out = sanitize_html('<p><b>Bold</b> <i>Italic</i> <u>Under</u></p><h2>Head</h2><ul><li>Item</li></ul>')
+    assert "<b>Bold</b>" in out
+    assert "<i>Italic</i>" in out
+    assert "<u>Under</u>" in out
+    assert "<h2>Head</h2>" in out
+    assert "<ul><li>Item</li></ul>" in out
+
+
+def test_sanitize_strips_base_direct():
+    """base tag must be removed directly."""
+    out = sanitize_html('<base href="https://evil.com">')
+    assert "base" not in out.lower()
+
+
+def test_sanitize_strips_form_direct():
+    """form/input must be removed directly (phishing vector)."""
+    out = sanitize_html('<form action="https://evil.com"><input name="x"></form>')
+    assert "form" not in out.lower()
+    assert "input" not in out.lower()
+
+
+def test_sanitize_strips_meta_refresh_direct():
+    """meta refresh must be removed directly."""
+    out = sanitize_html('<meta http-equiv="refresh" content="0;url=https://evil.com">')
+    assert "meta" not in out.lower()
