@@ -10,6 +10,9 @@
  * - Lists persist through the production path: a successful save that
  *   carries <ul>/<ol> markup fires a `lists-persisted` event and logs
  *   "LIST-PERSISTENCE: OK" for browser-level E2E to wait on
+ * - Heading styles H1/H2/H3 (+ paragraph reset): toolbar buttons and
+ *   Ctrl+Alt+1/2/3/0 route formatBlock through the `wo-command` event
+ *   bus; each conversion is captured as a single undoable snapshot step
  * - Undo/redo: explicit innerHTML snapshot chain (20+ steps, survives
  *   saves), not the flaky native execCommand stack
  * - Insert image: toolbar button opens an upload dialog (local file -> data
@@ -30,10 +33,12 @@
   const api = (path) => `/api/documents/${encodeURIComponent(DOC_ID)}/${path}?session=${encodeURIComponent(SESSION)}`;
   // Resolve the UI language from the browser (falls back to English).
   const detectedLng = window.detectLocale ? window.detectLocale() : (navigator.language || "en");
-  // New image-dialog strings are not in the i18n catalog yet (i18n.js is
-  // updated separately). Seed them as English fallbacks so the data-i18n
-  // markers below render real text instead of raw keys. Only missing keys
-  // are filled, so real catalog entries still win once they are added.
+  // New toolbar strings (heading H1-H3 button and insert-image dialog) are
+  // not in the shipped i18n catalog yet (i18n.js is outside this editor's
+  // file scope), so seed them here. Only missing keys are filled, so real
+  // catalog entries still win once they are added. English is the
+  // DEFAULT_TRANSLATIONS baseline; the German Heading3 pair matches the
+  // existing Heading1/Heading2 entries.
   const IMAGE_UI_STRINGS = {
     "Toolbar.InsertImage": "Insert image",
     "Toolbar.InsertImageTitle": "Insert image",
@@ -45,15 +50,24 @@
     "Image.TooLarge": "Image too large (max 10 MB)",
     "Image.ReadFailed": "Could not read the image",
   };
-  function seedImageStrings(tFn) {
+  const HEADING3_UI_STRINGS = Object.assign(
+    { "Toolbar.Heading3": "Heading 3", "Toolbar.Heading3Title": "Heading 3" },
+    detectedLng.indexOf("de") === 0
+      ? { "Toolbar.Heading3": "Überschrift 3", "Toolbar.Heading3Title": "Überschrift 3" }
+      : {}
+  );
+  function seedUiStrings(tFn) {
     const bucket = tFn && tFn.resources && tFn.resources[tFn.lng] && tFn.resources[tFn.lng].translation;
     if (!bucket) return;
     Object.keys(IMAGE_UI_STRINGS).forEach((k) => {
       if (bucket[k] === undefined) bucket[k] = IMAGE_UI_STRINGS[k];
     });
+    Object.keys(HEADING3_UI_STRINGS).forEach((k) => {
+      if (bucket[k] === undefined) bucket[k] = HEADING3_UI_STRINGS[k];
+    });
   }
   const t = (window.createI18n && window.createI18n({ lng: detectedLng })) || ((k) => k);
-  seedImageStrings(t);
+  seedUiStrings(t);
   // Localize static HTML (toolbar tooltips, Save label, ready status) and
   // keep the <html lang> attribute in sync for a11y & spell-check.
   if (window.applyTranslations) {
@@ -206,7 +220,18 @@
       return;
     }
     editor.focus();
-    document.execCommand(cmd, false, value || null);
+    // Headings (formatBlock) replace the block under the caret. Pass the
+    // spec-canonical lowercase tag name (a few engines are case-sensitive)
+    // and record the result as an explicit undo step, because execCommand
+    // does not fire an `input` event on every engine. The captureHistory()
+    // html===lastSnapshot guard keeps this a no-op when the event already ran.
+    const isBlock =
+      cmd === "formatBlock" && /^(H[1-6]|P)$/i.test(String(value || ""));
+    document.execCommand(cmd, false, isBlock ? String(value).toLowerCase() : value || null);
+    if (isBlock) {
+      markDirty();
+      captureHistory();
+    }
     updateActiveStates();
     updateUndoRedoState();
   }
@@ -297,7 +322,7 @@
       let active = false;
       try {
         active = cmd === "formatBlock"
-          ? editor.querySelector("h1,h2,h3") && btn.dataset.value === currentBlockTag()
+          ? (btn.dataset.value || "P") === currentBlockTag()
           : document.queryCommandState(cmd);
       } catch (err) {
         // A few engines throw for queryCommandState on unsupported commands;
@@ -522,8 +547,29 @@
     editor.focus();
   }
 
+  // wo-command event bus (project-wide invariant)
+  // ------------------------------------------------------------------
+  // Every formatting edit flows through a single channel:
+  //   window.dispatchEvent(new CustomEvent("wo-command", {detail:{command,
+  //   value}}))
+  // The toolbar buttons, keyboard shortcuts and the markdown auto-converter
+  // all emit here; the listener below is the one executor, so the future
+  // mutation-engine router can drive the same editor without forking code
+  // paths. Undo/redo stay internal (they walk the snapshot chain, they do
+  // not mutate content); everything else funnels into runCommand().
+  function emitCommand(cmd, value) {
+    window.dispatchEvent(new CustomEvent("wo-command", {
+      detail: { command: cmd, value: value == null ? null : String(value) },
+    }));
+  }
+  window.addEventListener("wo-command", (ev) => {
+    const detail = ev.detail || {};
+    if (typeof detail.command !== "string" || !detail.command) return;
+    runCommand(detail.command, detail.value == null ? null : String(detail.value));
+  });
+
   document.querySelectorAll(".toolbar button[data-cmd]").forEach((btn) => {
-    btn.addEventListener("click", () => runCommand(btn.dataset.cmd, btn.dataset.value));
+    btn.addEventListener("click", () => emitCommand(btn.dataset.cmd, btn.dataset.value));
   });
   document.getElementById("btn-table").addEventListener("click", insertTable);
   document.getElementById("btn-image").addEventListener("click", insertImage);
@@ -557,6 +603,14 @@
   // Keyboard shortcuts
   // ------------------------------------------------------------------
   editor.addEventListener("keydown", (ev) => {
+    // Headings: Ctrl+Alt+1/2/3 -> H1/H2/H3, Ctrl+Alt+0 -> normal paragraph
+    // (Word / LibreOffice / Google Docs convention). Only plain digit keys
+    // match, so layouts where Shift+digit yields a symbol are unaffected.
+    if ((ev.ctrlKey || ev.metaKey) && ev.altKey && /^[0-3]$/.test(ev.key)) {
+      ev.preventDefault();
+      emitCommand("formatBlock", ev.key === "0" ? "P" : "H" + ev.key);
+      return;
+    }
     if ((ev.ctrlKey || ev.metaKey) && !ev.altKey) {
       const k = ev.key.toLowerCase();
       if (k === "s") {
@@ -583,7 +637,7 @@
       // would report a symbol in ev.key instead of the numeral.
       if (ev.shiftKey && (ev.code === "Digit7" || ev.code === "Digit8")) {
         ev.preventDefault();
-        runCommand(ev.code === "Digit8" ? "insertUnorderedList" : "insertOrderedList");
+        emitCommand(ev.code === "Digit8" ? "insertUnorderedList" : "insertOrderedList");
         return;
       }
       if (k === "b" || k === "i" || k === "u") ev.preventDefault();
@@ -637,7 +691,7 @@
     caretRange.collapse(true);
     sel.removeAllRanges();
     sel.addRange(caretRange);
-    toggleList(command);
+    emitCommand(command);
   }
 
   document.addEventListener("selectionchange", updateActiveStates);
