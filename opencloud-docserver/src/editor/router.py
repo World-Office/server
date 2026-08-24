@@ -249,6 +249,21 @@ def _document_format(request: Request, doc_id: str) -> str:
     return "docx"
 
 
+# Content types by extension (kept deliberately small and in sync with the
+# WOPI host router; used by the extended contents/metadata endpoints).
+_CONTENT_TYPES = {
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".odt": "application/vnd.oasis.opendocument.text",
+    ".txt": "text/plain",
+    ".md": "text/markdown",
+}
+
+
+def _content_type(name: str) -> str:
+    ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+    return _CONTENT_TYPES.get(f".{ext}", "application/octet-stream")
+
+
 # ----------------------------------------------------------------------
 # Document API
 # ----------------------------------------------------------------------
@@ -318,9 +333,98 @@ async def save_document(doc_id: str, request: Request) -> JSONResponse:
     return JSONResponse({"ok": True, "size": len(output_bytes)})
 
 
+# ----------------------------------------------------------------------
+# Extended WOPI API: raw contents + extended metadata
+# ----------------------------------------------------------------------
+# The browser normally edits through the HTML conversion endpoints above,
+# but WOPI-style clients (and the remote-host forwarding path) need the raw
+# document bytes and richer metadata on the editor API surface. These
+# endpoints mirror WOPI GetFile/PutFile/CheckFileInfo semantics and work in
+# both host mode (local store) and client mode (forwarding to the OCIS host).
+
+
+@router.get("/api/documents/{doc_id}/contents")
+async def document_contents(doc_id: str, request: Request) -> Response:
+    """WOPI GetFile on the editor API: return the raw document bytes.
+
+    In host mode this reads the local store; in client mode it forwards to
+    the remote WOPI host. The ``X-WOPI-ItemVersion`` header carries the
+    document version, as the WOPI spec requires.
+    """
+    data = _load_bytes(request, doc_id)
+    if data is None:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    version = ""
+    session = _session_for(request, doc_id)
+    if session:
+        version = str(session.last_modified)
+    if not version:
+        doc = _store(request).get(doc_id)
+        if doc:
+            version = str(doc["updated_at"])
+    return Response(
+        content=data,
+        media_type=_content_type(_doc_name(request, doc_id)),
+        headers={"X-WOPI-ItemVersion": version},
+    )
+
+
+@router.put("/api/documents/{doc_id}/contents")
+@router.post("/api/documents/{doc_id}/contents")
+async def put_document_contents(doc_id: str, request: Request) -> JSONResponse:
+    """WOPI PutFile on the editor API: replace the raw document bytes.
+
+    ``POST`` is accepted when the WOPI ``X-WOPI-Override: PUT`` header is
+    present (the convention the OCIS wopiserver itself requires); a bare
+    ``PUT`` is the same call. The store lock is honoured: a locked document
+    rejects writes without the matching ``X-WOPI-Lock`` token (WOPI 409).
+    In client mode the bytes are forwarded to the remote host and the
+    session's read-only state is enforced.
+    """
+    if request.method == "POST" and request.headers.get("X-WOPI-Override", "").upper() != "PUT":
+        return JSONResponse(
+            {"error": "X-WOPI-Override: PUT required on POST /contents"}, status_code=400
+        )
+
+    store = _store(request)
+    session = _session_for(request, doc_id)
+    if store.get(doc_id) is None:
+        if session is None or not session.in_client_mode:
+            return JSONResponse({"error": "not found"}, status_code=404)
+
+    if session and session.read_only:
+        return JSONResponse(
+            {"error": "read-only: another user is editing this document"},
+            status_code=403,
+        )
+
+    lock = request.headers.get(LOCK_HEADER, "")
+    current_lock = store.get_lock(doc_id)
+    if current_lock and lock != current_lock:
+        return JSONResponse(
+            {"error": "lock mismatch"},
+            status_code=409,
+            headers={LOCK_HEADER: current_lock},
+        )
+
+    body = await request.body()
+    client = _client(request, doc_id)
+    if client:
+        try:
+            client.put_contents(doc_id, body)
+        except Exception as exc:
+            return JSONResponse({"error": f"remote save failed: {exc}"}, status_code=502)
+    else:
+        store.put_content(doc_id, body)
+
+    return JSONResponse({"ok": True, "size": len(body)})
+
+
 @router.get("/api/documents/{doc_id}")
 async def document_meta(doc_id: str, request: Request) -> JSONResponse:
-    """Return document metadata (size, name, lock state)."""
+    """Return document metadata (size, name, lock state) plus the extended
+    WOPI fields: base file name, format, MIME type, version, writability and
+    the contents URL for the raw-bytes endpoint."""
     doc = _store(request).get(doc_id)
     if doc is None:
         session = _registry(request).get(doc_id)
@@ -331,17 +435,33 @@ async def document_meta(doc_id: str, request: Request) -> JSONResponse:
                 "id": doc_id,
                 "name": session.name,
                 "size": session.size,
+                "updated_at": session.last_modified,
                 "locked": bool(session.lock_token),
                 "client_mode": session.in_client_mode,
+                "base_file_name": session.name,
+                "format": _document_format(request, doc_id),
+                "mime_type": _content_type(session.name),
+                "version": session.version,
+                "editable": not session.read_only,
+                "writable": not session.read_only,
+                "contents_url": f"/api/documents/{doc_id}/contents",
             }
         )
+    name = doc["name"]
     return JSONResponse(
         {
             "id": doc_id,
-            "name": doc["name"],
+            "name": name,
             "size": doc["size"],
             "updated_at": doc["updated_at"],
             "locked": bool(doc["lock_token"]),
+            "base_file_name": name,
+            "format": _document_format(request, doc_id),
+            "mime_type": _content_type(name),
+            "version": str(doc["updated_at"]),
+            "editable": True,
+            "writable": True,
+            "contents_url": f"/api/documents/{doc_id}/contents",
         }
     )
 
