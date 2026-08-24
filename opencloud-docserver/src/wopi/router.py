@@ -40,6 +40,36 @@ CONTENT_TYPES = {
 MAX_FILE_SIZE = 128 * 1024 * 1024  # 128 MiB
 
 
+def _invalid_doc_id(doc_id: str) -> bool:
+    """True when a WOPI file id must be rejected as a path-traversal attempt.
+
+    Content bytes live at ``{content_dir}/{doc_id}.bin``, so an id that
+    contains path separators addresses a file outside the store's content
+    directory. An attacker can smuggle separators into a URL path param
+    URI-encoded (``%2F``, ``%5C``) — FastAPI/Starlette decodes the segment
+    before the handler runs, turning e.g. ``..%2F..%2Fsecret`` into a doc id
+    of ``../../secret``. Opaque host ids never legitimately contain
+    separators or traversal segments, so reject them outright.
+    """
+    if not doc_id:
+        return True
+    if "/" in doc_id or "\\" in doc_id or "\x00" in doc_id:
+        return True
+    if doc_id in {".", ".."}:
+        return True
+    # No separator can remain at this point, so a bare ".." substring can no
+    # longer change directory resolution — reject it anyway: opaque ids never
+    # contain it and it keeps the contract obvious at every call site.
+    if ".." in doc_id:
+        return True
+    return False
+
+
+def _wopi_invalid_id_response() -> JSONResponse:
+    """400 response for a file id rejected by :func:`_invalid_doc_id`."""
+    return JSONResponse(status_code=400, content={"error": "Invalid file id"})
+
+
 def _content_type(name: str) -> str:
     ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
     return CONTENT_TYPES.get(f".{ext}", "application/octet-stream")
@@ -80,12 +110,16 @@ def _check_file(request: Request, doc_id: str) -> JSONResponse:
 @router.get("/wopi/files/{doc_id}")
 async def check_file_info(doc_id: str, request: Request) -> JSONResponse:
     """WOPI CheckFileInfo: return document metadata as JSON."""
+    if _invalid_doc_id(doc_id):
+        return _wopi_invalid_id_response()
     return _check_file(request, doc_id)
 
 
 @router.get("/wopi/files/{doc_id}/contents")
 async def get_file(doc_id: str, request: Request) -> Response:
     """WOPI GetFile: return the raw document bytes."""
+    if _invalid_doc_id(doc_id):
+        return _wopi_invalid_id_response()
     store = _store_of(request)
     doc = store.get(doc_id)
     if doc is None:
@@ -103,6 +137,8 @@ async def get_file(doc_id: str, request: Request) -> Response:
 @router.post("/wopi/files/{doc_id}/contents")
 async def put_file(doc_id: str, request: Request) -> JSONResponse:
     """WOPI PutFile: store new content, honouring the current lock."""
+    if _invalid_doc_id(doc_id):
+        return _wopi_invalid_id_response()
     store = _store_of(request)
     doc = store.get(doc_id)
     if doc is None:
@@ -145,6 +181,8 @@ async def lock_file(doc_id: str, request: Request) -> JSONResponse:
     lock is a refresh and keeps the lock; an empty lock token is rejected
     (WOPI lock tokens MUST be non-empty).
     """
+    if _invalid_doc_id(doc_id):
+        return _wopi_invalid_id_response()
     store = _store_of(request)
     if store.get(doc_id) is None:
         return _wopi_error_response(WopiError(404, f"File not found: {doc_id}"))
@@ -169,6 +207,8 @@ async def lock_file(doc_id: str, request: Request) -> JSONResponse:
 @router.post("/wopi/files/{doc_id}/unlock")
 async def unlock_file(doc_id: str, request: Request) -> JSONResponse:
     """WOPI Unlock: release the lock if the token matches."""
+    if _invalid_doc_id(doc_id):
+        return _wopi_invalid_id_response()
     store = _store_of(request)
     if store.get(doc_id) is None:
         return _wopi_error_response(WopiError(404, f"File not found: {doc_id}"))
@@ -182,6 +222,8 @@ async def unlock_file(doc_id: str, request: Request) -> JSONResponse:
 @router.post("/wopi/files/{doc_id}/refreshlock")
 async def refresh_lock(doc_id: str, request: Request) -> JSONResponse:
     """WOPI RefreshLock: extend the lock lease."""
+    if _invalid_doc_id(doc_id):
+        return _wopi_invalid_id_response()
     store = _store_of(request)
     if store.get(doc_id) is None:
         return _wopi_error_response(WopiError(404, f"File not found: {doc_id}"))
@@ -196,6 +238,8 @@ async def refresh_lock(doc_id: str, request: Request) -> JSONResponse:
 @router.post("/wopi/files/{doc_id}/getlock")
 async def get_lock(doc_id: str, request: Request) -> JSONResponse:
     """WOPI GetLock: return the current lock token."""
+    if _invalid_doc_id(doc_id):
+        return _wopi_invalid_id_response()
     store = _store_of(request)
     if store.get(doc_id) is None:
         return _wopi_error_response(WopiError(404, f"File not found: {doc_id}"))
