@@ -5,12 +5,11 @@ from __future__ import annotations
 import io
 from contextlib import asynccontextmanager
 
-from odf.opendocument import load
-
 import pytest
 from docx import Document
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from odf.opendocument import load
 
 from src.config import Config
 from src.editor.odt_converter import html_to_odt
@@ -228,7 +227,6 @@ def test_hosting_discovery_includes_odt_actions(client):
 
 def test_odt_file_routes_to_odt_converter(client):
     """Files with .odt extension must use the ODT converter."""
-    from src.editor.odt_converter import html_to_odt
     store = client.test_store  # type: ignore[attr-defined]
     store.init("odt-1", "document.odt")
     odt_bytes = html_to_odt("<p>Hello ODT</p>")
@@ -435,3 +433,269 @@ def test_save_document_sanitizes_nested_script(client):
     assert "alert" not in text
     assert "Safe" in text
     assert "Also safe" in text
+
+
+# ----------------------------------------------------------------------
+# XSS Evasion Tests (US-44)
+# ----------------------------------------------------------------------
+
+def test_save_document_sanitizes_html_encoded_script(client):
+    """HTML-encoded script tags must be stripped (&#60;script&#62;)."""
+    _seed_doc(client)
+    # HTML entity encoded script tag
+    malicious = '<p>Safe</p>&#60;script&#62;alert(1)&#60;/script&#62;<p>End</p>'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "alert" not in text
+    assert "Safe" in text
+    assert "End" in text
+
+
+def test_save_document_sanitizes_hex_encoded_script(client):
+    """Hex-encoded script tags must be stripped (&#x3c;script&#x3e;)."""
+    _seed_doc(client)
+    # Hex entity encoded script tag
+    malicious = '<p>Safe</p>&#x3c;script&#x3e;alert(1)&#x3c;/script&#x3e;<p>End</p>'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "alert" not in text
+    assert "Safe" in text
+
+
+def test_save_document_sanitizes_mixed_case_script(client):
+    """Mixed case script tags (ScRiPt) must be stripped."""
+    _seed_doc(client)
+    malicious = '<p>Safe</p><ScRiPt>alert(1)</sCrIpT><p>End</p>'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "alert" not in text.lower()
+    assert "Safe" in text
+
+
+def test_save_document_sanitizes_javascript_href(client):
+    """javascript: URLs in href must be stripped."""
+    _seed_doc(client)
+    malicious = '<p><a href="javascript:alert(1)">Click</a></p>'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "javascript" not in text.lower()
+    assert "Click" in text
+
+
+def test_save_document_sanitizes_javascript_src(client):
+    """javascript: URLs in src must be stripped."""
+    _seed_doc(client)
+    malicious = '<img src="javascript:alert(1)">'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "javascript" not in text.lower()
+
+
+def test_save_document_sanitizes_vbscript(client):
+    """vbscript: URLs must be stripped."""
+    _seed_doc(client)
+    malicious = '<img src="vbscript:msgbox(1)">'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "vbscript" not in text.lower()
+
+
+def test_save_document_sanitizes_css_expression(client):
+    """CSS expression() must be stripped (IE legacy)."""
+    _seed_doc(client)
+    malicious = '<p style="width:expression(alert(1))">Test</p>'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "expression" not in text.lower()
+    assert "Test" in text
+
+
+def test_save_document_sanitizes_css_behavior(client):
+    """CSS behavior: must be stripped."""
+    _seed_doc(client)
+    malicious = '<p style="behavior:url(evil.htc)">Test</p>'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "behavior" not in text.lower()
+    assert "Test" in text
+
+
+def test_save_document_sanitizes_moz_binding(client):
+    """-moz-binding: must be stripped."""
+    _seed_doc(client)
+    malicious = '<p style="-moz-binding:url(evil.xml#xss)">Test</p>'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "moz-binding" not in text.lower()
+    assert "Test" in text
+
+
+def test_save_document_sanitizes_data_uri_style(client):
+    """data: URIs in style must be stripped."""
+    _seed_doc(client)
+    malicious = '<p style="background:url(data:text/html,<script>alert(1)</script>)">Test</p>'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "data:" not in text.lower()
+    assert "alert" not in text
+    assert "Test" in text
+
+
+def test_save_document_sanitizes_svg_script(client):
+    """SVG with script elements must be stripped."""
+    _seed_doc(client)
+    malicious = '<p>Safe</p><svg><script>alert(1)</script></svg><p>End</p>'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "alert" not in text
+    assert "svg" not in text.lower()
+    assert "Safe" in text
+
+
+def test_save_document_sanitizes_object_embed(client):
+    """object and embed tags must be stripped."""
+    _seed_doc(client)
+    malicious = '<p>Safe</p><object data="evil.swf"></object><embed src="evil.swf"><p>End</p>'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "object" not in text.lower()
+    assert "embed" not in text.lower()
+    assert "Safe" in text
+    assert "End" in text
+
+
+def test_save_document_sanitizes_base_tag(client):
+    """base tag must be stripped (can redirect relative URLs)."""
+    _seed_doc(client)
+    malicious = '<base href="javascript:alert(1)"><p>Safe</p>'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "base" not in text.lower()
+    assert "javascript" not in text.lower()
+    assert "Safe" in text
+
+
+def test_save_document_sanitizes_form_input(client):
+    """form and input tags must be stripped (phishing vector)."""
+    _seed_doc(client)
+    malicious = '<form action="evil.com"><input name="credit"></form>'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "form" not in text.lower()
+    assert "input" not in text.lower()
+
+
+def test_save_document_sanitizes_meta_refresh(client):
+    """meta refresh tags must be stripped."""
+    _seed_doc(client)
+    malicious = '<meta http-equiv="refresh" content="0;url=evil.com"><p>Safe</p>'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "meta" not in text.lower()
+    assert "refresh" not in text.lower()
+    assert "Safe" in text
