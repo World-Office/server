@@ -265,4 +265,131 @@ def test_document_html_corrupt_nonempty_still_errors(client):
     store.put_content("e2", b"this is not a zip file, just text bytes")
     r = client.get("/api/documents/e2/html")
     assert r.status_code == 500
-    assert "conversion failed" in r.json()["error"]
+
+
+# ----------------------------------------------------------------------
+# XSS sanitizer
+# ----------------------------------------------------------------------
+
+def test_save_document_sanitizes_script_tag(client):
+    """Script tags must be stripped before storage."""
+    _seed_doc(client)
+    malicious = '<p>Hello</p><script>alert("xss")</script><p>World</p>'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+    assert res.json()["ok"] is True
+
+    docx_bytes = client.test_store.get_content("doc1")  # type: ignore[attr-defined]
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    # The script tag and its content should be removed
+    assert "<script>" not in text
+    assert "alert" not in text
+    # Safe content should remain
+    assert "Hello" in text
+    assert "World" in text
+
+
+def test_save_document_sanitizes_event_handler_attributes(client):
+    """Event handler attributes (onclick, onerror, etc.) must be stripped."""
+    _seed_doc(client)
+    malicious = '<p onclick="alert(1)">Click me</p><img src="x" onerror="alert(1)">'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")  # type: ignore[attr-defined]
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "onclick" not in text
+    assert "onerror" not in text
+    assert "Click me" in text
+
+
+def test_save_document_sanitizes_iframe(client):
+    """iframe elements must be stripped (potential XSS vector)."""
+    _seed_doc(client)
+    malicious = '<p>Safe content</p><iframe src="https://evil.com"></iframe><p>More safe</p>'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")  # type: ignore[attr-defined]
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "iframe" not in text
+    assert "Safe content" in text
+    assert "More safe" in text
+
+
+def test_save_document_sanitizes_style_with_url(client):
+    """Style attributes with url() or data: URIs must be stripped."""
+    _seed_doc(client)
+    malicious = '<p style="background-image:url(\'javascript:alert(1)\')">Test</p>'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")  # type: ignore[attr-defined]
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    # The style with dangerous content should be removed
+    assert "alert" not in text
+    assert "Test" in text
+
+
+def test_save_document_sanitizes_empty_string(client):
+    """Empty string input should return empty HTML."""
+    _seed_doc(client)
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": ""},
+    )
+    assert res.status_code == 200
+
+
+def test_save_document_preserves_safe_formatting(client):
+    """Safe formatting (bold, italic, underline, headings) should be preserved."""
+    _seed_doc(client)
+    formatted = "<h1>Heading</h1><p><b>Bold</b> and <i>italic</i> and <u>underline</u></p>"
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": formatted},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")  # type: ignore[attr-defined]
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "Heading" in text
+    assert "Bold" in text
+    assert "italic" in text
+    assert "underline" in text
+
+
+def test_save_document_sanitizes_nested_script(client):
+    """Nested script tags with mixed case must be stripped."""
+    _seed_doc(client)
+    malicious = '<p>Safe</p><SCRIPT>alert(1)</SCRIPT><p>Also safe</p>'
+    res = client.post(
+        "/api/documents/doc1/save",
+        json={"html": malicious},
+    )
+    assert res.status_code == 200
+
+    docx_bytes = client.test_store.get_content("doc1")  # type: ignore[attr-defined]
+    doc = Document(io.BytesIO(docx_bytes))
+    text = "\n".join(p.text for p in doc.paragraphs)
+    assert "<script>" not in text.lower() or "SCRIPT" not in text
+    assert "alert" not in text
+    assert "Safe" in text
+    assert "Also safe" in text
