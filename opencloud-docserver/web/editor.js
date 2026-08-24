@@ -5,6 +5,8 @@
  * - Lets the user edit in a contenteditable div
  * - Saves HTML back to the server (which converts to DOCX)
  * - Minimal toolbar via document.execCommand (deprecated but universal)
+ * - Bullet/numbered lists: toolbar, Ctrl+Shift+7/8 and markdown-style
+ *   auto-conversion ("- ", "* ", "1. ") all route through toggleList()
  * - Internationalized via /static/i18n.js
  */
 
@@ -94,7 +96,27 @@
   // ------------------------------------------------------------------
   // Toolbar
   // ------------------------------------------------------------------
+  // Toggle the bullet/numbered list at the caret. The native commands
+  // both wrap the current block in a list item AND unwrap/remove a list
+  // when toggled a second time, so this single path serves the toolbar
+  // buttons, the Ctrl+Shift+7/8 shortcuts and the smart-list converter.
+  // Lists mutate the DOM but don't always fire an `input` event
+  // (notably on toggle-off), so arm autosave explicitly on success.
+  function toggleList(command) {
+    if (READ_ONLY) return false;
+    editor.focus();
+    const ok = document.execCommand(command, false, null);
+    if (ok) markDirty();
+    updateActiveStates();
+    updateUndoRedoState();
+    return ok;
+  }
+
   function runCommand(cmd, value) {
+    if (cmd === "insertUnorderedList" || cmd === "insertOrderedList") {
+      toggleList(cmd);
+      return;
+    }
     editor.focus();
     const ok = document.execCommand(cmd, false, value || null);
     // Undo/redo mutate the document without always firing an `input` event,
@@ -120,9 +142,16 @@
     document.querySelectorAll(".toolbar button[data-cmd]").forEach((btn) => {
       const cmd = btn.dataset.cmd;
       if (!cmd || cmd === "undo" || cmd === "redo") return;
-      const active = cmd === "formatBlock"
-        ? editor.querySelector("h1,h2,h3") && btn.dataset.value === currentBlockTag()
-        : document.queryCommandState(cmd);
+      let active = false;
+      try {
+        active = cmd === "formatBlock"
+          ? editor.querySelector("h1,h2,h3") && btn.dataset.value === currentBlockTag()
+          : document.queryCommandState(cmd);
+      } catch (err) {
+        // A few engines throw for queryCommandState on unsupported commands;
+        // treat those as inactive instead of aborting the whole loop.
+        active = false;
+      }
       btn.classList.toggle("active", !!active);
     });
   }
@@ -180,9 +209,68 @@
         runCommand("redo");
         return;
       }
+      // Lists: Ctrl+Shift+7 = ordered, Ctrl+Shift+8 = bulleted
+      // (Google Docs / LibreOffice convention). Match on ev.code so the
+      // digits resolve independently of keyboard layout, where Shift+digit
+      // would report a symbol in ev.key instead of the numeral.
+      if (ev.shiftKey && (ev.code === "Digit7" || ev.code === "Digit8")) {
+        ev.preventDefault();
+        runCommand(ev.code === "Digit8" ? "insertUnorderedList" : "insertOrderedList");
+        return;
+      }
       if (k === "b" || k === "i" || k === "u") ev.preventDefault();
     }
   });
+
+  // ------------------------------------------------------------------
+  // Smart lists: convert markdown-style markers typed at the start of a
+  // paragraph ("- ", "* " or "1. "/"1) ") into a real list. Runs after
+  // the input event that appends the trailing space, rewinds to before the
+  // marker and lets the native list command do the wrapping, so the whole
+  // conversion is a single undoable step.
+  // ------------------------------------------------------------------
+  function autoConvertListMarker() {
+    if (READ_ONLY) return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || !sel.isCollapsed) return;
+    const textNode = sel.anchorNode;
+    // Only respond when the caret sits in a plain text node (typing, not
+    // caret navigation with a node-level selection).
+    if (!textNode || textNode.nodeType !== 3) return;
+    const block = textNode.parentNode;
+    if (!block || block.nodeType !== 1 || block.tagName !== "P") return;
+    // The marker must be the very first thing in the paragraph and the
+    // paragraph must be a free-standing body block (not inside a list or
+    // table cell, where the native list commands misbehave).
+    if (textNode !== block.firstChild) return;
+    if (block.closest("ul,ol,td,th")) return;
+    const text = textNode.textContent || "";
+    let command = null;
+    let marker = null;
+    if (/^[-*]\s$/.test(text)) {
+      command = "insertUnorderedList";
+      marker = text;
+    } else {
+      const m = /^(\d+)[.)]\s$/.exec(text);
+      if (m) {
+        command = "insertOrderedList";
+        marker = m[0];
+      }
+    }
+    if (!command) return;
+    // Rewind to before the marker, delete it and collapse the caret at the
+    // start of the (now empty) paragraph before the list command runs.
+    const range = document.createRange();
+    range.setStart(textNode, 0);
+    range.setEnd(textNode, marker.length);
+    range.deleteContents();
+    const caretRange = document.createRange();
+    caretRange.setStart(block, 0);
+    caretRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(caretRange);
+    toggleList(command);
+  }
 
   document.addEventListener("selectionchange", updateActiveStates);
 
@@ -197,6 +285,7 @@
   }
   editor.addEventListener("input", () => {
     markDirty();
+    autoConvertListMarker();
     updateUndoRedoState();
   });
 
