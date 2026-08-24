@@ -291,7 +291,7 @@ def odt_list_to_html(list_el, resolve, kinds) -> str:
 # HTML -> ODT
 # --------------------------------------------------------------------------
 
-_TAG_TABLE = re.compile(r"<table>.*?</table>", re.S)
+_TAG_TABLE = re.compile(r"<table[^>]*>.*?</table>", re.S)
 
 
 def html_to_odt(html_fragment: str) -> bytes:
@@ -423,7 +423,7 @@ class _OdtWriter:
         self.doc.text.addElement(list_el)
 
     def add_table(self, html: str) -> None:
-        rows = re.findall(r"<tr>(.*?)</tr>", html, re.S)
+        rows = re.findall(r"<tr[^>]*>(.*?)</tr>", html, re.S)
         if not rows:
             return
         ncols = 0

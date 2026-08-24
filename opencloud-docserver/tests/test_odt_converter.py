@@ -9,6 +9,7 @@ from __future__ import annotations
 import io
 
 from odf.opendocument import load
+from odf.table import Table, TableCell, TableRow
 
 from src.editor.odt_converter import (
     html_to_odt,
@@ -385,3 +386,257 @@ def test_odt_to_html_list_with_nested_list():
     assert "<ul><li>item 1<ul><li>nested a</li></ul></li></ul>" in html.replace(
         "\n", ""
     )
+
+
+# ---------------------------------------------------------------------------
+# ODT table round-trip (task: test-odt-tables)
+# ---------------------------------------------------------------------------
+
+def _table_odt(nrows: int, ncols: int, texts) -> bytes:
+    """Build an ODT containing a single ``nrows x ncols`` table."""
+    from odf.opendocument import OpenDocumentText
+    from odf.table import Table, TableCell, TableRow
+    from odf.text import P
+
+    doc = OpenDocumentText()
+    t = Table()
+    for r in range(nrows):
+        tr = TableRow()
+        for c in range(ncols):
+            tc = TableCell()
+            tc.addElement(P(text=texts[r][c]))
+            tr.addElement(tc)
+        t.addElement(tr)
+    doc.text.addElement(t)
+    buf = io.BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
+
+
+def test_html_to_odt_table_roundtrip_multicol():
+    """A 3x3 HTML table must land in ODT as one table and round-trip fully."""
+    html = (
+        "<table><tr><td>1</td><td>2</td><td>3</td></tr>"
+        "<tr><td>4</td><td>5</td><td>6</td></tr>"
+        "<tr><td>7</td><td>8</td><td>9</td></tr></table>"
+    )
+    odt = html_to_odt(html)
+    doc = load(io.BytesIO(odt))
+    tables = list(doc.text.getElementsByType(Table))
+    assert len(tables) == 1
+    rows = list(tables[0].getElementsByType(TableRow))
+    assert len(rows) == 3
+    assert all(len(list(r.getElementsByType(TableCell))) == 3 for r in rows)
+
+    # ODT -> HTML keeps the grid and cell order.
+    html2 = odt_to_html(odt)
+    assert html2.count("<tr>") == 3
+    assert html2.count("<td>") == 9
+    assert "<td><p>1</p></td>" in html2
+    assert "<td><p>5</p></td>" in html2
+    assert "<td><p>9</p></td>" in html2
+
+    # Full HTML -> ODT -> HTML -> ODT keeps one table and every cell.
+    odt2 = html_to_odt(html2)
+    doc2 = load(io.BytesIO(odt2))
+    tables2 = list(doc2.text.getElementsByType(Table))
+    assert len(tables2) == 1
+    rows2 = list(tables2[0].getElementsByType(TableRow))
+    assert len(rows2) == 3
+    from odf import teletype
+
+    cell_text = teletype.extractText(tables2[0])
+    for n in "123456789":
+        assert n in cell_text, cell_text
+
+
+def test_table_roundtrip_multicol_from_odt():
+    """A 3x2 ODT table must survive ODT -> HTML -> ODT unchanged."""
+    odt = _table_odt(3, 2, [
+        ["r0c0", "r0c1"],
+        ["r1c0", "r1c1"],
+        ["r2c0", "r2c1"],
+    ])
+    html = odt_to_html(odt)
+    assert html.count("<tr>") == 3
+    assert html.count("<td>") == 6
+    assert "<td><p>r0c0</p></td>" in html
+    assert "<td><p>r2c1</p></td>" in html
+
+    back = html_to_odt(html)
+    doc = load(io.BytesIO(back))
+    tables = list(doc.text.getElementsByType(Table))
+    assert len(tables) == 1
+    rows = list(tables[0].getElementsByType(TableRow))
+    assert len(rows) == 3
+    from odf import teletype
+
+    text = teletype.extractText(tables[0])
+    for cell in ("r0c0", "r0c1", "r1c0", "r1c1", "r2c0", "r2c1"):
+        assert cell in text, text
+
+
+def test_table_roundtrip_preserves_inline_formatting():
+    """Bold/italic runs inside cells must survive ODT -> HTML -> ODT."""
+    from odf.opendocument import OpenDocumentText
+    from odf.style import Style, TextProperties
+    from odf.table import Table, TableCell, TableRow
+    from odf.text import P, Span
+
+    doc = OpenDocumentText()
+    bold_style = Style(name="WO_100", family="text")
+    bold_style.addElement(TextProperties(fontweight="bold"))
+    doc.automaticstyles.addElement(bold_style)
+
+    t = Table()
+    tr = TableRow()
+    tc = TableCell()
+    p = P()
+    p.addElement(Span(text="boldtxt", stylename="WO_100"))
+    p.addElement(Span(text="plain"))
+    tc.addElement(p)
+    tr.addElement(tc)
+    t.addElement(tr)
+    doc.text.addElement(t)
+    buf = io.BytesIO()
+    doc.save(buf)
+
+    html = odt_to_html(buf.getvalue())
+    assert "<td><p><b>boldtxt</b>plain</p></td>" in html
+
+    back = html_to_odt(html)
+    doc2 = load(io.BytesIO(back))
+    tables = list(doc2.text.getElementsByType(Table))
+    assert len(tables) == 1
+    from odf import teletype
+
+    text = teletype.extractText(tables[0])
+    assert "boldtxt" in text and "plain" in text, text
+
+
+def test_table_roundtrip_multiple_tables_with_paragraph():
+    """Two tables with a paragraph between them must both survive."""
+    html = (
+        "<p>before</p>"
+        "<table><tr><td>1</td></tr></table>"
+        "<p>mid</p>"
+        "<table><tr><td>2</td></tr></table>"
+        "<p>after</p>"
+    )
+    html2 = odt_to_html(html_to_odt(html))
+    assert html2.count("<table>") == 2
+    assert html2.count("<p>before</p>") == 1
+    assert html2.count("<p>mid</p>") == 1
+    assert html2.count("<p>after</p>") == 1
+    # First table keeps its own content, second table keeps its own.
+    assert "<td><p>1</p></td>" in html2
+    assert "<td><p>2</p></td>" in html2
+
+    back = html_to_odt(html2)
+    doc = load(io.BytesIO(back))
+    tables = list(doc.text.getElementsByType(Table))
+    assert len(tables) == 2
+
+
+def test_table_roundtrip_empty_cells():
+    """Empty cells must not vanish during the round-trip."""
+    html = "<table><tr><td></td><td>x</td></tr></table>"
+    html2 = odt_to_html(html_to_odt(html))
+    assert "<td><p></p></td>" in html2
+    assert "<td><p>x</p></td>" in html2
+    back = html_to_odt(html2)
+    doc = load(io.BytesIO(back))
+    tables = list(doc.text.getElementsByType(Table))
+    cells = list(tables[0].getElementsByType(TableCell))
+    assert len(cells) == 2
+    from odf import teletype
+
+    assert "x" in teletype.extractText(cells[1])
+
+
+def test_html_to_odt_table_roundtrip_th_headers():
+    """A <th> header row becomes cells and keeps its text in the round-trip."""
+    html = (
+        "<table><tr><th>H1</th><th>H2</th></tr>"
+        "<tr><td>a</td><td>b</td></tr></table>"
+    )
+    html2 = odt_to_html(html_to_odt(html))
+    assert html2.count("<tr>") == 2
+    assert "<td><p>H1</p></td>" in html2
+    assert "<td><p>H2</p></td>" in html2
+    assert "<td><p>a</p></td>" in html2
+    assert "<td><p>b</p></td>" in html2
+
+
+def test_html_to_odt_table_roundtrip_with_attributes():
+    """<table>/<tr> with style or class attributes must still round-trip.
+
+    Regression: previously a table whose tags carried attributes was
+    silently dropped and its text flattened into a plain paragraph.
+    """
+    html = (
+        '<table style="width:100%" class="tbl">'
+        '<tr style="background:#eee"><td>a</td><td>b</td></tr>'
+        "</table>"
+    )
+    odt = html_to_odt(html)
+    doc = load(io.BytesIO(odt))
+    tables = list(doc.text.getElementsByType(Table))
+    assert len(tables) == 1, "table with attributes must not be dropped"
+
+    html2 = odt_to_html(odt)
+    assert "<table>" in html2
+    assert "<td><p>a</p></td>" in html2
+    assert "<td><p>b</p></td>" in html2
+    back = html_to_odt(html2)
+    doc2 = load(io.BytesIO(back))
+    tables2 = list(doc2.text.getElementsByType(Table))
+    assert len(tables2) == 1
+    from odf import teletype
+
+    text = teletype.extractText(tables2[0])
+    assert "a" in text and "b" in text, text
+
+
+def test_table_roundtrip_covered_cells():
+    """A covered-table-cell (LibreOffice merge artifact) renders as an empty
+    <td> and does not break the ODT -> HTML -> ODT round-trip."""
+    from odf.opendocument import OpenDocumentText
+    from odf.table import CoveredTableCell, Table, TableCell, TableRow
+    from odf.text import P
+
+    doc = OpenDocumentText()
+    t = Table()
+    tr = TableRow()
+    tc = TableCell()
+    tc.addElement(P(text="merged"))
+    tr.addElement(tc)
+    tr.addElement(CoveredTableCell())
+    t.addElement(tr)
+    doc.text.addElement(t)
+    buf = io.BytesIO()
+    doc.save(buf)
+
+    html = odt_to_html(buf.getvalue())
+    assert "<td><p>merged</p></td>" in html
+    assert html.count("<td>") == 2
+
+    back = html_to_odt(html)
+    doc2 = load(io.BytesIO(back))
+    tables = list(doc2.text.getElementsByType(Table))
+    assert len(tables) == 1
+    from odf import teletype
+
+    assert "merged" in teletype.extractText(tables[0])
+
+
+def test_table_roundtrip_ragged_rows():
+    """Rows of differing widths must keep their own cells during round-trip."""
+    html = (
+        "<table><tr><td>a</td><td>b</td><td>c</td></tr>"
+        "<tr><td>d</td></tr></table>"
+    )
+    html2 = odt_to_html(html_to_odt(html))
+    assert html2.count("<tr>") == 2
+    assert "<td><p>a</p></td><td><p>b</p></td><td><p>c</p></td>" in html2
+    assert "<td><p>d</p></td>" in html2
