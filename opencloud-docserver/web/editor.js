@@ -17,6 +17,11 @@
  *   saves), not the flaky native execCommand stack
  * - Insert image: toolbar button opens an upload dialog (local file -> data
  *   URI -> preview), then inserts a self-contained <img> at the caret
+ * - Find and replace: toolbar button / Ctrl+F opens a dialog that walks the
+ *   live DOM (native-selection highlight, no DOM mutation), jumps between
+ *   matches and replaces one occurrence or all of them via
+ *   document.execCommand("insertText") so native undo + the snapshot chain
+ *   stay consistent. Find works in read-only documents; replace is disabled.
  * - Internationalized via /static/i18n.js
  */
 
@@ -66,8 +71,33 @@
       if (bucket[k] === undefined) bucket[k] = HEADING3_UI_STRINGS[k];
     });
   }
+  // Same pattern for the find-and-replace strings: the catalog (i18n.js) is
+  // updated separately, so seed English fallbacks here so the data-i18n
+  // markers render real text instead of raw keys.
+  const FIND_UI_STRINGS = {
+    "Toolbar.Find": "Find and replace",
+    "Toolbar.FindTitle": "Find and replace (Ctrl+F)",
+    "Find.SearchLabel": "Find",
+    "Find.SearchPlaceholder": "Search in document",
+    "Find.ReplaceLabel": "Replace with",
+    "Find.MatchCase": "Match case",
+    "Find.Next": "Next (Enter)",
+    "Find.Prev": "Previous (Shift+Enter)",
+    "Find.Replace": "Replace",
+    "Find.ReplaceAll": "Replace all",
+    "Find.Close": "Close",
+    "Find.NoMatches": "No matches",
+  };
+  function seedFindStrings(tFn) {
+    const bucket = tFn && tFn.resources && tFn.resources[tFn.lng] && tFn.resources[tFn.lng].translation;
+    if (!bucket) return;
+    Object.keys(FIND_UI_STRINGS).forEach((k) => {
+      if (bucket[k] === undefined) bucket[k] = FIND_UI_STRINGS[k];
+    });
+  }
   const t = (window.createI18n && window.createI18n({ lng: detectedLng })) || ((k) => k);
   seedUiStrings(t);
+  seedFindStrings(t);
   // Localize static HTML (toolbar tooltips, Save label, ready status) and
   // keep the <html lang> attribute in sync for a11y & spell-check.
   if (window.applyTranslations) {
@@ -84,6 +114,10 @@
     saveBtn.disabled = true;
     const toolbar = document.getElementById("toolbar");
     if (toolbar) toolbar.querySelectorAll("button").forEach((b) => (b.disabled = true));
+    // Finding (Ctrl+F) never mutates the document, so it stays available in
+    // read-only documents; the dialog's replace controls handle the rest.
+    const findBtnReadonly = document.getElementById("btn-find");
+    if (findBtnReadonly) findBtnReadonly.disabled = false;
     setStatus(t("Status.ReadOnly"));
   }
 
@@ -568,12 +602,471 @@
     runCommand(detail.command, detail.value == null ? null : String(detail.value));
   });
 
+  // ------------------------------------------------------------------
+  // Find and replace
+  // ------------------------------------------------------------------
+  // Vanilla-JS search over the live contenteditable DOM, zero dependencies.
+  // Matches are located per text node (with cross-node spanning inside the
+  // same block, so "Hel" + "lo" in separate inline elements still match
+  // "Hello"), flattened into document order and highlighted with the native
+  // Selection — the DOM is never mutated for highlighting, so the undo
+  // snapshot chain stays intact. Replace routes through
+  // document.execCommand("insertText") (native undo + a real `input` event);
+  // Replace-all runs in reverse document order so earlier node references
+  // stay valid, and collapses the whole batch into a single undoable step.
+  const BLOCK_TAGS = ["P", "DIV", "H1", "H2", "H3", "H4", "H5", "H6", "LI", "TD", "TH", "TABLE", "UL", "OL", "BLOCKQUOTE", "PRE"];
+  const findState = {
+    textNodes: null,  // ordered text-node list of the last collectMatches()
+    matches: [],      // [{startNode,start,endNode,end,startPos,endPos}]
+    current: -1,      // index of the highlighted match
+    anchorPos: null,  // {ni,off}: “don’t step back before this” search anchor
+    lastQuery: null,
+    lastMatchCase: false,
+  };
+  let bulkEdit = false;          // replace-all batch: suppress per-step history
+  let updatingFindSelection = false; // guard the selectionchange tracker
+
+  function blockAncestor(node) {
+    let el = node && node.parentNode;
+    while (el && el !== editor) {
+      if (el.nodeType === 1 && BLOCK_TAGS.indexOf(el.tagName) !== -1) return el;
+      el = el.parentNode;
+    }
+    return editor;
+  }
+
+  function collectTextNodes() {
+    const nodes = [];
+    const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    return nodes;
+  }
+
+  function posCompare(a, b) {
+    if (a.ni !== b.ni) return a.ni < b.ni ? -1 : 1;
+    if (a.off !== b.off) return a.off < b.off ? -1 : 1;
+    return 0;
+  }
+
+  // Pure match engine over an ordered text-node list. `sameBlock(i,j)`
+  // decides whether two successive nodes may bridge into one match (both
+  // inside the same paragraph/cell/heading — never across the end of one
+  // block into the next, so "foo" in <p>1</p><p>2</p> does not match
+  // "12"). Every start offset of every node is tried — this is what finds
+  // "cat" inside "concatenate" — and overlapping hits are dropped ("aa"
+  // in "aaa" matches once), matching how replace-all behaves.
+  function buildMatches(textNodes, sameBlock, query, matchCase) {
+    const q = matchCase ? query : query.toLowerCase();
+    const ql = q.length;
+    const fold = (s) => (matchCase ? s : s.toLowerCase());
+    const all = [];
+    const n = textNodes.length;
+    for (let i = 0; i < n; i++) {
+      const startFold = fold(textNodes[i].data);
+      const maxStart = startFold.length; // one-past-end lets a match start at
+                                         // a node boundary and span into the
+                                         // next node
+      for (let off = 0; off <= maxStart; off++) {
+        let ri = i;
+        let ro = off;
+        let ki = 0;
+        let endNi = -1;
+        let endOff = -1;
+        let ok = true;
+        while (ki < ql) {
+          if (ri >= n) { ok = false; break; }
+          const nodeFold = fold(textNodes[ri].data);
+          const avail = nodeFold.length - ro;
+          if (avail <= 0) {
+            const next = ri + 1;
+            if (next >= n || !sameBlock(ri, next)) { ok = false; break; }
+            ri = next;
+            ro = 0;
+            continue;
+          }
+          const take = Math.min(avail, ql - ki);
+          if (q.substr(ki, take) !== nodeFold.substr(ro, take)) { ok = false; break; }
+          ki += take;
+          ro += take;
+          if (ki >= ql) { endNi = ri; endOff = ro; }
+        }
+        if (ok && endNi >= 0) {
+          all.push({
+            startNode: textNodes[i],
+            start: off,
+            endNode: textNodes[endNi],
+            end: endOff,
+            startPos: { ni: i, off },
+            endPos: { ni: endNi, off: endOff },
+          });
+        }
+      }
+    }
+    const clean = [];
+    let lastEnd = null;
+    for (let k = 0; k < all.length; k++) {
+      const r = all[k];
+      if (lastEnd === null || posCompare(r.startPos, lastEnd) >= 0) {
+        clean.push(r);
+        lastEnd = r.endPos;
+      }
+    }
+    return clean;
+  }
+
+  function collectMatches(query, matchCase) {
+    const textNodes = collectTextNodes();
+    findState.textNodes = textNodes;
+    const cache = new Map();
+    const sameBlock = (a, b) => {
+      let ba = cache.get(a);
+      if (!ba) { ba = blockAncestor(textNodes[a]); cache.set(a, ba); }
+      let bb = cache.get(b);
+      if (!bb) { bb = blockAncestor(textNodes[b]); cache.set(b, bb); }
+      return ba === bb;
+    };
+    return buildMatches(textNodes, sameBlock, query, matchCase);
+  }
+
+  function getTextNodes() {
+    if (!findState.textNodes) findState.textNodes = collectTextNodes();
+    return findState.textNodes;
+  }
+
+  // Map a DOM position (container + offset) onto the ordered text-node
+  // list as {ni, off}, or null when it points outside the editor. Element
+  // containers (caret on a block boundary) resolve to the first text node
+  // at/after the boundary.
+  function positionToIndex(container, offset) {
+    const textNodes = getTextNodes();
+    if (container.nodeType === 3) {
+      const ni = textNodes.indexOf(container);
+      return ni === -1 ? null : { ni, off: offset };
+    }
+    if (container.nodeType !== 1) return null;
+    const child = offset < container.childNodes.length ? container.childNodes[offset] : null;
+    for (let i = 0; i < textNodes.length; i++) {
+      const t = textNodes[i];
+      if (child) {
+        const precedes = (t.compareDocumentPosition(child) & Node.DOCUMENT_POSITION_PRECEDING) !== 0;
+        if (!precedes) return { ni: i, off: 0 };
+      } else {
+        const rel = t.compareDocumentPosition(container);
+        const inside = (rel & Node.DOCUMENT_POSITION_CONTAINED_BY) !== 0;
+        const precedes = (rel & Node.DOCUMENT_POSITION_PRECEDING) !== 0;
+        if (!inside && !precedes) return { ni: i, off: 0 };
+      }
+    }
+    return null;
+  }
+
+  function caretTextPos() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    const range = sel.getRangeAt(0);
+    if (!editor.contains(range.startContainer)) return null;
+    return positionToIndex(range.startContainer, range.startOffset);
+  }
+
+  function editorSelectionText() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return "";
+    const range = sel.getRangeAt(0);
+    if (!editor.contains(range.commonAncestorContainer)) return "";
+    return range.toString();
+  }
+
+  // First match at/after (forward) or at/before (reverse) `from`; wraps
+  // around when the document is exhausted.
+  function firstMatchFrom(matches, from, forward) {
+    if (!matches.length) return -1;
+    if (!from) return forward ? 0 : matches.length - 1;
+    if (forward) {
+      for (let i = 0; i < matches.length; i++) {
+        if (posCompare(matches[i].startPos, from) >= 0) return i;
+      }
+      return 0;
+    }
+    for (let i = matches.length - 1; i >= 0; i--) {
+      if (posCompare(matches[i].startPos, from) <= 0) return i;
+    }
+    return matches.length - 1;
+  }
+
+  function setCurrentMatch(idx) {
+    findState.current = idx;
+    const m = idx >= 0 && idx < findState.matches.length ? findState.matches[idx] : null;
+    if (!m) {
+      findState.anchorPos = null;
+      const sel = window.getSelection();
+      if (sel) sel.removeAllRanges();
+      updateFindUI();
+      return;
+    }
+    findState.anchorPos = m.startPos;
+    const range = document.createRange();
+    range.setStart(m.startNode, m.start);
+    range.setEnd(m.endNode, m.end);
+    updatingFindSelection = true;
+    try {
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } finally {
+      updatingFindSelection = false;
+    }
+    try {
+      const rect = range.getBoundingClientRect();
+      const vh = window.innerHeight || 600;
+      if (rect && (rect.top < 40 || rect.bottom > vh - 40)) {
+        const el = m.startNode.parentElement;
+        if (el && el.scrollIntoView) el.scrollIntoView({ block: "center", inline: "nearest" });
+      }
+    } catch (err) { /* scroll is best-effort */ }
+    updateFindUI();
+  }
+
+  // The one search entry point. `relative` (= next/prev stepping) continues
+  // from the current match; otherwise the search starts from the anchor
+  // (previous match, else the caret, else the top of the document).
+  function performSearch(opts) {
+    opts = opts || {};
+    const forward = !!opts.forward;
+    const relative = !!opts.relative;
+    const qInput = document.getElementById("find-query");
+    const query = qInput ? qInput.value : "";
+    const caseInput = document.getElementById("find-match-case");
+    const matchCase = !!(caseInput && caseInput.checked);
+    const queryChanged = query !== findState.lastQuery || matchCase !== findState.lastMatchCase;
+    findState.lastQuery = query;
+    findState.lastMatchCase = matchCase;
+    if (query === "") {
+      findState.matches = [];
+      setCurrentMatch(-1);
+      return false;
+    }
+    findState.matches = collectMatches(query, matchCase);
+    let idx = -1;
+    if (relative && !queryChanged) {
+      const total = findState.matches.length;
+      if (total === 0) idx = -1;
+      else if (findState.current < 0) idx = 0;
+      else idx = (findState.current + (forward ? 1 : -1) + total) % total;
+    } else {
+      const from = findState.anchorPos || caretTextPos() || null;
+      idx = firstMatchFrom(findState.matches, from, forward);
+    }
+    setCurrentMatch(idx);
+    return idx >= 0;
+  }
+
+  function updateFindUI() {
+    const countEl = document.getElementById("find-count");
+    const statusEl = document.getElementById("find-status");
+    const replaceBtn = document.getElementById("btn-find-replace");
+    const replaceAllBtn = document.getElementById("btn-find-replace-all");
+    const replaceInput = document.getElementById("find-replace");
+    const nextBtn = document.getElementById("btn-find-next");
+    const prevBtn = document.getElementById("btn-find-prev");
+    const total = findState.matches.length;
+    const noMatch = total === 0;
+    if (countEl) {
+      countEl.textContent = noMatch ? "0 / 0" : findState.current + 1 + " / " + total;
+      countEl.classList.toggle("no-match", noMatch);
+    }
+    if (statusEl) {
+      statusEl.textContent = noMatch ? t("Find.NoMatches") : "";
+      statusEl.classList.toggle("no-match", noMatch);
+    }
+    if (replaceBtn) replaceBtn.disabled = READ_ONLY || noMatch || findState.current < 0;
+    if (replaceAllBtn) replaceAllBtn.disabled = READ_ONLY || noMatch;
+    if (replaceInput) replaceInput.disabled = READ_ONLY;
+    if (nextBtn) nextBtn.disabled = noMatch;
+    if (prevBtn) prevBtn.disabled = noMatch;
+  }
+
+  function openFindDialog() {
+    const dialog = document.getElementById("find-dialog");
+    if (!dialog) return;
+    const qInput = document.getElementById("find-query");
+    // First open: prefill the query with the selected text, like real
+    // word processors do. Only when the user has not typed a query yet.
+    if (qInput && !findState.lastQuery) {
+      const selText = editorSelectionText();
+      if (selText) qInput.value = selText.slice(0, 200);
+    }
+    dialog.classList.add("open");
+    if (qInput) {
+      qInput.focus();
+      qInput.select();
+    }
+    findState.anchorPos = null; // start from the caret/selection this time
+    performSearch({ forward: true, relative: false });
+    updateFindUI();
+  }
+
+  function closeFindDialog() {
+    const dialog = document.getElementById("find-dialog");
+    if (dialog) dialog.classList.remove("open");
+    editor.focus();
+  }
+
+  function findNav(forward) {
+    const qInput = document.getElementById("find-query");
+    const fresh = !qInput || qInput.value !== findState.lastQuery;
+    performSearch({ forward, relative: !fresh });
+  }
+
+  function onFindInput() {
+    performSearch({ forward: true, relative: false });
+  }
+
+  function onFindQueryKeydown(ev) {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      findNav(!ev.shiftKey);
+    }
+  }
+
+  function onFindReplaceKeydown(ev) {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      doReplace();
+    }
+  }
+
+  // Select a recorded match and replace it via execCommand("insertText")
+  // (native undo + a real `input` event that arms autosave/history).
+  function replaceSelected(m, replacement) {
+    const range = document.createRange();
+    range.setStart(m.startNode, m.start);
+    range.setEnd(m.endNode, m.end);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    return document.execCommand("insertText", false, replacement);
+  }
+
+  function doReplace() {
+    if (READ_ONLY) return;
+    const m = findState.matches[findState.current];
+    if (!m) return;
+    const replaceInput = document.getElementById("find-replace");
+    const replacement = replaceInput ? replaceInput.value : "";
+    if (!replaceSelected(m, replacement)) return;
+    // insertText fired an `input` event, which invalidated the stale match
+    // list (see the input listener below) and armed autosave/history.
+    // Belt-and-braces: make sure dirty + history are recorded even on the
+    // odd engine that skips the event.
+    markDirty();
+    captureHistory();
+    // insertText leaves the caret just AFTER the replacement: re-search from
+    // there so the freshly inserted text is never re-matched.
+    findState.anchorPos = null;
+    performSearch({ forward: true, relative: false });
+  }
+
+  function doReplaceAll() {
+    if (READ_ONLY) return;
+    const replaceInput = document.getElementById("find-replace");
+    const replacement = replaceInput ? replaceInput.value : "";
+    const matches = findState.matches.slice(); // snapshot: the DOM is about to change
+    if (matches.length === 0) return;
+    bulkEdit = true;
+    try {
+      // Reverse document order keeps earlier node references/offsets valid.
+      for (let i = matches.length - 1; i >= 0; i--) {
+        replaceSelected(matches[i], replacement);
+      }
+    } finally {
+      bulkEdit = false;
+    }
+    markDirty();
+    captureHistory(); // the whole batch becomes ONE undoable step
+    updateUndoRedoState();
+    findState.anchorPos = null;
+    performSearch({ forward: true, relative: false });
+  }
+
+  // A document edit makes every stored node/offset reference stale: drop
+  // the search state so the next search starts fresh from the caret.
+  function invalidateFindState() {
+    findState.textNodes = null;
+    findState.matches = [];
+    findState.current = -1;
+    findState.anchorPos = null;
+    findState.lastQuery = null;
+    findState.lastMatchCase = false;
+    updateFindUI();
+  }
+
+  function selectionEqualsCurrentMatch() {
+    const m = findState.matches[findState.current];
+    if (!m) return false;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return false;
+    const range = sel.getRangeAt(0);
+    return (
+      range.startContainer === m.startNode &&
+      range.startOffset === m.start &&
+      range.endContainer === m.endNode &&
+      range.endOffset === m.end
+    );
+  }
+
   document.querySelectorAll(".toolbar button[data-cmd]").forEach((btn) => {
     btn.addEventListener("click", () => emitCommand(btn.dataset.cmd, btn.dataset.value));
   });
   document.getElementById("btn-table").addEventListener("click", insertTable);
   document.getElementById("btn-image").addEventListener("click", insertImage);
+  document.getElementById("btn-find").addEventListener("click", openFindDialog);
   saveBtn.addEventListener("click", saveDocument);
+
+  // Find-and-replace dialog controls
+  const findClose = document.getElementById("btn-find-close");
+  const findReplaceBtn = document.getElementById("btn-find-replace");
+  const findReplaceAllBtn = document.getElementById("btn-find-replace-all");
+  const findQueryInput = document.getElementById("find-query");
+  const findReplaceInput = document.getElementById("find-replace");
+  const findCaseInput = document.getElementById("find-match-case");
+  const btnFindNext = document.getElementById("btn-find-next");
+  const btnFindPrev = document.getElementById("btn-find-prev");
+  if (findClose) findClose.addEventListener("click", closeFindDialog);
+  if (findReplaceBtn) findReplaceBtn.addEventListener("click", doReplace);
+  if (findReplaceAllBtn) findReplaceAllBtn.addEventListener("click", doReplaceAll);
+  if (findQueryInput) findQueryInput.addEventListener("input", onFindInput);
+  if (findQueryInput) findQueryInput.addEventListener("keydown", onFindQueryKeydown);
+  if (findReplaceInput) findReplaceInput.addEventListener("keydown", onFindReplaceKeydown);
+  if (findCaseInput) findCaseInput.addEventListener("change", () => performSearch({ forward: true, relative: false }));
+  if (btnFindNext) btnFindNext.addEventListener("click", () => findNav(true));
+  if (btnFindPrev) btnFindPrev.addEventListener("click", () => findNav(false));
+
+  // Ctrl/Cmd+F opens find & replace; F3 / Shift+F3 steps next / previous
+  // (classic word-processor shortcuts, also with the dialog closed).
+  document.addEventListener("keydown", (ev) => {
+    if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && ev.key.toLowerCase() === "f") {
+      ev.preventDefault();
+      openFindDialog();
+      return;
+    }
+    if (ev.key === "F3") {
+      ev.preventDefault();
+      const dialog = document.getElementById("find-dialog");
+      const wasOpen = dialog && dialog.classList.contains("open");
+      openFindDialog();
+      if (wasOpen) findNav(!ev.shiftKey);
+      return;
+    }
+  });
+
+  // The user moved the caret in the editor: drop the match-derived anchor so
+  // the next search picks up from the new caret position. The highlight the
+  // find dialog sets is excluded via the updatingFindSelection flag.
+  document.addEventListener("selectionchange", () => {
+    if (updatingFindSelection) return;
+    if (findState.anchorPos && !selectionEqualsCurrentMatch()) findState.anchorPos = null;
+  });
 
   // Insert-image dialog controls
   const imageFile = document.getElementById("image-file");
@@ -590,6 +1083,11 @@
   if (btnTableCancel) btnTableCancel.addEventListener("click", closeTableDialog);
   document.addEventListener("keydown", (ev) => {
     if (ev.key !== "Escape") return;
+    const findDialog = document.getElementById("find-dialog");
+    if (findDialog && findDialog.classList.contains("open")) {
+      closeFindDialog();
+      return;
+    }
     const tableDialog = document.getElementById("table-dialog");
     if (tableDialog && tableDialog.classList.contains("open")) {
       closeTableDialog();
@@ -706,12 +1204,20 @@
     saveTimer = setTimeout(saveDocument, 30000);
   }
   editor.addEventListener("input", () => {
+    // Replace-all runs a batch of execCommand edits; the whole batch is
+    // captured as ONE history step after the loop (see doReplaceAll), so
+    // suppress the per-step capture here while it runs.
+    if (bulkEdit) return;
     markDirty();
     autoConvertListMarker();
     // Snapshot AFTER the DOM settled so the whole smart-list conversion
     // (marker + native wrap) lands as a single undoable step.
     captureHistory();
     updateUndoRedoState();
+    // Any edit invalidates the cached find matches (node refs went stale);
+    // a replace re-searches right after, a plain edit just resets the
+    // counter until the user searches again.
+    invalidateFindState();
   });
 
   // Release the WOPI lock on the remote host when the editor is closed

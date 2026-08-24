@@ -19,6 +19,54 @@
       border-radius: 6px;
     }
     .image-error { min-height: 16px; margin-top: 8px; font-size: 12px; color: #f87171; }
+
+    /* Find-and-replace dialog styles (scoped here; style.css is maintained
+       separately). Wider dialog with a query row + step arrows, a
+       match-case option, and the counter/status lines. */
+    .find-dialog { width: 380px; }
+    .find-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .find-head h3 { margin: 0; }
+    .find-count {
+      font-size: 12px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .find-count.no-match { color: #f87171; }
+    .find-field-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .find-field-row .find-label {
+      font-size: 13px;
+      color: var(--muted);
+      flex: 0 0 auto;
+    }
+    .find-field-row input { flex: 1; width: auto; }
+    .find-arrow { width: 34px; min-width: 34px; padding: 0; }
+    .find-options { margin: 4px 0 10px; }
+    .find-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .find-check input { width: auto; }
+    .find-status {
+      min-height: 16px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .find-status.no-match { color: #f87171; }
   </style>
 </head>
 <body>
@@ -36,6 +84,7 @@
     <button data-cmd="insertOrderedList" title="Numbered list" data-i18n-title="Toolbar.NumberedListTitle">1≡</button>
     <button id="btn-table" title="Insert table" data-i18n-title="Toolbar.InsertTableTitle">▦</button>
     <button id="btn-image" title="Insert image" data-i18n-title="Toolbar.InsertImageTitle">🖼</button>
+    <button id="btn-find" title="Find and replace (Ctrl+F)" data-i18n-title="Toolbar.FindTitle">🔍</button>
     <span class="sep"></span>
     <button id="btn-undo" data-cmd="undo" title="Undo (Ctrl+Z)" data-i18n-title="Toolbar.UndoTitle">↶</button>
     <button id="btn-redo" data-cmd="redo" title="Redo (Ctrl+Y)" data-i18n-title="Toolbar.RedoTitle">↷</button>
@@ -88,6 +137,45 @@
       <div class="dialog-actions">
         <button id="btn-image-cancel" data-i18n="Image.Cancel">Cancel</button>
         <button id="btn-image-ok" class="primary" disabled data-i18n="Image.Insert">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Find-and-replace dialog: search the document, step through matches
+       (highlighted with the native selection — the DOM is never mutated for
+       highlighting) and replace single occurrences or all at once. Replace
+       controls are disabled in read-only documents; finding stays
+       available. Keyboard: Enter/Shift+Enter step next/previous, Ctrl+F
+       re-opens, Escape closes. -->
+  <div id="find-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="find-dialog-title">
+    <div class="dialog find-dialog">
+      <div class="find-head">
+        <h3 id="find-dialog-title" data-i18n="Toolbar.Find">Find and replace</h3>
+        <span id="find-count" class="find-count" role="status">0 / 0</span>
+      </div>
+      <div class="find-field-row">
+        <label for="find-query" class="find-label" data-i18n="Find.SearchLabel">Find</label>
+        <input id="find-query" type="text" spellcheck="false"
+               placeholder="Search in document"
+               data-i18n-placeholder="Find.SearchPlaceholder">
+        <button id="btn-find-prev" class="find-arrow" title="Previous (Shift+Enter)" data-i18n-title="Find.Prev">▲</button>
+        <button id="btn-find-next" class="find-arrow" title="Next (Enter)" data-i18n-title="Find.Next">▼</button>
+      </div>
+      <div class="find-field-row">
+        <label for="find-replace" class="find-label" data-i18n="Find.ReplaceLabel">Replace with</label>
+        <input id="find-replace" type="text" spellcheck="false">
+      </div>
+      <div class="find-options">
+        <label class="find-check">
+          <input id="find-match-case" type="checkbox">
+          <span data-i18n="Find.MatchCase">Match case</span>
+        </label>
+      </div>
+      <div id="find-status" class="find-status" role="status"></div>
+      <div class="dialog-actions">
+        <button id="btn-find-close" data-i18n="Find.Close">Close</button>
+        <button id="btn-find-replace" data-i18n="Find.Replace">Replace</button>
+        <button id="btn-find-replace-all" class="primary" data-i18n="Find.ReplaceAll">Replace all</button>
       </div>
     </div>
   </div>
