@@ -13,15 +13,17 @@ Endpoints:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 import urllib.parse
 from pathlib import Path
 
 from fastapi import APIRouter, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
 from fastapi.templating import Jinja2Templates
 
+from ..editor.collab import get_hub
 from ..editor.converter import docx_to_html, html_to_docx
 from ..editor.odt_converter import html_to_odt, odt_to_html
 from ..editor.sanitize import sanitize_html
@@ -364,6 +366,150 @@ async def upload_document(file: UploadFile, request: Request) -> JSONResponse:
     store.init(doc_id, file.filename or "document.docx")
     store.put_content(doc_id, data)
     return JSONResponse({"id": doc_id, "name": file.filename})
+
+
+# ----------------------------------------------------------------------
+# Real-time collaboration (CRDT)
+# ----------------------------------------------------------------------
+# Character-level CRDT editing. Clients exchange idempotent insert/delete
+# operations (see src/editor/collab.py for the wire format) through the
+# hub, which assigns every applied op a global revision, replays missing
+# ops to late joiners and streams live updates over SSE.
+#
+#   GET  /api/documents/{id}/collab/state     -- snapshot: rev + text + log
+#   GET  /api/documents/{id}/collab/ops       -- catch-up ops since ?since=N
+#   POST /api/documents/{id}/collab/ops       -- apply client ops
+#   POST /api/documents/{id}/collab/resync    -- rebase on authoritative text
+#   GET  /api/documents/{id}/collab/stream    -- SSE live event stream (CO-3)
+#   POST /api/documents/{id}/collab/presence  -- announce cursor / leave
+#   GET  /api/documents/{id}/collab/presence  -- list active editors (CO-3)
+
+
+def _collab_base_text(request: Request, doc_id: str) -> str:
+    """Best-effort baseline for a document's collaboration state: the bytes
+    currently in the store (or the remote WOPI host) converted to HTML, so a
+    freshly touched collaboration state reflects the document as it exists.
+    Returns "" when there is nothing to seed from yet."""
+    data = _load_bytes(request, doc_id)
+    if not data:
+        return ""
+    try:
+        if _document_format(request, doc_id) == "odt":
+            return odt_to_html(data)
+        return docx_to_html(data)
+    except Exception:
+        return ""
+
+
+@router.get("/api/documents/{doc_id}/collab/state")
+async def collab_state(doc_id: str, request: Request) -> JSONResponse:
+    """Current collaboration snapshot: revision, visible text, full op log
+    and the list of active editors. A new (late-joining) client can apply
+    the whole op log from scratch and converge with every other editor."""
+    hub = get_hub()
+    hub.ensure(doc_id, _collab_base_text(request, doc_id))
+    return JSONResponse(hub.state(doc_id))
+
+
+@router.get("/api/documents/{doc_id}/collab/ops")
+async def collab_ops(doc_id: str, request: Request) -> JSONResponse:
+    """Catch-up replay: every hub op applied after revision ``since``.
+    Poll this (or subscribe to the SSE stream) to stay in sync."""
+    hub = get_hub()
+    hub.ensure(doc_id, _collab_base_text(request, doc_id))
+    try:
+        since = int(request.query_params.get("since", 0))
+    except (TypeError, ValueError):
+        since = 0
+    return JSONResponse({"rev": hub.rev(doc_id), "ops": hub.ops_since(doc_id, since)})
+
+
+@router.post("/api/documents/{doc_id}/collab/ops")
+async def collab_apply_ops(doc_id: str, request: Request) -> JSONResponse:
+    """Apply a batch of client operations (idempotent, deduplicated).
+    Body: ``{"client_id": str, "base_rev": int, "ops": [...]}``. The reply
+    carries the new revision, the ops that were applied, and any ops the
+    client is still missing since ``base_rev`` (single-round-trip healing
+    of gaps from lost/reordered delivery)."""
+    try:
+        payload = json.loads(await request.body())
+    except json.JSONDecodeError:
+        return JSONResponse({"error": "invalid JSON"}, status_code=400)
+    ops = payload.get("ops") if isinstance(payload, dict) else None
+    if not isinstance(ops, list):
+        return JSONResponse({"error": "ops must be a list"}, status_code=400)
+    client_id = payload.get("client_id") or "anon"
+    base_rev = payload.get("base_rev")
+    if not isinstance(base_rev, int):
+        base_rev = None
+    return JSONResponse(get_hub().apply_ops(doc_id, client_id, ops, base_rev))
+
+
+@router.post("/api/documents/{doc_id}/collab/resync")
+async def collab_resync(doc_id: str, request: Request) -> JSONResponse:
+    """Rebase the collaboration state onto authoritative text — used after
+    a full save so the CRDT layer and the stored document stay in step."""
+    try:
+        payload = json.loads(await request.body())
+    except json.JSONDecodeError:
+        return JSONResponse({"error": "invalid JSON"}, status_code=400)
+    if not isinstance(payload, dict):
+        return JSONResponse({"error": "invalid JSON"}, status_code=400)
+    state = get_hub().resync(doc_id, payload.get("text", ""))
+    return JSONResponse(state)
+
+
+@router.get("/api/documents/{doc_id}/collab/stream")
+async def collab_stream(doc_id: str, request: Request) -> StreamingResponse:
+    """Server-Sent Events stream. Emits a ``state`` event with the current
+    snapshot on connect, then ``ops``/``presence``/``resync`` events as they
+    happen — the real-time push half of the collaboration protocol."""
+    hub = get_hub()
+    hub.ensure(doc_id, _collab_base_text(request, doc_id))
+    queue = hub.subscribe(doc_id)
+
+    async def event_stream():
+        try:
+            # Seed the fresh subscriber so it converges immediately.
+            yield f"event: state\ndata: {json.dumps(hub.state(doc_id))}\n\n"
+            while True:
+                payload = await queue.get()
+                yield f"data: {payload}\n\n"
+        except asyncio.CancelledError:
+            raise
+        finally:
+            hub.unsubscribe(doc_id, queue)
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@router.post("/api/documents/{doc_id}/collab/presence")
+async def collab_presence(doc_id: str, request: Request) -> JSONResponse:
+    """Announce an editor (cursor/selection sharing) or leave by sending an
+    empty cursor. Body: ``{"client_id": str, "user": str, "cursor": ...}``."""
+    try:
+        payload = json.loads(await request.body())
+    except json.JSONDecodeError:
+        return JSONResponse({"error": "invalid JSON"}, status_code=400)
+    if not isinstance(payload, dict):
+        return JSONResponse({"error": "invalid JSON"}, status_code=400)
+    client_id = payload.get("client_id") or ""
+    if not client_id:
+        return JSONResponse({"error": "client_id required"}, status_code=400)
+    clients = get_hub().set_presence(
+        doc_id, client_id, payload.get("user", ""), payload.get("cursor")
+    )
+    return JSONResponse({"ok": True, "clients": clients})
+
+
+@router.get("/api/documents/{doc_id}/collab/presence")
+async def collab_presence_list(doc_id: str, request: Request) -> JSONResponse:
+    """List the editors currently collaborating on a document."""
+    return JSONResponse({"clients": get_hub().clients(doc_id)})
 
 
 # ----------------------------------------------------------------------
