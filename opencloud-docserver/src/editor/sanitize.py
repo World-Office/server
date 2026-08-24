@@ -18,10 +18,12 @@ class _XSSSanitizer(HTMLParser):
         super().__init__(convert_charrefs=True)
         self._output: list[str] = []
         self._safe_tags = {"p", "b", "i", "u", "em", "strong", "h1", "h2", "h3", "h4", "h5", "h6",
-                          "ul", "ol", "li", "table", "tr", "td", "th", "br", "div", "span"}
+                          "ul", "ol", "li", "table", "tr", "td", "th", "br", "div", "span",
+                          "img", "a"}
         self._unsafe_tags = {"script", "iframe", "object", "embed", "applet", "form", "input",
                             "button", "select", "textarea", "meta", "link", "style", "base",
                             "frame", "frameset", "head", "title", "body", "html"}
+        self._void_tags = {"img", "br"}
 
     def handle_starttag(self, tag: str, attrs) -> None:
         if tag in self._unsafe_tags:
@@ -37,7 +39,10 @@ class _XSSSanitizer(HTMLParser):
             self._output.append(f"</{tag}>")
 
     def handle_data(self, data: str) -> None:
-        self._output.append(data)
+        # Escape angle brackets in raw data so entity-decoded tags
+        # (&#60;script&#62;) can never survive as real HTML elements.
+        safe = data.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+        self._output.append(safe)
 
     def handle_entityref(self, name: str) -> None:
         self._output.append(f"&{name};")
@@ -49,69 +54,96 @@ class _XSSSanitizer(HTMLParser):
         return "".join(self._output)
 
 
+def _is_safe_url(name: str, value: str) -> bool:
+    """Return True if an attribute value is a safe URL for img src / a href."""
+    if name == "src":
+        # img src: only data:image/ URIs or https(s)/relative (no javascript:, no external tracking)
+        if value.startswith("data:image/"):
+            return True
+        if value.startswith(("https://", "http://", "/", "./", "../")):
+            return True
+        return False
+    if name == "href":
+        # a href: http(s), relative, mailto:, tel:, #anchor — but never script schemes
+        if value.startswith(("https://", "http://", "mailto:", "tel:", "#", "/", "./", "../")):
+            return True
+        return False
+    return True
+
+
 def _attrs_to_html(attrs) -> str:
-    """Return HTML attribute string, stripping dangerous on* attributes."""
+    """Return HTML attribute string, stripping dangerous attributes."""
     if not attrs:
         return ""
     safe_attrs: list[tuple[str, str]] = []
     for name, value in attrs:
+        lname = (name or "").lower()
         # Strip dangerous event handler attributes
-        if name.lower().startswith("on"):
+        if lname.startswith("on"):
             continue
         # Strip style attributes with URL schemes that could load remote content
-        if name.lower() == "style" and value:
+        if lname == "style" and value:
             # Allow basic color/spacing styles but strip url(), data: URIs, etc.
             safe_style = _sanitize_style(value)
             if safe_style:
                 safe_attrs.append(("style", safe_style))
             continue
+        # Validate URL-bearing attributes (img src, a href)
+        if lname in ("src", "href") and value:
+            if not _is_safe_url(lname, value):
+                continue  # drop dangerous URL (javascript:, vbscript:, data:text/html)
         safe_attrs.append((name, value))
     return "".join(f' {name}="{value}"' for name, value in safe_attrs)
 
 
 def _sanitize_style(value: str) -> str | None:
     """Strip unsafe constructs from inline style. Returns None if style is unsafe."""
-    # Allow common text styles but block unsafe constructs
-    safe_patterns = [
-        r'\s*color\s*:[^;]*;',     # color
-        r'\s*background-color\s*:[^;]*;',  # background-color
-        r'\s*font-family\s*:[^;]*;',  # font-family
-        r'\s*font-size\s*:[^;]*;',    # font-size
-        r'\s*text-align\s*:[^;]*;',   # text-align
-        r'\s*margin\s*:[^;]*;',       # margin
-        r'\s*padding\s*:[^;]*;',      # padding
-        r'\s*border\s*:[^;]*;',       # border
-        r'\s*text-decoration\s*:[^;]*;',  # text-decoration
-    ]
+    # Allow common text styles only (property whitelist)
+    safe_props = {
+        "color", "background-color", "font-family", "font-size", "font-weight",
+        "font-style", "text-align", "text-decoration", "margin", "margin-top",
+        "margin-bottom", "margin-left", "margin-right", "padding", "padding-top",
+        "padding-bottom", "padding-left", "padding-right", "border", "line-height",
+    }
 
-    # Check for dangerous patterns
+    # Reject any style that contains an unsafe construct anywhere
     unsafe_patterns = [
-        r'url\s*\([^)]*\)',         # url(...)
-        r'data:',                      # data: URIs
-        r'expression\s*\(',           # IE expressions
-        r'javascript:',                # javascript: URLs
-        r'vbscript:',                  # VBScript URLs
-        r'behavior:',                  # CSS behavior
-        r'-moz-binding:',              # Mozilla binding
+        r'url\s*\([^)]*\)',      # url(...)
+        r'expression\s*\(',       # IE expressions
+        r'javascript:',             # javascript: URLs
+        r'vbscript:',               # VBScript URLs
+        r'behavior:',               # CSS behavior
+        r'-moz-binding',            # Mozilla binding
+        r'@import',                 # @import
+        r'\bposition\s*:',         # position: fixed/absolute (ui hijack)
     ]
-
     for pattern in unsafe_patterns:
         if re.search(pattern, value, re.IGNORECASE):
-            return None  # Unsafe, drop the entire style
+            return None
 
-    # Only keep known-safe style properties
-    result = ""
-    for pattern in safe_patterns:
-        for m in re.finditer(pattern, value, re.IGNORECASE):
-            result += m.group(0)
+    # Split into individual declarations and keep only whitelisted props.
+    result_parts: list[str] = []
+    for decl in value.split(";"):
+        decl = decl.strip()
+        if not decl:
+            continue
+        if ":" not in decl:
+            continue
+        prop, _, val = decl.partition(":")
+        prop = prop.strip().lower()
+        val = val.strip()
+        if prop not in safe_props:
+            continue
+        # Reject dangerous values within an otherwise-safe property
+        if re.search(r'(url\s*\(|data:|base64|\bexpression\b|javascript:|vbscript:)', val, re.IGNORECASE):
+            continue
+        result_parts.append(f"{prop}: {val};")
 
+    result = " ".join(result_parts)
     if not result.strip():
-        return None  # Empty or no safe properties
-
-    # Limit length to prevent abuse
+        return None
     if len(result) > 512:
         return None
-
     return result.strip()
 
 
