@@ -59,6 +59,8 @@
       // typing produces <p>…</p> (bare text would be lost in DOCX conversion).
       editor.innerHTML = data.html || "<p><br></p>";
       setStatus(data.blank ? t("Status.EmptyDocument") : t("Status.Ready"));
+      // Fresh load resets the native undo stack: reflect that in the toolbar.
+      updateUndoRedoState();
     } catch (err) {
       editor.innerHTML = "<p><em>" + t("Status.LoadFailed") + err.message + "</em></p>";
       setStatus(t("Status.LoadFailed") + err.message, true);
@@ -94,8 +96,24 @@
   // ------------------------------------------------------------------
   function runCommand(cmd, value) {
     editor.focus();
-    document.execCommand(cmd, false, value || null);
+    const ok = document.execCommand(cmd, false, value || null);
+    // Undo/redo mutate the document without always firing an `input` event,
+    // so mark the doc dirty explicitly to keep autosave armed and the
+    // status bar accurate.
+    if ((cmd === "undo" || cmd === "redo") && ok) markDirty();
     updateActiveStates();
+    updateUndoRedoState();
+  }
+
+  // The legacy execCommand undo stack can be queried via queryCommandEnabled;
+  // use it to grey out the toolbar buttons when there is nothing to undo or
+  // redo (fresh document, or stack exhausted), instead of no-op clicks.
+  function updateUndoRedoState() {
+    if (typeof document.queryCommandEnabled !== "function") return;
+    const undoBtn = document.getElementById("btn-undo");
+    const redoBtn = document.getElementById("btn-redo");
+    if (undoBtn) undoBtn.disabled = READ_ONLY || !document.queryCommandEnabled("undo");
+    if (redoBtn) redoBtn.disabled = READ_ONLY || !document.queryCommandEnabled("redo");
   }
 
   function updateActiveStates() {
@@ -142,15 +160,27 @@
   // Keyboard shortcuts
   // ------------------------------------------------------------------
   editor.addEventListener("keydown", (ev) => {
-    if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey) {
+    if ((ev.ctrlKey || ev.metaKey) && !ev.altKey) {
       const k = ev.key.toLowerCase();
       if (k === "s") {
         ev.preventDefault();
         saveDocument();
+        return;
       }
-      if (k === "b") ev.preventDefault();
-      if (k === "i") ev.preventDefault();
-      if (k === "u") ev.preventDefault();
+      // Undo: Ctrl+Z. Redo: Ctrl+Y (Windows/Linux) or Ctrl+Shift+Z (macOS).
+      // Routed through runCommand() so button states and the dirty/autosave
+      // status stay consistent with the toolbar.
+      if (k === "z") {
+        ev.preventDefault();
+        runCommand(ev.shiftKey ? "redo" : "undo");
+        return;
+      }
+      if (k === "y") {
+        ev.preventDefault();
+        runCommand("redo");
+        return;
+      }
+      if (k === "b" || k === "i" || k === "u") ev.preventDefault();
     }
   });
 
@@ -160,10 +190,14 @@
   // Autosave every 30 s of inactivity
   // ------------------------------------------------------------------
   let saveTimer = null;
-  editor.addEventListener("input", () => {
+  function markDirty() {
     setStatus(t("Status.Unsaved"));
     clearTimeout(saveTimer);
     saveTimer = setTimeout(saveDocument, 30000);
+  }
+  editor.addEventListener("input", () => {
+    markDirty();
+    updateUndoRedoState();
   });
 
   // Release the WOPI lock on the remote host when the editor is closed
