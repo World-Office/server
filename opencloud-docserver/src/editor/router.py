@@ -23,6 +23,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from ..editor.converter import docx_to_html, html_to_docx
+from ..editor.odt_converter import html_to_odt, odt_to_html
 from ..editor.sanitize import sanitize_html
 from ..editor.session import (
     EditorSession,
@@ -81,6 +82,8 @@ WOPI_DISCOVERY_XML = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
     <app name="WorldOffice" favIconUrl="https://worldoffice.org/favicon.ico">
       <action name="view" ext="docx" urlsrc="{public_url}/editor"/>
       <action name="edit" ext="docx" urlsrc="{public_url}/editor"/>
+      <action name="view" ext="odt" urlsrc="{public_url}/editor"/>
+      <action name="edit" ext="odt" urlsrc="{public_url}/editor"/>
     </app>
   </net-zone>
 </wopi-discovery>"""
@@ -143,7 +146,13 @@ def _parse_launch(request: Request, form: dict | None):
                 host = RemoteWopiClient(wopi_host, token)
                 owner = ""
                 try:
-                    owner = (host.check_file_info(doc_id) or {}).get("UserId") or ""
+                    file_info = host.check_file_info(doc_id) or {}
+                    owner = file_info.get("UserId") or ""
+                    # BaseFileName carries the real extension (.odt vs .docx),
+                    # which the editor needs to route conversions correctly.
+                    base_name = file_info.get("BaseFileName") or ""
+                    if base_name:
+                        session.name = base_name
                 except Exception as exc:
                     print(f"[launch] CFI failed for {doc_id}: {exc!r}")
                 # Unknown owner still gets an owner-named token (wo:unknown:…)
@@ -226,6 +235,18 @@ def _doc_name(request: Request, doc_id: str) -> str:
     return session.name if session else "document.docx"
 
 
+def _document_format(request: Request, doc_id: str) -> str:
+    """Resolve the document format from its file name extension.
+
+    "docx" is the fallback for unknown/missing extensions so the existing
+    DOCX path keeps working; ".odt" files route through the ODT converter.
+    """
+    name = (_doc_name(request, doc_id) or "").lower()
+    if name.endswith(".odt"):
+        return "odt"
+    return "docx"
+
+
 # ----------------------------------------------------------------------
 # Document API
 # ----------------------------------------------------------------------
@@ -245,7 +266,10 @@ async def document_html(doc_id: str, request: Request) -> JSONResponse:
         # the first save re-encodes the (now non-empty) HTML into a valid DOCX.
         return JSONResponse({"html": "", "name": _doc_name(request, doc_id), "blank": True})
     try:
-        html = docx_to_html(data)
+        if _document_format(request, doc_id) == "odt":
+            html = odt_to_html(data)
+        else:
+            html = docx_to_html(data)
     except Exception as exc:
         return JSONResponse({"error": f"conversion failed: {exc}"}, status_code=500)
     return JSONResponse({"html": html, "name": _doc_name(request, doc_id)})
@@ -272,21 +296,24 @@ async def save_document(doc_id: str, request: Request) -> JSONResponse:
         )
 
     try:
-        docx_bytes = html_to_docx(html)
+        if _document_format(request, doc_id) == "odt":
+            output_bytes = html_to_odt(html)
+        else:
+            output_bytes = html_to_docx(html)
     except Exception as exc:
         return JSONResponse({"error": f"conversion failed: {exc}"}, status_code=500)
 
     client = _client(request, doc_id)
     if client:
         try:
-            client.put_contents(doc_id, docx_bytes)
+            client.put_contents(doc_id, output_bytes)
         except Exception as exc:
             return JSONResponse({"error": f"remote save failed: {exc}"}, status_code=502)
         _registry(request).get(doc_id)
     else:
-        _store(request).put_content(doc_id, docx_bytes)
+        _store(request).put_content(doc_id, output_bytes)
 
-    return JSONResponse({"ok": True, "size": len(docx_bytes)})
+    return JSONResponse({"ok": True, "size": len(output_bytes)})
 
 
 @router.get("/api/documents/{doc_id}")
