@@ -12,6 +12,8 @@
  *   "LIST-PERSISTENCE: OK" for browser-level E2E to wait on
  * - Undo/redo: explicit innerHTML snapshot chain (20+ steps, survives
  *   saves), not the flaky native execCommand stack
+ * - Insert image: toolbar button opens an upload dialog (local file -> data
+ *   URI -> preview), then inserts a self-contained <img> at the caret
  * - Internationalized via /static/i18n.js
  */
 
@@ -28,7 +30,30 @@
   const api = (path) => `/api/documents/${encodeURIComponent(DOC_ID)}/${path}?session=${encodeURIComponent(SESSION)}`;
   // Resolve the UI language from the browser (falls back to English).
   const detectedLng = window.detectLocale ? window.detectLocale() : (navigator.language || "en");
+  // New image-dialog strings are not in the i18n catalog yet (i18n.js is
+  // updated separately). Seed them as English fallbacks so the data-i18n
+  // markers below render real text instead of raw keys. Only missing keys
+  // are filled, so real catalog entries still win once they are added.
+  const IMAGE_UI_STRINGS = {
+    "Toolbar.InsertImage": "Insert image",
+    "Toolbar.InsertImageTitle": "Insert image",
+    "Image.ChooseFile": "Image file",
+    "Image.Insert": "Insert",
+    "Image.Cancel": "Cancel",
+    "Image.NoFile": "Choose an image file first",
+    "Image.UnsupportedType": "Unsupported file type — use PNG, JPEG, GIF, BMP, WebP or SVG",
+    "Image.TooLarge": "Image too large (max 10 MB)",
+    "Image.ReadFailed": "Could not read the image",
+  };
+  function seedImageStrings(tFn) {
+    const bucket = tFn && tFn.resources && tFn.resources[tFn.lng] && tFn.resources[tFn.lng].translation;
+    if (!bucket) return;
+    Object.keys(IMAGE_UI_STRINGS).forEach((k) => {
+      if (bucket[k] === undefined) bucket[k] = IMAGE_UI_STRINGS[k];
+    });
+  }
   const t = (window.createI18n && window.createI18n({ lng: detectedLng })) || ((k) => k);
+  seedImageStrings(t);
   // Localize static HTML (toolbar tooltips, Save label, ready status) and
   // keep the <html lang> attribute in sync for a11y & spell-check.
   if (window.applyTranslations) {
@@ -119,6 +144,17 @@
           detail: { docId: DOC_ID, name: DOC_NAME },
         }));
         console.info("LIST-PERSISTENCE: OK", DOC_NAME);
+      }
+      // Image persistence round-trip confirmed by the server: the saved
+      // body carried a self-contained <img> (data: URI) and came back as a
+      // valid save (converted + PUT to the WOPI host). Dispatch an event
+      // (plus console marker) that browser-level E2E (Playwright) waits on
+      // before verifying the embedded picture in the stored document.
+      if (/<img[\s>]/i.test(editor.innerHTML)) {
+        window.dispatchEvent(new CustomEvent("images-persisted", {
+          detail: { docId: DOC_ID, name: DOC_NAME },
+        }));
+        console.info("IMAGE-PERSISTENCE: OK", DOC_NAME);
       }
       setTimeout(() => setStatus(t("Status.Ready")), 2000);
     } catch (err) {
@@ -352,11 +388,154 @@
     editor.focus();
   }
 
+  // ------------------------------------------------------------------
+  // Insert-image dialog
+  // ------------------------------------------------------------------
+  // The toolbar's image button opens a small modal asking for a local image
+  // file. The file is read into a self-contained data: URI (nothing is
+  // uploaded yet — the browser keeps it), previewed, and inserted as an
+  // <img> at the saved cursor position on confirm. The server's sanitizer
+  // allows data:image/ URIs and the ODT converter embeds the binary into
+  // the stored document, so the picture persists across save/reload.
+  // The selection is captured before the dialog steals focus and restored
+  // on confirm, exactly like the table dialog.
+  const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB data-URI budget
+  const IMAGE_TYPES = ["image/png", "image/jpeg", "image/gif", "image/bmp", "image/webp", "image/svg+xml"];
+  let imageSelRange = null;
+  let imageDataUrl = null;
+
+  function insertImage() {
+    if (READ_ONLY) return;
+    const dialog = document.getElementById("image-dialog");
+    const fileInput = document.getElementById("image-file");
+    const okBtn = document.getElementById("btn-image-ok");
+    const previewWrap = document.getElementById("image-preview-wrap");
+    const errEl = document.getElementById("image-error");
+    if (!dialog) return;
+    saveImageSelection();
+    imageDataUrl = null;
+    if (fileInput) fileInput.value = "";
+    if (okBtn) okBtn.disabled = true;
+    if (previewWrap) previewWrap.hidden = true;
+    if (errEl) errEl.textContent = "";
+    dialog.classList.add("open");
+    if (fileInput) fileInput.focus();
+  }
+
+  function saveImageSelection() {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
+      imageSelRange = sel.getRangeAt(0).cloneRange();
+    } else {
+      imageSelRange = null;
+    }
+  }
+
+  function restoreImageSelection() {
+    if (!imageSelRange) return;
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(imageSelRange);
+    imageSelRange = null;
+  }
+
+  function escapeAttr(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/"/g, "&quot;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  // Read the picked file into a data: URI, validate it (type + size), show
+  // a preview and arm the Insert button. Runs on every file-input change.
+  function onImageFileChange() {
+    const fileInput = document.getElementById("image-file");
+    const okBtn = document.getElementById("btn-image-ok");
+    const errEl = document.getElementById("image-error");
+    const previewWrap = document.getElementById("image-preview-wrap");
+    const preview = document.getElementById("image-preview");
+    const file = fileInput && fileInput.files && fileInput.files[0];
+    if (okBtn) okBtn.disabled = true;
+    if (previewWrap) previewWrap.hidden = true;
+    if (errEl) errEl.textContent = "";
+    if (!file) {
+      imageDataUrl = null;
+      if (errEl) errEl.textContent = t("Image.NoFile");
+      return;
+    }
+    if (IMAGE_TYPES.indexOf(file.type) === -1) {
+      imageDataUrl = null;
+      if (errEl) errEl.textContent = t("Image.UnsupportedType");
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      imageDataUrl = null;
+      if (errEl) errEl.textContent = t("Image.TooLarge");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      imageDataUrl = String(reader.result || "");
+      if (preview) {
+        preview.src = imageDataUrl;
+        preview.alt = escapeAttr(file.name);
+      }
+      if (previewWrap) previewWrap.hidden = false;
+      if (errEl) errEl.textContent = "";
+      if (okBtn) okBtn.disabled = false;
+    };
+    reader.onerror = () => {
+      imageDataUrl = null;
+      if (errEl) errEl.textContent = t("Image.ReadFailed");
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Insert the previewed image at the saved caret. insertHTML fires an
+  // `input` event (arming autosave + capturing history); captureHistory()
+  // here is belt-and-braces, exactly like the table insertion — the
+  // html === lastSnapshot guard makes it a no-op when the event already
+  // ran.
+  function confirmImageDialog() {
+    if (!imageDataUrl) return;
+    const fileInput = document.getElementById("image-file");
+    const file = fileInput && fileInput.files && fileInput.files[0];
+    const alt = file ? escapeAttr(file.name) : "image";
+    const src = imageDataUrl; // capture before closeImageDialog() clears it
+    closeImageDialog();
+    restoreImageSelection();
+    editor.focus();
+    document.execCommand(
+      "insertHTML",
+      false,
+      '<img src="' + src + '" alt="' + alt + '">'
+    );
+    captureHistory();
+  }
+
+  function closeImageDialog() {
+    const dialog = document.getElementById("image-dialog");
+    if (dialog) dialog.classList.remove("open");
+    imageSelRange = null;
+    imageDataUrl = null;
+    editor.focus();
+  }
+
   document.querySelectorAll(".toolbar button[data-cmd]").forEach((btn) => {
     btn.addEventListener("click", () => runCommand(btn.dataset.cmd, btn.dataset.value));
   });
   document.getElementById("btn-table").addEventListener("click", insertTable);
+  document.getElementById("btn-image").addEventListener("click", insertImage);
   saveBtn.addEventListener("click", saveDocument);
+
+  // Insert-image dialog controls
+  const imageFile = document.getElementById("image-file");
+  const btnImageOk = document.getElementById("btn-image-ok");
+  const btnImageCancel = document.getElementById("btn-image-cancel");
+  if (imageFile) imageFile.addEventListener("change", onImageFileChange);
+  if (btnImageOk) btnImageOk.addEventListener("click", confirmImageDialog);
+  if (btnImageCancel) btnImageCancel.addEventListener("click", closeImageDialog);
 
   // Insert-table dialog controls
   const btnTableOk = document.getElementById("btn-table-ok");
@@ -365,8 +544,13 @@
   if (btnTableCancel) btnTableCancel.addEventListener("click", closeTableDialog);
   document.addEventListener("keydown", (ev) => {
     if (ev.key !== "Escape") return;
-    const dialog = document.getElementById("table-dialog");
-    if (dialog && dialog.classList.contains("open")) closeTableDialog();
+    const tableDialog = document.getElementById("table-dialog");
+    if (tableDialog && tableDialog.classList.contains("open")) {
+      closeTableDialog();
+      return;
+    }
+    const imageDialog = document.getElementById("image-dialog");
+    if (imageDialog && imageDialog.classList.contains("open")) closeImageDialog();
   }, true);
 
   // ------------------------------------------------------------------
