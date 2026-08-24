@@ -1,9 +1,9 @@
 /**
  * opencloud-docserver editor — vanilla JS, zero dependencies.
  *
- * - Loads DOCX as HTML from the server
+ * - Loads DOCX/ODT as HTML from the server
  * - Lets the user edit in a contenteditable div
- * - Saves HTML back to the server (which converts to DOCX)
+ * - Saves HTML back to the server (which converts to DOCX/ODT)
  * - Minimal toolbar via document.execCommand (deprecated but universal)
  * - Bullet/numbered lists: toolbar, Ctrl+Shift+7/8 and markdown-style
  *   auto-conversion ("- ", "* ", "1. ") all route through toggleList()
@@ -15,6 +15,9 @@
 (function () {
   const DOC_ID = window.__DOC_ID__ || "unknown";
   const DOC_NAME = window.__DOC_NAME__ || "document.docx";
+  // The server routes conversion by extension (see _document_format in
+  // src/editor/router.py); ODT files round-trip through the odfpy converter.
+  const DOC_FORMAT = /\.odt$/i.test(DOC_NAME) ? "odt" : "docx";
   const READ_ONLY = window.__READ_ONLY__ === true;
   const SESSION = window.__SESSION__ || "";
   const api = (path) => `/api/documents/${encodeURIComponent(DOC_ID)}/${path}?session=${encodeURIComponent(SESSION)}`;
@@ -87,6 +90,16 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "save failed");
       setStatus(t("Status.Saved"));
+      if (DOC_FORMAT === "odt") {
+        // ODT persistence round-trip confirmed by the server: the editor's
+        // HTML was converted back to ODT and PUT to the WOPI host. Dispatch
+        // an event (plus console marker) that browser-level E2E (Playwright)
+        // waits on before verifying content.xml in the stored file.
+        window.dispatchEvent(new CustomEvent("odt-persisted", {
+          detail: { docId: DOC_ID, name: DOC_NAME },
+        }));
+        console.info("ODT-PERSISTENCE: OK", DOC_NAME);
+      }
       setTimeout(() => setStatus(t("Status.Ready")), 2000);
     } catch (err) {
       setStatus(t("Status.SaveFailed") + err.message, true);
