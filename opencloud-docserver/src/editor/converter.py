@@ -10,6 +10,7 @@ only the subset our editor produces, plus whatever reasonable tags appear.
 
 from __future__ import annotations
 
+import base64
 import io
 import re
 from html import escape
@@ -19,7 +20,132 @@ from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from docx.shared import Emu
+from docx.table import _Cell
 from docx.text.paragraph import Paragraph
+
+# --------------------------------------------------------------------------
+# Image handling (package binary <-> data URI)
+# --------------------------------------------------------------------------
+
+_EMU_PER_PX = 9525  # EMU per CSS pixel at 96 dpi
+
+_PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+
+
+def _data_uri(mime: str, content: bytes) -> str:
+    """Encode image bytes as a self-contained ``data:`` URI for the editor."""
+    b64 = base64.b64encode(content).decode("ascii")
+    return f"data:{mime};base64,{b64}"
+
+
+_DATA_URI_RE = re.compile(r"^data:([^;,\s]+)(;[^,]*)?,(.*)$", re.S)
+
+
+def _decode_data_uri(src: str) -> tuple[str | None, bytes | None]:
+    """Decode a ``data:`` URI into (mime, bytes).
+
+    Returns (None, None) when the value is not an embeddable data URI (e.g.
+    an http(s) src that a server-side converter cannot fetch).
+    """
+    if not src:
+        return None, None
+    m = _DATA_URI_RE.match(src)
+    if not m:
+        return None, None
+    mime = (m.group(1) or "image/png").lower()
+    meta = m.group(2) or ""
+    payload = m.group(3)
+    try:
+        if "base64" in meta:
+            content = base64.b64decode(payload, validate=True)
+        else:
+            from urllib.parse import unquote
+
+            content = unquote(payload).encode("utf-8")
+    except Exception:
+        return None, None
+    if not content:
+        return None, None
+    return mime, content
+
+
+def _sniff_mime(data: bytes) -> str:
+    """Detect an image media type from its magic bytes."""
+    if data[:8] == _PNG_MAGIC:
+        return "image/png"
+    if data[:3] == b"GIF":
+        return "image/gif"
+    if data[:2] == b"\xff\xd8":
+        return "image/jpeg"
+    if data[:2] == b"BM":
+        return "image/bmp"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    if data[:5] in (b"<?xml", b"<svg "):
+        return "image/svg+xml"
+    return "image/png"
+
+
+_SOF_MARKERS = frozenset(
+    {0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF}
+)
+
+
+def _jpeg_dimensions(data: bytes) -> tuple[int, int] | None:
+    """Read pixel dimensions out of a JPEG's SOF marker."""
+    i = 2
+    n = len(data)
+    while i + 3 < n:
+        if data[i] != 0xFF:
+            i += 1
+            continue
+        marker = data[i + 1]
+        if marker in _SOF_MARKERS:
+            if i + 9 <= n:
+                return (
+                    int.from_bytes(data[i + 7:i + 9], "big"),
+                    int.from_bytes(data[i + 5:i + 7], "big"),
+                )
+            return None
+        if marker == 0xFF or 0xD0 <= marker <= 0xD7:
+            i += 2
+            continue
+        seglen = int.from_bytes(data[i + 2:i + 4], "big")
+        i += 2 + seglen
+    return None
+
+
+def _image_dimensions(mime: str, data: bytes) -> tuple[int, int] | None:
+    """Best-effort intrinsic pixel size for common raster formats."""
+    mime = (mime or "").lower()
+    if mime == "image/png" and data[:8] == _PNG_MAGIC and len(data) >= 24:
+        return (
+            int.from_bytes(data[16:20], "big"),
+            int.from_bytes(data[20:24], "big"),
+        )
+    if mime == "image/gif" and data[:6] in (b"GIF87a", b"GIF89a") and len(data) >= 10:
+        return (
+            int.from_bytes(data[6:8], "little"),
+            int.from_bytes(data[8:10], "little"),
+        )
+    if mime == "image/jpeg" and data[:2] == b"\xff\xd8":
+        return _jpeg_dimensions(data)
+    if mime == "image/bmp" and data[:2] == b"BM" and len(data) >= 26:
+        return (
+            int.from_bytes(data[18:22], "little"),
+            abs(int.from_bytes(data[22:26], "little")),
+        )
+    return None
+
+
+def _parse_px(value) -> int | None:
+    """Parse an integer pixel length from an HTML attribute (e.g. '120')."""
+    if value is None:
+        return None
+    m = re.fullmatch(r"\s*(\d+)\s*(?:px)?\s*", value)
+    return int(m.group(1)) if m else None
+
 
 # --------------------------------------------------------------------------
 # DOCX -> HTML
@@ -94,20 +220,153 @@ def _heading_level(style: str) -> int:
 def _runs_to_html(runs) -> str:
     out: list[str] = []
     for run in runs:
-        text = escape(run.text or "")
-        if not text:
-            continue
-        if run.bold:
-            text = f"<b>{text}</b>"
-        if run.italic:
-            text = f"<i>{text}</i>"
-        if run.underline:
-            text = f"<u>{text}</u>"
-        out.append(text)
-    if not out:
+        out.append(_run_to_html(run))
+    html = "".join(out)
+    if not html:
         # paragraph with no runs (e.g. empty) still needs a newline
         return "<br/>"
-    return "".join(out)
+    return html
+
+
+def _run_to_html(run) -> str:
+    """Inline HTML for one run, keeping picture positions intact.
+
+    A ``<w:r>`` can interleave text children (``w:t``/``w:tab``/``w:br``/``w:cr``)
+    with ``w:drawing`` children; each drawing becomes a self-contained
+    ``<img>`` where it sits in the run.
+    """
+    chunks: list[str] = []
+    buf: list[str] = []
+    for child in run._r:
+        if child.tag == qn("w:drawing"):
+            img = _drawing_to_img(run, child)
+            if img:
+                if buf:
+                    chunks.append(_wrap_run_text(escape("".join(buf)), run))
+                    buf = []
+                chunks.append(img)
+        elif child.tag in (qn("w:t"), qn("w:tab"), qn("w:br"), qn("w:cr")):
+            buf.append(_text_child_value(child))
+    if buf:
+        chunks.append(_wrap_run_text(escape("".join(buf)), run))
+    return "".join(chunks)
+
+
+def _text_child_value(child) -> str:
+    """Text equivalent of one run child, mirroring ``Run.text`` semantics."""
+    tag = child.tag
+    if tag == qn("w:t"):
+        return child.text or ""
+    if tag == qn("w:tab"):
+        return "\t"
+    if tag == qn("w:cr"):
+        return "\n"
+    if tag == qn("w:br"):
+        # Only line-break <w:br> counts as text; page/column breaks are
+        # layout primitives the HTML fragment does not model.
+        if (child.get(qn("w:type")) or "textWrapping") == "textWrapping":
+            return "\n"
+        return ""
+    return ""
+
+
+def _wrap_run_text(text: str, run) -> str:
+    """Apply a run's character formatting around already-escaped text."""
+    if run.bold:
+        text = f"<b>{text}</b>"
+    if run.italic:
+        text = f"<i>{text}</i>"
+    if run.underline:
+        text = f"<u>{text}</u>"
+    return text
+
+
+def _blip_bytes(run, embed: str) -> tuple[str | None, bytes | None]:
+    """Resolve an ``r:embed`` relationship id to (mime, bytes).
+
+    DOCX images live in ``word/media/``; the relationship maps the rId used
+    by the drawing's ``a:blip`` to that part. Best-effort: a missing or
+    external relationship yields (None, None) and the caller skips the
+    drawing, so surrounding text still converts.
+    """
+    rels = getattr(run.part, "rels", None)
+    if rels is None:
+        return None, None
+    rel = rels.get(embed)
+    if rel is None:
+        return None, None
+    try:
+        blob = rel.target_part.blob
+    except Exception:
+        return None, None
+    if not blob:
+        return None, None
+    mime = getattr(rel.target_part, "content_type", None) or _sniff_mime(blob)
+    return mime, blob
+
+
+def _drawing_extent_px(drawing) -> tuple[int | None, int | None]:
+    """Read the ``wp:extent`` of a drawing as (width_px, height_px).
+
+    Extent is stored in EMU; we divide by the same 96-dpi EMU-per-pixel
+    constant used when writing, so the round-trip is a fixed point.
+    """
+    for ext in drawing.iter(qn("wp:extent")):
+        try:
+            cx = int(ext.get("cx") or 0)
+            cy = int(ext.get("cy") or 0)
+        except ValueError:
+            return None, None
+        if cx <= 0 or cy <= 0:
+            return None, None
+        return cx // _EMU_PER_PX, cy // _EMU_PER_PX
+    return None, None
+
+
+def _drawing_alt(drawing) -> str:
+    """Accessible description of a drawing (``wp:docPr`` ``descr``).
+
+    Falls back to a non-default ``name`` for producers that store the alt
+    text there, but never to python-docx/Word's auto-generated
+    ``Picture N`` placeholder.
+    """
+    for docPr in drawing.iter(qn("wp:docPr")):
+        descr = (docPr.get("descr") or "").strip()
+        if descr:
+            return descr
+        name = (docPr.get("name") or "").strip()
+        if name and not re.fullmatch(r"Picture \d+", name):
+            return name
+        return ""
+    return ""
+
+
+def _drawing_to_img(run, drawing) -> str:
+    """Render a ``<w:drawing>`` as a self-contained ``<img>``.
+
+    Returns ``''`` when the drawing holds no embeddable picture (charts,
+    shapes, OLE objects, external links), so surrounding text still
+    converts. Dimension attributes come from the drawing extent and alt
+    text from ``wp:docPr``/``descr``.
+    """
+    for blip in drawing.iter(qn("a:blip")):
+        embed = blip.get(qn("r:embed"))
+        if not embed:
+            continue
+        mime, content = _blip_bytes(run, embed)
+        if content is None:
+            continue
+        width, height = _drawing_extent_px(drawing)
+        attrs = [f' src="{_data_uri(mime or "image/png", content)}"']
+        if width:
+            attrs.append(f' width="{width}"')
+        if height:
+            attrs.append(f' height="{height}"')
+        alt = _drawing_alt(drawing)
+        if alt:
+            attrs.append(f' alt="{escape(alt)}"')
+        return "<img" + "".join(attrs) + "/>"
+    return ""
 
 
 def _table_to_html(table) -> str:
@@ -130,7 +389,7 @@ def _table_to_html(table) -> str:
             rowspan = 1
             if e["vmerge"] == "start":
                 rowspan = _rowspan_for(grid, r, e["pos"])
-            cells.append(_cell_to_html(e, rowspan, tag))
+            cells.append(_cell_to_html(e, rowspan, tag, table))
         out.append("<tr>" + "".join(cells) + "</tr>")
     return "<table>" + "".join(out) + "</table>"
 
@@ -190,16 +449,19 @@ def _row_is_header(tr) -> bool:
     return trPr is not None and trPr.find(qn("w:tblHeader")) is not None
 
 
-def _cell_to_html(e, rowspan: int, tag: str) -> str:
+def _cell_to_html(e, rowspan: int, tag: str, table) -> str:
     """Render one grid entry as <td|th> HTML, keeping inline formatting."""
     attrs = ""
     if e["width"] > 1:
         attrs += f' colspan="{e["width"]}"'
     if rowspan > 1:
         attrs += f' rowspan="{rowspan}"'
+    # Parent paragraphs with a real _Cell so Run.part resolves to the
+    # document part (needed to look up drawing image relationships).
+    cell = _Cell(e["tc"], table)
     paras: list[str] = []
     for p_el in e["tc"].p_lst:
-        paras.append(_runs_to_html(Paragraph(p_el, e["tc"]).runs))
+        paras.append(_runs_to_html(Paragraph(p_el, cell).runs))
     inner = "<br/>".join(paras)
     if inner == "<br/>":
         inner = ""  # a single empty paragraph is an empty cell
@@ -331,18 +593,33 @@ def _inline_to_text(html: str) -> str:
 
 
 class _InlineRunBuilder(HTMLParser):
-    """Parse an inline HTML fragment into (text, bold, italic, underline) runs."""
+    """Parse an inline HTML fragment into text and image tokens.
+
+    Text tokens are dicts with ``type: "text"`` plus ``text``/``bold``/
+    ``italic``/``underline``; image tokens have ``type: "image"`` plus
+    ``src``/``alt``/``width``/``height``.
+    """
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
-        self.runs: list[tuple[str, bool, bool, bool]] = []
+        self.tokens: list[dict] = []
         self._bold = 0
         self._italic = 0
         self._underline = 0
         self._buf: list[str] = []
 
     def handle_starttag(self, tag: str, attrs) -> None:
-        if tag in ("b", "strong"):
+        if tag == "img":
+            self._flush()
+            a = dict(attrs)
+            self.tokens.append({
+                "type": "image",
+                "src": a.get("src", ""),
+                "alt": a.get("alt", ""),
+                "width": _parse_px(a.get("width")),
+                "height": _parse_px(a.get("height")),
+            })
+        elif tag in ("b", "strong"):
             self._flush()
             self._bold += 1
         elif tag in ("i", "em"):
@@ -373,27 +650,84 @@ class _InlineRunBuilder(HTMLParser):
     def _flush(self) -> None:
         text = "".join(self._buf)
         if text:
-            self.runs.append((text, self._bold > 0, self._italic > 0, self._underline > 0))
+            self.tokens.append({
+                "type": "text",
+                "text": text,
+                "bold": self._bold > 0,
+                "italic": self._italic > 0,
+                "underline": self._underline > 0,
+            })
         self._buf = []
 
 
-def _styled_runs(html: str) -> list[tuple[str, bool, bool, bool]]:
+def _inline_tokens(html: str) -> list[dict]:
     builder = _InlineRunBuilder()
     builder.feed(html)
     builder._flush()
-    return builder.runs
+    return builder.tokens
 
 
 def _add_styled_runs(paragraph, html: str) -> None:
-    """Add runs parsed from an inline HTML fragment to a paragraph."""
-    for text, bold, italic, underline in _styled_runs(html):
-        run = paragraph.add_run(text)
-        if bold:
+    """Add runs parsed from an inline HTML fragment to a paragraph.
+
+    Image tokens are embedded as inline pictures (``data:`` URIs only);
+    http(s)/relative src values are skipped server-side.
+    """
+    for token in _inline_tokens(html):
+        if token["type"] == "image":
+            _add_image_run(paragraph, token)
+            continue
+        run = paragraph.add_run(token["text"])
+        if token["bold"]:
             run.bold = True
-        if italic:
+        if token["italic"]:
             run.italic = True
-        if underline:
+        if token["underline"]:
             run.underline = True
+
+
+def _add_image_run(paragraph, token: dict) -> None:
+    """Embed a data-URI ``<img>`` into the paragraph as an inline picture.
+
+    Only ``data:`` URIs are embeddable server-side; http(s)/relative src
+    values are skipped (no network fetching in a converter). Explicit
+    width/height attributes become the drawing extent (px -> EMU); missing
+    ones fall back to the image's intrinsic pixel size. The alt text is
+    stored on the drawing's ``wp:docPr`` ``descr`` attribute so it
+    round-trips back out.
+    """
+    mime, content = _decode_data_uri(token.get("src") or "")
+    if content is None:
+        return
+    width = token.get("width")
+    height = token.get("height")
+    if not width or not height:
+        dims = _image_dimensions(mime, content)
+        if dims:
+            width = width or dims[0]
+            height = height or dims[1]
+    kwargs: dict = {}
+    if width and height:
+        kwargs["width"] = Emu(width * _EMU_PER_PX)
+        kwargs["height"] = Emu(height * _EMU_PER_PX)
+    try:
+        run = paragraph.add_run()
+        run.add_picture(io.BytesIO(content), **kwargs)
+    except Exception:
+        return  # corrupt/unsupported image bytes must not crash conversion
+    alt = (token.get("alt") or "").strip()
+    if alt:
+        _set_drawing_alt(run._r, alt)
+
+
+def _set_drawing_alt(r, alt: str) -> None:
+    """Record alt text on the ``wp:docPr`` of the run's picture."""
+    drawing = r.find(qn("w:drawing"))
+    if drawing is None:
+        return
+    for docPr in drawing.iter(qn("wp:docPr")):
+        docPr.set("descr", alt)
+        break
 
 
 def _append_table(doc: Document, tbl_html: str) -> None:
