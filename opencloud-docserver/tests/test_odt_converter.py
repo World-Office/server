@@ -608,8 +608,10 @@ def test_html_to_odt_table_roundtrip_with_attributes():
 
 
 def test_table_roundtrip_covered_cells():
-    """A covered-table-cell (LibreOffice merge artifact) renders as an empty
-    <td> and does not break the ODT -> HTML -> ODT round-trip."""
+    """A covered-table-cell (LibreOffice merge artifact) is absorbed into the
+    colspan of the cell it covers: the spanning cell keeps its span, the
+    covered slot is not emitted as a bogus extra <td>, and the HTML grid
+    round-trips back into a spanned ODF cell."""
     from odf.opendocument import OpenDocumentText
     from odf.table import CoveredTableCell, Table, TableCell, TableRow
     from odf.text import P
@@ -618,6 +620,7 @@ def test_table_roundtrip_covered_cells():
     t = Table()
     tr = TableRow()
     tc = TableCell()
+    tc.setAttribute("numbercolumnsspanned", "2")
     tc.addElement(P(text="merged"))
     tr.addElement(tc)
     tr.addElement(CoveredTableCell())
@@ -627,8 +630,8 @@ def test_table_roundtrip_covered_cells():
     doc.save(buf)
 
     html = odt_to_html(buf.getvalue())
-    assert "<td><p>merged</p></td>" in html
-    assert html.count("<td>") == 2
+    assert '<td colspan="2"><p>merged</p></td>' in html
+    assert html.count("<td") == 1
 
     back = html_to_odt(html)
     doc2 = load(io.BytesIO(back))
@@ -637,6 +640,222 @@ def test_table_roundtrip_covered_cells():
     from odf import teletype
 
     assert "merged" in teletype.extractText(tables[0])
+    # The span survives the HTML -> ODT leg.
+    cells = list(tables[0].getElementsByType(TableCell))
+    assert cells[0].getAttribute("numbercolumnsspanned") == "2"
+
+
+# -- merged cells / LibreOffice artifacts (task: odt-converter-tables) ------
+
+
+def test_odt_to_html_merged_cells_colspan_rowspan():
+    """A cell spanning two columns and two rows keeps colspan/rowspan on its
+    <td>; covered-table-cell placeholders are not emitted as extra cells."""
+    from odf.opendocument import OpenDocumentText
+    from odf.table import CoveredTableCell, Table, TableCell, TableRow
+    from odf.text import P
+
+    doc = OpenDocumentText()
+    t = Table()
+    tr1 = TableRow()
+    tc = TableCell()
+    tc.setAttribute("numbercolumnsspanned", "2")
+    tc.setAttribute("numberrowsspanned", "2")
+    tc.addElement(P(text="merged"))
+    tr1.addElement(tc)
+    tr1.addElement(CoveredTableCell())
+    t.addElement(tr1)
+    tr2 = TableRow()
+    tr2.addElement(CoveredTableCell())
+    tr2.addElement(CoveredTableCell())
+    t.addElement(tr2)
+    doc.text.addElement(t)
+    buf = io.BytesIO()
+    doc.save(buf)
+
+    html = odt_to_html(buf.getvalue())
+    assert html.count("<tr>") == 2
+    assert '<td colspan="2" rowspan="2"><p>merged</p></td>' in html
+    assert html.count("<td") == 1, html
+
+
+def test_table_roundtrip_colspan():
+    """HTML colspan survives to ODT (spanned cell + covered placeholder) and
+    back to HTML as a colspan attribute, keeping cell text."""
+    html = (
+        "<table><tr><td colspan='2'>wide</td><td>z</td></tr>"
+        "<tr><td>a</td><td>b</td><td>c</td></tr></table>"
+    )
+    odt = html_to_odt(html)
+    doc = load(io.BytesIO(odt))
+    tables = list(doc.text.getElementsByType(Table))
+    assert len(tables) == 1
+    cells = list(tables[0].getElementsByType(TableCell))
+    wide = next(c for c in cells if c.getAttribute("numbercolumnsspanned"))
+    assert wide.getAttribute("numbercolumnsspanned") == "2"
+    # covered placeholder present so the grid stays rectangular
+    from odf.table import CoveredTableCell
+
+    covered = list(tables[0].getElementsByType(CoveredTableCell))
+    assert len(covered) == 1
+
+    html2 = odt_to_html(odt)
+    assert '<td colspan="2"><p>wide</p></td>' in html2
+    assert "<td><p>a</p></td><td><p>b</p></td><td><p>c</p></td>" in html2
+
+    # full loop keeps one table with the span intact
+    odt2 = html_to_odt(html2)
+    doc2 = load(io.BytesIO(odt2))
+    tables2 = list(doc2.text.getElementsByType(Table))
+    cells2 = list(tables2[0].getElementsByType(TableCell))
+    wide2 = next(c for c in cells2 if c.getAttribute("numbercolumnsspanned"))
+    assert wide2.getAttribute("numbercolumnsspanned") == "2"
+    from odf import teletype
+
+    assert "wide" in teletype.extractText(tables2[0])
+
+
+def test_table_roundtrip_rowspan():
+    """HTML rowspan fills the hole in the next row with a covered cell and
+    round-trips back to a rowspan attribute."""
+    html = (
+        "<table><tr><td rowspan='2'>tall</td><td>r0c1</td></tr>"
+        "<tr><td>r1c1</td></tr></table>"
+    )
+    odt = html_to_odt(html)
+    doc = load(io.BytesIO(odt))
+    tables = list(doc.text.getElementsByType(Table))
+    assert len(tables) == 1
+    from odf.table import CoveredTableCell
+
+    covered = list(tables[0].getElementsByType(CoveredTableCell))
+    assert len(covered) == 1, "rowspan hole must be filled with a covered cell"
+
+    html2 = odt_to_html(odt)
+    assert '<td rowspan="2"><p>tall</p></td>' in html2
+    assert "<td><p>r0c1</p></td>" in html2
+    assert "<td><p>r1c1</p></td>" in html2
+
+    odt2 = html_to_odt(html2)
+    doc2 = load(io.BytesIO(odt2))
+    tables2 = list(doc2.text.getElementsByType(Table))
+    from odf import teletype
+
+    assert "tall" in teletype.extractText(tables2[0])
+    assert "r1c1" in teletype.extractText(tables2[0])
+
+
+def test_odt_to_html_repeated_columns():
+    """LibreOffice pads rows with ``<table-cell table:number-columns-repeated
+    ="N"/>``; those must expand into N empty <td>s so the grid keeps its
+    full column count."""
+    from odf.opendocument import OpenDocumentText
+    from odf.table import Table, TableCell, TableRow
+    from odf.text import P
+
+    doc = OpenDocumentText()
+    t = Table()
+    tr = TableRow()
+    tc = TableCell()
+    tc.setAttribute("numbercolumnsrepeated", "3")
+    tr.addElement(tc)
+    filled = TableCell()
+    filled.addElement(P(text="x"))
+    tr.addElement(filled)
+    t.addElement(tr)
+    doc.text.addElement(t)
+    buf = io.BytesIO()
+    doc.save(buf)
+
+    html = odt_to_html(buf.getvalue())
+    assert html.count("<td>") == 4, html
+    assert "<td></td><td></td><td></td><td><p>x</p></td>" in html
+
+
+def test_odt_to_html_repeated_rows():
+    """``table:number-rows-repeated="2"`` duplicates its row."""
+    from odf.opendocument import OpenDocumentText
+    from odf.table import Table, TableCell, TableRow
+    from odf.text import P
+
+    doc = OpenDocumentText()
+    t = Table()
+    tr = TableRow()
+    tr.setAttribute("numberrowsrepeated", "2")
+    c = TableCell()
+    c.addElement(P(text="dup"))
+    tr.addElement(c)
+    t.addElement(tr)
+    doc.text.addElement(t)
+    buf = io.BytesIO()
+    doc.save(buf)
+
+    html = odt_to_html(buf.getvalue())
+    assert html.count("<tr>") == 2
+    assert "<td><p>dup</p></td>" in html
+
+
+def test_odt_to_html_header_rows_wrapper():
+    """Rows inside a ``table:table-header-rows`` wrapper (LibreOffice) are
+    still emitted — header row first, data rows after."""
+    from odf.element import Element
+    from odf.namespaces import TABLENS
+    from odf.opendocument import OpenDocumentText
+    from odf.table import Table, TableCell, TableRow
+    from odf.text import P
+
+    doc = OpenDocumentText()
+    t = Table()
+    wrap = Element(qname=(TABLENS, "table-header-rows"))
+    hr = TableRow()
+    hc = TableCell()
+    hc.addElement(P(text="Header"))
+    hr.addElement(hc)
+    wrap.addElement(hr)
+    t.addElement(wrap)
+    dr = TableRow()
+    dc = TableCell()
+    dc.addElement(P(text="Data"))
+    dr.addElement(dc)
+    t.addElement(dr)
+    doc.text.addElement(t)
+    buf = io.BytesIO()
+    doc.save(buf)
+
+    html = odt_to_html(buf.getvalue())
+    assert html.count("<tr>") == 2
+    assert "<td><p>Header</p></td>" in html
+    assert "<td><p>Data</p></td>" in html
+
+
+def test_odt_to_html_nested_table_in_cell():
+    """A table inside a cell renders as a nested <table> within the <td>."""
+    from odf.opendocument import OpenDocumentText
+    from odf.table import Table, TableCell, TableRow
+    from odf.text import P
+
+    doc = OpenDocumentText()
+    t = Table()
+    tr = TableRow()
+    outer = TableCell()
+    outer.addElement(P(text="wrap"))
+    inner = Table()
+    itr = TableRow()
+    ic = TableCell()
+    ic.addElement(P(text="inner"))
+    itr.addElement(ic)
+    inner.addElement(itr)
+    outer.addElement(inner)
+    tr.addElement(outer)
+    t.addElement(tr)
+    doc.text.addElement(t)
+    buf = io.BytesIO()
+    doc.save(buf)
+
+    html = odt_to_html(buf.getvalue())
+    assert html.count("<table>") == 2, html
+    assert html.count("<tr>") == 2, html
+    assert "<td><p>wrap</p><table><tr><td><p>inner</p></td></tr></table></td>" in html
 
 
 def test_table_roundtrip_ragged_rows():
