@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import urllib.parse as urlparse
 from contextlib import asynccontextmanager
 from html.parser import HTMLParser
 
@@ -1337,6 +1338,7 @@ class TestSanitizeEvasion:
 
 
 # ----------------------------------------------------------------------
+
 # WOPI Lock Contention — acceptance gate: -k "lock_contention"
 # ----------------------------------------------------------------------
 # The WOPI lock is what lets several editors fight over one document while
@@ -1539,3 +1541,180 @@ class TestWopiLockContention:
         res = client.post("/wopi/files/doc1/unlock", headers=self._headers("wo:bob:B"))
         assert res.status_code == 200
         assert store.get_lock("doc1") == ""
+
+# ----------------------------------------------------------------------
+# File-Path-Traversal Defense (gate: -k "path_traversal")
+# ----------------------------------------------------------------------
+# Content bytes live at {content_dir}/{doc_id}.bin, so a WOPI file id is an
+# opaque host id that must NEVER contain path separators or traversal
+# segments. An attacker can smuggle separators into the URL path param
+# URI-encoded (%2F, %5C, %2E) — FastAPI/Starlette decodes the segment before
+# the handler runs — producing ids like "../secret" that the store's
+# content_path() would join straight onto the content directory, escaping it
+# and letting a crafted id read or write arbitrary files. The WOPI host must
+# reject such ids outright. These tests prove both the rejection and that no
+# file outside the content directory can be read or written through WOPI.
+
+
+# Raw (pre-encoding) ids that must be rejected as traversal attempts. These
+# are the DECODED values a handler receives (dot-dot, separators, NUL).
+_TRAVERSAL_IDS = [
+    "../secret",            # POSIX dot-dot escape
+    "..\\..\\secret",       # Windows separator form
+    "/etc/passwd",          # absolute path
+    "a/../b",               # embedded traversal
+    "sub/../../secret",     # deep escape
+    "..",                   # bare dot-dot
+    ".",                    # current directory
+    "../\x00",              # NUL byte
+    "C:\\Windows\\x",       # drive-qualified absolute (Windows)
+]
+
+# Opaque host ids that must keep working (no over-blocking).
+_SAFE_IDS = [
+    "doc1",
+    "ghost",
+    "doc-123",
+    "doc_1",
+    "550e8400-e29b-41d4-a716-446655440000",
+    "hello.world",
+    "subdoc.odt",
+]
+
+# Handlers only ever see SINGLE-segment ids (a URL cannot carry a raw '/'
+# inside a path param — FastAPI/Starlette percent-decodes the path before
+# routing, so an encoded %2F turns the id into extra segments and the route
+# 404s before any handler runs). The id forms that DO reach a handler are
+# backslash-encoded (%5C), dot-encoded (%2E) and NUL-encoded (%00):
+#   ..%5C..%5Csecret / %2E%2E%5Csecret  ->  handler receives ..\..\secret
+#   %2E%2E                                ->  handler receives ..
+#   %2E                                   ->  handler receives .
+#   ..%00x                                ->  handler receives ..\x00x
+# Every one of these must be rejected with 400 by the WOPI host guard.
+_HANDLER_REACHING = [
+    "..%5C..%5Csecret",
+    "..%5Csecret",
+    "%2E%2E%5Csecret",
+    "%2E%2E",
+    "%2E",
+    "..%00x",
+]
+
+# Encoded '/' forms are rejected by ROUTING itself (404, store untouched).
+_ROUTING_REJECTED = [
+    "..%2Fsecret",
+    "%2E%2E%2Fsecret",
+    "..%2F..%2Fsecret",
+    "%2Fetc%2Fpasswd",
+    "a%2F..%2Fb",
+    "sub%2F..%2F..%2Fx",
+]
+
+
+def _url_enc(raw: str) -> str:
+    """URI-encode an id exactly the way a malicious client URL would."""
+    return urlparse.quote(raw, safe="")
+
+
+def _content_dir(store) -> object:
+    """The store's content directory (parent of any content file)."""
+    return store.content_path("x").parent
+
+
+class TestPathTraversal:
+    def test_path_traversal_helper_rejects_dangerous_ids(self):
+        """Unit level: the id guard rejects every traversal shape and accepts
+        every ordinary opaque id."""
+        from src.wopi.router import _invalid_doc_id
+
+        for bad in _TRAVERSAL_IDS + [""]:
+            assert _invalid_doc_id(bad), f"{bad!r} must be rejected"
+        for good in _SAFE_IDS:
+            assert not _invalid_doc_id(good), f"{good!r} must be accepted"
+
+    def test_path_traversal_wopi_endpoints_all_reject_traversal_id(self, client):
+        """Every WOPI host endpoint rejects a traversal id that reaches the
+        handler — even when a matching store row was planted directly
+        (simulating a malicious upload that registered the id before
+        routing)."""
+        store = client.test_store  # type: ignore[attr-defined]
+        store.init("..\\..\\secret", "secret.docx")
+
+        base = f"/wopi/files/{_url_enc('..\\..\\secret')}"
+        cases = [
+            ("GET", base, None),
+            ("GET", f"{base}/contents", None),
+            ("POST", f"{base}/contents", b"x"),
+            ("POST", f"{base}/lock", None),
+            ("POST", f"{base}/unlock", None),
+            ("POST", f"{base}/refreshlock", None),
+            ("POST", f"{base}/getlock", None),
+        ]
+        for method, url, body in cases:
+            res = client.request(method, url, content=body)
+            assert res.status_code == 400, (
+                f"expected WOPI host guard 400, got {res.status_code}: {method} {url}"
+            )
+
+    def test_path_traversal_get_file_never_leaks_outside_content(self, client):
+        """A traversal id must never return bytes of a file outside content_dir.
+
+        A decoy 'secret.bin' is placed one directory ABOVE the content dir and
+        a store row with id '../secret' is planted — content_path('../secret')
+        resolves exactly onto that decoy, so the unguarded host WOULD leak it.
+        The WOPI host must refuse at every layer and reveal nothing."""
+        store = client.test_store  # type: ignore[attr-defined]
+        content_dir = _content_dir(store)
+        decoy = content_dir.parent / "secret.bin"
+        decoy.write_bytes(b"TOP-SECRET-CONTENTS")
+
+        store.init("../secret", "secret.docx")
+        # Prove this is a real escape, not a vacuous setup:
+        assert store.content_path("../secret").resolve() == decoy.resolve()
+        assert decoy.resolve() != content_dir.resolve()
+
+        # %2F forms are bounced by routing (404); %5C / %2E forms reach the
+        # handler and must be bounced by the id guard (400). Neither may
+        # return the decoy's bytes.
+        for enc in _ROUTING_REJECTED + _HANDLER_REACHING:
+            res = client.get(f"/wopi/files/{enc}/contents")
+            assert res.status_code in (400, 404), enc
+            assert b"TOP-SECRET" not in res.content, enc
+        # CheckFileInfo/GetFile metadata must reject it too, silently.
+        res = client.get("/wopi/files/..%2Fsecret")
+        assert res.status_code in (400, 404)
+        res = client.get("/wopi/files/..%5Csecret")
+        assert res.status_code == 400
+
+    def test_path_traversal_put_file_never_writes_outside_content(self, client):
+        """A traversal id must not be able to write a file outside content_dir."""
+        store = client.test_store  # type: ignore[attr-defined]
+        content_dir = _content_dir(store)
+        victim = content_dir.parent / "pwned.bin"
+        store.init("../pwned", "pwned.docx")
+
+        # %2F: blocked at routing. %5C: blocked by the id guard.
+        for enc in ["..%2Fpwned", "..%5Cpwned"]:
+            res = client.post(f"/wopi/files/{enc}/contents", content=b"owned")
+            assert res.status_code in (400, 404), enc
+            assert not victim.exists(), "no file may be written outside content_dir"
+            # and nothing was stored under the traversal id in the store either
+            assert store.get_content("../pwned") is None
+
+    def test_path_traversal_rejects_absolute_and_windows_ids(self, client):
+        """Absolute paths, Windows separators and NUL bytes are rejected by
+        the WOPI host (either at routing or by the id guard)."""
+        for enc in ["%2Fetc%2Fpasswd", "a%2F..%2Fb", "sub%2F..%2F..%2Fx"]:
+            res = client.get(f"/wopi/files/{enc}")
+            assert res.status_code in (400, 404), f"{enc} -> {res.status_code}"
+        for enc in ["..%5C..%5Cetc%5Cpasswd", "..%00x", "%2E%2E"]:
+            res = client.get(f"/wopi/files/{enc}")
+            assert res.status_code == 400, f"{enc} -> {res.status_code}"
+
+    def test_path_traversal_legitimate_opaque_ids_still_work(self, client):
+        """The defense must not over-block ordinary opaque host ids."""
+        for doc_id in ["doc-123", "550e8400-e29b-41d4-a716-446655440000", "notes.v2"]:
+            _seed_doc(client, doc_id=doc_id, name=f"{doc_id}.docx")
+            res = client.get(f"/wopi/files/{doc_id}")
+            assert res.status_code == 200, doc_id
+            assert res.json()["BaseFileName"] == f"{doc_id}.docx"
