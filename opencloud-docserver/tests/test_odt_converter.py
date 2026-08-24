@@ -6,10 +6,19 @@ formatting (bold/italic/underline, headings, lists, tables).
 
 from __future__ import annotations
 
+import base64
 import io
+import re
+import struct
+import zipfile
+import zlib
 
+from odf.draw import Frame, Image
+from odf.element import Element
+from odf.namespaces import OFFICENS
 from odf.opendocument import load
 from odf.table import Table, TableCell, TableRow
+from odf.text import P
 
 from src.editor.odt_converter import (
     html_to_odt,
@@ -640,3 +649,246 @@ def test_table_roundtrip_ragged_rows():
     assert html2.count("<tr>") == 2
     assert "<td><p>a</p></td><td><p>b</p></td><td><p>c</p></td>" in html2
     assert "<td><p>d</p></td>" in html2
+
+
+# ---------------------------------------------------------------------------
+# ODT image round-trip (task: test-odt-images)
+# ---------------------------------------------------------------------------
+
+
+def _png_bytes(width: int, height: int) -> bytes:
+    """Build a minimal valid PNG (RGB) of the given pixel size."""
+    def _chunk(ctype: bytes, data: bytes) -> bytes:
+        c = struct.pack(">I", len(data)) + ctype + data
+        return c + struct.pack(">I", zlib.crc32(ctype + data) & 0xFFFFFFFF)
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    raw = b"".join(b"\x00" + b"\xff\x00\x00" * width for _ in range(height))
+    return (b"\x89PNG\r\n\x1a\n" + _chunk(b"IHDR", ihdr)
+            + _chunk(b"IDAT", zlib.compress(raw)) + _chunk(b"IEND", b""))
+
+
+def _data_uri(data: bytes, mime: str = "image/png") -> str:
+    return f"data:{mime};base64,{base64.b64encode(data).decode('ascii')}"
+
+
+def _img_srcs(html: str) -> list[str]:
+    """All data-URI src values of <img> tags in an HTML fragment."""
+    return re.findall(r'<img[^>]*\ssrc="(data:[^"]+)"', html)
+
+
+def _decode_data_uri(uri: str) -> bytes:
+    return base64.b64decode(uri.split(",", 1)[1])
+
+
+def _odt_picture_bytes(odt: bytes) -> list[bytes]:
+    """Bytes of every Pictures/ member in an ODT package."""
+    with zipfile.ZipFile(io.BytesIO(odt)) as z:
+        return [z.read(n) for n in z.namelist() if n.startswith("Pictures/")]
+
+
+def _odt_with_picture(png: bytes, width_px: str | None = None,
+                      height_px: str | None = None) -> bytes:
+    """Build an ODT with one paragraph: text + referenced draw:image."""
+    from odf.opendocument import OpenDocumentText
+
+    doc = OpenDocumentText()
+    name = doc.addPictureFromString(png, "image/png")
+    frame = Frame(name="Pic", anchortype="as-char")
+    if width_px:
+        frame.setAttribute("width", width_px)
+    if height_px:
+        frame.setAttribute("height", height_px)
+    frame.addElement(Image(href=name))
+    p = P()
+    p.addText("imaged ")
+    p.addElement(frame)
+    doc.text.addElement(p)
+    buf = io.BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
+
+
+def test_html_to_odt_image_roundtrip_single():
+    """A data-URI <img> becomes a draw:frame/draw:image whose package bytes
+    and re-exported data URI match the original PNG exactly."""
+    png = _png_bytes(2, 3)
+    html = f'<p>Lead <img src="{_data_uri(png)}"/> tail</p>'
+    odt = html_to_odt(html)
+
+    pictures = _odt_picture_bytes(odt)
+    assert len(pictures) == 1
+    assert pictures[0] == png
+    with zipfile.ZipFile(io.BytesIO(odt)) as z:
+        assert "image/png" in z.read("META-INF/manifest.xml").decode()
+
+    html2 = odt_to_html(odt)
+    srcs = _img_srcs(html2)
+    assert len(srcs) == 1
+    assert _decode_data_uri(srcs[0]) == png
+    assert "Lead" in html2 and "tail" in html2
+
+
+def test_odt_to_html_image_roundtrip_referenced_picture():
+    """A classic ODT (draw:frame -> draw:image xlink:href into Pictures/)
+    renders as a data-URI <img> with its pixel dimensions kept."""
+    png = _png_bytes(4, 5)
+    html = odt_to_html(_odt_with_picture(png, width_px="4px", height_px="5px"))
+    srcs = _img_srcs(html)
+    assert len(srcs) == 1
+    assert _decode_data_uri(srcs[0]) == png
+    assert "imaged" in html
+    assert 'width="4"' in html and 'height="5"' in html
+
+
+def test_image_roundtrip_preserves_picture_bytes_full_loop():
+    """ODT -> HTML -> ODT keeps the image bytes verbatim end to end."""
+    png = _png_bytes(2, 3)
+    original = _odt_with_picture(png)
+
+    html = odt_to_html(original)
+    back = html_to_odt(html)
+    pictures = _odt_picture_bytes(back)
+    assert len(pictures) == 1
+    assert pictures[0] == png
+
+    srcs = _img_srcs(odt_to_html(back))
+    assert len(srcs) == 1
+    assert _decode_data_uri(srcs[0]) == png
+
+
+def test_odt_to_html_image_roundtrip_embedded_binary_data():
+    """A draw:image carrying office:binary-data (no Pictures/ member, no
+    xlink:href) still becomes a data-URI <img>."""
+    from odf.opendocument import OpenDocumentText
+
+    png = _png_bytes(2, 2)
+    doc = OpenDocumentText()
+    frame = Frame(name="Pic", anchortype="as-char")
+    img = Image()
+    bdata = Element(qname=(OFFICENS, "binary-data"))
+    bdata.addText(base64.b64encode(png).decode("ascii"))
+    img.addElement(bdata)
+    frame.addElement(img)
+    p = P()
+    p.addElement(frame)
+    doc.text.addElement(p)
+    buf = io.BytesIO()
+    doc.save(buf)
+
+    srcs = _img_srcs(odt_to_html(buf.getvalue()))
+    assert len(srcs) == 1
+    assert _decode_data_uri(srcs[0]) == png
+
+
+def test_html_to_odt_image_roundtrip_explicit_dimensions():
+    """width/height attributes on the <img> become svg:width/height on the
+    frame and survive the ODT -> HTML pass."""
+    png = _png_bytes(2, 3)
+    html = f'<p><img src="{_data_uri(png)}" width="120" height="90"/></p>'
+    odt = html_to_odt(html)
+
+    content = zipfile.ZipFile(io.BytesIO(odt)).read("content.xml").decode()
+    assert 'svg:width="120px"' in content
+    assert 'svg:height="90px"' in content
+
+    html2 = odt_to_html(odt)
+    srcs = _img_srcs(html2)
+    assert len(srcs) == 1
+    assert _decode_data_uri(srcs[0]) == png
+    assert 'width="120"' in html2 and 'height="90"' in html2
+
+
+def test_html_to_odt_image_roundtrip_intrinsic_dimensions():
+    """Without explicit attributes the frame size comes from the image's
+    intrinsic pixel dimensions (sniffed from the PNG header)."""
+    png = _png_bytes(2, 3)
+    odt = html_to_odt(f'<p><img src="{_data_uri(png)}"/></p>')
+
+    content = zipfile.ZipFile(io.BytesIO(odt)).read("content.xml").decode()
+    assert 'svg:width="2px"' in content
+    assert 'svg:height="3px"' in content
+
+    html2 = odt_to_html(odt)
+    assert 'width="2"' in html2 and 'height="3"' in html2
+
+
+def test_html_to_odt_image_roundtrip_keeps_formatting():
+    """An image inside a paragraph does not disturb bold/italic runs around
+    it — both the runs and the picture survive."""
+    png = _png_bytes(2, 3)
+    html = f'<p><b>Bold</b> <img src="{_data_uri(png)}"/> tail</p>'
+    odt = html_to_odt(html)
+    pictures = _odt_picture_bytes(odt)
+    assert pictures == [png]
+
+    html2 = odt_to_html(odt)
+    assert "<b>Bold</b>" in html2
+    assert " tail" in html2
+    srcs = _img_srcs(html2)
+    assert len(srcs) == 1
+    assert _decode_data_uri(srcs[0]) == png
+
+
+def test_html_to_odt_image_roundtrip_multiple():
+    """Several images in one paragraph each become their own frame with the
+    correct bytes, in order."""
+    png1 = _png_bytes(2, 3)
+    png2 = _png_bytes(3, 2)
+    html = (f'<p>a<img src="{_data_uri(png1)}"/>b'
+            f'<img src="{_data_uri(png2)}"/>c</p>')
+    odt = html_to_odt(html)
+
+    assert set(_odt_picture_bytes(odt)) == {png1, png2}
+    html2 = odt_to_html(odt)
+    srcs = _img_srcs(html2)
+    assert len(srcs) == 2
+    assert _decode_data_uri(srcs[0]) == png1
+    assert _decode_data_uri(srcs[1]) == png2
+
+
+def test_image_roundtrip_in_table_cell():
+    """Images inside table cells follow the same path and survive."""
+    png = _png_bytes(2, 3)
+    html = f'<table><tr><td>icon <img src="{_data_uri(png)}"/></td><td>x</td></tr></table>'
+    odt = html_to_odt(html)
+
+    pictures = _odt_picture_bytes(odt)
+    assert len(pictures) == 1
+    assert pictures[0] == png
+
+    html2 = odt_to_html(odt)
+    assert "<td><p>icon " in html2
+    srcs = _img_srcs(html2)
+    assert len(srcs) == 1
+    assert _decode_data_uri(srcs[0]) == png
+
+
+def test_odt_to_html_image_roundtrip_missing_picture_is_skipped():
+    """A draw:image whose Pictures/ member is absent must not crash or emit
+    a broken <img> — surrounding text still converts."""
+    from odf.opendocument import OpenDocumentText
+
+    doc = OpenDocumentText()
+    frame = Frame(name="Ghost", anchortype="as-char")
+    frame.addElement(Image(href="Pictures/Missing.png"))
+    p = P()
+    p.addElement(frame)
+    p.addText("after")
+    doc.text.addElement(p)
+    buf = io.BytesIO()
+    doc.save(buf)
+
+    html = odt_to_html(buf.getvalue())
+    assert "after" in html
+    assert "<img" not in html
+
+
+def test_html_to_odt_image_roundtrip_non_data_uri_is_skipped():
+    """An http(s) src cannot be fetched server-side and is skipped without
+    breaking the rest of the paragraph."""
+    odt = html_to_odt('<p>link <img src="https://example.com/x.png"/> tail</p>')
+    assert _odt_picture_bytes(odt) == []
+    html2 = odt_to_html(odt)
+    assert "link" in html2 and "tail" in html2
+    assert "<img" not in html2
