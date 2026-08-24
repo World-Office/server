@@ -38,7 +38,7 @@ from odf.namespaces import (
 )
 from odf.opendocument import OpenDocumentText, load
 from odf.style import ParagraphProperties, Style, TextProperties
-from odf.table import Table, TableCell, TableRow
+from odf.table import CoveredTableCell, Table, TableCell, TableRow
 from odf.text import (
     H,
     List,
@@ -472,21 +472,103 @@ def _list_items_to_html(list_el, resolve, kinds, pictures) -> list[str]:
     return items
 
 
+def _int_attr(el, name: str) -> int | None:
+    """Read an integer attribute by its odfpy camelCase name.
+
+    ``number-columns-spanned`` etc. are read as ``numbercolumnsspanned``.
+    Returns None when absent or not parseable as an integer.
+    """
+    val = el.getAttribute(name)
+    if val is None:
+        return None
+    try:
+        return int(val)
+    except (TypeError, ValueError):
+        return None
+
+
+def _table_rows(table_el):
+    """Yield the ``table:table-row`` elements of a table.
+
+    LibreOffice wraps header rows in ``table:table-header-rows`` and may use
+    ``table:table-rows`` group elements; those wrappers are descended into so
+    every real row is visited exactly once.
+    """
+    for child in table_el.childNodes:
+        if child.nodeType != Node.ELEMENT_NODE:
+            continue
+        qname = child.qname
+        if qname == (TABLENS, "table-row"):
+            yield child
+        elif qname in ((TABLENS, "table-header-rows"), (TABLENS, "table-rows")):
+            yield from _table_rows(child)
+
+
+def _cell_to_html(cell, resolve, pictures) -> str:
+    """Render one table cell as a ``<td>`` (``''`` for covered cells).
+
+    A ``covered-table-cell`` is the ODF placeholder for a slot already taken by
+    a colspan/rowspan on an earlier cell, so it renders as nothing — the span
+    attribute of the covering cell accounts for that column.
+
+    ``table:number-columns-spanned`` / ``table:number-rows-spanned`` become
+    ``colspan`` / ``rowspan`` attributes so merges survive into the editor.
+    Nested tables inside a cell render as a nested ``<table>``.
+    """
+    if cell.qname == (TABLENS, "covered-table-cell"):
+        return ""
+    chunks: list[str] = []
+    pending: list[str] = []
+
+    def flush() -> None:
+        if pending:
+            chunks.append("<br/>".join(pending))
+            pending.clear()
+
+    for c in cell.childNodes:
+        if c.nodeType != Node.ELEMENT_NODE:
+            continue
+        if c.qname == (TEXTNS, "p"):
+            pending.append(_paragraph_to_html(c, resolve, pictures))
+        elif c.qname == (TABLENS, "table"):
+            flush()
+            chunks.append(_table_to_html(c, resolve, pictures))
+    flush()
+    attrs = []
+    colspan = _int_attr(cell, "numbercolumnsspanned") or 1
+    rowspan = _int_attr(cell, "numberrowsspanned") or 1
+    if colspan > 1:
+        attrs.append(f'colspan="{colspan}"')
+    if rowspan > 1:
+        attrs.append(f'rowspan="{rowspan}"')
+    open_tag = "<td " + " ".join(attrs) + ">" if attrs else "<td>"
+    return open_tag + "".join(chunks) + "</td>"
+
+
 def _table_to_html(table_el, resolve, pictures) -> str:
     rows: list[str] = []
-    for row in table_el.childNodes:
-        if row.qname != (TABLENS, "table-row"):
-            continue
+    for row in _table_rows(table_el):
         cells: list[str] = []
         for cell in row.childNodes:
-            if cell.qname not in ((TABLENS, "table-cell"), (TABLENS, "covered-table-cell")):
+            if cell.nodeType != Node.ELEMENT_NODE:
                 continue
-            paras: list[str] = []
-            for c in cell.childNodes:
-                if c.nodeType == Node.ELEMENT_NODE and c.qname == (TEXTNS, "p"):
-                    paras.append(_paragraph_to_html(c, resolve, pictures))
-            cells.append("<td>" + "<br/>".join(paras) + "</td>")
-        rows.append("<tr>" + "".join(cells) + "</tr>")
+            if cell.qname not in ((TABLENS, "table-cell"),
+                                  (TABLENS, "covered-table-cell")):
+                continue
+            cell_html = _cell_to_html(cell, resolve, pictures)
+            if not cell_html:
+                continue  # covered cell: slot taken by a span
+            repeat = _int_attr(cell, "numbercolumnsrepeated") or 1
+            if repeat > 1:
+                cells.extend([cell_html] * repeat)
+            else:
+                cells.append(cell_html)
+        # A row whose cells are all covered-table-cell placeholders (fully
+        # consumed by a rowspan from above) still renders as an empty <tr> so
+        # the grid keeps its row count.
+        row_html = "<tr>" + "".join(cells) + "</tr>"
+        n_repeat = _int_attr(row, "numberrowsrepeated") or 1
+        rows.extend([row_html] * max(1, n_repeat))
     return "<table>" + "".join(rows) + "</table>"
 
 
@@ -680,24 +762,81 @@ class _OdtWriter:
             list_el.addElement(item)
         self.doc.text.addElement(list_el)
 
+    @staticmethod
+    def _parse_row(html: str) -> list[dict]:
+        """Split one HTML ``<tr>`` into its cells.
+
+        Each entry carries the cell's inner html plus its colspan/rowspan
+        (parsed from the opening tag, defaults to 1). Both ``<td>`` and
+        ``<th>`` map to ODF table cells.
+        """
+        cells: list[dict] = []
+        for m in re.finditer(r"<t[dh]([^>]*)>(.*?)</t[dh]>", html, re.S):
+            attrs, body = m.group(1), m.group(2)
+            cells.append({
+                "html": body,
+                "colspan": _span_attr(attrs, "colspan"),
+                "rowspan": _span_attr(attrs, "rowspan"),
+            })
+        return cells
+
     def add_table(self, html: str) -> None:
-        rows = re.findall(r"<tr[^>]*>(.*?)</tr>", html, re.S)
-        if not rows:
+        """Build an ODF ``<table:table>`` from an HTML ``<table>`` fragment.
+
+        colspan/rowspan become ``table:number-columns-spanned`` /
+        ``table:number-rows-spanned``; covered-table-cell placeholders are
+        emitted so the grid stays rectangular (matching what LibreOffice
+        expects). Rowspans leaving a hole in a later row fill that slot with
+        a covered cell too.
+        """
+        row_htmls = re.findall(r"<tr[^>]*>(.*?)</tr>", html, re.S)
+        if not row_htmls:
             return
+        rows = [self._parse_row(r) for r in row_htmls]
         ncols = 0
         for r in rows:
-            ncols = max(ncols, len(re.findall(r"<t[dh]>", r)))
+            ncols = max(ncols, sum(c["colspan"] for c in r))
+
         table = Table()
+        vertical: dict[int, int] = {}  # col -> rows still covered from above
         for r in rows:
             row_el = TableRow()
-            for cell_html in re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", r, re.S):
-                cell = TableCell()
+            col = 0
+            for cell in r:
+                # Emit covered cells for slots still held by a rowspan above.
+                while vertical.get(col, 0):
+                    row_el.addElement(CoveredTableCell())
+                    vertical[col] -= 1
+                    if vertical[col] <= 0:
+                        del vertical[col]
+                    col += 1
+                cel = TableCell()
+                if cell["colspan"] > 1:
+                    cel.setAttribute("numbercolumnsspanned", str(cell["colspan"]))
+                if cell["rowspan"] > 1:
+                    cel.setAttribute("numberrowsspanned", str(cell["rowspan"]))
+                    for k in range(cell["colspan"]):
+                        vertical[col + k] = cell["rowspan"] - 1
                 p = P()
-                self._fill(p, cell_html)
-                cell.addElement(p)
-                row_el.addElement(cell)
+                self._fill(p, cell["html"])
+                cel.addElement(p)
+                row_el.addElement(cel)
+                col += 1
+                for _ in range(1, cell["colspan"]):
+                    row_el.addElement(CoveredTableCell())
             table.addElement(row_el)
         self.doc.text.addElement(table)
+
+
+def _span_attr(attrs: str, name: str) -> int:
+    """Parse ``name="N"`` out of an HTML tag's attribute string (>= 1)."""
+    m = re.search(name + r'=["\'](\d+)["\']', attrs)
+    if not m:
+        return 1
+    try:
+        return max(1, int(m.group(1)))
+    except ValueError:
+        return 1
 
 
 # --------------------------------------------------------------------------
