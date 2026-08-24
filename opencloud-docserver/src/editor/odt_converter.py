@@ -10,6 +10,9 @@ only the subset our editor produces, plus whatever reasonable tags appear.
 
 Images survive as self-contained data URIs on the HTML side and as
 ``draw:frame``/``draw:image`` (package-embedded binary) on the ODT side.
+The ``alt`` text of an ``<img>`` is preserved as the ODF-standard
+``svg:title`` child of the ``draw:frame`` (accessible name) and comes
+back as an ``alt`` attribute on the re-exported ``<img>``.
 """
 
 from __future__ import annotations
@@ -23,7 +26,7 @@ from html import escape
 from html.parser import HTMLParser
 
 from odf.draw import Frame, Image
-from odf.element import Node
+from odf.element import Element, Node
 from odf.namespaces import (
     DRAWNS,
     OFFICENS,
@@ -272,12 +275,23 @@ def _image_dimensions(mime: str, data: bytes) -> tuple[int, int] | None:
     return None
 
 
+def _frame_alt(frame_el) -> str:
+    """Accessible name (svg:title child) of a draw:frame, if any."""
+    for child in frame_el.childNodes:
+        if child.nodeType == Node.ELEMENT_NODE and child.qname == (SVGNS, "title"):
+            return "".join(n.data for n in child.childNodes if n.nodeType == Node.TEXT_NODE)
+    return ""
+
+
 def _frame_to_html(frame_el, pictures: dict) -> str:
     """Render a draw:frame (holding a draw:image) as an <img> data URI.
 
     Handles both package-referenced images (xlink:href into ``Pictures/``)
-    and ``office:binary-data`` embedded directly in content.xml.
+    and ``office:binary-data`` embedded directly in content.xml. The
+    frame's ``svg:title`` (if any) is emitted back as the ``alt``
+    attribute.
     """
+    alt = _frame_alt(frame_el)
     for child in frame_el.childNodes:
         if child.nodeType != Node.ELEMENT_NODE or child.qname != (DRAWNS, "image"):
             continue
@@ -307,6 +321,8 @@ def _frame_to_html(frame_el, pictures: dict) -> str:
                 m = re.fullmatch(r"\s*(\d+)\s*px\s*", val or "")
                 if m:
                     attrs.append(f' {key}="{m.group(1)}"')
+            if alt:
+                attrs.append(f' alt="{escape(alt)}"')
             return f'<img src="{_data_uri(mime or "image/png", content)}"' + "".join(attrs) + "/>"
     return ""
 
@@ -353,6 +369,13 @@ def odt_to_html(data: bytes) -> str:
         elif qname == (TABLENS, "table"):
             flush_list()
             parts.append(_table_to_html(child, resolve, pictures))
+        elif qname == (DRAWNS, "frame"):
+            # A draw:frame sitting directly in the body (not nested in a
+            # text:p) is still a block-level image.
+            flush_list()
+            frame_html = _frame_to_html(child, pictures)
+            if frame_html:
+                parts.append(f"<p>{frame_html}</p>")
 
     flush_list()
     return "\n".join(p for p in parts if p)
@@ -633,6 +656,10 @@ class _OdtWriter:
             frame.setAttribute("width", f"{width}px")
         if height:
             frame.setAttribute("height", f"{height}px")
+        # Accessible name / alt text lives in svg:title (ODF standard).
+        alt = (token.get("alt") or "").strip()
+        if alt:
+            frame.addElement(Element(qname=(SVGNS, "title"), text=alt))
         frame.addElement(Image(href=manifest))
         para_el.addElement(frame)
 

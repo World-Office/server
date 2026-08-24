@@ -668,6 +668,24 @@ def _png_bytes(width: int, height: int) -> bytes:
             + _chunk(b"IDAT", zlib.compress(raw)) + _chunk(b"IEND", b""))
 
 
+def _jpeg_bytes(width: int, height: int) -> bytes:
+    """Build a minimal valid JPEG whose SOF0 marker carries the given dims."""
+    app0_payload = b"JFIF\x00\x01\x01\x00\x00\x01\x00\x01\x00\x00"  # 14 bytes
+    sof0_payload = struct.pack(">BHHB", 8, height, width, 3) + bytes(
+        [1, 0x11, 0, 2, 0x11, 0, 3, 0x11, 0]
+    )
+    return (
+        b"\xff\xd8"
+        + b"\xff\xe0"
+        + struct.pack(">H", len(app0_payload) + 2)
+        + app0_payload
+        + b"\xff\xc0"
+        + struct.pack(">H", len(sof0_payload) + 2)
+        + sof0_payload
+        + b"\xff\xd9"
+    )
+
+
 def _data_uri(data: bytes, mime: str = "image/png") -> str:
     return f"data:{mime};base64,{base64.b64encode(data).decode('ascii')}"
 
@@ -892,3 +910,76 @@ def test_html_to_odt_image_roundtrip_non_data_uri_is_skipped():
     html2 = odt_to_html(odt)
     assert "link" in html2 and "tail" in html2
     assert "<img" not in html2
+
+
+def test_odt_to_html_image_top_level_frame():
+    """A draw:frame placed directly in the body (no wrapping text:p) still
+    renders as a block-level image and survives the full round-trip."""
+    from odf.opendocument import OpenDocumentText
+
+    png = _png_bytes(2, 3)
+    doc = OpenDocumentText()
+    name = doc.addPictureFromString(png, "image/png")
+    frame = Frame(name="BlockPic", anchortype="paragraph")
+    frame.setAttribute("width", "2px")
+    frame.setAttribute("height", "3px")
+    frame.addElement(Image(href=name))
+    doc.text.addElement(frame)  # direct child of office:text
+    buf = io.BytesIO()
+    doc.save(buf)
+
+    html = odt_to_html(buf.getvalue())
+    srcs = _img_srcs(html)
+    assert len(srcs) == 1
+    assert _decode_data_uri(srcs[0]) == png
+
+    # And it must survive the full ODT -> HTML -> ODT loop.
+    back = html_to_odt(html)
+    assert _odt_picture_bytes(back) == [png]
+
+
+def test_image_roundtrip_alt_text():
+    """The <img> alt text becomes svg:title on the draw:frame and is
+    re-exported as an alt attribute through the full round-trip."""
+    png = _png_bytes(2, 3)
+    html = f'<p><img src="{_data_uri(png)}" alt="A kitten"/></p>'
+    odt = html_to_odt(html)
+    content = zipfile.ZipFile(io.BytesIO(odt)).read("content.xml").decode()
+    assert "A kitten" in content
+
+    html2 = odt_to_html(odt)
+    assert 'alt="A kitten"' in html2
+    assert _decode_data_uri(_img_srcs(html2)[0]) == png
+
+    # Full HTML -> ODT -> HTML -> ODT -> HTML keeps the alt as well.
+    assert 'alt="A kitten"' in odt_to_html(html_to_odt(html2))
+
+
+def test_image_roundtrip_in_list_item():
+    """An image inside a list item survives HTML -> ODT -> HTML."""
+    png = _png_bytes(2, 3)
+    html = f'<ul><li>icon <img src="{_data_uri(png)}"/></li></ul>'
+    odt = html_to_odt(html)
+    assert _odt_picture_bytes(odt) == [png]
+
+    html2 = odt_to_html(odt)
+    assert "<ul>" in html2 and "<li>icon " in html2
+    srcs = _img_srcs(html2)
+    assert len(srcs) == 1
+    assert _decode_data_uri(srcs[0]) == png
+
+
+def test_html_to_odt_image_roundtrip_jpeg_intrinsic_dimensions():
+    """JPEG data URIs without width/height attributes get intrinsic pixel
+    dimensions sniffed from their SOF marker, on both sides."""
+    jpeg = _jpeg_bytes(10, 5)
+    odt = html_to_odt(f'<p><img src="{_data_uri(jpeg, "image/jpeg")}"/></p>')
+    content = zipfile.ZipFile(io.BytesIO(odt)).read("content.xml").decode()
+    assert 'svg:width="10px"' in content
+    assert 'svg:height="5px"' in content
+
+    html2 = odt_to_html(odt)
+    srcs = _img_srcs(html2)
+    assert len(srcs) == 1
+    assert _decode_data_uri(srcs[0]) == jpeg
+    assert 'width="10"' in html2 and 'height="5"' in html2
