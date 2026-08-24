@@ -107,6 +107,33 @@ Scrapes all service `/health` endpoints on the `prometheus` Docker network.
 | Docserver Health | `opencloud-docserver/grafana/docserver-health.json` | Docserver-specific metrics, SQLite, sessions |
 | Logs | `observability/grafana/provisioning/dashboards/logs.json` | Centralized log viewer |
 
+### Docserver Health Dashboard
+
+The Python docserver (`opencloud-docserver`) ships a self-contained Grafana dashboard at
+`opencloud-docserver/grafana/docserver-health.json`.
+
+**Installation:** import the JSON via the Grafana UI (`Dashboards → New → Import`), or copy it
+into the file-provisioning folder alongside the other dashboards.
+
+**Metric contract** — the dashboard's PromQL targets define the series a Prometheus scrape of
+the docserver `job="docserver"` must expose once `/metrics` is instrumented (`prometheus_client`,
+scrape target `docserver:9091/metrics` per `observability/prometheus/prometheus.yml`):
+
+| Metric | Type | Labels | Panel usage |
+|---|---|---|---|
+| `up{job="docserver"}` | standard | — | Health stat (UP/DOWN) |
+| `opencloud_docserver_documents_total` | counter | — | Documents Stored stat |
+| `opencloud_docserver_sessions_active` | gauge | — | Active Sessions stat |
+| `opencloud_docserver_wopi_requests_total` | counter | `operation`, `status` | Request/error/5xx panels |
+| `opencloud_docserver_wopi_request_duration_seconds` | histogram | `operation` | P50/P95 latency |
+| `opencloud_docserver_lock_operations_total` | counter | `action` | Lock operations panel |
+| `opencloud_docserver_putfile_bytes_total` | counter | — | Save-throughput panel |
+| `process_resident_memory_bytes`, `process_virtual_memory_bytes` | gauge (process collector) | — | Memory panel |
+| `process_cpu_seconds_total` | counter (process collector) | — | CPU panel |
+
+The `job` and `operation` dashboard variables are wired into every query; set `job` to
+`docserver` (or use the `All` option) to view the docserver fleet.
+
 ---
 
 ## Incident Response
