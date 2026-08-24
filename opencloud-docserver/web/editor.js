@@ -167,16 +167,69 @@
     return "P";
   }
 
+  // ------------------------------------------------------------------
+  // Insert-table dialog
+  // ------------------------------------------------------------------
+  // The toolbar's table button opens a small modal asking for row/column
+  // counts, then inserts a real <table> at the saved cursor position.
+  // The selection is captured before the dialog steals focus and restored
+  // on confirm, so the table lands exactly where the user opened it.
+  let tableSelRange = null;
+
   function insertTable() {
-    const cols = prompt(t("Prompt.TableColumns"), "3");
-    const rows = prompt(t("Prompt.TableRows"), "2");
-    if (!cols || !rows) return;
-    const c = Math.min(parseInt(cols, 10) || 3, 10);
-    const r = Math.min(parseInt(rows, 10) || 2, 20);
-    const cell = "<td><br></td>";
-    const row = "<tr>" + cell.repeat(c) + "</tr>";
+    if (READ_ONLY) return;
+    const dialog = document.getElementById("table-dialog");
+    const rowsInput = document.getElementById("table-rows");
+    const colsInput = document.getElementById("table-cols");
+    if (!dialog || !rowsInput || !colsInput) return;
+    rowsInput.value = "2";
+    colsInput.value = "3";
+    saveTableSelection();
+    dialog.classList.add("open");
+    colsInput.focus();
+  }
+
+  function saveTableSelection() {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
+      tableSelRange = sel.getRangeAt(0).cloneRange();
+    } else {
+      tableSelRange = null;
+    }
+  }
+
+  function restoreTableSelection() {
+    if (!tableSelRange) return;
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(tableSelRange);
+    tableSelRange = null;
+  }
+
+  function clampInt(raw, min, max, fallback) {
+    const n = parseInt(raw, 10);
+    if (Number.isNaN(n)) return fallback;
+    return Math.min(Math.max(n, min), max);
+  }
+
+  function confirmTableDialog() {
+    const rows = clampInt(document.getElementById("table-rows").value, 1, 20, 2);
+    const cols = clampInt(document.getElementById("table-cols").value, 1, 10, 3);
+    closeTableDialog();
+    restoreTableSelection();
     editor.focus();
-    document.execCommand("insertHTML", false, "<table>" + row.repeat(r) + "</table>");
+    const cell = "<td><br></td>";
+    const row = "<tr>" + cell.repeat(cols) + "</tr>";
+    // insertHTML fires an `input` event, which arms autosave and refreshes
+    // undo/redo states (see the input listener below).
+    document.execCommand("insertHTML", false, "<table>" + row.repeat(rows) + "</table>");
+  }
+
+  function closeTableDialog() {
+    const dialog = document.getElementById("table-dialog");
+    if (dialog) dialog.classList.remove("open");
+    tableSelRange = null;
+    editor.focus();
   }
 
   document.querySelectorAll(".toolbar button[data-cmd]").forEach((btn) => {
@@ -184,6 +237,17 @@
   });
   document.getElementById("btn-table").addEventListener("click", insertTable);
   saveBtn.addEventListener("click", saveDocument);
+
+  // Insert-table dialog controls
+  const btnTableOk = document.getElementById("btn-table-ok");
+  const btnTableCancel = document.getElementById("btn-table-cancel");
+  if (btnTableOk) btnTableOk.addEventListener("click", confirmTableDialog);
+  if (btnTableCancel) btnTableCancel.addEventListener("click", closeTableDialog);
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Escape") return;
+    const dialog = document.getElementById("table-dialog");
+    if (dialog && dialog.classList.contains("open")) closeTableDialog();
+  }, true);
 
   // ------------------------------------------------------------------
   // Keyboard shortcuts
