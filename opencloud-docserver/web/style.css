@@ -268,3 +268,63 @@ main {
 }
 
 .dialog-actions button.primary:hover { background: var(--accent-hover); }
+
+/* ---- responsive / mobile ---- */
+
+/* Tablet / small-laptop: pull the page margins in so the editor keeps its
+   paper feel without wasting horizontal space. */
+@media (max-width: 1024px) {
+  main { padding: 16px 12px; }
+  #editor { padding: 36px 32px; }
+}
+
+/* Phones in landscape and small tablets: the toolbar is far too wide to sit
+   on a single row, so it becomes a wrapped, multi-row strip of touch-friendly
+   controls. The status read-out and the row separators are dropped (they just
+   add noise on a wrapped strip), and dialogs are allowed to fill the viewport
+   instead of overflowing it. */
+@media (max-width: 768px) {
+  .toolbar { flex-wrap: wrap; gap: 4px; padding: 6px 8px; }
+  .toolbar button { min-width: 36px; height: 36px; }
+  .toolbar .sep { display: none; }
+  .toolbar .status { display: none; }
+  .toolbar .toolbar-select { height: 36px; }
+  #font-family { width: 120px; max-width: 120px; }
+  #line-spacing { width: 84px; max-width: 84px; }
+  main {
+    padding: 8px max(8px, env(safe-area-inset-right))
+      8px max(8px, env(safe-area-inset-left));
+  }
+  #editor { min-height: 60vh; padding: 28px 20px; border-radius: 6px; }
+  .dialog { min-width: 0; width: calc(100vw - 32px); max-width: none; }
+  .dialog-actions button { padding: 0 12px; }
+}
+
+/* Portrait phones: keep the touch targets comfortable — slightly taller
+   buttons, a full-width Save row — and let the paper run edge to edge so
+   every pixel is used for the document. */
+@media (max-width: 480px) {
+  .toolbar { padding: 6px; }
+  .toolbar button { min-width: 34px; height: 38px; padding: 0 5px; }
+  .toolbar .color-btn { height: 38px; }
+  .toolbar .toolbar-select { height: 38px; }
+  #font-size { width: 50px; max-width: 50px; }
+  #font-family { width: 96px; max-width: 96px; }
+  #line-spacing { width: 76px; max-width: 76px; }
+  .toolbar .spacer { display: none; }
+  .toolbar .primary { flex: 1 1 100%; order: 99; margin-top: 2px; }
+  main { padding: 0; }
+  #editor {
+    width: 100%;
+    min-height: 58vh;
+    padding: 20px 14px;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  #editor:focus { box-shadow: none; }
+  .dialog { width: calc(100vw - 24px); padding: 16px; }
+  .dialog-actions { gap: 6px; }
+  .dialog-actions button { flex: 1; height: 40px; }
+  .dialog-field { flex-wrap: wrap; }
+  .dialog-field input { flex: 1; min-width: 72px; }
+}
