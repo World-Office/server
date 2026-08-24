@@ -5,12 +5,15 @@ from __future__ import annotations
 import io
 from contextlib import asynccontextmanager
 
+from odf.opendocument import load
+
 import pytest
 from docx import Document
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from src.config import Config
+from src.editor.odt_converter import html_to_odt
 from src.editor.router import router as editor_router
 from src.editor.session import SessionRegistry
 from src.lib.store import DocumentStore, wipe_db, wipe_dir
@@ -211,6 +214,45 @@ def test_hosting_discovery_clean_urlsrc_no_access_token(client):
     assert "access_token" not in xml, "urlsrc must not carry an access_token param"
     assert 'urlsrc="http://localhost:8000/editor"' in xml
     assert 'ext="docx"' in xml
+
+
+def test_hosting_discovery_includes_odt_actions(client):
+    """WOPI discovery must advertise ODT view/edit actions."""
+    r = client.get("/hosting/discovery")
+    assert r.status_code == 200
+    xml = r.text
+    assert 'ext="odt"' in xml
+    assert 'action name="view" ext="odt"' in xml
+    assert 'action name="edit" ext="odt"' in xml
+
+
+def test_odt_file_routes_to_odt_converter(client):
+    """Files with .odt extension must use the ODT converter."""
+    from src.editor.odt_converter import html_to_odt
+    store = client.test_store  # type: ignore[attr-defined]
+    store.init("odt-1", "document.odt")
+    odt_bytes = html_to_odt("<p>Hello ODT</p>")
+    store.put_content("odt-1", odt_bytes)
+
+    # GET /html should convert ODT -> HTML
+    r = client.get("/api/documents/odt-1/html")
+    assert r.status_code == 200
+    assert "Hello ODT" in r.json()["html"]
+
+    # SAVE should convert HTML -> ODT
+    res = client.post(
+        "/api/documents/odt-1/save",
+        json={"html": "<p>Updated ODT</p>"},
+    )
+    assert res.status_code == 200
+    assert res.json()["ok"] is True
+
+    # Verify the stored bytes are a valid ODT
+    stored = store.get_content("odt-1")  # type: ignore[attr-defined]
+    doc = load(io.BytesIO(stored))
+    from odf import teletype
+    text = teletype.extractText(doc.text)
+    assert "Updated ODT" in text
 
 
 def test_editor_launch_accepts_ocis_form_post(client):
