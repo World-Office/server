@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 from contextlib import asynccontextmanager
+from html.parser import HTMLParser
 
 import pytest
 from docx import Document
@@ -836,3 +837,387 @@ def test_sanitize_strips_meta_refresh_direct():
     """meta refresh must be removed directly."""
     out = sanitize_html('<meta http-equiv="refresh" content="0;url=https://evil.com">')
     assert "meta" not in out.lower()
+
+
+# ----------------------------------------------------------------------
+# XSS Sanitizer Evasion (US-44) — acceptance gate: -k "sanitize_evasion"
+# ----------------------------------------------------------------------
+# Every test below lives inside class TestSanitizeEvasion so the whole
+# battery runs under `pytest -k sanitize_evasion`. Each case asserts the
+# dangerous payload is neutralized AND that surrounding safe content
+# survives, so the sanitizer proves both secure and functional.
+
+
+class _SanitizedStructure(HTMLParser):
+    """Re-parse sanitized output to check structural safety.
+
+    Raw-substring assertions are misleading here: an escaped attribute value
+    like `title="&quot; onmouseover=&quot;alert(1)"` legitimately still
+    contains the letters `onmouseover` — but as inert text inside a quoted
+    value that re-encodes the quote, never as a real attribute. The security
+    property is structural: the re-parsed tree must contain no handler
+    attributes and no script-bearing tags.
+    """
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.tags: list[str] = []
+        self.attr_names: list[str] = []
+        self.text: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        self.tags.append(tag.lower())
+        self.attr_names.extend((name or "").lower() for name, _ in attrs)
+
+    def handle_startendtag(self, tag: str, attrs) -> None:
+        self.handle_starttag(tag, attrs)
+
+    def handle_data(self, data: str) -> None:
+        self.text.append(data)
+
+
+def _structure(html: str) -> _SanitizedStructure:
+    probe = _SanitizedStructure()
+    probe.feed(html)
+    return probe
+
+
+class TestSanitizeEvasion:
+    # ---- event handlers (most common XSS vector) ----
+
+    def test_sanitize_evasion_event_handlers_stripped(self):
+        out = sanitize_html(
+            '<img src="data:image/png;base64,x" onerror="alert(1)" '
+            'onload="alert(2)" onmouseover="alert(3)" onclick="alert(4)">'
+        )
+        for handler in ("onerror", "onload", "onmouseover", "onclick"):
+            assert handler not in out
+        assert "alert" not in out
+        assert "<img" in out  # element itself preserved
+
+    def test_sanitize_evasion_mixed_case_event_handlers_stripped(self):
+        out = sanitize_html('<p OnError="alert(1)" ONCLICK="alert(2)">Safe</p>')
+        assert "onerror" not in out.lower()
+        assert "onclick" not in out.lower()
+        assert "Safe" in out
+
+    def test_sanitize_evasion_space_handler_on_safe_tag_stripped(self):
+        # Event handlers are not restricted to tags that normally use them.
+        out = sanitize_html('<b onfocus="alert(1)" onblur="alert(2)">Bold</b>')
+        assert "onfocus" not in out
+        assert "onblur" not in out
+        assert "<b>Bold</b>" in out
+
+    # ---- URL schemes: javascript: / vbscript: / data:text/html ----
+
+    def test_sanitize_evasion_javascript_href_stripped(self):
+        out = sanitize_html('<p><a href="javascript:alert(1)">Click</a></p>')
+        assert "javascript" not in out.lower()
+        assert "alert" not in out
+        assert "Click" in out
+
+    def test_sanitize_evasion_entity_encoded_javascript_href_stripped(self):
+        # &#106; = 'j' — browsers decode entities in attribute values, so an
+        # attacker can hide the scheme; the sanitizer must still block it.
+        out = sanitize_html('<a href="&#106;avascript:alert(1)">Click</a>')
+        assert "javascript" not in out.lower()
+        assert "alert" not in out
+        assert "Click" in out
+
+    def test_sanitize_evasion_hex_entity_javascript_src_stripped(self):
+        out = sanitize_html('<img src="jav&#x61;script:alert(1)">')
+        assert "javascript" not in out.lower()
+        assert "alert" not in out
+
+    def test_sanitize_evasion_mixed_case_javascript_scheme_stripped(self):
+        out = sanitize_html('<a href="JaVaScRiPt:alert(1)">Click</a>')
+        assert "javascript" not in out.lower()
+        assert "Click" in out
+
+    def test_sanitize_evasion_whitespace_obfuscated_scheme_stripped(self):
+        # Tabs/newlines inside the scheme are ignored by lenient browsers.
+        out = sanitize_html('<a href="java\tscript:alert(1)">Click</a>')
+        assert "javascript" not in out.lower()
+        assert "alert" not in out
+
+    def test_sanitize_evasion_null_byte_scheme_stripped(self):
+        out = sanitize_html('<a href="java\x00script:alert(1)">Click</a>')
+        assert "script:" not in out
+        assert "alert" not in out
+
+    def test_sanitize_evasion_control_character_scheme_stripped(self):
+        out = sanitize_html('<a href="\x01javascript:alert(1)">Click</a>')
+        assert "javascript" not in out.lower()
+        assert "Click" in out
+
+    def test_sanitize_evasion_fullwidth_unicode_scheme_stripped(self):
+        # Full-width confusables must not survive either (whitelist rejects).
+        out = sanitize_html('<img src="\uff4a\uff41\uff56\uff41\uff53\uff43\uff52\uff49\uff50\uff54:alert(1)">')
+        assert "alert" not in out
+        assert "http" not in out
+
+    def test_sanitize_evasion_vbscript_scheme_stripped(self):
+        out = sanitize_html('<img src="vbscript:msgbox(1)"><a href="vBsCrIpT:msgbox(1)">x</a>')
+        assert "vbscript" not in out.lower()
+        assert "msgbox" not in out
+
+    def test_sanitize_evasion_data_text_html_src_stripped(self):
+        # data:text/html is an inline-execution vector; only data:image/ allowed.
+        out = sanitize_html('<img src="data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==">')
+        assert "data:text/html" not in out.lower()
+        assert "<script" not in out.lower()
+
+    def test_sanitize_evasion_data_text_html_href_stripped(self):
+        out = sanitize_html('<a href="data:text/html,<script>alert(1)</script>">Click</a>')
+        assert "data:text/html" not in out.lower()
+        assert "<script" not in out.lower()
+        assert "Click" in out
+
+    # ---- lesser-known URL-bearing attributes ----
+
+    def test_sanitize_evasion_srcset_javascript_stripped(self):
+        out = sanitize_html('<img src="x.png" srcset="javascript:alert(1) 1x, x2.png 2x">')
+        assert "srcset" not in out
+        assert "javascript" not in out.lower()
+        assert "alert" not in out
+        assert "<img" in out
+
+    def test_sanitize_evasion_srcset_encoded_candidate_stripped(self):
+        out = sanitize_html('<img src="x.png" srcset="java&#x73;cript:alert(1) 1x">')
+        assert "srcset" not in out
+        assert "javascript" not in out.lower()
+        assert "alert" not in out
+
+    def test_sanitize_evasion_srcset_data_text_html_stripped(self):
+        out = sanitize_html('<img src="x.png" srcset="data:text/html;base64,PHNjcmlwdD4= 1x">')
+        assert "data:text/html" not in out.lower()
+        assert "srcset" not in out
+
+    def test_sanitize_evasion_dynsrc_lowsrc_stripped(self):
+        # Legacy IE attributes on <img> that load and execute URLs.
+        out = sanitize_html('<img src="x.png" dynsrc="javascript:alert(1)" lowsrc="vbscript:msgbox(1)">')
+        assert "dynsrc" not in out
+        assert "lowsrc" not in out
+        assert "javascript" not in out.lower()
+        assert "vbscript" not in out.lower()
+
+    def test_sanitize_evasion_background_attribute_stripped(self):
+        # Legacy background attribute on table/td can carry javascript:.
+        out = sanitize_html(
+            '<table background="javascript:alert(1)"><tr>'
+            '<td background="java&#x73;cript:alert(2)">Cell</td></tr></table>'
+        )
+        assert "background" not in out
+        assert "javascript" not in out.lower()
+        assert "alert" not in out
+        assert "Cell" in out
+
+    def test_sanitize_evasion_poster_data_html_stripped(self):
+        out = sanitize_html('<img poster="data:text/html,<script>alert(1)</script>">')
+        assert "data:text/html" not in out.lower()
+        assert "<script" not in out.lower()
+
+    # ---- attribute / tag breakout via escaped quotes & brackets ----
+
+    def test_sanitize_evasion_attribute_breakout_neutralized(self):
+        # &quot; decodes to a real quote: an attacker tries to terminate the
+        # title attribute and forge onmouseover. The re-emitted value must
+        # stay quoted so no new attribute can be forged on re-parse.
+        out = sanitize_html('<p title="&quot; onmouseover=&quot;alert(1)">X</p>')
+        probe = _structure(out)
+        assert not any(a.startswith("on") for a in probe.attr_names)
+        assert probe.tags == ["p"]
+        # the quote is re-encoded inside the value, never emitted raw
+        assert '<p title="&quot;' in out
+
+    def test_sanitize_evasion_attribute_breakout_onerror_neutralized(self):
+        out = sanitize_html('<img alt="&quot; onerror=&quot;alert(1)" src="data:image/png;base64,x">')
+        probe = _structure(out)
+        assert not any(a.startswith("on") for a in probe.attr_names)
+        assert probe.tags == ["img"]
+        assert "<img" in out
+
+    def test_sanitize_evasion_tag_breakout_neutralized(self):
+        # &quot;&gt;&lt;script&gt; decodes to "><script> — must not become
+        # a real script element in the sanitized output.
+        out = sanitize_html('<p title="&quot;&gt;&lt;script&gt;alert(1)&lt;/script&gt;">X</p>')
+        probe = _structure(out)
+        assert "script" not in probe.tags
+        assert probe.tags == ["p"]
+        assert "<script" not in out.lower()
+
+    def test_sanitize_evasion_anchor_breakout_neutralized(self):
+        out = sanitize_html('<a href="https://ok.com" title="&quot; onclick=&quot;alert(1)">L</a>')
+        probe = _structure(out)
+        assert not any(a.startswith("on") for a in probe.attr_names)
+        assert probe.tags == ["a"]
+        assert 'href="https://ok.com"' in out
+
+    # ---- CSS / inline style injection ----
+
+    def test_sanitize_evasion_style_url_stripped(self):
+        out = sanitize_html('<p style="background:url(javascript:alert(1))">T</p>')
+        assert "url(" not in out.lower()
+        assert "javascript" not in out.lower()
+        assert "alert" not in out
+        assert "T" in out
+
+    def test_sanitize_evasion_style_expression_stripped(self):
+        out = sanitize_html('<p style="width:expression(alert(1))">T</p>')
+        assert "expression" not in out.lower()
+        assert "alert" not in out
+
+    def test_sanitize_evasion_style_behavior_stripped(self):
+        out = sanitize_html('<p style="behavior:url(evil.htc)">T</p>')
+        assert "behavior" not in out.lower()
+
+    def test_sanitize_evasion_style_moz_binding_stripped(self):
+        out = sanitize_html('<p style="-moz-binding:url(evil.xml#xss)">T</p>')
+        assert "moz-binding" not in out.lower()
+
+    def test_sanitize_evasion_style_import_stripped(self):
+        out = sanitize_html('<p style="@import url(https://evil.com/x.css)">T</p>')
+        assert "@import" not in out.lower()
+        assert "evil.com" not in out
+
+    def test_sanitize_evasion_style_css_escape_stripped(self):
+        # \65 is CSS-escaped 'e': \65 xpression(..) evades an expression check
+        # in naive sanitizers and executes in legacy CSS-expression browsers.
+        out = sanitize_html('<p style="color:\\65 xpression(alert(1))">T</p>')
+        assert "expression" not in out.lower()
+        assert "alert" not in out
+
+    def test_sanitize_evasion_style_entity_obfuscation_stripped(self):
+        out = sanitize_html('<p style="color:&#101;xpression(alert(1))">T</p>')
+        assert "expression" not in out.lower()
+        assert "alert" not in out
+
+    def test_sanitize_evasion_style_entity_url_stripped(self):
+        # u&#114;l(...) decodes to url(...) — must still be blocked.
+        out = sanitize_html('<p style="background-color:u&#114;l(javascript:alert(1))">T</p>')
+        assert "url(" not in out.lower()
+        assert "javascript" not in out.lower()
+
+    def test_sanitize_evasion_style_tag_removed(self):
+        out = sanitize_html('<p>Safe</p><style>@import url(https://evil.com/x.css);</style><p>End</p>')
+        assert "<style" not in out.lower()
+        # content of the dropped <style> must not leak as visible text either
+        assert "evil.com" not in out
+        assert "@import" not in out
+        assert _structure(out).tags == ["p", "p"]
+        assert "Safe" in out
+        assert "End" in out
+
+    # ---- encoded / tampered element names ----
+
+    def test_sanitize_evasion_script_entities_in_text_escaped(self):
+        # &#60;script&#62; must come back as text, not a real script element.
+        out = sanitize_html("&#60;script&#62;alert(1)&#60;/script&#62;")
+        assert "<script" not in out.lower()
+        assert "&lt;" in out
+
+    def test_sanitize_evasion_hex_entities_in_text_escaped(self):
+        out = sanitize_html("&#x3c;img src=x onerror=alert(1)&#x3e;")
+        assert "<img" not in out.lower()
+        assert "&lt;" in out
+        # re-parsed, it is pure text — no img element, no handler attribute
+        probe = _structure(out)
+        assert probe.tags == []
+        assert not any(a.startswith("on") for a in probe.attr_names)
+
+    def test_sanitize_evasion_mixed_case_script_removed(self):
+        out = sanitize_html('<ScRiPt src="https://evil.com/x.js"></ScRiPt><p>Safe</p>')
+        assert "script" not in out.lower()
+        assert "evil.com" not in out
+        assert "Safe" in out
+
+    def test_sanitize_evasion_script_src_external_removed(self):
+        out = sanitize_html('<script src="https://evil.com/x.js"></script><p>Safe</p>')
+        assert "script" not in out.lower()
+        assert "evil.com" not in out
+        assert "Safe" in out
+
+    # ---- dangerous containers / elements ----
+
+    def test_sanitize_evasion_svg_math_removed(self):
+        out = sanitize_html('<p>S</p><svg onload="alert(1)"><script>alert(2)</script></svg><math><mi>x</mi></math><p>E</p>')
+        assert "svg" not in out.lower()
+        assert "math" not in out.lower()
+        assert "script" not in out.lower()
+        assert "onload" not in out
+        assert "alert" not in out
+        assert "S" in out and "E" in out
+
+    def test_sanitize_evasion_iframe_object_embed_removed(self):
+        out = sanitize_html(
+            '<p>Safe</p><iframe src="javascript:alert(1)"></iframe>'
+            '<object data="evil.swf"></object><embed src="evil.swf">'
+        )
+        assert "iframe" not in out.lower()
+        assert "object" not in out.lower()
+        assert "embed" not in out.lower()
+        assert "alert" not in out
+        assert "Safe" in out
+
+    def test_sanitize_evasion_form_input_removed(self):
+        out = sanitize_html('<form action="javascript:alert(1)"><input name="x" onfocus="alert(1)"></form>')
+        assert "form" not in out
+        assert "input" not in out
+        assert "alert" not in out
+
+    def test_sanitize_evasion_meta_base_link_removed(self):
+        out = sanitize_html(
+            '<meta http-equiv="refresh" content="0;url=javascript:alert(1)">'
+            '<base href="https://evil.com"><link rel="stylesheet" href="https://evil.com/x.css">'
+            '<p>Safe</p>'
+        )
+        assert "meta" not in out
+        assert "base" not in out
+        assert "link" not in out
+        assert "evil.com" not in out
+        assert "Safe" in out
+
+    def test_sanitize_evasion_entity_encoded_tags_never_reconstruct(self):
+        # A charref-encoded script/iframe embedded in a safe element's text.
+        out = sanitize_html('<p>&#60;iframe src=&#34;javascript:alert(1)&#34;&#62;</p>')
+        probe = _structure(out)
+        assert probe.tags == ["p"]
+        assert "iframe" not in probe.tags
+        assert not any(a.startswith("on") for a in probe.attr_names)
+        assert "&lt;" in out
+
+    # ---- functional preservation (no over-stripping) ----
+
+    def test_sanitize_evasion_safe_markup_preserved(self):
+        out = sanitize_html(
+            '<h2>Title</h2><p><b>Bold</b> and <i>italic</i></p>'
+            '<a href="https://example.com/doc">Link</a>'
+            '<img src="data:image/png;base64,AAAA">'
+        )
+        assert "<h2>Title</h2>" in out
+        assert "<b>Bold</b>" in out
+        assert "<i>italic</i>" in out
+        assert 'href="https://example.com/doc"' in out
+        assert 'src="data:image/png;base64,AAAA"' in out
+
+    def test_sanitize_evasion_safe_styles_preserved(self):
+        out = sanitize_html('<p style="color:#ff0000; font-weight:bold; margin:4px">Safe</p>')
+        assert "color:#ff0000" in out or "color: #ff0000" in out
+        assert "font-weight" in out
+        assert "Safe" in out
+
+    def test_sanitize_evasion_real_script_typed_as_text_stripped(self):
+        # A literal (non-encoded) script tag is dropped — element AND its
+        # inner payload — while the ordinary text around it stays.
+        out = sanitize_html('<p>Hello</p><script>alert("xss")</script><p>World</p>')
+        assert "script" not in out.lower()
+        assert "alert" not in out
+        assert _structure(out).tags == ["p", "p"]
+        assert "Hello" in out
+        assert "World" in out
+
+    def test_sanitize_evasion_simple_plain_text_passthrough(self):
+        out = sanitize_html("<p>1 < 2 and 3 > 2 and A & B</p>")
+        assert "1 &lt; 2" in out
+        assert "3 &gt; 2" in out
+        assert "A &amp; B" in out
