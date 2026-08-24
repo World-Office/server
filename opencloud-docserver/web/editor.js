@@ -5,6 +5,7 @@
  * - Lets the user edit in a contenteditable div
  * - Saves HTML back to the server (which converts to DOCX)
  * - Minimal toolbar via document.execCommand (deprecated but universal)
+ * - Internationalized via /static/i18n.js
  */
 
 "use strict";
@@ -15,6 +16,7 @@
   const READ_ONLY = window.__READ_ONLY__ === true;
   const SESSION = window.__SESSION__ || "";
   const api = (path) => `/api/documents/${encodeURIComponent(DOC_ID)}/${path}?session=${encodeURIComponent(SESSION)}`;
+  const t = window.createI18n && window.createI18n({ lng: "en" }) || ((k) => k);
   const editor = document.getElementById("editor");
   const status = document.getElementById("status");
   const saveBtn = document.getElementById("btn-save");
@@ -24,7 +26,7 @@
     saveBtn.disabled = true;
     const toolbar = document.getElementById("toolbar");
     if (toolbar) toolbar.querySelectorAll("button").forEach((b) => (b.disabled = true));
-    setStatus("Read-only — another user is editing this document");
+    setStatus(t("Status.ReadOnly"));
   }
 
   // ------------------------------------------------------------------
@@ -39,7 +41,7 @@
   // Load
   // ------------------------------------------------------------------
   async function loadDocument() {
-    setStatus("Loading…");
+    setStatus(t("Status.Loading"));
     try {
       const res = await fetch(api("html"));
       const data = await res.json();
@@ -47,10 +49,10 @@
       // Anchor: an empty/blank document still needs a block element so
       // typing produces <p>…</p> (bare text would be lost in DOCX conversion).
       editor.innerHTML = data.html || "<p><br></p>";
-      setStatus(data.blank ? "Empty document — start typing" : "Ready");
+      setStatus(data.blank ? t("Status.EmptyDocument") : t("Status.Ready"));
     } catch (err) {
-      editor.innerHTML = "<p><em>Could not load document.</em></p>";
-      setStatus("Load failed: " + err.message, true);
+      editor.innerHTML = "<p><em>" + t("Status.LoadFailed") + err.message + "</em></p>";
+      setStatus(t("Status.LoadFailed") + err.message, true);
     }
   }
 
@@ -59,7 +61,7 @@
   // ------------------------------------------------------------------
   async function saveDocument() {
     if (READ_ONLY) return;
-    setStatus("Saving…");
+    setStatus(t("Status.Saving"));
     try {
       const res = await fetch(
         api("save"),
@@ -71,10 +73,10 @@
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "save failed");
-      setStatus("Saved ✓");
-      setTimeout(() => setStatus("Ready"), 2000);
+      setStatus(t("Status.Saved"));
+      setTimeout(() => setStatus(t("Status.Ready")), 2000);
     } catch (err) {
-      setStatus("Save failed: " + err.message, true);
+      setStatus(t("Status.SaveFailed") + err.message, true);
     }
   }
 
@@ -110,8 +112,8 @@
   }
 
   function insertTable() {
-    const cols = prompt("Columns:", "3");
-    const rows = prompt("Rows:", "2");
+    const cols = prompt(t("Table.Columns"), "3");
+    const rows = prompt(t("Table.Rows"), "2");
     if (!cols || !rows) return;
     const c = Math.min(parseInt(cols, 10) || 3, 10);
     const r = Math.min(parseInt(rows, 10) || 2, 20);
@@ -150,7 +152,7 @@
   // ------------------------------------------------------------------
   let saveTimer = null;
   editor.addEventListener("input", () => {
-    setStatus("Unsaved changes…");
+    setStatus(t("Status.Unsaved"));
     clearTimeout(saveTimer);
     saveTimer = setTimeout(saveDocument, 30000);
   });
