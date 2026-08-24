@@ -5,6 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{ name }} — opencloud-docserver</title>
   <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* Insert-image dialog styles (scoped here; style.css is maintained
+       separately). The file input needs to be wider than the 84px used by
+       the table dialog's number fields, and the preview/error rows are
+       specific to this dialog. */
+    #image-dialog .dialog-field input[type="file"] { width: auto; max-width: 220px; }
+    .image-preview-wrap { margin: 10px 0; text-align: center; }
+    .image-preview-wrap img {
+      max-width: 220px;
+      max-height: 160px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    .image-error { min-height: 16px; margin-top: 8px; font-size: 12px; color: #f87171; }
+  </style>
 </head>
 <body>
   <header id="toolbar" class="toolbar">
@@ -19,6 +34,7 @@
     <button data-cmd="insertUnorderedList" title="Bullet list" data-i18n-title="Toolbar.BulletListTitle">•≡</button>
     <button data-cmd="insertOrderedList" title="Numbered list" data-i18n-title="Toolbar.NumberedListTitle">1≡</button>
     <button id="btn-table" title="Insert table" data-i18n-title="Toolbar.InsertTableTitle">▦</button>
+    <button id="btn-image" title="Insert image" data-i18n-title="Toolbar.InsertImageTitle">🖼</button>
     <span class="sep"></span>
     <button id="btn-undo" data-cmd="undo" title="Undo (Ctrl+Z)" data-i18n-title="Toolbar.UndoTitle">↶</button>
     <button id="btn-redo" data-cmd="redo" title="Redo (Ctrl+Y)" data-i18n-title="Toolbar.RedoTitle">↷</button>
@@ -47,6 +63,30 @@
       <div class="dialog-actions">
         <button id="btn-table-cancel">Cancel</button>
         <button id="btn-table-ok" class="primary">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insert-image dialog (modal): a local image file is picked and
+       previewed here, then embedded as a self-contained data-URI <img> at
+       the saved cursor position. Nothing leaves the browser until the next
+       save, when the server embeds data-URI images into the stored
+       document (ODT: draw:frame/draw:image binaries). -->
+  <div id="image-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="image-dialog-title">
+    <div class="dialog">
+      <h3 id="image-dialog-title" data-i18n="Toolbar.InsertImage">Insert image</h3>
+      <div class="dialog-field">
+        <label for="image-file" data-i18n="Image.ChooseFile">Image file</label>
+        <input id="image-file" type="file"
+               accept="image/png,image/jpeg,image/gif,image/bmp,image/webp,image/svg+xml">
+      </div>
+      <div id="image-preview-wrap" class="image-preview-wrap" hidden>
+        <img id="image-preview" alt="">
+      </div>
+      <div id="image-error" class="image-error" role="alert"></div>
+      <div class="dialog-actions">
+        <button id="btn-image-cancel" data-i18n="Image.Cancel">Cancel</button>
+        <button id="btn-image-ok" class="primary" disabled data-i18n="Image.Insert">Insert</button>
       </div>
     </div>
   </div>
