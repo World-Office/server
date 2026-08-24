@@ -29,6 +29,72 @@ body {
   flex-direction: column;
 }
 
+/* ---- accessibility ---- */
+/* Skip link (WCAG 2.4.1): visually hidden until it receives keyboard focus,
+   then pinned to the top-left corner as a visible “Skip to document” cue. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  z-index: 200;
+}
+
+.skip-link:focus-visible {
+  position: fixed;
+  left: 12px;
+  top: 12px;
+  width: auto;
+  height: auto;
+  padding: 8px 14px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  overflow: visible;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Strong, visible keyboard-focus indicator on every interactive control.
+   Scoped per-control so #editor keeps its box-shadow focus style. */
+.toolbar button:focus-visible,
+.toolbar .toolbar-select:focus-visible,
+.toolbar input[type="color"]:focus-visible,
+.toolbar .color-btn:focus-within,
+.dialog-actions button:focus-visible,
+.dialog-field input:focus-visible,
+.find-field-row input:focus-visible,
+.find-arrow:focus-visible,
+.find-check input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* aria-pressed mirror of the .active state: JS toggles both, this keeps the
+   “formatting is on” affordance visible even if the class is ever dropped. */
+.toolbar button[aria-pressed="true"] {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* Respect users who asked the OS to reduce motion: kill animations and
+   transitions, and drop smooth scrolling. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* ---- toolbar ---- */
 .toolbar {
   display: flex;
@@ -53,7 +119,8 @@ body {
 }
 
 .toolbar button:hover { background: rgba(255,255,255,0.08); }
-.toolbar button.active { background: var(--accent); color: #fff; }
+.toolbar button.active,
+.toolbar button[aria-pressed="true"] { background: var(--accent); color: #fff; }
 .toolbar button.primary {
   background: var(--accent);
   color: #fff;

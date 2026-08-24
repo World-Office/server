@@ -71,12 +71,18 @@
   </style>
 </head>
 <body>
-  <header id="toolbar" class="toolbar">
+  <!-- Skip link (WCAG 2.4.1 Bypass Blocks): the first Tab stop jumps
+       keyboard/screen-reader users straight to the document text, past the
+       toolbar. Visually hidden until focused (see .skip-link in style.css). -->
+  <a class="skip-link" href="#editor" data-i18n="A11y.SkipToDocument">Skip to document</a>
+  <header id="toolbar" class="toolbar" role="toolbar" aria-label="Formatting toolbar" data-i18n-aria-label="Toolbar.Region">
     <!-- Format group: character styles, font size/family, text color, highlight -->
-    <button data-cmd="bold" title="Bold (Ctrl+B)" data-i18n-title="Toolbar.BoldTitle" aria-label="Bold">B</button>
-    <button data-cmd="italic" title="Italic (Ctrl+I)" data-i18n-title="Toolbar.ItalicTitle" aria-label="Italic"><i>I</i></button>
-    <button data-cmd="underline" title="Underline (Ctrl+U)" data-i18n-title="Toolbar.UnderlineTitle" aria-label="Underline"><u>U</u></button>
-    <button data-cmd="strikeThrough" title="Strikethrough" data-i18n-title="Toolbar.StrikethroughTitle" aria-label="Strikethrough"><s>S</s></button>
+    <!-- aria-pressed reflects the live on/off state (JS updateActiveStates);
+         aria-keyshortcuts mirrors the keyboard shortcuts handled in editor.js. -->
+    <button data-cmd="bold" title="Bold (Ctrl+B)" data-i18n-title="Toolbar.BoldTitle" aria-label="Bold" data-i18n-aria-label="Toolbar.Bold" aria-pressed="false" aria-keyshortcuts="Control+B">B</button>
+    <button data-cmd="italic" title="Italic (Ctrl+I)" data-i18n-title="Toolbar.ItalicTitle" aria-label="Italic" data-i18n-aria-label="Toolbar.Italic" aria-pressed="false" aria-keyshortcuts="Control+I"><i>I</i></button>
+    <button data-cmd="underline" title="Underline (Ctrl+U)" data-i18n-title="Toolbar.UnderlineTitle" aria-label="Underline" data-i18n-aria-label="Toolbar.Underline" aria-pressed="false" aria-keyshortcuts="Control+U"><u>U</u></button>
+    <button data-cmd="strikeThrough" title="Strikethrough" data-i18n-title="Toolbar.StrikethroughTitle" aria-label="Strikethrough" data-i18n-aria-label="Toolbar.Strikethrough" aria-pressed="false"><s>S</s></button>
     <select id="font-size" class="toolbar-select" title="Font size" data-i18n-title="Toolbar.FontSizeTitle" aria-label="Font size">
       <option value="1">8</option>
       <option value="2">10</option>
@@ -104,23 +110,23 @@
     </label>
     <span class="sep"></span>
     <!-- Paragraph styles: headings + paragraph reset -->
-    <button data-cmd="formatBlock" data-value="H1" title="Heading 1" data-i18n-title="Toolbar.Heading1Title">H1</button>
-    <button data-cmd="formatBlock" data-value="H2" title="Heading 2" data-i18n-title="Toolbar.Heading2Title">H2</button>
-    <button data-cmd="formatBlock" data-value="H3" title="Heading 3" data-i18n-title="Toolbar.Heading3Title">H3</button>
-    <button data-cmd="formatBlock" data-value="P" title="Paragraph" data-i18n-title="Toolbar.ParagraphTitle">¶</button>
+    <button data-cmd="formatBlock" data-value="H1" title="Heading 1 (Ctrl+Alt+1)" data-i18n-title="Toolbar.Heading1Title" aria-label="Heading 1" data-i18n-aria-label="Toolbar.Heading1Title" aria-pressed="false" aria-keyshortcuts="Control+Alt+1">H1</button>
+    <button data-cmd="formatBlock" data-value="H2" title="Heading 2 (Ctrl+Alt+2)" data-i18n-title="Toolbar.Heading2Title" aria-label="Heading 2" data-i18n-aria-label="Toolbar.Heading2Title" aria-pressed="false" aria-keyshortcuts="Control+Alt+2">H2</button>
+    <button data-cmd="formatBlock" data-value="H3" title="Heading 3 (Ctrl+Alt+3)" data-i18n-title="Toolbar.Heading3Title" aria-label="Heading 3" data-i18n-aria-label="Toolbar.Heading3Title" aria-pressed="false" aria-keyshortcuts="Control+Alt+3">H3</button>
+    <button data-cmd="formatBlock" data-value="P" title="Paragraph (Ctrl+Alt+0)" data-i18n-title="Toolbar.ParagraphTitle" aria-label="Paragraph" data-i18n-aria-label="Toolbar.ParagraphTitle" aria-pressed="false" aria-keyshortcuts="Control+Alt+0">¶</button>
     <span class="sep"></span>
     <!-- Alignment group -->
-    <button data-cmd="justifyLeft" title="Align left (Ctrl+Shift+L)" data-i18n-title="Toolbar.AlignLeftTitle" aria-label="Align left"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M1.5 3.5h10M1.5 7h13M1.5 10.5h10M1.5 14h13"/></svg></button>
-    <button data-cmd="justifyCenter" title="Center (Ctrl+E)" data-i18n-title="Toolbar.AlignCenterTitle" aria-label="Center"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2.5 3.5h11M1.5 7h13M2.5 10.5h11M1.5 14h13"/></svg></button>
-    <button data-cmd="justifyRight" title="Align right (Ctrl+R)" data-i18n-title="Toolbar.AlignRightTitle" aria-label="Align right"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M4.5 3.5h10M1.5 7h13M4.5 10.5h10M1.5 14h13"/></svg></button>
-    <button data-cmd="justifyFull" title="Justify (Ctrl+J)" data-i18n-title="Toolbar.AlignJustifyTitle" aria-label="Justify"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M1.5 3.5h13M1.5 7h13M1.5 10.5h13M1.5 14h13"/></svg></button>
+    <button data-cmd="justifyLeft" title="Align left (Ctrl+Shift+L)" data-i18n-title="Toolbar.AlignLeftTitle" aria-label="Align left" data-i18n-aria-label="Toolbar.AlignLeft" aria-pressed="false" aria-keyshortcuts="Control+Shift+L"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M1.5 3.5h10M1.5 7h13M1.5 10.5h10M1.5 14h13"/></svg></button>
+    <button data-cmd="justifyCenter" title="Center (Ctrl+E)" data-i18n-title="Toolbar.AlignCenterTitle" aria-label="Center" data-i18n-aria-label="Toolbar.AlignCenter" aria-pressed="false" aria-keyshortcuts="Control+E"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2.5 3.5h11M1.5 7h13M2.5 10.5h11M1.5 14h13"/></svg></button>
+    <button data-cmd="justifyRight" title="Align right (Ctrl+R)" data-i18n-title="Toolbar.AlignRightTitle" aria-label="Align right" data-i18n-aria-label="Toolbar.AlignRight" aria-pressed="false" aria-keyshortcuts="Control+R"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M4.5 3.5h10M1.5 7h13M4.5 10.5h10M1.5 14h13"/></svg></button>
+    <button data-cmd="justifyFull" title="Justify (Ctrl+J)" data-i18n-title="Toolbar.AlignJustifyTitle" aria-label="Justify" data-i18n-aria-label="Toolbar.AlignJustify" aria-pressed="false" aria-keyshortcuts="Control+J"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M1.5 3.5h13M1.5 7h13M1.5 10.5h13M1.5 14h13"/></svg></button>
     <span class="sep"></span>
-    <button data-cmd="insertUnorderedList" title="Bullet list" data-i18n-title="Toolbar.BulletListTitle">•≡</button>
-    <button data-cmd="insertOrderedList" title="Numbered list" data-i18n-title="Toolbar.NumberedListTitle">1≡</button>
+    <button data-cmd="insertUnorderedList" title="Bullet list (Ctrl+Shift+8)" data-i18n-title="Toolbar.BulletListTitle" aria-label="Bullet list" data-i18n-aria-label="Toolbar.BulletList" aria-pressed="false" aria-keyshortcuts="Control+Shift+8">•≡</button>
+    <button data-cmd="insertOrderedList" title="Numbered list (Ctrl+Shift+7)" data-i18n-title="Toolbar.NumberedListTitle" aria-label="Numbered list" data-i18n-aria-label="Toolbar.NumberedList" aria-pressed="false" aria-keyshortcuts="Control+Shift+7">1≡</button>
     <span class="sep"></span>
     <!-- Layout group: indent/outdent + line spacing -->
-    <button data-cmd="indent" title="Increase indent" data-i18n-title="Toolbar.IndentTitle" aria-label="Increase indent"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 2.5v11M8.5 8H14.5M5 5.5 8 8l-3 2.5"/></svg></button>
-    <button data-cmd="outdent" title="Decrease indent" data-i18n-title="Toolbar.OutdentTitle" aria-label="Decrease indent"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 2.5v11M1.5 8H8M11.5 5.5 8.5 8l3 2.5"/></svg></button>
+    <button data-cmd="indent" title="Increase indent" data-i18n-title="Toolbar.IndentTitle" aria-label="Increase indent" data-i18n-aria-label="Toolbar.Indent"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 2.5v11M8.5 8H14.5M5 5.5 8 8l-3 2.5"/></svg></button>
+    <button data-cmd="outdent" title="Decrease indent" data-i18n-title="Toolbar.OutdentTitle" aria-label="Decrease indent" data-i18n-aria-label="Toolbar.Outdent"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 2.5v11M1.5 8H8M11.5 5.5 8.5 8l3 2.5"/></svg></button>
     <select id="line-spacing" class="toolbar-select" title="Line spacing" data-i18n-title="Toolbar.LineSpacingTitle" aria-label="Line spacing">
       <option value="" selected>Spacing</option>
       <option value="1">1.0</option>
@@ -131,19 +137,25 @@
       <option value="3">3.0</option>
     </select>
     <span class="sep"></span>
-    <button id="btn-table" title="Insert table" data-i18n-title="Toolbar.InsertTableTitle">▦</button>
-    <button id="btn-image" title="Insert image" data-i18n-title="Toolbar.InsertImageTitle">🖼</button>
-    <button id="btn-find" title="Find and replace (Ctrl+F)" data-i18n-title="Toolbar.FindTitle">🔍</button>
+    <button id="btn-table" title="Insert table" data-i18n-title="Toolbar.InsertTableTitle" aria-label="Insert table" data-i18n-aria-label="Toolbar.InsertTable">▦</button>
+    <button id="btn-image" title="Insert image" data-i18n-title="Toolbar.InsertImageTitle" aria-label="Insert image" data-i18n-aria-label="Toolbar.InsertImageTitle">🖼</button>
+    <button id="btn-find" title="Find and replace (Ctrl+F)" data-i18n-title="Toolbar.FindTitle" aria-label="Find and replace" data-i18n-aria-label="Toolbar.Find" aria-keyshortcuts="Control+F">🔍</button>
     <span class="sep"></span>
-    <button id="btn-undo" data-cmd="undo" title="Undo (Ctrl+Z)" data-i18n-title="Toolbar.UndoTitle">↶</button>
-    <button id="btn-redo" data-cmd="redo" title="Redo (Ctrl+Y)" data-i18n-title="Toolbar.RedoTitle">↷</button>
+    <button id="btn-undo" data-cmd="undo" title="Undo (Ctrl+Z)" data-i18n-title="Toolbar.UndoTitle" aria-label="Undo" data-i18n-aria-label="Toolbar.Undo" aria-keyshortcuts="Control+Z">↶</button>
+    <button id="btn-redo" data-cmd="redo" title="Redo (Ctrl+Y)" data-i18n-title="Toolbar.RedoTitle" aria-label="Redo" data-i18n-aria-label="Toolbar.Redo" aria-keyshortcuts="Control+Y Control+Shift+Z">↷</button>
     <span class="spacer"></span>
-    <span id="status" class="status" data-i18n="Status.Ready">Ready</span>
-    <button id="btn-save" class="primary" title="Save (Ctrl+S)" data-i18n="Toolbar.Save" data-i18n-title="Toolbar.SaveTitle">Save</button>
+    <!-- role=status + aria-live=polite: the save/progress/error messages in
+         the status bar are announced to screen readers as they change. -->
+    <span id="status" class="status" role="status" aria-live="polite" data-i18n="Status.Ready">Ready</span>
+    <button id="btn-save" class="primary" title="Save (Ctrl+S)" data-i18n="Toolbar.Save" data-i18n-title="Toolbar.SaveTitle" aria-label="Save" data-i18n-aria-label="Toolbar.Save" aria-keyshortcuts="Control+S">Save</button>
   </header>
 
   <main>
-    <div id="editor" contenteditable="true" spellcheck="true"></div>
+    <!-- Rich-text editing surface: explicit textbox role + accessible name
+         so screen readers announce the document when it receives focus. -->
+    <div id="editor" contenteditable="true" spellcheck="true"
+         role="textbox" aria-multiline="true"
+         aria-label="Document" data-i18n-aria-label="A11y.EditorLabel"></div>
   </main>
 
   <!-- Insert-table dialog (modal): rows/cols picked here, then a real
@@ -207,8 +219,8 @@
         <input id="find-query" type="text" spellcheck="false"
                placeholder="Search in document"
                data-i18n-placeholder="Find.SearchPlaceholder">
-        <button id="btn-find-prev" class="find-arrow" title="Previous (Shift+Enter)" data-i18n-title="Find.Prev">▲</button>
-        <button id="btn-find-next" class="find-arrow" title="Next (Enter)" data-i18n-title="Find.Next">▼</button>
+        <button id="btn-find-prev" class="find-arrow" title="Previous (Shift+Enter)" data-i18n-title="Find.Prev" aria-label="Previous match">▲</button>
+        <button id="btn-find-next" class="find-arrow" title="Next (Enter)" data-i18n-title="Find.Next" aria-label="Next match">▼</button>
       </div>
       <div class="find-field-row">
         <label for="find-replace" class="find-label" data-i18n="Find.ReplaceLabel">Replace with</label>
