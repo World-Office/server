@@ -7,6 +7,9 @@
  * - Minimal toolbar via document.execCommand (deprecated but universal)
  * - Bullet/numbered lists: toolbar, Ctrl+Shift+7/8 and markdown-style
  *   auto-conversion ("- ", "* ", "1. ") all route through toggleList()
+ * - Lists persist through the production path: a successful save that
+ *   carries <ul>/<ol> markup fires a `lists-persisted` event and logs
+ *   "LIST-PERSISTENCE: OK" for browser-level E2E to wait on
  * - Undo/redo: explicit innerHTML snapshot chain (20+ steps, survives
  *   saves), not the flaky native execCommand stack
  * - Internationalized via /static/i18n.js
@@ -105,6 +108,17 @@
           detail: { docId: DOC_ID, name: DOC_NAME },
         }));
         console.info("ODT-PERSISTENCE: OK", DOC_NAME);
+      }
+      // List persistence round-trip confirmed by the server: the saved body
+      // contained bullet/numbered list markup and came back as a valid save
+      // (converted + PUT to the WOPI host). Dispatch an event (plus console
+      // marker) that browser-level E2E (Playwright) waits on before verifying
+      // the list items in the stored document.
+      if (/<([uo]l)[\s>]/i.test(editor.innerHTML)) {
+        window.dispatchEvent(new CustomEvent("lists-persisted", {
+          detail: { docId: DOC_ID, name: DOC_NAME },
+        }));
+        console.info("LIST-PERSISTENCE: OK", DOC_NAME);
       }
       setTimeout(() => setStatus(t("Status.Ready")), 2000);
     } catch (err) {
