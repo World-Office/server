@@ -104,6 +104,7 @@ Scrapes all service `/health` endpoints on the `prometheus` Docker network.
 | Services Overview | `observability/grafana/provisioning/dashboards/services-overview.json` | Health status, uptime, response times |
 | Production Overview | `observability/grafana/provisioning/dashboards/production-overview.json` | Resource usage, request rates |
 | Conversion Service | `observability/grafana/provisioning/dashboards/conversion-service.json` | Conversion rates, errors, duration |
+| Docserver Health | `opencloud-docserver/grafana/docserver-health.json` | Docserver-specific metrics, SQLite, sessions |
 | Logs | `observability/grafana/provisioning/dashboards/logs.json` | Centralized log viewer |
 
 ---

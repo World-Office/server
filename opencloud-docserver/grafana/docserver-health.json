@@ -1,0 +1,233 @@
+{
+  "dashboard": "opencloud-docserver",
+  "title": "World Office — Docserver Health",
+  "uid": "opencloud-docserver",
+  "version": 1,
+  "schemaVersion": 39,
+  "tags": ["world-office", "docserver", "fastapi"],
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "30s",
+  "panels": [
+    {
+      "title": "Docserver Health",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [
+        {
+          "expr": "up{job=\"docserver\"}",
+          "legendFormat": "Status",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "value": "1", "text": "UP", "color": "green" },
+            { "type": "value", "value": "0", "text": "DOWN", "color": "red" }
+          ],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "red" }, { "value": 1, "color": "green" }] }
+        }
+      }
+    },
+    {
+      "title": "Active Documents",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "sum(opencloud_docserver_documents_total)",
+          "legendFormat": "Documents",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "value": 50, "color": "yellow" }, { "value": 100, "color": "red" }] }
+        }
+      }
+    },
+    {
+      "title": "HTTP Request Rate (1h)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "rate(http_requests_total[5m])",
+          "legendFormat": "{{method}} {{path}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "calcs": ["max", "avg"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "title": "Error Rate (1h)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "rate(http_requests_total{status=~\"5..\"}[5m])",
+          "legendFormat": "{{method}} {{path}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "calcs": ["max", "avg"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "title": "P99 Latency",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "id": 5,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket[5m]))",
+          "legendFormat": "{{method}} {{path}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "calcs": ["max", "avg"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "title": "SQLite Database Size (MB)",
+      "type": "timeseries",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 12 },
+      "id": 6,
+      "targets": [
+        {
+          "expr": "sum(sqlite_db_size_bytes) / 1024 / 1024",
+          "legendFormat": "Database",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "calcs": ["max", "avg"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "title": "Active Sessions",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 16 },
+      "id": 7,
+      "targets": [
+        {
+          "expr": "sum(opencloud_docserver_sessions_active)",
+          "legendFormat": "Active",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "values": false },
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green" }, { "value": 10, "color": "yellow" }, { "value": 50, "color": "red" }] }
+        }
+      }
+    },
+    {
+      "title": "WOPI Lock Operations",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "id": 8,
+      "targets": [
+        {
+          "expr": "rate(wopi_lock_operations_total[5m])",
+          "legendFormat": "{{operation}}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "calcs": ["max", "avg"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "title": "Content Directory Size (MB)",
+      "type": "timeseries",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 20 },
+      "id": 9,
+      "targets": [
+        {
+          "expr": "sum(content_bytes_total) / 1024 / 1024",
+          "legendFormat": "Content",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "calcs": ["max", "avg"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    },
+    {
+      "title": "Document Upload Size (MB)",
+      "type": "histogram",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 24 },
+      "id": 10,
+      "targets": [
+        {
+          "expr": "sum by (le) (document_upload_bytes_bucket) / 1024 / 1024",
+          "legendFormat": "{{le}} MB",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "legend": { "calcs": ["max", "avg"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "multi" }
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "job",
+        "type": "query",
+        "query": "label_values(up, job)",
+        "refresh": 1,
+        "includeAll": true,
+        "multi": true
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" }
+}
