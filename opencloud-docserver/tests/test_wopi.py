@@ -151,6 +151,119 @@ def test_refresh_lock(client):
 
 
 # ----------------------------------------------------------------------
+# Extended WOPI API (contents endpoint + metadata) — gate: -k "extension"
+# ----------------------------------------------------------------------
+# The editor router exposes raw-bytes contents + extended metadata mirroring
+# the WOPI GetFile/PutFile/CheckFileInfo protocol (host mode uses the local
+# store; client mode forwards to the OCIS host). Every test lives inside
+# TestWopiApiExtension so the whole battery runs under `pytest -k extension`.
+
+
+class TestWopiApiExtension:
+    def test_extension_contents_get_roundtrip(self, client):
+        data = _docx_bytes("Extension body")
+        _seed_doc(client, data=data)
+        res = client.get("/api/documents/doc1/contents")
+        assert res.status_code == 200
+        assert res.content == data
+        assert "X-WOPI-ItemVersion" in res.headers
+        assert res.headers["content-type"].startswith(
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+
+    def test_extension_contents_get_missing(self, client):
+        res = client.get("/api/documents/ghost/contents")
+        assert res.status_code == 404
+
+    def test_extension_contents_put_roundtrip(self, client):
+        _seed_doc(client)
+        new_data = _docx_bytes("Replaced via contents PUT")
+        res = client.put("/api/documents/doc1/contents", content=new_data)
+        assert res.status_code == 200
+        assert res.json() == {"ok": True, "size": len(new_data)}
+        assert client.test_store.get_content("doc1") == new_data  # type: ignore[attr-defined]
+
+    def test_extension_contents_put_via_wopi_override_post(self, client):
+        """POST with X-WOPI-Override: PUT is the convention the OCIS
+        wopiserver itself requires — the extension must accept it."""
+        _seed_doc(client)
+        new_data = _docx_bytes("Via override POST")
+        res = client.post(
+            "/api/documents/doc1/contents",
+            content=new_data,
+            headers={"X-WOPI-Override": "PUT"},
+        )
+        assert res.status_code == 200
+        assert client.test_store.get_content("doc1") == new_data  # type: ignore[attr-defined]
+
+    def test_extension_contents_post_without_override_rejected(self, client):
+        _seed_doc(client)
+        res = client.post("/api/documents/doc1/contents", content=b"x")
+        assert res.status_code == 400
+
+    def test_extension_contents_put_respects_lock(self, client):
+        store = client.test_store  # type: ignore[attr-defined]
+        _seed_doc(client)
+        store.set_lock("doc1", "LOCK-456", "alice")
+
+        # wrong lock -> 409, echoing the current lock token
+        res = client.put(
+            "/api/documents/doc1/contents",
+            content=b"x",
+            headers={"X-WOPI-Lock": "WRONG"},
+        )
+        assert res.status_code == 409
+        assert res.headers.get("X-WOPI-Lock") == "LOCK-456"
+
+        # correct lock -> 200 and content replaced
+        new_data = _docx_bytes("Unlocked write")
+        res = client.put(
+            "/api/documents/doc1/contents",
+            content=new_data,
+            headers={"X-WOPI-Lock": "LOCK-456"},
+        )
+        assert res.status_code == 200
+        assert client.test_store.get_content("doc1") == new_data  # type: ignore[attr-defined]
+
+    def test_extension_contents_put_missing_file(self, client):
+        res = client.put("/api/documents/ghost/contents", content=b"x")
+        assert res.status_code == 404
+
+    def test_extension_metadata_extra_fields(self, client):
+        _seed_doc(client, name="report.docx")
+        res = client.get("/api/documents/doc1")
+        assert res.status_code == 200
+        body = res.json()
+        assert body["base_file_name"] == "report.docx"
+        assert body["format"] == "docx"
+        assert body["mime_type"].startswith(
+            "application/vnd.openxmlformats-officedocument"
+        )
+        assert body["version"] == str(body["updated_at"])
+        assert body["editable"] is True
+        assert body["writable"] is True
+        assert body["contents_url"] == "/api/documents/doc1/contents"
+        # existing fields are preserved (backwards compatible)
+        assert body["id"] == "doc1"
+        assert body["name"] == "report.docx"
+        assert body["locked"] is False
+
+    def test_extension_metadata_odt_format(self, client):
+        store = client.test_store  # type: ignore[attr-defined]
+        store.init("odt-2", "notes.odt")
+        store.put_content("odt-2", b"odt-bytes")
+        res = client.get("/api/documents/odt-2")
+        assert res.status_code == 200
+        body = res.json()
+        assert body["format"] == "odt"
+        assert body["mime_type"] == "application/vnd.oasis.opendocument.text"
+
+    def test_extension_metadata_missing(self, client):
+        res = client.get("/api/documents/ghost")
+        assert res.status_code == 404
+
+
+# ----------------------------------------------------------------------
 # Editor API
 # ----------------------------------------------------------------------
 
