@@ -7,6 +7,8 @@
  * - Minimal toolbar via document.execCommand (deprecated but universal)
  * - Bullet/numbered lists: toolbar, Ctrl+Shift+7/8 and markdown-style
  *   auto-conversion ("- ", "* ", "1. ") all route through toggleList()
+ * - Undo/redo: explicit innerHTML snapshot chain (20+ steps, survives
+ *   saves), not the flaky native execCommand stack
  * - Internationalized via /static/i18n.js
  */
 
@@ -63,8 +65,12 @@
       // Anchor: an empty/blank document still needs a block element so
       // typing produces <p>…</p> (bare text would be lost in DOCX conversion).
       editor.innerHTML = data.html || "<p><br></p>";
+      // Fresh load resets the snapshot chain: the loaded state becomes the
+      // baseline the Undo/Redo-Kette walks back to.
+      undoStack.length = 0;
+      redoStack.length = 0;
+      lastSnapshot = editor.innerHTML;
       setStatus(data.blank ? t("Status.EmptyDocument") : t("Status.Ready"));
-      // Fresh load resets the native undo stack: reflect that in the toolbar.
       updateUndoRedoState();
     } catch (err) {
       editor.innerHTML = "<p><em>" + t("Status.LoadFailed") + err.message + "</em></p>";
@@ -114,12 +120,16 @@
   // when toggled a second time, so this single path serves the toolbar
   // buttons, the Ctrl+Shift+7/8 shortcuts and the smart-list converter.
   // Lists mutate the DOM but don't always fire an `input` event
-  // (notably on toggle-off), so arm autosave explicitly on success.
+  // (notably on toggle-off), so arm autosave and snapshot the history
+  // explicitly on success.
   function toggleList(command) {
     if (READ_ONLY) return false;
     editor.focus();
     const ok = document.execCommand(command, false, null);
-    if (ok) markDirty();
+    if (ok) {
+      markDirty();
+      captureHistory();
+    }
     updateActiveStates();
     updateUndoRedoState();
     return ok;
@@ -130,25 +140,104 @@
       toggleList(cmd);
       return;
     }
+    // Undo/redo walk our explicit snapshot chain (below) instead of the
+    // undocumented native execCommand stack, so the chain keeps working
+    // for 20+ steps and across the list/table DOM rewrites and saves.
+    if (cmd === "undo") {
+      undoHistory();
+      updateActiveStates();
+      updateUndoRedoState();
+      return;
+    }
+    if (cmd === "redo") {
+      redoHistory();
+      updateActiveStates();
+      updateUndoRedoState();
+      return;
+    }
     editor.focus();
-    const ok = document.execCommand(cmd, false, value || null);
-    // Undo/redo mutate the document without always firing an `input` event,
-    // so mark the doc dirty explicitly to keep autosave armed and the
-    // status bar accurate.
-    if ((cmd === "undo" || cmd === "redo") && ok) markDirty();
+    document.execCommand(cmd, false, value || null);
     updateActiveStates();
     updateUndoRedoState();
   }
 
-  // The legacy execCommand undo stack can be queried via queryCommandEnabled;
-  // use it to grey out the toolbar buttons when there is nothing to undo or
-  // redo (fresh document, or stack exhausted), instead of no-op clicks.
+  // ------------------------------------------------------------------
+  // Undo/redo history — explicit innerHTML snapshot chain (US-31).
+  //
+  // document.execCommand("undo"/"redo") relies on an undocumented,
+  // browser-dependent native stack with a small capacity, and it breaks
+  // after DOM rewrites (smart-list conversion, table insert, reloads).
+  // So we keep our own bounded snapshot history: every user edit pushes
+  // the previous DOM state, Ctrl+Z / toolbar-undo walk back through it,
+  // Ctrl+Y / toolbar-redo walk forward, and a fresh edit truncates the
+  // redo branch. The chain is client-side only and survives saves: an
+  // explicit save never clears it, so "undo after save" restores the
+  // pre-save state — the exact contract of the Undo/Redo-Kette.
+  // ------------------------------------------------------------------
+  const HISTORY_LIMIT = 100; // 20+ steps required; headroom for comfort
+  const undoStack = [];      // states we can go BACK to (oldest first)
+  const redoStack = [];      // states we can go FORWARD to (newest first)
+  let lastSnapshot = null;   // DOM state the chain currently reflects
+
+  // Capture the state we are LEAVING, then remember the new one. Call
+  // after the DOM has settled (input, list toggle, table insert) so
+  // multi-step native commands form a single undoable step.
+  function captureHistory() {
+    const html = editor.innerHTML;
+    if (html === lastSnapshot) return; // nothing changed: keep the stack
+    if (lastSnapshot !== null) {
+      undoStack.push(lastSnapshot);
+      if (undoStack.length > HISTORY_LIMIT) undoStack.shift();
+    }
+    lastSnapshot = html;
+    redoStack.length = 0; // a fresh edit discards the redo branch
+    updateUndoRedoState();
+  }
+
+  function restoreSnapshot(html) {
+    editor.innerHTML = html;
+    lastSnapshot = html;
+    // Park the caret at the end so the user can keep typing right away.
+    try {
+      const sel = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(editor);
+      range.collapse(false);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } catch (err) {
+      /* selection restore is best-effort */
+    }
+    markDirty();
+    updateActiveStates();
+    updateUndoRedoState();
+  }
+
+  function undoHistory() {
+    if (READ_ONLY || undoStack.length === 0) return false;
+    redoStack.push(lastSnapshot);
+    lastSnapshot = undoStack.pop();
+    restoreSnapshot(lastSnapshot);
+    return true;
+  }
+
+  function redoHistory() {
+    if (READ_ONLY || redoStack.length === 0) return false;
+    undoStack.push(lastSnapshot);
+    lastSnapshot = redoStack.pop();
+    restoreSnapshot(lastSnapshot);
+    return true;
+  }
+
+  // Grey out the toolbar buttons when the chain is exhausted (or the
+  // document is read-only) instead of serving no-op clicks; the "can
+  // undo/redo" state is the SIZE of our explicit stacks now, not the
+  // opaque queryCommandEnabled query.
   function updateUndoRedoState() {
-    if (typeof document.queryCommandEnabled !== "function") return;
     const undoBtn = document.getElementById("btn-undo");
     const redoBtn = document.getElementById("btn-redo");
-    if (undoBtn) undoBtn.disabled = READ_ONLY || !document.queryCommandEnabled("undo");
-    if (redoBtn) redoBtn.disabled = READ_ONLY || !document.queryCommandEnabled("redo");
+    if (undoBtn) undoBtn.disabled = READ_ONLY || undoStack.length === 0;
+    if (redoBtn) redoBtn.disabled = READ_ONLY || redoStack.length === 0;
   }
 
   function updateActiveStates() {
@@ -233,9 +322,13 @@
     editor.focus();
     const cell = "<td><br></td>";
     const row = "<tr>" + cell.repeat(cols) + "</tr>";
-    // insertHTML fires an `input` event, which arms autosave and refreshes
-    // undo/redo states (see the input listener below).
+    // insertHTML fires an `input` event, which arms autosave and captures
+    // history (see the input listener below); captureHistory() here is
+    // belt-and-braces — the html === lastSnapshot guard makes it a no-op
+    // when the input event already ran, and the fallback covers engines
+    // that skip the event.
     document.execCommand("insertHTML", false, "<table>" + row.repeat(rows) + "</table>");
+    captureHistory();
   }
 
   function closeTableDialog() {
@@ -363,6 +456,9 @@
   editor.addEventListener("input", () => {
     markDirty();
     autoConvertListMarker();
+    // Snapshot AFTER the DOM settled so the whole smart-list conversion
+    // (marker + native wrap) lands as a single undoable step.
+    captureHistory();
     updateUndoRedoState();
   });
 

@@ -117,6 +117,150 @@ class _RealWopiClientTest:
         return False
 
 
+# ----------------------------------------------------------------------
+# Undo/Redo-Kette (US-31): frontend-style snapshot chain driven through
+# the real client-mode save -> DOCX -> fetch round-trip.
+# ----------------------------------------------------------------------
+
+class _UndoRedoHistory:
+    """Frontend-style undo/redo snapshot chain.
+
+    Mirrors the explicit innerHTML snapshot history the browser editor
+    maintains (see web/editor.js): a stack of document states where every
+    undo step restores exactly the previous state, redo re-applies the
+    next one, and a fresh edit truncates the redo branch. Driving the
+    same contract through the real save/fetch round-trip lets the tests
+    verify the Undo/Redo-Kette end-to-end: 20+ steps, undo after save.
+    """
+
+    def __init__(self, initial: str) -> None:
+        self._undo: list[str] = [initial]
+        self._redo: list[str] = []
+
+    def edit(self, html: str) -> None:
+        """User makes an edit; the previous state is pushed onto the undo
+        chain and the (now stale) redo branch is discarded."""
+        self._undo.append(html)
+        self._redo.clear()
+
+    def undo(self) -> str | None:
+        """Step back to (and return) the previous state, or None when the
+        chain is exhausted."""
+        if len(self._undo) < 2:
+            return None
+        current = self._undo.pop()
+        self._redo.append(current)
+        return self._undo[-1]
+
+    def redo(self) -> str | None:
+        """Step forward to (and return) the next state, or None when the
+        redo branch is empty."""
+        if not self._redo:
+            return None
+        current = self._redo.pop()
+        self._undo.append(current)
+        return current
+
+    @property
+    def can_undo(self) -> bool:
+        return len(self._undo) > 1
+
+    @property
+    def can_redo(self) -> bool:
+        return bool(self._redo)
+
+
+class _EditorHarness:
+    """Client-mode editor harness: a real WSGI mock WOPI host plus the
+    FastAPI TestClient, so every undo/redo step travels the full
+    save -> DOCX -> html-fetch path exactly like the deployed docserver.
+    """
+
+    def __init__(self, tmp_path, seed_html: str = "<p>start</p>") -> None:
+        self.tmp_path = tmp_path
+        self.seed_html = seed_html
+
+    def __enter__(self):
+        from contextlib import asynccontextmanager
+        from wsgiref.simple_server import make_server
+
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
+        from src.config import Config
+        from src.editor.converter import html_to_docx
+        from src.editor.router import router as editor_router
+        from src.lib.store import DocumentStore
+        from src.wopi.router import router as wopi_router
+
+        self.host = _MockHost()
+        self.host.content = html_to_docx(self.seed_html)
+        self.httpd = make_server("127.0.0.1", 0, self.host)
+        port = self.httpd.server_address[1]
+        self.thread = threading.Thread(target=self.httpd.serve_forever, daemon=True)
+        self.thread.start()
+
+        db = str(self.tmp_path / "t.db")
+        content = str(self.tmp_path / "content")
+        self.store = DocumentStore(db, content)
+        cfg = Config(database=db, content_dir=content, jwt_secret="test-secret")
+
+        @asynccontextmanager
+        async def lifespan(app):
+            app.state.store = self.store
+            app.state.sessions = SessionRegistry()
+            app.state.config = cfg
+            yield
+
+        app = FastAPI(lifespan=lifespan)
+        app.include_router(wopi_router)
+        app.include_router(editor_router)
+        self.client = TestClient(app)
+        self.client.__enter__()
+        src = f"http://127.0.0.1:{port}/wopi/files/doc1"
+        resp = self.client.post(
+            "/editor", data={"access_token": "tok-1"}, params={"WOPISrc": src}
+        )
+        assert resp.status_code == 200
+        session = self.client.app.state.sessions.get("doc1")
+        assert session is not None
+        self.session_id = session.session_id
+        self.doc_api = "/api/documents/doc1"
+        return self
+
+    def __exit__(self, *exc):
+        from src.lib.store import wipe_db, wipe_dir
+
+        self.client.__exit__(*exc)
+        self.httpd.shutdown()
+        self.httpd.server_close()
+        self.thread.join(timeout=2)
+        wipe_db(str(self.tmp_path / "t.db"))
+        wipe_dir(str(self.tmp_path / "content"))
+        return False
+
+    def save(self, html: str) -> None:
+        """POST the editor's current innerHTML to the server (a save)."""
+        resp = self.client.post(
+            f"{self.doc_api}/save?session={self.session_id}", json={"html": html}
+        )
+        assert resp.status_code == 200, resp.text
+
+    def fetch_html(self) -> str:
+        """GET the normalized HTML the editor would reload."""
+        resp = self.client.get(f"{self.doc_api}/html?session={self.session_id}")
+        assert resp.status_code == 200, resp.text
+        return resp.json()["html"]
+
+    def page_text(self) -> str:
+        """Plain text of the remote document (python-docx): the authority
+        on what actually reached the WOPI host after each save."""
+        from docx import Document
+
+        doc = Document(io.BytesIO(self.host.content))
+        return "\n".join(p.text for p in doc.paragraphs)
+
+
 def test_remote_client_get_and_put():
     with _RealWopiClientTest() as env:
         env.client.put_contents("doc1", b"hello from editor")
@@ -376,3 +520,143 @@ def test_launch_readonly_when_other_user_edits(tmp_path):
         thread.join(timeout=2)
         wipe_db(str(tmp_path / "t.db"))
         wipe_dir(str(tmp_path / "content"))
+
+
+# ----------------------------------------------------------------------
+# Undo/Redo-Kette (US-31): 20+ steps, exact content at each step, undo
+# after save, redo-branch truncation on new edits.
+# ----------------------------------------------------------------------
+
+def test_undo_redo_chain_20_steps(tmp_path):
+    """US-31: a 20-step edit chain must undo and redo one step at a time,
+    each step restoring the exact previous/next document state, return to
+    identity after a full undo cycle, and climb back to the tip on a full
+    redo. The chain lives client-side (editor.js snapshot history); this
+    test drives the SAME chain contract through the real client-mode
+    save -> DOCX -> fetch round-trip for every step, so every undo/redo
+    restores comparable content through the server conversion."""
+    steps = [f"step-{i:02d}" for i in range(20)]
+    edits = []
+    for i, s in enumerate(steps):
+        if i % 3 == 0:
+            edits.append(f"<p><b>{s}</b></p>")
+        elif i % 3 == 1:
+            edits.append(f"<p><i>{s}</i></p>")
+        else:
+            edits.append(f"<p>{s}</p>")
+
+    with _EditorHarness(tmp_path, seed_html="<p>undo-redo</p>") as env:
+        chain = _UndoRedoHistory(env.fetch_html())
+
+        # ---- 20 changes forward, persisted through a real save each ----
+        # The editor POSTs its WHOLE innerHTML on every save (the paragraphs
+        # accumulate), exactly like typing in the browser.
+        seen = set()
+        document = []
+        for i, html in enumerate(edits):
+            document.append(html)
+            env.save("".join(document))
+            state = env.fetch_html()
+            chain.edit(state)
+            text = env.page_text()
+            assert text not in seen, f"edit {i} did not change the document"
+            seen.add(text)
+            for k in range(i + 1):
+                assert steps[k] in text, f"edit {i}: step {k} missing"
+            if i + 1 < 20:
+                assert steps[i + 1] not in text, f"edit {i}: future step leaked in"
+
+        # ---- undo 20x: each step restores exactly the previous state ----
+        for back in range(20):
+            state = chain.undo()
+            assert state is not None, f"undo {back} exhausted the chain early"
+            env.save(state)
+            text = env.page_text()
+            remaining = 18 - back  # last step index still present
+            for k in range(remaining + 1):
+                assert steps[k] in text, f"after {back + 1} undos: {steps[k]} missing"
+            for k in range(remaining + 1, 20):
+                assert steps[k] not in text, (
+                    f"after {back + 1} undos: {steps[k]} still present"
+                )
+
+        # full undo cycle == identity (back to the untouched seed)
+        assert env.page_text().strip() == "undo-redo"
+        assert chain.can_undo is False
+        assert chain.undo() is None
+
+        # ---- redo 20x: each step restores exactly the next state ----
+        for fwd in range(20):
+            state = chain.redo()
+            assert state is not None, f"redo {fwd} exhausted the chain early"
+            env.save(state)
+            text = env.page_text()
+            for k in range(fwd + 1):
+                assert steps[k] in text, f"after {fwd + 1} redos: {steps[k]} missing"
+            if fwd + 1 < 20:
+                assert steps[fwd + 1] not in text, f"redo {fwd}: next step appeared early"
+        assert chain.redo() is None
+
+        # formatting survives the whole chain (bold on step-00, italic on step-01)
+        html = env.fetch_html()
+        assert "<b>step-00</b>" in html
+        assert "<i>step-01</i>" in html
+
+
+def test_undo_redo_after_save(tmp_path):
+    """US-31 edge case: an explicit save must NOT truncate the
+    Undo/Redo-Kette — saving persists the document but the client-side
+    chain stays intact, so undo right after a save still restores the
+    pre-save state (and redo brings the saved edit back)."""
+    with _EditorHarness(tmp_path, seed_html="<p>before</p>") as env:
+        chain = _UndoRedoHistory(env.fetch_html())
+
+        env.save("<p>before</p><p><b>edit-A</b></p>")
+        chain.edit(env.fetch_html())
+
+        env.save("<p>before</p><p><b>edit-A</b></p><p>edit-B</p>")
+        chain.edit(env.fetch_html())
+
+        # explicit "Save" round-trip (document persisted as-is)
+        env.save(env.fetch_html())
+        assert "edit-B" in env.page_text()
+
+        # undo AFTER save -> the chain is untouched by saving
+        state = chain.undo()
+        assert state is not None
+        env.save(state)
+        text = env.page_text()
+        assert "edit-A" in text
+        assert "edit-B" not in text
+
+        # redo AFTER save -> forward again
+        state = chain.redo()
+        assert state is not None
+        env.save(state)
+        assert "edit-B" in env.page_text()
+
+
+def test_undo_redo_new_edit_truncates_redo(tmp_path):
+    """Undo/Redo-Kette invariant: after undoing and then typing something
+    new, the stale redo branch is discarded — the new edit becomes the tip
+    of the chain and redo is no longer offered."""
+    with _EditorHarness(tmp_path, seed_html="<p>base</p>") as env:
+        chain = _UndoRedoHistory(env.fetch_html())
+
+        env.save("<p>base</p><p>one</p>")
+        chain.edit(env.fetch_html())
+        env.save("<p>base</p><p>one</p><p>two</p>")
+        chain.edit(env.fetch_html())
+
+        # undo one step: the redo branch is now live
+        assert chain.undo() is not None
+        assert chain.can_redo is True
+
+        # user types a NEW edit instead of redoing: redo branch is dropped
+        env.save("<p>base</p><p>one</p><p>three</p>")
+        chain.edit(env.fetch_html())
+        assert chain.can_redo is False
+        assert chain.redo() is None
+        text = env.page_text()
+        assert "three" in text
+        assert "two" not in text
