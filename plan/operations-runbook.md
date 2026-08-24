@@ -136,6 +136,45 @@ The `job` and `operation` dashboard variables are wired into every query; set `j
 
 ---
 
+## Document Formats (DOCX + ODT)
+
+The Python docserver (`opencloud-docserver`) is the single editing surface for both
+Microsoft Word (`.docx`) and OpenDocument Text (`.odt`) files:
+
+| Format | Converter pair | Library | MIME type |
+|---|---|---|---|
+| DOCX | `docx_to_html` / `html_to_docx` | python-docx | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` |
+| ODT | `odt_to_html` / `html_to_odt` | odfpy (`odfpy>=1.4`) | `application/vnd.oasis.opendocument.text` |
+
+The format is routed by file extension (from the WOPI `BaseFileName`); `.docx` is the
+fallback for unknown extensions. The WOPI discovery XML advertises `view`/`edit` for
+both extensions, so OpenCloud routes both file types into the same editor.
+
+### ODT-specific operational notes
+
+- **Editing flow** is identical to DOCX: OpenCloud launches the editor, the server
+  converts the ODF package to HTML, and on save re-encodes the HTML back into an ODT
+  package before PUT to the WOPI host.
+- **Round-trip scope** (preserved): paragraphs, headings, bold/italic/underline, lists
+  (incl. nested), tables, alignment, links, and images (as `data:` URIs in HTML and
+  packaged `draw:frame`/`draw:image` in the ODT). Anything outside that subset is
+  lossy — conversion is web-canvas-oriented, not print-fidelity.
+- **Dependency**: `odfpy` must be present in the deployed image/venv. If an install
+  drops it, ODT opens fail with a 500 `conversion failed: No module named 'odf'` on
+  `GET /api/documents/{id}/html`. Rebuild/redeploy with `uv sync` and verify,
+  then re-open the affected file.
+- **Troubleshooting**: conversion failures surface as HTTP 500 with a JSON body
+  `{"error": "conversion failed: ..."}` on the `html`/`save` endpoints — check the
+  docserver logs for the traceback, and the Docserver Health dashboard for a spike
+  in 5xx responses. Content-type mismatches (`.odt` served as
+  `application/octet-stream`) indicate a stale `CONTENT_TYPES` map in
+  `src/wopi/router.py` after an upgrade.
+- **Monitoring**: watch the `opencloud_docserver_wopi_request_duration_seconds` and
+  `opencloud_docserver_wopi_requests_total{status="5xx"}` series for the `html`/`save`
+  operations to catch converter regressions or oversized ODT files.
+
+---
+
 ## Incident Response
 
 ### Service Unhealthy
@@ -155,6 +194,18 @@ Storage service stores blobs on Docker volumes. Monitor:
 df -h /var/lib/docker/volumes
 du -sh /var/lib/docker/volumes/wo_storage_data
 ```
+
+### ODT / Conversion Failure
+
+1. Read the failing request: `curl -i <docserver>/api/documents/<id>/html` and check the
+   HTTP status + JSON error body.
+2. Pull the traceback: `docker compose logs docserver | grep -A5 'conversion failed'`.
+3. Common root causes:
+   - `odfpy` missing from the image/venv (module import error) — redeploy with deps.
+   - Corrupt/truncated ODT package (`zipfile.BadZipFile`) — ask the user to re-upload.
+   - Oversized document hitting the 128 MiB WOPI `MAX_FILE_SIZE` limit.
+4. After fixing, re-verify with a known-good `.odt` round-trip (open → edit → save)
+   before closing the incident.
 
 ### High Memory
 

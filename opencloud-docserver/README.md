@@ -8,6 +8,7 @@ integrated via the [WOPI](https://learn.microsoft.com/en-us/microsoft-365/cloud-
 - Python 3.12 + FastAPI — no Rust, no TypeScript, no WASM, no build step
 - Vanilla JS editor — zero npm dependencies
 - SQLite — a storage ledger, not a database server
+- DOCX **and** ODT editing — one editor, python-docx and odfpy
 - Single Docker image or a plain systemd unit
 
 ## Quick start (local)
@@ -27,6 +28,13 @@ uv run uvicorn src.main:app --reload
 # From a Python shell with `uv run python`:
 from docx import Document
 Document().add_paragraph("Stoic dogcow test").save("sample.docx")
+
+# Or the same for OpenDocument Text — .odt files work identically:
+from odf.opendocument import OpenDocumentText
+from odf.text import P
+doc = OpenDocumentText()
+doc.text.addElement(P(text="Stoic dogcow ODT"))
+doc.save("sample.odt")
 
 # Upload it:
 curl -s -F "file=@sample.docx" http://localhost:8000/api/upload
@@ -52,10 +60,53 @@ open http://localhost:8000/editor/sample.docx
 | Method | Path                              | Purpose                     |
 |--------|-----------------------------------|-----------------------------|
 | GET    | `/editor/{id}`                    | The web editor page         |
-| GET    | `/api/documents/{id}/html`        | DOCX as editable HTML       |
-| POST   | `/api/documents/{id}/save`        | Save HTML back to DOCX      |
+| GET    | `/api/documents/{id}/html`        | DOCX/ODT as editable HTML   |
+| POST   | `/api/documents/{id}/save`        | Save HTML back to DOCX/ODT  |
 | POST   | `/api/upload`                     | Create a document           |
 | GET    | `/api/documents`                  | List documents              |
+
+## Document formats
+
+The editor is a canvas-native web page — it does **not** attempt
+pagination or print fidelity. Documents round-trip through HTML in the
+browser and are re-encoded server-side on save. The format is routed by
+file extension (resolved from the WOPI `BaseFileName` at launch, or the
+local store name); `.docx` is the fallback for unknown extensions.
+
+| Format | Converter pair                 | Library    | MIME type                                              |
+|--------|--------------------------------|------------|--------------------------------------------------------|
+| DOCX   | `docx_to_html` / `html_to_docx` | python-docx | `application/vnd.openxmlformats-officedocument.wordprocessingml.document` |
+| ODT    | `odt_to_html` / `html_to_odt`   | odfpy      | `application/vnd.oasis.opendocument.text`             |
+
+### ODT support
+
+OpenDocument Text (`.odt`) is a first-class citizen:
+
+- **Read** — `GET /api/documents/{id}/html` detects the `.odt` extension
+  and converts the ODF package to editable HTML (`odt_to_html`).
+- **Write** — `POST /api/documents/{id}/save` re-encodes the edited HTML
+  into a valid ODT package (`html_to_odt`) before PUT to the WOPI host.
+- **Discovery** — the WOPI discovery XML advertises `view` and `edit`
+  actions for the `odt` extension, so OpenCloud offers ODT files to the
+  editor (`.docx` was already there).
+- **MIME type** — the WOPI host router serves ODT with the proper
+  `application/vnd.oasis.opendocument.text` content type.
+
+What survives the ODT round-trip: text and paragraphs, headings,
+bold/italic/underline, bullet and numbered lists (nested included),
+tables (multi-column, covered cells, ragged rows), left/center/right
+alignment, links, and images. Images are self-contained: they live as
+`data:` URIs in the browser HTML and as `draw:frame` / `draw:image`
+(package-embedded, via `Pictures/` members or `office:binary-data`) in
+the ODT package; `alt` text is preserved through the ODF-standard
+`svg:title` on the `draw:frame`.
+
+Conversion is deliberately lossy where web HTML is richer than the mapped
+ODT subset — content the editor neither produces nor consumes is not
+preserved. See `src/editor/odt_converter.py` for the exact mapping.
+
+**Dependency:** `odfpy>=1.4` (declared in `pyproject.toml`). Install with
+`uv sync`.
 
 ## OpenCloud (OCIS) integration
 
