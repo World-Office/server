@@ -22,6 +22,14 @@
  *   matches and replaces one occurrence or all of them via
  *   document.execCommand("insertText") so native undo + the snapshot chain
  *   stay consistent. Find works in read-only documents; replace is disabled.
+ * - Full toolbar: paragraph alignment (justifyLeft/Center/Right/Full),
+ *   font size/family, text color + highlight, strikethrough, indent/
+ *   outdent and line spacing. Style-producing commands run with
+ *   styleWithCSS so they emit span[style] (which the server sanitizer
+ *   keeps) instead of <font> tags (which it strips); every formatting
+ *   command routes through the wo-command event bus into runCommand().
+ * - Alignment + spacing also have Word/LibreOffice-style shortcuts:
+ *   Ctrl+E center, Ctrl+J justify, Ctrl+R right, Ctrl+Shift+L left.
  * - Internationalized via /static/i18n.js
  */
 
@@ -95,9 +103,73 @@
       if (bucket[k] === undefined) bucket[k] = FIND_UI_STRINGS[k];
     });
   }
+  // Same pattern for the full-toolbar strings (alignment, font, layout):
+  // the catalog (i18n.js) is updated separately, so seed English fallbacks
+  // here so the data-i18n-title markers render real labels.
+  const TOOLBAR_UI_STRINGS = {
+    "Toolbar.Strikethrough": "Strikethrough",
+    "Toolbar.StrikethroughTitle": "Strikethrough",
+    "Toolbar.FontSize": "Font size",
+    "Toolbar.FontSizeTitle": "Font size",
+    "Toolbar.FontFamily": "Font family",
+    "Toolbar.FontFamilyTitle": "Font family",
+    "Toolbar.TextColor": "Text color",
+    "Toolbar.TextColorTitle": "Text color",
+    "Toolbar.Highlight": "Highlight color",
+    "Toolbar.HighlightTitle": "Highlight color",
+    "Toolbar.AlignLeft": "Align left",
+    "Toolbar.AlignLeftTitle": "Align left (Ctrl+Shift+L)",
+    "Toolbar.AlignCenter": "Center",
+    "Toolbar.AlignCenterTitle": "Center (Ctrl+E)",
+    "Toolbar.AlignRight": "Align right",
+    "Toolbar.AlignRightTitle": "Align right (Ctrl+R)",
+    "Toolbar.AlignJustify": "Justify",
+    "Toolbar.AlignJustifyTitle": "Justify (Ctrl+J)",
+    "Toolbar.Indent": "Increase indent",
+    "Toolbar.IndentTitle": "Increase indent",
+    "Toolbar.Outdent": "Decrease indent",
+    "Toolbar.OutdentTitle": "Decrease indent",
+    "Toolbar.LineSpacing": "Line spacing",
+    "Toolbar.LineSpacingTitle": "Line spacing",
+  };
+  const TOOLBAR_UI_STRINGS_DE = {
+    "Toolbar.Strikethrough": "Durchgestrichen",
+    "Toolbar.StrikethroughTitle": "Durchgestrichen",
+    "Toolbar.FontSize": "Schriftgröße",
+    "Toolbar.FontSizeTitle": "Schriftgröße",
+    "Toolbar.FontFamily": "Schriftart",
+    "Toolbar.FontFamilyTitle": "Schriftart",
+    "Toolbar.TextColor": "Schriftfarbe",
+    "Toolbar.TextColorTitle": "Schriftfarbe",
+    "Toolbar.Highlight": "Hervorhebungsfarbe",
+    "Toolbar.HighlightTitle": "Hervorhebungsfarbe",
+    "Toolbar.AlignLeft": "Linksbündig",
+    "Toolbar.AlignLeftTitle": "Linksbündig (Strg+Umschalt+L)",
+    "Toolbar.AlignCenter": "Zentriert",
+    "Toolbar.AlignCenterTitle": "Zentriert (Strg+E)",
+    "Toolbar.AlignRight": "Rechtsbündig",
+    "Toolbar.AlignRightTitle": "Rechtsbündig (Strg+R)",
+    "Toolbar.AlignJustify": "Blocksatz",
+    "Toolbar.AlignJustifyTitle": "Blocksatz (Strg+J)",
+    "Toolbar.Indent": "Einzug vergrößern",
+    "Toolbar.IndentTitle": "Einzug vergrößern",
+    "Toolbar.Outdent": "Einzug verkleinern",
+    "Toolbar.OutdentTitle": "Einzug verkleinern",
+    "Toolbar.LineSpacing": "Zeilenabstand",
+    "Toolbar.LineSpacingTitle": "Zeilenabstand",
+  };
+  function seedToolbarStrings(tFn) {
+    const bucket = tFn && tFn.resources && tFn.resources[tFn.lng] && tFn.resources[tFn.lng].translation;
+    if (!bucket) return;
+    const pair = detectedLng.indexOf("de") === 0 ? TOOLBAR_UI_STRINGS_DE : TOOLBAR_UI_STRINGS;
+    Object.keys(pair).forEach((k) => {
+      if (bucket[k] === undefined) bucket[k] = pair[k];
+    });
+  }
   const t = (window.createI18n && window.createI18n({ lng: detectedLng })) || ((k) => k);
   seedUiStrings(t);
   seedFindStrings(t);
+  seedToolbarStrings(t);
   // Localize static HTML (toolbar tooltips, Save label, ready status) and
   // keep the <html lang> attribute in sync for a11y & spell-check.
   if (window.applyTranslations) {
@@ -114,6 +186,9 @@
     saveBtn.disabled = true;
     const toolbar = document.getElementById("toolbar");
     if (toolbar) toolbar.querySelectorAll("button").forEach((b) => (b.disabled = true));
+    // The full-toolbar selects (font size/family, line spacing) and color
+    // pickers are form controls, not buttons — disable them too.
+    if (toolbar) toolbar.querySelectorAll("select, input[type='color']").forEach((el) => (el.disabled = true));
     // Finding (Ctrl+F) never mutates the document, so it stays available in
     // read-only documents; the dialog's replace controls handle the rest.
     const findBtnReadonly = document.getElementById("btn-find");
@@ -253,6 +328,14 @@
       updateUndoRedoState();
       return;
     }
+    // Line spacing is not an execCommand; it is applied to the block(s)
+    // under the selection directly (see applyLineHeight below).
+    if (cmd === "lineHeight") {
+      applyLineHeight(value);
+      updateActiveStates();
+      updateUndoRedoState();
+      return;
+    }
     editor.focus();
     // Headings (formatBlock) replace the block under the caret. Pass the
     // spec-canonical lowercase tag name (a few engines are case-sensitive)
@@ -261,13 +344,67 @@
     // html===lastSnapshot guard keeps this a no-op when the event already ran.
     const isBlock =
       cmd === "formatBlock" && /^(H[1-6]|P)$/i.test(String(value || ""));
+    // Font size/family and color have no semantic tags (the sanitizer strips
+    // <font>), so run them with styleWithCSS on: the browser then emits
+    // span[style] with font-size/font-family/color/background-color, all
+    // properties the server sanitizer's whitelist keeps on save.
+    const isSpanStyle =
+      cmd === "fontSize" || cmd === "fontName" || cmd === "foreColor" ||
+      cmd === "hiliteColor" || cmd === "backColor";
+    if (isSpanStyle) {
+      try { document.execCommand("styleWithCSS", false, "true"); } catch (err) { /* best effort */ }
+    }
     document.execCommand(cmd, false, isBlock ? String(value).toLowerCase() : value || null);
-    if (isBlock) {
+    if (isSpanStyle) {
+      try { document.execCommand("styleWithCSS", false, "false"); } catch (err) { /* best effort */ }
+    }
+    // Structural + span-style commands don't fire a guaranteed `input`
+    // event on every engine, so arm dirty/history explicitly; the
+    // html===lastSnapshot guard keeps capture a no-op when the event ran.
+    if (isBlock || isSpanStyle || cmd === "indent" || cmd === "outdent" || /^justify/.test(cmd)) {
       markDirty();
       captureHistory();
     }
     updateActiveStates();
     updateUndoRedoState();
+  }
+
+  // Find the block-level element containing `node` (or null). Used by
+  // applyLineHeight and by updateActiveStates to reflect the line spacing
+  // at the caret. Same tag set as the find/replace BLOCK_TAGS constant.
+  function blockElementAt(node) {
+    let el = node;
+    while (el && el !== editor) {
+      if (el.nodeType === 1 && BLOCK_TAGS.indexOf(el.tagName) !== -1) return el;
+      el = el.parentNode;
+    }
+    return null;
+  }
+
+  // Line spacing: set the CSS line-height of the block(s) touched by the
+  // selection. The block gets `style="line-height: <n>;"`, which the server
+  // sanitizer whitelist allows; picking "1.0" removes the property (single
+  // spacing = the document default). Recorded as a single undoable step.
+  function applyLineHeight(value) {
+    if (READ_ONLY) return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    if (!editor.contains(range.startContainer)) return;
+    const blocks = [];
+    [range.startContainer, range.endContainer].forEach((node) => {
+      const b = blockElementAt(node);
+      if (b && b !== editor && blocks.indexOf(b) === -1) blocks.push(b);
+    });
+    if (blocks.length === 0) return;
+    const css = parseFloat(String(value));
+    const clear = !(css > 0) || css === 1; // "" or "1" -> reset to default
+    blocks.forEach((el) => {
+      if (clear) el.style.removeProperty("line-height");
+      else el.style.setProperty("line-height", String(css));
+    });
+    markDirty();
+    captureHistory();
   }
 
   // ------------------------------------------------------------------
@@ -365,6 +502,42 @@
       }
       btn.classList.toggle("active", !!active);
     });
+    // Mirror the formatting at the caret in the full-toolbar dropdowns
+    // (best effort — engines disagree on queryCommandValue formats, so a
+    // failed read simply leaves the current value in place).
+    const sizeEl = document.getElementById("font-size");
+    if (sizeEl) {
+      let size = "";
+      try { size = document.queryCommandValue("fontSize"); } catch (err) { /* best effort */ }
+      if (size && sizeEl.querySelector('option[value="' + size + '"]')) sizeEl.value = size;
+    }
+    const famEl = document.getElementById("font-family");
+    if (famEl) {
+      let fam = "";
+      try { fam = document.queryCommandValue("fontName"); } catch (err) { /* best effort */ }
+      fam = String(fam || "").replace(/^["']|["']$/g, "");
+      if (fam && famEl.querySelector('option[value="' + fam + '"]')) famEl.value = fam;
+    }
+    // Line spacing: resolve the block's computed line-height into the
+    // nearest preset in the dropdown (default 1.0 / single = placeholder).
+    const lsEl = document.getElementById("line-spacing");
+    if (lsEl) {
+      const sel = window.getSelection();
+      const blk = sel && sel.anchorNode ? blockElementAt(sel.anchorNode) : null;
+      let preset = "";
+      if (blk) {
+        try {
+          const cs = window.getComputedStyle(blk);
+          const fs = parseFloat(cs.fontSize) || 16;
+          const lh = cs.lineHeight;
+          if (lh && lh !== "normal") {
+            const mult = Math.round((parseFloat(lh) / fs) * 20) / 20;
+            if (lsEl.querySelector('option[value="' + mult + '"]')) preset = String(mult);
+          }
+        } catch (err) { /* best effort */ }
+      }
+      lsEl.value = preset;
+    }
   }
 
   function currentBlockTag() {
@@ -1023,6 +1196,38 @@
   document.getElementById("btn-find").addEventListener("click", openFindDialog);
   saveBtn.addEventListener("click", saveDocument);
 
+  // Full-toolbar controls: font size/family selects, text/highlight color
+  // pickers and the line-spacing select all emit through the wo-command
+  // event bus, so they share the exact same runCommand() code path as the
+  // buttons above. Color pickers fire on "change" (picker closed), not
+  // "input", so dragging inside the picker does not spam undo steps.
+  const fontSizeSel = document.getElementById("font-size");
+  if (fontSizeSel) fontSizeSel.addEventListener("change", () => {
+    if (READ_ONLY || !fontSizeSel.value) return;
+    emitCommand("fontSize", fontSizeSel.value);
+  });
+  const fontFamilySel = document.getElementById("font-family");
+  if (fontFamilySel) fontFamilySel.addEventListener("change", () => {
+    if (READ_ONLY || !fontFamilySel.value) return;
+    emitCommand("fontName", fontFamilySel.value);
+  });
+  const textColor = document.getElementById("text-color");
+  if (textColor) textColor.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    emitCommand("foreColor", textColor.value);
+  });
+  const highlightColor = document.getElementById("highlight-color");
+  if (highlightColor) highlightColor.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    emitCommand("hiliteColor", highlightColor.value);
+  });
+  const lineSpacingSel = document.getElementById("line-spacing");
+  if (lineSpacingSel) lineSpacingSel.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    emitCommand("lineHeight", lineSpacingSel.value);
+    lineSpacingSel.value = ""; // next updateActiveStates() re-reflects it
+  });
+
   // Find-and-replace dialog controls
   const findClose = document.getElementById("btn-find-close");
   const findReplaceBtn = document.getElementById("btn-find-replace");
@@ -1136,6 +1341,30 @@
       if (ev.shiftKey && (ev.code === "Digit7" || ev.code === "Digit8")) {
         ev.preventDefault();
         emitCommand(ev.code === "Digit8" ? "insertUnorderedList" : "insertOrderedList");
+        return;
+      }
+      // Paragraph alignment (Word / LibreOffice convention): Ctrl+E center,
+      // Ctrl+J justify, Ctrl+Shift+L left, Ctrl+R right. Ctrl+R overrides
+      // browser reload while focus is inside the editor — exactly what
+      // desktop word processors do; click outside the editor to reload.
+      if (k === "e") {
+        ev.preventDefault();
+        emitCommand("justifyCenter");
+        return;
+      }
+      if (k === "j") {
+        ev.preventDefault();
+        emitCommand("justifyFull");
+        return;
+      }
+      if (k === "l" && ev.shiftKey) {
+        ev.preventDefault();
+        emitCommand("justifyLeft");
+        return;
+      }
+      if (k === "r" && !ev.shiftKey) {
+        ev.preventDefault();
+        emitCommand("justifyRight");
         return;
       }
       if (k === "b" || k === "i" || k === "u") ev.preventDefault();
