@@ -23,6 +23,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.templating import Jinja2Templates
 
 from ..editor.converter import docx_to_html, html_to_docx
+from ..editor.sanitize import sanitize_html
 from ..editor.session import (
     EditorSession,
     RemoteWopiClient,
@@ -259,6 +260,9 @@ async def save_document(doc_id: str, request: Request) -> JSONResponse:
     except json.JSONDecodeError:
         return JSONResponse({"error": "invalid JSON"}, status_code=400)
     html = payload.get("html", "")
+
+    # Sanitize before conversion to prevent XSS
+    html = sanitize_html(html)
 
     session = _session_for(request, doc_id)
     if session and session.read_only:
