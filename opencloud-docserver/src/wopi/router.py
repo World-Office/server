@@ -136,17 +136,29 @@ def _require_lock_header(request: Request, store: DocumentStore, doc_id: str) ->
 
 @router.post("/wopi/files/{doc_id}/lock")
 async def lock_file(doc_id: str, request: Request) -> JSONResponse:
-    """WOPI Lock: acquire a lock unless another lock is held."""
+    """WOPI Lock: acquire a lock unless another lock is held.
+
+    Lock contention follows first-writer-wins: exactly one of several
+    simultaneous Lock requests succeeds, and every loser gets a 409 whose
+    ``X-WOPI-Lock`` header echoes the winner's token (per the WOPI spec) so
+    clients can adopt or back off. A Lock with the same token as the current
+    lock is a refresh and keeps the lock; an empty lock token is rejected
+    (WOPI lock tokens MUST be non-empty).
+    """
     store = _store_of(request)
     if store.get(doc_id) is None:
         return _wopi_error_response(WopiError(404, f"File not found: {doc_id}"))
     lock = request.headers.get(LOCK_HEADER, "")
+    if not lock:
+        return _wopi_error_response(WopiError(400, "Lock token must be non-empty"))
+
     current = store.get_lock(doc_id)
 
     if current:
         # Lock refresh if same token, otherwise conflict
         if lock == current:
-            return JSONResponse({})
+            # The spec requires Lock responses to echo the lock token.
+            return JSONResponse({}, headers={LOCK_HEADER: lock})
         return _lock_error(store, doc_id, current)
 
     user = request.query_params.get("user", "")

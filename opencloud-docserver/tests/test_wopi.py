@@ -1334,3 +1334,208 @@ class TestSanitizeEvasion:
         assert "1 &lt; 2" in out
         assert "3 &gt; 2" in out
         assert "A &amp; B" in out
+
+
+# ----------------------------------------------------------------------
+# WOPI Lock Contention — acceptance gate: -k "lock_contention"
+# ----------------------------------------------------------------------
+# The WOPI lock is what lets several editors fight over one document while
+# keeping a single writer.  These tests exercise the contention surface of
+# the host endpoints: two editors ("alice"/"bob") race for the same file.
+#
+# Invariants covered (WOPI spec):
+#   * Exactly one Lock wins; losers get 409 with the winner's token echoed
+#     in X-WOPI-Lock (so the loser can adopt or back off).
+#   * A Lock with the same token as the current lock is a refresh (200) and
+#     keeps the lock; Lock responses must echo the lock token.
+#   * Lock tokens MUST be non-empty; an empty token is rejected (400).
+#   * PutFile honours the lock: a wrong/missing token is rejected with 409
+#     and the saved content is never clobbered; a matching token succeeds
+#     and keeps the lock.
+#   * RefreshLock / Unlock with the wrong token are rejected (409) and never
+#     steal or drop the winner's lock.
+#   * GetLock reports the current holder; once the winner unlocks, the next
+#     editor can take the lock with a fresh token.
+
+
+class TestWopiLockContention:
+    @staticmethod
+    def _headers(token: str) -> dict:
+        return {"X-WOPI-Lock": token}
+
+    def test_lock_contention_single_winner(self, client):
+        """Only one of two contenders may acquire the lock."""
+        store = client.test_store  # type: ignore[attr-defined]
+        _seed_doc(client)
+
+        res_a = client.post("/wopi/files/doc1/lock", headers=self._headers("wo:alice:A"))
+        assert res_a.status_code == 200
+        assert res_a.headers.get("X-WOPI-Lock") == "wo:alice:A"
+
+        # bob's simultaneous attempt loses — 409 echoing alice's token
+        res_b = client.post("/wopi/files/doc1/lock", headers=self._headers("wo:bob:B"))
+        assert res_b.status_code == 409
+        assert res_b.headers.get("X-WOPI-Lock") == "wo:alice:A"
+
+        # the lock still belongs to alice
+        assert store.get_lock("doc1") == "wo:alice:A"
+
+    def test_lock_contention_same_token_is_a_refresh(self, client):
+        """A Lock with the holder's token refreshes (200) and keeps the lock."""
+        store = client.test_store  # type: ignore[attr-defined]
+        _seed_doc(client)
+        store.set_lock("doc1", "wo:alice:A", "alice")
+
+        res = client.post("/wopi/files/doc1/lock", headers=self._headers("wo:alice:A"))
+        assert res.status_code == 200
+        # spec: Lock responses must echo the lock token
+        assert res.headers.get("X-WOPI-Lock") == "wo:alice:A"
+        assert store.get_lock("doc1") == "wo:alice:A"
+
+    def test_lock_contention_loser_cannot_put(self, client):
+        """Bob's PutFile (missing or wrong lock) is rejected, content kept."""
+        store = client.test_store  # type: ignore[attr-defined]
+        original = _docx_bytes("Alice original")
+        _seed_doc(client, data=original)
+        store.set_lock("doc1", "wo:alice:A", "alice")
+
+        # no lock header at all
+        res = client.post("/wopi/files/doc1/contents", content=_docx_bytes("Bob clobber"))
+        assert res.status_code == 409
+        assert res.headers.get("X-WOPI-Lock") == "wo:alice:A"
+
+        # wrong lock token
+        bob = _docx_bytes("Bob clobber 2")
+        res = client.post(
+            "/wopi/files/doc1/contents", content=bob, headers=self._headers("wo:bob:B")
+        )
+        assert res.status_code == 409
+        assert res.headers.get("X-WOPI-Lock") == "wo:alice:A"
+
+        # neither attempt reached the document
+        assert store.get_content("doc1") == original
+
+        # alice with the matching token still saves
+        alice_final = _docx_bytes("Alice final")
+        res = client.post(
+            "/wopi/files/doc1/contents",
+            content=alice_final,
+            headers=self._headers("wo:alice:A"),
+        )
+        assert res.status_code == 200
+        assert store.get_content("doc1") == alice_final
+
+    def test_lock_contention_refresh_rejected_for_loser(self, client):
+        """Only the holder can extend the lock lease."""
+        store = client.test_store  # type: ignore[attr-defined]
+        _seed_doc(client)
+        store.set_lock("doc1", "wo:alice:A", "alice")
+
+        res = client.post(
+            "/wopi/files/doc1/refreshlock", headers=self._headers("wo:bob:B")
+        )
+        assert res.status_code == 409
+        assert res.headers.get("X-WOPI-Lock") == "wo:alice:A"
+        assert store.get_lock("doc1") == "wo:alice:A"
+
+        res = client.post(
+            "/wopi/files/doc1/refreshlock", headers=self._headers("wo:alice:A")
+        )
+        assert res.status_code == 200
+        assert res.headers.get("X-WOPI-Lock") == "wo:alice:A"
+        assert store.get_lock("doc1") == "wo:alice:A"
+
+    def test_lock_contention_unlock_rejected_for_loser(self, client):
+        """A loser cannot unlock — the winner's lock survives the attack."""
+        store = client.test_store  # type: ignore[attr-defined]
+        _seed_doc(client)
+        store.set_lock("doc1", "wo:alice:A", "alice")
+
+        res = client.post("/wopi/files/doc1/unlock", headers=self._headers("wo:bob:B"))
+        assert res.status_code == 409
+        assert res.headers.get("X-WOPI-Lock") == "wo:alice:A"
+        assert store.get_lock("doc1") == "wo:alice:A"
+
+        # the holder unlocks cleanly
+        res = client.post("/wopi/files/doc1/unlock", headers=self._headers("wo:alice:A"))
+        assert res.status_code == 200
+        assert store.get_lock("doc1") == ""
+
+    def test_lock_contention_getlock_reports_holder(self, client):
+        """GetLock must surface the current lock token to contenders."""
+        store = client.test_store  # type: ignore[attr-defined]
+        _seed_doc(client)
+        store.set_lock("doc1", "wo:alice:A", "alice")
+
+        res = client.post("/wopi/files/doc1/getlock")
+        assert res.status_code == 200
+        assert res.headers.get("X-WOPI-Lock") == "wo:alice:A"
+
+    def test_lock_contention_empty_token_rejected(self, client):
+        """WOPI lock tokens must be non-empty — a blank Lock is refused."""
+        store = client.test_store  # type: ignore[attr-defined]
+        _seed_doc(client)
+
+        res = client.post("/wopi/files/doc1/lock", headers=self._headers(""))
+        assert res.status_code == 400
+        assert store.get_lock("doc1") == ""
+
+    def test_lock_contention_relock_after_unlock(self, client):
+        """Once the winner unlocks, the next editor takes the lock."""
+        store = client.test_store  # type: ignore[attr-defined]
+        _seed_doc(client)
+
+        res = client.post("/wopi/files/doc1/lock", headers=self._headers("wo:alice:A"))
+        assert res.status_code == 200
+        store.release_lock("doc1")
+
+        res = client.post("/wopi/files/doc1/lock", headers=self._headers("wo:bob:B"))
+        assert res.status_code == 200
+        assert store.get_lock("doc1") == "wo:bob:B"
+
+    def test_lock_contention_put_keeps_lock(self, client):
+        """A successful save does not drop the lock mid-edit-session."""
+        store = client.test_store  # type: ignore[attr-defined]
+        _seed_doc(client)
+        store.set_lock("doc1", "wo:alice:A", "alice")
+
+        res = client.post(
+            "/wopi/files/doc1/contents",
+            content=_docx_bytes("More work"),
+            headers=self._headers("wo:alice:A"),
+        )
+        assert res.status_code == 200
+        assert store.get_lock("doc1") == "wo:alice:A"
+
+    def test_lock_contention_handoff_write_cycle(self, client):
+        """End-to-end: alice locks/edits/unlocks, then bob takes over."""
+        store = client.test_store  # type: ignore[attr-defined]
+        v0 = _docx_bytes("v0")
+        _seed_doc(client, data=v0)
+        assert store.get_content("doc1") == v0
+
+        # alice: lock -> write -> unlock
+        res = client.post("/wopi/files/doc1/lock", headers=self._headers("wo:alice:A"))
+        assert res.status_code == 200
+        v1 = _docx_bytes("v1 alice")
+        res = client.post(
+            "/wopi/files/doc1/contents", content=v1, headers=self._headers("wo:alice:A")
+        )
+        assert res.status_code == 200
+        assert store.get_content("doc1") == v1
+        res = client.post("/wopi/files/doc1/unlock", headers=self._headers("wo:alice:A"))
+        assert res.status_code == 200
+        assert store.get_lock("doc1") == ""
+
+        # bob: lock (fresh token) -> write -> unlock
+        res = client.post("/wopi/files/doc1/lock", headers=self._headers("wo:bob:B"))
+        assert res.status_code == 200
+        v2 = _docx_bytes("v2 bob")
+        res = client.post(
+            "/wopi/files/doc1/contents", content=v2, headers=self._headers("wo:bob:B")
+        )
+        assert res.status_code == 200
+        assert store.get_content("doc1") == v2
+        res = client.post("/wopi/files/doc1/unlock", headers=self._headers("wo:bob:B"))
+        assert res.status_code == 200
+        assert store.get_lock("doc1") == ""
