@@ -14,10 +14,14 @@ from __future__ import annotations
 import io
 import json
 import random
+import socket
 import threading
+import time
 from contextlib import asynccontextmanager
 
+import httpx
 import pytest
+import uvicorn
 from docx import Document
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -66,6 +70,38 @@ def client(tmp_path):
     with TestClient(app) as c:
         c.test_store = store  # type: ignore[attr-defined]
         yield c
+    wipe_db(str(tmp_path / "t.db"))
+    wipe_dir(str(tmp_path / "content"))
+    reset_hub()
+
+
+@pytest.fixture
+def server_client(tmp_path):
+    """A client over a real ASGI server. TestClient deadlocks on SSE streams
+    (external-thread + internal event loop), so realtime tests need a real
+    uvicorn server. ``test_store`` is still attached for direct seeding."""
+    reset_hub()
+    app, store = _make_app(tmp_path)
+    sock = socket.socket()
+    sock.bind(("127.0.0.1", 0))
+    app_port = sock.getsockname()[1]
+    sock.close()
+    cfg = uvicorn.Config(app, host="127.0.0.1", port=app_port, log_level="error")
+    srv = uvicorn.Server(cfg)
+    threading.Thread(target=srv.run, daemon=True).start()
+    deadline = time.time() + 10
+    while time.time() < deadline:
+        try:
+            with socket.create_connection(("127.0.0.1", app_port), timeout=0.5):
+                break
+        except OSError:
+            time.sleep(0.05)
+    c = httpx.Client(base_url=f"http://127.0.0.1:{app_port}")
+    c.test_store = store  # type: ignore[attr-defined]
+    yield c
+    c.close()
+    srv.should_exit = True
+    time.sleep(0.2)
     wipe_db(str(tmp_path / "t.db"))
     wipe_dir(str(tmp_path / "content"))
     reset_hub()
@@ -142,6 +178,7 @@ def test_local_insert_generates_and_integrates_op():
 def test_local_insert_middle():
     crdt = TextCRDT("site-A", initial_text="Hello world")
     op = crdt.local_insert(5, " beautiful")
+    assert op["chars"] == " beautiful"
     assert crdt.to_string() == "Hello beautiful world"
 
 
@@ -406,6 +443,7 @@ def test_hub_catchup_replay_from_base_rev():
     op_a = a.local_insert(0, "AAA")
     hub.apply_ops("doc.docx", "A", [op_a])
     rev1 = hub.rev("doc.docx")
+    assert rev1 == 1
     # client B has seen nothing yet (rev 0) and submits an insert; the reply
     # must heal B's gap with A's op too.
     op_b = b.local_insert(0, "BBB")
@@ -540,7 +578,9 @@ def test_state_endpoint_seeds_from_store(client):
     assert resp.status_code == 200
     data = resp.json()
     assert data["doc_id"] == "doc.docx"
-    assert data["text"] == "<p>Hello world</p>"
+    # The collaboration base is plain text (not HTML): CRDT positions are
+    # visible-character indices, exactly what a browser editor exposes.
+    assert data["text"] == "Hello world"
     assert data["rev"] == 1
     assert len(data["ops"]) == 1
 
@@ -548,7 +588,7 @@ def test_state_endpoint_seeds_from_store(client):
 def test_apply_ops_endpoint(client):
     _collab_base(client, text="Hello world")
     gen = _editor(client, "doc.docx", "editor-1")
-    op = gen.local_insert(3, "!")  # right after the opening <p>
+    op = gen.local_insert(3, "!")  # right after the 3rd visible char
     expected = gen.to_string()
     resp = client.post(
         "/api/documents/doc.docx/collab/ops",
@@ -638,18 +678,24 @@ def test_apply_ops_invalid_json_returns_400(client):
     assert resp.status_code == 400
 
 
-def test_sse_stream_emits_initial_state(client):
+def test_sse_stream_emits_initial_state(server_client):
+    client = server_client
     _seed_store(client, "doc.docx", "stream seed")
     with client.stream("GET", "/api/documents/doc.docx/collab/stream") as resp:
         assert resp.status_code == 200
         assert resp.headers["content-type"].startswith("text/event-stream")
-        lines = "".join(resp.iter_text())
+        lines = ""
+        for line in resp.iter_lines():
+            lines += line + "\n"
+            if "data:" in lines:
+                break  # the SSE stream is endless — stop after the snapshot
     assert "event: state" in lines
     assert "stream seed" in lines
 
 
-def test_sse_stream_receives_live_ops(client):
+def test_sse_stream_receives_live_ops(server_client):
     """A subscribed client receives ops pushed by another editor."""
+    client = server_client
     _seed_store(client, "doc.docx", "live")
     received: list[str] = []
     marker = "liveop"

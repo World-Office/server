@@ -507,18 +507,39 @@ async def upload_document(file: UploadFile, request: Request) -> JSONResponse:
 
 def _collab_base_text(request: Request, doc_id: str) -> str:
     """Best-effort baseline for a document's collaboration state: the bytes
-    currently in the store (or the remote WOPI host) converted to HTML, so a
-    freshly touched collaboration state reflects the document as it exists.
-    Returns "" when there is nothing to seed from yet."""
+    currently in the store (or the remote WOPI host) converted to **plain
+    text** (HTML markup stripped, entities decoded), so a freshly touched
+    collaboration state reflects the visible document as it exists.
+
+    Plain text (not HTML) is the correct base for character-level CRDT
+    edits: cursor positions and insert indices are expressed in visible
+    characters, exactly what a browser editor exposes. Seeding HTML would
+    make concurrent inserts land outside the tags and break persistence.
+    Returns "" when there is nothing to seed from yet.
+    """
     data = _load_bytes(request, doc_id)
     if not data:
         return ""
     try:
         if _document_format(request, doc_id) == "odt":
-            return odt_to_html(data)
-        return docx_to_html(data)
+            html = odt_to_html(data)
+        else:
+            html = docx_to_html(data)
     except Exception:
         return ""
+    return _html_to_text(html)
+
+
+def _html_to_text(html: str) -> str:
+    """Strip HTML to plain text, turning block/line breaks into newlines
+    and decoding entities ("<p>A</p><p>B</p>" -> "A\\nB")."""
+    import re as _re
+    from html import unescape as _unescape
+
+    text = _re.sub(r"</p>\s*<p>", "\n", html)
+    text = _re.sub(r"</p>|<br\s*/?>", "\n", text)
+    text = _re.sub(r"<[^>]+>", "", text)
+    return _unescape(text).strip()
 
 
 @router.get("/api/documents/{doc_id}/collab/state")

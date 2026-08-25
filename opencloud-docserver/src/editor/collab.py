@@ -47,7 +47,7 @@ from __future__ import annotations
 import asyncio
 import json
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 # Root anchor: origin of the very first characters of a document.
 ROOT = ("", 0)
@@ -265,10 +265,11 @@ class TextCRDT:
             prev = origin
             for i, ch in enumerate(chars):
                 iid = (site, start + i)
-                prev = iid  # chain stays consistent even if this item was
                 if iid in self.items:
-                    continue  # already applied — idempotent
+                    prev = iid  # already applied — stay chained for later chars
+                    continue
                 self._add_item(Item(site, start + i, prev[0], prev[1], ch))
+                prev = iid
                 changed = True
             return changed
 

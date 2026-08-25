@@ -36,11 +36,14 @@ from __future__ import annotations
 import io
 import json
 import re
+import socket
 import threading
 import time
 from wsgiref.simple_server import make_server
 
+import httpx
 import pytest
+import uvicorn
 from docx import Document
 from fastapi.testclient import TestClient
 
@@ -190,7 +193,7 @@ class _E2EStack:
     (urllib) exactly like it would against a deployed OpenCloud.
     """
 
-    def __init__(self, tmp_path) -> None:
+    def __init__(self, tmp_path, mode: str = "testclient") -> None:
         self.host = _ProdOcisHost()
         self._httpd = make_server("127.0.0.1", 0, self.host)
         self.port = self._httpd.server_address[1]
@@ -202,15 +205,51 @@ class _E2EStack:
         content = str(tmp_path / "content")
         cfg = Config(database=db, content_dir=content, jwt_secret="test-secret")
         app = create_app(cfg)
-        self.client = TestClient(app)
-        self.client.__enter__()  # run lifespan (app.state.*)
+        self._mode = mode
+        if mode == "server":
+            # A real ASGI server (not TestClient): TestClient cannot serve
+            # SSE streams to external threads (deadlocks in the internal
+            # event loop), so realtime subscribers need this mode.
+            self._srv = self._start_uvicorn(app)
+            self.client = httpx.Client(base_url=f"http://127.0.0.1:{self._srv._app_port}")
+        else:
+            self._srv = None
+            self.client = TestClient(app)
+            self.client.__enter__()  # run lifespan (app.state.*)
         self._db, self._content = db, content
 
+    @staticmethod
+    def _start_uvicorn(app):
+        sock = socket.socket()
+        sock.bind(("127.0.0.1", 0))
+        app_port = sock.getsockname()[1]
+        sock.close()
+        cfg = uvicorn.Config(app, host="127.0.0.1", port=app_port, log_level="error")
+        srv = uvicorn.Server(cfg)
+        threading.Thread(target=srv.run, daemon=True).start()
+        # wait until the server actually accepts connections
+        deadline = time.time() + 10
+        while time.time() < deadline:
+            try:
+                with socket.create_connection(("127.0.0.1", app_port), timeout=0.5):
+                    break
+            except OSError:
+                time.sleep(0.05)
+        srv._app_port = app_port
+        return srv
+
     def close(self) -> None:
-        try:
-            self.client.__exit__(None, None, None)
-        except Exception:
-            pass
+        if self._mode == "server":
+            try:
+                self._srv.should_exit = True
+            except Exception:
+                pass
+            self.client.close()
+        else:
+            try:
+                self.client.__exit__(None, None, None)
+            except Exception:
+                pass
         self._httpd.shutdown()
         self._httpd.server_close()
         self._thread.join(timeout=2)
@@ -309,16 +348,28 @@ def stack(tmp_path):
     reset_hub()
 
 
+@pytest.fixture
+def server_stack(tmp_path):
+    """Like ``stack`` but over a real ASGI server — required for the SSE
+    realtime-push test (TestClient deadlocks on external-thread streams)."""
+    reset_hub()
+    s = _E2EStack(tmp_path, mode="server")
+    yield s
+    s.close()
+    reset_hub()
+
+
 # ----------------------------------------------------------------------
 # The E2E tests
 # ----------------------------------------------------------------------
 
 
-def test_text_sync_live_push_reaches_other_editor_under_200ms(stack):
+def test_text_sync_live_push_reaches_other_editor_under_200ms(server_stack):
     """US-42 exploration 1: user A types "Hello" -> user B's editor sees it
     within 200 ms. Bob is subscribed to the realtime SSE stream; Alice's
     keystrokes are shipped through POST /collab/ops; we time the gap from
     Alice's edit leaving her editor until Bob's editor receives the op."""
+    stack = server_stack
     stack.seed_and_launch("ts-live.docx", "Hello collaborative world", user="alice")
 
     alice = stack.join_editor("ts-live.docx", "site-alice")
@@ -345,9 +396,9 @@ def test_text_sync_live_push_reaches_other_editor_under_200ms(stack):
     # Wait until Bob's stream has delivered its initial `state` snapshot so
     # the measurement starts with a warm, live subscription.
     deadline = time.time() + 5
-    while time.time() < deadline and not any("event: state" in l for l in seen):
+    while time.time() < deadline and not any("event: state" in line for line in seen):
         time.sleep(0.005)
-    assert any("event: state" in l for l in seen), "stream never sent its initial state"
+    assert any("event: state" in line for line in seen), "stream never sent its initial state"
 
     # Alice types "TEXT-SYNC-LIVE" at the end of the shared text and ships
     # the op the way a browser editor does.
