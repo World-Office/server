@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import base64
 import io
+import logging
 import re
 from html import escape
 from html.parser import HTMLParser
@@ -713,8 +714,9 @@ def _add_image_run(paragraph, token: dict) -> None:
     try:
         run = paragraph.add_run()
         run.add_picture(io.BytesIO(content), **kwargs)
-    except Exception:
-        return  # corrupt/unsupported image bytes must not crash conversion
+    except Exception as exc:  # corrupt/unsupported image bytes must not crash conversion
+        logging.getLogger(__name__).warning("skipping un-embeddable image: %s", exc)
+        return
     alt = (token.get("alt") or "").strip()
     if alt:
         _set_drawing_alt(run._r, alt)

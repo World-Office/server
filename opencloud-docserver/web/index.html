@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#1e1e28">
   <title>{{ name }} — opencloud-docserver</title>
+  <link rel="manifest" href="/static/manifest.json">
   <link rel="stylesheet" href="/static/style.css">
   <style>
     /* Insert-image dialog styles (scoped here; style.css is maintained
@@ -249,5 +250,15 @@
   </script>
   <script src="/static/i18n.js"></script>
   <script src="/static/editor.js"></script>
+  <script>
+    // Register the service worker for offline support (offline-pwa feature).
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/static/sw.js').catch((err) => {
+          console.warn('SW registration failed:', err);
+        });
+      });
+    }
+  </script>
 </body>
 </html>
