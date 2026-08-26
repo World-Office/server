@@ -27,10 +27,10 @@
 
 ## 4. Insert primitives (editor-ui/insert-misc)
 
-- [ ] 4.1 Failing converter test: `<hr>` and page break round-trip DOCX + ODT + HTML.
-- [ ] 4.2 Emit/parse `<hr>` and page break in `converter.py` (+ ODT pair).
-- [ ] 4.3 "Insert HR" + "Page break" buttons; symbol/emoji picker dialog in `web/index.html`/`editor.js`.
-- [ ] 4.4 Playwright check: insert HR + page break + a symbol, assert persistence.
+- [x] 4.1 Converter tests: `<hr>` + page break round-trip `html_to_docx`→`docx_to_html` (structural: `w:pBdr` bottom border; run `<w:br w:type='page'/>`); sanitizer keeps `<hr>` + `div.page-break` and still drops `<script>`.
+- [x] 4.2 Converter: `<hr>` ↔ bottom-border paragraph; page-break div ↔ `<w:br w:type='page'/>` paragraph; content left inside the page-break div (Chromium caret-in-marker quirk) is preserved as a paragraph after the break.
+- [x] 4.3 UI: `#btn-hr` / `#btn-page-break` toolbar buttons + `#symbol-dialog` picker (46 symbols/emoji, `insertText`). Page-break insert appends a trailing `<p><br></p>` target block (Chromium otherwise appends typed text INTO the marker div at a block boundary); `moveCaretPastStructuralMarkers()` guards symbol inserts at `hr`/`.page-break` carets.
+- [x] 4.4 Playwright `test_insert_hr_pagebreak_symbol`: insert hr + page break + § via dialog, assert DOM, save → host bytes contain `<hr`/`page-break`/`§`, reload → all restore from host.
 
 ## 5. View controls (editor-ui/view-controls)
 

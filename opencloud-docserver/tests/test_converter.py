@@ -728,3 +728,53 @@ def test_docx_to_html_image_missing_picture_is_skipped():
     assert "before" in html and " after" in html
     assert "<img" not in html
 
+
+
+def test_html_to_docx_hr_and_page_break_roundtrip():
+    """<hr> and page break survive html_to_docx -> docx_to_html."""
+    html = (
+        "<p>before</p><hr/><p>middle</p>"
+        "<div class=\"page-break\"><br></div><p>after</p>"
+    )
+    out = docx_to_html(html_to_docx(html))
+    assert "<hr" in out, out
+    assert "page-break" in out, out
+    assert "before" in out and "after" in out, out
+
+
+def test_docx_hr_is_bottom_border_paragraph():
+    """An <hr> maps to a paragraph with a bottom border (w:pBdr)."""
+    doc = Document(io.BytesIO(html_to_docx("<p>a</p><hr/><p>b</p>")))
+    ps = doc.paragraphs
+    assert [p.text for p in ps] == ["a", "", "b"]
+    pBdr = ps[1]._p.pPr.find(qn("w:pBdr"))
+    assert pBdr is not None and pBdr.find(qn("w:bottom")) is not None
+
+
+def test_docx_page_break_is_br_type_page():
+    """A page-break div maps to a paragraph carrying <w:br w:type='page'/>."""
+    doc = Document(io.BytesIO(html_to_docx("<p>a</p><div class=\"page-break\"><br></div><p>b</p>")))
+    ps = doc.paragraphs
+    assert [p.text for p in ps] == ["a", "", "b"]
+    page_brs = [
+        br
+        for br in ps[1]._p.iter(qn("w:br"))
+        if (br.get(qn("w:type")) or "textWrapping") == "page"
+    ]
+    assert len(page_brs) == 1
+
+
+def test_sanitize_allows_hr_and_keeps_page_break_class():
+    """The sanitizer keeps <hr> and div.page-break (and drops the rest)."""
+    from src.editor.sanitize import sanitize_html
+
+    html = (
+        "<p>a</p><hr/>"
+        '<div class="page-break"><br></div>'
+        '<div class="evil"><script>alert(1)</script>x</div>'
+    )
+    out = sanitize_html(html)
+    assert "<hr" in out, out
+    assert 'class="page-break"' in out, out
+    assert "<script>" not in out, out
+    assert "alert(1)" not in out, out
