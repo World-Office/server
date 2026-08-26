@@ -1273,3 +1273,43 @@ def test_html_to_odt_nested_numbered_list_roundtrip():
     assert norm == (
         "<ol><li>one<ol><li>1.1</li></ol></li><li>two</li></ol>"
     ), norm
+
+
+def test_html_to_odt_hr_roundtrip():
+    """<hr> survives html_to_odt -> odt_to_html."""
+    odt = html_to_odt("<p>before</p><hr/><p>after</p>")
+    out = odt_to_html(odt)
+    assert "<p>before</p>" in out and "<p>after</p>" in out
+    assert "<hr" in out.replace("\n", ""), out
+
+
+def test_odt_hr_is_bottom_border_paragraph():
+    """The ODT <hr> maps to an empty paragraph with a bottom border."""
+    from odf.text import P
+
+    doc = load(io.BytesIO(html_to_odt("x<hr/>")))
+    paras = list(doc.text.getElementsByType(P))
+    by_text = {}
+    for p in paras:
+        txt = "".join(n.data for n in p.childNodes if n.nodeType == 3)
+        by_text[txt] = p
+    empty = [p for p in paras if not "".join(n.data for n in p.childNodes if n.nodeType == 3).strip()]
+    assert empty, "expected an empty paragraph for the <hr>"
+    p = empty[0]
+    assert p.getAttribute("stylename")
+    found = False
+    for s in (doc.automaticstyles, doc.styles):
+        for el in s.childNodes:
+            if el.getAttribute("name") == p.getAttribute("stylename"):
+                from odf.style import ParagraphProperties
+                props = el.getElementsByType(ParagraphProperties)
+                if props and (props[0].getAttribute("borderbottom") or props[0].getAttribute("border-bottom")):
+                    found = True
+    assert found, "expected a bottom border on the <hr> paragraph style"
+
+
+def test_special_symbol_and_date_roundtrip_odt():
+    """Literal symbol + ISO date strings survive the ODT round-trip."""
+    html = "<p>§ ¶ ★ 2026-08-26</p>"
+    out = odt_to_html(html_to_odt(html))
+    assert "§" in out and "¶" in out and "★" in out and "2026-08-26" in out

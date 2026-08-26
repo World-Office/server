@@ -389,20 +389,38 @@ def _parse_px(value) -> int | None:
     return int(m.group(1)) if m else None
 
 
+def _raw_attr(el, *names):
+    """Read an element attribute tolerating odfpy's name validation.
+
+    ``getAttribute`` rejects names it does not know about, but FO attrs like
+    ``fo:border-bottom`` are accessed by several spellings; walk the raw
+    attribute map instead.
+    """
+    wanted = {n.replace("-", "") for n in names}
+    for (ns, local), val in (getattr(el, "attributes", None) or {}).items():
+        if local.replace("-", "") in wanted:
+            return val
+    return None
+
+
 def _style_para_props(el):
     """Collect the paragraph properties of one style element."""
     for child in el.childNodes:
         if child.qname == (STYLENS, "paragraph-properties"):
             return {
-                "textalign": child.getAttribute("textalign"),
-                "lineheight": child.getAttribute("lineheight"),
-                "marginleft": child.getAttribute("marginleft"),
-                "marginright": child.getAttribute("marginright"),
-                "margintop": child.getAttribute("margintop"),
-                "marginbottom": child.getAttribute("marginbottom"),
-                "textindent": child.getAttribute("textindent"),
-                "breakbefore": child.getAttribute("breakbefore"),
-                "writingmode": child.getAttribute("writingmode"),
+                "textalign": _raw_attr(child, "textalign"),
+                "lineheight": _raw_attr(child, "lineheight"),
+                "marginleft": _raw_attr(child, "marginleft"),
+                "marginright": _raw_attr(child, "marginright"),
+                "margintop": _raw_attr(child, "margintop"),
+                "marginbottom": _raw_attr(child, "marginbottom"),
+                "textindent": _raw_attr(child, "textindent"),
+                "breakbefore": _raw_attr(child, "breakbefore"),
+                "writingmode": _raw_attr(child, "writingmode"),
+                "borderbottom": _raw_attr(child, "border-bottom", "borderbottom"),
+                "bordertop": _raw_attr(child, "border-top", "bordertop"),
+                "borderleft": _raw_attr(child, "border-left", "borderleft"),
+                "borderright": _raw_attr(child, "border-right", "borderright"),
             }
     return {}
 
@@ -428,7 +446,8 @@ def _build_para_resolver(doc):
         return {k: None for k in (
             "textalign", "lineheight", "marginleft", "marginright",
             "margintop", "marginbottom", "textindent", "breakbefore",
-            "writingmode",
+            "writingmode", "borderbottom", "bordertop", "borderleft",
+            "borderright",
         )}
 
     def resolve(name: str | None) -> dict:
@@ -543,9 +562,21 @@ def odt_to_html(data: bytes) -> str:
 def _paragraph_to_html(el, resolve, pictures, presolve=None) -> str:
     """Render a text:p or text:h element as a block-level HTML tag."""
     inner = _paragraph_inner_html(el, resolve, pictures)
+    pprops = presolve(el.getAttribute("stylename")) if presolve else None
+    # Horizontal rule: an EMPTY paragraph whose style has only a bottom
+    # border renders as <hr/> (mirror of the DOCX converter's heuristic).
+    if (
+        el.qname == (TEXTNS, "p")
+        and pprops
+        and pprops.get("borderbottom")
+        and not (pprops.get("bordertop") or pprops.get("borderleft")
+                 or pprops.get("borderright"))
+        and not inner.strip()
+    ):
+        return "<hr/>"
     attrs = ""
-    if presolve:
-        css = _para_css(presolve(el.getAttribute("stylename")))
+    if pprops:
+        css = _para_css(pprops)
         if css:
             attrs = ' style="' + ";".join(css) + '"'
     if el.qname == (TEXTNS, "h"):
@@ -808,6 +839,9 @@ def html_to_odt(html_fragment: str) -> bytes:
     ops = _tokenize_body(body)
     for op in ops:
         kind = op[0]
+        if kind == "hr":
+            w.add_hr()
+            continue
         if kind == "list":
             w.add_list(op[1])
             continue
@@ -884,6 +918,7 @@ class _OdtWriter:
         self._char_styles: dict[tuple[bool, bool, bool], str] = {}
         self._para_styles: dict[str, str] = {}
         self._ol_style: str | None = None
+        self._hr_style: str | None = None
         self._img_n = 0
 
     # -- character styles -------------------------------------------------
@@ -1071,6 +1106,17 @@ class _OdtWriter:
                 li.addElement(self._build_list(sub))
             list_el.addElement(li)
         return list_el
+
+    def add_hr(self) -> None:
+        """A horizontal rule: an empty paragraph with a bottom border."""
+        if self._hr_style is None:
+            self._hr_style = "WO_HrRule"
+            style = Style(name=self._hr_style, family="paragraph")
+            style.addElement(ParagraphProperties(borderbottom="0.6pt solid #555555"))
+            self.doc.automaticstyles.addElement(style)
+        el = P()
+        el.setAttribute("stylename", self._hr_style)
+        self.doc.text.addElement(el)
 
     def add_list(self, tree: dict) -> None:
         """Append a (possibly nested) list tree to the body.

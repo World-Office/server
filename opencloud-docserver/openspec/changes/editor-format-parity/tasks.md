@@ -46,8 +46,8 @@ TDD per category: write failing contract test → implement converter + UI → v
 - [ ] T25 implement header/footer (both converters) + editor.js
 
 ## insert
-- [ ] T26 contract test: horizontal-rule round-trips
-- [ ] T27 implement symbol/date-time/hr (converters + editor.js)
+- [x] T26 contract test: horizontal-rule round-trips — DOCX already green; ODT now `test_html_to_odt_hr_roundtrip` + `test_odt_hr_is_bottom_border_paragraph` (both directions); literal symbol/date chars round-trip by construction (`test_special_symbol_roundtrips_docx`, `test_special_symbol_and_date_roundtrip_odt`).
+- [x] T27 implement symbol/date-time/hr (converters + editor.js) — ODT `add_hr()` writes an empty paragraph styled `fo:border-bottom`; the reader detects a bottom-border-only EMPTY paragraph (`_raw_attr` reads FO attrs, incl. hyphenated border-bottom) and emits `<hr/>` — mirror of the DOCX heuristic. `btn-datetime` button + `insertDate` command (ISO date via execCommand insertText, structural-marker guard like insertSymbol). E2E `test_insert_hr_pagebreak_symbol` extended with the date.
 
 ## view / file / collaboration / tools (UI-only or collab)
 - [ ] T28 editor.js: zoom / dark-mode / fullscreen / print-layout
