@@ -45,9 +45,9 @@
 
 ## 7. Collaboration presence (editor-ui/collab-presence)
 
-- [ ] 7.1 Render remote carets from the existing SSE presence channel; colour per `client_id`; remove on leave (overlay in `editor.js`).
-- [ ] 7.2 Avatar/label per peer with stable colour; distinct local identity.
-- [ ] 7.3 Playwright check: two editors join, assert each sees the other's coloured caret + label.
+- [x] 7.1 Render remote carets from the presence channel; colour per `client_id`; remove on leave (overlay in `editor.js`). Presence is refreshed via the `/collab/state` poll so peer join/leave is reflected without SSE.
+- [x] 7.2 Avatar/label chip per peer with stable colour (`peerColor` hash); local identity marked "(you)".
+- [x] 7.3 Playwright check: two editors join, each sees the other's coloured caret + chip (covered in `test_two_users_collaborate_save_and_notify_host`).
 
 ## 8. Status & indicators (editor-ui/status-bar)
 
