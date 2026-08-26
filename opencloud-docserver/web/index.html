@@ -171,6 +171,8 @@
     <button id="btn-undo" data-cmd="undo" title="Undo (Ctrl+Z)" data-i18n-title="Toolbar.UndoTitle" aria-label="Undo" data-i18n-aria-label="Toolbar.Undo" aria-keyshortcuts="Control+Z">↶</button>
     <button id="btn-redo" data-cmd="redo" title="Redo (Ctrl+Y)" data-i18n-title="Toolbar.RedoTitle" aria-label="Redo" data-i18n-aria-label="Toolbar.Redo" aria-keyshortcuts="Control+Y Control+Shift+Z">↷</button>
     <span class="spacer"></span>
+    <!-- Live word/character count, announced politely as it changes. -->
+    <span id="word-count" class="status-meta" role="status" aria-live="polite"></span>
     <!-- role=status + aria-live=polite: the save/progress/error messages in
          the status bar are announced to screen readers as they change. -->
     <span id="status" class="status" role="status" aria-live="polite" data-i18n="Status.Ready">Ready</span>

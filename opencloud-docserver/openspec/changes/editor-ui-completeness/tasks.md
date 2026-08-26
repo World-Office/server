@@ -50,10 +50,12 @@
 
 ## 8. Status & indicators (editor-ui/status-bar)
 
-- [ ] 8.1 Status bar in `web/index.html` + live word/char count in `editor.js`.
-- [ ] 8.2 Save-status indicator (saved/saving/dirty) reflecting the actual WOPI PUT.
+- [x] 8.1 Status bar in `web/index.html` + live word/char count in `editor.js` (GREEN)
+- [x] 8.2 Save-status indicator (saved/saving/dirty) reflecting the actual WOPI PUT
+      (`#status` + `markDirty`/`saveDocument`; already wired)
 - [ ] 8.3 Offline indicator using the existing service worker; queue edits locally when host unreachable.
-- [ ] 8.4 Playwright check: type → count updates; edit after save → "unsaved" then "saved".
+- [x] 8.4 Playwright check: type → count updates; edit after save → "unsaved" then "saved"/"ready"
+      (`tests/e2e/test_cloud_editor_e2e.py::test_status_bar_word_count_and_save_indicator`)
 
 ## 9. Cross-cutting
 
