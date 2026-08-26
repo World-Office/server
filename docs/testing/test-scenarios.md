@@ -749,6 +749,160 @@ uv run pytest tests/e2e/test_pwa_offline.py -q
 
 ---
 
+#### US-61: Hyperlink einfügen und Roundtrip (Major)
+**Beschreibung**: Toolbar-Button + Dialog fügen einen Link über die Auswahl ein; der Link übersteht Speichern/Laden (DOCX `w:hyperlink` + externe Beziehung). Unsichere Schemes (`javascript:`) werden verworfen.
+
+**Acceptance-Test (automatisiert)**:
+```bash
+cd /home/weiss/git/World-Office/server/opencloud-docserver
+uv run pytest tests/e2e/test_cloud_editor_e2e.py -q -k insert_link
+uv run pytest tests/test_converter.py -q -k link
+```
+
+**Explorations-Schritte (manuell)**:
+1. Text markieren → 🔗 → URL eintragen → OK
+2. Link im Editor anklickbar?
+3. Speichern, neu laden → Link-Href erhalten?
+4. Edge-Case: `javascript:alert(1)` als URL → wird verworfen
+
+**Priorität**: Major
+
+---
+
+#### US-62: Textfarbe, Highlight, Hoch-/Tiefstellung (Major)
+**Beschreibung**: Farb- und Highlight-Picker sowie Superscript/Subscript-Buttons formatieren Runs; die Formatierung übersteht den DOCX-Roundtrip (`w:color`, `w:shd`, `vertAlign`). Der Sanitizer erlaubt nur sichere Farbwerte (`#rrggbb`/`rgb()`).
+
+**Acceptance-Test (automatisiert)**:
+```bash
+cd /home/weiss/git/World-Office/server/opencloud-docserver
+uv run pytest tests/e2e/test_cloud_editor_e2e.py -q -k format_color
+uv run pytest tests/test_converter.py -q -k color
+```
+
+**Explorations-Schritte (manuell)**:
+1. Text markieren → Farbe wählen
+2. Text markieren → Highlight wählen
+3. Text markieren → x² / x₂
+4. Speichern, neu laden → Formatierung erhalten?
+
+**Priorität**: Major
+
+---
+
+#### US-63: Tabellen-Zellen bearbeiten (Major)
+**Beschreibung**: „Tabellenaktionen“-Dialog (▦✎): Zeile/Spalte einfügen und löschen, Zellen per Auswahlmergen (colspan/rowspan) und wieder splitten. Die Struktur übersteht den Roundtrip inklusive gespeicherter `colspan`-Attribute.
+
+**Acceptance-Test (automatisiert)**:
+```bash
+cd /home/weiss/git/World-Office/server/opencloud-docserver
+uv run pytest tests/e2e/test_cloud_editor_e2e.py -q -k table_merge
+uv run pytest tests/test_converter.py -q -k table
+```
+
+**Explorations-Schritte (manuell)**:
+1. Tabelle einfügen (2×2)
+2. Zwei Zellen einer Zeile markieren → Merge (colspan)
+3. Spalte löschen → Layout prüfen
+4. Speichern, neu laden → Merge-Struktur erhalten?
+
+**Priorität**: Major
+
+---
+
+#### US-64: Horizontale Linie, Seitenumbruch, Symbol-Picker (Major)
+**Beschreibung**: „─“ fügt ein `<hr>` ein (DOCX: Absatz mit unterer Rahmenlinie), „⏎“ einen Seitenumbruch (DOCX: `<w:br w:type='page'/>`), „Ω“ öffnet den Symbol-/Emoji-Picker (einfügen als Text). Alles übersteht Speichern und Neuladen.
+
+**Acceptance-Test (automatisiert)**:
+```bash
+cd /home/weiss/git/World-Office/server/opencloud-docserver
+uv run pytest tests/e2e/test_cloud_editor_e2e.py -q -k hr_pagebreak
+uv run pytest tests/test_converter.py -q -k "hr or page_break"
+```
+
+**Explorations-Schritte (manuell)**:
+1. „─“ klicken → Linie erscheint am Caret
+2. „⏎“ klicken, danach tippen → Text landet nach dem Umbruch
+3. „Ω“ → Symbol wählen → Zeichen eingefügt
+4. Speichern, neu laden → alles erhalten?
+
+**Priorität**: Major
+
+---
+
+#### US-65: Kollaborations-Präsenz (Major)
+**Beschreibung**: Zwei Editoren sehen sich gegenseitig als farbigen Chip (stabile Farbe pro Client) und einen Remote-Caret über dem Dokument; lokale Identität als „(you)“ markiert. Präsenz wird über den Collab-Poll aktualisiert.
+
+**Acceptance-Test (automatisiert)**:
+```bash
+cd /home/weiss/git/World-Office/server/opencloud-docserver
+uv run pytest tests/e2e/test_cloud_editor_e2e.py -q -k collaborate
+```
+
+**Explorations-Schritte (manuell)**:
+1. Dokument in zwei Browsern öffnen
+2. Beide sehen den jeweils anderen als Chip?
+3. Remote-Caret erscheint bei Eingaben des anderen?
+4. Schließen eines Tabs → Chip verschwindet (per Poll)?
+
+**Priorität**: Major
+
+---
+
+#### US-66: Ansicht: Zoom, Theme, Vollbild (Minor)
+**Beschreibung**: −/100%/＋ skalieren nur die Schreibfläche (per Client gespeichert), 🌙 wechselt Hell/Dunkel, ⛶ schaltet Vollbild um.
+
+**Acceptance-Test (automatisiert)**:
+```bash
+cd /home/weiss/git/World-Office/server/opencloud-docserver
+uv run pytest tests/e2e/test_cloud_editor_e2e.py -q -k view_controls
+```
+
+**Explorations-Schritte (manuell)**:
+1. Zoom + → Schriftfläche wächst, Dokument-Inhalt unverändert
+2. Theme umschalten → Hintergrund wechselt, Einstellung bleibt erhalten
+3. Vollbild umschalten → Layout expandiert
+
+**Priorität**: Minor
+
+---
+
+#### US-67: Datei-Menü: Neu und Export (Major)
+**Beschreibung**: „Export“ bietet PDF/ODT/HTML/DOCX-Downloads (Konvertierung serverseitig); „Neu“ leert das Dokument nach Bestätigung und speichert den Leerstand sofort. Drucken öffnet den Browser-Druckdialog mit Papier-Styling.
+
+**Acceptance-Test (automatisiert)**:
+```bash
+cd /home/weiss/git/World-Office/server/opencloud-docserver
+uv run pytest tests/e2e/test_cloud_editor_e2e.py -q -k file_menu
+uv run pytest tests/test_file_ops.py -q
+```
+
+**Explorations-Schritte (manuell)**:
+1. Datei → Export → ODT → Datei in LibreOffice öffnen?
+2. Datei → Neu → Bestätigen → Editor leer, Neuladen bleibt leer
+3. Drucken → nur das Papier im Druckdialog
+
+**Priorität**: Major
+
+---
+
+#### US-68: Offline-Queue und Resync (Major)
+**Beschreibung**: Schlägt ein Speichern mangels Verbindung fehl, wird der aktuelle Stand lokal gequeued (localStorage), ein „Offline“-Indikator erscheint, und beim Zurückkehren der Verbindung wird automatisch synchronisiert.
+
+**Acceptance-Test (automatisiert)**:
+```bash
+cd /home/weiss/git/World-Office/server/opencloud-docserver
+uv run pytest tests/e2e/test_cloud_editor_e2e.py -q -k offline_queue
+```
+
+**Explorations-Schritte (manuell)**:
+1. Netzwerk trennen, weiter tippen, Speichern → „Offline“-Hinweis
+2. Tab neu laden (offline) → gequeuter Stand erscheint
+3. Netzwerk wieder da → automatische Synchronisation, Hinweis verschwindet
+
+**Priorität**: Major
+
+---
+
 ## 4. Taskfleet-Integration
 
 ### **Automatisierte Tasks (für Taskfleet)**

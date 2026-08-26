@@ -190,6 +190,9 @@
     <!-- role=status + aria-live=polite: the save/progress/error messages in
          the status bar are announced to screen readers as they change. -->
     <span id="status" class="status" role="status" aria-live="polite" data-i18n="Status.Ready">Ready</span>
+    <!-- Offline indicator: shown (with the edit queue armed) whenever a save
+         cannot reach the host; clears automatically on the next success. -->
+    <span id="offline-indicator" class="offline-indicator" role="status" aria-live="polite" hidden data-i18n="Status.OfflineIndicator">Offline</span>
     <button id="btn-save" class="primary" title="Save (Ctrl+S)" data-i18n="Toolbar.Save" data-i18n-title="Toolbar.SaveTitle" aria-label="Save" data-i18n-aria-label="Toolbar.Save" aria-keyshortcuts="Control+S">Save</button>
   </header>
 

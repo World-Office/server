@@ -306,6 +306,16 @@ body {
   margin-right: 10px;
   white-space: nowrap;
 }
+.toolbar .offline-indicator {
+  font-size: 12px;
+  font-weight: 600;
+  color: #d97706;
+  margin-right: 10px;
+  white-space: nowrap;
+}
+.toolbar .offline-indicator[hidden] {
+  display: none;
+}
 
 /* Fullscreen toggle (toolbar button) expands the editing surface to the
    viewport. The browser Fullscreen API is attempted as well but the class is

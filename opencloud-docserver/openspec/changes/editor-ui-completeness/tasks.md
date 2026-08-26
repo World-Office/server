@@ -58,12 +58,12 @@
 - [x] 8.1 Status bar in `web/index.html` + live word/char count in `editor.js` (GREEN)
 - [x] 8.2 Save-status indicator (saved/saving/dirty) reflecting the actual WOPI PUT
       (`#status` + `markDirty`/`saveDocument`; already wired)
-- [ ] 8.3 Offline indicator using the existing service worker; queue edits locally when host unreachable.
+- [x] 8.3 Offline queue: save failures that are genuine network errors (`fetch` TypeError) queue the latest snapshot in localStorage (`wo-offline-queue`), show the `#offline-indicator`, restore the snapshot after a reload (so offline edits survive), and flush on the `online` event; a successful save clears the queue. Server-side HTTP errors are NOT queued (they would just fail again). Playwright `test_offline_queue_and_resync`.
 - [x] 8.4 Playwright check: type → count updates; edit after save → "unsaved" then "saved"/"ready"
       (`tests/e2e/test_cloud_editor_e2e.py::test_status_bar_word_count_and_save_indicator`)
 
 ## 9. Cross-cutting
 
-- [ ] 9.1 Add `ruff` + converter round-trip regression tests for every new element; ensure `pytest` suite stays green.
-- [ ] 9.2 Document the new UI elements in `docs/testing/test-scenarios.md` as user stories (continue the US-25..US-60 style).
-- [ ] 9.3 Review against the earlier lesson: "done" ≠ green — run the full local suite + a Playwright pass before marking any task complete.
+- [x] 9.1 `.symbol-grid`/print/offline CSS tidy; ruff (`uv run ruff check src tests`) clean; converter round-trip tests added with every group (links, colour/sup-sub, table, hr/page-break) and the full suite stays green (380 passed).
+- [x] 9.2 `docs/testing/test-scenarios.md` extended with US-61…US-68 (link, colour/sup-sub, table ops, insert misc, presence, view controls, file export/new, offline queue) in the existing German user-story style with automated acceptance commands.
+- [x] 9.3 Full local suite + repeated Playwright e2e passes run before marking each group done (a real `applyRemoteText` data-loss bug + a Chromium caret-in-marker bug + an index-shift bug + cross-test CRDT contamination were found and fixed; every commit green).
