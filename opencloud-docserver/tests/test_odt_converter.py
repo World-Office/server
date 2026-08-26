@@ -1313,3 +1313,48 @@ def test_special_symbol_and_date_roundtrip_odt():
     html = "<p>§ ¶ ★ 2026-08-26</p>"
     out = odt_to_html(html_to_odt(html))
     assert "§" in out and "¶" in out and "★" in out and "2026-08-26" in out
+
+
+def test_html_to_odt_page_break_roundtrip():
+    """The page-break marker survives the ODT round-trip (structure parity)."""
+    odt = html_to_odt("<p>a</p><div class=\"page-break\"><br></div><p>b</p>")
+    out = odt_to_html(odt)
+    assert "page-break" in out, out
+    assert "<p>a</p>" in out.replace("\n", "") and "<p>b</p>" in out.replace("\n", "")
+
+
+def test_html_to_odt_hyperlink_roundtrip():
+    """<a href> survives the ODT round-trip (links parity with DOCX)."""
+    odt = html_to_odt('<p>see <a href="https://example.com">site</a> now</p>')
+    out = odt_to_html(odt)
+    assert '<a href="https://example.com">site</a>' in out, out
+
+
+def test_odt_page_break_is_break_before_paragraph():
+    """The ODT page-break maps to an empty paragraph with fo:break-before."""
+    from odf.text import P
+    doc = load(io.BytesIO(html_to_odt("x<div class=\"page-break\"><br></div>")))
+    found = False
+    for p in doc.text.getElementsByType(P):
+        if "".join(n.data for n in p.childNodes if n.nodeType == 3).strip():
+            continue
+        name = p.getAttribute("stylename")
+        if not name:
+            continue
+        for s in (doc.automaticstyles, doc.styles):
+            for el in s.childNodes:
+                if el.getAttribute("name") == name:
+                    from odf.style import ParagraphProperties
+
+                    from src.editor.odt_converter import _raw_attr
+                    for props in el.getElementsByType(ParagraphProperties):
+                        if (_raw_attr(props, "break-before", "breakbefore") or "").lower() == "page":
+                            found = True
+    assert found, "expected an empty paragraph with break-before:page"
+
+
+def test_html_to_odt_link_boundaries_preserved():
+    """Text before/after an <a> stays outside the anchor in ODT too."""
+    html = '<p>See <a href="https://example.com">site</a> now.</p>'
+    out = odt_to_html(html_to_odt(html)).replace("\n", "")
+    assert out == '<p>See <a href="https://example.com">site</a> now.</p>', out

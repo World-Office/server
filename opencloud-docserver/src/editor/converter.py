@@ -1279,6 +1279,7 @@ class _InlineRunBuilder(HTMLParser):
             self._flush()
             self._underline += 1
         elif tag == "a":
+            self._flush()  # leading text must not merge into the link token
             a = dict(attrs)
             href = a.get("href", "")
             # Only carry safe schemes; javascript:/vbscript: etc. are dropped

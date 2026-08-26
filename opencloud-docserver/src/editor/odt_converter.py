@@ -40,6 +40,7 @@ from odf.opendocument import OpenDocumentText, load
 from odf.style import ParagraphProperties, Style, TextProperties
 from odf.table import CoveredTableCell, Table, TableCell, TableRow
 from odf.text import (
+    A,
     H,
     List,
     ListItem,
@@ -574,6 +575,15 @@ def _paragraph_to_html(el, resolve, pictures, presolve=None) -> str:
         and not inner.strip()
     ):
         return "<hr/>"
+    # Page break: an EMPTY paragraph with fo:break-before="page" renders as
+    # the same marker the DOCX converter uses (<div class="page-break">).
+    if (
+        el.qname == (TEXTNS, "p")
+        and pprops
+        and (pprops.get("breakbefore") or "").lower() == "page"
+        and not inner.strip()
+    ):
+        return '<div class="page-break"><br></div>'
     attrs = ""
     if pprops:
         css = _para_css(pprops)
@@ -842,6 +852,9 @@ def html_to_odt(html_fragment: str) -> bytes:
         if kind == "hr":
             w.add_hr()
             continue
+        if kind == "pagebreak":
+            w.add_page_break()
+            continue
         if kind == "list":
             w.add_list(op[1])
             continue
@@ -919,6 +932,7 @@ class _OdtWriter:
         self._para_styles: dict[str, str] = {}
         self._ol_style: str | None = None
         self._hr_style: str | None = None
+        self._pb_style: str | None = None
         self._img_n = 0
 
     # -- character styles -------------------------------------------------
@@ -1040,14 +1054,24 @@ class _OdtWriter:
         self.doc.text.addElement(el)
 
     def _fill(self, el, html: str) -> None:
-        """Add styled text runs and images parsed from an inline HTML fragment."""
+        """Add styled text runs, hyperlinks and images parsed from an inline
+        HTML fragment."""
         for token in _inline_tokens(html):
             if token["type"] == "image":
                 self.add_image(el, token)
                 continue
             text = token["text"]
             style_name = self.char_style(token)
-            if style_name:
+            href = token.get("href")
+            if href:
+                # ODF hyperlinks are text:a elements carrying xlink:href.
+                a = A(href=href, type="simple")
+                if style_name:
+                    a.addElement(Span(text=text, stylename=style_name))
+                else:
+                    a.addText(text)
+                el.addElement(a)
+            elif style_name:
                 el.addElement(Span(text=text, stylename=style_name))
             else:
                 el.addText(text)
@@ -1116,6 +1140,17 @@ class _OdtWriter:
             self.doc.automaticstyles.addElement(style)
         el = P()
         el.setAttribute("stylename", self._hr_style)
+        self.doc.text.addElement(el)
+
+    def add_page_break(self) -> None:
+        """A page break: an empty paragraph with fo:break-before="page"."""
+        if self._pb_style is None:
+            self._pb_style = "WO_PageBreak"
+            style = Style(name=self._pb_style, family="paragraph")
+            style.addElement(ParagraphProperties(breakbefore="page"))
+            self.doc.automaticstyles.addElement(style)
+        el = P()
+        el.setAttribute("stylename", self._pb_style)
         self.doc.text.addElement(el)
 
     def add_list(self, tree: dict) -> None:
@@ -1209,6 +1244,18 @@ def _span_attr(attrs: str, name: str) -> int:
 # Inline HTML -> runs (same semantics as the DOCX converter)
 # --------------------------------------------------------------------------
 
+def _inline_href(attrs) -> str | None:
+    """Extract a safe http(s)/relative URL from an <a> attribute set."""
+    a = dict(attrs)
+    href = (a.get("href") or "").strip()
+    if not href:
+        return None
+    low = href.lower()
+    if low.startswith(("javascript:", "data:", "vbscript:")):
+        return None
+    return href
+
+
 class _InlineRunBuilder(HTMLParser):
     """Parse an inline HTML fragment into text tokens and image tokens.
 
@@ -1237,6 +1284,7 @@ class _InlineRunBuilder(HTMLParser):
         self._all_caps = None
         self._span_stack: list[tuple] = []
         self._vert_stack: list[str | None] = []
+        self._href_stack: list[str | None] = []
         self._buf: list[str] = []
 
     def handle_starttag(self, tag: str, attrs) -> None:
@@ -1250,6 +1298,9 @@ class _InlineRunBuilder(HTMLParser):
                 "width": _parse_px(a.get("width")),
                 "height": _parse_px(a.get("height")),
             })
+        elif tag == "a":
+            self._flush()
+            self._href_stack.append(_inline_href(attrs))
         elif tag in ("b", "strong"):
             self._flush()
             self._bold += 1
@@ -1297,6 +1348,11 @@ class _InlineRunBuilder(HTMLParser):
             self._flush()
 
     def handle_endtag(self, tag: str) -> None:
+        if tag == "a":
+            self._flush()
+            if self._href_stack:
+                self._href_stack.pop()
+            return
         if tag in ("b", "strong"):
             self._flush()
             self._bold = max(0, self._bold - 1)
@@ -1359,6 +1415,8 @@ class _InlineRunBuilder(HTMLParser):
                 token["small_caps"] = True
             if self._all_caps:
                 token["all_caps"] = True
+            if self._href_stack:
+                token["href"] = self._href_stack[-1]
             self.tokens.append(token)
         self._buf = []
 
