@@ -1018,7 +1018,15 @@ def _table_to_html(table) -> str:
                 rowspan = _rowspan_for(grid, r, e["pos"])
             cells.append(_cell_to_html(e, rowspan, tag, table))
         out.append("<tr>" + "".join(cells) + "</tr>")
-    return "<table>" + "".join(out) + "</table>"
+    head = "<table>"
+    tblPr = table._tbl.tblPr
+    if tblPr is not None:
+        tblW = tblPr.find(qn("w:tblW"))
+        if tblW is not None and tblW.get(qn("w:type")) == "dxa":
+            w_val = tblW.get(qn("w:w"))
+            if w_val:
+                head = f'<table width="{round(int(w_val) / 15)}">'
+    return head + "".join(out) + "</table>"
 
 
 def _table_grid(table):
@@ -1083,6 +1091,11 @@ def _cell_to_html(e, rowspan: int, tag: str, table) -> str:
         attrs += f' colspan="{e["width"]}"'
     if rowspan > 1:
         attrs += f' rowspan="{rowspan}"'
+    sparts, cell_w = _cell_style_parts(e)
+    if sparts:
+        attrs += ' style="' + ";".join(sparts) + '"'
+    if cell_w is not None:
+        attrs += f' width="{cell_w}"'
     # Parent paragraphs with a real _Cell so Run.part resolves to the
     # document part (needed to look up drawing image relationships).
     cell = _Cell(e["tc"], table)
@@ -1093,6 +1106,51 @@ def _cell_to_html(e, rowspan: int, tag: str, table) -> str:
     if inner == "<br/>":
         inner = ""  # a single empty paragraph is an empty cell
     return f"<{tag}{attrs}>{inner}</{tag}>"
+
+
+def _cell_style_parts(e) -> tuple[list[str], str | None]:
+    """Cell shading / explicit borders / width as HTML style + width attr."""
+    parts: list[str] = []
+    width = None
+    tcPr = e["tc"].tcPr
+    if tcPr is None:
+        return parts, width
+    tcW = tcPr.tcW
+    if tcW is not None and tcW.type == "dxa":
+        w_val = tcW.get(qn("w:w"))
+        if w_val:
+            width = str(round(int(w_val) / 15))
+    shd = tcPr.find(qn("w:shd"))
+    if shd is not None and shd.get(qn("w:val")) not in (None, "nil"):
+        fill = shd.get(qn("w:fill"))
+        if fill:
+            parts.append("background-color:#" + fill.lstrip("#").lower())
+    bord = _tc_border_style(tcPr)
+    if bord:
+        parts.append(bord)
+    return parts, width
+
+
+def _tc_border_style(tcPr) -> str | None:
+    """Explicit w:tcBorders -> 'Npt solid #hex', or None."""
+    tcBorders = tcPr.find(qn("w:tcBorders"))
+    if tcBorders is None:
+        return None
+    sides: list[tuple[int, str]] = []
+    for side in ("top", "left", "bottom", "right"):
+        el = tcBorders.find(qn(f"w:{side}"))
+        if el is None:
+            continue
+        val = el.get(qn("w:val"))
+        sz = el.get(qn("w:sz"))
+        if val in (None, "nil", "none") or not sz:
+            continue
+        sides.append((int(sz), (el.get(qn("w:color")) or "000000")))
+    if not sides:
+        return None
+    sz = max(s[0] for s in sides)
+    color = sides[0][1].lower()
+    return f"border:{sz / 8:g}pt solid #{color}"
 
 
 class _TableParser(HTMLParser):
@@ -1521,6 +1579,102 @@ def _set_drawing_alt(r, alt: str) -> None:
         break
 
 
+def _parse_border(style: str) -> str | None:
+    """Extract a ``border`` declaration as ``'Npt solid #hex'`` or None.
+
+    Supports pt/px (px converts at 3/4); named colours fall back to
+    ``_normalize_color`` (basic names only). This is the HTML side of the
+    cell-border contract shared with the ODT converter.
+    """
+    m = re.search(
+        r"border\s*:\s*(\d+(?:\.\d+)?)\s*(pt|px)?\s*solid\s*"
+        r"(#[0-9a-fA-F]{3,8}|[a-zA-Z]+)",
+        style or "",
+    )
+    if not m:
+        return None
+    num = float(m.group(1))
+    if m.group(2) == "px":
+        num *= 0.75
+    if num <= 0:
+        return None
+    color = m.group(3)
+    if not color.startswith("#"):
+        norm = _normalize_color(color)
+        if not norm:
+            return None
+        color = norm
+    return f"{num:g}pt solid {color}"
+
+
+def _apply_cell_props(cell, attrs) -> None:
+    """Apply background-color / border / width parsed from a cell tag."""
+    style = attrs.get("style", "")
+    tcPr = cell._tc.get_or_add_tcPr()
+    width = (attrs.get("width") or "").strip()
+    tcWel = tcPr.find(qn("w:tcW"))
+    if re.fullmatch(r"\d+(\.\d+)?", width):
+        try:
+            cell.width = Emu(float(width) * 9525)
+        except Exception:
+            pass
+    elif tcWel is not None:
+        # python-docx fills every cell with a default w:tcW; drop it so the
+        # reader does not invent a width for a cell the HTML left unsized.
+        tcPr.remove(tcWel)
+    bg = _parse_inline_style(style).get("bg")
+    if bg:
+        shd = tcPr.find(qn("w:shd"))
+        if shd is None:
+            shd = OxmlElement("w:shd")
+            tcPr.append(shd)
+        shd.set(qn("w:val"), "clear")
+        shd.set(qn("w:color"), "auto")
+        shd.set(qn("w:fill"), bg.lstrip("#"))
+    bord = _parse_border(style)
+    if bord:
+        _set_tc_borders(tcPr, bord)
+
+
+def _set_tc_borders(tcPr, border_style: str) -> None:
+    """Set all four explicit w:tcBorders from 'Npt solid #hex'."""
+    m = re.match(r"([\d.]+)\s*pt\s*solid\s*(#[0-9a-fA-F]{6})", border_style)
+    if not m:
+        return
+    sz = max(1, round(float(m.group(1)) * 8))
+    color = m.group(2).lstrip("#")
+    tcBorders = tcPr.find(qn("w:tcBorders"))
+    if tcBorders is None:
+        tcBorders = OxmlElement("w:tcBorders")
+        tcPr.append(tcBorders)
+    for side in ("top", "left", "bottom", "right"):
+        el = OxmlElement(f"w:{side}")
+        el.set(qn("w:val"), "single")
+        el.set(qn("w:sz"), str(sz))
+        el.set(qn("w:space"), "0")
+        el.set(qn("w:color"), color)
+        tcBorders.append(el)
+
+
+def _set_table_width(table, px: float) -> None:
+    """Set an absolute (centered) table width w:tblW + w:jc."""
+    tblPr = table._tbl.tblPr
+    if tblPr is None:
+        tblPr = OxmlElement("w:tblPr")
+        table._tbl.insert(0, tblPr)
+    tblW = tblPr.find(qn("w:tblW"))
+    if tblW is None:
+        tblW = OxmlElement("w:tblW")
+        tblPr.append(tblW)
+    tblW.set(qn("w:type"), "dxa")
+    tblW.set(qn("w:w"), str(int(round(px * 15))))
+    jc = tblPr.find(qn("w:jc"))
+    if jc is None:
+        jc = OxmlElement("w:jc")
+        tblPr.append(jc)
+    jc.set(qn("w:val"), "center")
+
+
 def _append_table(doc: Document, tbl_html: str) -> None:
     """Append an HTML <table> to the document as a python-docx table.
 
@@ -1540,6 +1694,9 @@ def _append_table(doc: Document, tbl_html: str) -> None:
         ncols = max(ncols, width)
     table = doc.add_table(rows=len(rows), cols=ncols or 1)
     table.style = "Table Grid"
+    m = re.search(r"<table[^>]*\bwidth\s*=\s*[\"']?(\d+(\.\d+)?)", tbl_html)
+    if m:
+        _set_table_width(table, float(m.group(1)))
     pending = [0] * ncols  # remaining rows covered by a rowspan, per grid column
     for r, cells in enumerate(rows):
         if any(c["tag"] == "th" for c in cells):
@@ -1556,6 +1713,7 @@ def _append_table(doc: Document, tbl_html: str) -> None:
             rowspan = int(c["attrs"].get("rowspan", 1) or 1)
             cell = table.cell(r, pos)
             _fill_cell(cell, "".join(c["html"]))
+            _apply_cell_props(cell, c["attrs"])
             if colspan > 1 or rowspan > 1:
                 bottom = min(r + rowspan - 1, len(rows) - 1)
                 right = min(pos + colspan - 1, ncols - 1)

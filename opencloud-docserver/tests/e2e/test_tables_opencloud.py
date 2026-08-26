@@ -285,6 +285,13 @@ def stack(tmp_path):
 # Table document fixtures + stored-bytes inspection
 # ----------------------------------------------------------------------
 
+def _cell_html(html: str, text: str, tag: str = "td") -> bool:
+    """True when a <td|th> (optionally carrying width/style attrs) wraps the
+    exact cell text — tolerant of the height/width attributes the DOCX/ODT
+    readers now emit for explicitly-sized cells."""
+    return re.search(rf"<{tag}(?:\s[^>]*)?>{re.escape(text)}</{tag}>", html) is not None
+
+
 def _build_docx_tables() -> bytes:
     """A DOCX with a body line, a 2x2 data table and a header-row table."""
     doc = Document()
@@ -422,10 +429,10 @@ def test_docx_tables_persist_through_production_opencloud(stack):
     # OpenCloud serves the tables as HTML for the editor.
     html = stack.load_html("tables-docx")
     assert "<table>" in html, html
-    assert "<td>North</td>" in html
-    assert "<td>South</td>" in html
-    assert "<td>Qty</td>" in html
-    assert "<td>stoic pens</td>" in html
+    assert _cell_html(html, "North")
+    assert _cell_html(html, "South")
+    assert _cell_html(html, "Qty")
+    assert _cell_html(html, "stoic pens")
     assert "Stoic table document" in html
 
     # The user types a new table with a marker cell into the editor.
@@ -574,7 +581,7 @@ def test_docx_tables_survive_reopen_after_remote_put_and_unlock(stack):
     stack.launch_editor("tables-reopen", user="bob")
 
     again = stack.load_html("tables-reopen")
-    assert "<table>" in again and "<td>North</td>" in again
+    assert "<table>" in again and _cell_html(again, "North")
     assert f"{MARKER}-reopen" in again
 
     stored = stack.remote_doc("tables-reopen")

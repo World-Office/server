@@ -37,8 +37,15 @@ from odf.namespaces import (
     XLINKNS,
 )
 from odf.opendocument import OpenDocumentText, load
-from odf.style import ParagraphProperties, Style, TextProperties
-from odf.table import CoveredTableCell, Table, TableCell, TableRow
+from odf.style import (
+    ParagraphProperties,
+    Style,
+    TableCellProperties,
+    TableColumnProperties,
+    TableProperties,
+    TextProperties,
+)
+from odf.table import CoveredTableCell, Table, TableCell, TableColumn, TableRow
 from odf.text import (
     A,
     H,
@@ -53,6 +60,7 @@ from odf.text import (
 from src.editor.converter import (
     _MONO_FONTS,
     _normalize_color,
+    _parse_border,
     _parse_inline_style,
     _tokenize_body,
 )
@@ -518,6 +526,7 @@ def odt_to_html(data: bytes) -> str:
     doc = load(io.BytesIO(data))
     resolve = _build_style_resolver(doc)
     presolve = _build_para_resolver(doc)
+    cellresolve = _build_cell_resolver(doc)
     kinds = _list_kinds(doc)
     pictures = _extract_pictures(data)
 
@@ -547,7 +556,7 @@ def odt_to_html(data: bytes) -> str:
                 parts.append(item)
         elif qname == (TABLENS, "table"):
             flush_list()
-            parts.append(_table_to_html(child, resolve, pictures, presolve))
+            parts.append(_table_to_html(child, resolve, pictures, presolve, cellresolve))
         elif qname == (DRAWNS, "frame"):
             # A draw:frame sitting directly in the body (not nested in a
             # text:p) is still a block-level image.
@@ -714,9 +723,14 @@ def _int_attr(el, name: str) -> int | None:
     """Read an integer attribute by its odfpy camelCase name.
 
     ``number-columns-spanned`` etc. are read as ``numbercolumnsspanned``.
-    Returns None when absent or not parseable as an integer.
+    Returns None when absent or not parseable as an integer. Reads are
+    tolerant: an attribute not allowed on the element type (e.g. a covered
+    cell carries no span attrs) returns None instead of raising.
     """
-    val = el.getAttribute(name)
+    try:
+        val = el.getAttribute(name)
+    except (ValueError, AttributeError):
+        return None
     if val is None:
         return None
     try:
@@ -742,7 +756,8 @@ def _table_rows(table_el):
             yield from _table_rows(child)
 
 
-def _cell_to_html(cell, resolve, pictures, presolve=None) -> str:
+def _cell_to_html(cell, resolve, pictures, presolve=None, cellresolve=None,
+                  colws=None, colpos=None) -> str:
     """Render one table cell as a ``<td>`` (``''`` for covered cells).
 
     A ``covered-table-cell`` is the ODF placeholder for a slot already taken by
@@ -751,7 +766,9 @@ def _cell_to_html(cell, resolve, pictures, presolve=None) -> str:
 
     ``table:number-columns-spanned`` / ``table:number-rows-spanned`` become
     ``colspan`` / ``rowspan`` attributes so merges survive into the editor.
-    Nested tables inside a cell render as a nested ``<table>``.
+    Nested tables inside a cell render as a nested ``<table>``. Cell shading
+    (``fo:background-color``) and explicit borders (``fo:border``) become a
+    ``style`` attribute; the cell width is taken from its table column.
     """
     if cell.qname == (TABLENS, "covered-table-cell"):
         return ""
@@ -770,7 +787,7 @@ def _cell_to_html(cell, resolve, pictures, presolve=None) -> str:
             pending.append(_paragraph_to_html(c, resolve, pictures, presolve))
         elif c.qname == (TABLENS, "table"):
             flush()
-            chunks.append(_table_to_html(c, resolve, pictures, presolve))
+            chunks.append(_table_to_html(c, resolve, pictures, presolve, cellresolve))
     flush()
     attrs = []
     colspan = _int_attr(cell, "numbercolumnsspanned") or 1
@@ -779,21 +796,129 @@ def _cell_to_html(cell, resolve, pictures, presolve=None) -> str:
         attrs.append(f'colspan="{colspan}"')
     if rowspan > 1:
         attrs.append(f'rowspan="{rowspan}"')
+    cprops = (cellresolve or {}).get(cell.getAttribute("stylename")) if cellresolve else None
+    if cprops:
+        style_bits: list[str] = []
+        bg = cprops.get("backgroundcolor")
+        if bg:
+            style_bits.append("background-color:" + bg)
+        bord = _norm_border(cprops.get("border"))
+        if bord:
+            style_bits.append("border:" + bord)
+        if style_bits:
+            attrs.append('style="' + ";".join(style_bits) + '"')
+    if colws and colpos is not None and colpos < len(colws) and colws[colpos]:
+        attrs.append(f'width="{colws[colpos]}"')
     open_tag = "<td " + " ".join(attrs) + ">" if attrs else "<td>"
     return open_tag + "".join(chunks) + "</td>"
 
 
-def _table_to_html(table_el, resolve, pictures, presolve=None) -> str:
+def _build_cell_resolver(doc):
+    """Map table-cell / table / table-column style names to their properties.
+
+    ``backgroundcolor``/``border`` come from ``style:table-cell-properties``,
+    ``twidth`` from ``style:table-properties`` and ``cwidth`` from
+    ``style:table-column-properties`` — matching the HTML contract used by
+    the writer (cell style + column widths + table width).
+    """
+    out: dict[str, dict] = {}
+    for root in (doc.styles, doc.automaticstyles):
+        for el in root.childNodes:
+            if el.qname != (STYLENS, "style"):
+                continue
+            fam = el.getAttribute("family")
+            if fam not in ("table-cell", "table", "table-column"):
+                continue
+            props: dict = {}
+            for child in el.childNodes:
+                if child.qname == (STYLENS, "table-cell-properties"):
+                    props["backgroundcolor"] = _raw_attr(child, "background-color", "backgroundcolor")
+                    props["border"] = _raw_attr(child, "border")
+                elif child.qname == (STYLENS, "table-properties"):
+                    props["twidth"] = _raw_attr(child, "width")
+                elif child.qname == (STYLENS, "table-column-properties"):
+                    props["cwidth"] = _raw_attr(child, "column-width", "columnwidth")
+            if props:
+                out[el.getAttribute("name")] = props
+    return out
+
+
+def _px_of(value) -> int | None:
+    """Convert an ODF/SVG length ('96px', '2.5cm', '18pt') to integer px."""
+    m = re.match(r"^\s*([\d.]+)\s*(px|pt|cm|mm|in)?\s*$", value or "")
+    if not m:
+        return None
+    num = float(m.group(1))
+    unit = (m.group(2) or "px").lower()
+    if unit == "pt":
+        num *= 4 / 3
+    elif unit == "cm":
+        num *= 96 / 2.54
+    elif unit == "mm":
+        num *= 96 / 25.4
+    elif unit == "in":
+        num *= 96
+    return round(num)
+
+
+def _norm_border(value) -> str | None:
+    """Normalise an ODF border to 'Npt solid #hex', or None."""
+    m = re.search(
+        r"([\d.]+)\s*(cm|mm|in|pt|px)?\s*solid\s*(#[0-9a-fA-F]{3,8})",
+        value or "",
+    )
+    if not m:
+        return None
+    num = float(m.group(1))
+    unit = (m.group(2) or "pt").lower()
+    if unit == "cm":
+        num *= 28.3465
+    elif unit == "mm":
+        num *= 2.83465
+    elif unit == "in":
+        num *= 72
+    elif unit == "px":
+        num *= 0.75
+    return f"{round(num, 2):g}pt solid {m.group(3).lower()}"
+
+
+def _table_to_html(table_el, resolve, pictures, presolve=None, cellresolve=None) -> str:
     rows: list[str] = []
+    cellresolve = cellresolve or {}
+    tprops = cellresolve.get(table_el.getAttribute("stylename")) or {}
+    tw = _px_of(tprops.get("twidth"))
+    # Column widths (LibreOffice keeps cell widths on table:table-column).
+    colws: list[int] = []
+    for col in table_el.childNodes:
+        if col.nodeType != Node.ELEMENT_NODE:
+            continue
+        if col.qname == (TABLENS, "table-column"):
+            cw = _px_of(cellresolve.get(col.getAttribute("stylename") or "").get("cwidth")) \
+                if cellresolve.get(col.getAttribute("stylename") or "") else None
+            repeat = _int_attr(col, "numbercolumnsrepeated") or 1
+            colws.extend([cw] * max(1, repeat))
+        elif col.qname == (TABLENS, "table-column-group"):
+            for sub in col.childNodes:
+                if sub.nodeType == Node.ELEMENT_NODE and sub.qname == (TABLENS, "table-column"):
+                    props = cellresolve.get(sub.getAttribute("stylename") or "")
+                    cw = _px_of(props.get("cwidth")) if props else None
+                    repeat = _int_attr(sub, "numbercolumnsrepeated") or 1
+                    colws.extend([cw] * max(1, repeat))
     for row in _table_rows(table_el):
         cells: list[str] = []
+        colpos = 0
         for cell in row.childNodes:
             if cell.nodeType != Node.ELEMENT_NODE:
                 continue
             if cell.qname not in ((TABLENS, "table-cell"),
                                   (TABLENS, "covered-table-cell")):
                 continue
-            cell_html = _cell_to_html(cell, resolve, pictures, presolve)
+            cell_html = _cell_to_html(cell, resolve, pictures, presolve,
+                                      cellresolve, colws, colpos)
+            colspan = _int_attr(cell, "numbercolumnsspanned") or 1
+            if colspan < 1:
+                colspan = 1
+            colpos += colspan
             if not cell_html:
                 continue  # covered cell: slot taken by a span
             repeat = _int_attr(cell, "numbercolumnsrepeated") or 1
@@ -807,7 +932,10 @@ def _table_to_html(table_el, resolve, pictures, presolve=None) -> str:
         row_html = "<tr>" + "".join(cells) + "</tr>"
         n_repeat = _int_attr(row, "numberrowsrepeated") or 1
         rows.extend([row_html] * max(1, n_repeat))
-    return "<table>" + "".join(rows) + "</table>"
+    head = "<table>"
+    if tw:
+        head = f'<table width="{tw}">'
+    return head + "".join(rows) + "</table>"
 
 
 def odt_list_to_html(list_el, resolve, kinds, pictures) -> str:
@@ -933,6 +1061,9 @@ class _OdtWriter:
         self._ol_style: str | None = None
         self._hr_style: str | None = None
         self._pb_style: str | None = None
+        self._tc_styles: dict[tuple, str] = {}
+        self._col_styles: dict[int, str] = {}
+        self._tbl_styles: dict[float, str] = {}
         self._img_n = 0
 
     # -- character styles -------------------------------------------------
@@ -1168,8 +1299,9 @@ class _OdtWriter:
         """Split one HTML ``<tr>`` into its cells.
 
         Each entry carries the cell's inner html plus its colspan/rowspan
-        (parsed from the opening tag, defaults to 1). Both ``<td>`` and
-        ``<th>`` map to ODF table cells.
+        (parsed from the opening tag, defaults to 1), plus the parsed cell
+        ``style`` (background-color / border) / ``width`` (px). Both ``<td>``
+        and ``<th>`` map to ODF table cells.
         """
         cells: list[dict] = []
         for m in re.finditer(r"<t[dh]([^>]*)>(.*?)</t[dh]>", html, re.S):
@@ -1178,8 +1310,46 @@ class _OdtWriter:
                 "html": body,
                 "colspan": _span_attr(attrs, "colspan"),
                 "rowspan": _span_attr(attrs, "rowspan"),
+                "bg": _odt_cell_bg(attrs),
+                "border": _odt_cell_border(attrs),
+                "width": _odt_cell_width(attrs),
             })
         return cells
+
+    def cell_style(self, bg, border) -> str | None:
+        """Return (creating if needed) an ODF table-cell style with the given
+        background colour / border."""
+        key = (bg, border)
+        name = self._tc_styles.get(key)
+        if name:
+            return name
+        if not bg and not border:
+            return None
+        name = f"WO_Tc{len(self._tc_styles)}"
+        style = Style(name=name, family="table-cell")
+        props_el = TableCellProperties()
+        if bg:
+            props_el.setAttribute("backgroundcolor", bg)
+        if border:
+            props_el.setAttribute("border", border)
+        style.addElement(props_el)
+        self.doc.automaticstyles.addElement(style)
+        self._tc_styles[key] = name
+        return name
+
+    def _column_style(self, width_px: int) -> str:
+        """Return (creating if needed) an ODF table-column style for a width."""
+        name = self._col_styles.get(width_px)
+        if name:
+            return name
+        name = f"WO_Col{len(self._col_styles)}"
+        style = Style(name=name, family="table-column")
+        props_el = TableColumnProperties()
+        props_el.setAttribute("columnwidth", f"{width_px}px")
+        style.addElement(props_el)
+        self.doc.automaticstyles.addElement(style)
+        self._col_styles[width_px] = name
+        return name
 
     def add_table(self, html: str) -> None:
         """Build an ODF ``<table:table>`` from an HTML ``<table>`` fragment.
@@ -1199,6 +1369,19 @@ class _OdtWriter:
             ncols = max(ncols, sum(c["colspan"] for c in r))
 
         table = Table()
+        # Table width (style:table-properties fo:width on an automatic style).
+        tw = re.search(r"<table[^>]*\bwidth\s*=\s*[\"']?(\d+(\.\d+)?)", html)
+        if tw:
+            tname = self._table_style(float(tw.group(1)))
+            table.setAttribute("stylename", tname)
+        # Column widths: LibreOffice keeps cell widths on table:table-column.
+        col_widths = _odt_col_widths(rows, ncols)
+        if any(col_widths):
+            for wcol in col_widths:
+                col_el = TableColumn()
+                if wcol:
+                    col_el.setAttribute("stylename", self._column_style(wcol))
+                table.addElement(col_el)
         vertical: dict[int, int] = {}  # col -> rows still covered from above
         for r in rows:
             row_el = TableRow()
@@ -1218,6 +1401,9 @@ class _OdtWriter:
                     cel.setAttribute("numberrowsspanned", str(cell["rowspan"]))
                     for k in range(cell["colspan"]):
                         vertical[col + k] = cell["rowspan"] - 1
+                cname = self.cell_style(cell["bg"], cell["border"])
+                if cname:
+                    cel.setAttribute("stylename", cname)
                 p = P()
                 self._fill(p, cell["html"])
                 cel.addElement(p)
@@ -1227,6 +1413,60 @@ class _OdtWriter:
                     row_el.addElement(CoveredTableCell())
             table.addElement(row_el)
         self.doc.text.addElement(table)
+
+    def _table_style(self, width_px: float) -> str:
+        """Return (creating if needed) a table style fixing the table width."""
+        name = self._tbl_styles.get(width_px)
+        if name:
+            return name
+        name = f"WO_Tbl{len(self._tbl_styles)}"
+        style = Style(name=name, family="table")
+        props_el = TableProperties()
+        props_el.setAttribute("width", f"{width_px:g}px")
+        style.addElement(props_el)
+        self.doc.automaticstyles.addElement(style)
+        self._tbl_styles[width_px] = name
+        return name
+
+
+_ODT_ATTR_TAG = re.compile(r"<t[dh][^>]*\b(\w+)\s*=\s*[\"']([^\"']*)[\"']", re.S)
+
+
+def _odt_cell_bg(attrs: str) -> str | None:
+    """Parse a cell tag's background-color declaration to #rrggbb or None."""
+    m = re.search(r"background(?:-color)?\s*:\s*([^;\"\s]+)", attrs or "")
+    if not m:
+        return None
+    return _normalize_color(m.group(1).strip())
+
+
+def _odt_cell_border(attrs: str) -> str | None:
+    """Parse a cell tag's border declaration to 'Npt solid #hex' or None."""
+    return _parse_border(attrs or "")
+
+
+def _odt_cell_width(attrs: str) -> int | None:
+    """Parse a cell tag's width attribute to integer px or None."""
+    m = re.search(r"\bwidth\s*=\s*[\"']?(\d+(\.\d+)?)", attrs or "")
+    if not m:
+        return None
+    try:
+        return round(float(m.group(1)))
+    except ValueError:
+        return None
+
+
+def _odt_col_widths(rows: list[list[dict]], ncols: int) -> list[int]:
+    """Per-grid-column width (px) from the first cell in the column that
+    specifies one; 0 means 'no explicit width'."""
+    widths = [0] * ncols
+    for r in rows:
+        col = 0
+        for c in r:
+            if c["width"] and col < ncols and not widths[col]:
+                widths[col] = c["width"]
+            col += c["colspan"]
+    return widths
 
 
 def _span_attr(attrs: str, name: str) -> int:
