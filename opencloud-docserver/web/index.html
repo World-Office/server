@@ -268,6 +268,15 @@
       <div id="image-preview-wrap" class="image-preview-wrap" hidden>
         <img id="image-preview" alt="">
       </div>
+      <div class="dialog-field image-size-fields" hidden id="image-size-fields">
+        <label for="image-width" data-i18n="Image.Width">Width</label>
+        <input id="image-width" type="number" min="1" step="1" inputmode="numeric"
+               aria-label="Image width in pixels" placeholder="auto">
+        <label for="image-height" data-i18n="Image.Height">Height</label>
+        <input id="image-height" type="number" min="1" step="1" inputmode="numeric"
+               aria-label="Image height in pixels" placeholder="auto">
+        <span class="image-size-hint" data-i18n="Image.SizeHint">leave empty for original size</span>
+      </div>
       <div id="image-error" class="image-error" role="alert"></div>
       <div class="dialog-actions">
         <button id="btn-image-cancel" data-i18n="Image.Cancel">Cancel</button>

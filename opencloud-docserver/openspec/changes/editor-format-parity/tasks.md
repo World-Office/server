@@ -28,10 +28,10 @@ TDD per category: write failing contract test → implement converter + UI → v
 - [x] T15 contract test + UI: table insert / add row-col — UI shipped in `editor-ui-completeness` (insert-table dialog + row/col ops); grid/colspan/rowspan/header survive into both formats (existing tests).
 
 ## objects
-- [ ] T16 contract test: image resize/wrap preserved
-- [ ] T17 implement image sizing attrs (both converters) + editor.js
-- [ ] T18 contract test: shape/textbox/chart/equation round-trips (HTML embed)
-- [ ] T19 implement object embed (both converters) + editor.js
+- [x] T16 contract test: image resize preserved — width/height round-trip both formats: `test_html_to_docx_image_roundtrip_explicit_dimensions`, `test_html_to_odt_image_roundtrip_explicit_dimensions` + production e2e `test_image_resize_width_height_roundtrips_production_opencloud` (`<img width height>` -> ODT svg:width/height px on draw:frame -> reload).
+- [x] T17 implement image sizing attrs (both converters) + editor.js — converters already emitted/read dims; editor.js insert-image dialog now exposes Width/Height (px) fields wired into `confirmImageDialog` (`<img width= height=>`); `Image.Width/Height/SizeHint` i18n. Wrap = inline/as-char only (float wrap deferred).
+- [ ] T18 contract test: shape/textbox/chart/equation round-trips (HTML embed) — OPEN (no draw:custom-shape / wps / chart / math mapping in either converter).
+- [ ] T19 implement object embed (both converters) + editor.js — OPEN (deferred).
 
 ## links
 - [x] T20 contract test: hyperlink round-trips — DOCX (pre-existing) + ODT (`test_html_to_odt_hyperlink_roundtrip`); REGRESSION tests for link boundaries both formats (`test_html_to_docx_link_boundaries_preserved`, `test_html_to_odt_link_boundaries_preserved`). Bookmarks/cross-references use w:anchor/`#frag` hrefs (DOCX `w:anchor` read; `#` hrefs preserved as-is in both converters) — partial.

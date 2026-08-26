@@ -57,7 +57,7 @@ Module deps: CD=converter.py(DOCX) · CO=odt_converter.py(ODT) · UI=editor.js �
 - caption ❌ — REQUIRES UI,CD,CO
 
 ## 6. objects (PART_OF FeatureSurface)
-- image ⚠️ (insert UI + data-URI embed + resize round-trip both formats; wrap = inline/as-char only) — REQUIRES UI,CD,CO
+- image ✅ (insert UI + data-URI embed + resize UI (width/height px) round-tripping both formats; wrap = inline/as-char only) — REQUIRES UI,CD,CO
 - shape ❌ — REQUIRES UI,CD,CO
 - textbox ❌ — REQUIRES UI,CD,CO
 - chart ❌ — REQUIRES UI,CD,CO
