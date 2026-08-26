@@ -364,6 +364,9 @@
     captureHistory();
     updateUndoRedoState();
     markDirty();
+    // Persist the blank document immediately (autosave would wait ~30s);
+    // the empty editor HTML is a valid blank document for the converter.
+    saveDocument();
   }
 
   // Open is delegated to the surrounding host application (OpenCloud / WOPI

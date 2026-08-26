@@ -42,10 +42,10 @@
 
 ## 6. File operations (editor-ui/file-ops)
 
-- [ ] 6.1 "New" control: blank document + fresh store entry (confirm before discard) in `editor.js` + router.
-- [ ] 6.2 Add `GET /api/documents/{id}/export/{fmt}` for `odt` and `html` (server-side convert); PDF if a lightweight renderer is available, else defer.
-- [ ] 6.3 Print control opening browser print dialog with paper styling.
-- [ ] 6.4 Playwright check: export to ODT, assert valid file; new document clears editor.
+- [x] 6.1 "New" in `editor.js`: confirm-before-discard, then clear + immediate save (autosave would lag ~30s) so the blank document persists; server-side fresh store entry already available at `POST /api/documents/new` (returns an editor URL for a blank docx/odt).
+- [x] 6.2 `GET/POST /api/documents/{id}/export?format=…` for `odt`/`html`/`docx`/`pdf`; File > Export submenu drives `doExport(format)` download in `editor.js`. New unit tests: `tests/test_file_ops.py` (valid ODT zip with `mimetype` + text in `content.xml`; sanitized HTML export; new-document route).
+- [x] 6.3 Print control: `doPrint()` → `window.print()`; added `@media print` paper-only stylesheet (chrome hidden, `@page` margins) in `web/style.css`.
+- [x] 6.4 Playwright `test_file_menu_export_odt_and_new_document`: File > Export > ODT yields a downloadable ODT whose `content.xml` holds the body text; New confirms, clears the editor and the blank state persists to the host on save.
 
 ## 7. Collaboration presence (editor-ui/collab-presence)
 

@@ -574,3 +574,26 @@ main {
   .dialog-field { flex-wrap: wrap; }
   .dialog-field input { flex: 1; min-width: 72px; }
 }
+
+/* Printing: only the paper should reach the printer — chrome (nav, toolbar,
+   status, dialogs, presence/review overlays) is hidden and the editor's
+   paper surface fills the page with comfortable @page margins. */
+@media print {
+  body { background: #fff !important; }
+  nav, header.toolbar, footer, .status, .dialog-overlay,
+  #collab-peers, #collab-overlay, #find-bar, .sync-pill {
+    display: none !important;
+  }
+  main { margin: 0; padding: 0; }
+  #editor {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    box-shadow: none;
+    border: 0;
+    margin: 0;
+    padding: 0;
+  }
+  @page { margin: 2cm; }
+}

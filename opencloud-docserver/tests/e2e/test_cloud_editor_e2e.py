@@ -553,3 +553,48 @@ def test_insert_hr_pagebreak_symbol(servers):
         finally:
             ctx.close()
             browser.close()
+
+
+def test_file_menu_export_odt_and_new_document(servers):
+    """Export ODT from the File menu; New clears + persists the editor."""
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            seed = _seed_doc(servers, "file-ops.docx", "Exportable body")
+            ctx = browser.new_context(accept_downloads=True)
+            page = ctx.new_page()
+            # Accept the New-document confirm().
+            page.on("dialog", lambda d: d.accept())
+            page.goto(_parent_url(servers, seed))
+            frame = page.frame("ed")
+            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+
+            # --- Export ODT via File > Export > ODT -> downloadable archive.
+            frame.locator("#btn-file").click()
+            frame.locator("#btn-export").hover()
+            with page.expect_download(timeout=10000) as dl_info:
+                frame.locator("button[data-export='odt']").click()
+            dl = dl_info.value
+            assert dl.suggested_filename.endswith(".odt"), dl.suggested_filename
+            path = dl.path()
+            data = path.read_bytes()
+            assert data[:2] == b"PK", "ODT export must be a zip"
+            import zipfile as _zipfile
+            with _zipfile.ZipFile(io.BytesIO(data)) as zf:
+                content = zf.read("content.xml").decode("utf-8", "replace")
+            assert "Exportable body" in content
+
+            # --- New: confirm -> editor cleared.
+            frame.locator("#btn-file").click()
+            frame.locator("#btn-new").click()
+            _wait(lambda: frame.locator("#editor").inner_text().strip() == "")
+            assert frame.locator("#editor").inner_text().strip() == ""
+
+            # Save -> the blank document reaches the host too.
+            frame.locator("#btn-save").click()
+            _wait(lambda: _host_text(servers, seed).strip() == "")
+        finally:
+            ctx.close()
+            browser.close()
