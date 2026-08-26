@@ -224,6 +224,12 @@ def test_two_users_collaborate_save_and_notify_host(servers):
                 lambda: "LIVEPROBE_X" in _frame_text(frame_a) and "LIVEPROBE_X" in _frame_text(frame_b)
             )
 
+            # Presence: both editors show each other as collaborators (chips),
+            # and a remote caret is rendered for the peer.
+            assert frame_a.locator("#collab-peers .peer-chip").count() >= 2
+            assert frame_b.locator("#collab-peers .peer-chip").count() >= 2
+            assert frame_a.locator(".remote-caret").count() >= 1
+
             # User A types -> User B converges.
             frame_a.locator("#editor").click()
             frame_a.locator("#editor").press("End")

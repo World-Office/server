@@ -1814,10 +1814,97 @@
   collabBadge.id = "collab-badge";
   collabBadge.style.cssText = "margin-left:8px;font-size:12px;color:#22c55e;";
   if (status && status.parentNode) status.parentNode.insertBefore(collabBadge, status);
-  function renderPresence(clients) {
-    const n = (clients || []).length;
-    collabBadge.textContent = n ? "● " + n + " editing" : "";
+  // --- presence: peer chips + remote carets -----------------------
+  // Stable colour per client id so each collaborator keeps a consistent hue
+  // across caret, chip and label.
+  function peerColor(id) {
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 360;
+    return "hsl(" + h + ",65%,55%)";
   }
+  let collabOverlay = null;
+  let lastClients = [];
+  function ensureOverlay() {
+    if (collabOverlay) return collabOverlay;
+    const host = editor.parentElement; // <main>, position:relative
+    collabOverlay = document.createElement("div");
+    collabOverlay.id = "collab-overlay";
+    collabOverlay.style.cssText = "position:absolute;inset:0;pointer-events:none;z-index:5;overflow:hidden;";
+    host.appendChild(collabOverlay);
+    return collabOverlay;
+  }
+  function caretRectForIndex(index) {
+    let remaining = index, node = null, pos = 0;
+    const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, null);
+    while (walker.nextNode()) {
+      const len = walker.currentNode.textContent.length;
+      if (remaining <= len) { node = walker.currentNode; pos = remaining; break; }
+      remaining -= len;
+    }
+    const r = document.createRange();
+    if (node) r.setStart(node, Math.min(pos, node.textContent.length));
+    else { r.selectNodeContents(editor); r.collapse(false); }
+    r.collapse(true);
+    const rect = r.getClientRects()[0] || (node ? node.getBoundingClientRect() : r.getBoundingClientRect());
+    const base = editor.parentElement.getBoundingClientRect();
+    return { left: rect.left - base.left, top: rect.top - base.top, height: rect.height || 18 };
+  }
+  function renderRemoteCaret(client, color, overlay) {
+    let marker = overlay.querySelector('[data-peer="' + client.client + '"]');
+    if (!marker) {
+      marker = document.createElement("div");
+      marker.className = "remote-caret";
+      marker.dataset.peer = client.client;
+      const tag = document.createElement("span");
+      tag.className = "remote-caret-label";
+      marker.appendChild(tag);
+      overlay.appendChild(marker);
+    }
+    const user = client.user || client.client;
+    marker.querySelector(".remote-caret-label").textContent = user;
+    marker.style.borderColor = color;
+    marker.querySelector(".remote-caret-label").style.background = color;
+    const cur = client.cursor;
+    if (cur && typeof cur === "object" && typeof cur.index === "number") {
+      const rc = caretRectForIndex(cur.index);
+      marker.style.display = "";
+      marker.style.left = rc.left + "px";
+      marker.style.top = rc.top + "px";
+      marker.style.height = rc.height + "px";
+    } else {
+      marker.style.display = "none";
+    }
+  }
+  function renderPresence(clients) {
+    const list = clients || [];
+    lastClients = list;
+    const n = list.length;
+    collabBadge.textContent = n ? "● " + n + " editing" : "";
+    let panel = document.getElementById("collab-peers");
+    if (!panel) {
+      panel = document.createElement("span");
+      panel.id = "collab-peers";
+      panel.className = "collab-peers";
+      if (status && status.parentNode) status.parentNode.insertBefore(panel, status);
+    }
+    panel.innerHTML = "";
+    const overlay = ensureOverlay();
+    overlay.innerHTML = "";
+    list.forEach((c) => {
+      const color = peerColor(c.client);
+      const chip = document.createElement("span");
+      chip.className = "peer-chip";
+      chip.style.background = color;
+      const label = (c.user || c.client).slice(0, 2).toUpperCase();
+      chip.textContent = label + (c.client === CLIENT_ID ? "\u2022" : "");
+      chip.title = (c.user || c.client) + (c.client === CLIENT_ID ? " (you)" : "");
+      panel.appendChild(chip);
+      if (c.client !== CLIENT_ID) renderRemoteCaret(c, color, overlay);
+    });
+  }
+  // Keep remote carets aligned when the surface scrolls or reshapes.
+  editor.addEventListener("scroll", () => renderPresence(lastClients));
+  window.addEventListener("resize", () => renderPresence(lastClients));
 
   // --- plain-text helpers (collab is character-CRDT on plain text) -
   function editorPlainText() { return editor.innerText || ""; }
@@ -1945,6 +2032,9 @@
       const res = await fetch(api("collab/state"));
       const data = await res.json();
       if (data && typeof data.text === "string") applyRemoteText(data.text);
+      // Presence is refreshed from the polled state (the browser uses polling
+      // rather than the SSE stream, so peer join/leave must be re-read here).
+      if (data && Array.isArray(data.clients)) renderPresence(data.clients);
     } catch (e) {}
     setTimeout(pollCollab, 400);
   }
