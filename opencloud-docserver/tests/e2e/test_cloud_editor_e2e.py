@@ -705,3 +705,48 @@ def test_inline_format_commands_code_caps_strike(servers):
         finally:
             ctx.close()
             browser.close()
+
+
+def test_paragraph_rtl_and_line_spacing_roundtrip(servers):
+    """RTL + line-spacing paragraph props persist through save + reload."""
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            seed = _seed_doc(servers, "parafmt.docx", "para base")
+            ctx = browser.new_context()
+            parent = ctx.new_page()
+            parent.goto(_parent_url(servers, seed))
+            frame = parent.frame("ed")
+            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+            assert "para base" in _frame_text(frame)
+
+            frame.locator("#editor").click()
+            frame.locator("#editor").press("End")
+            frame.locator("#editor").press_sequentially(" RTL line")
+
+            # Apply 1.5 line spacing via the dropdown then RTL on the same block.
+            frame.select_option("#line-spacing", "1.5")
+            frame.locator("button[data-cmd='directionRtl']").click()
+
+            html = frame.evaluate("document.getElementById('editor').innerHTML")
+            assert 'line-height: 1.5' in html, html
+            assert 'direction: rtl' in html, html
+
+            # Save -> both reach the host DOCX.
+            frame.locator("#btn-save").click()
+            _wait(lambda: (
+                "line-height:1.5" in _host_html(servers, seed)
+                and "direction:rtl" in _host_html(servers, seed)
+            ))
+
+            # Reload from the host -> props survive.
+            parent.reload()
+            frame2 = parent.frame("ed")
+            frame2.locator("#editor").wait_for(state="visible", timeout=15000)
+            html2 = frame2.evaluate("document.getElementById('editor').innerHTML")
+            assert 'line-height' in html2 and 'rtl' in html2.lower(), html2
+        finally:
+            ctx.close()
+            browser.close()

@@ -11,8 +11,8 @@ TDD per category: write failing contract test → implement converter + UI → v
 - [x] T6 implement sup/sub/strike/caps/code (both converters) + editor.js commands — `runCommand` cases code/smallCaps/allCaps (`toggleMonospace` via fontName=Consolas, `toggleInlineCSS` wrap/unwrap + `cloneContents` to preserve nested formatting); toolbar buttons SC / Ā / `</>`; `updateActiveStates` reads `spanStyleActive`/`fontIsMono`; sanitizer now keeps `<strike>/<del>/<code>` (this was a real data-loss bug: `<strike>` was stripped before conversion). E2E `test_inline_format_commands_code_caps_strike`.
 
 ## paragraph
-- [ ] T7 contract test: line-spacing/indent/spacing/rtl/page-break-before round-trips
-- [ ] T8 implement paragraph style props (both converters) + editor.js
+- [x] T7 contract test: line-spacing/indent/spacing/rtl/page-break-before round-trips — `test_html_to_docx_paragraph_props_roundtrip` + `test_html_to_odt_paragraph_props_roundtrip` (all six props); blockquote→indent test.
+- [x] T8 implement paragraph style props (both converters) + editor.js — DOCX: `_para_style_parts`/`_apply_para_props` (line-space multiple via VALUE not rule — python-docx labels 1.5 as ONE_POINT_FIVE; w:bidi/w:pageBreakBefore/w:ind/w:spacing; `<blockquote>`→24pt left indent). ODT: `_build_para_resolver` + `_para_css` (fo:line-height %↔multiple, margins/indent via fo:margin-*, `style:writing-mode` rtl, fo:break-before) + writer `para_style(props)` preserving `WO_Center`/`WO_Right` names. UI: `directionRtl` toggle on blocks (parity with applyLineHeight — which now round-trips line-height instead of silently dropping it) + `RTL` toolbar button. E2E `test_paragraph_rtl_and_line_spacing_roundtrip`.
 
 ## lists
 - [ ] T9 contract test: multilevel/outline list round-trips

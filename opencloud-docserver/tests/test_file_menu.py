@@ -40,3 +40,10 @@ def test_inline_text_format_buttons_present():
         assert f'data-cmd="{cmd}"' in HTML, f"missing button data-cmd={cmd} in index.html"
     for fn in ["toggleInlineCSS", "toggleMonospace", "fontIsMono", "spanStyleActive"]:
         assert fn in JS, f"editor.js missing {fn}"
+
+
+def test_paragraph_format_commands_present():
+    """RTL button + block-level paragraph commands exist (T8 UI)."""
+    assert 'data-cmd="directionRtl"' in HTML
+    assert "toggleBlockDirection" in JS
+    assert "applyLineHeight" in JS
