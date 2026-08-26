@@ -701,6 +701,18 @@ def test_sanitize_keeps_superscript_and_subscript():
     assert "<s>old</s>" in out
 
 
+def test_sanitize_keeps_strike_del_and_code():
+    """Strike/del/code survive the sanitizer (inline-text parity)."""
+    out = sanitize_html(
+        "<p><strike>gone</strike> <del>old</del> <code>plain</code></p>"
+    )
+    assert "<strike>gone</strike>" in out
+    assert "<del>old</del>" in out
+    assert "<code>plain</code>" in out
+    # arbitrary inactive tags remain dropped
+    assert "figure" not in sanitize_html("<p><figure>x</figure></p>")
+
+
 def test_save_document_sanitizes_css_behavior(client):
     """CSS behavior: must be stripped."""
     _seed_doc(client)

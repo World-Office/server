@@ -538,6 +538,84 @@
     sel.removeAllRanges();
     sel.addRange(r);
   }
+  // Wrap the selection in (or unwrap it from) an inline <span style>. Used
+  // by the small-caps / all-caps buttons, which have no execCommand. The
+  // original selection is cloned (cloneContents) so nested formatting
+  // inside the selection survives the wrap; toggling off unwraps the exact
+  // span that wraps the whole selection.
+  function toggleInlineCSS(prop, value) {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return false;
+    const range = sel.getRangeAt(0);
+    if (range.collapsed || range.toString() === "") return false;
+    let node = range.commonAncestorContainer;
+    if (node.nodeType === 3) node = node.parentElement;
+    let span = null;
+    const text = range.toString();
+    while (node && node !== editor) {
+      if (node.nodeType === 1 && /^span$/i.test(node.tagName) &&
+          node.style && node.style[prop] === value && text === node.textContent) {
+        span = node;
+        break;
+      }
+      node = node.parentNode;
+    }
+    try {
+      const frag = range.cloneContents();
+      const tmp = document.createElement("div");
+      tmp.appendChild(frag);
+      const inner = tmp.innerHTML;
+      const kebab = prop.replace(/([A-Z])/g, "-$1").toLowerCase();
+      if (span) {
+        // Toggle off: replace with the (unwrapped) inner markup.
+        document.execCommand("insertHTML", false, inner);
+      } else {
+        document.execCommand("insertHTML", false,
+          `<span style="${kebab}:${value}">${inner}</span>`);
+      }
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  // Code toggle via the native fontName command (styleWithCSS on). The
+  // converters map any monospace family to <code> on save, so applying
+  // Consolas here round-trips as inline code; applying it again steps
+  // back to the plain font.
+  function toggleMonospace() {
+    try {
+      document.execCommand("styleWithCSS", false, "true");
+      const current = fontIsMono();
+      document.execCommand("fontName", false, current ? "" : "Consolas");
+      document.execCommand("styleWithCSS", false, "false");
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function fontIsMono() {
+    try {
+      return /consolas|courier|mono/i.test(
+        String(document.queryCommandValue("fontName") || ""));
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function spanStyleActive(prop, value) {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return false;
+    let node = sel.anchorNode;
+    if (node && node.nodeType === 3) node = node.parentElement;
+    while (node && node !== editor) {
+      if (node.nodeType === 1 && node.style && node.style[prop] === value) return true;
+      node = node.parentNode;
+    }
+    return false;
+  }
+
   function runCommand(cmd, value) {
     if (cmd === "insertUnorderedList" || cmd === "insertOrderedList") {
       toggleList(cmd);
@@ -562,6 +640,25 @@
     // under the selection directly (see applyLineHeight below).
     if (cmd === "lineHeight") {
       applyLineHeight(value);
+      updateActiveStates();
+      updateUndoRedoState();
+      return;
+    }
+    // code / small-caps / all-caps have no native execCommand; they wrap
+    // the selection in (or unwrap it from) a CSS span. The converters map
+    // monospace families to <code> and these CSS props to the same style
+    // strings, so everything round-trips through DOCX and ODT.
+    if (cmd === "code" || cmd === "smallCaps" || cmd === "allCaps") {
+      const applied = cmd === "code"
+        ? toggleMonospace()
+        : toggleInlineCSS(cmd === "smallCaps" ? "fontVariant" : "textTransform",
+                          cmd === "smallCaps" ? "small-caps" : "uppercase");
+      if (!applied) {
+        // No selection: fall back to a native command so the caret path
+        // still does something reasonable instead of silently doing nothing.
+        try { document.execCommand(cmd === "code" ? "fontName" : "strikeThrough", false,
+                                   cmd === "code" ? "Consolas" : null); } catch (err) {}
+      }
       updateActiveStates();
       updateUndoRedoState();
       return;
@@ -761,9 +858,16 @@
       if (!cmd || cmd === "undo" || cmd === "redo") return;
       let active = false;
       try {
-        active = cmd === "formatBlock"
-          ? (btn.dataset.value || "P") === currentBlockTag()
-          : document.queryCommandState(cmd);
+        if (cmd === "smallCaps" || cmd === "allCaps") {
+          active = spanStyleActive(cmd === "smallCaps" ? "fontVariant" : "textTransform",
+                                   cmd === "smallCaps" ? "small-caps" : "uppercase");
+        } else if (cmd === "code") {
+          active = fontIsMono();
+        } else {
+          active = cmd === "formatBlock"
+            ? (btn.dataset.value || "P") === currentBlockTag()
+            : document.queryCommandState(cmd);
+        }
       } catch (err) {
         // A few engines throw for queryCommandState on unsupported commands;
         // treat those as inactive instead of aborting the whole loop.

@@ -49,6 +49,8 @@ from odf.text import (
     Span,
 )
 
+from src.editor.converter import _MONO_FONTS, _normalize_color, _parse_inline_style
+
 _BOLD_WEIGHTS = {"bold", "bolder", "600", "700", "800", "900"}
 _ITALIC_STYLES = {"italic", "oblique"}
 _UNDERLINE_STYLES = {"solid", "dotted", "dash", "long-dash", "dot-dash",
@@ -69,8 +71,24 @@ def _style_text_props(el):
                 "fontweight": child.getAttribute("fontweight"),
                 "fontstyle": child.getAttribute("fontstyle"),
                 "textunderlinestyle": child.getAttribute("textunderlinestyle"),
+                "textlinethroughstyle": child.getAttribute("textlinethroughstyle"),
+                "color": child.getAttribute("color"),
+                "backgroundcolor": child.getAttribute("backgroundcolor"),
+                "fontfamily": child.getAttribute("fontfamily"),
+                "fontsize": child.getAttribute("fontsize"),
+                "fontvariant": child.getAttribute("fontvariant"),
+                "texttransform": child.getAttribute("texttransform"),
+                "textposition": child.getAttribute("textposition"),
             }
     return {}
+
+
+def _none_flags() -> dict:
+    return {
+        "bold": None, "italic": None, "underline": None, "strike": None,
+        "color": None, "bg": None, "font_family": None, "font_size": None,
+        "vert": None, "small_caps": None, "all_caps": None,
+    }
 
 
 def _build_style_resolver(doc):
@@ -92,16 +110,13 @@ def _build_style_resolver(doc):
 
     cache: dict[str, dict] = {}
 
-    def _none() -> dict:
-        return {"bold": None, "italic": None, "underline": None}
-
     def resolve(name: str | None) -> dict:
         if not name:
-            return _none()
+            return _none_flags()
         if name in cache:
             return cache[name]
         if name not in raw:
-            return _none()
+            return _none_flags()
         props, parent = raw[name]
         out = dict(resolve(parent))
         weight = props.get("fontweight")
@@ -119,6 +134,40 @@ def _build_style_resolver(doc):
             out["underline"] = True
         elif under == "none":
             out["underline"] = False
+        linethrough = props.get("textlinethroughstyle")
+        if linethrough and linethrough != "none":
+            out["strike"] = True
+        elif linethrough == "none":
+            out["strike"] = False
+        color = props.get("color")
+        if color:
+            out["color"] = _normalize_color(color)
+        bg = props.get("backgroundcolor")
+        if bg:
+            out["bg"] = _normalize_color(bg)
+        family = props.get("fontfamily")
+        if family is not None:
+            out["font_family"] = family
+        size = props.get("fontsize")
+        if size is not None:
+            out["font_size"] = size.lower()
+        variant = props.get("fontvariant")
+        if variant in ("small-caps", "smallcaps"):
+            out["small_caps"] = True
+        elif variant in ("normal", "none"):
+            out["small_caps"] = False
+        ttransform = props.get("texttransform")
+        if ttransform == "uppercase":
+            out["all_caps"] = True
+        elif ttransform in ("none", "lowercase"):
+            out["all_caps"] = False
+        valign = props.get("textposition")
+        if valign in ("super", "superscript"):
+            out["vert"] = "sup"
+        elif valign in ("sub", "subscript"):
+            out["vert"] = "sub"
+        elif valign == "auto":
+            out["vert"] = None
         cache[name] = out
         return out
 
@@ -426,7 +475,9 @@ def _inline_html(el, resolve, base, pictures) -> str:
             elif qname == (TEXTNS, "span"):
                 flags = dict(base)
                 span_flags = resolve(child.getAttribute("stylename"))
-                for key in ("bold", "italic", "underline"):
+                for key in ("bold", "italic", "underline", "strike", "vert",
+                            "small_caps", "all_caps", "color", "bg",
+                            "font_family", "font_size"):
                     if span_flags[key] is not None:
                         flags[key] = span_flags[key]
                 out.append(_inline_html(child, resolve, flags, pictures))
@@ -446,6 +497,37 @@ def _inline_html(el, resolve, base, pictures) -> str:
 
 
 def _wrap(text: str, flags: dict) -> str:
+    """Apply character formatting flags around already-escaped text.
+
+    Mirrors the DOCX converter's ``_wrap_run_text`` so both formats emit
+    the same HTML contract: ``<sup>/<sub>/<strike>/<code>`` + one
+    ``<span style=...>`` holding font-family/size, small-caps, all-caps,
+    colour and highlight.
+    """
+    if flags.get("vert") == "sup":
+        text = f"<sup>{text}</sup>"
+    elif flags.get("vert") == "sub":
+        text = f"<sub>{text}</sub>"
+    if flags.get("strike"):
+        text = f"<strike>{text}</strike>"
+    fam = flags.get("font_family")
+    if fam and fam.lower().strip() in _MONO_FONTS:
+        text = f"<code>{text}</code>"
+    styles: list[str] = []
+    if fam and fam.lower().strip() not in _MONO_FONTS:
+        styles.append(f"font-family:{fam}")
+    if flags.get("font_size"):
+        styles.append(f"font-size:{flags['font_size']}")
+    if flags.get("small_caps"):
+        styles.append("font-variant:small-caps")
+    if flags.get("all_caps"):
+        styles.append("text-transform:uppercase")
+    if flags.get("color"):
+        styles.append(f"color:{flags['color']}")
+    if flags.get("bg"):
+        styles.append(f"background-color:{flags['bg']}")
+    if styles:
+        text = f'<span style="{"; ".join(styles)}">{text}</span>'
     for key, tag in (("bold", "b"), ("italic", "i"), ("underline", "u")):
         if flags.get(key):
             text = f"<{tag}>{text}</{tag}>"
@@ -655,21 +737,63 @@ class _OdtWriter:
         self._img_n = 0
 
     # -- character styles -------------------------------------------------
-    def char_style(self, bold: bool, italic: bool, underline: bool) -> str | None:
-        key = (bold, italic, underline)
+    def char_style(self, token: dict) -> str | None:
+        """Return (creating if needed) an ODF character style for a token.
+
+        The style is keyed by the full formatting tuple (bold/italic/
+        underline/strike/vert/caps/colour/background/font), so identical
+        formatting reuses one style element — the same dedup the old
+        b/i/u-only version did, just with more dimensions.
+        """
+        fam = token.get("font_family")
+        if token.get("code"):
+            fam = "Consolas"
+        key = (
+            bool(token.get("bold")), bool(token.get("italic")), bool(token.get("underline")),
+            bool(token.get("strike")), bool(token.get("small_caps")), bool(token.get("all_caps")),
+            token.get("vert"), token.get("color"), token.get("bg"), fam, token.get("font_size"),
+        )
         if key in self._char_styles:
             return self._char_styles[key]
-        if not any(key):
+        has_any = any((
+            key[0], key[1], key[2], key[3], key[4], key[5], key[6], key[7],
+            key[8], key[9], key[10],
+        ))
+        if not has_any:
             return None
-        name = f"WO_{int(bold)}{int(italic)}{int(underline)}"
-        style = Style(name=name, family="text")
+        # Preserve the historic WO_{b}{i}{u} name (1=on/0=off) for the
+        # b/i/u-only styles so pre-existing consumers/tests keep working;
+        # extended formatting gets a numeric suffix.
+        base = f"WO_{int(bool(token.get('bold')))}{int(bool(token.get('italic')))}{int(bool(token.get('underline')))}"
+        extended = any((key[3], key[4], key[5], key[6], key[7], key[8], key[9], key[10]))
+        name = f"{base}_{len(self._char_styles)}" if extended else base
         props: list[tuple[str, str]] = []
-        if bold:
+        if token.get("bold"):
             props.append(("fontweight", "bold"))
-        if italic:
+        if token.get("italic"):
             props.append(("fontstyle", "italic"))
-        if underline:
+        if token.get("underline"):
             props.append(("textunderlinestyle", "solid"))
+        if token.get("strike"):
+            props.append(("textlinethroughstyle", "solid"))
+        if token.get("small_caps"):
+            props.append(("fontvariant", "small-caps"))
+        if token.get("all_caps"):
+            props.append(("texttransform", "uppercase"))
+        vert = token.get("vert")
+        if vert == "sup":
+            props.append(("textposition", "super"))
+        elif vert == "sub":
+            props.append(("textposition", "sub"))
+        if token.get("color"):
+            props.append(("color", token["color"]))
+        if token.get("bg"):
+            props.append(("backgroundcolor", token["bg"]))
+        if fam:
+            props.append(("fontfamily", fam))
+        if token.get("font_size"):
+            props.append(("fontsize", token["font_size"]))
+        style = Style(name=name, family="text")
         style.addElement(TextProperties(**dict(props)))
         self.doc.automaticstyles.addElement(style)
         self._char_styles[key] = name
@@ -707,7 +831,7 @@ class _OdtWriter:
                 self.add_image(el, token)
                 continue
             text = token["text"]
-            style_name = self.char_style(token["bold"], token["italic"], token["underline"])
+            style_name = self.char_style(token)
             if style_name:
                 el.addElement(Span(text=text, stylename=style_name))
             else:
@@ -847,8 +971,11 @@ class _InlineRunBuilder(HTMLParser):
     """Parse an inline HTML fragment into text tokens and image tokens.
 
     Text tokens are dicts with ``text`` / ``bold`` / ``italic`` /
-    ``underline`` keys; image tokens have ``type: "image"`` plus the
-    ``src`` / ``alt`` / ``width`` / ``height`` attributes.
+    ``underline`` / ``strike`` / ``vert`` / ``color`` / ``bg`` /
+    ``font_family`` / ``font_size`` / ``small_caps`` / ``all_caps`` /
+    ``code`` keys; image tokens have ``type: "image"`` plus the
+    ``src`` / ``alt`` / ``width`` / ``height`` attributes. Mirrors the
+    DOCX converter's builder so both formats share the same HTML contract.
     """
 
     def __init__(self) -> None:
@@ -857,6 +984,17 @@ class _InlineRunBuilder(HTMLParser):
         self._bold = 0
         self._italic = 0
         self._underline = 0
+        self._strike = 0
+        self._code = 0
+        self._color = None
+        self._bg = None
+        self._vert = None
+        self._font_family = None
+        self._font_size = None
+        self._small_caps = None
+        self._all_caps = None
+        self._span_stack: list[tuple] = []
+        self._vert_stack: list[str | None] = []
         self._buf: list[str] = []
 
     def handle_starttag(self, tag: str, attrs) -> None:
@@ -879,6 +1017,40 @@ class _InlineRunBuilder(HTMLParser):
         elif tag == "u":
             self._flush()
             self._underline += 1
+        elif tag == "span":
+            self._flush()
+            a = dict(attrs)
+            props = _parse_inline_style(a.get("style", ""))
+            self._span_stack.append(
+                (self._color, self._bg, self._font_family, self._font_size,
+                 self._small_caps, self._all_caps)
+            )
+            if "color" in props:
+                self._color = props["color"]
+            if "bg" in props:
+                self._bg = props["bg"]
+            if "font_family" in props:
+                self._font_family = props["font_family"]
+            if "font_size" in props:
+                self._font_size = props["font_size"]
+            if props.get("small_caps"):
+                self._small_caps = True
+            if props.get("all_caps"):
+                self._all_caps = True
+        elif tag == "sup":
+            self._flush()
+            self._vert_stack.append(self._vert)
+            self._vert = "sup"
+        elif tag == "sub":
+            self._flush()
+            self._vert_stack.append(self._vert)
+            self._vert = "sub"
+        elif tag in ("strike", "s", "del"):
+            self._flush()
+            self._strike += 1
+        elif tag == "code":
+            self._flush()
+            self._code += 1
         else:
             self._flush()
 
@@ -892,6 +1064,25 @@ class _InlineRunBuilder(HTMLParser):
         elif tag == "u":
             self._flush()
             self._underline = max(0, self._underline - 1)
+        elif tag == "span":
+            self._flush()
+            if self._span_stack:
+                (self._color, self._bg, self._font_family, self._font_size,
+                 self._small_caps, self._all_caps) = self._span_stack.pop()
+        elif tag == "sup":
+            self._flush()
+            if self._vert_stack:
+                self._vert = self._vert_stack.pop()
+        elif tag == "sub":
+            self._flush()
+            if self._vert_stack:
+                self._vert = self._vert_stack.pop()
+        elif tag in ("strike", "s", "del"):
+            self._flush()
+            self._strike = max(0, self._strike - 1)
+        elif tag == "code":
+            self._flush()
+            self._code = max(0, self._code - 1)
         else:
             self._flush()
 
@@ -901,13 +1092,32 @@ class _InlineRunBuilder(HTMLParser):
     def _flush(self) -> None:
         text = "".join(self._buf)
         if text:
-            self.tokens.append({
+            token: dict = {
                 "type": "text",
                 "text": text,
                 "bold": self._bold > 0,
                 "italic": self._italic > 0,
                 "underline": self._underline > 0,
-            })
+            }
+            if self._strike:
+                token["strike"] = True
+            if self._code:
+                token["code"] = True
+            if self._color:
+                token["color"] = self._color
+            if self._bg:
+                token["bg"] = self._bg
+            if self._vert:
+                token["vert"] = self._vert
+            if self._font_family:
+                token["font_family"] = self._font_family
+            if self._font_size:
+                token["font_size"] = self._font_size
+            if self._small_caps:
+                token["small_caps"] = True
+            if self._all_caps:
+                token["all_caps"] = True
+            self.tokens.append(token)
         self._buf = []
 
 

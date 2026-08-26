@@ -3,12 +3,12 @@
 TDD per category: write failing contract test → implement converter + UI → verify green.
 
 ## inline-text
-- [ ] T1 contract test: color/background round-trips in DOCX + ODT (FAIL)
-- [ ] T2 implement `_wrap_run_text` + `_InlineRunBuilder` color/highlight (converter.py + odt_converter.py)
-- [ ] T3 contract test: font-family/font-size round-trips
-- [ ] T4 implement font-family/font-size emit/parse (both converters)
-- [ ] T5 contract test: sup/sub/strike/small-caps/all-caps/inline-code round-trips
-- [ ] T6 implement sup/sub/strike/caps/code (both converters) + editor.js commands
+- [x] T1 contract test: color/background round-trips in DOCX + ODT — DOCX already green (format-advanced); ODT now emits `fo:color`/`fo:background-color` via `TextProperties` and round-trips both.
+- [x] T2 implement color/highlight in both converters — `_apply_run_style` (DOCX) + ODT `char_style`/resolver extended; symmetric HTML contract (one `style=` span).
+- [x] T3 contract test: font-family/font-size round-trips — `test_html_to_docx_font_family_size_roundtrip` + `test_html_to_odt_font_family_size_roundtrip` (Georgia + 14pt).
+- [x] T4 implement font-family/font-size emit/parse (both converters) — `w:rFonts`/`w:sz` on DOCX; `fo:font-family`/`fo:font-size` on ODT; `_parse_font_size` normalises pt/px.
+- [x] T5 contract test: sup/sub/strike/small-caps/all-caps/inline-code round-trips — both suites (ODT: `style:text-position` `super`/`sub`; `text-line-through-style`; `font-variant`; `text-transform`).
+- [x] T6 implement sup/sub/strike/caps/code (both converters) + editor.js commands — `runCommand` cases code/smallCaps/allCaps (`toggleMonospace` via fontName=Consolas, `toggleInlineCSS` wrap/unwrap + `cloneContents` to preserve nested formatting); toolbar buttons SC / Ā / `</>`; `updateActiveStates` reads `spanStyleActive`/`fontIsMono`; sanitizer now keeps `<strike>/<del>/<code>` (this was a real data-loss bug: `<strike>` was stripped before conversion). E2E `test_inline_format_commands_code_caps_strike`.
 
 ## paragraph
 - [ ] T7 contract test: line-spacing/indent/spacing/rtl/page-break-before round-trips

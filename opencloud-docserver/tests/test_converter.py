@@ -53,6 +53,29 @@ def test_html_to_docx_superscript_subscript_roundtrip():
     assert "<sub>" in out
 
 
+def test_html_to_docx_font_family_size_roundtrip():
+    """font-family/font-size spans survive HTML->DOCX->HTML."""
+    html = '<p><span style="font-family:Georgia;font-size:14pt">geo 14</span></p>'
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    assert "Georgia" in out
+    assert "14pt" in out
+
+
+def test_html_to_docx_strike_smallcaps_allcaps_inlinecode_roundtrip():
+    """Strike, small-caps, all-caps and inline code survive the DOCX round-trip."""
+    html = (
+        '<p><strike>gone</strike> '
+        '<span style="font-variant:small-caps">sc</span> '
+        '<span style="text-transform:uppercase">up</span> '
+        '<code>code</code></p>'
+    )
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    for frag in ("<strike>", "small-caps", "uppercase", "<code>"):
+        assert frag in out, frag
+
+
 def test_table_merge_and_column_removal_roundtrip():
     """A merged cell + a removed column survive HTML->DOCX->HTML."""
     html = (

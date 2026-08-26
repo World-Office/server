@@ -22,7 +22,7 @@ from docx.enum.dml import MSO_COLOR_TYPE
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Emu, RGBColor
+from docx.shared import Emu, Pt, RGBColor
 from docx.table import _Cell
 from docx.text.paragraph import Paragraph
 from docx.text.run import Run
@@ -349,8 +349,8 @@ def _text_child_value(child) -> str:
     return ""
 
 
-def _apply_run_color(run, token: dict) -> None:
-    """Apply colour / highlight / super- / subscript tokens to a run."""
+def _apply_run_style(run, token: dict) -> None:
+    """Apply colour / highlight / font / vert / strike / caps tokens to a run."""
     color = token.get("color")
     if color:
         try:
@@ -372,24 +372,74 @@ def _apply_run_color(run, token: dict) -> None:
         run.font.superscript = True
     elif vert == "sub":
         run.font.subscript = True
+    if token.get("strike"):
+        run.font.strike = True
+    if token.get("small_caps"):
+        run.font.small_caps = True
+    if token.get("all_caps"):
+        run.font.all_caps = True
+    if token.get("code"):
+        run.font.name = "Consolas"
+    fam = token.get("font_family")
+    if fam:
+        run.font.name = fam
+    size = token.get("font_size")  # e.g. "14pt" from _parse_font_size
+    if size:
+        try:
+            run.font.size = Pt(float(size[:-2]))
+        except Exception:
+            pass
 
 
-def _parse_inline_style(style: str) -> tuple[str | None, str | None]:
-    """Return (color, background) hex values parsed from a CSS style string."""
-    color = None
-    bg = None
+def _parse_inline_style(style: str) -> dict:
+    """Parse safe CSS declarations from a span style into token properties.
+
+    Returns a dict with any of: ``color``, ``bg``, ``font_family`` (CSS
+    name), ``font_size`` ("<n>pt"), ``small_caps``, ``all_caps``.
+    """
+    props: dict = {}
     for decl in (style or "").split(";"):
         decl = decl.strip()
         if ":" not in decl:
             continue
         prop, _, val = decl.partition(":")
         prop = prop.strip().lower()
-        val = val.strip().lower()
+        val = val.strip()
         if prop == "color":
-            color = _normalize_color(val)
+            c = _normalize_color(val)
+            if c:
+                props["color"] = c
         elif prop in ("background-color", "background"):
-            bg = _normalize_color(val)
-    return color, bg
+            c = _normalize_color(val)
+            if c:
+                props["bg"] = c
+        elif prop == "font-family":
+            fam = val.strip().strip("'\"")
+            if fam:
+                props["font_family"] = fam
+        elif prop == "font-size":
+            size = _parse_font_size(val)
+            if size:
+                props["font_size"] = size
+        elif prop == "font-variant" and val.lower() == "small-caps":
+            props["small_caps"] = True
+        elif prop == "text-transform" and val.lower() == "uppercase":
+            props["all_caps"] = True
+    return props
+
+
+def _parse_font_size(val: str) -> str | None:
+    """Normalise a CSS font-size to ``'<n>pt'`` (pt / px supported)."""
+    m = re.match(r"^\s*(\d+(?:\.\d+)?)\s*(pt|px)?\s*$", val, re.I)
+    if not m:
+        return None
+    num = float(m.group(1))
+    if num <= 0:
+        return None
+    unit = (m.group(2) or "pt").lower()
+    if unit == "px":
+        num = num * 0.75
+    return f"{num:g}pt"
 
 
 def _normalize_color(val: str) -> str | None:
@@ -435,6 +485,34 @@ def _run_highlight_hex(run) -> str | None:
         return "#" + fill.lower()
     return None
 
+def _run_highlight_hex(run) -> str | None:
+    """Return the run's highlight (w:shd fill) as #rrggbb, or None."""
+    rPr = run._r.find(qn("w:rPr"))
+    if rPr is None:
+        return None
+    shd = rPr.find(qn("w:shd"))
+    if shd is None:
+        return None
+    fill = shd.get(qn("w:fill"))
+    if fill:
+        return "#" + fill.lower()
+    return None
+
+
+_MONO_FONTS = {
+    "consolas", "courier new", "courier", "monospace", "liberation mono",
+    "dejavu sans mono", "cascadia mono", "source code pro",
+}
+
+
+def _run_font_family(run) -> str | None:
+    """The run's ASCII font name (w:rFonts ascii), or None."""
+    try:
+        return run.font.name
+    except Exception:
+        return None
+
+
 def _wrap_run_text(text: str, run) -> str:
     """Apply a run's character formatting around already-escaped text."""
     out = text
@@ -442,12 +520,38 @@ def _wrap_run_text(text: str, run) -> str:
         out = f"<sup>{out}</sup>"
     elif run.font.subscript:
         out = f"<sub>{out}</sub>"
+    try:
+        struck = run.font.strike
+    except Exception:
+        struck = False
+    if struck:
+        out = f"<strike>{out}</strike>"
+    fam = _run_font_family(run)
+    if fam and fam.lower().strip() in _MONO_FONTS:
+        out = f"<code>{out}</code>"
+    styles: list[str] = []
+    if fam and fam.lower().strip() not in _MONO_FONTS:
+        styles.append(f"font-family:{fam}")
+    try:
+        if run.font.size and run.font.size.pt:
+            styles.append(f"font-size:{run.font.size.pt:g}pt")
+    except Exception:
+        pass
+    try:
+        if run.font.small_caps:
+            styles.append("font-variant:small-caps")
+        if run.font.all_caps:
+            styles.append("text-transform:uppercase")
+    except Exception:
+        pass
     color = _run_color_hex(run)
     if color:
-        out = f'<span style="color:{color}">{out}</span>'
+        styles.append(f"color:{color}")
     bg = _run_highlight_hex(run)
     if bg:
-        out = f'<span style="background-color:{bg}">{out}</span>'
+        styles.append(f"background-color:{bg}")
+    if styles:
+        out = f'<span style="{'; '.join(styles)}">{out}</span>'
     if run.bold:
         out = f"<b>{out}</b>"
     if run.italic:
@@ -804,11 +908,17 @@ class _InlineRunBuilder(HTMLParser):
         self._bold = 0
         self._italic = 0
         self._underline = 0
+        self._strike = 0
+        self._code = 0
         self._link_href = None  # href of the <a> currently being parsed (or None)
         self._color = None      # current text colour (e.g. "#ff0000") or None
         self._bg = None         # current highlight (background) colour or None
         self._vert = None       # "sup"/"sub" or None
-        self._span_stack = []   # (prev_color, prev_bg) saved on <span> open
+        self._font_family = None
+        self._font_size = None
+        self._small_caps = None
+        self._all_caps = None
+        self._span_stack: list[tuple] = []  # prior span props saved on <span> open
         self._vert_stack = []   # prev vert saved on <sup>/<sub> open
         self._buf: list[str] = []
 
@@ -846,12 +956,23 @@ class _InlineRunBuilder(HTMLParser):
         elif tag == "span":
             self._flush()
             a = dict(attrs)
-            color, bg = _parse_inline_style(a.get("style", ""))
-            self._span_stack.append((self._color, self._bg))
-            if color is not None:
-                self._color = color
-            if bg is not None:
-                self._bg = bg
+            props = _parse_inline_style(a.get("style", ""))
+            self._span_stack.append(
+                (self._color, self._bg, self._font_family, self._font_size,
+                 self._small_caps, self._all_caps)
+            )
+            if "color" in props:
+                self._color = props["color"]
+            if "bg" in props:
+                self._bg = props["bg"]
+            if "font_family" in props:
+                self._font_family = props["font_family"]
+            if "font_size" in props:
+                self._font_size = props["font_size"]
+            if props.get("small_caps"):
+                self._small_caps = True
+            if props.get("all_caps"):
+                self._all_caps = True
         elif tag == "sup":
             self._flush()
             self._vert_stack.append(self._vert)
@@ -860,6 +981,12 @@ class _InlineRunBuilder(HTMLParser):
             self._flush()
             self._vert_stack.append(self._vert)
             self._vert = "sub"
+        elif tag in ("strike", "s", "del"):
+            self._flush()
+            self._strike += 1
+        elif tag == "code":
+            self._flush()
+            self._code += 1
         else:
             self._flush()
 
@@ -879,7 +1006,8 @@ class _InlineRunBuilder(HTMLParser):
         elif tag == "span":
             self._flush()
             if self._span_stack:
-                self._color, self._bg = self._span_stack.pop()
+                (self._color, self._bg, self._font_family, self._font_size,
+                 self._small_caps, self._all_caps) = self._span_stack.pop()
         elif tag == "sup":
             self._flush()
             if self._vert_stack:
@@ -888,6 +1016,12 @@ class _InlineRunBuilder(HTMLParser):
             self._flush()
             if self._vert_stack:
                 self._vert = self._vert_stack.pop()
+        elif tag in ("strike", "s", "del"):
+            self._flush()
+            self._strike = max(0, self._strike - 1)
+        elif tag == "code":
+            self._flush()
+            self._code = max(0, self._code - 1)
         else:
             self._flush()
 
@@ -913,6 +1047,18 @@ class _InlineRunBuilder(HTMLParser):
                 token["bg"] = self._bg
             if self._vert:
                 token["vert"] = self._vert
+            if self._strike:
+                token["strike"] = True
+            if self._code:
+                token["code"] = True
+            if self._font_family:
+                token["font_family"] = self._font_family
+            if self._font_size:
+                token["font_size"] = self._font_size
+            if self._small_caps:
+                token["small_caps"] = True
+            if self._all_caps:
+                token["all_caps"] = True
             self.tokens.append(token)
         self._buf = []
 
@@ -944,7 +1090,7 @@ def _add_styled_runs(paragraph, html: str) -> None:
             run.italic = True
         if token["underline"]:
             run.underline = True
-        _apply_run_color(run, token)
+        _apply_run_style(run, token)
 
 
 def _add_hyperlink(paragraph, token: dict) -> None:
