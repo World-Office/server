@@ -440,8 +440,18 @@ class CollabHub:
             if client_id in doc.presence:
                 doc.presence[client_id]["updated"] = time.time()
         if applied:
-            # real-time push: every live SSE subscriber sees the new ops
-            self._emit(doc_id, {"type": "ops", "doc_id": doc_id, "ops": applied})
+            # real-time push: every live SSE subscriber sees the new ops.
+            # Carry the full converged text so a thin browser client can apply
+            # the change directly without a follow-up /collab/state fetch.
+            self._emit(
+                doc_id,
+                {
+                    "type": "ops",
+                    "doc_id": doc_id,
+                    "ops": applied,
+                    "text": doc.crdt.to_string(),
+                },
+            )
         return {
             "doc_id": doc_id,
             "rev": doc.rev,
@@ -449,6 +459,58 @@ class CollabHub:
             "ops": self.ops_since(doc_id, base_rev if base_rev is not None else 0),
             "text": doc.crdt.to_string(),
         }
+
+    def sync_text(self, doc_id: str, client_id: str, text: str) -> dict:
+        """Merge a client's full-text snapshot into the CRDT.
+
+        The browser never runs the CRDT: it ships its plain-text content and
+        the server diffs it against the current CRDT text (common prefix /
+        suffix), applies the resulting insert/delete ops on the document's own
+        CRDT, and fans them out to every live subscriber. Two clients editing
+        the same document both converge because all snapshots are serialized
+        through the single CRDT.
+        """
+        doc = self.ensure(doc_id)
+        cur = doc.crdt.to_string()
+        text = str(text)
+        if cur == text:
+            return doc.snapshot()
+        # common prefix
+        i = 0
+        max_i = min(len(cur), len(text))
+        while i < max_i and cur[i] == text[i]:
+            i += 1
+        # common suffix (after the divergent middle)
+        j = 0
+        while (
+            j < (len(cur) - i)
+            and j < (len(text) - i)
+            and cur[len(cur) - 1 - j] == text[len(text) - 1 - j]
+        ):
+            j += 1
+        del_start = i
+        del_end = len(cur) - j
+        insert_text = text[i : len(text) - j]
+        # local_insert/local_delete mutate the CRDT and return the op dicts;
+        # we then record them as applied (bump rev, log, fan out) ourselves
+        # rather than re-feeding them to apply_ops, which would treat already
+        # integrated ops as duplicates and skip the revision bump + emit.
+        ops: list[dict] = []
+        if del_end > del_start:
+            ops.append(doc.crdt.local_delete(del_start, del_end))
+        if insert_text:
+            ops.append(doc.crdt.local_insert(del_start, insert_text))
+        ops = [o for o in ops if (o.get("chars") or o.get("ids"))]
+        if ops:
+            doc.rev += len(ops)
+            for o in ops:
+                doc.seen.add(op_key(o))
+                doc.log.append(o)
+            self._emit(
+                doc_id,
+                {"type": "ops", "doc_id": doc_id, "ops": ops, "text": doc.crdt.to_string()},
+            )
+        return doc.snapshot()
 
     def resync(self, doc_id: str, text: str) -> dict:
         """Rebase the document state onto authoritative text.

@@ -4,11 +4,9 @@ RED phase: fails until router.py implements POST /api/documents/new.
 """
 from __future__ import annotations
 
-import io
 from contextlib import asynccontextmanager
 
 import pytest
-from docx import Document
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 

@@ -6,7 +6,8 @@
 - [x] T3 contract test: POST /export?format=odt returns ODT; html returns html; docx returns docx
 - [x] T4 contract test: POST /new creates a blank session (FAIL→GREEN)
 - [x] T5 implement new-document route + session registration
-- [ ] T6 editor.js file menu: New / Open / Export(submenu) / Print wired to routes
+- [x] T6 editor.js file menu: New / Open / Export(submenu) / Print wired to routes
+  (RED→GREEN: tests/test_file_menu.py; menu in index.html, cmds in editor.js)
 - [ ] T7 E2E: file menu opens, export downloads, print dialog triggers
 
 ## View controls

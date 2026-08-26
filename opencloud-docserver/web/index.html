@@ -76,6 +76,32 @@
        keyboard/screen-reader users straight to the document text, past the
        toolbar. Visually hidden until focused (see .skip-link in style.css). -->
   <a class="skip-link" href="#editor" data-i18n="A11y.SkipToDocument">Skip to document</a>
+  <!-- Application menu bar: the File menu (New / Open / Export / Print).
+       Placed before the formatting toolbar so a keyboard user landing on the
+       skip link can reach app-level actions without tabbing through every
+       format button. The export submenu exposes per-format items that the
+       editor converts server-side (see editor.js doExport + router.py).
+       aria-haspopup / aria-expanded drive the dropdown disclosure state. -->
+  <nav id="menu-bar" class="menu-bar" aria-label="Application menu" data-i18n-aria-label="MenuBar.Region">
+    <div class="menu">
+      <button type="button" id="btn-file" class="menu-trigger" aria-haspopup="true" aria-expanded="false" data-i18n="Menu.File">File</button>
+      <ul id="file-menu" class="menu-list" role="menu" aria-labelledby="btn-file" hidden>
+        <li role="none"><button type="button" id="btn-new" role="menuitem" data-i18n="Menu.New">New</button></li>
+        <li role="none"><button type="button" id="btn-open" role="menuitem" data-i18n="Menu.Open">Open…</button></li>
+        <li role="none" class="menu-item-export">
+          <button type="button" id="btn-export" role="menuitem" aria-haspopup="true" aria-expanded="false" data-i18n="Menu.Export">Export</button>
+          <ul class="menu-sublist" role="menu" aria-label="Export as" hidden>
+            <li role="none"><button type="button" role="menuitem" data-export="pdf" data-i18n="Menu.ExportPdf">PDF</button></li>
+            <li role="none"><button type="button" role="menuitem" data-export="odt" data-i18n="Menu.ExportOdt">ODT</button></li>
+            <li role="none"><button type="button" role="menuitem" data-export="html" data-i18n="Menu.ExportHtml">HTML</button></li>
+            <li role="none"><button type="button" role="menuitem" data-export="docx" data-i18n="Menu.ExportDocx">DOCX</button></li>
+          </ul>
+        </li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
+        <li role="none"><button type="button" id="btn-print" role="menuitem" data-i18n="Menu.Print">Print</button></li>
+      </ul>
+    </div>
+  </nav>
   <header id="toolbar" class="toolbar" role="toolbar" aria-label="Formatting toolbar" data-i18n-aria-label="Toolbar.Region">
     <!-- Format group: character styles, font size/family, text color, highlight -->
     <!-- aria-pressed reflects the live on/off state (JS updateActiveStates);
