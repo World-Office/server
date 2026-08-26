@@ -50,10 +50,10 @@ TDD per category: write failing contract test → implement converter + UI → v
 - [x] T27 implement symbol/date-time/hr (converters + editor.js) — ODT `add_hr()` writes an empty paragraph styled `fo:border-bottom`; the reader detects a bottom-border-only EMPTY paragraph (`_raw_attr` reads FO attrs, incl. hyphenated border-bottom) and emits `<hr/>` — mirror of the DOCX heuristic. `btn-datetime` button + `insertDate` command (ISO date via execCommand insertText, structural-marker guard like insertSymbol). E2E `test_insert_hr_pagebreak_symbol` extended with the date.
 
 ## view / file / collaboration / tools (UI-only or collab)
-- [ ] T28 editor.js: zoom / dark-mode / fullscreen / print-layout
-- [ ] T29 editor.js: file-new / file-open / export(pdf,odt,html,docx) / print
-- [ ] T30 collab.py + editor.js: comments / track-changes / version-history
-- [ ] T31 editor.js: spellcheck / word-count / protect
+- [x] T28 editor.js: zoom / dark-mode / fullscreen / print-layout — shipped in `editor-ui-completeness` (view-controls): `applyZoom` + zoom in/out/reset buttons, theme toggle (prefers-color-scheme + `data-theme`), fullscreen API, print stylesheet.
+- [x] T29 editor.js: file-new / file-open / export(pdf,odt,html,docx) / print — shipped in `editor-ui-completeness`/`cloud-editor-complete` (file-ops): new/open dialogs, export menu (PDF/ODT/HTML/DOCX server-side), print.
+- [ ] T30 collab.py + editor.js: comments / track-changes / version-history — live multi-user collab (CRDT-presence, offline queue, presence cursors) shipped, but the three named features (comments, track-changes, version-history) are NOT implemented — remains open.
+- [x] T31 editor.js: spellcheck / word-count / protect — spellcheck attribute on the editor, word-count in the status bar, READ_ONLY protect mode (read-only host handshake).
 
 ## verification
 - [ ] T32 run full suite (pytest) + ruff; all 71 functions green or UI-wired

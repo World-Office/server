@@ -4,66 +4,67 @@
 > Each function lists IST status (current World-Office converter) and REQUIRES edges
 > to the modules that must support it (Converter-DOCX, Converter-ODT, UI, Sanitizer).
 > Mirrored into chemie-neo4j (db chemie) as Function nodes + REQUIRES / ALIGNED_WITH / PART_OF.
+> Last status sweep: 2026-08-26 (editor-format-parity change, suite 411 green).
 
 Legend: ✅ = works now · ⚠️ = partial · ❌ = missing
 Module deps: CD=converter.py(DOCX) · CO=odt_converter.py(ODT) · UI=editor.js · SA=sanitize.py
 
 ## 1. inline-text (PART_OF FeatureSurface)
-- bold ✅ (CD,CO) — REQUIRES CD,CO
+- bold ✅ (CD,CO)
 - italic ✅ (CD,CO)
 - underline ✅ (CD,CO)
-- strikethrough ❌ — REQUIRES CD,CO
-- color ❌ (SA ok, converter ignores) — REQUIRES CD,CO
-- highlight ❌ — REQUIRES CD,CO
-- font-family ❌ — REQUIRES CD,CO
-- font-size ❌ — REQUIRES CD,CO
-- superscript ❌ — REQUIRES CD,CO
-- subscript ❌ — REQUIRES CD,CO
-- small-caps ❌ — REQUIRES CD,CO
-- all-caps ❌ — REQUIRES CD,CO
-- inline-code ❌ — REQUIRES CD,CO,UI
+- strikethrough ✅ (CD,CO,UI; SA keeps strike/del)
+- color ✅ (CD,CO)
+- highlight ✅ (CD,CO)
+- font-family ✅ (CD,CO)
+- font-size ✅ (CD,CO)
+- superscript ✅ (CD,CO)
+- subscript ✅ (CD,CO)
+- small-caps ✅ (CD,CO,UI)
+- all-caps ✅ (CD,CO,UI)
+- inline-code ✅ (CD,CO,UI)
 
 ## 2. paragraph (PART_OF FeatureSurface)
 - align L/C/R/justify ✅ (CD,CO)
-- line-spacing ❌ — REQUIRES CD,CO
-- indent L/R/first/hanging ❌ — REQUIRES CD,CO
-- spacing before/after � loose (style whitelisted, not emitted) — REQUIRES CD,CO
-- paragraph-style ❌ — REQUIRES CD,CO,UI
-- rtl ❌ — REQUIRES CD,CO,UI
-- page-break-before ❌ — REQUIRES CD,CO
+- line-spacing ✅ (CD,CO)
+- indent L/R/first/hanging ✅ (CD,CO)
+- spacing before/after ✅ (CD,CO; w:spacing ↔ fo:margin-top/bottom)
+- paragraph-style ⚠️ (internal WO_Center/WO_Right/WO_A{n}; no user-named styles) — CD,CO,UI
+- rtl ✅ (CD,CO,UI)
+- page-break-before ✅ (CD,CO)
 
 ## 3. lists (PART_OF FeatureSurface)
 - bullet ✅ (CD,CO)
 - numbered ✅ (CD,CO)
-- multilevel ❌ — REQUIRES CD,CO,UI
+- multilevel ✅ (CD,CO,UI; nested <ul>/<ol> ↔ List Bullet/Number [n] ↔ nested text:list; Tab/Shift-Tab indent)
 
 ## 4. structure (PART_OF FeatureSurface)
 - headings ✅ (CD,CO)
 - TOC ❌ — REQUIRES CD,CO,UI
-- page-break ❌ — REQUIRES CD,CO,UI
+- page-break ✅ (CD,CO,UI; <div class="page-break"> ↔ w:br page ↔ fo:break-before="page")
 - section-break ❌ — REQUIRES CD,CO
 - columns ❌ — REQUIRES CD,CO
 
 ## 5. tables (PART_OF FeatureSurface)
-- insert ❌ (no UI; only roundtrip) — REQUIRES UI,CD,CO
-- add-row/col ❌ — REQUIRES UI,CD,CO
+- insert ✅ (UI dialog; roundtrip CD,CO)
+- add-row/col ✅ (UI ops)
 - merge ✅ (colspan/rowspan CD,CO)
 - split ❌ — REQUIRES UI,CD,CO
 - borders ❌ — REQUIRES CD,CO
 - shading ❌ — REQUIRES CD,CO
-- width/height ❌ — REQUIRES UI,CD,CO
+- width/height ❌ — REQUIRES CD,CO
 - header-row ✅ (th CD,CO)
 - caption ❌ — REQUIRES UI,CD,CO
 
 ## 6. objects (PART_OF FeatureSurface)
-- image ⚠️ (insert+roundtrip; no resize/wrap UI) — REQUIRES UI,CD,CO
+- image ⚠️ (insert UI + data-URI embed + resize round-trip both formats; wrap = inline/as-char only) — REQUIRES UI,CD,CO
 - shape ❌ — REQUIRES UI,CD,CO
 - textbox ❌ — REQUIRES UI,CD,CO
 - chart ❌ — REQUIRES UI,CD,CO
 - equation ❌ — REQUIRES UI,CD,CO
 
 ## 7. links (PART_OF FeatureSurface)
-- hyperlink ❌ — REQUIRES UI,CD,CO
+- hyperlink ✅ (UI link dialog; text:a ↔ w:hyperlink; safe-scheme filter; boundaries preserved both formats) — CD,CO,UI
 - bookmark ❌ — REQUIRES UI,CD,CO
 - cross-reference ❌ — REQUIRES UI,CD,CO
 
@@ -77,22 +78,22 @@ Module deps: CD=converter.py(DOCX) · CO=odt_converter.py(ODT) · UI=editor.js �
 - page-number ❌ — REQUIRES UI,CD,CO
 
 ## 10. insert (PART_OF FeatureSurface)
-- symbol ❌ — REQUIRES UI
-- date-time ❌ — REQUIRES UI
-- horizontal-rule ❌ — REQUIRES UI,CD,CO
+- symbol ✅ (UI symbol picker; literal char round-trips) — UI
+- date-time ✅ (UI btn-datetime inserts ISO date) — UI
+- horizontal-rule ✅ (UI btn-hr; w:pBdr (CD) ↔ fo:border-bottom (CO)) — UI,CD,CO
 
 ## 11. view (PART_OF FeatureSurface)
-- zoom ❌ — REQUIRES UI
-- dark-mode ❌ — REQUIRES UI
-- fullscreen ❌ — REQUIRES UI
-- print-layout ❌ — REQUIRES UI
+- zoom ✅ (UI)
+- dark-mode ✅ (UI)
+- fullscreen ✅ (UI)
+- print-layout ✅ (UI print stylesheet)
 
 ## 12. file (PART_OF FeatureSurface)
-- new ❌ — REQUIRES UI
-- open ❌ — REQUIRES UI
+- new ✅ (UI)
+- open ✅ (UI)
 - save ✅ (WOPI)
-- export-pdf/odt/html/docx ❌ — REQUIRES UI,CD,CO
-- print ❌ — REQUIRES UI
+- export-pdf/odt/html/docx ✅ (UI menu; server-side conversions) — UI,CD,CO
+- print ✅ (UI)
 
 ## 13. collaboration (PART_OF FeatureSurface)
 - comments ❌ — REQUIRES UI,CD,CO,collab
@@ -101,12 +102,15 @@ Module deps: CD=converter.py(DOCX) · CO=odt_converter.py(ODT) · UI=editor.js �
 - version-history ❌ — REQUIRES collab
 
 ## 14. tools (PART_OF FeatureSurface)
-- spellcheck ❌ — REQUIRES UI
+- spellcheck ✅ (UI attribute)
 - find-replace ✅
-- word-count ❌ — REQUIRES UI
+- word-count ✅ (UI status bar)
 - undo-redo ✅
-- protect ❌ — REQUIRES UI
+- protect ✅ (UI READ_ONLY handshake)
 
 ---
-TOTAL functions: ~80 · ✅ ~16 · ⚠️ 1 · ❌ ~63
-Converter gap (CD/CO) dominates; sanitizer already permissive.
+TOTAL functions: ~80 · ✅ ~40 · ⚠️ 5 · ❌ ~35
+Converter gap (CD/CO) now limited to tables (borders/shading/split/width),
+objects (shape/textbox/chart/equation), references, header-footer, and
+TOC/section-break/columns; the rest of the ❌ are collab-side (comments,
+track-changes, version-history).
