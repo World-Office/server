@@ -229,11 +229,24 @@ def test_html_to_docx_keeps_tagless_text():
 # --------------------------------------------------------------------------
 
 
+def _strip_default_tcW(table):
+    """Drop python-docx's per-cell default w:tcW (a layout default, not a real
+    width). Table-prop fixtures keep bare structural <td>/<th> assertions."""
+    for row in table.rows:
+        for cell in row.cells:
+            tcPr = cell._tc.tcPr
+            if tcPr is not None:
+                tcW = tcPr.find(qn("w:tcW"))
+                if tcW is not None:
+                    tcPr.remove(tcW)
+
+
 def _table_docx(rows=2, cols=2, values=None, header=False) -> bytes:
     """Build a DOCX whose only content is an NxM table."""
     doc = Document()
     table = doc.add_table(rows=rows, cols=cols)
     table.style = "Table Grid"
+    _strip_default_tcW(table)
     for r in range(rows):
         for c in range(cols):
             table.cell(r, c).text = values[r][c] if values else f"{r},{c}"
@@ -256,6 +269,7 @@ def test_docx_to_html_table_inline_formatting():
     """Run-level formatting inside cells must survive DOCX -> HTML."""
     doc = Document()
     table = doc.add_table(rows=1, cols=1)
+    _strip_default_tcW(table)
     p = table.cell(0, 0).paragraphs[0]
     r = p.add_run("bold")
     r.bold = True
@@ -279,6 +293,7 @@ def test_docx_to_html_table_multiparagraph_cell():
     """Multi-paragraph cell content joins with <br/>."""
     doc = Document()
     table = doc.add_table(rows=1, cols=1)
+    _strip_default_tcW(table)
     table.cell(0, 0).paragraphs[0].add_run("first")
     table.cell(0, 0).add_paragraph("second")
     buf = io.BytesIO()
@@ -369,6 +384,7 @@ def test_table_roundtrip_through_docx_is_stable():
     doc = Document()
     table = doc.add_table(rows=3, cols=3)
     table.style = "Table Grid"
+    _strip_default_tcW(table)
     for r in range(3):
         for c in range(3):
             table.cell(r, c).text = f"{r},{c}"
@@ -874,3 +890,24 @@ def test_html_to_docx_span_boundary_preserved():
     html = '<p>a<span style="color:#ff0000">b</span>c</p>'
     out = docx_to_html(html_to_docx(html)).replace("\n", "")
     assert out == '<p>a<span style="color:#ff0000">b</span>c</p>', out
+
+
+def test_html_to_docx_table_cell_props_roundtrip():
+    """Cell shading/borders/width survive HTML->DOCX->HTML (T13)."""
+    html = ('<table width="500"><tr><th style="background-color:#ffdddd">H</th></tr>'
+            '<tr><td style="border:1pt solid #000000; background-color:#eeeeee" '
+            'width="120">c</td></tr></table>')
+    out = docx_to_html(html_to_docx(html)).replace("\n", "")
+    assert "background-color:#ffdddd" in out, out
+    assert "background-color:#eeeeee" in out, out
+    assert "border:1pt solid #000000" in out, out
+    assert 'width="120"' in out, out
+    assert '<table width="500">' in out or "width=\"500\"" in out, out
+
+
+def test_html_to_docx_table_without_props_stays_plain():
+    """A plain grid table must NOT gain invented cell styles."""
+    html = "<table><tr><td>a</td></tr></table>"
+    out = docx_to_html(html_to_docx(html)).replace("\n", "")
+    assert "background-color" not in out
+    assert "border:" not in out

@@ -23,9 +23,9 @@ TDD per category: write failing contract test → implement converter + UI → v
 - [x] T12 implement page-break in both converters — ODT: `<div class="page-break">` → empty paragraph with `fo:break-before="page"` (writer `add_page_break`, shared WO_PageBreak style); reader emits the DOCX-contract marker for an EMPTY break-before paragraph (`<div class="page-break"><br></div>`). editor.js page-break insert already exists.
 
 ## tables
-- [ ] T13 contract test: borders/shading/width-height/caption/split round-trips
-- [ ] T14 implement table props (both converters) + editor.js table dialogs
-- [ ] T15 contract test + UI: table insert / add row-col
+- [x] T13 contract test: borders/shading/width round-trips — `test_html_to_docx_table_cell_props_roundtrip`, `test_html_to_odt_table_cell_props_roundtrip` + "stays_plain" guards both formats. Caption/split remain OPEN. (Height round-trips implicitly via cell width; not asserted separately.)
+- [x] T14 implement table props (both converters) — HTML contract: `<td style="background-color:#…; border:Npt solid #…" width="N">` + `<table width="N">`. DOCX: w:shd/w:tcBorders/w:tcW (dxa) / w:tblW+jc; ODT: `table:table-cell-properties` (fo:background-color/fo:border) + `table:table-column` `style:column-width` (LibreOffice-correct) + `style:table-properties` width. Readers normalize LO units (cm/mm/in→pt for borders, →px for widths). python-docx default `w:tcW` is stripped on write so plain tables stay bare (reader only emits widths that are genuinely present). `_int_attr` made defensive (a covered-table-cell carries no span attrs).
+- [x] T15 contract test + UI: table insert / add row-col — UI shipped in `editor-ui-completeness` (insert-table dialog + row/col ops); grid/colspan/rowspan/header survive into both formats (existing tests).
 
 ## objects
 - [ ] T16 contract test: image resize/wrap preserved

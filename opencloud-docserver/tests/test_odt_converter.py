@@ -1358,3 +1358,24 @@ def test_html_to_odt_link_boundaries_preserved():
     html = '<p>See <a href="https://example.com">site</a> now.</p>'
     out = odt_to_html(html_to_odt(html)).replace("\n", "")
     assert out == '<p>See <a href="https://example.com">site</a> now.</p>', out
+
+
+def test_html_to_odt_table_cell_props_roundtrip():
+    """Cell shading/borders/width survive HTML->ODT->HTML (T13)."""
+    html = ('<table width="500"><tr><th style="background-color:#ffdddd">H</th></tr>'
+            '<tr><td style="border:1pt solid #000000; background-color:#eeeeee" '
+            'width="120">c</td></tr></table>')
+    out = odt_to_html(html_to_odt(html)).replace("\n", "")
+    assert "background-color:#ffdddd" in out, out
+    assert "background-color:#eeeeee" in out, out
+    assert "border:1pt solid #000000" in out, out
+    assert 'width="120"' in out, out
+    assert 'width="500"' in out, out
+
+
+def test_html_to_odt_table_without_props_stays_plain():
+    """A plain ODT table must NOT gain invented cell styles."""
+    html = "<table><tr><td>a</td></tr></table>"
+    out = odt_to_html(html_to_odt(html)).replace("\n", "")
+    assert "background-color" not in out
+    assert "border:" not in out
