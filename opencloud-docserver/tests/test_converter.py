@@ -850,3 +850,11 @@ def test_html_to_docx_nested_numbered_list_roundtrip():
     assert norm == (
         "<ol><li>one<ol><li>1.1</li></ol></li><li>two</li></ol>"
     ), norm
+
+
+def test_special_symbol_roundtrips_docx():
+    """A special symbol (literal char) survives DOCX round-trip."""
+    from src.editor.odt_converter import html_to_odt, odt_to_html
+    html = "<p>Use the § symbol and ¶ now.</p>"
+    assert "§" in docx_to_html(html_to_docx(html))
+    assert "§" in odt_to_html(html_to_odt(html))

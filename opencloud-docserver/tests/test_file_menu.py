@@ -47,3 +47,10 @@ def test_paragraph_format_commands_present():
     assert 'data-cmd="directionRtl"' in HTML
     assert "toggleBlockDirection" in JS
     assert "applyLineHeight" in JS
+
+
+def test_insert_date_button_wired():
+    """Date/time insert button + command exist (insert parity T27)."""
+    assert 'id="btn-datetime"' in HTML
+    assert "insertDate" in JS
+    assert 'id="btn-hr"' in HTML

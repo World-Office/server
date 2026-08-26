@@ -534,12 +534,17 @@ def test_insert_hr_pagebreak_symbol(servers):
             frame.locator("#symbol-dialog .symbol-btn").first.click()
             _wait(lambda: "§" in _frame_text(frame))
 
-            # Save -> markers + symbol reach the host DOCX.
+            # Date/time insert -> ISO date appears as text.
+            frame.locator("#btn-datetime").click()
+            _wait(lambda: "2026-" in _frame_text(frame))
+
+            # Save -> markers + symbol + date reach the host DOCX.
             frame.locator("#btn-save").click()
             _wait(lambda: (
                 "<hr" in _host_html(servers, seed)
                 and "page-break" in _host_html(servers, seed)
                 and "§" in _host_html(servers, seed)
+                and "2026-" in _host_html(servers, seed)
             ))
 
             # Reload -> they come back from the host into the editor.

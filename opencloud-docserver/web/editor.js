@@ -723,11 +723,14 @@
       updateUndoRedoState();
       return;
     }
-    if (cmd === "insertSymbol") {
-      // Never let a symbol land inside an <hr> or page-break marker whose
-      // caret Chromium re-restored on focus.
+    if (cmd === "insertSymbol" || cmd === "insertDate") {
+      // Never let a symbol/date-land inside an <hr> or page-break marker
+      // whose caret Chromium re-restored on focus.
       moveCaretPastStructuralMarkers();
-      try { document.execCommand("insertText", false, String(value || "")); } catch (err) {}
+      const text = cmd === "insertDate"
+        ? new Date().toISOString().slice(0, 10)
+        : String(value || "");
+      try { document.execCommand("insertText", false, text); } catch (err) {}
       markDirty();
       captureHistory();
       scheduleCollabSync();
@@ -1913,6 +1916,8 @@
   }
   const symbolBtn = document.getElementById("btn-symbol");
   if (symbolBtn) symbolBtn.addEventListener("click", openSymbolDialog);
+  const dtBtn = document.getElementById("btn-datetime");
+  if (dtBtn) dtBtn.addEventListener("click", () => emitCommand("insertDate"));
   const symbolClose = document.getElementById("btn-symbol-close");
   if (symbolClose) symbolClose.addEventListener("click", () => {
     const d = document.getElementById("symbol-dialog");
