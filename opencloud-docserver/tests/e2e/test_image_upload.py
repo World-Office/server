@@ -553,3 +553,30 @@ def test_unsafe_image_urls_are_dropped_on_save(stack):
     stored = stack.remote_doc("img-safe")
     assert _odt_picture_bytes(stored) == [], "no picture may be embedded from a script URL"
     assert "alert" not in _odt_content_xml(stored)
+
+
+def test_image_resize_width_height_roundtrips_production_opencloud(stack):
+    """Explicit width/height on a data-URI <img> (what the resize fields in
+    the insert-image dialog emit) survive save -> ODT draw:frame dims ->
+    reload, through the real production path."""
+    png = _png_bytes(4, 2)
+    stack.host.seed("img-resize", "resize.odt", b"")
+    stack.launch_editor("img-resize", user="alice")
+
+    stack.save_html(
+        "img-resize",
+        f'<p><img src="{_data_uri(png)}" alt="wide" width="240" height="120"/></p>',
+    )
+    assert stack.host.put_count == 1
+
+    stored = stack.remote_doc("img-resize")
+    content = _odt_content_xml(stored)
+    # The draw:frame carries the requested dimensions (svg:width/height px).
+    assert "svg:width=\"240px\"" in content, content
+    assert "120px" in content, content
+
+    reloaded = stack.load_html("img-resize")
+    assert 'width="240"' in reloaded and 'height="120"' in reloaded, reloaded
+    assert _decode_data_uri(_img_srcs(reloaded)[0]) == png
+
+    print("IMAGE-RESIZE-ROUNDTRIP: OK")

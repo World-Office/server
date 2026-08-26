@@ -188,6 +188,9 @@
     "Table.Rows": "Zeilen",
     "Prompt.TableColumns": "Anzahl der Spalten:",
     "Prompt.TableRows": "Anzahl der Zeilen:",
+    "Image.Width": "Width (px)",
+    "Image.Height": "Height (px)",
+    "Image.SizeHint": "leave empty for the original size",
   };
 
   /** Language code → embedded catalog (merged over the English default). */

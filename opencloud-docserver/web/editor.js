@@ -1269,6 +1269,12 @@
     if (okBtn) okBtn.disabled = true;
     if (previewWrap) previewWrap.hidden = true;
     if (errEl) errEl.textContent = "";
+    const sizeFields = document.getElementById("image-size-fields");
+    if (sizeFields) sizeFields.hidden = true;
+    const wIn = document.getElementById("image-width");
+    const hIn = document.getElementById("image-height");
+    if (wIn) wIn.value = "";
+    if (hIn) hIn.value = "";
     rememberFocus();
     dialog.classList.add("open");
     if (fileInput) fileInput.focus();
@@ -1366,6 +1372,8 @@
         preview.alt = escapeAttr(file.name);
       }
       if (previewWrap) previewWrap.hidden = false;
+      const sizeFields = document.getElementById("image-size-fields");
+      if (sizeFields) sizeFields.hidden = false;
       if (errEl) errEl.textContent = "";
       if (okBtn) okBtn.disabled = false;
     };
@@ -1390,10 +1398,17 @@
     closeImageDialog();
     restoreImageSelection();
     editor.focus();
+    const wIn = document.getElementById("image-width");
+    const hIn = document.getElementById("image-height");
+    const dims = [];
+    const wRaw = wIn ? wIn.value.trim() : "";
+    const hRaw = hIn ? hIn.value.trim() : "";
+    if (/^\d+$/.test(wRaw) && Number(wRaw) > 0) dims.push(" width=\"" + Number(wRaw) + "\"");
+    if (/^\d+$/.test(hRaw) && Number(hRaw) > 0) dims.push(" height=\"" + Number(hRaw) + "\"");
     document.execCommand(
       "insertHTML",
       false,
-      '<img src="' + src + '" alt="' + alt + '">'
+      '<img src="' + src + '" alt="' + alt + '"' + dims.join("") + '>'
     );
     captureHistory();
   }

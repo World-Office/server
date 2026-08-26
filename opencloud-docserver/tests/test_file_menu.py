@@ -11,6 +11,7 @@ from pathlib import Path
 WEB = Path(__file__).resolve().parent.parent / "web"
 HTML = (WEB / "index.html").read_text(encoding="utf-8")
 JS = (WEB / "editor.js").read_text(encoding="utf-8")
+I18N = (WEB / "i18n.js").read_text(encoding="utf-8")
 
 
 def test_file_menu_present_in_html():
@@ -54,3 +55,11 @@ def test_insert_date_button_wired():
     assert 'id="btn-datetime"' in HTML
     assert "insertDate" in JS
     assert 'id="btn-hr"' in HTML
+
+
+def test_image_resize_fields_wired():
+    """Image dialog exposes width/height resize inputs wired into confirm."""
+    assert 'id="image-width"' in HTML and 'id="image-height"' in HTML
+    assert 'id="image-size-fields"' in HTML
+    assert "dims.push(" in JS  # confirmImageDialog attaches width attr
+    assert "Image.Width" in I18N and "Image.Height" in I18N
