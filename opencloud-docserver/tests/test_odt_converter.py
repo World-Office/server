@@ -1237,3 +1237,15 @@ def test_html_to_odt_sup_sub_strike_caps_code_roundtrip():
     out = odt_to_html(odt)
     for frag in ("<sup>", "<sub>", "<strike>", "small-caps", "uppercase", "<code>"):
         assert frag in out, frag
+
+
+def test_html_to_odt_paragraph_props_roundtrip():
+    """Line-height / indent / spacing / RTL / page-break-before round-trip ODT."""
+    html = (
+        '<p style="line-height:1.5;margin-left:24pt;text-indent:12pt;'
+        'margin-top:6pt;direction:rtl;page-break-before:always">RTL para</p>'
+    )
+    odt = html_to_odt(html)
+    out = odt_to_html(odt)
+    for frag in ("line-height:1.5", "24pt", "12pt", "6pt", "rtl", "page-break-before"):
+        assert frag in out, frag

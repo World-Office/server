@@ -384,10 +384,115 @@ def _parse_px(value) -> int | None:
     return int(m.group(1)) if m else None
 
 
+def _style_para_props(el):
+    """Collect the paragraph properties of one style element."""
+    for child in el.childNodes:
+        if child.qname == (STYLENS, "paragraph-properties"):
+            return {
+                "textalign": child.getAttribute("textalign"),
+                "lineheight": child.getAttribute("lineheight"),
+                "marginleft": child.getAttribute("marginleft"),
+                "marginright": child.getAttribute("marginright"),
+                "margintop": child.getAttribute("margintop"),
+                "marginbottom": child.getAttribute("marginbottom"),
+                "textindent": child.getAttribute("textindent"),
+                "breakbefore": child.getAttribute("breakbefore"),
+                "writingmode": child.getAttribute("writingmode"),
+            }
+    return {}
+
+
+def _build_para_resolver(doc):
+    """Resolve a paragraph style name to its effective paragraph props.
+
+    Returns a dict with keys textalign / lineheight / marginleft /
+    marginright / margintop / marginbottom / textindent / breakbefore /
+    writingmode, honouring parent-style inheritance.
+    """
+    raw: dict[str, tuple[dict, str]] = {}
+    for root in (doc.styles, doc.automaticstyles):
+        for el in root.childNodes:
+            if el.qname == (STYLENS, "style") and el.getAttribute("family") == "paragraph":
+                name = el.getAttribute("name")
+                if name:
+                    raw[name] = (_style_para_props(el), el.getAttribute("parentstylename"))
+
+    cache: dict[str, dict] = {}
+
+    def _none() -> dict:
+        return {k: None for k in (
+            "textalign", "lineheight", "marginleft", "marginright",
+            "margintop", "marginbottom", "textindent", "breakbefore",
+            "writingmode",
+        )}
+
+    def resolve(name: str | None) -> dict:
+        if not name:
+            return _none()
+        if name in cache:
+            return cache[name]
+        if name not in raw:
+            return _none()
+        props, parent = raw[name]
+        out = dict(resolve(parent))
+        for key, val in props.items():
+            if val is not None:
+                out[key] = val
+        cache[name] = out
+        return out
+
+    return resolve
+
+
+def _odt_len_to_pt(val: str) -> float | None:
+    """Normalise an ODF length ("24pt", "2.12cm", "0.5in") to points."""
+    m = re.match(r"^\s*([\d.]+)\s*(pt|cm|in|mm)?\s*$", val, re.I)
+    if not m:
+        return None
+    num = float(m.group(1))
+    unit = (m.group(2) or "pt").lower()
+    scale = {"pt": 1.0, "cm": 28.3465, "in": 72.0, "mm": 2.83465}
+    try:
+        return num * scale.get(unit, 1.0)
+    except (TypeError, ValueError):
+        return None
+
+
+def _para_css(props: dict) -> list[str]:
+    """CSS declarations for a resolved ODF paragraph style."""
+    css: list[str] = []
+    align = props.get("textalign")
+    if align in ("center",):
+        css.append("text-align:center")
+    elif align in ("end", "right"):
+        css.append("text-align:right")
+    lh = props.get("lineheight") or ""
+    m = re.match(r"^(\d+(?:\.\d+)?)%$", lh.strip())
+    if m:
+        mult = float(m.group(1)) / 100.0
+        if abs(mult - 1.0) > 1e-6:
+            css.append(f"line-height:{mult:g}")
+    for key, csskey in (
+        ("marginleft", "margin-left"), ("marginright", "margin-right"),
+        ("margintop", "margin-top"), ("marginbottom", "margin-bottom"),
+        ("textindent", "text-indent"),
+    ):
+        v = _odt_len_to_pt(props.get(key) or "")
+        if v:
+            css.append(f"{csskey}:{v:g}pt")
+    mode = props.get("writingmode")
+    if mode and mode.lower() in ("rtl", "rl", "rl-tb"):
+        css.append("direction:rtl")
+    if (props.get("breakbefore") or "").lower() == "page":
+        css.append("page-break-before:always")
+    return css
+
+
 def odt_to_html(data: bytes) -> str:
     """Convert ODT bytes to an HTML fragment (content only, no <html>)."""
     doc = load(io.BytesIO(data))
     resolve = _build_style_resolver(doc)
+    presolve = _build_para_resolver(doc)
     kinds = _list_kinds(doc)
     pictures = _extract_pictures(data)
 
@@ -406,7 +511,7 @@ def odt_to_html(data: bytes) -> str:
         qname = child.qname
         if qname in ((TEXTNS, "p"), (TEXTNS, "h")):
             flush_list()
-            parts.append(_paragraph_to_html(child, resolve, pictures))
+            parts.append(_paragraph_to_html(child, resolve, pictures, presolve))
         elif qname == (TEXTNS, "list"):
             kind = kinds.get(child.getAttribute("stylename"), "ul")
             if pending_list != kind:
@@ -417,7 +522,7 @@ def odt_to_html(data: bytes) -> str:
                 parts.append(item)
         elif qname == (TABLENS, "table"):
             flush_list()
-            parts.append(_table_to_html(child, resolve, pictures))
+            parts.append(_table_to_html(child, resolve, pictures, presolve))
         elif qname == (DRAWNS, "frame"):
             # A draw:frame sitting directly in the body (not nested in a
             # text:p) is still a block-level image.
@@ -430,16 +535,21 @@ def odt_to_html(data: bytes) -> str:
     return "\n".join(p for p in parts if p)
 
 
-def _paragraph_to_html(el, resolve, pictures) -> str:
+def _paragraph_to_html(el, resolve, pictures, presolve=None) -> str:
     """Render a text:p or text:h element as a block-level HTML tag."""
     inner = _paragraph_inner_html(el, resolve, pictures)
+    attrs = ""
+    if presolve:
+        css = _para_css(presolve(el.getAttribute("stylename")))
+        if css:
+            attrs = ' style="' + ";".join(css) + '"'
     if el.qname == (TEXTNS, "h"):
         try:
             level = max(1, min(int(el.getAttribute("outlinelevel") or 1), 6))
         except ValueError:
             level = 1
-        return f"<h{level}>{inner}</h{level}>"
-    return f"<p>{inner}</p>"
+        return f"<h{level}{attrs}>{inner}</h{level}>"
+    return f"<p{attrs}>{inner}</p>"
 
 
 def _paragraph_inner_html(el, resolve, pictures) -> str:
@@ -586,7 +696,7 @@ def _table_rows(table_el):
             yield from _table_rows(child)
 
 
-def _cell_to_html(cell, resolve, pictures) -> str:
+def _cell_to_html(cell, resolve, pictures, presolve=None) -> str:
     """Render one table cell as a ``<td>`` (``''`` for covered cells).
 
     A ``covered-table-cell`` is the ODF placeholder for a slot already taken by
@@ -611,10 +721,10 @@ def _cell_to_html(cell, resolve, pictures) -> str:
         if c.nodeType != Node.ELEMENT_NODE:
             continue
         if c.qname == (TEXTNS, "p"):
-            pending.append(_paragraph_to_html(c, resolve, pictures))
+            pending.append(_paragraph_to_html(c, resolve, pictures, presolve))
         elif c.qname == (TABLENS, "table"):
             flush()
-            chunks.append(_table_to_html(c, resolve, pictures))
+            chunks.append(_table_to_html(c, resolve, pictures, presolve))
     flush()
     attrs = []
     colspan = _int_attr(cell, "numbercolumnsspanned") or 1
@@ -627,7 +737,7 @@ def _cell_to_html(cell, resolve, pictures) -> str:
     return open_tag + "".join(chunks) + "</td>"
 
 
-def _table_to_html(table_el, resolve, pictures) -> str:
+def _table_to_html(table_el, resolve, pictures, presolve=None) -> str:
     rows: list[str] = []
     for row in _table_rows(table_el):
         cells: list[str] = []
@@ -637,7 +747,7 @@ def _table_to_html(table_el, resolve, pictures) -> str:
             if cell.qname not in ((TABLENS, "table-cell"),
                                   (TABLENS, "covered-table-cell")):
                 continue
-            cell_html = _cell_to_html(cell, resolve, pictures)
+            cell_html = _cell_to_html(cell, resolve, pictures, presolve)
             if not cell_html:
                 continue  # covered cell: slot taken by a span
             repeat = _int_attr(cell, "numbercolumnsrepeated") or 1
@@ -690,7 +800,7 @@ def html_to_odt(html_fragment: str) -> bytes:
     doc = OpenDocumentText()
     w = _OdtWriter(doc)
 
-    block_re = re.compile(r"<(p|h[1-6]|ul|ol)[^>]*>(.*?)</\1>", re.S)
+    block_re = re.compile(r"<(p|h[1-6]|ul|ol|blockquote)[^>]*>(.*?)</\1>", re.S)
     blocks = list(block_re.finditer(body))
     for m in blocks:
         tag, inner = m.group(1), m.group(2)
@@ -700,15 +810,19 @@ def html_to_odt(html_fragment: str) -> bytes:
         if tag == "ol":
             w.add_list(inner, ordered=True)
             continue
-        if tag.startswith("h"):
-            w.add_paragraph(inner, level=int(tag[1]),
-                            align=_alignment(m.group(0)))
+        if tag == "blockquote":
+            # Chrome's execCommand indent -> left-indented paragraph (parity
+            # with the DOCX converter).
+            w.add_paragraph(inner, level=0, props={"margin-left": 24.0})
             continue
-        w.add_paragraph(inner, level=0, align=_alignment(m.group(0)))
+        if tag.startswith("h"):
+            w.add_paragraph(inner, level=int(tag[1]), props=_para_props(m.group(0)))
+            continue
+        w.add_paragraph(inner, level=0, props=_para_props(m.group(0)))
 
     # Tag-less input (raw text typed into an empty contenteditable).
     if not blocks and body.strip():
-        w.add_paragraph(body, level=0, align=None)
+        w.add_paragraph(body, level=0, props=None)
 
     for tbl_html in tables_html:
         w.add_table(tbl_html)
@@ -718,12 +832,42 @@ def html_to_odt(html_fragment: str) -> bytes:
     return buf.getvalue()
 
 
-def _alignment(open_tag_and_attrs: str) -> str | None:
-    if "text-align:center" in open_tag_and_attrs:
-        return "center"
-    if "text-align:right" in open_tag_and_attrs:
-        return "right"
-    return None
+def _para_props(open_tag_and_attrs: str) -> dict:
+    """Parse paragraph-level CSS props from a block open tag.
+
+    Mirrors the DOCX converter's ``_parse_para_props``: recognized keys are
+    text-align, line-height (multiple), margin-left/right, margin-top/
+    bottom, text-indent (point floats) and direction / page-break-before.
+    """
+    props: dict = {}
+    m = re.search(r'style="([^"]*)"', open_tag_and_attrs)
+    style = m.group(1) if m else ""
+    for decl in style.split(";"):
+        if ":" not in decl:
+            continue
+        prop, _, val = decl.partition(":")
+        prop = prop.strip().lower()
+        val = val.strip()
+        if prop == "line-height":
+            lm = re.match(r"^(\d+(?:\.\d+)?)$", val)
+            if lm:
+                v = float(lm.group(1))
+                if v > 0 and abs(v - 1.0) > 1e-6:
+                    props["line-height"] = v
+        elif prop in ("margin-left", "margin-right", "margin-top",
+                      "margin-bottom", "text-indent"):
+            v = _odt_len_to_pt(val)
+            if v:
+                props[prop] = v
+        elif prop == "direction" and val.lower() == "rtl":
+            props["direction"] = "rtl"
+        elif prop == "page-break-before" and val.lower() in ("always", "page"):
+            props["page-break-before"] = True
+        elif prop == "text-align" and val in ("center", "right"):
+            props["text-align"] = val
+    if 'dir="rtl"' in open_tag_and_attrs:
+        props["direction"] = "rtl"
+    return props
 
 
 class _OdtWriter:
@@ -799,20 +943,50 @@ class _OdtWriter:
         self._char_styles[key] = name
         return name
 
-    def para_style(self, align: str | None) -> str | None:
-        if not align:
+    def para_style(self, props: dict) -> str | None:
+        """Return (creating if needed) an ODF paragraph style for props.
+
+        ``props`` uses the ``_para_props`` key set (text-align, line-height
+        multiple, margin-*, text-indent, direction, page-break-before).
+        A lone alignment keeps the historic ``WO_Center``/``WO_Right``
+        name; anything richer gets a numeric suffix.
+        """
+        if not props:
             return None
-        if align in self._para_styles:
-            return self._para_styles[align]
-        name = "WO_" + align.capitalize()
+        key = tuple(sorted(props.items()))
+        if key in self._para_styles:
+            return self._para_styles[key]
+        align = props.get("text-align")
+        name = (
+            "WO_" + align.capitalize()
+            if align and len(props) == 1
+            else f"WO_A{len(self._para_styles)}"
+        )
+        pp: dict = {}
+        if align:
+            pp["textalign"] = align
+        if props.get("line-height"):
+            pp["lineheight"] = f"{float(props['line-height']) * 100:g}%"
+        for csskey, attr in (
+            ("margin-left", "marginleft"), ("margin-right", "marginright"),
+            ("margin-top", "margintop"), ("margin-bottom", "marginbottom"),
+            ("text-indent", "textindent"),
+        ):
+            v = props.get(csskey)
+            if v:
+                pp[attr] = f"{v:g}pt"
+        if props.get("direction") == "rtl":
+            pp["writingmode"] = "rtl"
+        if props.get("page-break-before"):
+            pp["breakbefore"] = "page"
         style = Style(name=name, family="paragraph")
-        style.addElement(ParagraphProperties(textalign=align))
+        style.addElement(ParagraphProperties(**pp))
         self.doc.automaticstyles.addElement(style)
-        self._para_styles[align] = name
+        self._para_styles[key] = name
         return name
 
-    def add_paragraph(self, html: str, level: int = 0, align: str | None = None) -> None:
-        style_name = self.para_style(align)
+    def add_paragraph(self, html: str, level: int = 0, props: dict | None = None) -> None:
+        style_name = self.para_style(props) if props else None
         if level:
             el = H(outlinelevel=level)
             if style_name:

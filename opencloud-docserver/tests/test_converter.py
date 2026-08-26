@@ -801,3 +801,28 @@ def test_sanitize_allows_hr_and_keeps_page_break_class():
     assert 'class="page-break"' in out, out
     assert "<script>" not in out, out
     assert "alert(1)" not in out, out
+
+
+def test_html_to_docx_paragraph_props_roundtrip():
+    """Line-height / indent / spacing / RTL / page-break-before round-trip.
+
+    A paragraph carrying all five style properties must survive
+    HTML -> DOCX -> HTML with the values intact.
+    """
+    html = (
+        '<p style="line-height:1.5;margin-left:24pt;text-indent:12pt;'
+        'margin-top:6pt;direction:rtl;page-break-before:always">RTL para</p>'
+    )
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    for frag in ("line-height:1.5", "24pt", "12pt", "6pt", "rtl", "page-break-before"):
+        assert frag in out, frag
+
+
+def test_html_to_docx_blockquote_becomes_indent():
+    """A <blockquote> (Chrome's execCommand indent) maps to a left indent."""
+    html = "<blockquote>indented line</blockquote>"
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    assert "indented line" in out
+    assert "margin-left" in out.lower() or "blockquote" in out

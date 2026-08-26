@@ -616,6 +616,33 @@
     return false;
   }
 
+  // Toggle right-to-left on the block(s) touched by the selection: set or
+  // remove ``style="direction:rtl"``. Both converters round-trip the
+  // property (DOCX w:bidi / ODF style:writing-mode) and the sanitizer's
+  // style whitelist keeps ``direction`` on save.
+  function toggleBlockDirection() {
+    if (READ_ONLY) return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    if (!editor.contains(range.startContainer)) return;
+    const blocks = [];
+    [range.startContainer, range.endContainer].forEach((node) => {
+      const b = blockElementAt(node);
+      if (b && b !== editor && blocks.indexOf(b) === -1) blocks.push(b);
+    });
+    if (blocks.length === 0) return;
+    const anyRtl = blocks.some((b) => b.style.direction === "rtl");
+    blocks.forEach((el) => {
+      if (anyRtl) el.style.removeProperty("direction");
+      else el.style.setProperty("direction", "rtl");
+    });
+    markDirty();
+    captureHistory();
+    scheduleCollabSync();
+    notifyHost("editing");
+  }
+
   function runCommand(cmd, value) {
     if (cmd === "insertUnorderedList" || cmd === "insertOrderedList") {
       toggleList(cmd);
@@ -640,6 +667,14 @@
     // under the selection directly (see applyLineHeight below).
     if (cmd === "lineHeight") {
       applyLineHeight(value);
+      updateActiveStates();
+      updateUndoRedoState();
+      return;
+    }
+    // RTL is a block-level style, not an execCommand: toggle direction on
+    // the block(s) under the selection (parity with applyLineHeight).
+    if (cmd === "directionRtl") {
+      toggleBlockDirection();
       updateActiveStates();
       updateUndoRedoState();
       return;
@@ -863,6 +898,10 @@
                                    cmd === "smallCaps" ? "small-caps" : "uppercase");
         } else if (cmd === "code") {
           active = fontIsMono();
+        } else if (cmd === "directionRtl") {
+          const sel = window.getSelection();
+          const blk = sel && sel.anchorNode ? blockElementAt(sel.anchorNode) : null;
+          active = !!(blk && blk.style.direction === "rtl");
         } else {
           active = cmd === "formatBlock"
             ? (btn.dataset.value || "P") === currentBlockTag()

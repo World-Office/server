@@ -223,6 +223,143 @@ def _para_is_page_break(para) -> bool:
     )
 
 
+def _para_style_parts(para) -> list[str]:
+    """CSS declarations for a paragraph's formatting.
+
+    Maps the DOCX paragraph properties to the HTML contract used by both
+    converters: line-height (multiple), margin-left/right, text-indent,
+    margin-top/bottom (spacing before/after), direction:rtl (w:bidi) and
+    page-break-before:always (w:pageBreakBefore). Alignment is NOT part
+    of this list (the caller folds "text-align:*" in front).
+    """
+    pf = para.paragraph_format
+    styles: list[str] = []
+    try:
+        # line_spacing is a float multiple when the paragraph uses
+        # proportional spacing (python-docx may label it ONE_POINT_FIVE /
+        # DOUBLE rather than MULTIPLE, so check the VALUE, not the rule).
+        ls = pf.line_spacing
+        if (
+            ls
+            and isinstance(ls, (int, float))
+            and abs(float(ls) - 1.0) > 1e-6
+        ):
+            styles.append(f"line-height:{float(ls):g}")
+    except Exception:
+        pass
+
+    def _pt(value) -> float | None:
+        try:
+            return float(value.pt) if value is not None else None
+        except Exception:
+            return None
+
+    for css, attr in (
+        ("margin-left", "left_indent"),
+        ("margin-right", "right_indent"),
+        ("text-indent", "first_line_indent"),
+        ("margin-top", "space_before"),
+        ("margin-bottom", "space_after"),
+    ):
+        v = _pt(getattr(pf, attr, None))
+        if v:
+            styles.append(f"{css}:{v:g}pt")
+    try:
+        ppr = para._p.get_or_add_pPr()
+        if ppr.find(qn("w:bidi")) is not None:
+            styles.append("direction:rtl")
+        if ppr.find(qn("w:pageBreakBefore")) is not None:
+            styles.append("page-break-before:always")
+    except Exception:
+        pass
+    return styles
+
+
+def _parse_len_pt(val: str) -> float | None:
+    """Parse a CSS length to points (pt default; px and cm converted)."""
+    m = re.match(r"^\s*(\d+(?:\.\d+)?)\s*(pt|px|cm)?\s*$", val, re.I)
+    if not m:
+        return None
+    num = float(m.group(1))
+    if num <= 0:
+        return None
+    unit = (m.group(2) or "pt").lower()
+    if unit == "px":
+        num *= 0.75
+    elif unit == "cm":
+        num *= 28.3465
+    return num
+
+
+def _parse_para_props(open_tag: str) -> dict:
+    """Parse paragraph-level CSS props from a block open tag into a dict.
+
+    Keys: ``line_height`` (float multiple), ``margin-left``/``margin-right``/
+    ``margin-top``/``margin-bottom``/``text-indent`` (point floats),
+    ``direction`` ("rtl"), ``page_break_before`` (True).
+    """
+    props: dict = {}
+    m = re.search(r'style="([^"]*)"', open_tag)
+    style = m.group(1) if m else ""
+    for decl in style.split(";"):
+        if ":" not in decl:
+            continue
+        prop, _, val = decl.partition(":")
+        prop = prop.strip().lower()
+        val = val.strip()
+        if prop == "line-height":
+            lm = re.match(r"^(\d+(?:\.\d+)?)$", val)
+            if lm:
+                v = float(lm.group(1))
+                if v > 0 and abs(v - 1.0) > 1e-6:
+                    props["line_height"] = v
+        elif prop in ("margin-left", "margin-right", "margin-top",
+                      "margin-bottom", "text-indent"):
+            v = _parse_len_pt(val)
+            if v is not None:
+                props[prop] = v
+        elif prop == "direction" and val.lower() == "rtl":
+            props["direction"] = "rtl"
+        elif prop == "page-break-before" and val.lower() in ("always", "page"):
+            props["page_break_before"] = True
+        elif prop == "text-align" and val in ("center", "right"):
+            props["text-align"] = val
+    return props
+
+
+def _apply_para_props(p, props: dict) -> None:
+    """Apply parsed paragraph props to a python-docx paragraph."""
+    if not props:
+        return
+    pf = p.paragraph_format
+    if props.get("line_height"):
+        try:
+            pf.line_spacing = props["line_height"]
+        except Exception:
+            pass
+    for css, attr in (
+        ("margin-left", "left_indent"),
+        ("margin-right", "right_indent"),
+        ("margin-top", "space_before"),
+        ("margin-bottom", "space_after"),
+        ("text-indent", "first_line_indent"),
+    ):
+        v = props.get(css)
+        if v:
+            try:
+                setattr(pf, attr, Pt(v))
+            except Exception:
+                pass
+    try:
+        ppr = p._p.get_or_add_pPr()
+        if props.get("direction") == "rtl":
+            ppr.append(OxmlElement("w:bidi"))
+        if props.get("page_break_before"):
+            ppr.append(OxmlElement("w:pageBreakBefore"))
+    except Exception:
+        pass
+
+
 def _paragraph_to_html(para) -> tuple[str | None, str | None]:
     """Return (html_fragment, list_kind) — (None, None) for non-list blocks.
 
@@ -247,15 +384,24 @@ def _paragraph_to_html(para) -> tuple[str | None, str | None]:
 
     if style.startswith("heading") or style.startswith("titre"):
         level = _heading_level(style)
-        return f"<h{level}>{text}</h{level}>", None
+        attrs = _block_attrs(para, [])
+        return f"<h{level}{attrs}>{text}</h{level}>", None
 
+    styles = _para_style_parts(para)
     align = para.alignment
     if align == WD_ALIGN_PARAGRAPH.CENTER:
-        return f"<p style=\"text-align:center\">{text}</p>", None
-    if align == WD_ALIGN_PARAGRAPH.RIGHT:
-        return f"<p style=\"text-align:right\">{text}</p>", None
+        styles.insert(0, "text-align:center")
+    elif align == WD_ALIGN_PARAGRAPH.RIGHT:
+        styles.insert(0, "text-align:right")
+    attrs = _block_attrs(para, styles)
+    return f"<p{attrs}>{text}</p>", None
 
-    return f"<p>{text}</p>", None
+
+def _block_attrs(para, styles: list[str]) -> str:
+    """The open-tag attribute string for a paragraph/heading block."""
+    if not styles:
+        return ""
+    return ' style="' + ";".join(styles) + '"'
 
 
 def _paragraph_inline(para) -> str:
@@ -817,7 +963,7 @@ def html_to_docx(html_fragment: str) -> bytes:
     block_re = re.compile(
         r"<hr(?:\s[^>]*)?/?>"  # <hr>, <hr/>, <hr /> (self-closing)
         r"|<div[^>]*class=[\"']?page-break[\"']?[^>]*>.*?</div>"
-        r"|<(p|h[1-6]|ul|ol|li|table)[^>]*>(.*?)</\1>",
+        r"|<(p|h[1-6]|ul|ol|li|table|blockquote)[^>]*>(.*?)</\1>",
         re.S,
     )
     blocks = list(block_re.finditer(body))
@@ -840,6 +986,15 @@ def html_to_docx(html_fragment: str) -> bytes:
                     _add_styled_runs(p, inner)
             continue
         tag, inner = m.group(1), m.group(2)
+        open_tag = m.group(0).split(">", 1)[0] + ">"
+        props = _parse_para_props(open_tag)
+        if tag == "blockquote":
+            # Chrome's execCommand indent wraps blocks in <blockquote>; map
+            # it to a left-indented paragraph (the HTML contract for indent).
+            p = doc.add_paragraph("")
+            _apply_para_props(p, {"margin-left": 24.0})
+            _add_styled_runs(p, inner)
+            continue
         if tag == "ul" or tag == "ol":
             # extract the <li> items contained in this list block
             for li in re.finditer(r"<li[^>]*>(.*?)</li>", inner, re.S):
@@ -853,20 +1008,17 @@ def html_to_docx(html_fragment: str) -> bytes:
         if tag.startswith("h"):
             level = int(tag[1])
             p = doc.add_heading("", level=level)
+            _apply_para_props(p, props)
             _add_styled_runs(p, inner)
             continue
         # paragraph
-        if "text-align:center" in m.group(0):
-            p = doc.add_paragraph("")
+        p = doc.add_paragraph("")
+        _apply_para_props(p, props)
+        if props.get("text-align") == "center":
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-            _add_styled_runs(p, inner)
-        elif "text-align:right" in m.group(0):
-            p = doc.add_paragraph("")
+        elif props.get("text-align") == "right":
             p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-            _add_styled_runs(p, inner)
-        else:
-            p = doc.add_paragraph("")
-            _add_styled_runs(p, inner)
+        _add_styled_runs(p, inner)
 
     # Tag-less input (e.g. raw text typed into an empty contenteditable):
     # keep it as a single paragraph instead of dropping it silently.
