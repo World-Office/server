@@ -1379,6 +1379,47 @@
   document.getElementById("btn-find").addEventListener("click", openFindDialog);
   saveBtn.addEventListener("click", saveDocument);
 
+  // --- view controls: zoom / theme / fullscreen ----------------------
+  let zoomLevel = parseFloat(localStorage.getItem("wo-zoom") || "1") || 1;
+  function applyZoom() {
+    zoomLevel = Math.min(2, Math.max(0.5, zoomLevel));
+    editor.style.zoom = String(zoomLevel);
+    const reset = document.getElementById("btn-zoom-reset");
+    if (reset) reset.textContent = Math.round(zoomLevel * 100) + "%";
+    localStorage.setItem("wo-zoom", String(zoomLevel));
+  }
+  function applyTheme() {
+    const dark = localStorage.getItem("wo-theme") !== "light";
+    document.documentElement.classList.toggle("light", !dark);
+    const themeBtn = document.getElementById("btn-theme");
+    if (themeBtn) themeBtn.setAttribute("aria-pressed", String(dark));
+  }
+  function toggleTheme() {
+    const isLight = document.documentElement.classList.contains("light");
+    localStorage.setItem("wo-theme", isLight ? "dark" : "light");
+    applyTheme();
+  }
+  function toggleFullscreen() {
+    document.body.classList.toggle("fullscreen");
+    if (document.fullscreenElement) {
+      if (document.exitFullscreen) document.exitFullscreen();
+    } else if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  }
+  const zoomInBtn = document.getElementById("btn-zoom-in");
+  const zoomOutBtn = document.getElementById("btn-zoom-out");
+  const zoomResetBtn = document.getElementById("btn-zoom-reset");
+  const themeBtn = document.getElementById("btn-theme");
+  const fsBtn = document.getElementById("btn-fullscreen");
+  if (zoomInBtn) zoomInBtn.addEventListener("click", () => { zoomLevel += 0.1; applyZoom(); });
+  if (zoomOutBtn) zoomOutBtn.addEventListener("click", () => { zoomLevel -= 0.1; applyZoom(); });
+  if (zoomResetBtn) zoomResetBtn.addEventListener("click", () => { zoomLevel = 1; applyZoom(); });
+  if (themeBtn) themeBtn.addEventListener("click", toggleTheme);
+  if (fsBtn) fsBtn.addEventListener("click", toggleFullscreen);
+  applyZoom();
+  applyTheme();
+
   // ------------------------------------------------------------------
   // File menu wiring (dropdown disclose + command dispatch)
   // ------------------------------------------------------------------
