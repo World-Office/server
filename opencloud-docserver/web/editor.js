@@ -286,6 +286,7 @@
       lastSnapshot = editor.innerHTML;
       setStatus(data.blank ? t("Status.EmptyDocument") : t("Status.Ready"));
       updateUndoRedoState();
+      updateCounts();
     } catch (err) {
       editor.innerHTML = "<p><em>" + t("Status.LoadFailed") + err.message + "</em></p>";
       setStatus(t("Status.LoadFailed") + err.message, true);
@@ -1710,6 +1711,7 @@
     lastLocalEdit = Date.now();
     scheduleCollabSync();
     notifyHost("editing");
+    updateCounts();
   });
 
   // Release the WOPI lock on the remote host when the editor is closed
@@ -1778,6 +1780,15 @@
 
   // --- plain-text helpers (collab is character-CRDT on plain text) -
   function editorPlainText() { return editor.innerText || ""; }
+  // Live word/character count for the status bar. Words are whitespace-
+  // delimited runs; CJK/ligatures are approximated by character count too.
+  function updateCounts() {
+    const text = (editor.innerText || "").trim();
+    const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+    const chars = (editor.innerText || "").replace(/\n/g, "").length;
+    const el = document.getElementById("word-count");
+    if (el) el.textContent = words + " words · " + chars + " characters";
+  }
   function caretOffset(el) {
     const sel = window.getSelection();
     if (!sel || !sel.rangeCount) return 0;

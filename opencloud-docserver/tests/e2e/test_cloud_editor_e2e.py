@@ -252,3 +252,47 @@ def test_two_users_collaborate_save_and_notify_host(servers):
             ctx_a.close()
             ctx_b.close()
             browser.close()
+
+
+def _word_count(frame):
+    import re
+    txt = frame.locator("#word-count").inner_text()
+    m = re.search(r"(\d+)", txt)
+    return int(m.group(1)) if m else 0
+
+
+def test_status_bar_word_count_and_save_indicator(servers):
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            ctx = browser.new_context()
+            parent = ctx.new_page()
+            parent.goto(_parent_url(servers))
+            frame = parent.frame("ed")
+            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+
+            # The status bar shows a live word count for the loaded document.
+            wc0 = _word_count(frame)
+            assert wc0 > 0, "status bar must show a word count"
+
+            # Typing updates the count live.
+            frame.locator("#editor").click()
+            frame.locator("#editor").press("End")
+            frame.locator("#editor").press_sequentially(" extra words here")
+            _wait(lambda: _word_count(frame) > wc0 + 2)
+
+            # Typing flips the save indicator away from a saved state.
+            status0 = frame.locator("#status").inner_text().strip().lower()
+            assert status0 != "ready", f"status should show unsaved, got {status0!r}"
+
+            # Saving returns the indicator to saved/ready.
+            frame.locator("#btn-save").click()
+            _wait(
+                lambda: frame.locator("#status").inner_text().strip().lower()
+                in ("saved", "ready")
+            )
+        finally:
+            ctx.close()
+            browser.close()
