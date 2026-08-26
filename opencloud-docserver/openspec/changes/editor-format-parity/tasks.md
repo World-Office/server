@@ -15,8 +15,8 @@ TDD per category: write failing contract test → implement converter + UI → v
 - [x] T8 implement paragraph style props (both converters) + editor.js — DOCX: `_para_style_parts`/`_apply_para_props` (line-space multiple via VALUE not rule — python-docx labels 1.5 as ONE_POINT_FIVE; w:bidi/w:pageBreakBefore/w:ind/w:spacing; `<blockquote>`→24pt left indent). ODT: `_build_para_resolver` + `_para_css` (fo:line-height %↔multiple, margins/indent via fo:margin-*, `style:writing-mode` rtl, fo:break-before) + writer `para_style(props)` preserving `WO_Center`/`WO_Right` names. UI: `directionRtl` toggle on blocks (parity with applyLineHeight — which now round-trips line-height instead of silently dropping it) + `RTL` toolbar button. E2E `test_paragraph_rtl_and_line_spacing_roundtrip`.
 
 ## lists
-- [ ] T9 contract test: multilevel/outline list round-trips
-- [ ] T10 implement multilevel list (both converters) + editor.js
+- [x] T9 contract test: multilevel/outline list round-trips — `test_html_to_docx_nested_list_roundtrip`, `test_html_to_docx_nested_numbered_list_roundtrip`, `test_html_to_odt_nested_list_roundtrip`, `test_html_to_odt_nested_numbered_list_roundtrip`.
+- [x] T10 implement multilevel lists (both converters) + editor.js — canonical HTML contract is NESTED `<ul>/<ol>`; DOCX stores outline level as built-in styles "List Bullet/Number [n]" (`_emit_list_tree`/`_list_level` + `_list_run_tree` grouping turns the flat style lines back into nested HTML); ODT builds nested `text:list` under the parent `text:list-item` (`_build_list`). Shared `parse_list_at`/`extract_sublists` recursive parser replaces the regex block_re on both writers (fixes nesting + sibling lists + interleaved order via `_tokenize_body`). Tab/Shift-Tab inside a list item runs native execCommand indent/outdent (undoable, round-trips exactly). Sanitizer `_normalize_block_structure` lifts block-in-`<p>` and re-nests a `<ul>` sitting beside an `<li>` (Chromium Tab quirk) — real data-loss guard. E2E `test_nested_list_tab_indent_roundtrip`.
 
 ## structure
 - [ ] T11 contract test: TOC / page-break / section-break / columns round-trips

@@ -235,4 +235,35 @@ def sanitize_html(html: str) -> str:
     except Exception:
         # If parsing fails, return empty string for safety
         return ""
-    return sanitizer.get_output()
+    return _normalize_block_structure(sanitizer.get_output())
+
+
+def _normalize_block_structure(html: str) -> str:
+    """Normalise stray block-inside-<p> and list-within-list markup
+    (contenteditable quirks Chromium can produce).
+
+    1. A list/table/div nested inside ``<p>`` (``<p><ul><li>..</li></ul></p>``)
+       is lifted out — the block converters expect block elements at body
+       level. Surrounding text becomes a sibling paragraph.
+    2. A ``<ul>/<ol>`` sitting directly inside another list (a sibling of an
+       ``<li>``, which invalid HTML) is moved inside the preceding ``<li>``
+       so outline levels stay well-formed.
+
+    Loops because nested cases unroll gradually.
+    """
+    prev = None
+    while prev != html:
+        prev = html
+        html = re.sub(
+            r"<p[^>]*>(\s*)(<(?:ul|ol|table|div)[\s>].*?)(\s*)</p>",
+            lambda m: m.group(1) + m.group(2) + m.group(3),
+            html,
+            flags=re.S,
+        )
+        html = re.sub(
+            r"<li([^>]*)>((?:(?!</li>).)*)</li>(\s*)(<ul[\s>].*?</ul>|<ol[\s>].*?</ol>)",
+            lambda m: f"<li{m.group(1)}>{m.group(2)}{m.group(3)}{m.group(4)}</li>",
+            html,
+            flags=re.S,
+        )
+    return html

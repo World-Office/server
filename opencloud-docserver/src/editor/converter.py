@@ -154,31 +154,230 @@ def _parse_px(value) -> int | None:
 # DOCX -> HTML
 # --------------------------------------------------------------------------
 
+def parse_list_at(html: str, start: int) -> tuple[dict, int]:
+    """Parse a nested <ul>/<ol> subtree starting at ``html[start]``.
+
+    Returns (tree, index just past the matching ``</ul|ol>``). A tree is
+    ``{'kind': 'ul'|'ol', 'items': [{'frag': str, 'sub': [tree, ...]}, ...]}``
+    where ``frag`` is the item body with nested lists removed (they live in
+    ``sub`` instead), so a downstream inline parser can consume ``frag``
+    without seeing list markup.
+    """
+    m = re.match(r"<([uo]l)([^>]*)>", html[start:], re.I)
+    if not m:
+        return {"kind": "ul", "items": []}, start + 4
+    kind = m.group(1).lower()
+    i = start + m.end()
+    items: list[dict] = []
+    tok = re.compile(r"<(/)?([a-z0-9]+)\b", re.I)
+    while i < len(html):
+        t = tok.search(html, i)
+        if not t:
+            break
+        closing = t.group(1)
+        tag = t.group(2).lower()
+        if closing:
+            if tag == kind:
+                # past the closing '>'
+                return {"kind": kind, "items": items}, t.end() + 1
+            i = t.end() + 1
+            continue
+        if tag in ("ul", "ol"):
+            sub, ni = parse_list_at(html, t.start())
+            if items:
+                items[-1]["sub"].append(sub)
+            i = ni
+        elif tag == "li":
+            li_start = t.end() + 1
+            depth = 0
+            j = li_start
+            li_end = len(html)
+            while j < len(html):
+                tt = tok.search(html, j)
+                if not tt:
+                    break
+                if tt.group(1):  # closing tag
+                    if tt.group(2).lower() in ("ul", "ol", "li"):
+                        depth -= 1
+                        if depth < 0:
+                            li_end = tt.start()
+                            break
+                    j = tt.end() + 1
+                else:
+                    if tt.group(2).lower() in ("ul", "ol", "li"):
+                        depth += 1
+                    j = tt.start() + 1
+            frag = html[li_start:li_end]
+            frag, subs = extract_sublists(frag)
+            items.append({"frag": frag, "sub": subs})
+            i = li_end + 5 if li_end < len(html) else len(html)
+        else:
+            i = t.end() + 1
+    return {"kind": kind, "items": items}, i
+
+
+def extract_sublists(frag: str) -> tuple[str, list[dict]]:
+    """Pull nested <ul>/<ol> subtrees out of an <li> body in source order.
+
+    Returns (frag_with_lists_removed, [trees]).
+    """
+    subs: list[dict] = []
+    out: list[str] = []
+    pos = 0
+    while True:
+        m = re.search(r"<[uo]l\b", frag[pos:], re.I)
+        if not m:
+            out.append(frag[pos:])
+            break
+        out.append(frag[pos:pos + m.start()])
+        tree, end = parse_list_at(frag, pos + m.start())
+        subs.append(tree)
+        pos = end
+    return "".join(out), subs
+
+
+def _list_level(style: str) -> int:
+    """Outline level from a list style name ("List Bullet 2" -> 2)."""
+    m = re.search(r"(\d)+(?:\s*)$", style)
+    return max(1, int(m.group(1))) if m else 1
+
+
+def _emit_list_tree(doc, tree: dict, level: int = 1) -> None:
+    """Create DOCX paragraphs for a nested list tree using the numbered
+    Word list styles ("List Bullet [n]" / "List Number [n]")."""
+    base = "List Bullet" if tree["kind"] == "ul" else "List Number"
+    style = base if level <= 1 else f"{base} {level}"
+    for item in tree["items"]:
+        p = doc.add_paragraph("", style=style)
+        _add_styled_runs(p, item["frag"])
+        for sub in item["sub"]:
+            _emit_list_tree(doc, sub, level + 1)
+
+
+def _tokenize_body(body: str) -> list:
+    """Split a document body into block ops in source order.
+
+    op tuples: ('hr',) | ('pagebreak', inner) | ('p', open_attrs, inner) |
+    ('h', level, open_attrs, inner) | ('blockquote', open_attrs, inner) |
+    ('list', tree). Stray text between blocks is dropped, matching the
+    previous regex-based behaviour. Tables are appended separately by the
+    callers (they are excised before this runs).
+    """
+    ops: list = []
+    pos = 0
+    while True:
+        m = re.search(r"<", body[pos:])
+        if not m:
+            break
+        pos += m.start()
+        rest = body[pos:]
+        mh = re.match(r"<hr(?:\s[^>]*)?/?>", rest, re.I)
+        if mh:
+            ops.append(("hr",))
+            pos += mh.end()
+            continue
+        md = re.match(r"<div([^>]*)>(.*?)</div>", rest, re.S | re.I)
+        if md and "page-break" in (md.group(1) or ""):
+            ops.append(("pagebreak", md.group(2)))
+            pos += md.end()
+            continue
+        ml = re.match(r"<([uo]l)\b", rest, re.I)
+        if ml:
+            tree, end = parse_list_at(body, pos)
+            ops.append(("list", tree))
+            pos = end
+            continue
+        mp = re.match(r"<p([^>]*)>(.*?)</p>", rest, re.S | re.I)
+        if mp:
+            ops.append(("p", mp.group(1), mp.group(2)))
+            pos += mp.end()
+            continue
+        mh6 = re.match(r"<h([1-6])([^>]*)>(.*?)</h\1>", rest, re.S | re.I)
+        if mh6:
+            ops.append(("h", int(mh6.group(1)), mh6.group(2), mh6.group(3)))
+            pos += mh6.end()
+            continue
+        mb = re.match(r"<blockquote([^>]*)>(.*?)</blockquote>", rest, re.S | re.I)
+        if mb:
+            ops.append(("blockquote", mb.group(1), mb.group(2)))
+            pos += mb.end()
+            continue
+        # stray markup: skip one '<' and look again (content is dropped)
+        pos += 1
+    return ops
+
+
+def _render_list_node(node: dict) -> str:
+    """Render a nested-list tree as one contiguous HTML string."""
+    s = f"<{node['kind']}>"
+    for item in node["items"]:
+        s += "<li>" + item["frag"]
+        for sub in item["sub"]:
+            s += _render_list_node(sub)
+        s += "</li>"
+    return s + f"</{node['kind']}>"
+
+
+def _list_run_tree(seq: list[tuple]) -> list[dict]:
+    """Group a consecutive (kind, level, frag) list run into nested-tree
+    roots. A kind switch pops the open child (fresh top-level list)."""
+    roots: list[dict] = []
+    open_nodes: list[dict] = []  # {'kind','level','node'}
+    for kind, level, frag in seq:
+        # pop only STRICTLY deeper levels: an equal level is a sibling of
+        # the current node (still open), not a new child.
+        while open_nodes and open_nodes[-1]["level"] > level:
+            open_nodes.pop()
+        if (
+            open_nodes
+            and open_nodes[-1]["level"] == level
+            and open_nodes[-1]["kind"] != kind
+        ):
+            open_nodes.pop()
+        if not open_nodes:
+            node = {"kind": kind, "items": []}
+            roots.append(node)
+            open_nodes.append({"kind": kind, "level": level, "node": node})
+        elif open_nodes[-1]["level"] == level:
+            node = open_nodes[-1]["node"]
+        else:
+            # deeper level: nest under the last item of the open node
+            node = {"kind": kind, "items": []}
+            open_nodes[-1]["node"]["items"][-1]["sub"].append(node)
+            open_nodes.append({"kind": kind, "level": level, "node": node})
+        node["items"].append({"frag": frag, "sub": []})
+    return roots
+
+
 def docx_to_html(data: bytes) -> str:
     """Convert DOCX bytes to an HTML fragment (content only, no <html>)."""
     doc = Document(io.BytesIO(data))
-    parts: list[str] = []
-    pending_list: str | None = None  # 'ul' | 'ol' while collecting <li>s
+    seq: list[tuple] = []
 
-    def flush_list() -> None:
-        nonlocal pending_list
-        if pending_list:
-            parts.append(f"</{pending_list}>")
-            pending_list = None
+    def strip_li(frag: str) -> str:
+        m = re.match(r"^<li[^>]*>(.*)</li>\s*$", frag, re.S)
+        return m.group(1) if m else frag
 
     for para in doc.paragraphs:
-        li, list_kind = _paragraph_to_html(para)
-        if li is not None:
-            if pending_list != list_kind:
-                flush_list()
-                pending_list = list_kind
-                parts.append(f"<{list_kind}>")
-            parts.append(li)
+        li, list_kind, level = _paragraph_to_html(para)
+        if list_kind is not None:
+            seq.append(("list", list_kind, level or 1, strip_li(li)))
         else:
-            flush_list()
-            parts.append(li or "")
+            seq.append(("other", li or ""))
 
-    flush_list()
+    parts: list[str] = []
+    i = 0
+    while i < len(seq):
+        if seq[i][0] == "other":
+            parts.append(seq[i][1])
+            i += 1
+            continue
+        run: list[tuple] = []
+        while i < len(seq) and seq[i][0] == "list":
+            run.append(seq[i][1:])
+            i += 1
+        for node in _list_run_tree(run):
+            parts.append(_render_list_node(node))
 
     for table in doc.tables:
         parts.append(_table_to_html(table))
@@ -360,32 +559,34 @@ def _apply_para_props(p, props: dict) -> None:
         pass
 
 
-def _paragraph_to_html(para) -> tuple[str | None, str | None]:
-    """Return (html_fragment, list_kind) — (None, None) for non-list blocks.
+def _paragraph_to_html(para) -> tuple[str | None, str | None, int | None]:
+    """Return (html_fragment, list_kind, list_level).
 
-    List paragraphs are returned as `<li>..</li>` together with their kind
-    so the caller can group them into a single `<ul>`/`<ol>`.
+    Non-list blocks return (html, None, None). List paragraphs return
+    `[fmt]<li>..</li>` plus its kind ("ul"/"ol") and outline level so the
+    caller can group/nest consecutive items.
     """
     style = (para.style.name or "").lower()
     text = _paragraph_inline(para)
 
     # Horizontal rule: an empty paragraph with a bottom border renders as <hr/>.
     if _para_has_bottom_border(para) and not text.strip():
-        return "<hr/>", None
+        return "<hr/>", None, None
 
     # Page break: an empty paragraph holding <w:br w:type='page'/>.
     if _para_is_page_break(para) and not text.strip():
-        return '<div class="page-break"><br></div>', None
+        return '<div class="page-break"><br></div>', None, None
 
     # python-docx exposes list styles as "List Bullet" / "List Number".
     if style.startswith("list"):
         kind = "ul" if "bullet" in style else "ol"
-        return f"<li>{text}</li>", kind
+        level = _list_level(style)
+        return f"<li>{text}</li>", kind, level
 
     if style.startswith("heading") or style.startswith("titre"):
         level = _heading_level(style)
         attrs = _block_attrs(para, [])
-        return f"<h{level}{attrs}>{text}</h{level}>", None
+        return f"<h{level}{attrs}>{text}</h{level}>", None, None
 
     styles = _para_style_parts(para)
     align = para.alignment
@@ -394,7 +595,7 @@ def _paragraph_to_html(para) -> tuple[str | None, str | None]:
     elif align == WD_ALIGN_PARAGRAPH.RIGHT:
         styles.insert(0, "text-align:right")
     attrs = _block_attrs(para, styles)
-    return f"<p{attrs}>{text}</p>", None
+    return f"<p{attrs}>{text}</p>", None, None
 
 
 def _block_attrs(para, styles: list[str]) -> str:
@@ -960,69 +1161,52 @@ def html_to_docx(html_fragment: str) -> bytes:
 
     doc = Document()
 
-    block_re = re.compile(
-        r"<hr(?:\s[^>]*)?/?>"  # <hr>, <hr/>, <hr /> (self-closing)
-        r"|<div[^>]*class=[\"']?page-break[\"']?[^>]*>.*?</div>"
-        r"|<(p|h[1-6]|ul|ol|li|table|blockquote)[^>]*>(.*?)</\1>",
-        re.S,
-    )
-    blocks = list(block_re.finditer(body))
-    for m in blocks:
-        if m.group(1) is None:
-            # Special block: horizontal rule or page break.
-            if m.group(0).startswith("<hr"):
-                _add_hr_paragraph(doc)
-            else:
-                _add_page_break(doc)
-                # A contenteditable can leave the caret inside the break
-                # marker so the div carries real content (e.g. "§"); keep
-                # it as a normal paragraph after the break instead of
-                # dropping it.
-                inner_m = re.match(r"<div[^>]*>(.*?)</div>", m.group(0), re.S)
-                inner = inner_m.group(1) if inner_m else ""
-                inner = re.sub(r"<br\s*/?>", "", inner).strip()
-                if inner and _inline_to_text(inner).strip():
-                    p = doc.add_paragraph("")
-                    _add_styled_runs(p, inner)
+    ops = _tokenize_body(body)
+    for op in ops:
+        kind = op[0]
+        if kind == "hr":
+            _add_hr_paragraph(doc)
             continue
-        tag, inner = m.group(1), m.group(2)
-        open_tag = m.group(0).split(">", 1)[0] + ">"
-        props = _parse_para_props(open_tag)
-        if tag == "blockquote":
+        if kind == "pagebreak":
+            _add_page_break(doc)
+            # A contenteditable can leave the caret inside the break
+            # marker so the div carries real content (e.g. "§"); keep
+            # it as a normal paragraph after the break instead of
+            # dropping it.
+            inner = re.sub(r"<br\s*/?>", "", op[1]).strip()
+            if inner and _inline_to_text(inner).strip():
+                p = doc.add_paragraph("")
+                _add_styled_runs(p, inner)
+            continue
+        if kind == "list":
+            _emit_list_tree(doc, op[1], 1)
+            continue
+        if kind == "blockquote":
             # Chrome's execCommand indent wraps blocks in <blockquote>; map
             # it to a left-indented paragraph (the HTML contract for indent).
             p = doc.add_paragraph("")
             _apply_para_props(p, {"margin-left": 24.0})
-            _add_styled_runs(p, inner)
+            _add_styled_runs(p, op[2])
             continue
-        if tag == "ul" or tag == "ol":
-            # extract the <li> items contained in this list block
-            for li in re.finditer(r"<li[^>]*>(.*?)</li>", inner, re.S):
-                p = doc.add_paragraph(
-                    "", style="List Bullet" if tag == "ul" else "List Number"
-                )
-                _add_styled_runs(p, li.group(1))
-            continue
-        if tag == "li":
-            continue
-        if tag.startswith("h"):
-            level = int(tag[1])
-            p = doc.add_heading("", level=level)
+        if kind == "h":
+            props = _parse_para_props(op[2])
+            p = doc.add_heading("", level=op[1])
             _apply_para_props(p, props)
-            _add_styled_runs(p, inner)
+            _add_styled_runs(p, op[3])
             continue
         # paragraph
+        props = _parse_para_props(op[1])
         p = doc.add_paragraph("")
         _apply_para_props(p, props)
         if props.get("text-align") == "center":
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         elif props.get("text-align") == "right":
             p.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-        _add_styled_runs(p, inner)
+        _add_styled_runs(p, op[2])
 
     # Tag-less input (e.g. raw text typed into an empty contenteditable):
     # keep it as a single paragraph instead of dropping it silently.
-    if not blocks and body.strip():
+    if not ops and body.strip():
         p = doc.add_paragraph("")
         _add_styled_runs(p, body)
 

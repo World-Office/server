@@ -826,3 +826,27 @@ def test_html_to_docx_blockquote_becomes_indent():
     out = docx_to_html(docx)
     assert "indented line" in out
     assert "margin-left" in out.lower() or "blockquote" in out
+
+
+def test_html_to_docx_nested_list_roundtrip():
+    """A level-2 bullet/number round-trips as nested <ul>/<ol> in DOCX."""
+    html = (
+        "<ul><li>item 1<ul><li>sub 1</li><li>sub 2</li></ul></li>"
+        "<li>item 2</li></ul>"
+    )
+    out = docx_to_html(html_to_docx(html))
+    norm = out.replace("\n", "")
+    assert norm == (
+        "<ul><li>item 1<ul><li>sub 1</li><li>sub 2</li></ul></li>"
+        "<li>item 2</li></ul>"
+    ), norm
+
+
+def test_html_to_docx_nested_numbered_list_roundtrip():
+    """Numbered outline levels survive too."""
+    html = "<ol><li>one<ol><li>1.1</li></ol></li><li>two</li></ol>"
+    out = docx_to_html(html_to_docx(html))
+    norm = out.replace("\n", "")
+    assert norm == (
+        "<ol><li>one<ol><li>1.1</li></ol></li><li>two</li></ol>"
+    ), norm
