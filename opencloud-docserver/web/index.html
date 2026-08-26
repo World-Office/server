@@ -167,6 +167,7 @@
     </select>
     <span class="sep"></span>
     <button id="btn-table" title="Insert table" data-i18n-title="Toolbar.InsertTableTitle" aria-label="Insert table" data-i18n-aria-label="Toolbar.InsertTable">▦</button>
+    <button id="btn-table-ops" title="Table actions (rows, columns, merge)" aria-label="Table actions">▦✎</button>
     <button id="btn-image" title="Insert image" data-i18n-title="Toolbar.InsertImageTitle" aria-label="Insert image" data-i18n-aria-label="Toolbar.InsertImageTitle">🖼</button>
     <button id="btn-link" title="Insert link" aria-label="Insert link">🔗</button>
     <button id="btn-find" title="Find and replace (Ctrl+F)" data-i18n-title="Toolbar.FindTitle" aria-label="Find and replace" data-i18n-aria-label="Toolbar.Find" aria-keyshortcuts="Control+F">🔍</button>
@@ -213,6 +214,29 @@
       <div class="dialog-actions">
         <button id="btn-table-cancel">Cancel</button>
         <button id="btn-table-ok" class="primary">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table operations dialog: acts on the cell under the caret (or the
+       selection, for Merge cells). The server round-trips the resulting
+       colspan/rowspan when the DOCX is saved and reloaded. -->
+  <div id="table-ops-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="table-ops-title">
+    <div class="dialog">
+      <h3 id="table-ops-title">Table actions</h3>
+      <div id="table-ops-hint" class="table-ops-hint" hidden>A cell must be selected to act on a table.</div>
+      <div class="table-ops-grid">
+        <button id="op-row-above">Insert row above</button>
+        <button id="op-row-below">Insert row below</button>
+        <button id="op-col-left">Insert col left</button>
+        <button id="op-col-right">Insert col right</button>
+        <button id="op-del-row">Delete row</button>
+        <button id="op-del-col">Delete column</button>
+        <button id="op-merge">Merge cells</button>
+        <button id="op-split">Split cell</button>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-table-ops-close">Close</button>
       </div>
     </div>
   </div>

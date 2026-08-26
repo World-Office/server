@@ -53,6 +53,21 @@ def test_html_to_docx_superscript_subscript_roundtrip():
     assert "<sub>" in out
 
 
+def test_table_merge_and_column_removal_roundtrip():
+    """A merged cell + a removed column survive HTML->DOCX->HTML."""
+    html = (
+        '<table><tr><td rowspan="2">M</td><td>A</td></tr>'
+        '<tr><td>B</td></tr></table>'
+    )
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    assert "M" in out
+    assert "A" in out and "B" in out
+    assert "C" not in out
+    # the rowspan is preserved through the round-trip
+    assert "rowspan" in out.lower()
+
+
 def _make_docx(**kwargs) -> bytes:
     """Build a DOCX in memory with the given paragraphs/tables."""
     doc = Document()

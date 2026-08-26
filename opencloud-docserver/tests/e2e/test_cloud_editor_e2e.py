@@ -150,26 +150,45 @@ def servers(tmp_path_factory):
     parent_srv.should_exit = True
 
 
-def _editor_url(servers: dict) -> str:
-    wopi_src = f"http://127.0.0.1:{servers['host_port']}/wopi/files/{servers['doc_id']}"
+def _editor_url(servers: dict, seed: dict | None = None) -> str:
+    seed = seed or servers
+    wopi_src = f"http://127.0.0.1:{servers['host_port']}/wopi/files/{seed['doc_id']}"
     return (
-        f"http://127.0.0.1:{servers['doc_port']}/editor/{servers['doc_id']}"
-        f"?access_token={servers['token']}&WOPISrc={urllib.parse.quote(wopi_src, safe='')}"
+        f"http://127.0.0.1:{servers['doc_port']}/editor/{seed['doc_id']}"
+        f"?access_token={seed['token']}&WOPISrc={urllib.parse.quote(wopi_src, safe='')}"
     )
 
 
-def _parent_url(servers: dict) -> str:
-    return f"http://127.0.0.1:{servers['parent_port']}/?editor={urllib.parse.quote(_editor_url(servers), safe='')}"
+def _parent_url(servers: dict, seed: dict | None = None) -> str:
+    return f"http://127.0.0.1:{servers['parent_port']}/?editor={urllib.parse.quote(_editor_url(servers, seed), safe='')}"
+
+
+def _seed_doc(servers: dict, name: str = "t.docx", text: str = "E2E base text") -> dict:
+    """Create a fresh document in the mock host and return its seed."""
+    resp = json.loads(
+        urllib.request.urlopen(
+            urllib.request.Request(
+                f"http://127.0.0.1:{servers['host_port']}/_host/files",
+                data=json.dumps(
+                    {"name": name, "data": base64.b64encode(_docx_bytes(text)).decode()}
+                ).encode(),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            ),
+            timeout=10,
+        ).read()
+    )
+    return {"doc_id": resp["id"], "token": resp["access_token"]}
 
 
 def _frame_text(frame) -> str:
     return frame.locator("#editor").inner_text()
 
 
-def _post_sync(servers: dict, text: str) -> None:
+def _post_sync(servers: dict, seed: dict, text: str) -> None:
     urllib.request.urlopen(
         urllib.request.Request(
-            f"http://127.0.0.1:{servers['doc_port']}/api/documents/{servers['doc_id']}/collab/sync",
+            f"http://127.0.0.1:{servers['doc_port']}/api/documents/{seed['doc_id']}/collab/sync",
             data=json.dumps({"client_id": "probe", "text": text}).encode(),
             headers={"Content-Type": "application/json"},
             method="POST",
@@ -187,20 +206,22 @@ def _wait(predicate, timeout: float = 20.0) -> None:
     raise AssertionError(f"condition not met within {timeout}s")
 
 
-def _host_text(servers: dict) -> str:
+def _host_text(servers: dict, seed: dict | None = None) -> str:
+    seed = seed or servers
     url = (
-        f"http://127.0.0.1:{servers['host_port']}/wopi/files/{servers['doc_id']}/contents"
-        f"?access_token={servers['token']}"
+        f"http://127.0.0.1:{servers['host_port']}/wopi/files/{seed['doc_id']}/contents"
+        f"?access_token={seed['token']}"
     )
     data = urllib.request.urlopen(url, timeout=10).read()
     return "\n".join(p.text for p in Document(io.BytesIO(data)).paragraphs)
 
 
-def _host_html(servers: dict) -> str:
+def _host_html(servers: dict, seed: dict | None = None) -> str:
     """Convert the host DOCX back to HTML so markup (color, <sup>) is visible."""
+    seed = seed or servers
     url = (
-        f"http://127.0.0.1:{servers['host_port']}/wopi/files/{servers['doc_id']}/contents"
-        f"?access_token={servers['token']}"
+        f"http://127.0.0.1:{servers['host_port']}/wopi/files/{seed['doc_id']}/contents"
+        f"?access_token={seed['token']}"
     )
     data = urllib.request.urlopen(url, timeout=10).read()
     return docx_to_html(data)
@@ -212,6 +233,7 @@ def test_two_users_collaborate_save_and_notify_host(servers):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
         try:
+            seed = _seed_doc(servers, "collab.docx")
             ctx_a = browser.new_context()
             ctx_b = browser.new_context()
             parent_a = ctx_a.new_page()
@@ -220,8 +242,8 @@ def test_two_users_collaborate_save_and_notify_host(servers):
             errors = []
             parent_a.on("pageerror", lambda e: errors.append(str(e)))
 
-            parent_a.goto(_parent_url(servers))
-            parent_b.goto(_parent_url(servers))
+            parent_a.goto(_parent_url(servers, seed))
+            parent_b.goto(_parent_url(servers, seed))
 
             frame_a = parent_a.frame("ed")
             frame_b = parent_b.frame("ed")
@@ -230,7 +252,7 @@ def test_two_users_collaborate_save_and_notify_host(servers):
             assert "E2E base text" in _frame_text(frame_a)
 
             # Live push: a hub change converges in BOTH browsers (real-time).
-            _post_sync(servers, "LIVEPROBE_X")
+            _post_sync(servers, seed, "LIVEPROBE_X")
             _wait(
                 lambda: "LIVEPROBE_X" in _frame_text(frame_a) and "LIVEPROBE_X" in _frame_text(frame_b)
             )
@@ -256,8 +278,8 @@ def test_two_users_collaborate_save_and_notify_host(servers):
 
             # Save -> converted bytes reach the mock WOPI host.
             frame_a.locator("#btn-save").click()
-            _wait(lambda: "from A" in _host_text(servers) and "+B" in _host_text(servers))
-            host_text = _host_text(servers)
+            _wait(lambda: "from A" in _host_text(servers, seed) and "+B" in _host_text(servers, seed))
+            host_text = _host_text(servers, seed)
             assert "from A" in host_text and "+B" in host_text
 
             # Editor notified its embedding host via postMessage (woopi bridge).
@@ -284,9 +306,10 @@ def test_status_bar_word_count_and_save_indicator(servers):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
         try:
+            seed = _seed_doc(servers, "status.docx")
             ctx = browser.new_context()
             parent = ctx.new_page()
-            parent.goto(_parent_url(servers))
+            parent.goto(_parent_url(servers, seed))
             frame = parent.frame("ed")
             frame.locator("#editor").wait_for(state="visible", timeout=15000)
 
@@ -321,9 +344,10 @@ def test_view_controls_zoom_theme_fullscreen(servers):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
         try:
+            seed = _seed_doc(servers, "view.docx")
             ctx = browser.new_context()
             parent = ctx.new_page()
-            parent.goto(_parent_url(servers))
+            parent.goto(_parent_url(servers, seed))
             frame = parent.frame("ed")
             frame.locator("#editor").wait_for(state="visible", timeout=15000)
 
@@ -357,9 +381,10 @@ def test_insert_link_roundtrip(servers):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
         try:
+            seed = _seed_doc(servers, "link.docx")
             ctx = browser.new_context()
             parent = ctx.new_page()
-            parent.goto(_parent_url(servers))
+            parent.goto(_parent_url(servers, seed))
             frame = parent.frame("ed")
             frame.locator("#editor").wait_for(state="visible", timeout=15000)
 
@@ -375,7 +400,7 @@ def test_insert_link_roundtrip(servers):
 
             # Save -> the link survives the round-trip back to the host.
             frame.locator("#btn-save").click()
-            _wait(lambda: "example.com" in _host_text(servers))
+            _wait(lambda: "example.com" in _host_text(servers, seed))
         finally:
             ctx.close()
             browser.close()
@@ -387,9 +412,10 @@ def test_format_color_highlight_superscript(servers):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
         try:
+            seed = _seed_doc(servers, "color.docx")
             ctx = browser.new_context()
             parent = ctx.new_page()
-            parent.goto(_parent_url(servers))
+            parent.goto(_parent_url(servers, seed))
             frame = parent.frame("ed")
             frame.locator("#editor").wait_for(state="visible", timeout=15000)
 
@@ -413,7 +439,64 @@ def test_format_color_highlight_superscript(servers):
 
             # Save -> the styling persists back to the host bytes.
             frame.locator("#btn-save").click()
-            _wait(lambda: "ff0000" in _host_html(servers) and "<sup>" in _host_html(servers))
+            _wait(lambda: "ff0000" in _host_html(servers, seed) and "<sup>" in _host_html(servers, seed))
+        finally:
+            ctx.close()
+            browser.close()
+
+
+def test_table_merge_and_column_ops(servers):
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            seed = _seed_doc(servers, "table.docx")
+            ctx = browser.new_context()
+            parent = ctx.new_page()
+            parent.goto(_parent_url(servers, seed))
+            frame = parent.frame("ed")
+            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+
+            frame.locator("#editor").click()
+            frame.locator("#editor").press("End")
+            frame.locator("#btn-table").click()
+            frame.locator("#table-rows").fill("2")
+            frame.locator("#table-cols").fill("2")
+            frame.locator("#btn-table-ok").click()
+            frame.locator("#editor table").wait_for(state="attached", timeout=5000)
+            assert frame.locator("#editor table tr").count() == 2
+
+            # Select from the 1st cell of row 1 to the 2nd cell, then merge.
+            frame.evaluate("""() => {
+              const rows = document.querySelectorAll('#editor table tr');
+              const c0 = rows[0].cells[0];
+              const c1 = rows[0].cells[1];
+              const endNode = (c1.firstChild && c1.firstChild.nodeType === 3)
+                ? c1.firstChild : c1;
+              const r = document.createRange();
+              r.setStart(c0.firstChild || c0, 0);
+              r.setEnd(endNode, endNode.nodeType === 3 ? endNode.length : 1);
+              const s = window.getSelection();
+              s.removeAllRanges();
+              s.addRange(r);
+            }""")
+            frame.locator("#btn-table-ops").click()
+            frame.locator("#op-merge").click()
+            merged = frame.locator("#editor tr:first-child td").first
+            merged.wait_for(state="attached", timeout=5000)
+            colspan = merged.get_attribute("colspan")
+            assert colspan == "2", f"expected merged colspan=2, got {colspan}"
+
+            # Delete the 2nd column: click its cell in the second row, then act.
+            frame.locator("#editor tr").nth(1).locator("td").nth(1).click()
+            frame.locator("#btn-table-ops").click()
+            frame.locator("#op-del-col").click()
+            assert frame.locator("#editor tr").nth(1).locator("td").count() == 1
+
+            # Save -> the merged colspan survives round-trip to the host.
+            frame.locator("#btn-save").click()
+            _wait(lambda: "colspan" in _host_html(servers, seed).lower())
         finally:
             ctx.close()
             browser.close()

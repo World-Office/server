@@ -804,6 +804,152 @@
   }
 
   // ------------------------------------------------------------------
+  // Table actions: insert/delete row or column, merge/split cells.
+  // ------------------------------------------------------------------
+  function currentTableCell() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || !sel.focusNode) return null;
+    const node = sel.focusNode.nodeType === 1 ? sel.focusNode : sel.focusNode.parentElement;
+    if (!node) return null;
+    const cell = node.closest ? node.closest("td, th") : null;
+    return cell && editor.contains(cell) ? cell : null;
+  }
+  function tableGridCols(table) {
+    let max = 1;
+    Array.from(table.rows).forEach((r) => { max = Math.max(max, r.cells.length); });
+    return max;
+  }
+  function insertTableRow(above) {
+    const cell = currentTableCell(); if (!cell) return;
+    const tr = cell.closest("tr");
+    const table = tr.closest("table");
+    const newTr = document.createElement("tr");
+    const width = tableGridCols(table);
+    for (let i = 0; i < width; i++) {
+      const td = document.createElement("td");
+      td.innerHTML = "<br>";
+      newTr.appendChild(td);
+    }
+    if (above) tr.parentNode.insertBefore(newTr, tr);
+    else tr.parentNode.insertBefore(newTr, tr.nextSibling);
+    finalizeTableChange();
+  }
+  function insertTableCol(left) {
+    const cell = currentTableCell(); if (!cell) return;
+    const table = cell.closest("table");
+    const idx = cell.cellIndex;
+    Array.from(table.rows).forEach((r) => {
+      const td = document.createElement("td");
+      td.innerHTML = "<br>";
+      const target = Math.min(left ? idx : idx + 1, r.cells.length);
+      r.insertBefore(td, r.cells[target] || null);
+    });
+    finalizeTableChange();
+  }
+  function deleteTableRow() {
+    const cell = currentTableCell(); if (!cell) return;
+    cell.closest("tr").remove();
+    finalizeTableChange();
+  }
+  function deleteTableCol() {
+    const cell = currentTableCell(); if (!cell) return;
+    const table = cell.closest("table");
+    const idx = cell.cellIndex;
+    Array.from(table.rows).forEach((r) => { if (r.cells[idx]) r.cells[idx].remove(); });
+    Array.from(table.rows).forEach((r) => { if (!r.cells.length) r.remove(); });
+    finalizeTableChange();
+  }
+  function selectedCells(table) {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return [];
+    const range = sel.getRangeAt(0);
+    const out = [];
+    table.querySelectorAll("td, th").forEach((c) => {
+      if (range.intersectsNode(c)) out.push(c);
+    });
+    return out;
+  }
+  function mergeTableCells() {
+    const cell = currentTableCell(); if (!cell) return;
+    const table = cell.closest("table");
+    const cells = selectedCells(table);
+    if (cells.length < 2) return;
+    const rows = Array.from(table.rows);
+    const pos = cells.map((c) => ({
+      cell: c,
+      r: rows.indexOf(c.closest("tr")),
+      c: c.cellIndex,
+    }));
+    const r0 = Math.min(...pos.map((p) => p.r));
+    const r1 = Math.max(...pos.map((p) => p.r));
+    const c0 = Math.min(...pos.map((p) => p.c));
+    const c1 = Math.max(...pos.map((p) => p.c));
+    // Collect the exact cells in the bounding rectangle BEFORE removing any:
+    // the live row.cells collection re-indexes on each removal, so deleting
+    // while iterating would shift indices and leave cells behind.
+    const rect = [];
+    for (let r = r0; r <= r1; r++) {
+      for (let c = c0; c <= c1; c++) {
+        const rc = table.rows[r] && table.rows[r].cells[c];
+        if (rc) rect.push(rc);
+      }
+    }
+    if (!rect.length) return;
+    const texts = rect.map((c) => c.textContent.trim()).filter(Boolean);
+    rect.forEach((cell) => cell.remove());
+    const tr = table.rows[r0];
+    const merged = document.createElement("td");
+    merged.textContent = texts.join(" ");
+    if (c1 - c0 > 0) merged.colSpan = c1 - c0 + 1;
+    if (r1 - r0 > 0) merged.rowSpan = r1 - r0 + 1;
+    tr.insertBefore(merged, tr.cells[c0] || null);
+    finalizeTableChange();
+  }
+  function splitTableCell() {
+    const cell = currentTableCell(); if (!cell) return;
+    const cs = cell.colSpan || 1, rs = cell.rowSpan || 1;
+    if (cs <= 1 && rs <= 1) return;
+    cell.colSpan = 1; cell.rowSpan = 1;
+    const table = cell.closest("table");
+    const row = cell.parentNode;
+    for (let c = 1; c < cs; c++) {
+      const td = document.createElement("td");
+      td.innerHTML = "<br>";
+      row.insertBefore(td, cell.nextSibling ? cell.nextSibling : null);
+    }
+    const rows = Array.from(table.rows);
+    const ri = rows.indexOf(row);
+    const idx = cell.cellIndex;
+    for (let r = ri + 1; r < ri + rs && r < rows.length; r++) {
+      const td = document.createElement("td");
+      td.innerHTML = "<br>";
+      rows[r].insertBefore(td, rows[r].cells[idx] || null);
+    }
+    finalizeTableChange();
+  }
+  function finalizeTableChange() {
+    captureHistory();
+    markDirty();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
+  }
+  function closeTableOpsDialog() {
+    const dialog = document.getElementById("table-ops-dialog");
+    if (dialog) dialog.classList.remove("open");
+    restoreFocus();
+  }
+  function openTableOps() {
+    if (READ_ONLY) return;
+    const dialog = document.getElementById("table-ops-dialog");
+    const hint = document.getElementById("table-ops-hint");
+    if (!dialog) return;
+    rememberFocus();
+    if (hint) hint.hidden = !!currentTableCell();
+    dialog.classList.add("open");
+  }
+
+  // ------------------------------------------------------------------
   // Insert-image dialog
   // ------------------------------------------------------------------
   // The toolbar's image button opens a small modal asking for a local image
@@ -1409,6 +1555,23 @@
     btn.addEventListener("click", () => emitCommand(btn.dataset.cmd, btn.dataset.value));
   });
   document.getElementById("btn-table").addEventListener("click", insertTable);
+  document.getElementById("btn-table-ops").addEventListener("click", openTableOps);
+  const tableOps = {
+    "op-row-above": () => insertTableRow(true),
+    "op-row-below": () => insertTableRow(false),
+    "op-col-left": () => insertTableCol(true),
+    "op-col-right": () => insertTableCol(false),
+    "op-del-row": deleteTableRow,
+    "op-del-col": deleteTableCol,
+    "op-merge": mergeTableCells,
+    "op-split": splitTableCell,
+  };
+  Object.keys(tableOps).forEach((id) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.addEventListener("click", () => { tableOps[id](); closeTableOpsDialog(); });
+  });
+  const tableOpsClose = document.getElementById("btn-table-ops-close");
+  if (tableOpsClose) tableOpsClose.addEventListener("click", closeTableOpsDialog);
   document.getElementById("btn-image").addEventListener("click", insertImage);
   const linkBtn = document.getElementById("btn-link");
   if (linkBtn) linkBtn.addEventListener("click", insertLink);
@@ -2005,7 +2168,18 @@
     document.body.appendChild(syncPill);
   }
   function applyRemoteText(text) {
-    if (editorPlainText() === text) return;
+    const current = editorPlainText();
+    if (current === text) return;
+    // The collab layer is a plain-text CRDT: tables, images, links and
+    // formatting spans cannot be represented, and their contribution to the
+    // plain-text projection is (nearly) all whitespace. Without this guard,
+    // the poll would "converge" the editor back to the server baseline
+    // (which predates any structural edit) and erase the table/image/link
+    // via innerText=. Treat whitespace-equal projections as no real change
+    // so structural content is never destroyed; genuine character edits
+    // still differ and converge normally.
+    const norm = (s) => (s || "").replace(/\s+/g, " ").trim();
+    if (norm(current) === norm(text)) return;
     // Never clobber an open modal (find/table/image dialog): leave the editor
     // untouched and converge on the next tick after the dialog closes.
     if (getOpenDialog()) return;

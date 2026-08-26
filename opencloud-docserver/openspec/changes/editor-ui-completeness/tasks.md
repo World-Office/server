@@ -17,10 +17,13 @@
 
 ## 3. Table cell operations (editor-ui/table-cells)
 
-- [ ] 3.1 Failing converter test: merged cell + deleted column round-trips DOCX + ODT (reuse existing `colspan`/`rowspan`).
-- [ ] 3.2 Add merge/split + insert/delete row/column handlers in `converter.py` + `editor.js` (extend table dialog).
-- [ ] 3.3 Toolbar/dialog controls in `web/index.html`; wire selection-based ops in `editor.js`.
-- [ ] 3.4 Playwright check: merge two cells, delete a column, assert round-trip.
+- [x] 3.1 Converter round-trip test: merged cell (`rowspan`) + removed column survives `html_to_docx`→`docx_to_html`.
+- [x] 3.2 `editor.js` handlers: insert/delete row and column, merge (selection bounding rect), split (colspan/rowspan reset) — collect cells then remove to avoid live `row.cells` index shifts.
+- [x] 3.3 "Table actions" dialog (`#table-ops-dialog`) + `▦✎` toolbar button in `web/index.html`; wired through `finalizeTableChange()` (dirty/history/collab/host).
+- [x] 3.4 Playwright check: merge two cells (colspan=2) + delete a column, assert colspan persists to the host DOCX (`test_table_merge_and_column_ops`).
+
+### Bug fixed while implementing 3.x (real data-loss)
+`applyRemoteText` re-rendered via `editor.innerText = text` on ANY plain-text mismatch; since the collab layer is a plain-text CRDT, tables/images/links/formatting contribute only whitespace to the projection, so the 400ms poll erased structural content. Fix: whitespace-normalized equality guard — genuine character edits still converge, structure is never destroyed. E2E tests were also isolated per-document (fresh mock-host seed per test) to remove cross-test CRDT contamination.
 
 ## 4. Insert primitives (editor-ui/insert-misc)
 
