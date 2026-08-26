@@ -836,6 +836,38 @@
     if (fileInput) fileInput.focus();
   }
 
+  // --- insert hyperlink (toolbar button + dialog) -------------------
+  function insertLink() {
+    if (READ_ONLY) return;
+    const dialog = document.getElementById("link-dialog");
+    const urlInput = document.getElementById("link-url");
+    if (!dialog || !urlInput) return;
+    rememberFocus();
+    urlInput.value = "";
+    dialog.classList.add("open");
+    urlInput.focus();
+  }
+  function confirmLinkDialog() {
+    const urlInput = document.getElementById("link-url");
+    const dialog = document.getElementById("link-dialog");
+    const url = (urlInput && urlInput.value || "").trim();
+    if (dialog) dialog.classList.remove("open");
+    restoreFocus();
+    if (!url) return;
+    editor.focus();
+    const sel = window.getSelection();
+    if (sel && sel.toString().trim() !== "") {
+      document.execCommand("createLink", false, url);
+    } else {
+      document.execCommand("insertHTML", false,
+        '<a href="' + escapeAttr(url) + '">' + escapeAttr(url) + "</a>");
+    }
+    captureHistory();
+    markDirty();
+    scheduleCollabSync();
+    notifyHost("editing");
+  }
+
   function saveImageSelection() {
     const sel = window.getSelection();
     if (sel && sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
@@ -1376,6 +1408,20 @@
   });
   document.getElementById("btn-table").addEventListener("click", insertTable);
   document.getElementById("btn-image").addEventListener("click", insertImage);
+  const linkBtn = document.getElementById("btn-link");
+  if (linkBtn) linkBtn.addEventListener("click", insertLink);
+  const linkOk = document.getElementById("btn-link-ok");
+  if (linkOk) linkOk.addEventListener("click", confirmLinkDialog);
+  const linkCancel = document.getElementById("btn-link-cancel");
+  if (linkCancel) linkCancel.addEventListener("click", () => {
+    const d = document.getElementById("link-dialog");
+    if (d) d.classList.remove("open");
+    restoreFocus();
+  });
+  const linkInput = document.getElementById("link-url");
+  if (linkInput) linkInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); confirmLinkDialog(); }
+  });
   document.getElementById("btn-find").addEventListener("click", openFindDialog);
   saveBtn.addEventListener("click", saveDocument);
 
