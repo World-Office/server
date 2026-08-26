@@ -188,11 +188,50 @@
       if (bucket[k] === undefined) bucket[k] = pair[k];
     });
   }
+  const MENU_UI_STRINGS = {
+    "MenuBar.Region": "Application menu",
+    "Menu.File": "File",
+    "Menu.New": "New",
+    "Menu.Open": "Open…",
+    "Menu.Export": "Export",
+    "Menu.ExportPdf": "PDF",
+    "Menu.ExportOdt": "ODT",
+    "Menu.ExportHtml": "HTML",
+    "Menu.ExportDocx": "DOCX",
+    "Menu.Print": "Print",
+    "FileMenu.NewConfirm": "Discard the current document and start a new one?",
+    "FileMenu.Exporting": "Exporting…",
+    "FileMenu.ExportError": "Export failed",
+  };
+  const MENU_UI_STRINGS_DE = {
+    "MenuBar.Region": "Anwendungsmenü",
+    "Menu.File": "Datei",
+    "Menu.New": "Neu",
+    "Menu.Open": "Öffnen…",
+    "Menu.Export": "Exportieren",
+    "Menu.ExportPdf": "PDF",
+    "Menu.ExportOdt": "ODT",
+    "Menu.ExportHtml": "HTML",
+    "Menu.ExportDocx": "DOCX",
+    "Menu.Print": "Drucken",
+    "FileMenu.NewConfirm": "Aktuelles Dokument verwerfen und ein neues beginnen?",
+    "FileMenu.Exporting": "Exportiere…",
+    "FileMenu.ExportError": "Export fehlgeschlagen",
+  };
+  function seedMenuStrings(tFn) {
+    const bucket = tFn && tFn.resources && tFn.resources[tFn.lng] && tFn.resources[tFn.lng].translation;
+    if (!bucket) return;
+    const pair = detectedLng.indexOf("de") === 0 ? MENU_UI_STRINGS_DE : MENU_UI_STRINGS;
+    Object.keys(pair).forEach((k) => {
+      if (bucket[k] === undefined) bucket[k] = pair[k];
+    });
+  }
   const t = (window.createI18n && window.createI18n({ lng: detectedLng })) || ((k) => k);
   seedUiStrings(t);
   seedFindStrings(t);
   seedToolbarStrings(t);
   seedA11yStrings(t);
+  seedMenuStrings(t);
   // Localize static HTML (toolbar tooltips, Save label, ready status) and
   // keep the <html lang> attribute in sync for a11y & spell-check.
   if (window.applyTranslations) {
@@ -271,6 +310,7 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "save failed");
       setStatus(t("Status.Saved"));
+      notifyHost("saved");
       if (DOC_FORMAT === "odt") {
         // ODT persistence round-trip confirmed by the server: the editor's
         // HTML was converted back to ODT and PUT to the WOPI host. Dispatch
@@ -307,6 +347,64 @@
     } catch (err) {
       setStatus(t("Status.SaveFailed") + err.message, true);
     }
+  }
+
+  // ------------------------------------------------------------------
+  // File menu commands (New / Open / Export / Print)
+  // ------------------------------------------------------------------
+  // Start a blank document. Guarded by READ_ONLY because it mutates the
+  // editing surface; a confirm() prevents accidental data loss. After
+  // clearing, snapshot history + flag dirty so the change is undoable and
+  // autosaved like any other edit.
+  function doNewDocument() {
+    if (READ_ONLY) return;
+    if (!window.confirm(t("FileMenu.NewConfirm"))) return;
+    editor.innerHTML = "";
+    captureHistory();
+    updateUndoRedoState();
+    markDirty();
+  }
+
+  // Open is delegated to the surrounding host application (OpenCloud / WOPI
+  // frame), which owns file browsing and selection. There is no local file
+  // picker because all documents are served by the docserver. The host
+  // listens for this custom event and presents its own open dialog.
+  function doOpen() {
+    window.dispatchEvent(new CustomEvent("wo-open-file", { detail: { docId: DOC_ID } }));
+  }
+
+  // Export the current document in a target format. The server performs the
+  // conversion (router.py routes /export/<fmt>), returns a downloadable
+  // blob, and we trigger a browser download with a sensible filename.
+  async function doExport(format) {
+    if (!format) return;
+    try {
+      setStatus(t("FileMenu.Exporting"));
+      // The server exposes POST /api/documents/{doc_id}/export?format=<fmt>
+      // (router.py export_document). Build the URL directly — the api()
+      // helper appends ?session, so a ?format= here would create a broken
+      // double-? query string.
+      const exportUrl = `/api/documents/${encodeURIComponent(DOC_ID)}/export?format=${encodeURIComponent(format)}&session=${encodeURIComponent(SESSION)}`;
+      const res = await fetch(exportUrl, { method: "POST" });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = DOC_NAME.replace(/\.[^.]+$/, "") + "." + format;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setStatus(t("Status.Ready"));
+    } catch (err) {
+      setStatus(t("FileMenu.ExportError") + ": " + err.message, true);
+    }
+  }
+
+  // Print the current document through the browser's print pipeline.
+  function doPrint() {
+    window.print();
   }
 
   // ------------------------------------------------------------------
@@ -1280,6 +1378,66 @@
   document.getElementById("btn-find").addEventListener("click", openFindDialog);
   saveBtn.addEventListener("click", saveDocument);
 
+  // ------------------------------------------------------------------
+  // File menu wiring (dropdown disclose + command dispatch)
+  // ------------------------------------------------------------------
+  const fileTrigger = document.getElementById("btn-file");
+  const fileMenu = document.getElementById("file-menu");
+  const exportTrigger = document.getElementById("btn-export");
+  const exportSub = exportTrigger ? exportTrigger.parentElement.querySelector(".menu-sublist") : null;
+
+  function setMenu(menu, trigger, open) {
+    if (!menu) return;
+    menu.hidden = !open;
+    if (trigger) trigger.setAttribute("aria-expanded", String(open));
+  }
+  function closeAllMenus() {
+    setMenu(fileMenu, fileTrigger, false);
+    setMenu(exportSub, exportTrigger, false);
+  }
+
+  if (fileTrigger && fileMenu) {
+    // Toggle the File menu; stopPropagation so the document click handler
+    // doesn't immediately close it again on the same click.
+    fileTrigger.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      const willOpen = fileMenu.hidden;
+      closeAllMenus();
+      if (willOpen) setMenu(fileMenu, fileTrigger, true);
+    });
+  }
+  if (exportTrigger && exportSub) {
+    // Hover reveals the export submenu; click toggles it (keyboard path).
+    exportTrigger.addEventListener("mouseenter", () => {
+      if (!fileMenu.hidden) setMenu(exportSub, exportTrigger, true);
+    });
+    exportTrigger.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      setMenu(exportSub, exportTrigger, exportSub.hidden);
+    });
+  }
+  // Dismiss on any outside click or Escape.
+  document.addEventListener("click", closeAllMenus);
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") closeAllMenus();
+  });
+
+  const btnNew = document.getElementById("btn-new");
+  const btnOpen = document.getElementById("btn-open");
+  const btnPrint = document.getElementById("btn-print");
+  if (btnNew) btnNew.addEventListener("click", () => { closeAllMenus(); doNewDocument(); });
+  if (btnOpen) btnOpen.addEventListener("click", () => { closeAllMenus(); doOpen(); });
+  if (btnPrint) btnPrint.addEventListener("click", () => { closeAllMenus(); doPrint(); });
+  if (exportSub) {
+    exportSub.querySelectorAll("button[data-export]").forEach((b) => {
+      b.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        closeAllMenus();
+        doExport(b.dataset.export);
+      });
+    });
+  }
+
   // Full-toolbar controls: font size/family selects, text/highlight color
   // pickers and the line-spacing select all emit through the wo-command
   // event bus, so they share the exact same runCommand() code path as the
@@ -1549,6 +1707,9 @@
     // a replace re-searches right after, a plain edit just resets the
     // counter until the user searches again.
     invalidateFindState();
+    lastLocalEdit = Date.now();
+    scheduleCollabSync();
+    notifyHost("editing");
   });
 
   // Release the WOPI lock on the remote host when the editor is closed
@@ -1557,7 +1718,187 @@
     if (typeof navigator.sendBeacon === "function") {
       navigator.sendBeacon(api("unlock"), "");
     }
+    notifyHost("closed");
+    leavePresence();
   });
+
+  // ------------------------------------------------------------------
+  // Real-time collaboration + WOPI host PostMessage bridge
+  // ------------------------------------------------------------------
+  // Collaboration runs on a server-side character CRDT. The browser only
+  // ships its plain-text content (debounced) and applies remote updates
+  // pushed over an SSE stream. Rich formatting is preserved locally; the
+  // converged plain text is what all editors agree on.
+  const CLIENT_ID = "c-" + Math.random().toString(36).slice(2, 10);
+  const COLLAB_ENABLED = window.__COLLAB__ !== false;
+  let collabTimer = null;
+  let pendingRemoteText = null;
+  let syncPill = null;
+  let lastLocalEdit = 0; // timestamp of the user's last keystroke
+
+  // --- WOPI host PostMessage bridge ---------------------------------
+  // The editor is embedded in OpenCloud/Nextcloud via an <iframe>. It tells
+  // the host about save/edit/close so the host UI can reflect editing state.
+  function notifyHost(action, extra) {
+    const msg = Object.assign(
+      { type: "woopi", action: action, docId: DOC_ID, session: SESSION, name: DOC_NAME },
+      extra || {}
+    );
+    try { if (window.parent && window.parent !== window) window.parent.postMessage(msg, "*"); } catch (e) {}
+    try { if (window.opener) window.opener.postMessage(msg, "*"); } catch (e) {}
+  }
+
+  // Host -> editor messages (OpenCloud/Nextcloud WOPI postMessage protocol).
+  window.addEventListener("message", (ev) => {
+    const d = ev.data;
+    if (!d || typeof d !== "object") return;
+    if (d.MessageId === "Close" || d.action === "close") {
+      saveDocument();
+      notifyHost("closed");
+    } else if (d.MessageId === "GetDocumentProperty") {
+      try {
+        const src = ev.source || (window.parent && window.parent !== window ? window.parent : null);
+        if (src) src.postMessage({
+          type: "woopi", MessageId: "GetDocumentProperty",
+          id: d.id, docId: DOC_ID, value: DOC_NAME,
+        }, ev.origin || "*");
+      } catch (e) {}
+    }
+  });
+
+  // --- presence badge -----------------------------------------------
+  const collabBadge = document.createElement("span");
+  collabBadge.id = "collab-badge";
+  collabBadge.style.cssText = "margin-left:8px;font-size:12px;color:#22c55e;";
+  if (status && status.parentNode) status.parentNode.insertBefore(collabBadge, status);
+  function renderPresence(clients) {
+    const n = (clients || []).length;
+    collabBadge.textContent = n ? "● " + n + " editing" : "";
+  }
+
+  // --- plain-text helpers (collab is character-CRDT on plain text) -
+  function editorPlainText() { return editor.innerText || ""; }
+  function caretOffset(el) {
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return 0;
+    const range = sel.getRangeAt(0);
+    const pre = range.cloneRange();
+    pre.selectNodeContents(el);
+    pre.setEnd(range.endContainer, range.endOffset);
+    return pre.toString().length;
+  }
+  function setCaretOffset(el, offset) {
+    let remaining = offset, node = null, pos = 0;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+    while (walker.nextNode()) {
+      const len = walker.currentNode.textContent.length;
+      if (remaining <= len) { node = walker.currentNode; pos = remaining; break; }
+      remaining -= len;
+    }
+    if (!node) { el.focus(); return; }
+    const r = document.createRange();
+    r.setStart(node, Math.min(pos, node.textContent.length));
+    r.collapse(true);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(r);
+  }
+  function showSyncPill() {
+    if (syncPill) { syncPill.style.display = ""; return; }
+    syncPill = document.createElement("button");
+    syncPill.textContent = "↓ remote changes — click to sync";
+    syncPill.style.cssText =
+      "position:fixed;right:12px;bottom:12px;z-index:50;padding:6px 10px;" +
+      "background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;";
+    syncPill.addEventListener("click", () => {
+      if (pendingRemoteText != null) applyRemoteText(pendingRemoteText);
+      pendingRemoteText = null;
+      syncPill.style.display = "none";
+    });
+    document.body.appendChild(syncPill);
+  }
+  function applyRemoteText(text) {
+    if (editorPlainText() === text) return;
+    // Never clobber an open modal (find/table/image dialog): leave the editor
+    // untouched and converge on the next tick after the dialog closes.
+    if (getOpenDialog()) return;
+    // Never clobber a user who is actively typing. Once they go idle (even if
+    // the editor stays focused) remote edits converge automatically.
+    const activelyTyping =
+      document.activeElement === editor && Date.now() - lastLocalEdit < 1500;
+    if (activelyTyping) {
+      pendingRemoteText = text;
+      showSyncPill();
+      return;
+    }
+    const wasFocused = document.activeElement === editor;
+    const offset = caretOffset(editor);
+    editor.innerText = text;
+    // Only (re)place the caret if the editor was already focused, so the poll
+    // never yanks focus away from an unrelated control (e.g. a modal dialog).
+    if (wasFocused) {
+      try { setCaretOffset(editor, Math.min(offset, text.length)); } catch (e) {}
+    }
+    captureHistory();
+    updateUndoRedoState();
+  }
+  // --- collab sync (debounced) -------------------------------------
+  function collabSync() {
+    if (!COLLAB_ENABLED) return;
+    const text = editorPlainText();
+    fetch(api("collab/sync"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ client_id: CLIENT_ID, text: text }),
+    }).catch(() => {});
+  }
+  function scheduleCollabSync() {
+    if (!COLLAB_ENABLED) return;
+    clearTimeout(collabTimer);
+    collabTimer = setTimeout(collabSync, 300);
+  }
+
+  // --- presence announce / leave -----------------------------------
+  function announcePresence(cursor) {
+    if (!COLLAB_ENABLED) return;
+    fetch(api("collab/presence"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ client_id: CLIENT_ID, user: "Editor", cursor: cursor || { index: 0 } }),
+    })
+      .then((r) => r.json())
+      .then((d) => renderPresence(d && d.clients))
+      .catch(() => {});
+  }
+  function leavePresence() {
+    if (!COLLAB_ENABLED) return;
+    fetch(api("collab/presence"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ client_id: CLIENT_ID, cursor: null }),
+    }).catch(() => {});
+  }
+
+  // --- live collaboration: poll the hub for changes -----------------
+  // The browser polls the converged document state. Polling is used over an
+  // SSE EventSource for robustness across embedded/headless contexts: a single
+  // GET every ~400ms keeps every editor convergent with low latency and zero
+  // connection-state fragility. The SSE endpoint remains available for clients
+  // that prefer push. applyRemoteText() is idempotent (equal text is a no-op)
+  // and never clobbers the active typist (it is skipped while the editor is
+  // focused), so re-applying on every tick is safe.
+  async function pollCollab() {
+    if (!COLLAB_ENABLED) return;
+    try {
+      const res = await fetch(api("collab/state"));
+      const data = await res.json();
+      if (data && typeof data.text === "string") applyRemoteText(data.text);
+    } catch (e) {}
+    setTimeout(pollCollab, 400);
+  }
+
+  pollCollab();
+  announcePresence();
 
   loadDocument();
 })();

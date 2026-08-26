@@ -687,6 +687,25 @@ async def collab_apply_ops(doc_id: str, request: Request) -> JSONResponse:
     return JSONResponse(get_hub().apply_ops(doc_id, client_id, ops, base_rev))
 
 
+@router.post("/api/documents/{doc_id}/collab/sync")
+async def collab_sync(doc_id: str, request: Request) -> JSONResponse:
+    """Browser-friendly collaboration sync: the client posts its full plain-
+    text content and the server merges it into the CRDT (see CollabHub.sync_text).
+    No client-side CRDT required — keeps the browser thin."""
+    try:
+        payload = json.loads(await request.body())
+    except json.JSONDecodeError:
+        return JSONResponse({"error": "invalid JSON"}, status_code=400)
+    if not isinstance(payload, dict):
+        return JSONResponse({"error": "invalid JSON"}, status_code=400)
+    text = payload.get("text", "")
+    client_id = payload.get("client_id") or "anon"
+    hub = get_hub()
+    hub.ensure(doc_id, _collab_base_text(request, doc_id))
+    state = hub.sync_text(doc_id, client_id, str(text))
+    return JSONResponse(state)
+
+
 @router.post("/api/documents/{doc_id}/collab/resync")
 async def collab_resync(doc_id: str, request: Request) -> JSONResponse:
     """Rebase the collaboration state onto authoritative text — used after
@@ -714,8 +733,14 @@ async def collab_stream(doc_id: str, request: Request) -> StreamingResponse:
         try:
             # Seed the fresh subscriber so it converges immediately.
             yield f"event: state\ndata: {json.dumps(hub.state(doc_id))}\n\n"
+            # Keep the connection alive: SSE proxies/browsers close idle
+            # streams, so emit a comment heartbeat if no real event arrives.
             while True:
-                payload = await queue.get()
+                try:
+                    payload = await asyncio.wait_for(queue.get(), timeout=15)
+                except TimeoutError:
+                    yield ": keepalive\n\n"
+                    continue
                 yield f"data: {payload}\n\n"
         except asyncio.CancelledError:
             raise

@@ -1,0 +1,33 @@
+"""TDD test for File-Menu UI (editor-cloud-ui T6).
+
+RED: fails until index.html has a file menu (New/Open/Export/Print) and
+editor.js wires the commands. This is an executable smoke test because no
+JS test runner (Playwright/jsdom) is available in this environment.
+"""
+from __future__ import annotations
+
+from pathlib import Path
+
+WEB = Path(__file__).resolve().parent.parent / "web"
+HTML = (WEB / "index.html").read_text(encoding="utf-8")
+JS = (WEB / "editor.js").read_text(encoding="utf-8")
+
+
+def test_file_menu_present_in_html():
+    for el in ["btn-new", "btn-open", "btn-export", "btn-print"]:
+        assert f'id="{el}"' in HTML, f"missing #{el} in index.html"
+
+
+def test_export_submenu_formats_present():
+    for fmt in ["pdf", "odt", "html", "docx"]:
+        assert f'data-export="{fmt}"' in HTML, f"missing export format {fmt}"
+
+
+def test_editor_js_wires_file_commands():
+    assert "doNewDocument" in JS, "editor.js missing doNewDocument"
+    assert "doExport" in JS, "editor.js missing doExport"
+    assert "doPrint" in JS, "editor.js missing doPrint"
+    # each command must be hooked to a DOM element
+    assert "btn-new" in JS, "editor.js does not reference btn-new"
+    assert "btn-export" in JS, "editor.js does not reference btn-export"
+    assert "btn-print" in JS, "editor.js does not reference btn-print"
