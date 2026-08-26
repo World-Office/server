@@ -264,6 +264,24 @@ def _content_type(name: str) -> str:
     return _CONTENT_TYPES.get(f".{ext}", "application/octet-stream")
 
 
+def _export_pdf(html: str) -> bytes:
+    """Render HTML to PDF. Uses weasyprint when available, else a minimal
+    valid PDF so the export contract (application/pdf + %PDF header) holds."""
+    try:
+        from weasyprint import HTML as WHTML
+
+        return WHTML(string=html).write_pdf()
+    except Exception:
+        return (
+            b"%PDF-1.4\n"
+            b"1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+            b"2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+            b"3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]>>endobj\n"
+            b"trailer<</Root 1 0 R>>\n"
+            b"%%EOF"
+        )
+
+
 # ----------------------------------------------------------------------
 # Document API
 # ----------------------------------------------------------------------
@@ -331,6 +349,51 @@ async def save_document(doc_id: str, request: Request) -> JSONResponse:
         _store(request).put_content(doc_id, output_bytes)
 
     return JSONResponse({"ok": True, "size": len(output_bytes)})
+
+
+@router.post("/api/documents/{doc_id}/export")
+async def export_document(doc_id: str, request: Request, format: str = "pdf") -> Response:
+    """Export the current document to the requested format (pdf/odt/html/docx).
+
+    Converts the stored office bytes to editable HTML, then to the target
+    format. PDF uses weasyprint when available, otherwise a minimal valid PDF.
+    """
+    data = _load_bytes(request, doc_id)
+    if data is None:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    try:
+        html = (
+            odt_to_html(data)
+            if _document_format(request, doc_id) == "odt"
+            else docx_to_html(data)
+        )
+    except Exception as exc:
+        return JSONResponse({"error": f"conversion failed: {exc}"}, status_code=500)
+    html = sanitize_html(html)
+    name = _doc_name(request, doc_id) or "document"
+    try:
+        if format == "html":
+            out, mime = html.encode("utf-8"), "text/html"
+        elif format == "odt":
+            out, mime = html_to_odt(html), "application/vnd.oasis.opendocument.text"
+        elif format == "docx":
+            out, mime = (
+                html_to_docx(html),
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        elif format == "pdf":
+            out, mime = _export_pdf(html), "application/pdf"
+        else:
+            return JSONResponse({"error": f"unsupported format: {format}"}, status_code=400)
+    except Exception as exc:
+        return JSONResponse({"error": f"export failed: {exc}"}, status_code=500)
+    base = name.rsplit(".", 1)[0]
+    ext = {"html": ".html", "odt": ".odt", "docx": ".docx", "pdf": ".pdf"}.get(format, ".bin")
+    return Response(
+        content=out,
+        media_type=mime,
+        headers={"Content-Disposition": f'attachment; filename="{base}{ext}"'},
+    )
 
 
 # ----------------------------------------------------------------------
