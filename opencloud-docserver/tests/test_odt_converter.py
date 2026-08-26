@@ -1249,3 +1249,27 @@ def test_html_to_odt_paragraph_props_roundtrip():
     out = odt_to_html(odt)
     for frag in ("line-height:1.5", "24pt", "12pt", "6pt", "rtl", "page-break-before"):
         assert frag in out, frag
+
+
+def test_html_to_odt_nested_list_roundtrip():
+    """Level-2 bullets round-trip as nested <ul> through ODT."""
+    html = (
+        "<ul><li>item 1<ul><li>sub 1</li><li>sub 2</li></ul></li>"
+        "<li>item 2</li></ul>"
+    )
+    out = odt_to_html(html_to_odt(html))
+    norm = out.replace("\n", "")
+    assert norm == (
+        "<ul><li>item 1<ul><li>sub 1</li><li>sub 2</li></ul></li>"
+        "<li>item 2</li></ul>"
+    ), norm
+
+
+def test_html_to_odt_nested_numbered_list_roundtrip():
+    """Numbered outline levels survive through ODT."""
+    html = "<ol><li>one<ol><li>1.1</li></ol></li><li>two</li></ol>"
+    out = odt_to_html(html_to_odt(html))
+    norm = out.replace("\n", "")
+    assert norm == (
+        "<ol><li>one<ol><li>1.1</li></ol></li><li>two</li></ol>"
+    ), norm

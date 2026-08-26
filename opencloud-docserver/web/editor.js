@@ -2214,6 +2214,30 @@
         return;
       }
     }
+    // Tab / Shift+Tab inside a list item indent / outdent the item (Word /
+    // LibreOffice convention). execCommand("indent"/"outdent") nests or
+    // un-nests the <li> in a native, undoable edit, and both converters
+    // round-trip the resulting nested <ul>/<ol> as "List Bullet/Number 2".
+    // Elsewhere Tab keeps its default focus-navigation behaviour (WCAG).
+    if (ev.key === "Tab" && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+      const sel = window.getSelection();
+      const nd = sel && sel.anchorNode;
+      const el = nd && nd.nodeType === 1 ? nd : (nd && nd.parentElement);
+      if (el && el.closest && el.closest("li")) {
+        if (READ_ONLY) return;
+        ev.preventDefault();
+        try {
+          document.execCommand(ev.shiftKey ? "outdent" : "indent");
+          markDirty();
+          captureHistory();
+          scheduleCollabSync();
+          notifyHost("editing");
+        } catch (err) {
+          /* fall back to default */
+        }
+        return;
+      }
+    }
   });
 
   // ------------------------------------------------------------------

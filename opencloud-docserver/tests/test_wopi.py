@@ -1756,3 +1756,23 @@ class TestPathTraversal:
             res = client.get(f"/wopi/files/{doc_id}")
             assert res.status_code == 200, doc_id
             assert res.json()["BaseFileName"] == f"{doc_id}.docx"
+
+
+def test_sanitize_lifts_list_out_of_paragraph():
+    """A contenteditable can nest <ul> inside <p>; the block must be lifted."""
+    out = sanitize_html("<p><ul><li>x</li></ul></p>")
+    assert "<ul><li>x</li></ul>" in out
+    assert "<p><ul>" not in out
+    # surrounding text is preserved as a sibling paragraph
+    out2 = sanitize_html("<p>before<ul><li>x</li></ul>after</p>")
+    assert "before" in out2 and "after" in out2
+
+
+def test_sanitize_nests_stray_list_into_preceding_li():
+    """A <ul> directly inside another <ul> (Chromium Tab quirk) re-nests."""
+    out = sanitize_html(
+        "<ul><li>first item</li><ul><li>second item</li></ul></ul>"
+    )
+    norm = out.replace("\n", "")
+    assert ("<ul><li>first item<ul><li>second item</li></ul></li></ul>"
+            in norm), norm

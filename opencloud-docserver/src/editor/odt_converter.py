@@ -49,7 +49,12 @@ from odf.text import (
     Span,
 )
 
-from src.editor.converter import _MONO_FONTS, _normalize_color, _parse_inline_style
+from src.editor.converter import (
+    _MONO_FONTS,
+    _normalize_color,
+    _parse_inline_style,
+    _tokenize_body,
+)
 
 _BOLD_WEIGHTS = {"bold", "bolder", "600", "700", "800", "900"}
 _ITALIC_STYLES = {"italic", "oblique"}
@@ -800,28 +805,29 @@ def html_to_odt(html_fragment: str) -> bytes:
     doc = OpenDocumentText()
     w = _OdtWriter(doc)
 
-    block_re = re.compile(r"<(p|h[1-6]|ul|ol|blockquote)[^>]*>(.*?)</\1>", re.S)
-    blocks = list(block_re.finditer(body))
-    for m in blocks:
-        tag, inner = m.group(1), m.group(2)
-        if tag == "ul":
-            w.add_list(inner, ordered=False)
+    ops = _tokenize_body(body)
+    for op in ops:
+        kind = op[0]
+        if kind == "list":
+            w.add_list(op[1])
             continue
-        if tag == "ol":
-            w.add_list(inner, ordered=True)
-            continue
-        if tag == "blockquote":
+        if kind == "blockquote":
             # Chrome's execCommand indent -> left-indented paragraph (parity
             # with the DOCX converter).
-            w.add_paragraph(inner, level=0, props={"margin-left": 24.0})
+            w.add_paragraph(op[2], level=0, props={"margin-left": 24.0})
             continue
-        if tag.startswith("h"):
-            w.add_paragraph(inner, level=int(tag[1]), props=_para_props(m.group(0)))
+        if kind == "h":
+            w.add_paragraph(op[3], level=op[1], props=_para_props(op[2]))
             continue
-        w.add_paragraph(inner, level=0, props=_para_props(m.group(0)))
+        if kind == "p":
+            w.add_paragraph(op[2], level=0, props=_para_props(op[1]))
+        # 'hr' and 'pagebreak' are intentionally dropped: the ODT writer's
+        # mission is the same as before (no rule/page-break mapping).
 
     # Tag-less input (raw text typed into an empty contenteditable).
-    if not blocks and body.strip():
+    if body.strip() and not any(
+        op[0] in ("list", "p", "h", "blockquote") for op in ops
+    ):
         w.add_paragraph(body, level=0, props=None)
 
     for tbl_html in tables_html:
@@ -1043,22 +1049,38 @@ class _OdtWriter:
         frame.addElement(Image(href=manifest))
         para_el.addElement(frame)
 
-    def add_list(self, html: str, ordered: bool) -> None:
+    def _new_list(self, kind: str):
         list_el = List()
-        if ordered:
+        if kind == "ol":
             if self._ol_style is None:
                 self._ol_style = "WO_NumberedList"
                 ls = ListStyle(name=self._ol_style)
                 ls.addElement(ListLevelStyleNumber(level=1, numformat="1"))
                 self.doc.automaticstyles.addElement(ls)
             list_el.setAttribute("stylename", self._ol_style)
-        for li_html in re.findall(r"<li[^>]*>(.*?)</li>", html, re.S):
-            item = ListItem()
+        return list_el
+
+    def _build_list(self, tree: dict):
+        list_el = self._new_list(tree.get("kind") or "ul")
+        for item in tree.get("items", []):
+            li = ListItem()
             p = P()
-            self._fill(p, li_html)
-            item.addElement(p)
-            list_el.addElement(item)
-        self.doc.text.addElement(list_el)
+            self._fill(p, item.get("frag", ""))
+            li.addElement(p)
+            for sub in item.get("sub", []):
+                li.addElement(self._build_list(sub))
+            list_el.addElement(li)
+        return list_el
+
+    def add_list(self, tree: dict) -> None:
+        """Append a (possibly nested) list tree to the body.
+
+        ``tree`` is the ``parse_list_at`` shape: {'kind', 'items':
+        [{'frag', 'sub': [tree, ...]}, ...]}. Nested lists become nested
+        ``text:list`` elements inside their parent ``text:list-item`` so
+        outline levels reach LibreOffice unchanged.
+        """
+        self.doc.text.addElement(self._build_list(tree))
 
     @staticmethod
     def _parse_row(html: str) -> list[dict]:

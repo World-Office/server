@@ -613,7 +613,7 @@ def test_offline_queue_and_resync(servers):
             page.goto(_parent_url(servers, seed))
             frame = page.frame("ed")
             frame.locator("#editor").wait_for(state="visible", timeout=15000)
-            assert "Offline seed" in _frame_text(frame)
+            _wait(lambda: "Offline seed" in _frame_text(frame))
 
             frame.locator("#editor").click()
             frame.locator("#editor").press("End")
@@ -654,7 +654,7 @@ def test_inline_format_commands_code_caps_strike(servers):
             parent.goto(_parent_url(servers, seed))
             frame = parent.frame("ed")
             frame.locator("#editor").wait_for(state="visible", timeout=15000)
-            assert "plain base" in _frame_text(frame)
+            _wait(lambda: "plain base" in _frame_text(frame))
 
             # Type a line, then wrap one word in inline code (monospace).
             frame.locator("#editor").click()
@@ -720,7 +720,7 @@ def test_paragraph_rtl_and_line_spacing_roundtrip(servers):
             parent.goto(_parent_url(servers, seed))
             frame = parent.frame("ed")
             frame.locator("#editor").wait_for(state="visible", timeout=15000)
-            assert "para base" in _frame_text(frame)
+            _wait(lambda: "para base" in _frame_text(frame))
 
             frame.locator("#editor").click()
             frame.locator("#editor").press("End")
@@ -740,6 +740,14 @@ def test_paragraph_rtl_and_line_spacing_roundtrip(servers):
                 "line-height:1.5" in _host_html(servers, seed)
                 and "direction:rtl" in _host_html(servers, seed)
             ))
+            # Let any in-flight collab poll settle so it can't clobber the
+            # just-saved DOCX before the reload reads it back (save vs poll
+            # race), then confirm the host still holds the properties.
+            _t_settle = time.time()
+            while time.time() - _t_settle < 1.5:
+                time.sleep(0.2)
+            assert "line-height:1.5" in _host_html(servers, seed)
+            assert "direction:rtl" in _host_html(servers, seed)
 
             # Reload from the host -> props survive.
             parent.reload()
@@ -747,6 +755,46 @@ def test_paragraph_rtl_and_line_spacing_roundtrip(servers):
             frame2.locator("#editor").wait_for(state="visible", timeout=15000)
             html2 = frame2.evaluate("document.getElementById('editor').innerHTML")
             assert 'line-height' in html2 and 'rtl' in html2.lower(), html2
+        finally:
+            ctx.close()
+            browser.close()
+
+
+def test_nested_list_tab_indent_roundtrip(servers):
+    """Tab indents a list item into a nested list that survives save."""
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            seed = _seed_doc(servers, "lists.docx", "list base")
+            ctx = browser.new_context()
+            parent = ctx.new_page()
+            parent.goto(_parent_url(servers, seed))
+            frame = parent.frame("ed")
+            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+            _wait(lambda: "list base" in _frame_text(frame))
+
+            frame.locator("#editor").click()
+            frame.locator("#editor").press("End")
+            # Start a bullet list on a fresh line: Enter, then the bullet
+            # toolbar button (toggleList -> native execCommand) turns the new
+            # paragraph into an <li>; type two items; Tab indents the second.
+            frame.locator("#editor").press("Enter")
+            frame.locator("#editor").press_sequentially("first item")
+            frame.locator("button[data-cmd='insertUnorderedList']").click()
+            frame.locator("#editor").press("End")
+            frame.locator("#editor").press("Enter")
+            frame.locator("#editor").press_sequentially("second item")
+            frame.locator("#editor").press("Tab")
+            # The live editor DOM may be transiently invalid (Chromium can
+            # wrap the list in a <p> and put the nested <ul> beside the <li>);
+            # the sanitizer normalises it on save, so assert on the host.
+            frame.locator("#btn-save").click()
+            _wait(lambda: (
+                "<ul><li>second item</li></ul>" in _host_html(servers, seed).replace("\n", "")
+                or "List Bullet 2" in _host_html(servers, seed)
+            ))
         finally:
             ctx.close()
             browser.close()
