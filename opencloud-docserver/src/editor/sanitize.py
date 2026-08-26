@@ -19,7 +19,7 @@ class _XSSSanitizer(HTMLParser):
         self._output: list[str] = []
         self._safe_tags = {"p", "b", "i", "u", "em", "strong", "h1", "h2", "h3", "h4", "h5", "h6",
                           "ul", "ol", "li", "table", "tr", "td", "th", "br", "div", "span",
-                          "img", "a"}
+                          "img", "a", "s", "sup", "sub"}
         self._unsafe_tags = {"script", "iframe", "object", "embed", "applet", "form", "input",
                             "button", "select", "textarea", "meta", "link", "style", "base",
                             "frame", "frameset", "head", "title", "body", "html"}

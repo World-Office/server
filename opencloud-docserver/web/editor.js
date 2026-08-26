@@ -484,7 +484,9 @@
     // Structural + span-style commands don't fire a guaranteed `input`
     // event on every engine, so arm dirty/history explicitly; the
     // html===lastSnapshot guard keeps capture a no-op when the event ran.
-    if (isBlock || isSpanStyle || cmd === "indent" || cmd === "outdent" || /^justify/.test(cmd)) {
+    if (isBlock || isSpanStyle || cmd === "indent" || cmd === "outdent" ||
+        cmd === "superscript" || cmd === "subscript" || cmd === "strikeThrough" ||
+        /^justify/.test(cmd)) {
       markDirty();
       captureHistory();
     }

@@ -9,11 +9,11 @@
 
 ## 2. Text colour & highlight (editor-ui/format-advanced)
 
-- [ ] 2.1 Failing converter test: coloured/highlighted span round-trips DOCX + ODT.
-- [ ] 2.2 Extend `converter.py` to emit/parse `color`/`background` spans (`w:rPr/w:color`, `fo:text-color`).
-- [ ] 2.3 Extend `sanitize.py` with a `style` colour/background whitelist (fixed palette + `#rrggbb`; reject `url(`/`expression(`).
-- [ ] 2.4 Toolbar colour + highlight pickers + superscript/subscript buttons in `web/index.html`/`editor.js`.
-- [ ] 2.5 Playwright check: apply red + highlight, assert visible and persisted.
+- [x] 2.1 Converter round-trip tests: colour + highlight spans and `<sup>`/`<sub>` survive `html_to_docx`→`docx_to_html`.
+- [x] 2.2 `converter.py` emits/parses `color`/`background-color` (`w:color`, `w:shd` fill) + `vertAlign`; `_InlineRunBuilder` handles `<span style>`/`<sup>`/`<sub>` with a span/vert stack.
+- [x] 2.3 `sanitize.py` keeps `color`/`background-color` (whitelist) and drops `expression(`/`url(`; `sup`/`sub`/`s` added to safe tags.
+- [x] 2.4 Toolbar already had colour + highlight `<input type=color>` pickers (wired via `foreColor`/`hiliteColor` + `styleWithCSS`); added superscript/subscript buttons (`data-cmd`) + dirty condition in `emitCommand`.
+- [x] 2.5 Playwright check: apply colour + superscript, assert visible and persisted in the host DOCX (`test_format_color_highlight_superscript`).
 
 ## 3. Table cell operations (editor-ui/table-cells)
 
