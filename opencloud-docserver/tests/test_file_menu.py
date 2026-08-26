@@ -31,3 +31,12 @@ def test_editor_js_wires_file_commands():
     assert "btn-new" in JS, "editor.js does not reference btn-new"
     assert "btn-export" in JS, "editor.js does not reference btn-export"
     assert "btn-print" in JS, "editor.js does not reference btn-print"
+
+
+def test_inline_text_format_buttons_present():
+    """code / small-caps / all-caps toolbar commands exist (T6 UI)."""
+    for cmd in ["strikeThrough", "smallCaps", "allCaps", "code",
+                "superscript", "subscript"]:
+        assert f'data-cmd="{cmd}"' in HTML, f"missing button data-cmd={cmd} in index.html"
+    for fn in ["toggleInlineCSS", "toggleMonospace", "fontIsMono", "spanStyleActive"]:
+        assert fn in JS, f"editor.js missing {fn}"

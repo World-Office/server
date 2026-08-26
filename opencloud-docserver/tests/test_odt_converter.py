@@ -1202,3 +1202,38 @@ def test_html_to_odt_image_roundtrip_jpeg_intrinsic_dimensions():
     assert len(srcs) == 1
     assert _decode_data_uri(srcs[0]) == jpeg
     assert 'width="10"' in html2 and 'height="5"' in html2
+
+
+def test_html_to_odt_color_highlight_roundtrip():
+    """Colour + highlight spans survive ODT HTML->ODT->HTML."""
+    html = (
+        '<p><span style="color:#ff0000">red</span> '
+        '<span style="background-color:#ffff00">hi</span></p>'
+    )
+    odt = html_to_odt(html)
+    out = odt_to_html(odt)
+    assert "ff0000" in out.lower()
+    assert "ffff00" in out.lower()
+
+
+def test_html_to_odt_font_family_size_roundtrip():
+    """font-family/font-size spans survive the ODT round-trip."""
+    html = '<p><span style="font-family:Georgia;font-size:14pt">geo 14</span></p>'
+    odt = html_to_odt(html)
+    out = odt_to_html(odt)
+    assert "Georgia" in out
+    assert "14pt" in out
+
+
+def test_html_to_odt_sup_sub_strike_caps_code_roundtrip():
+    """sup/sub/strike/small-caps/all-caps/inline-code survive ODT round-trip."""
+    html = (
+        '<p>x<sup>2</sup> H<sub>2</sub> <strike>gone</strike> '
+        '<span style="font-variant:small-caps">sc</span> '
+        '<span style="text-transform:uppercase">up</span> '
+        '<code>code</code></p>'
+    )
+    odt = html_to_odt(html)
+    out = odt_to_html(odt)
+    for frag in ("<sup>", "<sub>", "<strike>", "small-caps", "uppercase", "<code>"):
+        assert frag in out, frag

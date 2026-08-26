@@ -639,3 +639,69 @@ def test_offline_queue_and_resync(servers):
         finally:
             ctx.close()
             browser.close()
+
+
+def test_inline_format_commands_code_caps_strike(servers):
+    """Code / small-caps / all-caps / strike round-trip in the browser."""
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            seed = _seed_doc(servers, "inlinefmt.docx", "plain base")
+            ctx = browser.new_context()
+            parent = ctx.new_page()
+            parent.goto(_parent_url(servers, seed))
+            frame = parent.frame("ed")
+            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+            assert "plain base" in _frame_text(frame)
+
+            # Type a line, then wrap one word in inline code (monospace).
+            frame.locator("#editor").click()
+            frame.locator("#editor").press("End")
+            frame.locator("#editor").press_sequentially(" code SC UP strike ")
+            frame.locator("#editor").evaluate("""() => {
+              const ed = document.getElementById('editor');
+              const t = ed.querySelector('p:last-of-type');
+              const range = document.createRange();
+              range.selectNodeContents(t);
+              const sel = window.getSelection();
+              sel.removeAllRanges(); sel.addRange(range);
+            }""")
+            frame.locator("button[data-cmd='code']").click()
+            frame.locator("#editor").evaluate("""() => {
+              const ed = document.getElementById('editor');
+              const t = ed.querySelector('p:last-of-type');
+              const range = document.createRange();
+              range.selectNodeContents(t);
+              const sel = window.getSelection();
+              sel.removeAllRanges(); sel.addRange(range);
+            }""")
+            frame.locator("button[data-cmd='allCaps']").click()
+            frame.locator("#editor").evaluate("""() => {
+              const ed = document.getElementById('editor');
+              const t = ed.querySelector('p:last-of-type');
+              const range = document.createRange();
+              range.selectNodeContents(t);
+              const sel = window.getSelection();
+              sel.removeAllRanges(); sel.addRange(range);
+            }""")
+            frame.locator("button[data-cmd='strikeThrough']").click()
+
+            html = frame.evaluate("document.getElementById('editor').innerHTML")
+            assert "Consolas" in html or "monospace" in html.lower(), html
+            assert "uppercase" in html, html
+            assert "<s>" in html or "<strike>" in html, html
+
+            # Save -> all three survive to the host DOCX.
+            frame.locator("#btn-save").click()
+            _wait(lambda: (
+                ("Consolas" in _host_html(servers, seed) or
+                 "<code>" in _host_html(servers, seed))
+                and "uppercase" in _host_html(servers, seed)
+                and ("<s>" in _host_html(servers, seed) or "<strike>" in _host_html(servers, seed))
+            ))
+
+        finally:
+            ctx.close()
+            browser.close()

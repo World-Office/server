@@ -19,7 +19,7 @@ class _XSSSanitizer(HTMLParser):
         self._output: list[str] = []
         self._safe_tags = {"p", "b", "i", "u", "em", "strong", "h1", "h2", "h3", "h4", "h5", "h6",
                           "ul", "ol", "li", "table", "tr", "td", "th", "br", "div", "span",
-                          "img", "a", "s", "sup", "sub", "hr"}
+                          "img", "a", "s", "sup", "sub", "strike", "del", "code", "hr"}
         self._unsafe_tags = {"script", "iframe", "object", "embed", "applet", "form", "input",
                             "button", "select", "textarea", "meta", "link", "style", "base",
                             "frame", "frameset", "head", "title", "body", "html"}
@@ -170,7 +170,8 @@ def _sanitize_style(value: str) -> str | None:
     # Allow common text styles only (property whitelist)
     safe_props = {
         "color", "background-color", "font-family", "font-size", "font-weight",
-        "font-style", "text-align", "text-decoration", "margin", "margin-top",
+        "font-style", "font-variant", "text-transform", "direction",
+        "text-align", "text-decoration", "margin", "margin-top",
         "margin-bottom", "margin-left", "margin-right", "padding", "padding-top",
         "padding-bottom", "padding-left", "padding-right", "border", "line-height",
     }
