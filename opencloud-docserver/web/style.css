@@ -356,6 +356,22 @@ body.fullscreen #editor {
   border-radius: 3px;
   white-space: nowrap;
 }
+/* Table operations dialog: compact button grid. */
+.table-ops-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 10px 0;
+}
+.table-ops-grid button {
+  padding: 6px 8px;
+  font-size: 12px;
+}
+.table-ops-hint {
+  margin: 8px 0 4px;
+  color: var(--muted, #666);
+  font-size: 12px;
+}
 main {
   position: relative;
   flex: 1;
