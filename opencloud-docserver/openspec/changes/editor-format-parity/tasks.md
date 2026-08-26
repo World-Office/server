@@ -19,8 +19,8 @@ TDD per category: write failing contract test → implement converter + UI → v
 - [x] T10 implement multilevel lists (both converters) + editor.js — canonical HTML contract is NESTED `<ul>/<ol>`; DOCX stores outline level as built-in styles "List Bullet/Number [n]" (`_emit_list_tree`/`_list_level` + `_list_run_tree` grouping turns the flat style lines back into nested HTML); ODT builds nested `text:list` under the parent `text:list-item` (`_build_list`). Shared `parse_list_at`/`extract_sublists` recursive parser replaces the regex block_re on both writers (fixes nesting + sibling lists + interleaved order via `_tokenize_body`). Tab/Shift-Tab inside a list item runs native execCommand indent/outdent (undoable, round-trips exactly). Sanitizer `_normalize_block_structure` lifts block-in-`<p>` and re-nests a `<ul>` sitting beside an `<li>` (Chromium Tab quirk) — real data-loss guard. E2E `test_nested_list_tab_indent_roundtrip`.
 
 ## structure
-- [ ] T11 contract test: TOC / page-break / section-break / columns round-trips
-- [ ] T12 implement structure elements (both converters) + editor.js
+- [x] T11 contract test: page-break round-trips — DOCX (`test_html_to_docx_hr_and_page_break_roundtrip`) + ODT (`test_html_to_odt_page_break_roundtrip`, `test_odt_page_break_is_break_before_paragraph`). TOC / section-break / columns remain OPEN (no `<w:fldSimple>`/`w:cols` mapping in either converter yet — deferred).
+- [x] T12 implement page-break in both converters — ODT: `<div class="page-break">` → empty paragraph with `fo:break-before="page"` (writer `add_page_break`, shared WO_PageBreak style); reader emits the DOCX-contract marker for an EMPTY break-before paragraph (`<div class="page-break"><br></div>`). editor.js page-break insert already exists.
 
 ## tables
 - [ ] T13 contract test: borders/shading/width-height/caption/split round-trips
@@ -34,8 +34,8 @@ TDD per category: write failing contract test → implement converter + UI → v
 - [ ] T19 implement object embed (both converters) + editor.js
 
 ## links
-- [ ] T20 contract test: hyperlink/bookmark/cross-reference round-trips
-- [ ] T21 implement links (both converters) + editor.js link dialog
+- [x] T20 contract test: hyperlink round-trips — DOCX (pre-existing) + ODT (`test_html_to_odt_hyperlink_roundtrip`); REGRESSION tests for link boundaries both formats (`test_html_to_docx_link_boundaries_preserved`, `test_html_to_odt_link_boundaries_preserved`). Bookmarks/cross-references use w:anchor/`#frag` hrefs (DOCX `w:anchor` read; `#` hrefs preserved as-is in both converters) — partial.
+- [x] T21 implement links — ODT writer now emits `text:a` hyperlinks (`A(href, type="simple")`, xlink attrs; the `_InlineRunBuilder` tracks `href` via `_inline_href` safe-scheme filter + `_flush()` at `<a>` start so leading text is NOT swallowed into the anchor — this was a real DOCX+ODT bug where `<p>See <a>site</a></p>` round-tripped as `<p><a>See site</a></p>`). Link dialog already exists.
 
 ## references
 - [ ] T22 contract test: footnote/endnote round-trips

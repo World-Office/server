@@ -858,3 +858,19 @@ def test_special_symbol_roundtrips_docx():
     html = "<p>Use the § symbol and ¶ now.</p>"
     assert "§" in docx_to_html(html_to_docx(html))
     assert "§" in odt_to_html(html_to_odt(html))
+
+
+def test_html_to_docx_link_boundaries_preserved():
+    """Text before/after an <a> must stay OUTSIDE the anchor (regression:
+    the builder merged leading text into the link token when <a> did not
+    flush the pending buffer first)."""
+    html = '<p>See <a href="https://example.com">site</a> now.</p>'
+    out = docx_to_html(html_to_docx(html)).replace("\n", "")
+    assert out == '<p>See <a href="https://example.com">site</a> now.</p>', out
+
+
+def test_html_to_docx_span_boundary_preserved():
+    """Leading text before a styled <span> does not inherit its style."""
+    html = '<p>a<span style="color:#ff0000">b</span>c</p>'
+    out = docx_to_html(html_to_docx(html)).replace("\n", "")
+    assert out == '<p>a<span style="color:#ff0000">b</span>c</p>', out
