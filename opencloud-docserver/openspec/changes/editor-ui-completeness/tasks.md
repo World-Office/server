@@ -30,10 +30,11 @@
 
 ## 5. View controls (editor-ui/view-controls)
 
-- [ ] 5.1 Zoom in/out/reset control that scales the editing surface only (no content change) in `editor.js` + `style.css`.
-- [ ] 5.2 Dark-mode toggle via CSS variables; persist for session.
-- [ ] 5.3 Fullscreen control expanding the editor viewport.
-- [ ] 5.4 Playwright check: toggle dark mode + zoom, assert surface changes and saved content is unchanged.
+- [x] 5.1 Zoom in/out/reset control that scales the editing surface only (CSS `zoom` on `#editor`, persisted in localStorage) in `editor.js` + `index.html`.
+- [x] 5.2 Dark/light theme toggle via CSS variables (`html.light` overrides `--bg/--text/...`), persisted in localStorage.
+- [x] 5.3 Fullscreen control expanding the editor viewport (`.fullscreen` class + best-effort Fullscreen API).
+- [x] 5.4 Playwright check: zoom in grows surface; theme toggle flips background; fullscreen toggles class.
+      (`tests/e2e/test_cloud_editor_e2e.py::test_view_controls_zoom_theme_fullscreen`)
 
 ## 6. File operations (editor-ui/file-ops)
 

@@ -13,6 +13,20 @@
   --ink: #1a1a1a;
 }
 
+/* Light theme: toggled from the toolbar; keeps the same variable names so the
+   whole UI re-skins without per-component overrides. */
+html.light {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --border: #d8dae0;
+  --text: #1a1a1a;
+  --muted: #5a5f6b;
+  --accent: #3a5bd9;
+  --accent-hover: #2f4ac0;
+  --paper: #ffffff;
+  --ink: #1a1a1a;
+}
+
 * { box-sizing: border-box; }
 
 html, body {
@@ -293,7 +307,19 @@ body {
   white-space: nowrap;
 }
 
-/* ---- editor surface ---- */
+/* Fullscreen toggle (toolbar button) expands the editing surface to the
+   viewport. The browser Fullscreen API is attempted as well but the class is
+   the source of truth for layout. */
+body.fullscreen { overflow: hidden; }
+body.fullscreen main,
+body.fullscreen #editor {
+  position: fixed;
+  inset: 48px 0 0 0;
+  max-width: none;
+  height: auto;
+  z-index: 50;
+  background: var(--bg);
+}
 main {
   flex: 1;
   overflow: auto;

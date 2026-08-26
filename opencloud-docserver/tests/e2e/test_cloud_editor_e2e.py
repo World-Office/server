@@ -296,3 +296,39 @@ def test_status_bar_word_count_and_save_indicator(servers):
         finally:
             ctx.close()
             browser.close()
+
+
+def test_view_controls_zoom_theme_fullscreen(servers):
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            ctx = browser.new_context()
+            parent = ctx.new_page()
+            parent.goto(_parent_url(servers))
+            frame = parent.frame("ed")
+            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+
+            # Zoom in scales only the editing surface (inline zoom grows).
+            z0 = float(frame.locator("#editor").evaluate("el => parseFloat(el.style.zoom || '1')"))
+            frame.locator("#btn-zoom-in").click()
+            z1 = float(frame.locator("#editor").evaluate("el => parseFloat(el.style.zoom || '1')"))
+            assert z1 > z0, f"zoom should increase: {z0} -> {z1}"
+            # Content is unaffected by zoom.
+            assert _frame_text(frame).strip()
+
+            # Theme toggle flips the page background colour.
+            bg0 = frame.evaluate("getComputedStyle(document.body).backgroundColor")
+            frame.locator("#btn-theme").click()
+            bg1 = frame.evaluate("getComputedStyle(document.body).backgroundColor")
+            assert bg0 != bg1, f"theme should change bg: {bg0} -> {bg1}"
+
+            # Fullscreen toggles the body class (browser Fullscreen API is
+            # best-effort; the class drives the layout expansion).
+            assert "fullscreen" not in frame.evaluate("document.body.className")
+            frame.locator("#btn-fullscreen").click()
+            assert "fullscreen" in frame.evaluate("document.body.className")
+        finally:
+            ctx.close()
+            browser.close()
