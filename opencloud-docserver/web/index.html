@@ -166,6 +166,7 @@
     <span class="sep"></span>
     <button id="btn-table" title="Insert table" data-i18n-title="Toolbar.InsertTableTitle" aria-label="Insert table" data-i18n-aria-label="Toolbar.InsertTable">▦</button>
     <button id="btn-image" title="Insert image" data-i18n-title="Toolbar.InsertImageTitle" aria-label="Insert image" data-i18n-aria-label="Toolbar.InsertImageTitle">🖼</button>
+    <button id="btn-link" title="Insert link" aria-label="Insert link">🔗</button>
     <button id="btn-find" title="Find and replace (Ctrl+F)" data-i18n-title="Toolbar.FindTitle" aria-label="Find and replace" data-i18n-aria-label="Toolbar.Find" aria-keyshortcuts="Control+F">🔍</button>
     <span class="sep"></span>
     <button id="btn-undo" data-cmd="undo" title="Undo (Ctrl+Z)" data-i18n-title="Toolbar.UndoTitle" aria-label="Undo" data-i18n-aria-label="Toolbar.Undo" aria-keyshortcuts="Control+Z">↶</button>
@@ -234,6 +235,22 @@
       <div class="dialog-actions">
         <button id="btn-image-cancel" data-i18n="Image.Cancel">Cancel</button>
         <button id="btn-image-ok" class="primary" disabled data-i18n="Image.Insert">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Insert-link dialog (modal): wraps the current selection (or the typed URL)
+       in an <a href>; the server sanitizer validates the scheme on save. -->
+  <div id="link-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="link-dialog-title">
+    <div class="dialog">
+      <h3 id="link-dialog-title">Insert link</h3>
+      <div class="dialog-field">
+        <label for="link-url">URL</label>
+        <input id="link-url" type="url" placeholder="https://example.com">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-link-cancel">Cancel</button>
+        <button id="btn-link-ok" class="primary">Insert</button>
       </div>
     </div>
   </div>

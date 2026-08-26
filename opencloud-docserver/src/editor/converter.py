@@ -24,6 +24,7 @@ from docx.oxml.ns import qn
 from docx.shared import Emu
 from docx.table import _Cell
 from docx.text.paragraph import Paragraph
+from docx.text.run import Run
 
 # --------------------------------------------------------------------------
 # Image handling (package binary <-> data URI)
@@ -191,7 +192,7 @@ def _paragraph_to_html(para) -> tuple[str | None, str | None]:
     so the caller can group them into a single `<ul>`/`<ol>`.
     """
     style = (para.style.name or "").lower()
-    text = _runs_to_html(para.runs)
+    text = _paragraph_inline(para)
 
     # python-docx exposes list styles as "List Bullet" / "List Number".
     if style.startswith("list"):
@@ -209,6 +210,37 @@ def _paragraph_to_html(para) -> tuple[str | None, str | None]:
         return f"<p style=\"text-align:right\">{text}</p>", None
 
     return f"<p>{text}</p>", None
+
+
+def _paragraph_inline(para) -> str:
+    """Inline HTML for a paragraph, emitting hyperlink runs as <a href>."""
+    out = []
+    for child in para._p.iterchildren():
+        tag = child.tag
+        if tag == qn("w:hyperlink"):
+            href = _hyperlink_href(para, child)
+            inner_runs = [Run(r, para) for r in child.findall(qn("w:r"))]
+            inner = _runs_to_html(inner_runs)
+            if href:
+                out.append(f'<a href="{escape(href, quote=True)}">{inner}</a>')
+            else:
+                out.append(inner)
+        elif tag == qn("w:r"):
+            out.append(_run_to_html(Run(child, para)))
+    return "".join(out)
+
+
+def _hyperlink_href(para, elem) -> str:
+    """Resolve a w:hyperlink element to its target URL (anchor or external)."""
+    anchor = elem.get(qn("w:anchor"))
+    if anchor:
+        return "#" + anchor
+    r_id = elem.get(qn("r:id"))
+    if r_id:
+        rel = para.part.rels.get(r_id)
+        if rel is not None:
+            return rel.target_ref
+    return ""
 
 
 def _heading_level(style: str) -> int:
@@ -607,6 +639,7 @@ class _InlineRunBuilder(HTMLParser):
         self._bold = 0
         self._italic = 0
         self._underline = 0
+        self._link_href = None  # href of the <a> currently being parsed (or None)
         self._buf: list[str] = []
 
     def handle_starttag(self, tag: str, attrs) -> None:
@@ -629,6 +662,17 @@ class _InlineRunBuilder(HTMLParser):
         elif tag == "u":
             self._flush()
             self._underline += 1
+        elif tag == "a":
+            a = dict(attrs)
+            href = a.get("href", "")
+            # Only carry safe schemes; javascript:/vbscript: etc. are dropped
+            # (the editor sanitizer would strip them anyway).
+            if href.startswith("#") or not re.search(r"^[a-z]+:", href, re.I):
+                self._link_href = href or None
+            elif href.startswith(("https://", "http://", "mailto:", "tel:", "/", "./", "../")):
+                self._link_href = href
+            else:
+                self._link_href = None
         else:
             self._flush()
 
@@ -642,6 +686,9 @@ class _InlineRunBuilder(HTMLParser):
         elif tag == "u":
             self._flush()
             self._underline = max(0, self._underline - 1)
+        elif tag == "a":
+            self._flush()  # emits a link token (if href set) then clears context
+            self._link_href = None
         else:
             self._flush()
 
@@ -651,13 +698,17 @@ class _InlineRunBuilder(HTMLParser):
     def _flush(self) -> None:
         text = "".join(self._buf)
         if text:
-            self.tokens.append({
+            token = {
                 "type": "text",
                 "text": text,
                 "bold": self._bold > 0,
                 "italic": self._italic > 0,
                 "underline": self._underline > 0,
-            })
+            }
+            if self._link_href:
+                token["type"] = "link"
+                token["href"] = self._link_href
+            self.tokens.append(token)
         self._buf = []
 
 
@@ -678,6 +729,9 @@ def _add_styled_runs(paragraph, html: str) -> None:
         if token["type"] == "image":
             _add_image_run(paragraph, token)
             continue
+        if token["type"] == "link":
+            _add_hyperlink(paragraph, token)
+            continue
         run = paragraph.add_run(token["text"])
         if token["bold"]:
             run.bold = True
@@ -685,6 +739,52 @@ def _add_styled_runs(paragraph, html: str) -> None:
             run.italic = True
         if token["underline"]:
             run.underline = True
+
+
+def _add_hyperlink(paragraph, token: dict) -> None:
+    """Append a hyperlink run (w:hyperlink + external relationship)."""
+    url = token.get("href", "")
+    part = paragraph.part
+    try:
+        # Generate a free rId for the external hyperlink relationship.
+        used = set(part.rels.keys())
+        i = 1
+        while f"rId{i}" in used:
+            i += 1
+        r_id = f"rId{i}"
+        part.rels.add_relationship(
+            "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
+            url,
+            r_id,
+            True,
+        )
+    except Exception as exc:  # malformed URL must not crash conversion
+        logging.getLogger(__name__).warning("skipping un-embeddable hyperlink: %s", exc)
+        run = paragraph.add_run(token["text"])
+        if token.get("bold"):
+            run.bold = True
+        if token.get("italic"):
+            run.italic = True
+        if token.get("underline"):
+            run.underline = True
+        return
+    hyperlink = OxmlElement("w:hyperlink")
+    hyperlink.set(qn("r:id"), r_id)
+    run = OxmlElement("w:r")
+    rPr = OxmlElement("w:rPr")
+    if token.get("bold"):
+        rPr.append(OxmlElement("w:b"))
+    if token.get("italic"):
+        rPr.append(OxmlElement("w:i"))
+    if token.get("underline"):
+        rPr.append(OxmlElement("w:u"))
+    run.append(rPr)
+    t = OxmlElement("w:t")
+    t.text = token["text"]
+    run.append(t)
+    hyperlink.append(run)
+    paragraph._p.append(hyperlink)
+
 
 
 def _add_image_run(paragraph, token: dict) -> None:

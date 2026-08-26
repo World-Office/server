@@ -17,6 +17,21 @@ from docx.shared import Emu
 from src.editor.converter import docx_to_html, html_to_docx
 
 
+def test_html_to_docx_link_roundtrip():
+    """A hyperlink survives HTML->DOCX->HTML and keeps its href + text."""
+    html = '<p>See <a href="https://example.com">our site</a> now.</p>'
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    assert "https://example.com" in out
+    assert "our site" in out
+    assert "<a" in out
+    # an unsafe scheme must not round-trip as a live link
+    bad = '<p><a href="javascript:alert(1)">x</a></p>'
+    bad_docx = html_to_docx(bad)
+    bad_out = docx_to_html(bad_docx)
+    assert "javascript:" not in bad_out
+
+
 def _make_docx(**kwargs) -> bytes:
     """Build a DOCX in memory with the given paragraphs/tables."""
     doc = Document()

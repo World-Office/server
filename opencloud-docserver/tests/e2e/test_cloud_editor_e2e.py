@@ -338,3 +338,33 @@ def test_view_controls_zoom_theme_fullscreen(servers):
         finally:
             ctx.close()
             browser.close()
+
+
+def test_insert_link_roundtrip(servers):
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            ctx = browser.new_context()
+            parent = ctx.new_page()
+            parent.goto(_parent_url(servers))
+            frame = parent.frame("ed")
+            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+
+            frame.locator("#editor").click()
+            frame.locator("#editor").press("End")
+            frame.locator("#editor").press_sequentially("Visit our site")
+            frame.locator("#editor").select_text()  # select all document text
+            frame.locator("#btn-link").click()
+            frame.locator("#link-url").fill("https://example.com")
+            frame.locator("#btn-link-ok").click()
+            frame.locator("#editor a[href='https://example.com']").wait_for(state="attached", timeout=5000)
+            assert frame.locator("#editor a").first.get_attribute("href") == "https://example.com"
+
+            # Save -> the link survives the round-trip back to the host.
+            frame.locator("#btn-save").click()
+            _wait(lambda: "example.com" in _host_text(servers))
+        finally:
+            ctx.close()
+            browser.close()

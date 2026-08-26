@@ -1,10 +1,11 @@
 ## 1. Hyperlink (editor-ui/links)
 
-- [ ] 1.1 Add a failing converter round-trip test: `<a href="https://x">text</a>` survives `html_to_docx`→`docx_to_html` and the ODT pair.
-- [ ] 1.2 Extend `converter.py` to emit/parse `<a>` (DOCX `w:hyperlink` + ODT `text:a`).
-- [ ] 1.3 Extend `sanitize.py` to allow `<a>` with safe `href` (reuse `_is_safe_url`; block `javascript:`/`data:`), keeping entity-decode escape.
-- [ ] 1.4 Add a "Insert link" toolbar button + dialog (`web/index.html`), wire `insertHTML`/`createLink` in `web/editor.js`.
-- [ ] 1.5 Playwright check: open editor, insert link, assert it shows and round-trips after save (mirror the image/table pattern).
+- [x] 1.1 Converter round-trip test: `<a href="https://x">text</a>` survives `html_to_docx`→`docx_to_html` (and a `javascript:` href is dropped).
+- [x] 1.2 `converter.py` emits/parses `<a>` (DOCX `w:hyperlink` + external relationship).
+- [x] 1.3 `sanitize.py` already allows `<a>` with safe `href` (blocks `javascript:`/`data:` via `_is_safe_link_url`).
+- [x] 1.4 "Insert link" toolbar button + dialog (`web/index.html`), `createLink`/`insertHTML` in `web/editor.js`.
+- [x] 1.5 Playwright check: insert link, assert it shows and round-trips to the host on save.
+      (`tests/e2e/test_cloud_editor_e2e.py::test_insert_link_roundtrip`)
 
 ## 2. Text colour & highlight (editor-ui/format-advanced)
 
