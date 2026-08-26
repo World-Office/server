@@ -431,6 +431,26 @@
     return ok;
   }
 
+  // Contenteditable tends to leave the caret INSIDE a freshly inserted
+  // structural marker (<hr>, div.page-break): the marker then swallows
+  // whatever is typed next. Re-check at command time and nudge the caret
+  // just past any marker the selection sits inside, so inserts/typing start
+  // a fresh block instead of landing in the rule/break.
+  function moveCaretPastStructuralMarkers() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const focus = sel.focusNode;
+    if (!focus || !editor.contains(focus)) return;
+    const el = focus.nodeType === 1 ? focus : focus.parentElement;
+    if (!el || !el.closest) return;
+    const marker = el.closest("hr, .page-break");
+    if (!marker) return;
+    const r = document.createRange();
+    r.setStartAfter(marker);
+    r.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(r);
+  }
   function runCommand(cmd, value) {
     if (cmd === "insertUnorderedList" || cmd === "insertOrderedList") {
       toggleList(cmd);
@@ -460,6 +480,43 @@
       return;
     }
     editor.focus();
+    // Custom inserts: horizontal rule, page break and picker symbols.
+    // They route through execCommand insertHTML/insertText so each becomes
+    // an ordinary editable step (undoable via captureHistory, collab-synced
+    // via the input event, persisted because the editor HTML carries the
+    // <hr>/div.page-break markers and the plain-text symbols).
+    if (cmd === "insertHR" || cmd === "insertPageBreak") {
+      // A page break inserts a marker PLUS a trailing empty paragraph: with
+      // nothing after the marker, Chromium appends subsequent typed text
+      // INTO the page-break div (block-boundary behaviour), corrupting it.
+      // The trailing <p> is the target block for whatever the user types or
+      // inserts next (Word keeps a paragraph after a page break too).
+      const html = cmd === "insertHR"
+        ? "<hr/>"
+        : '<div class="page-break"><br></div><p><br></p>';
+      try { document.execCommand("insertHTML", false, html); } catch (err) {}
+      moveCaretPastStructuralMarkers();
+      markDirty();
+      captureHistory();
+      scheduleCollabSync();
+      notifyHost("editing");
+      updateActiveStates();
+      updateUndoRedoState();
+      return;
+    }
+    if (cmd === "insertSymbol") {
+      // Never let a symbol land inside an <hr> or page-break marker whose
+      // caret Chromium re-restored on focus.
+      moveCaretPastStructuralMarkers();
+      try { document.execCommand("insertText", false, String(value || "")); } catch (err) {}
+      markDirty();
+      captureHistory();
+      scheduleCollabSync();
+      notifyHost("editing");
+      updateActiveStates();
+      updateUndoRedoState();
+      return;
+    }
     // Headings (formatBlock) replace the block under the caret. Pass the
     // spec-canonical lowercase tag name (a few engines are case-sensitive)
     // and record the result as an explicit undo step, because execCommand
@@ -705,7 +762,7 @@
     lastFocusedEl = null;
     el.focus();
   }
-  const DIALOG_IDS = ["find-dialog", "table-dialog", "image-dialog"];
+  const DIALOG_IDS = ["find-dialog", "table-dialog", "image-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -1586,6 +1643,51 @@
   const linkInput = document.getElementById("link-url");
   if (linkInput) linkInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); confirmLinkDialog(); }
+  });
+
+  // --- insert misc: horizontal rule / page break / symbol picker -----
+  const hrBtn = document.getElementById("btn-hr");
+  if (hrBtn) hrBtn.addEventListener("click", () => emitCommand("insertHR"));
+  const pbBtn = document.getElementById("btn-page-break");
+  if (pbBtn) pbBtn.addEventListener("click", () => emitCommand("insertPageBreak"));
+  const SYMBOLS = ["§", "¶", "°", "±", "×", "÷", "≈", "≠", "≤", "≥", "∞", "√",
+                   "€", "£", "¥", "¢", "©", "®", "™", "→", "←", "↑", "↓", "•",
+                   "–", "—", "…", "«", "»", "½", "¼", "¾", "α", "β", "μ", "π",
+                   "Ω", "∆", "∑", "♥", "★", "☺", "☎", "✂", "☞", "†"];
+  let symbolGridBuilt = false;
+  function openSymbolDialog() {
+    if (READ_ONLY) return;
+    const dialog = document.getElementById("symbol-dialog");
+    const grid = document.getElementById("symbol-grid");
+    if (!dialog || !grid) return;
+    if (!symbolGridBuilt) {
+      SYMBOLS.forEach((sym) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "symbol-btn";
+        btn.textContent = sym;
+        btn.setAttribute("aria-label", "Insert " + sym);
+        btn.addEventListener("click", () => {
+          dialog.classList.remove("open");
+          restoreFocus();
+          emitCommand("insertSymbol", sym);
+        });
+        grid.appendChild(btn);
+      });
+      symbolGridBuilt = true;
+    }
+    rememberFocus();
+    dialog.classList.add("open");
+    const first = grid.querySelector(".symbol-btn");
+    if (first) first.focus();
+  }
+  const symbolBtn = document.getElementById("btn-symbol");
+  if (symbolBtn) symbolBtn.addEventListener("click", openSymbolDialog);
+  const symbolClose = document.getElementById("btn-symbol-close");
+  if (symbolClose) symbolClose.addEventListener("click", () => {
+    const d = document.getElementById("symbol-dialog");
+    if (d) d.classList.remove("open");
+    restoreFocus();
   });
   document.getElementById("btn-find").addEventListener("click", openFindDialog);
   saveBtn.addEventListener("click", saveDocument);

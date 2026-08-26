@@ -500,3 +500,56 @@ def test_table_merge_and_column_ops(servers):
         finally:
             ctx.close()
             browser.close()
+
+
+def test_insert_hr_pagebreak_symbol(servers):
+    """Insert HR, page break and a symbol; all survive save via the host."""
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            seed = _seed_doc(servers, "insert-misc.docx")
+            ctx = browser.new_context()
+            parent = ctx.new_page()
+            parent.goto(_parent_url(servers, seed))
+            frame = parent.frame("ed")
+            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+
+            frame.locator("#editor").click()
+            frame.locator("#editor").press("End")
+
+            # Horizontal rule.
+            frame.locator("#btn-hr").click()
+            frame.locator("#editor hr").wait_for(state="attached", timeout=5000)
+            assert frame.locator("#editor hr").count() == 1
+
+            # Page break marker.
+            frame.locator("#btn-page-break").click()
+            frame.locator("#editor div.page-break").wait_for(state="attached", timeout=5000)
+            assert frame.locator("#editor div.page-break").count() == 1
+
+            # Symbol picker -> first symbol (§) inserted as text.
+            frame.locator("#btn-symbol").click()
+            frame.locator("#symbol-dialog .symbol-btn").first.click()
+            _wait(lambda: "§" in _frame_text(frame))
+
+            # Save -> markers + symbol reach the host DOCX.
+            frame.locator("#btn-save").click()
+            _wait(lambda: (
+                "<hr" in _host_html(servers, seed)
+                and "page-break" in _host_html(servers, seed)
+                and "§" in _host_html(servers, seed)
+            ))
+
+            # Reload -> they come back from the host into the editor.
+            parent.reload()
+            _wait(lambda: parent.frame("ed") is not None)
+            frame2 = parent.frame("ed")
+            frame2.locator("#editor").wait_for(state="visible", timeout=15000)
+            _wait(lambda: frame2.locator("#editor hr").count() == 1)
+            assert frame2.locator("#editor div.page-break").count() == 1
+            assert "§" in _frame_text(frame2)
+        finally:
+            ctx.close()
+            browser.close()

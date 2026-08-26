@@ -372,6 +372,21 @@ body.fullscreen #editor {
   color: var(--muted, #666);
   font-size: 12px;
 }
+/* Symbol/emoji picker: a tight grid of one-character buttons. */
+.symbol-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  margin: 10px 0;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.symbol-btn {
+  font-size: 17px;
+  line-height: 1.6;
+  padding: 2px 0;
+  min-width: 0;
+}
 main {
   position: relative;
   flex: 1;

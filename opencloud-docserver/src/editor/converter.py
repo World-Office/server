@@ -19,7 +19,7 @@ from html.parser import HTMLParser
 
 from docx import Document
 from docx.enum.dml import MSO_COLOR_TYPE
-from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Emu, RGBColor
@@ -186,6 +186,43 @@ def docx_to_html(data: bytes) -> str:
     return "\n".join(p for p in parts if p)
 
 
+def _add_hr_paragraph(doc) -> None:
+    """A horizontal rule: an empty paragraph styled with a bottom border."""
+    p = doc.add_paragraph()
+    pPr = p._p.get_or_add_pPr()
+    pBdr = OxmlElement("w:pBdr")
+    bottom = OxmlElement("w:bottom")
+    bottom.set(qn("w:val"), "single")
+    bottom.set(qn("w:sz"), "6")
+    bottom.set(qn("w:space"), "1")
+    bottom.set(qn("w:color"), "auto")
+    pBdr.append(bottom)
+    pPr.append(pBdr)
+
+
+def _add_page_break(doc) -> None:
+    """A page break: an empty paragraph holding ``<w:br w:type='page'/>``."""
+    p = doc.add_paragraph()
+    p.add_run().add_break(WD_BREAK.PAGE)
+
+
+def _para_has_bottom_border(para) -> bool:
+    """True when a paragraph is rendered as a bottom-border rule (<hr>)."""
+    pPr = para._p.pPr
+    if pPr is None:
+        return False
+    pBdr = pPr.find(qn("w:pBdr"))
+    return pBdr is not None and pBdr.find(qn("w:bottom")) is not None
+
+
+def _para_is_page_break(para) -> bool:
+    """True when a paragraph holds a page-break run."""
+    return any(
+        (br.get(qn("w:type")) or "textWrapping") == "page"
+        for br in para._p.iter(qn("w:br"))
+    )
+
+
 def _paragraph_to_html(para) -> tuple[str | None, str | None]:
     """Return (html_fragment, list_kind) — (None, None) for non-list blocks.
 
@@ -194,6 +231,14 @@ def _paragraph_to_html(para) -> tuple[str | None, str | None]:
     """
     style = (para.style.name or "").lower()
     text = _paragraph_inline(para)
+
+    # Horizontal rule: an empty paragraph with a bottom border renders as <hr/>.
+    if _para_has_bottom_border(para) and not text.strip():
+        return "<hr/>", None
+
+    # Page break: an empty paragraph holding <w:br w:type='page'/>.
+    if _para_is_page_break(para) and not text.strip():
+        return '<div class="page-break"><br></div>', None
 
     # python-docx exposes list styles as "List Bullet" / "List Number".
     if style.startswith("list"):
@@ -665,9 +710,31 @@ def html_to_docx(html_fragment: str) -> bytes:
 
     doc = Document()
 
-    block_re = re.compile(r"<(p|h[1-6]|ul|ol|li|table)[^>]*>(.*?)</\1>", re.S)
+    block_re = re.compile(
+        r"<hr(?:\s[^>]*)?/?>"  # <hr>, <hr/>, <hr /> (self-closing)
+        r"|<div[^>]*class=[\"']?page-break[\"']?[^>]*>.*?</div>"
+        r"|<(p|h[1-6]|ul|ol|li|table)[^>]*>(.*?)</\1>",
+        re.S,
+    )
     blocks = list(block_re.finditer(body))
     for m in blocks:
+        if m.group(1) is None:
+            # Special block: horizontal rule or page break.
+            if m.group(0).startswith("<hr"):
+                _add_hr_paragraph(doc)
+            else:
+                _add_page_break(doc)
+                # A contenteditable can leave the caret inside the break
+                # marker so the div carries real content (e.g. "§"); keep
+                # it as a normal paragraph after the break instead of
+                # dropping it.
+                inner_m = re.match(r"<div[^>]*>(.*?)</div>", m.group(0), re.S)
+                inner = inner_m.group(1) if inner_m else ""
+                inner = re.sub(r"<br\s*/?>", "", inner).strip()
+                if inner and _inline_to_text(inner).strip():
+                    p = doc.add_paragraph("")
+                    _add_styled_runs(p, inner)
+            continue
         tag, inner = m.group(1), m.group(2)
         if tag == "ul" or tag == "ol":
             # extract the <li> items contained in this list block

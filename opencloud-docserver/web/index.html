@@ -170,6 +170,9 @@
     <button id="btn-table-ops" title="Table actions (rows, columns, merge)" aria-label="Table actions">▦✎</button>
     <button id="btn-image" title="Insert image" data-i18n-title="Toolbar.InsertImageTitle" aria-label="Insert image" data-i18n-aria-label="Toolbar.InsertImageTitle">🖼</button>
     <button id="btn-link" title="Insert link" aria-label="Insert link">🔗</button>
+    <button id="btn-hr" title="Insert horizontal rule" aria-label="Insert horizontal rule">─</button>
+    <button id="btn-page-break" title="Insert page break" aria-label="Insert page break">⏎</button>
+    <button id="btn-symbol" title="Insert symbol" aria-label="Insert symbol">Ω</button>
     <button id="btn-find" title="Find and replace (Ctrl+F)" data-i18n-title="Toolbar.FindTitle" aria-label="Find and replace" data-i18n-aria-label="Toolbar.Find" aria-keyshortcuts="Control+F">🔍</button>
     <span class="sep"></span>
     <button id="btn-undo" data-cmd="undo" title="Undo (Ctrl+Z)" data-i18n-title="Toolbar.UndoTitle" aria-label="Undo" data-i18n-aria-label="Toolbar.Undo" aria-keyshortcuts="Control+Z">↶</button>
@@ -277,6 +280,19 @@
       <div class="dialog-actions">
         <button id="btn-link-cancel">Cancel</button>
         <button id="btn-link-ok" class="primary">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Symbol/emoji picker dialog: clicking a symbol inserts it as plain text
+       at the saved caret (execCommand insertText), so it persists after save
+       and needs no converter support of its own. -->
+  <div id="symbol-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="symbol-dialog-title">
+    <div class="dialog">
+      <h3 id="symbol-dialog-title">Insert symbol</h3>
+      <div id="symbol-grid" class="symbol-grid" role="listbox" aria-label="Symbols"></div>
+      <div class="dialog-actions">
+        <button id="btn-symbol-close">Close</button>
       </div>
     </div>
   </div>
