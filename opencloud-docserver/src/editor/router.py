@@ -396,6 +396,44 @@ async def export_document(doc_id: str, request: Request, format: str = "pdf") ->
     )
 
 
+@router.post("/api/documents/new")
+async def new_document(request: Request, format: str = "docx") -> JSONResponse:
+    """Create a blank document and register a session; return an editor URL."""
+    import io
+
+    from docx import Document as DocxDocument
+    from odf.opendocument import OpenDocumentText
+    from odf.text import P
+
+    if format == "odt":
+        doc = OpenDocumentText()
+        doc.text.addElement(P(text=""))
+        buf = io.BytesIO()
+        doc.save(buf)
+        data = buf.getvalue()
+        name = "untitled.odt"
+    else:
+        blank = DocxDocument()
+        blank.add_paragraph("")
+        buf = io.BytesIO()
+        blank.save(buf)
+        data = buf.getvalue()
+        name = "untitled.docx"
+    store = _store(request)
+    doc_id = f"new-{int(time.time() * 1000)}"
+    store.init(doc_id, name)
+    store.put_content(doc_id, data)
+    sess = EditorSession(
+        doc_id=doc_id,
+        name=name,
+        size=len(data),
+        version="1",
+        last_modified=int(time.time()),
+    )
+    _registry(request).register(sess)
+    return JSONResponse({"doc_id": doc_id, "url": f"/editor/{doc_id}", "name": name})
+
+
 # ----------------------------------------------------------------------
 # Extended WOPI API: raw contents + extended metadata
 # ----------------------------------------------------------------------

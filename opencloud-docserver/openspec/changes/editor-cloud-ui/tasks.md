@@ -4,8 +4,8 @@
 - [x] T1 contract test: POST /export?format=pdf returns application/pdf bytes (FAIL→GREEN)
 - [x] T2 implement export route (pdf via weasyprint, odt/html/docx via converter)
 - [x] T3 contract test: POST /export?format=odt returns ODT; html returns html; docx returns docx
-- [ ] T4 contract test: POST /new creates a blank session (FAIL)
-- [ ] T5 implement new-document route + session registration
+- [x] T4 contract test: POST /new creates a blank session (FAIL→GREEN)
+- [x] T5 implement new-document route + session registration
 - [ ] T6 editor.js file menu: New / Open / Export(submenu) / Print wired to routes
 - [ ] T7 E2E: file menu opens, export downloads, print dialog triggers
 
