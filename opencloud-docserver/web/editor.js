@@ -287,11 +287,81 @@
       setStatus(data.blank ? t("Status.EmptyDocument") : t("Status.Ready"));
       updateUndoRedoState();
       updateCounts();
+      // An offline snapshot queued by a previous session in this browser
+      // overrides the freshly fetched (stale) document and is marked dirty
+      // so it is re-pushed on the next save.
+      restoreOfflineQueue();
     } catch (err) {
       editor.innerHTML = "<p><em>" + t("Status.LoadFailed") + err.message + "</em></p>";
       setStatus(t("Status.LoadFailed") + err.message, true);
+      restoreOfflineQueue();
     }
   }
+
+  // ------------------------------------------------------------------
+  // Offline queue
+  // ------------------------------------------------------------------
+  // The service worker keeps the app shell usable offline; this queue keeps
+  // the LATEST unsaved snapshot in localStorage when a save cannot reach the
+  // host (network error), restores it on a later reload, and flushes it back
+  // to the server when the browser reports the connection again. Only the
+  // newest snapshot is kept — a queue of one, never a pile.
+  const OFFLINE_KEY = "wo-offline-queue";
+  let isOffline = false;
+  function updateOfflineIndicator() {
+    const el = document.getElementById("offline-indicator");
+    if (!el) return;
+    el.hidden = !isOffline;
+  }
+  function queueLocalEdit() {
+    try {
+      localStorage.setItem(OFFLINE_KEY, JSON.stringify({
+        ts: Date.now(), docId: DOC_ID, html: editor.innerHTML,
+      }));
+    } catch (e) {}
+    isOffline = true;
+    updateOfflineIndicator();
+    setStatus(t("Status.OfflineQueued"), true);
+  }
+  function clearOfflineQueue() {
+    try { localStorage.removeItem(OFFLINE_KEY); } catch (e) {}
+    isOffline = false;
+    updateOfflineIndicator();
+  }
+  // Called after each successful load: if this browser holds an unpushed
+  // snapshot for THIS document, an offline editing session survives a reload
+  // (the freshly fetched doc would otherwise be stale and orphan the queue).
+  function restoreOfflineQueue() {
+    let queued = null;
+    try { queued = JSON.parse(localStorage.getItem(OFFLINE_KEY) || "null"); } catch (e) {}
+    if (!queued || queued.docId !== DOC_ID || !queued.html) {
+      isOffline = false;
+      updateOfflineIndicator();
+      return;
+    }
+    editor.innerHTML = queued.html;
+    captureHistory();
+    updateUndoRedoState();
+    updateCounts();
+    isOffline = true;
+    markDirty();
+    updateOfflineIndicator();
+    setStatus(t("Status.OfflineQueued"), true);
+  }
+  async function flushOfflineQueue() {
+    if (READ_ONLY) return;
+    try {
+      const queued = JSON.parse(localStorage.getItem(OFFLINE_KEY) || "null");
+      if (!queued || queued.docId !== DOC_ID) return;
+    } catch (e) { return; }
+    // The editor holds the newest state; a successful save supersedes and
+    // clears the queue (saveDocument calls clearOfflineQueue).
+    await saveDocument();
+  }
+  window.addEventListener("online", () => { if (isOffline) flushOfflineQueue(); });
+  window.addEventListener("offline", () => {
+    if (!navigator.onLine) { isOffline = true; updateOfflineIndicator(); }
+  });
 
   // ------------------------------------------------------------------
   // Save
@@ -308,8 +378,15 @@
           body: JSON.stringify({ html: editor.innerHTML }),
         }
       );
+      if (!res.ok) {
+        let msg = "save failed";
+        try { msg = (await res.json()).error || msg; } catch (e) {}
+        throw new Error(msg);
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "save failed");
+      if (!data.ok) throw new Error(data.error || "save failed");
+      // A save reached the host: any queued offline snapshot is superseded.
+      clearOfflineQueue();
       setStatus(t("Status.Saved"));
       notifyHost("saved");
       if (DOC_FORMAT === "odt") {
@@ -346,6 +423,13 @@
       }
       setTimeout(() => setStatus(t("Status.Ready")), 2000);
     } catch (err) {
+      if (err instanceof TypeError) {
+        // The host is unreachable (fetch rejects with TypeError on network
+        // errors; server-side failures surface as HTTP responses instead and
+        // are deliberately NOT queued — they would just fail again online).
+        queueLocalEdit();
+        return;
+      }
       setStatus(t("Status.SaveFailed") + err.message, true);
     }
   }

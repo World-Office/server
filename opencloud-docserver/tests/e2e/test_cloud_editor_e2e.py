@@ -598,3 +598,44 @@ def test_file_menu_export_odt_and_new_document(servers):
         finally:
             ctx.close()
             browser.close()
+
+
+def test_offline_queue_and_resync(servers):
+    """An offline save queues a local snapshot; it flushes on reconnect."""
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            seed = _seed_doc(servers, "offline.docx", "Offline seed")
+            ctx = browser.new_context()
+            page = ctx.new_page()
+            page.goto(_parent_url(servers, seed))
+            frame = page.frame("ed")
+            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+            assert "Offline seed" in _frame_text(frame)
+
+            frame.locator("#editor").click()
+            frame.locator("#editor").press("End")
+            frame.locator("#editor").press_sequentially(" queued edits")
+
+            # Go offline -> Save fails -> snapshot queued locally + indicator.
+            ctx.set_offline(True)
+            frame.locator("#btn-save").click()
+            _wait(lambda: not frame.locator("#offline-indicator").evaluate(
+                "el => el.hidden"))
+            queued = frame.evaluate(
+                "JSON.parse(localStorage.getItem('wo-offline-queue') || 'null')")
+            assert queued and queued["docId"] == seed["doc_id"], queued
+            assert "queued edits" in queued["html"]
+
+            # Back online -> the queued snapshot flushes to the host.
+            ctx.set_offline(False)
+            frame.evaluate("window.dispatchEvent(new Event('online'))")
+            _wait(lambda: "queued edits" in _host_text(servers, seed))
+            _wait(lambda: frame.evaluate(
+                "localStorage.getItem('wo-offline-queue') === null"))
+            assert frame.locator("#offline-indicator").evaluate("el => el.hidden")
+        finally:
+            ctx.close()
+            browser.close()
