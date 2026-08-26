@@ -675,6 +675,32 @@ def test_save_document_sanitizes_css_expression(client):
     assert "Test" in text
 
 
+def test_sanitize_keeps_safe_color_and_highlight():
+    """A #rrggbb color/highlight span must survive the sanitizer."""
+    out = sanitize_html(
+        '<span style="color:#ff0000;background-color:#ffff00">x</span>'
+    )
+    assert "color: #ff0000" in out
+    assert "background-color: #ffff00" in out
+
+
+def test_sanitize_drops_expression_color():
+    """A colour declared as expression(alert(1)) must lose its style."""
+    out = sanitize_html('<span style="color:expression(alert(1))">x</span>')
+    assert "expression" not in out
+    # the text survives as a span, but no style is emitted
+    assert "x" in out
+    assert "style=" not in out
+
+
+def test_sanitize_keeps_superscript_and_subscript():
+    """<sup>/<sub> (and strikethrough) must survive the sanitizer."""
+    out = sanitize_html("<p>x<sup>2</sup> H<sub>2</sub>O <s>old</s></p>")
+    assert "<sup>2</sup>" in out
+    assert "<sub>2</sub>" in out
+    assert "<s>old</s>" in out
+
+
 def test_save_document_sanitizes_css_behavior(client):
     """CSS behavior: must be stripped."""
     _seed_doc(client)

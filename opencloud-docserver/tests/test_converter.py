@@ -32,6 +32,27 @@ def test_html_to_docx_link_roundtrip():
     assert "javascript:" not in bad_out
 
 
+def test_html_to_docx_color_highlight_roundtrip():
+    """A coloured / highlighted span survives HTML->DOCX->HTML."""
+    html = (
+        '<p><span style="color:#ff0000">red</span> '
+        '<span style="background-color:#ffff00">hi</span></p>'
+    )
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    assert "ff0000" in out.lower()
+    assert "ffff00" in out.lower()
+
+
+def test_html_to_docx_superscript_subscript_roundtrip():
+    """<sup>/<sub> survive HTML->DOCX->HTML."""
+    html = '<p>x<sup>2</sup> H<sub>2</sub>O</p>'
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    assert "<sup>" in out
+    assert "<sub>" in out
+
+
 def _make_docx(**kwargs) -> bytes:
     """Build a DOCX in memory with the given paragraphs/tables."""
     doc = Document()

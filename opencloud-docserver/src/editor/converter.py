@@ -18,10 +18,11 @@ from html import escape
 from html.parser import HTMLParser
 
 from docx import Document
+from docx.enum.dml import MSO_COLOR_TYPE
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Emu
+from docx.shared import Emu, RGBColor
 from docx.table import _Cell
 from docx.text.paragraph import Paragraph
 from docx.text.run import Run
@@ -303,15 +304,112 @@ def _text_child_value(child) -> str:
     return ""
 
 
+def _apply_run_color(run, token: dict) -> None:
+    """Apply colour / highlight / super- / subscript tokens to a run."""
+    color = token.get("color")
+    if color:
+        try:
+            run.font.color.rgb = RGBColor.from_string(color.lstrip("#"))
+        except Exception:
+            pass
+    bg = token.get("bg")
+    if bg:
+        try:
+            shd = OxmlElement("w:shd")
+            shd.set(qn("w:val"), "clear")
+            shd.set(qn("w:color"), "auto")
+            shd.set(qn("w:fill"), bg.lstrip("#"))
+            run._r.get_or_add_rPr().append(shd)
+        except Exception:
+            pass
+    vert = token.get("vert")
+    if vert == "sup":
+        run.font.superscript = True
+    elif vert == "sub":
+        run.font.subscript = True
+
+
+def _parse_inline_style(style: str) -> tuple[str | None, str | None]:
+    """Return (color, background) hex values parsed from a CSS style string."""
+    color = None
+    bg = None
+    for decl in (style or "").split(";"):
+        decl = decl.strip()
+        if ":" not in decl:
+            continue
+        prop, _, val = decl.partition(":")
+        prop = prop.strip().lower()
+        val = val.strip().lower()
+        if prop == "color":
+            color = _normalize_color(val)
+        elif prop in ("background-color", "background"):
+            bg = _normalize_color(val)
+    return color, bg
+
+
+def _normalize_color(val: str) -> str | None:
+    """Normalise a CSS colour to lowercase #rrggbb, or None if unsupported."""
+    val = (val or "").strip().lower()
+    if val.startswith("#"):
+        h = val[1:]
+        if len(h) == 3:
+            h = "".join(c * 2 for c in h)
+        if len(h) == 6 and all(c in "0123456789abcdef" for c in h):
+            return "#" + h
+        return None
+    if val.startswith("rgb("):
+        nums = re.findall(r"\d+", val)
+        if len(nums) >= 3:
+            r, g, b = (int(x) & 0xFF for x in nums[:3])
+            return f"#{r:02x}{g:02x}{b:02x}"
+        return None
+    return None
+
+
+def _run_color_hex(run) -> str | None:
+    """Return the run's RGB text colour as #rrggbb, or None."""
+    try:
+        cf = run.font.color
+        if cf.type == MSO_COLOR_TYPE.RGB:
+            return "#" + str(cf.rgb).lower()
+    except Exception:
+        return None
+    return None
+
+
+def _run_highlight_hex(run) -> str | None:
+    """Return the run's highlight (w:shd fill) as #rrggbb, or None."""
+    rPr = run._r.find(qn("w:rPr"))
+    if rPr is None:
+        return None
+    shd = rPr.find(qn("w:shd"))
+    if shd is None:
+        return None
+    fill = shd.get(qn("w:fill"))
+    if fill:
+        return "#" + fill.lower()
+    return None
+
 def _wrap_run_text(text: str, run) -> str:
     """Apply a run's character formatting around already-escaped text."""
+    out = text
+    if run.font.superscript:
+        out = f"<sup>{out}</sup>"
+    elif run.font.subscript:
+        out = f"<sub>{out}</sub>"
+    color = _run_color_hex(run)
+    if color:
+        out = f'<span style="color:{color}">{out}</span>'
+    bg = _run_highlight_hex(run)
+    if bg:
+        out = f'<span style="background-color:{bg}">{out}</span>'
     if run.bold:
-        text = f"<b>{text}</b>"
+        out = f"<b>{out}</b>"
     if run.italic:
-        text = f"<i>{text}</i>"
+        out = f"<i>{out}</i>"
     if run.underline:
-        text = f"<u>{text}</u>"
-    return text
+        out = f"<u>{out}</u>"
+    return out
 
 
 def _blip_bytes(run, embed: str) -> tuple[str | None, bytes | None]:
@@ -640,6 +738,11 @@ class _InlineRunBuilder(HTMLParser):
         self._italic = 0
         self._underline = 0
         self._link_href = None  # href of the <a> currently being parsed (or None)
+        self._color = None      # current text colour (e.g. "#ff0000") or None
+        self._bg = None         # current highlight (background) colour or None
+        self._vert = None       # "sup"/"sub" or None
+        self._span_stack = []   # (prev_color, prev_bg) saved on <span> open
+        self._vert_stack = []   # prev vert saved on <sup>/<sub> open
         self._buf: list[str] = []
 
     def handle_starttag(self, tag: str, attrs) -> None:
@@ -673,6 +776,23 @@ class _InlineRunBuilder(HTMLParser):
                 self._link_href = href
             else:
                 self._link_href = None
+        elif tag == "span":
+            self._flush()
+            a = dict(attrs)
+            color, bg = _parse_inline_style(a.get("style", ""))
+            self._span_stack.append((self._color, self._bg))
+            if color is not None:
+                self._color = color
+            if bg is not None:
+                self._bg = bg
+        elif tag == "sup":
+            self._flush()
+            self._vert_stack.append(self._vert)
+            self._vert = "sup"
+        elif tag == "sub":
+            self._flush()
+            self._vert_stack.append(self._vert)
+            self._vert = "sub"
         else:
             self._flush()
 
@@ -689,6 +809,18 @@ class _InlineRunBuilder(HTMLParser):
         elif tag == "a":
             self._flush()  # emits a link token (if href set) then clears context
             self._link_href = None
+        elif tag == "span":
+            self._flush()
+            if self._span_stack:
+                self._color, self._bg = self._span_stack.pop()
+        elif tag == "sup":
+            self._flush()
+            if self._vert_stack:
+                self._vert = self._vert_stack.pop()
+        elif tag == "sub":
+            self._flush()
+            if self._vert_stack:
+                self._vert = self._vert_stack.pop()
         else:
             self._flush()
 
@@ -708,6 +840,12 @@ class _InlineRunBuilder(HTMLParser):
             if self._link_href:
                 token["type"] = "link"
                 token["href"] = self._link_href
+            if self._color:
+                token["color"] = self._color
+            if self._bg:
+                token["bg"] = self._bg
+            if self._vert:
+                token["vert"] = self._vert
             self.tokens.append(token)
         self._buf = []
 
@@ -739,6 +877,7 @@ def _add_styled_runs(paragraph, html: str) -> None:
             run.italic = True
         if token["underline"]:
             run.underline = True
+        _apply_run_color(run, token)
 
 
 def _add_hyperlink(paragraph, token: dict) -> None:

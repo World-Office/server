@@ -34,6 +34,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.config import Config
+from src.editor.converter import docx_to_html
 from src.editor.router import router as editor_router
 from src.editor.session import SessionRegistry
 from src.lib.store import DocumentStore
@@ -193,6 +194,16 @@ def _host_text(servers: dict) -> str:
     )
     data = urllib.request.urlopen(url, timeout=10).read()
     return "\n".join(p.text for p in Document(io.BytesIO(data)).paragraphs)
+
+
+def _host_html(servers: dict) -> str:
+    """Convert the host DOCX back to HTML so markup (color, <sup>) is visible."""
+    url = (
+        f"http://127.0.0.1:{servers['host_port']}/wopi/files/{servers['doc_id']}/contents"
+        f"?access_token={servers['token']}"
+    )
+    data = urllib.request.urlopen(url, timeout=10).read()
+    return docx_to_html(data)
 
 
 def test_two_users_collaborate_save_and_notify_host(servers):
@@ -365,6 +376,44 @@ def test_insert_link_roundtrip(servers):
             # Save -> the link survives the round-trip back to the host.
             frame.locator("#btn-save").click()
             _wait(lambda: "example.com" in _host_text(servers))
+        finally:
+            ctx.close()
+            browser.close()
+
+
+def test_format_color_highlight_superscript(servers):
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            ctx = browser.new_context()
+            parent = ctx.new_page()
+            parent.goto(_parent_url(servers))
+            frame = parent.frame("ed")
+            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+
+            frame.locator("#editor").click()
+            frame.locator("#editor").press("End")
+            frame.locator("#editor").press_sequentially("Color me x2")
+
+            # Select the word "Color" and apply red via the colour picker.
+            frame.locator("#editor").select_text()
+            frame.locator("#text-color").fill("#ff0000")
+            frame.locator("#text-color").dispatch_event("change")
+            # Select the whole contenteditable so superscript applies visibly,
+            # then check the styling spans survive.
+            frame.locator("#editor").select_text()
+            frame.locator("button[data-cmd='superscript']").click()
+
+            # The styling is visible in the DOM.
+            colored = frame.locator("#editor span[style*='color']").count()
+            assert colored >= 1, "expected a colored span in the editor"
+            assert frame.locator("#editor sup").count() >= 1, "expected sup in the editor"
+
+            # Save -> the styling persists back to the host bytes.
+            frame.locator("#btn-save").click()
+            _wait(lambda: "ff0000" in _host_html(servers) and "<sup>" in _host_html(servers))
         finally:
             ctx.close()
             browser.close()
