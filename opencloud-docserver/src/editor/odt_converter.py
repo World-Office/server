@@ -27,8 +27,10 @@ from html import escape
 from odf.draw import Frame, Image
 from odf.element import Element, Node
 from odf.namespaces import (
+    CHARTNS,
     DCNS,
     DRAWNS,
+    MATHNS,
     OFFICENS,
     STYLENS,
     SVGNS,
@@ -357,6 +359,51 @@ def _frame_alt(frame_el) -> str:
     return ""
 
 
+def _odf_find(el, qname):
+    """Recursively find the first descendant element with ``qname`` (odfpy
+    Elements have no ElementTree-style ``.iter``)."""
+    for ch in el.childNodes:
+        if ch.nodeType != Node.ELEMENT_NODE:
+            continue
+        if ch.qname == qname:
+            return ch
+        found = _odf_find(ch, qname)
+        if found is not None:
+            return found
+    return None
+
+
+def _odf_text(el) -> str:
+    """Concatenate all text-node data under ``el``."""
+    out = []
+    for ch in el.childNodes:
+        if ch.nodeType == Node.TEXT_NODE:
+            out.append(ch.data or "")
+        elif ch.nodeType == Node.ELEMENT_NODE:
+            out.append(_odf_text(ch))
+    return "".join(out)
+
+
+def _odt_frame_object(frame, pictures) -> str | None:
+    """Return an object placeholder for a draw:frame holding an embedded
+    object, or None for plain image frames."""
+    name = frame.getAttribute("name") or ""
+    txt = _odf_text(frame)
+    if _odf_find(frame, (CHARTNS, "chart")) is not None:
+        return '<div class="object" data-type="chart" data-label="Chart"></div>'
+    math_el = _odf_find(frame, (MATHNS, "math"))
+    if math_el is not None:
+        return f'<div class="object" data-type="equation">{escape(_odf_text(math_el))}</div>'
+    if name.startswith("object-"):
+        typ = name[len("object-"):]
+        return f'<div class="object" data-type="{escape(typ)}">{escape(txt)}</div>'
+    if _odf_find(frame, (DRAWNS, "custom-shape")) is not None:
+        return '<div class="object" data-type="shape"></div>'
+    if _odf_find(frame, (DRAWNS, "text-box")) is not None:
+        return f'<div class="object" data-type="textbox">{escape(txt)}</div>'
+    return None
+
+
 def _frame_to_html(frame_el, pictures: dict) -> str:
     """Render a draw:frame (holding a draw:image) as an <img> data URI.
 
@@ -623,12 +670,16 @@ def odt_to_html(data: bytes) -> str:
                 flush_list()
                 parts.append(_table_to_html(child, resolve, pictures, presolve, cellresolve, caption_for.get(child)))
             elif qname == (DRAWNS, "frame"):
-                # A draw:frame sitting directly in the body (not nested in a
-                # text:p) is still a block-level image.
+                # A draw:frame may hold an image OR an embedded object
+                # (shape/textbox/chart/equation). Detect objects first.
                 flush_list()
-                frame_html = _frame_to_html(child, pictures)
-                if frame_html:
-                    parts.append(f"<p>{frame_html}</p>")
+                obj = _odt_frame_object(child, pictures)
+                if obj is not None:
+                    parts.append(obj)
+                else:
+                    frame_html = _frame_to_html(child, pictures)
+                    if frame_html:
+                        parts.append(f"<p>{frame_html}</p>")
 
     render(doc.text.childNodes)
     flush_list()
@@ -936,7 +987,8 @@ def _inline_html(el, resolve, base, pictures, changes=None) -> str:
                 inner = f'<a href="{escape(href)}">{inner}</a>'
             pending.append(inner)
         elif qname == (DRAWNS, "frame"):
-            pending.append(_frame_to_html(child, pictures))
+            obj = _odt_frame_object(child, pictures)
+            pending.append(obj if obj is not None else _frame_to_html(child, pictures))
         elif qname == (TEXTNS, "note"):
             note_html = _note_to_html(child, resolve, pictures)
             if note_html:
@@ -1359,6 +1411,9 @@ def html_to_odt(html_fragment: str) -> bytes:
             continue
         if kind == "sectionbreak":
             w.add_section_break()
+            continue
+        if kind == "object":
+            w.add_object(op[1], op[2], op[3])
             continue
         if kind == "list":
             w.add_list(op[1])
@@ -1825,6 +1880,26 @@ class _OdtWriter:
         sec = Section(name=f"WOSection{self._sec_count}")
         self.doc.text.addElement(sec)
         self.cur = sec
+
+    def add_object(self, typ: str, label: str, content: str) -> None:
+        """Emit a draw:frame holding an embedded-object placeholder.
+
+        The object type is stored in draw:frame/@draw:name ("object:TYPE")
+        and any text content in a draw:text-box, so odt_to_html recovers a
+        <div class="object" data-type="..."> marker.
+        """
+        from odf.draw import TextBox
+        from odf.text import P
+        frame = Frame(name=f"object-{typ}")
+        frame.setAttribute("width", "5cm")
+        frame.setAttribute("height", "2cm")
+        tb = TextBox()
+        para = P()
+        if content:
+            para.addText(content)
+        tb.addElement(para)
+        frame.addElement(tb)
+        self.cur.addElement(frame)
 
     def add_header(self, content_html: str) -> None:
         """Add a header to the document's master page.
