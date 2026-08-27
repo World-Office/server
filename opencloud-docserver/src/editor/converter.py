@@ -435,6 +435,51 @@ def _add_comment_reference(paragraph, token: dict) -> None:
     paragraph._p.append(r)
 
 
+def _next_track_id(body) -> int:
+    """Next unique positive w:id across all w:ins/w:del in the body."""
+    used: list[int] = []
+    for elem in body.iter():
+        if elem.tag not in (qn("w:ins"), qn("w:del")):
+            continue
+        val = elem.get(qn("w:id")) or ""
+        if val.isdigit():
+            used.append(int(val))
+    return (max(used) + 1) if used else 1
+
+
+def _add_track_change(paragraph, token: dict) -> None:
+    """Emit a tracked change element (w:ins / w:del) for a track token.
+
+    ``<ins class="track-insert" data-author=..>NEW</ins>`` becomes a
+    ``w:ins`` holding a run with the NEW text in ``w:t``; ``<del
+    class="track-delete" ...>OLD</del>`` becomes a ``w:del`` holding a run
+    whose ``w:delText`` carries the removed text (so Word still renders the
+    deleted run). The change elements append to the paragraph's XML in
+    document order; ids are unique and increasing.
+    """
+    parent = paragraph._p.getparent()
+    w_id = _next_track_id(parent if parent is not None else paragraph._p)
+    author = token.get("author") or ""
+    dt = token.get("datetime") or ""
+    kind = token.get("kind") or "insert"
+    text = _inline_to_text(token.get("html") or "")
+    change = OxmlElement("w:ins" if kind == "insert" else "w:del")
+    change.set(qn("w:id"), str(w_id))
+    change.set(qn("w:author"), author)
+    if dt:
+        change.set(qn("w:date"), dt)
+    run = OxmlElement("w:r")
+    if kind == "insert":
+        t_el = OxmlElement("w:t")
+    else:
+        t_el = OxmlElement("w:delText")
+    t_el.set(qn("xml:space"), "preserve")
+    t_el.text = text
+    run.append(t_el)
+    change.append(run)
+    paragraph._p.append(change)
+
+
 def _collect_comments(doc) -> dict:
     """Parse word/comments.xml into ``{w_id: (author, body_text)}``."""
     comments: dict = {}
@@ -1184,6 +1229,31 @@ def _paragraph_inline(para, notes=None, comments=None) -> str:
         if tag == qn("w:commentRangeEnd"):
             if in_comment is not None and child.get(qn("w:id")) == in_comment:
                 close_comment()
+            continue
+        if tag == qn("w:ins"):
+            # tracked insertion: the w:ins element wraps w:r runs carrying
+            # the inserted text in w:t
+            author = child.get(qn("w:author")) or ""
+            date = child.get(qn("w:date")) or ""
+            inner = "".join(
+                _run_to_html(Run(r, para), notes)
+                for r in child.findall(qn("w:r"))
+            )
+            outer = f'<ins class="track-insert" data-author="{escape(author)}"'
+            if date:
+                outer += f' data-datetime="{escape(date)}"'
+            out.append(outer + ">" + inner + "</ins>")
+            continue
+        if tag == qn("w:del"):
+            # tracked deletion: runs carry <w:delText>, never w:t — collect
+            # the removed text across all runs in the change element
+            author = child.get(qn("w:author")) or ""
+            date = child.get(qn("w:date")) or ""
+            deleted = "".join(t.text or "" for t in child.iter(qn("w:delText")))
+            outer = f'<del class="track-delete" data-author="{escape(author)}"'
+            if date:
+                outer += f' data-datetime="{escape(date)}"'
+            out.append(outer + ">" + escape(deleted) + "</del>")
             continue
         if tag == qn("w:hyperlink"):
             href = _hyperlink_href(para, child)
@@ -1949,6 +2019,7 @@ class _InlineRunBuilder(HTMLParser):
         self._vert_stack = []   # prev vert saved on <sup>/<sub> open
         self._note = None       # pending footnote/endnote (see _start_note)
         self._comment = None    # pending comment span (see handle_starttag)
+        self._track = None      # pending track-change (see handle_starttag)
         self._buf: list[str] = []
 
     def _start_note(self, attrs) -> bool:
@@ -1998,6 +2069,28 @@ class _InlineRunBuilder(HTMLParser):
             })
 
     def handle_starttag(self, tag: str, attrs) -> None:
+        if self._track is not None:
+            # collect the track-change element's inner markup
+            if tag not in _VOID_TAGS:
+                self._track["depth"] += 1
+            self._track["html"].append(self.get_starttag_text())
+            return
+        if tag in ("ins", "del") and "track-" in (dict(attrs).get("class") or ""):
+            cls = set((dict(attrs).get("class") or "").split())
+            kind = "insert" if tag == "ins" else "delete"
+            marker = "track-insert" if kind == "insert" else "track-delete"
+            if marker not in cls:
+                return  # not actually a tracked change (e.g. unstyled del)
+            self._flush()
+            a = dict(attrs)
+            self._track = {
+                "kind": kind,
+                "author": a.get("data-author") or "",
+                "datetime": a.get("data-datetime") or "",
+                "html": [],
+                "depth": 1,
+            }
+            return
         if self._comment is not None:
             # collect the comment span's inner markup until its closing tag
             if tag not in _VOID_TAGS:
@@ -2119,6 +2212,21 @@ class _InlineRunBuilder(HTMLParser):
         super().handle_startendtag(tag, attrs)
 
     def handle_endtag(self, tag: str) -> None:
+        if self._track is not None:
+            if tag not in _VOID_TAGS:
+                self._track["depth"] = max(0, self._track["depth"] - 1)
+            self._track["html"].append(f"</{tag}>")
+            if self._track["depth"] == 0:
+                track = self._track
+                self._track = None
+                self.tokens.append({
+                    "type": "track",
+                    "kind": track["kind"],
+                    "author": track["author"],
+                    "datetime": track["datetime"],
+                    "html": "".join(track["html"]),
+                })
+            return
         if self._comment is not None:
             if tag not in _VOID_TAGS:
                 self._comment["depth"] = max(0, self._comment["depth"] - 1)
@@ -2184,6 +2292,11 @@ class _InlineRunBuilder(HTMLParser):
             self._flush()
 
     def handle_data(self, data: str) -> None:
+        if self._track is not None:
+            # keep the inner text escaped in the capture (the writer re-uses
+            # _inline_to_text on the inner HTML)
+            self._track["html"].append(escape(data))
+            return
         if self._comment is not None:
             self._comment["html"].append(escape(data))
             return
@@ -2281,6 +2394,9 @@ def _add_styled_runs(paragraph, html: str) -> None:
             continue
         if token["type"] == "comment":
             _add_comment_reference(paragraph, token)
+            continue
+        if token["type"] == "track":
+            _add_track_change(paragraph, token)
             continue
         if token["type"] == "link":
             _add_hyperlink(paragraph, token)
