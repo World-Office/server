@@ -1745,3 +1745,21 @@ def test_html_to_odt_object_roundtrip():
         odt = html_to_odt(html)
         out = odt_to_html(odt)
         assert f'data-type="{typ}"' in out, (typ, out)
+
+
+def test_html_to_odt_bookmark_roundtrip_2():
+    """<span class="bookmark" data-name="X"> round-trips through ODT
+    text:bookmark and back (odt suite)."""
+    odt = html_to_odt('<p>Intro <span class="bookmark" data-name="SEC1">target text</span> end.</p>')
+    out = odt_to_html(odt)
+    assert 'class="bookmark"' in out, out
+    assert 'data-name="SEC1"' in out, out
+    assert "target text" in out, out
+
+
+def test_html_to_odt_crossref_roundtrip_2():
+    """<a href="#NAME"> round-trips through ODT text:bookmark-ref and back."""
+    odt = html_to_odt('<p>See <a href="#SEC1">section one</a> above.</p>')
+    out = odt_to_html(odt)
+    assert '<a href="#SEC1">' in out, out
+    assert "section one" in out, out

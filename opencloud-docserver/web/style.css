@@ -676,3 +676,14 @@ div.object {
   display: inline-block;
   min-width: 80px;
 }
+
+span.bookmark {
+  border-bottom: 1px dashed #b8860b;
+  background: #fff8e1;
+  cursor: pointer;
+}
+
+a[href^="#"] {
+  color: #1a5276;
+  border-bottom: 1px dotted #1a5276;
+}
