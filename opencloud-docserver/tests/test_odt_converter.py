@@ -1558,3 +1558,60 @@ def test_html_to_odt_endnote_roundtrip():
     notes = doc.text.getElementsByType(Note)
     assert len(notes) == 1
     assert notes[0].getAttribute("noteclass") == "endnote"
+
+
+def test_html_to_odt_comment_roundtrip():
+    """An anchored comment round-trips through ODT.
+
+    The writer must place an <office:annotation> (dc:creator / dc:date /
+    <text:p> body) inside the SAME <text:p> right after the anchored runs;
+    the reader must wrap the runs before the annotation in the comment
+    span, preserving author, body and anchored text."""
+    from odf import teletype
+    from odf.office import Annotation
+
+    html = (
+        '<p><span class="comment" data-author="Alice Smith" '
+        'data-comment="Review note, please fix.">anchored text</span> after.</p>'
+    )
+    odt = html_to_odt(html)
+    out = odt_to_html(odt)
+    assert (
+        '<span class="comment" data-author="Alice Smith" '
+        'data-comment="Review note, please fix.">anchored text</span>'
+    ) in out, out
+    assert "after." in out, out
+    # physical assertion: the ODT XML carries an office:annotation with the body
+    doc = load(io.BytesIO(odt))
+    anns = doc.text.getElementsByType(Annotation)
+    assert len(anns) == 1, [a.qname for a in anns]
+    assert "Review note, please fix." in teletype.extractText(anns[0]), teletype.extractText(anns[0])
+
+
+def test_odt_to_html_comment_roundtrip():
+    """The ODT writer's annotation element reads back as the comment span.
+
+    Round-trips the same HTML contract and additionally asserts the physical
+    office:annotation element exists in the ODT XML with the body, then
+    verifies the reader wraps the anchored runs before the annotation."""
+    from odf import teletype
+    from odf.office import Annotation
+
+    html = (
+        '<p><span class="comment" data-author="Sam" '
+        'data-comment="Body note.">this bit</span> ok</p>'
+    )
+    odt = html_to_odt(html)
+    # physical assertion: ODT XML carries an office:annotation with the body
+    doc = load(io.BytesIO(odt))
+    anns = doc.text.getElementsByType(Annotation)
+    assert len(anns) == 1, [a.qname for a in anns]
+    ann_text = teletype.extractText(anns[0])
+    assert "Sam" in ann_text and "Body note." in ann_text, ann_text
+    # the reader renders the anchored runs before the annotation as a span
+    out = odt_to_html(odt)
+    assert (
+        '<span class="comment" data-author="Sam" '
+        'data-comment="Body note.">this bit</span>'
+    ) in out, out
+    assert "ok" in out, out

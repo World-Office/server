@@ -1048,3 +1048,67 @@ def test_html_to_docx_endnote_roundtrip():
         en_xml = z.read("word/endnotes.xml").decode("utf-8", "replace")
         assert "End note body." in en_xml, en_xml
         assert 'w:id="1"' in en_xml, en_xml
+
+
+def test_html_to_docx_comment_roundtrip():
+    """An anchored comment (review note) round-trips through DOCX.
+
+    The HTML contract: <span class="comment" data-author="AUTHOR"
+    data-comment="BODY">ANCHORED TEXT</span>. The writer must emit a real
+    word/comments.xml part and wrap the anchored runs in commentRangeStart/
+    commentRangeEnd + a commentReference marker; the reader must turn that
+    back into the same span. The sanitizer passes the comment span through
+    unchanged (class + data-* attributes survive, values escaped on output).
+    """
+    html = (
+        '<p>Main text <span class="comment" data-author="Alice Smith" '
+        'data-comment="Please check this, thanks.">anchored words</span>'
+        ' continues.</p>'
+    )
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    assert (
+        '<span class="comment" data-author="Alice Smith" '
+        'data-comment="Please check this, thanks.">anchored words</span>'
+    ) in out, out
+    assert "Main text" in out and "continues." in out, out
+    # the sanitizer keeps the comment span and its data attributes
+    from src.editor.sanitize import sanitize_html
+    sane = sanitize_html(html)
+    assert 'class="comment"' in sane, sane
+    assert 'data-author="Alice Smith"' in sane, sane
+    assert 'data-comment="Please check this, thanks."' in sane, sane
+
+
+def test_docx_comment_read_from_parts():
+    """The DOCX writer physically produces word/comments.xml and the reader
+    resolves the commentRangeStart/End + commentReference markers back into
+    anchored comment spans (two comments, distinct authors)."""
+    html = (
+        '<p><span class="comment" data-author="Alice" '
+        'data-comment="First note.">one two</span> plain '
+        '<span class="comment" data-author="Bob" '
+        'data-comment="Second note, with punctuation.">three</span> tail</p>'
+    )
+    docx = html_to_docx(html)
+    # physical assertions on the package written by the converter
+    with zipfile.ZipFile(io.BytesIO(docx)) as z:
+        assert "word/comments.xml" in z.namelist(), z.namelist()
+        comments_xml = z.read("word/comments.xml").decode("utf-8", "replace")
+        assert "Alice" in comments_xml and "First note." in comments_xml, comments_xml
+        assert "Bob" in comments_xml and "Second note, with punctuation." in comments_xml, comments_xml
+        document_xml = z.read("word/document.xml").decode("utf-8", "replace")
+        assert "commentRangeStart" in document_xml, document_xml
+        assert "commentRangeEnd" in document_xml, document_xml
+        assert "commentReference" in document_xml, document_xml
+    # the reader resolves the markers back into the HTML contract
+    out = docx_to_html(docx)
+    assert (
+        '<span class="comment" data-author="Alice" '
+        'data-comment="First note.">one two</span>'
+    ) in out, out
+    assert (
+        '<span class="comment" data-author="Bob" '
+        'data-comment="Second note, with punctuation.">three</span>'
+    ) in out, out
+    assert "plain" in out and "tail" in out, out
