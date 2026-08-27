@@ -1112,3 +1112,71 @@ def test_docx_comment_read_from_parts():
         'data-comment="Second note, with punctuation.">three</span>'
     ) in out, out
     assert "plain" in out and "tail" in out, out
+
+
+def test_html_to_docx_track_changes_roundtrip():
+    """Tracked insertions/deletions round-trip through DOCX (T30).
+
+    The HTML contract: <ins class="track-insert" data-author="AUTHOR"> and
+    <del class="track-delete" data-author="AUTHOR">. The writer must emit
+    real w:ins / w:del change elements (with w:delText for the removed run)
+    in document.xml; the reader must turn them back into the same spans with
+    author + text intact. The sanitizer must pass ins through (del already
+    allowed), and still drop script.
+    """
+    html = (
+        '<p>Before <ins class="track-insert" data-author="Alice">new words</ins> '
+        'and <del class="track-delete" data-author="Bob">old words</del> after.</p>'
+    )
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    assert '<ins class="track-insert" data-author="Alice">new words</ins>' in out, out
+    assert '<del class="track-delete" data-author="Bob">old words</del>' in out, out
+    assert "Before" in out and "after." in out, out
+    # the sanitizer keeps the track-change spans and their data attributes
+    from src.editor.sanitize import sanitize_html
+    sane = sanitize_html(html)
+    assert '<ins class="track-insert" data-author="Alice">new words</ins>' in sane, sane
+    assert '<del class="track-delete" data-author="Bob">old words</del>' in sane, sane
+    assert "<script>" not in sane, sane
+
+
+def test_docx_track_changes_read_from_parts():
+    """The DOCX writer physically emits w:ins/w:del/w:delText change elements
+    in word/document.xml and the reader resolves them back into the HTML
+    contract (author + inserted text + deleted text)."""
+    html = (
+        '<p><ins class="track-insert" data-author="Alice">added bit</ins> '
+        'keep <del class="track-delete" data-author="Bob">removed bit</del> end</p>'
+    )
+    docx = html_to_docx(html)
+    import zipfile
+    with zipfile.ZipFile(io.BytesIO(docx)) as z:
+        xml = z.read("word/document.xml").decode("utf-8")
+    assert "<w:ins " in xml, xml[:500]
+    assert 'w:author="Alice"' in xml, xml[:500]
+    assert "<w:del " in xml, xml[:500]
+    assert 'w:author="Bob"' in xml, xml[:500]
+    assert "<w:delText" in xml, xml[:500]
+    # the reader resolves the change elements back to the contract
+    out = docx_to_html(docx)
+    assert '<ins class="track-insert" data-author="Alice">added bit</ins>' in out, out
+    assert '<del class="track-delete" data-author="Bob">removed bit</del>' in out, out
+
+
+def test_sanitizer_allows_ins():
+    """<ins class="track-insert"> survives sanitize_html() (del already
+    allowed); <script> and friends still do not."""
+    from src.editor.sanitize import sanitize_html
+
+    html = (
+        '<p>Hi <ins class="track-insert" data-author="A">added</ins> and '
+        '<del class="track-delete" data-author="B">removed</del> done '
+        '<script>alert(1)</script></p>'
+    )
+    out = sanitize_html(html)
+    assert '<ins class="track-insert"' in out, out
+    assert 'data-author="A"' in out, out
+    assert '<del class="track-delete"' in out, out
+    assert 'data-author="B"' in out, out
+    assert "<script>" not in out, out

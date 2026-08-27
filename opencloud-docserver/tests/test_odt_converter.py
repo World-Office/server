@@ -1615,3 +1615,53 @@ def test_odt_to_html_comment_roundtrip():
         'data-comment="Body note.">this bit</span>'
     ) in out, out
     assert "ok" in out, out
+
+
+def test_html_to_odt_track_changes_roundtrip():
+    """Tracked insertions/deletions round-trip through ODT (T30).
+
+    The writer must mark insertions with text:change-start/text:change-end
+    (registered change id) and deletions with a change-start/change-end
+    pair around an empty region whose removed text + author land in the
+    text:tracked-changes registry; the reader must resolve the ids and emit
+    the <ins>/<del> HTML contract."""
+    import zipfile
+
+    html = (
+        '<p>A <ins class="track-insert" data-author="Alice">new text</ins> '
+        'B <del class="track-delete" data-author="Bob">old text</del> C</p>'
+    )
+    odt = html_to_odt(html)
+    out = odt_to_html(odt)
+    assert '<ins class="track-insert" data-author="Alice">new text</ins>' in out, out
+    assert '<del class="track-delete" data-author="Bob">old text</del>' in out, out
+    assert "A " in out and " C" in out, out
+    # physical assertion: content.xml carries the change marks + the
+    # registered change list (tracked-changes registry with dc:creator).
+    with zipfile.ZipFile(io.BytesIO(odt)) as z:
+        cx = z.read("content.xml").decode("utf-8")
+    assert "text:change-start" in cx, cx[:400]
+    assert "text:change-end" in cx, cx[:400]
+    assert "tracked-changes" in cx, cx[:400]
+    assert "dc:creator" in cx, cx[:400]
+
+
+def test_odt_to_html_track_changes_roundtrip():
+    """The ODT writer's change marks + tracked-changes registry read back as
+    the HTML track-change contract, with authors resolved from dc:creator."""
+    import zipfile
+
+    html = (
+        '<p><ins class="track-insert" data-author="Sam">inserted</ins> '
+        'middle <del class="track-delete" data-author="Pat">deleted</del> tail</p>'
+    )
+    odt = html_to_odt(html)
+    # physical: ODT XML contains text:change-start/end + a registered change
+    with zipfile.ZipFile(io.BytesIO(odt)) as z:
+        cx = z.read("content.xml").decode("utf-8")
+    assert "text:change-start" in cx and "text:change-end" in cx, cx[:400]
+    assert "dc:creator" in cx, cx[:400]
+    out = odt_to_html(odt)
+    assert '<ins class="track-insert" data-author="Sam">inserted</ins>' in out, out
+    assert '<del class="track-delete" data-author="Pat">deleted</del>' in out, out
+    assert "middle" in out and "tail" in out, out
