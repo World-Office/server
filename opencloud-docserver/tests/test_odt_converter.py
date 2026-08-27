@@ -1727,3 +1727,21 @@ def test_html_to_odt_section_break_roundtrip():
     with zipfile.ZipFile(io.BytesIO(odt)) as z:
         cx = z.read("content.xml").decode()
     assert "text:section" in cx, cx[:1200]
+
+
+def test_html_to_odt_object_roundtrip():
+    """<div class="object" data-type="..."> preserves object presence + type
+    across an ODT round-trip (T32 gap: objects)."""
+    for typ, label, content in [
+        ("shape", "", ""),
+        ("textbox", "", "Boxed text"),
+        ("chart", "Sales", ""),
+        ("equation", "", "E=mc^2"),
+    ]:
+        html = f'<p>Before</p><div class="object" data-type="{typ}"'
+        if label:
+            html += f' data-label="{label}"'
+        html += f'>{content}</div><p>After</p>'
+        odt = html_to_odt(html)
+        out = odt_to_html(odt)
+        assert f'data-type="{typ}"' in out, (typ, out)
