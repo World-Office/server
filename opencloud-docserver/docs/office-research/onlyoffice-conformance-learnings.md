@@ -91,6 +91,30 @@ git sparse-checkout set OOXML/DocxFormat OdfFile/Writer/Format
 
 ---
 
+## State-of-the-art test methods now layered on
+
+Beyond the hand-written conformance cases the converter is also tested with
+modern/automated methods (see module docstrings for details):
+
+* **Differential testing** — `tests/test_converter_differential.py` uses
+  LibreOffice headless (soffice) as an independent ground-truth engine:
+  our DOCX reader must agree textually with LibreOffice on real documents,
+  and every DOCX/ODT our writers emit must open in LibreOffice with the
+  authored content intact. Skips cleanly when soffice is absent. *(On this
+  host LibreOffice's TXT export of tables runs away — a LO limitation
+  documented in the module — so tables stay covered by round-trip tests.)*
+* **Property-based + fuzz + metamorphic + mutation** — `tests/
+  test_converter_property.py` (Hypothesis): random documents preserve every
+  source token through DOCX/ODT round-trips; our DOCX output is a semantic
+  fixed point (idempotence); composed HTML never crashes either converter;
+  DOCX and ODT round-trips of the same source converge on identical text;
+  plus a mutation smoke test proving the invariants have teeth.
+
+Environment notes for the LibreOffice oracle on headless hosts:
+`SAL_USE_VCLPLUGIN=svp`, isolated module-shared profile, `--norestore
+--nodefault --nolockcheck`, small batches (<10 files), and verify output
+files exist (LO can exit 0 without producing output).
+
 ## Relation to the wo-conformance borrow
 
 - The earlier borrow (`tests/test_conformance_corpus.py`, 30 cases) feeds the
