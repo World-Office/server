@@ -541,6 +541,21 @@ def odt_to_html(data: bytes) -> str:
     kinds = _list_kinds(doc)
     pictures = _extract_pictures(data)
     changes = _collect_changes(doc)
+    # A caption is a text:p carrying text:sequence-name (e.g. "Table") that
+    # immediately precedes a table: it is rendered as the table's <figcaption>
+    # (and must not also render as a standalone paragraph).
+    children = list(doc.text.childNodes)
+    caption_for: dict = {}
+    skip_paras = set()
+    for i, ch in enumerate(children):
+        if ch.nodeType != Node.ELEMENT_NODE:
+            continue
+        if ch.qname == (TEXTNS, "p") and ch.attributes.get((TEXTNS, "sequence-name")):
+            nxt = children[i + 1] if i + 1 < len(children) else None
+            if nxt is not None and nxt.nodeType == Node.ELEMENT_NODE and nxt.qname == (TABLENS, "table"):
+                from odf import teletype
+                caption_for[nxt] = teletype.extractText(ch).strip()
+                skip_paras.add(id(ch))
 
     # Extract header and footer from master page if present
     header_html = ""
@@ -571,6 +586,8 @@ def odt_to_html(data: bytes) -> str:
             continue
         qname = child.qname
         if qname in ((TEXTNS, "p"), (TEXTNS, "h")):
+            if id(child) in skip_paras:
+                continue
             flush_list()
             parts.append(_paragraph_to_html(child, resolve, pictures, presolve, changes))
         elif qname == (TEXTNS, "list"):
@@ -583,7 +600,7 @@ def odt_to_html(data: bytes) -> str:
                 parts.append(item)
         elif qname == (TABLENS, "table"):
             flush_list()
-            parts.append(_table_to_html(child, resolve, pictures, presolve, cellresolve))
+            parts.append(_table_to_html(child, resolve, pictures, presolve, cellresolve, caption_for.get(child)))
         elif qname == (DRAWNS, "frame"):
             # A draw:frame sitting directly in the body (not nested in a
             # text:p) is still a block-level image.
@@ -1174,7 +1191,7 @@ def _norm_border(value) -> str | None:
     return f"{round(num, 2):g}pt solid {m.group(3).lower()}"
 
 
-def _table_to_html(table_el, resolve, pictures, presolve=None, cellresolve=None) -> str:
+def _table_to_html(table_el, resolve, pictures, presolve=None, cellresolve=None, caption=None) -> str:
     rows: list[str] = []
     cellresolve = cellresolve or {}
     tprops = cellresolve.get(table_el.getAttribute("stylename")) or {}
@@ -1227,7 +1244,10 @@ def _table_to_html(table_el, resolve, pictures, presolve=None, cellresolve=None)
     head = "<table>"
     if tw:
         head = f'<table width="{tw}">'
-    return head + "".join(rows) + "</table>"
+    table_html = head + "".join(rows) + "</table>"
+    if caption:
+        return f"<figure>{table_html}<figcaption>{escape(caption)}</figcaption></figure>"
+    return table_html
 
 
 def odt_list_to_html(list_el, resolve, kinds, pictures) -> str:
@@ -1252,7 +1272,7 @@ def odt_list_to_html(list_el, resolve, kinds, pictures) -> str:
 # HTML -> ODT
 # --------------------------------------------------------------------------
 
-_TAG_TABLE = re.compile(r"<table[^>]*>.*?</table>", re.S)
+_TAG_TABLE = re.compile(r"<figure>.*?</figure>|<table[^>]*>.*?</table>", re.S)
 
 
 def html_to_odt(html_fragment: str) -> bytes:
@@ -1934,6 +1954,17 @@ class _OdtWriter:
         expects). Rowspans leaving a hole in a later row fill that slot with
         a covered cell too.
         """
+        # A <figure><figcaption> wrapper becomes an ODF caption: a
+        # preceding text:p with text:sequence-name (extracted here, before
+        # the figure wrapper is unwrapped for table parsing).
+        caption = None
+        fig_m = re.search(r"<figure[^>]*>(.*?)</figure>", html, re.S)
+        if fig_m:
+            inner = fig_m.group(1)
+            fc = re.search(r"<figcaption[^>]*>(.*?)</figcaption>", inner, re.S)
+            if fc:
+                caption = _inline_to_text(fc.group(1)).strip()
+            html = fig_m.group(1)
         row_htmls = re.findall(r"<tr[^>]*>(.*?)</tr>", html, re.S)
         if not row_htmls:
             return
@@ -1987,6 +2018,11 @@ class _OdtWriter:
                     row_el.addElement(CoveredTableCell())
             table.addElement(row_el)
         self.doc.text.addElement(table)
+        if caption:
+            cap_p = P()
+            cap_p.attributes[(TEXTNS, "sequence-name")] = "Table"
+            cap_p.addText(caption)
+            self.doc.text.insertBefore(cap_p, table)
 
     def _table_style(self, width_px: float) -> str:
         """Return (creating if needed) a table style fixing the table width."""

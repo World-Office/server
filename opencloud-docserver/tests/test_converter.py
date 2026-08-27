@@ -1180,3 +1180,25 @@ def test_sanitizer_allows_ins():
     assert '<del class="track-delete"' in out, out
     assert 'data-author="B"' in out, out
     assert "<script>" not in out, out
+
+
+def test_html_to_docx_table_caption_roundtrip():
+    """A <figure> wrapping a <table> + <figcaption> round-trips through DOCX
+    (T32 gap: tables caption). The writer maps the figcaption to w:tblCaption
+    and the reader wraps the table back in <figure><figcaption>."""
+    html = (
+        '<figure><table width="400"><tr><td>a</td><td>b</td></tr>'
+        '<tr><td>c</td><td>d</td></tr></table>'
+        '<figcaption>Sample caption</figcaption></figure>'
+    )
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    assert "<figure>" in out, out
+    assert '<figcaption>Sample caption</figcaption>' in out, out
+    assert "<table" in out, out
+    # physical assertion: word/document.xml carries w:tblCaption
+    import zipfile
+    with zipfile.ZipFile(io.BytesIO(docx)) as z:
+        xml = z.read("word/document.xml").decode("utf-8")
+    assert "w:tblCaption" in xml, xml[:400]
+    assert "Sample caption" in xml, xml[:400]
