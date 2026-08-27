@@ -154,6 +154,12 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now opencloud-docserver
 ```
 
+## Planning
+
+The product backlog — **epics and user stories** for the editor/docserver —
+lives in [`docs/backlog-epics-and-user-stories.md`](docs/backlog-epics-and-user-stories.md).
+Epics are promoted into OpenSpec changes (`openspec/changes/`) when scheduled.
+
 ## Philosophy
 
 Stoic Linux. Simplicity, clarity, reliability, focus.
