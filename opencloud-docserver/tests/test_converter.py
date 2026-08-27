@@ -1264,3 +1264,21 @@ def test_html_to_docx_section_break_roundtrip():
     with zipfile.ZipFile(io.BytesIO(docx)) as z:
         xml = z.read("word/document.xml").decode()
     assert "w:sectPr" in xml, xml[:1200]
+
+
+def test_html_to_docx_object_roundtrip():
+    """<div class="object" data-type="..."> preserves shape/textbox/chart/
+    equation presence + type across a DOCX round-trip (T32 gap: objects)."""
+    for typ, label, content in [
+        ("shape", "", ""),
+        ("textbox", "", "Boxed text"),
+        ("chart", "Sales", ""),
+        ("equation", "", "E=mc^2"),
+    ]:
+        html = f'<p>Before</p><div class="object" data-type="{typ}"'
+        if label:
+            html += f' data-label="{label}"'
+        html += f'>{content}</div><p>After</p>'
+        docx = html_to_docx(html)
+        out = docx_to_html(docx)
+        assert f'data-type="{typ}"' in out, (typ, out)
