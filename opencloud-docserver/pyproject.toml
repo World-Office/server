@@ -26,6 +26,9 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
+markers = [
+    "integration: shells out to external tools (e.g. LibreOffice headless)",
+]
 
 [tool.ruff]
 line-length = 100
@@ -37,3 +40,8 @@ ignore = ["E501"]
 
 [tool.uv]
 package = false
+
+[dependency-groups]
+dev = [
+    "hypothesis>=6.165.10",
+]
