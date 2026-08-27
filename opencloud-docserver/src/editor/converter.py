@@ -332,6 +332,144 @@ def _note_marker(kind: str, w_id, notes) -> str:
 
 
 # --------------------------------------------------------------------------
+# Anchored comments (word/comments.xml part)
+# --------------------------------------------------------------------------
+#
+# python-docx does not model comments, so both reading and writing go through
+# the raw package parts, mirroring the footnotes/endnotes handling. The HTML
+# contract (shared with the ODT converter): a ``<span class="comment"
+# data-author="AUTHOR" data-comment="BODY">ANCHORED TEXT</span>``. The
+# anchored runs are wrapped in ``w:commentRangeStart``/``w:commentRangeEnd``
+# and terminated by a marker run carrying ``w:commentReference``; the body +
+# author live in a proper ``word/comments.xml`` part.
+
+_COMMENTS_XML = (
+    '<w:comments xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+    '</w:comments>'
+)
+
+
+class _CommentsPart(StoryPart):
+    """A raw WordprocessingML comments part (word/comments.xml).
+
+    Real ``w:comment`` children are appended by ``_append_comment``. The part
+    is registered with the main document part through the standard comments
+    relationship + content type so the package opens cleanly in Word and
+    LibreOffice (content type
+    ``application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml``).
+    """
+
+    @classmethod
+    def new(cls, package):
+        return cls(
+            PackURI("/word/comments.xml"),
+            CT.WML_COMMENTS,
+            parse_xml(_COMMENTS_XML),
+            package,
+        )
+
+
+def _get_comments_part(paragraph):
+    """The comments part for a document, creating + wiring it if missing
+    (proper content type + relationship from the main document part)."""
+    document_part = paragraph.part
+    for rel in document_part.rels.values():
+        if rel.reltype == RT.COMMENTS and not rel.is_external:
+            return rel.target_part
+    part = _CommentsPart.new(document_part.package)
+    document_part.relate_to(part, RT.COMMENTS)
+    return part
+
+
+def _next_comment_id(root) -> int:
+    """Next positive w:id (comments ids are 1-based)."""
+    used = []
+    for el in root.iter(qn("w:comment")):
+        val = el.get(qn("w:id")) or ""
+        if val.isdigit() and int(val) > 0:
+            used.append(int(val))
+    return max(used) + 1 if used else 1
+
+
+def _append_comment(part, w_id: int, author: str, body: str) -> None:
+    """Append a ``w:comment`` holding one paragraph with the body text in a
+    ``w:r><w:t`` (the contract: BODY is plain text)."""
+    root = part.element
+    comment_el = OxmlElement("w:comment")
+    comment_el.set(qn("w:id"), str(w_id))
+    comment_el.set(qn("w:author"), author or "")
+    p_el = OxmlElement("w:p")
+    r_el = OxmlElement("w:r")
+    t_el = OxmlElement("w:t")
+    t_el.text = body or ""
+    r_el.append(t_el)
+    p_el.append(r_el)
+    comment_el.append(p_el)
+    root.append(comment_el)
+
+
+def _add_comment_reference(paragraph, token: dict) -> None:
+    """Emit a comment range for a comment token.
+
+    ``w:commentRangeStart`` is inserted before the anchored runs, the runs
+    follow (parsed from the token's inner HTML), then ``w:commentRangeEnd``
+    and a marker run carrying ``w:commentReference`` attached to the end of
+    the anchored range.
+    """
+    part = _get_comments_part(paragraph)
+    w_id = _next_comment_id(part.element)
+    _append_comment(part, w_id, token.get("author") or "", token.get("body") or "")
+    start = OxmlElement("w:commentRangeStart")
+    start.set(qn("w:id"), str(w_id))
+    paragraph._p.append(start)
+    inner = token.get("html") or ""
+    if inner:
+        _add_styled_runs(paragraph, inner)
+    end = OxmlElement("w:commentRangeEnd")
+    end.set(qn("w:id"), str(w_id))
+    paragraph._p.append(end)
+    r = OxmlElement("w:r")
+    ref = OxmlElement("w:commentReference")
+    ref.set(qn("w:id"), str(w_id))
+    r.append(ref)
+    paragraph._p.append(r)
+
+
+def _collect_comments(doc) -> dict:
+    """Parse word/comments.xml into ``{w_id: (author, body_text)}``."""
+    comments: dict = {}
+    part = None
+    for rel in doc.part.rels.values():
+        if rel.reltype == RT.COMMENTS and not rel.is_external:
+            part = rel.target_part
+            break
+    if part is None:
+        return comments
+    root = parse_xml(part.blob)
+    for c_el in root.iter(qn("w:comment")):
+        w_id = c_el.get(qn("w:id"))
+        if not w_id:
+            continue
+        author = c_el.get(qn("w:author")) or ""
+        body = "".join(t.text or "" for t in c_el.iter(qn("w:t")))
+        comments[w_id] = (author, body)
+    return comments
+
+
+def _comment_span(w_id, pending: list, comments: dict) -> str:
+    """The anchored ``<span class="comment" data-author=.. data-comment=..>``
+    for a comment range, or the raw collected HTML when the id is unknown."""
+    meta = (comments or {}).get(w_id)
+    if meta is None:
+        return "".join(pending)
+    author, body = meta
+    return (
+        f'<span class="comment" data-author="{escape(author)}" '
+        f'data-comment="{escape(body)}">{"".join(pending)}</span>'
+    )
+
+
+# --------------------------------------------------------------------------
 # DOCX -> HTML
 # --------------------------------------------------------------------------
 
@@ -547,6 +685,7 @@ def docx_to_html(data: bytes) -> str:
     """Convert DOCX bytes to an HTML fragment (content only, no <html>)."""
     doc = Document(io.BytesIO(data))
     notes = _collect_notes(doc)
+    comments = _collect_comments(doc)
     seq: list[tuple] = []
 
     def strip_li(frag: str) -> str:
@@ -566,7 +705,7 @@ def docx_to_html(data: bytes) -> str:
         footer_html = _footer_to_html(footer_part)
 
     for para in doc.paragraphs:
-        li, list_kind, level = _paragraph_to_html(para, notes)
+        li, list_kind, level = _paragraph_to_html(para, notes, comments)
         if list_kind is not None:
             seq.append(("list", list_kind, level or 1, strip_li(li)))
         else:
@@ -962,16 +1101,17 @@ def _apply_para_props(p, props: dict) -> None:
         pass
 
 
-def _paragraph_to_html(para, notes=None) -> tuple[str | None, str | None, int | None]:
+def _paragraph_to_html(para, notes=None, comments=None) -> tuple[str | None, str | None, int | None]:
     """Return (html_fragment, list_kind, list_level).
 
     Non-list blocks return (html, None, None). List paragraphs return
     `[fmt]<li>..</li>` plus its kind ("ul"/"ol") and outline level so the
     caller can group/nest consecutive items. ``notes`` carries the parsed
-    footnotes/endnotes maps for footnote-marker rendering.
+    footnotes/endnotes maps for footnote-marker rendering; ``comments``
+    carries the parsed comments map for anchored comment spans.
     """
     style = (para.style.name or "").lower()
-    text = _paragraph_inline(para, notes)
+    text = _paragraph_inline(para, notes, comments)
 
     # Horizontal rule: an empty paragraph with a bottom border renders as <hr/>.
     if _para_has_bottom_border(para) and not text.strip():
@@ -1009,21 +1149,59 @@ def _block_attrs(para, styles: list[str]) -> str:
     return ' style="' + ";".join(styles) + '"'
 
 
-def _paragraph_inline(para, notes=None) -> str:
-    """Inline HTML for a paragraph, emitting hyperlink runs as <a href>."""
-    out = []
+def _paragraph_inline(para, notes=None, comments=None) -> str:
+    """Inline HTML for a paragraph, emitting hyperlink runs as <a href>.
+
+    Comment ranges (``w:commentRangeStart`` … ``w:commentRangeEnd`` closed
+    by a ``w:commentReference`` marker run) emit the HTML contract
+    ``<span class="comment" data-author=.. data-comment=..>ANCHOR</span>``;
+    the marker run itself is dropped from the output.
+    """
+    out: list[str] = []
+    pending: list[str] = []
+    in_comment: str | None = None
+
+    def add(html: str) -> None:
+        if in_comment is not None:
+            pending.append(html)
+        else:
+            out.append(html)
+
+    def close_comment() -> None:
+        nonlocal in_comment
+        if in_comment is not None:
+            out.append(_comment_span(in_comment, pending, comments))
+            pending.clear()
+            in_comment = None
+
     for child in para._p.iterchildren():
         tag = child.tag
+        if tag == qn("w:commentRangeStart"):
+            cid = child.get(qn("w:id"))
+            close_comment()  # close any malformed/unclosed previous range
+            in_comment = cid
+            continue
+        if tag == qn("w:commentRangeEnd"):
+            if in_comment is not None and child.get(qn("w:id")) == in_comment:
+                close_comment()
+            continue
         if tag == qn("w:hyperlink"):
             href = _hyperlink_href(para, child)
             inner_runs = [Run(r, para) for r in child.findall(qn("w:r"))]
             inner = _runs_to_html(inner_runs, notes)
             if href:
-                out.append(f'<a href="{escape(href, quote=True)}">{inner}</a>')
-            else:
-                out.append(inner)
+                inner = f'<a href="{escape(href, quote=True)}">{inner}</a>'
+            add(inner)
         elif tag == qn("w:r"):
-            out.append(_run_to_html(Run(child, para), notes))
+            inner = _run_to_html(Run(child, para), notes)
+            if in_comment is not None and child.find(qn("w:commentReference")) is not None:
+                # the marker run terminates the anchored range
+                pending.append(inner)
+                close_comment()
+            else:
+                add(inner)
+        # other children (pPr etc.) are not inline content
+    close_comment()
     return "".join(out)
 
 
@@ -1770,6 +1948,7 @@ class _InlineRunBuilder(HTMLParser):
         self._span_stack: list[tuple] = []  # prior span props saved on <span> open
         self._vert_stack = []   # prev vert saved on <sup>/<sub> open
         self._note = None       # pending footnote/endnote (see _start_note)
+        self._comment = None    # pending comment span (see handle_starttag)
         self._buf: list[str] = []
 
     def _start_note(self, attrs) -> bool:
@@ -1819,6 +1998,23 @@ class _InlineRunBuilder(HTMLParser):
             })
 
     def handle_starttag(self, tag: str, attrs) -> None:
+        if self._comment is not None:
+            # collect the comment span's inner markup until its closing tag
+            if tag not in _VOID_TAGS:
+                self._comment["depth"] += 1
+            self._comment["html"].append(self.get_starttag_text())
+            return
+        if tag == "span" and "comment" in (dict(attrs).get("class") or "").split():
+            # <span class="comment" data-author=.. data-comment=..>TEXT</span>
+            self._flush()
+            a = dict(attrs)
+            self._comment = {
+                "author": a.get("data-author") or "",
+                "body": a.get("data-comment") or "",
+                "html": [],
+                "depth": 1,
+            }
+            return
         if self._note is not None and not self._note["in_body"]:
             # An open citation <sup>: the confirming <span class=...> directly
             # adjacent starts the body; anything else orphans the citation
@@ -1908,9 +2104,14 @@ class _InlineRunBuilder(HTMLParser):
             self._flush()
 
     def handle_startendtag(self, tag: str, attrs) -> None:
-        """Record self-closing void tags inside a note body without skewing the
-        nesting depth (they have no matching end tag; the body's </span> is
-        tracked by depth, so an unclosed <br/> must not swallow it)."""
+        """Record self-closing void tags inside a note/comment body without
+        skewing the nesting depth (they have no matching end tag; the body's
+        closing span is tracked by depth, so an unclosed <br/> must not
+        swallow it)."""
+        if self._comment is not None:
+            if tag in _VOID_TAGS:
+                self._comment["html"].append(self.get_starttag_text())
+            return
         if self._note is not None and self._note["in_body"]:
             if tag in _VOID_TAGS:
                 self._note["html"].append(self.get_starttag_text())
@@ -1918,6 +2119,20 @@ class _InlineRunBuilder(HTMLParser):
         super().handle_startendtag(tag, attrs)
 
     def handle_endtag(self, tag: str) -> None:
+        if self._comment is not None:
+            if tag not in _VOID_TAGS:
+                self._comment["depth"] = max(0, self._comment["depth"] - 1)
+            self._comment["html"].append(f"</{tag}>")
+            if self._comment["depth"] == 0:
+                comment = self._comment
+                self._comment = None
+                self.tokens.append({
+                    "type": "comment",
+                    "author": comment["author"],
+                    "body": comment["body"],
+                    "html": "".join(comment["html"]),
+                })
+            return
         if self._note is not None and self._note["in_body"]:
             if tag not in _VOID_TAGS:
                 self._note["depth"] = max(0, self._note["depth"] - 1)
@@ -1969,6 +2184,9 @@ class _InlineRunBuilder(HTMLParser):
             self._flush()
 
     def handle_data(self, data: str) -> None:
+        if self._comment is not None:
+            self._comment["html"].append(escape(data))
+            return
         if (
             self._note is not None
             and not self._note["in_body"]
@@ -1981,7 +2199,16 @@ class _InlineRunBuilder(HTMLParser):
             self._buf.append(data)
 
     def _finish(self) -> None:
-        """Close out any unterminated footnote/endnote at end of input."""
+        """Close out any unterminated footnote/endnote/comment at end of input."""
+        if self._comment is not None:
+            comment = self._comment
+            self._comment = None
+            self.tokens.append({
+                "type": "comment",
+                "author": comment["author"],
+                "body": comment["body"],
+                "html": "".join(comment["html"]),
+            })
         if self._note is not None:
             if not self._note["in_body"]:
                 self._orphan_note()
@@ -2051,6 +2278,9 @@ def _add_styled_runs(paragraph, html: str) -> None:
             continue
         if token["type"] == "footnote":
             _add_footnote_reference(paragraph, token)
+            continue
+        if token["type"] == "comment":
+            _add_comment_reference(paragraph, token)
             continue
         if token["type"] == "link":
             _add_hyperlink(paragraph, token)

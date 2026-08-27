@@ -27,6 +27,7 @@ from html import escape
 from odf.draw import Frame, Image
 from odf.element import Element, Node
 from odf.namespaces import (
+    DCNS,
     DRAWNS,
     OFFICENS,
     STYLENS,
@@ -35,6 +36,7 @@ from odf.namespaces import (
     TEXTNS,
     XLINKNS,
 )
+from odf.office import Annotation
 from odf.opendocument import OpenDocumentText, load
 from odf.style import (
     ParagraphProperties,
@@ -649,58 +651,97 @@ def _paragraph_inner_html(el, resolve, pictures) -> str:
     return _inline_html(el, resolve, style, pictures)
 
 
+def _annotation_meta(ann_el) -> tuple[str | None, str]:
+    """(author, body) of an ``office:annotation``, or (None, '') when it
+    has no ``dc:creator`` (such annotations are ignored by the reader)."""
+    from odf import teletype
+
+    author = None
+    body = ""
+    for c in ann_el.childNodes:
+        if c.nodeType != Node.ELEMENT_NODE:
+            continue
+        if c.qname == (DCNS, "creator"):
+            author = teletype.extractText(c)
+        elif c.qname == (TEXTNS, "p"):
+            body = teletype.extractText(c)
+    if author is None:
+        return None, ""
+    return author, body
+
+
 def _inline_html(el, resolve, base, pictures) -> str:
     """Render the inline (run-level) content of an element to HTML.
 
     ``base`` is the effective character-flag dict inherited from the
     paragraph style; character styles on <span> override per property.
     ``pictures`` maps ODT package paths to (mime, bytes) for draw:image
-    lookups.
+    lookups. An ``office:annotation`` child anchors the runs accumulated
+    before it into ``<span class="comment" data-author=.. data-comment=..>``
+    (one annotation per paragraph is supported; multiple are best-effort).
     """
     out: list[str] = []
+    pending: list[str] = []
+
+    def flush_comment(author: str, body: str) -> None:
+        """Wrap the runs accumulated before an annotation in a comment span."""
+        out.append(
+            f'<span class="comment" data-author="{escape(author)}" '
+            f'data-comment="{escape(body)}">{"".join(pending)}</span>'
+        )
+        pending.clear()
+
     for child in el.childNodes:
         if child.nodeType == Node.TEXT_NODE:
-            out.append(_wrap(escape(child.data), base))
-        elif child.nodeType == Node.ELEMENT_NODE:
-            qname = child.qname
-            if qname == (TEXTNS, "s"):  # repeated space
-                try:
-                    count = max(1, int(child.getAttribute("c") or 1))
-                except ValueError:
-                    count = 1
-                out.append("&nbsp;" * count)
-            elif qname == (TEXTNS, "tab"):
-                out.append("&emsp;")
-            elif qname == (TEXTNS, "line-break"):
-                out.append("<br/>")
-            elif qname == (TEXTNS, "page-number"):
-                # Page number field - map to HTML span
-                out.append('<span class="page-number"></span>')
-            elif qname == (TEXTNS, "span"):
-                flags = dict(base)
-                span_flags = resolve(child.getAttribute("stylename"))
-                for key in ("bold", "italic", "underline", "strike", "vert",
-                            "small_caps", "all_caps", "color", "bg",
-                            "font_family", "font_size"):
-                    if span_flags[key] is not None:
-                        flags[key] = span_flags[key]
-                out.append(_inline_html(child, resolve, flags, pictures))
-            elif qname == (TEXTNS, "a"):
-                href = child.getAttribute("href")
-                inner = _inline_html(child, resolve, base, pictures)
-                if href:
-                    inner = f'<a href="{escape(href)}">{inner}</a>'
-                out.append(inner)
-            elif qname == (DRAWNS, "frame"):
-                out.append(_frame_to_html(child, pictures))
-            elif qname == (TEXTNS, "note"):
-                note_html = _note_to_html(child, resolve, pictures)
-                if note_html:
-                    out.append(note_html)
-            else:
-                # Unknown inline node (drawing text-box…):
-                # descend so its text is not silently dropped.
-                out.append(_inline_html(child, resolve, base, pictures))
+            pending.append(_wrap(escape(child.data), base))
+            continue
+        qname = child.qname
+        if qname == (OFFICENS, "annotation"):
+            author, body = _annotation_meta(child)
+            if author is not None:
+                flush_comment(author, body)
+            # annotations without dc:creator are ignored entirely (their text
+            # must not leak into the body)
+            continue
+        if qname == (TEXTNS, "s"):  # repeated space
+            try:
+                count = max(1, int(child.getAttribute("c") or 1))
+            except ValueError:
+                count = 1
+            pending.append("&nbsp;" * count)
+        elif qname == (TEXTNS, "tab"):
+            pending.append("&emsp;")
+        elif qname == (TEXTNS, "line-break"):
+            pending.append("<br/>")
+        elif qname == (TEXTNS, "page-number"):
+            # Page number field - map to HTML span
+            pending.append('<span class="page-number"></span>')
+        elif qname == (TEXTNS, "span"):
+            flags = dict(base)
+            span_flags = resolve(child.getAttribute("stylename"))
+            for key in ("bold", "italic", "underline", "strike", "vert",
+                        "small_caps", "all_caps", "color", "bg",
+                        "font_family", "font_size"):
+                if span_flags[key] is not None:
+                    flags[key] = span_flags[key]
+            pending.append(_inline_html(child, resolve, flags, pictures))
+        elif qname == (TEXTNS, "a"):
+            href = child.getAttribute("href")
+            inner = _inline_html(child, resolve, base, pictures)
+            if href:
+                inner = f'<a href="{escape(href)}">{inner}</a>'
+            pending.append(inner)
+        elif qname == (DRAWNS, "frame"):
+            pending.append(_frame_to_html(child, pictures))
+        elif qname == (TEXTNS, "note"):
+            note_html = _note_to_html(child, resolve, pictures)
+            if note_html:
+                pending.append(note_html)
+        else:
+            # Unknown inline node (drawing text-box…):
+            # descend so its text is not silently dropped.
+            pending.append(_inline_html(child, resolve, base, pictures))
+    out.append("".join(pending))
     return "".join(out)
 
 
@@ -1298,14 +1339,17 @@ class _OdtWriter:
         self.doc.text.addElement(el)
 
     def _fill(self, el, html: str) -> None:
-        """Add styled text runs, hyperlinks, images, and notes parsed from an inline
-        HTML fragment."""
+        """Add styled text runs, hyperlinks, images, notes, and anchored
+        comments parsed from an inline HTML fragment."""
         for token in _inline_tokens(html):
             if token["type"] == "image":
                 self.add_image(el, token)
                 continue
             if token["type"] == "footnote":
                 self._add_note(el, token)
+                continue
+            if token["type"] == "comment":
+                self._add_comment(el, token)
                 continue
             text = token["text"]
             style_name = self.char_style(token)
@@ -1354,6 +1398,29 @@ class _OdtWriter:
             frame.addElement(Element(qname=(SVGNS, "title"), text=alt))
         frame.addElement(Image(href=manifest))
         para_el.addElement(frame)
+
+    def _add_comment(self, para_el, token: dict) -> None:
+        """Append an anchored comment to the current paragraph.
+
+        The token's inner HTML becomes the anchored runs inside the SAME
+        ``<text:p>``; right after those runs an ``<office:annotation>`` holds
+        the ``dc:creator`` (author), a ``dc:date`` and the body in a
+        ``<text:p>`` (ODF review notes convention). odfpy validates
+        attributes against the element type, so the dc children are built
+        with plain ``Element`` qnames and text attached via ``addText``.
+        """
+        self._fill(para_el, token.get("html") or "")
+        ann = Annotation()
+        creator = Element(qname=(DCNS, "creator"))
+        creator.addText(token.get("author") or "")
+        ann.addElement(creator)
+        date_el = Element(qname=(DCNS, "date"))
+        date_el.addText("2026-01-01T00:00:00")
+        ann.addElement(date_el)
+        body_p = P()
+        body_p.addText(token.get("body") or "")
+        ann.addElement(body_p)
+        para_el.addElement(ann)
 
     def _add_note(self, para_el, token: dict) -> None:
         """Append a footnote/endnote as a text:note element.
