@@ -819,6 +819,50 @@ def test_sanitize_allows_hr_and_keeps_page_break_class():
     assert "alert(1)" not in out, out
 
 
+def test_sanitize_keeps_section_columns_toc_object_markers():
+    """The sanitizer keeps the editor-authored section/columns/TOC/object markers
+    (and their data-* attributes), dropping scripts, so editor inserts survive
+    the save path."""
+    from src.editor.sanitize import sanitize_html
+
+    html = (
+        "<p>a</p>"
+        '<hr class="section-break">'  # section break marker
+        '<section data-columns="2" data-column-gap="36"><p>b</p></section>'
+        '<nav class="toc" data-title="TOC"></nav>'
+        '<div class="object" data-type="shape" data-label=""></div>'
+        '<div class="evil"><script>alert(1)</script>x</div>'
+    )
+    out = sanitize_html(html)
+    assert 'class="section-break"' in out, out
+    assert 'data-columns="2"' in out, out
+    assert 'data-column-gap="36"' in out, out
+    assert 'class="toc"' in out and 'data-title="TOC"' in out, out
+    assert 'class="object"' in out and 'data-type="shape"' in out, out
+    assert "<script>" not in out, out
+    assert "alert(1)" not in out, out
+
+
+def test_editor_markers_survive_save_then_convert():
+    """Exact HTML the editor emits for each new feature survives the
+    sanitize (save) -> DOCX -> HTML round-trip with the marker intact."""
+    from src.editor.converter import docx_to_html, html_to_docx
+    from src.editor.sanitize import sanitize_html
+
+    cases = [
+        ('<hr class="section-break"><p><br></p>', 'section-break'),
+        ('<section data-columns="3" data-column-gap="24"><p><br></p></section>', 'data-columns="3"'),
+        ('<nav class="toc" data-title="Contents"></nav><p><br></p>', 'class="toc"'),
+        ('<div class="object" data-type="textbox" data-label="Box">Hi</div><p><br></p>', 'data-type="textbox"'),
+    ]
+    for frag, expect in cases:
+        saved = sanitize_html(frag)
+        docx = html_to_docx(saved)
+        out = docx_to_html(docx)
+        assert expect in out, (frag, out)
+
+
+
 def test_html_to_docx_paragraph_props_roundtrip():
     """Line-height / indent / spacing / RTL / page-break-before round-trip.
 
