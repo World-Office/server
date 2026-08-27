@@ -683,6 +683,12 @@ span.bookmark {
   cursor: pointer;
 }
 
+span.comment {
+  background: #fff9c4;
+  border-bottom: 1px solid #f9a825;
+  cursor: help;
+}
+
 a[href^="#"] {
   color: #1a5276;
   border-bottom: 1px dotted #1a5276;

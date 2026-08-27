@@ -1413,3 +1413,19 @@ def test_track_changes_markers_survive_save_then_convert():
     assert 'track-insert' in out_d and 'track-delete' in out_d, out_d
     out_o = odt_to_html(html_to_odt(saved))
     assert 'track-insert' in out_o and 'track-delete' in out_o, out_o
+
+
+def test_comment_markers_survive_save_then_convert():
+    """Editor comment markup (<span class="comment" data-author data-comment>)
+    survives sanitize (save) and round-trips through DOCX and ODT."""
+    from src.editor.converter import docx_to_html, html_to_docx
+    from src.editor.odt_converter import html_to_odt, odt_to_html
+    from src.editor.sanitize import sanitize_html
+
+    frag = ('<p>Some <span class="comment" data-author="Alice" '
+            'data-comment="check this">flagged</span> text.</p>')
+    saved = sanitize_html(frag)
+    out_d = docx_to_html(html_to_docx(saved))
+    assert 'class="comment"' in out_d and 'data-author="Alice"' in out_d, out_d
+    out_o = odt_to_html(html_to_odt(saved))
+    assert 'class="comment"' in out_o and 'data-author="Alice"' in out_o, out_o
