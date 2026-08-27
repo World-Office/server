@@ -1694,7 +1694,18 @@ def _table_to_html(table, notes=None) -> str:
             w_val = tblW.get(qn("w:w"))
             if w_val:
                 head = f'<table width="{round(int(w_val) / 15)}">'
-    return head + "".join(out) + "</table>"
+    table_html = head + "".join(out) + "</table>"
+    caption = None
+    if tblPr is not None:
+        cap = tblPr.find(qn("w:tblCaption"))
+        if cap is not None:
+            caption = cap.get(qn("w:val")) or cap.text or ""
+    if caption:
+        return (
+            f"<figure>{table_html}"
+            f"<figcaption>{escape(caption)}</figcaption></figure>"
+        )
+    return table_html
 
 
 def _table_grid(table):
@@ -1875,7 +1886,7 @@ class _TableParser(HTMLParser):
 # HTML -> DOCX
 # --------------------------------------------------------------------------
 
-_TAG_TABLE = re.compile(r"<table[^>]*>.*?</table>", re.S)
+_TAG_TABLE = re.compile(r"<figure>.*?</figure>|<table[^>]*>.*?</table>", re.S)
 
 
 def html_to_docx(html_fragment: str) -> bytes:
@@ -2604,6 +2615,17 @@ def _append_table(doc: Document, tbl_html: str) -> None:
     Honors <th> (row becomes a repeating header), colspan (gridSpan),
     rowspan (vMerge) and <br/> (extra paragraphs inside a cell).
     """
+    # A <figure> may wrap the <table> with a <figcaption>; map the
+    # figcaption to w:tblCaption (the OOXML caption property).
+    caption = None
+    fm = re.search(r"<figure[^>]*>(.*?)</figure>", tbl_html, re.S)
+    if fm:
+        inner = fm.group(1)
+        fc = re.search(r"<figcaption[^>]*>(.*?)</figcaption>", inner, re.S)
+        if fc:
+            caption = _inline_to_text(fc.group(1)).strip()
+        tm = re.search(r"<table[^>]*>.*?</table>", inner, re.S)
+        tbl_html = tm.group(0) if tm else tbl_html
     parser = _TableParser()
     parser.feed(tbl_html)
     rows = parser.rows
@@ -2617,6 +2639,14 @@ def _append_table(doc: Document, tbl_html: str) -> None:
         ncols = max(ncols, width)
     table = doc.add_table(rows=len(rows), cols=ncols or 1)
     table.style = "Table Grid"
+    if caption:
+        tblPr = table._tbl.tblPr
+        if tblPr is None:
+            tblPr = OxmlElement("w:tblPr")
+            table._tbl.insert(0, tblPr)
+        cap = OxmlElement("w:tblCaption")
+        cap.set(qn("w:val"), caption)
+        tblPr.append(cap)
     m = re.search(r"<table[^>]*\bwidth\s*=\s*[\"']?(\d+(\.\d+)?)", tbl_html)
     if m:
         _set_table_width(table, float(m.group(1)))
