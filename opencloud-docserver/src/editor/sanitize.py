@@ -20,7 +20,7 @@ class _XSSSanitizer(HTMLParser):
         self._safe_tags = {"p", "b", "i", "u", "em", "strong", "h1", "h2", "h3", "h4", "h5", "h6",
                           "ul", "ol", "li", "table", "tr", "td", "th", "br", "div", "span",
                           "img", "a", "s", "sup", "sub", "strike", "del", "ins", "code", "hr",
-                          "figure", "figcaption", "nav",
+                          "figure", "figcaption", "nav", "object",
                           "header", "footer"}
         self._unsafe_tags = {"script", "iframe", "object", "embed", "applet", "form", "input",
                             "button", "select", "textarea", "meta", "link", "style", "base",
