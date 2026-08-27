@@ -1220,3 +1220,21 @@ def test_html_to_docx_table_cantsplit_roundtrip():
     with zipfile.ZipFile(io.BytesIO(docx)) as z:
         xml = z.read("word/document.xml").decode("utf-8")
     assert "w:cantSplit" in xml, xml[:400]
+
+
+def test_html_to_docx_columns_roundtrip():
+    """A <section data-columns="N" data-column-gap="G"> wrapping the document
+    maps to w:sectPr/w:cols (w:num + w:space) and round-trips back (T32 gap:
+    columns)."""
+    html = (
+        '<section data-columns="2" data-column-gap="36">'
+        "<p>Left column text.</p><p>Right column text.</p></section>"
+    )
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    assert 'data-columns="2"' in out, out
+    import zipfile
+    with zipfile.ZipFile(io.BytesIO(docx)) as z:
+        xml = z.read("word/document.xml").decode("utf-8")
+    assert "w:cols" in xml, xml[:500]
+    assert 'w:num="2"' in xml, xml[:500]
