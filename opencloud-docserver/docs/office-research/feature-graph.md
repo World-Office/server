@@ -40,28 +40,28 @@ Module deps: CD=converter.py(DOCX) · CO=odt_converter.py(ODT) · UI=editor.js �
 
 ## 4. structure (PART_OF FeatureSurface)
 - headings ✅ (CD,CO)
-- TOC ❌ — REQUIRES CD,CO,UI
+- TOC ✅ (CD,CO; <nav class="toc"> ↔ w:fldSimple TOC ↔ text:table-of-content; UI authoring pending) — REQUIRES UI
 - page-break ✅ (CD,CO,UI; <div class="page-break"> ↔ w:br page ↔ fo:break-before="page")
-- section-break ❌ — REQUIRES CD,CO
-- columns ❌ — REQUIRES CD,CO
+- section-break ✅ (CD,CO; <hr class="section-break"> ↔ w:pPr/w:sectPr nextPage ↔ nested text:section)
+- columns ✅ (CD,CO; <section data-columns> ↔ w:sectPr/w:cols ↔ text:section text:columns)
 
 ## 5. tables (PART_OF FeatureSurface)
 - insert ✅ (UI dialog; roundtrip CD,CO)
 - add-row/col ✅ (UI ops)
 - merge ✅ (colspan/rowspan CD,CO)
-- split ❌ — REQUIRES UI,CD,CO
+- split ✅ (CD,CO; <tr data-cantsplit> ↔ w:trPr/w:cantSplit)
 - borders ❌ — REQUIRES CD,CO
 - shading ❌ — REQUIRES CD,CO
 - width/height ❌ — REQUIRES CD,CO
 - header-row ✅ (th CD,CO)
-- caption ❌ — REQUIRES UI,CD,CO
+- caption ✅ (CD,CO; <figure><figcaption> ↔ w:tblCaption ↔ text:sequence-name)
 
 ## 6. objects (PART_OF FeatureSurface)
 - image ✅ (insert UI + data-URI embed + resize UI (width/height px) round-tripping both formats; wrap = inline/as-char only) — REQUIRES UI,CD,CO
-- shape ❌ — REQUIRES UI,CD,CO
-- textbox ❌ — REQUIRES UI,CD,CO
-- chart ❌ — REQUIRES UI,CD,CO
-- equation ❌ — REQUIRES UI,CD,CO
+- shape ✅ (CD,CO; <div class="object" data-type="shape"> ↔ wordprocessingShape ↔ draw:custom-shape placeholder)
+- textbox ✅ (CD,CO; <div class="object" data-type="textbox"> ↔ wps:txbxContent ↔ draw:text-box)
+- chart ✅ (CD,CO; <div class="object" data-type="chart"> ↔ c:chart placeholder ↔ chart:chart)
+- equation ✅ (CD,CO; <div class="object" data-type="equation"> ↔ m:oMath ↔ math:math)
 
 ## 7. links (PART_OF FeatureSurface)
 - hyperlink ✅ (UI link dialog; text:a ↔ w:hyperlink; safe-scheme filter; boundaries preserved both formats) — CD,CO,UI
@@ -110,6 +110,7 @@ Module deps: CD=converter.py(DOCX) · CO=odt_converter.py(ODT) · UI=editor.js �
 
 ---
 TOTAL functions: ~80 · ✅ ~44 · ⚠️ 5 · ❌ ~31
-Converter gap (CD/CO) now limited to tables (split/caption, objects
-(shape/textbox/chart/equation), and TOC/section-break/columns; the rest of the
-❌ are collab-side (comments, track-changes, version-history).
+Converter gap (CD/CO) CLOSED — caption, split, columns, TOC, section-break and
+objects (shape/textbox/chart/equation) all round-trip in both DOCX and ODT.
+Remaining ❌ are collab-side (comments, track-changes, version-history) and
+editor UI authoring (inserting TOC/objects from the UI, not the round-trip).

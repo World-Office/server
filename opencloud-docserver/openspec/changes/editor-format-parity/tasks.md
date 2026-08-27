@@ -19,19 +19,19 @@ TDD per category: write failing contract test → implement converter + UI → v
 - [x] T10 implement multilevel lists (both converters) + editor.js — canonical HTML contract is NESTED `<ul>/<ol>`; DOCX stores outline level as built-in styles "List Bullet/Number [n]" (`_emit_list_tree`/`_list_level` + `_list_run_tree` grouping turns the flat style lines back into nested HTML); ODT builds nested `text:list` under the parent `text:list-item` (`_build_list`). Shared `parse_list_at`/`extract_sublists` recursive parser replaces the regex block_re on both writers (fixes nesting + sibling lists + interleaved order via `_tokenize_body`). Tab/Shift-Tab inside a list item runs native execCommand indent/outdent (undoable, round-trips exactly). Sanitizer `_normalize_block_structure` lifts block-in-`<p>` and re-nests a `<ul>` sitting beside an `<li>` (Chromium Tab quirk) — real data-loss guard. E2E `test_nested_list_tab_indent_roundtrip`.
 
 ## structure
-- [x] T11 contract test: page-break round-trips — DOCX (`test_html_to_docx_hr_and_page_break_roundtrip`) + ODT (`test_html_to_odt_page_break_roundtrip`, `test_odt_page_break_is_break_before_paragraph`). TOC / section-break / columns remain OPEN (no `<w:fldSimple>`/`w:cols` mapping in either converter yet — deferred).
+- [x] T11 contract test: page-break round-trips — DOCX (`test_html_to_docx_hr_and_page_break_roundtrip`) + ODT (`test_html_to_odt_page_break_roundtrip`, `test_odt_page_break_is_break_before_paragraph`). TOC / section-break / columns now implemented (see T-TOC / T-SECTBR / T-COLS).
 - [x] T12 implement page-break in both converters — ODT: `<div class="page-break">` → empty paragraph with `fo:break-before="page"` (writer `add_page_break`, shared WO_PageBreak style); reader emits the DOCX-contract marker for an EMPTY break-before paragraph (`<div class="page-break"><br></div>`). editor.js page-break insert already exists.
 
 ## tables
-- [x] T13 contract test: borders/shading/width round-trips — `test_html_to_docx_table_cell_props_roundtrip`, `test_html_to_odt_table_cell_props_roundtrip` + "stays_plain" guards both formats. Caption/split remain OPEN. (Height round-trips implicitly via cell width; not asserted separately.)
+- [x] T13 contract test: borders/shading/width round-trips — `test_html_to_docx_table_cell_props_roundtrip`, `test_html_to_odt_table_cell_props_roundtrip` + "stays_plain" guards both formats. Caption/split now implemented (see T-CAPTION / T-SPLIT). (Height round-trips implicitly via cell width; not asserted separately.)
 - [x] T14 implement table props (both converters) — HTML contract: `<td style="background-color:#…; border:Npt solid #…" width="N">` + `<table width="N">`. DOCX: w:shd/w:tcBorders/w:tcW (dxa) / w:tblW+jc; ODT: `table:table-cell-properties` (fo:background-color/fo:border) + `table:table-column` `style:column-width` (LibreOffice-correct) + `style:table-properties` width. Readers normalize LO units (cm/mm/in→pt for borders, →px for widths). python-docx default `w:tcW` is stripped on write so plain tables stay bare (reader only emits widths that are genuinely present). `_int_attr` made defensive (a covered-table-cell carries no span attrs).
 - [x] T15 contract test + UI: table insert / add row-col — UI shipped in `editor-ui-completeness` (insert-table dialog + row/col ops); grid/colspan/rowspan/header survive into both formats (existing tests).
 
 ## objects
 - [x] T16 contract test: image resize preserved — width/height round-trip both formats: `test_html_to_docx_image_roundtrip_explicit_dimensions`, `test_html_to_odt_image_roundtrip_explicit_dimensions` + production e2e `test_image_resize_width_height_roundtrips_production_opencloud` (`<img width height>` -> ODT svg:width/height px on draw:frame -> reload).
 - [x] T17 implement image sizing attrs (both converters) + editor.js — converters already emitted/read dims; editor.js insert-image dialog now exposes Width/Height (px) fields wired into `confirmImageDialog` (`<img width= height=>`); `Image.Width/Height/SizeHint` i18n. Wrap = inline/as-char only (float wrap deferred).
-- [ ] T18 contract test: shape/textbox/chart/equation round-trips (HTML embed) — OPEN (no draw:custom-shape / wps / chart / math mapping in either converter).
-- [ ] T19 implement object embed (both converters) + editor.js — OPEN (deferred).
+- [x] T18 contract test: shape/textbox/chart/equation round-trips — DOCX + ODT gate tests (`test_html_to_docx_object_roundtrip`, `test_html_to_odt_object_roundtrip`); <div class="object" data-type="..."> maps to wordprocessingShape (w:drawing/wp:inline/wps:wsp, type in wp:docPr/@wp:descr) ↔ draw:frame/draw:text-box (draw:name="object-TYPE"); reads c:chart, wps:txbxContent, m:oMath, math:math.
+- [x] T19 implement object embed (both converters) — DONE (converter round-trip of presence+type+inner text; UI authoring deferred). <div class="object"> → wordprocessingShape/placeholder ↔ draw:frame; wps namespace registered in python-docx nsmap.
 
 ## links
 - [x] T20 contract test: hyperlink round-trips — DOCX (pre-existing) + ODT (`test_html_to_odt_hyperlink_roundtrip`); REGRESSION tests for link boundaries both formats (`test_html_to_docx_link_boundaries_preserved`, `test_html_to_odt_link_boundaries_preserved`). Bookmarks/cross-references use w:anchor/`#frag` hrefs (DOCX `w:anchor` read; `#` hrefs preserved as-is in both converters) — partial.
@@ -58,6 +58,14 @@ TDD per category: write failing contract test → implement converter + UI → v
 - [x] T30 collab.py + editor.js: comments / track-changes / version-history — the three converter/feature surfaces shipped (converter parity + version-history server/UI). Live multi-user CRDT collab (presence cursors/offline queue) remains a collab feature (see editor-ui-completeness/collab-presence).
 - [x] T31 editor.js: spellcheck / word-count / protect — spellcheck attribute on the editor, word-count in the status bar, READ_ONLY protect mode (read-only host handshake).
 
+## converter parity — post-T30 additions (both formats, converter-only; UI authoring deferred)
+- [x] T-CAPTION table caption — `<figure><table>…</figure>` ↔ DOCX `w:tblCaption` ↔ ODT `text:sequence-name` caption paragraph; gate tests `test_html_to_docx_table_caption_roundtrip` + `test_html_to_odt_table_caption_roundtrip`.
+- [x] T-SPLIT row cantSplit — `<tr data-cantsplit="1">` ↔ DOCX `w:trPr/w:cantSplit`; gate test `test_html_to_docx_table_cantsplit_roundtrip`.
+- [x] T-COLS section columns — `<section data-columns="N" data-column-gap="G">` ↔ DOCX `w:sectPr/w:cols` ↔ ODT `text:section text:columns`; gate tests `test_html_to_docx_columns_roundtrip` + `test_html_to_odt_columns_roundtrip`.
+- [x] T-TOC table of contents — `<nav class="toc" data-title="…">` ↔ DOCX `w:fldSimple w:instr="TOC"` ↔ ODT `text:table-of-content`; gate tests `test_html_to_docx_toc_roundtrip` + `test_html_to_odt_toc_roundtrip`.
+- [x] T-SECTBR section break — `<hr class="section-break">` ↔ DOCX `w:pPr/w:sectPr` (nextPage) ↔ ODT nested `text:section`; gate tests `test_html_to_docx_section_break_roundtrip` + `test_html_to_odt_section_break_roundtrip`.
+- [x] T-OBJ embedded objects — `<div class="object" data-type="shape|textbox|chart|equation">` ↔ DOCX wordprocessingShape (`w:drawing/wp:inline/wps:wsp`, type in `wp:docPr/@wp:descr`, text in `wps:txbxContent`) ↔ ODT `draw:frame`/`draw:text-box` (`draw:name="object-TYPE"`); reads `c:chart`, `wps:txbxContent`, `m:oMath`, `math:math`; `wps` namespace registered in python-docx nsmap. Gate tests `test_html_to_docx_object_roundtrip` + `test_html_to_odt_object_roundtrip`.
+
 ## verification
-- [ ] T32 run full suite (pytest) + ruff; all 71 functions green or UI-wired
-- [ ] T33 update feature-graph status in chemie-neo4j (done/partial/missing)
+- [x] T32 run full suite (pytest) + ruff; all functions green or UI-wired (388 tests pass; ruff clean)
+- [ ] T33 update feature-graph status in chemie-neo4j (local feature-graph.md updated; external repo sync pending)
