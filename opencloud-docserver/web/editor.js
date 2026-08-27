@@ -42,6 +42,8 @@
   // src/editor/router.py); ODT files round-trip through the odfpy converter.
   const DOC_FORMAT = /\.odt$/i.test(DOC_NAME) ? "odt" : "docx";
   const READ_ONLY = window.__READ_ONLY__ === true;
+  let trackChangesOn = false;
+  const TRACK_AUTHOR = window.__USER_NAME__ || "You";
   const SESSION = window.__SESSION__ || "";
   const api = (path) => `/api/documents/${encodeURIComponent(DOC_ID)}/${path}?session=${encodeURIComponent(SESSION)}`;
   // Resolve the UI language from the browser (falls back to English).
@@ -1679,6 +1681,145 @@
     updateUndoRedoState();
   }
 
+  function setTrackChanges(on) {
+    if (READ_ONLY) return;
+    trackChangesOn = on;
+    editor.classList.toggle("track-on", on);
+    const btn = document.getElementById("btn-track-changes");
+    if (btn) {
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      btn.classList.toggle("active", on);
+    }
+    renderReviewList();
+  }
+
+  function insertTracked(tag, text) {
+    if (!text) return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const node = document.createElement(tag);
+    node.className = tag === "ins" ? "track-insert" : "track-delete";
+    node.setAttribute("data-author", TRACK_AUTHOR);
+    node.textContent = text;
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(node);
+    const r = document.createRange();
+    r.setStartAfter(node);
+    r.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(r);
+  }
+
+  function wrapRangeInDel(range) {
+    if (!range || range.collapsed) return;
+    const del = document.createElement("del");
+    del.className = "track-delete";
+    del.setAttribute("data-author", TRACK_AUTHOR);
+    del.appendChild(range.extractContents());
+    range.insertNode(del);
+    const r = document.createRange();
+    r.setStartBefore(del);
+    r.collapse(true);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(r);
+  }
+
+  function onBeforeInput(e) {
+    if (!trackChangesOn || READ_ONLY) return;
+    try {
+      const it = e.inputType;
+      if (it === "insertText" && e.data) {
+        e.preventDefault();
+        insertTracked("ins", e.data);
+        afterTrackEdit();
+      } else if (it === "insertFromPaste") {
+        e.preventDefault();
+        const text = (e.dataTransfer && e.dataTransfer.getData("text/plain")) || "";
+        if (text) { insertTracked("ins", text); afterTrackEdit(); }
+      } else if (it.indexOf("delete") === 0) {
+        e.preventDefault();
+        const ranges = (typeof e.getTargetRanges === "function") ? e.getTargetRanges() : [];
+        if (ranges.length) wrapRangeInDel(ranges[0]);
+        afterTrackEdit();
+      }
+    } catch (err) { /* never let tracking break normal editing */ }
+  }
+
+  function afterTrackEdit() {
+    markDirty();
+    captureHistory();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
+    updateUndoRedoState();
+    renderReviewList();
+  }
+
+  function openReviewPanel() {
+    const panel = document.getElementById("review-panel");
+    if (panel) panel.hidden = false;
+    renderReviewList();
+  }
+  function closeReviewPanel() {
+    const panel = document.getElementById("review-panel");
+    if (panel) panel.hidden = true;
+  }
+  function renderReviewList() {
+    const list = document.getElementById("review-list");
+    const empty = document.getElementById("review-empty");
+    if (!list) return;
+    const items = Array.from(editor.querySelectorAll("ins.track-insert, del.track-delete"));
+    list.innerHTML = "";
+    if (empty) empty.style.display = items.length ? "none" : "block";
+    items.forEach((el) => {
+      const kind = el.tagName.toLowerCase() === "ins" ? "insert" : "delete";
+      const author = el.getAttribute("data-author") || "";
+      const text = (el.textContent || "").slice(0, 120);
+      const item = document.createElement("div");
+      item.className = "review-item review-" + kind;
+      const label = document.createElement("div");
+      label.className = "review-meta";
+      label.textContent = (kind === "insert" ? "Insertion" : "Deletion") +
+        (author ? " — " + author : "");
+      const body = document.createElement("div");
+      body.className = "review-text";
+      body.textContent = text;
+      const actions = document.createElement("div");
+      actions.className = "review-actions";
+      const acc = document.createElement("button");
+      acc.type = "button"; acc.className = "primary"; acc.textContent = "Accept";
+      acc.addEventListener("click", () => acceptChange(el, kind));
+      const rej = document.createElement("button");
+      rej.type = "button"; rej.textContent = "Reject";
+      rej.addEventListener("click", () => rejectChange(el, kind));
+      actions.appendChild(acc); actions.appendChild(rej);
+      item.appendChild(label); item.appendChild(body); item.appendChild(actions);
+      list.appendChild(item);
+    });
+  }
+  function acceptChange(el, kind) {
+    const parent = el.parentNode;
+    if (!parent) return;
+    if (kind === "insert") { while (el.firstChild) parent.insertBefore(el.firstChild, el); }
+    parent.removeChild(el);
+    closeReviewPanelIfEmpty();
+    afterTrackEdit();
+  }
+  function rejectChange(el, kind) {
+    const parent = el.parentNode;
+    if (!parent) return;
+    if (kind === "delete") { while (el.firstChild) parent.insertBefore(el.firstChild, el); }
+    parent.removeChild(el);
+    closeReviewPanelIfEmpty();
+    afterTrackEdit();
+  }
+  function closeReviewPanelIfEmpty() {
+    const items = editor.querySelectorAll("ins.track-insert, del.track-delete");
+    if (items.length === 0) closeReviewPanel();
+  }
+
   // wo-command event bus (project-wide invariant)
   // ------------------------------------------------------------------
   // Every formatting edit flows through a single channel:
@@ -2317,6 +2458,13 @@
   if (xrefOk) xrefOk.addEventListener("click", confirmCrossrefDialog);
   const xrefCancel = document.getElementById("btn-crossref-cancel");
   if (xrefCancel) xrefCancel.addEventListener("click", closeCrossrefDialog);
+  const tcBtn = document.getElementById("btn-track-changes");
+  if (tcBtn) tcBtn.addEventListener("click", () => setTrackChanges(!trackChangesOn));
+  const revBtn = document.getElementById("btn-review-changes");
+  if (revBtn) revBtn.addEventListener("click", openReviewPanel);
+  const revClose = document.getElementById("btn-review-close");
+  if (revClose) revClose.addEventListener("click", closeReviewPanel);
+  editor.addEventListener("beforeinput", onBeforeInput);
   const SYMBOLS = ["§", "¶", "°", "±", "×", "÷", "≈", "≠", "≤", "≥", "∞", "√",
                    "€", "£", "¥", "¢", "©", "®", "™", "→", "←", "↑", "↓", "•",
                    "–", "—", "…", "«", "»", "½", "¼", "¾", "α", "β", "μ", "π",
