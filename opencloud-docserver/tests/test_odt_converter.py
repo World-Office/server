@@ -1714,3 +1714,16 @@ def test_html_to_odt_toc_roundtrip():
     with zipfile.ZipFile(io.BytesIO(odt)) as z:
         cx = z.read("content.xml").decode()
     assert "text:table-of-content" in cx, cx[:800]
+
+
+def test_html_to_odt_section_break_roundtrip():
+    """<hr class="section-break"> maps to a nested text:section and
+    round-trips back (T32 gap: section-break)."""
+    html = '<p>Before.</p><hr class="section-break"><p>After.</p>'
+    odt = html_to_odt(html)
+    out = odt_to_html(odt)
+    assert '<hr class="section-break">' in out, out
+    import zipfile
+    with zipfile.ZipFile(io.BytesIO(odt)) as z:
+        cx = z.read("content.xml").decode()
+    assert "text:section" in cx, cx[:1200]

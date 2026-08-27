@@ -599,6 +599,7 @@ def odt_to_html(data: bytes) -> str:
                     parts[:] = saved
                     parts.append(f'<section data-columns="{cols}">{sec_html}</section>')
                     continue
+                parts.append('<hr class="section-break">')
                 render(child.childNodes)  # section without columns: inline
                 continue
             if qname == (TEXTNS, "table-of-content"):
@@ -1356,6 +1357,9 @@ def html_to_odt(html_fragment: str) -> bytes:
         if kind == "toc":
             w.add_table_of_contents(op[1])
             continue
+        if kind == "sectionbreak":
+            w.add_section_break()
+            continue
         if kind == "list":
             w.add_list(op[1])
             continue
@@ -1451,6 +1455,8 @@ class _OdtWriter:
 
     def __init__(self, doc: OpenDocumentText) -> None:
         self.doc = doc
+        self.cur = self.doc.text  # current content parent (switched on section breaks)
+        self._sec_count = 0
         self._char_styles: dict[tuple[bool, bool, bool], str] = {}
         self._para_styles: dict[str, str] = {}
         self._ol_style: str | None = None
@@ -1580,7 +1586,7 @@ class _OdtWriter:
             if style_name:
                 el.setAttribute("stylename", style_name)
         self._fill(el, html)
-        self.doc.text.addElement(el)
+        self.cur.addElement(el)
 
     def _fill(self, el, html: str) -> None:
         """Add styled text runs, hyperlinks, images, notes, and anchored
@@ -1787,7 +1793,7 @@ class _OdtWriter:
             self.doc.automaticstyles.addElement(style)
         el = P()
         el.setAttribute("stylename", self._hr_style)
-        self.doc.text.addElement(el)
+        self.cur.addElement(el)
 
     def add_page_break(self) -> None:
         """A page break: an empty paragraph with fo:break-before="page"."""
@@ -1798,7 +1804,7 @@ class _OdtWriter:
             self.doc.automaticstyles.addElement(style)
         el = P()
         el.setAttribute("stylename", self._pb_style)
-        self.doc.text.addElement(el)
+        self.cur.addElement(el)
 
     def add_table_of_contents(self, title: str = "") -> None:
         """A table of contents: an ODF text:table-of-content element.
@@ -1808,7 +1814,17 @@ class _OdtWriter:
         """
         from odf.text import TableOfContent
         toc = TableOfContent(name=title or "Table of Contents")
-        self.doc.text.addElement(toc)
+        self.cur.addElement(toc)
+
+    def add_section_break(self) -> None:
+        """A section break: start a new text:section that receives all
+        subsequent content (ODF models a section break as a nested
+        text:section). Round-trips as <hr class="section-break">."""
+        self._sec_count += 1
+        from odf.text import Section
+        sec = Section(name=f"WOSection{self._sec_count}")
+        self.doc.text.addElement(sec)
+        self.cur = sec
 
     def add_header(self, content_html: str) -> None:
         """Add a header to the document's master page.
@@ -1951,7 +1967,7 @@ class _OdtWriter:
         ``text:list`` elements inside their parent ``text:list-item`` so
         outline levels reach LibreOffice unchanged.
         """
-        self.doc.text.addElement(self._build_list(tree))
+        self.cur.addElement(self._build_list(tree))
 
     @staticmethod
     def _parse_row(html: str) -> list[dict]:
@@ -2082,12 +2098,12 @@ class _OdtWriter:
                 for _ in range(1, cell["colspan"]):
                     row_el.addElement(CoveredTableCell())
             table.addElement(row_el)
-        self.doc.text.addElement(table)
+        self.cur.addElement(table)
         if caption:
             cap_p = P()
             cap_p.attributes[(TEXTNS, "sequence-name")] = "Table"
             cap_p.addText(caption)
-            self.doc.text.insertBefore(cap_p, table)
+            self.cur.insertBefore(cap_p, table)
 
     def _table_style(self, width_px: float) -> str:
         """Return (creating if needed) a table style fixing the table width."""
