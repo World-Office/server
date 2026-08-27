@@ -709,8 +709,9 @@ def test_sanitize_keeps_strike_del_and_code():
     assert "<strike>gone</strike>" in out
     assert "<del>old</del>" in out
     assert "<code>plain</code>" in out
-    # arbitrary inactive tags remain dropped
-    assert "figure" not in sanitize_html("<p><figure>x</figure></p>")
+    # arbitrary inactive tags remain dropped (figure/figcaption are now
+    # supported for table captions, so use a genuinely inactive tag)
+    assert "marquee" not in sanitize_html("<p><marquee>x</marquee></p>")
 
 
 def test_save_document_sanitizes_css_behavior(client):
