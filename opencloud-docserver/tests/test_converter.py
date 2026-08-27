@@ -1202,3 +1202,21 @@ def test_html_to_docx_table_caption_roundtrip():
         xml = z.read("word/document.xml").decode("utf-8")
     assert "w:tblCaption" in xml, xml[:400]
     assert "Sample caption" in xml, xml[:400]
+
+
+def test_html_to_docx_table_cantsplit_roundtrip():
+    """A <tr data-cantsplit="1"> marks a row that must not split across a
+    page; the writer emits w:trPr/w:cantSplit and the reader restores the
+    data-cantsplit attribute (T32 gap: tables split)."""
+    html = (
+        '<table><tr data-cantsplit="1"><td>keep</td><td>together</td></tr>'
+        '<tr><td>normal</td><td>row</td></tr></table>'
+    )
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    assert '<tr data-cantsplit="1">' in out, out
+    assert "<tr>" in out, out
+    import zipfile
+    with zipfile.ZipFile(io.BytesIO(docx)) as z:
+        xml = z.read("word/document.xml").decode("utf-8")
+    assert "w:cantSplit" in xml, xml[:400]
