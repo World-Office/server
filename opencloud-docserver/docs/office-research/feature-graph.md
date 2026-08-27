@@ -40,28 +40,28 @@ Module deps: CD=converter.py(DOCX) · CO=odt_converter.py(ODT) · UI=editor.js �
 
 ## 4. structure (PART_OF FeatureSurface)
 - headings ✅ (CD,CO)
-- TOC ✅ (CD,CO; <nav class="toc"> ↔ w:fldSimple TOC ↔ text:table-of-content; UI authoring pending) — REQUIRES UI
+- TOC ✅ (CD,CO,UI; <nav class="toc"> ↔ w:fldSimple TOC ↔ text:table-of-content; insert dialog for title)
 - page-break ✅ (CD,CO,UI; <div class="page-break"> ↔ w:br page ↔ fo:break-before="page")
-- section-break ✅ (CD,CO; <hr class="section-break"> ↔ w:pPr/w:sectPr nextPage ↔ nested text:section)
-- columns ✅ (CD,CO; <section data-columns> ↔ w:sectPr/w:cols ↔ text:section text:columns)
+- section-break ✅ (CD,CO,UI; <hr class="section-break"> ↔ w:pPr/w:sectPr nextPage ↔ nested text:section; toolbar button)
+- columns ✅ (CD,CO,UI; <section data-columns> ↔ w:sectPr/w:cols ↔ text:section text:columns; dialog for count+gap)
 
 ## 5. tables (PART_OF FeatureSurface)
 - insert ✅ (UI dialog; roundtrip CD,CO)
 - add-row/col ✅ (UI ops)
 - merge ✅ (colspan/rowspan CD,CO)
-- split ✅ (CD,CO; <tr data-cantsplit> ↔ w:trPr/w:cantSplit)
+- split ✅ (CD,CO,UI; <tr data-cantsplit> ↔ w:trPr/w:cantSplit)
 - borders ❌ — REQUIRES CD,CO
 - shading ❌ — REQUIRES CD,CO
 - width/height ❌ — REQUIRES CD,CO
 - header-row ✅ (th CD,CO)
-- caption ✅ (CD,CO; <figure><figcaption> ↔ w:tblCaption ↔ text:sequence-name)
+- caption ✅ (CD,CO,UI; <figure><figcaption> ↔ w:tblCaption ↔ text:sequence-name)
 
 ## 6. objects (PART_OF FeatureSurface)
 - image ✅ (insert UI + data-URI embed + resize UI (width/height px) round-tripping both formats; wrap = inline/as-char only) — REQUIRES UI,CD,CO
-- shape ✅ (CD,CO; <div class="object" data-type="shape"> ↔ wordprocessingShape ↔ draw:custom-shape placeholder)
-- textbox ✅ (CD,CO; <div class="object" data-type="textbox"> ↔ wps:txbxContent ↔ draw:text-box)
-- chart ✅ (CD,CO; <div class="object" data-type="chart"> ↔ c:chart placeholder ↔ chart:chart)
-- equation ✅ (CD,CO; <div class="object" data-type="equation"> ↔ m:oMath ↔ math:math)
+- shape ✅ (CD,CO,UI; <div class="object" data-type="shape"> ↔ wordprocessingShape ↔ draw:custom-shape placeholder; object dialog)
+- textbox ✅ (CD,CO,UI; <div class="object" data-type="textbox"> ↔ wps:txbxContent ↔ draw:text-box; object dialog)
+- chart ✅ (CD,CO,UI; <div class="object" data-type="chart"> ↔ c:chart placeholder ↔ chart:chart; object dialog)
+- equation ✅ (CD,CO,UI; <div class="object" data-type="equation"> ↔ m:oMath ↔ math:math; object dialog)
 
 ## 7. links (PART_OF FeatureSurface)
 - hyperlink ✅ (UI link dialog; text:a ↔ w:hyperlink; safe-scheme filter; boundaries preserved both formats) — CD,CO,UI
