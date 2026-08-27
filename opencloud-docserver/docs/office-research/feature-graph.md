@@ -69,13 +69,13 @@ Module deps: CD=converter.py(DOCX) · CO=odt_converter.py(ODT) · UI=editor.js �
 - cross-reference ❌ — REQUIRES UI,CD,CO
 
 ## 8. references (PART_OF FeatureSurface)
-- footnote ❌ — REQUIRES UI,CD,CO
-- endnote ❌ — REQUIRES UI,CD,CO
+- footnote ✅ (CD,CO: `<sup class="footnote-citation">[n]</sup>` + `<span class="footnote">` contract; DOCX real footnotes.xml part + w:footnoteReference, ODT text:note; no editor UI — static inline render)
+- endnote ✅ (CD,CO: same mechanism via endnote-citation/endnote classes + endnotes.xml / text:note note-class=endnote)
 
 ## 9. header-footer (PART_OF FeatureSurface)
-- header ❌ — REQUIRES UI,CD,CO
-- footer ❌ — REQUIRES UI,CD,CO
-- page-number ❌ — REQUIRES UI,CD,CO
+- header ✅ (CD,CO: `<header class="page-header">`; DOCX header1.xml part + sectPr headerReference; ODT master-page style:header)
+- footer ✅ (CD,CO: `<footer class="page-footer">`; DOCX footer1.xml + footerReference; ODT master-page style:footer)
+- page-number ✅ (CD,CO: `<span class="page-number">` ↔ DOCX PAGE field ↔ ODT text:page-number)
 
 ## 10. insert (PART_OF FeatureSurface)
 - symbol ✅ (UI symbol picker; literal char round-trips) — UI
@@ -109,8 +109,7 @@ Module deps: CD=converter.py(DOCX) · CO=odt_converter.py(ODT) · UI=editor.js �
 - protect ✅ (UI READ_ONLY handshake)
 
 ---
-TOTAL functions: ~80 · ✅ ~40 · ⚠️ 5 · ❌ ~35
-Converter gap (CD/CO) now limited to tables (borders/shading/split/width),
-objects (shape/textbox/chart/equation), references, header-footer, and
-TOC/section-break/columns; the rest of the ❌ are collab-side (comments,
-track-changes, version-history).
+TOTAL functions: ~80 · ✅ ~44 · ⚠️ 5 · ❌ ~31
+Converter gap (CD/CO) now limited to tables (split/caption), objects
+(shape/textbox/chart/equation), and TOC/section-break/columns; the rest of the
+❌ are collab-side (comments, track-changes, version-history).
