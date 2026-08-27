@@ -563,7 +563,7 @@
     if (!focus || !editor.contains(focus)) return;
     const el = focus.nodeType === 1 ? focus : focus.parentElement;
     if (!el || !el.closest) return;
-    const marker = el.closest("hr, .page-break");
+    const marker = el.closest("hr, .page-break, .section-break, [data-columns], nav.toc, div.object");
     if (!marker) return;
     const r = document.createRange();
     r.setStartAfter(marker);
@@ -746,6 +746,22 @@
       const html = cmd === "insertHR"
         ? "<hr/>"
         : '<div class="page-break"><br></div><p><br></p>';
+      try { document.execCommand("insertHTML", false, html); } catch (err) {}
+      moveCaretPastStructuralMarkers();
+      markDirty();
+      captureHistory();
+      scheduleCollabSync();
+      notifyHost("editing");
+      updateActiveStates();
+      updateUndoRedoState();
+      return;
+    }
+    if (cmd === "insertSectionBreak") {
+      // Mirror the page-break insert: a marker PLUS a trailing empty paragraph
+      // so subsequent typed text lands in a fresh block instead of inside the
+      // <hr> (block-boundary swallowing). Round-trips to DOCX w:sectPr and ODT
+      // nested text:section.
+      const html = '<hr class="section-break"><p><br></p>';
       try { document.execCommand("insertHTML", false, html); } catch (err) {}
       moveCaretPastStructuralMarkers();
       markDirty();
@@ -1454,6 +1470,123 @@
     restoreFocus();
   }
 
+  // --- insert columns (toolbar button + dialog) ---------------------
+  function openColumnsDialog() {
+    if (READ_ONLY) return;
+    const dialog = document.getElementById("columns-dialog");
+    const count = document.getElementById("columns-count");
+    const gap = document.getElementById("columns-gap");
+    if (!dialog) return;
+    if (count) count.value = "2";
+    if (gap) gap.value = "36";
+    rememberFocus();
+    dialog.classList.add("open");
+    if (count) count.focus();
+  }
+  function closeColumnsDialog() {
+    const dialog = document.getElementById("columns-dialog");
+    if (dialog) dialog.classList.remove("open");
+    restoreFocus();
+  }
+  function confirmColumnsDialog() {
+    const dialog = document.getElementById("columns-dialog");
+    const count = document.getElementById("columns-count");
+    const gap = document.getElementById("columns-gap");
+    const cols = Math.max(1, Math.min(6, parseInt((count && count.value) || "2", 10) || 2));
+    const gapPx = Math.max(0, parseInt((gap && gap.value) || "36", 10) || 0);
+    if (dialog) dialog.classList.remove("open");
+    restoreFocus();
+    editor.focus();
+    document.execCommand("insertHTML", false,
+      '<section data-columns="' + cols + '" data-column-gap="' + gapPx + '"><p><br></p></section>');
+    moveCaretPastStructuralMarkers();
+    captureHistory();
+    markDirty();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
+    updateUndoRedoState();
+  }
+
+  // --- insert table of contents (toolbar button + dialog) ------------
+  function openTocDialog() {
+    if (READ_ONLY) return;
+    const dialog = document.getElementById("toc-dialog");
+    const title = document.getElementById("toc-title");
+    if (!dialog) return;
+    if (title) title.value = "Table of Contents";
+    rememberFocus();
+    dialog.classList.add("open");
+    if (title) title.focus();
+  }
+  function closeTocDialog() {
+    const dialog = document.getElementById("toc-dialog");
+    if (dialog) dialog.classList.remove("open");
+    restoreFocus();
+  }
+  function confirmTocDialog() {
+    const dialog = document.getElementById("toc-dialog");
+    const title = document.getElementById("toc-title");
+    const t = ((title && title.value) || "Table of Contents").trim() || "Table of Contents";
+    if (dialog) dialog.classList.remove("open");
+    restoreFocus();
+    editor.focus();
+    document.execCommand("insertHTML", false,
+      '<nav class="toc" data-title="' + escapeAttr(t) + '"></nav><p><br></p>');
+    moveCaretPastStructuralMarkers();
+    captureHistory();
+    markDirty();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
+    updateUndoRedoState();
+  }
+
+  // --- insert object (shape / text box / chart / equation) ----------
+  function openObjectDialog() {
+    if (READ_ONLY) return;
+    const dialog = document.getElementById("object-dialog");
+    const type = document.getElementById("object-type");
+    const label = document.getElementById("object-label");
+    const content = document.getElementById("object-content");
+    if (!dialog) return;
+    if (type) type.value = "shape";
+    if (label) label.value = "";
+    if (content) content.value = "";
+    rememberFocus();
+    dialog.classList.add("open");
+    if (type) type.focus();
+  }
+  function closeObjectDialog() {
+    const dialog = document.getElementById("object-dialog");
+    if (dialog) dialog.classList.remove("open");
+    restoreFocus();
+  }
+  function confirmObjectDialog() {
+    const dialog = document.getElementById("object-dialog");
+    const type = document.getElementById("object-type");
+    const label = document.getElementById("object-label");
+    const content = document.getElementById("object-content");
+    const typ = (type && type.value) || "shape";
+    const lbl = (label && label.value || "").trim();
+    const c = (content && content.value) || "";
+    if (dialog) dialog.classList.remove("open");
+    restoreFocus();
+    editor.focus();
+    let html = '<div class="object" data-type="' + escapeAttr(typ) + '"';
+    if (lbl) html += ' data-label="' + escapeAttr(lbl) + '"';
+    const safe = String(c).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    html += '>' + safe + '</div><p><br></p>';
+    document.execCommand("insertHTML", false, html);
+    moveCaretPastStructuralMarkers();
+    captureHistory();
+    markDirty();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
+    updateUndoRedoState();
+  }
+
   // wo-command event bus (project-wide invariant)
   // ------------------------------------------------------------------
   // Every formatting edit flows through a single channel:
@@ -2041,6 +2174,41 @@
   if (hrBtn) hrBtn.addEventListener("click", () => emitCommand("insertHR"));
   const pbBtn = document.getElementById("btn-page-break");
   if (pbBtn) pbBtn.addEventListener("click", () => emitCommand("insertPageBreak"));
+  const sbBtn = document.getElementById("btn-section-break");
+  if (sbBtn) sbBtn.addEventListener("click", () => emitCommand("insertSectionBreak"));
+  const colsBtn = document.getElementById("btn-columns");
+  if (colsBtn) colsBtn.addEventListener("click", openColumnsDialog);
+  const tocBtn = document.getElementById("btn-toc");
+  if (tocBtn) tocBtn.addEventListener("click", openTocDialog);
+  const objBtn = document.getElementById("btn-object");
+  if (objBtn) objBtn.addEventListener("click", openObjectDialog);
+  // Columns dialog
+  const colsOk = document.getElementById("btn-columns-ok");
+  if (colsOk) colsOk.addEventListener("click", confirmColumnsDialog);
+  const colsCancel = document.getElementById("btn-columns-cancel");
+  if (colsCancel) colsCancel.addEventListener("click", closeColumnsDialog);
+  const colsCount = document.getElementById("columns-count");
+  if (colsCount) colsCount.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); confirmColumnsDialog(); }
+  });
+  const colsGap = document.getElementById("columns-gap");
+  if (colsGap) colsGap.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); confirmColumnsDialog(); }
+  });
+  // TOC dialog
+  const tocOk = document.getElementById("btn-toc-ok");
+  if (tocOk) tocOk.addEventListener("click", confirmTocDialog);
+  const tocCancel = document.getElementById("btn-toc-cancel");
+  if (tocCancel) tocCancel.addEventListener("click", closeTocDialog);
+  const tocTitle = document.getElementById("toc-title");
+  if (tocTitle) tocTitle.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); confirmTocDialog(); }
+  });
+  // Object dialog
+  const objOk = document.getElementById("btn-object-ok");
+  if (objOk) objOk.addEventListener("click", confirmObjectDialog);
+  const objCancel = document.getElementById("btn-object-cancel");
+  if (objCancel) objCancel.addEventListener("click", closeObjectDialog);
   const SYMBOLS = ["§", "¶", "°", "±", "×", "÷", "≈", "≠", "≤", "≥", "∞", "√",
                    "€", "£", "¥", "¢", "©", "®", "™", "→", "←", "↑", "↓", "•",
                    "–", "—", "…", "«", "»", "½", "¼", "¾", "α", "β", "μ", "π",
