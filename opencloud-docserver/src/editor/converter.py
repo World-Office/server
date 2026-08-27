@@ -873,7 +873,11 @@ def docx_to_html(data: bytes) -> str:
 def _find_header_part(doc) -> Any | None:
     """Find the header part from the document's relationships."""
 
-    sectPr = doc.sections[0]._sectPr
+    try:
+        sectPr = doc.sections[0]._sectPr
+    except IndexError:
+        # No section properties in this document -> no header.
+        return None
     hdr_ref = sectPr.find(qn("w:headerReference"))
     if hdr_ref is None:
         return None
@@ -891,7 +895,11 @@ def _find_header_part(doc) -> Any | None:
 def _find_footer_part(doc) -> Any | None:
     """Find the footer part from the document's relationships."""
 
-    sectPr = doc.sections[0]._sectPr
+    try:
+        sectPr = doc.sections[0]._sectPr
+    except IndexError:
+        # No section properties in this document -> no footer.
+        return None
     ftr_ref = sectPr.find(qn("w:footerReference"))
     if ftr_ref is None:
         return None
