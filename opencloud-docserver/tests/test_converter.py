@@ -1429,3 +1429,29 @@ def test_comment_markers_survive_save_then_convert():
     assert 'class="comment"' in out_d and 'data-author="Alice"' in out_d, out_d
     out_o = odt_to_html(html_to_odt(saved))
     assert 'class="comment"' in out_o and 'data-author="Alice"' in out_o, out_o
+
+
+def test_docx_without_sectpr_does_not_crash():
+    """A DOCX with no section properties (no body or paragraph <w:sectPr>)
+    must convert without crashing (regression for documents produced without
+    a section — surfaced by the wo-conformance corpus borrow)."""
+    import io
+
+    from docx.oxml.ns import qn
+
+    doc = Document()
+    doc.add_paragraph("hi")
+    for el in doc.element.body.findall(qn("w:sectPr")):
+        doc.element.body.remove(el)
+    for p in doc.paragraphs:
+        pPr = p._p.find(qn("w:pPr"))
+        if pPr is not None:
+            s = pPr.find(qn("w:sectPr"))
+            if s is not None:
+                pPr.remove(s)
+    assert len(doc.sections) == 0
+    buf = io.BytesIO()
+    doc.save(buf)
+    html = docx_to_html(buf.getvalue())
+    assert isinstance(html, str)
+    assert "hi" in html
