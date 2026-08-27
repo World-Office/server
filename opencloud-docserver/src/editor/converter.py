@@ -1685,7 +1685,11 @@ def _table_to_html(table, notes=None) -> str:
             if e["vmerge"] == "start":
                 rowspan = _rowspan_for(grid, r, e["pos"])
             cells.append(_cell_to_html(e, rowspan, tag, table, notes))
-        out.append("<tr>" + "".join(cells) + "</tr>")
+        tr_attr = ""
+        trPr = e["tr"].trPr
+        if trPr is not None and trPr.find(qn("w:cantSplit")) is not None:
+            tr_attr = ' data-cantsplit="1"'
+        out.append(f"<tr{tr_attr}>" + "".join(cells) + "</tr>")
     head = "<table>"
     tblPr = table._tbl.tblPr
     if tblPr is not None:
@@ -1843,6 +1847,7 @@ class _TableParser(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.rows: list[list[dict]] = []
+        self.row_attrs: list[dict] = []  # <tr> attributes, parallel to rows
         self._row: list[dict] | None = None
         self._cell: dict | None = None
         self._nested = 0  # open inline/nested elements inside the cell
@@ -1856,6 +1861,7 @@ class _TableParser(HTMLParser):
             if self._cell is None:
                 self._row = []
                 self.rows.append(self._row)
+                self.row_attrs.append(dict(attrs))
         elif tag in ("td", "th") and self._cell is None:
             if self._row is None:
                 self._row = []
@@ -2652,6 +2658,11 @@ def _append_table(doc: Document, tbl_html: str) -> None:
         _set_table_width(table, float(m.group(1)))
     pending = [0] * ncols  # remaining rows covered by a rowspan, per grid column
     for r, cells in enumerate(rows):
+        row_attrs = parser.row_attrs[r] if r < len(parser.row_attrs) else {}
+        if row_attrs.get("data-cantsplit") == "1":
+            trPr = table.rows[r]._tr.get_or_add_trPr()
+            if trPr.find(qn("w:cantSplit")) is None:
+                trPr.append(OxmlElement("w:cantSplit"))
         if any(c["tag"] == "th" for c in cells):
             _mark_header_row(table.rows[r]._tr)
         pos = 0
