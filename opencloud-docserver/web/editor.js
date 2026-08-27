@@ -1587,6 +1587,98 @@
     updateUndoRedoState();
   }
 
+  function openBookmarkDialog() {
+    if (READ_ONLY) return;
+    const dialog = document.getElementById("bookmark-dialog");
+    const name = document.getElementById("bookmark-name");
+    if (!dialog) return;
+    if (name) name.value = "";
+    rememberFocus();
+    dialog.classList.add("open");
+    if (name) name.focus();
+  }
+  function closeBookmarkDialog() {
+    const dialog = document.getElementById("bookmark-dialog");
+    if (dialog) dialog.classList.remove("open");
+    restoreFocus();
+  }
+  function confirmBookmarkDialog() {
+    const dialog = document.getElementById("bookmark-dialog");
+    const nameEl = document.getElementById("bookmark-name");
+    const name = (nameEl && nameEl.value || "").trim();
+    if (!name) { if (nameEl) nameEl.focus(); return; }
+    if (dialog) dialog.classList.remove("open");
+    restoreFocus();
+    editor.focus();
+    const sel = window.getSelection();
+    const text = (sel && sel.toString()) || name;
+    const html = '<span class="bookmark" data-name="' + escapeAttr(name) + '">' + escapeAttr(text) + '</span>';
+    document.execCommand("insertHTML", false, html);
+    captureHistory();
+    markDirty();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
+    updateUndoRedoState();
+  }
+
+  function openCrossrefDialog() {
+    if (READ_ONLY) return;
+    const dialog = document.getElementById("crossref-dialog");
+    const target = document.getElementById("crossref-target");
+    const textEl = document.getElementById("crossref-text");
+    if (!dialog) return;
+    if (target) {
+      target.innerHTML = "";
+      const names = new Set();
+      document.querySelectorAll("span.bookmark[data-name]").forEach((s) => {
+        const n = s.getAttribute("data-name");
+        if (n) names.add(n);
+      });
+      if (names.size === 0) {
+        const opt = document.createElement("option");
+        opt.value = ""; opt.textContent = "(no bookmarks yet)";
+        target.appendChild(opt);
+      } else {
+        Array.from(names).sort().forEach((n) => {
+          const opt = document.createElement("option");
+          opt.value = n; opt.textContent = n;
+          target.appendChild(opt);
+        });
+      }
+    }
+    if (textEl) textEl.value = "";
+    rememberFocus();
+    dialog.classList.add("open");
+    if (target) target.focus();
+  }
+  function closeCrossrefDialog() {
+    const dialog = document.getElementById("crossref-dialog");
+    if (dialog) dialog.classList.remove("open");
+    restoreFocus();
+  }
+  function confirmCrossrefDialog() {
+    const dialog = document.getElementById("crossref-dialog");
+    const target = document.getElementById("crossref-target");
+    const textEl = document.getElementById("crossref-text");
+    const name = (target && target.value) || "";
+    if (!name) { if (target) target.focus(); return; }
+    if (dialog) dialog.classList.remove("open");
+    restoreFocus();
+    editor.focus();
+    const sel = window.getSelection();
+    let label = (textEl && textEl.value || "").trim();
+    if (!label) label = (sel && sel.toString()) || name;
+    const html = '<a href="#' + escapeAttr(name) + '">' + escapeAttr(label) + '</a>';
+    document.execCommand("insertHTML", false, html);
+    captureHistory();
+    markDirty();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
+    updateUndoRedoState();
+  }
+
   // wo-command event bus (project-wide invariant)
   // ------------------------------------------------------------------
   // Every formatting edit flows through a single channel:
@@ -2209,6 +2301,22 @@
   if (objOk) objOk.addEventListener("click", confirmObjectDialog);
   const objCancel = document.getElementById("btn-object-cancel");
   if (objCancel) objCancel.addEventListener("click", closeObjectDialog);
+  const bmBtn = document.getElementById("btn-bookmark");
+  if (bmBtn) bmBtn.addEventListener("click", openBookmarkDialog);
+  const bmOk = document.getElementById("btn-bookmark-ok");
+  if (bmOk) bmOk.addEventListener("click", confirmBookmarkDialog);
+  const bmCancel = document.getElementById("btn-bookmark-cancel");
+  if (bmCancel) bmCancel.addEventListener("click", closeBookmarkDialog);
+  const bmName = document.getElementById("bookmark-name");
+  if (bmName) bmName.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); confirmBookmarkDialog(); }
+  });
+  const xrefBtn = document.getElementById("btn-crossref");
+  if (xrefBtn) xrefBtn.addEventListener("click", openCrossrefDialog);
+  const xrefOk = document.getElementById("btn-crossref-ok");
+  if (xrefOk) xrefOk.addEventListener("click", confirmCrossrefDialog);
+  const xrefCancel = document.getElementById("btn-crossref-cancel");
+  if (xrefCancel) xrefCancel.addEventListener("click", closeCrossrefDialog);
   const SYMBOLS = ["§", "¶", "°", "±", "×", "÷", "≈", "≠", "≤", "≥", "∞", "√",
                    "€", "£", "¥", "¢", "©", "®", "™", "→", "←", "↑", "↓", "•",
                    "–", "—", "…", "«", "»", "½", "¼", "¾", "α", "β", "μ", "π",

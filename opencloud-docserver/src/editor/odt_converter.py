@@ -52,6 +52,9 @@ from odf.style import (
 from odf.table import CoveredTableCell, Table, TableCell, TableColumn, TableRow
 from odf.text import (
     A,
+    BookmarkEnd,
+    BookmarkRef,
+    BookmarkStart,
     ChangeEnd,
     ChangeStart,
     Deletion,
@@ -879,6 +882,8 @@ def _inline_html(el, resolve, base, pictures, changes=None) -> str:
     """
     out: list[str] = []
     pending: list[str] = []
+    bm_name: str | None = None
+    bm_start_idx: int | None = None
     in_change: str | None = None   # open text:change-id region
 
     def flush_comment(author: str, body: str) -> None:
@@ -971,6 +976,28 @@ def _inline_html(el, resolve, base, pictures, changes=None) -> str:
         elif qname == (TEXTNS, "page-number"):
             # Page number field - map to HTML span
             pending.append('<span class="page-number"></span>')
+        elif qname == (TEXTNS, "bookmark-ref"):
+            refname = child.getAttribute("refname") or ""
+            inner = _inline_html(child, resolve, base, pictures, changes)
+            pending.append(f'<a href="#{escape(refname)}">{inner}</a>')
+        elif qname == (TEXTNS, "bookmark-start"):
+            bm_name = child.getAttribute("name") or ""
+            bm_start_idx = len(pending)
+            continue
+        elif qname == (TEXTNS, "bookmark-end"):
+            if bm_start_idx is not None:
+                content = "".join(pending[bm_start_idx:])
+                del pending[bm_start_idx:]
+                pending.append(
+                    f'<span class="bookmark" data-name="{escape(bm_name)}">{content}</span>'
+                )
+                bm_start_idx = None
+                bm_name = None
+            continue
+        elif qname == (TEXTNS, "bookmark"):
+            bname = child.getAttribute("name") or ""
+            inner = _inline_html(child, resolve, base, pictures, changes)
+            pending.append(f'<span class="bookmark" data-name="{escape(bname)}">{inner}</span>')
         elif qname == (TEXTNS, "span"):
             flags = dict(base)
             span_flags = resolve(child.getAttribute("stylename"))
@@ -1659,17 +1686,30 @@ class _OdtWriter:
             if token["type"] == "track":
                 self._add_track_change(el, token)
                 continue
+            if token["type"] == "bookmark":
+                name = token.get("name") or ""
+                bm_start = BookmarkStart(name=name)
+                bm_end = BookmarkEnd(name=name)
+                el.addElement(bm_start)
+                self._fill(el, token.get("html") or "")
+                el.addElement(bm_end)
+                continue
             text = token["text"]
             style_name = self.char_style(token)
             href = token.get("href")
             if href:
-                # ODF hyperlinks are text:a elements carrying xlink:href.
-                a = A(href=href, type="simple")
-                if style_name:
-                    a.addElement(Span(text=text, stylename=style_name))
+                if href.startswith("#"):
+                    # in-document cross-reference -> text:bookmark-ref
+                    ref = BookmarkRef(refname=href[1:], text=text)
+                    el.addElement(ref)
                 else:
-                    a.addText(text)
-                el.addElement(a)
+                    # ODF hyperlinks are text:a elements carrying xlink:href.
+                    a = A(href=href, type="simple")
+                    if style_name:
+                        a.addElement(Span(text=text, stylename=style_name))
+                    else:
+                        a.addText(text)
+                    el.addElement(a)
             elif style_name:
                 el.addElement(Span(text=text, stylename=style_name))
             else:

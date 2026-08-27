@@ -1427,10 +1427,14 @@ def _paragraph_inline(para, notes=None, comments=None) -> str:
     out: list[str] = []
     pending: list[str] = []
     in_comment: str | None = None
+    in_bookmark: tuple[str, str] | None = None
+    bm_pending: list[str] = []
 
     def add(html: str) -> None:
         if in_comment is not None:
             pending.append(html)
+        elif in_bookmark is not None:
+            bm_pending.append(html)
         else:
             out.append(html)
 
@@ -1440,6 +1444,14 @@ def _paragraph_inline(para, notes=None, comments=None) -> str:
             out.append(_comment_span(in_comment, pending, comments))
             pending.clear()
             in_comment = None
+
+    def close_bookmark() -> None:
+        nonlocal in_bookmark
+        if in_bookmark is not None:
+            out.append('<span class="bookmark" data-name="'
+                       + escape(in_bookmark[1]) + '">' + "".join(bm_pending) + "</span>")
+            bm_pending.clear()
+            in_bookmark = None
 
     for child in para._p.iterchildren():
         tag = child.tag
@@ -1451,6 +1463,16 @@ def _paragraph_inline(para, notes=None, comments=None) -> str:
         if tag == qn("w:commentRangeEnd"):
             if in_comment is not None and child.get(qn("w:id")) == in_comment:
                 close_comment()
+            continue
+        if tag == qn("w:bookmarkStart"):
+            bname = child.get(qn("w:name")) or ""
+            bid = child.get(qn("w:id"))
+            close_bookmark()  # close any malformed/unclosed previous range
+            in_bookmark = (bid, bname)
+            continue
+        if tag == qn("w:bookmarkEnd"):
+            if in_bookmark is not None and child.get(qn("w:id")) == in_bookmark[0]:
+                close_bookmark()
             continue
         if tag == qn("w:ins"):
             # tracked insertion: the w:ins element wraps w:r runs carrying
@@ -1493,6 +1515,7 @@ def _paragraph_inline(para, notes=None, comments=None) -> str:
             else:
                 add(inner)
         # other children (pPr etc.) are not inline content
+    close_bookmark()
     close_comment()
     return "".join(out)
 
@@ -2310,6 +2333,7 @@ class _InlineRunBuilder(HTMLParser):
         self._vert_stack = []   # prev vert saved on <sup>/<sub> open
         self._note = None       # pending footnote/endnote (see _start_note)
         self._comment = None    # pending comment span (see handle_starttag)
+        self._bookmark = None   # pending bookmark span (see handle_starttag)
         self._track = None      # pending track-change (see handle_starttag)
         self._buf: list[str] = []
 
@@ -2395,6 +2419,22 @@ class _InlineRunBuilder(HTMLParser):
             self._comment = {
                 "author": a.get("data-author") or "",
                 "body": a.get("data-comment") or "",
+                "html": [],
+                "depth": 1,
+            }
+            return
+        if self._bookmark is not None:
+            # collect the bookmark span's inner markup until its closing tag
+            if tag not in _VOID_TAGS:
+                self._bookmark["depth"] += 1
+            self._bookmark["html"].append(self.get_starttag_text())
+            return
+        if tag == "span" and "bookmark" in (dict(attrs).get("class") or "").split():
+            # <span class="bookmark" data-name="X">TEXT</span>
+            self._flush()
+            a = dict(attrs)
+            self._bookmark = {
+                "name": a.get("data-name") or "",
                 "html": [],
                 "depth": 1,
             }
@@ -2532,6 +2572,19 @@ class _InlineRunBuilder(HTMLParser):
                     "html": "".join(comment["html"]),
                 })
             return
+        if self._bookmark is not None:
+            if tag not in _VOID_TAGS:
+                self._bookmark["depth"] = max(0, self._bookmark["depth"] - 1)
+            self._bookmark["html"].append(f"</{tag}>")
+            if self._bookmark["depth"] == 0:
+                bm = self._bookmark
+                self._bookmark = None
+                self.tokens.append({
+                    "type": "bookmark",
+                    "name": bm["name"],
+                    "html": "".join(bm["html"]),
+                })
+            return
         if self._note is not None and self._note["in_body"]:
             if tag not in _VOID_TAGS:
                 self._note["depth"] = max(0, self._note["depth"] - 1)
@@ -2591,6 +2644,9 @@ class _InlineRunBuilder(HTMLParser):
         if self._comment is not None:
             self._comment["html"].append(escape(data))
             return
+        if self._bookmark is not None:
+            self._bookmark["html"].append(escape(data))
+            return
         if (
             self._note is not None
             and not self._note["in_body"]
@@ -2612,6 +2668,14 @@ class _InlineRunBuilder(HTMLParser):
                 "author": comment["author"],
                 "body": comment["body"],
                 "html": "".join(comment["html"]),
+            })
+        if self._bookmark is not None:
+            bm = self._bookmark
+            self._bookmark = None
+            self.tokens.append({
+                "type": "bookmark",
+                "name": bm["name"],
+                "html": "".join(bm["html"]),
             })
         if self._note is not None:
             if not self._note["in_body"]:
@@ -2692,6 +2756,9 @@ def _add_styled_runs(paragraph, html: str) -> None:
         if token["type"] == "link":
             _add_hyperlink(paragraph, token)
             continue
+        if token["type"] == "bookmark":
+            _add_bookmark(paragraph, token)
+            continue
         run = paragraph.add_run(token["text"])
         if token["bold"]:
             run.bold = True
@@ -2702,9 +2769,72 @@ def _add_styled_runs(paragraph, html: str) -> None:
         _apply_run_style(run, token)
 
 
+def _next_bookmark_id(part) -> int:
+    """Smallest unused w:bookmarkStart/@w:id within the document part."""
+    maxid = 0
+    for el in part.element.iter(qn("w:bookmarkStart")):
+        try:
+            maxid = max(maxid, int(el.get(qn("w:id")) or 0))
+        except (TypeError, ValueError):
+            pass
+    return maxid + 1
+
+
+def _add_bookmark(paragraph, token: dict) -> None:
+    """Wrap the token's inner runs in a DOCX bookmark (w:bookmarkStart/End)."""
+    bid = _next_bookmark_id(paragraph.part)
+    name = token.get("name") or f"bm{bid}"
+    start = OxmlElement("w:bookmarkStart")
+    start.set(qn("w:id"), str(bid))
+    start.set(qn("w:name"), name)
+    paragraph._p.append(start)
+    for inner in _inline_tokens(token.get("html") or ""):
+        if inner["type"] == "image":
+            _add_image_run(paragraph, inner)
+        elif inner["type"] == "footnote":
+            _add_footnote_reference(paragraph, inner)
+        elif inner["type"] == "comment":
+            _add_comment_reference(paragraph, inner)
+        elif inner["type"] == "track":
+            _add_track_change(paragraph, inner)
+        elif inner["type"] == "link":
+            _add_hyperlink(paragraph, inner)
+        else:
+            run = paragraph.add_run(inner.get("text", ""))
+            if inner.get("bold"):
+                run.bold = True
+            if inner.get("italic"):
+                run.italic = True
+            if inner.get("underline"):
+                run.underline = True
+            _apply_run_style(run, inner)
+    end = OxmlElement("w:bookmarkEnd")
+    end.set(qn("w:id"), str(bid))
+    paragraph._p.append(end)
+
+
 def _add_hyperlink(paragraph, token: dict) -> None:
     """Append a hyperlink run (w:hyperlink + external relationship)."""
     url = token.get("href", "")
+    if url.startswith("#"):
+        # In-document cross-reference: a w:hyperlink with w:anchor (no rel).
+        hyperlink = OxmlElement("w:hyperlink")
+        hyperlink.set(qn("w:anchor"), url[1:])
+        run = OxmlElement("w:r")
+        rPr = OxmlElement("w:rPr")
+        if token.get("bold"):
+            rPr.append(OxmlElement("w:b"))
+        if token.get("italic"):
+            rPr.append(OxmlElement("w:i"))
+        if token.get("underline"):
+            rPr.append(OxmlElement("w:u"))
+        run.append(rPr)
+        t = OxmlElement("w:t")
+        t.text = token["text"]
+        run.append(t)
+        hyperlink.append(run)
+        paragraph._p.append(hyperlink)
+        return
     part = paragraph.part
     try:
         # Generate a free rId for the external hyperlink relationship.

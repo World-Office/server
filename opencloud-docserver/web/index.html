@@ -181,6 +181,8 @@
     <button id="btn-columns" title="Insert columns" aria-label="Insert columns">▥</button>
     <button id="btn-toc" title="Insert table of contents" aria-label="Insert table of contents">☰</button>
     <button id="btn-object" title="Insert object" aria-label="Insert object">▢</button>
+    <button id="btn-bookmark" title="Insert bookmark" aria-label="Insert bookmark">📑</button>
+    <button id="btn-crossref" title="Insert cross-reference" aria-label="Insert cross-reference">🔗</button>
     <button id="btn-symbol" title="Insert symbol" aria-label="Insert symbol">Ω</button>
     <button id="btn-datetime" title="Insert date" aria-label="Insert date">📅</button>
     <button id="btn-find" title="Find and replace (Ctrl+F)" data-i18n-title="Toolbar.FindTitle" aria-label="Find and replace" data-i18n-aria-label="Toolbar.Find" aria-keyshortcuts="Control+F">🔍</button>
@@ -364,6 +366,40 @@
       <div class="dialog-actions">
         <button id="btn-object-cancel">Cancel</button>
         <button id="btn-object-ok" class="primary">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bookmark dialog -->
+  <div id="bookmark-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="bookmark-dialog-title">
+    <div class="dialog">
+      <h3 id="bookmark-dialog-title">Insert bookmark</h3>
+      <div class="dialog-field">
+        <label for="bookmark-name">Name</label>
+        <input id="bookmark-name" type="text" placeholder="e.g. Section1">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-bookmark-cancel">Cancel</button>
+        <button id="btn-bookmark-ok" class="primary">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cross-reference dialog -->
+  <div id="crossref-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="crossref-dialog-title">
+    <div class="dialog">
+      <h3 id="crossref-dialog-title">Insert cross-reference</h3>
+      <div class="dialog-field">
+        <label for="crossref-target">Target bookmark</label>
+        <select id="crossref-target"></select>
+      </div>
+      <div class="dialog-field">
+        <label for="crossref-text">Display text</label>
+        <input id="crossref-text" type="text" placeholder="optional (defaults to target name)">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-crossref-cancel">Cancel</button>
+        <button id="btn-crossref-ok" class="primary">Insert</button>
       </div>
     </div>
   </div>

@@ -15,6 +15,7 @@ from docx.oxml.ns import qn
 from docx.shared import Emu
 
 from src.editor.converter import docx_to_html, html_to_docx
+from src.editor.odt_converter import html_to_odt, odt_to_html
 
 
 def test_html_to_docx_link_roundtrip():
@@ -1326,3 +1327,73 @@ def test_html_to_docx_object_roundtrip():
         docx = html_to_docx(html)
         out = docx_to_html(docx)
         assert f'data-type="{typ}"' in out, (typ, out)
+
+
+def test_html_to_docx_bookmark_roundtrip():
+    """<span class="bookmark" data-name="X"> wraps content that round-trips
+    to DOCX w:bookmarkStart/w:bookmarkEnd and back as a bookmark span."""
+    html = '<p>Intro <span class="bookmark" data-name="SEC1">target text</span> end.</p>'
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    assert 'class="bookmark"' in out, out
+    assert 'data-name="SEC1"' in out, out
+    assert "target text" in out, out
+
+
+def test_html_to_docx_crossref_roundtrip():
+    """<a href="#NAME"> round-trips as a DOCX w:hyperlink anchor (not an
+    external relationship) and back."""
+    html = '<p>See <a href="#SEC1">section one</a> above.</p>'
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    assert '<a href="#SEC1">' in out, out
+    assert "section one" in out, out
+
+
+def test_html_to_odt_bookmark_roundtrip():
+    """<span class="bookmark" data-name="X"> round-trips through ODT
+    text:bookmark and back."""
+    odt = html_to_odt('<p>Intro <span class="bookmark" data-name="SEC1">target text</span> end.</p>')
+    out = odt_to_html(odt)
+    assert 'class="bookmark"' in out, out
+    assert 'data-name="SEC1"' in out, out
+    assert "target text" in out, out
+
+
+def test_html_to_odt_crossref_roundtrip():
+    """<a href="#NAME"> round-trips through ODT text:bookmark-ref and back."""
+    odt = html_to_odt('<p>See <a href="#SEC1">section one</a> above.</p>')
+    out = odt_to_html(odt)
+    assert '<a href="#SEC1">' in out, out
+    assert "section one" in out, out
+
+
+def test_sanitize_keeps_bookmark_crossref_markers():
+    """The sanitizer keeps editor-authored bookmark + cross-reference markers
+    (span.bookmark[data-name] and a[href^='#']) while dropping scripts."""
+    from src.editor.sanitize import sanitize_html
+
+    html = (
+        '<p>Intro <span class="bookmark" data-name="SEC1">target</span> end.</p>'
+        '<p>See <a href="#SEC1">section one</a> above.</p>'
+        '<div class="evil"><script>alert(1)</script>x</div>'
+    )
+    out = sanitize_html(html)
+    assert 'class="bookmark"' in out and 'data-name="SEC1"' in out, out
+    assert 'href="#SEC1"' in out, out
+    assert "<script>" not in out, out
+    assert "alert(1)" not in out, out
+
+
+def test_bookmark_crossref_survive_save_then_convert():
+    """Editor bookmark HTML survives sanitize (save) -> DOCX/ODT -> HTML."""
+    from src.editor.converter import docx_to_html, html_to_docx
+    from src.editor.odt_converter import html_to_odt, odt_to_html
+    from src.editor.sanitize import sanitize_html
+
+    frag = '<p>Intro <span class="bookmark" data-name="SEC1">target</span> end.</p>'
+    saved = sanitize_html(frag)
+    out_d = docx_to_html(html_to_docx(saved))
+    assert 'data-name="SEC1"' in out_d, out_d
+    out_o = odt_to_html(html_to_odt(saved))
+    assert 'data-name="SEC1"' in out_o, out_o
