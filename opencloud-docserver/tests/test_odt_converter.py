@@ -1665,3 +1665,25 @@ def test_odt_to_html_track_changes_roundtrip():
     assert '<ins class="track-insert" data-author="Sam">inserted</ins>' in out, out
     assert '<del class="track-delete" data-author="Pat">deleted</del>' in out, out
     assert "middle" in out and "tail" in out, out
+
+
+def test_html_to_odt_table_caption_roundtrip():
+    """A <figure> wrapping a <table> + <figcaption> round-trips through ODT
+    (T32 gap: tables caption). The writer emits a preceding text:p with
+    text:sequence-name carrying the caption; the reader wraps the table in
+    <figure><figcaption>."""
+    html = (
+        '<figure><table width="400"><tr><td>a</td><td>b</td></tr>'
+        '<tr><td>c</td><td>d</td></tr></table>'
+        '<figcaption>Sample caption</figcaption></figure>'
+    )
+    odt = html_to_odt(html)
+    out = odt_to_html(odt)
+    assert "<figure>" in out, out
+    assert '<figcaption>Sample caption</figcaption>' in out, out
+    assert "<table" in out, out
+    import zipfile
+    with zipfile.ZipFile(io.BytesIO(odt)) as z:
+        cx = z.read("content.xml").decode("utf-8")
+    assert "text:sequence-name" in cx, cx[:400]
+    assert "Sample caption" in cx, cx[:400]
