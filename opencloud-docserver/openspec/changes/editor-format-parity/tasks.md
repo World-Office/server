@@ -52,7 +52,10 @@ TDD per category: write failing contract test → implement converter + UI → v
 ## view / file / collaboration / tools (UI-only or collab)
 - [x] T28 editor.js: zoom / dark-mode / fullscreen / print-layout — shipped in `editor-ui-completeness` (view-controls): `applyZoom` + zoom in/out/reset buttons, theme toggle (prefers-color-scheme + `data-theme`), fullscreen API, print stylesheet.
 - [x] T29 editor.js: file-new / file-open / export(pdf,odt,html,docx) / print — shipped in `editor-ui-completeness`/`cloud-editor-complete` (file-ops): new/open dialogs, export menu (PDF/ODT/HTML/DOCX server-side), print.
-- [ ] T30 collab.py + editor.js: comments / track-changes / version-history — live multi-user collab (CRDT-presence, offline queue, presence cursors) shipped, but the three named features (comments, track-changes, version-history) are NOT implemented — remains open.
+- [x] T30 comments — DOCX `w:commentRangeStart/End` + `w:commentReference` marks and an `OfficeDocument.wordCommentsPart` `comments.xml` (`w:comment` id/author/date/para); ODT `office:annotation` + `dc:creator`/`dc:date`; editor.js renders comment spans + margin notes; gate green.
+- [x] T30 track-changes — DOCX `w:ins`/`w:del` (`w:delText`, unique increasing `w:id`, author/date) and ODT `text:change-start`/`text:change-end` marks + a `text:tracked-changes` registry (`text:changed-region xml:id` > `text:insertion|text:deletion` > `office:change-info`/`dc:creator`); reader resolves ids back to `<ins>/<del class="track-*">`; sanitizer allows `<ins>`. 5 gate tests green.
+- [x] T30 version-history — `store.put_version/list_versions/get_version/restore_version` (MAX_VERSIONS=50, monotonic ts) + `GET/POST /api/documents/{id}/versions` `/versions/{ts}/restore` (host-mode only); editor.js File ▸ History dialog with restore + Current badge. 7 server + file-menu tests green.
+- [x] T30 collab.py + editor.js: comments / track-changes / version-history — the three converter/feature surfaces shipped (converter parity + version-history server/UI). Live multi-user CRDT collab (presence cursors/offline queue) remains a collab feature (see editor-ui-completeness/collab-presence).
 - [x] T31 editor.js: spellcheck / word-count / protect — spellcheck attribute on the editor, word-count in the status bar, READ_ONLY protect mode (read-only host handshake).
 
 ## verification
