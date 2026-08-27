@@ -648,9 +648,14 @@ def _tokenize_body(body: str) -> list:
             ops.append(("footer", mf.group(1), mf.group(2)))
             pos += mf.end()
             continue
-        mh = re.match(r"<hr(?:\s[^>]*)?/?>", rest, re.I)
+        mh = re.match(r"<hr(\s[^>]*)?/?>", rest, re.I)
         if mh:
-            ops.append(("hr",))
+            attrs = mh.group(1) or ""
+            cls = re.search(r'class\s*=\s*"?([^" >]+)"?', attrs)
+            if cls and "section-break" in cls.group(1).split():
+                ops.append(("sectionbreak",))
+            else:
+                ops.append(("hr",))
             pos += mh.end()
             continue
         md = re.match(r"<div([^>]*)>(.*?)</div>", rest, re.S | re.I)
@@ -752,6 +757,14 @@ def _paragraph_toc_title(para) -> str | None:
     return None
 
 
+def _paragraph_is_section_break(para) -> bool:
+    """True if the paragraph's pPr carries a w:sectPr (a section break)."""
+    pPr = para._p.find(qn("w:pPr"))
+    if pPr is None:
+        return False
+    return pPr.find(qn("w:sectPr")) is not None
+
+
 def docx_to_html(data: bytes) -> str:
     """Convert DOCX bytes to an HTML fragment (content only, no <html>)."""
     doc = Document(io.BytesIO(data))
@@ -780,6 +793,9 @@ def docx_to_html(data: bytes) -> str:
         if toc_title is not None:
             seq.append(("toc", toc_title))
             continue
+        if _paragraph_is_section_break(para):
+            seq.append(("sectionbreak",))
+            continue
         li, list_kind, level = _paragraph_to_html(para, notes, comments)
         if list_kind is not None:
             seq.append(("list", list_kind, level or 1, strip_li(li)))
@@ -791,6 +807,10 @@ def docx_to_html(data: bytes) -> str:
     while i < len(seq):
         if seq[i][0] == "toc":
             parts.append(f'<nav class="toc" data-title="{escape(seq[i][1])}"></nav>')
+            i += 1
+            continue
+        if seq[i][0] == "sectionbreak":
+            parts.append('<hr class="section-break">')
             i += 1
             continue
         if seq[i][0] == "other":
@@ -958,6 +978,16 @@ def _add_table_of_contents(doc, title: str = "") -> None:
     r.append(t)
     fld.append(r)
     p._p.append(fld)
+
+
+def _add_section_break(doc) -> None:
+    """A section break: a paragraph whose pPr carries a w:sectPr, starting a
+    new section (w:type="nextPage")."""
+    p = doc.add_paragraph()
+    pPr = p._p.get_or_add_pPr()
+    sectPr = OxmlElement("w:sectPr")
+    sectPr.set(qn("w:type"), "nextPage")
+    pPr.append(sectPr)
 
 
 def _add_header(doc, content_html: str) -> None:
@@ -2043,6 +2073,9 @@ def html_to_docx(html_fragment: str) -> bytes:
             continue
         if kind == "toc":
             _add_table_of_contents(doc, op[1])
+            continue
+        if kind == "sectionbreak":
+            _add_section_break(doc)
             continue
         if kind == "list":
             _emit_list_tree(doc, op[1], 1)

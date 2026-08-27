@@ -1251,3 +1251,16 @@ def test_html_to_docx_toc_roundtrip():
     with zipfile.ZipFile(io.BytesIO(docx)) as z:
         xml = z.read("word/document.xml").decode()
     assert "TOC" in xml, xml[:800]
+
+
+def test_html_to_docx_section_break_roundtrip():
+    """<hr class="section-break"> maps to a paragraph with w:sectPr
+    (nextPage) and round-trips back (T32 gap: section-break)."""
+    html = '<p>Before.</p><hr class="section-break"><p>After.</p>'
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    assert '<hr class="section-break">' in out, out
+    import zipfile
+    with zipfile.ZipFile(io.BytesIO(docx)) as z:
+        xml = z.read("word/document.xml").decode()
+    assert "w:sectPr" in xml, xml[:1200]
