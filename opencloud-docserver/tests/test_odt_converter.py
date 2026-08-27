@@ -1701,3 +1701,16 @@ def test_html_to_odt_columns_roundtrip():
         cx = z.read("content.xml").decode()
     assert "text:columns" in cx, cx[:500]
     assert "text:section" in cx, cx[:500]
+
+
+def test_html_to_odt_toc_roundtrip():
+    """<nav class="toc" data-title="..."> maps to text:table-of-content and
+    round-trips back (T32 gap: TOC)."""
+    html = '<nav class="toc" data-title="Contents"></nav><p>Body.</p>'
+    odt = html_to_odt(html)
+    out = odt_to_html(odt)
+    assert '<nav class="toc" data-title="Contents">' in out, out
+    import zipfile
+    with zipfile.ZipFile(io.BytesIO(odt)) as z:
+        cx = z.read("content.xml").decode()
+    assert "text:table-of-content" in cx, cx[:800]
