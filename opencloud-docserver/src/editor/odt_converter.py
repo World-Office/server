@@ -35,6 +35,7 @@ from odf.namespaces import (
     TABLENS,
     TEXTNS,
     XLINKNS,
+    XMLNS,
 )
 from odf.office import Annotation
 from odf.opendocument import OpenDocumentText, load
@@ -49,7 +50,11 @@ from odf.style import (
 from odf.table import CoveredTableCell, Table, TableCell, TableColumn, TableRow
 from odf.text import (
     A,
+    ChangeEnd,
+    ChangeStart,
+    Deletion,
     H,
+    Insertion,
     List,
     ListItem,
     ListLevelStyleNumber,
@@ -59,10 +64,12 @@ from odf.text import (
     NoteCitation,
     P,
     Span,
+    TrackedChanges,
 )
 
 from src.editor.converter import (
     _MONO_FONTS,
+    _inline_to_text,
     _inline_tokens,
     _normalize_color,
     _parse_border,
@@ -533,6 +540,7 @@ def odt_to_html(data: bytes) -> str:
     cellresolve = _build_cell_resolver(doc)
     kinds = _list_kinds(doc)
     pictures = _extract_pictures(data)
+    changes = _collect_changes(doc)
 
     # Extract header and footer from master page if present
     header_html = ""
@@ -564,7 +572,7 @@ def odt_to_html(data: bytes) -> str:
         qname = child.qname
         if qname in ((TEXTNS, "p"), (TEXTNS, "h")):
             flush_list()
-            parts.append(_paragraph_to_html(child, resolve, pictures, presolve))
+            parts.append(_paragraph_to_html(child, resolve, pictures, presolve, changes))
         elif qname == (TEXTNS, "list"):
             kind = kinds.get(child.getAttribute("stylename"), "ul")
             if pending_list != kind:
@@ -597,19 +605,19 @@ def odt_to_html(data: bytes) -> str:
     return "\n".join(p for p in html_parts if p)
 
 
-def _master_page_section_to_html(section, resolve, pictures) -> str:
+def _master_page_section_to_html(section, resolve, pictures, changes=None) -> str:
     """Convert a master page header/footer section to HTML."""
     html_parts = []
     for child in section.childNodes:
         if child.qname == (TEXTNS, "p"):
-            inner = _paragraph_inner_html(child, resolve, pictures)
+            inner = _paragraph_inner_html(child, resolve, pictures, changes)
             html_parts.append(f"<p>{inner}</p>")
     return "\n".join(html_parts)
 
 
-def _paragraph_to_html(el, resolve, pictures, presolve=None) -> str:
+def _paragraph_to_html(el, resolve, pictures, presolve=None, changes=None) -> str:
     """Render a text:p or text:h element as a block-level HTML tag."""
-    inner = _paragraph_inner_html(el, resolve, pictures)
+    inner = _paragraph_inner_html(el, resolve, pictures, changes)
     pprops = presolve(el.getAttribute("stylename")) if presolve else None
     # Horizontal rule: an EMPTY paragraph whose style has only a bottom
     # border renders as <hr/> (mirror of the DOCX converter's heuristic).
@@ -645,10 +653,109 @@ def _paragraph_to_html(el, resolve, pictures, presolve=None) -> str:
     return f"<p{attrs}>{inner}</p>"
 
 
-def _paragraph_inner_html(el, resolve, pictures) -> str:
+def _paragraph_inner_html(el, resolve, pictures, changes=None) -> str:
     """Render paragraph/heading inline content (no <p>/<h> wrapper)."""
     style = resolve(el.getAttribute("stylename"))
-    return _inline_html(el, resolve, style, pictures)
+    return _inline_html(el, resolve, style, pictures, changes)
+
+
+def _collect_region_text(block) -> str:
+    """Plain text of a text:insertion / text:deletion region block.
+
+    Only the region's own text:p paragraphs count — teletype.extractText on
+    the whole block would also swallow the office:change-info/dc:creator
+    author text."""
+    from odf import teletype
+    parts: list[str] = []
+    for sub in block.childNodes:
+        if sub.nodeType != Node.ELEMENT_NODE:
+            continue
+        if sub.qname == (TEXTNS, "p"):
+            parts.append(teletype.extractText(sub))
+    return "".join(parts).strip()
+
+
+def _collect_changes(doc) -> dict:
+    """Parse the change registry into ``{change_id: {"author":.., "deleted":..}}``.
+
+    Two registry shapes are understood:
+      * ODF 1.2 ``text:tracked-changes`` with ``text:changed-region``
+        (``xml:id``) holding ``text:insertion``/``text:deletion`` whose
+        ``office:change-info`` carries ``dc:creator`` (what the writer emits,
+        what LibreOffice writes);
+      * the older ``office:changes`` form (text:change + change-id +
+        office:change-info). Body change marks are resolved against this
+        map; ids not present are ignored by the reader.
+    """
+    changes: dict = {}
+    root = doc.text
+    for child in root.childNodes:
+        if child.nodeType != Node.ELEMENT_NODE:
+            continue
+        if child.qname == (TEXTNS, "tracked-changes"):
+            for region in child.childNodes:
+                if region.nodeType != Node.ELEMENT_NODE:
+                    continue
+                if region.qname != (TEXTNS, "changed-region"):
+                    continue
+                cid = region.attributes.get((XMLNS, "id"))
+                if not cid:
+                    cid = region.attributes.get((TEXTNS, "id"))
+                if not cid:
+                    continue
+                author = ""
+                deleted = ""
+                for block in region.childNodes:
+                    if block.nodeType != Node.ELEMENT_NODE:
+                        continue
+                    if block.qname == (TEXTNS, "insertion"):
+                        author = _region_author(block)
+                    elif block.qname == (TEXTNS, "deletion"):
+                        author = _region_author(block)
+                        deleted = _collect_region_text(block)
+                changes[cid] = {"author": author, "deleted": deleted}
+        elif child.qname == (OFFICENS, "changes"):
+            # older office:changes form (foreign files)
+            for c_el in child.childNodes:
+                if c_el.nodeType != Node.ELEMENT_NODE:
+                    continue
+                if c_el.qname != (TEXTNS, "change"):
+                    continue
+                cid = c_el.getAttribute("changeid")
+                if not cid:
+                    continue
+                author = ""
+                deleted = ""
+                for info in c_el.childNodes:
+                    if info.nodeType != Node.ELEMENT_NODE:
+                        continue
+                    if info.qname != (OFFICENS, "change-info"):
+                        continue
+                    for cr in info.childNodes:
+                        if cr.nodeType != Node.ELEMENT_NODE:
+                            continue
+                        if cr.qname == (DCNS, "creator"):
+                            from odf import teletype
+                            author = teletype.extractText(cr)
+                        elif cr.qname == (DCNS, "description"):
+                            from odf import teletype
+                            deleted = teletype.extractText(cr)
+                changes[cid] = {"author": author, "deleted": deleted}
+    return changes
+
+
+def _region_author(block) -> str:
+    """dc:creator from the office:change-info child of a change block."""
+    from odf import teletype
+    for sub in block.childNodes:
+        if sub.nodeType != Node.ELEMENT_NODE:
+            continue
+        if sub.qname == (OFFICENS, "change-info"):
+            for cr in sub.childNodes:
+                if (cr.nodeType == Node.ELEMENT_NODE
+                        and cr.qname == (DCNS, "creator")):
+                    return teletype.extractText(cr)
+    return ""
 
 
 def _annotation_meta(ann_el) -> tuple[str | None, str]:
@@ -670,7 +777,7 @@ def _annotation_meta(ann_el) -> tuple[str | None, str]:
     return author, body
 
 
-def _inline_html(el, resolve, base, pictures) -> str:
+def _inline_html(el, resolve, base, pictures, changes=None) -> str:
     """Render the inline (run-level) content of an element to HTML.
 
     ``base`` is the effective character-flag dict inherited from the
@@ -682,6 +789,7 @@ def _inline_html(el, resolve, base, pictures) -> str:
     """
     out: list[str] = []
     pending: list[str] = []
+    in_change: str | None = None   # open text:change-id region
 
     def flush_comment(author: str, body: str) -> None:
         """Wrap the runs accumulated before an annotation in a comment span."""
@@ -691,11 +799,68 @@ def _inline_html(el, resolve, base, pictures) -> str:
         )
         pending.clear()
 
+    def flush_change() -> None:
+        """Close an open tracked-change region.
+
+        Runs accumulated between text:change-start and text:change-end become
+        an <ins> (tracked insertion). An EMPTY region whose registry entry
+        carries deleted text is a tracked deletion and is re-emitted as <del>
+        with the removed text recovered from the registry. Authors come from
+        dc:creator; ids not registered never open a region."""
+        nonlocal in_change
+        if in_change is None:
+            return
+        cid = in_change
+        in_change = None
+        if pending:
+            author = ((changes or {}).get(cid) or {}).get("author", "")
+            out.append(
+                f'<ins class="track-insert" data-author="{escape(author)}">'
+                + "".join(pending)
+                + "</ins>"
+            )
+            pending.clear()
+            return
+        meta = (changes or {}).get(cid)
+        if meta and meta.get("deleted"):
+            out.append(
+                f'<del class="track-delete" data-author="{escape(meta.get("author") or "")}">'
+                + escape(meta["deleted"])
+                + "</del>"
+            )
+
     for child in el.childNodes:
         if child.nodeType == Node.TEXT_NODE:
             pending.append(_wrap(escape(child.data), base))
             continue
         qname = child.qname
+        if qname == (TEXTNS, "change-start"):
+            cid = child.getAttribute("changeid")
+            if cid and (changes or {}).get(cid) is not None:
+                flush_change()                # close a malformed previous region
+                out.append("".join(pending))  # pre-region content stays outside
+                pending.clear()
+                in_change = cid
+            continue
+        if qname == (TEXTNS, "change-end"):
+            flush_change()
+            continue
+        if qname == (TEXTNS, "deletion"):
+            # LibreOffice-style inline deletion (region content between marks)
+            from odf import teletype
+            deleted = teletype.extractText(child).strip()
+            author = ""
+            if in_change:
+                author = ((changes or {}).get(in_change) or {}).get("author", "")
+            elif changes:
+                author = next(iter(changes.values())).get("author", "")
+            if deleted:
+                out.append(
+                    f'<del class="track-delete" data-author="{escape(author)}">'
+                    + escape(deleted)
+                    + "</del>"
+                )
+            continue
         if qname == (OFFICENS, "annotation"):
             author, body = _annotation_meta(child)
             if author is not None:
@@ -724,10 +889,10 @@ def _inline_html(el, resolve, base, pictures) -> str:
                         "font_family", "font_size"):
                 if span_flags[key] is not None:
                     flags[key] = span_flags[key]
-            pending.append(_inline_html(child, resolve, flags, pictures))
+            pending.append(_inline_html(child, resolve, flags, pictures, changes))
         elif qname == (TEXTNS, "a"):
             href = child.getAttribute("href")
-            inner = _inline_html(child, resolve, base, pictures)
+            inner = _inline_html(child, resolve, base, pictures, changes)
             if href:
                 inner = f'<a href="{escape(href)}">{inner}</a>'
             pending.append(inner)
@@ -740,12 +905,12 @@ def _inline_html(el, resolve, base, pictures) -> str:
         else:
             # Unknown inline node (drawing text-box…):
             # descend so its text is not silently dropped.
-            pending.append(_inline_html(child, resolve, base, pictures))
+            pending.append(_inline_html(child, resolve, base, pictures, changes))
     out.append("".join(pending))
     return "".join(out)
 
 
-def _note_to_html(note_el, resolve, pictures) -> str:
+def _note_to_html(note_el, resolve, pictures, changes=None) -> str:
     """Render a ``text:note`` (footnote or endnote) as the HTML contract
     ``<sup class="{cls}-citation">[N]</sup><span class="{cls}">BODY</span>``.
 
@@ -771,11 +936,11 @@ def _note_to_html(note_el, resolve, pictures) -> str:
                 if p_el.nodeType != Node.ELEMENT_NODE:
                     continue
                 if p_el.qname in ((TEXTNS, "p"), (TEXTNS, "h")):
-                    html = _paragraph_inner_html(p_el, resolve, pictures)
+                    html = _paragraph_inner_html(p_el, resolve, pictures, changes)
                     if html:
                         paras.append(html)
                 else:  # unknown body child: descend so text is not dropped
-                    html = _inline_html(p_el, resolve, {}, pictures)
+                    html = _inline_html(p_el, resolve, {}, pictures, changes)
                     if html:
                         paras.append(html)
             body_html = "<br/>".join(paras)
@@ -1161,6 +1326,8 @@ def html_to_odt(html_fragment: str) -> bytes:
     for tbl_html in tables_html:
         w.add_table(tbl_html)
 
+    w.emit_changes()
+
     buf = io.BytesIO()
     doc.save(buf)
     return buf.getvalue()
@@ -1219,6 +1386,8 @@ class _OdtWriter:
         self._tbl_styles: dict[float, str] = {}
         self._img_n = 0
         self._note_n = 0
+        self._change_n = 0
+        self._changes: list[tuple[str, str, str, str]] = []  # (change_id, author, region_text, kind)
 
     # -- character styles -------------------------------------------------
     def char_style(self, token: dict) -> str | None:
@@ -1351,6 +1520,9 @@ class _OdtWriter:
             if token["type"] == "comment":
                 self._add_comment(el, token)
                 continue
+            if token["type"] == "track":
+                self._add_track_change(el, token)
+                continue
             text = token["text"]
             style_name = self.char_style(token)
             href = token.get("href")
@@ -1421,6 +1593,59 @@ class _OdtWriter:
         body_p.addText(token.get("body") or "")
         ann.addElement(body_p)
         para_el.addElement(ann)
+
+    def _add_track_change(self, para_el, token: dict) -> None:
+        """Mark a tracked insertion/deletion on the current paragraph.
+
+        Both kinds emit ``text:change-start``/``text:change-end`` marks with
+        a registered change id. Inserted runs sit between the marks; the
+        removed text of a deletion travels ONLY in the registry (odfpy
+        refuses an inline ``text:deletion`` inside ``text:p``) and the
+        reader re-emits it at the change-end mark (parity contract)."""
+        self._change_n += 1
+        cid = f"ct{self._change_n}"
+        author = token.get("author") or ""
+        inner = token.get("html") or ""
+        from html import unescape as _unescape
+        region_text = _unescape(_inline_to_text(inner))
+        self._changes.append((cid, author, region_text, token.get("kind") or "insert"))
+        para_el.addElement(ChangeStart(changeid=cid))
+        if token.get("kind") == "insert":
+            self._fill(para_el, inner)
+        para_el.addElement(ChangeEnd(changeid=cid))
+
+    def emit_changes(self) -> None:
+        """Insert the ``text:tracked-changes`` registry at the top of body.
+
+        One ``text:changed-region`` (xml:id) per change with a
+        ``text:insertion``/``text:deletion`` block whose ``office:change-info``
+        carries ``dc:creator`` — the ODF 1.2/LibreOffice-readable model the
+        reader resolves the body marks against. (odfpy's ``text:change``
+        allows no children, so the office:changes form is not buildable;
+        this model is what LibreOffice itself writes.)"""
+        if not self._changes:
+            return
+        tc = TrackedChanges()
+        for cid, author, region_text, kind in self._changes:
+            region = Element(
+                qname=(TEXTNS, "changed-region"),
+                qattributes={(XMLNS, "id"): cid},
+            )
+            change_block = Deletion() if kind == "delete" else Insertion()
+            body_p = P()
+            body_p.addText(region_text)
+            change_block.insertBefore(body_p, None)
+            info = Element(qname=(OFFICENS, "change-info"))
+            creator = Element(qname=(DCNS, "creator"))
+            creator.addText(author)
+            info.insertBefore(creator, None)
+            change_block.insertBefore(info, None)  # DOM bypass (odfpy schema)
+            region.insertBefore(change_block, None)
+            tc.addElement(region)
+        if self.doc.text.childNodes:
+            self.doc.text.insertBefore(tc, self.doc.text.childNodes[0])
+        else:
+            self.doc.text.addElement(tc)
 
     def _add_note(self, para_el, token: dict) -> None:
         """Append a footnote/endnote as a text:note element.
