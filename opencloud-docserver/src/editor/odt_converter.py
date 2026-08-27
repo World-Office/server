@@ -857,17 +857,17 @@ def _annotation_meta(ann_el) -> tuple[str | None, str]:
     from odf import teletype
 
     author = None
-    body = ""
+    paras: list[str] = []
     for c in ann_el.childNodes:
         if c.nodeType != Node.ELEMENT_NODE:
             continue
         if c.qname == (DCNS, "creator"):
             author = teletype.extractText(c)
         elif c.qname == (TEXTNS, "p"):
-            body = teletype.extractText(c)
+            paras.append(teletype.extractText(c))
     if author is None:
         return None, ""
-    return author, body
+    return author, "\n".join(paras)
 
 
 def _inline_html(el, resolve, base, pictures, changes=None) -> str:
@@ -980,11 +980,13 @@ def _inline_html(el, resolve, base, pictures, changes=None) -> str:
             refname = child.getAttribute("refname") or ""
             inner = _inline_html(child, resolve, base, pictures, changes)
             pending.append(f'<a href="#{escape(refname)}">{inner}</a>')
-        elif qname == (TEXTNS, "bookmark-start"):
+        elif qname in ((TEXTNS, "bookmark-start"), (TEXTNS, "reference-mark-start")):
+            # LibreOffice targets cross-references at text:reference-mark*
+            # elements, not only text:bookmark* — both families are anchors.
             bm_name = child.getAttribute("name") or ""
             bm_start_idx = len(pending)
             continue
-        elif qname == (TEXTNS, "bookmark-end"):
+        elif qname in ((TEXTNS, "bookmark-end"), (TEXTNS, "reference-mark-end")):
             if bm_start_idx is not None:
                 content = "".join(pending[bm_start_idx:])
                 del pending[bm_start_idx:]
@@ -994,7 +996,7 @@ def _inline_html(el, resolve, base, pictures, changes=None) -> str:
                 bm_start_idx = None
                 bm_name = None
             continue
-        elif qname == (TEXTNS, "bookmark"):
+        elif qname in ((TEXTNS, "bookmark"), (TEXTNS, "reference-mark")):
             bname = child.getAttribute("name") or ""
             inner = _inline_html(child, resolve, base, pictures, changes)
             pending.append(f'<span class="bookmark" data-name="{escape(bname)}">{inner}</span>')
