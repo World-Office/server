@@ -21,8 +21,13 @@ from typing import Any
 from docx import Document
 from docx.enum.dml import MSO_COLOR_TYPE
 from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
+from docx.opc.constants import CONTENT_TYPE as CT
+from docx.opc.constants import RELATIONSHIP_TYPE as RT
+from docx.opc.packuri import PackURI
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from docx.oxml.parser import parse_xml
+from docx.parts.story import StoryPart
 from docx.shared import Emu, Pt, RGBColor
 from docx.table import _Cell
 from docx.text.paragraph import Paragraph
@@ -149,6 +154,181 @@ def _parse_px(value) -> int | None:
         return None
     m = re.fullmatch(r"\s*(\d+)\s*(?:px)?\s*", value)
     return int(m.group(1)) if m else None
+
+
+# --------------------------------------------------------------------------
+# Footnotes and endnotes (footnotes.xml / endnotes.xml parts)
+# --------------------------------------------------------------------------
+#
+# python-docx does not model footnotes/endnotes, so both reading and writing
+# go through the raw package parts. The HTML contract (shared with the ODT
+# converter): a marker <sup class="footnote-citation">[n]</sup> immediately
+# followed by <span class="footnote">BODY</span> (endnotes use the
+# endnote-citation / endnote classes).
+
+_FOOTNOTES_SENTINEL_XML = (
+    '<w:footnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+    '<w:footnote w:type="separator" w:id="-1">'
+    '<w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>'
+    '<w:r><w:separator/></w:r></w:p></w:footnote>'
+    '<w:footnote w:type="continuationSeparator" w:id="0">'
+    '<w:p><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr>'
+    '<w:r><w:continuationSeparator/></w:r></w:p></w:footnote>'
+    '</w:footnotes>'
+)
+
+_ENDNOTES_SENTINEL_XML = (
+    _FOOTNOTES_SENTINEL_XML
+    .replace("<w:footnotes", "<w:endnotes")
+    .replace("</w:footnotes>", "</w:endnotes>")
+    .replace("<w:footnote ", "<w:endnote ")
+    .replace("</w:footnote>", "</w:endnote>")
+)
+
+
+class _NotesPart(StoryPart):
+    """A raw WordprocessingML footnotes/endnotes part.
+
+    Carries the separator (-1) and continuationSeparator (0) sentinels Word
+    and LibreOffice expect, plus the real notes appended as ``w:footnote`` /
+    ``w:endnote`` children. Registered with the main document part through
+    the standard relationship + content type so the package opens cleanly in
+    Word/LibreOffice.
+    """
+
+    @classmethod
+    def new(cls, package, kind: str):
+        partname = PackURI(
+            "/word/footnotes.xml" if kind == "footnote" else "/word/endnotes.xml"
+        )
+        content_type = CT.WML_FOOTNOTES if kind == "footnote" else CT.WML_ENDNOTES
+        element = parse_xml(
+            _FOOTNOTES_SENTINEL_XML if kind == "footnote" else _ENDNOTES_SENTINEL_XML
+        )
+        return cls(partname, content_type, element, package)
+
+
+def _get_notes_part(paragraph, kind: str):
+    """The footnotes/endnotes part for a document, creating + wiring it if
+    missing (proper content type + relationship from the main document part)."""
+    document_part = paragraph.part
+    reltype = RT.FOOTNOTES if kind == "footnote" else RT.ENDNOTES
+    for rel in document_part.rels.values():
+        if rel.reltype == reltype and not rel.is_external:
+            return rel.target_part
+    part = _NotesPart.new(document_part.package, kind)
+    document_part.relate_to(part, reltype)
+    return part
+
+
+def _next_note_id(root, kind: str) -> int:
+    """Next positive w:id (sentinels use -1/0, real notes start at 1)."""
+    tag = qn("w:footnote") if kind == "footnote" else qn("w:endnote")
+    used = []
+    for el in root.iter(tag):
+        val = el.get(qn("w:id")) or ""
+        if val.isdigit() and int(val) > 0:
+            used.append(int(val))
+    return max(used) + 1 if used else 1
+
+
+def _append_note_body(part, kind: str, w_id: int, body_html: str) -> None:
+    """Append a w:footnote/w:endnote element holding the body paragraphs
+    (``<br/>`` separates paragraphs, same as the reader round-trips)."""
+    root = part.element
+    note_el = OxmlElement("w:footnote" if kind == "footnote" else "w:endnote")
+    note_el.set(qn("w:id"), str(w_id))
+    for frag in re.split(r"<br\s*/?>", body_html or ""):
+        p_el = OxmlElement("w:p")
+        _add_styled_runs(Paragraph(p_el, part), frag)
+        note_el.append(p_el)
+    root.append(note_el)
+
+
+def _add_footnote_reference(paragraph, token: dict) -> None:
+    """Emit a w:footnoteReference/w:endnoteReference run for a footnote token
+    and store the note body in the notes part."""
+    kind = token.get("kind") or "footnote"
+    part = _get_notes_part(paragraph, kind)
+    w_id = _next_note_id(part.element, kind)
+    _append_note_body(part, kind, w_id, token.get("body") or "")
+    r = OxmlElement("w:r")
+    rPr = OxmlElement("w:rPr")
+    vert = OxmlElement("w:vertAlign")
+    vert.set(qn("w:val"), "superscript")
+    rPr.append(vert)
+    r.append(rPr)
+    ref = OxmlElement(
+        "w:footnoteReference" if kind == "footnote" else "w:endnoteReference"
+    )
+    ref.set(qn("w:id"), str(w_id))
+    r.append(ref)
+    paragraph._p.append(r)
+
+
+def _note_body_html(note_el, part) -> str:
+    """Inline HTML of a footnotes/endnotes part's w:p children joined with
+    ``<br/>``. Nested note references are ignored (they resolve against the
+    body ordering, not the note)."""
+    paras: list[str] = []
+    for p_el in note_el.findall(qn("w:p")):
+        html = _paragraph_inline(Paragraph(p_el, part))
+        if html:
+            paras.append(html)
+    return "<br/>".join(paras)
+
+
+def _collect_notes(doc) -> dict:
+    """Parse footnotes.xml/endnotes.xml into ``{id: body_html}`` maps plus the
+    1-based document-order index at which each id is first referenced."""
+    notes = {
+        "footnote": {}, "footnote_order": {},
+        "endnote": {}, "endnote_order": {},
+    }
+    for kind, reltype in (("footnote", RT.FOOTNOTES), ("endnote", RT.ENDNOTES)):
+        part = None
+        for rel in doc.part.rels.values():
+            if rel.reltype == reltype and not rel.is_external:
+                part = rel.target_part
+                break
+        if part is None:
+            continue
+        root = parse_xml(part.blob)
+        note_tag = qn("w:footnote") if kind == "footnote" else qn("w:endnote")
+        for note_el in root.iter(note_tag):
+            w_id = note_el.get(qn("w:id"))
+            if not w_id or not w_id.isdigit() or note_el.get(qn("w:type")):
+                continue  # skip the separator/continuationSeparator sentinels
+            notes[kind][w_id] = _note_body_html(note_el, part)
+        ref_tag = (
+            qn("w:footnoteReference") if kind == "footnote"
+            else qn("w:endnoteReference")
+        )
+        order = 0
+        for ref in doc.element.body.iter(ref_tag):
+            rid = ref.get(qn("w:id"))
+            if rid in notes[kind] and rid not in notes[kind + "_order"]:
+                order += 1
+                notes[kind + "_order"][rid] = order
+    return notes
+
+
+def _note_marker(kind: str, w_id, notes) -> str:
+    """The ``<sup class="...-citation">[i]</sup>`` + ``<span class="...">``
+    pair for a referenced note, or ``''`` when unknown/not tracked."""
+    if not notes:
+        return ""
+    bodies = notes.get(kind) or {}
+    order = notes.get(kind + "_order") or {}
+    body = bodies.get(w_id)
+    i = order.get(w_id)
+    if body is None or i is None:
+        return ""
+    cls = "footnote" if kind == "footnote" else "endnote"
+    return (
+        f'<sup class="{cls}-citation">[{i}]</sup>'
+        f'<span class="{cls}">{body}</span>'
+    )
 
 
 # --------------------------------------------------------------------------
@@ -366,6 +546,7 @@ def _list_run_tree(seq: list[tuple]) -> list[dict]:
 def docx_to_html(data: bytes) -> str:
     """Convert DOCX bytes to an HTML fragment (content only, no <html>)."""
     doc = Document(io.BytesIO(data))
+    notes = _collect_notes(doc)
     seq: list[tuple] = []
 
     def strip_li(frag: str) -> str:
@@ -385,7 +566,7 @@ def docx_to_html(data: bytes) -> str:
         footer_html = _footer_to_html(footer_part)
 
     for para in doc.paragraphs:
-        li, list_kind, level = _paragraph_to_html(para)
+        li, list_kind, level = _paragraph_to_html(para, notes)
         if list_kind is not None:
             seq.append(("list", list_kind, level or 1, strip_li(li)))
         else:
@@ -406,7 +587,7 @@ def docx_to_html(data: bytes) -> str:
             parts.append(_render_list_node(node))
 
     for table in doc.tables:
-        parts.append(_table_to_html(table))
+        parts.append(_table_to_html(table, notes))
 
     # Build the final HTML with header/footer
     html_parts = []
@@ -781,15 +962,16 @@ def _apply_para_props(p, props: dict) -> None:
         pass
 
 
-def _paragraph_to_html(para) -> tuple[str | None, str | None, int | None]:
+def _paragraph_to_html(para, notes=None) -> tuple[str | None, str | None, int | None]:
     """Return (html_fragment, list_kind, list_level).
 
     Non-list blocks return (html, None, None). List paragraphs return
     `[fmt]<li>..</li>` plus its kind ("ul"/"ol") and outline level so the
-    caller can group/nest consecutive items.
+    caller can group/nest consecutive items. ``notes`` carries the parsed
+    footnotes/endnotes maps for footnote-marker rendering.
     """
     style = (para.style.name or "").lower()
-    text = _paragraph_inline(para)
+    text = _paragraph_inline(para, notes)
 
     # Horizontal rule: an empty paragraph with a bottom border renders as <hr/>.
     if _para_has_bottom_border(para) and not text.strip():
@@ -827,7 +1009,7 @@ def _block_attrs(para, styles: list[str]) -> str:
     return ' style="' + ";".join(styles) + '"'
 
 
-def _paragraph_inline(para) -> str:
+def _paragraph_inline(para, notes=None) -> str:
     """Inline HTML for a paragraph, emitting hyperlink runs as <a href>."""
     out = []
     for child in para._p.iterchildren():
@@ -835,13 +1017,13 @@ def _paragraph_inline(para) -> str:
         if tag == qn("w:hyperlink"):
             href = _hyperlink_href(para, child)
             inner_runs = [Run(r, para) for r in child.findall(qn("w:r"))]
-            inner = _runs_to_html(inner_runs)
+            inner = _runs_to_html(inner_runs, notes)
             if href:
                 out.append(f'<a href="{escape(href, quote=True)}">{inner}</a>')
             else:
                 out.append(inner)
         elif tag == qn("w:r"):
-            out.append(_run_to_html(Run(child, para)))
+            out.append(_run_to_html(Run(child, para), notes))
     return "".join(out)
 
 
@@ -865,10 +1047,10 @@ def _heading_level(style: str) -> int:
     return max(1, min(int(m.group(1)), 6))
 
 
-def _runs_to_html(runs) -> str:
+def _runs_to_html(runs, notes=None) -> str:
     out: list[str] = []
     for run in runs:
-        out.append(_run_to_html(run))
+        out.append(_run_to_html(run, notes))
     html = "".join(out)
     if not html:
         # paragraph with no runs (e.g. empty) still needs a newline
@@ -876,17 +1058,33 @@ def _runs_to_html(runs) -> str:
     return html
 
 
-def _run_to_html(run) -> str:
+def _run_to_html(run, notes=None) -> str:
     """Inline HTML for one run, keeping picture positions intact.
 
     A ``<w:r>`` can interleave text children (``w:t``/``w:tab``/``w:br``/``w:cr``)
     with ``w:drawing`` children; each drawing becomes a self-contained
-    ``<img>`` where it sits in the run.
+    ``<img>`` where it sits in the run. A ``w:footnoteReference``/
+    ``w:endnoteReference`` child emits the note marker + body span via the
+    ``notes`` context (unknown ids are dropped).
     """
     chunks: list[str] = []
     buf: list[str] = []
     for child in run._r:
-        if child.tag == qn("w:drawing"):
+        if child.tag == qn("w:footnoteReference"):
+            marker = _note_marker("footnote", child.get(qn("w:id")), notes)
+            if marker:
+                if buf:
+                    chunks.append(_wrap_run_text(escape("".join(buf)), run))
+                    buf = []
+                chunks.append(marker)
+        elif child.tag == qn("w:endnoteReference"):
+            marker = _note_marker("endnote", child.get(qn("w:id")), notes)
+            if marker:
+                if buf:
+                    chunks.append(_wrap_run_text(escape("".join(buf)), run))
+                    buf = []
+                chunks.append(marker)
+        elif child.tag == qn("w:drawing"):
             img = _drawing_to_img(run, child)
             if img:
                 if buf:
@@ -1218,7 +1416,7 @@ def _drawing_to_img(run, drawing) -> str:
     return ""
 
 
-def _table_to_html(table) -> str:
+def _table_to_html(table, notes=None) -> str:
     """Render a python-docx table as an HTML <table> fragment.
 
     Cell text keeps run-level formatting (bold/italic/underline) and
@@ -1238,7 +1436,7 @@ def _table_to_html(table) -> str:
             rowspan = 1
             if e["vmerge"] == "start":
                 rowspan = _rowspan_for(grid, r, e["pos"])
-            cells.append(_cell_to_html(e, rowspan, tag, table))
+            cells.append(_cell_to_html(e, rowspan, tag, table, notes))
         out.append("<tr>" + "".join(cells) + "</tr>")
     head = "<table>"
     tblPr = table._tbl.tblPr
@@ -1306,7 +1504,7 @@ def _row_is_header(tr) -> bool:
     return trPr is not None and trPr.find(qn("w:tblHeader")) is not None
 
 
-def _cell_to_html(e, rowspan: int, tag: str, table) -> str:
+def _cell_to_html(e, rowspan: int, tag: str, table, notes=None) -> str:
     """Render one grid entry as <td|th> HTML, keeping inline formatting."""
     attrs = ""
     if e["width"] > 1:
@@ -1323,7 +1521,7 @@ def _cell_to_html(e, rowspan: int, tag: str, table) -> str:
     cell = _Cell(e["tc"], table)
     paras: list[str] = []
     for p_el in e["tc"].p_lst:
-        paras.append(_runs_to_html(Paragraph(p_el, cell).runs))
+        paras.append(_runs_to_html(Paragraph(p_el, cell).runs, notes))
     inner = "<br/>".join(paras)
     if inner == "<br/>":
         inner = ""  # a single empty paragraph is an empty cell
@@ -1536,12 +1734,21 @@ def _inline_to_text(html: str) -> str:
     return unescape(text)
 
 
+_VOID_TAGS = frozenset({
+    "img", "br", "hr", "meta", "link", "input", "area", "base", "col",
+    "embed", "frame", "param", "source", "track", "wbr",
+})
+
+
 class _InlineRunBuilder(HTMLParser):
     """Parse an inline HTML fragment into text and image tokens.
 
     Text tokens are dicts with ``type: "text"`` plus ``text``/``bold``/
     ``italic``/``underline``; image tokens have ``type: "image"`` plus
-    ``src``/``alt``/``width``/``height``.
+    ``src``/``alt``/``width``/``height``. The HTML contract for notes — a
+    ``<sup class="footnote-citation">[n]</sup>`` immediately followed by a
+    ``<span class="footnote">BODY</span>`` — becomes a single ``type:
+    "footnote"`` token carrying ``kind`` / ``citation`` / ``body``.
     """
 
     def __init__(self) -> None:
@@ -1562,9 +1769,74 @@ class _InlineRunBuilder(HTMLParser):
         self._all_caps = None
         self._span_stack: list[tuple] = []  # prior span props saved on <span> open
         self._vert_stack = []   # prev vert saved on <sup>/<sub> open
+        self._note = None       # pending footnote/endnote (see _start_note)
         self._buf: list[str] = []
 
+    def _start_note(self, attrs) -> bool:
+        """True when the attrs mark a footnote/endnote citation <sup>. Starts a
+        pending note: the next adjacent <span class="footnote|endnote"> (or
+        the end of input) decides whether it becomes a real note token or is
+        emitted as a plain superscript."""
+        cls = set((dict(attrs).get("class") or "").split())
+        if not (cls & {"footnote-citation", "endnote-citation"}):
+            return False
+        self._note = {
+            "kind": "endnote" if "endnote-citation" in cls else "footnote",
+            "citation": "",
+            "in_citation": True,   # still inside the <sup>…</sup> citation
+            "in_body": False,
+            "depth": 0,
+            "html": [],
+        }
+        return True
+
+        self._note = {
+            "kind": "endnote" if "endnote-citation" in cls else "footnote",
+            "citation": "",
+            "in_citation": True,   # still inside the <sup>…</sup> citation
+            "in_body": False,
+            "depth": 0,
+            "html": [],
+            "token_pos": len(self.tokens),
+        }
+        return True
+
+    def _orphan_note(self) -> None:
+        """Emit a pending citation <sup> that was NOT followed by an adjacent
+        <span class="footnote|endnote"> as a plain superscript run, keeping it
+        at its original position in the token stream."""
+        text = self._note["citation"]
+        pos = self._note["token_pos"]
+        self._note = None
+        if text:
+            self.tokens.insert(pos, {
+                "type": "text",
+                "text": text,
+                "bold": self._bold > 0,
+                "italic": self._italic > 0,
+                "underline": self._underline > 0,
+                "vert": "sup",
+            })
+
     def handle_starttag(self, tag: str, attrs) -> None:
+        if self._note is not None and not self._note["in_body"]:
+            # An open citation <sup>: the confirming <span class=...> directly
+            # adjacent starts the body; anything else orphans the citation
+            # back into a plain superscript run.
+            cls = (dict(attrs).get("class") or "").split()
+            body_cls = "footnote" if self._note["kind"] == "footnote" else "endnote"
+            if tag == "span" and body_cls in cls and not self._buf:
+                self._note["in_body"] = True
+                self._note["depth"] = 1
+                self._note["html"].append(self.get_starttag_text())
+                return
+            self._orphan_note()
+            # fall through to normal handling for this tag
+        elif self._note is not None and self._note["in_body"]:
+            if tag not in _VOID_TAGS:
+                self._note["depth"] += 1
+            self._note["html"].append(self.get_starttag_text())
+            return
         if tag == "img":
             self._flush()
             a = dict(attrs)
@@ -1618,6 +1890,8 @@ class _InlineRunBuilder(HTMLParser):
                 self._all_caps = True
         elif tag == "sup":
             self._flush()
+            if self._start_note(attrs):
+                return  # citation sups do not touch the vertical-align state
             self._vert_stack.append(self._vert)
             self._vert = "sup"
         elif tag == "sub":
@@ -1633,7 +1907,31 @@ class _InlineRunBuilder(HTMLParser):
         else:
             self._flush()
 
+    def handle_startendtag(self, tag: str, attrs) -> None:
+        """Record self-closing void tags inside a note body without skewing the
+        nesting depth (they have no matching end tag; the body's </span> is
+        tracked by depth, so an unclosed <br/> must not swallow it)."""
+        if self._note is not None and self._note["in_body"]:
+            if tag in _VOID_TAGS:
+                self._note["html"].append(self.get_starttag_text())
+                return
+        super().handle_startendtag(tag, attrs)
+
     def handle_endtag(self, tag: str) -> None:
+        if self._note is not None and self._note["in_body"]:
+            if tag not in _VOID_TAGS:
+                self._note["depth"] = max(0, self._note["depth"] - 1)
+            self._note["html"].append(f"</{tag}>")
+            if self._note["depth"] == 0 and tag == "span":
+                note = self._note
+                self._note = None
+                self.tokens.append({
+                    "type": "footnote",
+                    "kind": note["kind"],
+                    "citation": (note["citation"] or "").strip(),
+                    "body": "".join(note["html"]),
+                })
+            return
         if tag in ("b", "strong"):
             self._flush()
             self._bold = max(0, self._bold - 1)
@@ -1653,7 +1951,9 @@ class _InlineRunBuilder(HTMLParser):
                  self._small_caps, self._all_caps) = self._span_stack.pop()
         elif tag == "sup":
             self._flush()
-            if self._vert_stack:
+            if self._note is not None and self._note.get("in_citation"):
+                self._note["in_citation"] = False
+            elif self._vert_stack:
                 self._vert = self._vert_stack.pop()
         elif tag == "sub":
             self._flush()
@@ -1669,7 +1969,32 @@ class _InlineRunBuilder(HTMLParser):
             self._flush()
 
     def handle_data(self, data: str) -> None:
-        self._buf.append(data)
+        if (
+            self._note is not None
+            and not self._note["in_body"]
+            and self._note["in_citation"]
+        ):
+            self._note["citation"] += data
+        elif self._note is not None and self._note["in_body"]:
+            self._note["html"].append(escape(data))
+        else:
+            self._buf.append(data)
+
+    def _finish(self) -> None:
+        """Close out any unterminated footnote/endnote at end of input."""
+        if self._note is not None:
+            if not self._note["in_body"]:
+                self._orphan_note()
+            else:
+                note = self._note
+                self._note = None
+                self.tokens.append({
+                    "type": "footnote",
+                    "kind": note["kind"],
+                    "citation": (note["citation"] or "").strip(),
+                    "body": "".join(note["html"]),
+                })
+        self._flush()
 
     def _flush(self) -> None:
         text = "".join(self._buf)
@@ -1709,7 +2034,7 @@ class _InlineRunBuilder(HTMLParser):
 def _inline_tokens(html: str) -> list[dict]:
     builder = _InlineRunBuilder()
     builder.feed(html)
-    builder._flush()
+    builder._finish()
     return builder.tokens
 
 
@@ -1717,11 +2042,15 @@ def _add_styled_runs(paragraph, html: str) -> None:
     """Add runs parsed from an inline HTML fragment to a paragraph.
 
     Image tokens are embedded as inline pictures (``data:`` URIs only);
-    http(s)/relative src values are skipped server-side.
+    http(s)/relative src values are skipped server-side. Footnote/endnote
+    tokens emit a reference run and record the note body in the package.
     """
     for token in _inline_tokens(html):
         if token["type"] == "image":
             _add_image_run(paragraph, token)
+            continue
+        if token["type"] == "footnote":
+            _add_footnote_reference(paragraph, token)
             continue
         if token["type"] == "link":
             _add_hyperlink(paragraph, token)

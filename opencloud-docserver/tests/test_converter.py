@@ -1002,3 +1002,49 @@ def test_docx_page_number_field_roundtrip():
     out = docx_to_html(docx_bytes)
     assert 'page-number' in out, out
     assert 'Page' in out and 'of 10' in out, out
+
+
+def test_html_to_docx_footnote_roundtrip():
+    """A footnote (marker + adjacent body span) round-trips DOCX.
+
+    The HTML contract: <sup class="footnote-citation">[n]</sup> immediately
+    followed by <span class="footnote">BODY</span>. On reload the citation
+    ``[1]``, the marker classes and the body text must all survive, and the
+    DOCX package must physically carry a footnotes.xml part (with the
+    Word/LibreOffice sentinel footnotes) holding the note text.
+    """
+    html = (
+        '<p>Main text<sup class="footnote-citation">[1]</sup>'
+        '<span class="footnote">Note body.</span> continues.</p>'
+    )
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    assert '<sup class="footnote-citation">[1]</sup>' in out, out
+    assert '<span class="footnote">Note body.</span>' in out, out
+    assert "Main text" in out and "continues." in out, out
+    # physical assertion: the package carries a footnotes part with sentinels
+    with zipfile.ZipFile(io.BytesIO(docx)) as z:
+        assert "word/footnotes.xml" in z.namelist(), z.namelist()
+        fn_xml = z.read("word/footnotes.xml").decode("utf-8", "replace")
+        assert "Note body." in fn_xml, fn_xml
+        assert 'separator' in fn_xml, fn_xml
+        assert 'continuationSeparator' in fn_xml, fn_xml
+        assert 'w:id="1"' in fn_xml, fn_xml
+
+
+def test_html_to_docx_endnote_roundtrip():
+    """An endnote (marker + adjacent body span) round-trips DOCX."""
+    html = (
+        '<p>Main text<sup class="endnote-citation">[1]</sup>'
+        '<span class="endnote">End note body.</span> continues.</p>'
+    )
+    docx = html_to_docx(html)
+    out = docx_to_html(docx)
+    assert '<sup class="endnote-citation">[1]</sup>' in out, out
+    assert '<span class="endnote">End note body.</span>' in out, out
+    assert "Main text" in out and "continues." in out, out
+    with zipfile.ZipFile(io.BytesIO(docx)) as z:
+        assert "word/endnotes.xml" in z.namelist(), z.namelist()
+        en_xml = z.read("word/endnotes.xml").decode("utf-8", "replace")
+        assert "End note body." in en_xml, en_xml
+        assert 'w:id="1"' in en_xml, en_xml
