@@ -185,6 +185,8 @@
     <button id="btn-crossref" title="Insert cross-reference" aria-label="Insert cross-reference">🔗</button>
     <button id="btn-track-changes" title="Track changes" aria-label="Track changes" aria-pressed="false">🛠</button>
     <button id="btn-review-changes" title="Review changes" aria-label="Review changes">✓</button>
+    <button id="btn-comment" title="Add comment" aria-label="Add comment">💬</button>
+    <button id="btn-comments" title="Show comments" aria-label="Show comments">🗒</button>
     <button id="btn-symbol" title="Insert symbol" aria-label="Insert symbol">Ω</button>
     <button id="btn-datetime" title="Insert date" aria-label="Insert date">📅</button>
     <button id="btn-find" title="Find and replace (Ctrl+F)" data-i18n-title="Toolbar.FindTitle" aria-label="Find and replace" data-i18n-aria-label="Toolbar.Find" aria-keyshortcuts="Control+F">🔍</button>
@@ -498,6 +500,31 @@
     </div>
     <div id="review-list" class="review-list"></div>
     <p id="review-empty" class="review-empty">No tracked changes.</p>
+  </aside>
+
+  <!-- Comment dialog -->
+  <div id="comment-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="comment-dialog-title">
+    <div class="dialog">
+      <h3 id="comment-dialog-title">Add comment</h3>
+      <div class="dialog-field">
+        <label for="comment-body">Comment</label>
+        <textarea id="comment-body" rows="3" placeholder="Your comment"></textarea>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-comment-cancel">Cancel</button>
+        <button id="btn-comment-ok" class="primary">Comment</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comments panel -->
+  <aside id="comments-panel" class="side-panel" aria-label="Comments" hidden>
+    <div class="side-panel-header">
+      <h3>Comments</h3>
+      <button id="btn-comments-close" aria-label="Close comments panel">✕</button>
+    </div>
+    <div id="comments-list" class="review-list"></div>
+    <p id="comments-empty" class="review-empty">No comments.</p>
   </aside>
 
 </body>

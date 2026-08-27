@@ -112,5 +112,6 @@ Module deps: CD=converter.py(DOCX) · CO=odt_converter.py(ODT) · UI=editor.js �
 TOTAL functions: ~80 · ✅ ~44 · ⚠️ 5 · ❌ ~31
 Converter gap (CD/CO) CLOSED — caption, split, columns, TOC, section-break and
 objects (shape/textbox/chart/equation) all round-trip in both DOCX and ODT.
-Remaining editorial UI: comments (sidebar + insert). Presence carets are
+All editorial UI is implemented (bookmarks, cross-references, track-changes
+toggle + accept/reject, comments sidebar + insert). Presence carets are
 explicitly out of scope (see cloud-editor-complete).

@@ -44,6 +44,7 @@
   const READ_ONLY = window.__READ_ONLY__ === true;
   let trackChangesOn = false;
   const TRACK_AUTHOR = window.__USER_NAME__ || "You";
+  let commentRange = null;
   const SESSION = window.__SESSION__ || "";
   const api = (path) => `/api/documents/${encodeURIComponent(DOC_ID)}/${path}?session=${encodeURIComponent(SESSION)}`;
   // Resolve the UI language from the browser (falls back to English).
@@ -1820,6 +1821,112 @@
     if (items.length === 0) closeReviewPanel();
   }
 
+  function openCommentDialog() {
+    if (READ_ONLY) return;
+    const dialog = document.getElementById("comment-dialog");
+    const bodyEl = document.getElementById("comment-body");
+    if (!dialog) return;
+    const sel = window.getSelection();
+    commentRange = (sel && sel.rangeCount) ? sel.getRangeAt(0).cloneRange() : null;
+    if (bodyEl) bodyEl.value = "";
+    rememberFocus();
+    dialog.classList.add("open");
+    if (bodyEl) bodyEl.focus();
+  }
+  function closeCommentDialog() {
+    const dialog = document.getElementById("comment-dialog");
+    if (dialog) dialog.classList.remove("open");
+    restoreFocus();
+  }
+  function confirmCommentDialog() {
+    const dialog = document.getElementById("comment-dialog");
+    const bodyEl = document.getElementById("comment-body");
+    const body = (bodyEl && bodyEl.value || "").trim();
+    if (dialog) dialog.classList.remove("open");
+    restoreFocus();
+    editor.focus();
+    if (!commentRange) { renderCommentsList(); openCommentsPanel(); return; }
+    const span = document.createElement("span");
+    span.className = "comment";
+    span.setAttribute("data-author", TRACK_AUTHOR);
+    span.setAttribute("data-comment", body);
+    try {
+      commentRange.surroundContents(span);
+    } catch (err) {
+      const text = commentRange.toString();
+      const html = '<span class="comment" data-author="' + escapeAttr(TRACK_AUTHOR) +
+        '" data-comment="' + escapeAttr(body) + '">' + escapeAttr(text) + '</span>';
+      try { document.execCommand("insertHTML", false, html); } catch (e2) {}
+      afterTrackEdit();
+      renderCommentsList();
+      openCommentsPanel();
+      return;
+    }
+    afterTrackEdit();
+    renderCommentsList();
+    openCommentsPanel();
+  }
+  function openCommentsPanel() {
+    const p = document.getElementById("comments-panel");
+    if (p) p.hidden = false;
+    renderCommentsList();
+  }
+  function closeCommentsPanel() {
+    const p = document.getElementById("comments-panel");
+    if (p) p.hidden = true;
+  }
+  function closeCommentsPanelIfEmpty() {
+    const items = editor.querySelectorAll("span.comment");
+    if (items.length === 0) closeCommentsPanel();
+  }
+  function renderCommentsList() {
+    const list = document.getElementById("comments-list");
+    const empty = document.getElementById("comments-empty");
+    if (!list) return;
+    const items = Array.from(editor.querySelectorAll("span.comment"));
+    list.innerHTML = "";
+    if (empty) empty.style.display = items.length ? "none" : "block";
+    items.forEach((el) => {
+      const author = el.getAttribute("data-author") || "";
+      const body = el.getAttribute("data-comment") || "";
+      const item = document.createElement("div");
+      item.className = "review-item";
+      const meta = document.createElement("div");
+      meta.className = "review-meta";
+      meta.textContent = author ? "Comment — " + author : "Comment";
+      const b = document.createElement("div");
+      b.className = "review-text";
+      b.textContent = body || (el.textContent || "").slice(0, 120);
+      const actions = document.createElement("div");
+      actions.className = "review-actions";
+      const locate = document.createElement("button");
+      locate.type = "button"; locate.textContent = "Go to";
+      locate.addEventListener("click", () => {
+        el.scrollIntoView({ block: "center" });
+        const r = document.createRange();
+        r.selectNodeContents(el);
+        const s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+      });
+      const del = document.createElement("button");
+      del.type = "button"; del.className = "primary"; del.textContent = "Delete";
+      del.addEventListener("click", () => deleteComment(el));
+      actions.appendChild(locate); actions.appendChild(del);
+      item.appendChild(meta); item.appendChild(b); item.appendChild(actions);
+      list.appendChild(item);
+    });
+  }
+  function deleteComment(el) {
+    const parent = el.parentNode;
+    if (!parent) return;
+    while (el.firstChild) parent.insertBefore(el.firstChild, el);
+    parent.removeChild(el);
+    afterTrackEdit();
+    renderCommentsList();
+    closeCommentsPanelIfEmpty();
+  }
+
   // wo-command event bus (project-wide invariant)
   // ------------------------------------------------------------------
   // Every formatting edit flows through a single channel:
@@ -2465,6 +2572,24 @@
   const revClose = document.getElementById("btn-review-close");
   if (revClose) revClose.addEventListener("click", closeReviewPanel);
   editor.addEventListener("beforeinput", onBeforeInput);
+  const commentBtn = document.getElementById("btn-comment");
+  if (commentBtn) commentBtn.addEventListener("click", openCommentDialog);
+  const commentOk = document.getElementById("btn-comment-ok");
+  if (commentOk) commentOk.addEventListener("click", confirmCommentDialog);
+  const commentCancel = document.getElementById("btn-comment-cancel");
+  if (commentCancel) commentCancel.addEventListener("click", closeCommentDialog);
+  const commentBody = document.getElementById("comment-body");
+  if (commentBody) commentBody.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); confirmCommentDialog(); }
+  });
+  const commentsBtn = document.getElementById("btn-comments");
+  if (commentsBtn) commentsBtn.addEventListener("click", () => {
+    const p = document.getElementById("comments-panel");
+    if (p) p.hidden = !p.hidden;
+    renderCommentsList();
+  });
+  const commentsClose = document.getElementById("btn-comments-close");
+  if (commentsClose) commentsClose.addEventListener("click", closeCommentsPanel);
   const SYMBOLS = ["§", "¶", "°", "±", "×", "÷", "≈", "≠", "≤", "≥", "∞", "√",
                    "€", "£", "¥", "¢", "©", "®", "™", "→", "←", "↑", "↓", "•",
                    "–", "—", "…", "«", "»", "½", "¼", "¾", "α", "β", "μ", "π",
