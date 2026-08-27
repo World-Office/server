@@ -582,6 +582,78 @@ def _canonical_odt_crossref_page_format() -> bytes:
     return buf.getvalue()
 
 
+def _canonical_odt_reference_mark_range() -> bytes:
+    """LibreOffice anchors cross-references at text:reference-mark-start/end
+    in addition to text:bookmark-start/end — our reader treats both as
+    bookmark anchors."""
+    doc = OpenDocumentText()
+    p = P()
+    p.addText("Intro ")
+    p.addElement(Element(qname=(TEXTNS, "reference-mark-start"),
+                         qattributes={(TEXTNS, "name"): "RM1"}))
+    p.addText("Target")
+    p.addElement(Element(qname=(TEXTNS, "reference-mark-end"),
+                         qattributes={(TEXTNS, "name"): "RM1"}))
+    p.addText(" end.")
+    doc.text.addElement(p)
+    buf = io.BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
+
+
+def _canonical_odt_reference_mark_point() -> bytes:
+    doc = OpenDocumentText()
+    p = P()
+    p.addText("head ")
+    p.addElement(Element(qname=(TEXTNS, "reference-mark"),
+                         qattributes={(TEXTNS, "name"): "RM2"}))
+    p.addText(" tail")
+    doc.text.addElement(p)
+    buf = io.BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
+
+
+def _canonical_odt_multiparagraph_comment() -> bytes:
+    """office:annotation whose body has several text:p paragraphs."""
+    doc = OpenDocumentText()
+    p = P()
+    p.addText("flagged")
+    ann = Element(qname=(OFFICENS, "annotation"))
+    creator = Element(qname=(DCNS, "creator"))
+    creator.addText("Alice")
+    ann.addElement(creator)
+    b1 = Element(qname=(TEXTNS, "p"))
+    b1.addText("First line of note")
+    ann.addElement(b1)
+    b2 = Element(qname=(TEXTNS, "p"))
+    b2.addText("Second line")
+    ann.addElement(b2)
+    p.addElement(ann)
+    doc.text.addElement(p)
+    buf = io.BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
+
+
+def test_odt_read_reference_mark_range():
+    html = odt_to_html(_canonical_odt_reference_mark_range())
+    assert '<span class="bookmark" data-name="RM1">Target</span>' in html, html
+    assert "Intro" in html and "end." in html, html
+
+
+def test_odt_read_reference_mark_point():
+    html = odt_to_html(_canonical_odt_reference_mark_point())
+    assert '<span class="bookmark" data-name="RM2"></span>' in html, html
+    assert "head" in html and "tail" in html, html
+
+
+def test_odt_read_multiparagraph_comment():
+    html = odt_to_html(_canonical_odt_multiparagraph_comment())
+    assert ('<span class="comment" data-author="Alice" '
+            'data-comment="First line of note\nSecond line">flagged</span>') in html, html
+
+
 def _canonical_odt_crossref_inside_tracked_insert() -> bytes:
     """A cross-reference text inside a tracked insertion region."""
     doc = OpenDocumentText()
