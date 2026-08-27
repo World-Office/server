@@ -99,6 +99,7 @@
         </li>
         <li role="none" class="menu-sep" aria-hidden="true"></li>
         <li role="none"><button type="button" id="btn-print" role="menuitem" data-i18n="Menu.Print">Print</button></li>
+        <li role="none"><button type="button" id="btn-history" role="menuitem" data-i18n="Menu.History">History…</button></li>
       </ul>
     </div>
   </nav>
@@ -297,6 +298,20 @@
       <div class="dialog-actions">
         <button id="btn-link-cancel">Cancel</button>
         <button id="btn-link-ok" class="primary">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Version-history dialog: lists saved snapshots newest-first with a Restore
+       button per entry; the head version is marked Current. Restore rewinds the
+       stored document and reloads the editor. -->
+  <div id="version-history-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="version-history-title">
+    <div class="dialog">
+      <h3 id="version-history-title" data-i18n="VersionHistory.Title">Version history</h3>
+      <div id="version-list" class="version-list" role="list" aria-label="Version history"></div>
+      <div id="version-error" class="version-error" role="alert"></div>
+      <div class="dialog-actions">
+        <button id="btn-version-close" data-i18n="VersionHistory.Close">Close</button>
       </div>
     </div>
   </div>
