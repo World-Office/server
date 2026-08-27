@@ -67,7 +67,8 @@ The parity-round implementation already matched every one of these structures:
    `text:reference-format="text"` (matches ONLYOFFICE/LibreOffice output).
    Previously only `text:ref-name` was written; readers tolerate the omission,
    but emitting it is more canonical.
-2. **New conformance suite** — `tests/test_onlyoffice_conformance.py` (11 tests)
+2. **New conformance suite** — `tests/test_onlyoffice_conformance.py`
+   (24 tests — expanded) rebuilds each canonical document
    rebuilds each canonical document *in memory* (via python-docx/odfpy) exactly
    as ONLYOFFICE writes it, and asserts the docserver converter:
    - reads canonical DOCX bookmarks, anchor cross-refs, `w:ins`/`w:del` (+delText);
