@@ -687,3 +687,63 @@ a[href^="#"] {
   color: #1a5276;
   border-bottom: 1px dotted #1a5276;
 }
+
+ins.track-insert {
+  text-decoration: underline;
+  color: #1565c0;
+  background: #e3f2fd;
+}
+del.track-delete {
+  text-decoration: line-through;
+  color: #c62828;
+  background: #ffebee;
+}
+#editor.track-on {
+  outline: 2px dashed #90a4ae;
+  outline-offset: -2px;
+}
+button.active {
+  background: #1565c0;
+  color: #fff;
+}
+
+.side-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100%;
+  background: #fff;
+  border-left: 1px solid #ccc;
+  box-shadow: -2px 0 8px rgba(0, 0, 0, .1);
+  display: flex;
+  flex-direction: column;
+  z-index: 50;
+}
+.side-panel[hidden] { display: none; }
+.side-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  border-bottom: 1px solid #eee;
+}
+.side-panel-header h3 { margin: 0; font-size: 14px; }
+.review-list { flex: 1; overflow-y: auto; padding: 8px; }
+.review-item {
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+.review-insert { border-left: 3px solid #1565c0; }
+.review-delete { border-left: 3px solid #c62828; }
+.review-meta { font-size: 12px; color: #555; margin-bottom: 4px; }
+.review-text {
+  font-size: 13px;
+  margin-bottom: 6px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.review-actions { display: flex; gap: 6px; }
+.review-empty { padding: 12px; color: #888; }

@@ -65,8 +65,8 @@ Module deps: CD=converter.py(DOCX) · CO=odt_converter.py(ODT) · UI=editor.js �
 
 ## 7. links (PART_OF FeatureSurface)
 - hyperlink ✅ (UI link dialog; text:a ↔ w:hyperlink; safe-scheme filter; boundaries preserved both formats) — CD,CO,UI
-- bookmark ❌ — REQUIRES UI,CD,CO
-- cross-reference ❌ — REQUIRES UI,CD,CO
+- bookmark ✅ (CD,CO,UI; <span class="bookmark" data-name> ↔ w:bookmarkStart/End ↔ text:bookmark-start/end; bookmark dialog)
+- cross-reference ✅ (CD,CO,UI; <a href="#name"> ↔ w:hyperlink w:anchor ↔ text:bookmark-ref; cross-ref dialog)
 
 ## 8. references (PART_OF FeatureSurface)
 - footnote ✅ (CD,CO: `<sup class="footnote-citation">[n]</sup>` + `<span class="footnote">` contract; DOCX real footnotes.xml part + w:footnoteReference, ODT text:note; no editor UI — static inline render)
@@ -97,7 +97,7 @@ Module deps: CD=converter.py(DOCX) · CO=odt_converter.py(ODT) · UI=editor.js �
 
 ## 13. collaboration (PART_OF FeatureSurface)
 - comments ✅ (DOCX comments.xml + ODT office:annotation; editor.js span + margin notes)
-- track-changes ✅ (DOCX w:ins/w:del + ODT change marks/tracked-changes registry)
+- track-changes ✅ (CD,CO + UI: toggle, live recording, accept/reject review panel; DOCX w:ins/w:del + ODT change marks/tracked-changes registry)
 - presence-cursor ✅ (collab-presence spec)
 - version-history ❌ — REQUIRES collab
 
@@ -112,5 +112,5 @@ Module deps: CD=converter.py(DOCX) · CO=odt_converter.py(ODT) · UI=editor.js �
 TOTAL functions: ~80 · ✅ ~44 · ⚠️ 5 · ❌ ~31
 Converter gap (CD/CO) CLOSED — caption, split, columns, TOC, section-break and
 objects (shape/textbox/chart/equation) all round-trip in both DOCX and ODT.
-Remaining ❌ are collab-side (comments, track-changes, version-history) and
-editor UI authoring (inserting TOC/objects from the UI, not the round-trip).
+Remaining editorial UI: comments (sidebar + insert). Presence carets are
+explicitly out of scope (see cloud-editor-complete).

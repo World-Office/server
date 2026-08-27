@@ -183,6 +183,8 @@
     <button id="btn-object" title="Insert object" aria-label="Insert object">▢</button>
     <button id="btn-bookmark" title="Insert bookmark" aria-label="Insert bookmark">📑</button>
     <button id="btn-crossref" title="Insert cross-reference" aria-label="Insert cross-reference">🔗</button>
+    <button id="btn-track-changes" title="Track changes" aria-label="Track changes" aria-pressed="false">🛠</button>
+    <button id="btn-review-changes" title="Review changes" aria-label="Review changes">✓</button>
     <button id="btn-symbol" title="Insert symbol" aria-label="Insert symbol">Ω</button>
     <button id="btn-datetime" title="Insert date" aria-label="Insert date">📅</button>
     <button id="btn-find" title="Find and replace (Ctrl+F)" data-i18n-title="Toolbar.FindTitle" aria-label="Find and replace" data-i18n-aria-label="Toolbar.Find" aria-keyshortcuts="Control+F">🔍</button>
@@ -488,5 +490,15 @@
       });
     }
   </script>
+  <!-- Review panel: list track-changes for accept/reject -->
+  <aside id="review-panel" class="side-panel" aria-label="Review changes" hidden>
+    <div class="side-panel-header">
+      <h3>Review changes</h3>
+      <button id="btn-review-close" aria-label="Close review panel">✕</button>
+    </div>
+    <div id="review-list" class="review-list"></div>
+    <p id="review-empty" class="review-empty">No tracked changes.</p>
+  </aside>
+
 </body>
 </html>
