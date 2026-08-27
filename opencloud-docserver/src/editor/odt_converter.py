@@ -584,6 +584,7 @@ def odt_to_html(data: bytes) -> str:
     def render(children) -> None:
         """Render body-level children into ``parts`` (recurses into
         text:section elements so section columns survive the round-trip)."""
+        nonlocal pending_list
         for child in children:
             if child.nodeType != Node.ELEMENT_NODE:
                 continue
