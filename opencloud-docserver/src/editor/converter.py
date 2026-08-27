@@ -16,6 +16,7 @@ import logging
 import re
 from html import escape
 from html.parser import HTMLParser
+from typing import Any
 
 from docx import Document
 from docx.enum.dml import MSO_COLOR_TYPE
@@ -259,9 +260,10 @@ def _tokenize_body(body: str) -> list:
 
     op tuples: ('hr',) | ('pagebreak', inner) | ('p', open_attrs, inner) |
     ('h', level, open_attrs, inner) | ('blockquote', open_attrs, inner) |
-    ('list', tree). Stray text between blocks is dropped, matching the
-    previous regex-based behaviour. Tables are appended separately by the
-    callers (they are excised before this runs).
+    ('list', tree) | ('header', attrs, content) | ('footer', attrs, content).
+    Stray text between blocks is dropped, matching the previous regex-based
+    behaviour. Tables are appended separately by the callers (they are excised
+    before this runs).
     """
     ops: list = []
     pos = 0
@@ -271,6 +273,18 @@ def _tokenize_body(body: str) -> list:
             break
         pos += m.start()
         rest = body[pos:]
+        # Header at the start of body
+        mh = re.match(r'<header([^>]*)>(.*?)</header>', rest, re.S | re.I)
+        if mh:
+            ops.append(("header", mh.group(1), mh.group(2)))
+            pos += mh.end()
+            continue
+        # Footer at the end of body
+        mf = re.search(r'<footer([^>]*)>(.*?)</footer>', rest, re.S | re.I)
+        if mf and mf.start() == 0:
+            ops.append(("footer", mf.group(1), mf.group(2)))
+            pos += mf.end()
+            continue
         mh = re.match(r"<hr(?:\s[^>]*)?/?>", rest, re.I)
         if mh:
             ops.append(("hr",))
@@ -358,6 +372,18 @@ def docx_to_html(data: bytes) -> str:
         m = re.match(r"^<li[^>]*>(.*)</li>\s*$", frag, re.S)
         return m.group(1) if m else frag
 
+    # Extract header content if present
+    header_html = ""
+    header_part = _find_header_part(doc)
+    if header_part:
+        header_html = _header_to_html(header_part)
+
+    # Extract footer content if present
+    footer_html = ""
+    footer_part = _find_footer_part(doc)
+    if footer_part:
+        footer_html = _footer_to_html(footer_part)
+
     for para in doc.paragraphs:
         li, list_kind, level = _paragraph_to_html(para)
         if list_kind is not None:
@@ -382,7 +408,105 @@ def docx_to_html(data: bytes) -> str:
     for table in doc.tables:
         parts.append(_table_to_html(table))
 
-    return "\n".join(p for p in parts if p)
+    # Build the final HTML with header/footer
+    html_parts = []
+    if header_html:
+        html_parts.append(f'<header class="page-header">{header_html}</header>')
+    html_parts.extend(parts)
+    if footer_html:
+        html_parts.append(f'<footer class="page-footer">{footer_html}</footer>')
+
+    return "\n".join(p for p in html_parts if p)
+
+
+def _find_header_part(doc) -> Any | None:
+    """Find the header part from the document's relationships."""
+
+    sectPr = doc.sections[0]._sectPr
+    hdr_ref = sectPr.find(qn("w:headerReference"))
+    if hdr_ref is None:
+        return None
+
+    rel_id = hdr_ref.get(qn("r:id"))
+    if rel_id is None:
+        return None
+
+    for rid, rel in doc.part.rels.items():
+        if rid == rel_id and "header" in rel.reltype:
+            return rel.target_part
+    return None
+
+
+def _find_footer_part(doc) -> Any | None:
+    """Find the footer part from the document's relationships."""
+
+    sectPr = doc.sections[0]._sectPr
+    ftr_ref = sectPr.find(qn("w:footerReference"))
+    if ftr_ref is None:
+        return None
+
+    rel_id = ftr_ref.get(qn("r:id"))
+    if rel_id is None:
+        return None
+
+    for rid, rel in doc.part.rels.items():
+        if rid == rel_id and "footer" in rel.reltype:
+            return rel.target_part
+    return None
+
+
+def _header_to_html(header_part) -> str:
+    """Convert a header part to HTML."""
+    # The header part is an XML element with w:hdr root
+    hdr_el = header_part._element
+
+    html_parts = []
+    for p_el in hdr_el.iter(qn("w:p")):
+        inner_html = _runs_to_html_from_el(p_el)
+        html_parts.append(f"<p>{inner_html}</p>")
+
+    return "\n".join(html_parts)
+
+
+def _footer_to_html(footer_part) -> str:
+    """Convert a footer part to HTML."""
+    # The footer part is an XML element with w:ftr root
+    ftr_el = footer_part._element
+
+    html_parts = []
+    for p_el in ftr_el.iter(qn("w:p")):
+        inner_html = _runs_to_html_from_el(p_el)
+        html_parts.append(f"<p>{inner_html}</p>")
+
+    return "\n".join(html_parts)
+
+
+def _runs_to_html_from_el(p_el) -> str:
+    """Convert paragraph elements to HTML, handling PAGE fields."""
+    chunks: list[str] = []
+
+    for child in p_el.iterchildren():
+        tag = child.tag
+        if tag == qn("w:r"):
+            # Check for PAGE field in this run
+            fld_simple = child.find(qn("w:fldSimple"))
+            if fld_simple is not None:
+                instr = fld_simple.get(qn("w:instr"))
+                if instr and " PAGE " in instr:
+                    chunks.append('<span class="page-number"></span>')
+                    continue
+
+            # Regular run - process children
+            for run_child in child.iterchildren():
+                run_child_tag = run_child.tag
+                if run_child_tag == qn("w:t"):
+                    text = run_child.text or ""
+                    if text:
+                        chunks.append(text)
+        elif tag == qn("w:br"):
+            chunks.append("<br/>")
+
+    return "".join(chunks)
 
 
 def _add_hr_paragraph(doc) -> None:
@@ -403,6 +527,104 @@ def _add_page_break(doc) -> None:
     """A page break: an empty paragraph holding ``<w:br w:type='page'/>``."""
     p = doc.add_paragraph()
     p.add_run().add_break(WD_BREAK.PAGE)
+
+
+def _add_header(doc, content_html: str) -> None:
+    """Add a header with the given HTML content to the document.
+
+    Creates word/header1.xml and adds a headerReference to the sectPr.
+    """
+    # Use python-docx's section header - it creates header1.xml automatically
+    section = doc.sections[0]
+    header = section.header
+    header_para = header.paragraphs[0]
+
+    # Parse the header content and add runs
+    # Each <p> becomes a paragraph in the header
+    for p_match in re.finditer(r'<p([^>]*)>(.*?)</p>', content_html, re.S | re.I):
+        p_inner = p_match.group(2)
+
+        # Add the paragraph with header style
+        # Create a run with the header text and any page number fields
+        _add_header_footer_runs_to_paragraph(header_para, p_inner)
+
+        # Add additional paragraphs for multiple <p> tags
+        if p_match.end() < len(content_html):
+            header_para = header.add_paragraph()
+
+    # The section.header accessor automatically adds headerReference to sectPr
+    # if it's not already there
+
+
+def _add_footer(doc, content_html: str) -> None:
+    """Add a footer with the given HTML content to the document.
+
+    Creates word/footer1.xml and adds a footerReference to the sectPr.
+    """
+    # Use python-docx's section footer - it creates footer1.xml automatically
+    section = doc.sections[0]
+    footer = section.footer
+    footer_para = footer.paragraphs[0]
+
+    # Parse the footer content and add runs
+    for p_match in re.finditer(r'<p([^>]*)>(.*?)</p>', content_html, re.S | re.I):
+        p_inner = p_match.group(2)
+
+        # Add the paragraph with footer text and any page number fields
+        _add_header_footer_runs_to_paragraph(footer_para, p_inner)
+
+        # Add additional paragraphs for multiple <p> tags
+        if p_match.end() < len(content_html):
+            footer_para = footer.add_paragraph()
+
+
+def _add_header_footer_runs_to_paragraph(para, content_html: str) -> None:
+    """Add runs to a header/footer paragraph from HTML content.
+
+    Handles page number fields (<span class="page-number">) specially.
+    """
+    # Process the content, splitting into text and page-number markers
+    pos = 0
+    while pos < len(content_html):
+        # Check for page number span
+        pn_match = re.match(r'<span\s+class="page-number"[^>]*></span>', content_html[pos:], re.I | re.S)
+        if pn_match:
+            # Add any preceding text
+            if pn_match.start() > 0:
+                text = content_html[pos:pos + pn_match.start()]
+                text = re.sub(r'<[^>]+>', '', text)  # Strip any remaining tags
+                if text:
+                    para.add_run(text)
+
+            # Add page number field
+            run = para.add_run()
+            # Use fldSimple for PAGE field
+            fldSimple = OxmlElement('w:fldSimple')
+            fldSimple.set(qn('w:instr'), ' PAGE ')
+            run._r.append(fldSimple)
+
+            # Add initial text
+            t = OxmlElement('w:t')
+            t.text = '1'
+            fldSimple.append(t)
+
+            pos += pn_match.end()
+        else:
+            # Regular text - find next tag or end
+            tag_match = re.search(r'<', content_html[pos:])
+            if tag_match:
+                text = content_html[pos:pos + tag_match.start()]
+                text = re.sub(r'<[^>]+>', '', text)
+                if text:
+                    para.add_run(text)
+                pos += tag_match.start()
+            else:
+                # Remaining text
+                text = content_html[pos:]
+                text = re.sub(r'<[^>]+>', '', text)
+                if text:
+                    para.add_run(text)
+                break
 
 
 def _para_has_bottom_border(para) -> bool:
@@ -1219,7 +1441,33 @@ def html_to_docx(html_fragment: str) -> bytes:
 
     doc = Document()
 
+    # Extract header and footer if present
+    header_content = None
+    footer_content = None
+
+    # Extract header from the beginning
+    header_match = re.match(r'<header([^>]*)>(.*?)</header>', body, re.S | re.I)
+    if header_match:
+        header_content = header_match.group(2)
+        body = body[header_match.end():]
+
+    # Extract footer from the end (search in remaining body)
+    body = body.strip()
+    footer_match = re.search(r'<footer([^>]*)>(.*?)</footer>', body, re.S | re.I)
+    if footer_match:
+        footer_content = footer_match.group(2)
+        body = body[:footer_match.start()].strip()
+
     ops = _tokenize_body(body)
+
+    # Process header if present
+    if header_content:
+        _add_header(doc, header_content)
+
+    # Process footer if present
+    if footer_content:
+        _add_footer(doc, footer_content)
+
     for op in ops:
         kind = op[0]
         if kind == "hr":

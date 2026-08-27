@@ -911,3 +911,94 @@ def test_html_to_docx_table_without_props_stays_plain():
     out = docx_to_html(html_to_docx(html)).replace("\n", "")
     assert "background-color" not in out
     assert "border:" not in out
+
+
+def test_sanitizer_allows_header_footer():
+    """The sanitizer keeps <header class=\"page-header\"> and <footer class=\"page-footer\">."""
+    from src.editor.sanitize import sanitize_html
+
+    html = (
+        "<p>before</p>"
+        '<header class="page-header"><p>Header text</p></header>'
+        "<p>content</p>"
+        '<footer class="page-footer"><p>Footer <span class="page-number"></span></p></footer>'
+        "<p>after</p>"
+    )
+    out = sanitize_html(html)
+    assert '<header class="page-header">' in out, out
+    assert '</header>' in out, out
+    assert '<footer class="page-footer">' in out, out
+    assert '</footer>' in out, out
+    assert 'Header text' in out, out
+    assert 'Footer' in out, out
+    assert 'page-number' in out, out
+    # Verify dangerous content is still stripped
+    assert '<script>' not in out, out
+    assert 'alert(1)' not in out, out
+
+
+def test_html_to_docx_header_footer_roundtrip():
+    """Header/footer with page-number survive HTML->DOCX->HTML round-trip.
+
+    The HTML contract:
+    - <header class="page-header"> contains the header content
+    - <footer class="page-footer"> contains the footer content
+    - <span class="page-number"></span> represents the page number field
+
+    After DOCX conversion, the DOCX package must contain header1.xml and footer1.xml
+    parts with the content, and the body sectPr must have headerReference/footerReference.
+    """
+    html = (
+        '<header class="page-header"><p>Header text</p></header>'
+        '<p>Body content</p>'
+        '<footer class="page-footer"><p>Page <span class="page-number"></span></p></footer>'
+    )
+
+    docx_bytes = html_to_docx(html)
+
+    # Verify DOCX contains header1.xml and footer1.xml parts
+    import io
+    import zipfile
+    z = zipfile.ZipFile(io.BytesIO(docx_bytes))
+    parts = z.namelist()
+    assert 'word/header1.xml' in parts, "DOCX must contain header1.xml"
+    assert 'word/footer1.xml' in parts, "DOCX must contain footer1.xml"
+
+    # Verify sectPr has headerReference and footerReference
+    doc_xml = z.read('word/document.xml').decode('utf-8')
+    assert 'headerReference' in doc_xml, "sectPr must have headerReference"
+    assert 'footerReference' in doc_xml, "sectPr must have footerReference"
+
+    # Round-trip back to HTML
+    out = docx_to_html(docx_bytes)
+
+    # Verify header/footer survive
+    assert '<header class="page-header">' in out, out
+    assert '</header>' in out, out
+    assert 'Header text' in out, out
+    assert '<footer class="page-footer">' in out, out
+    assert '</footer>' in out, out
+    assert 'Page' in out, out
+    assert '<span class="page-number">' in out or '<span class="page-number"></span>' in out, out
+
+
+def test_docx_page_number_field_roundtrip():
+    """A PAGE field (w:fldSimple w:instr=" PAGE ") round-trips as <span class="page-number">."""
+    html = (
+        '<header class="page-header"><p>Page <span class="page-number"></span> of 10</p></header>'
+        '<p>Content</p>'
+    )
+    docx_bytes = html_to_docx(html)
+
+    # Verify the DOCX contains the PAGE field
+    import io
+    import zipfile
+    z = zipfile.ZipFile(io.BytesIO(docx_bytes))
+    header_xml = z.read('word/header1.xml').decode('utf-8')
+    assert 'fldSimple' in header_xml, "DOCX header must contain fldSimple"
+    assert ' PAGE ' in header_xml, "fldSimple must have PAGE instruction"
+
+    # Round-trip
+    out = docx_to_html(docx_bytes)
+    assert 'page-number' in out, out
+    assert 'Page' in out and 'of 10' in out, out

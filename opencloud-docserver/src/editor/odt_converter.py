@@ -530,6 +530,21 @@ def odt_to_html(data: bytes) -> str:
     kinds = _list_kinds(doc)
     pictures = _extract_pictures(data)
 
+    # Extract header and footer from master page if present
+    header_html = ""
+    footer_html = ""
+
+    # Find the master page in styles.xml
+    for root in (doc.styles, doc.masterstyles, doc.automaticstyles):
+        for child in root.childNodes:
+            if child.qname == (STYLENS, "master-page"):
+                # Extract header content
+                for subchild in child.childNodes:
+                    if subchild.qname == (STYLENS, "header"):
+                        header_html = _master_page_section_to_html(subchild, resolve, pictures)
+                    elif subchild.qname == (STYLENS, "footer"):
+                        footer_html = _master_page_section_to_html(subchild, resolve, pictures)
+
     parts: list[str] = []
     pending_list: str | None = None  # 'ul' | 'ol' while collecting <li>s
 
@@ -566,7 +581,26 @@ def odt_to_html(data: bytes) -> str:
                 parts.append(f"<p>{frame_html}</p>")
 
     flush_list()
-    return "\n".join(p for p in parts if p)
+
+    # Build the final HTML with header/footer
+    html_parts = []
+    if header_html:
+        html_parts.append(f'<header class="page-header">{header_html}</header>')
+    html_parts.extend(parts)
+    if footer_html:
+        html_parts.append(f'<footer class="page-footer">{footer_html}</footer>')
+
+    return "\n".join(p for p in html_parts if p)
+
+
+def _master_page_section_to_html(section, resolve, pictures) -> str:
+    """Convert a master page header/footer section to HTML."""
+    html_parts = []
+    for child in section.childNodes:
+        if child.qname == (TEXTNS, "p"):
+            inner = _paragraph_inner_html(child, resolve, pictures)
+            html_parts.append(f"<p>{inner}</p>")
+    return "\n".join(html_parts)
 
 
 def _paragraph_to_html(el, resolve, pictures, presolve=None) -> str:
@@ -637,6 +671,9 @@ def _inline_html(el, resolve, base, pictures) -> str:
                 out.append("&emsp;")
             elif qname == (TEXTNS, "line-break"):
                 out.append("<br/>")
+            elif qname == (TEXTNS, "page-number"):
+                # Page number field - map to HTML span
+                out.append('<span class="page-number"></span>')
             elif qname == (TEXTNS, "span"):
                 flags = dict(base)
                 span_flags = resolve(child.getAttribute("stylename"))
@@ -974,7 +1011,33 @@ def html_to_odt(html_fragment: str) -> bytes:
     doc = OpenDocumentText()
     w = _OdtWriter(doc)
 
+    # Extract header and footer if present
+    header_content = None
+    footer_content = None
+
+    # Extract header from the beginning
+    header_match = re.match(r'<header([^>]*)>(.*?)</header>', body, re.S | re.I)
+    if header_match:
+        header_content = header_match.group(2)
+        body = body[header_match.end():]
+
+    # Extract footer from the end (search in remaining body)
+    body = body.strip()
+    footer_match = re.search(r'<footer([^>]*)>(.*?)</footer>', body, re.S | re.I)
+    if footer_match:
+        footer_content = footer_match.group(2)
+        body = body[:footer_match.start()].strip()
+
     ops = _tokenize_body(body)
+
+    # Process header if present - add to master page
+    if header_content:
+        w.add_header(header_content)
+
+    # Process footer if present - add to master page
+    if footer_content:
+        w.add_footer(footer_content)
+
     for op in ops:
         kind = op[0]
         if kind == "hr":
@@ -1283,6 +1346,139 @@ class _OdtWriter:
         el = P()
         el.setAttribute("stylename", self._pb_style)
         self.doc.text.addElement(el)
+
+    def add_header(self, content_html: str) -> None:
+        """Add a header to the document's master page.
+
+        Creates a master page style with style:header containing the content.
+        """
+        from odf.style import Header, MasterPage, PageLayout
+        from odf.text import P
+
+        # Create a page layout if we don't have one
+        if not any(el.getAttribute("name") == "WO_PageLayout"
+                   for el in self.doc.automaticstyles.childNodes
+                   if el.qname == (STYLENS, "page-layout")):
+            pageLayout = PageLayout(name="WO_PageLayout")
+            self.doc.automaticstyles.addElement(pageLayout)
+
+        # Create or update master page with header
+        master_name = "WO_Master"
+        master = None
+        for el in self.doc.masterstyles.childNodes:
+            if el.qname == (STYLENS, "master-page") and el.getAttribute("name") == master_name:
+                master = el
+                break
+
+        if master is None:
+            master = MasterPage(name=master_name, pagelayoutname="WO_PageLayout")
+            self.doc.masterstyles.addElement(master)
+
+        # Remove existing header if any and add new content
+        for child in master.childNodes[:]:
+            if child.qname == (STYLENS, "header"):
+                master.removeChildNode(child)
+
+        header = Header()
+
+        # Parse the header content into paragraphs
+        for p_match in re.finditer(r'<p([^>]*)>(.*?)</p>', content_html, re.S | re.I):
+            p_inner = p_match.group(2)
+            p = P()
+            # Add runs to the paragraph
+            self._add_runs_to_element(p, p_inner)
+            header.addElement(p)
+
+        master.addElement(header)
+
+    def add_footer(self, content_html: str) -> None:
+        """Add a footer to the document's master page.
+
+        Creates a master page style with style:footer containing the content.
+        """
+        from odf.style import Footer, MasterPage, PageLayout
+        from odf.text import P
+
+        # Create a page layout if we don't have one
+        if not any(el.getAttribute("name") == "WO_PageLayout"
+                   for el in self.doc.automaticstyles.childNodes
+                   if el.qname == (STYLENS, "page-layout")):
+            pageLayout = PageLayout(name="WO_PageLayout")
+            self.doc.automaticstyles.addElement(pageLayout)
+
+        # Create or update master page with footer
+        master_name = "WO_Master"
+        master = None
+        for el in self.doc.masterstyles.childNodes:
+            if el.qname == (STYLENS, "master-page") and el.getAttribute("name") == master_name:
+                master = el
+                break
+
+        if master is None:
+            master = MasterPage(name=master_name, pagelayoutname="WO_PageLayout")
+            self.doc.masterstyles.addElement(master)
+
+        # Remove existing footer if any and add new content
+        for child in master.childNodes[:]:
+            if child.qname == (STYLENS, "footer"):
+                master.removeChildNode(child)
+
+        footer = Footer()
+
+        # Parse the footer content into paragraphs
+        for p_match in re.finditer(r'<p([^>]*)>(.*?)</p>', content_html, re.S | re.I):
+            p_inner = p_match.group(2)
+            p = P()
+            # Add runs to the paragraph
+            self._add_runs_to_element(p, p_inner)
+            footer.addElement(p)
+
+        master.addElement(footer)
+
+    def _add_runs_to_element(self, parent, content_html: str) -> None:
+        """Add text runs to an ODF element from HTML content.
+
+        Handles page number fields (<span class="page-number">) specially.
+        """
+        from odf.element import Element
+        from odf.namespaces import TEXTNS
+
+        pos = 0
+        while pos < len(content_html):
+            # Check for page number span
+            pn_match = re.match(r'<span\s+class="page-number"[^>]*></span>', content_html[pos:], re.I | re.S)
+            if pn_match:
+                # Add any preceding text
+                if pn_match.start() > 0:
+                    text = content_html[pos:pos + pn_match.start()]
+                    text = re.sub(r'<[^>]+>', '', text)
+                    if text:
+                        parent.addText(text)
+
+                # Add page number field
+                # In ODT, page number is a text:page-number element
+                pn_el = Element(qname=(TEXTNS, "page-number"))
+                pn_el.setAttrNS(TEXTNS, "select-page", "current")
+                pn_el.addText("1")  # Initial value placeholder
+                parent.addElement(pn_el)
+
+                pos += pn_match.end()
+            else:
+                # Regular text - find next tag or end
+                tag_match = re.search(r'<', content_html[pos:])
+                if tag_match:
+                    text = content_html[pos:pos + tag_match.start()]
+                    text = re.sub(r'<[^>]+>', '', text)
+                    if text:
+                        parent.addText(text)
+                    pos += tag_match.start()
+                else:
+                    # Remaining text
+                    text = content_html[pos:]
+                    text = re.sub(r'<[^>]+>', '', text)
+                    if text:
+                        parent.addText(text)
+                    break
 
     def add_list(self, tree: dict) -> None:
         """Append a (possibly nested) list tree to the body.
