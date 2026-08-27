@@ -33,6 +33,7 @@ from ..editor.session import (
     SessionRegistry,
     session_from_token,
 )
+from ..lib.store import DocumentStoreError
 from ..wopi.protocol import LOCK_HEADER
 
 router = APIRouter()
@@ -468,6 +469,59 @@ async def document_contents(doc_id: str, request: Request) -> Response:
         media_type=_content_type(_doc_name(request, doc_id)),
         headers={"X-WOPI-ItemVersion": version},
     )
+
+
+# ----------------------------------------------------------------------
+# Version history (snapshots taken on every content write)
+# ----------------------------------------------------------------------
+
+
+@router.get("/api/documents/{doc_id}/versions")
+async def document_versions(doc_id: str, request: Request) -> JSONResponse:
+    """Return the document's version history, newest first.
+
+    Snapshot metadata (ts, author, size) is served from the local store.
+    Remote (client-mode) documents are managed by the WOPI host, whose
+    own revision history is authoritative — return a clear error instead
+    of a misleading empty list.
+    """
+    if _client(request, doc_id) is not None:
+        return JSONResponse(
+            {"error": "version history is managed by the remote document host"},
+            status_code=400,
+        )
+    store = _store(request)
+    if store.get(doc_id) is None:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    return JSONResponse({"versions": store.list_versions(doc_id)})
+
+
+@router.post("/api/documents/{doc_id}/versions/{ts}/restore")
+async def restore_document_version(doc_id: str, ts: int, request: Request) -> JSONResponse:
+    """Restore the given snapshot as the document's current content.
+
+    The pre-restore state is preserved as a new snapshot so the restore is
+    itself undoable. Client-mode documents are refused (host owns history).
+    """
+    if _client(request, doc_id) is not None:
+        return JSONResponse(
+            {"error": "version history is managed by the remote document host"},
+            status_code=400,
+        )
+    store = _store(request)
+    if store.get(doc_id) is None:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    session = _session_for(request, doc_id)
+    if session and session.read_only:
+        return JSONResponse(
+            {"error": "read-only: another user is editing this document"},
+            status_code=403,
+        )
+    try:
+        head_ts = store.restore_version(doc_id, ts)
+    except DocumentStoreError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=404)
+    return JSONResponse({"ok": True, "ts": head_ts})
 
 
 @router.put("/api/documents/{doc_id}/contents")

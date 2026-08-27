@@ -54,6 +54,20 @@ class DocumentStore:
                 )
                 """
             )
+            self._conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS versions (
+                    id      INTEGER PRIMARY KEY AUTOINCREMENT,
+                    doc_id  TEXT NOT NULL,
+                    ts      INTEGER NOT NULL,
+                    author  TEXT DEFAULT '',
+                    size    INTEGER NOT NULL
+                )
+                """
+            )
+            self._conn.execute(
+                "CREATE INDEX IF NOT EXISTS idx_versions_doc ON versions (doc_id, ts DESC)"
+            )
 
     # ----- lifecycle ----------------------------------------------------
 
@@ -93,8 +107,13 @@ class DocumentStore:
         """Filesystem path where a document's bytes live."""
         return self._content_dir / f"{doc_id}.bin"
 
-    def put_content(self, doc_id: str, data: bytes) -> None:
-        """Write document bytes and update the size in the index."""
+    def put_content(self, doc_id: str, data: bytes, author: str = "") -> None:
+        """Write document bytes, update the index, and snapshot a version.
+
+        Every content write records a byte-level snapshot (pruned to
+        :attr:`MAX_VERSIONS`) so the document's history can be listed and
+        restored. ``author`` is stored on the snapshot for attribution.
+        """
         path = self.content_path(doc_id)
         path.write_bytes(data)
         now = time.time()
@@ -103,6 +122,7 @@ class DocumentStore:
                 "UPDATE documents SET size = ?, updated_at = ? WHERE id = ?",
                 (len(data), now, doc_id),
             )
+        self.put_version(doc_id, data, author=author)
 
     def get_content(self, doc_id: str) -> bytes | None:
         """Return document bytes, or None if content is missing."""
@@ -110,6 +130,90 @@ class DocumentStore:
         if not path.exists():
             return None
         return path.read_bytes()
+
+    # ----- version history ---------------------------------------------
+
+    #: Maximum number of snapshots kept per document (newest N retained).
+    MAX_VERSIONS = 50
+
+    _last_ts = 0  # monotonic across the store, so version order is stable
+
+    def _versions_dir(self, doc_id: str):
+        return self._content_dir / "versions" / doc_id
+
+    def put_version(self, doc_id: str, data: bytes, author: str = "", ts: int | None = None) -> int:
+        """Snapshot ``data`` as a new version of ``doc_id``; return its ts.
+
+        Older snapshots beyond :attr:`MAX_VERSIONS` are pruned (files +
+        index rows). The timestamp doubles as the snapshot's identity and
+        its filename (``<ts>.bin`` in the per-doc versions directory).
+        """
+        if ts is None:
+            # strictly increasing even for back-to-back writes in the same
+            # millisecond, so ORDER BY ts mirrors real write order
+            DocumentStore._last_ts = max(DocumentStore._last_ts, int(time.time() * 1000)) + 1
+            ts = DocumentStore._last_ts
+        vdir = self._versions_dir(doc_id)
+        vdir.mkdir(parents=True, exist_ok=True)
+        (vdir / f"{ts}.bin").write_bytes(data)
+        with self._conn:
+            self._conn.execute(
+                "INSERT INTO versions (doc_id, ts, author, size) VALUES (?, ?, ?, ?)",
+                (doc_id, ts, author, len(data)),
+            )
+        # prune: keep the newest MAX_VERSIONS rows (drop older files too)
+        rows = self._conn.execute(
+            "SELECT ts FROM versions WHERE doc_id = ? ORDER BY ts DESC",
+            (doc_id,),
+        ).fetchall()
+        drop = [r["ts"] for r in rows[self.MAX_VERSIONS :]] if len(rows) > self.MAX_VERSIONS else []
+        if drop:
+            with self._conn:
+                for old_ts in drop:
+                    self._conn.execute(
+                        "DELETE FROM versions WHERE doc_id = ? AND ts = ?", (doc_id, old_ts)
+                    )
+            for old_ts in drop:
+                f = vdir / f"{old_ts}.bin"
+                try:
+                    f.unlink()
+                except OSError:
+                    pass
+        return ts
+
+    def list_versions(self, doc_id: str) -> list[dict[str, object]]:
+        """Return version metadata for a document, newest first."""
+        rows = self._conn.execute(
+            "SELECT ts, author, size FROM versions WHERE doc_id = ? ORDER BY ts DESC",
+            (doc_id,),
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def get_version(self, doc_id: str, ts: int) -> bytes | None:
+        """Return the snapshot bytes for a version, or None if unknown."""
+        f = self._versions_dir(doc_id) / f"{ts}.bin"
+        if not f.exists():
+            return None
+        return f.read_bytes()
+
+    def restore_version(self, doc_id: str, ts: int) -> int:
+        """Restore version ``ts`` as the document's current content.
+
+        The pre-restore state is snapshotted first so the restore itself is
+        undoable; the restore then becomes the newest version. Returns the
+        timestamp of the new head version.
+        """
+        data = self.get_version(doc_id, ts)
+        if data is None:
+            raise DocumentStoreError(f"version {ts} not found for {doc_id}")
+        current = self.get_content(doc_id)
+        if current is None:
+            raise DocumentStoreError(f"no current content for {doc_id}")
+        # preserve the pre-restore state as a recoverable snapshot
+        self.put_version(doc_id, current, author="")
+        self.put_content(doc_id, data)
+        versions = self.list_versions(doc_id)
+        return versions[0]["ts"] if versions else ts
 
     def has_content(self, doc_id: str) -> bool:
         """True if a content file exists for the document."""
