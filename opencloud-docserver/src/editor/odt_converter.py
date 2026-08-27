@@ -1700,7 +1700,8 @@ class _OdtWriter:
             if href:
                 if href.startswith("#"):
                     # in-document cross-reference -> text:bookmark-ref
-                    ref = BookmarkRef(refname=href[1:], text=text)
+                    # (OnlyOffice/libreoffice always carry text:reference-format)
+                    ref = BookmarkRef(refname=href[1:], text=text, referenceformat="text")
                     el.addElement(ref)
                 else:
                     # ODF hyperlinks are text:a elements carrying xlink:href.
