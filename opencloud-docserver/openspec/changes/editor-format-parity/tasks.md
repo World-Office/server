@@ -38,12 +38,12 @@ TDD per category: write failing contract test → implement converter + UI → v
 - [x] T21 implement links — ODT writer now emits `text:a` hyperlinks (`A(href, type="simple")`, xlink attrs; the `_InlineRunBuilder` tracks `href` via `_inline_href` safe-scheme filter + `_flush()` at `<a>` start so leading text is NOT swallowed into the anchor — this was a real DOCX+ODT bug where `<p>See <a>site</a></p>` round-tripped as `<p><a>See site</a></p>`). Link dialog already exists.
 
 ## references
-- [ ] T22 contract test: footnote/endnote round-trips
-- [ ] T23 implement references (both converters) + editor.js
+- [x] T22 contract test: footnote/endnote round-trips — fleet task `parity-footnotes` merged (`2b61c554e`): `test_html_to_docx_footnote_roundtrip`, `test_html_to_docx_endnote_roundtrip`, `test_html_to_odt_footnote_roundtrip`, `test_odt_to_html_footnote_roundtrip` + `test_odt_to_html_ignores_unnamed_note_class`, `test_html_to_odt_endnote_roundtrip`. HTML contract: `<sup class="footnote-citation">[n]</sup>` followed by `<span class="footnote">BODY</span>` (endnote classes symmetric).
+- [x] T23 implement references (both converters) — DOCX: real `footnotes.xml`/`endnotes.xml` package parts (Word/LibreOffice sentinel ids -1/0), body runs with `w:footnoteReference`/`w:endnoteReference`; citations renumbered per-kind by document order. ODT: `<text:note note-class=footnote|endnote>` with unique `text:id`, `<text:note-citation>`, `<text:note-body>`; writer/reader symmetric; notes with other note-classes ignored by the reader. Editor.js: none needed (notes render as static inline HTML). Both directions verified against real package parts (not faked).
 
 ## header-footer
-- [ ] T24 contract test: header/footer/page-number round-trips
-- [ ] T25 implement header/footer (both converters) + editor.js
+- [x] T24 contract test: header/footer/page-number round-trips — fleet task `parity-header-footer` merged (`457fd1bb9`): `test_html_to_docx_header_footer_roundtrip`, `test_docx_page_number_field_roundtrip`, `test_html_to_odt_header_footer_roundtrip`, `test_odt_page_number_roundtrip`, `test_sanitizer_allows_header_footer`. HTML contract: `<header class="page-header">…</header>` (first) / `<footer class="page-footer">…</footer>` (last); `<span class="page-number"></span>` = current page number.
+- [x] T25 implement header/footer (both converters) — DOCX: `header1.xml`/`footer1.xml` parts (proper content-types + rels) wired to sectPr `w:headerReference`/`w:footerReference`; PAGE field (`w:fldSimple w:instr=" PAGE "` + complex-field forms) ↔ `<span class="page-number">`. ODT: `style:master-page` with `<style:header>`/`<style:footer>` + `<text:page-number text:select-page="current">` ↔ page-number span. Sanitizer admits `header`/`footer` (content-preserving). Editor renders regions as static blocks.
 
 ## insert
 - [x] T26 contract test: horizontal-rule round-trips — DOCX already green; ODT now `test_html_to_odt_hr_roundtrip` + `test_odt_hr_is_bottom_border_paragraph` (both directions); literal symbol/date chars round-trip by construction (`test_special_symbol_roundtrips_docx`, `test_special_symbol_and_date_roundtrip_odt`).
