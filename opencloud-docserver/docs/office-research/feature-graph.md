@@ -96,8 +96,8 @@ Module deps: CD=converter.py(DOCX) · CO=odt_converter.py(ODT) · UI=editor.js �
 - print ✅ (UI)
 
 ## 13. collaboration (PART_OF FeatureSurface)
-- comments ❌ — REQUIRES UI,CD,CO,collab
-- track-changes ❌ — REQUIRES UI,CD,CO,collab
+- comments ✅ (DOCX comments.xml + ODT office:annotation; editor.js span + margin notes)
+- track-changes ✅ (DOCX w:ins/w:del + ODT change marks/tracked-changes registry)
 - presence-cursor ✅ (collab-presence spec)
 - version-history ❌ — REQUIRES collab
 
@@ -110,6 +110,6 @@ Module deps: CD=converter.py(DOCX) · CO=odt_converter.py(ODT) · UI=editor.js �
 
 ---
 TOTAL functions: ~80 · ✅ ~44 · ⚠️ 5 · ❌ ~31
-Converter gap (CD/CO) now limited to tables (split/caption), objects
+Converter gap (CD/CO) now limited to tables (split/caption, objects
 (shape/textbox/chart/equation), and TOC/section-break/columns; the rest of the
 ❌ are collab-side (comments, track-changes, version-history).
