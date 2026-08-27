@@ -23,7 +23,6 @@ import mimetypes
 import re
 import zipfile
 from html import escape
-from html.parser import HTMLParser
 
 from odf.draw import Frame, Image
 from odf.element import Element, Node
@@ -53,15 +52,18 @@ from odf.text import (
     ListItem,
     ListLevelStyleNumber,
     ListStyle,
+    Note,
+    NoteBody,
+    NoteCitation,
     P,
     Span,
 )
 
 from src.editor.converter import (
     _MONO_FONTS,
+    _inline_tokens,
     _normalize_color,
     _parse_border,
-    _parse_inline_style,
     _tokenize_body,
 )
 
@@ -691,11 +693,58 @@ def _inline_html(el, resolve, base, pictures) -> str:
                 out.append(inner)
             elif qname == (DRAWNS, "frame"):
                 out.append(_frame_to_html(child, pictures))
+            elif qname == (TEXTNS, "note"):
+                note_html = _note_to_html(child, resolve, pictures)
+                if note_html:
+                    out.append(note_html)
             else:
-                # Unknown inline node (footnote body, drawing text-box…):
+                # Unknown inline node (drawing text-box…):
                 # descend so its text is not silently dropped.
                 out.append(_inline_html(child, resolve, base, pictures))
     return "".join(out)
+
+
+def _note_to_html(note_el, resolve, pictures) -> str:
+    """Render a ``text:note`` (footnote or endnote) as the HTML contract
+    ``<sup class="{cls}-citation">[N]</sup><span class="{cls}">BODY</span>``.
+
+    Notes whose ``text:note-class`` is neither ``footnote`` nor ``endnote``
+    are ignored (return ``''``) so their text never leaks into the body.
+    ``BODY`` is the note-body's paragraphs joined with ``<br/>``.
+    """
+    noteclass = note_el.getAttribute("noteclass")
+    if noteclass not in ("footnote", "endnote"):
+        return ""
+    citation = ""
+    body_html = ""
+    for subchild in note_el.childNodes:
+        if subchild.nodeType != Node.ELEMENT_NODE:
+            continue
+        if subchild.qname == (TEXTNS, "note-citation"):
+            citation = "".join(
+                c.data for c in subchild.childNodes if c.nodeType == Node.TEXT_NODE
+            )
+        elif subchild.qname == (TEXTNS, "note-body"):
+            paras: list[str] = []
+            for p_el in subchild.childNodes:
+                if p_el.nodeType != Node.ELEMENT_NODE:
+                    continue
+                if p_el.qname in ((TEXTNS, "p"), (TEXTNS, "h")):
+                    html = _paragraph_inner_html(p_el, resolve, pictures)
+                    if html:
+                        paras.append(html)
+                else:  # unknown body child: descend so text is not dropped
+                    html = _inline_html(p_el, resolve, {}, pictures)
+                    if html:
+                        paras.append(html)
+            body_html = "<br/>".join(paras)
+    if not citation and not body_html:
+        return ""
+    cls = "footnote" if noteclass == "footnote" else "endnote"
+    return (
+        f'<sup class="{cls}-citation">[{citation}]</sup>'
+        f'<span class="{cls}">{body_html}</span>'
+    )
 
 
 def _wrap(text: str, flags: dict) -> str:
@@ -1128,6 +1177,7 @@ class _OdtWriter:
         self._col_styles: dict[int, str] = {}
         self._tbl_styles: dict[float, str] = {}
         self._img_n = 0
+        self._note_n = 0
 
     # -- character styles -------------------------------------------------
     def char_style(self, token: dict) -> str | None:
@@ -1248,11 +1298,14 @@ class _OdtWriter:
         self.doc.text.addElement(el)
 
     def _fill(self, el, html: str) -> None:
-        """Add styled text runs, hyperlinks and images parsed from an inline
+        """Add styled text runs, hyperlinks, images, and notes parsed from an inline
         HTML fragment."""
         for token in _inline_tokens(html):
             if token["type"] == "image":
                 self.add_image(el, token)
+                continue
+            if token["type"] == "footnote":
+                self._add_note(el, token)
                 continue
             text = token["text"]
             style_name = self.char_style(token)
@@ -1301,6 +1354,39 @@ class _OdtWriter:
             frame.addElement(Element(qname=(SVGNS, "title"), text=alt))
         frame.addElement(Image(href=manifest))
         para_el.addElement(frame)
+
+    def _add_note(self, para_el, token: dict) -> None:
+        """Append a footnote/endnote as a text:note element.
+
+        ``token`` is the DOCX-parity ``type: "footnote"`` token with
+        ``kind`` (footnote/endnote), ``citation`` (the bracketed number,
+        e.g. ``[1]``) and ``body`` (the note body HTML).
+        """
+        kind = token.get("kind") or "footnote"
+        self._note_n += 1
+        note = Note(noteclass=kind, id=f"ftn{self._note_n}")
+        citation = (token.get("citation") or "").strip().strip("[]")
+        b = NoteBody()
+        # Fill the note body with the paragraph machinery.
+        self._fill_note_body(b, token.get("body") or "")
+        note.addElement(NoteCitation(text=citation))
+        note.addElement(b)
+        para_el.addElement(note)
+
+    def _fill_note_body(self, note_body_el, html: str) -> None:
+        """Fill a text:note-body with paragraphs parsed from HTML.
+
+        Body paragraphs use the same paragraph machinery as regular body
+        text so formatting/links/images inside notes survive; ``<br/>``
+        splits into separate <text:p> elements (mirrors the DOCX
+        writer's note-body handling). Nested notes are not supported
+        (notes cannot contain notes).
+        """
+        for frag in re.split(r"<br\s*/?>", html or ""):
+            p = P()
+            self._fill(p, frag)
+            note_body_el.addElement(p)
+
 
     def _new_list(self, kind: str):
         list_el = List()
@@ -1678,191 +1764,10 @@ def _span_attr(attrs: str, name: str) -> int:
 
 # --------------------------------------------------------------------------
 # Inline HTML -> runs (same semantics as the DOCX converter)
+#
+# ``_inline_tokens`` is shared with the DOCX converter so both writers parse
+# the same HTML contract (footnotes/endnotes included).
 # --------------------------------------------------------------------------
-
-def _inline_href(attrs) -> str | None:
-    """Extract a safe http(s)/relative URL from an <a> attribute set."""
-    a = dict(attrs)
-    href = (a.get("href") or "").strip()
-    if not href:
-        return None
-    low = href.lower()
-    if low.startswith(("javascript:", "data:", "vbscript:")):
-        return None
-    return href
-
-
-class _InlineRunBuilder(HTMLParser):
-    """Parse an inline HTML fragment into text tokens and image tokens.
-
-    Text tokens are dicts with ``text`` / ``bold`` / ``italic`` /
-    ``underline`` / ``strike`` / ``vert`` / ``color`` / ``bg`` /
-    ``font_family`` / ``font_size`` / ``small_caps`` / ``all_caps`` /
-    ``code`` keys; image tokens have ``type: "image"`` plus the
-    ``src`` / ``alt`` / ``width`` / ``height`` attributes. Mirrors the
-    DOCX converter's builder so both formats share the same HTML contract.
-    """
-
-    def __init__(self) -> None:
-        super().__init__(convert_charrefs=True)
-        self.tokens: list[dict] = []
-        self._bold = 0
-        self._italic = 0
-        self._underline = 0
-        self._strike = 0
-        self._code = 0
-        self._color = None
-        self._bg = None
-        self._vert = None
-        self._font_family = None
-        self._font_size = None
-        self._small_caps = None
-        self._all_caps = None
-        self._span_stack: list[tuple] = []
-        self._vert_stack: list[str | None] = []
-        self._href_stack: list[str | None] = []
-        self._buf: list[str] = []
-
-    def handle_starttag(self, tag: str, attrs) -> None:
-        if tag == "img":
-            self._flush()
-            a = dict(attrs)
-            self.tokens.append({
-                "type": "image",
-                "src": a.get("src", ""),
-                "alt": a.get("alt", ""),
-                "width": _parse_px(a.get("width")),
-                "height": _parse_px(a.get("height")),
-            })
-        elif tag == "a":
-            self._flush()
-            self._href_stack.append(_inline_href(attrs))
-        elif tag in ("b", "strong"):
-            self._flush()
-            self._bold += 1
-        elif tag in ("i", "em"):
-            self._flush()
-            self._italic += 1
-        elif tag == "u":
-            self._flush()
-            self._underline += 1
-        elif tag == "span":
-            self._flush()
-            a = dict(attrs)
-            props = _parse_inline_style(a.get("style", ""))
-            self._span_stack.append(
-                (self._color, self._bg, self._font_family, self._font_size,
-                 self._small_caps, self._all_caps)
-            )
-            if "color" in props:
-                self._color = props["color"]
-            if "bg" in props:
-                self._bg = props["bg"]
-            if "font_family" in props:
-                self._font_family = props["font_family"]
-            if "font_size" in props:
-                self._font_size = props["font_size"]
-            if props.get("small_caps"):
-                self._small_caps = True
-            if props.get("all_caps"):
-                self._all_caps = True
-        elif tag == "sup":
-            self._flush()
-            self._vert_stack.append(self._vert)
-            self._vert = "sup"
-        elif tag == "sub":
-            self._flush()
-            self._vert_stack.append(self._vert)
-            self._vert = "sub"
-        elif tag in ("strike", "s", "del"):
-            self._flush()
-            self._strike += 1
-        elif tag == "code":
-            self._flush()
-            self._code += 1
-        else:
-            self._flush()
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag == "a":
-            self._flush()
-            if self._href_stack:
-                self._href_stack.pop()
-            return
-        if tag in ("b", "strong"):
-            self._flush()
-            self._bold = max(0, self._bold - 1)
-        elif tag in ("i", "em"):
-            self._flush()
-            self._italic = max(0, self._italic - 1)
-        elif tag == "u":
-            self._flush()
-            self._underline = max(0, self._underline - 1)
-        elif tag == "span":
-            self._flush()
-            if self._span_stack:
-                (self._color, self._bg, self._font_family, self._font_size,
-                 self._small_caps, self._all_caps) = self._span_stack.pop()
-        elif tag == "sup":
-            self._flush()
-            if self._vert_stack:
-                self._vert = self._vert_stack.pop()
-        elif tag == "sub":
-            self._flush()
-            if self._vert_stack:
-                self._vert = self._vert_stack.pop()
-        elif tag in ("strike", "s", "del"):
-            self._flush()
-            self._strike = max(0, self._strike - 1)
-        elif tag == "code":
-            self._flush()
-            self._code = max(0, self._code - 1)
-        else:
-            self._flush()
-
-    def handle_data(self, data: str) -> None:
-        self._buf.append(data)
-
-    def _flush(self) -> None:
-        text = "".join(self._buf)
-        if text:
-            token: dict = {
-                "type": "text",
-                "text": text,
-                "bold": self._bold > 0,
-                "italic": self._italic > 0,
-                "underline": self._underline > 0,
-            }
-            if self._strike:
-                token["strike"] = True
-            if self._code:
-                token["code"] = True
-            if self._color:
-                token["color"] = self._color
-            if self._bg:
-                token["bg"] = self._bg
-            if self._vert:
-                token["vert"] = self._vert
-            if self._font_family:
-                token["font_family"] = self._font_family
-            if self._font_size:
-                token["font_size"] = self._font_size
-            if self._small_caps:
-                token["small_caps"] = True
-            if self._all_caps:
-                token["all_caps"] = True
-            if self._href_stack:
-                token["href"] = self._href_stack[-1]
-            self.tokens.append(token)
-        self._buf = []
-
-
-def _inline_tokens(html: str) -> list[dict]:
-    """Tokenize an inline HTML fragment into text and image tokens."""
-    builder = _InlineRunBuilder()
-    builder.feed(html)
-    builder._flush()
-    return builder.tokens
 
 
 def _styled_runs(html: str) -> list[tuple[str, bool, bool, bool]]:
