@@ -63,3 +63,18 @@ def test_image_resize_fields_wired():
     assert 'id="image-size-fields"' in HTML
     assert "dims.push(" in JS  # confirmImageDialog attaches width attr
     assert "Image.Width" in I18N and "Image.Height" in I18N
+
+
+def test_version_history_wired():
+    """Version history: menu entry, dialog, list+restore logic, i18n (T30)."""
+    assert 'id="btn-history"' in HTML, "File menu missing History entry"
+    assert 'id="version-history-dialog"' in HTML, "missing version-history dialog"
+    assert 'id="version-list"' in HTML and 'id="version-error"' in HTML
+    for fn in ["openVersionHistory", "closeVersionHistory", "restoreVersion",
+               "renderVersionList", "formatVersionDate"]:
+        assert fn in JS, f"editor.js missing {fn}"
+    assert 'api("versions")' in JS, "version list must call the versions endpoint"
+    assert 'api("versions/"' in JS, "restore must call the restore endpoint"
+    for key in ["VersionHistory.Title", "VersionHistory.Restore",
+                "VersionHistory.Current", "VersionHistory.Empty"]:
+        assert key in JS, f"editor.js missing i18n key {key}"

@@ -454,6 +454,48 @@ main {
 
 .dialog-overlay.open { display: flex; }
 
+/* Version-history dialog list */
+.version-list {
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 10px;
+}
+.version-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 13px;
+}
+.version-item.current { border-color: var(--accent, #2f6fdb); }
+.version-meta { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.version-badge {
+  flex: none;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--accent, #2f6fdb);
+}
+.version-restore {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  font-size: 12px;
+}
+.version-restore:hover { background: var(--hover, rgba(128, 128, 128, 0.15)); }
+.version-restore:disabled { opacity: 0.6; cursor: default; }
+.version-empty { color: var(--muted); font-size: 13px; margin: 6px 0; }
+.version-error { color: var(--error, #c0392b); font-size: 13px; margin: 0 0 8px; }
+
 .dialog {
   background: var(--surface);
   color: var(--text);

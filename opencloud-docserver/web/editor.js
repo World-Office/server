@@ -199,6 +199,7 @@
     "Menu.ExportHtml": "HTML",
     "Menu.ExportDocx": "DOCX",
     "Menu.Print": "Print",
+    "Menu.History": "History…",
     "FileMenu.NewConfirm": "Discard the current document and start a new one?",
     "FileMenu.Exporting": "Exporting…",
     "FileMenu.ExportError": "Export failed",
@@ -214,10 +215,41 @@
     "Menu.ExportHtml": "HTML",
     "Menu.ExportDocx": "DOCX",
     "Menu.Print": "Drucken",
+    "Menu.History": "Verlauf…",
     "FileMenu.NewConfirm": "Aktuelles Dokument verwerfen und ein neues beginnen?",
     "FileMenu.Exporting": "Exportiere…",
     "FileMenu.ExportError": "Export fehlgeschlagen",
   };
+  const VERSION_UI_STRINGS = {
+    "VersionHistory.Title": "Version history",
+    "VersionHistory.Empty": "No versions saved yet — save the document to create one.",
+    "VersionHistory.Current": "Current",
+    "VersionHistory.Restore": "Restore",
+    "VersionHistory.Restoring": "Restoring…",
+    "VersionHistory.Restored": "Version restored ✓",
+    "VersionHistory.RestoreError": "Restore failed: ",
+    "VersionHistory.ListError": "Could not load version history: ",
+    "VersionHistory.Close": "Close",
+  };
+  const VERSION_UI_STRINGS_DE = {
+    "VersionHistory.Title": "Versionen",
+    "VersionHistory.Empty": "Noch keine Versionen gespeichert — speichern Sie das Dokument, um eine zu erzeugen.",
+    "VersionHistory.Current": "Aktuell",
+    "VersionHistory.Restore": "Wiederherstellen",
+    "VersionHistory.Restoring": "Stelle wieder her…",
+    "VersionHistory.Restored": "Version wiederhergestellt ✓",
+    "VersionHistory.RestoreError": "Wiederherstellung fehlgeschlagen: ",
+    "VersionHistory.ListError": "Versionen konnten nicht geladen werden: ",
+    "VersionHistory.Close": "Schließen",
+  };
+  function seedVersionStrings(tFn) {
+    const bucket = tFn && tFn.resources && tFn.resources[tFn.lng] && tFn.resources[tFn.lng].translation;
+    if (!bucket) return;
+    const pair = detectedLng.indexOf("de") === 0 ? VERSION_UI_STRINGS_DE : VERSION_UI_STRINGS;
+    Object.keys(pair).forEach((k) => {
+      if (bucket[k] === undefined) bucket[k] = pair[k];
+    });
+  }
   function seedMenuStrings(tFn) {
     const bucket = tFn && tFn.resources && tFn.resources[tFn.lng] && tFn.resources[tFn.lng].translation;
     if (!bucket) return;
@@ -232,6 +264,7 @@
   seedToolbarStrings(t);
   seedA11yStrings(t);
   seedMenuStrings(t);
+  seedVersionStrings(t);
   // Localize static HTML (toolbar tooltips, Save label, ready status) and
   // keep the <html lang> attribute in sync for a11y & spell-check.
   if (window.applyTranslations) {
@@ -995,7 +1028,7 @@
     lastFocusedEl = null;
     el.focus();
   }
-  const DIALOG_IDS = ["find-dialog", "table-dialog", "image-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog"];
+  const DIALOG_IDS = ["find-dialog", "table-dialog", "image-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -1891,6 +1924,116 @@
   const linkInput = document.getElementById("link-url");
   if (linkInput) linkInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); confirmLinkDialog(); }
+  });
+
+  // --- version history -----------------------------------------------
+  // Lists the server's snapshots (one per save) newest-first with a Restore
+  // button per entry; restoring rewinds the stored document and reloads the
+  // editor so the change is immediately visible and undoable via History.
+  const versionList = document.getElementById("version-list");
+  const versionError = document.getElementById("version-error");
+  const versionDialog = document.getElementById("version-history-dialog");
+  let versionEntries = [];
+
+  function formatVersionDate(ts) {
+    try {
+      return new Date(ts).toLocaleString();
+    } catch (e) {
+      return String(ts);
+    }
+  }
+  function formatVersionAuthor(author) {
+    return author ? String(author) : "";
+  }
+  function renderVersionList() {
+    if (!versionList) return;
+    versionList.textContent = "";
+    if (!versionEntries || versionEntries.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "version-empty";
+      empty.textContent = t("VersionHistory.Empty");
+      versionList.appendChild(empty);
+      return;
+    }
+    versionEntries.forEach((v, idx) => {
+      const item = document.createElement("div");
+      item.className = "version-item" + (idx === 0 ? " current" : "");
+      item.setAttribute("role", "listitem");
+      const meta = document.createElement("span");
+      meta.className = "version-meta";
+      const when = formatVersionDate(v.ts);
+      const who = formatVersionAuthor(v.author);
+      const sizeLabel = v.size != null ? ` · ${v.size} B` : "";
+      meta.textContent = when + (who ? ` · ${who}` : "") + (sizeLabel ? sizeLabel : "");
+      item.appendChild(meta);
+      if (idx === 0) {
+        const badge = document.createElement("span");
+        badge.className = "version-badge";
+        badge.textContent = t("VersionHistory.Current");
+        item.appendChild(badge);
+      } else {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "version-restore";
+        btn.textContent = t("VersionHistory.Restore");
+        btn.addEventListener("click", () => restoreVersion(v.ts, btn));
+        item.appendChild(btn);
+      }
+      versionList.appendChild(item);
+    });
+  }
+  async function openVersionHistory() {
+    closeAllMenus();
+    if (versionError) versionError.textContent = "";
+    if (versionDialog) {
+      rememberFocus();
+      versionDialog.classList.add("open");
+    }
+    setStatus(t("Status.Loading"));
+    try {
+      const res = await fetch(api("versions"));
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "versions failed");
+      versionEntries = data.versions || [];
+      renderVersionList();
+      setStatus(t("Status.Ready"));
+    } catch (err) {
+      if (versionError) versionError.textContent = t("VersionHistory.ListError") + err.message;
+      setStatus(t("VersionHistory.ListError") + err.message, true);
+    }
+  }
+  function closeVersionHistory() {
+    if (versionDialog) versionDialog.classList.remove("open");
+    restoreFocus();
+  }
+  async function restoreVersion(ts, btn) {
+    if (!btn) return;
+    btn.disabled = true;
+    const label = btn.textContent;
+    btn.textContent = t("VersionHistory.Restoring");
+    try {
+      const res = await fetch(api("versions/" + encodeURIComponent(ts) + "/restore"), { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "restore failed");
+      closeVersionHistory();
+      setStatus(t("VersionHistory.Restored"));
+      await loadDocument();
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = label;
+      if (versionError) versionError.textContent = t("VersionHistory.RestoreError") + err.message;
+      setStatus(t("VersionHistory.RestoreError") + err.message, true);
+    }
+  }
+  const btnHistory = document.getElementById("btn-history");
+  if (btnHistory) btnHistory.addEventListener("click", () => { closeAllMenus(); openVersionHistory(); });
+  const btnVersionClose = document.getElementById("btn-version-close");
+  if (btnVersionClose) btnVersionClose.addEventListener("click", closeVersionHistory);
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && versionDialog && versionDialog.classList.contains("open")) {
+      ev.preventDefault();
+      closeVersionHistory();
+    }
   });
 
   // --- insert misc: horizontal rule / page break / symbol picker -----
