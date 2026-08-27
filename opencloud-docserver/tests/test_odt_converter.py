@@ -1379,3 +1379,71 @@ def test_html_to_odt_table_without_props_stays_plain():
     out = odt_to_html(html_to_odt(html)).replace("\n", "")
     assert "background-color" not in out
     assert "border:" not in out
+
+
+def test_html_to_odt_header_footer_roundtrip():
+    """Header/footer with page-number survive HTML->ODT->HTML round-trip.
+
+    The HTML contract:
+    - <header class="page-header"> contains the header content
+    - <footer class="page-footer"> contains the footer content
+    - <span class="page-number"></span> represents the page number field
+
+    After ODT conversion, the styles.xml must contain a master page with
+    style:header and style:footer.
+    """
+    html = (
+        '<header class="page-header"><p>Header text</p></header>'
+        '<p>Body content</p>'
+        '<footer class="page-footer"><p>Page <span class="page-number"></span></p></footer>'
+    )
+
+    odt_bytes = html_to_odt(html)
+
+    # Verify ODT contains a master page with header/footer
+    import io
+    import zipfile
+    z = zipfile.ZipFile(io.BytesIO(odt_bytes))
+    parts = z.namelist()
+    assert 'styles.xml' in parts, "ODT must contain styles.xml"
+    assert 'content.xml' in parts, "ODT must contain content.xml"
+
+    styles_xml = z.read('styles.xml').decode('utf-8')
+
+    # Verify master page exists with header/footer
+    assert 'master-page' in styles_xml.lower(), "styles.xml must have master-page"
+    assert 'style:header' in styles_xml, "master-page must have style:header"
+    assert 'style:footer' in styles_xml, "master-page must have style:footer"
+
+    # Round-trip back to HTML
+    out = odt_to_html(odt_bytes)
+
+    # Verify header/footer survive
+    assert '<header class="page-header">' in out, out
+    assert '</header>' in out, out
+    assert 'Header text' in out, out
+    assert '<footer class="page-footer">' in out, out
+    assert '</footer>' in out, out
+    assert 'Page' in out, out
+    assert '<span class="page-number">' in out or '<span class="page-number"></span>' in out, out
+
+
+def test_odt_page_number_roundtrip():
+    """A page-number field (text:page-number) round-trips as <span class="page-number">."""
+    html = (
+        '<header class="page-header"><p>Page <span class="page-number"></span> of 10</p></header>'
+        '<p>Content</p>'
+    )
+    odt_bytes = html_to_odt(html)
+
+    # Verify the ODT contains the page number element
+    import io
+    import zipfile
+    z = zipfile.ZipFile(io.BytesIO(odt_bytes))
+    styles_xml = z.read('styles.xml').decode('utf-8')
+    assert 'page-number' in styles_xml.lower(), "styles.xml must contain page-number"
+
+    # Round-trip
+    out = odt_to_html(odt_bytes)
+    assert 'page-number' in out, out
+    assert 'Page' in out and 'of 10' in out, out
