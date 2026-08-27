@@ -581,34 +581,50 @@ def odt_to_html(data: bytes) -> str:
             parts.append(f"</{pending_list}>")
             pending_list = None
 
-    for child in doc.text.childNodes:
-        if child.nodeType != Node.ELEMENT_NODE:
-            continue
-        qname = child.qname
-        if qname in ((TEXTNS, "p"), (TEXTNS, "h")):
-            if id(child) in skip_paras:
+    def render(children) -> None:
+        """Render body-level children into ``parts`` (recurses into
+        text:section elements so section columns survive the round-trip)."""
+        for child in children:
+            if child.nodeType != Node.ELEMENT_NODE:
                 continue
-            flush_list()
-            parts.append(_paragraph_to_html(child, resolve, pictures, presolve, changes))
-        elif qname == (TEXTNS, "list"):
-            kind = kinds.get(child.getAttribute("stylename"), "ul")
-            if pending_list != kind:
+            qname = child.qname
+            if qname == (TEXTNS, "section"):
+                cols = child.attributes.get((TEXTNS, "columns"))
+                if cols:
+                    saved = parts[:]
+                    parts.clear()
+                    render(child.childNodes)
+                    sec_html = "".join(parts)
+                    parts[:] = saved
+                    parts.append(f'<section data-columns="{cols}">{sec_html}</section>')
+                    continue
+                render(child.childNodes)  # section without columns: inline
+                continue
+            if qname in ((TEXTNS, "p"), (TEXTNS, "h")):
+                if id(child) in skip_paras:
+                    continue
                 flush_list()
-                pending_list = kind
-                parts.append(f"<{kind}>")
-            for item in _list_items_to_html(child, resolve, kinds, pictures):
-                parts.append(item)
-        elif qname == (TABLENS, "table"):
-            flush_list()
-            parts.append(_table_to_html(child, resolve, pictures, presolve, cellresolve, caption_for.get(child)))
-        elif qname == (DRAWNS, "frame"):
-            # A draw:frame sitting directly in the body (not nested in a
-            # text:p) is still a block-level image.
-            flush_list()
-            frame_html = _frame_to_html(child, pictures)
-            if frame_html:
-                parts.append(f"<p>{frame_html}</p>")
+                parts.append(_paragraph_to_html(child, resolve, pictures, presolve, changes))
+            elif qname == (TEXTNS, "list"):
+                kind = kinds.get(child.getAttribute("stylename"), "ul")
+                if pending_list != kind:
+                    flush_list()
+                    pending_list = kind
+                    parts.append(f"<{kind}>")
+                for item in _list_items_to_html(child, resolve, kinds, pictures):
+                    parts.append(item)
+            elif qname == (TABLENS, "table"):
+                flush_list()
+                parts.append(_table_to_html(child, resolve, pictures, presolve, cellresolve, caption_for.get(child)))
+            elif qname == (DRAWNS, "frame"):
+                # A draw:frame sitting directly in the body (not nested in a
+                # text:p) is still a block-level image.
+                flush_list()
+                frame_html = _frame_to_html(child, pictures)
+                if frame_html:
+                    parts.append(f"<p>{frame_html}</p>")
 
+    render(doc.text.childNodes)
     flush_list()
 
     # Build the final HTML with header/footer
@@ -1277,6 +1293,17 @@ _TAG_TABLE = re.compile(r"<figure>.*?</figure>|<table[^>]*>.*?</table>", re.S)
 
 def html_to_odt(html_fragment: str) -> bytes:
     """Convert an HTML fragment into ODT bytes."""
+    # A <section data-columns> wrapper carries section-column layout
+    # (mapped to a text:section with text:columns); unwrap it before body
+    # processing and re-apply it around the whole body on output.
+    section_cols = None
+    sec_m = re.match(r"<section([^>]*)>(.*)</section>", html_fragment, re.S | re.I)
+    if sec_m:
+        sattrs = sec_m.group(1)
+        cm = re.search(r'data-columns\s*=\s*"?(\d+)', sattrs)
+        if cm:
+            section_cols = int(cm.group(1))
+        html_fragment = sec_m.group(2)
     # Tables split out the same way the DOCX converter does it: python-odf
     # tables and paragraphs share the body, but interleaving complicates
     # the body, so tables are appended at the end.
@@ -1347,6 +1374,26 @@ def html_to_odt(html_fragment: str) -> bytes:
         w.add_table(tbl_html)
 
     w.emit_changes()
+
+    if section_cols and section_cols > 1:
+        from odf.text import Section
+        sec = Section(name="WOSection")
+        sec.attributes[(TEXTNS, "columns")] = str(section_cols)
+        tracked = [
+            ch for ch in doc.text.childNodes
+            if ch.qname == (TEXTNS, "tracked-changes")
+        ]
+        content = [
+            ch for ch in doc.text.childNodes
+            if ch.qname != (TEXTNS, "tracked-changes")
+        ]
+        while doc.text.childNodes:
+            doc.text.removeChild(doc.text.childNodes[0])
+        for ch in content:
+            sec.addElement(ch)
+        doc.text.addElement(sec)
+        for tc in tracked:
+            doc.text.insertBefore(tc, sec)
 
     buf = io.BytesIO()
     doc.save(buf)
