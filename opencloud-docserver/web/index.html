@@ -177,6 +177,10 @@
     <button id="btn-link" title="Insert link" aria-label="Insert link">🔗</button>
     <button id="btn-hr" title="Insert horizontal rule" aria-label="Insert horizontal rule">─</button>
     <button id="btn-page-break" title="Insert page break" aria-label="Insert page break">⏎</button>
+    <button id="btn-section-break" title="Insert section break" aria-label="Insert section break">⇘</button>
+    <button id="btn-columns" title="Insert columns" aria-label="Insert columns">▥</button>
+    <button id="btn-toc" title="Insert table of contents" aria-label="Insert table of contents">☰</button>
+    <button id="btn-object" title="Insert object" aria-label="Insert object">▢</button>
     <button id="btn-symbol" title="Insert symbol" aria-label="Insert symbol">Ω</button>
     <button id="btn-datetime" title="Insert date" aria-label="Insert date">📅</button>
     <button id="btn-find" title="Find and replace (Ctrl+F)" data-i18n-title="Toolbar.FindTitle" aria-label="Find and replace" data-i18n-aria-label="Toolbar.Find" aria-keyshortcuts="Control+F">🔍</button>
@@ -298,6 +302,68 @@
       <div class="dialog-actions">
         <button id="btn-link-cancel">Cancel</button>
         <button id="btn-link-ok" class="primary">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Columns dialog: wrap the caret position in a multi-column section -->
+  <div id="columns-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="columns-dialog-title">
+    <div class="dialog">
+      <h3 id="columns-dialog-title">Insert columns</h3>
+      <div class="dialog-field">
+        <label for="columns-count">Columns</label>
+        <input id="columns-count" type="number" min="1" max="6" value="2">
+      </div>
+      <div class="dialog-field">
+        <label for="columns-gap">Gap (px)</label>
+        <input id="columns-gap" type="number" min="0" max="200" value="36">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-columns-cancel">Cancel</button>
+        <button id="btn-columns-ok" class="primary">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table-of-contents dialog -->
+  <div id="toc-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="toc-dialog-title">
+    <div class="dialog">
+      <h3 id="toc-dialog-title">Insert table of contents</h3>
+      <div class="dialog-field">
+        <label for="toc-title">Title</label>
+        <input id="toc-title" type="text" placeholder="Table of Contents" value="Table of Contents">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-toc-cancel">Cancel</button>
+        <button id="btn-toc-ok" class="primary">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Object (shape / text box / chart / equation) dialog -->
+  <div id="object-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="object-dialog-title">
+    <div class="dialog">
+      <h3 id="object-dialog-title">Insert object</h3>
+      <div class="dialog-field">
+        <label for="object-type">Type</label>
+        <select id="object-type">
+          <option value="shape">Shape</option>
+          <option value="textbox">Text box</option>
+          <option value="chart">Chart</option>
+          <option value="equation">Equation</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label for="object-label">Label</label>
+        <input id="object-label" type="text" placeholder="optional">
+      </div>
+      <div class="dialog-field">
+        <label for="object-content">Content</label>
+        <textarea id="object-content" rows="3" placeholder="text inside the object (text box / equation)"></textarea>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-object-cancel">Cancel</button>
+        <button id="btn-object-ok" class="primary">Insert</button>
       </div>
     </div>
   </div>
