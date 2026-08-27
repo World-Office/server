@@ -1687,3 +1687,17 @@ def test_html_to_odt_table_caption_roundtrip():
         cx = z.read("content.xml").decode("utf-8")
     assert "text:sequence-name" in cx, cx[:400]
     assert "Sample caption" in cx, cx[:400]
+
+
+def test_html_to_odt_columns_roundtrip():
+    """A <section data-columns="N"> wrapping the document maps to a
+    text:section with text:columns and round-trips back (T32 gap: columns)."""
+    html = '<section data-columns="3"><p>A</p><p>B</p><p>C</p></section>'
+    odt = html_to_odt(html)
+    out = odt_to_html(odt)
+    assert 'data-columns="3"' in out, out
+    import zipfile
+    with zipfile.ZipFile(io.BytesIO(odt)) as z:
+        cx = z.read("content.xml").decode()
+    assert "text:columns" in cx, cx[:500]
+    assert "text:section" in cx, cx[:500]
