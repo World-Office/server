@@ -781,7 +781,22 @@ def docx_to_html(data: bytes) -> str:
     if footer_html:
         html_parts.append(f'<footer class="page-footer">{footer_html}</footer>')
 
-    return "\n".join(p for p in html_parts if p)
+    body_html = "\n".join(p for p in html_parts if p)
+    # Section columns (w:sectPr/w:cols) map to a <section data-columns>
+    # wrapper so the layout survives an HTML round-trip.
+    try:
+        sp = doc.sections[0]._sectPr
+        cols_el = sp.find(qn("w:cols")) if sp is not None else None
+        if cols_el is not None:
+            num = cols_el.get(qn("w:num"))
+            space = cols_el.get(qn("w:space"))
+            if num and int(num) > 1:
+                n = int(num)
+                gap = int(int(space) / 15) if space else 0
+                return f'<section data-columns="{n}" data-column-gap="{gap}">{body_html}</section>'
+    except Exception:
+        pass
+    return body_html
 
 
 def _find_header_part(doc) -> Any | None:
@@ -1897,12 +1912,40 @@ _TAG_TABLE = re.compile(r"<figure>.*?</figure>|<table[^>]*>.*?</table>", re.S)
 
 def html_to_docx(html_fragment: str) -> bytes:
     """Convert an HTML fragment into DOCX bytes."""
+    # A <section data-columns> wrapper carries section-column layout
+    # (mapped to w:sectPr/w:cols); unwrap it before body processing.
+    section_cols = None
+    section_gap = None
+    sec_m = re.match(r'<section([^>]*)>(.*)</section>', html_fragment, re.S | re.I)
+    if sec_m:
+        sattrs = sec_m.group(1)
+        cm = re.search(r'data-columns\s*=\s*"?(\d+)', sattrs)
+        gm = re.search(r'data-column-gap\s*=\s*"?(\d+)', sattrs)
+        if cm:
+            section_cols = int(cm.group(1))
+        if gm:
+            section_gap = int(gm.group(1))
+        html_fragment = sec_m.group(2)
     # Split tables out; python-docx tables and paragraphs share the body
     # but order interleaving is complex — append tables at the end.
     tables_html = _TAG_TABLE.findall(html_fragment)
     body = _TAG_TABLE.sub("", html_fragment)
 
     doc = Document()
+    if section_cols and section_cols > 1:
+        sectPr = doc.sections[0]._sectPr
+        if sectPr is None:
+            sectPr = OxmlElement("w:sectPr")
+            doc.sections[0]._element.append(sectPr)
+        cols_el = sectPr.find(qn("w:cols"))
+        if cols_el is None:
+            cols_el = OxmlElement("w:cols")
+            sectPr.append(cols_el)
+        cols_el.set(qn("w:num"), str(section_cols))
+        if section_gap:
+            cols_el.set(qn("w:space"), str(int(section_gap * 15)))
+        else:
+            cols_el.attrib.pop(qn("w:space"), None)
 
     # Extract header and footer if present
     header_content = None
