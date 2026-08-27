@@ -1397,3 +1397,19 @@ def test_bookmark_crossref_survive_save_then_convert():
     assert 'data-name="SEC1"' in out_d, out_d
     out_o = odt_to_html(html_to_odt(saved))
     assert 'data-name="SEC1"' in out_o, out_o
+
+
+def test_track_changes_markers_survive_save_then_convert():
+    """Editor track-change markup (<ins>/<del>) survives sanitize (save) and
+    round-trips through DOCX and ODT with the change intact."""
+    from src.editor.converter import docx_to_html, html_to_docx
+    from src.editor.odt_converter import html_to_odt, odt_to_html
+    from src.editor.sanitize import sanitize_html
+
+    frag = ('<p>Before <ins class="track-insert" data-author="Alice">new words</ins> '
+            'and <del class="track-delete" data-author="Bob">old words</del> after.</p>')
+    saved = sanitize_html(frag)
+    out_d = docx_to_html(html_to_docx(saved))
+    assert 'track-insert' in out_d and 'track-delete' in out_d, out_d
+    out_o = odt_to_html(html_to_odt(saved))
+    assert 'track-insert' in out_o and 'track-delete' in out_o, out_o
