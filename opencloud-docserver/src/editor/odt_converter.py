@@ -583,6 +583,19 @@ def _para_css(props: dict) -> list[str]:
 
 
 def odt_to_html(data: bytes) -> str:
+    """Convert ODT bytes to an HTML fragment (content only, no <html>).
+
+    Never raises on hostile or corrupt input (fault-injection suite): an
+    unreadable document degrades to empty content instead of crashing the
+    read path with a 500.
+    """
+    try:
+        return _odt_to_html(data)
+    except Exception:
+        return ""
+
+
+def _odt_to_html(data: bytes) -> str:
     """Convert ODT bytes to an HTML fragment (content only, no <html>)."""
     doc = load(io.BytesIO(data))
     resolve = _build_style_resolver(doc)

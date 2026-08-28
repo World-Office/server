@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import shutil
 import sqlite3
+import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -36,6 +37,11 @@ class DocumentStore:
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._content_dir.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
+        # One shared SQLite connection is used by all threads (HTTP handlers
+        # run concurrently), so every DB-touching method serializes through
+        # this (reentrant) lock; RLock lets nested calls put_content →
+        # put_version re-acquire safely.
+        self._lock = threading.RLock()
         self._conn.row_factory = sqlite3.Row
         self._init_schema()
 
@@ -74,7 +80,7 @@ class DocumentStore:
     def init(self, doc_id: str, name: str) -> dict[str, Any]:
         """Register a document in the index (idempotent), return its row."""
         now = time.time()
-        with self._conn:
+        with self._lock, self._conn:
             self._conn.execute(
                 "INSERT OR IGNORE INTO documents (id, name, created_at, updated_at) "
                 "VALUES (?, ?, ?, ?)",
@@ -84,17 +90,23 @@ class DocumentStore:
 
     def get(self, doc_id: str) -> dict[str, Any] | None:
         """Return the metadata row for a document, or None if unknown."""
-        row = self._conn.execute("SELECT * FROM documents WHERE id = ?", (doc_id,)).fetchone()
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT * FROM documents WHERE id = ?", (doc_id,)
+            ).fetchone()
         return dict(row) if row else None
 
     def list(self) -> list[dict[str, Any]]:
         """Return all registered documents, newest first."""
-        rows = self._conn.execute("SELECT * FROM documents ORDER BY updated_at DESC").fetchall()
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT * FROM documents ORDER BY updated_at DESC"
+            ).fetchall()
         return [dict(r) for r in rows]
 
     def delete(self, doc_id: str) -> bool:
         """Remove a document and its content file. Returns True if removed."""
-        with self._conn:
+        with self._lock, self._conn:
             cur = self._conn.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
         removed = cur.rowcount > 0
         if removed:
@@ -113,16 +125,20 @@ class DocumentStore:
         Every content write records a byte-level snapshot (pruned to
         :attr:`MAX_VERSIONS`) so the document's history can be listed and
         restored. ``author`` is stored on the snapshot for attribution.
+
+        Serialized through the store lock: concurrent saves must never corrupt
+        the index/version ledger (last write wins, no partial state).
         """
         path = self.content_path(doc_id)
-        path.write_bytes(data)
-        now = time.time()
-        with self._conn:
-            self._conn.execute(
-                "UPDATE documents SET size = ?, updated_at = ? WHERE id = ?",
-                (len(data), now, doc_id),
-            )
-        self.put_version(doc_id, data, author=author)
+        with self._lock:
+            path.write_bytes(data)
+            now = time.time()
+            with self._conn:
+                self._conn.execute(
+                    "UPDATE documents SET size = ?, updated_at = ? WHERE id = ?",
+                    (len(data), now, doc_id),
+                )
+            self.put_version(doc_id, data, author=author)
 
     def get_content(self, doc_id: str) -> bytes | None:
         """Return document bytes, or None if content is missing."""
@@ -155,38 +171,40 @@ class DocumentStore:
             ts = DocumentStore._last_ts
         vdir = self._versions_dir(doc_id)
         vdir.mkdir(parents=True, exist_ok=True)
-        (vdir / f"{ts}.bin").write_bytes(data)
-        with self._conn:
-            self._conn.execute(
-                "INSERT INTO versions (doc_id, ts, author, size) VALUES (?, ?, ?, ?)",
-                (doc_id, ts, author, len(data)),
-            )
-        # prune: keep the newest MAX_VERSIONS rows (drop older files too)
-        rows = self._conn.execute(
-            "SELECT ts FROM versions WHERE doc_id = ? ORDER BY ts DESC",
-            (doc_id,),
-        ).fetchall()
-        drop = [r["ts"] for r in rows[self.MAX_VERSIONS :]] if len(rows) > self.MAX_VERSIONS else []
-        if drop:
+        with self._lock:
+            (vdir / f"{ts}.bin").write_bytes(data)
             with self._conn:
+                self._conn.execute(
+                    "INSERT INTO versions (doc_id, ts, author, size) VALUES (?, ?, ?, ?)",
+                    (doc_id, ts, author, len(data)),
+                )
+            # prune: keep the newest MAX_VERSIONS rows (drop older files too)
+            rows = self._conn.execute(
+                "SELECT ts FROM versions WHERE doc_id = ? ORDER BY ts DESC",
+                (doc_id,),
+            ).fetchall()
+            drop = [r["ts"] for r in rows[self.MAX_VERSIONS :]] if len(rows) > self.MAX_VERSIONS else []
+            if drop:
+                with self._conn:
+                    for old_ts in drop:
+                        self._conn.execute(
+                            "DELETE FROM versions WHERE doc_id = ? AND ts = ?", (doc_id, old_ts)
+                        )
                 for old_ts in drop:
-                    self._conn.execute(
-                        "DELETE FROM versions WHERE doc_id = ? AND ts = ?", (doc_id, old_ts)
-                    )
-            for old_ts in drop:
-                f = vdir / f"{old_ts}.bin"
-                try:
-                    f.unlink()
-                except OSError:
-                    pass
+                    f = vdir / f"{old_ts}.bin"
+                    try:
+                        f.unlink()
+                    except OSError:
+                        pass
         return ts
 
     def list_versions(self, doc_id: str) -> list[dict[str, object]]:
         """Return version metadata for a document, newest first."""
-        rows = self._conn.execute(
-            "SELECT ts, author, size FROM versions WHERE doc_id = ? ORDER BY ts DESC",
-            (doc_id,),
-        ).fetchall()
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT ts, author, size FROM versions WHERE doc_id = ? ORDER BY ts DESC",
+                (doc_id,),
+            ).fetchall()
         return [dict(r) for r in rows]
 
     def get_version(self, doc_id: str, ts: int) -> bytes | None:
@@ -228,14 +246,15 @@ class DocumentStore:
 
     def get_lock(self, doc_id: str) -> str:
         """Return the current lock token ('' when unlocked)."""
-        row = self._conn.execute(
-            "SELECT lock_token FROM documents WHERE id = ?", (doc_id,)
-        ).fetchone()
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT lock_token FROM documents WHERE id = ?", (doc_id,)
+            ).fetchone()
         return row["lock_token"] if row else ""
 
     def set_lock(self, doc_id: str, token: str, user: str = "") -> None:
         """Acquire/replace the lock on a document."""
-        with self._conn:
+        with self._lock, self._conn:
             self._conn.execute(
                 "UPDATE documents SET lock_token = ?, lock_user = ? WHERE id = ?",
                 (token, user, doc_id),
@@ -243,7 +262,7 @@ class DocumentStore:
 
     def release_lock(self, doc_id: str) -> None:
         """Clear the lock on a document."""
-        with self._conn:
+        with self._lock, self._conn:
             self._conn.execute(
                 "UPDATE documents SET lock_token = '', lock_user = '' WHERE id = ?",
                 (doc_id,),

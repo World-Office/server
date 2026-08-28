@@ -783,6 +783,19 @@ def _paragraph_is_section_break(para) -> bool:
 
 
 def docx_to_html(data: bytes) -> str:
+    """Convert DOCX bytes to an HTML fragment (content only, no <html>).
+
+    Never raises on hostile or corrupt input (fault-injection suite): an
+    unreadable document degrades to empty content instead of crashing the
+    read path with a 500.
+    """
+    try:
+        return _docx_to_html(data)
+    except Exception:
+        return ""
+
+
+def _docx_to_html(data: bytes) -> str:
     """Convert DOCX bytes to an HTML fragment (content only, no <html>)."""
     doc = Document(io.BytesIO(data))
     notes = _collect_notes(doc)
