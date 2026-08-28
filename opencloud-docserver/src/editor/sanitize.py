@@ -234,6 +234,7 @@ def sanitize_html(html: str) -> str:
     sanitizer = _XSSSanitizer()
     try:
         sanitizer.feed(html)
+        sanitizer.close()  # flush trailing charref/& data before get_output()
     except Exception:
         # If parsing fails, return empty string for safety
         return ""

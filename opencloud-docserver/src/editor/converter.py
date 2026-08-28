@@ -2750,6 +2750,7 @@ class _InlineRunBuilder(HTMLParser):
 def _inline_tokens(html: str) -> list[dict]:
     builder = _InlineRunBuilder()
     builder.feed(html)
+    builder.close()  # flush any trailing charref/& data buffered by HTMLParser
     builder._finish()
     return builder.tokens
 
@@ -3059,6 +3060,7 @@ def _append_table(doc: Document, tbl_html: str) -> None:
         tbl_html = tm.group(0) if tm else tbl_html
     parser = _TableParser()
     parser.feed(tbl_html)
+    parser.close()  # flush trailing data (e.g. a dangling '&' in the last cell)
     rows = parser.rows
     if not rows:
         return
