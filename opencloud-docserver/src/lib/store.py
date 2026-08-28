@@ -43,7 +43,17 @@ class DocumentStore:
         # put_version re-acquire safely.
         self._lock = threading.RLock()
         self._conn.row_factory = sqlite3.Row
-        self._init_schema()
+        try:
+            self._init_schema()
+        except sqlite3.Error as exc:
+            # Storage is not a valid database (corrupted, truncated, or
+            # overwritten). Fail with the store's OWN typed error instead of
+            # leaking a raw sqlite traceback, and never silently initialise a
+            # fresh empty store over it (that would hide data loss).
+            self._conn.close()
+            raise DocumentStoreError(
+                f"storage unreadable or corrupt at {self._db_path!r}: {exc}"
+            ) from exc
 
     def _init_schema(self) -> None:
         with self._conn:
