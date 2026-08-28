@@ -150,6 +150,16 @@ _XSS_CORPUS: list[str] = [
     "<p>&lt;img src=x onerror=alert(1)&gt;</p>",
     '<a href="&#106;&#97;&#118;&#97;&#115;&#99;&#114;&#105;&#112;&#116;&#58;'
     'alert(1)">x</a>',
+    # ---- attribute-breakout via decoded quotes (#ATTRIBUTE and #TAG fields
+    #      of the OWASP matrix): a kept safe attribute whose *value* contains
+    #      entity-encoded quotes must not be able to forge new attributes/tags
+    #      on re-parse --------------------------------------------------------
+    '<div title="&quot; onmouseover=&quot;alert(1)">x</div>',
+    '<a href="/ok" alt="&quot;&gt;&lt;svg onload=alert(1)&gt;">x</a>',
+    '<img src="/s.png" alt="&quot; autofocus onfocus=&quot;alert(1)">',
+
+    # ---- SVG/event-source-in-srcset -----------------------------------------
+    '<img src="x" srcset="javascript:alert(1) 1x, /ok.png 2x">',
 ]
 
 
@@ -177,6 +187,29 @@ def test_corpus_still_preserves_benign_content():
     assert "https://ok.example/x?a=1&amp;b=2" in out
     assert "/assets/pic.png" in out
     assert "onerror" not in out
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        "<script>alert(1)</script>",
+        "<script>window.location='https://evil.example/'</script>",
+        "<script src='//evil.example/x.js'></script>",
+        "<style>body{display:none}</style>",
+        "<iframe><p>phished ui</p></iframe>",
+        "<svg><script>alert(1)</script></svg>",
+    ],
+    ids=["script-alert", "script-redirect", "script-src", "style-css", "iframe-content", "svg-script"],
+)
+def test_unsafe_element_content_is_suppressed_not_leaked(payload: str):
+    """Content-suppression property: a stripped executable element must not
+    leak its payload as *visible text*. This is the exact regression the
+    sanitizer's suppression depth exists to prevent — a dropped ``<script>``
+    must not leave ``alert(1)`` behind in the document text.
+
+    (Pinned by mutation testing: removing ``script`` from ``_unsafe_tags``
+    leaves the payload as visible text, which only this assertion detects.)"""
+    assert sanitize_html(payload) == ""
 
 
 # ---------------------------------------------------------------------------

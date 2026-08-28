@@ -415,12 +415,18 @@ def test_document_html_empty_file_returns_blank(client):
     assert body["blank"] is True
 
 
-def test_document_html_corrupt_nonempty_still_errors(client):
+def test_document_html_corrupt_content_degrades_gracefully(client):
+    """Fault-injection contract: corrupt (non-zip) content must NOT produce a
+    server error — the read path degrades to an empty document instead of a
+    500, so a damaged file can never take the docserver down (formerly 500)."""
     store = client.test_store  # type: ignore[attr-defined]
     store.init("e2", "corrupt.docx")
     store.put_content("e2", b"this is not a zip file, just text bytes")
     r = client.get("/api/documents/e2/html")
-    assert r.status_code == 500
+    assert r.status_code == 200
+    body = r.json()
+    assert body["html"] == ""
+    assert body["name"] == "corrupt.docx"
 
 
 # ----------------------------------------------------------------------

@@ -735,6 +735,8 @@ async def collab_apply_ops(doc_id: str, request: Request) -> JSONResponse:
     if not isinstance(ops, list):
         return JSONResponse({"error": "ops must be a list"}, status_code=400)
     client_id = payload.get("client_id") or "anon"
+    if not isinstance(client_id, str):
+        client_id = "anon"
     base_rev = payload.get("base_rev")
     if not isinstance(base_rev, int):
         base_rev = None
@@ -754,6 +756,8 @@ async def collab_sync(doc_id: str, request: Request) -> JSONResponse:
         return JSONResponse({"error": "invalid JSON"}, status_code=400)
     text = payload.get("text", "")
     client_id = payload.get("client_id") or "anon"
+    if not isinstance(client_id, str):
+        client_id = "anon"
     hub = get_hub()
     hub.ensure(doc_id, _collab_base_text(request, doc_id))
     state = hub.sync_text(doc_id, client_id, str(text))
@@ -819,7 +823,7 @@ async def collab_presence(doc_id: str, request: Request) -> JSONResponse:
     if not isinstance(payload, dict):
         return JSONResponse({"error": "invalid JSON"}, status_code=400)
     client_id = payload.get("client_id") or ""
-    if not client_id:
+    if not isinstance(client_id, str) or not client_id:
         return JSONResponse({"error": "client_id required"}, status_code=400)
     clients = get_hub().set_presence(
         doc_id, client_id, payload.get("user", ""), payload.get("cursor")

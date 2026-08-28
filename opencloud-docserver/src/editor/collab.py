@@ -84,6 +84,9 @@ def op_key(op: dict) -> tuple | None:
 
     An insert is uniquely identified by the first item id it creates
     ``(site, b)`` and its length; a delete by its target id list.
+
+    Malformed ops (wrong types, e.g. ``ids`` as a string) yield ``None``
+    so the hub skips them instead of unpacking garbage.
     """
     if not isinstance(op, dict):
         return None
@@ -91,7 +94,12 @@ def op_key(op: dict) -> tuple | None:
         return ("i", op.get("s"), op.get("b"), op.get("n", 0))
     if op.get("t") == T_DELETE:
         ids = op.get("ids") or []
-        return ("d", op.get("s"), tuple((s, q) for s, q in ids))
+        if not isinstance(ids, list):
+            return None
+        try:
+            return ("d", op.get("s"), tuple((s, q) for s, q in ids))
+        except (TypeError, ValueError):
+            return None
     return None
 
 
@@ -247,16 +255,30 @@ class TextCRDT:
           the (future) origin and becomes visible once the origin arrives;
         * a delete for an unseen item is parked and applied when the item
           integrates.
+
+        Ops arrive over the wire from untrusted clients, so every field is
+        type-validated up front: a malformed op is rejected whole (returns
+        False) instead of crashing the replica or being half-applied.
         """
         if not isinstance(op, dict) or op.get("t") not in (T_INSERT, T_DELETE):
             return False
         site = op.get("s", "")
+        if not isinstance(site, str) or not site:
+            return False
         changed = False
 
         if op["t"] == T_INSERT:
             start = op.get("b", 0)
-            origin = (op.get("originSite", ""), op.get("originSeq", 0))
+            if not isinstance(start, int):
+                return False
+            origin_site = op.get("originSite", "")
+            origin_seq = op.get("originSeq", 0)
+            if not isinstance(origin_site, str) or not isinstance(origin_seq, int):
+                return False
+            origin = (origin_site, origin_seq)
             chars = op.get("chars", "") or ""
+            if not isinstance(chars, str):
+                return False
             self._touch(site, start + len(chars) - 1)
             # reconstruct the same chain the generating site built: the
             # first char anchors at `origin`, each following char anchors at
@@ -274,10 +296,18 @@ class TextCRDT:
             return changed
 
         # delete
+        ids = op.get("ids") or []
+        if not isinstance(ids, list):
+            return False
+        # validate the whole id list up front — never partially apply a
+        # malformed op (a string here would otherwise unpack char-by-char)
+        for sid, seq in ids:
+            if not isinstance(sid, str) or not isinstance(seq, int):
+                return False
         max_seq = 0
-        for s, seq in op.get("ids", []):
-            max_seq = max(max_seq, int(seq))
-            iid = (s, int(seq))
+        for sid, seq in ids:
+            max_seq = max(max_seq, seq)
+            iid = (sid, seq)
             item = self.items.get(iid)
             if item is None:
                 self._pending_deletes.add(iid)
