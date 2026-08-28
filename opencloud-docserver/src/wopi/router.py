@@ -24,6 +24,7 @@ from .protocol import (
     LOCK_HEADER,
     WopiError,
     file_info_response,
+    invalid_doc_id,
     lock_mismatch_error,
 )
 
@@ -43,26 +44,11 @@ MAX_FILE_SIZE = 128 * 1024 * 1024  # 128 MiB
 def _invalid_doc_id(doc_id: str) -> bool:
     """True when a WOPI file id must be rejected as a path-traversal attempt.
 
-    Content bytes live at ``{content_dir}/{doc_id}.bin``, so an id that
-    contains path separators addresses a file outside the store's content
-    directory. An attacker can smuggle separators into a URL path param
-    URI-encoded (``%2F``, ``%5C``) — FastAPI/Starlette decodes the segment
-    before the handler runs, turning e.g. ``..%2F..%2Fsecret`` into a doc id
-    of ``../../secret``. Opaque host ids never legitimately contain
-    separators or traversal segments, so reject them outright.
+    Re-exported from :mod:`wopi.protocol`, which shares the predicate with
+    the editor API (both reach the content directory through
+    ``DocumentStore.content_path``).
     """
-    if not doc_id:
-        return True
-    if "/" in doc_id or "\\" in doc_id or "\x00" in doc_id:
-        return True
-    if doc_id in {".", ".."}:
-        return True
-    # No separator can remain at this point, so a bare ".." substring can no
-    # longer change directory resolution — reject it anyway: opaque ids never
-    # contain it and it keeps the contract obvious at every call site.
-    if ".." in doc_id:
-        return True
-    return False
+    return invalid_doc_id(doc_id)
 
 
 def _wopi_invalid_id_response() -> JSONResponse:

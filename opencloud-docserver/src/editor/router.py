@@ -34,7 +34,7 @@ from ..editor.session import (
     session_from_token,
 )
 from ..lib.store import DocumentStoreError
-from ..wopi.protocol import LOCK_HEADER
+from ..wopi.protocol import LOCK_HEADER, invalid_doc_id
 
 router = APIRouter()
 
@@ -217,6 +217,11 @@ async def editor_page(doc_id: str, request: Request) -> HTMLResponse:
         doc_id = session.doc_id
         read_only = session.read_only
         session_id = session.session_id
+    # The root /editor launch path enters with an empty path id that is only
+    # resolved from WOPISrc above — so validate the *resolved* id. (The
+    # empty-id degenerate root page is inert: it reads no store content.)
+    if doc_id and invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
 
     return _templates.TemplateResponse(
         request,
@@ -294,6 +299,8 @@ async def document_html(doc_id: str, request: Request) -> JSONResponse:
     Reads bytes from the local store, or from the remote WOPI host when
     in client mode, then converts DOCX -> HTML.
     """
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
     data = _load_bytes(request, doc_id)
     if data is None:
         return JSONResponse({"error": "not found"}, status_code=404)
@@ -314,10 +321,12 @@ async def document_html(doc_id: str, request: Request) -> JSONResponse:
 @router.post("/api/documents/{doc_id}/save")
 async def save_document(doc_id: str, request: Request) -> JSONResponse:
     """Convert submitted HTML back to DOCX and persist."""
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
     body = await request.body()
     try:
         payload = json.loads(body)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, UnicodeDecodeError):
         return JSONResponse({"error": "invalid JSON"}, status_code=400)
     html = payload.get("html", "")
 
@@ -359,6 +368,8 @@ async def export_document(doc_id: str, request: Request, format: str = "pdf") ->
     Converts the stored office bytes to editable HTML, then to the target
     format. PDF uses weasyprint when available, otherwise a minimal valid PDF.
     """
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
     data = _load_bytes(request, doc_id)
     if data is None:
         return JSONResponse({"error": "not found"}, status_code=404)
@@ -453,6 +464,8 @@ async def document_contents(doc_id: str, request: Request) -> Response:
     the remote WOPI host. The ``X-WOPI-ItemVersion`` header carries the
     document version, as the WOPI spec requires.
     """
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
     data = _load_bytes(request, doc_id)
     if data is None:
         return JSONResponse({"error": "not found"}, status_code=404)
@@ -485,6 +498,8 @@ async def document_versions(doc_id: str, request: Request) -> JSONResponse:
     own revision history is authoritative — return a clear error instead
     of a misleading empty list.
     """
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
     if _client(request, doc_id) is not None:
         return JSONResponse(
             {"error": "version history is managed by the remote document host"},
@@ -503,6 +518,8 @@ async def restore_document_version(doc_id: str, ts: int, request: Request) -> JS
     The pre-restore state is preserved as a new snapshot so the restore is
     itself undoable. Client-mode documents are refused (host owns history).
     """
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
     if _client(request, doc_id) is not None:
         return JSONResponse(
             {"error": "version history is managed by the remote document host"},
@@ -536,6 +553,8 @@ async def put_document_contents(doc_id: str, request: Request) -> JSONResponse:
     In client mode the bytes are forwarded to the remote host and the
     session's read-only state is enforced.
     """
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
     if request.method == "POST" and request.headers.get("X-WOPI-Override", "").upper() != "PUT":
         return JSONResponse(
             {"error": "X-WOPI-Override: PUT required on POST /contents"}, status_code=400
@@ -580,6 +599,8 @@ async def document_meta(doc_id: str, request: Request) -> JSONResponse:
     """Return document metadata (size, name, lock state) plus the extended
     WOPI fields: base file name, format, MIME type, version, writability and
     the contents URL for the raw-bytes endpoint."""
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
     doc = _store(request).get(doc_id)
     if doc is None:
         session = _registry(request).get(doc_id)
@@ -637,6 +658,10 @@ async def upload_document(file: UploadFile, request: Request) -> JSONResponse:
     if not data:
         return JSONResponse({"error": "empty file"}, status_code=400)
     doc_id = file.filename or "doc"
+    # A hostile filename is a path-traversal vector (the filename becomes
+    # the doc id, i.e. the content filename) — reject it at the boundary.
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
     store = _store(request)
     store.init(doc_id, file.filename or "document.docx")
     store.put_content(doc_id, data)
@@ -702,6 +727,8 @@ async def collab_state(doc_id: str, request: Request) -> JSONResponse:
     """Current collaboration snapshot: revision, visible text, full op log
     and the list of active editors. A new (late-joining) client can apply
     the whole op log from scratch and converge with every other editor."""
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
     hub = get_hub()
     hub.ensure(doc_id, _collab_base_text(request, doc_id))
     return JSONResponse(hub.state(doc_id))
@@ -711,6 +738,8 @@ async def collab_state(doc_id: str, request: Request) -> JSONResponse:
 async def collab_ops(doc_id: str, request: Request) -> JSONResponse:
     """Catch-up replay: every hub op applied after revision ``since``.
     Poll this (or subscribe to the SSE stream) to stay in sync."""
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
     hub = get_hub()
     hub.ensure(doc_id, _collab_base_text(request, doc_id))
     try:
@@ -727,9 +756,11 @@ async def collab_apply_ops(doc_id: str, request: Request) -> JSONResponse:
     carries the new revision, the ops that were applied, and any ops the
     client is still missing since ``base_rev`` (single-round-trip healing
     of gaps from lost/reordered delivery)."""
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
     try:
         payload = json.loads(await request.body())
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, UnicodeDecodeError):
         return JSONResponse({"error": "invalid JSON"}, status_code=400)
     ops = payload.get("ops") if isinstance(payload, dict) else None
     if not isinstance(ops, list):
@@ -748,9 +779,11 @@ async def collab_sync(doc_id: str, request: Request) -> JSONResponse:
     """Browser-friendly collaboration sync: the client posts its full plain-
     text content and the server merges it into the CRDT (see CollabHub.sync_text).
     No client-side CRDT required — keeps the browser thin."""
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
     try:
         payload = json.loads(await request.body())
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, UnicodeDecodeError):
         return JSONResponse({"error": "invalid JSON"}, status_code=400)
     if not isinstance(payload, dict):
         return JSONResponse({"error": "invalid JSON"}, status_code=400)
@@ -768,9 +801,11 @@ async def collab_sync(doc_id: str, request: Request) -> JSONResponse:
 async def collab_resync(doc_id: str, request: Request) -> JSONResponse:
     """Rebase the collaboration state onto authoritative text — used after
     a full save so the CRDT layer and the stored document stay in step."""
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
     try:
         payload = json.loads(await request.body())
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, UnicodeDecodeError):
         return JSONResponse({"error": "invalid JSON"}, status_code=400)
     if not isinstance(payload, dict):
         return JSONResponse({"error": "invalid JSON"}, status_code=400)
@@ -816,9 +851,11 @@ async def collab_stream(doc_id: str, request: Request) -> StreamingResponse:
 async def collab_presence(doc_id: str, request: Request) -> JSONResponse:
     """Announce an editor (cursor/selection sharing) or leave by sending an
     empty cursor. Body: ``{"client_id": str, "user": str, "cursor": ...}``."""
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
     try:
         payload = json.loads(await request.body())
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, UnicodeDecodeError):
         return JSONResponse({"error": "invalid JSON"}, status_code=400)
     if not isinstance(payload, dict):
         return JSONResponse({"error": "invalid JSON"}, status_code=400)
@@ -834,6 +871,8 @@ async def collab_presence(doc_id: str, request: Request) -> JSONResponse:
 @router.get("/api/documents/{doc_id}/collab/presence")
 async def collab_presence_list(doc_id: str, request: Request) -> JSONResponse:
     """List the editors currently collaborating on a document."""
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
     return JSONResponse({"clients": get_hub().clients(doc_id)})
 
 
