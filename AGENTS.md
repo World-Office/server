@@ -216,3 +216,30 @@ The workspace-level `plan/` directory contains operational and developer documen
 - The WOPI server (wo-wopi) requires access tokens -- do not expose endpoints without auth
 - WASM crates (wo-x2t-wasm, wo-renderer-wasm) cannot be tested with standard `cargo test` -- they need wasm-pack or a browser runtime
 - pnpm workspace includes `apps/web/apps/*` -- editor changes propagate across all editor shells
+
+## AGENTIC AI DEV LOOP (opencloud-docserver)
+
+The docserver ships an agentic surface (`opencloud-docserver/src/ai/`): agents are
+collaboration clients (MCP tool surface over the WOPI + CRDT control plane), never a
+privileged write path. Direction + implementation record: `plan/agentic-ai-direction.md`;
+spec: `openspec/changes/agentic-ai-document-platform/`.
+
+**The dev loop is spec-driven and eval-gated:**
+
+1. **Spec first** — every behavior change starts as an OpenSpec change
+   (`openspec new change`, schema `spec-driven`: proposal → design → specs → tasks).
+   Backlog stories (E13–E23 in `opencloud-docserver/docs/backlog-epics-and-user-stories.md`)
+   are the source of spec fragments.
+2. **Implement on a `parity/*` branch**, tasks ticked as you go (`openspec apply`).
+3. **Gate before merge** — all three must be green:
+   - `uv run pytest tests/ -q -p no:randomly --ignore=tests/e2e` (in `opencloud-docserver/`)
+   - `uv run ruff check src tests`
+   - `uv run python scripts/mutation-test.py` — **mutation score must stay 100%**;
+     a surviving mutant = a guardrail without teeth = new tests required before merge.
+   The CI job `docserver-mutation-gate` enforces the mutation gate on PRs.
+4. **Agent-facing changes get eval corpora**: agent edits are just another untrusted
+   input class — add cases to `tests/test_ai_agent_edits.py` (property oracle) and, when
+   protocol-shaping, golden transcripts (`tests/golden/`, regen with `UPDATE_GOLDEN=1`).
+5. **Ship**: `merge --no-ff` to main; push branch to remotes (see repo push conventions).
+
+Kill switch for the whole surface: `DOCSERVER_AGENTS=0` (tool calls fail closed).

@@ -336,3 +336,45 @@ jobs:
       - name: Check all targets
         run: cargo check --workspace --all-targets
         timeout-minutes: 30
+
+  docserver-tests:
+    name: Docserver Tests (Python)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: opencloud-docserver
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+        timeout-minutes: 5
+
+      - name: Lint (ruff)
+        run: uv run ruff check src tests
+        timeout-minutes: 5
+
+      - name: Test suite
+        run: uv run pytest tests/ -q --tb=short -p no:randomly --ignore=tests/e2e
+        timeout-minutes: 20
+
+  # Eval gate (spec: agent-eval-harness): a change touching the agent tool
+  # surface or the collaboration path must keep the mutation score at 100%
+  # before it can merge. A surviving mutant = a guardrail without teeth.
+  docserver-mutation-gate:
+    name: Docserver Mutation Gate (score = 100%)
+    runs-on: ubuntu-latest
+    needs: docserver-tests
+    defaults:
+      run:
+        working-directory: opencloud-docserver
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+        timeout-minutes: 5
+
+      - name: Mutation testing (exit 1 on any survivor)
+        run: uv run python scripts/mutation-test.py
+        timeout-minutes: 60

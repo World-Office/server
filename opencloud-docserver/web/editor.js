@@ -1047,7 +1047,7 @@
     lastFocusedEl = null;
     el.focus();
   }
-  const DIALOG_IDS = ["find-dialog", "table-dialog", "image-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog"];
+  const DIALOG_IDS = ["find-dialog", "table-dialog", "image-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -2506,6 +2506,121 @@
     if (ev.key === "Escape" && versionDialog && versionDialog.classList.contains("open")) {
       ev.preventDefault();
       closeVersionHistory();
+    }
+  });
+
+  // --- AI review (op-stream diff + per-op reject) ---------------------
+  // The agent edits through the same op pipeline as humans; its ops are
+  // attributable (site "agent=<name>"), so the review pane lists exactly
+  // those ops with their revisions. Reject emits the inverse op as the
+  // "reviewer" client — a normal, attributable, undoable op itself. Roll
+  // back to any prior revision stays in the version-history dialog.
+  const aiReviewDialog = document.getElementById("ai-review-dialog");
+  const aiReviewList = document.getElementById("ai-review-list");
+  const aiReviewError = document.getElementById("ai-review-error");
+  let aiReviewEntries = [];
+
+  function closeAIReview() {
+    if (aiReviewDialog) aiReviewDialog.classList.remove("open");
+    restoreFocus();
+  }
+
+  function renderAIReview() {
+    if (!aiReviewList) return;
+    aiReviewList.textContent = "";
+    if (!aiReviewEntries.length) {
+      const empty = document.createElement("p");
+      empty.className = "version-empty";
+      empty.textContent = "No AI changes in this document.";
+      aiReviewList.appendChild(empty);
+      return;
+    }
+    aiReviewEntries.forEach((op) => {
+      const item = document.createElement("div");
+      item.className = "version-item ai-review-item";
+      item.setAttribute("role", "listitem");
+      const meta = document.createElement("span");
+      meta.className = "version-meta";
+      meta.textContent = `#${op.rev} · ${op.agent} · ${op.summary}`;
+      item.appendChild(meta);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "version-restore ai-reject";
+      btn.textContent = "Reject";
+      btn.setAttribute("aria-label", `Reject AI change #${op.rev} (${op.summary})`);
+      btn.addEventListener("click", () => rejectAIOp(op.rev, btn));
+      item.appendChild(btn);
+      aiReviewList.appendChild(item);
+    });
+  }
+
+  async function rejectAIOp(rev, btn) {
+    if (btn) btn.disabled = true;
+    try {
+      const res = await fetch(api("ai/review/reject"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ revs: [rev] }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "reject failed");
+      setStatus("AI change rejected");
+      await openAIReview(); // re-render from the live op stream
+      await loadDocument();
+    } catch (err) {
+      if (btn) btn.disabled = false;
+      if (aiReviewError) aiReviewError.textContent = "Reject failed: " + err.message;
+    }
+  }
+
+  async function rejectAllAIOps(btn) {
+    if (btn) btn.disabled = true;
+    try {
+      const res = await fetch(api("ai/review/reject"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ all: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "reject failed");
+      setStatus("All AI changes rejected");
+      await openAIReview();
+      await loadDocument();
+    } catch (err) {
+      if (btn) btn.disabled = false;
+      if (aiReviewError) aiReviewError.textContent = "Reject failed: " + err.message;
+    }
+  }
+
+  async function openAIReview() {
+    closeAllMenus();
+    if (aiReviewError) aiReviewError.textContent = "";
+    if (aiReviewDialog) {
+      rememberFocus();
+      aiReviewDialog.classList.add("open");
+    }
+    try {
+      const res = await fetch(api("ai/review"));
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "ai review failed");
+      aiReviewEntries = data.ops || [];
+      renderAIReview();
+      setStatus(t("Status.Ready"));
+    } catch (err) {
+      if (aiReviewError) aiReviewError.textContent = "Could not load AI changes: " + err.message;
+    }
+  }
+
+  const btnAIReview = document.getElementById("btn-ai-review");
+  if (btnAIReview) btnAIReview.addEventListener("click", () => { closeAllMenus(); openAIReview(); });
+  const btnAIReviewClose = document.getElementById("btn-ai-review-close");
+  if (btnAIReviewClose) btnAIReviewClose.addEventListener("click", closeAIReview);
+  const btnAIRejectAll = document.getElementById("btn-ai-reject-all");
+  if (btnAIRejectAll) btnAIRejectAll.addEventListener("click", () => rejectAllAIOps(btnAIRejectAll));
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && aiReviewDialog && aiReviewDialog.classList.contains("open")) {
+      ev.preventDefault();
+      closeAIReview();
     }
   });
 

@@ -2747,9 +2747,22 @@ class _InlineRunBuilder(HTMLParser):
         self._buf = []
 
 
+# `<?...>` and non-comment `<!...>` make HTMLParser swallow everything up to
+# the next `>` as a processing instruction / bogus comment — silently
+# dropping document text (e.g. "0<? <b>0</b>" lost the separating space).
+# Pre-escape them into literal text; real comments (<!--) and DOCTYPEs stay
+# intact. Text preservation beats markup pedantry for office fragments.
+_BOGUS_MARKUP = re.compile(r"<(\?|!(?!--)(?!doctype))", re.IGNORECASE)
+
+
+def _escape_bogus_markup(html: str) -> str:
+    """Neutralize PI/bogus-comment constructs so parsers cannot eat text."""
+    return _BOGUS_MARKUP.sub(r"&lt;\1", html)
+
+
 def _inline_tokens(html: str) -> list[dict]:
     builder = _InlineRunBuilder()
-    builder.feed(html)
+    builder.feed(_escape_bogus_markup(html))
     builder.close()  # flush any trailing charref/& data buffered by HTMLParser
     builder._finish()
     return builder.tokens
@@ -3059,7 +3072,7 @@ def _append_table(doc: Document, tbl_html: str) -> None:
         tm = re.search(r"<table[^>]*>.*?</table>", inner, re.S)
         tbl_html = tm.group(0) if tm else tbl_html
     parser = _TableParser()
-    parser.feed(tbl_html)
+    parser.feed(_escape_bogus_markup(tbl_html))
     parser.close()  # flush trailing data (e.g. a dangling '&' in the last cell)
     rows = parser.rows
     if not rows:
