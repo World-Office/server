@@ -100,6 +100,7 @@
         <li role="none" class="menu-sep" aria-hidden="true"></li>
         <li role="none"><button type="button" id="btn-print" role="menuitem" data-i18n="Menu.Print">Print</button></li>
         <li role="none"><button type="button" id="btn-history" role="menuitem" data-i18n="Menu.History">History…</button></li>
+        <li role="none"><button type="button" id="btn-ai-review" role="menuitem">AI changes…</button></li>
       </ul>
     </div>
   </nav>
@@ -418,6 +419,23 @@
       <div id="version-error" class="version-error" role="alert"></div>
       <div class="dialog-actions">
         <button id="btn-version-close" data-i18n="VersionHistory.Close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI review dialog: the op-stream diff of agent edits. Agents edit
+       through the same CRDT pipeline as humans, and their ops carry an
+       "agent=<name>" site, so each row is one attributable op with a Reject
+       button (inverse op applied as the "reviewer" client). Full rollback
+       to any prior revision stays in the version-history dialog. -->
+  <div id="ai-review-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="ai-review-title">
+    <div class="dialog">
+      <h3 id="ai-review-title">AI changes</h3>
+      <div id="ai-review-list" class="version-list" role="list" aria-label="AI changes"></div>
+      <div id="ai-review-error" class="version-error" role="alert"></div>
+      <div class="dialog-actions">
+        <button id="btn-ai-reject-all">Reject all</button>
+        <button id="btn-ai-review-close">Close</button>
       </div>
     </div>
   </div>

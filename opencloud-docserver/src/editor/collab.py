@@ -339,6 +339,27 @@ class TextCRDT:
     def _alive_ids(self) -> list[tuple[str, int]]:
         return [iid for iid in self._ordered_ids() if self.items[iid].alive]
 
+    def alive_ids(self) -> list[tuple[str, int]]:
+        """Public view of the alive item ids (visible-char order).
+
+        Used by the agent tool surface to compile index-based text edits
+        into CRDT wire ops without reaching into private state.
+        """
+        return self._alive_ids()
+
+    def insert_index_at(self, iid: tuple[str, int]) -> int:
+        """The alive index at which *iid* sits or would be re-inserted:
+        the number of alive items preceding it in document order. Works for
+        tombstoned ids too — that is how a rejected agent delete knows where
+        to put the removed characters back."""
+        pos = 0
+        for cur in self._ordered_ids():
+            if cur == iid:
+                return pos
+            if self.items[cur].alive:
+                pos += 1
+        return pos
+
     def to_string(self) -> str:
         """The materialized (visible) text of this replica."""
         if self._text_cache is not None:
@@ -567,11 +588,15 @@ class CollabHub:
         if cursor is None:
             doc.presence.pop(client_id, None)
         else:
+            # Agents announce themselves as "agent=<name>" clients; the badge
+            # makes them distinguishable from human editors in every UI that
+            # renders the presence list.
             doc.presence[client_id] = {
                 "client": client_id,
                 "user": user or client_id,
                 "cursor": cursor,
                 "updated": time.time(),
+                "agent": client_id.startswith("agent="),
             }
         clients = self.clients(doc_id)
         self._emit(doc_id, {"type": "presence", "doc_id": doc_id, "clients": clients})
