@@ -23,6 +23,7 @@ from fastapi import APIRouter, Request, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
 from fastapi.templating import Jinja2Templates
 
+from ..ai.review import agent_ops, reject_agent_ops
 from ..editor.collab import get_hub
 from ..editor.converter import docx_to_html, html_to_docx
 from ..editor.odt_converter import html_to_odt, odt_to_html
@@ -874,6 +875,52 @@ async def collab_presence_list(doc_id: str, request: Request) -> JSONResponse:
     if invalid_doc_id(doc_id):
         return JSONResponse({"error": "Invalid file id"}, status_code=400)
     return JSONResponse({"clients": get_hub().clients(doc_id)})
+
+
+# ----------------------------------------------------------------------
+# AI review (op-stream diff + per-op reject)
+# ----------------------------------------------------------------------
+
+@router.get("/api/documents/{doc_id}/ai/review")
+async def ai_review(doc_id: str, request: Request) -> JSONResponse:
+    """The reviewable agent portion of the op stream (spec:
+    agent-collab-client): every agent op with its revision, attribution and
+    a one-line summary — the diff between the pre-agent and post-agent
+    revisions, one row per op."""
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
+    try:
+        since = int(request.query_params.get("since", 0))
+    except (TypeError, ValueError):
+        since = 0
+    hub = get_hub()
+    hub.ensure(doc_id, _collab_base_text(request, doc_id))
+    return JSONResponse(agent_ops(hub, doc_id, since_rev=since))
+
+
+@router.post("/api/documents/{doc_id}/ai/review/reject")
+async def ai_review_reject(doc_id: str, request: Request) -> JSONResponse:
+    """Reject agent ops: body ``{"revs": [..]}`` or ``{"all": true}``.
+    Each rejection emits the inverse op as the ``reviewer`` client, so the
+    rejection itself is a normal, attributable, undoable op."""
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
+    try:
+        payload = json.loads(await request.body())
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JSONResponse({"error": "invalid JSON"}, status_code=400)
+    if not isinstance(payload, dict):
+        return JSONResponse({"error": "invalid JSON"}, status_code=400)
+    hub = get_hub()
+    hub.ensure(doc_id, _collab_base_text(request, doc_id))
+    if payload.get("all"):
+        listing = agent_ops(hub, doc_id)
+        revs = [op["rev"] for op in listing["ops"]]
+    else:
+        revs = payload.get("revs")
+        if not isinstance(revs, list) or not all(isinstance(r, int) for r in revs):
+            return JSONResponse({"error": "revs must be a list of ints"}, status_code=400)
+    return JSONResponse(reject_agent_ops(hub, doc_id, revs))
 
 
 # ----------------------------------------------------------------------
