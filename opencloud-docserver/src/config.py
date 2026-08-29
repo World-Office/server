@@ -31,6 +31,7 @@ class Config:
     cors_origins: str = "*"
     wopi_host: str = ""
     data_dir: str = "data"
+    agents_enabled: bool = True
 
     @property
     def document_dir(self) -> str:
@@ -79,6 +80,9 @@ def load_config(path: str | Path = "config.toml") -> Config:
         _dig(raw, "storage", "data_dir"),
         str(Path(merged["database"]).parent),
     )
+    merged["agents_enabled"] = _first_str(
+        "DOCSERVER_AGENTS", _dig(raw, "ai", "enabled"), "true"
+    ).lower() not in ("0", "false", "no")
     return Config(**merged)
 
 

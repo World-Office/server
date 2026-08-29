@@ -53,6 +53,13 @@ COLLAB_TESTS = ["tests/test_collab_modelbased.py", "tests/test_collab.py"]
 
 PROTOCOL_TESTS = ["tests/test_wopi_protocol_property.py"]
 
+AI_TESTS = [
+    "tests/test_ai_tools.py",
+    "tests/test_ai_mcp.py",
+    "tests/test_ai_runner.py",
+    "tests/test_ai_agent_edits.py",
+]
+
 # Each entry: module name, source path, mutants, test args. ``old`` must be
 # unique inside the source file; replacements keep the file syntactically
 # valid so a failure is a *semantic* kill, not a syntax-error artefact.
@@ -141,6 +148,31 @@ MUTATIONS: list[dict] = [
              'expected {expected!r}, got {actual!r}")',
              'return WopiError(200, f"Lock mismatch: expected {expected!r}, '
              'got {actual!r}")'),
+        ],
+    },
+    {
+        "module": "ai",
+        "file": "src/ai/tools.py",
+        "tests": AI_TESTS,
+        "mutants": [
+            ("WOPI lock check dropped for agent writes",
+             'current_lock = ctx.store.get_lock(doc_id)\n    if current_lock and lock_token != current_lock:',
+             'current_lock = ctx.store.get_lock(doc_id)\n    if False and lock_token != current_lock:'),
+            ("agent client_id requirement dropped (unattributed edits)",
+             '    if not is_agent_client(client_id):\n        return err_result(\n            "agent_client_id_required", 400,',
+             '    if False:\n        return err_result(\n            "agent_client_id_required", 400,'),
+            ("unknown-document check dropped (apply_ops)",
+             '    if ctx.store.get(doc_id) is None:\n        return _not_found(doc_id)\n    if not is_agent_client(client_id):',
+             '    if False:\n        return _not_found(doc_id)\n    if not is_agent_client(client_id):'),
+            ("per-site clock instead of global clock (interleaving regression)",
+             'seq = max(crdt.lamport.values(), default=0) + 1',
+             'seq = crdt.lamport.get(site, 0) + 1'),
+            ("per-call op cap removed (runaway batches)",
+             '    if len(ops) > MAX_OPS_PER_CALL:',
+             '    if False and len(ops) > MAX_OPS_PER_CALL:'),
+            ("agents_enabled kill switch ignored",
+             '    if not ctx.agents_enabled:',
+             '    if False:'),
         ],
     },
 ]

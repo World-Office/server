@@ -233,7 +233,9 @@ def sanitize_html(html: str) -> str:
         return ""
     sanitizer = _XSSSanitizer()
     try:
-        sanitizer.feed(html)
+        # keep in sync with converter._escape_bogus_markup: `<?`/`<!` would
+        # otherwise swallow text up to the next `>` inside the sanitizer too
+        sanitizer.feed(re.sub(r"<(\?|!(?!--)(?!doctype))", r"&lt;\1", html, flags=re.IGNORECASE))
         sanitizer.close()  # flush trailing charref/& data before get_output()
     except Exception:
         # If parsing fails, return empty string for safety
