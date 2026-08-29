@@ -21,6 +21,7 @@ Distinct methods used here, complementing the hand-written conformance cases:
 from __future__ import annotations
 
 import re
+from html import escape
 
 from hypothesis import given, settings
 from hypothesis import strategies as st
@@ -55,8 +56,15 @@ def _tokens(text: str) -> set[str]:
 
 @st.composite
 def inline_fragment(draw) -> str:
-    """One text fragment, optionally wrapped in emphasis tags."""
-    frag = draw(FRAGMENT)
+    """One text fragment, optionally wrapped in emphasis tags.
+
+    The drawn text is XML-escaped exactly like the real editor pipeline does
+    before storing content: a raw `<` in text is a *tag start* per the HTML5
+    tokenizer (never literal text), so unescaped fragments would not be
+    documents at all. Entity escaping (&, <, >) remains under test — the
+    wave-3 trailing-`&` regression was caught precisely here.
+    """
+    frag = escape(draw(FRAGMENT), quote=False)
     style = draw(st.sampled_from(["plain", "plain", "plain", "b", "i"]))
     if style == "b":
         frag = f"<b>{frag}</b>"
