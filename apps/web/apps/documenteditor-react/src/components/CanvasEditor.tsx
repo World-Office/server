@@ -542,6 +542,12 @@ const CanvasEditorInternal = (
         }
 
         setPages(layoutPages)
+        // Mark the store modified so embedded autosave / Ctrl+S actually
+        // persist canvas-typed edits via WOPI PutFile. Without this, edits
+        // live only in memory and are silently lost on reload.
+        if (_onChange) {
+          _onChange()
+        }
       }
     } catch (err) {
       console.error("[CanvasEditor] handle_key_event failed:", err)
@@ -568,8 +574,13 @@ const CanvasEditorInternal = (
     if (pageIndex < 0) return
 
     const rect = (e.target as HTMLCanvasElement).getBoundingClientRect()
-    const x = e.clientX - rect.left
-    const y = e.clientY - rect.top
+    // Convert CSS pixel coords → canvas pixel coords (canvas may be scaled
+    // by CSS; the WASM hit-test operates in canvas pixel space).
+    const canvas = e.target as HTMLCanvasElement
+    const scaleX = canvas.width / rect.width || 1
+    const scaleY = canvas.height / rect.height || 1
+    const x = (e.clientX - rect.left) * scaleX
+    const y = (e.clientY - rect.top) * scaleY
 
     try {
       const result = api.handle_mouse_event(docHandle, pageIndex, x, y)
@@ -593,6 +604,10 @@ const CanvasEditorInternal = (
 
       // Force cursor visible
       cursorVisibleRef.current = true
+
+      // Draw the caret immediately so users get instant feedback that the
+      // click registered (waiting for the 530ms blink tick feels dead).
+      drawCursorOverlay()
 
       // Notify parent about cursor position change (for collaboration)
       if (onCursorChange && pos.found) {

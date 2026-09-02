@@ -33,6 +33,14 @@ export class DocumentStore {
   wopiFileInfo: WopiFileInfo | null = null
   lastLoadedContent: Blob | null = null
   wopiConnection: WopiConnection | null = null
+  /**
+   * Bridge to the active WASM canvas editor: serializes the live document
+   * model to OOXML. Registered by WasmEditorCanvas on mount so that canvas
+   * edits actually persist (the store cannot reach the editor internals).
+   */
+  canvasSerializer: (() => Promise<Blob | null> | Blob | null) | null = null
+  /** Debounced autosave handle (store-level; does not depend on React lifecycles). */
+  private autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 
   /* Toolbar */
   activeTab: DocumentTab | null = null
@@ -324,7 +332,22 @@ export class DocumentStore {
   }
 
   markModified(): void {
+    console.info("[StoreDebug] markModified called")
     this.isModified = true
+    this.scheduleAutoSave()
+  }
+
+  /**
+   * Store-level debounced autosave (3s). The React-hook autosave
+   * (useEmbeddedAutoSave) depends on effect timing; this guarantees canvas
+   * edits persist even when component lifecycles stall.
+   */
+  scheduleAutoSave(): void {
+    if (this.autoSaveTimer) clearTimeout(this.autoSaveTimer)
+    this.autoSaveTimer = setTimeout(() => {
+      this.autoSaveTimer = null
+      void this.saveToWopi().catch(() => {})
+    }, 3000)
   }
 
   setAutoCorrectEnabled(enabled: boolean): void {
@@ -449,6 +472,7 @@ export class DocumentStore {
   }
 
   async saveToWopi(): Promise<void> {
+    console.info("[StoreDebug] saveToWopi", { conn: !!this.wopiConnection, mod: this.isModified, dirty: this.isDirty, ser: !!this.canvasSerializer })
     if (!this.wopiConnection) return
     if (!this.isModified && !this.isDirty) return
     this.isSaving = true
@@ -481,8 +505,12 @@ export class DocumentStore {
         type: this.monacoMime ?? "text/plain; charset=utf-8",
       })
     }
-    // Canvas editors (WASM-rendered) are read-only today: fall back to the
-    // original content if present, otherwise a plain-text blob.
+    // Canvas (WASM) editing: serialize the live model to OOXML. Falls back
+    // to the last loaded content when no canvas editor is active.
+    if (this.canvasSerializer && (this.isModified || this.isDirty)) {
+      const blob = await this.canvasSerializer()
+      if (blob) return blob
+    }
     if (this.lastLoadedContent) {
       return this.lastLoadedContent
     }

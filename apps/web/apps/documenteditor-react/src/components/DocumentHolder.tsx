@@ -1,7 +1,7 @@
 import { registerEditorRouter } from "@world-office/editor-common"
 import { observer } from "mobx-react-lite"
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react"
-import { isCanvasFormat } from "../lib/wasm-renderer"
+import { getWasmApi, isCanvasFormat } from "../lib/wasm-renderer"
 import { createWordCommandHandler } from "../lib/word-commands"
 import { documentStore } from "../stores/DocumentStore"
 import { CanvasEditor, type CanvasEditorHandle } from "./CanvasEditor"
@@ -73,6 +73,27 @@ const WasmEditorCanvas = observer(
 
       return () => unregister()
     }, [editorRef])
+
+    // Register the model serializer so buildDocumentBlob() can persist
+    // canvas edits via WOPI PutFile (serialize_document → OOXML bytes).
+    useEffect(() => {
+      documentStore.canvasSerializer = () => {
+        const handle = editorRef.current?.getDocHandle() ?? null
+        const api = getWasmApi()
+        if (handle === null || !api) {
+          console.warn("[SerializerBridge] not ready", { handle, wasm: !!api })
+          return null
+        }
+        const bytes = api.serialize_document(handle)
+        console.info("[SerializerBridge] serialized", bytes.length, "bytes")
+        return new Blob([bytes.slice().buffer as ArrayBuffer], {
+          type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        })
+      }
+      return () => {
+        documentStore.canvasSerializer = null
+      }
+    }, [])
 
     const handleModelOp = useCallback(
       (op: unknown, _docHandle: number) => {
