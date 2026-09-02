@@ -143,9 +143,10 @@ impl WopiClient {
 
     /// PUT file contents to the WOPI host.
     ///
-    /// Forwards WOPI-relevant headers (X-WOPI-Override, X-WOPI-Lock, If-Match)
-    /// if provided. The OCIS collaboration service requires `X-WOPI-Override: PUT`
-    /// to identify this as a WOPI PutFile operation.
+    /// Implements the WOPI lock lifecycle around the upload:
+    /// Lock → PutFile (with lock) → Unlock. The OpenCloud collaboration
+    /// service rejects PutFile with "file must be locked first" unless the
+    /// editing client holds the lock (contentconnector.go:256).
     pub async fn put_file(
         &self,
         file_id: &str,
@@ -155,35 +156,92 @@ impl WopiClient {
         wopi_lock: Option<String>,
         if_match: Option<String>,
     ) -> Result<()> {
-        let url = format!(
-            "{}/wopi/files/{}/contents?access_token={}",
-            self.wopi_host_url, file_id, access_token
-        );
+        let base = format!("{}/wopi/files/{}", self.wopi_host_url, file_id);
+        let contents_url = format!("{base}/contents?access_token={access_token}");
+        let lock_url = format!("{base}?access_token={access_token}");
+        // Stable per-proxy lock id: this docserver is the single WOPI client
+        // proxying PutFile for all browser editors.
+        let lock_id = "wo-docserver-lock".to_string();
         let http = self.http.clone();
-        retry_with_backoff(|| async {
-            let mut req = http
-                .post(&url)
-                .header("Content-Type", "application/octet-stream");
-            // Forward WOPI headers from the browser request to the upstream
-            if let Some(ref val) = wopi_override {
-                req = req.header("X-WOPI-Override", val);
+        let _ = wopi_lock; // superseded by proxy-managed locking
+
+        // ── 1. Acquire the lock (taking over a stale one if present) ──
+        let acquire = |lid: String| {
+            let http = http.clone();
+            let url = lock_url.clone();
+            async move {
+                http.post(&url)
+                    .header("X-WOPI-Override", "LOCK")
+                    .header("X-WOPI-Lock", &lid)
+                    .send()
+                    .await
             }
-            if let Some(ref val) = wopi_lock {
-                req = req.header("X-WOPI-Lock", val);
+        };
+        match acquire(lock_id.clone()).await {
+            Ok(resp) if resp.status().is_success() => {}
+            // 409 Conflict: another holder owns the lock; its id comes back
+            // in the X-WOPI-Lock response header. Take over, then re-lock.
+            Ok(resp) if resp.status().as_u16() == 409 => {
+                let existing = resp
+                    .headers()
+                    .get("x-wopi-lock")
+                    .and_then(|v| v.to_str().ok())
+                    .map(|s| s.to_string());
+                if let Some(existing) = existing {
+                    let unlock = http
+                        .post(&lock_url)
+                        .header("X-WOPI-Override", "UNLOCK")
+                        .header("X-WOPI-Lock", &existing)
+                        .send()
+                        .await
+                        .context("WOPI unlock request")?;
+                    if !unlock.status().is_success() {
+                        anyhow::bail!("WOPI unlock of stale lock failed: {}", unlock.status());
+                    }
+                }
+                let resp = acquire(lock_id.clone()).await.context("WOPI re-lock request")?;
+                if !resp.status().is_success() {
+                    anyhow::bail!("WOPI lock failed after takeover: {}", resp.status());
+                }
             }
-            if let Some(ref val) = if_match {
-                req = req.header("If-Match", val);
-            }
-            let resp = req.body(data.clone()).send().await?;
-            if !resp.status().is_success() {
-                let status = resp.status();
-                let body = resp.text().await.unwrap_or_default();
-                return Err(anyhow::anyhow!("WOPI PutFile upstream {status}: {body}"));
-            }
-            Ok(())
-        })
-        .await
-        .context("put_file")
+            Ok(resp) => anyhow::bail!("WOPI lock failed: {}", resp.status()),
+            Err(err) => return Err(err).context("WOPI lock request"),
+        }
+
+        // ── 2. Upload contents while holding the lock ──
+        let mut req = http
+            .post(&contents_url)
+            .header("Content-Type", "application/octet-stream")
+            .header("X-WOPI-Lock", &lock_id);
+        if let Some(ref val) = wopi_override {
+            req = req.header("X-WOPI-Override", val);
+        }
+        if let Some(ref val) = if_match {
+            req = req.header("If-Match", val);
+        }
+        let resp = req.body(data).send().await.context("WOPI PutFile upload")?;
+        if !resp.status().is_success() {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            // Best-effort release so the next autosave starts clean.
+            let _ = http
+                .post(&lock_url)
+                .header("X-WOPI-Override", "UNLOCK")
+                .header("X-WOPI-Lock", &lock_id)
+                .send()
+                .await;
+            anyhow::bail!("WOPI PutFile upstream {status}: {body}");
+        }
+
+        // ── 3. Release the lock (best-effort) ──
+        let _ = http
+            .post(&lock_url)
+            .header("X-WOPI-Override", "UNLOCK")
+            .header("X-WOPI-Lock", &lock_id)
+            .send()
+            .await;
+
+        Ok(())
     }
 
     /// Validate a JWT access token using the shared secret.
@@ -395,5 +453,229 @@ mod tests {
         let token = WopiClient::encode_token(&claims, "secret").unwrap();
         let result = WopiClient::validate_token(&token, "secret");
         assert!(result.is_err());
+    }
+}
+
+#[cfg(test)]
+mod lock_tests {
+    //! Unit tests for the proxy-managed lock lifecycle in [`WopiClient::put_file`].
+    //!
+    //! Spins up a mock WOPI host (raw TCP, tokio only) that records every
+    //! request so the exact LOCK → PutFile → UNLOCK dance can be asserted.
+
+    use super::WopiClient;
+    use std::sync::Arc;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::TcpListener;
+    use tokio::sync::Mutex;
+
+    #[derive(Debug, Clone)]
+    struct RecordedReq {
+        path: String,
+        wopi_override: Option<String>,
+        wopi_lock: Option<String>,
+        body_len: usize,
+    }
+
+    #[derive(Debug, Clone, Copy, PartialEq)]
+    enum Script {
+        /// LOCK 200 → PUT 200 → UNLOCK 200
+        Happy,
+        /// LOCK 409 (stale-lock) → UNLOCK(stale) 200 → LOCK 200 → PUT 200 → UNLOCK 200
+        Takeover,
+        /// LOCK 200 → PUT 500 → best-effort UNLOCK; put_file must error
+        UploadFails,
+        /// LOCK 500 → error, no PutFile may be attempted
+        LockFails,
+    }
+
+    struct MockHost {
+        url: String,
+        log: Arc<Mutex<Vec<RecordedReq>>>,
+    }
+
+    async fn spawn_mock(script: Script) -> MockHost {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let log: Arc<Mutex<Vec<RecordedReq>>> = Arc::new(Mutex::new(Vec::new()));
+        let log_task = log.clone();
+        tokio::spawn(async move {
+            loop {
+                let (mut sock, _) = match listener.accept().await {
+                    Ok(v) => v,
+                    Err(_) => return,
+                };
+                let log_conn = log_task.clone();
+                tokio::spawn(async move {
+                    let mut buf = Vec::new();
+                    // read until end of headers
+                    let mut chunk = [0u8; 4096];
+                    let header_end;
+                    loop {
+                        let n = match sock.read(&mut chunk).await {
+                            Ok(0) => return,
+                            Ok(n) => n,
+                            Err(_) => return,
+                        };
+                        buf.extend_from_slice(&chunk[..n]);
+                        if let Some(pos) = find_subsequence(&buf, b"\r\n\r\n") {
+                            header_end = pos + 4;
+                            break;
+                        }
+                    }
+                    let head = String::from_utf8_lossy(&buf[..header_end]).to_string();
+                    let mut lines = head.split("\r\n");
+                    let request_line = lines.next().unwrap_or("");
+                    let path = request_line.split_whitespace().nth(1).unwrap_or("").to_string();
+                    let mut content_length = 0usize;
+                    let mut wopi_override = None;
+                    let mut wopi_lock = None;
+                    for line in lines {
+                        let (name, value) = match line.split_once(':') {
+                            Some(v) => v,
+                            None => continue,
+                        };
+                        let name = name.trim().to_ascii_lowercase();
+                        let value = value.trim();
+                        match name.as_str() {
+                            "content-length" => content_length = value.parse().unwrap_or(0),
+                            "x-wopi-override" => wopi_override = Some(value.to_string()),
+                            "x-wopi-lock" => wopi_lock = Some(value.to_string()),
+                            _ => {}
+                        }
+                    }
+                    // read remaining body bytes
+                    while buf.len() < header_end + content_length {
+                        let n = match sock.read(&mut chunk).await {
+                            Ok(0) => break,
+                            Ok(n) => n,
+                            Err(_) => break,
+                        };
+                        buf.extend_from_slice(&chunk[..n]);
+                    }
+                    let body_len = buf.len().saturating_sub(header_end).min(content_length);
+
+                    // decide the response
+                    let (status, extra) = if path.contains("/contents") {
+                        log_conn.lock().await.push(RecordedReq {
+                            path: path.clone(),
+                            wopi_override: wopi_override.clone(),
+                            wopi_lock: wopi_lock.clone(),
+                            body_len,
+                        });
+                        let status = if script == Script::UploadFails { 500 } else { 200 };
+                        (status, String::new())
+                    } else {
+                        let mut log_guard = log_conn.lock().await;
+                        let n = log_guard.len() + 1;
+                        log_guard.push(RecordedReq {
+                            path: path.clone(),
+                            wopi_override: wopi_override.clone(),
+                            wopi_lock: wopi_lock.clone(),
+                            body_len,
+                        });
+                        drop(log_guard);
+                        if script == Script::Takeover && n == 1 {
+                            (409, "x-wopi-lock: stale-lock\r\n".to_string())
+                        } else if script == Script::LockFails {
+                            (500, String::new())
+                        } else {
+                            (200, String::new())
+                        }
+                    };
+
+                    let resp = format!(
+                        "HTTP/1.1 {status} MOCK\r\ncontent-length: 2\r\n{extra}connection: close\r\n\r\nok"
+                    );
+                    let _ = sock.write_all(resp.as_bytes()).await;
+                    let _ = sock.shutdown().await;
+                });
+            }
+        });
+        MockHost {
+            url: format!("http://{addr}"),
+            log,
+        }
+    }
+
+    fn find_subsequence(haystack: &[u8], needle: &[u8]) -> Option<usize> {
+        haystack.windows(needle.len()).position(|w| w == needle)
+    }
+
+    async fn recorded(log: &Arc<Mutex<Vec<RecordedReq>>>) -> Vec<RecordedReq> {
+        log.lock().await.clone()
+    }
+
+    #[tokio::test]
+    async fn put_file_lock_dance_happy_path() {
+        let host = spawn_mock(Script::Happy).await;
+        let client = WopiClient::new(host.url.clone(), "https://public.example".into(), false);
+        client
+            .put_file("doc1", "tok", b"payload".to_vec(), None, None, None)
+            .await
+            .expect("put_file must succeed");
+
+        let reqs = recorded(&host.log).await;
+        assert!(reqs.len() >= 3, "expected LOCK+PUT+UNLOCK, got {:?}", reqs);
+        assert_eq!(reqs[0].wopi_override.as_deref(), Some("LOCK"));
+        assert_eq!(reqs[0].wopi_lock.as_deref(), Some("wo-docserver-lock"));
+        assert!(reqs[1].path.split('?').next().unwrap().ends_with("/contents"));
+        assert_eq!(reqs[1].wopi_lock.as_deref(), Some("wo-docserver-lock"));
+        assert_eq!(reqs[1].body_len, 7, "payload must be forwarded");
+        let last = reqs.last().unwrap();
+        assert_eq!(last.wopi_override.as_deref(), Some("UNLOCK"));
+    }
+
+    #[tokio::test]
+    async fn put_file_takes_over_stale_lock_on_409() {
+        let host = spawn_mock(Script::Takeover).await;
+        let client = WopiClient::new(host.url.clone(), "https://public.example".into(), false);
+        client
+            .put_file("doc2", "tok", b"xyz".to_vec(), None, None, None)
+            .await
+            .expect("put_file must take over the stale lock and succeed");
+
+        let reqs = recorded(&host.log).await;
+        // 1: LOCK → 409; 2: UNLOCK with stale id; 3: re-LOCK; 4: PUT; 5: UNLOCK
+        assert!(reqs.len() >= 5, "expected takeover dance, got {:?}", reqs);
+        assert_eq!(reqs[1].wopi_override.as_deref(), Some("UNLOCK"));
+        assert_eq!(reqs[1].wopi_lock.as_deref(), Some("stale-lock"), "must unlock the STALE lock id");
+        assert_eq!(reqs[2].wopi_override.as_deref(), Some("LOCK"));
+        assert_eq!(reqs[2].wopi_lock.as_deref(), Some("wo-docserver-lock"));
+        assert!(reqs[3].path.split('?').next().unwrap().ends_with("/contents"));
+    }
+
+    #[tokio::test]
+    async fn put_file_failed_upload_releases_lock() {
+        let host = spawn_mock(Script::UploadFails).await;
+        let client = WopiClient::new(host.url.clone(), "https://public.example".into(), false);
+        let result = client
+            .put_file("doc3", "tok", b"abc".to_vec(), None, None, None)
+            .await;
+        assert!(result.is_err(), "upload failure must surface as error");
+
+        let reqs = recorded(&host.log).await;
+        let last = reqs.last().unwrap();
+        assert_eq!(
+            last.wopi_override.as_deref(),
+            Some("UNLOCK"),
+            "lock must be released best-effort after failed upload"
+        );
+    }
+
+    #[tokio::test]
+    async fn put_file_lock_failure_blocks_upload() {
+        let host = spawn_mock(Script::LockFails).await;
+        let client = WopiClient::new(host.url.clone(), "https://public.example".into(), false);
+        let result = client
+            .put_file("doc4", "tok", b"abc".to_vec(), None, None, None)
+            .await;
+        assert!(result.is_err(), "lock failure must surface as error");
+
+        let reqs = recorded(&host.log).await;
+        assert!(
+            reqs.iter().all(|r| !r.path.split('?').next().unwrap().ends_with("/contents")),
+            "no PutFile attempt may be made when the lock cannot be acquired"
+        );
     }
 }
