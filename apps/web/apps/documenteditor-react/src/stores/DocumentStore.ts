@@ -495,6 +495,15 @@ export class DocumentStore {
       return this.lastLoadedContent
     }
     const format = this.richTextFormat
+    // IMPORTANT: the canvas (WASM) editor runs with editorType === "richtext",
+    // but richTextHtml is only a LOAD-TIME snapshot — canvas edits never touch
+    // it. When a canvas serializer is registered it owns the truth: check it
+    // FIRST or every save silently re-converts the stale HTML and drops all
+    // typed edits (seen in production on cloud.graphwiz.ai).
+    if (this.canvasSerializer && (this.isModified || this.isDirty)) {
+      const blob = await this.canvasSerializer()
+      if (blob) return blob
+    }
     if (this.editorType === "richtext" && this.richTextHtml && format) {
       return await convertFromHtml(this.richTextHtml, format)
     }
@@ -507,10 +516,7 @@ export class DocumentStore {
     }
     // Canvas (WASM) editing: serialize the live model to OOXML. Falls back
     // to the last loaded content when no canvas editor is active.
-    if (this.canvasSerializer && (this.isModified || this.isDirty)) {
-      const blob = await this.canvasSerializer()
-      if (blob) return blob
-    }
+    // Legacy/no-canvas fallback: last loaded content
     if (this.lastLoadedContent) {
       return this.lastLoadedContent
     }
