@@ -686,6 +686,7 @@ dev = [
 [package.dev-dependencies]
 dev = [
     { name = "hypothesis" },
+    { name = "pytest" },
 ]
 
 [package.metadata]
@@ -707,7 +708,10 @@ requires-dist = [
 provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "hypothesis", specifier = ">=6.165.10" }]
+dev = [
+    { name = "hypothesis", specifier = ">=6.165.10" },
+    { name = "pytest", specifier = ">=9.1.1" },
+]
 
 [[package]]
 name = "packaging"
