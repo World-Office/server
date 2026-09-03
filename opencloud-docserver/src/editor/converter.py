@@ -2373,16 +2373,6 @@ class _InlineRunBuilder(HTMLParser):
             "in_body": False,
             "depth": 0,
             "html": [],
-        }
-        return True
-
-        self._note = {
-            "kind": "endnote" if "endnote-citation" in cls else "footnote",
-            "citation": "",
-            "in_citation": True,   # still inside the <sup>…</sup> citation
-            "in_body": False,
-            "depth": 0,
-            "html": [],
             "token_pos": len(self.tokens),
         }
         return True
