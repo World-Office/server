@@ -50,7 +50,7 @@ function collectContentIds(doc: PmNode): string[] {
       const id = node.attrs.id as string | undefined
       if (id) ids.push(id)
     }
-    return false // don't descend into footnote items
+    return node.type.name !== "footnoteItem" // don't descend into footnote items
   })
   return ids
 }
@@ -163,7 +163,7 @@ export const FootnoteSection = Node.create({
   name: "footnoteSection",
 
   group: "block",
-  content: "footnoteItem+",
+  content: "footnoteItem*", // zero or more — allows empty section for cleanup
   defining: true,
   draggable: false,
   selectable: false,
@@ -287,6 +287,7 @@ export function cleanupOrphanedFootnotes(editor: Editor): boolean {
         childrenToRemove.push(pos)
       }
     }
+    return true // continue traversing into child nodes
   })
 
   // Remove from end to start to preserve positions
@@ -349,6 +350,7 @@ export const footnoteAutoNumberPlugin = new Plugin({
           if (node.type.name === "footnoteItem" && orphaned.includes(node.attrs.id as string)) {
             removePositions.push(pos)
           }
+          return true // continue traversing into child nodes
         })
         for (let i = removePositions.length - 1; i >= 0; i--) {
           const pos = removePositions[i]
