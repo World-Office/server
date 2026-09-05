@@ -4491,6 +4491,326 @@
    "type": "COVERS"
   },
   {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_accept_change_semantics_serialize_to_docx",
+   "to": "F-100",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_accept_insert_reject_delete_mix_serialize_to_docx",
+   "to": "F-100",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_add_delete_surface_wired",
+   "to": "F-100",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_docx_roundtrip_part_and_markers",
+   "to": "F-100",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_odt_roundtrip_annotation",
+   "to": "F-100",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_thread_reply_resolve_missing",
+   "to": "F-100",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_reject_change_semantics_serialize_to_docx",
+   "to": "F-100",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_review_panel_accept_reject_surface_wired",
+   "to": "F-100",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_docx_physical_ooxml",
+   "to": "F-100",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_docx_roundtrip_preserves_markers",
+   "to": "F-100",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_odt_roundtrip_preserves_markers",
+   "to": "F-100",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_toggle_surface_wired",
+   "to": "F-100",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_restore_rewinds_tracked_content",
+   "to": "F-100",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_restore_unknown_returns_404",
+   "to": "F-100",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_snapshot_per_save_newest_first",
+   "to": "F-100",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_surface_wired",
+   "to": "F-100",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_accept_change_semantics_serialize_to_docx",
+   "to": "F-101",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_accept_insert_reject_delete_mix_serialize_to_docx",
+   "to": "F-101",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_add_delete_surface_wired",
+   "to": "F-101",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_docx_roundtrip_part_and_markers",
+   "to": "F-101",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_odt_roundtrip_annotation",
+   "to": "F-101",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_thread_reply_resolve_missing",
+   "to": "F-101",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_reject_change_semantics_serialize_to_docx",
+   "to": "F-101",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_review_panel_accept_reject_surface_wired",
+   "to": "F-101",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_docx_physical_ooxml",
+   "to": "F-101",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_docx_roundtrip_preserves_markers",
+   "to": "F-101",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_odt_roundtrip_preserves_markers",
+   "to": "F-101",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_toggle_surface_wired",
+   "to": "F-101",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_restore_rewinds_tracked_content",
+   "to": "F-101",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_restore_unknown_returns_404",
+   "to": "F-101",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_snapshot_per_save_newest_first",
+   "to": "F-101",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_surface_wired",
+   "to": "F-101",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_accept_change_semantics_serialize_to_docx",
+   "to": "F-102",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_accept_insert_reject_delete_mix_serialize_to_docx",
+   "to": "F-102",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_add_delete_surface_wired",
+   "to": "F-102",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_docx_roundtrip_part_and_markers",
+   "to": "F-102",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_odt_roundtrip_annotation",
+   "to": "F-102",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_thread_reply_resolve_missing",
+   "to": "F-102",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_reject_change_semantics_serialize_to_docx",
+   "to": "F-102",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_review_panel_accept_reject_surface_wired",
+   "to": "F-102",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_docx_physical_ooxml",
+   "to": "F-102",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_docx_roundtrip_preserves_markers",
+   "to": "F-102",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_odt_roundtrip_preserves_markers",
+   "to": "F-102",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_toggle_surface_wired",
+   "to": "F-102",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_restore_rewinds_tracked_content",
+   "to": "F-102",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_restore_unknown_returns_404",
+   "to": "F-102",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_snapshot_per_save_newest_first",
+   "to": "F-102",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_surface_wired",
+   "to": "F-102",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_accept_change_semantics_serialize_to_docx",
+   "to": "F-104",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_accept_insert_reject_delete_mix_serialize_to_docx",
+   "to": "F-104",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_add_delete_surface_wired",
+   "to": "F-104",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_docx_roundtrip_part_and_markers",
+   "to": "F-104",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_odt_roundtrip_annotation",
+   "to": "F-104",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_thread_reply_resolve_missing",
+   "to": "F-104",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_reject_change_semantics_serialize_to_docx",
+   "to": "F-104",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_review_panel_accept_reject_surface_wired",
+   "to": "F-104",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_docx_physical_ooxml",
+   "to": "F-104",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_docx_roundtrip_preserves_markers",
+   "to": "F-104",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_odt_roundtrip_preserves_markers",
+   "to": "F-104",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_toggle_surface_wired",
+   "to": "F-104",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_restore_rewinds_tracked_content",
+   "to": "F-104",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_restore_unknown_returns_404",
+   "to": "F-104",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_snapshot_per_save_newest_first",
+   "to": "F-104",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_surface_wired",
+   "to": "F-104",
+   "type": "COVERS"
+  },
+  {
    "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_01_manuscript_seed_is_a_valid_paper",
    "to": "F-120",
    "type": "COVERS"
@@ -4761,7 +5081,7 @@
    "type": "COVERS"
   }
  ],
- "generated_at": "2026-09-05T06:48:45+00:00",
+ "generated_at": "2026-09-05T12:17:18+00:00",
  "nodes": [
   {
    "id": "allCaps",
@@ -9651,6 +9971,102 @@
    "path": "opencloud-docserver/tests/test_resilience.py"
   },
   {
+   "id": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_toggle_surface_wired",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_review_surfaces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_docx_roundtrip_preserves_markers",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_review_surfaces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_docx_physical_ooxml",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_review_surfaces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_review_surfaces.py::test_track_changes_odt_roundtrip_preserves_markers",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_review_surfaces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_review_surfaces.py::test_review_panel_accept_reject_surface_wired",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_review_surfaces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_review_surfaces.py::test_accept_change_semantics_serialize_to_docx",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_review_surfaces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_review_surfaces.py::test_reject_change_semantics_serialize_to_docx",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_review_surfaces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_review_surfaces.py::test_accept_insert_reject_delete_mix_serialize_to_docx",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_review_surfaces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_add_delete_surface_wired",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_review_surfaces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_docx_roundtrip_part_and_markers",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_review_surfaces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_odt_roundtrip_annotation",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_review_surfaces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_review_surfaces.py::test_comment_thread_reply_resolve_missing",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_review_surfaces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_surface_wired",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_review_surfaces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_snapshot_per_save_newest_first",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_review_surfaces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_restore_rewinds_tracked_content",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_review_surfaces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_review_surfaces.py::test_version_history_restore_unknown_returns_404",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_review_surfaces.py"
+  },
+  {
    "id": "opencloud-docserver/tests/test_sanitize_review_edges.py::test_sanitize_style_keeps_whitelisted_properties",
    "label": "Test",
    "layer": "e2e",
@@ -12159,27 +12575,42 @@
   },
   {
    "area": "review",
-   "fidelity": "L4",
+   "fidelity": "L1",
    "id": "F-100",
    "label": "Feature",
    "name": "Track changes on/off",
-   "parity": "missing"
+   "parity": "full"
+  },
+  {
+   "id": "F-100:editor-surface",
+   "justification": "btn-track-changes toggles a track-on mode; beforeinput wraps edits in <ins class=\"track-insert\">/<del class=\"track-delete\"> (data-author). Markers round-trip DOCX w:ins/w:del (w:delText) and ODT change marks. Editor is vanilla contenteditable -- canvas-true review rendering (L2+) not claimed.",
+   "label": "Divergence"
   },
   {
    "area": "review",
-   "fidelity": "L4",
+   "fidelity": "L1",
    "id": "F-101",
    "label": "Feature",
    "name": "Accept / reject change",
-   "parity": "missing"
+   "parity": "full"
+  },
+  {
+   "id": "F-101:panel-actions",
+   "justification": "btn-review-changes lists each tracked region with Accept/Reject (acceptChange/rejectChange); accepted/rejected content serializes to real DOCX. DOM behaviour pinned by source-wiring tests; no canvas-true review UI (L2+).",
+   "label": "Divergence"
   },
   {
    "area": "review",
-   "fidelity": "L4",
+   "fidelity": "L1",
    "id": "F-102",
    "label": "Feature",
    "name": "Comment threads (add/reply/resolve)",
-   "parity": "missing"
+   "parity": "partial"
+  },
+  {
+   "id": "F-102:no-reply-resolve",
+   "justification": "Add + delete + anchored serialization proven (span.comment <-> word/comments.xml with commentRangeStart/End/Reference; ODT office:annotation): btn-comment wraps the selection, comments panel lists Go to/Delete. No reply threading or resolve lifecycle exists in the editor UI -- OnlyOffice thread semantics not implemented.",
+   "label": "Divergence"
   },
   {
    "area": "review",
@@ -12195,7 +12626,12 @@
    "id": "F-104",
    "label": "Feature",
    "name": "Version history",
-   "parity": "missing"
+   "parity": "full"
+  },
+  {
+   "id": "F-104:snapshot-policy",
+   "justification": "btn-history lists per-save snapshots from GET /api/documents/{id}/versions and restores via POST /api/documents/{id}/versions/{ts}/restore (store version index; restore stays undoable). No visual version diff/compare view -- OnlyOffice's compare step is not implemented.",
+   "label": "Divergence"
   },
   {
    "area": "view",
@@ -12280,10 +12716,10 @@
  ],
  "stats": {
   "commands": 21,
-  "edges": 952,
+  "edges": 1016,
   "features": 82,
   "surfaces": 21,
-  "tests": 1097
+  "tests": 1113
  },
  "version": 1
 }

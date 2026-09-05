@@ -106,11 +106,15 @@ features:
   - {id: F-097, area: layout,      name: Watermark,                      parity: missing, fidelity: L3}
 
   # ── review ────────────────────────────────────────────────────────────────
-  - {id: F-100, area: review,      name: Track changes on/off,           parity: missing, fidelity: L4}
-  - {id: F-101, area: review,      name: Accept / reject change,         parity: missing, fidelity: L4}
-  - {id: F-102, area: review,      name: Comment threads (add/reply/resolve), parity: missing, fidelity: L4}
+  - {id: F-100, area: review,      name: Track changes on/off,           parity: full,    fidelity: L1,
+      divergence: [{ref: editor-surface, justification: "btn-track-changes toggles a track-on mode; beforeinput wraps edits in <ins class=\"track-insert\">/<del class=\"track-delete\"> (data-author). Markers round-trip DOCX w:ins/w:del (w:delText) and ODT change marks. Editor is vanilla contenteditable -- canvas-true review rendering (L2+) not claimed."}]}
+  - {id: F-101, area: review,      name: Accept / reject change,         parity: full,    fidelity: L1,
+      divergence: [{ref: panel-actions, justification: "btn-review-changes lists each tracked region with Accept/Reject (acceptChange/rejectChange); accepted/rejected content serializes to real DOCX. DOM behaviour pinned by source-wiring tests; no canvas-true review UI (L2+)."}]}
+  - {id: F-102, area: review,      name: Comment threads (add/reply/resolve), parity: partial, fidelity: L1,
+      divergence: [{ref: no-reply-resolve, justification: "Add + delete + anchored serialization proven (span.comment <-> word/comments.xml with commentRangeStart/End/Reference; ODT office:annotation): btn-comment wraps the selection, comments panel lists Go to/Delete. No reply threading or resolve lifecycle exists in the editor UI -- OnlyOffice thread semantics not implemented."}]}
   - {id: F-103, area: review,      name: Compare documents,              parity: missing, fidelity: L4}
-  - {id: F-104, area: review,      name: Version history,                parity: missing, fidelity: L4}
+  - {id: F-104, area: review,      name: Version history,                parity: full,    fidelity: L4,
+      divergence: [{ref: snapshot-policy, justification: "btn-history lists per-save snapshots from GET /api/documents/{id}/versions and restores via POST /api/documents/{id}/versions/{ts}/restore (store version index; restore stays undoable). No visual version diff/compare view -- OnlyOffice's compare step is not implemented."}]}
 
   # ── view ──────────────────────────────────────────────────────────────────
   - {id: F-110, area: view,        name: Zoom controls,                  parity: partial, fidelity: L3}
