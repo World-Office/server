@@ -616,6 +616,86 @@
    "type": "COVERS"
   },
   {
+   "from": "F-032",
+   "to": "insertUnorderedList",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "F-032",
+   "to": "insertOrderedList",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_docx_roundtrip",
+   "to": "F-032",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_multiple_values_docx_roundtrip",
+   "to": "F-032",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_odt_roundtrip",
+   "to": "F-032",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_odt_writes_percentage",
+   "to": "F-032",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_single_means_default",
+   "to": "F-032",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_survives_sanitizer",
+   "to": "F-032",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_writes_wspacing_line_auto",
+   "to": "F-032",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_multilevel_bullet_list_docx_roundtrip",
+   "to": "F-032",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_multilevel_list_docx_encodes_levels_as_numbered_styles",
+   "to": "F-032",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_multilevel_list_odt_encodes_nested_text_lists",
+   "to": "F-032",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_multilevel_list_odt_roundtrip",
+   "to": "F-032",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_multilevel_numbered_list_docx_roundtrip",
+   "to": "F-032",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_paragraph_shading_and_borders_not_serialized_from_html",
+   "to": "F-032",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_paragraph_shading_and_borders_not_serialized_to_html",
+   "to": "F-032",
+   "type": "COVERS"
+  },
+  {
    "from": "F-033",
    "to": "justifyLeft",
    "type": "IMPLEMENTED_BY"
@@ -703,6 +783,76 @@
   {
    "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
    "to": "F-038",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_docx_roundtrip",
+   "to": "F-039",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_multiple_values_docx_roundtrip",
+   "to": "F-039",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_odt_roundtrip",
+   "to": "F-039",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_odt_writes_percentage",
+   "to": "F-039",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_single_means_default",
+   "to": "F-039",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_survives_sanitizer",
+   "to": "F-039",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_writes_wspacing_line_auto",
+   "to": "F-039",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_multilevel_bullet_list_docx_roundtrip",
+   "to": "F-039",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_multilevel_list_docx_encodes_levels_as_numbered_styles",
+   "to": "F-039",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_multilevel_list_odt_encodes_nested_text_lists",
+   "to": "F-039",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_multilevel_list_odt_roundtrip",
+   "to": "F-039",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_multilevel_numbered_list_docx_roundtrip",
+   "to": "F-039",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_paragraph_shading_and_borders_not_serialized_from_html",
+   "to": "F-039",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_paragraph_controls.py::test_paragraph_shading_and_borders_not_serialized_to_html",
+   "to": "F-039",
    "type": "COVERS"
   },
   {
@@ -4761,7 +4911,7 @@
    "type": "COVERS"
   }
  ],
- "generated_at": "2026-09-05T06:48:45+00:00",
+ "generated_at": "2026-09-05T12:38:37+00:00",
  "nodes": [
   {
    "id": "allCaps",
@@ -9489,6 +9639,90 @@
    "path": "opencloud-docserver/tests/test_page_break_roundtrip.py"
   },
   {
+   "id": "opencloud-docserver/tests/test_paragraph_controls.py::test_multilevel_bullet_list_docx_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_paragraph_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_paragraph_controls.py::test_multilevel_numbered_list_docx_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_paragraph_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_paragraph_controls.py::test_multilevel_list_docx_encodes_levels_as_numbered_styles",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_paragraph_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_paragraph_controls.py::test_multilevel_list_odt_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_paragraph_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_paragraph_controls.py::test_multilevel_list_odt_encodes_nested_text_lists",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_paragraph_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_docx_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_paragraph_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_writes_wspacing_line_auto",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_paragraph_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_multiple_values_docx_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_paragraph_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_odt_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_paragraph_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_odt_writes_percentage",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_paragraph_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_survives_sanitizer",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_paragraph_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_paragraph_controls.py::test_line_spacing_single_means_default",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_paragraph_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_paragraph_controls.py::test_paragraph_shading_and_borders_not_serialized_from_html",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_paragraph_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_paragraph_controls.py::test_paragraph_shading_and_borders_not_serialized_to_html",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_paragraph_controls.py"
+  },
+  {
    "id": "opencloud-docserver/tests/test_persistence.py::test_reopen_preserves_content_names_locks_and_versions",
    "label": "Test",
    "layer": "e2e",
@@ -11786,7 +12020,12 @@
    "id": "F-032",
    "label": "Feature",
    "name": "Multilevel list",
-   "parity": "missing"
+   "parity": "full"
+  },
+  {
+   "id": "F-032:numbering-styles",
+   "justification": "Nested <ul>/<ol> round-trip exactly through DOCX (List Bullet/Number [n] styles carry the outline level) and ODT (nested text:list inside text:list-item) both directions; DOCX levels are encoded via python-docx per-level list styles whose independent per-level restart is structural (L1) evidence, not a claim of Word outline-continuation numbering (\"1.1\") at L2. Authoring surface: insertUnorderedList/insertOrderedList; no dedicated multilevel-list gallery button.",
+   "label": "Divergence"
   },
   {
    "area": "home.para",
@@ -11838,11 +12077,16 @@
   },
   {
    "area": "home.para",
-   "fidelity": "L2",
+   "fidelity": "L1",
    "id": "F-039",
    "label": "Feature",
    "name": "Line spacing",
-   "parity": "missing"
+   "parity": "full"
+  },
+  {
+   "id": "F-039:marker-serialization",
+   "justification": "The #line-spacing select emits a lineHeight command setting line-height:<n> on the block(s); the sanitizer whitelist keeps it and DOCX (w:spacing/w:lineRule) and ODT (fo:line-height percentage) round-trip it both directions; 1.0 clears to the document default. Select is not a data-cmd control, so no commands entry. Layout rendering not claimed beyond L1.",
+   "label": "Divergence"
   },
   {
    "area": "home.para",
@@ -11851,6 +12095,11 @@
    "label": "Feature",
    "name": "Paragraph shading / borders",
    "parity": "missing"
+  },
+  {
+   "id": "F-040:no-surface-or-serialization",
+   "justification": "Audited WO-REG-PARA-1: no toolbar button/dialog for paragraph shading or borders (only run-level highlight-color, table-cell shading, and the <hr> bottom-border heuristic exist); no paragraph-level serialization either way (w:pPr/w:shd and w:pBdr dropped on DOCX->HTML; style=background-color/border on <p> dropped on HTML->DOCX and HTML->ODT). Current behaviour pinned in tests/test_paragraph_controls.py without a feature marker so no coverage edge is claimed.",
+   "label": "Divergence"
   },
   {
    "area": "home.para",
@@ -12280,10 +12529,10 @@
  ],
  "stats": {
   "commands": 21,
-  "edges": 952,
+  "edges": 982,
   "features": 82,
   "surfaces": 21,
-  "tests": 1097
+  "tests": 1111
  },
  "version": 1
 }
