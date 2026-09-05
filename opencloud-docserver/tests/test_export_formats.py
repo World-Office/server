@@ -1,4 +1,5 @@
-"""Tests for /api/documents/{id}/export (F-003 Download as DOCX, F-004 Export to PDF).
+"""Export & download endpoints (F-002 Download as ODT, F-003 Download as DOCX,
+F-004 Export to PDF).
 
 The export contract: the endpoint returns real, engine-produced artifacts —
 never silent fallbacks. PDF export must use WeasyPrint (declared dependency);
@@ -140,6 +141,21 @@ def test_export_rejects_unknown_document(client):
 def test_export_rejects_invalid_document_id(client):
     r = client.post("/api/documents/../etc/passwd/export?format=pdf")
     assert r.status_code in (400, 404)
+
+
+def test_download_original_odt_bytes_unchanged(client, tmp_path):
+    """F-002: downloading an ODT document returns the original bytes."""
+    from src.editor.odt_converter import html_to_odt
+
+    original = html_to_odt("<p>original odt bytes</p>")
+    client.test_store.init("orig.odt", "orig.odt")  # type: ignore[attr-defined]
+    client.test_store.put_content("orig.odt", original)  # type: ignore[attr-defined]
+    r = client.get("/api/documents/orig.odt/contents")
+    assert r.status_code == 200
+    assert r.content == original, "download must return the stored bytes verbatim"
+    assert r.headers["content-type"].startswith(
+        "application/vnd.oasis.opendocument.text"
+    )
 
 
 def test_weasyprint_is_a_declared_dependency():

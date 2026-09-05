@@ -8,7 +8,10 @@ OpenCloud/Nextcloud WOPI host:
     in real time (server-side character CRDT + poll push);
   * a save forwards the converted bytes back to the mock host (open -> edit
     -> save -> host loop proven in a browser, not just at the API level);
-  * the editor notifies its embedding host via postMessage (woopi bridge).
+  * the editor notifies its embedding host via postMessage (woopi bridge);
+  * Insert > page break via the toolbar button lands in the saved document.
+
+feature register: F-076 (page break surface + serialization)
 
 Run: pytest tests/e2e/test_cloud_editor_e2e.py
 """
