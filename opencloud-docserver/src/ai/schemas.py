@@ -5,18 +5,20 @@ agent framework can consume it without vendor-specific server code. Schemas
 are versioned: bump :data:`TOOL_CATALOG_VERSION` whenever a tool's contract
 changes, so clients can pin and detect drift.
 
-Tool catalog (5 tools, deliberately small):
+Tool catalog (6 tools, deliberately small):
 
     read_doc      — document bytes/metadata + current collaborative text
     apply_ops     — apply edits through the collaboration op pipeline
     get_versions  — version history metadata (+ optional snapshot content)
+    get_context   — deterministic grounding pack (bounded text + structure
+                    + recent versions) so edits respect document intent
     lock          — WOPI lock/unlock/refresh/get
     presence      — announce/update/leave the presence list
 """
 
 from __future__ import annotations
 
-TOOL_CATALOG_VERSION = "1.0"
+TOOL_CATALOG_VERSION = "1.1"
 
 #: The doc id argument shared by every tool.
 _DOC_ID = {
@@ -98,6 +100,38 @@ get_versions_schema = {
     "inputSchema": _DOC_ID,
 }
 
+get_context_schema = {
+    "name": "get_context",
+    "description": (
+        "Get a deterministic, size-bounded grounding pack for a document: "
+        "the collaborative text (truncated at max_chars with exact block "
+        "spans so anchored edits stay precise), recent version metadata, "
+        "and a sha256 of the full text. Prefer this over read_doc before "
+        "editing — it is the cheapest way to respect document intent. "
+        "Purely derived from the document: identical document state always "
+        "yields an identical pack."
+    ),
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "doc_id": {"type": "string", "description": "Document id (WOPI file id)."},
+            "max_chars": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 20000,
+                "description": "Character budget for the returned text (default 4000).",
+            },
+            "versions_tail": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10,
+                "description": "How many recent version entries to include (default 3).",
+            },
+        },
+        "required": ["doc_id"],
+    },
+}
+
 lock_schema = {
     "name": "lock",
     "description": (
@@ -158,6 +192,7 @@ TOOL_CATALOG = [
     read_doc_schema,
     apply_ops_schema,
     get_versions_schema,
+    get_context_schema,
     lock_schema,
     presence_schema,
 ]

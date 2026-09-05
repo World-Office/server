@@ -50,9 +50,9 @@ def ctx(tmp_path):
 # ----------------------------------------------------------------------
 # Discovery + schemas (model-agnostic)
 
-def test_tool_catalog_has_the_five_spec_tools():
+def test_tool_catalog_has_the_six_spec_tools():
     assert set(TOOL_NAMES) == {
-        "read_doc", "apply_ops", "get_versions", "lock", "presence"
+        "read_doc", "apply_ops", "get_versions", "get_context", "lock", "presence"
     }
     for tool in TOOL_CATALOG:
         assert tool["name"] and tool["description"]

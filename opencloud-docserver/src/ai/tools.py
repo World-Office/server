@@ -1,4 +1,4 @@
-"""The five agent tools, mapped onto DocumentStore and CollabHub.
+"""The six agent tools, mapped onto DocumentStore and CollabHub.
 
 Every tool returns a uniform JSON envelope::
 
@@ -14,6 +14,7 @@ contracts (404 not found, 409 lock mismatch, 400 bad request, 413 too large).
 from __future__ import annotations
 
 import base64
+import hashlib
 from dataclasses import dataclass
 from typing import Any
 
@@ -273,6 +274,75 @@ def tool_get_versions(ctx: ToolContext, doc_id: str) -> dict[str, Any]:
     return ok_result(doc_id=doc_id, versions=ctx.store.list_versions(doc_id))
 
 
+# ----------------------------------------------------------------------
+# Grounding pack (E18S1): deterministic, size-bounded document context
+# ----------------------------------------------------------------------
+
+CONTEXT_DEFAULT_CHARS = 4000
+CONTEXT_MAX_CHARS = 20000
+CONTEXT_MAX_VERSIONS = 10
+
+
+def tool_get_context(
+    ctx: ToolContext,
+    doc_id: str,
+    max_chars: int = CONTEXT_DEFAULT_CHARS,
+    versions_tail: int = 3,
+) -> dict[str, Any]:
+    """Deterministic grounding pack: bounded text + line blocks + versions.
+
+    The pack is a pure function of document state — identical state yields
+    byte-identical packs (golden-tested). The text is the same collaborative
+    text ``read_doc`` serves (so agent edit indices line up), truncated at
+    ``max_chars``; ``blocks`` are non-empty line spans in ``[start, end)``
+    visible-char coordinates for anchored edits; ``versions`` is the newest
+    ``versions_tail`` version entries (metadata only). The pack only ever
+    contains the requested document's data — cross-document context is
+    structurally impossible (isolation-tested).
+    """
+    if not isinstance(doc_id, str) or invalid_doc_id(doc_id):
+        return err_result("bad_request", 400, doc_id=doc_id)
+    doc = ctx.store.get(doc_id)
+    if doc is None:
+        return _not_found(doc_id)
+    try:
+        cap = int(max_chars)
+        tail = int(versions_tail)
+    except (TypeError, ValueError):
+        return err_result("bad_request", 400, hint="max_chars/versions_tail must be integers")
+    if not 1 <= cap <= CONTEXT_MAX_CHARS:
+        return err_result("bad_request", 400, hint=f"max_chars must be 1..{CONTEXT_MAX_CHARS}")
+    if not 0 <= tail <= CONTEXT_MAX_VERSIONS:
+        return err_result("bad_request", 400, hint=f"versions_tail must be 0..{CONTEXT_MAX_VERSIONS}")
+
+    state = ctx.hub.ensure(doc_id, _base_text(ctx.store, doc_id, doc["name"])).snapshot()
+    full: str = state["text"]
+    total = len(full)
+    shown = full[:cap]
+    truncated = total > cap
+
+    blocks: list[dict[str, Any]] = []
+    start = 0
+    for line in full.split("\n"):
+        end = start + len(line)
+        if line and end <= cap:  # only blocks fully inside the budget
+            blocks.append({"start": start, "end": end, "text": line})
+        start = end + 1  # +1 for the newline itself
+
+    return ok_result(
+        doc_id=doc_id,
+        name=doc["name"],
+        rev=state.get("rev", 0),
+        total_chars=total,
+        max_chars=cap,
+        truncated=truncated,
+        text=shown,
+        blocks=blocks,
+        versions=ctx.store.list_versions(doc_id)[:tail],
+        sha256=hashlib.sha256(full.encode("utf-8")).hexdigest(),
+    )
+
+
 def tool_lock(
     ctx: ToolContext,
     doc_id: str,
@@ -366,6 +436,7 @@ _TOOLS = {
     "read_doc": tool_read_doc,
     "apply_ops": tool_apply_ops,
     "get_versions": tool_get_versions,
+    "get_context": tool_get_context,
     "lock": tool_lock,
     "presence": tool_presence,
 }

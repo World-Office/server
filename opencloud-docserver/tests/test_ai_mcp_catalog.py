@@ -1,7 +1,7 @@
 """MCP tool catalog discovery and schema completeness.
 
 UNIT+GOLD tests for TC-E13-01: verifies that the MCP server exposes
-five tools with complete, model-agnostic schemas through both the
+six tools with complete, model-agnostic schemas through both the
 ``tools/list`` RPC endpoint and the ``build_context`` Wire-to-ToolContext
 path. Golden files pin the full catalog shape; unit tests assert
 count, names, and schema properties.
@@ -46,15 +46,15 @@ def server(tmp_path):
 # ----------------------------------------------------------------------
 
 
-def test_tool_catalog_contains_exactly_five_tools():
-    """The advertised catalog has exactly five tool schemas."""
-    assert len(TOOL_CATALOG) == 5
-    assert len(TOOL_NAMES) == 5
+def test_tool_catalog_contains_exactly_six_tools():
+    """The advertised catalog has exactly six tool schemas."""
+    assert len(TOOL_CATALOG) == 6
+    assert len(TOOL_NAMES) == 6
 
 
 def test_tool_catalog_names_match_expected_set():
-    """The five tools are read_doc, apply_ops, get_versions, lock, presence."""
-    expected = {"read_doc", "apply_ops", "get_versions", "lock", "presence"}
+    """The six tools are read_doc, apply_ops, get_versions, get_context, lock, presence."""
+    expected = {"read_doc", "apply_ops", "get_versions", "get_context", "lock", "presence"}
     assert set(TOOL_NAMES) == expected
 
 
@@ -113,14 +113,14 @@ def test_catalog_schemas_are_model_agnostic():
 # ----------------------------------------------------------------------
 
 
-def test_mcp_tools_list_returns_all_five_tools(server):
-    """tools/list RPC returns the full five-tool catalog from McpServer."""
+def test_mcp_tools_list_returns_all_six_tools(server):
+    """tools/list RPC returns the full six-tool catalog from McpServer."""
     msg = {"jsonrpc": "2.0", "id": 1, "method": "tools/list"}
     result = server.handle(msg)
     assert result["jsonrpc"] == "2.0"
     assert result["id"] == 1
     tools = result["result"]["tools"]
-    assert len(tools) == 5
+    assert len(tools) == 6
     returned_names = [t["name"] for t in tools]
     assert set(returned_names) == set(TOOL_NAMES)
 
