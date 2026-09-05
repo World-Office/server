@@ -123,7 +123,7 @@ def main() -> int:
         selected = all_e2e_tests()
 
     if not selected:
-        editor_changed = [c for c in changed if Path(c).name in {p.name for p in EDITOR_FILES}]
+        editor_changed = [c for c in changed if Path(c).name in EDITOR_FILES]
         if editor_changed:
             diff = subprocess.run(
                 ["git", "diff", "HEAD", "--", *EDITOR_FILES],
@@ -142,7 +142,8 @@ def main() -> int:
         test_changed = {
             E2E_ROOT / Path(c).name
             for c in changed
-            if (E2E_ROOT / Path(c).name).exists()
+            if Path(c).name.startswith("test_")
+            and (E2E_ROOT / Path(c).name).exists()
         }
         selected = {p for p in test_changed if p.exists()}
 
