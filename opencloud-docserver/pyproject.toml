@@ -49,4 +49,6 @@ dev = [
     "playwright>=1.40",
     "hypothesis>=6.165.10",
     "pytest>=9.1.1",
+    "pytest-xdist>=3.8.0",
+    "pytest-rerunfailures>=16.6.1",
 ]

@@ -7,7 +7,8 @@
 # Commands:
 #   unit                full pytest suite (opencloud-docserver/tests)
 #   gates               harness-graph drift + register coverage gates
-#   select [--base R]   impact analysis: tests affected by the current diff
+#   select [--base R]   impact analysis: e2e tests affected by the diff
+#   affected [--base R] e2e + unit tests affected by the diff
 #   feature F-xxx       tests covering one register feature
 #   e2e                 e2e suite (requires a live stack; skipped honestly)
 #   all                 unit + gates   (e2e only when E2E_BASE is set)
@@ -57,10 +58,22 @@ require_tree() {
 # ---------------------------------------------------------------------------
 # commands
 
+cmd_affected() {
+  info "tests affected by diff (${SEL_BASE:-working tree vs HEAD})"
+  local -a sargs=()
+  [[ -n "$SEL_BASE" ]] && sargs+=(--base "$SEL_BASE")
+  [[ $SEL_LIST -eq 1 ]] && sargs+=(--list)
+  ( cd "$REPO_DIR" && "$PYTHON" scripts/harness-graph/select-tests.py --unit --list ${sargs[@]+"${sargs[@]}"} )
+  local rc=$?
+  ( cd "$REPO_DIR" && "$PYTHON" scripts/harness-graph/select-tests.py ${sargs[@]+"${sargs[@]}"} )
+  return $rc
+}
+
 cmd_unit() {
-  info "unit suite (opencloud-docserver/tests)"
-  local args=(run --frozen pytest tests/ -q)
+  info "unit suite (opencloud-docserver/tests, parallel${FAST:+, fail-fast})"
+  local -a args=(run --frozen pytest tests/ -q -n "${WO_UNIT_WORKERS:-auto}" --dist loadgroup)
   [[ $FAST -eq 1 ]] && args+=(-x)
+  [[ "${WO_UNIT_WORKERS:-}" == "0" ]] && args=(run --frozen pytest tests/ -q)
   ( cd "$DOCSERVER_DIR" && uv ${args[@]+"${args[@]}"} )
   local rc=$?
   RESULT_MAP[unit]=$(( rc == 0 ? 1 : 0 ))
@@ -166,9 +179,10 @@ main() {
       --json)  JSON_OUT="${2:?}"; shift ;;
       --base)  SEL_BASE="${2:?}"; shift ;;
       --list)  SEL_LIST=1 ;;
+      --serial) WO_UNIT_WORKERS=0 ;;
       --self-test) cmd="self-test" ;;
       help|-h) sed -n '2,40p' "${BASH_SOURCE[0]}"; exit 0 ;;
-      unit|gates|select|feature|e2e|all) cmd="$1" ;;
+      unit|gates|select|affected|feature|e2e|all) cmd="$1" ;;
       -*) die "unknown flag: $1" ;;
       *) rest+=("$1") ;;  # e.g. feature's F-xxx
     esac
@@ -182,6 +196,7 @@ main() {
     unit)      require_tree; cmd_unit; rc=$? ;;
     gates)     require_tree; cmd_gates; rc=$? ;;
     select)    require_tree; cmd_select; rc=$? ;;
+    affected)  require_tree; cmd_affected; rc=$? ;;
     feature)   require_tree; cmd_feature "${rest[@]:-}"; rc=$? ;;
     e2e)       require_tree; cmd_e2e; rc=$? ;;
     all)       require_tree
@@ -190,7 +205,7 @@ main() {
                cmd_e2e || rc=$? ;;
     self-test) cmd_self_test; rc=$? ;;
     help|-h)   sed -n '2,40p' "${BASH_SOURCE[0]}"; exit 0 ;;
-    *)         die "unknown command: $cmd (try: unit|gates|select|feature|e2e|all|self-test)" ;;
+    *)         die "unknown command: $cmd (try: unit|gates|select|affected|feature|e2e|all|self-test)" ;;
   esac
 
   if [[ -n "$JSON_OUT" ]]; then

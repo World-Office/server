@@ -96,6 +96,30 @@ def all_e2e_tests() -> set[Path]:
     return set(E2E_ROOT.glob("test_*.py"))
 
 
+def unit_tests_for(changed: list[str]) -> set[Path]:
+    """Unit-layer impact: changed docserver src module -> test files that
+    reference it (module path or file stem). Cheap grep, conservative by
+    construction: a test file is selected when it mentions the module."""
+    tests_root = SERVER_ROOT / "opencloud-docserver" / "tests"
+    mods: set[str] = set()
+    for c in changed:
+        p = Path(c)
+        parts = p.parts
+        if ("src" in parts and parts[0] == "opencloud-docserver"
+                and p.suffix == ".py"):
+            rel = Path(*parts[parts.index("src") + 1:])
+            mods.add(str(rel.with_suffix("")).replace("/", "."))
+            mods.add(rel.stem)
+    if not mods:
+        return set()
+    hits: set[Path] = set()
+    for tf in sorted(tests_root.rglob("test_*.py")):
+        text = tf.read_text(errors="ignore")
+        if any(m in text for m in mods):
+            hits.add(tf)
+    return hits
+
+
 def command_wired_tests(g: dict) -> set[Path]:
     commands = {
         n["id"]
@@ -109,6 +133,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--base", help="git ref to diff against (default: working tree vs HEAD)")
     ap.add_argument("--list", action="store_true", help="one path per line")
+    ap.add_argument("--unit", action="store_true",
+                    help="also select unit tests affected by changed src modules")
     args = ap.parse_args()
 
     changed = git_changed(args.base)
@@ -146,6 +172,9 @@ def main() -> int:
             and (E2E_ROOT / Path(c).name).exists()
         }
         selected = {p for p in test_changed if p.exists()}
+
+    if args.unit:
+        selected |= unit_tests_for(changed)
 
     if not selected:
         return 0

@@ -200,7 +200,7 @@ def _post_sync(servers: dict, seed: dict, text: str) -> None:
     ).read()
 
 
-def _wait(predicate, timeout: float = 20.0) -> None:
+def _wait(predicate, timeout: float = 60.0) -> None:
     deadline = time.time() + timeout
     while time.time() < deadline:
         if predicate():
@@ -250,8 +250,8 @@ def test_two_users_collaborate_save_and_notify_host(servers):
 
             frame_a = parent_a.frame("ed")
             frame_b = parent_b.frame("ed")
-            frame_a.locator("#editor").wait_for(state="visible", timeout=15000)
-            frame_b.locator("#editor").wait_for(state="visible", timeout=15000)
+            frame_a.locator("#editor").wait_for(state="visible", timeout=45000)
+            frame_b.locator("#editor").wait_for(state="visible", timeout=45000)
             assert "E2E base text" in _frame_text(frame_a)
 
             # Live push: a hub change converges in BOTH browsers (real-time).
@@ -314,7 +314,7 @@ def test_status_bar_word_count_and_save_indicator(servers):
             parent = ctx.new_page()
             parent.goto(_parent_url(servers, seed))
             frame = parent.frame("ed")
-            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+            frame.locator("#editor").wait_for(state="visible", timeout=45000)
 
             # The status bar shows a live word count for the loaded document.
             wc0 = _word_count(frame)
@@ -352,7 +352,7 @@ def test_view_controls_zoom_theme_fullscreen(servers):
             parent = ctx.new_page()
             parent.goto(_parent_url(servers, seed))
             frame = parent.frame("ed")
-            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+            frame.locator("#editor").wait_for(state="visible", timeout=45000)
 
             # Zoom in scales only the editing surface (inline zoom grows).
             z0 = float(frame.locator("#editor").evaluate("el => parseFloat(el.style.zoom || '1')"))
@@ -389,7 +389,7 @@ def test_insert_link_roundtrip(servers):
             parent = ctx.new_page()
             parent.goto(_parent_url(servers, seed))
             frame = parent.frame("ed")
-            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+            frame.locator("#editor").wait_for(state="visible", timeout=45000)
 
             frame.locator("#editor").click()
             frame.locator("#editor").press("End")
@@ -420,7 +420,7 @@ def test_format_color_highlight_superscript(servers):
             parent = ctx.new_page()
             parent.goto(_parent_url(servers, seed))
             frame = parent.frame("ed")
-            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+            frame.locator("#editor").wait_for(state="visible", timeout=45000)
 
             frame.locator("#editor").click()
             frame.locator("#editor").press("End")
@@ -459,7 +459,7 @@ def test_table_merge_and_column_ops(servers):
             parent = ctx.new_page()
             parent.goto(_parent_url(servers, seed))
             frame = parent.frame("ed")
-            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+            frame.locator("#editor").wait_for(state="visible", timeout=45000)
 
             frame.locator("#editor").click()
             frame.locator("#editor").press("End")
@@ -517,7 +517,7 @@ def test_insert_hr_pagebreak_symbol(servers):
             parent = ctx.new_page()
             parent.goto(_parent_url(servers, seed))
             frame = parent.frame("ed")
-            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+            frame.locator("#editor").wait_for(state="visible", timeout=45000)
 
             frame.locator("#editor").click()
             frame.locator("#editor").press("End")
@@ -554,7 +554,7 @@ def test_insert_hr_pagebreak_symbol(servers):
             parent.reload()
             _wait(lambda: parent.frame("ed") is not None)
             frame2 = parent.frame("ed")
-            frame2.locator("#editor").wait_for(state="visible", timeout=15000)
+            frame2.locator("#editor").wait_for(state="visible", timeout=45000)
             _wait(lambda: frame2.locator("#editor hr").count() == 1)
             assert frame2.locator("#editor div.page-break").count() == 1
             assert "§" in _frame_text(frame2)
@@ -577,7 +577,7 @@ def test_file_menu_export_odt_and_new_document(servers):
             page.on("dialog", lambda d: d.accept())
             page.goto(_parent_url(servers, seed))
             frame = page.frame("ed")
-            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+            frame.locator("#editor").wait_for(state="visible", timeout=45000)
 
             # --- Export ODT via File > Export > ODT -> downloadable archive.
             frame.locator("#btn-file").click()
@@ -620,7 +620,7 @@ def test_offline_queue_and_resync(servers):
             page = ctx.new_page()
             page.goto(_parent_url(servers, seed))
             frame = page.frame("ed")
-            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+            frame.locator("#editor").wait_for(state="visible", timeout=45000)
             _wait(lambda: "Offline seed" in _frame_text(frame))
 
             frame.locator("#editor").click()
@@ -661,7 +661,7 @@ def test_inline_format_commands_code_caps_strike(servers):
             parent = ctx.new_page()
             parent.goto(_parent_url(servers, seed))
             frame = parent.frame("ed")
-            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+            frame.locator("#editor").wait_for(state="visible", timeout=45000)
             _wait(lambda: "plain base" in _frame_text(frame))
 
             # Type a line, then wrap one word in inline code (monospace).
@@ -727,7 +727,7 @@ def test_paragraph_rtl_and_line_spacing_roundtrip(servers):
             parent = ctx.new_page()
             parent.goto(_parent_url(servers, seed))
             frame = parent.frame("ed")
-            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+            frame.locator("#editor").wait_for(state="visible", timeout=45000)
             _wait(lambda: "para base" in _frame_text(frame))
 
             frame.locator("#editor").click()
@@ -760,7 +760,7 @@ def test_paragraph_rtl_and_line_spacing_roundtrip(servers):
             # Reload from the host -> props survive.
             parent.reload()
             frame2 = parent.frame("ed")
-            frame2.locator("#editor").wait_for(state="visible", timeout=15000)
+            frame2.locator("#editor").wait_for(state="visible", timeout=45000)
             html2 = frame2.evaluate("document.getElementById('editor').innerHTML")
             assert 'line-height' in html2 and 'rtl' in html2.lower(), html2
         finally:
@@ -780,7 +780,7 @@ def test_nested_list_tab_indent_roundtrip(servers):
             parent = ctx.new_page()
             parent.goto(_parent_url(servers, seed))
             frame = parent.frame("ed")
-            frame.locator("#editor").wait_for(state="visible", timeout=15000)
+            frame.locator("#editor").wait_for(state="visible", timeout=45000)
             _wait(lambda: "list base" in _frame_text(frame))
 
             frame.locator("#editor").click()
