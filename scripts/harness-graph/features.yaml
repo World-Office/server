@@ -46,15 +46,19 @@ features:
   # ── home: paragraph ───────────────────────────────────────────────────────
   - {id: F-030, area: home.para,   name: Bulleted list,                  parity: full,    fidelity: L1, commands: [insertUnorderedList]}
   - {id: F-031, area: home.para,   name: Numbered list,                  parity: full,    fidelity: L1, commands: [insertOrderedList]}
-  - {id: F-032, area: home.para,   name: Multilevel list,                parity: missing, fidelity: L1}
+  - {id: F-032, area: home.para,   name: Multilevel list,                parity: full,    fidelity: L1,
+      commands: [insertUnorderedList, insertOrderedList],
+      divergence: [{ref: numbering-styles, justification: "Nested <ul>/<ol> round-trip exactly through DOCX (List Bullet/Number [n] styles carry the outline level) and ODT (nested text:list inside text:list-item) both directions; DOCX levels are encoded via python-docx per-level list styles whose independent per-level restart is structural (L1) evidence, not a claim of Word outline-continuation numbering (\"1.1\") at L2. Authoring surface: insertUnorderedList/insertOrderedList; no dedicated multilevel-list gallery button."}]}
   - {id: F-033, area: home.para,   name: Align left,                     parity: full,    fidelity: L2, commands: [justifyLeft]}
   - {id: F-034, area: home.para,   name: Align center,                   parity: full,    fidelity: L2, commands: [justifyCenter]}
   - {id: F-035, area: home.para,   name: Align right,                    parity: full,    fidelity: L2, commands: [justifyRight]}
   - {id: F-036, area: home.para,   name: Justify,                        parity: full,    fidelity: L2, commands: [justifyFull]}
   - {id: F-037, area: home.para,   name: Increase indent,                parity: full,    fidelity: L1, commands: [indent]}
   - {id: F-038, area: home.para,   name: Decrease indent,                parity: full,    fidelity: L1, commands: [outdent]}
-  - {id: F-039, area: home.para,   name: Line spacing,                   parity: missing, fidelity: L2}
-  - {id: F-040, area: home.para,   name: Paragraph shading / borders,    parity: missing, fidelity: L2}
+  - {id: F-039, area: home.para,   name: Line spacing,                   parity: full,    fidelity: L1,
+      divergence: [{ref: marker-serialization, justification: "The #line-spacing select emits a lineHeight command setting line-height:<n> on the block(s); the sanitizer whitelist keeps it and DOCX (w:spacing/w:lineRule) and ODT (fo:line-height percentage) round-trip it both directions; 1.0 clears to the document default. Select is not a data-cmd control, so no commands entry. Layout rendering not claimed beyond L1."}]}
+  - {id: F-040, area: home.para,   name: Paragraph shading / borders,    parity: missing, fidelity: L2,
+      divergence: [{ref: no-surface-or-serialization, justification: "Audited WO-REG-PARA-1: no toolbar button/dialog for paragraph shading or borders (only run-level highlight-color, table-cell shading, and the <hr> bottom-border heuristic exist); no paragraph-level serialization either way (w:pPr/w:shd and w:pBdr dropped on DOCX->HTML; style=background-color/border on <p> dropped on HTML->DOCX and HTML->ODT). Current behaviour pinned in tests/test_paragraph_controls.py without a feature marker so no coverage edge is claimed."}]}
   - {id: F-041, area: home.para,   name: RTL paragraph direction,        parity: partial, fidelity: L1, commands: [directionRtl]}
 
   # ── home: styles ──────────────────────────────────────────────────────────
