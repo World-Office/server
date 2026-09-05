@@ -6,6 +6,8 @@ Covers, per the collaboration contract:
     insert-before-parent, deterministic ordering, Unicode handling.
   * Hub behaviour — global revisions, dedup, late-join replay (CO-4),
     presence (CO-3), SSE fan-out, resync after a save.
+
+feature register: F-122 (presence hub: set_presence, cursors, leave)
   * HTTP API — state / ops / presence / resync / stream endpoints.
 """
 

@@ -66,8 +66,10 @@ features:
   # ── home: styles ──────────────────────────────────────────────────────────
   - {id: F-050, area: home.styles, name: Heading 1-6 / paragraph styles, parity: partial, fidelity: L1, commands: [formatBlock]}
   - {id: F-051, area: home.styles, name: Block quote,                    parity: partial, fidelity: L1, commands: [formatBlock]}
-  - {id: F-052, area: home.styles, name: Style gallery (named styles),   parity: missing, fidelity: L1}
-  - {id: F-053, area: home.styles, name: Title / subtitle styles,        parity: missing, fidelity: L1}
+  - {id: F-052, area: home.styles, name: Style gallery (named styles),   parity: missing, fidelity: L1,
+      divergence: [{ref: absent, justification: "No style gallery surface (no gallery markup/editor code), no named-style mapping in converter; only formatBlock headings exist (F-050)."}]}
+  - {id: F-053, area: home.styles, name: Title / subtitle styles,        parity: missing, fidelity: L1,
+      divergence: [{ref: absent, justification: "No Title/Subtitle block styles in editor formatBlock set nor converter heading mapping."}]}
 
   # ── editing ───────────────────────────────────────────────────────────────
   - {id: F-060, area: editing,     name: Undo,                           parity: full,    fidelity: L1, commands: [undo]}
@@ -113,9 +115,12 @@ features:
       divergence: [{ref: serialization-only, justification: "Paragraph margins (left/right/top/bottom) serialize to DOCX and back; document-level page margins are not mapped to editor view."}]}
   - {id: F-093, area: layout,      name: Columns,                        parity: full,    fidelity: L1}
   - {id: F-094, area: layout,      name: Section breaks,                 parity: full,    fidelity: L1}
-  - {id: F-095, area: layout,      name: Hyphenation,                    parity: missing, fidelity: L2}
-  - {id: F-096, area: layout,      name: Line numbers,                   parity: missing, fidelity: L2}
-  - {id: F-097, area: layout,      name: Watermark,                      parity: missing, fidelity: L3}
+  - {id: F-095, area: layout,      name: Hyphenation,                    parity: missing, fidelity: L2,
+      divergence: [{ref: absent, justification: "No hyphenation surface or autoHyphenation/w:hyphenation handling in editor or converters."}]}
+  - {id: F-096, area: layout,      name: Line numbers,                    parity: missing, fidelity: L2,
+      divergence: [{ref: absent, justification: "No line-number surface; w:ln/lineNumber numbering not handled by converters."}]}
+  - {id: F-097, area: layout,      name: Watermark,                      parity: missing, fidelity: L3,
+      divergence: [{ref: absent, justification: "No watermark surface or header-anchored VML/image watermark projection."}]}
 
   # ── review ────────────────────────────────────────────────────────────────
   - {id: F-100, area: review,      name: Track changes on/off,           parity: full,    fidelity: L1,
@@ -124,7 +129,8 @@ features:
       divergence: [{ref: panel-actions, justification: "btn-review-changes lists each tracked region with Accept/Reject (acceptChange/rejectChange); accepted/rejected content serializes to real DOCX. DOM behaviour pinned by source-wiring tests; no canvas-true review UI (L2+)."}]}
   - {id: F-102, area: review,      name: Comment threads (add/reply/resolve), parity: partial, fidelity: L1,
       divergence: [{ref: no-reply-resolve, justification: "Add + delete + anchored serialization proven (span.comment <-> word/comments.xml with commentRangeStart/End/Reference; ODT office:annotation): btn-comment wraps the selection, comments panel lists Go to/Delete. No reply threading or resolve lifecycle exists in the editor UI -- OnlyOffice thread semantics not implemented."}]}
-  - {id: F-103, area: review,      name: Compare documents,              parity: missing, fidelity: L4}
+  - {id: F-103, area: review,      name: Compare documents,              parity: missing, fidelity: L4,
+      divergence: [{ref: absent, justification: "No compare surface/endpoint; editor 'compare' hits are DOM compareDocumentPosition only."}]}
   - {id: F-104, area: review,      name: Version history,                parity: full,    fidelity: L4,
       divergence: [{ref: snapshot-policy, justification: "btn-history lists per-save snapshots from GET /api/documents/{id}/versions and restores via POST /api/documents/{id}/versions/{ts}/restore (store version index; restore stays undoable). No visual version diff/compare view -- OnlyOffice's compare step is not implemented."}]}
 
@@ -143,6 +149,7 @@ features:
   # ── collaboration (WO-specific, OnlyOffice co-editing as reference) ──────
   - {id: F-120, area: collab,      name: Real-time co-editing,           parity: partial, fidelity: L4}
   - {id: F-121, area: collab,      name: Live cursors with names,        parity: partial, fidelity: L4}
-  - {id: F-122, area: collab,      name: Presence avatars,               parity: missing, fidelity: L4}
+  - {id: F-122, area: collab,      name: Presence avatars,               parity: partial, fidelity: L1,
+      divergence: [{ref: chips-not-avatars, justification: "Stable-hue peer chips, remote carets and cursor sync proven (collab hub set_presence + editor peerColor); profile-image avatars (L4) not implemented."}]}
   - {id: F-123, area: collab,      name: Concurrent edit conflict resolution, parity: partial, fidelity: L4}
   - {id: F-124, area: collab,      name: WOPI Lock/Unlock conflict handling,  parity: full,    fidelity: L4}
