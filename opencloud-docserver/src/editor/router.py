@@ -488,6 +488,37 @@ async def document_contents(doc_id: str, request: Request) -> Response:
     )
 
 
+@router.get("/api/documents/{doc_id}/info")
+async def document_info(doc_id: str, request: Request) -> JSONResponse:
+    """Document metadata: name, format, size, timestamps, version.
+
+    The metadata surface for document info (file properties are shown by the
+    OpenCloud shell in the integrated product; this is the docserver-side
+    source of truth for it).
+    """
+    if invalid_doc_id(doc_id):
+        return JSONResponse({"error": "Invalid file id"}, status_code=400)
+    doc = _store(request).get(doc_id)
+    if not doc:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    data = _load_bytes(request, doc_id)
+    if data is None:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    name = doc["name"]
+    fmt = "odt" if (name or "").lower().endswith(".odt") else "docx"
+    return JSONResponse(
+        {
+            "id": doc_id,
+            "name": name,
+            "format": fmt,
+            "size": len(data),
+            "created_at": doc["created_at"],
+            "updated_at": doc["updated_at"],
+            "version": str(doc["updated_at"]),
+        }
+    )
+
+
 # ----------------------------------------------------------------------
 # Version history (snapshots taken on every content write)
 # ----------------------------------------------------------------------

@@ -136,6 +136,61 @@
    "type": "COVERS"
   },
   {
+   "from": "opencloud-docserver/tests/test_export_formats.py::test_download_original_odt_bytes_unchanged",
+   "to": "F-002",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_export_formats.py::test_export_docx_is_a_real_docx",
+   "to": "F-002",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_export_formats.py::test_export_html_preserves_content",
+   "to": "F-002",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_export_formats.py::test_export_odt_is_a_real_odt",
+   "to": "F-002",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_export_formats.py::test_export_pdf_from_odt_document",
+   "to": "F-002",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_export_formats.py::test_export_pdf_uses_real_engine",
+   "to": "F-002",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_export_formats.py::test_export_rejects_invalid_document_id",
+   "to": "F-002",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_export_formats.py::test_export_rejects_unknown_document",
+   "to": "F-002",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_export_formats.py::test_export_rejects_unknown_format",
+   "to": "F-002",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_export_formats.py::test_weasyprint_is_a_declared_dependency",
+   "to": "F-002",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_export_formats.py::test_download_original_odt_bytes_unchanged",
+   "to": "F-003",
+   "type": "COVERS"
+  },
+  {
    "from": "opencloud-docserver/tests/test_export_formats.py::test_export_docx_is_a_real_docx",
    "to": "F-003",
    "type": "COVERS"
@@ -181,6 +236,11 @@
    "type": "COVERS"
   },
   {
+   "from": "opencloud-docserver/tests/test_export_formats.py::test_download_original_odt_bytes_unchanged",
+   "to": "F-004",
+   "type": "COVERS"
+  },
+  {
    "from": "opencloud-docserver/tests/test_export_formats.py::test_export_docx_is_a_real_docx",
    "to": "F-004",
    "type": "COVERS"
@@ -223,6 +283,26 @@
   {
    "from": "opencloud-docserver/tests/test_export_formats.py::test_weasyprint_is_a_declared_dependency",
    "to": "F-004",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_document_info.py::test_info_404_on_unknown_document",
+   "to": "F-006",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_document_info.py::test_info_detects_odt_format",
+   "to": "F-006",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_document_info.py::test_info_rejects_invalid_document_id",
+   "to": "F-006",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_document_info.py::test_info_reports_metadata",
+   "to": "F-006",
    "type": "COVERS"
   },
   {
@@ -731,6 +811,31 @@
    "type": "COVERS"
   },
   {
+   "from": "opencloud-docserver/tests/test_page_break_roundtrip.py::test_docx_to_html_restores_page_break_marker",
+   "to": "F-076",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_page_break_roundtrip.py::test_html_to_docx_serializes_page_break_marker",
+   "to": "F-076",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_page_break_roundtrip.py::test_html_to_odt_serializes_page_break_marker",
+   "to": "F-076",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_page_break_roundtrip.py::test_page_break_roundtrip_docx",
+   "to": "F-076",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_page_break_roundtrip.py::test_page_break_survives_sanitization",
+   "to": "F-076",
+   "type": "COVERS"
+  },
+  {
    "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_01_manuscript_seed_is_a_valid_paper",
    "to": "F-120",
    "type": "COVERS"
@@ -1001,7 +1106,7 @@
    "type": "COVERS"
   }
  ],
- "generated_at": "2026-09-05T06:08:49+00:00",
+ "generated_at": "2026-09-05T06:37:31+00:00",
  "nodes": [
   {
    "id": "allCaps",
@@ -4307,6 +4412,30 @@
    "path": "opencloud-docserver/tests/test_crypto_edges.py"
   },
   {
+   "id": "opencloud-docserver/tests/test_document_info.py::test_info_reports_metadata",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_document_info.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_document_info.py::test_info_detects_odt_format",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_document_info.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_document_info.py::test_info_404_on_unknown_document",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_document_info.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_document_info.py::test_info_rejects_invalid_document_id",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_document_info.py"
+  },
+  {
    "id": "opencloud-docserver/tests/test_editor_api_lifecycle.py::test_new_document_creates_blank_docx",
    "label": "Test",
    "layer": "e2e",
@@ -4680,6 +4809,12 @@
   },
   {
    "id": "opencloud-docserver/tests/test_export_formats.py::test_export_rejects_invalid_document_id",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_export_formats.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_export_formats.py::test_download_original_odt_bytes_unchanged",
    "label": "Test",
    "layer": "e2e",
    "path": "opencloud-docserver/tests/test_export_formats.py"
@@ -5661,6 +5796,36 @@
    "label": "Test",
    "layer": "e2e",
    "path": "opencloud-docserver/tests/test_onlyoffice_conformance.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_page_break_roundtrip.py::test_html_to_docx_serializes_page_break_marker",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_page_break_roundtrip.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_page_break_roundtrip.py::test_docx_to_html_restores_page_break_marker",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_page_break_roundtrip.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_page_break_roundtrip.py::test_page_break_roundtrip_docx",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_page_break_roundtrip.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_page_break_roundtrip.py::test_html_to_odt_serializes_page_break_marker",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_page_break_roundtrip.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_page_break_roundtrip.py::test_page_break_survives_sanitization",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_page_break_roundtrip.py"
   },
   {
    "id": "opencloud-docserver/tests/test_persistence.py::test_reopen_preserves_content_names_locks_and_versions",
@@ -7806,7 +7971,12 @@
    "id": "F-006",
    "label": "Feature",
    "name": "Document info / metadata",
-   "parity": "missing"
+   "parity": "full"
+  },
+  {
+   "id": "F-006:api-surface",
+   "justification": "Info exposed as GET /api/documents/{id}/info (name, format, size, timestamps, version); the user-facing properties panel belongs to the OpenCloud shell in the integrated product.",
+   "label": "Divergence"
   },
   {
    "area": "home.font",
@@ -8146,11 +8316,16 @@
   },
   {
    "area": "insert",
-   "fidelity": "L2",
+   "fidelity": "L1",
    "id": "F-076",
    "label": "Feature",
    "name": "Page break",
-   "parity": "missing"
+   "parity": "full"
+  },
+  {
+   "id": "F-076:marker-serialization",
+   "justification": "Editor marker (div.page-break via Insert menu -> runCommand insertPageBreak) round-trips through DOCX (w:br type=page) and ODT; visual pagination in the rendered view is renderer-dependent and not claimed at L2.",
+   "label": "Divergence"
   },
   {
    "area": "insert",
@@ -8419,10 +8594,10 @@
  ],
  "stats": {
   "commands": 21,
-  "edges": 200,
+  "edges": 221,
   "features": 82,
   "surfaces": 21,
-  "tests": 1086
+  "tests": 1096
  },
  "version": 1
 }

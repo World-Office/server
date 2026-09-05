@@ -22,7 +22,8 @@ features:
   - {id: F-004, area: file,        name: Export to PDF,                  parity: full,    fidelity: L1,
       divergence: [{ref: html-projection, justification: "PDF via WeasyPrint from the sanitized editor HTML, not canvas-true layout (L4 pending a renderer-backed path). The historical silent stub-PDF fallback was removed; missing engine now fails loudly (X-Export-Engine header + 500)."}]}
   - {id: F-005, area: file,        name: Print,                          parity: missing, fidelity: L4}
-  - {id: F-006, area: file,        name: Document info / metadata,       parity: missing, fidelity: L1}
+  - {id: F-006, area: file,        name: Document info / metadata,       parity: full,    fidelity: L1,
+      divergence: [{ref: api-surface, justification: "Info exposed as GET /api/documents/{id}/info (name, format, size, timestamps, version); the user-facing properties panel belongs to the OpenCloud shell in the integrated product."}]}
 
   # ── home: font ────────────────────────────────────────────────────────────
   - {id: F-010, area: home.font,   name: Bold,                           parity: full,    fidelity: L1, commands: [bold]}
@@ -75,7 +76,9 @@ features:
   - {id: F-073, area: insert,      name: Footnote,                       parity: missing, fidelity: L1}
   - {id: F-074, area: insert,      name: Endnote,                        parity: missing, fidelity: L1}
   - {id: F-075, area: insert,      name: Comment,                        parity: missing, fidelity: L4}
-  - {id: F-076, area: insert,      name: Page break,                     parity: missing, fidelity: L2}
+  - {id: F-076, area: insert,      name: Page break,                     parity: full,    fidelity: L1,
+      commands: [insertPageBreak],
+      divergence: [{ref: marker-serialization, justification: "Editor marker (div.page-break via Insert menu -> runCommand insertPageBreak) round-trips through DOCX (w:br type=page) and ODT; visual pagination in the rendered view is renderer-dependent and not claimed at L2."}]}
   - {id: F-077, area: insert,      name: Table of contents,              parity: missing, fidelity: L1}
   - {id: F-078, area: insert,      name: Symbol / special char,          parity: missing, fidelity: L1}
   - {id: F-079, area: insert,      name: Date and time,                  parity: missing, fidelity: L1}
