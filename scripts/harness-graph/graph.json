@@ -1101,6 +1101,51 @@
    "type": "COVERS"
   },
   {
+   "from": "opencloud-docserver/tests/test_find_replace.py::test_find_replace_ui_presence",
+   "to": "F-062",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_find_replace.py::test_rich_paste_hook_presence",
+   "to": "F-062",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_find_replace.py::test_shortcuts_hooks_presence",
+   "to": "F-062",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_find_replace.py::test_find_replace_ui_presence",
+   "to": "F-063",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_find_replace.py::test_rich_paste_hook_presence",
+   "to": "F-063",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_find_replace.py::test_shortcuts_hooks_presence",
+   "to": "F-063",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_find_replace.py::test_find_replace_ui_presence",
+   "to": "F-064",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_find_replace.py::test_rich_paste_hook_presence",
+   "to": "F-064",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_find_replace.py::test_shortcuts_hooks_presence",
+   "to": "F-064",
+   "type": "COVERS"
+  },
+  {
    "from": "opencloud-docserver/tests/test_converter.py::test_bookmark_crossref_survive_save_then_convert",
    "to": "F-070",
    "type": "COVERS"
@@ -5006,7 +5051,7 @@
    "type": "COVERS"
   }
  ],
- "generated_at": "2026-09-05T11:22:39+00:00",
+ "generated_at": "2026-09-05T11:26:03+00:00",
  "nodes": [
   {
    "id": "allCaps",
@@ -8798,6 +8843,24 @@
    "path": "opencloud-docserver/tests/test_file_ops.py"
   },
   {
+   "id": "opencloud-docserver/tests/test_find_replace.py::test_find_replace_ui_presence",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_find_replace.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_find_replace.py::test_rich_paste_hook_presence",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_find_replace.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_find_replace.py::test_shortcuts_hooks_presence",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_find_replace.py"
+  },
+  {
    "id": "opencloud-docserver/tests/test_font_controls.py::test_font_family_roundtrip",
    "label": "Test",
    "layer": "e2e",
@@ -12211,7 +12274,7 @@
    "id": "F-062",
    "label": "Feature",
    "name": "Find and replace",
-   "parity": "partial"
+   "parity": "full"
   },
   {
    "area": "editing",
@@ -12222,12 +12285,17 @@
    "parity": "partial"
   },
   {
+   "id": "F-063:plain-text-only",
+   "justification": "onBeforeInput handles 'insertFromPaste' but only extracts 'text/plain' from dataTransfer.",
+   "label": "Divergence"
+  },
+  {
    "area": "editing",
    "fidelity": "L4",
    "id": "F-064",
    "label": "Feature",
    "name": "Keyboard shortcuts (core set)",
-   "parity": "partial"
+   "parity": "full"
   },
   {
    "area": "insert",
@@ -12577,10 +12645,10 @@
  ],
  "stats": {
   "commands": 21,
-  "edges": 1001,
+  "edges": 1010,
   "features": 82,
   "surfaces": 21,
-  "tests": 1104
+  "tests": 1107
  },
  "version": 1
 }
