@@ -82,6 +82,21 @@ class DocumentStore:
                 """
             )
             self._conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS agent_runs (
+                    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+                    ts             INTEGER NOT NULL,
+                    doc_id         TEXT NOT NULL,
+                    client_id      TEXT NOT NULL,
+                    task           TEXT DEFAULT '',
+                    steps          INTEGER DEFAULT 0,
+                    ops            INTEGER DEFAULT 0,
+                    rev            INTEGER DEFAULT 0,
+                    stopped_reason TEXT DEFAULT ''
+                )
+                """
+            )
+            self._conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_versions_doc ON versions (doc_id, ts DESC)"
             )
 
@@ -214,6 +229,67 @@ class DocumentStore:
             rows = self._conn.execute(
                 "SELECT ts, author, size FROM versions WHERE doc_id = ? ORDER BY ts DESC",
                 (doc_id,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    # ------------------------------------------------------------------
+    # Agent run audit (E20): every agent turn leaves a row — the op log
+    # says WHAT changed, these rows say WHO ran, WHEN, with what budget.
+    # ------------------------------------------------------------------
+
+    def record_agent_run(
+        self,
+        doc_id: str,
+        client_id: str,
+        task: str = "",
+        steps: int = 0,
+        ops: int = 0,
+        rev: int = 0,
+        stopped_reason: str = "",
+        ts: int | None = None,
+    ) -> int:
+        """Append one audit row for a finished agent run; returns its id."""
+        if ts is None:
+            ts = int(time.time() * 1000)
+        with self._lock:
+            with self._conn:
+                cur = self._conn.execute(
+                    "INSERT INTO agent_runs (ts, doc_id, client_id, task, steps, ops, rev, stopped_reason) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    (int(ts), doc_id, client_id, task, int(steps), int(ops), int(rev), str(stopped_reason)),
+                )
+            return int(cur.lastrowid or 0)
+
+    def list_agent_runs(
+        self,
+        client_id: str | None = None,
+        doc_id: str | None = None,
+        limit: int = 100,
+    ) -> list[dict[str, object]]:
+        """Audit rows, newest first; optional client/doc filters."""
+        where, args = [], []
+        if client_id is not None:
+            where.append("client_id = ?")
+            args.append(client_id)
+        if doc_id is not None:
+            where.append("doc_id = ?")
+            args.append(doc_id)
+        sql = "SELECT id, ts, doc_id, client_id, task, steps, ops, rev, stopped_reason FROM agent_runs"
+        if where:
+            sql += " WHERE " + " AND ".join(where)
+        sql += " ORDER BY ts DESC, id DESC LIMIT ?"
+        args.append(max(1, min(int(limit), 1000)))
+        with self._lock:
+            rows = self._conn.execute(sql, args).fetchall()
+        return [dict(r) for r in rows]
+
+    def agent_summary(self) -> list[dict[str, object]]:
+        """Per-agent aggregates: runs, ops applied, documents touched."""
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT client_id, COUNT(*) AS runs, SUM(ops) AS ops, "
+                "COUNT(DISTINCT doc_id) AS docs, MAX(ts) AS last_ts "
+                "FROM agent_runs GROUP BY client_id ORDER BY last_ts DESC",
             ).fetchall()
         return [dict(r) for r in rows]
 

@@ -6581,7 +6581,7 @@
    "type": "COVERS"
   }
  ],
- "generated_at": "2026-09-05T16:49:36+00:00",
+ "generated_at": "2026-09-05T17:59:44+00:00",
  "nodes": [
   {
    "id": "allCaps",
@@ -7631,6 +7631,96 @@
    "path": "opencloud-docserver/tests/test_ai_agent_modelbased.py"
   },
   {
+   "id": "opencloud-docserver/tests/test_ai_anchor_ops.py::test_set_span_replaces_a_block_and_survives_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_anchor_ops.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_anchor_ops.py::test_set_span_with_empty_text_is_pure_deletion",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_anchor_ops.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_anchor_ops.py::test_expected_mismatch_is_typed_412_and_applies_nothing",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_anchor_ops.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_anchor_ops.py::test_expected_match_edits_exactly_what_the_pack_showed",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_anchor_ops.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_anchor_ops.py::test_expected_on_plain_ins_and_del",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_anchor_ops.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_anchor_ops.py::test_bad_anchor_aborts_the_rest_of_the_batch",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_anchor_ops.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_anchor_ops.py::test_bad_anchor_types",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_anchor_ops.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_anchor_ops.py::test_anchored_ops_see_text_after_previous_ops_in_same_call",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_anchor_ops.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_anchor_ops.py::test_anchor_flow_with_lock_still_enforces_409",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_anchor_ops.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_anchor_ops.py::test_search_to_anchor_pipeline",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_anchor_ops.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_audit.py::test_runner_writes_audit_rows",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_audit.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_audit.py::test_audit_rows_filter_and_order",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_audit.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_audit.py::test_summary_aggregates",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_audit.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_audit.py::test_rest_runs_and_summary",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_audit.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_audit.py::test_audit_failure_never_breaks_the_run",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_audit.py"
+  },
+  {
    "id": "opencloud-docserver/tests/test_ai_context_pack.py::test_get_context_shape_and_golden_determinism",
    "label": "Test",
    "layer": "e2e",
@@ -7677,6 +7767,30 @@
    "label": "Test",
    "layer": "e2e",
    "path": "opencloud-docserver/tests/test_ai_context_pack.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_injection_containment.py::test_hostile_content_is_payload_data_never_interpreted",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_injection_containment.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_injection_containment.py::test_server_containment_holds_under_gullible_model",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_injection_containment.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_injection_containment.py::test_flood_is_capped_at_max_ops",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_injection_containment.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_injection_containment.py::test_cas_anchor_beats_a_racing_document",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_injection_containment.py"
   },
   {
    "id": "opencloud-docserver/tests/test_ai_lock_parity.py::test_lock_tool_and_wopi_return_same_409_on_mismatch",
@@ -7805,7 +7919,7 @@
    "path": "opencloud-docserver/tests/test_ai_mcp.py"
   },
   {
-   "id": "opencloud-docserver/tests/test_ai_mcp_catalog.py::test_tool_catalog_contains_exactly_six_tools",
+   "id": "opencloud-docserver/tests/test_ai_mcp_catalog.py::test_tool_catalog_contains_exactly_seven_tools",
    "label": "Test",
    "layer": "e2e",
    "path": "opencloud-docserver/tests/test_ai_mcp_catalog.py"
@@ -7847,7 +7961,7 @@
    "path": "opencloud-docserver/tests/test_ai_mcp_catalog.py"
   },
   {
-   "id": "opencloud-docserver/tests/test_ai_mcp_catalog.py::test_mcp_tools_list_returns_all_six_tools",
+   "id": "opencloud-docserver/tests/test_ai_mcp_catalog.py::test_mcp_tools_list_returns_all_seven_tools",
    "label": "Test",
    "layer": "e2e",
    "path": "opencloud-docserver/tests/test_ai_mcp_catalog.py"
@@ -8297,7 +8411,43 @@
    "path": "opencloud-docserver/tests/test_ai_runner_bounds.py"
   },
   {
-   "id": "opencloud-docserver/tests/test_ai_tools.py::test_tool_catalog_has_the_six_spec_tools",
+   "id": "opencloud-docserver/tests/test_ai_search_doc.py::test_search_doc_is_in_catalog",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_search_doc.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_search_doc.py::test_ranking_relevance_then_position_and_determinism",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_search_doc.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_search_doc.py::test_refs_carry_doc_rev_sha256",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_search_doc.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_search_doc.py::test_no_match_is_empty_ok_result",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_search_doc.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_search_doc.py::test_bounds_and_typed_errors",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_search_doc.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_search_doc.py::test_max_passages_is_respected",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_search_doc.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_tools.py::test_tool_catalog_has_the_seven_spec_tools",
    "label": "Test",
    "layer": "e2e",
    "path": "opencloud-docserver/tests/test_ai_tools.py"
@@ -14760,7 +14910,7 @@
   "edges": 1316,
   "features": 82,
   "surfaces": 21,
-  "tests": 1184
+  "tests": 1209
  },
  "version": 1
 }
