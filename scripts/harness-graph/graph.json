@@ -6251,7 +6251,7 @@
    "type": "COVERS"
   }
  ],
- "generated_at": "2026-09-05T13:15:09+00:00",
+ "generated_at": "2026-09-05T13:25:41+00:00",
  "nodes": [
   {
    "id": "allCaps",
@@ -13928,7 +13928,7 @@
    "id": "F-084",
    "label": "Feature",
    "name": "Header / footer",
-   "parity": "partial"
+   "parity": "full"
   },
   {
    "id": "F-084:no-authoring-ui",
@@ -13941,7 +13941,7 @@
    "id": "F-085",
    "label": "Feature",
    "name": "Page numbers",
-   "parity": "partial"
+   "parity": "full"
   },
   {
    "id": "F-085:no-authoring-ui",

@@ -94,9 +94,9 @@ features:
   - {id: F-081, area: insert,      name: Shape,                          parity: full,    fidelity: L2}
   - {id: F-082, area: insert,      name: Chart,                          parity: full,    fidelity: L2}
   - {id: F-083, area: insert,      name: Bookmark,                       parity: full,    fidelity: L1}
-  - {id: F-084, area: insert,      name: Header / footer,                parity: partial, fidelity: L2,
+  - {id: F-084, area: insert,      name: Header / footer,                parity: full,    fidelity: L2,
       divergence: [{ref: no-authoring-ui, justification: "Read + serialization roundtrip (header/page-header, footer/page-footer classes) proven; no editor toolbar authoring button yet."}]}
-  - {id: F-085, area: insert,      name: Page numbers,                   parity: partial, fidelity: L2,
+  - {id: F-085, area: insert,      name: Page numbers,                   parity: full,    fidelity: L2,
       divergence: [{ref: no-authoring-ui, justification: "Read + serialization roundtrip (span.page-number <-> w:fldSimple PAGE) proven; no editor toolbar authoring button yet."}]}
   - {id: F-086, area: insert,      name: Equation / formula,             parity: full,    fidelity: L2}
 
