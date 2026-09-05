@@ -1,21 +1,21 @@
 {
   "schema_version": 1,
   "truth_captured_from": "onlyoffice-ds docker.io/onlyoffice/documentserver@sha2…",
-  "captured_at": "2026-09-05T05:30:11.534196105+00:00",
+  "captured_at": "2026-09-05T05:45:56.443340629+00:00",
   "render": {
     "pages": [
       {
         "index": 0,
         "size": {
-          "width_pt": 595.27557,
-          "height_pt": 841.88977
+          "width_pt": 595.29999,
+          "height_pt": 841.90002
         },
         "boxes": [
           {
             "kind": "paragraph",
             "origin": {
-              "x_pt": 85.03937,
-              "y_pt": 51.16279
+              "x_pt": 72.0,
+              "y_pt": 66.46989
             },
             "size": {
               "width_pt": 55.536255,
@@ -29,8 +29,8 @@
                 "weight": 400,
                 "italic": false,
                 "origin": {
-                  "x_pt": 85.03937,
-                  "y_pt": 66.15439
+                  "x_pt": 72.0,
+                  "y_pt": 81.46149000000001
                 }
               },
               {
@@ -40,8 +40,8 @@
                 "weight": 400,
                 "italic": false,
                 "origin": {
-                  "x_pt": 107.255871,
-                  "y_pt": 66.15439
+                  "x_pt": 94.216501,
+                  "y_pt": 81.46149000000001
                 }
               },
               {
@@ -51,8 +51,8 @@
                 "weight": 400,
                 "italic": false,
                 "origin": {
-                  "x_pt": 117.815625,
-                  "y_pt": 66.15439
+                  "x_pt": 104.776255,
+                  "y_pt": 81.46149000000001
                 }
               }
             ]
@@ -68,7 +68,7 @@
     "metadata": {
       "engine": "onlyoffice-documentserver",
       "engine_version": "docker.io/onlyoffice/documentserver@sha2…",
-      "captured_at": "2026-09-05T05:30:11.534188825+00:00",
+      "captured_at": "2026-09-05T05:45:56.443333152+00:00",
       "environment": "onlyoffice-ds pdf-export projection; filetype=docx"
     }
   }

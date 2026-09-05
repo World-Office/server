@@ -3,8 +3,8 @@
     {
       "index": 0,
       "size": {
-        "width_pt": 612.0,
-        "height_pt": 792.0
+        "width_pt": 595.3,
+        "height_pt": 841.89
       },
       "boxes": [
         {
@@ -14,8 +14,8 @@
             "y_pt": 71.99
           },
           "size": {
-            "width_pt": 464.95,
-            "height_pt": 294.39
+            "width_pt": 434.14,
+            "height_pt": 307.19
           },
           "runs": [
             {
@@ -30,7 +30,7 @@
               }
             },
             {
-              "text": "word11 word12 word13 word14 word15 word16 word17 word18 word19 word20",
+              "text": "word11 word12 word13 word14 word15 word16 word17 word18 word19",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -41,7 +41,7 @@
               }
             },
             {
-              "text": "word21 word22 word23 word24 word25 word26 word27 word28 word29 word30",
+              "text": "word20 word21 word22 word23 word24 word25 word26 word27 word28",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -52,7 +52,7 @@
               }
             },
             {
-              "text": "word31 word32 word33 word34 word35 word36 word37 word38 word39 word40",
+              "text": "word29 word30 word31 word32 word33 word34 word35 word36 word37",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -63,7 +63,7 @@
               }
             },
             {
-              "text": "word41 word42 word43 word44 word45 word46 word47 word48 word49 word50",
+              "text": "word38 word39 word40 word41 word42 word43 word44 word45 word46",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -74,7 +74,7 @@
               }
             },
             {
-              "text": "word51 word52 word53 word54 word55 word56 word57 word58 word59 word60",
+              "text": "word47 word48 word49 word50 word51 word52 word53 word54 word55",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -85,7 +85,7 @@
               }
             },
             {
-              "text": "word61 word62 word63 word64 word65 word66 word67 word68 word69 word70",
+              "text": "word56 word57 word58 word59 word60 word61 word62 word63 word64",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -96,7 +96,7 @@
               }
             },
             {
-              "text": "word71 word72 word73 word74 word75 word76 word77 word78 word79 word80",
+              "text": "word65 word66 word67 word68 word69 word70 word71 word72 word73",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -107,7 +107,7 @@
               }
             },
             {
-              "text": "word81 word82 word83 word84 word85 word86 word87 word88 word89 word90",
+              "text": "word74 word75 word76 word77 word78 word79 word80 word81 word82",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -118,7 +118,7 @@
               }
             },
             {
-              "text": "word91 word92 word93 word94 word95 word96 word97 word98 word99 word100",
+              "text": "word83 word84 word85 word86 word87 word88 word89 word90 word91",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -129,7 +129,7 @@
               }
             },
             {
-              "text": "word101 word102 word103 word104 word105 word106 word107 word108",
+              "text": "word92 word93 word94 word95 word96 word97 word98 word99 word100",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -140,7 +140,7 @@
               }
             },
             {
-              "text": "word109 word110 word111 word112 word113 word114 word115 word116",
+              "text": "word101 word102 word103 word104 word105 word106 word107 word108",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -151,7 +151,7 @@
               }
             },
             {
-              "text": "word117 word118 word119 word120 word121 word122 word123 word124",
+              "text": "word109 word110 word111 word112 word113 word114 word115 word116",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -162,7 +162,7 @@
               }
             },
             {
-              "text": "word125 word126 word127 word128 word129 word130 word131 word132",
+              "text": "word117 word118 word119 word120 word121 word122 word123 word124",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -173,7 +173,7 @@
               }
             },
             {
-              "text": "word133 word134 word135 word136 word137 word138 word139 word140",
+              "text": "word125 word126 word127 word128 word129 word130 word131 word132",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -184,7 +184,7 @@
               }
             },
             {
-              "text": "word141 word142 word143 word144 word145 word146 word147 word148",
+              "text": "word133 word134 word135 word136 word137 word138 word139 word140",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -195,7 +195,7 @@
               }
             },
             {
-              "text": "word149 word150 word151 word152 word153 word154 word155 word156",
+              "text": "word141 word142 word143 word144 word145 word146 word147 word148",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -206,7 +206,7 @@
               }
             },
             {
-              "text": "word157 word158 word159 word160 word161 word162 word163 word164",
+              "text": "word149 word150 word151 word152 word153 word154 word155 word156",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -217,7 +217,7 @@
               }
             },
             {
-              "text": "word165 word166 word167 word168 word169 word170 word171 word172",
+              "text": "word157 word158 word159 word160 word161 word162 word163 word164",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -228,7 +228,7 @@
               }
             },
             {
-              "text": "word173 word174 word175 word176 word177 word178 word179 word180",
+              "text": "word165 word166 word167 word168 word169 word170 word171 word172",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -239,7 +239,7 @@
               }
             },
             {
-              "text": "word181 word182 word183 word184 word185 word186 word187 word188",
+              "text": "word173 word174 word175 word176 word177 word178 word179 word180",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -250,7 +250,7 @@
               }
             },
             {
-              "text": "word189 word190 word191 word192 word193 word194 word195 word196",
+              "text": "word181 word182 word183 word184 word185 word186 word187 word188",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -261,7 +261,7 @@
               }
             },
             {
-              "text": "word197 word198 word199",
+              "text": "word189 word190 word191 word192 word193 word194 word195 word196",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -269,6 +269,17 @@
               "origin": {
                 "x_pt": 72.1,
                 "y_pt": 363.8
+              }
+            },
+            {
+              "text": "word197 word198 word199",
+              "font": "DejaVuSerif",
+              "size_pt": 11.0,
+              "weight": 700,
+              "italic": false,
+              "origin": {
+                "x_pt": 72.1,
+                "y_pt": 376.6
               }
             }
           ]
@@ -283,8 +294,8 @@
   },
   "metadata": {
     "engine": "libreoffice",
-    "engine_version": "LibreOffice 26.2.4.2 620(Build:2)",
-    "captured_at": "2026-07-29T19:08:10.204245+00:00",
+    "engine_version": "LibreOffice 26.8.0.3 680(Build:3)",
+    "captured_at": "2026-09-05T05:44:24.024229+00:00",
     "environment": "PDF\u2192IR extraction via PyMuPDF ('1.28.0', '1.29.0', None)"
   }
 }

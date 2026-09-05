@@ -3,8 +3,8 @@
     {
       "index": 0,
       "size": {
-        "width_pt": 612.0,
-        "height_pt": 792.0
+        "width_pt": 595.3,
+        "height_pt": 841.89
       },
       "boxes": [
         {
@@ -41,8 +41,8 @@
   },
   "metadata": {
     "engine": "libreoffice",
-    "engine_version": "LibreOffice 26.2.4.2 620(Build:2)",
-    "captured_at": "2026-07-29T19:08:00.167673+00:00",
+    "engine_version": "LibreOffice 26.8.0.3 680(Build:3)",
+    "captured_at": "2026-09-05T05:44:13.493564+00:00",
     "environment": "PDF\u2192IR extraction via PyMuPDF ('1.28.0', '1.29.0', None)"
   }
 }

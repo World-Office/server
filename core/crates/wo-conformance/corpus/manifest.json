@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "corpus_name": "corpus",
-  "truth_source": "libreoffice LibreOffice 26.2.4.2 620(Build:2)",
+  "truth_source": "libreoffice LibreOffice 26.8.0.3 680(Build:3)",
   "case_count": 30,
   "results": [
     {
@@ -185,6 +185,6 @@
       "status": "ok"
     }
   ],
-  "captured_at": "2026-07-29T19:08:11.506279+00:00",
-  "notes": "Truth captured from libreoffice LibreOffice 26.2.4.2 620(Build:2). Refresh by re-running with --force."
+  "captured_at": "2026-09-05T05:44:25.460296+00:00",
+  "notes": "Truth captured from libreoffice LibreOffice 26.8.0.3 680(Build:3). Refresh by re-running with --force."
 }
