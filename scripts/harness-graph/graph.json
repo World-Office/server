@@ -6291,6 +6291,186 @@
    "type": "COVERS"
   },
   {
+   "from": "opencloud-docserver/tests/test_collab.py::test_apply_ops_endpoint",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_apply_ops_heals_gap_in_single_roundtrip",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_apply_ops_invalid_json_returns_400",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_commutativity_any_subset_order",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_concurrent_insert_and_delete_converge",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_concurrent_inserts_same_position_converge",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_delete_before_insert_is_parked_then_applied",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_deterministic_sibling_order_locked",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_hub_applies_ops_and_assigns_revisions",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_hub_broadcast_fans_out_to_subscribers",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_hub_catchup_replay_from_base_rev",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_hub_deduplicates_redelivery",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_hub_late_join_replays_full_log",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_hub_presence_cursors_and_leave",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_hub_resync_rebases_and_notifies_subscribers",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_hub_two_clients_via_hub_converge",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_hub_unsubscribe_stops_events",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_idempotent_replay_duplicate_ops",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_insert_at_clamped_indices",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_insert_before_parent_arrives",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_local_delete_span",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_local_insert_generates_and_integrates_op",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_local_insert_middle",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_op_key_is_unique_and_stable",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_ops_since_endpoint",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_presence_endpoints",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_presence_requires_client_id",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_random_concurrent_edits_converge",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_resync_endpoint",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_seed_materializes_initial_text",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_seed_op_uses_base_site",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_sse_stream_emits_initial_state",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_sse_stream_receives_live_ops",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_state_endpoint_seeds_from_store",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_unicode_counts_chars_not_bytes",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_collab.py::test_unicode_delete_span",
+   "to": "F-122",
+   "type": "COVERS"
+  },
+  {
    "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_01_manuscript_seed_is_a_valid_paper",
    "to": "F-123",
    "type": "COVERS"
@@ -6401,7 +6581,7 @@
    "type": "COVERS"
   }
  ],
- "generated_at": "2026-09-05T13:29:22+00:00",
+ "generated_at": "2026-09-05T15:03:19+00:00",
  "nodes": [
   {
    "id": "allCaps",
@@ -13982,12 +14162,22 @@
    "parity": "missing"
   },
   {
+   "id": "F-052:absent",
+   "justification": "No style gallery surface (no gallery markup/editor code), no named-style mapping in converter; only formatBlock headings exist (F-050).",
+   "label": "Divergence"
+  },
+  {
    "area": "home.styles",
    "fidelity": "L1",
    "id": "F-053",
    "label": "Feature",
    "name": "Title / subtitle styles",
    "parity": "missing"
+  },
+  {
+   "id": "F-053:absent",
+   "justification": "No Title/Subtitle block styles in editor formatBlock set nor converter heading mapping.",
+   "label": "Divergence"
   },
   {
    "area": "editing",
@@ -14269,6 +14459,11 @@
    "parity": "missing"
   },
   {
+   "id": "F-095:absent",
+   "justification": "No hyphenation surface or autoHyphenation/w:hyphenation handling in editor or converters.",
+   "label": "Divergence"
+  },
+  {
    "area": "layout",
    "fidelity": "L2",
    "id": "F-096",
@@ -14277,12 +14472,22 @@
    "parity": "missing"
   },
   {
+   "id": "F-096:absent",
+   "justification": "No line-number surface; w:ln/lineNumber numbering not handled by converters.",
+   "label": "Divergence"
+  },
+  {
    "area": "layout",
    "fidelity": "L3",
    "id": "F-097",
    "label": "Feature",
    "name": "Watermark",
    "parity": "missing"
+  },
+  {
+   "id": "F-097:absent",
+   "justification": "No watermark surface or header-anchored VML/image watermark projection.",
+   "label": "Divergence"
   },
   {
    "area": "review",
@@ -14330,6 +14535,11 @@
    "label": "Feature",
    "name": "Compare documents",
    "parity": "missing"
+  },
+  {
+   "id": "F-103:absent",
+   "justification": "No compare surface/endpoint; editor 'compare' hits are DOM compareDocumentPosition only.",
+   "label": "Divergence"
   },
   {
    "area": "review",
@@ -14427,11 +14637,16 @@
   },
   {
    "area": "collab",
-   "fidelity": "L4",
+   "fidelity": "L1",
    "id": "F-122",
    "label": "Feature",
    "name": "Presence avatars",
-   "parity": "missing"
+   "parity": "partial"
+  },
+  {
+   "id": "F-122:chips-not-avatars",
+   "justification": "Stable-hue peer chips, remote carets and cursor sync proven (collab hub set_presence + editor peerColor); profile-image avatars (L4) not implemented.",
+   "label": "Divergence"
   },
   {
    "area": "collab",
@@ -14452,7 +14667,7 @@
  ],
  "stats": {
   "commands": 21,
-  "edges": 1280,
+  "edges": 1316,
   "features": 82,
   "surfaces": 21,
   "tests": 1169
