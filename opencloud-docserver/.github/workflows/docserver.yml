@@ -5,7 +5,8 @@
 # real-HTTP WOPI validation plus a Docker image build + smoke test.
 #
 #   lint          -> uv run ruff check src tests        (matches `make lint`)
-#   test          -> uv run pytest                       (unit + in-process e2e,
+#   test          -> uv run pytest -n auto --dist loadgroup
+#                                                         (unit + in-process e2e,
 #                                                         matches `make test`)
 #   validate-wopi -> boot the server, drive scripts/validate_wopi_e2e.sh
 #                    over real HTTP against the full WOPI host surface
@@ -86,9 +87,9 @@ jobs:
         run: uv sync --frozen --extra dev
         timeout-minutes: 5
 
-      - name: Run test suite (unit + in-process e2e)
+      - name: Run test suite (unit + in-process e2e, parallel)
         working-directory: opencloud-docserver
-        run: uv run pytest -q --junitxml=test-results/junit.xml
+        run: uv run pytest -q -n auto --dist loadgroup --junitxml=test-results/junit.xml
         timeout-minutes: 15
 
       - name: Upload JUnit report
