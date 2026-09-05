@@ -504,6 +504,38 @@ async def agent_runs(request: Request, client_id: str | None = None, doc_id: str
     })
 
 
+@router.get("/api/agents/runs/{run_id}")
+async def agent_run_detail(run_id: int, request: Request) -> JSONResponse:
+    """One agent run with its redacted trace (E20S1).
+
+    The trace keeps structure (calls, arguments, op kinds, results meta)
+    and bounds every text payload — debugging context, not a document
+    mirror.
+    """
+    run = _store(request).get_agent_run(run_id)
+    if run is None:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    trace = _store(request).get_agent_trace(run_id)
+    run["trace"] = json.loads(trace["payload"]) if trace else None
+    return JSONResponse(run)
+
+
+@router.get("/agents")
+async def agents_dashboard(request: Request):
+    """Agents dashboard (E20S3) — a read-only server-rendered page: per-agent
+    aggregates on top, the most recent runs underneath. Stoic: a page, not a
+    SPA."""
+    store = _store(request)
+    return _templates.TemplateResponse(
+        request,
+        "agents.html",
+        {
+            "summary": store.agent_summary(),
+            "runs": store.list_agent_runs(limit=20),
+        },
+    )
+
+
 @router.get("/api/agents/summary")
 async def agent_summary(request: Request) -> JSONResponse:
     """Per-agent aggregates over the audit log: runs, ops, docs, last seen."""
