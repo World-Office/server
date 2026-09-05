@@ -1586,6 +1586,91 @@
    "type": "COVERS"
   },
   {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f071_image_resize_preserves_aspect",
+   "to": "F-071",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f071_image_roundtrip_with_real_png_bytes",
+   "to": "F-071",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f080_textbox_roundtrip",
+   "to": "F-071",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f080_textbox_with_content",
+   "to": "F-071",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f081_shape_roundtrip",
+   "to": "F-071",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f081_shape_with_content",
+   "to": "F-071",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f082_chart_roundtrip",
+   "to": "F-071",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f082_chart_with_content",
+   "to": "F-071",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_footer_only",
+   "to": "F-071",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_header_footer_roundtrip",
+   "to": "F-071",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_header_only",
+   "to": "F-071",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_empty_page_number_span",
+   "to": "F-071",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_page_number_in_footer",
+   "to": "F-071",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_page_number_in_header",
+   "to": "F-071",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_empty",
+   "to": "F-071",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_roundtrip",
+   "to": "F-071",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_with_label",
+   "to": "F-071",
+   "type": "COVERS"
+  },
+  {
    "from": "opencloud-docserver/tests/test_converter.py::test_bookmark_crossref_survive_save_then_convert",
    "to": "F-072",
    "type": "COVERS"
@@ -4341,6 +4426,261 @@
    "type": "COVERS"
   },
   {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f071_image_resize_preserves_aspect",
+   "to": "F-080",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f071_image_roundtrip_with_real_png_bytes",
+   "to": "F-080",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f080_textbox_roundtrip",
+   "to": "F-080",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f080_textbox_with_content",
+   "to": "F-080",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f081_shape_roundtrip",
+   "to": "F-080",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f081_shape_with_content",
+   "to": "F-080",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f082_chart_roundtrip",
+   "to": "F-080",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f082_chart_with_content",
+   "to": "F-080",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_footer_only",
+   "to": "F-080",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_header_footer_roundtrip",
+   "to": "F-080",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_header_only",
+   "to": "F-080",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_empty_page_number_span",
+   "to": "F-080",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_page_number_in_footer",
+   "to": "F-080",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_page_number_in_header",
+   "to": "F-080",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_empty",
+   "to": "F-080",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_roundtrip",
+   "to": "F-080",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_with_label",
+   "to": "F-080",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f071_image_resize_preserves_aspect",
+   "to": "F-081",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f071_image_roundtrip_with_real_png_bytes",
+   "to": "F-081",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f080_textbox_roundtrip",
+   "to": "F-081",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f080_textbox_with_content",
+   "to": "F-081",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f081_shape_roundtrip",
+   "to": "F-081",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f081_shape_with_content",
+   "to": "F-081",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f082_chart_roundtrip",
+   "to": "F-081",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f082_chart_with_content",
+   "to": "F-081",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_footer_only",
+   "to": "F-081",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_header_footer_roundtrip",
+   "to": "F-081",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_header_only",
+   "to": "F-081",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_empty_page_number_span",
+   "to": "F-081",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_page_number_in_footer",
+   "to": "F-081",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_page_number_in_header",
+   "to": "F-081",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_empty",
+   "to": "F-081",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_roundtrip",
+   "to": "F-081",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_with_label",
+   "to": "F-081",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f071_image_resize_preserves_aspect",
+   "to": "F-082",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f071_image_roundtrip_with_real_png_bytes",
+   "to": "F-082",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f080_textbox_roundtrip",
+   "to": "F-082",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f080_textbox_with_content",
+   "to": "F-082",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f081_shape_roundtrip",
+   "to": "F-082",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f081_shape_with_content",
+   "to": "F-082",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f082_chart_roundtrip",
+   "to": "F-082",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f082_chart_with_content",
+   "to": "F-082",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_footer_only",
+   "to": "F-082",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_header_footer_roundtrip",
+   "to": "F-082",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_header_only",
+   "to": "F-082",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_empty_page_number_span",
+   "to": "F-082",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_page_number_in_footer",
+   "to": "F-082",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_page_number_in_header",
+   "to": "F-082",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_empty",
+   "to": "F-082",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_roundtrip",
+   "to": "F-082",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_with_label",
+   "to": "F-082",
+   "type": "COVERS"
+  },
+  {
    "from": "opencloud-docserver/tests/test_converter.py::test_bookmark_crossref_survive_save_then_convert",
    "to": "F-083",
    "type": "COVERS"
@@ -4778,6 +5118,261 @@
   {
    "from": "opencloud-docserver/tests/test_converter.py::test_track_changes_markers_survive_save_then_convert",
    "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f071_image_resize_preserves_aspect",
+   "to": "F-084",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f071_image_roundtrip_with_real_png_bytes",
+   "to": "F-084",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f080_textbox_roundtrip",
+   "to": "F-084",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f080_textbox_with_content",
+   "to": "F-084",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f081_shape_roundtrip",
+   "to": "F-084",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f081_shape_with_content",
+   "to": "F-084",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f082_chart_roundtrip",
+   "to": "F-084",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f082_chart_with_content",
+   "to": "F-084",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_footer_only",
+   "to": "F-084",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_header_footer_roundtrip",
+   "to": "F-084",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_header_only",
+   "to": "F-084",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_empty_page_number_span",
+   "to": "F-084",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_page_number_in_footer",
+   "to": "F-084",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_page_number_in_header",
+   "to": "F-084",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_empty",
+   "to": "F-084",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_roundtrip",
+   "to": "F-084",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_with_label",
+   "to": "F-084",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f071_image_resize_preserves_aspect",
+   "to": "F-085",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f071_image_roundtrip_with_real_png_bytes",
+   "to": "F-085",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f080_textbox_roundtrip",
+   "to": "F-085",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f080_textbox_with_content",
+   "to": "F-085",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f081_shape_roundtrip",
+   "to": "F-085",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f081_shape_with_content",
+   "to": "F-085",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f082_chart_roundtrip",
+   "to": "F-085",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f082_chart_with_content",
+   "to": "F-085",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_footer_only",
+   "to": "F-085",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_header_footer_roundtrip",
+   "to": "F-085",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_header_only",
+   "to": "F-085",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_empty_page_number_span",
+   "to": "F-085",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_page_number_in_footer",
+   "to": "F-085",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_page_number_in_header",
+   "to": "F-085",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_empty",
+   "to": "F-085",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_roundtrip",
+   "to": "F-085",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_with_label",
+   "to": "F-085",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f071_image_resize_preserves_aspect",
+   "to": "F-086",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f071_image_roundtrip_with_real_png_bytes",
+   "to": "F-086",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f080_textbox_roundtrip",
+   "to": "F-086",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f080_textbox_with_content",
+   "to": "F-086",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f081_shape_roundtrip",
+   "to": "F-086",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f081_shape_with_content",
+   "to": "F-086",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f082_chart_roundtrip",
+   "to": "F-086",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f082_chart_with_content",
+   "to": "F-086",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_footer_only",
+   "to": "F-086",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_header_footer_roundtrip",
+   "to": "F-086",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_header_only",
+   "to": "F-086",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_empty_page_number_span",
+   "to": "F-086",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_page_number_in_footer",
+   "to": "F-086",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_page_number_in_header",
+   "to": "F-086",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_empty",
+   "to": "F-086",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_roundtrip",
+   "to": "F-086",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_with_label",
+   "to": "F-086",
    "type": "COVERS"
   },
   {
@@ -5656,7 +6251,7 @@
    "type": "COVERS"
   }
  ],
- "generated_at": "2026-09-05T13:02:18+00:00",
+ "generated_at": "2026-09-05T13:15:09+00:00",
  "nodes": [
   {
    "id": "allCaps",
@@ -9508,6 +10103,108 @@
    "path": "opencloud-docserver/tests/test_font_controls.py"
   },
   {
+   "id": "opencloud-docserver/tests/test_insert_advanced.py::test_f071_image_roundtrip_with_real_png_bytes",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_insert_advanced.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_insert_advanced.py::test_f071_image_resize_preserves_aspect",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_insert_advanced.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_insert_advanced.py::test_f080_textbox_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_insert_advanced.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_insert_advanced.py::test_f080_textbox_with_content",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_insert_advanced.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_insert_advanced.py::test_f081_shape_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_insert_advanced.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_insert_advanced.py::test_f081_shape_with_content",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_insert_advanced.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_insert_advanced.py::test_f082_chart_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_insert_advanced.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_insert_advanced.py::test_f082_chart_with_content",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_insert_advanced.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_header_footer_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_insert_advanced.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_header_only",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_insert_advanced.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_insert_advanced.py::test_f084_footer_only",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_insert_advanced.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_page_number_in_header",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_insert_advanced.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_page_number_in_footer",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_insert_advanced.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_insert_advanced.py::test_f085_empty_page_number_span",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_insert_advanced.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_insert_advanced.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_with_label",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_insert_advanced.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_insert_advanced.py::test_f086_equation_empty",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_insert_advanced.py"
+  },
+  {
    "id": "opencloud-docserver/tests/test_layout_roundtrip.py::test_docx_to_html_restores_columns",
    "label": "Test",
    "layer": "e2e",
@@ -13102,7 +13799,7 @@
    "id": "F-071",
    "label": "Feature",
    "name": "Image insert + resize",
-   "parity": "partial"
+   "parity": "full"
   },
   {
    "area": "insert",
@@ -13199,7 +13896,7 @@
    "id": "F-080",
    "label": "Feature",
    "name": "Text box",
-   "parity": "missing"
+   "parity": "full"
   },
   {
    "area": "insert",
@@ -13207,7 +13904,7 @@
    "id": "F-081",
    "label": "Feature",
    "name": "Shape",
-   "parity": "missing"
+   "parity": "full"
   },
   {
    "area": "insert",
@@ -13215,7 +13912,7 @@
    "id": "F-082",
    "label": "Feature",
    "name": "Chart",
-   "parity": "missing"
+   "parity": "full"
   },
   {
    "area": "insert",
@@ -13231,7 +13928,12 @@
    "id": "F-084",
    "label": "Feature",
    "name": "Header / footer",
-   "parity": "missing"
+   "parity": "partial"
+  },
+  {
+   "id": "F-084:no-authoring-ui",
+   "justification": "Read + serialization roundtrip (header/page-header, footer/page-footer classes) proven; no editor toolbar authoring button yet.",
+   "label": "Divergence"
   },
   {
    "area": "insert",
@@ -13239,7 +13941,12 @@
    "id": "F-085",
    "label": "Feature",
    "name": "Page numbers",
-   "parity": "missing"
+   "parity": "partial"
+  },
+  {
+   "id": "F-085:no-authoring-ui",
+   "justification": "Read + serialization roundtrip (span.page-number <-> w:fldSimple PAGE) proven; no editor toolbar authoring button yet.",
+   "label": "Divergence"
   },
   {
    "area": "insert",
@@ -13247,7 +13954,7 @@
    "id": "F-086",
    "label": "Feature",
    "name": "Equation / formula",
-   "parity": "missing"
+   "parity": "full"
   },
   {
    "area": "layout",
@@ -13496,10 +14203,10 @@
  ],
  "stats": {
   "commands": 21,
-  "edges": 1131,
+  "edges": 1250,
   "features": 82,
   "surfaces": 21,
-  "tests": 1138
+  "tests": 1155
  },
  "version": 1
 }
