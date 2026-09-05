@@ -39,6 +39,34 @@
     "name": "apply_ops"
   },
   {
+    "description": "Get a deterministic, size-bounded grounding pack for a document: the collaborative text (truncated at max_chars with exact block spans so anchored edits stay precise), recent version metadata, and a sha256 of the full text. Prefer this over read_doc before editing \u2014 it is the cheapest way to respect document intent. Purely derived from the document: identical document state always yields an identical pack.",
+    "inputSchema": {
+      "properties": {
+        "doc_id": {
+          "description": "Document id (WOPI file id).",
+          "type": "string"
+        },
+        "max_chars": {
+          "description": "Character budget for the returned text (default 4000).",
+          "maximum": 20000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "versions_tail": {
+          "description": "How many recent version entries to include (default 3).",
+          "maximum": 10,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "doc_id"
+      ],
+      "type": "object"
+    },
+    "name": "get_context"
+  },
+  {
     "description": "List a document's stored versions, newest first (metadata only).",
     "inputSchema": {
       "properties": {

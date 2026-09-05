@@ -6581,7 +6581,7 @@
    "type": "COVERS"
   }
  ],
- "generated_at": "2026-09-05T15:03:19+00:00",
+ "generated_at": "2026-09-05T16:49:36+00:00",
  "nodes": [
   {
    "id": "allCaps",
@@ -7547,6 +7547,48 @@
    "path": "opencloud-docserver/tests/test_agent_loop_integration.py"
   },
   {
+   "id": "opencloud-docserver/tests/test_ai_adapters.py::test_both_producers_translate_same_plan_to_same_ops",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_adapters.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_adapters.py::test_translators_agree_on_the_same_calls",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_adapters.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_adapters.py::test_usage_normalization_and_accumulation",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_adapters.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_adapters.py::test_openai_arguments_must_decode",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_adapters.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_adapters.py::test_provider_fault_leaves_document_untouched",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_adapters.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_adapters.py::test_malformed_vendor_response_is_typed_adapter_error",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_adapters.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_adapters.py::test_transports_receive_canonical_request_shapes",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_adapters.py"
+  },
+  {
    "id": "opencloud-docserver/tests/test_ai_agent_edits.py::test_agent_edit_storm_matches_reference_simulation",
    "label": "Test",
    "layer": "e2e",
@@ -7587,6 +7629,54 @@
    "label": "Test",
    "layer": "e2e",
    "path": "opencloud-docserver/tests/test_ai_agent_modelbased.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_context_pack.py::test_get_context_shape_and_golden_determinism",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_context_pack.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_context_pack.py::test_get_context_in_catalog",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_context_pack.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_context_pack.py::test_get_context_block_spans_survive_text_budget_cut",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_context_pack.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_context_pack.py::test_get_context_versions_tail_bounded",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_context_pack.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_context_pack.py::test_get_context_rejects_out_of_bounds_arguments",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_context_pack.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_context_pack.py::test_get_context_unknown_doc_is_typed_not_found",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_context_pack.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_context_pack.py::test_get_context_isolation_neighbor_content_never_leaks",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_context_pack.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_context_pack.py::test_get_context_via_call_tool_and_pack_feeds_edit_indices",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_context_pack.py"
   },
   {
    "id": "opencloud-docserver/tests/test_ai_lock_parity.py::test_lock_tool_and_wopi_return_same_409_on_mismatch",
@@ -7715,7 +7805,7 @@
    "path": "opencloud-docserver/tests/test_ai_mcp.py"
   },
   {
-   "id": "opencloud-docserver/tests/test_ai_mcp_catalog.py::test_tool_catalog_contains_exactly_five_tools",
+   "id": "opencloud-docserver/tests/test_ai_mcp_catalog.py::test_tool_catalog_contains_exactly_six_tools",
    "label": "Test",
    "layer": "e2e",
    "path": "opencloud-docserver/tests/test_ai_mcp_catalog.py"
@@ -7757,7 +7847,7 @@
    "path": "opencloud-docserver/tests/test_ai_mcp_catalog.py"
   },
   {
-   "id": "opencloud-docserver/tests/test_ai_mcp_catalog.py::test_mcp_tools_list_returns_all_five_tools",
+   "id": "opencloud-docserver/tests/test_ai_mcp_catalog.py::test_mcp_tools_list_returns_all_six_tools",
    "label": "Test",
    "layer": "e2e",
    "path": "opencloud-docserver/tests/test_ai_mcp_catalog.py"
@@ -8207,7 +8297,7 @@
    "path": "opencloud-docserver/tests/test_ai_runner_bounds.py"
   },
   {
-   "id": "opencloud-docserver/tests/test_ai_tools.py::test_tool_catalog_has_the_five_spec_tools",
+   "id": "opencloud-docserver/tests/test_ai_tools.py::test_tool_catalog_has_the_six_spec_tools",
    "label": "Test",
    "layer": "e2e",
    "path": "opencloud-docserver/tests/test_ai_tools.py"
@@ -14670,7 +14760,7 @@
   "edges": 1316,
   "features": 82,
   "surfaces": 21,
-  "tests": 1169
+  "tests": 1184
  },
  "version": 1
 }
