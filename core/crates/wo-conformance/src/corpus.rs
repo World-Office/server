@@ -81,6 +81,7 @@ pub fn run_corpus<E: RenderEngine>(
                     font_coverage: 0.0,
                 },
                 notes: vec![format!("case errored: {e}")],
+                mismatches: Vec::new(),
                 scoring_mode: crate::scoring::ScoringMode::Box,
             }),
         }

@@ -15,8 +15,9 @@ use std::process::ExitCode;
 use serde_json::Value;
 
 use wo_conformance::{
-    compute_fidelity, compute_fidelity_cross_engine, discover_corpus, CorpusManifest,
-    GroundTruthFile, NormalizedRender, TRUTH_SCHEMA_VERSION,
+    compute_fidelity, compute_fidelity_cross_engine, discover_corpus, CorpusManifest, DsConfig,
+    GroundTruthFile, NormalizedRender, OnlyOfficePdfEngine, PopplerSource, RenderEngine,
+    TRUTH_SCHEMA_VERSION,
 };
 
 fn main() -> ExitCode {
@@ -30,6 +31,7 @@ fn main() -> ExitCode {
         "inspect" => cmd_inspect(&args[2..]),
         "init" => cmd_init(&args[2..]),
         "corpus" => cmd_corpus(&args[2..]),
+        "capture" => cmd_capture(&args[2..]),
         "-h" | "--help" | "help" => {
             usage(&args[0]);
             0
@@ -50,7 +52,10 @@ fn usage(prog: &str) {
          {prog} diff [--cross-engine] [--threshold=0.95] <engine.json> <truth.json>\n\
          {prog} inspect <file.json>               Summarize a NormalizedRender\n  \
          {prog} init <corpus-dir>                 Scaffold an empty corpus\n  \
-         {prog} corpus <corpus-dir>               List discovered cases + missing truth\n\n\
+         {prog} corpus <corpus-dir>               List discovered cases + missing truth\n  \
+         {prog} capture --ds-url <url> [--jwt <secret>] [--public-host <host>]\n  \
+                  [--filetype docx] --input <doc> --out <render.json>\n  \
+                                          Capture a NormalizedRender from OnlyOffice DS\n\n\
          A render JSON is either a bare NormalizedRender or a GroundTruthFile wrapper."
     );
 }
@@ -273,6 +278,105 @@ fn print_human(report: &wo_conformance::CaseReport, truth_src: &str) {
         eprintln!("notes:");
         for n in &report.notes {
             eprintln!("  - {n}");
+        }
+    }
+}
+
+/// `capture` — record a NormalizedRender from the OnlyOffice Document Server
+/// oracle into JSON. This is how goldens are made (recapture-as-PR).
+fn cmd_capture(args: &[String]) -> i32 {
+    let mut ds_url: Option<String> = None;
+    let mut jwt: Option<String> = None;
+    let mut public_host: Option<String> = None;
+    let mut filetype = "docx".to_string();
+    let mut version = std::env::var("OO_DS_VERSION").unwrap_or_else(|_| "unknown".to_string());
+    let mut input: Option<String> = None;
+    let mut out: Option<String> = None;
+
+    let mut it = args.iter();
+    while let Some(a) = it.next() {
+        match a.as_str() {
+            "--ds-url" => ds_url = it.next().cloned(),
+            "--jwt" => jwt = it.next().cloned(),
+            "--public-host" => public_host = it.next().cloned(),
+            "--filetype" => {
+                if let Some(ft) = it.next() {
+                    filetype = ft.clone();
+                }
+            }
+            "--version" => {
+                if let Some(v) = it.next() {
+                    version = v.clone();
+                }
+            }
+            "--input" => input = it.next().cloned(),
+            "--out" => out = it.next().cloned(),
+            other => {
+                eprintln!("capture: unknown flag {other}");
+                return 2;
+            }
+        }
+    }
+    let (Some(input), Some(out)) = (input, out) else {
+        eprintln!("capture: --input and --out are required");
+        return 2;
+    };
+    let Some(ds_url) = ds_url.or_else(|| std::env::var("OO_DS_URL").ok()) else {
+        eprintln!("capture: --ds-url (or OO_DS_URL) is required");
+        return 2;
+    };
+
+    let mut cfg = DsConfig::new(ds_url);
+    if let Some(secret) = jwt.or_else(|| std::env::var("OO_DS_JWT").ok()) {
+        cfg.jwt_secret = Some(secret);
+    }
+    if let Some(host) = public_host.or_else(|| std::env::var("OO_DS_PUBLIC_HOST").ok()) {
+        cfg.public_host = host;
+    }
+
+    let doc = match std::fs::read(&input) {
+        Ok(b) => b,
+        Err(e) => {
+            eprintln!("capture: read {}: {e}", input);
+            return 1;
+        }
+    };
+
+    let source = match PopplerSource::new() {
+        Ok(s) => Box::new(s),
+        Err(e) => {
+            eprintln!("capture: {e}");
+            return 1;
+        }
+    };
+    let engine = match OnlyOfficePdfEngine::new(cfg, source, &version) {
+        Ok(e) => e,
+        Err(e) => {
+            eprintln!("capture: engine init: {e}");
+            return 1;
+        }
+    };
+    let mut engine = engine;
+    engine.filetype = filetype;
+
+    match engine.render(&doc, &wo_conformance::RenderSpec::default()) {
+        Ok(render) => {
+            let truth = GroundTruthFile {
+                schema_version: TRUTH_SCHEMA_VERSION,
+                truth_captured_from: format!("onlyoffice-ds {}", engine.version),
+                captured_at: chrono::Utc::now().to_rfc3339(),
+                render,
+            };
+            if let Err(e) = std::fs::write(&out, serde_json::to_string_pretty(&truth).unwrap()) {
+                eprintln!("capture: write {}: {e}", out);
+                return 1;
+            }
+            println!("captured {} -> {}", input, out);
+            0
+        }
+        Err(e) => {
+            eprintln!("capture: {e}");
+            1
         }
     }
 }

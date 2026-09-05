@@ -1,0 +1,2864 @@
+{
+  "schema_version": 1,
+  "truth_captured_from": "onlyoffice-ds docker.io/onlyoffice/documentserver@sha2…",
+  "captured_at": "2026-09-05T05:30:11.817747992+00:00",
+  "render": {
+    "pages": [
+      {
+        "index": 0,
+        "size": {
+          "width_pt": 595.27557,
+          "height_pt": 841.88977
+        },
+        "boxes": [
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 51.82885
+            },
+            "size": {
+              "width_pt": 448.08637500000003,
+              "height_pt": 18.61999999999999
+            },
+            "runs": [
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 114.177398,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 141.115398,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 164.715244,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 176.653354,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 201.053102,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 249.032948,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 292.592712,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 310.33246,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 339.47046,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 366.40846,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 390.008305,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 401.946387,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 426.346135,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 474.325981,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 517.885745,
+                  "y_pt": 66.35244999999999
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 63.32787
+            },
+            "size": {
+              "width_pt": 448.08637500000003,
+              "height_pt": 18.619999999999997
+            },
+            "runs": [
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 114.177398,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 141.115398,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 164.715244,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 176.653354,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 201.053102,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 249.032948,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 292.592712,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 310.33246,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 339.47046,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 366.40846,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 390.008305,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 401.946387,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 426.346135,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 474.325981,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 517.885745,
+                  "y_pt": 77.85146999999999
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 74.82689
+            },
+            "size": {
+              "width_pt": 448.08637500000003,
+              "height_pt": 18.61999999999999
+            },
+            "runs": [
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 89.35049
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 114.177398,
+                  "y_pt": 89.35049
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 141.115398,
+                  "y_pt": 89.35049
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 164.715244,
+                  "y_pt": 89.35049
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 176.653354,
+                  "y_pt": 89.35049
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 201.053102,
+                  "y_pt": 89.35049
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 249.032948,
+                  "y_pt": 89.35049
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 292.592712,
+                  "y_pt": 89.35049
+                }
+              },
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 310.33246,
+                  "y_pt": 89.35049
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 339.47046,
+                  "y_pt": 89.35049
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 366.40846,
+                  "y_pt": 89.35049
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 390.008305,
+                  "y_pt": 89.35049
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 401.946387,
+                  "y_pt": 89.35049
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 426.346135,
+                  "y_pt": 89.35049
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 474.325981,
+                  "y_pt": 89.35049
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 517.885745,
+                  "y_pt": 89.35049
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 86.32591
+            },
+            "size": {
+              "width_pt": 448.08637500000003,
+              "height_pt": 18.620000000000005
+            },
+            "runs": [
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 100.84951
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 114.177398,
+                  "y_pt": 100.84951
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 141.115398,
+                  "y_pt": 100.84951
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 164.715244,
+                  "y_pt": 100.84951
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 176.653354,
+                  "y_pt": 100.84951
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 201.053102,
+                  "y_pt": 100.84951
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 249.032948,
+                  "y_pt": 100.84951
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 292.592712,
+                  "y_pt": 100.84951
+                }
+              },
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 310.33246,
+                  "y_pt": 100.84951
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 339.47046,
+                  "y_pt": 100.84951
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 366.40846,
+                  "y_pt": 100.84951
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 390.008305,
+                  "y_pt": 100.84951
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 401.946387,
+                  "y_pt": 100.84951
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 426.346135,
+                  "y_pt": 100.84951
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 474.325981,
+                  "y_pt": 100.84951
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 517.885745,
+                  "y_pt": 100.84951
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 97.82493
+            },
+            "size": {
+              "width_pt": 448.08637500000003,
+              "height_pt": 18.620000000000005
+            },
+            "runs": [
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 112.34853
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 114.177398,
+                  "y_pt": 112.34853
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 141.115398,
+                  "y_pt": 112.34853
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 164.715244,
+                  "y_pt": 112.34853
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 176.653354,
+                  "y_pt": 112.34853
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 201.053102,
+                  "y_pt": 112.34853
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 249.032948,
+                  "y_pt": 112.34853
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 292.592712,
+                  "y_pt": 112.34853
+                }
+              },
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 310.33246,
+                  "y_pt": 112.34853
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 339.47046,
+                  "y_pt": 112.34853
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 366.40846,
+                  "y_pt": 112.34853
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 390.008305,
+                  "y_pt": 112.34853
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 401.946387,
+                  "y_pt": 112.34853
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 426.346135,
+                  "y_pt": 112.34853
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 474.325981,
+                  "y_pt": 112.34853
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 517.885745,
+                  "y_pt": 112.34853
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 109.32395
+            },
+            "size": {
+              "width_pt": 448.08637500000003,
+              "height_pt": 18.620000000000005
+            },
+            "runs": [
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 123.84755
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 114.177398,
+                  "y_pt": 123.84755
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 141.115398,
+                  "y_pt": 123.84755
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 164.715244,
+                  "y_pt": 123.84755
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 176.653354,
+                  "y_pt": 123.84755
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 201.053102,
+                  "y_pt": 123.84755
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 249.032948,
+                  "y_pt": 123.84755
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 292.592712,
+                  "y_pt": 123.84755
+                }
+              },
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 310.33246,
+                  "y_pt": 123.84755
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 339.47046,
+                  "y_pt": 123.84755
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 366.40846,
+                  "y_pt": 123.84755
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 390.008305,
+                  "y_pt": 123.84755
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 401.946387,
+                  "y_pt": 123.84755
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 426.346135,
+                  "y_pt": 123.84755
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 474.325981,
+                  "y_pt": 123.84755
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 517.885745,
+                  "y_pt": 123.84755
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 120.82297
+            },
+            "size": {
+              "width_pt": 448.08637500000003,
+              "height_pt": 18.620000000000005
+            },
+            "runs": [
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 135.34657
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 114.177398,
+                  "y_pt": 135.34657
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 141.115398,
+                  "y_pt": 135.34657
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 164.715244,
+                  "y_pt": 135.34657
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 176.653354,
+                  "y_pt": 135.34657
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 201.053102,
+                  "y_pt": 135.34657
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 249.032948,
+                  "y_pt": 135.34657
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 292.592712,
+                  "y_pt": 135.34657
+                }
+              },
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 310.33246,
+                  "y_pt": 135.34657
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 339.47046,
+                  "y_pt": 135.34657
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 366.40846,
+                  "y_pt": 135.34657
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 390.008305,
+                  "y_pt": 135.34657
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 401.946387,
+                  "y_pt": 135.34657
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 426.346135,
+                  "y_pt": 135.34657
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 474.325981,
+                  "y_pt": 135.34657
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 517.885745,
+                  "y_pt": 135.34657
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 132.32199
+            },
+            "size": {
+              "width_pt": 448.08637500000003,
+              "height_pt": 18.620000000000005
+            },
+            "runs": [
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 146.84559000000002
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 114.177398,
+                  "y_pt": 146.84559000000002
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 141.115398,
+                  "y_pt": 146.84559000000002
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 164.715244,
+                  "y_pt": 146.84559000000002
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 176.653354,
+                  "y_pt": 146.84559000000002
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 201.053102,
+                  "y_pt": 146.84559000000002
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 249.032948,
+                  "y_pt": 146.84559000000002
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 292.592712,
+                  "y_pt": 146.84559000000002
+                }
+              },
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 310.33246,
+                  "y_pt": 146.84559000000002
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 339.47046,
+                  "y_pt": 146.84559000000002
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 366.40846,
+                  "y_pt": 146.84559000000002
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 390.008305,
+                  "y_pt": 146.84559000000002
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 401.946387,
+                  "y_pt": 146.84559000000002
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 426.346135,
+                  "y_pt": 146.84559000000002
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 474.325981,
+                  "y_pt": 146.84559000000002
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 517.885745,
+                  "y_pt": 146.84559000000002
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 143.82101
+            },
+            "size": {
+              "width_pt": 448.08637500000003,
+              "height_pt": 18.620000000000005
+            },
+            "runs": [
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 158.34461000000002
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 114.177398,
+                  "y_pt": 158.34461000000002
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 141.115398,
+                  "y_pt": 158.34461000000002
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 164.715244,
+                  "y_pt": 158.34461000000002
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 176.653354,
+                  "y_pt": 158.34461000000002
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 201.053102,
+                  "y_pt": 158.34461000000002
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 249.032948,
+                  "y_pt": 158.34461000000002
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 292.592712,
+                  "y_pt": 158.34461000000002
+                }
+              },
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 310.33246,
+                  "y_pt": 158.34461000000002
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 339.47046,
+                  "y_pt": 158.34461000000002
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 366.40846,
+                  "y_pt": 158.34461000000002
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 390.008305,
+                  "y_pt": 158.34461000000002
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 401.946387,
+                  "y_pt": 158.34461000000002
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 426.346135,
+                  "y_pt": 158.34461000000002
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 474.325981,
+                  "y_pt": 158.34461000000002
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 517.885745,
+                  "y_pt": 158.34461000000002
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 155.32003
+            },
+            "size": {
+              "width_pt": 448.08637500000003,
+              "height_pt": 18.620000000000005
+            },
+            "runs": [
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 169.84363000000002
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 114.177398,
+                  "y_pt": 169.84363000000002
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 141.115398,
+                  "y_pt": 169.84363000000002
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 164.715244,
+                  "y_pt": 169.84363000000002
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 176.653354,
+                  "y_pt": 169.84363000000002
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 201.053102,
+                  "y_pt": 169.84363000000002
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 249.032948,
+                  "y_pt": 169.84363000000002
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 292.592712,
+                  "y_pt": 169.84363000000002
+                }
+              },
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 310.33246,
+                  "y_pt": 169.84363000000002
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 339.47046,
+                  "y_pt": 169.84363000000002
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 366.40846,
+                  "y_pt": 169.84363000000002
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 390.008305,
+                  "y_pt": 169.84363000000002
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 401.946387,
+                  "y_pt": 169.84363000000002
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 426.346135,
+                  "y_pt": 169.84363000000002
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 474.325981,
+                  "y_pt": 169.84363000000002
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 517.885745,
+                  "y_pt": 169.84363000000002
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 166.81905
+            },
+            "size": {
+              "width_pt": 448.08637500000003,
+              "height_pt": 18.620000000000005
+            },
+            "runs": [
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 181.34265000000002
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 114.177398,
+                  "y_pt": 181.34265000000002
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 141.115398,
+                  "y_pt": 181.34265000000002
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 164.715244,
+                  "y_pt": 181.34265000000002
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 176.653354,
+                  "y_pt": 181.34265000000002
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 201.053102,
+                  "y_pt": 181.34265000000002
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 249.032948,
+                  "y_pt": 181.34265000000002
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 292.592712,
+                  "y_pt": 181.34265000000002
+                }
+              },
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 310.33246,
+                  "y_pt": 181.34265000000002
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 339.47046,
+                  "y_pt": 181.34265000000002
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 366.40846,
+                  "y_pt": 181.34265000000002
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 390.008305,
+                  "y_pt": 181.34265000000002
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 401.946387,
+                  "y_pt": 181.34265000000002
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 426.346135,
+                  "y_pt": 181.34265000000002
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 474.325981,
+                  "y_pt": 181.34265000000002
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 517.885745,
+                  "y_pt": 181.34265000000002
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 178.31807
+            },
+            "size": {
+              "width_pt": 448.08637500000003,
+              "height_pt": 18.620000000000005
+            },
+            "runs": [
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 192.84167000000002
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 114.177398,
+                  "y_pt": 192.84167000000002
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 141.115398,
+                  "y_pt": 192.84167000000002
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 164.715244,
+                  "y_pt": 192.84167000000002
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 176.653354,
+                  "y_pt": 192.84167000000002
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 201.053102,
+                  "y_pt": 192.84167000000002
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 249.032948,
+                  "y_pt": 192.84167000000002
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 292.592712,
+                  "y_pt": 192.84167000000002
+                }
+              },
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 310.33246,
+                  "y_pt": 192.84167000000002
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 339.47046,
+                  "y_pt": 192.84167000000002
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 366.40846,
+                  "y_pt": 192.84167000000002
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 390.008305,
+                  "y_pt": 192.84167000000002
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 401.946387,
+                  "y_pt": 192.84167000000002
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 426.346135,
+                  "y_pt": 192.84167000000002
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 474.325981,
+                  "y_pt": 192.84167000000002
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 517.885745,
+                  "y_pt": 192.84167000000002
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 189.81709
+            },
+            "size": {
+              "width_pt": 448.08637500000003,
+              "height_pt": 18.620000000000005
+            },
+            "runs": [
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 204.34069000000002
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 114.177398,
+                  "y_pt": 204.34069000000002
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 141.115398,
+                  "y_pt": 204.34069000000002
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 164.715244,
+                  "y_pt": 204.34069000000002
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 176.653354,
+                  "y_pt": 204.34069000000002
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 201.053102,
+                  "y_pt": 204.34069000000002
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 249.032948,
+                  "y_pt": 204.34069000000002
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 292.592712,
+                  "y_pt": 204.34069000000002
+                }
+              },
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 310.33246,
+                  "y_pt": 204.34069000000002
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 339.47046,
+                  "y_pt": 204.34069000000002
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 366.40846,
+                  "y_pt": 204.34069000000002
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 390.008305,
+                  "y_pt": 204.34069000000002
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 401.946387,
+                  "y_pt": 204.34069000000002
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 426.346135,
+                  "y_pt": 204.34069000000002
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 474.325981,
+                  "y_pt": 204.34069000000002
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 517.885745,
+                  "y_pt": 204.34069000000002
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 201.31611
+            },
+            "size": {
+              "width_pt": 448.08637500000003,
+              "height_pt": 18.620000000000005
+            },
+            "runs": [
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 215.83971000000003
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 114.177398,
+                  "y_pt": 215.83971000000003
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 141.115398,
+                  "y_pt": 215.83971000000003
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 164.715244,
+                  "y_pt": 215.83971000000003
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 176.653354,
+                  "y_pt": 215.83971000000003
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 201.053102,
+                  "y_pt": 215.83971000000003
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 249.032948,
+                  "y_pt": 215.83971000000003
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 292.592712,
+                  "y_pt": 215.83971000000003
+                }
+              },
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 310.33246,
+                  "y_pt": 215.83971000000003
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 339.47046,
+                  "y_pt": 215.83971000000003
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 366.40846,
+                  "y_pt": 215.83971000000003
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 390.008305,
+                  "y_pt": 215.83971000000003
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 401.946387,
+                  "y_pt": 215.83971000000003
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 426.346135,
+                  "y_pt": 215.83971000000003
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 474.325981,
+                  "y_pt": 215.83971000000003
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.620000000000005,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 517.885745,
+                  "y_pt": 215.83971000000003
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 212.81513
+            },
+            "size": {
+              "width_pt": 448.08637500000003,
+              "height_pt": 18.619999999999976
+            },
+            "runs": [
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.619999999999976,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 227.33873
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.619999999999976,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 114.177398,
+                  "y_pt": 227.33873
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.619999999999976,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 141.115398,
+                  "y_pt": 227.33873
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.619999999999976,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 164.715244,
+                  "y_pt": 227.33873
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.619999999999976,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 176.653354,
+                  "y_pt": 227.33873
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.619999999999976,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 201.053102,
+                  "y_pt": 227.33873
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.619999999999976,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 249.032948,
+                  "y_pt": 227.33873
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.619999999999976,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 292.592712,
+                  "y_pt": 227.33873
+                }
+              },
+              {
+                "text": "Lorem",
+                "font": "",
+                "size_pt": 18.619999999999976,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 310.33246,
+                  "y_pt": 227.33873
+                }
+              },
+              {
+                "text": "ipsum",
+                "font": "",
+                "size_pt": 18.619999999999976,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 339.47046,
+                  "y_pt": 227.33873
+                }
+              },
+              {
+                "text": "dolor",
+                "font": "",
+                "size_pt": 18.619999999999976,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 366.40846,
+                  "y_pt": 227.33873
+                }
+              },
+              {
+                "text": "sit",
+                "font": "",
+                "size_pt": 18.619999999999976,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 390.008305,
+                  "y_pt": 227.33873
+                }
+              },
+              {
+                "text": "amet,",
+                "font": "",
+                "size_pt": 18.619999999999976,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 401.946387,
+                  "y_pt": 227.33873
+                }
+              },
+              {
+                "text": "consectetur",
+                "font": "",
+                "size_pt": 18.619999999999976,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 426.346135,
+                  "y_pt": 227.33873
+                }
+              },
+              {
+                "text": "adipiscing",
+                "font": "",
+                "size_pt": 18.619999999999976,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 474.325981,
+                  "y_pt": 227.33873
+                }
+              },
+              {
+                "text": "elit.",
+                "font": "",
+                "size_pt": 18.619999999999976,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 517.885745,
+                  "y_pt": 227.33873
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "resolved_fonts": {
+      "requested": [],
+      "resolved": {},
+      "unavailable": []
+    },
+    "metadata": {
+      "engine": "onlyoffice-documentserver",
+      "engine_version": "docker.io/onlyoffice/documentserver@sha2…",
+      "captured_at": "2026-09-05T05:30:11.817736995+00:00",
+      "environment": "onlyoffice-ds pdf-export projection; filetype=docx"
+    }
+  }
+}

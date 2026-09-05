@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "truth_captured_from": "onlyoffice-ds docker.io/onlyoffice/documentserver@sha2…",
+  "captured_at": "2026-09-05T05:30:11.849842889+00:00",
+  "render": {
+    "pages": [
+      {
+        "index": 0,
+        "size": {
+          "width_pt": 595.27557,
+          "height_pt": 841.88977
+        },
+        "boxes": [
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 52.33169
+            },
+            "size": {
+              "width_pt": 31.358109999999996,
+              "height_pt": 18.619999999999997
+            },
+            "runs": [
+              {
+                "text": "Cell",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 66.85529
+                }
+              },
+              {
+                "text": "A1",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 104.17748,
+                  "y_pt": 66.85529
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 64.33069
+            },
+            "size": {
+              "width_pt": 31.358109999999996,
+              "height_pt": 18.61999999999999
+            },
+            "runs": [
+              {
+                "text": "Cell",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 78.85428999999999
+                }
+              },
+              {
+                "text": "A2",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 104.17748,
+                  "y_pt": 78.85428999999999
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 325.85922,
+              "y_pt": 52.33169
+            },
+            "size": {
+              "width_pt": 30.79811000000001,
+              "height_pt": 18.619999999999997
+            },
+            "runs": [
+              {
+                "text": "Cell",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 325.85922,
+                  "y_pt": 66.85529
+                }
+              },
+              {
+                "text": "B1",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 344.99733,
+                  "y_pt": 66.85529
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 325.85922,
+              "y_pt": 64.33069
+            },
+            "size": {
+              "width_pt": 30.79811000000001,
+              "height_pt": 18.61999999999999
+            },
+            "runs": [
+              {
+                "text": "Cell",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 325.85922,
+                  "y_pt": 78.85428999999999
+                }
+              },
+              {
+                "text": "B2",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 344.99733,
+                  "y_pt": 78.85428999999999
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "resolved_fonts": {
+      "requested": [],
+      "resolved": {},
+      "unavailable": []
+    },
+    "metadata": {
+      "engine": "onlyoffice-documentserver",
+      "engine_version": "docker.io/onlyoffice/documentserver@sha2…",
+      "captured_at": "2026-09-05T05:30:11.849827629+00:00",
+      "environment": "onlyoffice-ds pdf-export projection; filetype=docx"
+    }
+  }
+}

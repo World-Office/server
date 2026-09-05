@@ -9,7 +9,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::model::{GlyphRun, NormalizedRender, Page, GEOMETRY_TOLERANCE_PT};
+use crate::model::{GlyphRun, LayoutBox, NormalizedRender, Page, GEOMETRY_TOLERANCE_PT};
 
 /// Weights for the composite fidelity score. Must sum to 1.0.
 pub const W_GEOMETRY: f64 = 0.30;
@@ -40,6 +40,19 @@ impl FidelityBreakdown {
     }
 }
 
+/// One actionable, coordinate-bearing difference between engine and truth.
+/// This is what makes a fidelity number diagnosable — see the strategy doc's
+/// requirement that reports read like `page 2, table 1: expected y=312.4pt, got 311.8pt`.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct BoxMismatch {
+    /// Zero-based page index.
+    pub page: usize,
+    /// Lower-cased truth box kind (`paragraph`, `table`, ...).
+    pub kind: String,
+    /// Human-readable description with expected/got coordinates.
+    pub detail: String,
+}
+
 /// Report for a single conformance case.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CaseReport {
@@ -65,6 +78,9 @@ pub struct CaseReport {
     /// Which scoring mode produced this report.
     #[serde(default)]
     pub scoring_mode: ScoringMode,
+    /// Actionable per-box differences (capped; box mode only).
+    #[serde(default)]
+    pub mismatches: Vec<BoxMismatch>,
 }
 
 /// Aggregate report over a corpus run.
@@ -123,7 +139,8 @@ pub fn compute_fidelity(
     engine_render: &NormalizedRender,
     truth: &NormalizedRender,
 ) -> CaseReport {
-    let breakdown = score_box_level(engine_render, truth);
+    let mut mismatches = Vec::new();
+    let breakdown = score_box_level(engine_render, truth, &mut mismatches);
     let notes = breakdown_notes(engine_render, truth, &breakdown);
     build_report(
         case_name,
@@ -131,6 +148,7 @@ pub fn compute_fidelity(
         truth,
         breakdown,
         notes,
+        mismatches,
         ScoringMode::Box,
     )
 }
@@ -154,6 +172,7 @@ pub fn compute_fidelity_cross_engine(
         truth,
         breakdown,
         notes,
+        Vec::new(),
         ScoringMode::Run,
     )
 }
@@ -183,7 +202,11 @@ struct ScoreBreakdown {
 }
 
 /// Box-level scoring: greedy nearest-neighbor by origin.
-fn score_box_level(engine_render: &NormalizedRender, truth: &NormalizedRender) -> ScoreBreakdown {
+fn score_box_level(
+    engine_render: &NormalizedRender,
+    truth: &NormalizedRender,
+    mismatches: &mut Vec<BoxMismatch>,
+) -> ScoreBreakdown {
     let comparable_pages = engine_render.pages.len().min(truth.pages.len());
     let mut boxes_total = 0usize;
     let mut boxes_matched = 0usize;
@@ -195,7 +218,7 @@ fn score_box_level(engine_render: &NormalizedRender, truth: &NormalizedRender) -
     for i in 0..comparable_pages {
         let e_page = &engine_render.pages[i];
         let t_page = &truth.pages[i];
-        let (bt, bm, txt_m, txt_t, st_m, st_t) = score_page_boxes(e_page, t_page);
+        let (bt, bm, txt_m, txt_t, st_m, st_t) = score_page_boxes(i, e_page, t_page, mismatches);
         boxes_total += bt;
         boxes_matched += bm;
         text_matches += txt_m;
@@ -205,8 +228,15 @@ fn score_box_level(engine_render: &NormalizedRender, truth: &NormalizedRender) -
     }
 
     // Truth boxes on pages the engine didn't produce at all count as unmatched.
-    for page in truth.pages.iter().skip(comparable_pages) {
+    for (i, page) in truth.pages.iter().enumerate().skip(comparable_pages) {
         boxes_total += page.boxes.len();
+        for tbox in &page.boxes {
+            mismatches.push(BoxMismatch {
+                page: i,
+                kind: format!("{:?}", tbox.kind).to_lowercase(),
+                detail: "missing: engine did not produce this page".into(),
+            });
+        }
     }
 
     let geometry = ratio(boxes_matched, boxes_total);
@@ -232,13 +262,68 @@ fn score_box_level(engine_render: &NormalizedRender, truth: &NormalizedRender) -
     }
 }
 
-/// Run-level scoring: flatten all boxes into runs per page, match by text content.
+/// Run-level scoring: token-level cross-engine comparison.
 ///
-/// Uses a relaxed geometry tolerance (15pt) because different engines position
-/// text differently. Text is matched by content (greedy left-to-right).
-/// Unmatched truth runs penalize text and geometry but not style (no counterpart).
+/// Engines disagree on run segmentation (poppler emits one run per word,
+/// PyMuPDF merges a line) and on page setup (A4 vs Letter defaults, margins,
+/// baseline-vs-bbox y anchors). This mode therefore compares *relative*
+/// layout: whitespace-split text tokens matched greedily left-to-right,
+/// geometry judged against the reference page dimensions, style unknown-aware
+/// (a projection that cannot see fonts must not be penalized). Absolute
+/// geometry fidelity is the box mode's job — within a single projection.
 fn score_run_level(engine_render: &NormalizedRender, truth: &NormalizedRender) -> ScoreBreakdown {
-    const CROSS_GEO_TOL: f64 = 15.0;
+    /// Fraction of the reference page dimension a token may move and still count.
+    const REL_GEOMETRY_TOL: f64 = 0.05;
+    /// poppler reports line height (~1.5–1.9x the font size, font-dependent),
+    /// so cross-engine size comparison is a gross-error detector only; the
+    /// precise size gate is box mode within a single projection.
+    const CROSS_SIZE_TOL_PT: f64 = 1.2;
+
+    struct Token<'a> {
+        text: &'a str,
+        x_pt: f64,
+        y_pt: f64,
+        run: &'a GlyphRun,
+    }
+
+    /// Split a box's runs into tokens; token origins are distributed
+    /// proportionally across the box width (accurate for both poppler word
+    /// boxes and PyMuPDF line boxes).
+    fn box_tokens<'a>(boxk: &'a LayoutBox) -> Vec<Token<'a>> {
+        let total_chars: usize = boxk.runs.iter().map(|r| r.text.chars().count()).sum();
+        let mut tokens = Vec::new();
+        for run in &boxk.runs {
+            // char-width estimate for words beyond the first (poppler emits
+            // one word per run with a real origin, so the first word is exact;
+            // PyMuPDF-style line runs get proportional positions).
+            let char_w = if total_chars > 0 {
+                boxk.size.width_pt / total_chars as f64
+            } else {
+                0.0
+            };
+            let mut char_offset = 0usize;
+            for (k, word) in run.text.split_whitespace().enumerate() {
+                let start = run.text[char_offset..]
+                    .find(word)
+                    .map(|byte_idx| {
+                        char_offset + run.text[char_offset..][..byte_idx].chars().count()
+                    })
+                    .unwrap_or(char_offset);
+                tokens.push(Token {
+                    text: word,
+                    x_pt: if k == 0 {
+                        run.origin.x_pt
+                    } else {
+                        run.origin.x_pt + start as f64 * char_w
+                    },
+                    y_pt: run.origin.y_pt,
+                    run,
+                });
+                char_offset = start + word.chars().count();
+            }
+        }
+        tokens
+    }
 
     let comparable_pages = engine_render.pages.len().min(truth.pages.len());
     let mut geo_matches = 0usize;
@@ -252,43 +337,42 @@ fn score_run_level(engine_render: &NormalizedRender, truth: &NormalizedRender) -
         let e_page = &engine_render.pages[i];
         let t_page = &truth.pages[i];
 
-        // Flatten runs per page
-        let e_runs: Vec<&GlyphRun> = e_page.boxes.iter().flat_map(|b| b.runs.iter()).collect();
-        let t_runs: Vec<&GlyphRun> = t_page.boxes.iter().flat_map(|b| b.runs.iter()).collect();
+        let e_toks: Vec<Token> = e_page.boxes.iter().flat_map(box_tokens).collect();
+        let t_toks: Vec<Token> = t_page.boxes.iter().flat_map(box_tokens).collect();
 
-        let mut used = vec![false; e_runs.len()];
-        for tr in &t_runs {
+        let mut used = vec![false; e_toks.len()];
+        for tt in &t_toks {
             text_total += 1;
             geo_total += 1;
 
-            // Greedy left-to-right text match
-            let best_j =
-                (0..e_runs.len()).find(|&j| !used[j] && e_runs[j].text.trim() == tr.text.trim());
-
-            if let Some(j) = best_j {
-                used[j] = true;
-                text_matches += 1;
-                style_total += 1;
-                if style_match(e_runs[j], tr) {
-                    style_matches += 1;
-                }
-                // Geometry: relaxed tolerance for cross-engine
-                let dx = (e_runs[j].origin.x_pt - tr.origin.x_pt).abs();
-                let dy = (e_runs[j].origin.y_pt - tr.origin.y_pt).abs();
-                if dx <= CROSS_GEO_TOL && dy <= CROSS_GEO_TOL {
-                    geo_matches += 1;
-                }
+            // Greedy left-to-right exact-token match.
+            let best = (0..e_toks.len()).find(|&j| !used[j] && e_toks[j].text == tt.text);
+            let Some(j) = best else { continue };
+            used[j] = true;
+            text_matches += 1;
+            style_total += 1;
+            if style_match_cross(e_toks[j].run, tt.run, CROSS_SIZE_TOL_PT) {
+                style_matches += 1;
+            }
+            // Geometry relative to the reference page dimensions.
+            let dx = (e_toks[j].x_pt - tt.x_pt).abs() / t_page.size.width_pt.max(1.0);
+            let dy = (e_toks[j].y_pt - tt.y_pt).abs() / t_page.size.height_pt.max(1.0);
+            if dx <= REL_GEOMETRY_TOL && dy <= REL_GEOMETRY_TOL {
+                geo_matches += 1;
             }
         }
     }
 
-    // Unmatched truth pages: count runs as failures for text/geometry.
+    // Unmatched truth pages: count tokens as failures for text/geometry.
     for page in truth.pages.iter().skip(comparable_pages) {
         for b in &page.boxes {
-            for _ in &b.runs {
-                text_total += 1;
-                geo_total += 1;
-            }
+            let n: usize = b
+                .runs
+                .iter()
+                .map(|r| r.text.split_whitespace().count())
+                .sum();
+            text_total += n;
+            geo_total += n;
         }
     }
 
@@ -313,6 +397,21 @@ fn score_run_level(engine_render: &NormalizedRender, truth: &NormalizedRender) -
         font_substitutions,
         missing_fonts,
     }
+}
+
+/// Cross-engine style comparison: unknown-aware. An empty font family means
+/// the projection could not observe typography at all — then only the size is
+/// comparable (poppler reports line height ~1.5–1.7x the font size, so the
+/// tolerance is relative to the reference size). The PyMuPDF-based reference
+/// truths systematically report weight 700; comparing weight would be noise.
+fn style_match_cross(a: &GlyphRun, b: &GlyphRun, size_tol_factor: f64) -> bool {
+    let size_ok = a.size_pt <= 0.0
+        || b.size_pt <= 0.0
+        || (a.size_pt - b.size_pt).abs() <= size_tol_factor * b.size_pt;
+    if a.font.is_empty() || b.font.is_empty() {
+        return size_ok;
+    }
+    size_ok && a.font == b.font && a.weight == b.weight && a.italic == b.italic
 }
 
 /// Compute font coverage: what fraction of truth's requested fonts did the engine satisfy?
@@ -374,8 +473,18 @@ fn build_report(
     truth: &NormalizedRender,
     breakdown: ScoreBreakdown,
     notes: Vec<String>,
+    mut mismatches: Vec<BoxMismatch>,
     scoring_mode: ScoringMode,
 ) -> CaseReport {
+    const MAX_MISMATCHES: usize = 100;
+    let mut notes = notes;
+    if mismatches.len() > MAX_MISMATCHES {
+        notes.push(format!(
+            "…and {} more mismatched boxes (showing first {MAX_MISMATCHES})",
+            mismatches.len() - MAX_MISMATCHES
+        ));
+        mismatches.truncate(MAX_MISMATCHES);
+    }
     let fb = FidelityBreakdown {
         geometry: breakdown.geometry,
         text: breakdown.text,
@@ -400,7 +509,39 @@ fn build_report(
         fidelity: fb.composite(),
         breakdown: fb,
         notes,
+        mismatches,
         scoring_mode,
+    }
+}
+
+impl std::fmt::Display for CaseReport {
+    /// Renders the summary plus actionable diffs, e.g.
+    /// `page 0, paragraph: expected (72.0, 63.4) 100.0x14.0pt, got (72.0, 68.4) ... (Δy=5.0pt > 2pt)`.
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "[{}] {} {} vs truth({}): fidelity {:.3} (geometry {:.3}, text {:.3}, style {:.3}, fonts {:.3}), boxes {}/{}, pages {}/{}",
+            format!("{:?}", self.scoring_mode).to_lowercase(),
+            self.engine,
+            self.engine_version,
+            self.truth_source,
+            self.fidelity,
+            self.breakdown.geometry,
+            self.breakdown.text,
+            self.breakdown.style,
+            self.breakdown.font_coverage,
+            self.boxes_matched,
+            self.boxes_total,
+            self.page_count_engine,
+            self.page_count_truth,
+        )?;
+        for m in &self.mismatches {
+            write!(f, "\n  page {}, {}: {}", m.page, m.kind, m.detail)?;
+        }
+        for n in &self.notes {
+            write!(f, "\n  note: {n}")?;
+        }
+        Ok(())
     }
 }
 
@@ -411,12 +552,21 @@ fn build_report(
 /// only if origin + size are both within tolerance. For matched pairs we then
 /// score concatenated text equality and per-run style.
 fn score_page_boxes(
+    page_index: usize,
     engine_page: &Page,
     truth_page: &Page,
+    mismatches: &mut Vec<BoxMismatch>,
 ) -> (usize, usize, usize, usize, usize, usize) {
     // (boxes_total, boxes_matched, text_matches, text_total, style_matches, style_total)
     let boxes_total = truth_page.boxes.len();
     if engine_page.boxes.is_empty() {
+        for tbox in &truth_page.boxes {
+            mismatches.push(BoxMismatch {
+                page: page_index,
+                kind: format!("{:?}", tbox.kind).to_lowercase(),
+                detail: "missing: engine produced no boxes on this page".into(),
+            });
+        }
         return (boxes_total, 0, 0, 0, 0, 0);
     }
 
@@ -437,7 +587,17 @@ fn score_page_boxes(
                 da.partial_cmp(&db).unwrap_or(std::cmp::Ordering::Equal)
             });
 
-        let Some(j) = best else { continue };
+        let Some(j) = best else {
+            mismatches.push(BoxMismatch {
+                page: page_index,
+                kind: format!("{:?}", tbox.kind).to_lowercase(),
+                detail: format!(
+                    "missing: no engine box near ({:.1}, {:.1}); expected {:.1}x{:.1}pt",
+                    tbox.origin.x_pt, tbox.origin.y_pt, tbox.size.width_pt, tbox.size.height_pt
+                ),
+            });
+            continue;
+        };
         let ebox = &engine_page.boxes[j];
 
         if ebox.approx_eq(tbox, GEOMETRY_TOLERANCE_PT) {
@@ -450,6 +610,12 @@ fn score_page_boxes(
             text_total += 1;
             if e_text == t_text {
                 text_matches += 1;
+            } else {
+                mismatches.push(BoxMismatch {
+                    page: page_index,
+                    kind: format!("{:?}", tbox.kind).to_lowercase(),
+                    detail: format!("text: expected {t_text:?}, got {e_text:?}"),
+                });
             }
 
             // Style score: zip runs by index, compare style fields.
@@ -463,6 +629,38 @@ fn score_page_boxes(
             if tbox.runs.len() > ebox.runs.len() {
                 style_total += tbox.runs.len() - ebox.runs.len();
             }
+        } else {
+            let dx = (ebox.origin.x_pt - tbox.origin.x_pt).abs();
+            let dy = (ebox.origin.y_pt - tbox.origin.y_pt).abs();
+            let axis = if dy >= dx { "y" } else { "x" };
+            let (delta, expected, got) = if dy >= dx {
+                (
+                    dy,
+                    (tbox.origin.x_pt, tbox.origin.y_pt),
+                    (ebox.origin.x_pt, ebox.origin.y_pt),
+                )
+            } else {
+                (
+                    dx,
+                    (tbox.origin.x_pt, tbox.origin.y_pt),
+                    (ebox.origin.x_pt, ebox.origin.y_pt),
+                )
+            };
+            mismatches.push(BoxMismatch {
+                page: page_index,
+                kind: format!("{:?}", tbox.kind).to_lowercase(),
+                detail: format!(
+                    "expected ({:.1}, {:.1}) {:.1}x{:.1}pt, got ({:.1}, {:.1}) {:.1}x{:.1}pt (Δ{axis}={delta:.1}pt > {GEOMETRY_TOLERANCE_PT}pt)",
+                    expected.0,
+                    expected.1,
+                    tbox.size.width_pt,
+                    tbox.size.height_pt,
+                    got.0,
+                    got.1,
+                    ebox.size.width_pt,
+                    ebox.size.height_pt,
+                ),
+            });
         }
         // An unmatched truth box contributes to boxes_total but not matches;
         // its runs are not scored for style (no engine counterpart to compare).

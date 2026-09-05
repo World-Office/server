@@ -1,0 +1,189 @@
+{
+  "schema_version": 1,
+  "truth_captured_from": "onlyoffice-ds docker.io/onlyoffice/documentserver@sha2…",
+  "captured_at": "2026-09-05T05:30:11.906025727+00:00",
+  "render": {
+    "pages": [
+      {
+        "index": 0,
+        "size": {
+          "width_pt": 595.27557,
+          "height_pt": 841.88977
+        },
+        "boxes": [
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 51.83169
+            },
+            "size": {
+              "width_pt": 54.92772000000001,
+              "height_pt": 18.619999999999997
+            },
+            "runs": [
+              {
+                "text": "Para",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 66.35529
+                }
+              },
+              {
+                "text": "1",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 105.297534,
+                  "y_pt": 66.35529
+                }
+              },
+              {
+                "text": "in",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 112.797298,
+                  "y_pt": 66.35529
+                }
+              },
+              {
+                "text": "cell.",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 123.06709,
+                  "y_pt": 66.35529
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 63.33071
+            },
+            "size": {
+              "width_pt": 77.95588399999998,
+              "height_pt": 18.619999999999997
+            },
+            "runs": [
+              {
+                "text": "Para",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 77.85431
+                }
+              },
+              {
+                "text": "2",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 105.297534,
+                  "y_pt": 77.85431
+                }
+              },
+              {
+                "text": "in",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 112.797298,
+                  "y_pt": 77.85431
+                }
+              },
+              {
+                "text": "same",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 123.06709,
+                  "y_pt": 77.85431
+                }
+              },
+              {
+                "text": "cell.",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 146.095254,
+                  "y_pt": 77.85431
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 358.98908,
+              "y_pt": 51.83169
+            },
+            "size": {
+              "width_pt": 55.45810999999998,
+              "height_pt": 18.619999999999997
+            },
+            "runs": [
+              {
+                "text": "Adjacent",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 358.98908,
+                  "y_pt": 66.35529
+                }
+              },
+              {
+                "text": "cell.",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 397.54719,
+                  "y_pt": 66.35529
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "resolved_fonts": {
+      "requested": [],
+      "resolved": {},
+      "unavailable": []
+    },
+    "metadata": {
+      "engine": "onlyoffice-documentserver",
+      "engine_version": "docker.io/onlyoffice/documentserver@sha2…",
+      "captured_at": "2026-09-05T05:30:11.906013243+00:00",
+      "environment": "onlyoffice-ds pdf-export projection; filetype=docx"
+    }
+  }
+}

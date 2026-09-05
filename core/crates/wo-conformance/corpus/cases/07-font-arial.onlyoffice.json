@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "truth_captured_from": "onlyoffice-ds docker.io/onlyoffice/documentserver@sha2…",
+  "captured_at": "2026-09-05T05:30:11.534196105+00:00",
+  "render": {
+    "pages": [
+      {
+        "index": 0,
+        "size": {
+          "width_pt": 595.27557,
+          "height_pt": 841.88977
+        },
+        "boxes": [
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 51.16279
+            },
+            "size": {
+              "width_pt": 55.536255,
+              "height_pt": 19.22
+            },
+            "runs": [
+              {
+                "text": "Text",
+                "font": "",
+                "size_pt": 19.22,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 66.15439
+                }
+              },
+              {
+                "text": "in",
+                "font": "",
+                "size_pt": 19.22,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 107.255871,
+                  "y_pt": 66.15439
+                }
+              },
+              {
+                "text": "Arial.",
+                "font": "",
+                "size_pt": 19.22,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 117.815625,
+                  "y_pt": 66.15439
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "resolved_fonts": {
+      "requested": [],
+      "resolved": {},
+      "unavailable": []
+    },
+    "metadata": {
+      "engine": "onlyoffice-documentserver",
+      "engine_version": "docker.io/onlyoffice/documentserver@sha2…",
+      "captured_at": "2026-09-05T05:30:11.534188825+00:00",
+      "environment": "onlyoffice-ds pdf-export projection; filetype=docx"
+    }
+  }
+}

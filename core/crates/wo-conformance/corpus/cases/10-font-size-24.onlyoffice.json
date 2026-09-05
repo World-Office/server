@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "truth_captured_from": "onlyoffice-ds docker.io/onlyoffice/documentserver@sha2…",
+  "captured_at": "2026-09-05T05:30:11.618169445+00:00",
+  "render": {
+    "pages": [
+      {
+        "index": 0,
+        "size": {
+          "width_pt": 595.27557,
+          "height_pt": 841.88977
+        },
+        "boxes": [
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 45.01915
+            },
+            "size": {
+              "width_pt": 224.60812899999996,
+              "height_pt": 44.687999999999995
+            },
+            "runs": [
+              {
+                "text": "Twenty-four",
+                "font": "",
+                "size_pt": 44.687999999999995,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 79.87579
+                }
+              },
+              {
+                "text": "point",
+                "font": "",
+                "size_pt": 44.687999999999995,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 212.323653,
+                  "y_pt": 79.87579
+                }
+              },
+              {
+                "text": "text.",
+                "font": "",
+                "size_pt": 44.687999999999995,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 267.659395,
+                  "y_pt": 79.87579
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "resolved_fonts": {
+      "requested": [],
+      "resolved": {},
+      "unavailable": []
+    },
+    "metadata": {
+      "engine": "onlyoffice-documentserver",
+      "engine_version": "docker.io/onlyoffice/documentserver@sha2…",
+      "captured_at": "2026-09-05T05:30:11.618157464+00:00",
+      "environment": "onlyoffice-ds pdf-export projection; filetype=docx"
+    }
+  }
+}
