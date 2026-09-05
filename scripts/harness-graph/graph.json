@@ -4781,6 +4781,156 @@
    "type": "COVERS"
   },
   {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_docx_to_html_restores_columns",
+   "to": "F-090",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_docx_to_html_restores_section_break",
+   "to": "F-090",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_html_to_docx_restores_columns",
+   "to": "F-090",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_html_to_docx_restores_section_break",
+   "to": "F-090",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_margins_serialization",
+   "to": "F-090",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_page_break_roundtrip",
+   "to": "F-090",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_docx_to_html_restores_columns",
+   "to": "F-091",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_docx_to_html_restores_section_break",
+   "to": "F-091",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_html_to_docx_restores_columns",
+   "to": "F-091",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_html_to_docx_restores_section_break",
+   "to": "F-091",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_margins_serialization",
+   "to": "F-091",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_page_break_roundtrip",
+   "to": "F-091",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_docx_to_html_restores_columns",
+   "to": "F-092",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_docx_to_html_restores_section_break",
+   "to": "F-092",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_html_to_docx_restores_columns",
+   "to": "F-092",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_html_to_docx_restores_section_break",
+   "to": "F-092",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_margins_serialization",
+   "to": "F-092",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_page_break_roundtrip",
+   "to": "F-092",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_docx_to_html_restores_columns",
+   "to": "F-093",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_docx_to_html_restores_section_break",
+   "to": "F-093",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_html_to_docx_restores_columns",
+   "to": "F-093",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_html_to_docx_restores_section_break",
+   "to": "F-093",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_margins_serialization",
+   "to": "F-093",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_page_break_roundtrip",
+   "to": "F-093",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_docx_to_html_restores_columns",
+   "to": "F-094",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_docx_to_html_restores_section_break",
+   "to": "F-094",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_html_to_docx_restores_columns",
+   "to": "F-094",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_html_to_docx_restores_section_break",
+   "to": "F-094",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_margins_serialization",
+   "to": "F-094",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_layout_roundtrip.py::test_page_break_roundtrip",
+   "to": "F-094",
+   "type": "COVERS"
+  },
+  {
    "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_01_manuscript_seed_is_a_valid_paper",
    "to": "F-120",
    "type": "COVERS"
@@ -5051,7 +5201,7 @@
    "type": "COVERS"
   }
  ],
- "generated_at": "2026-09-05T11:26:03+00:00",
+ "generated_at": "2026-09-05T11:41:56+00:00",
  "nodes": [
   {
    "id": "allCaps",
@@ -8903,6 +9053,42 @@
    "path": "opencloud-docserver/tests/test_font_controls.py"
   },
   {
+   "id": "opencloud-docserver/tests/test_layout_roundtrip.py::test_docx_to_html_restores_columns",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_layout_roundtrip.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_layout_roundtrip.py::test_docx_to_html_restores_section_break",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_layout_roundtrip.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_layout_roundtrip.py::test_html_to_docx_restores_columns",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_layout_roundtrip.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_layout_roundtrip.py::test_html_to_docx_restores_section_break",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_layout_roundtrip.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_layout_roundtrip.py::test_page_break_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_layout_roundtrip.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_layout_roundtrip.py::test_margins_serialization",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_layout_roundtrip.py"
+  },
+  {
    "id": "opencloud-docserver/tests/test_main_bootstrap.py::test_create_app_initializes_with_config",
    "label": "Test",
    "layer": "e2e",
@@ -12460,43 +12646,58 @@
   },
   {
    "area": "layout",
-   "fidelity": "L2",
+   "fidelity": "L1",
    "id": "F-090",
    "label": "Feature",
    "name": "Page size",
-   "parity": "partial"
+   "parity": "full"
+  },
+  {
+   "id": "F-090:marker-only",
+   "justification": "L1 marker for page breaks proven; actual page size settings are not mapped to editor view.",
+   "label": "Divergence"
   },
   {
    "area": "layout",
-   "fidelity": "L2",
+   "fidelity": "L1",
    "id": "F-091",
    "label": "Feature",
    "name": "Orientation (portrait/landscape)",
-   "parity": "partial"
+   "parity": "full"
+  },
+  {
+   "id": "F-091:marker-only",
+   "justification": "L1 marker for page breaks proven; actual orientation settings are not mapped to editor view.",
+   "label": "Divergence"
   },
   {
    "area": "layout",
-   "fidelity": "L2",
+   "fidelity": "L1",
    "id": "F-092",
    "label": "Feature",
    "name": "Margins",
-   "parity": "missing"
+   "parity": "full"
+  },
+  {
+   "id": "F-092:serialization-only",
+   "justification": "Paragraph margins (left/right/top/bottom) serialize to DOCX and back; document-level page margins are not mapped to editor view.",
+   "label": "Divergence"
   },
   {
    "area": "layout",
-   "fidelity": "L2",
+   "fidelity": "L1",
    "id": "F-093",
    "label": "Feature",
    "name": "Columns",
-   "parity": "missing"
+   "parity": "full"
   },
   {
    "area": "layout",
-   "fidelity": "L2",
+   "fidelity": "L1",
    "id": "F-094",
    "label": "Feature",
    "name": "Section breaks",
-   "parity": "missing"
+   "parity": "full"
   },
   {
    "area": "layout",
@@ -12645,10 +12846,10 @@
  ],
  "stats": {
   "commands": 21,
-  "edges": 1010,
+  "edges": 1040,
   "features": 82,
   "surfaces": 21,
-  "tests": 1107
+  "tests": 1113
  },
  "version": 1
 }
