@@ -1,0 +1,58 @@
+name: Docserver
+
+on:
+  pull_request:
+    paths:
+      - "opencloud-docserver/**"
+      - "scripts/harness-graph/**"
+  push:
+    branches: [main]
+    paths:
+      - "opencloud-docserver/**"
+      - "scripts/harness-graph/**"
+
+concurrency:
+  group: docserver-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: Unit + browser-e2e suite
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: opencloud-docserver
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: opencloud-docserver/uv.lock
+
+      - name: Sync (frozen — dev group must carry all test deps)
+        run: uv sync --frozen
+
+      - name: Playwright browser (in-repo e2e uses chromium)
+        run: uv run playwright install --with-deps chromium
+
+      - name: Full suite
+        run: uv run --frozen pytest tests/ -q
+
+  register:
+    name: Register gates (drift + full resolution)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PyYAML
+        run: python3 -m pip install --break-system-packages pyyaml
+
+      - name: Graph drift gate
+        run: python3 scripts/harness-graph/seed.py --check
+
+      - name: Every feature covered or divergence-documented
+        run: |
+          IDS=$(grep -oE 'F-[0-9]{3}' scripts/harness-graph/features.yaml | sort -u | tr '\n' ' ')
+          python3 scripts/harness-graph/check-register.py $IDS
