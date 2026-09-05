@@ -1,0 +1,385 @@
+{
+  "schema_version": 1,
+  "truth_captured_from": "onlyoffice-ds docker.io/onlyoffice/documentserver@sha2…",
+  "captured_at": "2026-09-05T05:30:11.729988875+00:00",
+  "render": {
+    "pages": [
+      {
+        "index": 0,
+        "size": {
+          "width_pt": 595.27557,
+          "height_pt": 841.88977
+        },
+        "boxes": [
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 51.82885
+            },
+            "size": {
+              "width_pt": 467.40147699999994,
+              "height_pt": 18.61999999999999
+            },
+            "runs": [
+              {
+                "text": "This",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "is",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 105.859638,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "a",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 115.579905,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "longer",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 123.07692,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "paragraph",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 151.665587,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "that",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 194.674173,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "should",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 212.711105,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "exercise",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 242.42972,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "line",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 278.206705,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "wrapping",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 296.24372,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "with",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 337.052334,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "justified",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 357.87092,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "alignment.",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 393.659534,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "The",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 439.158075,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "quick",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 457.755061,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "brown",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 483.013647,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "fox",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 511.622261,
+                  "y_pt": 66.35244999999999
+                }
+              },
+              {
+                "text": "jumps",
+                "font": "",
+                "size_pt": 18.61999999999999,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 528.010847,
+                  "y_pt": 66.35244999999999
+                }
+              }
+            ]
+          },
+          {
+            "kind": "paragraph",
+            "origin": {
+              "x_pt": 85.03937,
+              "y_pt": 63.32787
+            },
+            "size": {
+              "width_pt": 238.97434999999996,
+              "height_pt": 18.619999999999997
+            },
+            "runs": [
+              {
+                "text": "over",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 85.03937,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "the",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 105.299216,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "lazy",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 120.007379,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "dog.",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 139.137143,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "Pack",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 159.136863,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "my",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 181.056627,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "box",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 196.326391,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "with",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 213.826154,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "five",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 234.085947,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "dozen",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 252.12411,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "liquor",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 278.483874,
+                  "y_pt": 77.85146999999999
+                }
+              },
+              {
+                "text": "jugs.",
+                "font": "",
+                "size_pt": 18.619999999999997,
+                "weight": 400,
+                "italic": false,
+                "origin": {
+                  "x_pt": 304.85372,
+                  "y_pt": 77.85146999999999
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "resolved_fonts": {
+      "requested": [],
+      "resolved": {},
+      "unavailable": []
+    },
+    "metadata": {
+      "engine": "onlyoffice-documentserver",
+      "engine_version": "docker.io/onlyoffice/documentserver@sha2…",
+      "captured_at": "2026-09-05T05:30:11.729980239+00:00",
+      "environment": "onlyoffice-ds pdf-export projection; filetype=docx"
+    }
+  }
+}

@@ -21,6 +21,7 @@ on:
       - "server/core/crates/wo-ooxml/**"
       - "server/core/crates/wo-renderer/**"
       - "server/core/crates/wo-common/**"
+      - "server/scripts/harness-graph/**"
 
 concurrency:
   group: conformance-${{ github.ref }}
@@ -44,11 +45,27 @@ jobs:
         with:
           workspaces: server
 
-      - name: Test wo-conformance
-        run: cd server && cargo test -p wo-conformance --lib -- --test-threads=1
+      - name: Install poppler (pdftotext for the PDF projection adapter)
+        run: pdftotext -v || sudo apt-get update && sudo apt-get install -y poppler-utils
+
+      - name: Test wo-conformance (lib + integration)
+        run: cd server && cargo test -p wo-conformance -- --test-threads=1
 
       - name: Test wo-docx-renderer
         run: cd server && cargo test -p wo-docx-renderer --lib -- --test-threads=1
+
+  harness-graph:
+    name: Harness graph drift gate (features.yaml ↔ graph.json)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PyYAML
+        run: python3 -m pip install --break-system-packages pyyaml
+
+      - name: Drift gate
+        working-directory: server
+        run: python3 scripts/harness-graph/seed.py --check
 
   cross-engine-fidelity:
     name: Cross-engine fidelity (wo-docx-renderer vs LibreOffice)
@@ -120,4 +137,67 @@ jobs:
           path: |
             server/core/crates/wo-conformance/corpus/comparison-*.json
             server/core/crates/wo-conformance/corpus/baseline.json
+          retention-days: 90
+
+  onlyoffice-oracle:
+    # Nightly: record OnlyOffice behavior (the CI-runnable oracle) and diff it
+    # against the committed reference truth. Heavy container — never on PRs.
+    name: OnlyOffice oracle (pinned DS, corpus capture + cross-engine diff)
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (nightly)
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: server
+
+      - name: Install poppler (pdftotext)
+        run: pdftotext -v || sudo apt-get update && sudo apt-get install -y poppler-utils
+
+      - name: Start pinned OnlyOffice Document Server
+        run: |
+          source server/core/crates/wo-conformance/scripts/onlyoffice-image.env
+          docker run -d --name oo-oracle -p 9980:80 \
+            -e JWT_ENABLED=true -e JWT_SECRET=devsecret \
+            "${OO_DS_IMAGE}"
+          for i in $(seq 1 60); do
+            if [ "$(curl -s http://127.0.0.1:9980/healthcheck)" = "true" ]; then break; fi
+            sleep 5
+          done
+          [ "$(curl -s http://127.0.0.1:9980/healthcheck)" = "true" ] || { docker logs oo-oracle | tail -50; exit 1; }
+
+      - name: Live adapter test
+        working-directory: server
+        env:
+          OO_DS_URL: http://127.0.0.1:9980
+          OO_DS_JWT: devsecret
+          OO_DS_PUBLIC_HOST: 172.17.0.1
+        run: cargo test -p wo-conformance --test onlyoffice_live -- --ignored
+
+      - name: Capture OnlyOffice goldens for the corpus
+        working-directory: server/core/crates/wo-conformance
+        env:
+          OO_DS_URL: http://127.0.0.1:9980
+          OO_DS_JWT: devsecret
+          OO_DS_PUBLIC_HOST: 172.17.0.1
+        run: bash scripts/capture-onlyoffice.sh corpus/cases
+
+      - name: Cross-engine diff (OnlyOffice vs reference truth)
+        working-directory: server/core/crates/wo-conformance
+        run: bash scripts/capture-onlyoffice.sh corpus/cases --diff-only
+
+      - name: Upload oracle report + goldens
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: onlyoffice-oracle
+          path: |
+            server/core/crates/wo-conformance/corpus/cases/*.onlyoffice.json
+            server/core/crates/wo-conformance/corpus/oracle-report-*.txt
           retention-days: 90

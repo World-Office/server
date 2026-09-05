@@ -8,12 +8,14 @@
 //
 // See plan/2026-07-27-ooxml-conformance-strategy.md.
 
+pub mod adapters;
 pub mod corpus;
 pub mod engine;
 pub mod ground_truth;
 pub mod model;
 pub mod scoring;
 
+pub use adapters::{DsConfig, OnlyOfficePdfEngine, PdfGeometrySource, PopplerSource};
 pub use corpus::{run_case, run_corpus};
 pub use engine::RenderEngine;
 pub use ground_truth::{
@@ -24,7 +26,7 @@ pub use model::{
     RenderMetadata, RenderSpec, ResolvedFonts, GEOMETRY_TOLERANCE_PT,
 };
 pub use scoring::{
-    compute_fidelity, compute_fidelity_cross_engine, CaseReport, ConformanceReport,
+    compute_fidelity, compute_fidelity_cross_engine, BoxMismatch, CaseReport, ConformanceReport,
     FidelityBreakdown, ScoringMode,
 };
 

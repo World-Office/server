@@ -60,3 +60,39 @@ four font families (Calibri, Arial, Times New Roman, Courier New), font sizes
 indentation, paragraph spacing, page breaks, multi-page, tables (simple, header,
 multi-paragraph cells, font in cells), mixed fonts per paragraph, size runs
 within paragraphs, and empty document.
+
+## OnlyOffice oracle goldens (`*.onlyoffice.json`)
+
+Captured from a pinned OnlyOffice Document Server (see
+`scripts/onlyoffice-image.env`) via the Rust adapter:
+
+```sh
+docker run -d --name oo-oracle -p 9980:80 -e JWT_ENABLED=true -e JWT_SECRET=devsecret \
+  "$(source scripts/onlyoffice-image.env && echo $OO_DS_IMAGE)"
+OO_DS_JWT=devsecret bash scripts/capture-onlyoffice.sh corpus/cases
+```
+
+Goldens share the poppler projection with every other engine, so cross-engine
+diffs compare like with like (`diff --cross-engine <onlyoffice.json> <truth.json>`).
+
+### Divergence register (OnlyOffice vs LibreOffice reference)
+
+Real, justified differences observed on the pinned image — never "fix" these
+by loosening the scorer; they are the oracle's signal:
+
+- **A4 vs Letter default**: fixtures without `sectPr` page size — DS exports
+  A4 (595.3×841.9pt), LibreOffice defaults to Letter (612×792pt). The
+  cross-engine scorer normalizes coordinates by page dimensions.
+- **Font substitution**: DS lacks Arial / Times New Roman / Calibri / Courier
+  New and substitutes (e.g. Liberation family) → `font_coverage` 0 in those
+  cases is expected, not a regression.
+- **Spaces swallowed at font-change boundaries**: in `22-mixed-fonts` DS's PDF
+  text extraction yields `CalibriBold` (no space) where the source has
+  `Calibri Bold` → honest text mismatch.
+- **Run segmentation**: poppler (our projection) emits one run per word;
+  PyMuPDF truths one run per line. Token-level matching in `score_run_level`
+  sees through this; do not compare runs 1:1.
+- **Line-height vs font-size**: poppler runs carry the line height (~1.5–1.9×
+  the font size, font-dependent); cross-engine style scoring is therefore a
+  gross-error detector only. Precise size/typography gates are box-mode
+  comparisons within a single projection.
