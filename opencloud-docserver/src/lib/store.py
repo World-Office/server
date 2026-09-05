@@ -97,6 +97,16 @@ class DocumentStore:
                 """
             )
             self._conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS agent_traces (
+                    id       INTEGER PRIMARY KEY AUTOINCREMENT,
+                    run_id   INTEGER NOT NULL,
+                    ts       INTEGER NOT NULL,
+                    payload  TEXT NOT NULL
+                )
+                """
+            )
+            self._conn.execute(
                 "CREATE INDEX IF NOT EXISTS idx_versions_doc ON versions (doc_id, ts DESC)"
             )
 
@@ -292,6 +302,48 @@ class DocumentStore:
                 "FROM agent_runs GROUP BY client_id ORDER BY last_ts DESC",
             ).fetchall()
         return [dict(r) for r in rows]
+
+    def get_agent_run(self, run_id: int) -> dict[str, object] | None:
+        """One audit row by id, or None."""
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT id, ts, doc_id, client_id, task, steps, ops, rev, stopped_reason "
+                "FROM agent_runs WHERE id = ?",
+                (int(run_id),),
+            ).fetchone()
+        return dict(row) if row else None
+
+    # Traces (E20S1): redacted transcripts, retention-bounded.
+
+    MAX_TRACES = 100
+
+    def record_agent_trace(self, run_id: int, payload: str, ts: int | None = None) -> int:
+        """Store a redacted transcript JSON for a run; keeps the newest
+        MAX_TRACES rows (retention bound) and returns the trace id."""
+        if ts is None:
+            ts = int(time.time() * 1000)
+        with self._lock:
+            with self._conn:
+                cur = self._conn.execute(
+                    "INSERT INTO agent_traces (run_id, ts, payload) VALUES (?, ?, ?)",
+                    (int(run_id), int(ts), payload),
+                )
+                self._conn.execute(
+                    "DELETE FROM agent_traces WHERE id NOT IN "
+                    "(SELECT id FROM agent_traces ORDER BY id DESC LIMIT ?)",
+                    (self.MAX_TRACES,),
+                )
+            return int(cur.lastrowid or 0)
+
+    def get_agent_trace(self, run_id: int) -> dict[str, object] | None:
+        """The trace row for a run (id, run_id, ts, payload JSON string)."""
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT id, run_id, ts, payload FROM agent_traces WHERE run_id = ? "
+                "ORDER BY id DESC LIMIT 1",
+                (int(run_id),),
+            ).fetchone()
+        return dict(row) if row else None
 
     def get_version(self, doc_id: str, ts: int) -> bytes | None:
         """Return the snapshot bytes for a version, or None if unknown."""

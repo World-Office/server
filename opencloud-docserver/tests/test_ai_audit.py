@@ -127,3 +127,14 @@ def test_audit_failure_never_breaks_the_run(world):
     report = runner.run(ctx, "doc1", "agent=tough", "ignore broken audit", audit=BrokenStore())
     assert report.ops_applied == 1  # the edit went through regardless
     assert world.list_agent_runs() == []  # but nothing was recorded
+
+
+def test_agents_dashboard_renders(client, world):
+    """E20S3: a read-only server-rendered page — aggregates on top, recent
+    runs underneath. Stoic: a page, not a SPA."""
+    world.record_agent_run("doc1", "agent=dash", task="page check", steps=2, ops=3, rev=4, stopped_reason="done")
+    resp = client.get("/agents")
+    assert resp.status_code == 200
+    body = resp.text
+    assert "agent=dash" in body and "page check" in body  # recent run shown
+    assert "runs" in body.lower()  # aggregates section present

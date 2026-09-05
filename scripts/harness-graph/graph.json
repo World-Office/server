@@ -6581,7 +6581,7 @@
    "type": "COVERS"
   }
  ],
- "generated_at": "2026-09-05T17:59:44+00:00",
+ "generated_at": "2026-09-05T18:46:52+00:00",
  "nodes": [
   {
    "id": "allCaps",
@@ -7631,6 +7631,24 @@
    "path": "opencloud-docserver/tests/test_ai_agent_modelbased.py"
   },
   {
+   "id": "opencloud-docserver/tests/test_ai_agent_sanitizer.py::test_agent_text_is_stored_verbatim_no_interpretation",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_agent_sanitizer.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_agent_sanitizer.py::test_agent_markup_is_escaped_on_render",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_agent_sanitizer.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_agent_sanitizer.py::test_full_agent_flow_end_to_end_escapes",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_agent_sanitizer.py"
+  },
+  {
    "id": "opencloud-docserver/tests/test_ai_anchor_ops.py::test_set_span_replaces_a_block_and_survives_roundtrip",
    "label": "Test",
    "layer": "e2e",
@@ -7716,6 +7734,12 @@
   },
   {
    "id": "opencloud-docserver/tests/test_ai_audit.py::test_audit_failure_never_breaks_the_run",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_audit.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_audit.py::test_agents_dashboard_renders",
    "label": "Test",
    "layer": "e2e",
    "path": "opencloud-docserver/tests/test_ai_audit.py"
@@ -8061,6 +8085,18 @@
    "label": "Test",
    "layer": "e2e",
    "path": "opencloud-docserver/tests/test_ai_mcp_fuzz.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_no_egress.py::test_src_ai_has_no_network_clients",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_no_egress.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_no_egress.py::test_agent_edits_complete_with_egress_disabled",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_no_egress.py"
   },
   {
    "id": "opencloud-docserver/tests/test_ai_ops_validation.py::test_compile_text_edit_rejects_garbage",
@@ -8739,6 +8775,54 @@
    "label": "Test",
    "layer": "e2e",
    "path": "opencloud-docserver/tests/test_ai_tools_edge.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_traces.py::test_long_strings_are_truncated_in_place",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_traces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_traces.py::test_base64_blobs_are_dropped_but_short_values_kept",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_traces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_traces.py::test_redaction_is_recursive_and_original_untouched",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_traces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_traces.py::test_redaction_deterministic",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_traces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_traces.py::test_big_documents_materialize_past_the_old_recursion_ceiling",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_traces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_traces.py::test_runner_persists_redacted_trace",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_traces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_traces.py::test_trace_retention_is_bounded",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_traces.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_ai_traces.py::test_rest_run_detail_with_trace",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_ai_traces.py"
   },
   {
    "id": "opencloud-docserver/tests/test_api_error_shapes.py::test_unknown_doc_consistent_404_across_get_routes",
@@ -14910,7 +14994,7 @@
   "edges": 1316,
   "features": 82,
   "surfaces": 21,
-  "tests": 1209
+  "tests": 1223
  },
  "version": 1
 }

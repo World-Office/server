@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
+import json
 from typing import Any
 
 from .tools import ToolContext, call_tool
@@ -134,7 +135,9 @@ class AgentRunner:
             report.text = state.get("text", "") if state.get("ok") else ""
         if audit is not None:
             try:
-                audit.record_agent_run(
+                from .audit import redact_transcript
+
+                run_id = audit.record_agent_run(
                     doc_id=doc_id,
                     client_id=client_id,
                     task=task,
@@ -142,6 +145,11 @@ class AgentRunner:
                     ops=report.ops_applied,
                     rev=report.rev,
                     stopped_reason=report.stopped_reason,
+                )
+                # E20S1: redacted transcript, retention-bounded by the store.
+                audit.record_agent_trace(
+                    run_id,
+                    json.dumps(redact_transcript(report.transcript), ensure_ascii=False),
                 )
             except Exception:  # noqa: BLE001 — auditing must never break a run
                 pass
