@@ -1,0 +1,117 @@
+# World-Office feature register — OnlyOffice Document Editor parity
+#
+# Single source of truth for the parity roadmap. `seed.py` compiles this into
+# graph.json (and optionally Neo4j). Rules:
+#   - Every feature needs EITHER a covering test (pytest marker `F-###`) OR a
+#     `divergence` entry with a justification (the reference is buggy / we
+#     deliberately differ).
+#   - IDs are stable forever. Never renumber; delete only with a note.
+#   - parity: full | partial | missing   (vs OnlyOffice behavior, not pixels)
+#   - fidelity: target capture layer for the parity claim
+#       L0 spec/XSD conformance   L1 canonical IR snapshot   L2 box-tree geometry
+#       L3 perceptual raster      L4 behavior/conversion matrix
+version: 1
+source: OnlyOffice Document Editor (word processor) feature surface
+
+features:
+  # ── file ──────────────────────────────────────────────────────────────────
+  - {id: F-001, area: file,        name: Save / autosave to WOPI,        parity: full,    fidelity: L4, commands: [save]}
+  - {id: F-002, area: file,        name: Download as ODT,                parity: full,    fidelity: L4}
+  - {id: F-003, area: file,        name: Download as DOCX,               parity: missing, fidelity: L4}
+  - {id: F-004, area: file,        name: Export to PDF,                  parity: missing, fidelity: L4}
+  - {id: F-005, area: file,        name: Print,                          parity: missing, fidelity: L4}
+  - {id: F-006, area: file,        name: Document info / metadata,       parity: missing, fidelity: L1}
+
+  # ── home: font ────────────────────────────────────────────────────────────
+  - {id: F-010, area: home.font,   name: Bold,                           parity: full,    fidelity: L1, commands: [bold]}
+  - {id: F-011, area: home.font,   name: Italic,                         parity: full,    fidelity: L1, commands: [italic]}
+  - {id: F-012, area: home.font,   name: Underline,                      parity: full,    fidelity: L1, commands: [underline]}
+  - {id: F-013, area: home.font,   name: Strikethrough,                  parity: full,    fidelity: L1, commands: [strikeThrough]}
+  - {id: F-014, area: home.font,   name: Subscript,                      parity: full,    fidelity: L1, commands: [subscript]}
+  - {id: F-015, area: home.font,   name: Superscript,                    parity: full,    fidelity: L1, commands: [superscript]}
+  - {id: F-016, area: home.font,   name: All caps,                       parity: full,    fidelity: L1, commands: [allCaps]}
+  - {id: F-017, area: home.font,   name: Small caps,                     parity: full,    fidelity: L1, commands: [smallCaps]}
+  - {id: F-018, area: home.font,   name: Code / monospace style,         parity: partial, fidelity: L1, commands: [code]}
+  - {id: F-019, area: home.font,   name: Font family picker,             parity: missing, fidelity: L1}
+  - {id: F-020, area: home.font,   name: Font size picker,               parity: missing, fidelity: L1}
+  - {id: F-021, area: home.font,   name: Font color,                     parity: partial, fidelity: L1}
+  - {id: F-022, area: home.font,   name: Highlight color,                parity: partial, fidelity: L1}
+  - {id: F-023, area: home.font,   name: Clear formatting,               parity: missing, fidelity: L1}
+  - {id: F-024, area: home.font,   name: Grow / shrink font,             parity: missing, fidelity: L1}
+
+  # ── home: paragraph ───────────────────────────────────────────────────────
+  - {id: F-030, area: home.para,   name: Bulleted list,                  parity: full,    fidelity: L1, commands: [insertUnorderedList]}
+  - {id: F-031, area: home.para,   name: Numbered list,                  parity: full,    fidelity: L1, commands: [insertOrderedList]}
+  - {id: F-032, area: home.para,   name: Multilevel list,                parity: missing, fidelity: L1}
+  - {id: F-033, area: home.para,   name: Align left,                     parity: full,    fidelity: L2, commands: [justifyLeft]}
+  - {id: F-034, area: home.para,   name: Align center,                   parity: full,    fidelity: L2, commands: [justifyCenter]}
+  - {id: F-035, area: home.para,   name: Align right,                    parity: full,    fidelity: L2, commands: [justifyRight]}
+  - {id: F-036, area: home.para,   name: Justify,                        parity: full,    fidelity: L2, commands: [justifyFull]}
+  - {id: F-037, area: home.para,   name: Increase indent,                parity: full,    fidelity: L1, commands: [indent]}
+  - {id: F-038, area: home.para,   name: Decrease indent,                parity: full,    fidelity: L1, commands: [outdent]}
+  - {id: F-039, area: home.para,   name: Line spacing,                   parity: missing, fidelity: L2}
+  - {id: F-040, area: home.para,   name: Paragraph shading / borders,    parity: missing, fidelity: L2}
+  - {id: F-041, area: home.para,   name: RTL paragraph direction,        parity: partial, fidelity: L1, commands: [directionRtl]}
+
+  # ── home: styles ──────────────────────────────────────────────────────────
+  - {id: F-050, area: home.styles, name: Heading 1-6 / paragraph styles, parity: partial, fidelity: L1, commands: [formatBlock]}
+  - {id: F-051, area: home.styles, name: Block quote,                    parity: partial, fidelity: L1, commands: [formatBlock]}
+  - {id: F-052, area: home.styles, name: Style gallery (named styles),   parity: missing, fidelity: L1}
+  - {id: F-053, area: home.styles, name: Title / subtitle styles,        parity: missing, fidelity: L1}
+
+  # ── editing ───────────────────────────────────────────────────────────────
+  - {id: F-060, area: editing,     name: Undo,                           parity: full,    fidelity: L1, commands: [undo]}
+  - {id: F-061, area: editing,     name: Redo,                           parity: full,    fidelity: L1, commands: [redo]}
+  - {id: F-062, area: editing,     name: Find and replace,               parity: partial, fidelity: L1}
+  - {id: F-063, area: editing,     name: Clipboard paste (rich text),    parity: partial, fidelity: L1}
+  - {id: F-064, area: editing,     name: Keyboard shortcuts (core set),  parity: partial, fidelity: L4}
+
+  # ── insert ────────────────────────────────────────────────────────────────
+  - {id: F-070, area: insert,      name: Table insert + row/col ops,     parity: partial, fidelity: L2}
+  - {id: F-071, area: insert,      name: Image insert + resize,          parity: partial, fidelity: L2}
+  - {id: F-072, area: insert,      name: Hyperlink,                      parity: missing, fidelity: L1}
+  - {id: F-073, area: insert,      name: Footnote,                       parity: missing, fidelity: L1}
+  - {id: F-074, area: insert,      name: Endnote,                        parity: missing, fidelity: L1}
+  - {id: F-075, area: insert,      name: Comment,                        parity: missing, fidelity: L4}
+  - {id: F-076, area: insert,      name: Page break,                     parity: missing, fidelity: L2}
+  - {id: F-077, area: insert,      name: Table of contents,              parity: missing, fidelity: L1}
+  - {id: F-078, area: insert,      name: Symbol / special char,          parity: missing, fidelity: L1}
+  - {id: F-079, area: insert,      name: Date and time,                  parity: missing, fidelity: L1}
+  - {id: F-080, area: insert,      name: Text box,                       parity: missing, fidelity: L2}
+  - {id: F-081, area: insert,      name: Shape,                          parity: missing, fidelity: L2}
+  - {id: F-082, area: insert,      name: Chart,                          parity: missing, fidelity: L2}
+  - {id: F-083, area: insert,      name: Bookmark,                       parity: missing, fidelity: L1}
+  - {id: F-084, area: insert,      name: Header / footer,                parity: missing, fidelity: L2}
+  - {id: F-085, area: insert,      name: Page numbers,                   parity: missing, fidelity: L2}
+  - {id: F-086, area: insert,      name: Equation / formula,             parity: missing, fidelity: L2}
+
+  # ── layout ────────────────────────────────────────────────────────────────
+  - {id: F-090, area: layout,      name: Page size,                      parity: partial, fidelity: L2}
+  - {id: F-091, area: layout,      name: Orientation (portrait/landscape), parity: partial, fidelity: L2}
+  - {id: F-092, area: layout,      name: Margins,                        parity: missing, fidelity: L2}
+  - {id: F-093, area: layout,      name: Columns,                        parity: missing, fidelity: L2}
+  - {id: F-094, area: layout,      name: Section breaks,                 parity: missing, fidelity: L2}
+  - {id: F-095, area: layout,      name: Hyphenation,                    parity: missing, fidelity: L2}
+  - {id: F-096, area: layout,      name: Line numbers,                   parity: missing, fidelity: L2}
+  - {id: F-097, area: layout,      name: Watermark,                      parity: missing, fidelity: L3}
+
+  # ── review ────────────────────────────────────────────────────────────────
+  - {id: F-100, area: review,      name: Track changes on/off,           parity: missing, fidelity: L4}
+  - {id: F-101, area: review,      name: Accept / reject change,         parity: missing, fidelity: L4}
+  - {id: F-102, area: review,      name: Comment threads (add/reply/resolve), parity: missing, fidelity: L4}
+  - {id: F-103, area: review,      name: Compare documents,              parity: missing, fidelity: L4}
+  - {id: F-104, area: review,      name: Version history,                parity: missing, fidelity: L4}
+
+  # ── view ──────────────────────────────────────────────────────────────────
+  - {id: F-110, area: view,        name: Zoom controls,                  parity: partial, fidelity: L3}
+  - {id: F-111, area: view,        name: Fit page / fit width,           parity: missing, fidelity: L3}
+  - {id: F-112, area: view,        name: Full screen,                    parity: missing, fidelity: L4}
+  - {id: F-113, area: view,        name: Rulers / guides,                parity: missing, fidelity: L4}
+  - {id: F-114, area: view,        name: Dark interface theme,           parity: missing, fidelity: L4}
+
+  # ── collaboration (WO-specific, OnlyOffice co-editing as reference) ──────
+  - {id: F-120, area: collab,      name: Real-time co-editing,           parity: partial, fidelity: L4}
+  - {id: F-121, area: collab,      name: Live cursors with names,        parity: partial, fidelity: L4}
+  - {id: F-122, area: collab,      name: Presence avatars,               parity: missing, fidelity: L4}
+  - {id: F-123, area: collab,      name: Concurrent edit conflict resolution, parity: partial, fidelity: L4}
+  - {id: F-124, area: collab,      name: WOPI Lock/Unlock conflict handling,  parity: full,    fidelity: L4}

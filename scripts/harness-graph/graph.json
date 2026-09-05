@@ -1,0 +1,2222 @@
+{
+ "edges": [
+  {
+   "from": "toolbar:allCaps",
+   "to": "allCaps",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:bold",
+   "to": "bold",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:code",
+   "to": "code",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:directionRtl",
+   "to": "directionRtl",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:formatBlock",
+   "to": "formatBlock",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:indent",
+   "to": "indent",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:insertOrderedList",
+   "to": "insertOrderedList",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:insertUnorderedList",
+   "to": "insertUnorderedList",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:italic",
+   "to": "italic",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:justifyCenter",
+   "to": "justifyCenter",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:justifyFull",
+   "to": "justifyFull",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:justifyLeft",
+   "to": "justifyLeft",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:justifyRight",
+   "to": "justifyRight",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:outdent",
+   "to": "outdent",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:redo",
+   "to": "redo",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:smallCaps",
+   "to": "smallCaps",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:strikeThrough",
+   "to": "strikeThrough",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:subscript",
+   "to": "subscript",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:superscript",
+   "to": "superscript",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:underline",
+   "to": "underline",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "toolbar:undo",
+   "to": "undo",
+   "type": "TRIGGERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_wopi_protocol.py::test_check_file_info_rejects_bogus_token",
+   "to": "F-001",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_wopi_protocol.py::test_discovery_advertises_word_editor",
+   "to": "F-001",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_wopi_protocol.py::test_discovery_covers_office_extensions",
+   "to": "F-001",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_wopi_protocol.py::test_editor_ui_bundle_served",
+   "to": "F-001",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_wopi_protocol.py::test_health_endpoint",
+   "to": "F-001",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_wopi_protocol.py::test_put_file_rejects_bogus_token",
+   "to": "F-001",
+   "type": "COVERS"
+  },
+  {
+   "from": "F-010",
+   "to": "bold",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_click_into_document_content_places_caret",
+   "to": "F-010",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_document_reloads_with_saved_content",
+   "to": "F-010",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_enter_and_backspace_shape_paragraphs",
+   "to": "F-010",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_typed_text_persists_to_storage",
+   "to": "F-010",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_typing_triggers_wopi_autosave",
+   "to": "F-010",
+   "type": "COVERS"
+  },
+  {
+   "from": "F-011",
+   "to": "italic",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_click_into_document_content_places_caret",
+   "to": "F-011",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_document_reloads_with_saved_content",
+   "to": "F-011",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_enter_and_backspace_shape_paragraphs",
+   "to": "F-011",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_typed_text_persists_to_storage",
+   "to": "F-011",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_typing_triggers_wopi_autosave",
+   "to": "F-011",
+   "type": "COVERS"
+  },
+  {
+   "from": "F-012",
+   "to": "underline",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_click_into_document_content_places_caret",
+   "to": "F-012",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_document_reloads_with_saved_content",
+   "to": "F-012",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_enter_and_backspace_shape_paragraphs",
+   "to": "F-012",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_typed_text_persists_to_storage",
+   "to": "F-012",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_typing_triggers_wopi_autosave",
+   "to": "F-012",
+   "type": "COVERS"
+  },
+  {
+   "from": "F-013",
+   "to": "strikeThrough",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_click_into_document_content_places_caret",
+   "to": "F-013",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_document_reloads_with_saved_content",
+   "to": "F-013",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_enter_and_backspace_shape_paragraphs",
+   "to": "F-013",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_typed_text_persists_to_storage",
+   "to": "F-013",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_typing_triggers_wopi_autosave",
+   "to": "F-013",
+   "type": "COVERS"
+  },
+  {
+   "from": "F-014",
+   "to": "subscript",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "F-015",
+   "to": "superscript",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "F-016",
+   "to": "allCaps",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "F-017",
+   "to": "smallCaps",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "F-018",
+   "to": "code",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "F-030",
+   "to": "insertUnorderedList",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "F-031",
+   "to": "insertOrderedList",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "F-033",
+   "to": "justifyLeft",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "F-034",
+   "to": "justifyCenter",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "F-035",
+   "to": "justifyRight",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "F-036",
+   "to": "justifyFull",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "F-037",
+   "to": "indent",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "F-038",
+   "to": "outdent",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "F-041",
+   "to": "directionRtl",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "F-050",
+   "to": "formatBlock",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "F-051",
+   "to": "formatBlock",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "F-060",
+   "to": "undo",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_click_into_document_content_places_caret",
+   "to": "F-060",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_document_reloads_with_saved_content",
+   "to": "F-060",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_enter_and_backspace_shape_paragraphs",
+   "to": "F-060",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_typed_text_persists_to_storage",
+   "to": "F-060",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_typing_triggers_wopi_autosave",
+   "to": "F-060",
+   "type": "COVERS"
+  },
+  {
+   "from": "F-061",
+   "to": "redo",
+   "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_click_into_document_content_places_caret",
+   "to": "F-061",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_document_reloads_with_saved_content",
+   "to": "F-061",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_enter_and_backspace_shape_paragraphs",
+   "to": "F-061",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_typed_text_persists_to_storage",
+   "to": "F-061",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_typing_triggers_wopi_autosave",
+   "to": "F-061",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_click_into_document_content_places_caret",
+   "to": "F-062",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_document_reloads_with_saved_content",
+   "to": "F-062",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_enter_and_backspace_shape_paragraphs",
+   "to": "F-062",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_typed_text_persists_to_storage",
+   "to": "F-062",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_typing_triggers_wopi_autosave",
+   "to": "F-062",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_01_manuscript_seed_is_a_valid_paper",
+   "to": "F-120",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_02_ada_opens_manuscript_in_worldoffice",
+   "to": "F-120",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_03_ada_explicit_save_preserves_every_section",
+   "to": "F-120",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_04_ada_shares_project_folder_with_bob",
+   "to": "F-120",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_04b_share_role_upgrade_to_editor",
+   "to": "F-120",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_05_bob_sees_the_shared_project",
+   "to": "F-120",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_05b_share_mount_lists_project_in_dav_jail",
+   "to": "F-120",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_06_bob_edits_the_manuscript",
+   "to": "F-120",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_07_concurrent_saves_do_not_corrupt",
+   "to": "F-120",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_08_version_history_lists_prior_versions",
+   "to": "F-120",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_09_public_review_link_downloads_readonly",
+   "to": "F-120",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_10_journal_download_from_gui",
+   "to": "F-120",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_11_rename_keeps_coauthor_connected",
+   "to": "F-120",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_12_outsider_eve_cannot_read_the_paper",
+   "to": "F-120",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_13_accidental_delete_is_restored_from_trash",
+   "to": "F-120",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_13b_gui_trash_lists_fresh_delete",
+   "to": "F-120",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_01_manuscript_seed_is_a_valid_paper",
+   "to": "F-121",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_02_ada_opens_manuscript_in_worldoffice",
+   "to": "F-121",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_03_ada_explicit_save_preserves_every_section",
+   "to": "F-121",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_04_ada_shares_project_folder_with_bob",
+   "to": "F-121",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_04b_share_role_upgrade_to_editor",
+   "to": "F-121",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_05_bob_sees_the_shared_project",
+   "to": "F-121",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_05b_share_mount_lists_project_in_dav_jail",
+   "to": "F-121",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_06_bob_edits_the_manuscript",
+   "to": "F-121",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_07_concurrent_saves_do_not_corrupt",
+   "to": "F-121",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_08_version_history_lists_prior_versions",
+   "to": "F-121",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_09_public_review_link_downloads_readonly",
+   "to": "F-121",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_10_journal_download_from_gui",
+   "to": "F-121",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_11_rename_keeps_coauthor_connected",
+   "to": "F-121",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_12_outsider_eve_cannot_read_the_paper",
+   "to": "F-121",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_13_accidental_delete_is_restored_from_trash",
+   "to": "F-121",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_13b_gui_trash_lists_fresh_delete",
+   "to": "F-121",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_01_manuscript_seed_is_a_valid_paper",
+   "to": "F-123",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_02_ada_opens_manuscript_in_worldoffice",
+   "to": "F-123",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_03_ada_explicit_save_preserves_every_section",
+   "to": "F-123",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_04_ada_shares_project_folder_with_bob",
+   "to": "F-123",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_04b_share_role_upgrade_to_editor",
+   "to": "F-123",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_05_bob_sees_the_shared_project",
+   "to": "F-123",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_05b_share_mount_lists_project_in_dav_jail",
+   "to": "F-123",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_06_bob_edits_the_manuscript",
+   "to": "F-123",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_07_concurrent_saves_do_not_corrupt",
+   "to": "F-123",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_08_version_history_lists_prior_versions",
+   "to": "F-123",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_09_public_review_link_downloads_readonly",
+   "to": "F-123",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_10_journal_download_from_gui",
+   "to": "F-123",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_11_rename_keeps_coauthor_connected",
+   "to": "F-123",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_12_outsider_eve_cannot_read_the_paper",
+   "to": "F-123",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_13_accidental_delete_is_restored_from_trash",
+   "to": "F-123",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_13b_gui_trash_lists_fresh_delete",
+   "to": "F-123",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_wopi_protocol.py::test_check_file_info_rejects_bogus_token",
+   "to": "F-124",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_wopi_protocol.py::test_discovery_advertises_word_editor",
+   "to": "F-124",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_wopi_protocol.py::test_discovery_covers_office_extensions",
+   "to": "F-124",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_wopi_protocol.py::test_editor_ui_bundle_served",
+   "to": "F-124",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_wopi_protocol.py::test_health_endpoint",
+   "to": "F-124",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_wopi_protocol.py::test_put_file_rejects_bogus_token",
+   "to": "F-124",
+   "type": "COVERS"
+  }
+ ],
+ "generated_at": "2026-09-05T04:51:14+00:00",
+ "nodes": [
+  {
+   "id": "allCaps",
+   "label": "Command",
+   "source": "editor.js:runCommand('allCaps')"
+  },
+  {
+   "id": "bold",
+   "label": "Command",
+   "source": "editor.js:runCommand('bold')"
+  },
+  {
+   "id": "code",
+   "label": "Command",
+   "source": "editor.js:runCommand('code')"
+  },
+  {
+   "id": "directionRtl",
+   "label": "Command",
+   "source": "editor.js:runCommand('directionRtl')"
+  },
+  {
+   "id": "formatBlock",
+   "label": "Command",
+   "source": "editor.js:runCommand('formatBlock')"
+  },
+  {
+   "id": "indent",
+   "label": "Command",
+   "source": "editor.js:runCommand('indent')"
+  },
+  {
+   "id": "insertOrderedList",
+   "label": "Command",
+   "source": "editor.js:runCommand('insertOrderedList')"
+  },
+  {
+   "id": "insertUnorderedList",
+   "label": "Command",
+   "source": "editor.js:runCommand('insertUnorderedList')"
+  },
+  {
+   "id": "italic",
+   "label": "Command",
+   "source": "editor.js:runCommand('italic')"
+  },
+  {
+   "id": "justifyCenter",
+   "label": "Command",
+   "source": "editor.js:runCommand('justifyCenter')"
+  },
+  {
+   "id": "justifyFull",
+   "label": "Command",
+   "source": "editor.js:runCommand('justifyFull')"
+  },
+  {
+   "id": "justifyLeft",
+   "label": "Command",
+   "source": "editor.js:runCommand('justifyLeft')"
+  },
+  {
+   "id": "justifyRight",
+   "label": "Command",
+   "source": "editor.js:runCommand('justifyRight')"
+  },
+  {
+   "id": "outdent",
+   "label": "Command",
+   "source": "editor.js:runCommand('outdent')"
+  },
+  {
+   "id": "redo",
+   "label": "Command",
+   "source": "editor.js:runCommand('redo')"
+  },
+  {
+   "id": "smallCaps",
+   "label": "Command",
+   "source": "editor.js:runCommand('smallCaps')"
+  },
+  {
+   "id": "strikeThrough",
+   "label": "Command",
+   "source": "editor.js:runCommand('strikeThrough')"
+  },
+  {
+   "id": "subscript",
+   "label": "Command",
+   "source": "editor.js:runCommand('subscript')"
+  },
+  {
+   "id": "superscript",
+   "label": "Command",
+   "source": "editor.js:runCommand('superscript')"
+  },
+  {
+   "id": "underline",
+   "label": "Command",
+   "source": "editor.js:runCommand('underline')"
+  },
+  {
+   "id": "undo",
+   "label": "Command",
+   "source": "editor.js:runCommand('undo')"
+  },
+  {
+   "id": "toolbar:allCaps",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:bold",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:code",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:directionRtl",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:formatBlock",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:indent",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:insertOrderedList",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:insertUnorderedList",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:italic",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:justifyCenter",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:justifyFull",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:justifyLeft",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:justifyRight",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:outdent",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:redo",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:smallCaps",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:strikeThrough",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:subscript",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:superscript",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:underline",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "toolbar:undo",
+   "kind": "toolbar-button",
+   "label": "Surface",
+   "source": "index.html"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_auth_gui.py::test_login_success",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_auth_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_auth_gui.py::test_login_wrong_password_rejected",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_auth_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_auth_gui.py::test_login_empty_form_rejected",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_auth_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_auth_gui.py::test_logout",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_auth_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_button_sweep_gui.py::test_files_view_full_button_inventory",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_button_sweep_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_button_sweep_gui.py::test_every_visible_button_has_accessible_name",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_button_sweep_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_button_sweep_gui.py::test_new_menu_offers_all_document_types",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_button_sweep_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_button_sweep_gui.py::test_row_context_menu_inventory",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_button_sweep_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_button_sweep_gui.py::test_docx_context_menu_has_open_with",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_button_sweep_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_button_sweep_gui.py::test_folder_actions_button_opens_folder_menu",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_button_sweep_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_button_sweep_gui.py::test_display_customization_opens",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_button_sweep_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_button_sweep_gui.py::test_notifications_button_opens_panel",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_button_sweep_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_button_sweep_gui.py::test_application_switcher_lists_all_apps",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_button_sweep_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_button_sweep_gui.py::test_account_menu_offers_preferences_and_logout",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_button_sweep_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_button_sweep_gui.py::test_all_files_button_navigates_to_root",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_button_sweep_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_button_sweep_gui.py::test_breadcrumb_button_navigates_up",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_button_sweep_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_button_sweep_gui.py::test_left_nav_all_sections_render",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_button_sweep_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_button_sweep_gui.py::test_app_switcher_navigates_to_admin_settings",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_button_sweep_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_button_sweep_gui.py::test_skip_to_main_link_focuses_content",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_button_sweep_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_document_edit_depth.py::test_check_file_info_fields_after_open",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_document_edit_depth.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_document_edit_depth.py::test_get_file_serves_the_stored_document",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_document_edit_depth.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_document_edit_depth.py::test_put_file_roundtrip_and_last_write_wins",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_document_edit_depth.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_document_edit_depth.py::test_put_file_requires_override_header",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_document_edit_depth.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_document_edit_depth.py::test_lock_endpoints_are_server_internal_not_client_facing",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_document_edit_depth.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_document_edit_depth.py::test_concurrent_puts_stay_valid",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_document_edit_depth.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_document_edit_depth.py::test_editor_save_preserves_document_integrity",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_document_edit_depth.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editor_depth_gui.py::test_editor_shell_complete",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editor_depth_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editor_depth_gui.py::test_ctrl_s_fires_wopi_save",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editor_depth_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editor_depth_gui.py::test_undo_redo_keeps_editor_alive",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editor_depth_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editor_depth_gui.py::test_viewport_resize_rerenders",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editor_depth_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editor_depth_gui.py::test_editor_surveys_direct_url_reload",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editor_depth_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editor_depth_gui.py::test_typing_many_paragraphs_stays_stable",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editor_depth_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editor_menu_gui.py::test_deployed_editor_chrome_dom_present",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editor_menu_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editor_menu_gui.py::test_file_menu_opens_with_full_inventory",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editor_menu_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editor_menu_gui.py::test_create_new_panel_lists_all_templates",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editor_menu_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editor_menu_gui.py::test_invoice_template_loads_real_content",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editor_menu_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editor_menu_gui.py::test_version_history_panel_opens",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editor_menu_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editor_menu_gui.py::test_close_editor_returns_to_files",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editor_menu_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editors_gui.py::test_open_docx_word_editor",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editors_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editors_gui.py::test_open_odt_via_gui_created_template",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editors_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editors_gui.py::test_open_ods_spreadsheet_editor",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editors_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editors_gui.py::test_open_odp_presentation_editor",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editors_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editors_gui.py::test_open_txt",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editors_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_editors_gui.py::test_open_pdf",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_editors_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_file_lifecycle.py::test_01_dotfiles_are_rejected",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_file_lifecycle.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_file_lifecycle.py::test_02_umlauts_spaces_ampersand_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_file_lifecycle.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_file_lifecycle.py::test_03_emoji_filename_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_file_lifecycle.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_file_lifecycle.py::test_04_long_filename_survives",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_file_lifecycle.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_file_lifecycle.py::test_05_overwrite_is_an_update_not_a_duplicate",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_file_lifecycle.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_file_lifecycle.py::test_06_move_to_subfolder_keeps_editor_access",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_file_lifecycle.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_file_lifecycle.py::test_07_move_conflict_without_overwrite_is_refused",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_file_lifecycle.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_file_lifecycle.py::test_08_two_megabyte_document_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_file_lifecycle.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_files_depth_gui.py::test_search_finds_file",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_files_depth_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_files_depth_gui.py::test_details_sidebar_shows_file_info",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_files_depth_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_files_depth_gui.py::test_switch_view_mode",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_files_depth_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_files_depth_gui.py::test_deleted_file_reaches_server_trash",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_files_depth_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_files_depth_gui.py::test_deleted_file_visible_in_gui_trash",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_files_depth_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_files_depth_gui.py::test_open_with_lists_worldoffice_for_docx",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_files_depth_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_files_gui.py::test_new_folder_via_gui",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_files_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_files_gui.py::test_new_document_via_gui",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_files_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_files_gui.py::test_uploaded_docx_is_listed",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_files_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_files_gui.py::test_rename_via_context_menu",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_files_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_files_gui.py::test_delete_via_context_menu",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_files_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_files_gui.py::test_folder_navigation",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_files_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_multisession_gui.py::test_two_sessions_open_same_document",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_multisession_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_paper_collaboration.py::test_01_manuscript_seed_is_a_valid_paper",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_paper_collaboration.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_paper_collaboration.py::test_02_ada_opens_manuscript_in_worldoffice",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_paper_collaboration.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_paper_collaboration.py::test_03_ada_explicit_save_preserves_every_section",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_paper_collaboration.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_paper_collaboration.py::test_04_ada_shares_project_folder_with_bob",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_paper_collaboration.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_paper_collaboration.py::test_04b_share_role_upgrade_to_editor",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_paper_collaboration.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_paper_collaboration.py::test_05_bob_sees_the_shared_project",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_paper_collaboration.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_paper_collaboration.py::test_05b_share_mount_lists_project_in_dav_jail",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_paper_collaboration.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_paper_collaboration.py::test_06_bob_edits_the_manuscript",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_paper_collaboration.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_paper_collaboration.py::test_07_concurrent_saves_do_not_corrupt",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_paper_collaboration.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_paper_collaboration.py::test_08_version_history_lists_prior_versions",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_paper_collaboration.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_paper_collaboration.py::test_09_public_review_link_downloads_readonly",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_paper_collaboration.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_paper_collaboration.py::test_10_journal_download_from_gui",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_paper_collaboration.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_paper_collaboration.py::test_11_rename_keeps_coauthor_connected",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_paper_collaboration.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_paper_collaboration.py::test_12_outsider_eve_cannot_read_the_paper",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_paper_collaboration.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_paper_collaboration.py::test_13_accidental_delete_is_restored_from_trash",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_paper_collaboration.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_paper_collaboration.py::test_13b_gui_trash_lists_fresh_delete",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_paper_collaboration.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_protocol_depth.py::test_check_file_info_without_token_rejected",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_protocol_depth.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_protocol_depth.py::test_put_file_without_token_rejected",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_protocol_depth.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_protocol_depth.py::test_unknown_route_is_404_not_500",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_protocol_depth.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_protocol_depth.py::test_discovery_concurrent_requests_ok",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_protocol_depth.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_protocol_depth.py::test_editor_static_assets_served",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_protocol_depth.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_protocol_depth.py::test_discovery_content_type_is_xml",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_protocol_depth.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_share_lifecycle.py::test_01_unshare_revokes_bob_immediately",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_share_lifecycle.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_share_lifecycle.py::test_02_reshare_restores_full_access",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_share_lifecycle.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_share_lifecycle.py::test_03_collaborator_without_share_bit_cannot_reshare",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_share_lifecycle.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_share_lifecycle.py::test_04_password_link_blocks_anonymous",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_share_lifecycle.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_share_lifecycle.py::test_05_readonly_link_forbids_write",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_share_lifecycle.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_share_lifecycle.py::test_06_deleted_link_stops_serving",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_share_lifecycle.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_share_lifecycle.py::test_07_share_panel_lists_bob",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_share_lifecycle.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_wopi_protocol.py::test_health_endpoint",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_wopi_protocol.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_wopi_protocol.py::test_discovery_advertises_word_editor",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_wopi_protocol.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_wopi_protocol.py::test_discovery_covers_office_extensions",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_wopi_protocol.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_wopi_protocol.py::test_check_file_info_rejects_bogus_token",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_wopi_protocol.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_wopi_protocol.py::test_put_file_rejects_bogus_token",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_wopi_protocol.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_wopi_protocol.py::test_editor_ui_bundle_served",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_wopi_protocol.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_word_editing_gui.py::test_click_into_document_content_places_caret",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_word_editing_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_word_editing_gui.py::test_typing_triggers_wopi_autosave",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_word_editing_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_word_editing_gui.py::test_enter_and_backspace_shape_paragraphs",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_word_editing_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_word_editing_gui.py::test_typed_text_persists_to_storage",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_word_editing_gui.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_word_editing_gui.py::test_document_reloads_with_saved_content",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_word_editing_gui.py"
+  },
+  {
+   "area": "file",
+   "fidelity": "L4",
+   "id": "F-001",
+   "label": "Feature",
+   "name": "Save / autosave to WOPI",
+   "parity": "full"
+  },
+  {
+   "area": "file",
+   "fidelity": "L4",
+   "id": "F-002",
+   "label": "Feature",
+   "name": "Download as ODT",
+   "parity": "full"
+  },
+  {
+   "area": "file",
+   "fidelity": "L4",
+   "id": "F-003",
+   "label": "Feature",
+   "name": "Download as DOCX",
+   "parity": "missing"
+  },
+  {
+   "area": "file",
+   "fidelity": "L4",
+   "id": "F-004",
+   "label": "Feature",
+   "name": "Export to PDF",
+   "parity": "missing"
+  },
+  {
+   "area": "file",
+   "fidelity": "L4",
+   "id": "F-005",
+   "label": "Feature",
+   "name": "Print",
+   "parity": "missing"
+  },
+  {
+   "area": "file",
+   "fidelity": "L1",
+   "id": "F-006",
+   "label": "Feature",
+   "name": "Document info / metadata",
+   "parity": "missing"
+  },
+  {
+   "area": "home.font",
+   "fidelity": "L1",
+   "id": "F-010",
+   "label": "Feature",
+   "name": "Bold",
+   "parity": "full"
+  },
+  {
+   "area": "home.font",
+   "fidelity": "L1",
+   "id": "F-011",
+   "label": "Feature",
+   "name": "Italic",
+   "parity": "full"
+  },
+  {
+   "area": "home.font",
+   "fidelity": "L1",
+   "id": "F-012",
+   "label": "Feature",
+   "name": "Underline",
+   "parity": "full"
+  },
+  {
+   "area": "home.font",
+   "fidelity": "L1",
+   "id": "F-013",
+   "label": "Feature",
+   "name": "Strikethrough",
+   "parity": "full"
+  },
+  {
+   "area": "home.font",
+   "fidelity": "L1",
+   "id": "F-014",
+   "label": "Feature",
+   "name": "Subscript",
+   "parity": "full"
+  },
+  {
+   "area": "home.font",
+   "fidelity": "L1",
+   "id": "F-015",
+   "label": "Feature",
+   "name": "Superscript",
+   "parity": "full"
+  },
+  {
+   "area": "home.font",
+   "fidelity": "L1",
+   "id": "F-016",
+   "label": "Feature",
+   "name": "All caps",
+   "parity": "full"
+  },
+  {
+   "area": "home.font",
+   "fidelity": "L1",
+   "id": "F-017",
+   "label": "Feature",
+   "name": "Small caps",
+   "parity": "full"
+  },
+  {
+   "area": "home.font",
+   "fidelity": "L1",
+   "id": "F-018",
+   "label": "Feature",
+   "name": "Code / monospace style",
+   "parity": "partial"
+  },
+  {
+   "area": "home.font",
+   "fidelity": "L1",
+   "id": "F-019",
+   "label": "Feature",
+   "name": "Font family picker",
+   "parity": "missing"
+  },
+  {
+   "area": "home.font",
+   "fidelity": "L1",
+   "id": "F-020",
+   "label": "Feature",
+   "name": "Font size picker",
+   "parity": "missing"
+  },
+  {
+   "area": "home.font",
+   "fidelity": "L1",
+   "id": "F-021",
+   "label": "Feature",
+   "name": "Font color",
+   "parity": "partial"
+  },
+  {
+   "area": "home.font",
+   "fidelity": "L1",
+   "id": "F-022",
+   "label": "Feature",
+   "name": "Highlight color",
+   "parity": "partial"
+  },
+  {
+   "area": "home.font",
+   "fidelity": "L1",
+   "id": "F-023",
+   "label": "Feature",
+   "name": "Clear formatting",
+   "parity": "missing"
+  },
+  {
+   "area": "home.font",
+   "fidelity": "L1",
+   "id": "F-024",
+   "label": "Feature",
+   "name": "Grow / shrink font",
+   "parity": "missing"
+  },
+  {
+   "area": "home.para",
+   "fidelity": "L1",
+   "id": "F-030",
+   "label": "Feature",
+   "name": "Bulleted list",
+   "parity": "full"
+  },
+  {
+   "area": "home.para",
+   "fidelity": "L1",
+   "id": "F-031",
+   "label": "Feature",
+   "name": "Numbered list",
+   "parity": "full"
+  },
+  {
+   "area": "home.para",
+   "fidelity": "L1",
+   "id": "F-032",
+   "label": "Feature",
+   "name": "Multilevel list",
+   "parity": "missing"
+  },
+  {
+   "area": "home.para",
+   "fidelity": "L2",
+   "id": "F-033",
+   "label": "Feature",
+   "name": "Align left",
+   "parity": "full"
+  },
+  {
+   "area": "home.para",
+   "fidelity": "L2",
+   "id": "F-034",
+   "label": "Feature",
+   "name": "Align center",
+   "parity": "full"
+  },
+  {
+   "area": "home.para",
+   "fidelity": "L2",
+   "id": "F-035",
+   "label": "Feature",
+   "name": "Align right",
+   "parity": "full"
+  },
+  {
+   "area": "home.para",
+   "fidelity": "L2",
+   "id": "F-036",
+   "label": "Feature",
+   "name": "Justify",
+   "parity": "full"
+  },
+  {
+   "area": "home.para",
+   "fidelity": "L1",
+   "id": "F-037",
+   "label": "Feature",
+   "name": "Increase indent",
+   "parity": "full"
+  },
+  {
+   "area": "home.para",
+   "fidelity": "L1",
+   "id": "F-038",
+   "label": "Feature",
+   "name": "Decrease indent",
+   "parity": "full"
+  },
+  {
+   "area": "home.para",
+   "fidelity": "L2",
+   "id": "F-039",
+   "label": "Feature",
+   "name": "Line spacing",
+   "parity": "missing"
+  },
+  {
+   "area": "home.para",
+   "fidelity": "L2",
+   "id": "F-040",
+   "label": "Feature",
+   "name": "Paragraph shading / borders",
+   "parity": "missing"
+  },
+  {
+   "area": "home.para",
+   "fidelity": "L1",
+   "id": "F-041",
+   "label": "Feature",
+   "name": "RTL paragraph direction",
+   "parity": "partial"
+  },
+  {
+   "area": "home.styles",
+   "fidelity": "L1",
+   "id": "F-050",
+   "label": "Feature",
+   "name": "Heading 1-6 / paragraph styles",
+   "parity": "partial"
+  },
+  {
+   "area": "home.styles",
+   "fidelity": "L1",
+   "id": "F-051",
+   "label": "Feature",
+   "name": "Block quote",
+   "parity": "partial"
+  },
+  {
+   "area": "home.styles",
+   "fidelity": "L1",
+   "id": "F-052",
+   "label": "Feature",
+   "name": "Style gallery (named styles)",
+   "parity": "missing"
+  },
+  {
+   "area": "home.styles",
+   "fidelity": "L1",
+   "id": "F-053",
+   "label": "Feature",
+   "name": "Title / subtitle styles",
+   "parity": "missing"
+  },
+  {
+   "area": "editing",
+   "fidelity": "L1",
+   "id": "F-060",
+   "label": "Feature",
+   "name": "Undo",
+   "parity": "full"
+  },
+  {
+   "area": "editing",
+   "fidelity": "L1",
+   "id": "F-061",
+   "label": "Feature",
+   "name": "Redo",
+   "parity": "full"
+  },
+  {
+   "area": "editing",
+   "fidelity": "L1",
+   "id": "F-062",
+   "label": "Feature",
+   "name": "Find and replace",
+   "parity": "partial"
+  },
+  {
+   "area": "editing",
+   "fidelity": "L1",
+   "id": "F-063",
+   "label": "Feature",
+   "name": "Clipboard paste (rich text)",
+   "parity": "partial"
+  },
+  {
+   "area": "editing",
+   "fidelity": "L4",
+   "id": "F-064",
+   "label": "Feature",
+   "name": "Keyboard shortcuts (core set)",
+   "parity": "partial"
+  },
+  {
+   "area": "insert",
+   "fidelity": "L2",
+   "id": "F-070",
+   "label": "Feature",
+   "name": "Table insert + row/col ops",
+   "parity": "partial"
+  },
+  {
+   "area": "insert",
+   "fidelity": "L2",
+   "id": "F-071",
+   "label": "Feature",
+   "name": "Image insert + resize",
+   "parity": "partial"
+  },
+  {
+   "area": "insert",
+   "fidelity": "L1",
+   "id": "F-072",
+   "label": "Feature",
+   "name": "Hyperlink",
+   "parity": "missing"
+  },
+  {
+   "area": "insert",
+   "fidelity": "L1",
+   "id": "F-073",
+   "label": "Feature",
+   "name": "Footnote",
+   "parity": "missing"
+  },
+  {
+   "area": "insert",
+   "fidelity": "L1",
+   "id": "F-074",
+   "label": "Feature",
+   "name": "Endnote",
+   "parity": "missing"
+  },
+  {
+   "area": "insert",
+   "fidelity": "L4",
+   "id": "F-075",
+   "label": "Feature",
+   "name": "Comment",
+   "parity": "missing"
+  },
+  {
+   "area": "insert",
+   "fidelity": "L2",
+   "id": "F-076",
+   "label": "Feature",
+   "name": "Page break",
+   "parity": "missing"
+  },
+  {
+   "area": "insert",
+   "fidelity": "L1",
+   "id": "F-077",
+   "label": "Feature",
+   "name": "Table of contents",
+   "parity": "missing"
+  },
+  {
+   "area": "insert",
+   "fidelity": "L1",
+   "id": "F-078",
+   "label": "Feature",
+   "name": "Symbol / special char",
+   "parity": "missing"
+  },
+  {
+   "area": "insert",
+   "fidelity": "L1",
+   "id": "F-079",
+   "label": "Feature",
+   "name": "Date and time",
+   "parity": "missing"
+  },
+  {
+   "area": "insert",
+   "fidelity": "L2",
+   "id": "F-080",
+   "label": "Feature",
+   "name": "Text box",
+   "parity": "missing"
+  },
+  {
+   "area": "insert",
+   "fidelity": "L2",
+   "id": "F-081",
+   "label": "Feature",
+   "name": "Shape",
+   "parity": "missing"
+  },
+  {
+   "area": "insert",
+   "fidelity": "L2",
+   "id": "F-082",
+   "label": "Feature",
+   "name": "Chart",
+   "parity": "missing"
+  },
+  {
+   "area": "insert",
+   "fidelity": "L1",
+   "id": "F-083",
+   "label": "Feature",
+   "name": "Bookmark",
+   "parity": "missing"
+  },
+  {
+   "area": "insert",
+   "fidelity": "L2",
+   "id": "F-084",
+   "label": "Feature",
+   "name": "Header / footer",
+   "parity": "missing"
+  },
+  {
+   "area": "insert",
+   "fidelity": "L2",
+   "id": "F-085",
+   "label": "Feature",
+   "name": "Page numbers",
+   "parity": "missing"
+  },
+  {
+   "area": "insert",
+   "fidelity": "L2",
+   "id": "F-086",
+   "label": "Feature",
+   "name": "Equation / formula",
+   "parity": "missing"
+  },
+  {
+   "area": "layout",
+   "fidelity": "L2",
+   "id": "F-090",
+   "label": "Feature",
+   "name": "Page size",
+   "parity": "partial"
+  },
+  {
+   "area": "layout",
+   "fidelity": "L2",
+   "id": "F-091",
+   "label": "Feature",
+   "name": "Orientation (portrait/landscape)",
+   "parity": "partial"
+  },
+  {
+   "area": "layout",
+   "fidelity": "L2",
+   "id": "F-092",
+   "label": "Feature",
+   "name": "Margins",
+   "parity": "missing"
+  },
+  {
+   "area": "layout",
+   "fidelity": "L2",
+   "id": "F-093",
+   "label": "Feature",
+   "name": "Columns",
+   "parity": "missing"
+  },
+  {
+   "area": "layout",
+   "fidelity": "L2",
+   "id": "F-094",
+   "label": "Feature",
+   "name": "Section breaks",
+   "parity": "missing"
+  },
+  {
+   "area": "layout",
+   "fidelity": "L2",
+   "id": "F-095",
+   "label": "Feature",
+   "name": "Hyphenation",
+   "parity": "missing"
+  },
+  {
+   "area": "layout",
+   "fidelity": "L2",
+   "id": "F-096",
+   "label": "Feature",
+   "name": "Line numbers",
+   "parity": "missing"
+  },
+  {
+   "area": "layout",
+   "fidelity": "L3",
+   "id": "F-097",
+   "label": "Feature",
+   "name": "Watermark",
+   "parity": "missing"
+  },
+  {
+   "area": "review",
+   "fidelity": "L4",
+   "id": "F-100",
+   "label": "Feature",
+   "name": "Track changes on/off",
+   "parity": "missing"
+  },
+  {
+   "area": "review",
+   "fidelity": "L4",
+   "id": "F-101",
+   "label": "Feature",
+   "name": "Accept / reject change",
+   "parity": "missing"
+  },
+  {
+   "area": "review",
+   "fidelity": "L4",
+   "id": "F-102",
+   "label": "Feature",
+   "name": "Comment threads (add/reply/resolve)",
+   "parity": "missing"
+  },
+  {
+   "area": "review",
+   "fidelity": "L4",
+   "id": "F-103",
+   "label": "Feature",
+   "name": "Compare documents",
+   "parity": "missing"
+  },
+  {
+   "area": "review",
+   "fidelity": "L4",
+   "id": "F-104",
+   "label": "Feature",
+   "name": "Version history",
+   "parity": "missing"
+  },
+  {
+   "area": "view",
+   "fidelity": "L3",
+   "id": "F-110",
+   "label": "Feature",
+   "name": "Zoom controls",
+   "parity": "partial"
+  },
+  {
+   "area": "view",
+   "fidelity": "L3",
+   "id": "F-111",
+   "label": "Feature",
+   "name": "Fit page / fit width",
+   "parity": "missing"
+  },
+  {
+   "area": "view",
+   "fidelity": "L4",
+   "id": "F-112",
+   "label": "Feature",
+   "name": "Full screen",
+   "parity": "missing"
+  },
+  {
+   "area": "view",
+   "fidelity": "L4",
+   "id": "F-113",
+   "label": "Feature",
+   "name": "Rulers / guides",
+   "parity": "missing"
+  },
+  {
+   "area": "view",
+   "fidelity": "L4",
+   "id": "F-114",
+   "label": "Feature",
+   "name": "Dark interface theme",
+   "parity": "missing"
+  },
+  {
+   "area": "collab",
+   "fidelity": "L4",
+   "id": "F-120",
+   "label": "Feature",
+   "name": "Real-time co-editing",
+   "parity": "partial"
+  },
+  {
+   "area": "collab",
+   "fidelity": "L4",
+   "id": "F-121",
+   "label": "Feature",
+   "name": "Live cursors with names",
+   "parity": "partial"
+  },
+  {
+   "area": "collab",
+   "fidelity": "L4",
+   "id": "F-122",
+   "label": "Feature",
+   "name": "Presence avatars",
+   "parity": "missing"
+  },
+  {
+   "area": "collab",
+   "fidelity": "L4",
+   "id": "F-123",
+   "label": "Feature",
+   "name": "Concurrent edit conflict resolution",
+   "parity": "partial"
+  },
+  {
+   "area": "collab",
+   "fidelity": "L4",
+   "id": "F-124",
+   "label": "Feature",
+   "name": "WOPI Lock/Unlock conflict handling",
+   "parity": "full"
+  }
+ ],
+ "stats": {
+  "commands": 21,
+  "edges": 138,
+  "features": 82,
+  "surfaces": 21,
+  "tests": 105
+ },
+ "version": 1
+}
