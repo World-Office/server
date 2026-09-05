@@ -271,22 +271,17 @@ def _content_type(name: str) -> str:
     return _CONTENT_TYPES.get(f".{ext}", "application/octet-stream")
 
 
-def _export_pdf(html: str) -> bytes:
-    """Render HTML to PDF. Uses weasyprint when available, else a minimal
-    valid PDF so the export contract (application/pdf + %PDF header) holds."""
-    try:
-        from weasyprint import HTML as WHTML
+def _export_pdf(html: str) -> tuple[bytes, str]:
+    """Render HTML to PDF with WeasyPrint.
 
-        return WHTML(string=html).write_pdf()
-    except Exception:
-        return (
-            b"%PDF-1.4\n"
-            b"1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
-            b"2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
-            b"3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]>>endobj\n"
-            b"trailer<</Root 1 0 R>>\n"
-            b"%%EOF"
-        )
+    Returns (pdf_bytes, engine). The historical behavior — a minimal no-content
+    stub PDF when WeasyPrint was unavailable — is GONE on purpose: a silent
+    stub defeats the export contract. Missing engine now surfaces as a 500
+    with an actionable error (see export_document).
+    """
+    from weasyprint import HTML as WHTML
+
+    return WHTML(string=html).write_pdf(), "weasyprint"
 
 
 # ----------------------------------------------------------------------
@@ -329,6 +324,8 @@ async def save_document(doc_id: str, request: Request) -> JSONResponse:
         payload = json.loads(body)
     except (json.JSONDecodeError, UnicodeDecodeError):
         return JSONResponse({"error": "invalid JSON"}, status_code=400)
+    if not isinstance(payload, dict):
+        return JSONResponse({"error": "invalid JSON body: expected an object"}, status_code=400)
     html = payload.get("html", "")
 
     # Sanitize before conversion to prevent XSS
@@ -384,6 +381,7 @@ async def export_document(doc_id: str, request: Request, format: str = "pdf") ->
         return JSONResponse({"error": f"conversion failed: {exc}"}, status_code=500)
     html = sanitize_html(html)
     name = _doc_name(request, doc_id) or "document"
+    engine_header: dict[str, str] | None = None
     try:
         if format == "html":
             out, mime = html.encode("utf-8"), "text/html"
@@ -395,17 +393,22 @@ async def export_document(doc_id: str, request: Request, format: str = "pdf") ->
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             )
         elif format == "pdf":
-            out, mime = _export_pdf(html), "application/pdf"
+            pdf_bytes, engine = _export_pdf(html)
+            out, mime = pdf_bytes, "application/pdf"
+            engine_header = {"X-Export-Engine": engine}
         else:
             return JSONResponse({"error": f"unsupported format: {format}"}, status_code=400)
     except Exception as exc:
         return JSONResponse({"error": f"export failed: {exc}"}, status_code=500)
     base = name.rsplit(".", 1)[0]
     ext = {"html": ".html", "odt": ".odt", "docx": ".docx", "pdf": ".pdf"}.get(format, ".bin")
+    headers = {"Content-Disposition": f'attachment; filename="{base}{ext}"'}
+    if engine_header:
+        headers.update(engine_header)
     return Response(
         content=out,
         media_type=mime,
-        headers={"Content-Disposition": f'attachment; filename="{base}{ext}"'},
+        headers=headers,
     )
 
 
