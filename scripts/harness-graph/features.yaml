@@ -119,11 +119,16 @@ features:
   - {id: F-104, area: review,      name: Version history,                parity: missing, fidelity: L4}
 
   # ── view ──────────────────────────────────────────────────────────────────
-  - {id: F-110, area: view,        name: Zoom controls,                  parity: partial, fidelity: L3}
-  - {id: F-111, area: view,        name: Fit page / fit width,           parity: missing, fidelity: L3}
-  - {id: F-112, area: view,        name: Full screen,                    parity: missing, fidelity: L4}
-  - {id: F-113, area: view,        name: Rulers / guides,                parity: missing, fidelity: L4}
-  - {id: F-114, area: view,        name: Dark interface theme,           parity: missing, fidelity: L4}
+  - {id: F-110, area: view,        name: Zoom controls,                  parity: full,    fidelity: L1,
+      divergence: [{ref: css-zoom, justification: "Toolbar zoom in/out/reset (id-based #btn-zoom-*) drive CSS zoom of the editing surface, clamped 0.5..2.0 and persisted to localStorage; proven by static wiring tests + live-browser e2e. Fidelity is L1 (marker+wiring): no canvas-true L3 perceptual evidence, and the Control+Plus/Minus shortcuts are declared in aria-keyshortcuts only, not bound as keydown handlers."}]}
+  - {id: F-111, area: view,        name: Fit page / fit width,           parity: missing, fidelity: L3,
+      divergence: [{ref: no-surface, justification: "Audit empty: no fit/fit-page/fit-width control in index.html, editor.js or style.css (only unrelated viewport-fit=cover/object-fit CSS props); serialization N/A; no tests. Tracked for implementation."}]}
+  - {id: F-112, area: view,        name: Full screen,                    parity: full,    fidelity: L1,
+      divergence: [{ref: class-driven, justification: "#btn-fullscreen toggles body.fullscreen (layout expansion via style.css) plus a best-effort requestFullscreen/exitFullscreen call. Proven by wiring tests + live-browser e2e class toggle. Fidelity is L1 (marker+wiring), not an L4 native-fullscreen/rendering claim."}]}
+  - {id: F-113, area: view,        name: Rulers / guides,                parity: missing, fidelity: L4,
+      divergence: [{ref: no-surface, justification: "Audit empty: no ruler or guide surface anywhere in web/ or src/ (grep ruler|guide across index.html, editor.js, style.css, i18n.js, converter sources); serialization N/A; no tests. Tracked for implementation."}]}
+  - {id: F-114, area: view,        name: Dark interface theme,           parity: full,    fidelity: L1,
+      divergence: [{ref: two-palette, justification: "#btn-theme toggles html.light over a dark-default :root palette via CSS variables (localStorage wo-theme, aria-pressed synced); live-browser e2e observes the body background colour change. Fidelity is L1 (marker+wiring+css), not a full L4 dynamic-theme engine."}]}
 
   # ── collaboration (WO-specific, OnlyOffice co-editing as reference) ──────
   - {id: F-120, area: collab,      name: Real-time co-editing,           parity: partial, fidelity: L4}
