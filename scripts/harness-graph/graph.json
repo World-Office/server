@@ -141,6 +141,16 @@
    "type": "IMPLEMENTED_BY"
   },
   {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-010",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-010",
+   "type": "COVERS"
+  },
+  {
    "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_click_into_document_content_places_caret",
    "to": "F-010",
    "type": "COVERS"
@@ -169,6 +179,16 @@
    "from": "F-011",
    "to": "italic",
    "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-011",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-011",
+   "type": "COVERS"
   },
   {
    "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_click_into_document_content_places_caret",
@@ -201,6 +221,16 @@
    "type": "IMPLEMENTED_BY"
   },
   {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-012",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-012",
+   "type": "COVERS"
+  },
+  {
    "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_click_into_document_content_places_caret",
    "to": "F-012",
    "type": "COVERS"
@@ -229,6 +259,16 @@
    "from": "F-013",
    "to": "strikeThrough",
    "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-013",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-013",
+   "type": "COVERS"
   },
   {
    "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_click_into_document_content_places_caret",
@@ -261,9 +301,29 @@
    "type": "IMPLEMENTED_BY"
   },
   {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-014",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-014",
+   "type": "COVERS"
+  },
+  {
    "from": "F-015",
    "to": "superscript",
    "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-015",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-015",
+   "type": "COVERS"
   },
   {
    "from": "F-016",
@@ -271,9 +331,29 @@
    "type": "IMPLEMENTED_BY"
   },
   {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-016",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-016",
+   "type": "COVERS"
+  },
+  {
    "from": "F-017",
    "to": "smallCaps",
    "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-017",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-017",
+   "type": "COVERS"
   },
   {
    "from": "F-018",
@@ -281,9 +361,29 @@
    "type": "IMPLEMENTED_BY"
   },
   {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-018",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-018",
+   "type": "COVERS"
+  },
+  {
    "from": "F-030",
    "to": "insertUnorderedList",
    "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-030",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-030",
+   "type": "COVERS"
   },
   {
    "from": "F-031",
@@ -291,9 +391,29 @@
    "type": "IMPLEMENTED_BY"
   },
   {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-031",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-031",
+   "type": "COVERS"
+  },
+  {
    "from": "F-033",
    "to": "justifyLeft",
    "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-033",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-033",
+   "type": "COVERS"
   },
   {
    "from": "F-034",
@@ -301,9 +421,29 @@
    "type": "IMPLEMENTED_BY"
   },
   {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-034",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-034",
+   "type": "COVERS"
+  },
+  {
    "from": "F-035",
    "to": "justifyRight",
    "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-035",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-035",
+   "type": "COVERS"
   },
   {
    "from": "F-036",
@@ -311,9 +451,29 @@
    "type": "IMPLEMENTED_BY"
   },
   {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-036",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-036",
+   "type": "COVERS"
+  },
+  {
    "from": "F-037",
    "to": "indent",
    "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-037",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-037",
+   "type": "COVERS"
   },
   {
    "from": "F-038",
@@ -321,9 +481,29 @@
    "type": "IMPLEMENTED_BY"
   },
   {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-038",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-038",
+   "type": "COVERS"
+  },
+  {
    "from": "F-041",
    "to": "directionRtl",
    "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-041",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-041",
+   "type": "COVERS"
   },
   {
    "from": "F-050",
@@ -331,14 +511,44 @@
    "type": "IMPLEMENTED_BY"
   },
   {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-050",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-050",
+   "type": "COVERS"
+  },
+  {
    "from": "F-051",
    "to": "formatBlock",
    "type": "IMPLEMENTED_BY"
   },
   {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-051",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-051",
+   "type": "COVERS"
+  },
+  {
    "from": "F-060",
    "to": "undo",
    "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-060",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-060",
+   "type": "COVERS"
   },
   {
    "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_click_into_document_content_places_caret",
@@ -369,6 +579,16 @@
    "from": "F-061",
    "to": "redo",
    "type": "IMPLEMENTED_BY"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "to": "F-061",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "to": "F-061",
+   "type": "COVERS"
   },
   {
    "from": "opencloud-docserver/e2e/test_word_editing_gui.py::test_click_into_document_content_places_caret",
@@ -691,7 +911,7 @@
    "type": "COVERS"
   }
  ],
- "generated_at": "2026-09-05T04:51:14+00:00",
+ "generated_at": "2026-09-05T05:50:44+00:00",
  "nodes": [
   {
    "id": "allCaps",
@@ -1489,6 +1709,18 @@
    "path": "opencloud-docserver/e2e/test_share_lifecycle.py"
   },
   {
+   "id": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_registered_surface_exists",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py"
+  },
+  {
+   "id": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py::test_every_editor_button_is_registered",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/e2e/test_toolbar_sweep_graph.py"
+  },
+  {
    "id": "opencloud-docserver/e2e/test_wopi_protocol.py::test_health_endpoint",
    "label": "Test",
    "layer": "e2e",
@@ -2213,10 +2445,10 @@
  ],
  "stats": {
   "commands": 21,
-  "edges": 138,
+  "edges": 182,
   "features": 82,
   "surfaces": 21,
-  "tests": 105
+  "tests": 107
  },
  "version": 1
 }
