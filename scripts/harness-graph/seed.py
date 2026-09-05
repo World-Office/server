@@ -46,7 +46,10 @@ DEFAULTS = {
     "features": HERE / "features.yaml",
     "editor_js": SERVER / "opencloud-docserver" / "web" / "editor.js",
     "index_html": SERVER / "opencloud-docserver" / "web" / "index.html",
-    "pytest_roots": [SERVER / "opencloud-docserver" / "e2e"],
+    "pytest_roots": [
+        SERVER / "opencloud-docserver" / "e2e",
+        SERVER / "opencloud-docserver" / "tests",  # unit tests may claim coverage too
+    ],
     "out": HERE / "graph.json",
 }
 

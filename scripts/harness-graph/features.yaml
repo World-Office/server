@@ -17,8 +17,10 @@ features:
   # ── file ──────────────────────────────────────────────────────────────────
   - {id: F-001, area: file,        name: Save / autosave to WOPI,        parity: full,    fidelity: L4, commands: [save]}
   - {id: F-002, area: file,        name: Download as ODT,                parity: full,    fidelity: L4}
-  - {id: F-003, area: file,        name: Download as DOCX,               parity: missing, fidelity: L4}
-  - {id: F-004, area: file,        name: Export to PDF,                  parity: missing, fidelity: L4}
+  - {id: F-003, area: file,        name: Download as DOCX,               parity: full,    fidelity: L1,
+      divergence: [{ref: html-projection, justification: "DOCX is produced from the editor HTML projection (html_to_docx), not canvas-true layout; content-faithful, formatting approximate. Canvas-true export tracked as future work."}]}
+  - {id: F-004, area: file,        name: Export to PDF,                  parity: full,    fidelity: L1,
+      divergence: [{ref: html-projection, justification: "PDF via WeasyPrint from the sanitized editor HTML, not canvas-true layout (L4 pending a renderer-backed path). The historical silent stub-PDF fallback was removed; missing engine now fails loudly (X-Export-Engine header + 500)."}]}
   - {id: F-005, area: file,        name: Print,                          parity: missing, fidelity: L4}
   - {id: F-006, area: file,        name: Document info / metadata,       parity: missing, fidelity: L1}
 
