@@ -68,9 +68,10 @@ features:
   # ── editing ───────────────────────────────────────────────────────────────
   - {id: F-060, area: editing,     name: Undo,                           parity: full,    fidelity: L1, commands: [undo]}
   - {id: F-061, area: editing,     name: Redo,                           parity: full,    fidelity: L1, commands: [redo]}
-  - {id: F-062, area: editing,     name: Find and replace,               parity: partial, fidelity: L1}
-  - {id: F-063, area: editing,     name: Clipboard paste (rich text),    parity: partial, fidelity: L1}
-  - {id: F-064, area: editing,     name: Keyboard shortcuts (core set),  parity: partial, fidelity: L4}
+  - {id: F-062, area: editing,     name: Find and replace,               parity: full,    fidelity: L1}
+  - {id: F-063, area: editing,     name: Clipboard paste (rich text),    parity: partial, fidelity: L1,
+      divergence: [{ref: plain-text-only, justification: "onBeforeInput handles 'insertFromPaste' but only extracts 'text/plain' from dataTransfer."}]}
+  - {id: F-064, area: editing,     name: Keyboard shortcuts (core set),  parity: full,    fidelity: L4}
 
   # ── insert ────────────────────────────────────────────────────────────────
   - {id: F-070, area: insert,      name: Table insert + row/col ops,     parity: full,    fidelity: L2}
