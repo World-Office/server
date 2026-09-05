@@ -586,6 +586,251 @@
    "type": "COVERS"
   },
   {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_clear_formatting_missing",
+   "to": "F-018",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_code_style_parity",
+   "to": "F-018",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_color_roundtrip",
+   "to": "F-018",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_family_roundtrip",
+   "to": "F-018",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_size_roundtrip",
+   "to": "F-018",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_grow_shrink_missing",
+   "to": "F-018",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_highlight_color_roundtrip",
+   "to": "F-018",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_clear_formatting_missing",
+   "to": "F-019",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_code_style_parity",
+   "to": "F-019",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_color_roundtrip",
+   "to": "F-019",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_family_roundtrip",
+   "to": "F-019",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_size_roundtrip",
+   "to": "F-019",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_grow_shrink_missing",
+   "to": "F-019",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_highlight_color_roundtrip",
+   "to": "F-019",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_clear_formatting_missing",
+   "to": "F-020",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_code_style_parity",
+   "to": "F-020",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_color_roundtrip",
+   "to": "F-020",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_family_roundtrip",
+   "to": "F-020",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_size_roundtrip",
+   "to": "F-020",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_grow_shrink_missing",
+   "to": "F-020",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_highlight_color_roundtrip",
+   "to": "F-020",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_clear_formatting_missing",
+   "to": "F-021",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_code_style_parity",
+   "to": "F-021",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_color_roundtrip",
+   "to": "F-021",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_family_roundtrip",
+   "to": "F-021",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_size_roundtrip",
+   "to": "F-021",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_grow_shrink_missing",
+   "to": "F-021",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_highlight_color_roundtrip",
+   "to": "F-021",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_clear_formatting_missing",
+   "to": "F-022",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_code_style_parity",
+   "to": "F-022",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_color_roundtrip",
+   "to": "F-022",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_family_roundtrip",
+   "to": "F-022",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_size_roundtrip",
+   "to": "F-022",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_grow_shrink_missing",
+   "to": "F-022",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_highlight_color_roundtrip",
+   "to": "F-022",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_clear_formatting_missing",
+   "to": "F-023",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_code_style_parity",
+   "to": "F-023",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_color_roundtrip",
+   "to": "F-023",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_family_roundtrip",
+   "to": "F-023",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_size_roundtrip",
+   "to": "F-023",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_grow_shrink_missing",
+   "to": "F-023",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_highlight_color_roundtrip",
+   "to": "F-023",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_clear_formatting_missing",
+   "to": "F-024",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_code_style_parity",
+   "to": "F-024",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_color_roundtrip",
+   "to": "F-024",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_family_roundtrip",
+   "to": "F-024",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_font_size_roundtrip",
+   "to": "F-024",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_grow_shrink_missing",
+   "to": "F-024",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_font_controls.py::test_highlight_color_roundtrip",
+   "to": "F-024",
+   "type": "COVERS"
+  },
+  {
    "from": "F-030",
    "to": "insertUnorderedList",
    "type": "IMPLEMENTED_BY"
@@ -4761,7 +5006,7 @@
    "type": "COVERS"
   }
  ],
- "generated_at": "2026-09-05T06:48:45+00:00",
+ "generated_at": "2026-09-05T11:22:39+00:00",
  "nodes": [
   {
    "id": "allCaps",
@@ -8553,6 +8798,48 @@
    "path": "opencloud-docserver/tests/test_file_ops.py"
   },
   {
+   "id": "opencloud-docserver/tests/test_font_controls.py::test_font_family_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_font_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_font_controls.py::test_font_size_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_font_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_font_controls.py::test_font_color_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_font_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_font_controls.py::test_highlight_color_roundtrip",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_font_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_font_controls.py::test_clear_formatting_missing",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_font_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_font_controls.py::test_grow_shrink_missing",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_font_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_font_controls.py::test_code_style_parity",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_font_controls.py"
+  },
+  {
    "id": "opencloud-docserver/tests/test_main_bootstrap.py::test_create_app_initializes_with_config",
    "label": "Test",
    "layer": "e2e",
@@ -11714,7 +12001,7 @@
    "id": "F-018",
    "label": "Feature",
    "name": "Code / monospace style",
-   "parity": "partial"
+   "parity": "full"
   },
   {
    "area": "home.font",
@@ -11722,7 +12009,7 @@
    "id": "F-019",
    "label": "Feature",
    "name": "Font family picker",
-   "parity": "missing"
+   "parity": "full"
   },
   {
    "area": "home.font",
@@ -11730,7 +12017,7 @@
    "id": "F-020",
    "label": "Feature",
    "name": "Font size picker",
-   "parity": "missing"
+   "parity": "full"
   },
   {
    "area": "home.font",
@@ -11738,7 +12025,7 @@
    "id": "F-021",
    "label": "Feature",
    "name": "Font color",
-   "parity": "partial"
+   "parity": "full"
   },
   {
    "area": "home.font",
@@ -11746,7 +12033,7 @@
    "id": "F-022",
    "label": "Feature",
    "name": "Highlight color",
-   "parity": "partial"
+   "parity": "full"
   },
   {
    "area": "home.font",
@@ -11757,12 +12044,22 @@
    "parity": "missing"
   },
   {
+   "id": "F-023:no-impl",
+   "justification": "No 'removeFormat' or 'clearFormatting' logic found in editor.js or converter.py.",
+   "label": "Divergence"
+  },
+  {
    "area": "home.font",
    "fidelity": "L1",
    "id": "F-024",
    "label": "Feature",
    "name": "Grow / shrink font",
    "parity": "missing"
+  },
+  {
+   "id": "F-024:no-impl",
+   "justification": "No grow/shrink font logic found in editor.js or converter.py.",
+   "label": "Divergence"
   },
   {
    "area": "home.para",
@@ -12280,10 +12577,10 @@
  ],
  "stats": {
   "commands": 21,
-  "edges": 952,
+  "edges": 1001,
   "features": 82,
   "surfaces": 21,
-  "tests": 1097
+  "tests": 1104
  },
  "version": 1
 }
