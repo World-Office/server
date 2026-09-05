@@ -39,8 +39,8 @@ jobs:
       - name: Playwright browser (in-repo e2e uses chromium)
         run: uv run playwright install --with-deps chromium
 
-      - name: Full suite
-        run: uv run --frozen pytest tests/ -q
+      - name: Full suite (parallel; browser tests in their own lane)
+        run: uv run --frozen pytest tests/ -q -n auto --dist loadgroup
 
   register:
     name: Register gates (drift + full resolution)
