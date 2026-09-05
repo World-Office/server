@@ -4931,6 +4931,141 @@
    "type": "COVERS"
   },
   {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_fullscreen_css_expands_surface",
+   "to": "F-110",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_fullscreen_surface_present",
+   "to": "F-110",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_fullscreen_wiring",
+   "to": "F-110",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_theme_command_wired",
+   "to": "F-110",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_theme_css_dark_and_light_palettes",
+   "to": "F-110",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_theme_surface_present",
+   "to": "F-110",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_zoom_buttons_hooked_to_applyzoom",
+   "to": "F-110",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_zoom_command_applyzoom_wired",
+   "to": "F-110",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_zoom_controls_surfaces_present",
+   "to": "F-110",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_fullscreen_css_expands_surface",
+   "to": "F-112",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_fullscreen_surface_present",
+   "to": "F-112",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_fullscreen_wiring",
+   "to": "F-112",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_theme_command_wired",
+   "to": "F-112",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_theme_css_dark_and_light_palettes",
+   "to": "F-112",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_theme_surface_present",
+   "to": "F-112",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_zoom_buttons_hooked_to_applyzoom",
+   "to": "F-112",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_zoom_command_applyzoom_wired",
+   "to": "F-112",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_zoom_controls_surfaces_present",
+   "to": "F-112",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_fullscreen_css_expands_surface",
+   "to": "F-114",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_fullscreen_surface_present",
+   "to": "F-114",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_fullscreen_wiring",
+   "to": "F-114",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_theme_command_wired",
+   "to": "F-114",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_theme_css_dark_and_light_palettes",
+   "to": "F-114",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_theme_surface_present",
+   "to": "F-114",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_zoom_buttons_hooked_to_applyzoom",
+   "to": "F-114",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_zoom_command_applyzoom_wired",
+   "to": "F-114",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_view_controls.py::test_zoom_controls_surfaces_present",
+   "to": "F-114",
+   "type": "COVERS"
+  },
+  {
    "from": "opencloud-docserver/e2e/test_paper_collaboration.py::test_01_manuscript_seed_is_a_valid_paper",
    "to": "F-120",
    "type": "COVERS"
@@ -5201,7 +5336,7 @@
    "type": "COVERS"
   }
  ],
- "generated_at": "2026-09-05T11:41:56+00:00",
+ "generated_at": "2026-09-05T12:26:04+00:00",
  "nodes": [
   {
    "id": "allCaps",
@@ -10907,6 +11042,60 @@
    "path": "opencloud-docserver/tests/test_versions.py"
   },
   {
+   "id": "opencloud-docserver/tests/test_view_controls.py::test_zoom_controls_surfaces_present",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_view_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_view_controls.py::test_zoom_command_applyzoom_wired",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_view_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_view_controls.py::test_zoom_buttons_hooked_to_applyzoom",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_view_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_view_controls.py::test_fullscreen_surface_present",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_view_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_view_controls.py::test_fullscreen_wiring",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_view_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_view_controls.py::test_fullscreen_css_expands_surface",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_view_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_view_controls.py::test_theme_surface_present",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_view_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_view_controls.py::test_theme_command_wired",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_view_controls.py"
+  },
+  {
+   "id": "opencloud-docserver/tests/test_view_controls.py::test_theme_css_dark_and_light_palettes",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_view_controls.py"
+  },
+  {
    "id": "opencloud-docserver/tests/test_web_surface.py::test_hosting_discovery_returns_xml_with_correct_media_type",
    "label": "Test",
    "layer": "e2e",
@@ -12765,11 +12954,16 @@
   },
   {
    "area": "view",
-   "fidelity": "L3",
+   "fidelity": "L1",
    "id": "F-110",
    "label": "Feature",
    "name": "Zoom controls",
-   "parity": "partial"
+   "parity": "full"
+  },
+  {
+   "id": "F-110:css-zoom",
+   "justification": "Toolbar zoom in/out/reset (id-based #btn-zoom-*) drive CSS zoom of the editing surface, clamped 0.5..2.0 and persisted to localStorage; proven by static wiring tests + live-browser e2e. Fidelity is L1 (marker+wiring): no canvas-true L3 perceptual evidence, and the Control+Plus/Minus shortcuts are declared in aria-keyshortcuts only, not bound as keydown handlers.",
+   "label": "Divergence"
   },
   {
    "area": "view",
@@ -12780,12 +12974,22 @@
    "parity": "missing"
   },
   {
+   "id": "F-111:no-surface",
+   "justification": "Audit empty: no fit/fit-page/fit-width control in index.html, editor.js or style.css (only unrelated viewport-fit=cover/object-fit CSS props); serialization N/A; no tests. Tracked for implementation.",
+   "label": "Divergence"
+  },
+  {
    "area": "view",
-   "fidelity": "L4",
+   "fidelity": "L1",
    "id": "F-112",
    "label": "Feature",
    "name": "Full screen",
-   "parity": "missing"
+   "parity": "full"
+  },
+  {
+   "id": "F-112:class-driven",
+   "justification": "#btn-fullscreen toggles body.fullscreen (layout expansion via style.css) plus a best-effort requestFullscreen/exitFullscreen call. Proven by wiring tests + live-browser e2e class toggle. Fidelity is L1 (marker+wiring), not an L4 native-fullscreen/rendering claim.",
+   "label": "Divergence"
   },
   {
    "area": "view",
@@ -12796,12 +13000,22 @@
    "parity": "missing"
   },
   {
+   "id": "F-113:no-surface",
+   "justification": "Audit empty: no ruler or guide surface anywhere in web/ or src/ (grep ruler|guide across index.html, editor.js, style.css, i18n.js, converter sources); serialization N/A; no tests. Tracked for implementation.",
+   "label": "Divergence"
+  },
+  {
    "area": "view",
-   "fidelity": "L4",
+   "fidelity": "L1",
    "id": "F-114",
    "label": "Feature",
    "name": "Dark interface theme",
-   "parity": "missing"
+   "parity": "full"
+  },
+  {
+   "id": "F-114:two-palette",
+   "justification": "#btn-theme toggles html.light over a dark-default :root palette via CSS variables (localStorage wo-theme, aria-pressed synced); live-browser e2e observes the body background colour change. Fidelity is L1 (marker+wiring+css), not a full L4 dynamic-theme engine.",
+   "label": "Divergence"
   },
   {
    "area": "collab",
@@ -12846,10 +13060,10 @@
  ],
  "stats": {
   "commands": 21,
-  "edges": 1040,
+  "edges": 1067,
   "features": 82,
   "surfaces": 21,
-  "tests": 1113
+  "tests": 1122
  },
  "version": 1
 }
