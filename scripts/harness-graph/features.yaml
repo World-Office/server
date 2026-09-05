@@ -35,13 +35,15 @@ features:
   - {id: F-015, area: home.font,   name: Superscript,                    parity: full,    fidelity: L1, commands: [superscript]}
   - {id: F-016, area: home.font,   name: All caps,                       parity: full,    fidelity: L1, commands: [allCaps]}
   - {id: F-017, area: home.font,   name: Small caps,                     parity: full,    fidelity: L1, commands: [smallCaps]}
-  - {id: F-018, area: home.font,   name: Code / monospace style,         parity: partial, fidelity: L1, commands: [code]}
-  - {id: F-019, area: home.font,   name: Font family picker,             parity: missing, fidelity: L1}
-  - {id: F-020, area: home.font,   name: Font size picker,               parity: missing, fidelity: L1}
-  - {id: F-021, area: home.font,   name: Font color,                     parity: partial, fidelity: L1}
-  - {id: F-022, area: home.font,   name: Highlight color,                parity: partial, fidelity: L1}
-  - {id: F-023, area: home.font,   name: Clear formatting,               parity: missing, fidelity: L1}
-  - {id: F-024, area: home.font,   name: Grow / shrink font,             parity: missing, fidelity: L1}
+  - {id: F-018, area: home.font,   name: Code / monospace style,         parity: full,    fidelity: L1, commands: [code]}
+  - {id: F-019, area: home.font,   name: Font family picker,             parity: full,    fidelity: L1}
+  - {id: F-020, area: home.font,   name: Font size picker,               parity: full,    fidelity: L1}
+  - {id: F-021, area: home.font,   name: Font color,                     parity: full,    fidelity: L1}
+  - {id: F-022, area: home.font,   name: Highlight color,                parity: full,    fidelity: L1}
+  - {id: F-023, area: home.font,   name: Clear formatting,               parity: missing, fidelity: L1,
+      divergence: [{ref: no-impl, justification: "No 'removeFormat' or 'clearFormatting' logic found in editor.js or converter.py."}]}
+  - {id: F-024, area: home.font,   name: Grow / shrink font,             parity: missing, fidelity: L1,
+      divergence: [{ref: no-impl, justification: "No grow/shrink font logic found in editor.js or converter.py."}]}
 
   # ── home: paragraph ───────────────────────────────────────────────────────
   - {id: F-030, area: home.para,   name: Bulleted list,                  parity: full,    fidelity: L1, commands: [insertUnorderedList]}
