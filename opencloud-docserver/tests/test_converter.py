@@ -1,4 +1,7 @@
-"""Tests for DOCX <-> HTML conversion."""
+"""Tests for DOCX <-> HTML conversion.
+
+feature register: F-070 F-072 F-073 F-074 F-075 F-077 F-078 F-083 (converter serialization roundtrips)
+"""
 
 from __future__ import annotations
 
