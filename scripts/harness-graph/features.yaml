@@ -75,7 +75,7 @@ features:
 
   # ── insert ────────────────────────────────────────────────────────────────
   - {id: F-070, area: insert,      name: Table insert + row/col ops,     parity: full,    fidelity: L2}
-  - {id: F-071, area: insert,      name: Image insert + resize,          parity: partial, fidelity: L2}
+  - {id: F-071, area: insert,      name: Image insert + resize,          parity: full,    fidelity: L2}
   - {id: F-072, area: insert,      name: Hyperlink,                      parity: full,    fidelity: L1}
   - {id: F-073, area: insert,      name: Footnote,                       parity: partial, fidelity: L1,
       divergence: [{ref: no-authoring-ui, justification: "Read + serialization roundtrip (w:footnoteReference <-> sup.footnote-citation) proven; no editor toolbar authoring button yet."}]}
@@ -90,13 +90,15 @@ features:
   - {id: F-078, area: insert,      name: Symbol / special char,          parity: full,    fidelity: L1}
   - {id: F-079, area: insert,      name: Date and time,                  parity: full,    fidelity: L1,
       divergence: [{ref: plain-text, justification: "Insert menu inserts the ISO date as plain text, not a date FIELD; field-level roundtrip not claimed."}]}
-  - {id: F-080, area: insert,      name: Text box,                       parity: missing, fidelity: L2}
-  - {id: F-081, area: insert,      name: Shape,                          parity: missing, fidelity: L2}
-  - {id: F-082, area: insert,      name: Chart,                          parity: missing, fidelity: L2}
+  - {id: F-080, area: insert,      name: Text box,                       parity: full,    fidelity: L2}
+  - {id: F-081, area: insert,      name: Shape,                          parity: full,    fidelity: L2}
+  - {id: F-082, area: insert,      name: Chart,                          parity: full,    fidelity: L2}
   - {id: F-083, area: insert,      name: Bookmark,                       parity: full,    fidelity: L1}
-  - {id: F-084, area: insert,      name: Header / footer,                parity: missing, fidelity: L2}
-  - {id: F-085, area: insert,      name: Page numbers,                   parity: missing, fidelity: L2}
-  - {id: F-086, area: insert,      name: Equation / formula,             parity: missing, fidelity: L2}
+  - {id: F-084, area: insert,      name: Header / footer,                parity: partial, fidelity: L2,
+      divergence: [{ref: no-authoring-ui, justification: "Read + serialization roundtrip (header/page-header, footer/page-footer classes) proven; no editor toolbar authoring button yet."}]}
+  - {id: F-085, area: insert,      name: Page numbers,                   parity: partial, fidelity: L2,
+      divergence: [{ref: no-authoring-ui, justification: "Read + serialization roundtrip (span.page-number <-> w:fldSimple PAGE) proven; no editor toolbar authoring button yet."}]}
+  - {id: F-086, area: insert,      name: Equation / formula,             parity: full,    fidelity: L2}
 
   # ── layout ────────────────────────────────────────────────────────────────
   - {id: F-090, area: layout,      name: Page size,                      parity: full,    fidelity: L1,
