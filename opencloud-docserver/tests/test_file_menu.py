@@ -1,5 +1,7 @@
 """TDD test for File-Menu UI (editor-cloud-ui T6).
 
+feature register: F-005 F-078 F-079 (menu surface wiring)
+
 RED: fails until index.html has a file menu (New/Open/Export/Print) and
 editor.js wires the commands. This is an executable smoke test because no
 JS test runner (Playwright/jsdom) is available in this environment.
@@ -78,3 +80,12 @@ def test_version_history_wired():
     for key in ["VersionHistory.Title", "VersionHistory.Restore",
                 "VersionHistory.Current", "VersionHistory.Empty"]:
         assert key in JS, f"editor.js missing i18n key {key}"
+
+
+def test_insert_menu_buttons_present_and_wired():
+    """Insert-surface buttons exist and emit their commands (F-078/F-079)."""
+    for el in ["btn-symbol", "btn-datetime"]:
+        assert f'id="{el}"' in HTML, f"missing #{el} in index.html"
+        assert el in JS, f"editor.js does not reference {el}"
+    assert 'cmd === "insertSymbol"' in JS or "insertSymbol" in JS
+    assert "insertDate" in JS

@@ -286,6 +286,51 @@
    "type": "COVERS"
   },
   {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_editor_js_wires_file_commands",
+   "to": "F-005",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_export_submenu_formats_present",
+   "to": "F-005",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_file_menu_present_in_html",
+   "to": "F-005",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_image_resize_fields_wired",
+   "to": "F-005",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_inline_text_format_buttons_present",
+   "to": "F-005",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_insert_date_button_wired",
+   "to": "F-005",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_insert_menu_buttons_present_and_wired",
+   "to": "F-005",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_paragraph_format_commands_present",
+   "to": "F-005",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_version_history_wired",
+   "to": "F-005",
+   "type": "COVERS"
+  },
+  {
    "from": "opencloud-docserver/tests/test_document_info.py::test_info_404_on_unknown_document",
    "to": "F-006",
    "type": "COVERS"
@@ -811,6 +856,2206 @@
    "type": "COVERS"
   },
   {
+   "from": "opencloud-docserver/tests/test_converter.py::test_bookmark_crossref_survive_save_then_convert",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_comment_markers_survive_save_then_convert",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_converter_roundtrip_has_no_perf_regression",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_comment_read_from_parts",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_hr_is_bottom_border_paragraph",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_page_break_is_br_type_page",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_page_number_field_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_bold",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_contains_paragraphs",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_headings",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_in_table_cell_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_inline_in_same_run",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_missing_picture_is_skipped",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_roundtrip_referenced_picture",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_basic",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_colspan",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_header_row",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_inline_formatting",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_multiparagraph_cell",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_rowspan",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_track_changes_read_from_parts",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_without_sectpr_does_not_crash",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_editor_markers_survive_save_then_convert",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_full_roundtrip_keeps_bold",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_full_roundtrip_survives",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_blockquote_becomes_indent",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_bookmark_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_color_highlight_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_columns_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_comment_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_crossref_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_endnote_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_font_family_size_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_footnote_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_header_footer_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_headings",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_hr_and_page_break_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_explicit_dimensions",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_intrinsic_dimensions",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_jpeg_intrinsic_dimensions",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_keeps_formatting",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_multiple",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_non_data_uri_is_skipped",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_single",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_keeps_tagless_text",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_link_boundaries_preserved",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_link_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_list",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_inline_formatting",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_list_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_numbered_list_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_object_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_paragraph_props_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_preserves_bold_italic_underline",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_roundtrip_text",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_section_break_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_span_boundary_preserved",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_strike_smallcaps_allcaps_inlinecode_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_superscript_subscript_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_cantsplit_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_caption_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_cell_props_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_colspan",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_header_row",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_inline_formatting",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_multiparagraph",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_rowspan",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_without_props_stays_plain",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_toc_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_track_changes_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_odt_bookmark_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_odt_crossref_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_alt_text",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_in_list_item",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_in_table_cell",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_preserves_picture_bytes_full_loop",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_list_grouped_in_ul",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_allows_hr_and_keeps_page_break_class",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_keeps_bookmark_crossref_markers",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_keeps_section_columns_toc_object_markers",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitizer_allows_header_footer",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitizer_allows_ins",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_special_symbol_roundtrips_docx",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_merge_and_column_removal_roundtrip",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_roundtrip_through_docx_is_stable",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_roundtrip_through_html_is_stable",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_track_changes_markers_survive_save_then_convert",
+   "to": "F-070",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_bookmark_crossref_survive_save_then_convert",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_comment_markers_survive_save_then_convert",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_converter_roundtrip_has_no_perf_regression",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_comment_read_from_parts",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_hr_is_bottom_border_paragraph",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_page_break_is_br_type_page",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_page_number_field_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_bold",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_contains_paragraphs",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_headings",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_in_table_cell_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_inline_in_same_run",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_missing_picture_is_skipped",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_roundtrip_referenced_picture",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_basic",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_colspan",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_header_row",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_inline_formatting",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_multiparagraph_cell",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_rowspan",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_track_changes_read_from_parts",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_without_sectpr_does_not_crash",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_editor_markers_survive_save_then_convert",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_full_roundtrip_keeps_bold",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_full_roundtrip_survives",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_blockquote_becomes_indent",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_bookmark_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_color_highlight_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_columns_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_comment_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_crossref_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_endnote_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_font_family_size_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_footnote_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_header_footer_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_headings",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_hr_and_page_break_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_explicit_dimensions",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_intrinsic_dimensions",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_jpeg_intrinsic_dimensions",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_keeps_formatting",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_multiple",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_non_data_uri_is_skipped",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_single",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_keeps_tagless_text",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_link_boundaries_preserved",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_link_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_list",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_inline_formatting",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_list_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_numbered_list_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_object_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_paragraph_props_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_preserves_bold_italic_underline",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_roundtrip_text",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_section_break_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_span_boundary_preserved",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_strike_smallcaps_allcaps_inlinecode_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_superscript_subscript_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_cantsplit_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_caption_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_cell_props_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_colspan",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_header_row",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_inline_formatting",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_multiparagraph",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_rowspan",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_without_props_stays_plain",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_toc_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_track_changes_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_odt_bookmark_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_odt_crossref_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_alt_text",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_in_list_item",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_in_table_cell",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_preserves_picture_bytes_full_loop",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_list_grouped_in_ul",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_allows_hr_and_keeps_page_break_class",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_keeps_bookmark_crossref_markers",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_keeps_section_columns_toc_object_markers",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitizer_allows_header_footer",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitizer_allows_ins",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_special_symbol_roundtrips_docx",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_merge_and_column_removal_roundtrip",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_roundtrip_through_docx_is_stable",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_roundtrip_through_html_is_stable",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_track_changes_markers_survive_save_then_convert",
+   "to": "F-072",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_bookmark_crossref_survive_save_then_convert",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_comment_markers_survive_save_then_convert",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_converter_roundtrip_has_no_perf_regression",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_comment_read_from_parts",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_hr_is_bottom_border_paragraph",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_page_break_is_br_type_page",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_page_number_field_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_bold",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_contains_paragraphs",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_headings",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_in_table_cell_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_inline_in_same_run",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_missing_picture_is_skipped",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_roundtrip_referenced_picture",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_basic",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_colspan",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_header_row",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_inline_formatting",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_multiparagraph_cell",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_rowspan",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_track_changes_read_from_parts",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_without_sectpr_does_not_crash",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_editor_markers_survive_save_then_convert",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_full_roundtrip_keeps_bold",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_full_roundtrip_survives",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_blockquote_becomes_indent",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_bookmark_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_color_highlight_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_columns_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_comment_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_crossref_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_endnote_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_font_family_size_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_footnote_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_header_footer_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_headings",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_hr_and_page_break_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_explicit_dimensions",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_intrinsic_dimensions",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_jpeg_intrinsic_dimensions",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_keeps_formatting",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_multiple",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_non_data_uri_is_skipped",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_single",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_keeps_tagless_text",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_link_boundaries_preserved",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_link_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_list",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_inline_formatting",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_list_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_numbered_list_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_object_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_paragraph_props_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_preserves_bold_italic_underline",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_roundtrip_text",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_section_break_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_span_boundary_preserved",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_strike_smallcaps_allcaps_inlinecode_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_superscript_subscript_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_cantsplit_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_caption_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_cell_props_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_colspan",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_header_row",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_inline_formatting",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_multiparagraph",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_rowspan",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_without_props_stays_plain",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_toc_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_track_changes_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_odt_bookmark_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_odt_crossref_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_alt_text",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_in_list_item",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_in_table_cell",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_preserves_picture_bytes_full_loop",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_list_grouped_in_ul",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_allows_hr_and_keeps_page_break_class",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_keeps_bookmark_crossref_markers",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_keeps_section_columns_toc_object_markers",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitizer_allows_header_footer",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitizer_allows_ins",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_special_symbol_roundtrips_docx",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_merge_and_column_removal_roundtrip",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_roundtrip_through_docx_is_stable",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_roundtrip_through_html_is_stable",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_track_changes_markers_survive_save_then_convert",
+   "to": "F-073",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_bookmark_crossref_survive_save_then_convert",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_comment_markers_survive_save_then_convert",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_converter_roundtrip_has_no_perf_regression",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_comment_read_from_parts",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_hr_is_bottom_border_paragraph",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_page_break_is_br_type_page",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_page_number_field_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_bold",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_contains_paragraphs",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_headings",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_in_table_cell_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_inline_in_same_run",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_missing_picture_is_skipped",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_roundtrip_referenced_picture",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_basic",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_colspan",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_header_row",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_inline_formatting",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_multiparagraph_cell",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_rowspan",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_track_changes_read_from_parts",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_without_sectpr_does_not_crash",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_editor_markers_survive_save_then_convert",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_full_roundtrip_keeps_bold",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_full_roundtrip_survives",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_blockquote_becomes_indent",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_bookmark_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_color_highlight_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_columns_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_comment_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_crossref_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_endnote_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_font_family_size_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_footnote_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_header_footer_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_headings",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_hr_and_page_break_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_explicit_dimensions",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_intrinsic_dimensions",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_jpeg_intrinsic_dimensions",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_keeps_formatting",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_multiple",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_non_data_uri_is_skipped",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_single",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_keeps_tagless_text",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_link_boundaries_preserved",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_link_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_list",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_inline_formatting",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_list_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_numbered_list_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_object_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_paragraph_props_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_preserves_bold_italic_underline",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_roundtrip_text",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_section_break_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_span_boundary_preserved",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_strike_smallcaps_allcaps_inlinecode_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_superscript_subscript_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_cantsplit_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_caption_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_cell_props_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_colspan",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_header_row",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_inline_formatting",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_multiparagraph",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_rowspan",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_without_props_stays_plain",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_toc_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_track_changes_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_odt_bookmark_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_odt_crossref_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_alt_text",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_in_list_item",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_in_table_cell",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_preserves_picture_bytes_full_loop",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_list_grouped_in_ul",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_allows_hr_and_keeps_page_break_class",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_keeps_bookmark_crossref_markers",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_keeps_section_columns_toc_object_markers",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitizer_allows_header_footer",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitizer_allows_ins",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_special_symbol_roundtrips_docx",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_merge_and_column_removal_roundtrip",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_roundtrip_through_docx_is_stable",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_roundtrip_through_html_is_stable",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_track_changes_markers_survive_save_then_convert",
+   "to": "F-074",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_bookmark_crossref_survive_save_then_convert",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_comment_markers_survive_save_then_convert",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_converter_roundtrip_has_no_perf_regression",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_comment_read_from_parts",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_hr_is_bottom_border_paragraph",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_page_break_is_br_type_page",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_page_number_field_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_bold",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_contains_paragraphs",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_headings",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_in_table_cell_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_inline_in_same_run",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_missing_picture_is_skipped",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_roundtrip_referenced_picture",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_basic",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_colspan",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_header_row",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_inline_formatting",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_multiparagraph_cell",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_rowspan",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_track_changes_read_from_parts",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_without_sectpr_does_not_crash",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_editor_markers_survive_save_then_convert",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_full_roundtrip_keeps_bold",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_full_roundtrip_survives",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_blockquote_becomes_indent",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_bookmark_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_color_highlight_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_columns_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_comment_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_crossref_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_endnote_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_font_family_size_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_footnote_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_header_footer_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_headings",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_hr_and_page_break_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_explicit_dimensions",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_intrinsic_dimensions",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_jpeg_intrinsic_dimensions",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_keeps_formatting",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_multiple",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_non_data_uri_is_skipped",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_single",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_keeps_tagless_text",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_link_boundaries_preserved",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_link_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_list",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_inline_formatting",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_list_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_numbered_list_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_object_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_paragraph_props_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_preserves_bold_italic_underline",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_roundtrip_text",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_section_break_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_span_boundary_preserved",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_strike_smallcaps_allcaps_inlinecode_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_superscript_subscript_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_cantsplit_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_caption_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_cell_props_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_colspan",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_header_row",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_inline_formatting",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_multiparagraph",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_rowspan",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_without_props_stays_plain",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_toc_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_track_changes_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_odt_bookmark_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_odt_crossref_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_alt_text",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_in_list_item",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_in_table_cell",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_preserves_picture_bytes_full_loop",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_list_grouped_in_ul",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_allows_hr_and_keeps_page_break_class",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_keeps_bookmark_crossref_markers",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_keeps_section_columns_toc_object_markers",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitizer_allows_header_footer",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitizer_allows_ins",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_special_symbol_roundtrips_docx",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_merge_and_column_removal_roundtrip",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_roundtrip_through_docx_is_stable",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_roundtrip_through_html_is_stable",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_track_changes_markers_survive_save_then_convert",
+   "to": "F-075",
+   "type": "COVERS"
+  },
+  {
    "from": "opencloud-docserver/tests/test_page_break_roundtrip.py::test_docx_to_html_restores_page_break_marker",
    "to": "F-076",
    "type": "COVERS"
@@ -833,6 +3078,1416 @@
   {
    "from": "opencloud-docserver/tests/test_page_break_roundtrip.py::test_page_break_survives_sanitization",
    "to": "F-076",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_bookmark_crossref_survive_save_then_convert",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_comment_markers_survive_save_then_convert",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_converter_roundtrip_has_no_perf_regression",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_comment_read_from_parts",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_hr_is_bottom_border_paragraph",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_page_break_is_br_type_page",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_page_number_field_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_bold",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_contains_paragraphs",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_headings",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_in_table_cell_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_inline_in_same_run",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_missing_picture_is_skipped",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_roundtrip_referenced_picture",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_basic",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_colspan",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_header_row",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_inline_formatting",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_multiparagraph_cell",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_rowspan",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_track_changes_read_from_parts",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_without_sectpr_does_not_crash",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_editor_markers_survive_save_then_convert",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_full_roundtrip_keeps_bold",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_full_roundtrip_survives",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_blockquote_becomes_indent",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_bookmark_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_color_highlight_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_columns_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_comment_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_crossref_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_endnote_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_font_family_size_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_footnote_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_header_footer_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_headings",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_hr_and_page_break_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_explicit_dimensions",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_intrinsic_dimensions",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_jpeg_intrinsic_dimensions",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_keeps_formatting",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_multiple",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_non_data_uri_is_skipped",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_single",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_keeps_tagless_text",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_link_boundaries_preserved",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_link_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_list",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_inline_formatting",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_list_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_numbered_list_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_object_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_paragraph_props_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_preserves_bold_italic_underline",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_roundtrip_text",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_section_break_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_span_boundary_preserved",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_strike_smallcaps_allcaps_inlinecode_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_superscript_subscript_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_cantsplit_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_caption_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_cell_props_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_colspan",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_header_row",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_inline_formatting",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_multiparagraph",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_rowspan",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_without_props_stays_plain",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_toc_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_track_changes_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_odt_bookmark_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_odt_crossref_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_alt_text",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_in_list_item",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_in_table_cell",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_preserves_picture_bytes_full_loop",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_list_grouped_in_ul",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_allows_hr_and_keeps_page_break_class",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_keeps_bookmark_crossref_markers",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_keeps_section_columns_toc_object_markers",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitizer_allows_header_footer",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitizer_allows_ins",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_special_symbol_roundtrips_docx",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_merge_and_column_removal_roundtrip",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_roundtrip_through_docx_is_stable",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_roundtrip_through_html_is_stable",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_track_changes_markers_survive_save_then_convert",
+   "to": "F-077",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_bookmark_crossref_survive_save_then_convert",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_comment_markers_survive_save_then_convert",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_converter_roundtrip_has_no_perf_regression",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_comment_read_from_parts",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_hr_is_bottom_border_paragraph",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_page_break_is_br_type_page",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_page_number_field_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_bold",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_contains_paragraphs",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_headings",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_in_table_cell_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_inline_in_same_run",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_missing_picture_is_skipped",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_roundtrip_referenced_picture",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_basic",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_colspan",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_header_row",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_inline_formatting",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_multiparagraph_cell",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_rowspan",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_track_changes_read_from_parts",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_without_sectpr_does_not_crash",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_editor_markers_survive_save_then_convert",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_full_roundtrip_keeps_bold",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_full_roundtrip_survives",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_blockquote_becomes_indent",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_bookmark_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_color_highlight_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_columns_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_comment_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_crossref_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_endnote_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_font_family_size_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_footnote_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_header_footer_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_headings",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_hr_and_page_break_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_explicit_dimensions",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_intrinsic_dimensions",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_jpeg_intrinsic_dimensions",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_keeps_formatting",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_multiple",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_non_data_uri_is_skipped",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_single",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_keeps_tagless_text",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_link_boundaries_preserved",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_link_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_list",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_inline_formatting",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_list_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_numbered_list_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_object_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_paragraph_props_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_preserves_bold_italic_underline",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_roundtrip_text",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_section_break_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_span_boundary_preserved",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_strike_smallcaps_allcaps_inlinecode_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_superscript_subscript_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_cantsplit_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_caption_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_cell_props_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_colspan",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_header_row",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_inline_formatting",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_multiparagraph",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_rowspan",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_without_props_stays_plain",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_toc_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_track_changes_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_odt_bookmark_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_odt_crossref_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_alt_text",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_in_list_item",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_in_table_cell",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_preserves_picture_bytes_full_loop",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_list_grouped_in_ul",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_allows_hr_and_keeps_page_break_class",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_keeps_bookmark_crossref_markers",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_keeps_section_columns_toc_object_markers",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitizer_allows_header_footer",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitizer_allows_ins",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_special_symbol_roundtrips_docx",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_merge_and_column_removal_roundtrip",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_roundtrip_through_docx_is_stable",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_roundtrip_through_html_is_stable",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_track_changes_markers_survive_save_then_convert",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_editor_js_wires_file_commands",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_export_submenu_formats_present",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_file_menu_present_in_html",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_image_resize_fields_wired",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_inline_text_format_buttons_present",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_insert_date_button_wired",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_insert_menu_buttons_present_and_wired",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_paragraph_format_commands_present",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_version_history_wired",
+   "to": "F-078",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_editor_js_wires_file_commands",
+   "to": "F-079",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_export_submenu_formats_present",
+   "to": "F-079",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_file_menu_present_in_html",
+   "to": "F-079",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_image_resize_fields_wired",
+   "to": "F-079",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_inline_text_format_buttons_present",
+   "to": "F-079",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_insert_date_button_wired",
+   "to": "F-079",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_insert_menu_buttons_present_and_wired",
+   "to": "F-079",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_paragraph_format_commands_present",
+   "to": "F-079",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_file_menu.py::test_version_history_wired",
+   "to": "F-079",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_bookmark_crossref_survive_save_then_convert",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_comment_markers_survive_save_then_convert",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_converter_roundtrip_has_no_perf_regression",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_comment_read_from_parts",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_hr_is_bottom_border_paragraph",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_page_break_is_br_type_page",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_page_number_field_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_bold",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_contains_paragraphs",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_headings",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_in_table_cell_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_inline_in_same_run",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_missing_picture_is_skipped",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_image_roundtrip_referenced_picture",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_basic",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_colspan",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_header_row",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_inline_formatting",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_multiparagraph_cell",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_to_html_table_rowspan",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_track_changes_read_from_parts",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_docx_without_sectpr_does_not_crash",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_editor_markers_survive_save_then_convert",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_full_roundtrip_keeps_bold",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_full_roundtrip_survives",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_blockquote_becomes_indent",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_bookmark_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_color_highlight_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_columns_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_comment_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_crossref_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_endnote_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_font_family_size_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_footnote_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_header_footer_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_headings",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_hr_and_page_break_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_explicit_dimensions",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_intrinsic_dimensions",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_jpeg_intrinsic_dimensions",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_keeps_formatting",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_multiple",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_non_data_uri_is_skipped",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_image_roundtrip_single",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_keeps_tagless_text",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_link_boundaries_preserved",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_link_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_list",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_inline_formatting",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_list_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_nested_numbered_list_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_object_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_paragraph_props_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_preserves_bold_italic_underline",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_roundtrip_text",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_section_break_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_span_boundary_preserved",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_strike_smallcaps_allcaps_inlinecode_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_superscript_subscript_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_cantsplit_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_caption_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_cell_props_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_colspan",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_header_row",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_inline_formatting",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_multiparagraph",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_rowspan",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_table_without_props_stays_plain",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_toc_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_docx_track_changes_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_odt_bookmark_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_html_to_odt_crossref_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_alt_text",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_in_list_item",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_in_table_cell",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_image_roundtrip_preserves_picture_bytes_full_loop",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_list_grouped_in_ul",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_allows_hr_and_keeps_page_break_class",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_keeps_bookmark_crossref_markers",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitize_keeps_section_columns_toc_object_markers",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitizer_allows_header_footer",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_sanitizer_allows_ins",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_special_symbol_roundtrips_docx",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_merge_and_column_removal_roundtrip",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_roundtrip_through_docx_is_stable",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_table_roundtrip_through_html_is_stable",
+   "to": "F-083",
+   "type": "COVERS"
+  },
+  {
+   "from": "opencloud-docserver/tests/test_converter.py::test_track_changes_markers_survive_save_then_convert",
+   "to": "F-083",
    "type": "COVERS"
   },
   {
@@ -1106,7 +4761,7 @@
    "type": "COVERS"
   }
  ],
- "generated_at": "2026-09-05T06:37:31+00:00",
+ "generated_at": "2026-09-05T06:48:45+00:00",
  "nodes": [
   {
    "id": "allCaps",
@@ -4874,6 +8529,12 @@
    "path": "opencloud-docserver/tests/test_file_menu.py"
   },
   {
+   "id": "opencloud-docserver/tests/test_file_menu.py::test_insert_menu_buttons_present_and_wired",
+   "label": "Test",
+   "layer": "e2e",
+   "path": "opencloud-docserver/tests/test_file_menu.py"
+  },
+  {
    "id": "opencloud-docserver/tests/test_file_ops.py::test_export_odt_is_valid_odf",
    "label": "Test",
    "layer": "e2e",
@@ -7959,11 +11620,16 @@
   },
   {
    "area": "file",
-   "fidelity": "L4",
+   "fidelity": "L1",
    "id": "F-005",
    "label": "Feature",
    "name": "Print",
-   "parity": "missing"
+   "parity": "full"
+  },
+  {
+   "id": "F-005:browser-print",
+   "justification": "window.print() via File menu; browser print pipeline, not a layout-true L4 print path.",
+   "label": "Divergence"
   },
   {
    "area": "file",
@@ -8272,7 +11938,7 @@
    "id": "F-070",
    "label": "Feature",
    "name": "Table insert + row/col ops",
-   "parity": "partial"
+   "parity": "full"
   },
   {
    "area": "insert",
@@ -8288,7 +11954,7 @@
    "id": "F-072",
    "label": "Feature",
    "name": "Hyperlink",
-   "parity": "missing"
+   "parity": "full"
   },
   {
    "area": "insert",
@@ -8296,7 +11962,12 @@
    "id": "F-073",
    "label": "Feature",
    "name": "Footnote",
-   "parity": "missing"
+   "parity": "partial"
+  },
+  {
+   "id": "F-073:no-authoring-ui",
+   "justification": "Read + serialization roundtrip (w:footnoteReference <-> sup.footnote-citation) proven; no editor toolbar authoring button yet.",
+   "label": "Divergence"
   },
   {
    "area": "insert",
@@ -8304,15 +11975,25 @@
    "id": "F-074",
    "label": "Feature",
    "name": "Endnote",
-   "parity": "missing"
+   "parity": "partial"
+  },
+  {
+   "id": "F-074:no-authoring-ui",
+   "justification": "Read + serialization roundtrip proven; no editor toolbar authoring button yet.",
+   "label": "Divergence"
   },
   {
    "area": "insert",
-   "fidelity": "L4",
+   "fidelity": "L1",
    "id": "F-075",
    "label": "Feature",
    "name": "Comment",
-   "parity": "missing"
+   "parity": "full"
+  },
+  {
+   "id": "F-075:anchored-span",
+   "justification": "Anchored comment spans serialize to word/comments.xml and back (data-author/data-comment); collaborative threaded comments (L4 claim) are not evidenced.",
+   "label": "Divergence"
   },
   {
    "area": "insert",
@@ -8333,7 +12014,7 @@
    "id": "F-077",
    "label": "Feature",
    "name": "Table of contents",
-   "parity": "missing"
+   "parity": "full"
   },
   {
    "area": "insert",
@@ -8341,7 +12022,7 @@
    "id": "F-078",
    "label": "Feature",
    "name": "Symbol / special char",
-   "parity": "missing"
+   "parity": "full"
   },
   {
    "area": "insert",
@@ -8349,7 +12030,12 @@
    "id": "F-079",
    "label": "Feature",
    "name": "Date and time",
-   "parity": "missing"
+   "parity": "full"
+  },
+  {
+   "id": "F-079:plain-text",
+   "justification": "Insert menu inserts the ISO date as plain text, not a date FIELD; field-level roundtrip not claimed.",
+   "label": "Divergence"
   },
   {
    "area": "insert",
@@ -8381,7 +12067,7 @@
    "id": "F-083",
    "label": "Feature",
    "name": "Bookmark",
-   "parity": "missing"
+   "parity": "full"
   },
   {
    "area": "insert",
@@ -8594,10 +12280,10 @@
  ],
  "stats": {
   "commands": 21,
-  "edges": 221,
+  "edges": 952,
   "features": 82,
   "surfaces": 21,
-  "tests": 1096
+  "tests": 1097
  },
  "version": 1
 }

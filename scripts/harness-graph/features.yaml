@@ -21,7 +21,8 @@ features:
       divergence: [{ref: html-projection, justification: "DOCX is produced from the editor HTML projection (html_to_docx), not canvas-true layout; content-faithful, formatting approximate. Canvas-true export tracked as future work."}]}
   - {id: F-004, area: file,        name: Export to PDF,                  parity: full,    fidelity: L1,
       divergence: [{ref: html-projection, justification: "PDF via WeasyPrint from the sanitized editor HTML, not canvas-true layout (L4 pending a renderer-backed path). The historical silent stub-PDF fallback was removed; missing engine now fails loudly (X-Export-Engine header + 500)."}]}
-  - {id: F-005, area: file,        name: Print,                          parity: missing, fidelity: L4}
+  - {id: F-005, area: file,        name: Print,                          parity: full,    fidelity: L1,
+      divergence: [{ref: browser-print, justification: "window.print() via File menu; browser print pipeline, not a layout-true L4 print path."}]}
   - {id: F-006, area: file,        name: Document info / metadata,       parity: full,    fidelity: L1,
       divergence: [{ref: api-surface, justification: "Info exposed as GET /api/documents/{id}/info (name, format, size, timestamps, version); the user-facing properties panel belongs to the OpenCloud shell in the integrated product."}]}
 
@@ -70,22 +71,26 @@ features:
   - {id: F-064, area: editing,     name: Keyboard shortcuts (core set),  parity: partial, fidelity: L4}
 
   # ── insert ────────────────────────────────────────────────────────────────
-  - {id: F-070, area: insert,      name: Table insert + row/col ops,     parity: partial, fidelity: L2}
+  - {id: F-070, area: insert,      name: Table insert + row/col ops,     parity: full,    fidelity: L2}
   - {id: F-071, area: insert,      name: Image insert + resize,          parity: partial, fidelity: L2}
-  - {id: F-072, area: insert,      name: Hyperlink,                      parity: missing, fidelity: L1}
-  - {id: F-073, area: insert,      name: Footnote,                       parity: missing, fidelity: L1}
-  - {id: F-074, area: insert,      name: Endnote,                        parity: missing, fidelity: L1}
-  - {id: F-075, area: insert,      name: Comment,                        parity: missing, fidelity: L4}
+  - {id: F-072, area: insert,      name: Hyperlink,                      parity: full,    fidelity: L1}
+  - {id: F-073, area: insert,      name: Footnote,                       parity: partial, fidelity: L1,
+      divergence: [{ref: no-authoring-ui, justification: "Read + serialization roundtrip (w:footnoteReference <-> sup.footnote-citation) proven; no editor toolbar authoring button yet."}]}
+  - {id: F-074, area: insert,      name: Endnote,                        parity: partial, fidelity: L1,
+      divergence: [{ref: no-authoring-ui, justification: "Read + serialization roundtrip proven; no editor toolbar authoring button yet."}]}
+  - {id: F-075, area: insert,      name: Comment,                        parity: full,    fidelity: L1,
+      divergence: [{ref: anchored-span, justification: "Anchored comment spans serialize to word/comments.xml and back (data-author/data-comment); collaborative threaded comments (L4 claim) are not evidenced."}]}
   - {id: F-076, area: insert,      name: Page break,                     parity: full,    fidelity: L1,
       commands: [insertPageBreak],
       divergence: [{ref: marker-serialization, justification: "Editor marker (div.page-break via Insert menu -> runCommand insertPageBreak) round-trips through DOCX (w:br type=page) and ODT; visual pagination in the rendered view is renderer-dependent and not claimed at L2."}]}
-  - {id: F-077, area: insert,      name: Table of contents,              parity: missing, fidelity: L1}
-  - {id: F-078, area: insert,      name: Symbol / special char,          parity: missing, fidelity: L1}
-  - {id: F-079, area: insert,      name: Date and time,                  parity: missing, fidelity: L1}
+  - {id: F-077, area: insert,      name: Table of contents,              parity: full,    fidelity: L1}
+  - {id: F-078, area: insert,      name: Symbol / special char,          parity: full,    fidelity: L1}
+  - {id: F-079, area: insert,      name: Date and time,                  parity: full,    fidelity: L1,
+      divergence: [{ref: plain-text, justification: "Insert menu inserts the ISO date as plain text, not a date FIELD; field-level roundtrip not claimed."}]}
   - {id: F-080, area: insert,      name: Text box,                       parity: missing, fidelity: L2}
   - {id: F-081, area: insert,      name: Shape,                          parity: missing, fidelity: L2}
   - {id: F-082, area: insert,      name: Chart,                          parity: missing, fidelity: L2}
-  - {id: F-083, area: insert,      name: Bookmark,                       parity: missing, fidelity: L1}
+  - {id: F-083, area: insert,      name: Bookmark,                       parity: full,    fidelity: L1}
   - {id: F-084, area: insert,      name: Header / footer,                parity: missing, fidelity: L2}
   - {id: F-085, area: insert,      name: Page numbers,                   parity: missing, fidelity: L2}
   - {id: F-086, area: insert,      name: Equation / formula,             parity: missing, fidelity: L2}
