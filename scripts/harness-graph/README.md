@@ -62,3 +62,27 @@ MATCH (t:Test) WHERE NOT EXISTS { MATCH (t)-[:COVERS]->(:Feature) } RETURN t.id;
 Capture layers L0–L4 in `features.yaml.fidelity` state which layer a parity
 claim must be proven at; the graph ties those claims to tests and code.
 Recapture-as-PR applies to both: `graph.json` here, ground-truth JSON there.
+
+## Button sweep 2.0 (graph-driven)
+
+`opencloud-docserver/e2e/test_toolbar_sweep_graph.py` reads `graph.json` and
+checks, against the live editor, that (1) every registered `toolbar:*` surface
+exists and (2) every `data-cmd` in the editor is registered. Adding a command
+to editor + register automatically extends the sweep — no hardcoded lists.
+
+## Test selection (changed files -> affected tests)
+
+```sh
+# local: what would this diff affect?
+python3 scripts/harness-graph/select-tests.py --base origin/main --list
+
+# CI (future e2e workflow): run only what the graph says is affected
+TESTS=$(python3 scripts/harness-graph/select-tests.py --base "$BASE")
+[ -z "$TESTS" ] || pytest $TESTS
+```
+
+Rules: register changed → all tests; editor sources changed with
+`data-cmd`/`runCommand` tokens in the diff → tests covering those commands
+(via `Command←IMPLEMENTED_BY—Feature—COVERS→Test`); test file changed →
+itself; anything else → nothing. Exits 2 if the graph is missing/stale —
+run `seed.py` first.
