@@ -3,6 +3,7 @@
   "apply_ops",
   "get_versions",
   "get_context",
+  "search_doc",
   "lock",
   "presence"
 ]

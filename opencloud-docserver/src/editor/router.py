@@ -488,6 +488,28 @@ async def document_contents(doc_id: str, request: Request) -> Response:
     )
 
 
+@router.get("/api/agents/runs")
+async def agent_runs(request: Request, client_id: str | None = None, doc_id: str | None = None,
+                     limit: int = 100) -> JSONResponse:
+    """Agent run audit rows (E20), newest first, optional filters.
+
+    Every finished AgentRunner run with the store attached leaves a row:
+    who ran, when, on which document, with what step/op budget usage and
+    stop reason. The operator-facing answer to 'what did the agents do?'.
+    """
+    if limit < 1 or limit > 1000:
+        return JSONResponse({"error": "limit must be 1..1000"}, status_code=400)
+    return JSONResponse({
+        "runs": _store(request).list_agent_runs(client_id=client_id, doc_id=doc_id, limit=limit),
+    })
+
+
+@router.get("/api/agents/summary")
+async def agent_summary(request: Request) -> JSONResponse:
+    """Per-agent aggregates over the audit log: runs, ops, docs, last seen."""
+    return JSONResponse({"agents": _store(request).agent_summary()})
+
+
 @router.get("/api/documents/{doc_id}/info")
 async def document_info(doc_id: str, request: Request) -> JSONResponse:
     """Document metadata: name, format, size, timestamps, version.
