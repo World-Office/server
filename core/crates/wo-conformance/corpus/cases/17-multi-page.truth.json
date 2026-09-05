@@ -3,8 +3,8 @@
     {
       "index": 0,
       "size": {
-        "width_pt": 612.0,
-        "height_pt": 792.0
+        "width_pt": 595.3,
+        "height_pt": 841.89
       },
       "boxes": [
         {
@@ -14,7 +14,7 @@
             "y_pt": 71.99
           },
           "size": {
-            "width_pt": 471.29,
+            "width_pt": 450.69,
             "height_pt": 281.59
           },
           "runs": [
@@ -63,7 +63,7 @@
               }
             },
             {
-              "text": "consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+              "text": "consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -74,7 +74,7 @@
               }
             },
             {
-              "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit",
+              "text": "elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -85,7 +85,7 @@
               }
             },
             {
-              "text": "amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur",
+              "text": "sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -118,7 +118,7 @@
               }
             },
             {
-              "text": "consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+              "text": "consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -129,7 +129,7 @@
               }
             },
             {
-              "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit",
+              "text": "elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -140,7 +140,7 @@
               }
             },
             {
-              "text": "amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur",
+              "text": "sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -173,7 +173,7 @@
               }
             },
             {
-              "text": "consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+              "text": "consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -184,7 +184,7 @@
               }
             },
             {
-              "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit",
+              "text": "elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -195,7 +195,7 @@
               }
             },
             {
-              "text": "amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur",
+              "text": "sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -228,7 +228,7 @@
               }
             },
             {
-              "text": "consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+              "text": "consectetur adipiscing elit. Lorem ipsum dolor sit amet, consectetur adipiscing",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -239,7 +239,7 @@
               }
             },
             {
-              "text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor sit",
+              "text": "elit. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Lorem ipsum dolor",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -250,7 +250,7 @@
               }
             },
             {
-              "text": "amet, consectetur adipiscing elit.",
+              "text": "sit amet, consectetur adipiscing elit.",
               "font": "DejaVuSerif",
               "size_pt": 11.0,
               "weight": 700,
@@ -272,8 +272,8 @@
   },
   "metadata": {
     "engine": "libreoffice",
-    "engine_version": "LibreOffice 26.2.4.2 620(Build:2)",
-    "captured_at": "2026-07-29T19:08:05.910810+00:00",
+    "engine_version": "LibreOffice 26.8.0.3 680(Build:3)",
+    "captured_at": "2026-09-05T05:44:19.021606+00:00",
     "environment": "PDF\u2192IR extraction via PyMuPDF ('1.28.0', '1.29.0', None)"
   }
 }

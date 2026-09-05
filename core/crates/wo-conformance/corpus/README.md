@@ -80,9 +80,11 @@ diffs compare like with like (`diff --cross-engine <onlyoffice.json> <truth.json
 Real, justified differences observed on the pinned image — never "fix" these
 by loosening the scorer; they are the oracle's signal:
 
-- **A4 vs Letter default**: fixtures without `sectPr` page size — DS exports
-  A4 (595.3×841.9pt), LibreOffice defaults to Letter (612×792pt). The
-  cross-engine scorer normalizes coordinates by page dimensions.
+- **Page setup**: fixtures carry an explicit `sectPr` (A4, 1-inch margins, see
+  `generate-corpus.py`) so engines agree. Historically, fixtures without
+  `sectPr` made DS default to A4 while LibreOffice defaulted to Letter — the
+  cross-engine scorer still normalizes coordinates by page dimensions, so old
+  goldens/truths stay comparable.
 - **Font substitution**: DS lacks Arial / Times New Roman / Calibri / Courier
   New and substitutes (e.g. Liberation family) → `font_coverage` 0 in those
   cases is expected, not a regression.

@@ -3,8 +3,8 @@
     {
       "index": 0,
       "size": {
-        "width_pt": 612.0,
-        "height_pt": 792.0
+        "width_pt": 595.3,
+        "height_pt": 841.89
       },
       "boxes": [
         {
@@ -14,7 +14,7 @@
             "y_pt": 72.03
           },
           "size": {
-            "width_pt": 267.73,
+            "width_pt": 259.38,
             "height_pt": 38.45
           },
           "runs": [
@@ -36,7 +36,7 @@
               "weight": 700,
               "italic": false,
               "origin": {
-                "x_pt": 311.45,
+                "x_pt": 303.1,
                 "y_pt": 82.35
               }
             },
@@ -58,7 +58,7 @@
               "weight": 700,
               "italic": false,
               "origin": {
-                "x_pt": 311.45,
+                "x_pt": 303.1,
                 "y_pt": 95.1
               }
             },
@@ -80,7 +80,7 @@
               "weight": 700,
               "italic": false,
               "origin": {
-                "x_pt": 311.45,
+                "x_pt": 303.1,
                 "y_pt": 107.9
               }
             }
@@ -96,8 +96,8 @@
   },
   "metadata": {
     "engine": "libreoffice",
-    "engine_version": "LibreOffice 26.2.4.2 620(Build:2)",
-    "captured_at": "2026-07-29T19:08:06.756904+00:00",
+    "engine_version": "LibreOffice 26.8.0.3 680(Build:3)",
+    "captured_at": "2026-09-05T05:44:19.871443+00:00",
     "environment": "PDF\u2192IR extraction via PyMuPDF ('1.28.0', '1.29.0', None)"
   }
 }

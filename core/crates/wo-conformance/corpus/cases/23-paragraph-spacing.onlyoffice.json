@@ -1,91 +1,91 @@
 {
   "schema_version": 1,
   "truth_captured_from": "onlyoffice-ds docker.io/onlyoffice/documentserver@sha2…",
-  "captured_at": "2026-09-05T05:30:11.991765835+00:00",
+  "captured_at": "2026-09-05T05:46:05.985793972+00:00",
   "render": {
     "pages": [
       {
         "index": 0,
         "size": {
-          "width_pt": 595.27557,
-          "height_pt": 841.88977
+          "width_pt": 595.29999,
+          "height_pt": 841.90002
         },
         "boxes": [
           {
             "kind": "paragraph",
             "origin": {
-              "x_pt": 85.03937,
-              "y_pt": 75.82883
+              "x_pt": 72.0,
+              "y_pt": 91.13594
             },
             "size": {
               "width_pt": 159.870583,
-              "height_pt": 18.620000000000005
+              "height_pt": 18.61999999999999
             },
             "runs": [
               {
                 "text": "Paragraph",
                 "font": "",
-                "size_pt": 18.620000000000005,
+                "size_pt": 18.61999999999999,
                 "weight": 400,
                 "italic": false,
                 "origin": {
-                  "x_pt": 85.03937,
-                  "y_pt": 90.35243
+                  "x_pt": 72.0,
+                  "y_pt": 105.65953999999999
                 }
               },
               {
                 "text": "with",
                 "font": "",
-                "size_pt": 18.620000000000005,
+                "size_pt": 18.61999999999999,
                 "weight": 400,
                 "italic": false,
                 "origin": {
-                  "x_pt": 128.049134,
-                  "y_pt": 90.35243
+                  "x_pt": 115.009764,
+                  "y_pt": 105.65953999999999
                 }
               },
               {
                 "text": "480",
                 "font": "",
-                "size_pt": 18.620000000000005,
+                "size_pt": 18.61999999999999,
                 "weight": 400,
                 "italic": false,
                 "origin": {
-                  "x_pt": 148.308898,
-                  "y_pt": 90.35243
+                  "x_pt": 135.269528,
+                  "y_pt": 105.65953999999999
                 }
               },
               {
                 "text": "twips",
                 "font": "",
-                "size_pt": 18.620000000000005,
+                "size_pt": 18.61999999999999,
                 "weight": 400,
                 "italic": false,
                 "origin": {
-                  "x_pt": 165.808661,
-                  "y_pt": 90.35243
+                  "x_pt": 152.769291,
+                  "y_pt": 105.65953999999999
                 }
               },
               {
                 "text": "(24pt)",
                 "font": "",
-                "size_pt": 18.620000000000005,
+                "size_pt": 18.61999999999999,
                 "weight": 400,
                 "italic": false,
                 "origin": {
-                  "x_pt": 189.960107,
-                  "y_pt": 90.35243
+                  "x_pt": 176.920737,
+                  "y_pt": 105.65953999999999
                 }
               },
               {
                 "text": "before.",
                 "font": "",
-                "size_pt": 18.620000000000005,
+                "size_pt": 18.61999999999999,
                 "weight": 400,
                 "italic": false,
                 "origin": {
-                  "x_pt": 216.889953,
-                  "y_pt": 90.35243
+                  "x_pt": 203.850583,
+                  "y_pt": 105.65953999999999
                 }
               }
             ]
@@ -93,34 +93,34 @@
           {
             "kind": "paragraph",
             "origin": {
-              "x_pt": 85.03937,
-              "y_pt": 87.32785
+              "x_pt": 72.0,
+              "y_pt": 102.63496
             },
             "size": {
-              "width_pt": 75.47811,
-              "height_pt": 18.620000000000005
+              "width_pt": 75.47810999999999,
+              "height_pt": 18.61999999999999
             },
             "runs": [
               {
                 "text": "Normal",
                 "font": "",
-                "size_pt": 18.620000000000005,
+                "size_pt": 18.61999999999999,
                 "weight": 400,
                 "italic": false,
                 "origin": {
-                  "x_pt": 85.03937,
-                  "y_pt": 101.85145
+                  "x_pt": 72.0,
+                  "y_pt": 117.15856
                 }
               },
               {
                 "text": "paragraph.",
                 "font": "",
-                "size_pt": 18.620000000000005,
+                "size_pt": 18.61999999999999,
                 "weight": 400,
                 "italic": false,
                 "origin": {
-                  "x_pt": 118.06748,
-                  "y_pt": 101.85145
+                  "x_pt": 105.02811,
+                  "y_pt": 117.15856
                 }
               }
             ]
@@ -128,67 +128,67 @@
           {
             "kind": "paragraph",
             "origin": {
-              "x_pt": 85.03937,
-              "y_pt": 98.82687
+              "x_pt": 72.0,
+              "y_pt": 114.13398
             },
             "size": {
-              "width_pt": 125.71073700000001,
-              "height_pt": 18.620000000000005
+              "width_pt": 125.710737,
+              "height_pt": 18.62000000000002
             },
             "runs": [
               {
                 "text": "Paragraph",
                 "font": "",
-                "size_pt": 18.620000000000005,
+                "size_pt": 18.62000000000002,
                 "weight": 400,
                 "italic": false,
                 "origin": {
-                  "x_pt": 85.03937,
-                  "y_pt": 113.35047
+                  "x_pt": 72.0,
+                  "y_pt": 128.65758
                 }
               },
               {
                 "text": "with",
                 "font": "",
-                "size_pt": 18.620000000000005,
+                "size_pt": 18.62000000000002,
                 "weight": 400,
                 "italic": false,
                 "origin": {
-                  "x_pt": 128.049134,
-                  "y_pt": 113.35047
+                  "x_pt": 115.009764,
+                  "y_pt": 128.65758
                 }
               },
               {
                 "text": "400",
                 "font": "",
-                "size_pt": 18.620000000000005,
+                "size_pt": 18.62000000000002,
                 "weight": 400,
                 "italic": false,
                 "origin": {
-                  "x_pt": 148.308898,
-                  "y_pt": 113.35047
+                  "x_pt": 135.269528,
+                  "y_pt": 128.65758
                 }
               },
               {
                 "text": "twips",
                 "font": "",
-                "size_pt": 18.620000000000005,
+                "size_pt": 18.62000000000002,
                 "weight": 400,
                 "italic": false,
                 "origin": {
-                  "x_pt": 165.808661,
-                  "y_pt": 113.35047
+                  "x_pt": 152.769291,
+                  "y_pt": 128.65758
                 }
               },
               {
                 "text": "after.",
                 "font": "",
-                "size_pt": 18.620000000000005,
+                "size_pt": 18.62000000000002,
                 "weight": 400,
                 "italic": false,
                 "origin": {
-                  "x_pt": 189.960107,
-                  "y_pt": 113.35047
+                  "x_pt": 176.920737,
+                  "y_pt": 128.65758
                 }
               }
             ]
@@ -204,7 +204,7 @@
     "metadata": {
       "engine": "onlyoffice-documentserver",
       "engine_version": "docker.io/onlyoffice/documentserver@sha2…",
-      "captured_at": "2026-09-05T05:30:11.991752230+00:00",
+      "captured_at": "2026-09-05T05:46:05.985785618+00:00",
       "environment": "onlyoffice-ds pdf-export projection; filetype=docx"
     }
   }

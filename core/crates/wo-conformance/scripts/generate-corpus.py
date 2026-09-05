@@ -36,8 +36,26 @@ RELS = """\
 
 WORD_NS = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"'
 
+# Explicit A4 page setup (11906x16838 twips, 1-inch margins) so every engine
+# agrees on page size/margins. Without sectPr, OnlyOffice defaults to A4 while
+# LibreOffice defaults to Letter — a pure noise divergence for the oracle.
+SECTPR = (
+    '<w:sectPr>'
+    '<w:pgSz w:w="11906" w:h="16838"/>'
+    '<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" '
+    'w:header="720" w:footer="720" w:gutter="0"/>'
+    '</w:sectPr>'
+)
+
 
 def _w(body_xml: str, extra_parts: dict | None = None) -> bytes:
+    # sectPr must be the last child of w:body; case builders already emit the
+    # body wrapper, so inject the section properties just before its close tag.
+    stripped = body_xml.rstrip()
+    if stripped.endswith("</w:body>"):
+        body_xml = stripped[: -len("</w:body>")] + SECTPR + "</w:body>"
+    else:  # legacy: no body wrapper
+        body_xml = body_xml + SECTPR
     parts = {
         "[Content_Types].xml": CONTENT_TYPES_MINIMAL,
         "_rels/.rels": RELS,

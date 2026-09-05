@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "truth_captured_from": "onlyoffice-ds docker.io/onlyoffice/documentserver@sha2…",
-  "captured_at": "2026-09-05T05:30:11.786947039+00:00",
+  "captured_at": "2026-09-05T05:46:02.245841428+00:00",
   "render": {
     "pages": [
       {
@@ -145,7 +145,7 @@
     "metadata": {
       "engine": "onlyoffice-documentserver",
       "engine_version": "docker.io/onlyoffice/documentserver@sha2…",
-      "captured_at": "2026-09-05T05:30:11.786939056+00:00",
+      "captured_at": "2026-09-05T05:46:02.245830093+00:00",
       "environment": "onlyoffice-ds pdf-export projection; filetype=docx"
     }
   }
