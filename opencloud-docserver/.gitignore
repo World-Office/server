@@ -11,3 +11,7 @@ sample.docx
 
 # Local overrides
 .env
+
+# Coverage / scratch
+.coverage
+*.tmp
