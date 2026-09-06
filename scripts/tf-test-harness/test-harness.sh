@@ -11,6 +11,9 @@
 #   affected [--base R] e2e + unit tests affected by the diff
 #   feature F-xxx       tests covering one register feature
 #   e2e                 e2e suite (requires a live stack; skipped honestly)
+#                       --only wopi|gui selects the protocol/browser half
+#   coverage            unit suite + coverage gate (fail_under in pyproject)
+#   mutation [MODULE]   mutation testing (slow; surviving mutants = gaps)
 #   all                 unit + gates   (e2e only when E2E_BASE is set)
 #
 # Flags:
@@ -125,16 +128,46 @@ PYEOF
 }
 
 cmd_e2e() {
+  local only="${E2E_ONLY:-}"
   if [[ -z "${E2E_BASE:-}" ]]; then
     note "e2e skipped: E2E_BASE not set (no live stack configured)"
     RESULT_MAP[e2e]="skipped"
     return 0
   fi
-  info "e2e suite against $E2E_BASE"
-  ( cd "$DOCSERVER_DIR/e2e" && uv run --frozen pytest -q )
+  local -a sel=()
+  case "$only" in
+    wopi) sel+=(-m wopi); info "e2e protocol suite (-m wopi) against $E2E_BASE" ;;
+    gui)  sel+=(-m gui);  info "e2e browser suite (-m gui) against $E2E_BASE" ;;
+    *)    info "e2e suite (gui + wopi) against $E2E_BASE" ;;
+  esac
+  ( cd "$DOCSERVER_DIR/e2e" && uv run --frozen pytest -q ${sel[@]+"${sel[@]}"} )
   local rc=$?
   RESULT_MAP[e2e]=$(( rc == 0 ? 1 : 0 ))
   (( rc == 0 )) && ok "e2e passed" || fail "e2e failed"
+  return $rc
+}
+
+cmd_coverage() {
+  info "coverage gate (fail_under from pyproject.toml)"
+  local -a args=(run --frozen pytest tests/ -q -n "${WO_UNIT_WORKERS:-auto}" --dist loadgroup
+                 --cov=src --cov-report=term-missing:skip-covered)
+  [[ $FAST -eq 1 ]] && args+=(-x)
+  ( cd "$DOCSERVER_DIR" && uv ${args[@]+"${args[@]}"} )
+  local rc=$?
+  RESULT_MAP[coverage]=$(( rc == 0 ? 1 : 0 ))
+  (( rc == 0 )) && ok "coverage gate passed" || fail "coverage gate failed (rc=$rc)"
+  return $rc
+}
+
+cmd_mutation() {
+  local module="${1:-}"
+  local -a args=(run --frozen python scripts/mutation-test.py)
+  [[ -n "$module" ]] && args+=(--module "$module")
+  info "mutation testing${module:+ ($module)} — slow by design (surviving mutants = coverage gaps)"
+  ( cd "$DOCSERVER_DIR" && uv ${args[@]+"${args[@]}"} )
+  local rc=$?
+  RESULT_MAP[mutation]=$(( rc == 0 ? 1 : 0 ))
+  (( rc == 0 )) && ok "mutation gate passed" || fail "mutation gate failed (surviving mutants)"
   return $rc
 }
 
@@ -153,6 +186,13 @@ cmd_self_test() {
   n=$( cd "$DOCSERVER_DIR" && uv run --frozen pytest --collect-only -q 2>/dev/null | tail -1 )
   echo "$n" | grep -qE '^[0-9]+ tests? collected' || die "pytest collection failed"
   ok "pytest collects ($n)"
+
+  info "self-test: coverage + mutation tooling present"
+  ( cd "$DOCSERVER_DIR" && uv run --frozen python -c "import pytest_cov" ) \
+    || die "pytest-cov missing (coverage gate would crash)"
+  /usr/bin/python3 -m py_compile "$DOCSERVER_DIR/scripts/mutation-test.py" \
+    || die "mutation-test.py has a syntax error"
+  ok "coverage + mutation tooling"
 
   info "self-test: register resolves"
   ( cd "$REPO_DIR" && "$PYTHON" scripts/harness-graph/check-register.py $(_register_ids) >/dev/null ) \
@@ -180,9 +220,10 @@ main() {
       --base)  SEL_BASE="${2:?}"; shift ;;
       --list)  SEL_LIST=1 ;;
       --serial) WO_UNIT_WORKERS=0 ;;
+      --only)  export E2E_ONLY="${2:?}" ;;
       --self-test) cmd="self-test" ;;
       help|-h) sed -n '2,40p' "${BASH_SOURCE[0]}"; exit 0 ;;
-      unit|gates|select|affected|feature|e2e|all) cmd="$1" ;;
+      unit|gates|select|affected|feature|e2e|coverage|mutation|all) cmd="$1" ;;
       -*) die "unknown flag: $1" ;;
       *) rest+=("$1") ;;  # e.g. feature's F-xxx
     esac
@@ -199,13 +240,15 @@ main() {
     affected)  require_tree; cmd_affected; rc=$? ;;
     feature)   require_tree; cmd_feature "${rest[@]:-}"; rc=$? ;;
     e2e)       require_tree; cmd_e2e; rc=$? ;;
+    coverage)  require_tree; cmd_coverage; rc=$? ;;
+    mutation)  require_tree; cmd_mutation "${rest[@]:-}"; rc=$? ;;
     all)       require_tree
                cmd_unit; rc=$?
                cmd_gates || rc=$?
                cmd_e2e || rc=$? ;;
     self-test) cmd_self_test; rc=$? ;;
     help|-h)   sed -n '2,40p' "${BASH_SOURCE[0]}"; exit 0 ;;
-    *)         die "unknown command: $cmd (try: unit|gates|select|affected|feature|e2e|all|self-test)" ;;
+    *)         die "unknown command: $cmd (try: unit|gates|select|affected|feature|e2e|coverage|mutation|all|self-test)" ;;
   esac
 
   if [[ -n "$JSON_OUT" ]]; then

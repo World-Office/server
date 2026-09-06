@@ -41,9 +41,12 @@ interpreter: `PYTHON=/usr/bin/python3`.
 | `select`   | `harness-graph/select-tests.py` — diff → affected e2e tests      | TH-006                 |
 | `affected` | e2e **and unit** tests affected by the diff (`--base R`)         | TH-006                 |
 | `feature`  | graph.json `COVERS` edges for one feature                        | TH-012                 |
-| `e2e`      | `opencloud-docserver/e2e` against `$E2E_BASE` (skipped if unset)  | manual / scheduled     |
-| `all`      | unit + gates (+ e2e only when `E2E_BASE` is set)                 | —                      |
-| `--self-test` | toolchain, graph freshness, pytest collection, register, select | runs in CI           |
+| `e2e`      | `opencloud-docserver/e2e` against `$E2E_BASE` (skipped if unset);  |
+|            | `--only wopi\|gui` picks the protocol/browser half                |
+| `coverage` | unit suite + `--cov=src`, gated at `fail_under` (85)             |
+| `mutation` | `scripts/mutation-test.py` — surviving mutants fail the gate     |
+| `all`      | unit + gates (+ e2e only when `E2E_BASE` is set)                 |
+| `--self-test` | toolchain, graph freshness, collection, register, select, tooling | runs in CI |
 
 `unit` runs in parallel (pytest-xdist). The 68 browser tests spin their own
 uvicorn + Chromium + WOPI-httpd stack each, so the `tests/e2e/` conftest pins
@@ -86,12 +89,14 @@ ships:
 | TH-002 task generation | `generate-tests.py` over the live suite (1,500+ real tasks) |
 | TH-003 graph drift gate in CI | `.github/workflows/docserver.yml` `register` job |
 | TH-004 test parallelization | xdist `-n auto --dist loadgroup` + browser lane (≈3× faster) |
+| TH-005 coverage gate | `coverage` command + CI `--cov` at `fail_under = 85` |
+| TH-007 mutation testing | `mutation [MODULE]` over `scripts/mutation-test.py` |
 | TH-006 test impact analysis | `select` (graph-driven, e2e layer) |
 | TH-011 reports | `--json` run reports + `tasks.json` inventory |
 | TH-012 feature mapping | `feature F-xxx` via graph `COVERS` edges |
 | TH-014 documentation | this README |
 
-Rust-side items (TH-005/007/008/010) are **not implemented** — that stack
+Rust-side items (TH-008/010) are **not implemented** — that stack
 is deprecated reference, per `plan/RETHINK_WORLD_OFFICE.md`.
 
 ## License
