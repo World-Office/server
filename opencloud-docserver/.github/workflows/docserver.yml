@@ -5,9 +5,8 @@
 # real-HTTP WOPI validation plus a Docker image build + smoke test.
 #
 #   lint          -> uv run ruff check src tests        (matches `make lint`)
-#   test          -> uv run pytest -n auto --dist loadgroup
-#                                                         (unit + in-process e2e,
-#                                                         matches `make test`)
+#   test          -> unit lane (parallel) + browser lane (2 workers),
+#                    sequential — matches the phased `make test`
 #   validate-wopi -> boot the server, drive scripts/validate_wopi_e2e.sh
 #                    over real HTTP against the full WOPI host surface
 #   docker-build  -> build the image (Dockerfile) and smoke-test /health
@@ -39,6 +38,8 @@ concurrency:
 env:
   # Shared HMAC secret for WOPI JWT tokens (never a real secret in CI).
   DOCSERVER_JWT_SECRET: ci-test-secret
+  # Deterministic, lighter Hypothesis profile for CI runs (see tests/conftest.py).
+  HYPOTHESIS_PROFILE: ci
 
 jobs:
   lint:
@@ -87,10 +88,15 @@ jobs:
         run: uv sync --frozen --extra dev
         timeout-minutes: 5
 
-      - name: Run test suite (unit + in-process e2e, parallel)
+      - name: Unit lane (pytest, parallel across cores, coverage gate >=85%)
         working-directory: opencloud-docserver
-        run: uv run pytest -q -n auto --dist loadgroup --junitxml=test-results/junit.xml
-        timeout-minutes: 15
+        run: uv run pytest -q -n auto --dist loadgroup --ignore=tests/e2e --cov=src --cov-report=term-missing --junitxml=test-results/junit-unit.xml
+        timeout-minutes: 10
+
+      - name: Browser lane (pytest, 2 workers — more starves the host)
+        working-directory: opencloud-docserver
+        run: uv run pytest -q -n 2 tests/e2e --junitxml=test-results/junit-browser.xml
+        timeout-minutes: 10
 
       - name: Upload JUnit report
         if: always()
