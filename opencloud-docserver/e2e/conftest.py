@@ -329,10 +329,15 @@ def editor_frame(page):
 
 
 def editor_canvas(page):
+    """Return (frame, editable surface) of the live editor.
+
+    Kept for call-site compatibility: the editor surface is the
+    contenteditable ``#editor`` div (the canvas-based writer is gone).
+    """
     fr = editor_frame(page)
-    canvas = fr.locator("canvas").first
-    canvas.wait_for(state="visible", timeout=20000)
-    return fr, canvas
+    surface = fr.locator("#editor").first
+    surface.wait_for(state="visible", timeout=30000)
+    return fr, surface
 
 
 def close_editor(page, run_id=None, url=None):
@@ -373,8 +378,14 @@ def wopi_token_from_editor(page) -> tuple[str, str]:
 def wopi_open_and_capture(page, name: str) -> tuple[str, str]:
     """Open `name` in the WorldOffice editor and capture the WOPI session.
 
-    Spies on the editor's own CheckFileInfo request to learn the real WOPI
-    file id (a 64-hex collaboration-service id) and the access token.
+    Two stack shapes are supported:
+    - modern (OpenCloud collaboration): the web POSTs the editor launch to
+      ``/editor?WOPISrc=...`` with the access_token in the urlencoded body;
+      the WOPISrc carries the 64-hex collaboration file id. The browser
+      itself never calls /wopi/files (the docserver relays server-side).
+    - legacy/local: the browser calls CheckFileInfo directly at
+      ``/wopi/files/<id>?access_token=...``.
+
     Returns (file_id, access_token).
     """
     import re
@@ -382,25 +393,49 @@ def wopi_open_and_capture(page, name: str) -> tuple[str, str]:
 
     holder = {"r": None}
 
+    def _finish(fid, tok):
+        if fid and tok and not holder["r"]:
+            holder["r"] = (fid, tok)
+
     def _on_request(req):
         if holder["r"]:
             return
-        m = re.search(r"/wopi/files/([0-9a-fA-F]{64})", req.url)
+        url = req.url
+        if "/editor" in url and "WOPISrc=" in url:
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+            src = (q.get("WOPISrc") or [""])[0]
+            m = re.search(r"/wopi/files/([0-9a-fA-F]{64})", src)
+            tok = None
+            if req.method == "POST" and req.post_data:
+                body = urllib.parse.parse_qs(req.post_data)
+                tok = (body.get("access_token") or [None])[0]
+            if tok is None:
+                tok = (q.get("access_token") or [None])[0]
+            _finish(m.group(1) if m else None, tok)
+            return
+        m = re.search(r"/wopi/files/([0-9a-fA-F]{64})", url)
         if m:
-            q = urllib.parse.parse_qs(urllib.parse.urlparse(req.url).query)
-            holder["r"] = (m.group(1), q.get("access_token", [None])[0])
+            q = urllib.parse.parse_qs(urllib.parse.urlparse(url).query)
+            _finish(m.group(1), (q.get("access_token") or [None])[0])
 
-    page.on("request", _on_request)
+    # The live OpenCloud web opens the editor as an iframe/popup, so listen
+    # at context level — that sees the opener page, any popup, and every
+    # frame at once.
+    context = page.context
+    context.on("request", _on_request)
     try:
         open_file_by_name(page, name)
         deadline = time.time() + 30
         while time.time() < deadline and not holder["r"]:
             page.wait_for_timeout(800)
         if not holder["r"]:
-            raise AssertionError("no /wopi/files/<id> request observed from the editor")
+            seen = [pg.url[:100] for pg in context.pages]
+            raise AssertionError(
+                f"no editor launch or WOPI request observed (open pages: {seen})"
+            )
         return holder["r"]
     finally:
-        page.remove_listener("request", _on_request)
+        context.remove_listener("request", _on_request)
 
 
 WOPI_PUT_HEADERS = {"X-WOPI-Override": "PUT", "Content-Type": "application/octet-stream"}
