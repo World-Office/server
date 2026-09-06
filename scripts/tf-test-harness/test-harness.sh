@@ -135,13 +135,34 @@ cmd_e2e() {
     return 0
   fi
   local -a sel=()
+  local per_module=0
   case "$only" in
     wopi) sel+=(-m wopi); info "e2e protocol suite (-m wopi) against $E2E_BASE" ;;
-    gui)  sel+=(-m gui);  info "e2e browser suite (-m gui) against $E2E_BASE" ;;
+    gui)  per_module=1;  info "e2e browser suite (-m gui, one session per module) against $E2E_BASE" ;;
     *)    info "e2e suite (gui + wopi) against $E2E_BASE" ;;
   esac
-  ( cd "$DOCSERVER_DIR/e2e" && uv run --frozen pytest -q ${sel[@]+"${sel[@]}"} )
-  local rc=$?
+  local rc=0
+  if (( per_module )); then
+    # One pytest SESSION per GUI module. Sustained single-session churn
+    # (hundreds of sibling nodes) drives reva's posixfs id-cache negative for
+    # freshly created paths — MKCOL 201 but PROPFIND/PUT answer 404/409 for
+    # minutes, cascading through every later module. Per-module sessions give
+    # each module its own run folder AND the session-scoped health probe that
+    # absorbs any residual degradation before the first test.
+    local f mod failed=0 ran=0
+    for f in "$DOCSERVER_DIR"/e2e/test_*.py; do
+      grep -lq "pytest.mark.gui" "$f" || continue
+      mod=$(basename "$f")
+      note "e2e gui module: $mod"
+      ( cd "$DOCSERVER_DIR/e2e" && uv run --frozen pytest -q "$mod" ) || { failed=$((failed+1)); echo "FAILED module: $mod"; }
+      ran=$((ran+1))
+    done
+    (( failed )) && rc=1
+    info "e2e gui: $ran modules, $failed failed"
+  else
+    ( cd "$DOCSERVER_DIR/e2e" && uv run --frozen pytest -q ${sel[@]+"${sel[@]}"} )
+    rc=$?
+  fi
   RESULT_MAP[e2e]=$(( rc == 0 ? 1 : 0 ))
   (( rc == 0 )) && ok "e2e passed" || fail "e2e failed"
   return $rc

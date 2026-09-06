@@ -107,7 +107,34 @@ def _dav() -> requests.Session:
     s = requests.Session()
     s.auth = (USER, PASS)
     s.verify = False
+    _mount_retries(s)
     return s
+
+
+def _mount_retries(session: requests.Session) -> None:
+    """Retry connect/read failures and 5xx at the transport level.
+
+    The public edge (caddy in front of the live stack) occasionally drops
+    TCP connects for a second or two; without this, one blip fails a whole
+    test (page loads succeed, the API probe right after times out).
+    """
+    from requests.adapters import HTTPAdapter
+    from urllib3.util.retry import Retry
+
+    retry = Retry(
+        total=3,
+        connect=3,
+        read=2,
+        status=3,
+        backoff_factor=0.5,
+        status_forcelist=(502, 503, 504),
+        allowed_methods=frozenset(
+            {"GET", "PUT", "POST", "DELETE", "MKCOL", "MOVE", "PROPFIND", "PATCH", "LOCK", "UNLOCK"}
+        ),
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
 
 
 def dav_url(path: str) -> str:
@@ -163,12 +190,29 @@ def dav_mkcol(path: str) -> requests.Response:
 
 
 def dav_contains(path: str, token: str, timeout_s: float = 30.0) -> bool:
-    """Poll WebDAV until the file's XML contains `token` (postprocessing lag)."""
+    """Poll WebDAV until `token` appears in the file (postprocessing lag).
+
+    ZIP-based documents (docx/odt) store XML deflated — a raw-byte substring
+    check can never see text inside them. Archive members are therefore
+    decompressed before searching; plain files (txt/md) are checked raw.
+    """
     deadline = time.time() + timeout_s
     while time.time() < deadline:
         r = dav_get(path)
-        if r.ok and token in r.content.decode("utf-8", "ignore"):
-            return True
+        if r.ok:
+            if r.content[:2] == b"PK":
+                import io
+                import zipfile
+                with zipfile.ZipFile(io.BytesIO(r.content)) as zf:
+                    haystack = "".join(
+                        zf.read(n).decode("utf-8", "ignore")
+                        for n in zf.namelist()
+                        if n.endswith((".xml", ".rdf"))
+                    )
+            else:
+                haystack = r.content.decode("utf-8", "ignore")
+            if token in haystack:
+                return True
         time.sleep(2.0)
     return False
 
@@ -264,6 +308,25 @@ def goto(page, url: str):
     raise last_err
 
 
+def wait_row(page, name: str, timeout_s: int = 90):
+    """Wait until a specific resource row is visible, reloading periodically.
+
+    The files listing is served through reva's readdir cache, which
+    intermittently serves stale listings under churn — a freshly created
+    (or long-existing!) file can be missing from the list for a while even
+    though other rows render. Reload until it shows up.
+    """
+    row = page.locator(f"[data-test-resource-name='{name}']").first
+    deadline = time.time() + timeout_s
+    while time.time() < deadline:
+        if row.count() and row.is_visible():
+            return row
+        page.wait_for_timeout(2500)
+        page.reload(wait_until="domcontentloaded")
+        page.wait_for_timeout(2500)
+    raise AssertionError(f"row '{name}' never appeared in the listing after {timeout_s}s")
+
+
 def login(page, user: str = USER, password: str = PASS):
     goto(page, BASE)
     page.locator("#oc-login-username").fill(user)
@@ -340,7 +403,7 @@ def editor_canvas(page):
     return fr, surface
 
 
-def close_editor(page, run_id=None, url=None):
+def close_editor(page, run_id=None, url=None, file_path=None):
     """Leave the editor cleanly BEFORE the page is torn down.
 
     Closing a page with a live editor iframe makes the collaboration host
@@ -348,11 +411,28 @@ def close_editor(page, run_id=None, url=None):
     reva's id-cache — new-file PUTs into the folder answer 409 for ~5 min
     and root listings go stale. Navigating away first unloads the editor
     gracefully. Pass `url` for non-admin pages (e.g. bob's shares view).
+
+    With `file_path` (DAV path of the edited file), also VERIFY that the
+    WOPI lock actually released: an unlock beacon lost to a network blip
+    leaks a ~30-minute lock that hides 'Rename'/'Move to' in the files app
+    and 423/409s every later write to that file. Fail loudly instead of
+    poisoning downstream tests.
     """
     if url is None:
         url = f"{BASE}/files/spaces/personal/admin/{run_id}"
     goto(page, url)
     page.wait_for_timeout(2000)
+    if file_path:
+        deadline = time.time() + 45
+        while time.time() < deadline:
+            if "lockdiscovery" not in dav_propfind(file_path).text:
+                return
+            time.sleep(2.5)
+        raise AssertionError(
+            f"WOPI lock on {file_path} did not release within 45s of the "
+            "graceful editor unload — the unlock beacon was likely lost; "
+            "later tests on this file would 409/423 (leaked ~30min lock)"
+        )
 
 
 def wopi_token_from_editor(page) -> tuple[str, str]:
@@ -571,7 +651,75 @@ def session_ctx(pw, run_id):
 def page(session_ctx):
     pg = session_ctx.new_page()
     yield pg
+    _graceful_editor_unload(pg)
     pg.close()
+
+
+def ensure_user(username: str, password: str, display_name: str) -> str:
+    """Idempotently provision a local user on the live stack; return their id.
+
+    Looks the user up by `onPremisesSamAccountName` (falling back to their
+    mail), creates them via the Graph API when missing, and (re)sets their
+    password either way. This replaces an old hardcoded UUID that went stale
+    when the IDM database was re-provisioned — user ids are server-generated
+    and MUST NOT be assumed by tests.
+    """
+    import requests
+
+    s = requests.Session()
+    s.auth = (USER, PASS)
+    s.verify = False
+    _mount_retries(s)
+
+    def _find():
+        r = s.get(f"{BASE}/graph/v1.0/users", timeout=30)
+        if r.ok:
+            for u in r.json().get("value", []):
+                if u.get("onPremisesSamAccountName") == username or (
+                    u.get("mail") == f"{username}@example.org"
+                ):
+                    return u["id"]
+        return None
+
+    uid = _find()
+    if uid is None:
+        r = s.post(
+            f"{BASE}/graph/v1.0/users",
+            json={
+                "displayName": display_name,
+                "onPremisesSamAccountName": username,
+                "mail": f"{username}@example.org",
+                "accountEnabled": True,
+                "passwordProfile": {"password": password},
+            },
+            timeout=30,
+        )
+        assert r.status_code in (200, 201), f"user create failed: {r.status_code} {r.text[:200]}"
+        uid = r.json()["id"]
+    r = s.patch(
+        f"{BASE}/graph/v1.0/users/{uid}",
+        json={"passwordProfile": {"password": password}},
+        timeout=30,
+    )
+    assert r.status_code == 200, f"password reset failed: {r.status_code}"
+    return uid
+
+
+def _graceful_editor_unload(pg):
+    """Leave an open editor gracefully BEFORE the page is closed.
+
+    An abrupt close with a live editor makes the collaboration host fire a
+    late async WOPI/TUS save that wedges reva's id-cache for minutes (dav_put
+    then answers 409 for every new upload). Navigating away first lets the
+    editor unregister cleanly — same rationale as close_editor().
+    """
+    try:
+        if "external-worldoffice" in pg.url or pg.url.rstrip("/").endswith("/editor"):
+            pg.goto(f"{BASE}/files/spaces/personal/admin",
+                    wait_until="domcontentloaded", timeout=15000)
+            pg.wait_for_timeout(2000)
+    except Exception:
+        pass
 
 
 @pytest.fixture
@@ -595,10 +743,19 @@ def fresh_page(fresh_ctx):
 
 @pytest.fixture
 def in_run_folder(page, run_id):
-    """Navigate the logged-in page into the run folder."""
+    """Navigate the logged-in page into the run folder.
+
+    On teardown, unload any editor the test left open — an abrupt page close
+    leaks the ~30-minute WOPI lock and fires a late async save that poisons
+    reva's id-cache (fresh-node 409s for minutes) for every later module.
+    """
     goto(page, f"{BASE}/files/spaces/personal/admin/{run_id}")
     page.wait_for_timeout(2500)
-    return page
+    yield page
+    try:
+        close_editor(page, run_id)
+    except Exception:
+        pass
 
 
 @pytest.fixture
@@ -610,3 +767,5 @@ def uploaded_docx(in_run_folder, run_id):
     assert r.status_code in (201, 204), f"docx upload failed: {r.status_code}"
     in_run_folder.wait_for_timeout(1500)
     yield in_run_folder, name, path
+    # loud lock check: this file WAS opened in the editor by the test
+    close_editor(in_run_folder, run_id, file_path=path)
