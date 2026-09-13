@@ -1,0 +1,22 @@
+name: docserver-binary
+
+# Build the wo-docserver binary in the same rust:bookworm image the Dockerfile
+# uses (glibc-compatible with the Debian production host) and upload it as an
+# artifact — for hosts that run the single-binary + editor-ui deployment model
+# instead of the compose stack.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: rust:bookworm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build wo-docserver (release)
+        run: cargo build --release -p wo-docserver
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wo-docserver-linux-amd64
+          path: target/release/wo-docserver
