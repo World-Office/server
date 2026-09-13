@@ -1,4 +1,4 @@
-import { detectWopiParams, loadDocument, putFile } from "@world-office/wopi-client"
+import { detectWopiParams, isEditable, loadDocument, putFile } from "@world-office/wopi-client"
 import type { WopiConnection, WopiFileInfo } from "@world-office/wopi-client"
 import { makeAutoObservable } from "mobx"
 import type { PDFDocumentProxy } from "pdfjs-dist"
@@ -310,7 +310,7 @@ export class PdfStore {
       this.lastLoadedContent = content
       // WOPI UserCanWrite drives edit mode (was never wired — tabs/controls
       // stayed hidden and docs appeared uneditable).
-      this.setEditMode(info.UserCanWrite ?? false)
+      this.setEditMode(isEditable(info))
       this.document = {
         title: info.BaseFileName || "Untitled",
         fileType: "pdf",

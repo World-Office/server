@@ -1,6 +1,7 @@
 import type { CollabUser } from "@world-office/editor-stores";
 import {
 	detectWopiParams,
+	isEditable,
 	loadDocument,
 	putFile,
 } from "@world-office/wopi-client";
@@ -119,7 +120,7 @@ export class PresentationStore {
 			this.lastLoadedContent = content;
 			// WOPI UserCanWrite drives edit mode (was never wired — tabs/controls
 			// stayed hidden and docs appeared uneditable).
-			this.setEditMode(info.UserCanWrite ?? false);
+			this.setEditMode(isEditable(info));
 
 			this.document = {
 				title: info.BaseFileName ?? "Untitled",

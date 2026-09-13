@@ -9,6 +9,10 @@ export {
 } from "./detect-wopi-params"
 
 export {
+  isEditable,
+} from "./wopi-types"
+
+export {
   checkFileInfo,
   getFile,
   putFile,

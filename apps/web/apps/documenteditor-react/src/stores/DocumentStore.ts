@@ -2,6 +2,7 @@ import {
   type WopiConnection,
   type WopiFileInfo,
   detectWopiParams,
+  isEditable,
   loadDocument,
   putFile,
 } from "@world-office/wopi-client"
@@ -414,10 +415,10 @@ export class DocumentStore {
       this.lastLoadedContent = content
       this.fileName = info.BaseFileName ?? "Untitled Document"
       this.filePath = conn.wopiFileId
-      // WOPI UserCanWrite drives edit mode: enables Insert/Layout tabs and
-      // all edit-dependent ribbon controls (was never wired up — isEditMode
-      // stayed false, hiding tabs and making documents appear uneditable).
-      this.setEditMode(info.UserCanWrite ?? false)
+      // WOPI editability: UserCanWrite when present, otherwise default
+      // editable unless ReadOnly — OpenCloud click-open sessions omit the
+      // field (VIEW_MODE_VIEW_ONLY) but the CS3 token can still save.
+      this.setEditMode(isEditable(info))
       this.setDocument({
         title: this.fileName,
         fileType: this.fileName.split(".").pop() ?? "docx",
