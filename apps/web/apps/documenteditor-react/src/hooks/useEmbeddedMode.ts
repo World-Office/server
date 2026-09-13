@@ -7,9 +7,13 @@ function getEmbeddedConfig(): { embedded?: boolean } {
   return cfg ?? {}
 }
 
-export function isEmbeddedMode(): boolean {
+export function explicitlyEmbedded(): boolean {
   const params = new URLSearchParams(window.location.search)
-  if (params.get("embedded") === "true" || getEmbeddedConfig().embedded === true) {
+  return params.get("embedded") === "true" || getEmbeddedConfig().embedded === true
+}
+
+export function isEmbeddedMode(): boolean {
+  if (explicitlyEmbedded()) {
     return true
   }
   // A WOPI session (access_token + file_id, as minted by the OpenCloud
@@ -25,15 +29,19 @@ export function useEmbeddedMode(
   setRightMenuVisible: (visible: boolean) => void,
 ): { embedded: boolean } {
   const embedded = useMemo(() => isEmbeddedMode(), [])
+  // Chrome is hidden only when the embedder explicitly opts out of the
+  // editor-provided UI (embedded=true / config). A plain WOPI session keeps
+  // the full chrome: the host (OpenCloud web) renders no toolbar of its own.
+  const chromeless = useMemo(() => explicitlyEmbedded(), [])
 
   useEffect(() => {
-    if (embedded) {
+    if (chromeless) {
       setToolbarVisible(false)
       setStatusbarVisible(false)
       setLeftMenuVisible(false)
       setRightMenuVisible(false)
     }
-  }, [embedded, setToolbarVisible, setStatusbarVisible, setLeftMenuVisible, setRightMenuVisible])
+  }, [chromeless, setToolbarVisible, setStatusbarVisible, setLeftMenuVisible, setRightMenuVisible])
 
   return { embedded }
 }

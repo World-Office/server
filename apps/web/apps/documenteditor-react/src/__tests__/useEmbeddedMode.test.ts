@@ -1,165 +1,54 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { act } from 'react'
-import { createRoot } from 'react-dom/client'
-import React from 'react'
-import { isEmbeddedMode, useEmbeddedMode } from '../hooks/useEmbeddedMode'
+// Pins the WOPI-vs-chrome semantics of useEmbeddedMode:
+// a plain WOPI session (OpenCloud web iframe) is an embedded editing session
+// (autosave/Ctrl+S armed) but must KEEP the editor chrome — the host renders
+// no toolbar of its own. Chrome is hidden only on explicit opt-in.
+import { afterEach, describe, expect, it, vi } from "vitest"
 
-describe('useEmbeddedMode', () => {
-  const setupHookHarness = (props: any) => {
-    const container = document.createElement('div')
-    document.body.appendChild(container)
-    const root = createRoot(container)
+type Hook = typeof import("../hooks/useEmbeddedMode")
 
-    let result: any = null
-    const Probe = () => {
-      result = useEmbeddedMode(
-        props.setToolbar,
-        props.setStatusbar,
-        props.setLeftMenu,
-        props.setRightMenu
-      )
-      return null
-    }
+async function importWithSearch(search: string, config?: { embedded?: boolean }): Promise<Hook> {
+  vi.resetModules()
+  const fakeWindow = {
+    location: { search },
+    __WORLD_OFFICE_CONFIG__: config,
+  } as unknown as Window & typeof globalThis
+  vi.stubGlobal("window", fakeWindow)
+  return import("../hooks/useEmbeddedMode")
+}
 
-    return {
-      render: () => {
-        act(() => {
-          root.render(React.createElement(Probe))
-        })
-        return result
-      },
-      unmount: () => {
-        act(() => {
-          root.unmount()
-        })
-        document.body.removeChild(container)
-      }
-    }
-  }
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.resetModules()
+})
 
-  beforeEach(() => {
-    window.history.replaceState(null, '', '/')
-    delete (window as any).__WORLD_OFFICE_CONFIG__
-    vi.clearAllMocks()
+describe("useEmbeddedMode truth table", () => {
+  it("plain WOPI session: embedded (autosave armed), chrome visible", async () => {
+    const m = await importWithSearch("?WOPISrc=http%3A%2F%2Fx&access_token=tok&file_id=f1")
+    expect(m.isEmbeddedMode()).toBe(true)
+    expect(m.explicitlyEmbedded()).toBe(false)
   })
 
-  describe('isEmbeddedMode()', () => {
-    it('returns false for a bare URL', () => {
-      window.history.replaceState(null, '', '/')
-      expect(isEmbeddedMode()).toBe(false)
-    })
-
-    it('returns true when ?embedded=true', () => {
-      window.history.replaceState(null, '', '/?embedded=true')
-      expect(isEmbeddedMode()).toBe(true)
-    })
-
-    it('returns true when __WORLD_OFFICE_CONFIG__.embedded is true', () => {
-      (window as any).__WORLD_OFFICE_CONFIG__ = { embedded: true }
-      window.history.replaceState(null, '', '/')
-      expect(isEmbeddedMode()).toBe(true)
-    })
-
-    it('returns true for WOPI-shaped URLs (access_token and file_id)', () => {
-      window.history.replaceState(null, '', '/?access_token=abc&file_id=123')
-      expect(isEmbeddedMode()).toBe(true)
-    })
-
-    it('returns false for WOPI URL missing one parameter', () => {
-      window.history.replaceState(null, '', '/?access_token=abc')
-      expect(isEmbeddedMode()).toBe(false)
-      window.history.replaceState(null, '', '/?file_id=123')
-      expect(isEmbeddedMode()).toBe(false)
-    })
-
-    it('prioritizes URL params or config over absence of both', () => {
-      // If config says true, but URL is bare -> true
-      (window as any).__WORLD_OFFICE_CONFIG__ = { embedded: true }
-      expect(isEmbeddedMode()).toBe(true)
-    })
-
-    it('returns false when ?embedded=false even if config is true', () => {
-      // Based on source: if (params.get("embedded") === "true" || getEmbeddedConfig().embedded === true)
-      // "false" is not "true", but config is still true.
-      // The prompt asked to "pin the real precedence".
-      // Looking at source:
-      // if (params.get("embedded") === "true" || getEmbeddedConfig().embedded === true) { return true }
-      // So if embedded=false but config=true, it STILL returns true because of the OR.
-      
-      (window as any).__WORLD_OFFICE_CONFIG__ = { embedded: true }
-      window.history.replaceState(null, '', '/?embedded=false')
-      expect(isEmbeddedMode()).toBe(true)
-    })
+  it("explicit embedded=true: chrome hidden", async () => {
+    const m = await importWithSearch("?embedded=true")
+    expect(m.isEmbeddedMode()).toBe(true)
+    expect(m.explicitlyEmbedded()).toBe(true)
   })
 
-  describe('useEmbeddedMode hook', () => {
-    it('returns { embedded: true } and hides panels when in embedded mode', () => {
-      window.history.replaceState(null, '', '/?embedded=true')
-      
-      const setToolbar = vi.fn()
-      const setStatusbar = vi.fn()
-      const setLeftMenu = vi.fn()
-      const setRightMenu = vi.fn()
+  it("explicit embedded=true wins even without WOPI params", async () => {
+    const m = await importWithSearch("?embedded=true&access_token=tok&file_id=f1")
+    expect(m.explicitlyEmbedded()).toBe(true)
+  })
 
-      const { render, unmount } = setupHookHarness({
-        setToolbar, setStatusbar, setLeftMenu, setRightMenu
-      })
+  it("config embedded=true: chrome hidden", async () => {
+    const m = await importWithSearch("", { embedded: true })
+    expect(m.isEmbeddedMode()).toBe(true)
+    expect(m.explicitlyEmbedded()).toBe(true)
+  })
 
-      const result = render()
-      expect(result.embedded).toBe(true)
-      expect(setToolbar).toHaveBeenCalledWith(false)
-      expect(setStatusbar).toHaveBeenCalledWith(false)
-      expect(setLeftMenu).toHaveBeenCalledWith(false)
-      expect(setRightMenu).toHaveBeenCalledWith(false)
-
-      unmount()
-    })
-
-    it('returns { embedded: false } and does not hide panels when not embedded', () => {
-      window.history.replaceState(null, '', '/')
-      
-      const setToolbar = vi.fn()
-      const setStatusbar = vi.fn()
-      const setLeftMenu = vi.fn()
-      const setRightMenu = vi.fn()
-
-      const { render, unmount } = setupHookHarness({
-        setToolbar, setStatusbar, setLeftMenu, setRightMenu
-      })
-
-      const result = render()
-      expect(result.embedded).toBe(false)
-      expect(setToolbar).not.toHaveBeenCalled()
-      expect(setStatusbar).not.toHaveBeenCalled()
-      expect(setLeftMenu).not.toHaveBeenCalled()
-      expect(setRightMenu).not.toHaveBeenCalled()
-
-      unmount()
-    })
-
-    it('only calls panel setters once when embedded', () => {
-      window.history.replaceState(null, '', '/?embedded=true')
-      
-      const setToolbar = vi.fn()
-      const setStatusbar = vi.fn()
-      const setLeftMenu = vi.fn()
-      const setRightMenu = vi.fn()
-
-      const { render, unmount } = setupHookHarness({
-        setToolbar, setStatusbar, setLeftMenu, setRightMenu
-      })
-
-      render()
-      // Trigger a re-render by rendering again (in a real app, props or state change)
-      render()
-
-      expect(setToolbar).toHaveBeenCalledTimes(1)
-      expect(setStatusbar).toHaveBeenCalledTimes(1)
-      expect(setLeftMenu).toHaveBeenCalledTimes(1)
-      expect(setRightMenu).toHaveBeenCalledTimes(1)
-
-      unmount()
-    })
+  it("no params: plain standalone session", async () => {
+    const m = await importWithSearch("")
+    expect(m.isEmbeddedMode()).toBe(false)
+    expect(m.explicitlyEmbedded()).toBe(false)
   })
 })
