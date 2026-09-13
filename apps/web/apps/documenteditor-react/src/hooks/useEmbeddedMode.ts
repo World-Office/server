@@ -19,6 +19,7 @@ export function isEmbeddedMode(): boolean {
   // A WOPI session (access_token + file_id, as minted by the OpenCloud
   // collaboration service) is inherently an embedded editing session:
   // without this, autosave/Ctrl+S never arm and edits are lost on reload.
+  const params = new URLSearchParams(window.location.search)
   return Boolean(params.get("access_token") && params.get("file_id"))
 }
 
