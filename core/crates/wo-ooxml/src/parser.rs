@@ -1314,7 +1314,10 @@ impl OoxmlParser {
 
         let body = match body_node {
             Some(node) => self.parse_body_node(&node, &xml),
-            None => DocxBody { blocks: Vec::new() },
+            None => DocxBody {
+                blocks: Vec::new(),
+                raw_sect_pr: None,
+            },
         };
 
         Ok(Some(body))
@@ -1322,6 +1325,7 @@ impl OoxmlParser {
 
     fn parse_body_node(&self, body: &roxmltree::Node, xml: &str) -> DocxBody {
         let mut blocks = Vec::new();
+        let mut raw_sect_pr = None;
 
         for child in body.children() {
             if !child.is_element() {
@@ -1339,6 +1343,13 @@ impl OoxmlParser {
                         blocks.push(DocxBlock::Table(table));
                     }
                 }
+                (Some(Self::W_NS), "sectPr") => {
+                    // Body-level section properties: capture the whole
+                    // <w:sectPr> subtree verbatim so page geometry and other
+                    // section features survive a parse-serialize cycle.
+                    let r = child.range();
+                    raw_sect_pr = Some(xml[r.start..r.end].to_string());
+                }
                 (Some(Self::W_NS), "sdt") => {
                     // Structured document tag — try to parse its content
                     for inner in child.descendants() {
@@ -1353,7 +1364,10 @@ impl OoxmlParser {
             }
         }
 
-        DocxBody { blocks }
+        DocxBody {
+            blocks,
+            raw_sect_pr,
+        }
     }
 
     fn parse_paragraph(&self, p_node: &roxmltree::Node, xml: &str) -> DocxParagraph {

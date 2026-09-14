@@ -662,3 +662,139 @@ fn test_paragraph_without_ppr_has_no_raw() {
         .expect("serialize should succeed");
     assert!(document_xml(&out).contains("Plain"));
 }
+
+/// Corpus congruence test: a rich document combining every raw-capture
+/// feature (numPr, styled runs, table, inline drawing, hyperlink, body
+/// sectPr) must survive a parse→serialize round trip.
+#[test]
+fn test_rich_corpus_round_trip() {
+    let input = {
+        let mut buf = Vec::new();
+        {
+            let mut zip = zip::ZipWriter::new(Cursor::new(&mut buf));
+            zip.start_file(
+                "[Content_Types].xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>"#,
+            )
+            .unwrap();
+            zip.start_file(
+                "word/document.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+  <w:body>
+    <w:p>
+      <w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr>
+      <w:r><w:t>First item</w:t></w:r>
+    </w:p>
+    <w:p>
+      <w:pPr><w:numPr><w:ilvl w:val="1"/><w:numId w:val="2"/></w:numPr></w:pPr>
+      <w:r><w:t>Second item</w:t></w:r>
+    </w:p>
+    <w:p>
+      <w:r><w:rPr><w:b/><w:color w:val="FF0000"/></w:rPr><w:t>Bold colored</w:t></w:r>
+      <w:hyperlink r:id="rId7"><w:r><w:t>linked</w:t></w:r></w:hyperlink>
+      <w:r><w:t>after link</w:t></w:r>
+    </w:p>
+    <w:tbl>
+      <w:tblPr><w:tblW w:w="5000" w:type="dxa"/></w:tblPr>
+      <w:tblGrid><w:gridCol w:w="5000"/></w:tblGrid>
+      <w:tr><w:tc><w:p><w:r><w:t>Head cell</w:t></w:r></w:p></w:tc></w:tr>
+      <w:tr><w:tc><w:p><w:r><w:t>Body cell</w:t></w:r></w:p></w:tc></w:tr>
+    </w:tbl>
+    <w:p>
+      <w:r>
+        <w:drawing>
+          <wp:inline distT="0" distB="0">
+            <wp:extent cx="914400" cy="914400"/>
+            <a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic/></a:graphicData></a:graphic>
+          </wp:inline>
+        </w:drawing>
+      </w:r>
+      <w:r><w:t>Caption</w:t></w:r>
+    </w:p>
+    <w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1418" w:right="1418"/></w:sectPr>
+  </w:body>
+</w:document>"#,
+            )
+            .unwrap();
+            zip.finish().unwrap();
+        }
+        buf
+    };
+
+    // Parse: raw_sect_pr must hold the verbatim body-level sectPr.
+    let parser = OoxmlParser::new();
+    let doc = parser.parse(&input).expect("parse should succeed");
+    let body = doc.docx_body.as_ref().expect("docx body present");
+    let raw_sect = body.raw_sect_pr.as_deref().expect("raw_sect_pr captured");
+    assert!(raw_sect.starts_with("<w:sectPr>"));
+    assert!(raw_sect.ends_with("</w:sectPr>"));
+    assert!(raw_sect.contains(r#"<w:pgSz w:w="11906" w:h="16838"/>"#));
+    assert!(raw_sect.contains(r#"<w:pgMar w:top="1418" w:right="1418"/>"#));
+
+    // Serialize: every corpus feature must survive.
+    let serializer = OoxmlSerializer::new();
+    let out = serializer
+        .serialize(&doc)
+        .expect("serialize should succeed");
+    let document = document_xml(&out);
+
+    assert!(
+        document.matches("<w:numPr>").count() >= 2,
+        "both numbering definitions must survive"
+    );
+    assert!(
+        document.contains(r#"<w:numId w:val="2"/>"#),
+        "second numbering id must survive"
+    );
+    assert_eq!(
+        document.matches("<w:drawing").count(),
+        1,
+        "exactly one inline drawing must survive"
+    );
+    assert!(
+        document.contains(r#"<w:hyperlink r:id="rId7">"#),
+        "hyperlink wrapper must survive"
+    );
+    assert!(document.contains("<w:tblPr>"), "table properties must survive");
+    assert!(document.contains("<w:sectPr>"), "section properties must survive");
+    assert!(
+        document.contains(r#"<w:pgSz w:w="11906" w:h="16838"/>"#),
+        "page geometry must survive verbatim"
+    );
+    assert!(
+        document.contains(r#"<w:b/><w:color w:val="FF0000"/>"#),
+        "bold + color run properties must survive"
+    );
+
+    // All texts preserved.
+    for text in [
+        "First item",
+        "Second item",
+        "Bold colored",
+        "linked",
+        "after link",
+        "Head cell",
+        "Body cell",
+        "Caption",
+    ] {
+        assert!(document.contains(text), "text {:?} must survive", text);
+    }
+}
