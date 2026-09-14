@@ -6,6 +6,60 @@
 //! This is the "C++ layout engine" equivalent in ONLYOFFICE's architecture.
 
 use wo_ooxml::model::{DocxBlock, DocxBody, DocxParagraph};
+
+/// Where a laid-out paragraph lives in the `DocxBody` block structure.
+///
+/// Layout flattens body paragraphs and table-cell paragraphs into one
+/// sequence; the path carries the provenance so the edit path can map a
+/// hit-tested paragraph index back to its model location.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum BlockPath {
+    /// Paragraph block at `body.blocks[block]`.
+    BodyBlock(usize),
+    /// Paragraph `para` of cell (`row`, `cell`) in the table at
+    /// `body.blocks[table]`.
+    TableCell {
+        table: usize,
+        row: usize,
+        cell: usize,
+        para: usize,
+    },
+}
+
+impl Default for BlockPath {
+    fn default() -> Self {
+        BlockPath::BodyBlock(0)
+    }
+}
+
+/// Paragraph paths in layout order: body paragraphs and table-cell
+/// paragraphs (row-major), exactly the order `LayoutEngine::layout_document`
+/// emits them. The edit path uses this to map flat paragraph indices
+/// (`cursor.para`, hit-test indexing) back to model locations.
+pub fn flat_paragraphs(body: &DocxBody) -> Vec<BlockPath> {
+    let mut out = Vec::new();
+    for (bi, block) in body.blocks.iter().enumerate() {
+        match block {
+            DocxBlock::Paragraph(_) => out.push(BlockPath::BodyBlock(bi)),
+            DocxBlock::Table(t) => {
+                for (ri, row) in t.rows.iter().enumerate() {
+                    for (ci, cell) in row.cells.iter().enumerate() {
+                        for pi in 0..cell.paragraphs.len() {
+                            out.push(BlockPath::TableCell {
+                                table: bi,
+                                row: ri,
+                                cell: ci,
+                                para: pi,
+                            });
+                        }
+                    }
+                }
+            }
+            DocxBlock::Image(_) => {}
+        }
+    }
+    out
+}
 use wo_renderer::canvas::Canvas;
 use wo_renderer::color::Color;
 use wo_renderer::fonts::FontLibrary;
@@ -56,6 +110,8 @@ pub struct LaidOutParagraph {
     pub y: f32,
     pub height: f32,
     pub style_id: Option<String>,
+    /// Model location of this paragraph (body block or table cell).
+    pub path: BlockPath,
 }
 
 /// Page layout information.
@@ -175,7 +231,7 @@ impl LayoutEngine {
         };
         let mut cursor_y = pl.content_y;
 
-        for block in &body.blocks {
+        for (bi, block) in body.blocks.iter().enumerate() {
             match block {
                 DocxBlock::Paragraph(para) => {
                     // Page break
@@ -222,6 +278,7 @@ impl LayoutEngine {
                     let max_row_w = pl.content_width - indent_left * PT_TO_PX;
                     let (laid_paras, para_h) = self.layout_paragraph(
                         para,
+                        BlockPath::BodyBlock(bi),
                         cursor_y,
                         indent_left * PT_TO_PX,
                         indent_first.unwrap_or(0.0) * PT_TO_PX,
@@ -240,6 +297,7 @@ impl LayoutEngine {
                         cursor_y = pl.content_y;
                         let (relaid, _) = self.layout_paragraph(
                             para,
+                            BlockPath::BodyBlock(bi),
                             cursor_y,
                             indent_left * PT_TO_PX,
                             indent_first.unwrap_or(0.0) * PT_TO_PX,
@@ -296,7 +354,7 @@ impl LayoutEngine {
                         .unwrap_or(0.0)
                         + pl.content_x;
 
-                    for row in &table.rows {
+                    for (ri, row) in table.rows.iter().enumerate() {
                         let row_h_pt = row.height.map(|h| h as f32).unwrap_or(24.0);
                         let row_h_px = row_h_pt * PT_TO_PX;
 
@@ -310,7 +368,7 @@ impl LayoutEngine {
 
                         for (ci, cell) in row.cells.iter().enumerate() {
                             let cell_x = table_indent + ci as f32 * col_w;
-                            for cp in &cell.paragraphs {
+                            for (pi, cp) in cell.paragraphs.iter().enumerate() {
                                 let cf = cp
                                     .runs
                                     .first()
@@ -320,6 +378,12 @@ impl LayoutEngine {
                                 let cell_max_w = col_w - 8.0;
                                 let (cl, _) = self.layout_paragraph(
                                     cp,
+                                    BlockPath::TableCell {
+                                        table: bi,
+                                        row: ri,
+                                        cell: ci,
+                                        para: pi,
+                                    },
                                     cursor_y,
                                     cell_x,
                                     0.0,
@@ -350,6 +414,7 @@ impl LayoutEngine {
     fn layout_paragraph(
         &mut self,
         para: &DocxParagraph,
+        path: BlockPath,
         start_y: f32,
         indent_px: f32,
         first_indent_px: f32,
@@ -419,6 +484,7 @@ impl LayoutEngine {
                     y: start_y,
                     height: base_lh_px,
                     style_id: para.style_id.clone(),
+                    path,
                 }],
                 base_lh_px,
             );
@@ -609,6 +675,7 @@ impl LayoutEngine {
                 y: start_y,
                 height: para_h.max(base_lh_px),
                 style_id: para.style_id.clone(),
+                path,
             }],
             para_h.max(base_lh_px),
         )

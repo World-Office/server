@@ -21,8 +21,8 @@ use wasm_bindgen::prelude::*;
 use wo_common::op::EditableModel;
 use wo_common::path::{Path, Range};
 use wo_ooxml::model::{
-    DocxBlock, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, OoxmlDocument,
-    PptxPresentation, XlsxWorkbook,
+    DocxBlock, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, DocxTable,
+    OoxmlDocument, PptxPresentation, XlsxWorkbook,
 };
 use wo_ooxml::parser::OoxmlParser;
 use wo_ooxml::serializer::OoxmlSerializer;
@@ -34,7 +34,8 @@ use wo_spell::suggest::Suggester;
 // Re-export canvas functions
 pub use canvas_bridge::{create_canvas, flush_to_canvas, get_pixel_data, release_canvas};
 pub use layout::{
-    LaidOutChar, LaidOutLine, LaidOutPage, LaidOutParagraph, LayoutEngine, PageLayout,
+    flat_paragraphs, BlockPath, LaidOutChar, LaidOutLine, LaidOutPage, LaidOutParagraph,
+    LayoutEngine, PageLayout,
 };
 
 /// Global store of document instances (handle → parsed OoxmlDocument).
@@ -1438,31 +1439,44 @@ pub fn render_laid_out_page(
 /// Release a document and all its cached data.
 #[wasm_bindgen]
 pub fn release_document(doc_handle: u32) -> Result<(), String> {
-    let store = DOC_STORE.get_or_init(|| Mutex::new(HashMap::new()));
-    let mut store = store.lock().unwrap();
-    store.remove(&doc_handle);
+    // ponytail: one lock at a time — holding all seven simultaneously
+    // deadlocks against callers that take two stores (serialize_document).
+    DOC_STORE
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap()
+        .remove(&doc_handle);
 
-    let model_store = DOC_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
-    let mut model_store = model_store.lock().unwrap();
-    model_store.remove(&doc_handle);
+    DOC_MODEL_STORE
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap()
+        .remove(&doc_handle);
 
-    let layout_store = LAYOUT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
-    let mut layout_store = layout_store.lock().unwrap();
-    layout_store.remove(&doc_handle);
+    LAYOUT_STORE
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap()
+        .remove(&doc_handle);
 
-    let engine_store = ENGINE_STORE.get_or_init(|| Mutex::new(HashMap::new()));
-    let mut engine_store = engine_store.lock().unwrap();
-    engine_store.remove(&doc_handle);
+    ENGINE_STORE
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap()
+        .remove(&doc_handle);
 
-    let cursor_store = CURSOR_STORE.get_or_init(|| Mutex::new(HashMap::new()));
-    let mut cursor_store = cursor_store.lock().unwrap();
-    cursor_store.remove(&doc_handle);
+    CURSOR_STORE
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap()
+        .remove(&doc_handle);
 
     SELECTION_STORE
         .get_or_init(|| Mutex::new(HashMap::new()))
         .lock()
         .unwrap()
         .remove(&doc_handle);
+
     HISTORY_STORE
         .get_or_init(|| Mutex::new(HashMap::new()))
         .lock()
@@ -1618,6 +1632,90 @@ fn store_body(doc_handle: u32, body: DocxBody) -> Result<(), String> {
     Ok(())
 }
 
+// ── Block-path resolution (layout ↔ model) ───────────────────────
+
+fn table_at(body: &DocxBody, i: usize) -> Option<&DocxTable> {
+    match body.blocks.get(i)? {
+        DocxBlock::Table(t) => Some(t),
+        _ => None,
+    }
+}
+
+fn table_at_mut(body: &mut DocxBody, i: usize) -> Option<&mut DocxTable> {
+    match body.blocks.get_mut(i)? {
+        DocxBlock::Table(t) => Some(t),
+        _ => None,
+    }
+}
+
+/// Read-only paragraph lookup by block path.
+fn paragraph_at(body: &DocxBody, path: BlockPath) -> Option<&DocxParagraph> {
+    match path {
+        BlockPath::BodyBlock(b) => match body.blocks.get(b)? {
+            DocxBlock::Paragraph(p) => Some(p),
+            _ => None,
+        },
+        BlockPath::TableCell { table, row, cell, para } => table_at(body, table)?
+            .rows
+            .get(row)?
+            .cells
+            .get(cell)?
+            .paragraphs
+            .get(para),
+    }
+}
+
+/// Mutable paragraph lookup by block path.
+fn paragraph_at_mut(body: &mut DocxBody, path: BlockPath) -> Option<&mut DocxParagraph> {
+    match path {
+        BlockPath::BodyBlock(b) => match body.blocks.get_mut(b)? {
+            DocxBlock::Paragraph(p) => Some(p),
+            _ => None,
+        },
+        BlockPath::TableCell { table, row, cell, para } => table_at_mut(body, table)?
+            .rows
+            .get_mut(row)?
+            .cells
+            .get_mut(cell)?
+            .paragraphs
+            .get_mut(para),
+    }
+}
+
+/// Resolve a block path to the paragraph's runs — the edit surface.
+fn resolve_block_path(body: &mut DocxBody, path: BlockPath) -> Option<&mut Vec<DocxRun>> {
+    paragraph_at_mut(body, path).map(|p| &mut p.runs)
+}
+
+/// Path of the hit-tested paragraph: the LAYOUT_STORE entry at
+/// (page, para) — exactly the entry `hit_test_position` indexed.
+fn layout_paragraph_path(doc_handle: u32, cursor: &CursorPos) -> Option<BlockPath> {
+    let store = LAYOUT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let store = store.lock().ok()?;
+    let pages = store.get(&doc_handle)?;
+    let page = pages.get(cursor.page as usize)?;
+    page.paragraphs.get(cursor.para).map(|p| p.path)
+}
+
+/// Resolve the cursor's paragraph path: prefer the hit-tested layout
+/// paragraph; fall back to flat-paragraph order (hand-set cursors, documents
+/// not yet laid out). Stale layouts that no longer resolve also fall through.
+///
+/// ponytail: trusts the cached layout between remote ops; re-hit-test if
+/// concurrent structure edits ever misplace the cursor.
+fn cursor_block_path(doc_handle: u32, body: &DocxBody, cursor: &CursorPos) -> Option<BlockPath> {
+    if let Some(p) = layout_paragraph_path(doc_handle, cursor) {
+        if paragraph_at(body, p).is_some() {
+            return Some(p);
+        }
+    }
+    let flat = flat_paragraphs(body);
+    let idx = cursor.para.min(flat.len().saturating_sub(1));
+    flat.get(idx)
+        .copied()
+        .filter(|&p| paragraph_at(body, p).is_some())
+}
+
 /// Helper: get cursor position.
 fn get_cursor(doc_handle: u32) -> CursorPos {
     let cursor_store = CURSOR_STORE.get_or_init(|| Mutex::new(HashMap::new()));
@@ -1648,7 +1746,6 @@ pub fn handle_key_event(
 ) -> Result<String, String> {
     let mut body = extract_body(doc_handle)?;
     let cursor = get_cursor(doc_handle);
-    let paras_len = body.paragraphs().len();
 
     match key {
         "Enter" | "Return" => {
@@ -1657,13 +1754,14 @@ pub fn handle_key_event(
             if let Some(c) = collapse_selection(doc_handle, &mut body) {
                 cursor = c;
             }
-            let new_cursor = insert_paragraph_break(&mut body, cursor);
+            let path = cursor_block_path(doc_handle, &body, &cursor);
+            let new_cursor = insert_paragraph_break(&mut body, cursor, path);
             store_body(doc_handle, body)?;
             set_cursor(doc_handle, new_cursor);
             layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
         }
         "Backspace" => {
-            if body.paragraphs().is_empty() {
+            if flat_paragraphs(&body).is_empty() {
                 return Ok("{}".to_string());
             }
             push_history(doc_handle);
@@ -1678,47 +1776,14 @@ pub fn handle_key_event(
                     margin_pt,
                 );
             }
-            let pidx = cursor.para.min(paras_len.saturating_sub(1));
-            if cursor.char_idx > 0 && pidx < body.paragraphs().len() {
-                if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
-                    let mut global_c = 0usize;
-                    for run in &mut para.runs {
-                        let run_len = run.text.chars().count();
-                        if global_c + run_len > cursor.char_idx.saturating_sub(1) {
-                            let remove_idx = cursor.char_idx.saturating_sub(1) - global_c;
-                            if remove_idx < run_len && remove_idx < run.text.chars().count() {
-                                let mut chars: Vec<char> = run.text.chars().collect();
-                                if remove_idx < chars.len() {
-                                    chars.remove(remove_idx);
-                                    run.text = chars.into_iter().collect();
-                                }
-                            }
-                            break;
-                        }
-                        global_c += run_len;
-                    }
-                }
-            } else if cursor.char_idx == 0 && pidx > 0 && pidx < body.paragraphs().len() {
-                // Merge with previous paragraph
-                if let Some(DocxBlock::Paragraph(curr_para)) = body.blocks.get(pidx) {
-                    let first_text = curr_para
-                        .runs
-                        .first()
-                        .map(|r| r.text.clone())
-                        .unwrap_or_default();
-                    if let Some(DocxBlock::Paragraph(prev_para)) = body.blocks.get_mut(pidx - 1) {
-                        if let Some(prev_last_run) = prev_para.runs.last_mut() {
-                            prev_last_run.text.push_str(&first_text);
-                        }
-                    }
-                }
-                body.blocks.remove(pidx);
-            }
+            let path = cursor_block_path(doc_handle, &body, &cursor);
+            let new_cursor = backspace_at_cursor(&mut body, cursor, path);
+            set_cursor(doc_handle, new_cursor);
             store_body(doc_handle, body)?;
             layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
         }
         "Delete" => {
-            if body.paragraphs().is_empty() {
+            if flat_paragraphs(&body).is_empty() {
                 return Ok("{}".to_string());
             }
             push_history(doc_handle);
@@ -1732,45 +1797,9 @@ pub fn handle_key_event(
                     margin_pt,
                 );
             }
-            let pidx = cursor.para.min(paras_len.saturating_sub(1));
-            if pidx < body.paragraphs().len() {
-                if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
-                    let mut global_c = 0usize;
-                    let mut removed = false;
-                    for run in &mut para.runs {
-                        let run_len = run.text.chars().count();
-                        if global_c + run_len > cursor.char_idx {
-                            let remove_idx = cursor.char_idx - global_c;
-                            if remove_idx < run_len && remove_idx < run.text.chars().count() {
-                                let mut chars: Vec<char> = run.text.chars().collect();
-                                if remove_idx < chars.len() {
-                                    chars.remove(remove_idx);
-                                    run.text = chars.into_iter().collect();
-                                }
-                            }
-                            removed = true;
-                            break;
-                        }
-                        global_c += run_len;
-                    }
-                    if !removed && pidx + 1 < body.paragraphs().len() {
-                        if let Some(DocxBlock::Paragraph(next_para)) = body.blocks.get(pidx + 1) {
-                            let next_text = next_para
-                                .runs
-                                .first()
-                                .map(|r| r.text.clone())
-                                .unwrap_or_default();
-                            if let Some(DocxBlock::Paragraph(curr_para)) = body.blocks.get_mut(pidx)
-                            {
-                                if let Some(last_run) = curr_para.runs.last_mut() {
-                                    last_run.text.push_str(&next_text);
-                                }
-                            }
-                        }
-                        body.blocks.remove(pidx + 1);
-                    }
-                }
-            }
+            let path = cursor_block_path(doc_handle, &body, &cursor);
+            let new_cursor = delete_at_cursor(&mut body, cursor, path);
+            set_cursor(doc_handle, new_cursor);
             store_body(doc_handle, body)?;
             layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
         }
@@ -1817,7 +1846,8 @@ pub fn handle_key_event(
             if let Some(c) = collapse_selection(doc_handle, &mut body) {
                 cursor = c;
             }
-            let new_cursor = insert_char_at_cursor(&mut body, cursor, ch);
+            let path = cursor_block_path(doc_handle, &body, &cursor);
+            let new_cursor = insert_char_at_cursor(&mut body, cursor, path, ch);
             set_cursor(doc_handle, new_cursor);
             store_body(doc_handle, body)?;
             layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
@@ -1825,61 +1855,88 @@ pub fn handle_key_event(
     }
 }
 
+/// Insert a character into concatenated run text at `char_idx` (char index).
+fn insert_char_into_runs(runs: &mut Vec<DocxRun>, char_idx: usize, ch: char) {
+    let mut global_c = 0usize;
+    for run in runs.iter_mut() {
+        let run_len = run.text.chars().count();
+        if global_c + run_len >= char_idx {
+            let insert_idx = char_idx - global_c;
+            let mut chars: Vec<char> = run.text.chars().collect();
+            chars.insert(insert_idx.min(chars.len()), ch);
+            run.text = chars.into_iter().collect();
+            return;
+        }
+        global_c += run_len;
+    }
+    if runs.is_empty() {
+        runs.push(DocxRun {
+            text: ch.to_string(),
+            ..Default::default()
+        });
+    } else if let Some(last) = runs.last_mut() {
+        last.text.push(ch);
+    }
+}
+
+/// Remove the character at `char_idx` (char index). False when no character
+/// lives at that index (at/after end of text).
+fn remove_char_at(runs: &mut Vec<DocxRun>, char_idx: usize) -> bool {
+    let mut global_c = 0usize;
+    for run in runs.iter_mut() {
+        let run_len = run.text.chars().count();
+        if global_c + run_len > char_idx {
+            let remove_idx = char_idx - global_c;
+            let mut chars: Vec<char> = run.text.chars().collect();
+            if remove_idx < chars.len() {
+                chars.remove(remove_idx);
+                run.text = chars.into_iter().collect();
+            }
+            return true;
+        }
+        global_c += run_len;
+    }
+    false
+}
+
 /// Insert a single character at the cursor, advancing it. Returns the new cursor.
-fn insert_char_at_cursor(body: &mut DocxBody, cursor: CursorPos, ch: char) -> CursorPos {
-    let paras_len = body.paragraphs().len();
-    if body.paragraphs().is_empty() {
-        body.blocks.push(DocxBlock::Paragraph(DocxParagraph {
-            style_id: None,
-            properties: DocxParagraphProperties::default(),
-            runs: vec![DocxRun {
-                text: ch.to_string(),
-                ..Default::default()
-            }],
-            section_properties: None,
-            raw_ppr: None,
-        }));
+fn insert_char_at_cursor(
+    body: &mut DocxBody,
+    cursor: CursorPos,
+    path: Option<BlockPath>,
+    ch: char,
+) -> CursorPos {
+    if let Some(runs) = path.and_then(|p| resolve_block_path(body, p)) {
+        insert_char_into_runs(runs, cursor.char_idx, ch);
         return CursorPos {
-            char_idx: 1,
+            char_idx: cursor.char_idx + 1,
             ..cursor
         };
     }
-    let pidx = cursor.para.min(paras_len.saturating_sub(1));
-    if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
-        let mut global_c = 0usize;
-        let mut inserted = false;
-        for run in &mut para.runs {
-            let run_len = run.text.chars().count();
-            if global_c + run_len >= cursor.char_idx {
-                let insert_idx = cursor.char_idx - global_c;
-                let mut chars: Vec<char> = run.text.chars().collect();
-                chars.insert(insert_idx.min(chars.len()), ch);
-                run.text = chars.into_iter().collect();
-                inserted = true;
-                break;
-            }
-            global_c += run_len;
-        }
-        if !inserted && para.runs.is_empty() {
-            para.runs.push(DocxRun {
-                text: ch.to_string(),
-                ..Default::default()
-            });
-        } else if !inserted {
-            if let Some(last) = para.runs.last_mut() {
-                last.text.push(ch);
-            }
-        }
-    }
+    // nothing to resolve into (no paragraphs anywhere) → create the first one
+    body.blocks.push(DocxBlock::Paragraph(DocxParagraph {
+        style_id: None,
+        properties: DocxParagraphProperties::default(),
+        runs: vec![DocxRun {
+            text: ch.to_string(),
+            ..Default::default()
+        }],
+        section_properties: None,
+        raw_ppr: None,
+    }));
     CursorPos {
-        char_idx: cursor.char_idx + 1,
+        char_idx: 1,
         ..cursor
     }
 }
 
 /// Start a new paragraph at the cursor (Enter key / newline in pasted text).
-fn insert_paragraph_break(body: &mut DocxBody, cursor: CursorPos) -> CursorPos {
-    let paras_len = body.paragraphs().len();
+/// Inside a table cell, the new paragraph is added inside that cell.
+fn insert_paragraph_break(
+    body: &mut DocxBody,
+    cursor: CursorPos,
+    path: Option<BlockPath>,
+) -> CursorPos {
     let new_para = DocxParagraph {
         style_id: None,
         properties: DocxParagraphProperties::default(),
@@ -1887,23 +1944,158 @@ fn insert_paragraph_break(body: &mut DocxBody, cursor: CursorPos) -> CursorPos {
         section_properties: None,
         raw_ppr: None,
     };
-    let insert_idx = cursor.para.min(paras_len.saturating_sub(1));
-    let insert_before = if cursor.char_idx == 0 && insert_idx > 0 {
-        insert_idx
-    } else {
-        insert_idx + 1
-    };
-    if insert_before <= body.blocks.len() {
-        body.blocks
-            .insert(insert_before, DocxBlock::Paragraph(new_para));
-    }
-    CursorPos {
+    let new_cursor = |para: usize| CursorPos {
         page: cursor.page,
-        para: insert_before,
+        para,
         line: 0,
         char_idx: 0,
         x: 0.0,
         y: cursor.y + 20.0,
+    };
+    match path {
+        Some(BlockPath::TableCell { table, row, cell, para }) => {
+            let cell_paras = table_at_mut(body, table)
+                .and_then(|t| t.rows.get_mut(row))
+                .and_then(|r| r.cells.get_mut(cell))
+                .map(|c| &mut c.paragraphs);
+            if let Some(cell_paras) = cell_paras {
+                let at = if cursor.char_idx == 0 && para > 0 {
+                    para
+                } else {
+                    (para + 1).min(cell_paras.len())
+                };
+                cell_paras.insert(at, new_para);
+                return new_cursor(cursor.para + 1);
+            }
+            cursor
+        }
+        path => {
+            let bi = match path {
+                Some(BlockPath::BodyBlock(b)) => b,
+                _ => 0,
+            };
+            let at = if cursor.char_idx == 0 && bi > 0 {
+                bi
+            } else {
+                bi + 1
+            };
+            let at = at.min(body.blocks.len());
+            body.blocks.insert(at, DocxBlock::Paragraph(new_para));
+            new_cursor(cursor.para + 1)
+        }
+    }
+}
+
+/// Backspace: delete the char before the cursor; at a paragraph start, merge
+/// into the previous paragraph (body block or cell paragraph).
+fn backspace_at_cursor(
+    body: &mut DocxBody,
+    cursor: CursorPos,
+    path: Option<BlockPath>,
+) -> CursorPos {
+    if cursor.char_idx > 0 {
+        if let Some(runs) = path.and_then(|p| resolve_block_path(body, p)) {
+            remove_char_at(runs, cursor.char_idx - 1);
+        }
+        return cursor;
+    }
+    match path {
+        Some(BlockPath::BodyBlock(bi)) if bi > 0 && bi < body.blocks.len() => {
+            let mergeable =
+                matches!(body.blocks.get(bi - 1), Some(DocxBlock::Paragraph(_)))
+                    && matches!(body.blocks.get(bi), Some(DocxBlock::Paragraph(_)));
+            if !mergeable {
+                return cursor;
+            }
+            let prev_len = match body.blocks.get(bi - 1) {
+                Some(DocxBlock::Paragraph(p)) => {
+                    p.runs.iter().map(|r| r.text.chars().count()).sum()
+                }
+                _ => 0,
+            };
+            let curr_runs = match body.blocks.get_mut(bi) {
+                Some(DocxBlock::Paragraph(p)) => std::mem::take(&mut p.runs),
+                _ => Vec::new(),
+            };
+            if let Some(DocxBlock::Paragraph(prev)) = body.blocks.get_mut(bi - 1) {
+                prev.runs.extend(curr_runs);
+            }
+            body.blocks.remove(bi);
+            CursorPos {
+                para: cursor.para.saturating_sub(1),
+                char_idx: prev_len,
+                ..cursor
+            }
+        }
+        Some(BlockPath::TableCell { table, row, cell, para }) if para > 0 => {
+            let cell_paras = table_at_mut(body, table)
+                .and_then(|t| t.rows.get_mut(row))
+                .and_then(|r| r.cells.get_mut(cell))
+                .map(|c| &mut c.paragraphs);
+            if let Some(paras) = cell_paras {
+                let prev_len = paras
+                    .get(para - 1)
+                    .map(|p| p.runs.iter().map(|r| r.text.chars().count()).sum())
+                    .unwrap_or(0);
+                let curr_runs = std::mem::take(&mut paras[para].runs);
+                paras[para - 1].runs.extend(curr_runs);
+                paras.remove(para);
+                return CursorPos {
+                    para: cursor.para.saturating_sub(1),
+                    char_idx: prev_len,
+                    ..cursor
+                };
+            }
+            cursor
+        }
+        _ => cursor, // start of body or first cell paragraph — nothing before
+    }
+}
+
+/// Delete: remove the char at the cursor; at the end of a paragraph, pull the
+/// next paragraph's runs up (body block or cell paragraph).
+fn delete_at_cursor(
+    body: &mut DocxBody,
+    cursor: CursorPos,
+    path: Option<BlockPath>,
+) -> CursorPos {
+    if let Some(runs) = path.and_then(|p| resolve_block_path(body, p)) {
+        if remove_char_at(runs, cursor.char_idx) {
+            return cursor;
+        }
+    }
+    match path {
+        Some(BlockPath::BodyBlock(bi)) => {
+            let mergeable = matches!(body.blocks.get(bi), Some(DocxBlock::Paragraph(_)))
+                && matches!(body.blocks.get(bi + 1), Some(DocxBlock::Paragraph(_)));
+            if !mergeable {
+                return cursor;
+            }
+            let next_runs = match body.blocks.get_mut(bi + 1) {
+                Some(DocxBlock::Paragraph(p)) => std::mem::take(&mut p.runs),
+                _ => Vec::new(),
+            };
+            if let Some(DocxBlock::Paragraph(curr)) = body.blocks.get_mut(bi) {
+                curr.runs.extend(next_runs);
+            }
+            body.blocks.remove(bi + 1);
+            cursor
+        }
+        Some(BlockPath::TableCell { table, row, cell, para }) => {
+            if let Some(paras) = table_at_mut(body, table)
+                .and_then(|t| t.rows.get_mut(row))
+                .and_then(|r| r.cells.get_mut(cell))
+                .map(|c| &mut c.paragraphs)
+            {
+                if para + 1 < paras.len() {
+                    let next_runs = std::mem::take(&mut paras[para + 1].runs);
+                    paras[para].runs.extend(next_runs);
+                    paras.remove(para + 1);
+                }
+            }
+            cursor
+        }
+        None => cursor,
     }
 }
 
@@ -1927,10 +2119,11 @@ pub fn insert_text(
         if ch == '\r' {
             continue;
         }
+        let path = cursor_block_path(doc_handle, &body, &cursor);
         cursor = if ch == '\n' {
-            insert_paragraph_break(&mut body, cursor)
+            insert_paragraph_break(&mut body, cursor, path)
         } else {
-            insert_char_at_cursor(&mut body, cursor, ch)
+            insert_char_at_cursor(&mut body, cursor, path, ch)
         };
     }
     store_body(doc_handle, body)?;
@@ -1953,14 +2146,11 @@ fn get_selected_text_in(body: &DocxBody, anchor: CursorPos, cursor: CursorPos) -
     if (sp, sc) == (ep, ec) {
         return String::new();
     }
-    let paras_len = body.paragraphs().len();
+    let flat = flat_paragraphs(body);
     let mut out = String::new();
-    let last = ep.min(paras_len.saturating_sub(1));
+    let last = ep.min(flat.len().saturating_sub(1));
     for pi in sp..=last {
-        if pi >= paras_len {
-            break;
-        }
-        if let Some(DocxBlock::Paragraph(p)) = body.blocks.get(pi) {
+        if let Some(p) = flat.get(pi).and_then(|&path| paragraph_at(body, path)) {
             let text: String = p.runs.iter().flat_map(|r| r.text.chars()).collect();
             if pi == sp && pi == ep {
                 out.extend(text.chars().skip(sc).take(ec.saturating_sub(sc)));
@@ -2017,29 +2207,57 @@ fn delete_selected(body: &mut DocxBody, anchor: CursorPos, cursor: CursorPos) ->
     if (sp, sc) == (ep, ec) {
         return cursor;
     }
-    if sp == ep {
-        if let Some(DocxBlock::Paragraph(p)) = body.blocks.get_mut(sp) {
+    let flat = flat_paragraphs(body);
+    if sp >= flat.len() {
+        return cursor;
+    }
+    let last = ep.min(flat.len() - 1);
+    if sp == last {
+        if let Some(p) = paragraph_at_mut(body, flat[sp]) {
             delete_range_in_para(p, sc, ec);
         }
     } else {
-        // surviving tail of the end paragraph moves up to the start paragraph
-        let tail: Vec<DocxRun> = if let Some(DocxBlock::Paragraph(p)) = body.blocks.get_mut(ep) {
-            delete_range_in_para(p, 0, ec);
-            std::mem::take(&mut p.runs)
-                .into_iter()
-                .filter(|r| !r.text.is_empty())
-                .collect()
+        // Merge-removal is only safe when the whole span is consecutive body
+        // paragraph blocks; across table cells we trim in place so the table
+        // structure survives.
+        let consecutive_body =
+            matches!(
+                (flat.get(sp), flat.get(last)),
+                (Some(BlockPath::BodyBlock(a)), Some(BlockPath::BodyBlock(b)))
+                    if *b - *a == last - sp
+            ) && (sp..=last)
+                .all(|i| matches!(flat.get(i), Some(BlockPath::BodyBlock(_))));
+        if consecutive_body {
+            let (a, b) = match (flat[sp], flat[last]) {
+                (BlockPath::BodyBlock(a), BlockPath::BodyBlock(b)) => (a, b),
+                _ => unreachable!("checked above"),
+            };
+            // surviving tail of the end paragraph moves up to the start paragraph
+            let tail: Vec<DocxRun> = {
+                let p_end = paragraph_at_mut(body, flat[last]).unwrap();
+                delete_range_in_para(p_end, 0, ec);
+                std::mem::take(&mut p_end.runs)
+                    .into_iter()
+                    .filter(|r| !r.text.is_empty())
+                    .collect()
+            };
+            let p_start = paragraph_at_mut(body, flat[sp]).unwrap();
+            delete_range_in_para(p_start, sc, usize::MAX);
+            p_start.runs.extend(tail);
+            body.blocks.drain(a + 1..=b);
         } else {
-            Vec::new()
-        };
-        if let Some(DocxBlock::Paragraph(p)) = body.blocks.get_mut(sp) {
-            delete_range_in_para(p, sc, usize::MAX);
-            p.runs.extend(tail);
-        }
-        let from = sp + 1;
-        let to = ep.min(body.blocks.len().saturating_sub(1));
-        if from <= to {
-            body.blocks.drain(from..=to);
+            for i in sp..=last {
+                let (s, e) = if i == sp {
+                    (sc, usize::MAX)
+                } else if i == last {
+                    (0, ec)
+                } else {
+                    (0, usize::MAX)
+                };
+                if let Some(p) = paragraph_at_mut(body, flat[i]) {
+                    delete_range_in_para(p, s, e);
+                }
+            }
         }
     }
     CursorPos {
@@ -2326,6 +2544,15 @@ fn layout_document_and_return_json(
 /// customXml, app.xml, thumbnail) survive edit+save cycles.
 #[wasm_bindgen]
 pub fn serialize_document(doc_handle: u32) -> Result<Vec<u8>, String> {
+    // Original bytes first (lock released immediately): everywhere else in
+    // this file takes DOC_STORE → DOC_MODEL in that order; mixing the two
+    // orders deadlocks parallel callers.
+    let original = DOC_STORE
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap()
+        .get(&doc_handle)
+        .cloned();
     let model_store = DOC_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let model_store = model_store.lock().unwrap();
     let doc = model_store
@@ -2336,14 +2563,8 @@ pub fn serialize_document(doc_handle: u32) -> Result<Vec<u8>, String> {
     let minimal = serializer
         .serialize(doc)
         .map_err(|e| format!("Serialization failed: {}", e))?;
+    drop(model_store);
 
-    // Merge into the original package when we have its bytes.
-    let original = DOC_STORE
-        .get_or_init(|| Mutex::new(HashMap::new()))
-        .lock()
-        .unwrap()
-        .get(&doc_handle)
-        .cloned();
     match original {
         Some(original) => merge_document_xml(&original, &minimal).or(Ok(minimal)),
         None => Ok(minimal),
@@ -3413,6 +3634,7 @@ pub fn spell_release(lang: &str) -> Result<(), String> {
 #[cfg(test)]
 mod selection_undo_tests;
 mod serialize_merge_tests;
+mod table_interaction_tests;
 
 #[cfg(test)]
 mod tests {
@@ -4146,12 +4368,12 @@ mod clipboard_tests {
     fn test_insert_char_at_cursor() {
         let mut body = DocxBody::default();
         // empty body → creates the first paragraph
-        let c = insert_char_at_cursor(&mut body, CursorPos::default(), 'a');
+        let c = insert_char_at_cursor(&mut body, CursorPos::default(), None, 'a');
         assert_eq!(body.paragraphs().len(), 1);
         assert_eq!(body.paragraphs()[0].runs[0].text, "a");
         assert_eq!(c.char_idx, 1);
         // append at the advanced cursor
-        let c2 = insert_char_at_cursor(&mut body, c, 'b');
+        let c2 = insert_char_at_cursor(&mut body, c, Some(BlockPath::BodyBlock(0)), 'b');
         assert_eq!(body.paragraphs()[0].runs[0].text, "ab");
         assert_eq!(c2.char_idx, 2);
     }
@@ -4159,13 +4381,13 @@ mod clipboard_tests {
     #[test]
     fn test_insert_char_mid_word() {
         let mut body = DocxBody::default();
-        insert_char_at_cursor(&mut body, CursorPos::default(), 't');
+        insert_char_at_cursor(&mut body, CursorPos::default(), None, 't');
         let mid = CursorPos {
             char_idx: 1,
             ..CursorPos::default()
         };
         // body has "t"; simulate cursor after first char of a 1-char para
-        let c = insert_char_at_cursor(&mut body, mid, 'e');
+        let c = insert_char_at_cursor(&mut body, mid, Some(BlockPath::BodyBlock(0)), 'e');
         let text = body.paragraphs()[0]
             .runs
             .iter()
@@ -4178,8 +4400,8 @@ mod clipboard_tests {
     #[test]
     fn test_insert_paragraph_break() {
         let mut body = DocxBody::default();
-        let c = insert_char_at_cursor(&mut body, CursorPos::default(), 'x');
-        let c2 = insert_paragraph_break(&mut body, c);
+        let c = insert_char_at_cursor(&mut body, CursorPos::default(), None, 'x');
+        let c2 = insert_paragraph_break(&mut body, c, Some(BlockPath::BodyBlock(0)));
         assert_eq!(body.paragraphs().len(), 2);
         assert_eq!(c2.para, 1);
         assert_eq!(c2.char_idx, 0);
