@@ -1009,117 +1009,122 @@ impl OoxmlSerializer {
     fn serialize_paragraph(&self, para: &DocxParagraph) -> String {
         let mut xml = String::from("    <w:p>");
 
-        // Paragraph properties
-        let has_props = para.style_id.is_some()
-            || para.properties.alignment.is_some()
-            || para.properties.indent_left.is_some()
-            || para.properties.indent_right.is_some()
-            || para.properties.indent_first_line.is_some()
-            || para.properties.indent_hanging.is_some()
-            || para.properties.spacing_before.is_some()
-            || para.properties.spacing_after.is_some()
-            || para.properties.spacing_line.is_some()
-            || para.properties.keep_lines
-            || para.properties.keep_next
-            || para.properties.page_break_before;
+        // Verbatim <w:pPr> captured at parse time wins over typed properties.
+        if let Some(ref raw) = para.raw_ppr {
+            xml.push_str(raw);
+        } else {
+            // Paragraph properties
+            let has_props = para.style_id.is_some()
+                || para.properties.alignment.is_some()
+                || para.properties.indent_left.is_some()
+                || para.properties.indent_right.is_some()
+                || para.properties.indent_first_line.is_some()
+                || para.properties.indent_hanging.is_some()
+                || para.properties.spacing_before.is_some()
+                || para.properties.spacing_after.is_some()
+                || para.properties.spacing_line.is_some()
+                || para.properties.keep_lines
+                || para.properties.keep_next
+                || para.properties.page_break_before;
 
-        if has_props {
-            xml.push_str("<w:pPr>");
-            if let Some(ref style) = para.style_id {
-                xml.push_str("<w:pStyle w:val=\"");
-                xml.push_str(&escape_xml(style));
-                xml.push_str("\"/>");
-            }
-            if let Some(align) = para.properties.alignment {
-                let val = match align {
-                    TextAlignment::Left => "left",
-                    TextAlignment::Center => "center",
-                    TextAlignment::Right => "right",
-                    TextAlignment::Both => "both",
-                };
-                xml.push_str("<w:jc w:val=\"");
-                xml.push_str(val);
-                xml.push_str("\"/>");
-            }
-            if let Some(il) = para.properties.indent_left {
-                xml.push_str(&format!("<w:ind w:left=\"{}\"", il));
-                if let Some(ir) = para.properties.indent_right {
-                    xml.push_str(&format!(" w:right=\"{}\"", ir));
+            if has_props {
+                xml.push_str("<w:pPr>");
+                if let Some(ref style) = para.style_id {
+                    xml.push_str("<w:pStyle w:val=\"");
+                    xml.push_str(&escape_xml(style));
+                    xml.push_str("\"/>");
                 }
-                if let Some(fi) = para.properties.indent_first_line {
-                    xml.push_str(&format!(" w:firstLine=\"{}\"", fi));
+                if let Some(align) = para.properties.alignment {
+                    let val = match align {
+                        TextAlignment::Left => "left",
+                        TextAlignment::Center => "center",
+                        TextAlignment::Right => "right",
+                        TextAlignment::Both => "both",
+                    };
+                    xml.push_str("<w:jc w:val=\"");
+                    xml.push_str(val);
+                    xml.push_str("\"/>");
                 }
-                if let Some(ih) = para.properties.indent_hanging {
-                    xml.push_str(&format!(" w:hanging=\"{}\"", ih));
-                }
-                xml.push_str("/>");
-            } else {
-                // Write individual indent properties if only some are set
-                let mut ind_parts = Vec::new();
-                if let Some(ir) = para.properties.indent_right {
-                    ind_parts.push(format!("w:right=\"{}\"", ir));
-                }
-                if let Some(fi) = para.properties.indent_first_line {
-                    ind_parts.push(format!("w:firstLine=\"{}\"", fi));
-                }
-                if let Some(ih) = para.properties.indent_hanging {
-                    ind_parts.push(format!("w:hanging=\"{}\"", ih));
-                }
-                if !ind_parts.is_empty() {
-                    xml.push_str("<w:ind ");
-                    xml.push_str(&ind_parts.join(" "));
+                if let Some(il) = para.properties.indent_left {
+                    xml.push_str(&format!("<w:ind w:left=\"{}\"", il));
+                    if let Some(ir) = para.properties.indent_right {
+                        xml.push_str(&format!(" w:right=\"{}\"", ir));
+                    }
+                    if let Some(fi) = para.properties.indent_first_line {
+                        xml.push_str(&format!(" w:firstLine=\"{}\"", fi));
+                    }
+                    if let Some(ih) = para.properties.indent_hanging {
+                        xml.push_str(&format!(" w:hanging=\"{}\"", ih));
+                    }
                     xml.push_str("/>");
-                }
-            }
-            if let Some(sb) = para.properties.spacing_before {
-                xml.push_str(&format!("<w:spacing w:before=\"{}\"", sb));
-                if let Some(sa) = para.properties.spacing_after {
-                    xml.push_str(&format!(" w:after=\"{}\"", sa));
-                }
-                if let Some(sl) = para.properties.spacing_line {
-                    xml.push_str(&format!(" w:line=\"{}\"", sl));
-                    if let Some(rule) = para.properties.spacing_line_rule {
-                        let rule_str = match rule {
-                            LineSpacingRule::Auto => "auto",
-                            LineSpacingRule::Exact => "exact",
-                            LineSpacingRule::AtLeast => "atLeast",
-                        };
-                        xml.push_str(&format!(" w:lineRule=\"{}\"", rule_str));
+                } else {
+                    // Write individual indent properties if only some are set
+                    let mut ind_parts = Vec::new();
+                    if let Some(ir) = para.properties.indent_right {
+                        ind_parts.push(format!("w:right=\"{}\"", ir));
+                    }
+                    if let Some(fi) = para.properties.indent_first_line {
+                        ind_parts.push(format!("w:firstLine=\"{}\"", fi));
+                    }
+                    if let Some(ih) = para.properties.indent_hanging {
+                        ind_parts.push(format!("w:hanging=\"{}\"", ih));
+                    }
+                    if !ind_parts.is_empty() {
+                        xml.push_str("<w:ind ");
+                        xml.push_str(&ind_parts.join(" "));
+                        xml.push_str("/>");
                     }
                 }
-                xml.push_str("/>");
-            } else {
-                let mut sp_parts = Vec::new();
-                if let Some(sa) = para.properties.spacing_after {
-                    sp_parts.push(format!("w:after=\"{}\"", sa));
-                }
-                if let Some(sl) = para.properties.spacing_line {
-                    sp_parts.push(format!("w:line=\"{}\"", sl));
-                    if let Some(rule) = para.properties.spacing_line_rule {
-                        let rule_str = match rule {
-                            LineSpacingRule::Auto => "auto",
-                            LineSpacingRule::Exact => "exact",
-                            LineSpacingRule::AtLeast => "atLeast",
-                        };
-                        sp_parts.push(format!("w:lineRule=\"{}\"", rule_str));
+                if let Some(sb) = para.properties.spacing_before {
+                    xml.push_str(&format!("<w:spacing w:before=\"{}\"", sb));
+                    if let Some(sa) = para.properties.spacing_after {
+                        xml.push_str(&format!(" w:after=\"{}\"", sa));
+                    }
+                    if let Some(sl) = para.properties.spacing_line {
+                        xml.push_str(&format!(" w:line=\"{}\"", sl));
+                        if let Some(rule) = para.properties.spacing_line_rule {
+                            let rule_str = match rule {
+                                LineSpacingRule::Auto => "auto",
+                                LineSpacingRule::Exact => "exact",
+                                LineSpacingRule::AtLeast => "atLeast",
+                            };
+                            xml.push_str(&format!(" w:lineRule=\"{}\"", rule_str));
+                        }
+                    }
+                    xml.push_str("/>");
+                } else {
+                    let mut sp_parts = Vec::new();
+                    if let Some(sa) = para.properties.spacing_after {
+                        sp_parts.push(format!("w:after=\"{}\"", sa));
+                    }
+                    if let Some(sl) = para.properties.spacing_line {
+                        sp_parts.push(format!("w:line=\"{}\"", sl));
+                        if let Some(rule) = para.properties.spacing_line_rule {
+                            let rule_str = match rule {
+                                LineSpacingRule::Auto => "auto",
+                                LineSpacingRule::Exact => "exact",
+                                LineSpacingRule::AtLeast => "atLeast",
+                            };
+                            sp_parts.push(format!("w:lineRule=\"{}\"", rule_str));
+                        }
+                    }
+                    if !sp_parts.is_empty() {
+                        xml.push_str("<w:spacing ");
+                        xml.push_str(&sp_parts.join(" "));
+                        xml.push_str("/>");
                     }
                 }
-                if !sp_parts.is_empty() {
-                    xml.push_str("<w:spacing ");
-                    xml.push_str(&sp_parts.join(" "));
-                    xml.push_str("/>");
+                if para.properties.keep_lines {
+                    xml.push_str("<w:keepLines/>");
                 }
+                if para.properties.keep_next {
+                    xml.push_str("<w:keepNext/>");
+                }
+                if para.properties.page_break_before {
+                    xml.push_str("<w:pageBreakBefore/>");
+                }
+                xml.push_str("</w:pPr>");
             }
-            if para.properties.keep_lines {
-                xml.push_str("<w:keepLines/>");
-            }
-            if para.properties.keep_next {
-                xml.push_str("<w:keepNext/>");
-            }
-            if para.properties.page_break_before {
-                xml.push_str("<w:pageBreakBefore/>");
-            }
-            xml.push_str("</w:pPr>");
         }
 
         for run in &para.runs {
@@ -2385,6 +2390,10 @@ fn escape_xml(s: &str) -> String {
 }
 
 #[cfg(test)]
+#[path = "congruence_tests.rs"]
+mod congruence_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -2419,6 +2428,7 @@ mod tests {
                         small_caps: false,
                         all_caps: false,
                     }],
+                    raw_ppr: None,
                     section_properties: None,
                 })],
             }),
@@ -2536,6 +2546,7 @@ mod tests {
                             all_caps: false,
                         },
                     ],
+                    raw_ppr: None,
                     section_properties: None,
                 })],
             }),
@@ -2585,6 +2596,7 @@ mod tests {
                             small_caps: false,
                             all_caps: false,
                         }],
+                        raw_ppr: None,
                         section_properties: None,
                     }),
                     DocxBlock::Paragraph(DocxParagraph {
@@ -2609,6 +2621,7 @@ mod tests {
                             small_caps: false,
                             all_caps: false,
                         }],
+                        raw_ppr: None,
                         section_properties: None,
                     }),
                     DocxBlock::Paragraph(DocxParagraph {
@@ -2633,6 +2646,7 @@ mod tests {
                             small_caps: false,
                             all_caps: false,
                         }],
+                        raw_ppr: None,
                         section_properties: None,
                     }),
                 ],
@@ -2688,6 +2702,7 @@ mod tests {
                                             small_caps: false,
                                             all_caps: false,
                                         }],
+                                        raw_ppr: None,
                                         section_properties: None,
                                     }],
                                     column_span: 1,
@@ -2715,6 +2730,7 @@ mod tests {
                                             small_caps: false,
                                             all_caps: false,
                                         }],
+                                        raw_ppr: None,
                                         section_properties: None,
                                     }],
                                     column_span: 1,
@@ -2748,6 +2764,7 @@ mod tests {
                                             small_caps: false,
                                             all_caps: false,
                                         }],
+                                        raw_ppr: None,
                                         section_properties: None,
                                     }],
                                     column_span: 1,
@@ -2775,6 +2792,7 @@ mod tests {
                                             small_caps: false,
                                             all_caps: false,
                                         }],
+                                        raw_ppr: None,
                                         section_properties: None,
                                     }],
                                     column_span: 1,
@@ -2923,6 +2941,7 @@ mod tests {
                                 text: "Hello PPTX".to_string(),
                                 ..DocxRun::default()
                             }],
+                            raw_ppr: None,
                             section_properties: None,
                         }],
                     },
@@ -2993,6 +3012,7 @@ mod tests {
                                     text: "Slide One".to_string(),
                                     ..DocxRun::default()
                                 }],
+                                raw_ppr: None,
                                 section_properties: None,
                             }],
                         },
@@ -3026,6 +3046,7 @@ mod tests {
                                     text: "Slide Two".to_string(),
                                     ..DocxRun::default()
                                 }],
+                                raw_ppr: None,
                                 section_properties: None,
                             }],
                         },
@@ -3148,6 +3169,7 @@ mod tests {
                                 text: "Title Placeholder".to_string(),
                                 ..DocxRun::default()
                             }],
+                            raw_ppr: None,
                             section_properties: None,
                         }],
                     }),
@@ -3283,6 +3305,7 @@ mod tests {
                                     ..DocxRun::default()
                                 },
                             ],
+                            raw_ppr: None,
                             section_properties: None,
                         }],
                     },
@@ -3409,6 +3432,7 @@ mod tests {
                                 text: "Animated".to_string(),
                                 ..DocxRun::default()
                             }],
+                            raw_ppr: None,
                             section_properties: None,
                         }],
                     },
@@ -3620,6 +3644,7 @@ mod tests {
                         small_caps: false,
                         all_caps: false,
                     }],
+                    raw_ppr: None,
                     section_properties: None,
                 })],
             }),
