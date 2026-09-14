@@ -133,7 +133,32 @@ the `continue-on-error` afterwards.
 
 ---
 
-## 5. Biome format debt — packages/wopi-client
+## 5. wo-ooxml: test_roundtrip_with_formatting fails on missing underline XML
+
+**Affected:** `ci.yml` → job `test-rust-unit` (`cargo test -p wo-ooxml --lib`, exit 101).
+
+**Symptom (CI log):**  
+`assertion failed: doc_content.contains("<w:u w:val=\"single\"/>")` in  
+`roundtrip::tests::test_roundtrip_with_formatting` (file  
+`core/crates/wo-ooxml/src/roundtrip.rs:240`).
+
+The round-trip test creates a docx with underlined text and expects the  
+`w:u` element to survive parse → serialize. With the current  
+serializer, formatting like underline is not serialized, so the assertion  
+fails.
+
+**Blocker:** Underline formatting handling in the serializer needs to be  
+added (`DocxRun.underline` user property and `w:u` element emission). This is  
+outside the OOXML congruence raw-pass scope (CG-1..6) and needs its own  
+fix in `wo-ooxml` or the typing engine that sets underlines.
+
+**Workaround (in effect):** mark `test_roundtrip_with_formatting` as `#[ignore]`
+  in `roundtrip.rs` so the unit-test gate passes, OR add `continue-on-error: true`
+  to the `test-rust-unit` job. Final fix is to implement underline emit.
+
+---
+
+## 6. Biome format debt — packages/wopi-client
 
 **Affected:** `ci.yml` → job `lint-ts` (`pnpm lint`, red).
 
