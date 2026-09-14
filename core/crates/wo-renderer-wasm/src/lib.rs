@@ -34,8 +34,8 @@ use wo_spell::suggest::Suggester;
 // Re-export canvas functions
 pub use canvas_bridge::{create_canvas, flush_to_canvas, get_pixel_data, release_canvas};
 pub use layout::{
-    flat_paragraphs, BlockPath, LaidOutChar, LaidOutLine, LaidOutPage, LaidOutParagraph,
-    LayoutEngine, PageLayout,
+    compute_selection_rects, flat_paragraphs, BlockPath, LaidOutChar, LaidOutLine, LaidOutPage,
+    LaidOutParagraph, LayoutEngine, PageLayout, SelectionRect,
 };
 
 /// Global store of document instances (handle → parsed OoxmlDocument).
@@ -1345,10 +1345,48 @@ pub fn layout_document(
     let mut engine_store = engine_store.lock().unwrap();
     engine_store.insert(doc_handle, engine);
 
-    // Serialize to JSON for the frontend
+    // Serialize to JSON for the frontend (includes per-page selection_rects)
+    pages_to_layout_json(&pages, doc_handle)
+}
+
+/// Serialize one page's selection rects to JSON values (pixel-space, rounded).
+fn selection_rects_json(rects: &[SelectionRect]) -> Vec<serde_json::Value> {
+    rects
+        .iter()
+        .map(|r| {
+            serde_json::json!({
+                "x": (r.x * 100.0).round() / 100.0,
+                "y": (r.y * 100.0).round() / 100.0,
+                "w": (r.w * 100.0).round() / 100.0,
+                "h": (r.h * 100.0).round() / 100.0,
+            })
+        })
+        .collect()
+}
+
+/// Serialize laid-out pages to the frontend layout JSON, per page:
+/// `{width, height, marginPx, paragraphs, selection_rects}`.
+///
+/// When the document has an active selection (anchor ≠ cursor), per-line
+/// highlight rects are computed from anchor/head via the laid-out lines and
+/// embedded per page; otherwise every page gets an empty `selection_rects`.
+fn pages_to_layout_json(pages: &[LaidOutPage], doc_handle: u32) -> Result<String, String> {
+    let rects_per_page: Vec<Vec<SelectionRect>> = if selection_active(doc_handle) {
+        let anchor = get_anchor(doc_handle).expect("selection_active implies an anchor");
+        let head = get_cursor(doc_handle);
+        compute_selection_rects(
+            pages,
+            (anchor.page, anchor.para, anchor.char_idx),
+            (head.page, head.para, head.char_idx),
+        )
+    } else {
+        vec![Vec::new(); pages.len()]
+    };
+
     let pages_json: Vec<serde_json::Value> = pages
         .iter()
-        .map(|page| {
+        .enumerate()
+        .map(|(pi, page)| {
             let paras: Vec<serde_json::Value> =
                 page.paragraphs
                     .iter()
@@ -1382,11 +1420,13 @@ pub fn layout_document(
                         })
                     })
                     .collect();
+            let selection_rects: Vec<serde_json::Value> = selection_rects_json(&rects_per_page[pi]);
             serde_json::json!({
                 "width": page.layout.width_px,
                 "height": page.layout.height_px,
                 "marginPx": (page.layout.margin_px * 100.0).round() / 100.0,
                 "paragraphs": paras,
+                "selection_rects": selection_rects,
             })
         })
         .collect();
@@ -2483,53 +2523,8 @@ fn layout_document_and_return_json(
     let mut engine_store = engine_store.lock().unwrap();
     engine_store.insert(doc_handle, engine);
 
-    // Serialize to JSON
-    let pages_json: Vec<serde_json::Value> = pages
-        .iter()
-        .map(|page| {
-            let paras: Vec<serde_json::Value> =
-                page.paragraphs
-                    .iter()
-                    .map(|para| {
-                        let lines: Vec<serde_json::Value> =
-                            para.lines
-                                .iter()
-                                .map(|line| {
-                                    let chars: Vec<serde_json::Value> = line.chars.iter().map(|c| {
-                    serde_json::json!({
-                        "ch": c.ch.to_string(),
-                        "x": (c.x * 100.0).round() / 100.0,
-                        "y": (c.y * 100.0).round() / 100.0,
-                        "fontSizePt": (c.font_size_pt * 100.0).round() / 100.0,
-                        "color": c.color,
-                    })
-                }).collect();
-                                    serde_json::json!({
-                                        "chars": chars,
-                                        "x": (line.x * 100.0).round() / 100.0,
-                                        "y": (line.y * 100.0).round() / 100.0,
-                                        "width": (line.width * 100.0).round() / 100.0,
-                                        "height": (line.height * 100.0).round() / 100.0,
-                                    })
-                                })
-                                .collect();
-                        serde_json::json!({
-                            "lines": lines,
-                            "y": (para.y * 100.0).round() / 100.0,
-                            "height": (para.height * 100.0).round() / 100.0,
-                        })
-                    })
-                    .collect();
-            serde_json::json!({
-                "width": page.layout.width_px,
-                "height": page.layout.height_px,
-                "marginPx": (page.layout.margin_px * 100.0).round() / 100.0,
-                "paragraphs": paras,
-            })
-        })
-        .collect();
-
-    serde_json::to_string(&pages_json).map_err(|e| format!("JSON serialization failed: {}", e))
+    // Serialize to JSON (includes per-page selection_rects)
+    pages_to_layout_json(&pages, doc_handle)
 }
 
 /// Serialize the document back to DOCX bytes.
@@ -2603,6 +2598,41 @@ fn merge_document_xml(original: &[u8], edited: &[u8]) -> Result<Vec<u8>, String>
     }
     out.finish().map_err(|e| e.to_string())?;
     Ok(buf.into_inner())
+}
+
+/// Get the current selection highlight rectangles as JSON.
+///
+/// Returns a per-page array of `[{x,y,w,h}, ...]` in canvas pixel space
+/// (empty per-page arrays when nothing is selected). The frontend calls this
+/// after drag/selection changes to draw highlights without a full re-layout.
+#[wasm_bindgen]
+pub fn get_selection_rects(doc_handle: u32) -> Result<String, String> {
+    let pages = {
+        let layout_store = LAYOUT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+        let layout_store = layout_store.lock().unwrap();
+        layout_store
+            .get(&doc_handle)
+            .cloned()
+            .ok_or_else(|| format!("Document handle {} not found", doc_handle))?
+    };
+
+    let rects_per_page: Vec<Vec<SelectionRect>> = if selection_active(doc_handle) {
+        let anchor = get_anchor(doc_handle).expect("selection_active implies an anchor");
+        let head = get_cursor(doc_handle);
+        compute_selection_rects(
+            &pages,
+            (anchor.page, anchor.para, anchor.char_idx),
+            (head.page, head.para, head.char_idx),
+        )
+    } else {
+        vec![Vec::new(); pages.len()]
+    };
+
+    let json: Vec<serde_json::Value> = rects_per_page
+        .iter()
+        .map(|rects| serde_json::Value::Array(selection_rects_json(rects)))
+        .collect();
+    serde_json::to_string(&json).map_err(|e| format!("JSON serialization failed: {}", e))
 }
 
 /// Get the current cursor position as JSON.
@@ -3635,6 +3665,8 @@ pub fn spell_release(lang: &str) -> Result<(), String> {
 mod selection_undo_tests;
 mod serialize_merge_tests;
 mod table_interaction_tests;
+#[cfg(test)]
+mod selection_rects_tests;
 
 #[cfg(test)]
 mod tests {

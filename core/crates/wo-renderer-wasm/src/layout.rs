@@ -133,6 +133,89 @@ pub struct LaidOutPage {
     pub paragraphs: Vec<LaidOutParagraph>,
 }
 
+/// A rectangular highlight for one line of a text selection, in pixels.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct SelectionRect {
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+}
+
+/// Compute per-page selection highlight rectangles from anchor/head via lines.
+///
+/// The selection is an (page, para, char_idx) pair for each end. `char_idx`
+/// is a character offset within the paragraph's concatenated text, mapped
+/// through the laid-out lines (a line owns chars `[acc, acc + chars.len())`
+/// of its paragraph). Each line that intersects the selection yields exactly
+/// one rect — full-width for lines fully inside the selection, partial for
+/// the first/last partial line — so rects never overlap.
+///
+/// Returns one `Vec<SelectionRect>` per page (empty when nothing is selected
+/// on that page or in the whole document).
+pub fn compute_selection_rects(
+    pages: &[LaidOutPage],
+    anchor: (u32, usize, usize),
+    head: (u32, usize, usize),
+) -> Vec<Vec<SelectionRect>> {
+    let empty = || pages.iter().map(|_| Vec::new()).collect::<Vec<Vec<SelectionRect>>>();
+    if anchor == head {
+        return empty();
+    }
+    let (start, end) = if anchor <= head { (anchor, head) } else { (head, anchor) };
+
+    let mut out: Vec<Vec<SelectionRect>> = pages.iter().map(|_| Vec::new()).collect();
+    for (pi, page) in pages.iter().enumerate() {
+        if (pi as u32) < start.0 || (pi as u32) > end.0 {
+            continue;
+        }
+        for (para_idx, para) in page.paragraphs.iter().enumerate() {
+            let pos = (pi as u32, para_idx);
+            if pos < (start.0, start.1) || pos > (end.0, end.1) {
+                continue;
+            }
+            let para_chars: usize = para.lines.iter().map(|l| l.chars.len()).sum();
+            let sel_start = if pos == (start.0, start.1) { start.2 } else { 0 };
+            let sel_end = if pos == (end.0, end.1) {
+                end.2.min(para_chars)
+            } else {
+                para_chars
+            };
+            if sel_start >= para_chars || sel_start >= sel_end {
+                continue;
+            }
+
+            let mut acc = 0usize;
+            for line in &para.lines {
+                let n = line.chars.len();
+                let (line_s, line_e) = (acc, acc + n);
+                acc = line_e;
+                if sel_start >= line_e || sel_end <= line_s {
+                    continue;
+                }
+                let local_s = sel_start.max(line_s) - line_s;
+                let local_e = sel_end.min(line_e) - line_s;
+                if local_s >= local_e || local_s >= n {
+                    continue;
+                }
+                let start_x = line.chars[local_s].x;
+                let end_x = if local_e < n {
+                    line.chars[local_e].x
+                } else {
+                    line.x + line.width
+                };
+                out[pi].push(SelectionRect {
+                    x: start_x,
+                    y: line.y,
+                    w: (end_x - start_x).max(1.0),
+                    h: line.height.max(1.0),
+                });
+            }
+        }
+    }
+    out
+}
+
 // ── Layout Engine ────────────────────────────────────────────────────
 
 /// Layout engine that produces precise page layouts from OOXML document bodies.
