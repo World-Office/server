@@ -474,12 +474,20 @@ pub enum DocxBlock {
 pub struct DocxBody {
     /// Blocks preserving document order (paragraphs and tables interleaved)
     pub blocks: Vec<DocxBlock>,
+    /// Verbatim body-level `<w:sectPr>` captured at parse time. When set, the
+    /// serializer emits it unchanged before `</w:body>`, so section features
+    /// (page size, margins, columns) survive a parse-serialize cycle.
+    #[serde(default)]
+    pub raw_sect_pr: Option<String>,
 }
 
 impl DocxBody {
     /// Create a new empty DocxBody
     pub fn new() -> Self {
-        Self { blocks: Vec::new() }
+        Self {
+            blocks: Vec::new(),
+            raw_sect_pr: None,
+        }
     }
 
     /// Build a DocxBody from separate paragraph/table vectors. Conversion
@@ -488,7 +496,10 @@ impl DocxBody {
     pub fn from_parts(paragraphs: Vec<DocxParagraph>, tables: Vec<DocxTable>) -> Self {
         let mut blocks: Vec<DocxBlock> = paragraphs.into_iter().map(DocxBlock::Paragraph).collect();
         blocks.extend(tables.into_iter().map(DocxBlock::Table));
-        Self { blocks }
+        Self {
+            blocks,
+            raw_sect_pr: None,
+        }
     }
 
     /// Get all paragraphs in the body (in order)

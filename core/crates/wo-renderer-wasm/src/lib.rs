@@ -1837,6 +1837,7 @@ fn insert_char_at_cursor(body: &mut DocxBody, cursor: CursorPos, ch: char) -> Cu
                 ..Default::default()
             }],
             section_properties: None,
+            raw_ppr: None,
         }));
         return CursorPos {
             char_idx: 1,
@@ -1884,6 +1885,7 @@ fn insert_paragraph_break(body: &mut DocxBody, cursor: CursorPos) -> CursorPos {
         properties: DocxParagraphProperties::default(),
         runs: vec![DocxRun::default()],
         section_properties: None,
+        raw_ppr: None,
     };
     let insert_idx = cursor.para.min(paras_len.saturating_sub(1));
     let insert_before = if cursor.char_idx == 0 && insert_idx > 0 {
@@ -2450,6 +2452,23 @@ pub fn apply_formatting(
 
         // Apply formatting to the target run
         if let Some(run) = para.runs.get_mut(target_run_idx) {
+            // Formatting edits must win at save time: the verbatim rPr
+            // capture would shadow the typed properties below, so drop it.
+            const RUN_FMT_KEYS: [&str; 10] = [
+                "bold",
+                "italic",
+                "underline",
+                "strikethrough",
+                "fontSize",
+                "fontName",
+                "textColor",
+                "highlight",
+                "clearFormatting",
+                "verticalAlignment",
+            ];
+            if RUN_FMT_KEYS.iter().any(|k| format.get(*k).is_some()) {
+                run.raw_rpr = None;
+            }
             if let Some(bold) = format.get("bold").and_then(|v| v.as_bool()) {
                 run.bold = bold;
             }
@@ -2511,7 +2530,19 @@ pub fn apply_formatting(
             }
         }
 
-        // Paragraph-level formatting (alignment, heading level, line spacing)
+        // Paragraph-level formatting (alignment, heading level, line spacing).
+        // Same rule as runs: an edited paragraph must serialize its typed
+        // properties, so the verbatim pPr capture has to go.
+        const PARA_FMT_KEYS: [&str; 5] = [
+            "align",
+            "heading",
+            "lineSpacing",
+            "spacingBefore",
+            "spacingAfter",
+        ];
+        if PARA_FMT_KEYS.iter().any(|k| format.get(*k).is_some()) {
+            para.raw_ppr = None;
+        }
         if let Some(align) = format.get("align").and_then(|v| v.as_str()) {
             use wo_ooxml::model::TextAlignment;
             para.properties.alignment = Some(match align {
@@ -2666,11 +2697,13 @@ pub fn apply_structure_op(
                     properties: DocxParagraphProperties::default(),
                     runs: vec![DocxRun::default()],
                     section_properties: None,
+                    raw_ppr: None,
                 }],
                 column_span: 1,
                 row_span: 1,
                 width: None,
                 shading: None,
+                raw_tc_pr: None,
             };
             let rows = vec![
                 DocxTableRow {
@@ -2687,6 +2720,7 @@ pub fn apply_structure_op(
             let table = DocxTable {
                 rows,
                 properties: DocxTableProperties::default(),
+                raw_tbl_pr: None, raw_tbl_grid: None,
             };
             let insert_at = (pidx + 1).min(body.blocks.len());
             body.blocks.insert(insert_at, DocxBlock::Table(table));
@@ -2700,6 +2734,7 @@ pub fn apply_structure_op(
                 },
                 runs: vec![DocxRun::default()],
                 section_properties: None,
+                raw_ppr: None,
             };
             let insert_at = (pidx + 1).min(body.blocks.len());
             body.blocks.insert(insert_at, DocxBlock::Paragraph(new_para));
@@ -2717,6 +2752,7 @@ pub fn apply_structure_op(
                     ..Default::default()
                 }],
                 section_properties: None,
+                raw_ppr: None,
             };
             let insert_at = (pidx + 1).min(body.blocks.len());
             body.blocks.insert(insert_at, DocxBlock::Paragraph(rule_para));
@@ -2730,6 +2766,7 @@ pub fn apply_structure_op(
                 },
                 runs: vec![DocxRun::default()],
                 section_properties: None,
+                raw_ppr: None,
             };
             let insert_at = (pidx + 1).min(body.blocks.len());
             body.blocks.insert(insert_at, DocxBlock::Paragraph(new_para));
@@ -3457,6 +3494,61 @@ mod tests {
 
         let result = apply_formatting(doc_handle, r##"{"bold": true}"##, "A4", "portrait", 72.0);
         assert!(result.is_err(), "Empty body should fail");
+
+        // Cleanup
+        release_document(doc_handle).ok();
+    }
+
+    #[test]
+    fn test_congruence_fmt_edits_clear_raw_captures() {
+        // Formatting edits must drop the verbatim rPr/pPr captures, otherwise
+        // the raw XML would shadow the typed properties at save time.
+        let doc_handle = 6666u32;
+        let doc = OoxmlDocument {
+            format: wo_ooxml::model::OoxmlFormat::Unknown,
+            version: "1.0".to_string(),
+            content_types: Vec::new(),
+            main_part: None,
+            shared_strings: Vec::new(),
+            part_count: 0,
+            core_properties: Default::default(),
+            relationships: Vec::new(),
+            docx_body: Some(DocxBody {
+                blocks: vec![DocxBlock::Paragraph(DocxParagraph {
+                    raw_ppr: Some(
+                        "<w:pPr><w:numPr><w:ilvl w:val=\"0\"/><w:numId w:val=\"1\"/></w:numPr></w:pPr>"
+                            .to_string(),
+                    ),
+                    runs: vec![DocxRun {
+                        text: "hello".to_string(),
+                        raw_rpr: Some(
+                            "<w:rPr><w:rFonts w:ascii=\"Foo\"/><w:shd/></w:rPr>".to_string(),
+                        ),
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                })],
+                ..Default::default()
+            }),
+            xlsx_workbook: None,
+        };
+        let model_store = DOC_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+        model_store.lock().unwrap().insert(doc_handle, doc);
+        set_cursor(doc_handle, CursorPos::default());
+
+        apply_formatting(doc_handle, r##"{"bold": true, "align": "center"}"##, "A4", "portrait", 72.0)
+            .expect("apply_formatting should succeed");
+
+        let body = extract_body(doc_handle).expect("body present after edit");
+        let para = body.paragraphs()[0];
+        assert!(para.raw_ppr.is_none(), "paragraph edit must clear raw_ppr");
+        assert_eq!(
+            para.properties.alignment,
+            Some(wo_ooxml::model::TextAlignment::Center)
+        );
+        let run = &para.runs[0];
+        assert!(run.raw_rpr.is_none(), "run edit must clear raw_rpr");
+        assert!(run.bold, "typed bold must be set");
 
         // Cleanup
         release_document(doc_handle).ok();

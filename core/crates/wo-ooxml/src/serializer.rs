@@ -1000,6 +1000,14 @@ impl OoxmlSerializer {
                     }
                 }
             }
+
+            // Verbatim body-level <w:sectPr> captured at parse time is
+            // re-emitted unchanged before </w:body>.
+            if let Some(ref raw) = body.raw_sect_pr {
+                xml.push_str("    ");
+                xml.push_str(raw);
+                xml.push('\n');
+            }
         }
 
         xml.push_str("  </w:body>\n</w:document>");
@@ -2458,6 +2466,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
+                raw_sect_pr: None,
                 blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
@@ -2545,6 +2554,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
+                raw_sect_pr: None,
                 blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
@@ -2637,6 +2647,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
+                raw_sect_pr: None,
                 blocks: vec![
                     DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
@@ -2748,6 +2759,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
+                raw_sect_pr: None,
                 blocks: vec![DocxBlock::Table(DocxTable {
                     rows: vec![
                         DocxTableRow {
@@ -3716,6 +3728,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
+                raw_sect_pr: None,
                 blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
@@ -3770,7 +3783,7 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-            docx_body: Some(DocxBody { blocks: vec![] }),
+            docx_body: Some(DocxBody { blocks: vec![], raw_sect_pr: None }),
         };
         let ser = OoxmlSerializer::new();
         let bytes = ser.serialize(&doc).unwrap();
