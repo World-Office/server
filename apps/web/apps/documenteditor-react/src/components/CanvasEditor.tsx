@@ -92,6 +92,8 @@ const CanvasEditorInternal = (
   const cursorPosRef = useRef<CursorPos | null>(null)
   const blinkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const cursorVisibleRef = useRef(true)
+  // true between mousedown and mouseup on the canvas: mousemove extends selection
+  const draggingRef = useRef(false)
 
   // The wasm renderer accepts docx natively; odt blobs are converted to
   // docx in the DocumentStore load flow, so map odt→docx here too.
@@ -548,6 +550,44 @@ const CanvasEditorInternal = (
       // Ctrl+P still work: they are handled by the window-level listener in
       // useKeyboardShortcuts, and keydown bubbles past this handler.
       if (e.ctrlKey || e.metaKey) {
+        if (keyStr === "c" || keyStr === "C") {
+          try {
+            const text = api.get_selected_text(docHandle)
+            if (text) navigator.clipboard.writeText(text).catch(() => {})
+          } catch (err) {
+            console.error("[CanvasEditor] copy failed:", err)
+          }
+          return
+        }
+        if (keyStr === "x" || keyStr === "X") {
+          try {
+            const text = api.get_selected_text(docHandle)
+            if (text) navigator.clipboard.writeText(text).catch(() => {})
+            applyWasmResult(api.delete_selection(docHandle, "A4", "portrait", 72.0))
+          } catch (err) {
+            console.error("[CanvasEditor] cut failed:", err)
+          }
+          return
+        }
+        if (keyStr === "z" || keyStr === "Z") {
+          try {
+            const result = e.shiftKey
+              ? api.redo(docHandle, "A4", "portrait", 72.0)
+              : api.undo(docHandle, "A4", "portrait", 72.0)
+            applyWasmResult(result)
+          } catch (err) {
+            console.error("[CanvasEditor] undo/redo failed:", err)
+          }
+          return
+        }
+        if (keyStr === "y" || keyStr === "Y") {
+          try {
+            applyWasmResult(api.redo(docHandle, "A4", "portrait", 72.0))
+          } catch (err) {
+            console.error("[CanvasEditor] redo failed:", err)
+          }
+          return
+        }
         if (keyStr === "v" || keyStr === "V") {
           navigator.clipboard
             .readText()
@@ -635,6 +675,9 @@ const CanvasEditorInternal = (
       // click registered (waiting for the 530ms blink tick feels dead).
       drawCursorOverlay()
 
+      // Begin drag-select: mousemove until mouseup extends the selection.
+      draggingRef.current = true
+
       // Notify parent about cursor position change (for collaboration)
       if (onCursorChange && pos.found) {
         onCursorChange(pageIndex, pos.para, pos.charIdx, pos.x, pos.y)
@@ -642,6 +685,68 @@ const CanvasEditorInternal = (
     } catch (err) {
       console.error("[CanvasEditor] handle_mouse_event failed:", err)
     }
+  }, [])
+
+  // ── Drag-select: mousemove extends the selection, mouseup ends it ──
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!draggingRef.current || !isWasmReady() || docHandleRef.current === null) return
+    const wasmApi = getWasmApi()
+    if (!wasmApi) return
+    const api = wasmApi
+    const docHandle = docHandleRef.current
+
+    let pageIndex = -1
+    for (let i = 0; i < canvasRefs.current.length; i++) {
+      if (canvasRefs.current[i] === e.target) {
+        pageIndex = i
+        break
+      }
+    }
+    if (pageIndex < 0) return
+
+    const canvas = e.target as HTMLCanvasElement
+    const rect = canvas.getBoundingClientRect()
+    const scaleX = canvas.width / rect.width || 1
+    const scaleY = canvas.height / rect.height || 1
+    const x = (e.clientX - rect.left) * scaleX
+    const y = (e.clientY - rect.top) * scaleY
+
+    try {
+      // Engine moves the cursor and keeps the anchor (ponytail: selection is
+      // not visually highlighted — the canvas renderer draws text only; add
+      // selection-rect rendering if highlight is ever requested).
+      api.handle_mouse_drag(docHandle, pageIndex, x, y)
+      const posJson = api.get_cursor_position(docHandle)
+      if (posJson && posJson !== "null") {
+        const pos = JSON.parse(posJson) as {
+          para: number
+          line: number
+          charIdx: number
+          x: number
+          y: number
+        }
+        cursorVisibleRef.current = true
+        drawCursorOverlay()
+        if (onCursorChange) {
+          onCursorChange(pageIndex, pos.para, pos.charIdx, pos.x, pos.y)
+        }
+      }
+    } catch (err) {
+      console.error("[CanvasEditor] handle_mouse_drag failed:", err)
+    }
+  }, [])
+
+  const handleMouseUp = useCallback(() => {
+    draggingRef.current = false
+  }, [])
+
+  // Mouseup can land outside the canvas mid-drag — end the drag regardless.
+  useEffect(() => {
+    const stop = () => {
+      draggingRef.current = false
+    }
+    window.addEventListener("mouseup", stop)
+    return () => window.removeEventListener("mouseup", stop)
   }, [])
 
   // ── Canvas ref callback ───────────────────────────────────────────
@@ -724,6 +829,8 @@ const CanvasEditorInternal = (
             }}
             onKeyDown={handleKeyDown}
             onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
           />
           <span
             style={{

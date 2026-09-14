@@ -43,6 +43,30 @@ static DOC_STORE: OnceLock<Mutex<HashMap<u32, Vec<u8>>>> = OnceLock::new();
 static DOC_MODEL_STORE: OnceLock<Mutex<HashMap<u32, OoxmlDocument>>> = OnceLock::new();
 /// Global store of layout results (handle → laid-out pages).
 static LAYOUT_STORE: OnceLock<Mutex<HashMap<u32, Vec<LaidOutPage>>>> = OnceLock::new();
+
+/// Text selection: anchor position. The head of the selection is the cursor.
+/// The selection is active while the anchor is stored and differs from the
+/// cursor. Cleared on plain clicks, plain arrows, undo/redo, and edits.
+static SELECTION_STORE: OnceLock<Mutex<HashMap<u32, CursorPos>>> = OnceLock::new();
+
+/// One undo snapshot (whole body + cursor). ponytail: full-body clone per
+/// edit — fine for document-scale bodies; switch to a delta log if undo
+/// latency ever measurably matters.
+#[derive(Clone)]
+struct HistoryEntry {
+    body: DocxBody,
+    cursor: CursorPos,
+}
+
+#[derive(Default)]
+struct DocHistory {
+    undo: Vec<HistoryEntry>,
+    redo: Vec<HistoryEntry>,
+}
+
+/// Undo snapshots per document, capped so long sessions can't grow memory.
+static HISTORY_STORE: OnceLock<Mutex<HashMap<u32, DocHistory>>> = OnceLock::new();
+const HISTORY_CAP: usize = 100;
 /// Global store of layout engines (handle → LayoutEngine).
 static ENGINE_STORE: OnceLock<Mutex<HashMap<u32, LayoutEngine>>> = OnceLock::new();
 /// Cursor position per document (handle → (para_idx, run_idx, char_idx, x, y)).
@@ -1434,6 +1458,17 @@ pub fn release_document(doc_handle: u32) -> Result<(), String> {
     let mut cursor_store = cursor_store.lock().unwrap();
     cursor_store.remove(&doc_handle);
 
+    SELECTION_STORE
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap()
+        .remove(&doc_handle);
+    HISTORY_STORE
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap()
+        .remove(&doc_handle);
+
     Ok(())
 }
 
@@ -1443,19 +1478,12 @@ pub fn release_document(doc_handle: u32) -> Result<(), String> {
 ///
 /// Returns JSON: `{para, line, char_idx, x, y, found}` or error string.
 /// If no character is found at the coordinate, returns the nearest position.
-#[wasm_bindgen]
-pub fn handle_mouse_event(
-    doc_handle: u32,
+fn hit_test_position(
+    pages: &[LaidOutPage],
     page_index: u32,
     x: f32,
     y: f32,
-) -> Result<String, String> {
-    let layout_store = LAYOUT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
-    let layout_store = layout_store.lock().unwrap();
-    let pages = layout_store
-        .get(&doc_handle)
-        .ok_or_else(|| format!("Document handle {} not found", doc_handle))?;
-
+) -> Result<(CursorPos, bool), String> {
     let page = pages
         .get(page_index as usize)
         .ok_or_else(|| format!("Page index {} out of bounds", page_index))?;
@@ -1492,11 +1520,7 @@ pub fn handle_mouse_event(
         }
     }
 
-    // Store cursor position
-    let cursor_store = CURSOR_STORE.get_or_init(|| Mutex::new(HashMap::new()));
-    let mut cursor_store = cursor_store.lock().unwrap();
-    cursor_store.insert(
-        doc_handle,
+    Ok((
         CursorPos {
             page: page_index,
             para: best_para,
@@ -1505,14 +1529,69 @@ pub fn handle_mouse_event(
             x: best_x,
             y: best_y,
         },
-    );
+        found,
+    ))
+}
+
+/// Mouse click: move the cursor and collapse the selection onto it.
+///
+/// Returns JSON: `{para, line, char_idx, x, y, found}` or error string.
+#[wasm_bindgen]
+pub fn handle_mouse_event(
+    doc_handle: u32,
+    page_index: u32,
+    x: f32,
+    y: f32,
+) -> Result<String, String> {
+    let (pos, found) = {
+        let layout_store = LAYOUT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+        let layout_store = layout_store.lock().unwrap();
+        let pages = layout_store
+            .get(&doc_handle)
+            .ok_or_else(|| format!("Document handle {} not found", doc_handle))?;
+        hit_test_position(pages, page_index, x, y)?
+    };
+
+    // Plain click: move the cursor and collapse the selection onto it.
+    set_cursor(doc_handle, pos);
+    set_anchor(doc_handle, pos);
 
     serde_json::to_string(&serde_json::json!({
-        "para": best_para,
-        "line": best_line,
-        "charIdx": best_char,
-        "x": (best_x * 100.0).round() / 100.0,
-        "y": (best_y * 100.0).round() / 100.0,
+        "para": pos.para,
+        "line": pos.line,
+        "charIdx": pos.char_idx,
+        "x": (pos.x * 100.0).round() / 100.0,
+        "y": (pos.y * 100.0).round() / 100.0,
+        "found": found,
+    }))
+    .map_err(|e| format!("JSON error: {}", e))
+}
+
+/// Mouse move while dragging: move the cursor but keep the selection anchor.
+#[wasm_bindgen]
+pub fn handle_mouse_drag(
+    doc_handle: u32,
+    page_index: u32,
+    x: f32,
+    y: f32,
+) -> Result<String, String> {
+    let (pos, found) = {
+        let layout_store = LAYOUT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+        let layout_store = layout_store.lock().unwrap();
+        let pages = layout_store
+            .get(&doc_handle)
+            .ok_or_else(|| format!("Document handle {} not found", doc_handle))?;
+        hit_test_position(pages, page_index, x, y)?
+    };
+
+    set_cursor(doc_handle, pos);
+
+    serde_json::to_string(&serde_json::json!({
+        "para": pos.para,
+        "line": pos.line,
+        "charIdx": pos.char_idx,
+        "x": (pos.x * 100.0).round() / 100.0,
+        "y": (pos.y * 100.0).round() / 100.0,
         "found": found,
     }))
     .map_err(|e| format!("JSON error: {}", e))
@@ -1573,6 +1652,11 @@ pub fn handle_key_event(
 
     match key {
         "Enter" | "Return" => {
+            push_history(doc_handle);
+            let mut cursor = cursor;
+            if let Some(c) = collapse_selection(doc_handle, &mut body) {
+                cursor = c;
+            }
             let new_cursor = insert_paragraph_break(&mut body, cursor);
             store_body(doc_handle, body)?;
             set_cursor(doc_handle, new_cursor);
@@ -1581,6 +1665,18 @@ pub fn handle_key_event(
         "Backspace" => {
             if body.paragraphs().is_empty() {
                 return Ok("{}".to_string());
+            }
+            push_history(doc_handle);
+            // A selection delete replaces the char-delete path entirely.
+            if let Some(new_cursor) = collapse_selection(doc_handle, &mut body) {
+                store_body(doc_handle, body)?;
+                set_cursor(doc_handle, new_cursor);
+                return layout_document_and_return_json(
+                    doc_handle,
+                    page_size,
+                    orientation,
+                    margin_pt,
+                );
             }
             let pidx = cursor.para.min(paras_len.saturating_sub(1));
             if cursor.char_idx > 0 && pidx < body.paragraphs().len() {
@@ -1625,6 +1721,17 @@ pub fn handle_key_event(
             if body.paragraphs().is_empty() {
                 return Ok("{}".to_string());
             }
+            push_history(doc_handle);
+            if let Some(new_cursor) = collapse_selection(doc_handle, &mut body) {
+                store_body(doc_handle, body)?;
+                set_cursor(doc_handle, new_cursor);
+                return layout_document_and_return_json(
+                    doc_handle,
+                    page_size,
+                    orientation,
+                    margin_pt,
+                );
+            }
             let pidx = cursor.para.min(paras_len.saturating_sub(1));
             if pidx < body.paragraphs().len() {
                 if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
@@ -1668,23 +1775,34 @@ pub fn handle_key_event(
             layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
         }
         "ArrowLeft" => {
-            set_cursor(
-                doc_handle,
-                CursorPos {
-                    char_idx: cursor.char_idx.saturating_sub(1),
-                    ..cursor
-                },
-            );
+            let new_cursor = CursorPos {
+                char_idx: cursor.char_idx.saturating_sub(1),
+                ..cursor
+            };
+            if _shift {
+                // start extending from the pre-move position if not already selecting
+                if get_anchor(doc_handle).is_none() {
+                    set_anchor(doc_handle, cursor);
+                }
+            } else {
+                set_anchor(doc_handle, new_cursor); // collapse
+            }
+            set_cursor(doc_handle, new_cursor);
             Ok("{}".to_string())
         }
         "ArrowRight" => {
-            set_cursor(
-                doc_handle,
-                CursorPos {
-                    char_idx: cursor.char_idx + 1,
-                    ..cursor
-                },
-            );
+            let new_cursor = CursorPos {
+                char_idx: cursor.char_idx + 1,
+                ..cursor
+            };
+            if _shift {
+                if get_anchor(doc_handle).is_none() {
+                    set_anchor(doc_handle, cursor);
+                }
+            } else {
+                set_anchor(doc_handle, new_cursor);
+            }
+            set_cursor(doc_handle, new_cursor);
             Ok("{}".to_string())
         }
         _ => {
@@ -1694,6 +1812,11 @@ pub fn handle_key_event(
                 return Ok("{}".to_string());
             }
             let ch = key.chars().next().unwrap();
+            push_history(doc_handle);
+            let mut cursor = cursor;
+            if let Some(c) = collapse_selection(doc_handle, &mut body) {
+                cursor = c;
+            }
             let new_cursor = insert_char_at_cursor(&mut body, cursor, ch);
             set_cursor(doc_handle, new_cursor);
             store_body(doc_handle, body)?;
@@ -1791,8 +1914,13 @@ pub fn insert_text(
     orientation: &str,
     margin_pt: f32,
 ) -> Result<String, String> {
+    push_history(doc_handle);
     let mut body = extract_body(doc_handle)?;
     let mut cursor = get_cursor(doc_handle);
+    // pasting over a selection replaces it (one history entry for the whole paste)
+    if let Some(c) = collapse_selection(doc_handle, &mut body) {
+        cursor = c;
+    }
     for ch in text.chars() {
         if ch == '\r' {
             continue;
@@ -1806,6 +1934,296 @@ pub fn insert_text(
     store_body(doc_handle, body)?;
     set_cursor(doc_handle, cursor);
     layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
+}
+
+// ── Selection & undo/redo ─────────────────────────────────────────
+
+fn selection_bounds(anchor: CursorPos, cursor: CursorPos) -> (usize, usize, usize, usize) {
+    if (anchor.para, anchor.char_idx) <= (cursor.para, cursor.char_idx) {
+        (anchor.para, anchor.char_idx, cursor.para, cursor.char_idx)
+    } else {
+        (cursor.para, cursor.char_idx, anchor.para, anchor.char_idx)
+    }
+}
+
+fn get_selected_text_in(body: &DocxBody, anchor: CursorPos, cursor: CursorPos) -> String {
+    let (sp, sc, ep, ec) = selection_bounds(anchor, cursor);
+    if (sp, sc) == (ep, ec) {
+        return String::new();
+    }
+    let paras_len = body.paragraphs().len();
+    let mut out = String::new();
+    let last = ep.min(paras_len.saturating_sub(1));
+    for pi in sp..=last {
+        if pi >= paras_len {
+            break;
+        }
+        if let Some(DocxBlock::Paragraph(p)) = body.blocks.get(pi) {
+            let text: String = p.runs.iter().flat_map(|r| r.text.chars()).collect();
+            if pi == sp && pi == ep {
+                out.extend(text.chars().skip(sc).take(ec.saturating_sub(sc)));
+            } else if pi == sp {
+                out.extend(text.chars().skip(sc));
+            } else if pi == ep {
+                out.extend(text.chars().take(ec));
+            } else {
+                out.push_str(&text);
+            }
+        }
+        if pi != ep {
+            out.push('\n');
+        }
+    }
+    out
+}
+
+/// Remove `[start, end)` from a paragraph's concatenated run text, keeping
+/// run boundaries for surviving text. Empty runs are pruned; a fully-emptied
+/// paragraph keeps one default run.
+fn delete_range_in_para(para: &mut DocxParagraph, start: usize, end: usize) {
+    let mut pos = 0usize;
+    let mut result: Vec<DocxRun> = Vec::new();
+    for mut run in para.runs.drain(..) {
+        let chars: Vec<char> = run.text.chars().collect();
+        let len = chars.len();
+        let rs = pos;
+        let re = pos + len;
+        let cut_s = start.max(rs).min(re);
+        let cut_e = end.min(re);
+        let mut kept = String::new();
+        if cut_s > rs {
+            kept.extend(&chars[..cut_s - rs]);
+        }
+        if cut_e < re {
+            kept.extend(&chars[cut_e - rs..]);
+        }
+        if !kept.is_empty() {
+            run.text = kept;
+            result.push(run);
+        }
+        pos = re;
+    }
+    if result.is_empty() {
+        result.push(DocxRun::default());
+    }
+    para.runs = result;
+}
+
+/// Delete the selection anchor..cursor. Returns the collapsed cursor.
+fn delete_selected(body: &mut DocxBody, anchor: CursorPos, cursor: CursorPos) -> CursorPos {
+    let (sp, sc, ep, ec) = selection_bounds(anchor, cursor);
+    if (sp, sc) == (ep, ec) {
+        return cursor;
+    }
+    if sp == ep {
+        if let Some(DocxBlock::Paragraph(p)) = body.blocks.get_mut(sp) {
+            delete_range_in_para(p, sc, ec);
+        }
+    } else {
+        // surviving tail of the end paragraph moves up to the start paragraph
+        let tail: Vec<DocxRun> = if let Some(DocxBlock::Paragraph(p)) = body.blocks.get_mut(ep) {
+            delete_range_in_para(p, 0, ec);
+            std::mem::take(&mut p.runs)
+                .into_iter()
+                .filter(|r| !r.text.is_empty())
+                .collect()
+        } else {
+            Vec::new()
+        };
+        if let Some(DocxBlock::Paragraph(p)) = body.blocks.get_mut(sp) {
+            delete_range_in_para(p, sc, usize::MAX);
+            p.runs.extend(tail);
+        }
+        let from = sp + 1;
+        let to = ep.min(body.blocks.len().saturating_sub(1));
+        if from <= to {
+            body.blocks.drain(from..=to);
+        }
+    }
+    CursorPos {
+        para: sp,
+        char_idx: sc,
+        ..cursor
+    }
+}
+
+fn get_anchor(doc_handle: u32) -> Option<CursorPos> {
+    let store = SELECTION_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let store = store.lock().unwrap();
+    store.get(&doc_handle).copied()
+}
+
+fn set_anchor(doc_handle: u32, anchor: CursorPos) {
+    SELECTION_STORE
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap()
+        .insert(doc_handle, anchor);
+}
+
+fn clear_anchor(doc_handle: u32) {
+    SELECTION_STORE
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap()
+        .remove(&doc_handle);
+}
+
+/// A selection is active while an anchor is stored and differs from the cursor.
+fn selection_active(doc_handle: u32) -> bool {
+    let cursor = get_cursor(doc_handle);
+    match get_anchor(doc_handle) {
+        Some(a) => (a.para, a.char_idx) != (cursor.para, cursor.char_idx),
+        None => false,
+    }
+}
+
+/// Delete the active selection from `body`, returning the collapsed cursor.
+/// Returns None when no selection is active.
+fn collapse_selection(doc_handle: u32, body: &mut DocxBody) -> Option<CursorPos> {
+    let cursor = get_cursor(doc_handle);
+    let anchor = get_anchor(doc_handle)?;
+    if (anchor.para, anchor.char_idx) == (cursor.para, cursor.char_idx) {
+        return None;
+    }
+    let collapsed = delete_selected(body, anchor, cursor);
+    clear_anchor(doc_handle);
+    Some(collapsed)
+}
+
+/// Set the selection anchor (start of the selection). The head is the cursor;
+/// extend by moving the cursor (Shift+arrows / mouse drag).
+#[wasm_bindgen]
+pub fn set_selection_anchor(doc_handle: u32, para: u32, char_idx: u32) {
+    let anchor = CursorPos {
+        page: 0,
+        para: para as usize,
+        line: 0,
+        char_idx: char_idx as usize,
+        x: 0.0,
+        y: 0.0,
+    };
+    set_anchor(doc_handle, anchor);
+}
+
+/// Selected text (paragraphs joined with \n). Empty when nothing is selected.
+#[wasm_bindgen]
+pub fn get_selected_text(doc_handle: u32) -> Result<String, String> {
+    if !selection_active(doc_handle) {
+        return Ok(String::new());
+    }
+    let body = extract_body(doc_handle)?;
+    let cursor = get_cursor(doc_handle);
+    let anchor = get_anchor(doc_handle).unwrap();
+    Ok(get_selected_text_in(&body, anchor, cursor))
+}
+
+/// Delete the active selection and re-layout.
+#[wasm_bindgen]
+pub fn delete_selection(
+    doc_handle: u32,
+    page_size: &str,
+    orientation: &str,
+    margin_pt: f32,
+) -> Result<String, String> {
+    if !selection_active(doc_handle) {
+        return Ok("{}".to_string());
+    }
+    push_history(doc_handle);
+    let mut body = extract_body(doc_handle)?;
+    let new_cursor = collapse_selection(doc_handle, &mut body).unwrap();
+    store_body(doc_handle, body)?;
+    set_cursor(doc_handle, new_cursor);
+    layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
+}
+
+/// Snapshot the current body+cursor onto the undo stack (call BEFORE a mutation).
+fn push_history(doc_handle: u32) {
+    let body = extract_body(doc_handle).unwrap_or_default();
+    let cursor = get_cursor(doc_handle);
+    let store = HISTORY_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut store = store.lock().unwrap();
+    let entry = store.entry(doc_handle).or_default();
+    entry.undo.push(HistoryEntry { body, cursor });
+    if entry.undo.len() > HISTORY_CAP {
+        entry.undo.remove(0);
+    }
+    entry.redo.clear();
+}
+
+fn apply_snapshot(
+    doc_handle: u32,
+    snap: HistoryEntry,
+    page_size: &str,
+    orientation: &str,
+    margin_pt: f32,
+) -> Result<String, String> {
+    store_body(doc_handle, snap.body)?;
+    set_cursor(doc_handle, snap.cursor);
+    clear_anchor(doc_handle);
+    layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
+}
+
+/// Undo the last edit. Returns the new layout JSON, or "{}" when nothing to undo.
+#[wasm_bindgen]
+pub fn undo(
+    doc_handle: u32,
+    page_size: &str,
+    orientation: &str,
+    margin_pt: f32,
+) -> Result<String, String> {
+    let snap = {
+        let store = HISTORY_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+        let mut store = store.lock().unwrap();
+        match store.get_mut(&doc_handle).and_then(|h| h.undo.pop()) {
+            Some(s) => s,
+            None => return Ok("{}".to_string()),
+        }
+    };
+    let current = HistoryEntry {
+        body: extract_body(doc_handle)?,
+        cursor: get_cursor(doc_handle),
+    };
+    HISTORY_STORE
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap()
+        .entry(doc_handle)
+        .or_default()
+        .redo
+        .push(current);
+    apply_snapshot(doc_handle, snap, page_size, orientation, margin_pt)
+}
+
+/// Redo the last undone edit. Returns layout JSON, or "{}" when nothing to redo.
+#[wasm_bindgen]
+pub fn redo(
+    doc_handle: u32,
+    page_size: &str,
+    orientation: &str,
+    margin_pt: f32,
+) -> Result<String, String> {
+    let snap = {
+        let store = HISTORY_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+        let mut store = store.lock().unwrap();
+        match store.get_mut(&doc_handle).and_then(|h| h.redo.pop()) {
+            Some(s) => s,
+            None => return Ok("{}".to_string()),
+        }
+    };
+    let current = HistoryEntry {
+        body: extract_body(doc_handle)?,
+        cursor: get_cursor(doc_handle),
+    };
+    HISTORY_STORE
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap()
+        .entry(doc_handle)
+        .or_default()
+        .undo
+        .push(current);
+    apply_snapshot(doc_handle, snap, page_size, orientation, margin_pt)
 }
 
 /// Helper: layout document and return JSON (used by handle_key_event).
@@ -2881,6 +3299,9 @@ pub fn spell_release(lang: &str) -> Result<(), String> {
 }
 
 // ── Tests ────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod selection_undo_tests;
 
 #[cfg(test)]
 mod tests {

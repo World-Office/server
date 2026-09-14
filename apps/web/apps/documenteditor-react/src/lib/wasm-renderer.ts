@@ -67,6 +67,19 @@ export interface WasmRenderApi {
     marginPt: number,
   ): string
   handle_mouse_event(docHandle: number, pageIndex: number, x: number, y: number): string
+  // Mouse move while dragging: extend selection (anchor stays, cursor follows)
+  handle_mouse_drag(docHandle: number, pageIndex: number, x: number, y: number): string
+  // Selection + undo/redo
+  set_selection_anchor(docHandle: number, para: number, charIdx: number): void
+  get_selected_text(docHandle: number): string
+  delete_selection(
+    docHandle: number,
+    pageSize: string,
+    orientation: string,
+    marginPt: number,
+  ): string
+  undo(docHandle: number, pageSize: string, orientation: string, marginPt: number): string
+  redo(docHandle: number, pageSize: string, orientation: string, marginPt: number): string
   serialize_document(docHandle: number): Uint8Array
   get_cursor_position(docHandle: number): string
   // Formatting (Phase 4)
