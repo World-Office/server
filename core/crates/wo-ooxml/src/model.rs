@@ -705,6 +705,10 @@ pub struct DocxRun {
     /// so run properties the typed model cannot represent survive a round trip.
     #[serde(default)]
     pub raw_rpr: Option<String>,
+    /// Verbatim `<w:drawing>` subtree captured at parse time, re-emitted
+    /// unchanged so inline graphics (images, charts) survive a round trip.
+    #[serde(default)]
+    pub drawing: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

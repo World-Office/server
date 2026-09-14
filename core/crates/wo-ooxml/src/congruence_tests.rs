@@ -187,6 +187,122 @@ fn test_run_rpr_round_trip() {
     assert!(document.contains("Plain"));
 }
 
+/// Build a minimal DOCX whose paragraph carries a run with an inline
+/// `<w:drawing>` (an anchored picture referencing an image via `r:embed`).
+fn docx_with_drawing() -> Vec<u8> {
+    let mut buf = Vec::new();
+    {
+        let mut zip = zip::ZipWriter::new(Cursor::new(&mut buf));
+        zip.start_file(
+            "[Content_Types].xml",
+            zip::write::SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>"#,
+        )
+        .unwrap();
+
+        zip.start_file(
+            "word/document.xml",
+            zip::write::SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+            xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+            xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"
+            xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+  <w:body>
+    <w:p>
+      <w:r>
+        <w:drawing>
+          <wp:inline distT="0" distB="0">
+            <wp:extent cx="914400" cy="914400"/>
+            <a:graphic>
+              <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+                <pic:pic>
+                  <pic:nvPicPr><pic:cNvPr id="1" name="Picture 1"/></pic:nvPicPr>
+                  <pic:blipFill><a:blip r:embed="rId7"/></pic:blipFill>
+                  <pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="914400" cy="914400"/></a:xfrm></pic:spPr>
+                </pic:pic>
+              </a:graphicData>
+            </a:graphic>
+          </wp:inline>
+        </w:drawing>
+      </w:r>
+      <w:r><w:t>Caption</w:t></w:r>
+    </w:p>
+  </w:body>
+</w:document>"#,
+        )
+        .unwrap();
+        zip.finish().unwrap();
+    }
+    buf
+}
+
+#[test]
+fn test_drawing_round_trip() {
+    let input = docx_with_drawing();
+
+    // Parse: drawing must be captured verbatim on the drawing run; the plain
+    // caption run leaves drawing at None.
+    let parser = OoxmlParser::new();
+    let doc = parser.parse(&input).expect("parse should succeed");
+    let paras = doc
+        .docx_body
+        .as_ref()
+        .expect("docx body present")
+        .paragraphs();
+    assert_eq!(paras[0].runs.len(), 2);
+
+    let drawing_run = &paras[0].runs[0];
+    assert!(drawing_run.text.is_empty());
+    let raw = drawing_run
+        .drawing
+        .as_deref()
+        .expect("drawing captured");
+    assert!(raw.starts_with("<w:drawing>"));
+    assert!(raw.ends_with("</w:drawing>"));
+    assert!(raw.contains(r#"<wp:inline distT="0" distB="0">"#));
+    assert!(raw.contains(r#"<wp:extent cx="914400" cy="914400"/"#));
+    assert!(raw.contains(r#"<pic:cNvPr id="1" name="Picture 1"/"#));
+    assert!(raw.contains(r#"<a:blip r:embed="rId7"/"#));
+
+    assert!(paras[0].runs[1].drawing.is_none());
+    assert_eq!(paras[0].runs[1].text, "Caption");
+
+    // Serialize: verbatim drawing must be re-emitted unchanged.
+    let serializer = OoxmlSerializer::new();
+    let out = serializer
+        .serialize(&doc)
+        .expect("serialize should succeed");
+    let document = document_xml(&out);
+
+    assert!(document.contains("<w:drawing>"), "drawing must be re-emitted");
+    assert!(
+        document.contains(r#"<wp:extent cx="914400" cy="914400"/"#),
+        "inline geometry must survive the round trip"
+    );
+    assert!(
+        document.contains(r#"<a:blip r:embed="rId7"/"#),
+        "image relationship reference must survive the round trip"
+    );
+    assert!(
+        document.contains(r#"<pic:cNvPr id="1" name="Picture 1"/"#),
+        "picture name must survive the round trip"
+    );
+    assert!(document.contains("Caption"));
+}
+
 #[test]
 fn test_paragraph_without_ppr_has_no_raw() {
     // A paragraph without <w:pPr> must leave raw_ppr at None and still
