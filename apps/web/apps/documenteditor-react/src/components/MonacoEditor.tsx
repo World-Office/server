@@ -5,6 +5,7 @@ import HtmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker"
 import JsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker"
 import TsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker"
 import { useEffect, useRef, useState } from "react"
+import { resolveMonacoEditable } from "../lib/monaco-editable"
 
 if (typeof self !== "undefined") {
   self.MonacoEnvironment = {
@@ -38,7 +39,7 @@ interface MonacoEditorProps {
   language?: string
   theme?: string
   editorType?: string
-  readOnly?: boolean
+  isEditable?: boolean
 }
 
 export function MonacoEditor({
@@ -47,7 +48,7 @@ export function MonacoEditor({
   language = "typescript",
   theme = "vs",
   editorType,
-  readOnly,
+  isEditable,
 }: MonacoEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null)
@@ -59,7 +60,9 @@ export function MonacoEditor({
     onChangeRef.current = onChange
   }, [onChange])
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: editor is recreated only on language/theme/editorType change; initial `value` seeds the model, subsequent updates applied via setValue in the effect below
+  const editable = resolveMonacoEditable(isEditable, editorType)
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: editor is recreated only on language/theme/editorType change; initial `value` seeds the model and initial `!editable` seeds readOnly, subsequent updates are applied via setValue/updateOptions in the effects below
   useEffect(() => {
     if (!containerRef.current) return
 
@@ -76,7 +79,7 @@ export function MonacoEditor({
         tabSize: 2,
         insertSpaces: true,
         wordWrap: "on",
-        readOnly: readOnly ?? (editorType === "presentation" || editorType === "pdf"),
+        readOnly: !editable,
       })
 
       editorRef.current = editor
@@ -100,6 +103,13 @@ export function MonacoEditor({
       setLoadError(err instanceof Error ? err.message : "Failed to initialize Monaco Editor")
     }
   }, [language, theme, editorType])
+
+  // readOnly is dynamic: apply via updateOptions whenever editability changes,
+  // so the editor flips in place instead of ignoring the new prop.
+  useEffect(() => {
+    if (!isReady) return
+    editorRef.current?.updateOptions({ readOnly: !editable })
+  }, [editable, isReady])
 
   useEffect(() => {
     if (editorRef.current && isReady) {

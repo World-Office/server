@@ -302,7 +302,7 @@ export const DocumentHolder = observer(function DocumentHolder({ embedded }: Doc
             value={value}
             onChange={handleChange}
             language={languageForFile(fileName)}
-            readOnly={documentStore.wopiFileInfo ? !documentStore.wopiFileInfo.UserCanWrite : false}
+            isEditable={documentStore.wopiFileInfo ? !!documentStore.wopiFileInfo.UserCanWrite : true}
             editorType="document"
           />
         </Suspense>
@@ -344,7 +344,7 @@ export const DocumentHolder = observer(function DocumentHolder({ embedded }: Doc
           value={value}
           onChange={handleChange}
           language={languageForFile(fileName)}
-          readOnly={documentStore.wopiFileInfo ? !documentStore.wopiFileInfo.UserCanWrite : false}
+          isEditable={documentStore.wopiFileInfo ? !!documentStore.wopiFileInfo.UserCanWrite : true}
           editorType="document"
         />
       </Suspense>
