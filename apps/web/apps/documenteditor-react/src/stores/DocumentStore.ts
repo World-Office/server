@@ -476,6 +476,7 @@ export class DocumentStore {
     console.info("[StoreDebug] saveToWopi", { conn: !!this.wopiConnection, mod: this.isModified, dirty: this.isDirty, ser: !!this.canvasSerializer })
     if (!this.wopiConnection) return
     if (!this.isModified && !this.isDirty) return
+    if (this.isSaving) return // guard against Ctrl+S racing the autosave debounce
     this.isSaving = true
     try {
       const blob = await this.buildDocumentBlob()

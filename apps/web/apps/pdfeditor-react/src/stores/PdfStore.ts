@@ -329,6 +329,7 @@ export class PdfStore {
       await this.exportAsDownload()
       return
     }
+    if (this.isSaving) return; // guard against Ctrl+S racing the autosave debounce
     this.isSaving = true
     try {
       const blob = await this.buildDocumentBlob()

@@ -173,6 +173,7 @@ export class PresentationStore {
 			void this.exportAsDownload();
 			return;
 		}
+		if (this.isSaving) return; // guard against Ctrl+S racing the autosave debounce
 		this.isSaving = true;
 		try {
 			const conn = {
