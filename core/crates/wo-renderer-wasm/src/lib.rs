@@ -50,6 +50,10 @@ static LAYOUT_STORE: OnceLock<Mutex<HashMap<u32, Vec<LaidOutPage>>>> = OnceLock:
 /// cursor. Cleared on plain clicks, plain arrows, undo/redo, and edits.
 static SELECTION_STORE: OnceLock<Mutex<HashMap<u32, CursorPos>>> = OnceLock::new();
 
+/// Sticky goal column for vertical navigation (ArrowUp/Down): the x the
+/// cursor wants to keep while hopping across lines of different length.
+static GOAL_X_STORE: OnceLock<Mutex<HashMap<u32, f32>>> = OnceLock::new();
+
 /// One undo snapshot (whole body + cursor). ponytail: full-body clone per
 /// edit — fine for document-scale bodies; switch to a delta log if undo
 /// latency ever measurably matters.
@@ -1523,6 +1527,12 @@ pub fn release_document(doc_handle: u32) -> Result<(), String> {
         .unwrap()
         .remove(&doc_handle);
 
+    GOAL_X_STORE
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap()
+        .remove(&doc_handle);
+
     Ok(())
 }
 
@@ -1607,6 +1617,7 @@ pub fn handle_mouse_event(
     };
 
     // Plain click: move the cursor and collapse the selection onto it.
+    clear_goal_x(doc_handle);
     set_cursor(doc_handle, pos);
     set_anchor(doc_handle, pos);
 
@@ -1638,6 +1649,7 @@ pub fn handle_mouse_drag(
         hit_test_position(pages, page_index, x, y)?
     };
 
+    clear_goal_x(doc_handle);
     set_cursor(doc_handle, pos);
 
     serde_json::to_string(&serde_json::json!({
@@ -1770,6 +1782,390 @@ fn set_cursor(doc_handle: u32, cursor: CursorPos) {
     cursor_store.insert(doc_handle, cursor);
 }
 
+// ── Navigation keys (INT-3) ──────────────────────────────────────────
+//
+// Vertical moves (ArrowUp/Down) work on the laid-out lines so wrapped
+// lines and paragraph boundaries behave like a real editor; horizontal
+// moves (arrows, word jumps, Ctrl+Home/End) work on the model text via
+// BlockPath so they stay correct without a layout. Shift extends the
+// selection from the pre-move position.
+
+fn goal_x(doc_handle: u32) -> Option<f32> {
+    GOAL_X_STORE
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap()
+        .get(&doc_handle)
+        .copied()
+}
+
+fn set_goal_x(doc_handle: u32, x: f32) {
+    GOAL_X_STORE
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap()
+        .insert(doc_handle, x);
+}
+
+fn clear_goal_x(doc_handle: u32) {
+    GOAL_X_STORE
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap()
+        .remove(&doc_handle);
+}
+
+/// Concatenated run text of the flat paragraph at `flat_idx`.
+fn para_text(body: &DocxBody, flat_idx: usize) -> String {
+    flat_paragraphs(body)
+        .get(flat_idx)
+        .and_then(|&p| paragraph_at(body, p))
+        .map(|p| p.runs.iter().flat_map(|r| r.text.chars()).collect())
+        .unwrap_or_default()
+}
+
+/// Start of the previous word at/before `from` (whitespace-delimited).
+fn word_left(text: &str, from: usize) -> usize {
+    let chars: Vec<char> = text.chars().collect();
+    let mut i = from.min(chars.len());
+    while i > 0 && chars[i - 1].is_whitespace() {
+        i -= 1;
+    }
+    while i > 0 && !chars[i - 1].is_whitespace() {
+        i -= 1;
+    }
+    i
+}
+
+/// Start of the next word at/after `from`, or the end of the text.
+fn word_right(text: &str, from: usize) -> usize {
+    let chars: Vec<char> = text.chars().collect();
+    let mut i = from.min(chars.len());
+    while i < chars.len() && !chars[i].is_whitespace() {
+        i += 1;
+    }
+    while i < chars.len() && chars[i].is_whitespace() {
+        i += 1;
+    }
+    i
+}
+
+/// ArrowLeft/ArrowRight by one char, crossing paragraph boundaries.
+fn char_move(body: &DocxBody, cursor: CursorPos, right: bool) -> CursorPos {
+    let flat = flat_paragraphs(body);
+    if flat.is_empty() {
+        return cursor;
+    }
+    let p = cursor.para.min(flat.len() - 1);
+    let len = para_text(body, p).chars().count();
+    let c = cursor.char_idx.min(len);
+    if right {
+        if c < len {
+            CursorPos {
+                char_idx: c + 1,
+                ..cursor
+            }
+        } else if p + 1 < flat.len() {
+            CursorPos {
+                para: p + 1,
+                line: 0,
+                char_idx: 0,
+                ..cursor
+            }
+        } else {
+            cursor
+        }
+    } else if c > 0 {
+        CursorPos {
+            char_idx: c - 1,
+            ..cursor
+        }
+    } else if p > 0 {
+        CursorPos {
+            para: p - 1,
+            line: 0,
+            char_idx: para_text(body, p - 1).chars().count(),
+            ..cursor
+        }
+    } else {
+        cursor
+    }
+}
+
+/// Ctrl+ArrowLeft/ArrowRight: word-boundary jump, crossing paragraphs.
+fn word_move(body: &DocxBody, cursor: CursorPos, right: bool) -> CursorPos {
+    let flat = flat_paragraphs(body);
+    if flat.is_empty() {
+        return cursor;
+    }
+    let p = cursor.para.min(flat.len() - 1);
+    let text = para_text(body, p);
+    let c = cursor.char_idx.min(text.chars().count());
+    if right {
+        let to = word_right(&text, c);
+        if to > c {
+            CursorPos {
+                char_idx: to,
+                ..cursor
+            }
+        } else if p + 1 < flat.len() {
+            CursorPos {
+                para: p + 1,
+                line: 0,
+                char_idx: 0,
+                ..cursor
+            }
+        } else {
+            cursor
+        }
+    } else {
+        let to = word_left(&text, c);
+        if to < c {
+            CursorPos {
+                char_idx: to,
+                ..cursor
+            }
+        } else if p > 0 {
+            CursorPos {
+                para: p - 1,
+                line: 0,
+                char_idx: para_text(body, p - 1).chars().count(),
+                ..cursor
+            }
+        } else {
+            cursor
+        }
+    }
+}
+
+/// One laid-out line, flattened across pages/paragraphs for vertical moves.
+struct NavLine {
+    page: u32,
+    /// Paragraph index in the page's layout order (cursor.para convention).
+    para: usize,
+    line_in_para: usize,
+    /// Char offset of the line's first char within the paragraph text.
+    start: usize,
+    x0: f32,
+    end_x: f32,
+    y: f32,
+    /// Left-edge x of each char in the line.
+    xs: Vec<f32>,
+}
+
+/// All laid-out lines in document order (None when no layout is cached).
+fn layout_lines(doc_handle: u32) -> Option<Vec<NavLine>> {
+    let store = LAYOUT_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+    let store = store.lock().ok()?;
+    let pages = store.get(&doc_handle)?;
+    let mut out = Vec::new();
+    for (pi, page) in pages.iter().enumerate() {
+        for (para_i, para) in page.paragraphs.iter().enumerate() {
+            let mut acc = 0usize;
+            for (li, line) in para.lines.iter().enumerate() {
+                out.push(NavLine {
+                    page: pi as u32,
+                    para: para_i,
+                    line_in_para: li,
+                    start: acc,
+                    x0: line.x,
+                    end_x: line.x + line.width,
+                    y: line.y,
+                    xs: line.chars.iter().map(|c| c.x).collect(),
+                });
+                acc += line.chars.len();
+            }
+        }
+    }
+    Some(out)
+}
+
+/// Index of the line the cursor sits on: the line that owns `char_idx`
+/// (a cursor at/after the paragraph end belongs to the last line).
+/// When the stored `cursor.line` owns `char_idx` (end-inclusive) it is
+/// trusted first — Home/End/vertical moves set it, so their end-of-line
+/// tie-breaks stay stable (char N is both end of line k and start of k+1).
+fn current_line_idx(lines: &[NavLine], cursor: &CursorPos) -> Option<usize> {
+    let para_lines: Vec<usize> = lines
+        .iter()
+        .enumerate()
+        .filter(|(_, l)| l.page == cursor.page && l.para == cursor.para)
+        .map(|(i, _)| i)
+        .collect();
+    let last = *para_lines.last()?;
+    let para_len = lines[last].start + lines[last].xs.len();
+    if cursor.char_idx >= para_len {
+        return Some(last);
+    }
+    if let Some(&i) = para_lines
+        .iter()
+        .find(|&&i| lines[i].line_in_para == cursor.line)
+    {
+        let l = &lines[i];
+        if cursor.char_idx >= l.start && cursor.char_idx <= l.start + l.xs.len() {
+            return Some(i);
+        }
+    }
+    para_lines.into_iter().find(|&i| {
+        cursor.char_idx >= lines[i].start && cursor.char_idx < lines[i].start + lines[i].xs.len()
+    })
+}
+
+/// Char offset within a line whose x is closest to `goal` (ties → first).
+/// `xs.len()` means "past the last char" (goal at/after the line end).
+fn closest_x(xs: &[f32], goal: f32, end_x: f32) -> usize {
+    if xs.is_empty() || goal >= end_x {
+        return xs.len();
+    }
+    let mut best = 0usize;
+    let mut best_d = f32::MAX;
+    for (i, &x) in xs.iter().enumerate() {
+        let d = (x - goal).abs();
+        if d < best_d {
+            best_d = d;
+            best = i;
+        }
+    }
+    best
+}
+
+/// ArrowUp/ArrowDown: one laid-out line, keeping the sticky goal column.
+/// Without a layout (or off it), hop whole paragraphs keeping the char index.
+fn vertical_move(doc_handle: u32, cursor: CursorPos, down: bool) -> CursorPos {
+    let goal = match goal_x(doc_handle) {
+        Some(g) => g,
+        None => {
+            set_goal_x(doc_handle, cursor.x);
+            cursor.x
+        }
+    };
+    if let Some(lines) = layout_lines(doc_handle) {
+        if let Some(idx) = current_line_idx(&lines, &cursor) {
+            let target = if down {
+                (idx + 1).min(lines.len() - 1)
+            } else {
+                idx.saturating_sub(1)
+            };
+            let l = &lines[target];
+            let j = closest_x(&l.xs, goal, l.end_x);
+            return CursorPos {
+                page: l.page,
+                para: l.para,
+                line: l.line_in_para,
+                char_idx: l.start + j,
+                x: l.xs.get(j).copied().unwrap_or(l.end_x),
+                y: l.y,
+            };
+        }
+    }
+    // paragraph-hop fallback: keep the char index, clamp to the target length
+    let body = extract_body(doc_handle).unwrap_or_default();
+    let flat = flat_paragraphs(&body);
+    if flat.is_empty() {
+        return cursor;
+    }
+    let p = cursor.para.min(flat.len() - 1);
+    let target = if down {
+        (p + 1).min(flat.len() - 1)
+    } else {
+        p.saturating_sub(1)
+    };
+    if target == p {
+        return cursor;
+    }
+    let c = cursor
+        .char_idx
+        .min(para_text(&body, target).chars().count());
+    CursorPos {
+        para: target,
+        char_idx: c,
+        ..cursor
+    }
+}
+
+/// Home/End: start/end of the current laid-out line (paragraph text bounds
+/// without a layout).
+fn line_home_end(doc_handle: u32, cursor: CursorPos, end: bool) -> CursorPos {
+    if let Some(lines) = layout_lines(doc_handle) {
+        if let Some(i) = current_line_idx(&lines, &cursor) {
+            let l = &lines[i];
+            return CursorPos {
+                page: l.page,
+                para: l.para,
+                line: l.line_in_para,
+                char_idx: if end { l.start + l.xs.len() } else { l.start },
+                x: if end { l.end_x } else { l.x0 },
+                y: l.y,
+            };
+        }
+    }
+    let body = extract_body(doc_handle).unwrap_or_default();
+    let flat = flat_paragraphs(&body);
+    let len = flat
+        .get(cursor.para.min(flat.len().saturating_sub(1)))
+        .and_then(|&p| paragraph_at(&body, p))
+        .map(|p| p.runs.iter().map(|r| r.text.chars().count()).sum())
+        .unwrap_or(0);
+    CursorPos {
+        char_idx: if end { len } else { 0 },
+        ..cursor
+    }
+}
+
+/// Ctrl+Home/End: document start/end. The end position comes from the last
+/// BlockPath in the body so it is correct even without a layout.
+fn doc_home_end(doc_handle: u32, body: &DocxBody, end: bool) -> CursorPos {
+    let flat = flat_paragraphs(body);
+    if flat.is_empty() {
+        return CursorPos::default();
+    }
+    let lines = layout_lines(doc_handle);
+    if !end {
+        return match lines.as_ref().and_then(|l| l.first()) {
+            Some(f) => CursorPos {
+                page: f.page,
+                para: f.para,
+                line: 0,
+                char_idx: 0,
+                x: f.x0,
+                y: f.y,
+            },
+            None => CursorPos::default(),
+        };
+    }
+    let last_len: usize = paragraph_at(body, *flat.last().unwrap())
+        .map(|p| p.runs.iter().map(|r| r.text.chars().count()).sum())
+        .unwrap_or(0);
+    match lines.as_ref().and_then(|l| l.last()) {
+        Some(l) => CursorPos {
+            page: l.page,
+            para: l.para,
+            line: l.line_in_para,
+            char_idx: l.start + l.xs.len(),
+            x: l.end_x,
+            y: l.y,
+        },
+        None => CursorPos {
+            para: flat.len() - 1,
+            char_idx: last_len,
+            ..Default::default()
+        },
+    }
+}
+
+/// Apply a navigation move: Shift extends the selection from the pre-move
+/// position; plain moves collapse the selection onto the new cursor.
+fn move_cursor_nav(doc_handle: u32, old: CursorPos, new_cursor: CursorPos, shift: bool) {
+    if shift {
+        if get_anchor(doc_handle).is_none() {
+            set_anchor(doc_handle, old);
+        }
+    } else {
+        set_anchor(doc_handle, new_cursor);
+    }
+    set_cursor(doc_handle, new_cursor);
+}
+
 /// Insert a character at the current cursor position, re-layout, and re-render.
 ///
 /// Returns the updated layout JSON (same format as `layout_document`).
@@ -1786,6 +2182,11 @@ pub fn handle_key_event(
 ) -> Result<String, String> {
     let mut body = extract_body(doc_handle)?;
     let cursor = get_cursor(doc_handle);
+
+    // The vertical goal column only survives consecutive Up/Down moves.
+    if key != "ArrowUp" && key != "ArrowDown" {
+        clear_goal_x(doc_handle);
+    }
 
     match key {
         "Enter" | "Return" => {
@@ -1843,35 +2244,27 @@ pub fn handle_key_event(
             store_body(doc_handle, body)?;
             layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
         }
-        "ArrowLeft" => {
-            let new_cursor = CursorPos {
-                char_idx: cursor.char_idx.saturating_sub(1),
-                ..cursor
-            };
-            if _shift {
-                // start extending from the pre-move position if not already selecting
-                if get_anchor(doc_handle).is_none() {
-                    set_anchor(doc_handle, cursor);
-                }
-            } else {
-                set_anchor(doc_handle, new_cursor); // collapse
-            }
-            set_cursor(doc_handle, new_cursor);
+        "ArrowUp" | "ArrowDown" => {
+            let new_cursor = vertical_move(doc_handle, cursor, key == "ArrowDown");
+            move_cursor_nav(doc_handle, cursor, new_cursor, _shift);
             Ok("{}".to_string())
         }
-        "ArrowRight" => {
-            let new_cursor = CursorPos {
-                char_idx: cursor.char_idx + 1,
-                ..cursor
-            };
-            if _shift {
-                if get_anchor(doc_handle).is_none() {
-                    set_anchor(doc_handle, cursor);
-                }
+        "ArrowLeft" | "ArrowRight" => {
+            let new_cursor = if _ctrl {
+                word_move(&body, cursor, key == "ArrowRight")
             } else {
-                set_anchor(doc_handle, new_cursor);
-            }
-            set_cursor(doc_handle, new_cursor);
+                char_move(&body, cursor, key == "ArrowRight")
+            };
+            move_cursor_nav(doc_handle, cursor, new_cursor, _shift);
+            Ok("{}".to_string())
+        }
+        "Home" | "End" => {
+            let new_cursor = if _ctrl {
+                doc_home_end(doc_handle, &body, key == "End")
+            } else {
+                line_home_end(doc_handle, cursor, key == "End")
+            };
+            move_cursor_nav(doc_handle, cursor, new_cursor, _shift);
             Ok("{}".to_string())
         }
         _ => {
@@ -3667,6 +4060,8 @@ mod serialize_merge_tests;
 mod table_interaction_tests;
 #[cfg(test)]
 mod selection_rects_tests;
+#[cfg(test)]
+mod navigation_tests;
 
 #[cfg(test)]
 mod tests {
