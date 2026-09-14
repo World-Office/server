@@ -23,6 +23,25 @@ import type { WopiConnection } from "@world-office/wopi-client"
 
 import { useEmbeddedAutoSave } from "../hooks/useEmbeddedAutoSave"
 
+const { putFileMock } = vi.hoisted(() => ({ putFileMock: vi.fn() }))
+
+// DocumentStore (tested below for FE-2) pulls these in; mock them so the
+// store is exercisable in jsdom without network/wasm.
+vi.mock("@world-office/wopi-client", () => ({
+  detectWopiParams: vi.fn(() => null),
+  loadDocument: vi.fn(),
+  putFile: putFileMock,
+}))
+vi.mock("../lib/conversion", () => ({
+  convertToHtml: vi.fn(),
+  convertToOdt: vi.fn(),
+  convertFromHtml: vi.fn(),
+  toDocxForCanvas: vi.fn(),
+  downloadBlob: vi.fn(),
+}))
+
+import { DocumentStore } from "../stores/DocumentStore"
+
 const DEFAULT_DEBOUNCE_MS = 3000
 
 function makeConnection(): WopiConnection {
@@ -277,5 +296,71 @@ describe("useEmbeddedAutoSave", () => {
       })
       expect(h.captures.save).not.toHaveBeenCalled()
     })
+  })
+})
+
+// ────────────────────────────────────────────────────────────────────────
+// FE-2 — save-failure surfacing in DocumentStore (the store backs the
+// `save` callback used by the hook above). A rejected putFile must emit
+// notifyError("SAVE_FAILED", msg) and set the lastSaveError observable; a
+// later successful save clears it. The notification's fallback action
+// "Download copy" is exportAsDownload — user-invoked, not auto-invoked.
+// ────────────────────────────────────────────────────────────────────────
+
+describe("DocumentStore save failure (FE-2)", () => {
+  function makeSavingStore() {
+    const store = new DocumentStore()
+    store.wopiConnection = makeConnection()
+    store.isModified = true
+    store.canvasSerializer = () => new Blob(["docx-bytes"])
+    return store
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("a rejected putFile emits notifyError('SAVE_FAILED', msg) and sets lastSaveError", async () => {
+    const store = makeSavingStore()
+    const notify = vi.fn()
+    store.notifyError = notify // capture locally: mobx wraps assigned callbacks
+    putFileMock.mockRejectedValueOnce(new Error("412 conflict"))
+
+    await store.saveToWopi()
+
+    expect(notify).toHaveBeenCalledWith("SAVE_FAILED", "412 conflict")
+    expect(store.lastSaveError).toBe("412 conflict")
+    // Failure must not mark the document as saved.
+    expect(store.isModified).toBe(true)
+  })
+
+  it("failure does not auto-download — 'Download copy' is the notification action", async () => {
+    const stderr = vi.spyOn(console, "error").mockImplementation(() => {})
+    const store = makeSavingStore()
+    store.notifyError = vi.fn()
+    const download = vi.spyOn(store, "exportAsDownload")
+    putFileMock.mockRejectedValueOnce(new Error("boom"))
+
+    await store.saveToWopi()
+
+    expect(download).not.toHaveBeenCalled()
+    stderr.mockRestore()
+  })
+
+  it("a successful save clears lastSaveError", async () => {
+    const store = makeSavingStore()
+    const notify = vi.fn()
+    store.notifyError = notify
+
+    putFileMock.mockRejectedValueOnce(new Error("disk full"))
+    await store.saveToWopi()
+    expect(store.lastSaveError).toBe("disk full")
+
+    putFileMock.mockResolvedValueOnce(undefined)
+    await store.saveToWopi()
+    expect(store.lastSaveError).toBeNull()
+    expect(store.isModified).toBe(false)
+    // Exactly one notification: the failure. Success stays silent.
+    expect(notify).toHaveBeenCalledTimes(1)
   })
 })
