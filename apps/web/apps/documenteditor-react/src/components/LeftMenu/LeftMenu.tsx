@@ -24,7 +24,9 @@ function LeftMenuInner(): JSX.Element {
   return (
     <div className="de-left-menu" role="menubar" aria-orientation="vertical" aria-label="Left menu">
       <div className="de-left-menu-btns">
-        {BUTTONS.map(({ action, title, icon }) => (
+        {/* content-links is a storage-service feature; ocis WOPI hosts don't
+            expose those routes (CORS/404 noise) — hide the button there. */}
+        {BUTTONS.filter(({ action }) => action !== "contentlinks" || documentStore.wopiConnection === null).map(({ action, title, icon }) => (
           <LeftMenuButton
             key={action}
             action={action}
