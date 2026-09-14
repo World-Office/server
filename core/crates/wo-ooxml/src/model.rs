@@ -605,6 +605,10 @@ pub struct DocxParagraph {
     pub runs: Vec<DocxRun>,
     /// Section properties for this paragraph (if it starts a new section).
     pub section_properties: Option<SectionProperties>,
+    /// Verbatim `<w:pPr>` XML captured at parse time. When set, the serializer
+    /// emits it verbatim instead of reconstructing the typed properties.
+    #[serde(default)]
+    pub raw_ppr: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]

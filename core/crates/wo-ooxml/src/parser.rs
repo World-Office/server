@@ -963,6 +963,7 @@ impl OoxmlParser {
                 properties: DocxParagraphProperties::default(),
                 runs,
                 section_properties: None,
+                raw_ppr: None,
             });
         }
 
@@ -1312,14 +1313,14 @@ impl OoxmlParser {
             .find(|n| n.has_tag_name("body") && n.tag_name().namespace() == Some(Self::W_NS));
 
         let body = match body_node {
-            Some(node) => self.parse_body_node(&node),
+            Some(node) => self.parse_body_node(&node, &xml),
             None => DocxBody { blocks: Vec::new() },
         };
 
         Ok(Some(body))
     }
 
-    fn parse_body_node(&self, body: &roxmltree::Node) -> DocxBody {
+    fn parse_body_node(&self, body: &roxmltree::Node, xml: &str) -> DocxBody {
         let mut blocks = Vec::new();
 
         for child in body.children() {
@@ -1331,10 +1332,10 @@ impl OoxmlParser {
 
             match (ns, local_name) {
                 (Some(Self::W_NS), "p") => {
-                    blocks.push(DocxBlock::Paragraph(self.parse_paragraph(&child)));
+                    blocks.push(DocxBlock::Paragraph(self.parse_paragraph(&child, xml)));
                 }
                 (Some(Self::W_NS), "tbl") => {
-                    if let Some(table) = self.parse_table(&child) {
+                    if let Some(table) = self.parse_table(&child, xml) {
                         blocks.push(DocxBlock::Table(table));
                     }
                 }
@@ -1344,7 +1345,7 @@ impl OoxmlParser {
                         if inner.has_tag_name("p")
                             && inner.tag_name().namespace() == Some(Self::W_NS)
                         {
-                            blocks.push(DocxBlock::Paragraph(self.parse_paragraph(&inner)));
+                            blocks.push(DocxBlock::Paragraph(self.parse_paragraph(&inner, xml)));
                         }
                     }
                 }
@@ -1355,10 +1356,11 @@ impl OoxmlParser {
         DocxBody { blocks }
     }
 
-    fn parse_paragraph(&self, p_node: &roxmltree::Node) -> DocxParagraph {
+    fn parse_paragraph(&self, p_node: &roxmltree::Node, xml: &str) -> DocxParagraph {
         let mut style_id = None;
         let mut properties = DocxParagraphProperties::default();
         let mut runs = Vec::new();
+        let mut raw_ppr = None;
 
         for child in p_node.children() {
             if !child.is_element() {
@@ -1369,6 +1371,10 @@ impl OoxmlParser {
 
             match (ns, local) {
                 (Some(Self::W_NS), "pPr") => {
+                    // Capture the whole <w:pPr> subtree verbatim so unknown
+                    // properties (e.g. numPr) survive a parse-serialize cycle.
+                    let r = child.range();
+                    raw_ppr = Some(xml[r.start..r.end].to_string());
                     // pStyle is a child element with val attribute, not an attribute on pPr
                     if let Some(pstyle) = child
                         .children()
@@ -1408,6 +1414,7 @@ impl OoxmlParser {
             properties,
             runs,
             section_properties: None,
+            raw_ppr,
         }
     }
 
@@ -1617,7 +1624,7 @@ impl OoxmlParser {
         }
     }
 
-    fn parse_table(&self, tbl_node: &roxmltree::Node) -> Option<DocxTable> {
+    fn parse_table(&self, tbl_node: &roxmltree::Node, xml: &str) -> Option<DocxTable> {
         let mut rows = Vec::new();
         let mut properties = DocxTableProperties::default();
 
@@ -1632,7 +1639,7 @@ impl OoxmlParser {
                     properties = self.parse_table_properties(&child);
                 }
                 "tr" => {
-                    rows.push(self.parse_table_row(&child));
+                    rows.push(self.parse_table_row(&child, xml));
                 }
                 _ => {}
             }
@@ -1669,7 +1676,7 @@ impl OoxmlParser {
         props
     }
 
-    fn parse_table_row(&self, tr_node: &roxmltree::Node) -> DocxTableRow {
+    fn parse_table_row(&self, tr_node: &roxmltree::Node, xml: &str) -> DocxTableRow {
         let mut cells = Vec::new();
         let mut height = None;
         let mut is_header = false;
@@ -1689,7 +1696,7 @@ impl OoxmlParser {
                     }
                 }
                 "tc" => {
-                    cells.push(self.parse_table_cell(&child));
+                    cells.push(self.parse_table_cell(&child, xml));
                 }
                 _ => {}
             }
@@ -1702,7 +1709,7 @@ impl OoxmlParser {
         }
     }
 
-    fn parse_table_cell(&self, tc_node: &roxmltree::Node) -> DocxTableCell {
+    fn parse_table_cell(&self, tc_node: &roxmltree::Node, xml: &str) -> DocxTableCell {
         let mut paragraphs = Vec::new();
         let mut column_span = 1u32;
         let mut row_span = 1u32;
@@ -1731,7 +1738,7 @@ impl OoxmlParser {
                     }
                 }
                 "p" => {
-                    paragraphs.push(self.parse_paragraph(&child));
+                    paragraphs.push(self.parse_paragraph(&child, xml));
                 }
                 _ => {}
             }
