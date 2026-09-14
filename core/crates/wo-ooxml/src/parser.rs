@@ -1510,6 +1510,7 @@ impl OoxmlParser {
             small_caps: false,
             all_caps: false,
             raw_rpr: None,
+            drawing: None,
         };
 
         for child in r_node.children() {
@@ -1533,6 +1534,12 @@ impl OoxmlParser {
                     let r = child.range();
                     run.raw_rpr = Some(xml[r.start..r.end].to_string());
                     self.apply_run_properties(&child, &mut run);
+                }
+                (Some(Self::W_NS), "drawing") => {
+                    // Capture the whole <w:drawing> subtree verbatim so inline
+                    // graphics survive a parse-serialize cycle.
+                    let r = child.range();
+                    run.drawing = Some(xml[r.start..r.end].to_string());
                 }
                 (Some(Self::W_NS), "br") => {
                     let br_type = child.attribute("type").unwrap_or("line");

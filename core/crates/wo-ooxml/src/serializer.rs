@@ -1224,6 +1224,12 @@ impl OoxmlSerializer {
             xml.push_str("</w:rPr>");
         }
 
+        if let Some(ref drawing) = run.drawing {
+            // Verbatim <w:drawing> subtree (captured at parse time) — inline
+            // graphics the typed model cannot represent survive a round trip.
+            xml.push_str(drawing);
+        }
+
         if !run.text.is_empty() {
             xml.push_str("<w:t xml:space=\"preserve\">");
             xml.push_str(&escape_xml(&run.text));
@@ -2433,6 +2439,7 @@ mod tests {
                         small_caps: false,
                         all_caps: false,
                         raw_rpr: None,
+                        drawing: None,
                     }],
                     raw_ppr: None,
                     section_properties: None,
@@ -2519,6 +2526,7 @@ mod tests {
                             small_caps: false,
                             all_caps: false,
                             raw_rpr: None,
+                            drawing: None,
                         },
                         DocxRun {
                             text: "Italic".to_string(),
@@ -2536,6 +2544,7 @@ mod tests {
                             small_caps: false,
                             all_caps: false,
                             raw_rpr: None,
+                            drawing: None,
                         },
                         DocxRun {
                             text: "Underline".to_string(),
@@ -2553,6 +2562,7 @@ mod tests {
                             small_caps: false,
                             all_caps: false,
                             raw_rpr: None,
+                            drawing: None,
                         },
                     ],
                     raw_ppr: None,
@@ -2605,6 +2615,7 @@ mod tests {
                             small_caps: false,
                             all_caps: false,
                             raw_rpr: None,
+                            drawing: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -2631,6 +2642,7 @@ mod tests {
                             small_caps: false,
                             all_caps: false,
                             raw_rpr: None,
+                            drawing: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -2657,6 +2669,7 @@ mod tests {
                             small_caps: false,
                             all_caps: false,
                             raw_rpr: None,
+                            drawing: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -2714,6 +2727,7 @@ mod tests {
                                             small_caps: false,
                                             all_caps: false,
                                             raw_rpr: None,
+                                            drawing: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -2743,6 +2757,7 @@ mod tests {
                                             small_caps: false,
                                             all_caps: false,
                                             raw_rpr: None,
+                                            drawing: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -2778,6 +2793,7 @@ mod tests {
                                             small_caps: false,
                                             all_caps: false,
                                             raw_rpr: None,
+                                            drawing: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -2807,6 +2823,7 @@ mod tests {
                                             small_caps: false,
                                             all_caps: false,
                                             raw_rpr: None,
+                                            drawing: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -3290,6 +3307,7 @@ mod tests {
                                     small_caps: false,
                                     all_caps: false,
                                     raw_rpr: None,
+                                    drawing: None,
                                 },
                                 DocxRun {
                                     text: "Italic".to_string(),
@@ -3661,6 +3679,7 @@ mod tests {
                         small_caps: false,
                         all_caps: false,
                         raw_rpr: None,
+                        drawing: None,
                     }],
                     raw_ppr: None,
                     section_properties: None,
