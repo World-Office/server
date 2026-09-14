@@ -302,3 +302,37 @@ fn apply_op_invalidates_undo_history_and_selection() {
     assert!(sel.is_empty(), "selection must be gone, got {sel:?}");
     release_document(h).ok();
 }
+
+#[test]
+fn first_keystroke_after_click_is_not_lost() {
+    // Regression: the first typed char after a mouse click used to vanish.
+    // Click → type "AB" must yield both chars in the body.
+    let h = fixture_doc(7014, &["test"]);
+    layout_document_and_return_json(h, "A4", "portrait", 72.0).unwrap();
+    // click somewhere on the text (canvas coords from the layout)
+    let r = handle_mouse_event(h, 0, 30.0, 96.0).unwrap();
+    let pos: serde_json::Value = serde_json::from_str(&r).unwrap();
+    assert_eq!(pos["found"], true, "click must hit text, layout was {r}");
+    let out1 = handle_key_event(h, "A", false, false, "A4", "portrait", 72.0).unwrap();
+    assert!(out1 != "{}", "first keystroke after click must return a layout");
+    handle_key_event(h, "B", false, false, "A4", "portrait", 72.0).ok();
+    let body = DOC_MODEL_STORE
+        .get()
+        .unwrap()
+        .lock()
+        .unwrap()
+        .get(&h)
+        .and_then(|d| d.docx_body.clone())
+        .unwrap();
+    let text: String = body
+        .blocks
+        .iter()
+        .filter_map(|b| match b {
+            DocxBlock::Paragraph(p) => Some(p.runs.iter().map(|r| r.text.as_str()).collect::<String>()),
+            _ => None,
+        })
+        .collect();
+    assert!(text.contains('A') && text.contains('B'), "both chars must land, got {text:?}");
+    release_document(h).ok();
+}
+

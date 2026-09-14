@@ -14,7 +14,7 @@ pub mod stub_model;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::io::Cursor;
+use std::io::{Cursor, Read, Write};
 use std::sync::Mutex;
 use std::sync::OnceLock;
 use wasm_bindgen::prelude::*;
@@ -2084,6 +2084,11 @@ fn collapse_selection(doc_handle: u32, body: &mut DocxBody) -> Option<CursorPos>
     let cursor = get_cursor(doc_handle);
     let anchor = get_anchor(doc_handle)?;
     if (anchor.para, anchor.char_idx) == (cursor.para, cursor.char_idx) {
+        // No active selection, but a stale anchor (e.g. from a click) must not
+        // survive an edit: the cursor moves on insert and the anchor would
+        // silently turn the last keystroke into a phantom selection that the
+        // next keystroke deletes.
+        clear_anchor(doc_handle);
         return None;
     }
     let collapsed = delete_selected(body, anchor, cursor);
@@ -2311,6 +2316,12 @@ fn layout_document_and_return_json(
 ///
 /// Returns a `Uint8Array` of the complete DOCX file (ZIP of XML).
 /// Call this before saving to get the modified document.
+///
+/// When the original file bytes are known (DOC_STORE, populated by
+/// create_docx_model), the edited `word/document.xml` is merged into the
+/// ORIGINAL package instead of emitting a minimal 6-part one: parts the
+/// engine model cannot represent (theme, fonts, media, numbering, settings,
+/// customXml, app.xml, thumbnail) survive edit+save cycles.
 #[wasm_bindgen]
 pub fn serialize_document(doc_handle: u32) -> Result<Vec<u8>, String> {
     let model_store = DOC_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
@@ -2320,9 +2331,55 @@ pub fn serialize_document(doc_handle: u32) -> Result<Vec<u8>, String> {
         .ok_or_else(|| format!("Document handle {} not found", doc_handle))?;
 
     let serializer = OoxmlSerializer::new();
-    serializer
+    let minimal = serializer
         .serialize(doc)
-        .map_err(|e| format!("Serialization failed: {}", e))
+        .map_err(|e| format!("Serialization failed: {}", e))?;
+
+    // Merge into the original package when we have its bytes.
+    let original = DOC_STORE
+        .get_or_init(|| Mutex::new(HashMap::new()))
+        .lock()
+        .unwrap()
+        .get(&doc_handle)
+        .cloned();
+    match original {
+        Some(original) => merge_document_xml(&original, &minimal).or(Ok(minimal)),
+        None => Ok(minimal),
+    }
+}
+
+/// Replace `word/document.xml` in `original` with the one from `edited`, 
+/// keeping every other original part (bytes untouched, order preserved).
+fn merge_document_xml(original: &[u8], edited: &[u8]) -> Result<Vec<u8>, String> {
+    let mut edited_zip = zip::ZipArchive::new(Cursor::new(edited.to_vec()))
+        .map_err(|e| format!("edited zip: {e}"))?;
+    let mut new_doc_xml = Vec::new();
+    edited_zip
+        .by_name("word/document.xml")
+        .map_err(|e| format!("edited document.xml: {e}"))?
+        .read_to_end(&mut new_doc_xml)
+        .map_err(|e| e.to_string())?;
+
+    let mut original_zip = zip::ZipArchive::new(Cursor::new(original.to_vec()))
+        .map_err(|e| format!("original zip: {e}"))?;
+    let mut buf = Cursor::new(Vec::new());
+    let mut out = zip::ZipWriter::new(&mut buf);
+    let opts = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+
+    for i in 0..original_zip.len() {
+        let mut entry = original_zip.by_index(i).map_err(|e| e.to_string())?;
+        let name = entry.name().to_string();
+        if name == "word/document.xml" {
+            out.start_file(&name, opts).map_err(|e| e.to_string())?;
+            out.write_all(&new_doc_xml).map_err(|e| e.to_string())?;
+        } else {
+            // copy_entry preserves compression metadata per part
+            out.raw_copy_file(entry).map_err(|e| e.to_string())?;
+        }
+    }
+    out.finish().map_err(|e| e.to_string())?;
+    Ok(buf.into_inner())
 }
 
 /// Get the current cursor position as JSON.
@@ -3318,6 +3375,7 @@ pub fn spell_release(lang: &str) -> Result<(), String> {
 
 #[cfg(test)]
 mod selection_undo_tests;
+mod serialize_merge_tests;
 
 #[cfg(test)]
 mod tests {
