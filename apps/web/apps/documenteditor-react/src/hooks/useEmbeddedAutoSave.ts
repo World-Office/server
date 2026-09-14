@@ -1,7 +1,10 @@
-// Auto-save hook for embedded mode — debounces document changes
-// and saves via WOPI PutFile
+// Auto-save hook for embedded mode — debounces document changes and saves
+// through the store's guarded saveToWopi. It must NOT call putFile directly:
+// a parallel in-flight PUT here raced the store's own save (second PUT got
+// 412 from the data layer → 502 to the browser; before the isSaving guard
+// the same race truncated files). Every save funnels through the store's
+// isSaving guard, which serializes autosave, Ctrl+S and this hook.
 
-import { putFile } from "@world-office/wopi-client"
 import type { WopiConnection } from "@world-office/wopi-client"
 import { useCallback, useEffect, useRef } from "react"
 
@@ -9,34 +12,25 @@ export function useEmbeddedAutoSave(
   embedded: boolean,
   wopiConnection: WopiConnection | null,
   isModified: boolean,
-  getDocumentBlob: () => Promise<Blob>,
+  save: () => Promise<void>,
   notifyDocumentSaved: (version: string) => void,
   notifyError: (code: string, message: string) => void,
   debounceMs = 3000,
-  onSaved?: () => void,
 ): { forceSave: () => Promise<void> } {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const savingRef = useRef(false)
 
   const doSave = useCallback(async () => {
-    if (!embedded || !wopiConnection || savingRef.current) return
-
-    savingRef.current = true
+    if (!embedded || !wopiConnection) return
     try {
-      const blob = await getDocumentBlob()
-      await putFile(wopiConnection, blob)
-      // Reset the modified flag so subsequent edits re-trigger the debounce.
-      // Without this, isModified stays true forever and auto-save fires at
-      // most once per session.
-      onSaved?.()
+      // saveToWopi early-returns when unmodified; its isSaving guard
+      // serializes this against Ctrl+S and the store's own autosave timer.
+      await save()
       notifyDocumentSaved(Date.now().toString())
     } catch (err) {
       console.error("Auto-save failed:", err)
       notifyError("AUTOSAVE_FAILED", err instanceof Error ? err.message : "Unknown error")
-    } finally {
-      savingRef.current = false
     }
-  }, [embedded, wopiConnection, getDocumentBlob, notifyDocumentSaved, notifyError, onSaved])
+  }, [embedded, wopiConnection, save, notifyDocumentSaved, notifyError])
 
   // Debounce saves on modification
   useEffect(() => {

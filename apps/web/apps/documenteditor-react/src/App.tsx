@@ -58,14 +58,9 @@ export const App = observer(function App() {
     embedded,
     documentStore.wopiConnection,
     documentStore.isModified,
-    () => documentStore.buildDocumentBlob(),
+    () => documentStore.saveToWopi(),
     bridge.notifyDocumentSaved,
     bridge.notifyError,
-    undefined,
-    () => {
-      documentStore.isModified = false
-      documentStore.isDirty = false
-    },
   )
 
   useEffect(() => {

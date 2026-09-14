@@ -48,13 +48,9 @@ export const App = observer(function App() {
 		embedded,
 		spreadsheetStore.wopiConnection,
 		spreadsheetStore.isModified,
-		() => spreadsheetStore.buildDocumentBlob(),
+		() => spreadsheetStore.saveToWopi(),
 		bridge.notifyDocumentSaved,
 		bridge.notifyError,
-		undefined,
-		() => {
-			spreadsheetStore.isModified = false;
-		},
 	);
 
 	const handleMonacoCommand = useCallback((command: MonacoCommand) => {

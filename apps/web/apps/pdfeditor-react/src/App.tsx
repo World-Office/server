@@ -41,13 +41,9 @@ export const App = observer(function App() {
     embedded,
     pdfStore.wopiConnection,
     pdfStore.isModified,
-    () => pdfStore.buildDocumentBlob(),
+    () => pdfStore.saveToWopi(),
     bridge.notifyDocumentSaved,
     bridge.notifyError,
-    undefined,
-    () => {
-      pdfStore.isModified = false
-    },
   )
 
   const handleMonacoCommand = useCallback((command: MonacoCommand) => {
