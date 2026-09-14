@@ -740,6 +740,14 @@ pub enum VerticalAlignment {
 pub struct DocxTable {
     pub rows: Vec<DocxTableRow>,
     pub properties: DocxTableProperties,
+    /// Verbatim `<w:tblPr>` subtree captured at parse time. When set, the
+    /// serializer emits it verbatim instead of the typed properties.
+    #[serde(default)]
+    pub raw_tbl_pr: Option<String>,
+    /// Verbatim `<w:tblGrid>` subtree captured at parse time, re-emitted
+    /// unchanged so column definitions (`w:gridCol`) survive a round trip.
+    #[serde(default)]
+    pub raw_tbl_grid: Option<String>,
 }
 
 /// An image in the document body.
@@ -791,6 +799,10 @@ pub struct DocxTableCell {
     pub row_span: u32,
     pub width: Option<i32>,
     pub shading: Option<String>,
+    /// Verbatim `<w:tcPr>` subtree captured at parse time. When set, the
+    /// serializer emits it verbatim instead of the typed cell properties.
+    #[serde(default)]
+    pub raw_tc_pr: Option<String>,
 }
 
 /// Styles from word/styles.xml.

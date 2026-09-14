@@ -1138,12 +1138,8 @@ impl OoxmlSerializer {
                     i += 1;
                 }
                 Some(rid) => {
-                    xml.push_str(&format!(
-                        "<w:hyperlink r:id=\"{}\">",
-                        escape_xml(rid)
-                    ));
-                    while i < para.runs.len()
-                        && para.runs[i].hyperlink_rid.as_deref() == Some(rid)
+                    xml.push_str(&format!("<w:hyperlink r:id=\"{}\">", escape_xml(rid)));
+                    while i < para.runs.len() && para.runs[i].hyperlink_rid.as_deref() == Some(rid)
                     {
                         xml.push_str(&self.serialize_run(&para.runs[i]));
                         i += 1;
@@ -1265,6 +1261,28 @@ impl OoxmlSerializer {
     fn serialize_table(&self, table: &DocxTable) -> String {
         let mut xml = String::from("    <w:tbl>");
 
+        // Verbatim <w:tblPr> captured at parse time wins over typed properties.
+        if let Some(ref raw) = table.raw_tbl_pr {
+            xml.push_str(raw);
+        } else {
+            self.serialize_typed_tbl_pr(&mut xml, table);
+        }
+
+        // The typed model has no grid representation; the verbatim capture is
+        // the only source of <w:gridCol> column definitions.
+        if let Some(ref raw) = table.raw_tbl_grid {
+            xml.push_str(raw);
+        }
+
+        for row in &table.rows {
+            xml.push_str(&self.serialize_table_row(row));
+        }
+
+        xml.push_str("</w:tbl>\n");
+        xml
+    }
+
+    fn serialize_typed_tbl_pr(&self, xml: &mut String, table: &DocxTable) {
         // Table properties
         let has_props = table.properties.width.is_some()
             || table.properties.indent.is_some()
@@ -1312,13 +1330,6 @@ impl OoxmlSerializer {
             }
             xml.push_str("</w:tblPr>");
         }
-
-        for row in &table.rows {
-            xml.push_str(&self.serialize_table_row(row));
-        }
-
-        xml.push_str("</w:tbl>\n");
-        xml
     }
 
     fn serialize_table_row(&self, row: &DocxTableRow) -> String {
@@ -1338,29 +1349,34 @@ impl OoxmlSerializer {
 
     fn serialize_table_cell(&self, cell: &DocxTableCell) -> String {
         let mut xml = String::from("        <w:tc>");
-        // Cell properties
-        let has_props = cell.column_span != 1
-            || cell.row_span != 1
-            || cell.width.is_some()
-            || cell.shading.is_some();
-        if has_props {
-            xml.push_str("<w:tcPr>");
-            if cell.column_span != 1 {
-                xml.push_str(&format!("<w:gridSpan w:val=\"{}\"/>", cell.column_span));
+        // Verbatim <w:tcPr> captured at parse time wins over typed properties.
+        if let Some(ref raw) = cell.raw_tc_pr {
+            xml.push_str(raw);
+        } else {
+            // Cell properties
+            let has_props = cell.column_span != 1
+                || cell.row_span != 1
+                || cell.width.is_some()
+                || cell.shading.is_some();
+            if has_props {
+                xml.push_str("<w:tcPr>");
+                if cell.column_span != 1 {
+                    xml.push_str(&format!("<w:gridSpan w:val=\"{}\"/>", cell.column_span));
+                }
+                if cell.row_span != 1 {
+                    xml.push_str(&format!(
+                        "<w:vMerge w:val=\"restart\" w:rowSpan=\"{}\"/>",
+                        cell.row_span
+                    ));
+                }
+                if let Some(width) = cell.width {
+                    xml.push_str(&format!("<w:tcW w:w=\"{}\" w:type=\"dxa\"/>", width));
+                }
+                if let Some(ref shading) = cell.shading {
+                    xml.push_str(&format!("<w:shd w:fill=\"{}\"/>", shading));
+                }
+                xml.push_str("</w:tcPr>");
             }
-            if cell.row_span != 1 {
-                xml.push_str(&format!(
-                    "<w:vMerge w:val=\"restart\" w:rowSpan=\"{}\"/>",
-                    cell.row_span
-                ));
-            }
-            if let Some(width) = cell.width {
-                xml.push_str(&format!("<w:tcW w:w=\"{}\" w:type=\"dxa\"/>", width));
-            }
-            if let Some(ref shading) = cell.shading {
-                xml.push_str(&format!("<w:shd w:fill=\"{}\"/>", shading));
-            }
-            xml.push_str("</w:tcPr>");
         }
         for para in &cell.paragraphs {
             xml.push_str(&self.serialize_paragraph(para));
@@ -2766,6 +2782,7 @@ mod tests {
                                     row_span: 1,
                                     width: None,
                                     shading: None,
+                                    raw_tc_pr: None,
                                 },
                                 DocxTableCell {
                                     paragraphs: vec![DocxParagraph {
@@ -2797,6 +2814,7 @@ mod tests {
                                     row_span: 1,
                                     width: None,
                                     shading: None,
+                                    raw_tc_pr: None,
                                 },
                             ],
                             height: None,
@@ -2834,6 +2852,7 @@ mod tests {
                                     row_span: 1,
                                     width: None,
                                     shading: None,
+                                    raw_tc_pr: None,
                                 },
                                 DocxTableCell {
                                     paragraphs: vec![DocxParagraph {
@@ -2865,6 +2884,7 @@ mod tests {
                                     row_span: 1,
                                     width: None,
                                     shading: None,
+                                    raw_tc_pr: None,
                                 },
                             ],
                             height: None,
@@ -2872,6 +2892,8 @@ mod tests {
                         },
                     ],
                     properties: DocxTableProperties::default(),
+                    raw_tbl_pr: None,
+                    raw_tbl_grid: None,
                 })],
             }),
         };

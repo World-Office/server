@@ -1645,6 +1645,8 @@ impl OoxmlParser {
     fn parse_table(&self, tbl_node: &roxmltree::Node, xml: &str) -> Option<DocxTable> {
         let mut rows = Vec::new();
         let mut properties = DocxTableProperties::default();
+        let mut raw_tbl_pr = None;
+        let mut raw_tbl_grid = None;
 
         for child in tbl_node.children() {
             if !child.is_element() {
@@ -1654,7 +1656,16 @@ impl OoxmlParser {
 
             match local {
                 "tblPr" => {
+                    // Capture the whole <w:tblPr> subtree verbatim so table
+                    // properties the typed model cannot represent (borders,
+                    // layout, conditional formatting) survive a round trip.
+                    let r = child.range();
+                    raw_tbl_pr = Some(xml[r.start..r.end].to_string());
                     properties = self.parse_table_properties(&child);
+                }
+                "tblGrid" => {
+                    let r = child.range();
+                    raw_tbl_grid = Some(xml[r.start..r.end].to_string());
                 }
                 "tr" => {
                     rows.push(self.parse_table_row(&child, xml));
@@ -1663,7 +1674,12 @@ impl OoxmlParser {
             }
         }
 
-        Some(DocxTable { rows, properties })
+        Some(DocxTable {
+            rows,
+            properties,
+            raw_tbl_pr,
+            raw_tbl_grid,
+        })
     }
 
     fn parse_table_properties(&self, tbl_pr: &roxmltree::Node) -> DocxTableProperties {
@@ -1733,6 +1749,7 @@ impl OoxmlParser {
         let mut row_span = 1u32;
         let mut width = None;
         let mut shading = None;
+        let mut raw_tc_pr = None;
 
         for child in tc_node.children() {
             if !child.is_element() {
@@ -1740,6 +1757,11 @@ impl OoxmlParser {
             }
             match child.tag_name().name() {
                 "tcPr" => {
+                    // Capture the whole <w:tcPr> subtree verbatim so cell
+                    // properties the typed model cannot represent (vMerge in
+                    // element form, tcBorders, ...) survive a round trip.
+                    let r = child.range();
+                    raw_tc_pr = Some(xml[r.start..r.end].to_string());
                     column_span = child
                         .attribute("gridSpan")
                         .and_then(|v| v.parse().ok())
@@ -1768,6 +1790,7 @@ impl OoxmlParser {
             row_span,
             width,
             shading,
+            raw_tc_pr,
         }
     }
 
