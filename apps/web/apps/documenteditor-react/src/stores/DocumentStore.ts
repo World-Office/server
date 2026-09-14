@@ -35,6 +35,18 @@ export class DocumentStore {
   lastLoadedContent: Blob | null = null
   wopiConnection: WopiConnection | null = null
   /**
+   * Last save-failure message for the save-error notification. That
+   * notification's fallback action "Download copy" calls exportAsDownload().
+   * Cleared by the next successful save.
+   */
+  lastSaveError: string | null = null
+  /**
+   * Host error channel (useEmbeddedBridge notifyError), registered by the
+   * app shell the same way canvasSerializer is. saveToWopi failures emit
+   * notifyError("SAVE_FAILED", msg).
+   */
+  notifyError: ((code: string, message: string) => void) | null = null
+  /**
    * Bridge to the active WASM canvas editor: serializes the live document
    * model to OOXML. Registered by WasmEditorCanvas on mount so that canvas
    * edits actually persist (the store cannot reach the editor internals).
@@ -484,9 +496,16 @@ export class DocumentStore {
       this.isModified = false
       this.isDirty = false
       this.lastLoadedContent = blob
+      this.lastSaveError = null
     } catch (err) {
-      console.error("WOPI save failed, falling back to download", err)
-      this.exportAsDownload()
+      // Failure surfaces to the user: notifyError("SAVE_FAILED", msg) plus the
+      // lastSaveError observable; the notification offers "Download copy"
+      // (exportAsDownload) instead of silently auto-downloading. The promise
+      // still resolves so autosave/Ctrl+S callers don't double-notify.
+      const msg = err instanceof Error ? err.message : String(err)
+      console.error("WOPI save failed", err)
+      this.lastSaveError = msg
+      this.notifyError?.("SAVE_FAILED", msg)
     } finally {
       this.isSaving = false
     }
