@@ -2780,6 +2780,22 @@ fn create_docx_model(bytes: &[u8]) -> Result<u32, String> {
 /// For DOCX models, uses the extract_body/store_body pattern (§4).
 #[wasm_bindgen]
 pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
+    // Remote ops mutate the body outside the local history stream: stale
+    // undo snapshots would resurrect pre-collab text. Invalidate undo/redo
+    // and any active selection for this document before applying.
+    if let Some(hist) = HISTORY_STORE.get() {
+        if let Ok(mut hist) = hist.lock() {
+            if let Some(h) = hist.get_mut(&handle) {
+                h.undo.clear();
+                h.redo.clear();
+            }
+        }
+    }
+    if let Some(sel) = SELECTION_STORE.get() {
+        if let Ok(mut sel) = sel.lock() {
+            sel.remove(&handle);
+        }
+    }
     if op_json.is_empty() {
         return Err("op_json is empty".to_string());
     }

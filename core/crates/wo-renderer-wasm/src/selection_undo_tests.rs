@@ -279,3 +279,26 @@ use super::*;
         assert!(count <= 100, "history should be capped, got {}", count);
         release_document(h).ok();
     }
+
+#[test]
+fn apply_op_invalidates_undo_history_and_selection() {
+    // Contract: ANY remote apply_op (even a rejected one) must clear undo/redo
+    // and the selection — stale snapshots would resurrect pre-collab text.
+    let h = fixture_doc(7013, &["hello"]);
+    set_cursor(h, cursor_at(0, 5));
+    insert_text(h, "AB", "A4", "portrait", 72.0).ok();
+    set_selection_anchor(h, 0, 1);
+
+    // undo works before the remote op
+    assert!(undo(h, "A4", "portrait", 72.0).unwrap() != "{}");
+
+    // rebuild history, then a remote op arrives (malformed still invalidates:
+    // the session stays live and partial ops can follow)
+    insert_text(h, "CD", "A4", "portrait", 72.0).ok();
+    assert!(apply_op(h, "not-json").is_err());
+    assert_eq!(undo(h, "A4", "portrait", 72.0).unwrap(), "{}", "undo empty after apply_op");
+    assert_eq!(redo(h, "A4", "portrait", 72.0).unwrap(), "{}", "redo empty after apply_op");
+    let sel = get_selected_text(h).unwrap_or_default();
+    assert!(sel.is_empty(), "selection must be gone, got {sel:?}");
+    release_document(h).ok();
+}
