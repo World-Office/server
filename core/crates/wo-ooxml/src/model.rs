@@ -701,6 +701,10 @@ pub struct DocxRun {
     pub vertical_alignment: Option<VerticalAlignment>,
     pub small_caps: bool,
     pub all_caps: bool,
+    /// Verbatim `<w:rPr>` subtree captured at parse time, re-emitted unchanged
+    /// so run properties the typed model cannot represent survive a round trip.
+    #[serde(default)]
+    pub raw_rpr: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

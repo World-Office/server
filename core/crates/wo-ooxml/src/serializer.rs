@@ -1152,7 +1152,12 @@ impl OoxmlSerializer {
             || run.small_caps
             || run.all_caps;
 
-        if has_rpr {
+        if let Some(ref raw) = run.raw_rpr {
+            // Verbatim <w:rPr> subtree (captured at parse time) takes
+            // precedence; typed emission below is the fallback for runs
+            // created or edited in-code.
+            xml.push_str(raw);
+        } else if has_rpr {
             xml.push_str("<w:rPr>");
             if run.bold {
                 xml.push_str("<w:b/>");
@@ -2427,6 +2432,7 @@ mod tests {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
+                        raw_rpr: None,
                     }],
                     raw_ppr: None,
                     section_properties: None,
@@ -2512,6 +2518,7 @@ mod tests {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
+                            raw_rpr: None,
                         },
                         DocxRun {
                             text: "Italic".to_string(),
@@ -2528,6 +2535,7 @@ mod tests {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
+                            raw_rpr: None,
                         },
                         DocxRun {
                             text: "Underline".to_string(),
@@ -2544,6 +2552,7 @@ mod tests {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
+                            raw_rpr: None,
                         },
                     ],
                     raw_ppr: None,
@@ -2595,6 +2604,7 @@ mod tests {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
+                            raw_rpr: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -2620,6 +2630,7 @@ mod tests {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
+                            raw_rpr: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -2645,6 +2656,7 @@ mod tests {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
+                            raw_rpr: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -2701,6 +2713,7 @@ mod tests {
                                             vertical_alignment: None,
                                             small_caps: false,
                                             all_caps: false,
+                                            raw_rpr: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -2729,6 +2742,7 @@ mod tests {
                                             vertical_alignment: None,
                                             small_caps: false,
                                             all_caps: false,
+                                            raw_rpr: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -2763,6 +2777,7 @@ mod tests {
                                             vertical_alignment: None,
                                             small_caps: false,
                                             all_caps: false,
+                                            raw_rpr: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -2791,6 +2806,7 @@ mod tests {
                                             vertical_alignment: None,
                                             small_caps: false,
                                             all_caps: false,
+                                            raw_rpr: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -3273,6 +3289,7 @@ mod tests {
                                     vertical_alignment: None,
                                     small_caps: false,
                                     all_caps: false,
+                                    raw_rpr: None,
                                 },
                                 DocxRun {
                                     text: "Italic".to_string(),
@@ -3643,6 +3660,7 @@ mod tests {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
+                        raw_rpr: None,
                     }],
                     raw_ppr: None,
                     section_properties: None,
