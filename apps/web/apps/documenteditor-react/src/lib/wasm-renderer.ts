@@ -58,6 +58,14 @@ export interface WasmRenderApi {
     orientation: string,
     marginPt: number,
   ): string
+  // Clipboard paste: insert a whole string at the cursor, one relayout
+  insert_text(
+    docHandle: number,
+    text: string,
+    pageSize: string,
+    orientation: string,
+    marginPt: number,
+  ): string
   handle_mouse_event(docHandle: number, pageIndex: number, x: number, y: number): string
   serialize_document(docHandle: number): Uint8Array
   get_cursor_position(docHandle: number): string
