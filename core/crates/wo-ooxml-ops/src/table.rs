@@ -18,9 +18,13 @@ use wo_ooxml::model::{
 /// Create a default paragraph
 fn default_paragraph() -> DocxParagraph {
     DocxParagraph {
+        raw_ppr: None,
         style_id: None,
         properties: DocxParagraphProperties::default(),
         runs: vec![DocxRun {
+            raw_rpr: None,
+            drawing: None,
+            hyperlink_rid: None,
             text: String::new(),
             bold: false,
             italic: false,
@@ -78,6 +82,7 @@ impl<'a> DocModel<'a> {
                     row_span: cell.row_span,
                     width: cell.width,
                     shading: cell.shading.clone(),
+                    raw_tc_pr: cell.raw_tc_pr.clone(),
                 })
                 .collect(),
             height: template_row.height,
@@ -189,6 +194,7 @@ impl<'a> DocModel<'a> {
                 row_span: 1,
                 width: None,
                 shading: None,
+                raw_tc_pr: None,
             };
             row.cells.insert(insert_col, new_cell);
         }
@@ -429,6 +435,7 @@ impl<'a> DocModel<'a> {
                         row_span: 1,
                         width: None,
                         shading: None,
+                        raw_tc_pr: None,
                     });
                 }
 
@@ -489,6 +496,7 @@ impl<'a> DocModel<'a> {
                             row_span: 1,
                             width: None,
                             shading: None,
+                            raw_tc_pr: None,
                         });
                     }
 
@@ -501,6 +509,7 @@ impl<'a> DocModel<'a> {
                             row_span: if r_offset == 0 { 1 } else { 0 },
                             width: None,
                             shading: None,
+                            raw_tc_pr: None,
                         },
                     );
                 }

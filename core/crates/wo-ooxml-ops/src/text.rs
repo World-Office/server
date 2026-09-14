@@ -299,6 +299,7 @@ impl<'a> DocModel<'a> {
                 properties: paragraph.properties.clone(),
                 runs: Vec::new(),
                 section_properties: None,
+                raw_ppr: None,
             },
         );
 
@@ -335,6 +336,7 @@ impl<'a> DocModel<'a> {
             properties: old_paragraph.properties.clone(),
             runs: runs_before_split,
             section_properties: None,
+            raw_ppr: old_paragraph.raw_ppr.clone(),
         };
 
         // Create new paragraph with content after split
@@ -343,6 +345,7 @@ impl<'a> DocModel<'a> {
             properties: old_paragraph.properties,
             runs: new_runs,
             section_properties: None,
+            raw_ppr: old_paragraph.raw_ppr,
         };
 
         // Insert the new paragraph after the current one
@@ -596,6 +599,9 @@ impl<'a> DocModel<'a> {
 
             new_runs.push(DocxRun {
                 text: formatted_text,
+                raw_rpr: run.raw_rpr.clone(),
+                drawing: run.drawing.clone(),
+                hyperlink_rid: run.hyperlink_rid.clone(),
                 bold: attrs.bold.unwrap_or(run.bold),
                 italic: attrs.italic.unwrap_or(run.italic),
                 underline: attrs.underline.or(run.underline),

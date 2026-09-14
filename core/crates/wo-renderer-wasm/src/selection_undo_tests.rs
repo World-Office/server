@@ -15,6 +15,7 @@ use super::*;
                     ..Default::default()
                 }],
                 section_properties: None,
+                raw_ppr: None,
             }));
         }
         body
