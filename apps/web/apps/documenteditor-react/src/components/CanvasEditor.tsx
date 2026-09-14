@@ -90,6 +90,9 @@ const CanvasEditorInternal = (
   const docHandleRef = useRef<number | null>(null)
   const canvasHandlesRef = useRef<number[]>([])
   const cursorPosRef = useRef<CursorPos | null>(null)
+  // Selection highlight rects per page (canvas pixel space), refreshed from
+  // the engine on every overlay draw so drag-selection stays live.
+  const selectionRectsRef = useRef<{ x: number; y: number; w: number; h: number }[][]>([])
   const blinkIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const cursorVisibleRef = useRef(true)
   // true between mousedown and mouseup on the canvas: mousemove extends selection
@@ -116,6 +119,7 @@ const CanvasEditorInternal = (
 
   function drawCursorOverlay() {
     if (!cursorPosRef.current || !docHandleRef.current) return
+    const docHandle = docHandleRef.current
     const api = getWasmApi()
     if (!api) return
 
@@ -142,6 +146,27 @@ const CanvasEditorInternal = (
       page.height,
     )
     ctx.putImageData(imageData, 0, 0)
+
+    // Selection highlight (rgba(0,120,215,0.3), ONLYOFFICE-style) drawn on the
+    // page at full canvas/page scale. Drag moves the head without re-emitting
+    // layout JSON, so rects are refreshed from the engine each draw. Cast: the
+    // export exists in the wasm module but WasmRenderApi (lib/wasm-renderer.ts)
+    // doesn't list it yet — that file is outside this task's scope.
+    const getSelectionRects = (
+      getWasmApi() as { get_selection_rects?: (h: number) => string } | null
+    )?.get_selection_rects
+    if (getSelectionRects) {
+      try {
+        const raw = getSelectionRects(docHandle)
+        if (raw) selectionRectsRef.current = JSON.parse(raw)
+      } catch {
+        // keep last-known rects on parse failure
+      }
+    }
+    for (const r of selectionRectsRef.current[cursor.page] ?? []) {
+      ctx.fillStyle = "rgba(0,120,215,0.3)"
+      ctx.fillRect(r.x, r.y, r.w, r.h)
+    }
 
     // Draw blinking cursor
     if (cursorVisibleRef.current) {
@@ -204,8 +229,13 @@ const CanvasEditorInternal = (
         const docHandle = api.create_document(bytes, format)
         docHandleRef.current = docHandle
 
-        const layoutJson = api.layout_document(docHandle, "A4", "portrait", 72.0)
-        const layoutPages: PageInfo[] = JSON.parse(layoutJson).map(
+        const layoutJsonArr = JSON.parse(layoutJson) as {
+          width: number
+          height: number
+          marginPx: number
+          selection_rects?: { x: number; y: number; w: number; h: number }[]
+        }[]
+        const layoutPages: PageInfo[] = layoutJsonArr.map(
           (p: { width: number; height: number; marginPx: number }, i: number) => ({
             width: p.width,
             height: p.height,
@@ -213,6 +243,7 @@ const CanvasEditorInternal = (
             index: i,
           }),
         )
+        selectionRectsRef.current = layoutJsonArr.map((p) => p.selection_rects ?? [])
 
         if (cancelled) return
         setPages(layoutPages)
