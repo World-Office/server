@@ -64,13 +64,9 @@ export const App = observer(function App(): JSX.Element {
 		embedded,
 		presentationStore.wopiConnection,
 		presentationStore.isModified,
-		() => presentationStore.buildDocumentBlob(),
+		() => presentationStore.saveToWopi(),
 		bridge.notifyDocumentSaved,
 		bridge.notifyError,
-		undefined,
-		() => {
-			presentationStore.isModified = false;
-		},
 	);
 
 	const handleMonacoCommand = useCallback((command: MonacoCommand) => {

@@ -73,13 +73,9 @@ export const App = observer(function App() {
 		embedded,
 		visioStore.wopiConnection,
 		visioStore.isModified,
-		() => Promise.resolve(visioStore.buildDocumentBlob()),
+		() => visioStore.saveToWopi(),
 		bridge.notifyDocumentSaved,
 		bridge.notifyError,
-		undefined,
-		() => {
-			visioStore.isModified = false;
-		},
 	);
 
 	const handleMonacoCommand = useCallback((command: MonacoCommand) => {
