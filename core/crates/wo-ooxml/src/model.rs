@@ -709,6 +709,11 @@ pub struct DocxRun {
     /// unchanged so inline graphics (images, charts) survive a round trip.
     #[serde(default)]
     pub drawing: Option<String>,
+    /// Relationship id (`r:id`) of the enclosing `<w:hyperlink>`, set on every
+    /// inner run at parse time; the serializer re-groups consecutive runs
+    /// sharing a r:id into a single `<w:hyperlink>` wrapper.
+    #[serde(default)]
+    pub hyperlink_rid: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

@@ -303,6 +303,103 @@ fn test_drawing_round_trip() {
     assert!(document.contains("Caption"));
 }
 
+/// Build a minimal DOCX whose paragraph mixes plain runs with a
+/// `<w:hyperlink r:id="rId7">` containing two runs.
+fn docx_with_hyperlink() -> Vec<u8> {
+    let mut buf = Vec::new();
+    {
+        let mut zip = zip::ZipWriter::new(Cursor::new(&mut buf));
+        zip.start_file(
+            "[Content_Types].xml",
+            zip::write::SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>"#,
+        )
+        .unwrap();
+
+        zip.start_file(
+            "word/document.xml",
+            zip::write::SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <w:body>
+    <w:p>
+      <w:r><w:t>Before </w:t></w:r>
+      <w:hyperlink r:id="rId7">
+        <w:r><w:rPr><w:b/></w:rPr><w:t>World</w:t></w:r>
+        <w:r><w:t> Office</w:t></w:r>
+      </w:hyperlink>
+      <w:r><w:t> after</w:t></w:r>
+    </w:p>
+  </w:body>
+</w:document>"#,
+        )
+        .unwrap();
+        zip.finish().unwrap();
+    }
+    buf
+}
+
+#[test]
+fn test_hyperlink_round_trip() {
+    let input = docx_with_hyperlink();
+
+    // Parse: every run inside <w:hyperlink r:id="rId7"> carries the r:id;
+    // runs outside the hyperlink leave it at None.
+    let parser = OoxmlParser::new();
+    let doc = parser.parse(&input).expect("parse should succeed");
+    let paras = doc
+        .docx_body
+        .as_ref()
+        .expect("docx body present")
+        .paragraphs();
+    assert_eq!(paras[0].runs.len(), 4);
+
+    assert_eq!(paras[0].runs[0].text, "Before ");
+    assert!(paras[0].runs[0].hyperlink_rid.is_none());
+
+    assert_eq!(paras[0].runs[1].text, "World");
+    assert!(paras[0].runs[1].bold);
+    assert_eq!(paras[0].runs[1].hyperlink_rid.as_deref(), Some("rId7"));
+    assert_eq!(paras[0].runs[2].text, " Office");
+    assert_eq!(paras[0].runs[2].hyperlink_rid.as_deref(), Some("rId7"));
+
+    assert_eq!(paras[0].runs[3].text, " after");
+    assert!(paras[0].runs[3].hyperlink_rid.is_none());
+
+    // Serialize: the two same-r:id runs must be re-grouped into exactly one
+    // <w:hyperlink r:id="rId7"> wrapper.
+    let serializer = OoxmlSerializer::new();
+    let out = serializer
+        .serialize(&doc)
+        .expect("serialize should succeed");
+    let document = document_xml(&out);
+
+    assert_eq!(
+        document.matches(r#"<w:hyperlink r:id="rId7">"#).count(),
+        1,
+        "hyperlink runs must be grouped into a single wrapper"
+    );
+    assert_eq!(document.matches("</w:hyperlink>").count(), 1);
+    assert!(
+        document.contains(r#"<w:hyperlink r:id="rId7"><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">World</w:t></w:r><w:r><w:t xml:space="preserve"> Office</w:t></w:r></w:hyperlink>"#),
+        "both inner runs must sit inside the wrapper, formatting preserved"
+    );
+    assert!(document.contains("Before "));
+    assert!(document.contains(" after"));
+}
+
 #[test]
 fn test_paragraph_without_ppr_has_no_raw() {
     // A paragraph without <w:pPr> must leave raw_ppr at None and still

@@ -1388,13 +1388,17 @@ impl OoxmlParser {
                     runs.push(self.parse_run(&child, xml));
                 }
                 (Some(Self::W_NS), "hyperlink") => {
-                    // Hyperlinks contain runs
+                    // Hyperlinks contain runs. Capture @r:id so the link
+                    // survives a round trip (serializer re-groups runs).
+                    let rid = child.attribute((Self::R_NS, "id")).map(|s| s.to_string());
                     for r in child.children() {
                         if r.is_element()
                             && r.tag_name().name() == "r"
                             && r.tag_name().namespace() == Some(Self::W_NS)
                         {
-                            runs.push(self.parse_run(&r, xml));
+                            let mut run = self.parse_run(&r, xml);
+                            run.hyperlink_rid = rid.clone();
+                            runs.push(run);
                         }
                     }
                 }
@@ -1511,6 +1515,7 @@ impl OoxmlParser {
             all_caps: false,
             raw_rpr: None,
             drawing: None,
+            hyperlink_rid: None,
         };
 
         for child in r_node.children() {
