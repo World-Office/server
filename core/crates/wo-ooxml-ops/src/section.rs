@@ -35,6 +35,7 @@ impl<'a> DocModel<'a> {
                 properties: Default::default(),
                 runs: vec![],
                 section_properties: Some(section_props),
+                raw_ppr: None,
             };
 
             self.body.blocks.push(DocxBlock::Paragraph(new_para));
