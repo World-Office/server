@@ -1385,7 +1385,7 @@ impl OoxmlParser {
                     properties = self.parse_paragraph_properties(&child);
                 }
                 (Some(Self::W_NS), "r") => {
-                    runs.push(self.parse_run(&child));
+                    runs.push(self.parse_run(&child, xml));
                 }
                 (Some(Self::W_NS), "hyperlink") => {
                     // Hyperlinks contain runs
@@ -1394,14 +1394,14 @@ impl OoxmlParser {
                             && r.tag_name().name() == "r"
                             && r.tag_name().namespace() == Some(Self::W_NS)
                         {
-                            runs.push(self.parse_run(&r));
+                            runs.push(self.parse_run(&r, xml));
                         }
                     }
                 }
                 (Some(Self::W_NS), "sdt") => {
                     for r in child.descendants() {
                         if r.has_tag_name("r") && r.tag_name().namespace() == Some(Self::W_NS) {
-                            runs.push(self.parse_run(&r));
+                            runs.push(self.parse_run(&r, xml));
                         }
                     }
                 }
@@ -1493,7 +1493,7 @@ impl OoxmlParser {
         props
     }
 
-    fn parse_run(&self, r_node: &roxmltree::Node) -> DocxRun {
+    fn parse_run(&self, r_node: &roxmltree::Node, xml: &str) -> DocxRun {
         let mut run = DocxRun {
             text: String::new(),
             bold: false,
@@ -1509,6 +1509,7 @@ impl OoxmlParser {
             vertical_alignment: None,
             small_caps: false,
             all_caps: false,
+            raw_rpr: None,
         };
 
         for child in r_node.children() {
@@ -1526,6 +1527,11 @@ impl OoxmlParser {
                     }
                 }
                 (Some(Self::W_NS), "rPr") => {
+                    // Capture the whole <w:rPr> subtree verbatim so run
+                    // properties the typed model cannot represent (e.g. rStyle,
+                    // shd) survive a parse-serialize cycle.
+                    let r = child.range();
+                    run.raw_rpr = Some(xml[r.start..r.end].to_string());
                     self.apply_run_properties(&child, &mut run);
                 }
                 (Some(Self::W_NS), "br") => {

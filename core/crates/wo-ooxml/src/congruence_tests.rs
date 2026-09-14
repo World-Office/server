@@ -102,6 +102,91 @@ fn test_ppr_round_trip() {
     assert!(document.contains("Numbered list item"));
 }
 
+/// Build a minimal DOCX with two runs: one carrying a `<w:rPr>` with
+/// properties the typed model cannot represent (`rStyle`, `shd`), one plain.
+fn docx_with_rpr() -> Vec<u8> {
+    let mut buf = Vec::new();
+    {
+        let mut zip = zip::ZipWriter::new(Cursor::new(&mut buf));
+        zip.start_file(
+            "[Content_Types].xml",
+            zip::write::SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>"#,
+        )
+        .unwrap();
+
+        zip.start_file(
+            "word/document.xml",
+            zip::write::SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:r><w:rPr><w:rStyle w:val="Foo"/><w:shd w:val="clear" w:fill="FFFF00"/></w:rPr><w:t>Styled run</w:t></w:r>
+      <w:r><w:t>Plain</w:t></w:r>
+    </w:p>
+  </w:body>
+</w:document>"#,
+        )
+        .unwrap();
+        zip.finish().unwrap();
+    }
+    buf
+}
+
+#[test]
+fn test_run_rpr_round_trip() {
+    let input = docx_with_rpr();
+
+    // Parse: raw_rpr must capture the whole <w:rPr> subtree verbatim.
+    let parser = OoxmlParser::new();
+    let doc = parser.parse(&input).expect("parse should succeed");
+    let paras = doc
+        .docx_body
+        .as_ref()
+        .expect("docx body present")
+        .paragraphs();
+    assert_eq!(paras[0].runs.len(), 2);
+
+    let styled = &paras[0].runs[0];
+    assert_eq!(styled.text, "Styled run");
+    let raw = styled.raw_rpr.as_deref().expect("raw_rpr captured");
+    assert!(raw.starts_with("<w:rPr>"));
+    assert!(raw.ends_with("</w:rPr>"));
+    assert!(raw.contains(r#"<w:rStyle w:val="Foo"/"#));
+    assert!(raw.contains(r#"<w:shd w:val="clear" w:fill="FFFF00"/"#));
+
+    // A run with no <w:rPr> leaves raw_rpr at None.
+    assert!(paras[0].runs[1].raw_rpr.is_none());
+    assert_eq!(paras[0].runs[1].text, "Plain");
+
+    // Serialize: verbatim rPr must be re-emitted unchanged, before <w:t>.
+    let serializer = OoxmlSerializer::new();
+    let out = serializer
+        .serialize(&doc)
+        .expect("serialize should succeed");
+    let document = document_xml(&out);
+
+    assert!(
+        document.contains(
+            r#"<w:rPr><w:rStyle w:val="Foo"/><w:shd w:val="clear" w:fill="FFFF00"/></w:rPr><w:t xml:space="preserve">Styled run</w:t>"#
+        ),
+        "verbatim rPr must survive the round trip before <w:t>"
+    );
+    assert!(document.contains("Plain"));
+}
+
 #[test]
 fn test_paragraph_without_ppr_has_no_raw() {
     // A paragraph without <w:pPr> must leave raw_ppr at None and still
