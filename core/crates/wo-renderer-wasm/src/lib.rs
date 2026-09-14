@@ -1573,34 +1573,9 @@ pub fn handle_key_event(
 
     match key {
         "Enter" | "Return" => {
-            let new_para = DocxParagraph {
-                style_id: None,
-                properties: DocxParagraphProperties::default(),
-                runs: vec![DocxRun::default()],
-                section_properties: None,
-            };
-            let insert_idx = cursor.para.min(paras_len.saturating_sub(1));
-            let insert_before = if cursor.char_idx == 0 && insert_idx > 0 {
-                insert_idx
-            } else {
-                insert_idx + 1
-            };
-            if insert_before <= body.blocks.len() {
-                body.blocks
-                    .insert(insert_before, DocxBlock::Paragraph(new_para));
-            }
+            let new_cursor = insert_paragraph_break(&mut body, cursor);
             store_body(doc_handle, body)?;
-            set_cursor(
-                doc_handle,
-                CursorPos {
-                    page: cursor.page,
-                    para: insert_before,
-                    line: 0,
-                    char_idx: 0,
-                    x: 0.0,
-                    y: cursor.y + 20.0,
-                },
-            );
+            set_cursor(doc_handle, new_cursor);
             layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
         }
         "Backspace" => {
@@ -1713,60 +1688,124 @@ pub fn handle_key_event(
             Ok("{}".to_string())
         }
         _ => {
-            // Insert printable character
-            if key.len() == 1 {
-                let ch = key.chars().next().unwrap();
-                if body.paragraphs().is_empty() {
-                    body.blocks.push(DocxBlock::Paragraph(DocxParagraph {
-                        style_id: None,
-                        properties: DocxParagraphProperties::default(),
-                        runs: vec![DocxRun {
-                            text: ch.to_string(),
-                            ..Default::default()
-                        }],
-                        section_properties: None,
-                    }));
-                } else {
-                    let pidx = cursor.para.min(paras_len.saturating_sub(1));
-                    if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
-                        let mut global_c = 0usize;
-                        let mut inserted = false;
-                        for run in &mut para.runs {
-                            let run_len = run.text.chars().count();
-                            if global_c + run_len >= cursor.char_idx {
-                                let insert_idx = cursor.char_idx - global_c;
-                                let mut chars: Vec<char> = run.text.chars().collect();
-                                chars.insert(insert_idx.min(chars.len()), ch);
-                                run.text = chars.into_iter().collect();
-                                inserted = true;
-                                break;
-                            }
-                            global_c += run_len;
-                        }
-                        if !inserted && para.runs.is_empty() {
-                            para.runs.push(DocxRun {
-                                text: ch.to_string(),
-                                ..Default::default()
-                            });
-                        } else if !inserted {
-                            if let Some(last) = para.runs.last_mut() {
-                                last.text.push(ch);
-                            }
-                        }
-                    }
-                }
-                set_cursor(
-                    doc_handle,
-                    CursorPos {
-                        char_idx: cursor.char_idx + 1,
-                        ..cursor
-                    },
-                );
+            // Insert printable character. Modifier combos (Ctrl+C/X/V/S …) must
+            // never insert letters; clipboard paste goes through insert_text.
+            if key.len() != 1 || _ctrl {
+                return Ok("{}".to_string());
             }
+            let ch = key.chars().next().unwrap();
+            let new_cursor = insert_char_at_cursor(&mut body, cursor, ch);
+            set_cursor(doc_handle, new_cursor);
             store_body(doc_handle, body)?;
             layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
         }
     }
+}
+
+/// Insert a single character at the cursor, advancing it. Returns the new cursor.
+fn insert_char_at_cursor(body: &mut DocxBody, cursor: CursorPos, ch: char) -> CursorPos {
+    let paras_len = body.paragraphs().len();
+    if body.paragraphs().is_empty() {
+        body.blocks.push(DocxBlock::Paragraph(DocxParagraph {
+            style_id: None,
+            properties: DocxParagraphProperties::default(),
+            runs: vec![DocxRun {
+                text: ch.to_string(),
+                ..Default::default()
+            }],
+            section_properties: None,
+        }));
+        return CursorPos {
+            char_idx: 1,
+            ..cursor
+        };
+    }
+    let pidx = cursor.para.min(paras_len.saturating_sub(1));
+    if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
+        let mut global_c = 0usize;
+        let mut inserted = false;
+        for run in &mut para.runs {
+            let run_len = run.text.chars().count();
+            if global_c + run_len >= cursor.char_idx {
+                let insert_idx = cursor.char_idx - global_c;
+                let mut chars: Vec<char> = run.text.chars().collect();
+                chars.insert(insert_idx.min(chars.len()), ch);
+                run.text = chars.into_iter().collect();
+                inserted = true;
+                break;
+            }
+            global_c += run_len;
+        }
+        if !inserted && para.runs.is_empty() {
+            para.runs.push(DocxRun {
+                text: ch.to_string(),
+                ..Default::default()
+            });
+        } else if !inserted {
+            if let Some(last) = para.runs.last_mut() {
+                last.text.push(ch);
+            }
+        }
+    }
+    CursorPos {
+        char_idx: cursor.char_idx + 1,
+        ..cursor
+    }
+}
+
+/// Start a new paragraph at the cursor (Enter key / newline in pasted text).
+fn insert_paragraph_break(body: &mut DocxBody, cursor: CursorPos) -> CursorPos {
+    let paras_len = body.paragraphs().len();
+    let new_para = DocxParagraph {
+        style_id: None,
+        properties: DocxParagraphProperties::default(),
+        runs: vec![DocxRun::default()],
+        section_properties: None,
+    };
+    let insert_idx = cursor.para.min(paras_len.saturating_sub(1));
+    let insert_before = if cursor.char_idx == 0 && insert_idx > 0 {
+        insert_idx
+    } else {
+        insert_idx + 1
+    };
+    if insert_before <= body.blocks.len() {
+        body.blocks
+            .insert(insert_before, DocxBlock::Paragraph(new_para));
+    }
+    CursorPos {
+        page: cursor.page,
+        para: insert_before,
+        line: 0,
+        char_idx: 0,
+        x: 0.0,
+        y: cursor.y + 20.0,
+    }
+}
+
+/// Insert a whole string at the cursor (clipboard paste), one relayout at the end.
+#[wasm_bindgen]
+pub fn insert_text(
+    doc_handle: u32,
+    text: &str,
+    page_size: &str,
+    orientation: &str,
+    margin_pt: f32,
+) -> Result<String, String> {
+    let mut body = extract_body(doc_handle)?;
+    let mut cursor = get_cursor(doc_handle);
+    for ch in text.chars() {
+        if ch == '\r' {
+            continue;
+        }
+        cursor = if ch == '\n' {
+            insert_paragraph_break(&mut body, cursor)
+        } else {
+            insert_char_at_cursor(&mut body, cursor, ch)
+        };
+    }
+    store_body(doc_handle, body)?;
+    set_cursor(doc_handle, cursor);
+    layout_document_and_return_json(doc_handle, page_size, orientation, margin_pt)
 }
 
 /// Helper: layout document and return JSON (used by handle_key_event).
@@ -3509,5 +3548,53 @@ SFX N e ness e
                 err
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod clipboard_tests {
+    use super::*;
+
+    #[test]
+    fn test_insert_char_at_cursor() {
+        let mut body = DocxBody::default();
+        // empty body → creates the first paragraph
+        let c = insert_char_at_cursor(&mut body, CursorPos::default(), 'a');
+        assert_eq!(body.paragraphs().len(), 1);
+        assert_eq!(body.paragraphs()[0].runs[0].text, "a");
+        assert_eq!(c.char_idx, 1);
+        // append at the advanced cursor
+        let c2 = insert_char_at_cursor(&mut body, c, 'b');
+        assert_eq!(body.paragraphs()[0].runs[0].text, "ab");
+        assert_eq!(c2.char_idx, 2);
+    }
+
+    #[test]
+    fn test_insert_char_mid_word() {
+        let mut body = DocxBody::default();
+        insert_char_at_cursor(&mut body, CursorPos::default(), 't');
+        let mid = CursorPos {
+            char_idx: 1,
+            ..CursorPos::default()
+        };
+        // body has "t"; simulate cursor after first char of a 1-char para
+        let c = insert_char_at_cursor(&mut body, mid, 'e');
+        let text = body.paragraphs()[0]
+            .runs
+            .iter()
+            .map(|r| r.text.as_str())
+            .collect::<String>();
+        assert_eq!(text, "te");
+        assert_eq!(c.char_idx, 2);
+    }
+
+    #[test]
+    fn test_insert_paragraph_break() {
+        let mut body = DocxBody::default();
+        let c = insert_char_at_cursor(&mut body, CursorPos::default(), 'x');
+        let c2 = insert_paragraph_break(&mut body, c);
+        assert_eq!(body.paragraphs().len(), 2);
+        assert_eq!(c2.para, 1);
+        assert_eq!(c2.char_idx, 0);
     }
 }

@@ -504,18 +504,8 @@ const CanvasEditorInternal = (
 
     e.preventDefault()
 
-    try {
-      const result = api.handle_key_event(
-        docHandle,
-        keyStr,
-        e.ctrlKey,
-        e.shiftKey,
-        "A4",
-        "portrait",
-        72.0,
-      )
-
-      // Parse updated layout
+    // Parse updated layout and re-render all pages
+    const applyWasmResult = (result: string | null) => {
       console.info("[CanvasEditor] apply_formatting result:", result?.substring(0, 80))
       if (result && result !== "{}") {
         const layoutPages: PageInfo[] = JSON.parse(result).map(
@@ -549,6 +539,42 @@ const CanvasEditorInternal = (
           _onChange()
         }
       }
+    }
+
+    try {
+      // Modifier combos must never reach the WASM engine — it used to insert
+      // the bare letter (Ctrl+S typed an "s" into the document). Ctrl+V pastes
+      // via insert_text; other combos are swallowed here. Ctrl+S / Ctrl+zoom /
+      // Ctrl+P still work: they are handled by the window-level listener in
+      // useKeyboardShortcuts, and keydown bubbles past this handler.
+      if (e.ctrlKey || e.metaKey) {
+        if (keyStr === "v" || keyStr === "V") {
+          navigator.clipboard
+            .readText()
+            .then((text) => {
+              if (!text) return
+              try {
+                applyWasmResult(api.insert_text(docHandle, text, "A4", "portrait", 72.0))
+              } catch (err) {
+                console.error("[CanvasEditor] insert_text failed:", err)
+              }
+            })
+            .catch((err) => console.error("[CanvasEditor] clipboard read failed:", err))
+        }
+        return
+      }
+
+      const result = api.handle_key_event(
+        docHandle,
+        keyStr,
+        e.ctrlKey,
+        e.shiftKey,
+        "A4",
+        "portrait",
+        72.0,
+      )
+
+      applyWasmResult(result)
     } catch (err) {
       console.error("[CanvasEditor] handle_key_event failed:", err)
     }
