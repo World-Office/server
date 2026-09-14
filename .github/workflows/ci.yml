@@ -90,9 +90,11 @@ jobs:
       - name: Run unit tests (nextest, --lib)
         run: |
           mkdir -p test-results/nextest
+          # --archive-file is a `nextest archive`/`nextest replay` flag, not a
+          # `run` flag — passing it made nextest print a usage error and run
+          # ZERO tests while the job stayed green. Removed 2026-09-14.
           cargo nextest run --workspace --lib \
-            --message-format libtest-json-plus \
-            --archive-file test-results/nextest/archive.tar.zst 2>&1 || true
+            --message-format libtest-json-plus 2>&1 || true
         timeout-minutes: 60
 
       - name: Generate JUnit report (nextest)
