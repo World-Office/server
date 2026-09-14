@@ -93,7 +93,7 @@ jobs:
           # --archive-file is a `nextest archive`/`nextest replay` flag, not a
           # `run` flag — passing it made nextest print a usage error and run
           # ZERO tests while the job stayed green. Removed 2026-09-14.
-          cargo nextest run --workspace --lib \
+          NEXTEST_EXPERIMENTAL_LIBTEST_JSON=1 cargo nextest run --workspace --lib \
             --message-format libtest-json-plus 2>&1 || true
         timeout-minutes: 60
 
