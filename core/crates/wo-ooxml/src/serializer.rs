@@ -1127,8 +1127,30 @@ impl OoxmlSerializer {
             }
         }
 
-        for run in &para.runs {
-            xml.push_str(&self.serialize_run(run));
+        // Emit runs, grouping consecutive runs that share a hyperlink r:id
+        // into a single <w:hyperlink r:id="..."> wrapper.
+        let mut i = 0;
+        while i < para.runs.len() {
+            let run = &para.runs[i];
+            match run.hyperlink_rid.as_deref() {
+                None => {
+                    xml.push_str(&self.serialize_run(run));
+                    i += 1;
+                }
+                Some(rid) => {
+                    xml.push_str(&format!(
+                        "<w:hyperlink r:id=\"{}\">",
+                        escape_xml(rid)
+                    ));
+                    while i < para.runs.len()
+                        && para.runs[i].hyperlink_rid.as_deref() == Some(rid)
+                    {
+                        xml.push_str(&self.serialize_run(&para.runs[i]));
+                        i += 1;
+                    }
+                    xml.push_str("</w:hyperlink>");
+                }
+            }
         }
 
         xml.push_str("</w:p>\n");
@@ -2440,6 +2462,7 @@ mod tests {
                         all_caps: false,
                         raw_rpr: None,
                         drawing: None,
+                        hyperlink_rid: None,
                     }],
                     raw_ppr: None,
                     section_properties: None,
@@ -2527,6 +2550,7 @@ mod tests {
                             all_caps: false,
                             raw_rpr: None,
                             drawing: None,
+                            hyperlink_rid: None,
                         },
                         DocxRun {
                             text: "Italic".to_string(),
@@ -2545,6 +2569,7 @@ mod tests {
                             all_caps: false,
                             raw_rpr: None,
                             drawing: None,
+                            hyperlink_rid: None,
                         },
                         DocxRun {
                             text: "Underline".to_string(),
@@ -2563,6 +2588,7 @@ mod tests {
                             all_caps: false,
                             raw_rpr: None,
                             drawing: None,
+                            hyperlink_rid: None,
                         },
                     ],
                     raw_ppr: None,
@@ -2616,6 +2642,7 @@ mod tests {
                             all_caps: false,
                             raw_rpr: None,
                             drawing: None,
+                            hyperlink_rid: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -2643,6 +2670,7 @@ mod tests {
                             all_caps: false,
                             raw_rpr: None,
                             drawing: None,
+                            hyperlink_rid: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -2670,6 +2698,7 @@ mod tests {
                             all_caps: false,
                             raw_rpr: None,
                             drawing: None,
+                            hyperlink_rid: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -2728,6 +2757,7 @@ mod tests {
                                             all_caps: false,
                                             raw_rpr: None,
                                             drawing: None,
+                                            hyperlink_rid: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -2758,6 +2788,7 @@ mod tests {
                                             all_caps: false,
                                             raw_rpr: None,
                                             drawing: None,
+                                            hyperlink_rid: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -2794,6 +2825,7 @@ mod tests {
                                             all_caps: false,
                                             raw_rpr: None,
                                             drawing: None,
+                                            hyperlink_rid: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -2824,6 +2856,7 @@ mod tests {
                                             all_caps: false,
                                             raw_rpr: None,
                                             drawing: None,
+                                            hyperlink_rid: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -3308,6 +3341,7 @@ mod tests {
                                     all_caps: false,
                                     raw_rpr: None,
                                     drawing: None,
+                                    hyperlink_rid: None,
                                 },
                                 DocxRun {
                                     text: "Italic".to_string(),
@@ -3680,6 +3714,7 @@ mod tests {
                         all_caps: false,
                         raw_rpr: None,
                         drawing: None,
+                        hyperlink_rid: None,
                     }],
                     raw_ppr: None,
                     section_properties: None,
