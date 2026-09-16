@@ -4056,7 +4056,9 @@ pub fn spell_release(lang: &str) -> Result<(), String> {
 
 #[cfg(test)]
 mod selection_undo_tests;
+#[cfg(test)]
 mod serialize_merge_tests;
+#[cfg(test)]
 mod table_interaction_tests;
 #[cfg(test)]
 mod selection_rects_tests;

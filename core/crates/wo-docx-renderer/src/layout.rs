@@ -1618,6 +1618,7 @@ impl LayoutEngine {
             // Create a temporary body from the header/footer blocks
             let body = DocxBody {
                 blocks: hf.blocks.clone(),
+                raw_sect_pr: None,
             };
 
             // Layout the body content
