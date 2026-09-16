@@ -75,9 +75,9 @@ mod tests {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            }],
+            ..Default::default()}],
             section_properties: None,
-        }
+        ..Default::default()}
     }
 
     #[test]

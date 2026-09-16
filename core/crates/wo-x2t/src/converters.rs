@@ -10735,7 +10735,7 @@ mod tests {
                     }],
                     properties: Default::default(),
                 ..Default::default()})],
-            }),
+            ..Default::default()}),
         };
         let odf = docx_to_odf(&doc);
         assert_eq!(odf.metadata.title, Some("Doc Title".into()));
@@ -10816,7 +10816,7 @@ mod tests {
                         ..Default::default()}],
                     ..Default::default()}),
                 ],
-            }),
+            ..Default::default()}),
         };
         let odf = docx_to_odf(&doc);
         match &odf.content {
@@ -13645,7 +13645,7 @@ mod tests {
                         ..Default::default()}],
                     ..Default::default()}),
                 ],
-            }),
+            ..Default::default()}),
         };
         let serialized = OoxmlSerializer::new()
             .serialize(&ooxml)
@@ -13737,7 +13737,7 @@ mod tests {
                         ..Default::default()}],
                     ..Default::default()}),
                 ],
-            }),
+            ..Default::default()}),
         };
         let serialized = OoxmlSerializer::new().serialize(&ooxml).expect("serialize");
         let result = DocxToEpubConverter.convert(&serialized).expect("convert");
@@ -14175,7 +14175,7 @@ mod tests {
                         ..DocxRun::default()
                     }],
                 ..Default::default()})],
-            }),
+            ..Default::default()}),
         };
         let xps = docx_to_xps(&doc);
         assert_eq!(xps.page_count, 1);
@@ -14216,7 +14216,7 @@ mod tests {
                         }],
                     ..Default::default()}),
                 ],
-            }),
+            ..Default::default()}),
         };
         let xps = docx_to_xps(&doc);
         assert_eq!(xps.page_count, 1);
@@ -14248,7 +14248,7 @@ mod tests {
                         ..DocxRun::default()
                     }],
                 ..Default::default()})],
-            }),
+            ..Default::default()}),
         };
         let xps = docx_to_xps(&doc);
         // Both parts on same page
@@ -14291,7 +14291,7 @@ mod tests {
                         }],
                     ..Default::default()}),
                 ],
-            }),
+            ..Default::default()}),
         };
         let xps = docx_to_xps(&doc);
         assert_eq!(xps.pages[0].content.glyphs.len(), 1);
@@ -14589,7 +14589,7 @@ mod tests {
                         }],
                     ..Default::default()}),
                 ],
-            }),
+            ..Default::default()}),
         };
         let lines = docx_body_to_text_lines(&doc);
         assert_eq!(lines, vec!["Line1", "Line2"]);
@@ -14660,7 +14660,7 @@ mod tests {
                     }],
                     properties: DocxTableProperties::default(),
                 ..Default::default()})],
-            }),
+            ..Default::default()}),
         };
         let table_lines = docx_body_to_text_lines(&doc_with_table);
         assert_eq!(table_lines, vec!["A\tB"]);
@@ -15190,7 +15190,7 @@ mod tests {
                     ..DocxRun::default()
                 }],
             ..Default::default()})],
-        };
+        ..Default::default()};
         let ch = docx_body_to_epub_chapters(&body);
         assert_eq!(ch.len(), 1);
         assert_eq!(ch[0].0, "Line1");
@@ -15229,7 +15229,7 @@ mod tests {
                     }],
                 ..Default::default()}),
             ],
-        };
+        ..Default::default()};
         let ch = docx_body_to_epub_chapters(&body);
         assert_eq!(ch.len(), 3);
         assert_eq!(ch[0].0, "Untitled");
@@ -15280,7 +15280,7 @@ mod tests {
                         }],
                     ..Default::default()}),
                 ],
-            }),
+            ..Default::default()}),
         };
         let epub = docx_to_epub(&doc);
         assert_eq!(epub.version, "3.0");
@@ -15325,7 +15325,7 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-            docx_body: Some(DocxBody { blocks: vec![] }),
+            docx_body: Some(DocxBody { blocks: vec![], ..Default::default() }),
         };
         let epub = docx_to_epub(&doc);
         assert_eq!(epub.chapters.len(), 1);

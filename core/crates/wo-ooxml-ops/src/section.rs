@@ -36,7 +36,7 @@ impl<'a> DocModel<'a> {
                 runs: vec![],
                 section_properties: Some(section_props),
                 raw_ppr: None,
-            };
+            ..Default::default()};
 
             self.body.blocks.push(DocxBlock::Paragraph(new_para));
 
@@ -109,9 +109,9 @@ mod tests {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            }],
+            ..Default::default()}],
             section_properties: None,
-        }
+        ..Default::default()}
     }
 
     #[test]
