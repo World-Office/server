@@ -12,16 +12,19 @@ jobs:
     steps:
       - name: Environment
         run: |
-          echo "== whoami =="; whoami; id; uname -a; hostname
-          echo "== docker =="; docker version --format '{{.Server.Version}}' 2>&1 | head -2
+          echo "== user =="; whoami; id | tr ',' '\n' | grep -E 'docker|wheel'
+          echo "== docker =="
+          docker version --format 'server={{.Server.Version}}' 2>&1 | head -1
           docker compose version 2>&1 | head -1
-          echo "== compose dirs =="
-          ls -la ~/opencloud-compose 2>&1 | head -25
-          echo "== compose-cutover =="
-          ls -la ~/compose-cutover 2>&1 | head -25
-          echo "== docserver container =="
-          docker ps --format '{{.Names}} | {{.Image}} | {{.Status}}' 2>&1 | grep -i docserver | head -6
+          echo "== opencloud-compose dir =="
+          ls -la /home/weiss/opencloud-compose 2>&1 | head -30
+          echo "== compose-cutover dir =="
+          ls -la /home/weiss/compose-cutover 2>&1 | head -30
+          echo "== running docserver containers =="
+          docker ps -a --format '{{.Names}} | {{.Image}} | {{.Status}}' 2>&1 | grep -i docserver | head -8
+          echo "== editor-ui dirs on host =="
+          ls -d /home/weiss/editor-ui-* 2>&1 | head -10
       - name: Compose mounts
         run: |
-          echo "== editor-ui lines in compose =="
-          grep -n "editor-ui\|/word\|/sheet\|/slide\|/pdf\|/diagram" ~/opencloud-compose/docker-compose.yml 2>&1 | head -30
+          echo "== editor-ui / volumes in compose =="
+          grep -n "editor-ui\|/word\|/sheet\|/slide\|/pdf\|/diagram\|image:" /home/weiss/opencloud-compose/docker-compose.yml 2>&1 | head -40
