@@ -1,6 +1,7 @@
 import { CollaboratorCursors } from "@world-office/collaboration-react"
 import { useEffect, useState } from "react"
 import type { ReactNode } from "react"
+import { observer } from "mobx-react-lite"
 import { collaborationStore } from "../lib/collaboration"
 import type { PageLayoutSettings, RichTextCommand } from "../lib/rte-command"
 import { documentStore } from "../stores/DocumentStore"
@@ -55,7 +56,11 @@ const MARGIN_CSS: Record<string, string> = {
   wide: "34mm",      /* Fibonacci: 34 */
 }
 
-export function Viewport({
+// Viewport reads documentStore directly (file-menu panel, about panel, find
+// panel, right panels) — it MUST be an observer or those overlays never
+// re-render: clicking File flipped the store but de-file-menu-panel stayed
+// display:none forever (the "WO file menu does nothing" bug).
+export const Viewport = observer(function Viewport({
   toolbarVisible,
   statusbarVisible,
   leftMenuVisible,
@@ -232,4 +237,4 @@ export function Viewport({
       </div>
     </div>
   )
-}
+})
