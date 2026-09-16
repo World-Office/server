@@ -1,7 +1,6 @@
 name: stage-ui-probe
 
-# Read-only environment probe run on the self-hosted legion runner (prod host).
-# Learn what the staging workflow can do before flipping any mounts.
+# Read-only probe #2: sudo capability, override file, docserver service block.
 
 on:
   workflow_dispatch:
@@ -10,21 +9,15 @@ jobs:
   probe:
     runs-on: [self-hosted, legion]
     steps:
-      - name: Environment
+      - name: Probe
         run: |
-          echo "== user =="; whoami; id | tr ',' '\n' | grep -E 'docker|wheel'
-          echo "== docker =="
-          docker version --format 'server={{.Server.Version}}' 2>&1 | head -1
-          docker compose version 2>&1 | head -1
-          echo "== opencloud-compose dir =="
-          ls -la /home/weiss/opencloud-compose 2>&1 | head -30
-          echo "== compose-cutover dir =="
-          ls -la /home/weiss/compose-cutover 2>&1 | head -30
-          echo "== running docserver containers =="
-          docker ps -a --format '{{.Names}} | {{.Image}} | {{.Status}}' 2>&1 | grep -i docserver | head -8
-          echo "== editor-ui dirs on host =="
-          ls -d /home/weiss/editor-ui-* 2>&1 | head -10
-      - name: Compose mounts
-        run: |
-          echo "== editor-ui / volumes in compose =="
-          grep -n "editor-ui\|/word\|/sheet\|/slide\|/pdf\|/diagram\|image:" /home/weiss/opencloud-compose/docker-compose.yml 2>&1 | head -40
+          echo "== sudo =="; sudo -n true 2>&1 && echo "passwordless sudo OK" || echo "sudo needs password"
+          echo "== override file =="
+          cat /home/weiss/opencloud-compose/docker-compose.override.yml 2>&1 | head -30
+          echo "== docserver service block =="
+          awk '/^  docserver:/{f=1} f{print} f&&/^  [a-z]/&&!/^  docserver:/{exit}' /home/weiss/opencloud-compose/docker-compose.yml
+          echo "== images =="
+          docker images worldoffice/documentserver --format '{{.Repository}}:{{.Tag}} {{.ID}} {{.CreatedSince}} {{.Size}}' 2>&1 | head -3
+          echo "== current editor-ui head =="
+          ls /home/weiss/editor-ui-7a777d89/word 2>&1 | head -8
+          echo "== home writable =="; touch /home/weiss/.runner-write-test 2>&1 && echo write-ok && rm /home/weiss/.runner-write-test
