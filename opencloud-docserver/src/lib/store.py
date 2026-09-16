@@ -28,6 +28,13 @@ class DocumentStoreError(RuntimeError):
     """Raised on store-level failures (I/O, DB)."""
 
 
+# Live DocumentStore instances by absolute db path, so wipe_db() can close a
+# still-open connection before unlinking the file (Windows refuses to unlink
+# an open SQLite db; Linux tolerates it and we close anyway). Rows are just
+# (path, store) pairs -- the store holds the only reference to its connection.
+_LIVE_STORES: dict[str, "DocumentStore"] = {}
+
+
 class DocumentStore:
     """SQLite-backed metadata index plus file-backed content."""
 
@@ -37,6 +44,7 @@ class DocumentStore:
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._content_dir.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(str(self._db_path), check_same_thread=False)
+        _LIVE_STORES[str(self._db_path.resolve())] = self
         # One shared SQLite connection is used by all threads (HTTP handlers
         # run concurrently), so every DB-touching method serializes through
         # this (reentrant) lock; RLock lets nested calls put_content →
@@ -54,6 +62,12 @@ class DocumentStore:
             raise DocumentStoreError(
                 f"storage unreadable or corrupt at {self._db_path!r}: {exc}"
             ) from exc
+
+    def close(self) -> None:
+        """Close the shared connection (e.g. before a test wipes the db file;
+        Windows cannot unlink an open SQLite db)."""
+        self._conn.close()
+        _LIVE_STORES.pop(str(self._db_path.resolve()), None)
 
     def _init_schema(self) -> None:
         with self._conn:
@@ -410,13 +424,21 @@ class DocumentStore:
 def wipe_db(db_path: str) -> None:
     """Remove the SQLite file (used by tests / reset)."""
     p = Path(db_path)
+    # Close a still-live store first so its DB file is deletable on Windows
+    # (an open SQLite connection holds the file open).
+    live = _LIVE_STORES.get(str(p.resolve()))
+    if live is not None:
+        live.close()
     if p.exists():
         p.unlink()
     # WAL/shm sidecars
     for suffix in ("-wal", "-shm"):
         side = Path(str(p) + suffix)
         if side.exists():
-            side.unlink()
+            try:
+                side.unlink()
+            except OSError:
+                pass
 
 
 def wipe_dir(path: str) -> None:

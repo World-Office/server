@@ -51,9 +51,9 @@ def _find_graph() -> Path:
         # CI (docserver.yml) checks wo-test-harness out INSIDE the server
         # workspace: $GITHUB_WORKSPACE/wo-test-harness == parents[2]/wo-test-harness.
         here.parents[2] / "wo-test-harness" / "harness-graph" / "graph.json",
-        # Local dev checkout: harness is a sibling of the server checkout's
-        # grandparent (~/git/wo-test-harness next to ~/git/World-Office/...).
-        here.parents[3].parent / "wo-test-harness" / "harness-graph" / "graph.json",
+        # Local dev checkout: harness is a sibling of the server checkout
+        # (~/git/World-Office/wo-test-harness next to ~/git/World-Office/server).
+        here.parents[3] / "wo-test-harness" / "harness-graph" / "graph.json",
         # Legacy in-repo path (pre-move).
         here.parents[2] / "scripts" / "harness-graph" / "graph.json",
     ]

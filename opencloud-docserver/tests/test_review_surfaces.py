@@ -60,8 +60,8 @@ from src.lib.store import DocumentStore, wipe_db, wipe_dir
 # ---------------------------------------------------------------------------
 
 _WEB = Path(__file__).resolve().parent.parent / "web"
-INDEX_HTML = (_WEB / "index.html").read_text()
-EDITOR_JS = (_WEB / "editor.js").read_text()
+INDEX_HTML = (_WEB / "index.html").read_text(encoding="utf-8")
+EDITOR_JS = (_WEB / "editor.js").read_text(encoding="utf-8")
 
 
 @pytest.fixture
@@ -84,6 +84,7 @@ def client(tmp_path):
     with TestClient(app) as c:
         c.test_store = store  # type: ignore[attr-defined]
         yield c
+    store.close()
     wipe_db(db)
     wipe_dir(content)
 

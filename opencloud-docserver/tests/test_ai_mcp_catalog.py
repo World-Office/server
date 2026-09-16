@@ -213,7 +213,7 @@ def _assert_golden(name: str, canonical: str) -> None:
         f"golden file {golden_path} missing — generate with "
         f"UPDATE_GOLDEN=1 uv run pytest tests/test_ai_mcp_catalog.py"
     )
-    golden = golden_path.read_text()
+    golden = golden_path.read_text(encoding="utf-8")
     if canonical != golden:
         diff = "".join(
             difflib.unified_diff(
