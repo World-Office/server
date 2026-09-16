@@ -1,0 +1,27 @@
+name: stage-ui-probe
+
+# Read-only environment probe run on the self-hosted legion runner (prod host).
+# Learn what the staging workflow can do before flipping any mounts.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: [self-hosted, legion]
+    steps:
+      - name: Environment
+        run: |
+          echo "== whoami =="; whoami; id; uname -a; hostname
+          echo "== docker =="; docker version --format '{{.Server.Version}}' 2>&1 | head -2
+          docker compose version 2>&1 | head -1
+          echo "== compose dirs =="
+          ls -la ~/opencloud-compose 2>&1 | head -25
+          echo "== compose-cutover =="
+          ls -la ~/compose-cutover 2>&1 | head -25
+          echo "== docserver container =="
+          docker ps --format '{{.Names}} | {{.Image}} | {{.Status}}' 2>&1 | grep -i docserver | head -6
+      - name: Compose mounts
+        run: |
+          echo "== editor-ui lines in compose =="
+          grep -n "editor-ui\|/word\|/sheet\|/slide\|/pdf\|/diagram" ~/opencloud-compose/docker-compose.yml 2>&1 | head -30
