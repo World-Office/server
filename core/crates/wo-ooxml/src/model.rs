@@ -747,7 +747,7 @@ pub enum VerticalAlignment {
 }
 
 /// A table in the document.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct DocxTable {
     pub rows: Vec<DocxTableRow>,
     pub properties: DocxTableProperties,
@@ -803,7 +803,7 @@ pub struct DocxTableRow {
     pub is_header: bool,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct DocxTableCell {
     pub paragraphs: Vec<DocxParagraph>,
     pub column_span: u32,
