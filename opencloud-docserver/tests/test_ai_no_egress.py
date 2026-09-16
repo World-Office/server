@@ -25,7 +25,7 @@ def test_src_ai_has_no_network_clients():
     """Static containment: the whole agent module imports no network stack."""
     offenders = []
     for py in sorted(SRC_AI.glob("*.py")):
-        text = py.read_text()
+        text = py.read_text(encoding="utf-8")
         for line_no, line in enumerate(text.splitlines(), start=1):
             stripped = line.strip()
             if stripped.startswith("#"):
