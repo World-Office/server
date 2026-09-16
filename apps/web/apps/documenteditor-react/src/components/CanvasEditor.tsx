@@ -229,6 +229,7 @@ const CanvasEditorInternal = (
         const docHandle = api.create_document(bytes, format)
         docHandleRef.current = docHandle
 
+        const layoutJson = api.layout_document(docHandle, "A4", "portrait", 72.0)
         const layoutJsonArr = JSON.parse(layoutJson) as {
           width: number
           height: number
