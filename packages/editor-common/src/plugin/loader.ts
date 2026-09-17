@@ -143,6 +143,10 @@ export class PluginLoader {
    * Tries dynamic import() first, then falls back to evaluating source.
    */
   private async loadPlugin(config: PluginConfig): Promise<WorldOfficePlugin> {
+    if (config.module) {
+      const mod = await config.module()
+      return mod.default ?? mod
+    }
     if (config.path) {
       const mod = await import(/* @vite-ignore */ config.path)
       return mod.default ?? mod

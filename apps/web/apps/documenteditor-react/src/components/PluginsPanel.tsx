@@ -3,35 +3,7 @@
  * Lists available plugins with enable/disable toggles and install option.
  */
 import { type JSX, useState } from "react"
-
-// Plugin config persists under the same key the editor-common plugin loader
-// reads ("wo-plugins"), so toggles here feed the loader when it is wired in.
-const PLUGIN_CONFIG_KEY = "wo-plugins"
-
-interface PluginConfigEntry {
-  id: string
-  name: string
-  enabled: boolean
-}
-
-function loadPersistedConfig(): PluginConfigEntry[] {
-  try {
-    const raw = window.localStorage.getItem(PLUGIN_CONFIG_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    return Array.isArray(parsed) ? (parsed as PluginConfigEntry[]) : []
-  } catch {
-    return []
-  }
-}
-
-function savePersistedConfig(list: PluginConfigEntry[]): void {
-  try {
-    window.localStorage.setItem(PLUGIN_CONFIG_KEY, JSON.stringify(list))
-  } catch {
-    // Ignore storage errors (matches the rest of the app)
-  }
-}
+import { type PluginConfig, loadPluginConfig, savePluginConfig, usePluginAppBar } from "../lib/plugin-runtime"
 
 interface PluginsPanelProps {
   visible: boolean
@@ -52,7 +24,7 @@ const DEFAULT_PLUGINS: PluginInfo[] = [
     enabled: true,
   },
   {
-    id: "wordcount",
+    id: "word-count",
     name: "Word Count",
     description: "Live word and character count in status bar",
     enabled: true,
@@ -95,7 +67,7 @@ const DEFAULT_PLUGINS: PluginInfo[] = [
   },
 ]
 
-function mergePersisted(list: PluginInfo[], cfg: PluginConfigEntry[]): PluginInfo[] {
+function mergePersisted(list: PluginInfo[], cfg: PluginConfig[]): PluginInfo[] {
   if (!cfg.length) return list
   return list.map((p) => {
     const c = cfg.find((x) => x.id === p.id)
@@ -103,21 +75,22 @@ function mergePersisted(list: PluginInfo[], cfg: PluginConfigEntry[]): PluginInf
   })
 }
 
-function toConfig(list: PluginInfo[]): PluginConfigEntry[] {
+function toConfig(list: PluginInfo[]): PluginConfig[] {
   return list.map((p) => ({ id: p.id, name: p.name, enabled: p.enabled }))
 }
 
 function PluginsPanelInner({ visible }: PluginsPanelProps): JSX.Element | null {
   // Seed from persisted config so toggles are the single source of truth
   // (drives the plugin loader in editor-common when it is wired in).
-  const [plugins, setPlugins] = useState<PluginInfo[]>(() => mergePersisted(DEFAULT_PLUGINS, loadPersistedConfig()))
+  const [plugins, setPlugins] = useState<PluginInfo[]>(() => mergePersisted(DEFAULT_PLUGINS, loadPluginConfig()))
+  const hostButtons = usePluginAppBar()
 
   if (!visible) return null
 
   function togglePlugin(id: string) {
     setPlugins((prev) => {
       const next = prev.map((p) => (p.id === id ? { ...p, enabled: !p.enabled } : p))
-      savePersistedConfig(toConfig(next))
+      savePluginConfig(toConfig(next))
       return next
     })
   }
@@ -211,6 +184,34 @@ function PluginsPanelInner({ visible }: PluginsPanelProps): JSX.Element | null {
         >
           + Browse Plugin Store
         </button>
+        {hostButtons.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ fontWeight: 600, fontSize: 12, color: "#333", marginBottom: 6 }}>
+              Plugin Apps
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {hostButtons.map((btn) => (
+                <button
+                  key={btn.id}
+                  type="button"
+                  onClick={() => btn.onClick()}
+                  title={btn.tooltip}
+                  style={{
+                    padding: "8px 12px",
+                    border: "1px solid #d0d7e2",
+                    borderRadius: 4,
+                    background: "#fff",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    textAlign: "left",
+                  }}
+                >
+                  {btn.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
