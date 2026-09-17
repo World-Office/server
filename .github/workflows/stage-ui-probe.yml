@@ -1,6 +1,6 @@
 name: stage-ui-probe
 
-# Read-only probe #2: sudo capability, override file, docserver service block.
+# Read-only probe #3: full override file + full base docserver block.
 
 on:
   workflow_dispatch:
@@ -11,13 +11,11 @@ jobs:
     steps:
       - name: Probe
         run: |
-          echo "== sudo =="; sudo -n true 2>&1 && echo "passwordless sudo OK" || echo "sudo needs password"
-          echo "== override file =="
-          cat /home/weiss/opencloud-compose/docker-compose.override.yml 2>&1 | head -30
-          echo "== docserver service block =="
+          echo "===== FULL override ====="
+          cat /home/weiss/opencloud-compose/docker-compose.override.yml
+          echo "===== candidate docserver blocks (base) ====="
           awk '/^  docserver:/{f=1} f{print} f&&/^  [a-z]/&&!/^  docserver:/{exit}' /home/weiss/opencloud-compose/docker-compose.yml
-          echo "== images =="
-          docker images worldoffice/documentserver --format '{{.Repository}}:{{.Tag}} {{.ID}} {{.CreatedSince}} {{.Size}}' 2>&1 | head -3
-          echo "== current editor-ui head =="
-          ls /home/weiss/editor-ui-7a777d89/word 2>&1 | head -8
-          echo "== home writable =="; touch /home/weiss/.runner-write-test 2>&1 && echo write-ok && rm /home/weiss/.runner-write-test
+          echo "===== compose project state ====="
+          docker compose -p opencloud-compose --project-directory /home/weiss/opencloud-compose ps -q docserver 2>&1 | head -2
+          echo "===== docserver container portmap ====="
+          docker port opencloud-compose-docserver-1 2>&1 | head -5
