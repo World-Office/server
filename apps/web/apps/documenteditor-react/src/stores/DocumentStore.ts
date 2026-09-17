@@ -280,6 +280,11 @@ export class DocumentStore {
   }
 
   toggleRightPanel(panel: RightMenuPanel): void {
+    // Opening a panel reveals the right rail (the web shell hides it until
+    // a panel is requested, e.g. ribbon Collaboration/AI/Plugins commands).
+    if (this.activeRightPanel !== panel) {
+      this.rightMenuVisible = true
+    }
     this.setActiveRightPanel(this.activeRightPanel === panel ? null : panel)
   }
 
