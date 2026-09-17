@@ -42,12 +42,12 @@ jobs:
         run: |
           curl -fsSL http://192.168.42.42:8082/demo/document -o /tmp/demo.docx
           python3 - <<'PY'
-import zipfile, sys
-z = zipfile.ZipFile("/tmp/demo.docx")
-bad = z.testzip()
-print("demo docx entries:", len(z.namelist()), "bad:", bad)
-sys.exit(1 if bad else 0)
-PY
+          import zipfile, sys
+          z = zipfile.ZipFile("/tmp/demo.docx")
+          bad = z.testzip()
+          print("demo docx entries:", len(z.namelist()), "bad:", bad)
+          sys.exit(1 if bad else 0)
+          PY
       - name: Verify public /word/ still serves the new UI bundle
         run: |
           curl -fsSL https://editor.cloud.graphwiz.ai/word/ | grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' | head -1
