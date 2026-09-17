@@ -5,6 +5,7 @@ import { Suspense, lazy, useCallback, useEffect, useState } from "react"
 import { isDesktop, listenForMenuEvents, listenForUpdateEvents } from "./bridge"
 import { getActiveEditor } from "./components/MonacoEditor"
 import { type MonacoCommand, dispatchMonacoCommand } from "./components/Toolbar/MonacoCommand"
+import { PluginToast } from "./components/PluginToast"
 import { Viewport } from "./components/Viewport"
 import { useEmbeddedAutoSave } from "./hooks/useEmbeddedAutoSave"
 import { useEmbeddedBridge } from "./hooks/useEmbeddedBridge"
@@ -15,6 +16,7 @@ import { useSpellchecker } from "./hooks/useSpellchecker"
 import { isCollaborationConfigured } from "./lib/collaboration-config"
 import { type RichTextCommand, dispatchRichTextCommand } from "./lib/rte-command"
 import { SpellcheckContext } from "./lib/spellcheck-context"
+import { initPluginRuntime } from "./lib/plugin-runtime"
 import { documentStore } from "./stores/DocumentStore"
 
 // Non-critical components loaded on demand
@@ -34,9 +36,23 @@ const SpellcheckContextMenu = lazy(() =>
 
 export const App = observer(function App() {
   const [shortcutsVisible, setShortcutsVisible] = useState(false)
+  const [pluginToast, setPluginToast] = useState<string | null>(null)
 
   useKeyboardShortcuts()
   usePlugins()
+
+  useEffect(() => {
+    let timer: number | undefined
+    const cleanup = initPluginRuntime((message) => {
+      setPluginToast(message)
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => setPluginToast(null), 4000)
+    })
+    return () => {
+      window.clearTimeout(timer)
+      cleanup()
+    }
+  }, [])
 
   const spellcheck = useSpellchecker()
 
@@ -271,6 +287,7 @@ export const App = observer(function App() {
       <Suspense fallback={null}>
         <ShortcutsOverlay visible={shortcutsVisible} onClose={() => setShortcutsVisible(false)} />
       </Suspense>
+      {pluginToast && <PluginToast message={pluginToast} />}
       <SpellcheckContext.Provider value={spellcheck}>
         <Viewport
           toolbarVisible={documentStore.toolbarVisible}

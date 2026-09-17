@@ -11,6 +11,8 @@ export interface PluginConfig {
   enabled: boolean
   /** Path or URL to the plugin entry module */
   path?: string
+  /** Loader callback for app-bundled plugin modules (preferred over `path`). */
+  module?: () => Promise<{ default: import("./types").WorldOfficePlugin }>
   /** Plugin-specific settings */
   settings?: Record<string, unknown>
 }
