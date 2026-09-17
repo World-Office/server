@@ -1,0 +1,123 @@
+name: stage-ui
+
+# Real production deployment of the React editor UI (editor.cloud.graphwiz.ai).
+# Runs on the self-hosted legion runner (prod host, outbound connection — no VPN).
+# Deploy model: the docserver Rust binary is baked into the local image
+# worldoffice/documentserver:latest (verified unchanged between the staged and
+# target commits); the editor-ui is a read-only host mount flipped per release.
+#
+# Flow:
+#   1. resolve the latest SUCCESSFUL Deploy run (or an explicit run id) + sha
+#   2. download its frontend-dist artifact, extract to /home/weiss/editor-ui-<sha8>/
+#   3. copy the live compose, rewrite the 5 editor-ui volume sources to the new dir
+#   4. docker compose up -d docserver (recreate with new mounts, image untouched)
+#   5. persist compose to the root-owned opencloud-compose dir
+#   6. verify the public /word/ serves the artifact's index bundle hash
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Deploy run id to stage (default: latest successful Deploy run)"
+        required: false
+        default: ""
+
+jobs:
+  stage:
+    runs-on: [self-hosted, legion]
+    steps:
+      - name: Resolve target Deploy run + artifact
+        id: resolve
+        env:
+          TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.inputs.run_id }}
+        run: |
+          set -euo pipefail
+          python3 - "$RUN_ID" "$TOKEN" "$REPO" <<'PY'
+          import sys, os, json, urllib.request
+          run_id, token, repo = sys.argv[1], sys.argv[2], sys.argv[3]
+          def get(url):
+              req = urllib.request.Request(url, headers={"Authorization": f"token {token}",
+                                                         "Accept": "application/vnd.github+json"})
+              with urllib.request.urlopen(req) as r:
+                  return json.load(r)
+          if not run_id:
+              runs = get(f"https://api.github.com/repos/{repo}/actions/workflows/deploy.yml/runs?per_page=30")
+              run_id = next(r["id"] for r in runs["workflow_runs"] if r["conclusion"] == "success")
+          run = get(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}")
+          sha = run["head_sha"]
+          arts = get(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/artifacts")
+          art = next(a for a in arts["artifacts"] if a["name"] == "frontend-dist")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"run_id={run_id}\nsha={sha}\nsha8={sha[:8]}\ndl={art['archive_download_url']}\n")
+          print(f"resolved: Deploy run {run_id} @ {sha} -> editor-ui-{sha[:8]}")
+          PY
+
+      - name: Download + extract frontend-dist to editor-ui-<sha8>
+        env:
+          TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          SHA8="${{ steps.resolve.outputs.sha8 }}"
+          DIR="/home/weiss/editor-ui-$SHA8"
+          CUR=$(grep -oE '/home/weiss/editor-ui-[0-9a-f]+' /home/weiss/opencloud-compose/docker-compose.yml | head -1)
+          echo "current staged: $CUR ; target: $DIR"
+          if [ "$CUR" = "$DIR" ]; then echo "already current — nothing to do"; exit 0; fi
+          if [ ! -d "$DIR" ]; then
+            mkdir -p "$DIR"
+            curl -fsSL -H "Authorization: token $TOKEN" "${{ steps.resolve.outputs.dl }}" -o /tmp/frontend-dist.zip
+            python3 - "$SHA8" <<'PY'
+            import zipfile, os, sys
+            sha8 = sys.argv[1]
+            z = zipfile.ZipFile("/tmp/frontend-dist.zip")
+            os.chdir(f"/home/weiss/editor-ui-{sha8}")
+            z.extractall()
+            print("extracted", len(z.namelist()), "entries")
+            PY
+            rm -f /tmp/frontend-dist.zip
+          fi
+          for d in word sheet slide diagram pdf; do
+            [ -d "$DIR/$d" ] || { echo "MISSING $d in artifact"; exit 1; }
+          done
+          echo "staged: $DIR"
+          grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' "$DIR/word/index.html" | head -1
+
+      - name: Build cutover compose (flip editor-ui mounts)
+        run: |
+          set -euo pipefail
+          SHA8="${{ steps.resolve.outputs.sha8 }}"
+          NEW="/home/weiss/editor-ui-$SHA8"
+          cp /home/weiss/opencloud-compose/docker-compose.yml /home/weiss/compose-cutover/docker-compose.yml
+          sed -i -E "s#/home/weiss/editor-ui-[0-9a-f]+#$NEW#g" /home/weiss/compose-cutover/docker-compose.yml
+          echo "== flipped volume lines =="
+          grep -n "editor-ui-" /home/weiss/compose-cutover/docker-compose.yml
+
+      - name: Recreate docserver with new UI
+        run: |
+          set -euo pipefail
+          docker compose -p opencloud-compose \
+            --project-directory /home/weiss/opencloud-compose \
+            -f /home/weiss/compose-cutover/docker-compose.yml up -d docserver
+          sleep 6
+          docker ps --format '{{.Names}} | {{.Status}} | {{.Image}}' | grep opencloud-compose-docserver
+
+      - name: Persist compose (root-owned opencloud-compose dir)
+        run: |
+          set -euo pipefail
+          sudo cp /home/weiss/compose-cutover/docker-compose.yml /home/weiss/opencloud-compose/docker-compose.yml
+          echo "persisted; previous UI still at /home/weiss/editor-ui-7a777d89 (rollback: point mounts back)"
+          grep -n "editor-ui-" /home/weiss/opencloud-compose/docker-compose.yml | head -5
+
+      - name: Verify served bundle
+        run: |
+          set -euo pipefail
+          SHA8="${{ steps.resolve.outputs.sha8 }}"
+          echo "== container =="
+          docker ps --format '{{.Names}} {{.Status}}' | grep opencloud-compose-docserver
+          echo "== local =="
+          curl -fsSL http://192.168.42.42:8082/word/ | grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' | head -2
+          echo "== public =="
+          curl -fsSL https://editor.cloud.graphwiz.ai/word/ | grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' | head -2
+          echo "== expected (artifact) =="
+          grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' /home/weiss/editor-ui-$SHA8/word/index.html | head -2
