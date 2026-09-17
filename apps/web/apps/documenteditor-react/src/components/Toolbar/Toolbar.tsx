@@ -82,6 +82,9 @@ const ObservedToolbar = observer(function ObservedToolbar({
         documentStore.setDifferentFirstPage(!documentStore.differentFirstPage)
       } else if (cmd === "differentOddEven") {
         documentStore.setDifferentOddEven(!documentStore.differentOddEven)
+      } else if (cmd === "protect-document") {
+        documentStore.setFileMenuOpen(true)
+        documentStore.setActiveFileMenuPanel("protect")
       } else {
         // Dispatch via wo-command event for formatting and other commands
         // Convert kebab-case to camelCase for compatibility with existing command names

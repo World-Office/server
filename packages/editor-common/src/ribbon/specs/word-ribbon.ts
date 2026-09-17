@@ -646,6 +646,26 @@ export const wordRibbonSpec: RibbonSpec = {
     },
 
     {
+      id: "protection",
+      label: "Protection",
+      groups: [
+        {
+          id: "protect",
+          label: "Protect",
+          controls: [
+            {
+              id: "protect-document",
+              type: "button",
+              icon: "Lock",
+              label: "Protect Document",
+              command: "protect-document",
+            },
+          ],
+        },
+      ],
+    },
+
+    {
       id: "review",
       label: "Review",
       groups: [
