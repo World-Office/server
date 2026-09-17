@@ -1,7 +1,10 @@
 import { Button, Divider, makeStyles, mergeClasses, tokens } from "@fluentui/react-components"
+import { CollaborationStatus } from "@world-office/collaboration-react"
+import { observer } from "mobx-react-lite"
 import type { ReactElement } from "react"
 import { useTranslation } from "react-i18next"
 import { openFile } from "../../bridge/file-operations"
+import { collaborationStore } from "../../lib/collaboration"
 import { documentStore } from "../../stores/DocumentStore"
 import type { FileMenuAction } from "../../types/document"
 
@@ -118,6 +121,22 @@ const useStyles = makeStyles({
     margin: 0,
     padding: "8px 0",
   },
+  header: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+    padding: "12px 20px",
+    marginBottom: "8px",
+    borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+  },
+  headerTitle: {
+    fontSize: tokens.fontSizeBase300,
+    fontWeight: 600,
+    color: tokens.colorNeutralForeground1,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  },
   backIcon: {
     display: "inline-flex",
     alignItems: "center",
@@ -168,9 +187,11 @@ const useStyles = makeStyles({
   },
 })
 
-export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
+const ObservedFileMenuItems = observer(function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
   const { t } = useTranslation()
   const activePanel = documentStore.activeFileMenuPanel
+  const connectionStatus = collaborationStore.connectionStatus
+  const userCount = collaborationStore.users.length
   const styles = useStyles()
 
   function handleBack(): void {
@@ -219,6 +240,11 @@ export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
 
   return (
     <ul className={styles.root}>
+      {/* OnlyOffice backstage header: doc title + connection status. Plain element (not a button) so the parity census still only lists menu items. */}
+      <div className={mergeClasses("de-filemenu-header", styles.header)}>
+        <span className={styles.headerTitle}>{documentStore.fileName}</span>
+        <CollaborationStatus state={connectionStatus} userCount={userCount} />
+      </div>
       <Button appearance="subtle" className={styles.item} onClick={handleBack} aria-label={t("Back")}>
         <span className={styles.backIcon}>
           <svg
@@ -276,4 +302,6 @@ export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
       ))}
     </ul>
   )
-}
+})
+
+export { ObservedFileMenuItems as FileMenuItems }
