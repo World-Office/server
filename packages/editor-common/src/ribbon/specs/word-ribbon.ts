@@ -646,28 +646,8 @@ export const wordRibbonSpec: RibbonSpec = {
     },
 
     {
-      id: "protection",
-      label: "Protection",
-      groups: [
-        {
-          id: "protect",
-          label: "Protect",
-          controls: [
-            {
-              id: "protect-document",
-              type: "button",
-              icon: "Lock",
-              label: "Protect Document",
-              command: "protect-document",
-            },
-          ],
-        },
-      ],
-    },
-
-    {
-      id: "review",
-      label: "Review",
+      id: "collaboration",
+      label: "Collaboration",
       groups: [
         {
           id: "tracking",
@@ -723,8 +703,55 @@ export const wordRibbonSpec: RibbonSpec = {
             },
           ],
         },
+        {
+          id: "comments",
+          label: "Comments",
+          controls: [
+            {
+              id: "comments-panel",
+              type: "button",
+              icon: "MessageSquare",
+              label: "Comments",
+              command: "toggleComment",
+            },
+          ],
+        },
+        {
+          id: "chat",
+          label: "Chat",
+          controls: [
+            {
+              id: "chat-panel",
+              type: "button",
+              icon: "Users",
+              label: "Chat",
+              command: "chat",
+            },
+          ],
+        },
       ],
     },
+
+    {
+      id: "protection",
+      label: "Protection",
+      groups: [
+        {
+          id: "protect",
+          label: "Protect",
+          controls: [
+            {
+              id: "protect-document",
+              type: "button",
+              icon: "Lock",
+              label: "Protect Document",
+              command: "protect-document",
+            },
+          ],
+        },
+      ],
+    },
+
     {
       id: "view",
       label: "View",
@@ -826,6 +853,46 @@ export const wordRibbonSpec: RibbonSpec = {
               icon: "ChevronDown",
               label: "Combo Box",
               command: "insertDropdownControl",
+            },
+          ],
+        },
+      ],
+    },
+
+    {
+      id: "plugins",
+      label: "Plugins",
+      groups: [
+        {
+          id: "plugin-management",
+          label: "Plugins",
+          controls: [
+            {
+              id: "plugins-panel",
+              type: "button",
+              icon: "Settings",
+              label: "Manage Plugins",
+              command: "plugins",
+            },
+          ],
+        },
+      ],
+    },
+
+    {
+      id: "ai",
+      label: "AI",
+      groups: [
+        {
+          id: "ai-assistant",
+          label: "AI Assistant",
+          controls: [
+            {
+              id: "ai-assistant-panel",
+              type: "button",
+              icon: "Smile",
+              label: "AI Assistant",
+              command: "ai-assistant",
             },
           ],
         },

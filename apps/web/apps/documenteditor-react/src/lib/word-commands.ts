@@ -13,7 +13,7 @@
  *   ui     → document events handled by App.tsx (find/replace etc.)
  */
 
-import type { WoCommand } from "@world-office/editor-common"
+import { togglePluginEnabled, type WoCommand } from "@world-office/editor-common"
 import type { RichTextCommand } from "./rte-command"
 import { documentStore } from "../stores/DocumentStore"
 import type { CanvasEditorHandle } from "../components/CanvasEditor"
@@ -340,6 +340,15 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "insertDatePickerControl":
         documentStore.toggleRightPanel("form")
         return
+      case "chat":
+        documentStore.toggleLeftPanel("chat")
+        return
+      case "plugins":
+        documentStore.toggleRightPanel("plugins")
+        return
+      case "aiAssistant":
+        documentStore.toggleRightPanel("ai-assistant")
+        return
       // Track Changes commands open the review panel
       case "toggleTrackChanges":
       case "acceptChange":
@@ -358,6 +367,9 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "updateIndex":
       case "insertIndexEntry":
         documentStore.toggleRightPanel("crossreference")
+        return
+      case "togglePlugin":
+        if (typeof value === "string" && value) togglePluginEnabled(value)
         return
       default:
         break

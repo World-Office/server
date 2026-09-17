@@ -4,6 +4,35 @@
  */
 import { type JSX, useState } from "react"
 
+// Plugin config persists under the same key the editor-common plugin loader
+// reads ("wo-plugins"), so toggles here feed the loader when it is wired in.
+const PLUGIN_CONFIG_KEY = "wo-plugins"
+
+interface PluginConfigEntry {
+  id: string
+  name: string
+  enabled: boolean
+}
+
+function loadPersistedConfig(): PluginConfigEntry[] {
+  try {
+    const raw = window.localStorage.getItem(PLUGIN_CONFIG_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as PluginConfigEntry[]) : []
+  } catch {
+    return []
+  }
+}
+
+function savePersistedConfig(list: PluginConfigEntry[]): void {
+  try {
+    window.localStorage.setItem(PLUGIN_CONFIG_KEY, JSON.stringify(list))
+  } catch {
+    // Ignore storage errors (matches the rest of the app)
+  }
+}
+
 interface PluginsPanelProps {
   visible: boolean
 }
@@ -66,16 +95,31 @@ const DEFAULT_PLUGINS: PluginInfo[] = [
   },
 ]
 
-export function PluginsPanel({ visible }: PluginsPanelProps): JSX.Element | null {
-  const [plugins, setPlugins] = useState(DEFAULT_PLUGINS)
+function mergePersisted(list: PluginInfo[], cfg: PluginConfigEntry[]): PluginInfo[] {
+  if (!cfg.length) return list
+  return list.map((p) => {
+    const c = cfg.find((x) => x.id === p.id)
+    return c ? { ...p, enabled: c.enabled, name: c.name || p.name } : p
+  })
+}
+
+function toConfig(list: PluginInfo[]): PluginConfigEntry[] {
+  return list.map((p) => ({ id: p.id, name: p.name, enabled: p.enabled }))
+}
+
+function PluginsPanelInner({ visible }: PluginsPanelProps): JSX.Element | null {
+  // Seed from persisted config so toggles are the single source of truth
+  // (drives the plugin loader in editor-common when it is wired in).
+  const [plugins, setPlugins] = useState<PluginInfo[]>(() => mergePersisted(DEFAULT_PLUGINS, loadPersistedConfig()))
 
   if (!visible) return null
 
   function togglePlugin(id: string) {
-    setPlugins((prev) => prev.map((p) => (p.id === id ? { ...p, enabled: !p.enabled } : p)))
-    window.dispatchEvent(
-      new CustomEvent("wo-command", { detail: { command: "togglePlugin", value: id } }),
-    )
+    setPlugins((prev) => {
+      const next = prev.map((p) => (p.id === id ? { ...p, enabled: !p.enabled } : p))
+      savePersistedConfig(toConfig(next))
+      return next
+    })
   }
 
   return (
@@ -195,3 +239,5 @@ const headerStyle: React.CSSProperties = {
   background: "#f8f9fa",
 }
 const bodyStyle: React.CSSProperties = { flex: 1, overflowY: "auto", padding: "12px 16px" }
+
+export const PluginsPanel = PluginsPanelInner
