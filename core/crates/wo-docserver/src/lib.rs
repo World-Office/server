@@ -835,26 +835,37 @@ async fn conversion_formats(State(state): State<AppState>) -> Json<FormatsRespon
 /// Embedded minimal docx for the demo document — served when the file
 /// configured via `DEMO_DOC_PATH` (or `./demo.docx`) is missing.
 ///
-/// Generated with: python3 -c "zipfile+base64" (see plan/ for script).
+/// Minimal demo docx served by `/demo/document` when the file configured
+/// via `DEMO_DOC_PATH` is missing. Same content as `assets/demo.docx` (the
+/// image-baked copy); generated with python3 zipfile + base64.
 const EMBEDDED_DEMO_DOCX_BASE64: &str = concat!(
-    "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",
+    "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",
 );
 
 fn decode_embedded_demo_docx() -> anyhow::Result<Vec<u8>> {
