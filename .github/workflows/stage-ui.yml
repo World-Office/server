@@ -68,13 +68,13 @@ jobs:
             mkdir -p "$DIR"
             curl -fsSL -H "Authorization: token $TOKEN" "${{ steps.resolve.outputs.dl }}" -o /tmp/frontend-dist.zip
             python3 - "$SHA8" <<'PY'
-import zipfile, os, sys
-sha8 = sys.argv[1]
-z = zipfile.ZipFile("/tmp/frontend-dist.zip")
-os.chdir(f"/home/weiss/editor-ui-{sha8}")
-z.extractall()
-print("extracted", len(z.namelist()), "entries")
-PY
+          import zipfile, os, sys
+          sha8 = sys.argv[1]
+          z = zipfile.ZipFile("/tmp/frontend-dist.zip")
+          os.chdir(f"/home/weiss/editor-ui-{sha8}")
+          z.extractall()
+          print("extracted", len(z.namelist()), "entries")
+          PY
             rm -f /tmp/frontend-dist.zip
           fi
           for d in word sheet slide diagram pdf; do
