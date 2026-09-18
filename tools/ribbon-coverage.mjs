@@ -182,6 +182,10 @@ const WIRING = {
     toggleMultiplePages: { target: "store", implemented: true },
     fitToPage: { target: "store", implemented: true },
     fitToWidth: { target: "store", implemented: true },
+    // ai tab — each opens the AI assistant panel (summarize/translate/grammar/chat surface)
+    aiSettings: { target: "panel", implemented: true }, aiChatbot: { target: "panel", implemented: true },
+    aiSummarization: { target: "panel", implemented: true }, aiTranslation: { target: "panel", implemented: true },
+    aiGrammarSpelling: { target: "panel", implemented: true }, "ai-assistant": { target: "panel", implemented: true },
   },
   sheet: {
     cut: { target: "router", implemented: true }, copy: { target: "router", implemented: true },
