@@ -109,8 +109,16 @@ const WIRING = {
     insertTableOfFigures: { target: "panel", implemented: true },
     // review
     acceptAllChanges: { target: "panel", implemented: true }, acceptChange: { target: "panel", implemented: true },
-    nextChange: { target: "panel", implemented: true }, rejectAllChanges: { target: "panel", implemented: true },
-    rejectChange: { target: "panel", implemented: true }, toggleTrackChanges: { target: "panel", implemented: true },
+    nextChange: { target: "panel", implemented: true }, previousChange: { target: "panel", implemented: true },
+    rejectAllChanges: { target: "panel", implemented: true }, rejectChange: { target: "panel", implemented: true },
+    toggleTrackChanges: { target: "panel", implemented: true },
+    // collaboration - comments
+    addComment: { target: "panel", implemented: true }, toggleComment: { target: "panel", implemented: true },
+    deleteComment: { target: "panel", implemented: true }, resolveComment: { target: "panel", implemented: true },
+    // collaboration - compare
+    compareDocuments: { target: "panel", implemented: true }, combineDocuments: { target: "panel", implemented: true },
+    // collaboration - display & mail merge
+    displayMode: { target: "panel", implemented: true }, mailMerge: { target: "panel", implemented: true },
     // view
     toggleGridlines: { target: "store", implemented: true }, toggleNavigation: { target: "store", implemented: true },
     toggleRuler: { target: "store", implemented: true }, toggleSpellCheck: { target: "store", implemented: true },
@@ -130,6 +138,9 @@ const WIRING = {
     fitToPage: { target: "store", implemented: true }, fitToWidth: { target: "store", implemented: true },
     // protection
     encrypt: { target: "panel", implemented: true }, "protect-document": { target: "panel", implemented: true },
+    // protection, chat, plugins, ai
+    chat: { target: "panel", implemented: true }, "protect-document": { target: "panel", implemented: true },
+    plugins: { target: "panel", implemented: true }, "ai-assistant": { target: "panel", implemented: true },
   },
   sheet: {
     cut: { target: "router", implemented: true }, copy: { target: "router", implemented: true },
