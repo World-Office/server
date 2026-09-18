@@ -84,6 +84,13 @@ const WIRING = {
     selectAll: { target: "router", implemented: true },
     // insert
     horizontalRule: { target: "wasm", implemented: true }, image: { target: "panel", implemented: true },
+    blankPage: { target: "wasm", implemented: true },
+    insertShape: { target: "panel", implemented: true }, insertSmartArt: { target: "panel", implemented: true },
+    insertChart: { target: "panel", implemented: true }, textBox: { target: "panel", implemented: true },
+    textArt: { target: "panel", implemented: true }, dropCap: { target: "panel", implemented: true },
+    textFromFile: { target: "router", implemented: true },
+    equation: { target: "panel", implemented: true }, symbol: { target: "panel", implemented: true },
+    insertContentControl: { target: "panel", implemented: true },
     link: { target: "panel", implemented: true }, insertTable: { target: "wasm", implemented: true },
     pageBreak: { target: "wasm", implemented: true },
     // layout
