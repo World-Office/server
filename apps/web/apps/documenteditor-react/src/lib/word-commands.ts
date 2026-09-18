@@ -275,6 +275,32 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "insertPageNumber":
         documentStore.headerFooterMode = "footer"
         return
+      case "insertDateTime": {
+        // OO inserts an updatable DATETIME field into the active region
+        const stamp = new Date().toISOString()
+        if (documentStore.headerFooterMode === "footer") {
+          documentStore.footerHtml += `<span data-wo-field="DATETIME">${stamp}</span>`
+        } else {
+          documentStore.headerFooterMode = "header"
+          documentStore.headerHtml += `<span data-wo-field="DATETIME">${stamp}</span>`
+        }
+        return
+      }
+      case "insertField": {
+        // OO field dialog inserts a named field (PAGE, NUMPAGES, …);
+        // default to PAGE when opened without a selection
+        const name = typeof value === "string" && value ? value : "PAGE"
+        if (documentStore.headerFooterMode === "footer") {
+          documentStore.footerHtml += `<span data-wo-field="${name}">${name}</span>`
+        } else {
+          documentStore.headerFooterMode = "header"
+          documentStore.headerHtml += `<span data-wo-field="${name}">${name}</span>`
+        }
+        return
+      }
+      case "closeHeaderFooter":
+        documentStore.headerFooterMode = "none"
+        return
       case "save":
         void documentStore.saveToWopi()
         return
