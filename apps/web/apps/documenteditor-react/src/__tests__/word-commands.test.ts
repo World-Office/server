@@ -347,6 +347,53 @@ describe("word-commands", () => {
     })
   })
 
+  describe("home parity commands", () => {
+    it("should step font size up on the OO ladder (increment font size)", () => {
+      handler({ command: "increaseFontSize" })
+      expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ fontSize: 28 }) // 12 → 14 pt
+      handler({ command: "increaseFontSize", value: "10" })
+      expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ fontSize: 22 }) // 10 → 11 pt
+    })
+
+    it("should step font size down on the OO ladder (decrement font size)", () => {
+      handler({ command: "decreaseFontSize" })
+      expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ fontSize: 22 }) // 12 → 11 pt
+      handler({ command: "decreaseFontSize", value: "8" })
+      expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ fontSize: 16 }) // floor 8 pt
+    })
+
+    it("should apply a multilevel list (ordered-list + indent level)", () => {
+      handler({ command: "multilevelList" })
+      expect(editorHandle.applyStructureOp).toHaveBeenNthCalledWith(1, "ordered-list")
+      expect(editorHandle.applyStructureOp).toHaveBeenNthCalledWith(2, "indent")
+    })
+
+    it("should select all through the rich-text bridge", () => {
+      handler({ command: "selectAll" })
+      expect(deps.onRichTextCommand).toHaveBeenCalledWith("selectAll", undefined)
+    })
+
+    it("should open the paragraph settings panel for change case", () => {
+      handler({ command: "changeCase" })
+      expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("paragraph")
+    })
+
+    it("should open the paragraph settings panel for shading", () => {
+      handler({ command: "shading" })
+      expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("paragraph")
+    })
+
+    it("should open the paragraph settings panel for borders", () => {
+      handler({ command: "borders" })
+      expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("paragraph")
+    })
+
+    it("should toggle non-printing (formatting marks) via the paragraph settings panel", () => {
+      handler({ command: "toggleNonprinting" })
+      expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("paragraph")
+    })
+  })
+
   describe("unknown commands", () => {
     it("should log a warning for unknown commands and not throw", () => {
       const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})

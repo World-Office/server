@@ -61,21 +61,27 @@ const WIRING = {
     fontFamily: { target: "wasm", implemented: true }, fontSize: { target: "wasm", implemented: true },
     textColor: { target: "wasm", implemented: true }, highlight: { target: "wasm", implemented: true },
     clearFormatting: { target: "wasm", implemented: true },
+    increaseFontSize: { target: "wasm", implemented: true }, decreaseFontSize: { target: "wasm", implemented: true },
+    changeCase: { target: "panel", implemented: true },
     // home — paragraph
     bulletList: { target: "wasm", implemented: true }, orderedList: { target: "wasm", implemented: true },
     taskList: { target: "wasm", implemented: true },
+    multilevelList: { target: "wasm", implemented: true },
     alignLeft: { target: "wasm", implemented: true }, alignCenter: { target: "wasm", implemented: true },
     alignRight: { target: "wasm", implemented: true }, alignJustify: { target: "wasm", implemented: true },
     indent: { target: "wasm", implemented: true }, outdent: { target: "wasm", implemented: true },
     lineSpacing: { target: "wasm", implemented: true },
     blockquote: { target: "wasm", implemented: true }, codeBlock: { target: "wasm", implemented: true },
     setTextDirection: { target: "wasm", implemented: true },
+    toggleNonprinting: { target: "panel", implemented: true }, shading: { target: "panel", implemented: true },
+    borders: { target: "panel", implemented: true },
     // home — styles
     heading1: { target: "wasm", implemented: true }, heading2: { target: "wasm", implemented: true },
     heading3: { target: "wasm", implemented: true }, heading4: { target: "wasm", implemented: true },
     heading5: { target: "wasm", implemented: true }, heading6: { target: "wasm", implemented: true },
     // home — editing
     find: { target: "panel", implemented: true }, replace: { target: "panel", implemented: true },
+    selectAll: { target: "router", implemented: true },
     // insert
     horizontalRule: { target: "wasm", implemented: true }, image: { target: "panel", implemented: true },
     link: { target: "panel", implemented: true }, insertTable: { target: "wasm", implemented: true },
