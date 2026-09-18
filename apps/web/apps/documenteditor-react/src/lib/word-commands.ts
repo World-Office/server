@@ -70,6 +70,21 @@ export function structureOpForCommand(command: string): string | null {
 }
 
 /**
+ * Standard OnlyOffice font-size ladder (points). Ribbon Inc./Dec. font size
+ * buttons step along it; a non-ladder start value is snapped to the nearest
+ * rung before stepping.
+ */
+const FONT_SIZE_LADDER = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36, 48, 72]
+
+/** Next / previous ladder size in points; defaults to stepping from 12pt. */
+export function stepFontSize(value: string | undefined, dir: 1 | -1): number {
+  const current = value ? Number.parseFloat(value) : 12
+  const idx = FONT_SIZE_LADDER.indexOf(current)
+  if (idx === -1) return FONT_SIZE_LADDER[0]
+  return FONT_SIZE_LADDER[Math.min(FONT_SIZE_LADDER.length - 1, Math.max(0, idx + dir))]
+}
+
+/**
  * Map a ribbon command + value to a WASM applyFormatting JSON object.
  * Returns null when the command is not a formatting op.
  */
@@ -93,6 +108,11 @@ export function commandToFormat(
       return { verticalAlignment: "superscript" }
     case "fontSize":
       return { fontSize: value ? Number.parseInt(value, 10) * 2 : 24 }
+    case "increaseFontSize":
+      // Half-points (1pt = 2 half-points), matching the font-size select.
+      return { fontSize: stepFontSize(value, 1) * 2 }
+    case "decreaseFontSize":
+      return { fontSize: stepFontSize(value, -1) * 2 }
     case "fontFamily":
       return value ? { fontName: value } : null
     case "textColor":
@@ -156,6 +176,15 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       editorRef.current?.applyStructureOp(
         value === "rtl" ? "set-text-direction-rtl" : "set-text-direction-ltr",
       )
+      return
+    }
+    if (command === "multilevelList") {
+      // OO "Multilevel list" = a decimal-numbered list with nested levels.
+      // The WASM engine has no single multilevel op, so run the two real
+      // ops that reproduce it: start a decimal list, then deepen its level
+      // (ilvl + 1) so the item renders as a nested multi-level item.
+      editorRef.current?.applyStructureOp("ordered-list")
+      editorRef.current?.applyStructureOp("indent")
       return
     }
     const structureOp = structureOpForCommand(command)
@@ -370,6 +399,18 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         return
       case "togglePlugin":
         if (typeof value === "string" && value) togglePluginEnabled(value)
+        return
+      // Home paragraph-formatting / view controls that have no dedicated
+      // WASM model op yet land in the existing paragraph settings panel
+      // (StylesPanel — the right-rail component rendered for "paragraph").
+      // ponytail: full OO parity needs engine ops for case cycling, paragraph
+      // shading/borders and non-printing-marks display; upgrade each command
+      // when the WASM model exposes them.
+      case "changeCase":
+      case "shading":
+      case "borders":
+      case "toggleNonprinting":
+        documentStore.toggleRightPanel("paragraph")
         return
       default:
         break
