@@ -1,13 +1,19 @@
 {
   "name": "@world-office/wo-renderer-wasm",
   "version": "0.1.0",
-  "collaborators": ["World Office Contributors"],
+  "collaborators": [
+    "World Office Contributors"
+  ],
   "description": "WASM bindings for World-Office rendering engine",
   "type": "module",
   "scripts": {
-    "build": "wasm-pack build --target web --out-dir pkg"
+    "build": "wasm-pack build --target web --out-dir pkg",
+    "build:win": "cargo build --release --target wasm32-unknown-unknown && wasm-bindgen --target web --out-dir pkg ../../target/wasm32-unknown-unknown/release/wo_renderer_wasm.wasm",
+    "build:win:note": "prereq: cargo install wasm-bindgen-cli --locked (matches workspace wasm-bindgen 0.2.x); skips binaryen wasm-opt, which crashes on some Windows boxes \u2014 wasm+bindings emit fine"
   },
-  "files": ["pkg"],
+  "files": [
+    "pkg"
+  ],
   "main": "pkg/wo_renderer_wasm.js",
   "module": "pkg/wo_renderer_wasm.js",
   "types": "pkg/wo_renderer_wasm.d.ts",
