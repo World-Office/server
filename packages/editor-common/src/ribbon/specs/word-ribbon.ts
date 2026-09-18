@@ -1,5 +1,88 @@
-import type { RibbonSpec } from "../types"
+import type { RibbonGroupSpec, RibbonSpec } from "../types"
 import { cloudTab } from "./cloud-spec"
+
+/**
+ * Global quick-access groups shown at the trail of OO's Home and Plugins
+ * tabs (word count, document language, spell/track status, page fitting
+ * and zoom). Shared so both tabs carry identical controls.
+ */
+export const globalLanguageGroup: RibbonGroupSpec = {
+  id: "language",
+  label: "Language",
+  controls: [
+    {
+      id: "word-count",
+      type: "button",
+      icon: "FileText",
+      label: "Word count",
+      command: "wordCount",
+    },
+    {
+      id: "set-document-language",
+      type: "button",
+      icon: "Globe",
+      label: "English – United States",
+      command: "setDocumentLanguage",
+    },
+    {
+      id: "spell-checking",
+      type: "checkbox",
+      label: "Spell checking",
+      checked: (ctx) => ctx.spellcheckEnabled ?? true,
+      onChange: () => {},
+      command: "toggleSpellCheck",
+    },
+    {
+      id: "track-changes",
+      type: "button",
+      icon: "Eye",
+      label: "Track changes",
+      command: "toggleTrackChanges",
+    },
+  ],
+}
+
+export const globalViewGroup: RibbonGroupSpec = {
+  id: "view",
+  label: "View",
+  controls: [
+    {
+      id: "multiple-pages",
+      type: "button",
+      icon: "Layout",
+      label: "Multiple pages",
+      command: "multiplePages",
+    },
+    {
+      id: "fit-to-page",
+      type: "button",
+      icon: "Maximize",
+      label: "Fit to page",
+      command: "fitToPage",
+    },
+    {
+      id: "fit-to-width",
+      type: "button",
+      icon: "Maximize2",
+      label: "Fit to width",
+      command: "fitToWidth",
+    },
+    {
+      id: "zoom-out",
+      type: "button",
+      icon: "ZoomOut",
+      label: "Zoom out",
+      command: "zoomOut",
+    },
+    {
+      id: "zoom-in",
+      type: "button",
+      icon: "ZoomIn",
+      label: "Zoom in",
+      command: "zoomIn",
+    },
+  ],
+}
 
 /**
  * Word editor ribbon spec — mirrors ONLYOFFICE Document Editor ribbon 1:1.
@@ -56,6 +139,14 @@ export const wordRibbonSpec: RibbonSpec = {
               label: "Redo",
               command: "redo",
               shortcut: "Ctrl+Y",
+            },
+            {
+              id: "copy-style",
+              type: "button",
+              icon: "CopyText",
+              label: "Copy style",
+              command: "copyStyle",
+              shortcut: "Ctrl+Alt+C",
             },
           ],
         },
@@ -418,6 +509,8 @@ export const wordRibbonSpec: RibbonSpec = {
             },
           ],
         },
+        globalLanguageGroup,
+        globalViewGroup,
       ],
     },
 
@@ -1296,78 +1389,12 @@ export const wordRibbonSpec: RibbonSpec = {
         {
           id: "language",
           label: "Language",
-          controls: [
-            {
-              id: "word-count",
-              type: "button",
-              icon: "FileText",
-              label: "Word count",
-              command: "wordCount",
-            },
-            {
-              id: "set-document-language",
-              type: "button",
-              icon: "Globe",
-              label: "English – United States",
-              command: "setDocumentLanguage",
-            },
-            {
-              id: "spell-checking",
-              type: "checkbox",
-              label: "Spell checking",
-              checked: (ctx) => ctx.spellcheckEnabled ?? true,
-              onChange: () => {},
-              command: "toggleSpellCheck",
-            },
-            {
-              id: "track-changes",
-              type: "button",
-              icon: "Eye",
-              label: "Track changes",
-              command: "toggleTrackChanges",
-            },
-          ],
+          controls: globalLanguageGroup.controls,
         },
         {
           id: "view",
           label: "View",
-          controls: [
-            {
-              id: "multiple-pages",
-              type: "button",
-              icon: "Layout",
-              label: "Multiple pages",
-              command: "multiplePages",
-            },
-            {
-              id: "fit-to-page",
-              type: "button",
-              icon: "Maximize",
-              label: "Fit to page",
-              command: "fitToPage",
-            },
-            {
-              id: "fit-to-width",
-              type: "button",
-              icon: "Maximize2",
-              label: "Fit to width",
-              command: "fitToWidth",
-            },
-            {
-              id: "zoom-out",
-              type: "button",
-              icon: "ZoomOut",
-              label: "Zoom out",
-              command: "zoomOut",
-            },
-            {
-              id: "zoom-in",
-              type: "button",
-              icon: "ZoomIn",
-              label: "Zoom in",
-              command: "zoomIn",
-            },
-          ],
+          controls: globalViewGroup.controls,
         },
       ],
     },
