@@ -198,7 +198,7 @@ const ObservedFileMenuItems = observer(function FileMenuItems({ onMenuClick, onB
     onBack()
   }
 
-  async function handleDesktopAction(action: string): Promise<void> {
+  async function handleDesktopAction(action: string, hasPanel: boolean): Promise<void> {
     if (action === "browse") {
       documentStore.setActiveFileMenuPanel("browse")
       documentStore.setActiveTab("file")
@@ -211,13 +211,15 @@ const ObservedFileMenuItems = observer(function FileMenuItems({ onMenuClick, onB
     }
 
     if (!documentStore.isDesktop) {
-      onMenuClick(action, false)
+      // Panels (Download As, Info, Protect, …) open the matching backstage
+      // panel; plain actions close the menu. Mirrors OnlyOffice.
+      onMenuClick(action, hasPanel)
       return
     }
     switch (action) {
       case "save-desktop": {
         if (documentStore.filePath) {
-          onMenuClick(action, false)
+          onMenuClick(action, hasPanel)
         } else {
           onMenuClick("saveas", true)
         }
@@ -234,7 +236,7 @@ const ObservedFileMenuItems = observer(function FileMenuItems({ onMenuClick, onB
         break
       }
       default:
-        onMenuClick(action, false)
+        onMenuClick(action, hasPanel)
     }
   }
 
@@ -277,7 +279,7 @@ const ObservedFileMenuItems = observer(function FileMenuItems({ onMenuClick, onB
                 activePanel === item.action ? styles.active : undefined,
                 item.hasPanel ? styles.chevron : undefined,
               )}
-              onClick={() => handleDesktopAction(item.action)}
+              onClick={() => handleDesktopAction(item.action, item.hasPanel)}
             >
               <span className={styles.icon}>
                 <svg

@@ -128,6 +128,14 @@ const WIRING = {
     copyStyle: { target: "router", implemented: true }, wordCount: { target: "panel", implemented: true },
     setDocumentLanguage: { target: "panel", implemented: true }, multiplePages: { target: "panel", implemented: true },
     fitToPage: { target: "store", implemented: true }, fitToWidth: { target: "store", implemented: true },
+    // file backstage
+    back: { target: "state", implemented: true }, save: { target: "store", implemented: true },
+    downloadAs: { target: "panel", implemented: true }, print: { target: "panel", implemented: true },
+    protect: { target: "panel", implemented: true }, info: { target: "panel", implemented: true },
+    advancedSettings: { target: "panel", implemented: true }, help: { target: "panel", implemented: true },
+    suggestFeature: { target: "panel", implemented: true },
+    chat: { target: "panel", implemented: true }, "protect-document": { target: "panel", implemented: true },
+    "ai-assistant": { target: "panel", implemented: true },
   },
   sheet: {
     cut: { target: "router", implemented: true }, copy: { target: "router", implemented: true },

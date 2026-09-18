@@ -33,6 +33,8 @@ vi.mock("../stores/DocumentStore", () => ({
     pageOrientation: "portrait",
     pageSize: "A4",
     pageMargins: "normal",
+    setFileMenuOpen: vi.fn(),
+    setActiveFileMenuPanel: vi.fn(),
   },
 }))
 
@@ -419,6 +421,54 @@ describe("word-commands", () => {
         handler({ command: cmd })
         expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("crossreference")
       })
+    })
+  })
+
+  describe("file backstage commands", () => {
+    it("should open the Save-As panel for Download As", () => {
+      handler({ command: "downloadAs" })
+      expect(documentStore.setFileMenuOpen).toHaveBeenCalledWith(true)
+      expect(documentStore.setActiveFileMenuPanel).toHaveBeenCalledWith("saveas")
+    })
+
+    it("should open the print-preview panel for Print", () => {
+      handler({ command: "print" })
+      expect(documentStore.setFileMenuOpen).toHaveBeenCalledWith(true)
+      expect(documentStore.setActiveFileMenuPanel).toHaveBeenCalledWith("printpreview")
+    })
+
+    it("should open the protect panel for Protect", () => {
+      handler({ command: "protect" })
+      expect(documentStore.setFileMenuOpen).toHaveBeenCalledWith(true)
+      expect(documentStore.setActiveFileMenuPanel).toHaveBeenCalledWith("protect")
+    })
+
+    it("should open the document-info panel for Info", () => {
+      handler({ command: "info" })
+      expect(documentStore.setFileMenuOpen).toHaveBeenCalledWith(true)
+      expect(documentStore.setActiveFileMenuPanel).toHaveBeenCalledWith("info")
+    })
+
+    it("should open the settings panel for Advanced Settings", () => {
+      handler({ command: "advancedSettings" })
+      expect(documentStore.setFileMenuOpen).toHaveBeenCalledWith(true)
+      expect(documentStore.setActiveFileMenuPanel).toHaveBeenCalledWith("opts")
+    })
+
+    it("should open the help panel for Help and Suggest a Feature", () => {
+      handler({ command: "help" })
+      expect(documentStore.setFileMenuOpen).toHaveBeenCalledWith(true)
+      expect(documentStore.setActiveFileMenuPanel).toHaveBeenCalledWith("help")
+      documentStore.setActiveFileMenuPanel.mockClear()
+      handler({ command: "suggestFeature" })
+      expect(documentStore.setFileMenuOpen).toHaveBeenCalledWith(true)
+      expect(documentStore.setActiveFileMenuPanel).toHaveBeenCalledWith("help")
+    })
+
+    it("should close the backstage for Back", () => {
+      handler({ command: "back" })
+      expect(documentStore.setFileMenuOpen).toHaveBeenCalledWith(false)
+      expect(documentStore.setActiveFileMenuPanel).toHaveBeenCalledWith(null)
     })
   })
 
