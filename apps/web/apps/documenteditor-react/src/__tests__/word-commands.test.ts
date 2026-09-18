@@ -18,6 +18,8 @@ vi.mock("../stores/DocumentStore", () => ({
     differentFirstPage: false,
     setDifferentOddEven: vi.fn(),
     differentOddEven: false,
+    setTrackChanges: vi.fn(),
+    trackChanges: false,
     clearHeader: vi.fn(),
     clearFooter: vi.fn(),
     headerHtml: "",
@@ -26,6 +28,8 @@ vi.mock("../stores/DocumentStore", () => ({
     saveToWopi: vi.fn(),
     exportAsDownload: vi.fn(),
     toggleRightPanel: vi.fn(),
+    setFitToPage: vi.fn(),
+    setFitToWidth: vi.fn(),
     pageOrientation: "portrait",
     pageSize: "A4",
     pageMargins: "normal",
@@ -360,10 +364,52 @@ describe("word-commands", () => {
     })
 
     it("should toggle review panel for track changes", () => {
-      const cmds = ["toggleTrackChanges", "acceptChange", "acceptAllChanges", "rejectChange", "rejectAllChanges", "nextChange"]
+      const cmds = ["acceptChange", "acceptAllChanges", "rejectChange", "rejectAllChanges", "nextChange"]
       cmds.forEach(cmd => {
         handler({ command: cmd })
         expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("review")
+      })
+    })
+
+    it("should toggle track changes setting", () => {
+      documentStore.trackChanges = false
+      handler({ command: "toggleTrackChanges" })
+      expect(documentStore.setTrackChanges).toHaveBeenCalledWith(true)
+      documentStore.trackChanges = true
+      handler({ command: "toggleTrackChanges" })
+      expect(documentStore.setTrackChanges).toHaveBeenCalledWith(false)
+    })
+
+    it("should toggle store settings", () => {
+      const cmds = ["fitToPage", "fitToWidth"]
+      cmds.forEach(cmd => {
+        handler({ command: cmd })
+      })
+      expect(documentStore.setFitToPage).toHaveBeenCalled()
+      expect(documentStore.setFitToWidth).toHaveBeenCalled()
+    })
+
+    it("should open plugins panel for plugin commands", () => {
+      const cmds = [
+        "pluginManager",
+        "backgroundPlugins",
+        "photoEditor",
+        "youtube",
+        "ocr",
+        "translator",
+        "mendeley",
+        "thesaurus",
+        "highlightCode",
+        "zotero",
+        "speech",
+        "speechInput",
+        "wordCount",
+        "setDocumentLanguage",
+        "multiplePages",
+      ]
+      cmds.forEach(cmd => {
+        handler({ command: cmd })
+        expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("plugins")
       })
     })
 

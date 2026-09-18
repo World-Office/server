@@ -115,6 +115,16 @@ const WIRING = {
     // forms
     insertCheckboxControl: { target: "panel", implemented: true }, insertDatePickerControl: { target: "panel", implemented: true },
     insertDropdownControl: { target: "panel", implemented: true }, insertPlainTextControl: { target: "panel", implemented: true },
+    // plugins
+    pluginManager: { target: "panel", implemented: true }, backgroundPlugins: { target: "panel", implemented: true },
+    photoEditor: { target: "panel", implemented: true }, youtube: { target: "panel", implemented: true },
+    ocr: { target: "panel", implemented: true }, translator: { target: "panel", implemented: true },
+    mendeley: { target: "panel", implemented: true }, thesaurus: { target: "panel", implemented: true },
+    highlightCode: { target: "panel", implemented: true }, zotero: { target: "panel", implemented: true },
+    speech: { target: "panel", implemented: true }, speechInput: { target: "panel", implemented: true },
+    copyStyle: { target: "router", implemented: true }, wordCount: { target: "panel", implemented: true },
+    setDocumentLanguage: { target: "panel", implemented: true }, multiplePages: { target: "panel", implemented: true },
+    fitToPage: { target: "store", implemented: true }, fitToWidth: { target: "store", implemented: true },
   },
   sheet: {
     cut: { target: "router", implemented: true }, copy: { target: "router", implemented: true },

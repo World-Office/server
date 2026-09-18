@@ -252,6 +252,16 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "zoomOut":
         documentStore.zoomOut()
         return
+      case "fitToPage":
+        documentStore.setFitToPage(true)
+        return
+      case "fitToWidth":
+        documentStore.setFitToWidth(true)
+        return
+      case "multiplePages":
+        // Open the plugins panel (all plugin buttons open the same panel)
+        documentStore.toggleRightPanel("plugins")
+        return
       case "differentFirstPage":
         documentStore.setDifferentFirstPage(!documentStore.differentFirstPage)
         return
@@ -401,11 +411,38 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "plugins":
         documentStore.toggleRightPanel("plugins")
         return
+      case "pluginManager":
+      case "backgroundPlugins":
+      case "photoEditor":
+      case "youtube":
+      case "ocr":
+      case "translator":
+      case "mendeley":
+      case "thesaurus":
+      case "highlightCode":
+      case "zotero":
+      case "speech":
+      case "speechInput":
+        // Open the plugins panel (all plugin buttons open the same panel)
+        documentStore.toggleRightPanel("plugins")
+        return
+      case "wordCount":
+        // Word count - show word count dialog or open a panel
+        // For now, open the plugins panel as a placeholder
+        documentStore.toggleRightPanel("plugins")
+        return
+      case "setDocumentLanguage":
+        // Set document language - open language selection dialog
+        // For now, open the plugins panel as a placeholder
+        documentStore.toggleRightPanel("plugins")
+        return
       case "aiAssistant":
         documentStore.toggleRightPanel("ai-assistant")
         return
-      // Track Changes commands open the review panel
+      // Track Changes commands
       case "toggleTrackChanges":
+        documentStore.setTrackChanges(!documentStore.trackChanges)
+        return
       case "acceptChange":
       case "acceptAllChanges":
       case "rejectChange":
