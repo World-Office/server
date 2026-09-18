@@ -117,6 +117,7 @@ export type RightMenuPanel =
   | "plugins"
   | "crossreference"
   | "theme"
+  | "word-count"
 
 export type SaveAsFormat =
   | "DOCX"
