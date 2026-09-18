@@ -713,6 +713,25 @@ describe("word-commands", () => {
       expect(documentStore.toggleMacroPause).toHaveBeenCalled()
     })
 
+  describe("ai tab commands", () => {
+    it("should open the AI assistant panel for each AI tab command", () => {
+      const cmds = [
+        "ai-assistant",
+        "aiChatbot",
+        "aiSummarization",
+        "aiTranslation",
+        "aiGrammarSpelling",
+        "aiSettings",
+      ]
+      for (const cmd of cmds) {
+        vi.clearAllMocks()
+        handler({ command: cmd })
+        expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("ai-assistant")
+        expect(documentStore.toggleRightPanel).toHaveBeenCalledTimes(1)
+      }
+    })
+  })
+
   describe("unknown commands", () => {
     it("should log a warning for unknown commands and not throw", () => {
       const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
