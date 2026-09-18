@@ -60,6 +60,11 @@ export function structureOpForCommand(command: string): string | null {
     case "pageBreak":
     case "page-break":
       return "page-break"
+    // OO "Blank Page" inserts a page break at the cursor, pushing the
+    // following content onto a fresh page (same real WASM model op).
+    case "blankPage":
+    case "blank-page":
+      return "page-break"
     case "blockquote":
       return "blockquote"
     case "codeBlock":
@@ -375,6 +380,32 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         break
     }
 
+    // 4.5. Insert text from a file — OO "Text from File" opens a picker and
+    //      inserts the chosen file's contents at the cursor. Real behavior:
+    //      hidden file input → read as text → WASM insertText model op.
+    if (command === "textFromFile") {
+      const input = document.createElement("input")
+      input.type = "file"
+      input.accept = ".txt,.md,.csv,.html,.rtf,.doc,.docx"
+      input.style.display = "none"
+      input.onchange = () => {
+        const file = input.files?.[0]
+        if (!file) return
+        const reader = new FileReader()
+        reader.onload = () => {
+          const text = typeof reader.result === "string" ? reader.result : ""
+          if (text && editorRef.current) {
+            editorRef.current.applyFormatting({ insertText: text })
+          }
+        }
+        reader.readAsText(file)
+      }
+      document.body.appendChild(input)
+      input.click()
+      input.remove()
+      return
+    }
+
     // 5. Panel-opening commands
     switch (command) {
       case "protectDocument":
@@ -403,6 +434,35 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         return
       case "insertTable":
         documentStore.toggleRightPanel("table")
+        return
+      // Insert-tab media/objects: Shape, SmartArt and Text Box land on the
+      // existing shapes panel (the graphic-object surface; the WASM engine
+      // has no op for floating frames yet) — ponytail: add a real
+      // object-insertion model op when the engine exposes them.
+      case "insertShape":
+      case "insertSmartArt":
+      case "textBox":
+        documentStore.toggleRightPanel("shape")
+        return
+      case "insertChart":
+        documentStore.toggleRightPanel("chart")
+        return
+      case "textArt":
+        documentStore.toggleRightPanel("textart")
+        return
+      case "dropCap":
+        // Drop cap is paragraph-level formatting → paragraph settings panel
+        documentStore.toggleRightPanel("paragraph")
+        return
+      case "insertContentControl":
+        documentStore.toggleRightPanel("form")
+        return
+      case "equation":
+      case "symbol":
+        // ponytail: no dedicated equation/symbol surface yet — land in the
+        // plugins panel (it lists the enabled Equation Editor plugin); add a
+        // real picker panel when the engine exposes object insertion.
+        documentStore.toggleRightPanel("plugins")
         return
       case "openTheme":
         documentStore.toggleRightPanel("theme")

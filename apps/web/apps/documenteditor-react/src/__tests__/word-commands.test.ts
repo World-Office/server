@@ -502,6 +502,73 @@ describe("word-commands", () => {
     })
   })
 
+  describe("insert parity commands", () => {
+    it("should insert a blank page via the page-break model op", () => {
+      handler({ command: "blankPage" })
+      expect(editorHandle.applyStructureOp).toHaveBeenCalledWith("page-break")
+    })
+
+    it("should open the shapes panel for Shape / SmartArt / Text Box", () => {
+      const cmds = ["insertShape", "insertSmartArt", "textBox"]
+      cmds.forEach((cmd) => {
+        handler({ command: cmd })
+        expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("shape")
+      })
+    })
+
+    it("should open the chart panel for Chart", () => {
+      handler({ command: "insertChart" })
+      expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("chart")
+    })
+
+    it("should open the text art panel for Text Art", () => {
+      handler({ command: "textArt" })
+      expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("textart")
+    })
+
+    it("should open the paragraph settings panel for Drop Cap", () => {
+      handler({ command: "dropCap" })
+      expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("paragraph")
+    })
+
+    it("should open the form panel for Content Controls", () => {
+      handler({ command: "insertContentControl" })
+      expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("form")
+    })
+
+    it("should open the plugins panel for Equation and Symbol", () => {
+      const cmds = ["equation", "symbol"]
+      cmds.forEach((cmd) => {
+        handler({ command: cmd })
+        expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("plugins")
+      })
+    })
+
+    it("should insert the chosen file's text at the cursor for Text from File", async () => {
+      const realCreate = document.createElement.bind(document)
+      let captured: HTMLInputElement | null = null
+      vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+        const el = realCreate(tag) as HTMLInputElement
+        if (tag.toLowerCase() === "input") captured = el
+        return el
+      })
+
+      handler({ command: "textFromFile" })
+      expect(captured).not.toBeNull()
+      const input = captured as HTMLInputElement
+      expect(input.type).toBe("file")
+
+      const file = new File(["Hello from file"], "notes.txt", { type: "text/plain" })
+      Object.defineProperty(input, "files", { value: [file], configurable: true })
+      input.dispatchEvent(new Event("change"))
+
+      await vi.waitFor(() => {
+        expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ insertText: "Hello from file" })
+      })
+      vi.restoreAllMocks()
+    })
+  })
+
   describe("unknown commands", () => {
     it("should log a warning for unknown commands and not throw", () => {
       const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
