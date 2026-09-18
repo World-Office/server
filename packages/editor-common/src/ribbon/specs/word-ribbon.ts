@@ -1491,6 +1491,13 @@ export const wordRibbonSpec: RibbonSpec = {
               label: "Zoom Out",
               command: "zoomOut",
             },
+            {
+              id: "zoom-100",
+              type: "button",
+              icon: "Percent",
+              label: "Zoom to 100%",
+              command: "zoomTo100",
+            },
           ],
         },
         {
@@ -1524,10 +1531,69 @@ export const wordRibbonSpec: RibbonSpec = {
             {
               id: "navigation",
               type: "checkbox",
-              label: "Navigation",
+              label: "Headings",
               checked: (ctx) => ctx.navigationVisible ?? false,
               onChange: () => {},
               command: "toggleNavigation",
+            },
+            {
+              id: "dark-document",
+              type: "checkbox",
+              label: "Dark Document",
+              checked: (ctx) => ctx.darkDocument ?? false,
+              onChange: () => {},
+              command: "toggleDarkDocument",
+            },
+          ],
+        },
+        {
+          id: "interface-theme",
+          label: "Interface Theme",
+          controls: [
+            {
+              id: "interface-theme",
+              type: "select",
+              label: "Interface Theme",
+              options: [
+                { value: "office", label: "Light" },
+                { value: "classic", label: "Classic Light" },
+                { value: "dark", label: "Dark" },
+                { value: "contrast", label: "Contrast Black" },
+              ],
+              value: () => "office",
+              onChange: (val: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", {
+                    detail: { command: "interfaceTheme", value: val },
+                  }),
+                ),
+            },
+          ],
+        },
+        {
+          id: "macros",
+          label: "Macros",
+          controls: [
+            {
+              id: "macros",
+              type: "button",
+              icon: "Code2",
+              label: "Macros",
+              command: "macros",
+            },
+            {
+              id: "record-macro",
+              type: "button",
+              icon: "Play",
+              label: "Record Macro",
+              command: "recordMacro",
+            },
+            {
+              id: "pause-recording",
+              type: "button",
+              icon: "Timer",
+              label: "Pause Recording",
+              command: "pauseMacroRecording",
             },
           ],
         },
