@@ -106,6 +106,12 @@ export class DocumentStore {
   /* Track changes */
   trackChanges = false
 
+  /**
+   * Format JSON captured by OO "Copy style" (Ctrl+Alt+C) — the run
+   * formatting snapshot read off the WASM engine, ready to be re-applied.
+   */
+  formatPainterFormat: string | null = null
+
   /* Header / Footer */
   headerHtml = ""
   footerHtml = ""

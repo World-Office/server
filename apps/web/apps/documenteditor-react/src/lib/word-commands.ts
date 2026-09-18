@@ -15,6 +15,7 @@
 
 import { togglePluginEnabled, type WoCommand } from "@world-office/editor-common"
 import type { RichTextCommand } from "./rte-command"
+import { getWasmApi } from "./wasm-renderer"
 import { documentStore } from "../stores/DocumentStore"
 import type { CanvasEditorHandle } from "../components/CanvasEditor"
 
@@ -548,6 +549,21 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "togglePlugin":
         if (typeof value === "string" && value) togglePluginEnabled(value)
         return
+      case "copyStyle": {
+        // OO "Copy style" (Ctrl+Alt+C): capture the formatting of the run
+        // at the current cursor into app state so a surface with a matching
+        // apply-path can re-use it (format painter pattern).
+        const docHandle = editorRef.current?.getDocHandle?.() ?? null
+        const api = docHandle !== null ? getWasmApi() : null
+        if (api !== null && docHandle !== null) {
+          try {
+            documentStore.formatPainterFormat = api.get_run_formatting(docHandle)
+          } catch {
+            // WASM not ready — leave the previously copied format untouched
+          }
+        }
+        return
+      }
       // Home paragraph-formatting / view controls that have no dedicated
       // WASM model op yet land in the existing paragraph settings panel
       // (StylesPanel — the right-rail component rendered for "paragraph").

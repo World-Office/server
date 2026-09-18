@@ -5,6 +5,14 @@ import { documentStore } from "../stores/DocumentStore"
 import type { CanvasEditorHandle } from "../components/CanvasEditor"
 import type { WoCommand } from "@world-office/editor-common"
 
+const wasmMocks = vi.hoisted(() => ({
+  getWasmApi: vi.fn(() => null),
+}))
+
+vi.mock("../lib/wasm-renderer", () => ({
+  getWasmApi: wasmMocks.getWasmApi,
+}))
+
 vi.mock("../stores/DocumentStore", () => ({
   documentStore: {
     toggleRuler: vi.fn(),
@@ -20,6 +28,7 @@ vi.mock("../stores/DocumentStore", () => ({
     differentOddEven: false,
     setTrackChanges: vi.fn(),
     trackChanges: false,
+    formatPainterFormat: null,
     clearHeader: vi.fn(),
     clearFooter: vi.fn(),
     headerHtml: "",
@@ -45,6 +54,8 @@ describe("word-commands", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    wasmMocks.getWasmApi.mockReset();
+    wasmMocks.getWasmApi.mockReturnValue(null)
     documentStore.headerFooterMode = "none"
     documentStore.headerHtml = ""
     documentStore.footerHtml = ""
@@ -484,6 +495,29 @@ describe("word-commands", () => {
     it("should open the paragraph settings panel for change case", () => {
       handler({ command: "changeCase" })
       expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("paragraph")
+    })
+
+    it("should capture the current run formatting for Copy style (Ctrl+Alt+C)", () => {
+      const get_run_formatting = vi.fn(() => '{"bold":true,"italic":false}')
+      wasmMocks.getWasmApi.mockReturnValue({ get_run_formatting })
+      const docHandle = 7
+      editorHandle = {
+        applyFormatting: vi.fn(),
+        applyStructureOp: vi.fn(),
+        getDocHandle: () => docHandle,
+      } as unknown as CanvasEditorHandle
+      deps.editorRef.current = editorHandle
+
+      handler({ command: "copyStyle" })
+
+      expect(get_run_formatting).toHaveBeenCalledWith(docHandle)
+      expect(documentStore.formatPainterFormat).toBe('{"bold":true,"italic":false}')
+    })
+
+    it("should tolerate a missing WASM handle for Copy style", () => {
+      documentStore.formatPainterFormat = "old"
+      handler({ command: "copyStyle" })
+      expect(documentStore.formatPainterFormat).toBe("old")
     })
 
     it("should open the paragraph settings panel for shading", () => {
