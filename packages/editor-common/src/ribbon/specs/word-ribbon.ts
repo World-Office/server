@@ -10,6 +10,84 @@ import { cloudTab } from "./cloud-spec"
 export const wordRibbonSpec: RibbonSpec = {
   tabs: [
     {
+      id: "file",
+      label: "File",
+      // OnlyOffice backstage (File tab) — each button opens the matching
+      // FileMenu backstage panel via a real command in word-commands.ts.
+      groups: [
+        {
+          id: "backstage",
+          label: "File",
+          controls: [
+            {
+              id: "backstage-back",
+              type: "button",
+              icon: "ChevronLeft",
+              label: "Back",
+              command: "back",
+            },
+            {
+              id: "backstage-save",
+              type: "button",
+              icon: "Save",
+              label: "Save",
+              command: "save",
+            },
+            {
+              id: "backstage-download-as",
+              type: "button",
+              icon: "Download",
+              label: "Download As",
+              command: "downloadAs",
+            },
+            {
+              id: "backstage-print",
+              type: "button",
+              icon: "Printer",
+              label: "Print",
+              command: "print",
+            },
+            {
+              id: "backstage-protect",
+              type: "button",
+              icon: "Lock",
+              label: "Protect",
+              command: "protect",
+            },
+            {
+              id: "backstage-info",
+              type: "button",
+              icon: "FileText",
+              label: "Info",
+              command: "info",
+            },
+            {
+              id: "backstage-advanced-settings",
+              type: "button",
+              icon: "Settings",
+              label: "Advanced Settings",
+              command: "advancedSettings",
+            },
+            {
+              id: "backstage-help",
+              type: "button",
+              icon: "HelpCircle",
+              label: "Help",
+              command: "help",
+            },
+            {
+              id: "backstage-suggest-feature",
+              type: "button",
+              icon: "MessageSquare",
+              label: "Suggest a Feature",
+              command: "suggestFeature",
+            },
+          ],
+        },
+      ],
+    },
+
+    {
       id: "home",
       label: "Home",
       groups: [

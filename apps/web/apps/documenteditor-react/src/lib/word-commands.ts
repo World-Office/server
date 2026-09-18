@@ -321,6 +321,42 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         break
     }
 
+    // 3b. OnlyOffice File backstage — open the matching FileMenu panel (or
+    //     return to the document). The panel ids mirror FileMenuItems actions.
+    switch (command) {
+      case "back":
+        documentStore.setFileMenuOpen(false)
+        documentStore.setActiveFileMenuPanel(null)
+        return
+      case "downloadAs":
+        documentStore.setFileMenuOpen(true)
+        documentStore.setActiveFileMenuPanel("saveas")
+        return
+      case "print":
+        documentStore.setFileMenuOpen(true)
+        documentStore.setActiveFileMenuPanel("printpreview")
+        return
+      case "protect":
+        documentStore.setFileMenuOpen(true)
+        documentStore.setActiveFileMenuPanel("protect")
+        return
+      case "info":
+        documentStore.setFileMenuOpen(true)
+        documentStore.setActiveFileMenuPanel("info")
+        return
+      case "advancedSettings":
+        documentStore.setFileMenuOpen(true)
+        documentStore.setActiveFileMenuPanel("opts")
+        return
+      case "help":
+      case "suggestFeature":
+        documentStore.setFileMenuOpen(true)
+        documentStore.setActiveFileMenuPanel("help")
+        return
+      default:
+        break
+    }
+
     // 4. Page-layout commands — dispatch CustomEvents directly
     //    (works without TipTap; Viewport.tsx listens for these)
     switch (command) {
