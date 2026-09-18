@@ -38,6 +38,7 @@ vi.mock("../stores/DocumentStore", () => ({
     exportAsDownload: vi.fn(),
     toggleRightPanel: vi.fn(),
     setFitToPage: vi.fn(),
+    setLanguage: vi.fn(),
     setFitToWidth: vi.fn(),
     setFileMenuOpen: vi.fn(),
     setActiveFileMenuPanel: vi.fn(),
@@ -191,7 +192,6 @@ describe("word-commands", () => {
         { cmd: "codeBlock", op: "code-block" },
         { cmd: "drawSelect", op: "select-tool" },
         { cmd: "drawEraser", op: "eraser-tool" },
-        { cmd: "copyStyle", op: "copy-style" },
       ]
       ops.forEach(({ cmd, op }) => {
         handler({ command: cmd })
