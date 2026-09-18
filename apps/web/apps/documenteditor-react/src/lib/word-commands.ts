@@ -618,6 +618,11 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         return
       case "aiAssistant":
       case "ai-assistant":
+      case "aiChatbot":
+      case "aiSummarization":
+      case "aiTranslation":
+      case "aiGrammarSpelling":
+      case "aiSettings":
         documentStore.toggleRightPanel("ai-assistant")
         return
       // Track Changes commands
