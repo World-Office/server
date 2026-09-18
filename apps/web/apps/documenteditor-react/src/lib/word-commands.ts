@@ -458,6 +458,11 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "insertIndex":
       case "updateIndex":
       case "insertIndexEntry":
+      case "addTocText":
+      case "insertBookmark":
+      case "insertCaption":
+      case "insertCrossReference":
+      case "insertTableOfFigures":
         documentStore.toggleRightPanel("crossreference")
         return
       case "togglePlugin":

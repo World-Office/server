@@ -414,7 +414,7 @@ describe("word-commands", () => {
     })
 
     it("should toggle crossreference panel for references", () => {
-      const cmds = ["insertFootnote", "insertEndnote", "insertToc", "updateToc", "insertIndex", "updateIndex", "insertIndexEntry"]
+      const cmds = ["insertFootnote", "insertEndnote", "insertToc", "updateToc", "insertIndex", "updateIndex", "insertIndexEntry", "addTocText", "insertBookmark", "insertCaption", "insertCrossReference", "insertTableOfFigures"]
       cmds.forEach(cmd => {
         handler({ command: cmd })
         expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("crossreference")

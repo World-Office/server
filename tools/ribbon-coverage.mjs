@@ -104,6 +104,9 @@ const WIRING = {
     insertIndexEntry: { target: "panel", implemented: true }, insertToc: { target: "panel", implemented: true },
     toggleComment: { target: "panel", implemented: true }, updateIndex: { target: "panel", implemented: true },
     updateToc: { target: "panel", implemented: true },
+    addTocText: { target: "panel", implemented: true }, insertBookmark: { target: "panel", implemented: true },
+    insertCaption: { target: "panel", implemented: true }, insertCrossReference: { target: "panel", implemented: true },
+    insertTableOfFigures: { target: "panel", implemented: true },
     // review
     acceptAllChanges: { target: "panel", implemented: true }, acceptChange: { target: "panel", implemented: true },
     nextChange: { target: "panel", implemented: true }, rejectAllChanges: { target: "panel", implemented: true },
