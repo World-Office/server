@@ -159,7 +159,15 @@ const WIRING = {
     mendeley: { target: "panel", implemented: true }, thesaurus: { target: "panel", implemented: true },
     highlightCode: { target: "panel", implemented: true }, zotero: { target: "panel", implemented: true },
     speech: { target: "panel", implemented: true }, speechInput: { target: "panel", implemented: true },
-    copyStyle: { target: "router", implemented: true }, wordCount: { target: "panel", implemented: true },
+    copyStyle: { target: "router", implemented: true },
+    // chart-design (contextual)
+    chartElements: { target: "router", implemented: true }, editChartData: { target: "panel", implemented: true },
+    updateChartData: { target: "router", implemented: true }, chartType: { target: "router", implemented: true },
+    chartAdvancedSettings: { target: "panel", implemented: true }, chartWrapping: { target: "router", implemented: true },
+    chart3DRotation: { target: "panel", implemented: true }, chartElementAxisTitles: { target: "router", implemented: true },
+    chartElementLegend: { target: "router", implemented: true }, chartElementDataLabels: { target: "router", implemented: true },
+    chartElementGridlines: { target: "router", implemented: true }, chartElementErrorBars: { target: "router", implemented: true },
+ wordCount: { target: "panel", implemented: true },
     setDocumentLanguage: { target: "panel", implemented: true }, multiplePages: { target: "panel", implemented: true },
     fitToPage: { target: "store", implemented: true }, fitToWidth: { target: "store", implemented: true },
     // protection

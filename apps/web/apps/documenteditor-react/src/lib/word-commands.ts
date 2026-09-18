@@ -625,6 +625,38 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "aiSettings":
         documentStore.toggleRightPanel("ai-assistant")
         return
+      // Chart Design (contextual) commands — real chart panel + view-state
+      // events consumed by the canvas chart layer.
+      case "chartElements":
+      case "editChartData":
+      case "chartAdvancedSettings":
+      case "chart3DRotation":
+        documentStore.toggleRightPanel("chart")
+        return
+      case "chartElementAxisTitles":
+        window.dispatchEvent(new CustomEvent("world-office:chart-element", { detail: { element: "axis-titles" } }))
+        return
+      case "chartElementLegend":
+        window.dispatchEvent(new CustomEvent("world-office:chart-element", { detail: { element: "legend" } }))
+        return
+      case "chartElementDataLabels":
+        window.dispatchEvent(new CustomEvent("world-office:chart-element", { detail: { element: "data-labels" } }))
+        return
+      case "chartElementGridlines":
+        window.dispatchEvent(new CustomEvent("world-office:chart-element", { detail: { element: "gridlines" } }))
+        return
+      case "chartElementErrorBars":
+        window.dispatchEvent(new CustomEvent("world-office:chart-element", { detail: { element: "error-bars" } }))
+        return
+      case "chartType":
+        window.dispatchEvent(new CustomEvent("world-office:chart-type", { detail: { type: typeof value === "string" && value ? value : "bar" } }))
+        return
+      case "chartWrapping":
+        window.dispatchEvent(new CustomEvent("world-office:chart-wrapping", { detail: { mode: typeof value === "string" && value ? value : "inline" } }))
+        return
+      case "updateChartData":
+        window.dispatchEvent(new CustomEvent("world-office:chart-update", { detail: { at: Date.now() } }))
+        return
       // Track Changes commands
       case "toggleTrackChanges":
         documentStore.setTrackChanges(!documentStore.trackChanges)
