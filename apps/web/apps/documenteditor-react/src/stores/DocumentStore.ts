@@ -88,6 +88,7 @@ export class DocumentStore {
   pageSize: "A4" | "A3" | "Letter" | "Legal" = "A4"
   pageMargins: "normal" | "narrow" | "wide" = "normal"
   columns: number = 1
+  multiplePages = false
 
   /* Page navigation */
   currentPage = 0
@@ -250,6 +251,11 @@ export class DocumentStore {
     if (value) this.fitToPage = false
   }
 
+  setZoomFit(fit: "page" | "width"): void {
+    if (fit === "page") this.setFitToPage(true)
+    else this.setFitToWidth(true)
+  }
+
   setToolbarVisible(visible: boolean): void {
     this.toolbarVisible = visible
   }
@@ -315,6 +321,10 @@ export class DocumentStore {
     this.languageCode = code
   }
 
+  setLanguage(code: string): void {
+    this.setLanguageCode(code)
+  }
+
   setWordCount(count: number): void {
     this.wordCount = count
   }
@@ -329,6 +339,10 @@ export class DocumentStore {
 
   setDifferentOddEven(value: boolean): void {
     this.differentOddEven = value
+  }
+
+  setMultiplePages(value: boolean): void {
+    this.multiplePages = value
   }
 
   clearHeader(): void {
