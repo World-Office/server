@@ -716,7 +716,7 @@ describe("word-commands", () => {
   describe("ai tab commands", () => {
     it("should open the AI assistant panel for each AI tab command", () => {
       const cmds = [
-        "aiAssistant",
+        "ai-assistant",
         "aiChatbot",
         "aiSummarization",
         "aiTranslation",
