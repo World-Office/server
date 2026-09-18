@@ -19,6 +19,8 @@ export interface RibbonContext {
   canEdit: boolean
   /** Name of the currently active tab */
   activeTab: string
+  /** Track-changes toggle state (review tools) */
+  trackChangesEnabled?: boolean
   // Cloud / WOPI
   /** Whether this document was opened via WOPI */
   isWopi: boolean
