@@ -74,7 +74,7 @@ jobs:
         timeout-minutes: 10
 
       - name: Run Rust unit tests
-        run: cargo test -p world-office-desktop -- --test-threads=1
+        run: cargo test --manifest-path desktop/tauri-poc/src-tauri/Cargo.toml -- --test-threads=1
         timeout-minutes: 5
 
       - name: Run vitest integration tests
@@ -157,7 +157,7 @@ jobs:
         timeout-minutes: 5
 
       - name: Run Rust unit tests
-        run: cargo test -p world-office-desktop -- --test-threads=1
+        run: cargo test --manifest-path desktop/tauri-poc/src-tauri/Cargo.toml -- --test-threads=1
         timeout-minutes: 5
 
       - name: Run vitest integration tests
