@@ -47,6 +47,17 @@ vi.mock("../stores/DocumentStore", () => ({
     pageMargins: "normal",
     setFileMenuOpen: vi.fn(),
     setActiveFileMenuPanel: vi.fn(),
+    toggleLeftPanel: vi.fn(),
+    pageOrientation: "portrait",
+    pageSize: "A4",
+    pageMargins: "normal",
+    setLineNumbersEnabled: vi.fn(),
+    lineNumbersEnabled: false,
+    bringForward: vi.fn(),
+    sendBackward: vi.fn(),
+    alignObjects: vi.fn(),
+    groupObjects: vi.fn(),
+    mergeShapes: vi.fn(),
   },
 }))
 
@@ -271,6 +282,21 @@ describe("word-commands", () => {
       expect(documentStore.setDifferentFirstPage).toHaveBeenCalled()
       handler({ command: "differentOddEven" })
       expect(documentStore.setDifferentOddEven).toHaveBeenCalled()
+      handler({ command: "lineNumbers" })
+      expect(documentStore.setLineNumbersEnabled).toHaveBeenCalled()
+    })
+
+    it("should handle arrange commands", () => {
+      handler({ command: "bringForward" })
+      expect(documentStore.bringForward).toHaveBeenCalled()
+      handler({ command: "sendBackward" })
+      expect(documentStore.sendBackward).toHaveBeenCalled()
+      handler({ command: "alignObjects" })
+      expect(documentStore.alignObjects).toHaveBeenCalled()
+      handler({ command: "groupObjects" })
+      expect(documentStore.groupObjects).toHaveBeenCalled()
+      handler({ command: "mergeShapes" })
+      expect(documentStore.mergeShapes).toHaveBeenCalled()
     })
 
     it("should handle header/footer commands", () => {
@@ -384,6 +410,12 @@ describe("word-commands", () => {
         { cmd: "insertCheckboxControl", panel: "form" },
         { cmd: "insertDropdownControl", panel: "form" },
         { cmd: "insertDatePickerControl", panel: "form" },
+        { cmd: "openBreaksPanel", panel: "paragraph" },
+        { cmd: "hyphenation", panel: "paragraph" },
+        { cmd: "wrapping", panel: "paragraph" },
+        { cmd: "watermark", panel: "image" },
+        { cmd: "pageColor", panel: "image" },
+        { cmd: "documentColors", panel: "image" },
       ]
       panels.forEach(({ cmd, panel }) => {
         handler({ command: cmd })

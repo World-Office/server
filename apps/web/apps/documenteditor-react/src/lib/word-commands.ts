@@ -324,6 +324,23 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       }
       case "closeHeaderFooter":
         documentStore.headerFooterMode = "none"
+      case "lineNumbers":
+        documentStore.setLineNumbersEnabled(!documentStore.lineNumbersEnabled)
+        return
+      case "bringForward":
+        documentStore.bringForward()
+        return
+      case "sendBackward":
+        documentStore.sendBackward()
+        return
+      case "alignObjects":
+        documentStore.alignObjects()
+        return
+      case "groupObjects":
+        documentStore.groupObjects()
+        return
+      case "mergeShapes":
+        documentStore.mergeShapes()
         return
       case "save":
         void documentStore.saveToWopi()
@@ -526,6 +543,18 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         return
       case "openTheme":
         documentStore.toggleRightPanel("theme")
+        return
+      case "openBreaksPanel":
+        documentStore.toggleRightPanel("paragraph")
+        return
+      case "hyphenation":
+      case "wrapping":
+        documentStore.toggleRightPanel("paragraph")
+        return
+      case "watermark":
+      case "pageColor":
+      case "documentColors":
+        documentStore.toggleRightPanel("image")
         return
       case "insertPlainTextControl":
       case "insertCheckboxControl":
