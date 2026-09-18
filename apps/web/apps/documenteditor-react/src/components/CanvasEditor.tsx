@@ -576,11 +576,11 @@ const CanvasEditorInternal = (
     }
 
     try {
-      // Modifier combos must never reach the WASM engine — it used to insert
-      // the bare letter (Ctrl+S typed an "s" into the document). Ctrl+V pastes
-      // via insert_text; other combos are swallowed here. Ctrl+S / Ctrl+zoom /
-      // Ctrl+P still work: they are handled by the window-level listener in
-      // useKeyboardShortcuts, and keydown bubbles past this handler.
+      // Clipboard copy/cut/paste need the system clipboard, which the WASM
+      // engine cannot reach — handle those in JS. Every other key (including
+      // Ctrl+S/B/Z/Y) dispatches to the engine's handle_key_event, which
+      // interprets the modifier (save, bold, undo) instead of inserting the
+      // bare letter.
       if (e.ctrlKey || e.metaKey) {
         if (keyStr === "c" || keyStr === "C") {
           try {
@@ -601,25 +601,6 @@ const CanvasEditorInternal = (
           }
           return
         }
-        if (keyStr === "z" || keyStr === "Z") {
-          try {
-            const result = e.shiftKey
-              ? api.redo(docHandle, "A4", "portrait", 72.0)
-              : api.undo(docHandle, "A4", "portrait", 72.0)
-            applyWasmResult(result)
-          } catch (err) {
-            console.error("[CanvasEditor] undo/redo failed:", err)
-          }
-          return
-        }
-        if (keyStr === "y" || keyStr === "Y") {
-          try {
-            applyWasmResult(api.redo(docHandle, "A4", "portrait", 72.0))
-          } catch (err) {
-            console.error("[CanvasEditor] redo failed:", err)
-          }
-          return
-        }
         if (keyStr === "v" || keyStr === "V") {
           navigator.clipboard
             .readText()
@@ -632,8 +613,8 @@ const CanvasEditorInternal = (
               }
             })
             .catch((err) => console.error("[CanvasEditor] clipboard read failed:", err))
+          return
         }
-        return
       }
 
       const result = api.handle_key_event(
