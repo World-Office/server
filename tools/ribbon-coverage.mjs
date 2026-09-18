@@ -87,10 +87,12 @@ const WIRING = {
     link: { target: "panel", implemented: true }, insertTable: { target: "wasm", implemented: true },
     pageBreak: { target: "wasm", implemented: true },
     // layout
+    closeHeaderFooter: { target: "store", implemented: true },
     columns: { target: "panel", implemented: true },
     differentFirstPage: { target: "store", implemented: true }, differentOddEven: { target: "store", implemented: true },
     editFooter: { target: "store", implemented: true }, editHeader: { target: "store", implemented: true },
     insertContinuousSectionBreak: { target: "wasm", implemented: true },
+    insertDateTime: { target: "store", implemented: true }, insertField: { target: "store", implemented: true },
     insertPageNumber: { target: "store", implemented: true },
     insertSectionBreak: { target: "wasm", implemented: true }, openTheme: { target: "panel", implemented: true },
     pageMargins: { target: "panel", implemented: true }, pageOrientation: { target: "panel", implemented: true },

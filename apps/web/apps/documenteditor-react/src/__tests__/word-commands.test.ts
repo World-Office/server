@@ -20,6 +20,8 @@ vi.mock("../stores/DocumentStore", () => ({
     differentOddEven: false,
     clearHeader: vi.fn(),
     clearFooter: vi.fn(),
+    headerHtml: "",
+    footerHtml: "",
     headerFooterMode: "none",
     saveToWopi: vi.fn(),
     exportAsDownload: vi.fn(),
@@ -37,6 +39,9 @@ describe("word-commands", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    documentStore.headerFooterMode = "none"
+    documentStore.headerHtml = ""
+    documentStore.footerHtml = ""
 
     editorHandle = {
       applyFormatting: vi.fn(),
@@ -259,6 +264,30 @@ describe("word-commands", () => {
       expect(documentStore.headerFooterMode).toBe("footer")
       handler({ command: "insertPageNumber" })
       expect(documentStore.headerFooterMode).toBe("footer")
+    })
+
+    it("should insert a DATETIME field into the active header region", () => {
+      handler({ command: "insertDateTime" })
+      expect(documentStore.headerFooterMode).toBe("header")
+      expect(documentStore.headerHtml).toMatch(/data-wo-field="DATETIME"/)
+      // footer region active → appends there instead
+      documentStore.headerFooterMode = "footer"
+      handler({ command: "insertDateTime" })
+      expect(documentStore.footerHtml).toMatch(/data-wo-field="DATETIME"/)
+    })
+
+    it("should insert a named field, defaulting to PAGE", () => {
+      handler({ command: "insertField" })
+      expect(documentStore.headerFooterMode).toBe("header")
+      expect(documentStore.headerHtml).toMatch(/data-wo-field="PAGE"/)
+      handler({ command: "insertField", value: "NUMPAGES" })
+      expect(documentStore.headerHtml).toMatch(/data-wo-field="NUMPAGES"/)
+    })
+
+    it("should close header/footer editing mode", () => {
+      documentStore.headerFooterMode = "header"
+      handler({ command: "closeHeaderFooter" })
+      expect(documentStore.headerFooterMode).toBe("none")
     })
 
     it("should handle save and download", () => {

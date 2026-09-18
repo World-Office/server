@@ -588,6 +588,27 @@ export const wordRibbonSpec: RibbonSpec = {
               command: "insertPageNumber",
             },
             {
+              id: "insert-date-time",
+              type: "button",
+              icon: "CalendarDays",
+              label: "Date & Time",
+              command: "insertDateTime",
+            },
+            {
+              id: "insert-field",
+              type: "button",
+              icon: "Braces",
+              label: "Field",
+              command: "insertField",
+            },
+            {
+              id: "close-header-footer",
+              type: "button",
+              icon: "X",
+              label: "Close",
+              command: "closeHeaderFooter",
+            },
+            {
               id: "different-first-page",
               type: "checkbox",
               label: "Different First Page",
