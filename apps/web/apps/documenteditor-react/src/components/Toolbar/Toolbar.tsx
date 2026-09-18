@@ -85,6 +85,9 @@ const ObservedToolbar = observer(function ObservedToolbar({
       } else if (cmd === "protect-document") {
         documentStore.setFileMenuOpen(true)
         documentStore.setActiveFileMenuPanel("protect")
+      } else if (cmd === "encrypt") {
+        documentStore.setFileMenuOpen(true)
+        documentStore.setActiveFileMenuPanel("protect")
       } else {
         // Dispatch via wo-command event for formatting and other commands
         // Convert kebab-case to camelCase for compatibility with existing command names

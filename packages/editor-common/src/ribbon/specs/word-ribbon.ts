@@ -880,6 +880,13 @@ export const wordRibbonSpec: RibbonSpec = {
               label: "Protect Document",
               command: "protect-document",
             },
+            {
+              id: "encrypt",
+              type: "button",
+              icon: "LockKey",
+              label: "Encrypt",
+              command: "encrypt",
+            },
           ],
         },
       ],

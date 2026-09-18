@@ -128,6 +128,8 @@ const WIRING = {
     copyStyle: { target: "router", implemented: true }, wordCount: { target: "panel", implemented: true },
     setDocumentLanguage: { target: "panel", implemented: true }, multiplePages: { target: "panel", implemented: true },
     fitToPage: { target: "store", implemented: true }, fitToWidth: { target: "store", implemented: true },
+    // protection
+    encrypt: { target: "panel", implemented: true }, "protect-document": { target: "panel", implemented: true },
   },
   sheet: {
     cut: { target: "router", implemented: true }, copy: { target: "router", implemented: true },
