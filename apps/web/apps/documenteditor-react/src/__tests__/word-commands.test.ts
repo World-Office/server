@@ -732,6 +732,76 @@ describe("word-commands", () => {
     })
   })
 
+
+  describe("chart design parity commands", () => {
+    it("should open the chart panel for OO chart dialog controls", () => {
+      const cmds = ["chartElements", "editChartData", "chartAdvancedSettings", "chart3DRotation"]
+      cmds.forEach((cmd) => {
+        handler({ command: cmd })
+        expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("chart")
+      })
+    })
+
+    it("should dispatch chart-element view-state for Chart Elements dropdown items", () => {
+      const dispatchSpy = vi.spyOn(window, "dispatchEvent")
+      const elements = [
+        { cmd: "chartElementAxisTitles", key: "axis-titles" },
+        { cmd: "chartElementLegend", key: "legend" },
+        { cmd: "chartElementDataLabels", key: "data-labels" },
+        { cmd: "chartElementGridlines", key: "gridlines" },
+        { cmd: "chartElementErrorBars", key: "error-bars" },
+      ]
+      elements.forEach(({ cmd, key }) => {
+        handler({ command: cmd })
+        expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+          type: "world-office:chart-element",
+          detail: { element: key },
+        }))
+      })
+      dispatchSpy.mockRestore()
+    })
+
+    it("should dispatch chart-type view-state from the Chart type select", () => {
+      const dispatchSpy = vi.spyOn(window, "dispatchEvent")
+      handler({ command: "chartType" })
+      expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+        type: "world-office:chart-type",
+        detail: { type: "bar" },
+      }))
+      handler({ command: "chartType", value: "line" })
+      expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+        type: "world-office:chart-type",
+        detail: { type: "line" },
+      }))
+      dispatchSpy.mockRestore()
+    })
+
+    it("should dispatch chart-wrapping view-state from the Wrapping select", () => {
+      const dispatchSpy = vi.spyOn(window, "dispatchEvent")
+      handler({ command: "chartWrapping" })
+      expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+        type: "world-office:chart-wrapping",
+        detail: { mode: "inline" },
+      }))
+      handler({ command: "chartWrapping", value: "square" })
+      expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+        type: "world-office:chart-wrapping",
+        detail: { mode: "square" },
+      }))
+      dispatchSpy.mockRestore()
+    })
+
+    it("should dispatch a chart-update refresh event for Update data", () => {
+      const dispatchSpy = vi.spyOn(window, "dispatchEvent")
+      handler({ command: "updateChartData" })
+      expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
+        type: "world-office:chart-update",
+        detail: expect.objectContaining({ at: expect.any(Number) }),
+      }))
+      dispatchSpy.mockRestore()
+    })
+  })
+
   describe("unknown commands", () => {
     it("should log a warning for unknown commands and not throw", () => {
       const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})

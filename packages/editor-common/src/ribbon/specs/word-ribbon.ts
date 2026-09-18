@@ -1847,6 +1847,90 @@ export const wordRibbonSpec: RibbonSpec = {
       ],
     },
 
+    {
+      id: "chart-design",
+      label: "Chart Design",
+      groups: [
+        {
+          id: "chart-elements",
+          label: "Chart Elements",
+          controls: [
+            {
+              id: "chart-elements",
+              type: "button",
+              icon: "BarChart3",
+              label: "ChartElements",
+              command: "chartElements",
+            },
+            {
+              id: "edit-chart-data",
+              type: "button",
+              icon: "Table",
+              label: "EditData",
+              command: "editChartData",
+            },
+            {
+              id: "update-chart-data",
+              type: "button",
+              icon: "RefreshCw",
+              label: "UpdateData",
+              command: "updateChartData",
+            },
+          ],
+        },
+        {
+          id: "chart-type",
+          label: "Type",
+          controls: [
+            {
+              id: "chart-type",
+              type: "select",
+              label: "Chart type",
+              command: "chartType",
+              options: [
+                { value: "bar", label: "Bar" },
+                { value: "line", label: "Line" },
+                { value: "pie", label: "Pie" },
+                { value: "area", label: "Area" },
+              ],
+            },
+          ],
+        },
+        {
+          id: "chart-arrange",
+          label: "Arrange",
+          controls: [
+            {
+              id: "chart-advanced-settings",
+              type: "button",
+              icon: "Settings",
+              label: "Advanced settings",
+              command: "chartAdvancedSettings",
+            },
+            {
+              id: "chart-wrapping",
+              type: "select",
+              label: "Wrapping",
+              command: "chartWrapping",
+              options: [
+                { value: "inline", label: "Inline" },
+                { value: "square", label: "Square" },
+                { value: "tight", label: "Tight" },
+                { value: "top-and-bottom", label: "Top and bottom" },
+              ],
+            },
+            {
+              id: "chart-3d-rotation",
+              type: "button",
+              icon: "Rotate3d",
+              label: "3Drotation",
+              command: "chart3DRotation",
+            },
+          ],
+        },
+      ],
+    },
+
     cloudTab,
   ],
 }
