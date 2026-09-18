@@ -1886,13 +1886,17 @@ export const wordRibbonSpec: RibbonSpec = {
               id: "chart-type",
               type: "select",
               label: "Chart type",
-              command: "chartType",
               options: [
                 { value: "bar", label: "Bar" },
                 { value: "line", label: "Line" },
                 { value: "pie", label: "Pie" },
                 { value: "area", label: "Area" },
               ],
+              value: () => "",
+              onChange: (val: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", { detail: { command: "chartType", value: val } }),
+                ),
             },
           ],
         },
@@ -1911,13 +1915,17 @@ export const wordRibbonSpec: RibbonSpec = {
               id: "chart-wrapping",
               type: "select",
               label: "Wrapping",
-              command: "chartWrapping",
               options: [
                 { value: "inline", label: "Inline" },
                 { value: "square", label: "Square" },
                 { value: "tight", label: "Tight" },
                 { value: "top-and-bottom", label: "Top and bottom" },
               ],
+              value: () => "",
+              onChange: (val: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", { detail: { command: "chartWrapping", value: val } }),
+                ),
             },
             {
               id: "chart-3d-rotation",
