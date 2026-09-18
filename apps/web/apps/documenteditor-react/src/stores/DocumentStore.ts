@@ -135,6 +135,13 @@ export class DocumentStore {
   /* Theme */
   themeId = "office"
 
+  /* Dark document (view tab) */
+  darkDocument = false
+
+  /* Macros (view tab) */
+  macroRecording = false
+  macroRecordingPaused = false
+
   /* Find & Replace panel */
   showFindPanel = false
 
@@ -393,6 +400,21 @@ export class DocumentStore {
   mergeShapes(): void {
     console.log("Merge Shapes clicked")
     // TODO: Implement merge shapes logic
+  }
+
+  /* Dark document + macros (view tab) */
+  setDarkDocument(enabled: boolean): void {
+    this.darkDocument = enabled
+  }
+
+  toggleMacroRecording(): void {
+    this.macroRecording = !this.macroRecording
+    if (this.macroRecording) this.macroRecordingPaused = false
+  }
+
+  toggleMacroPause(): void {
+    this.macroRecordingPaused = !this.macroRecordingPaused
+    if (this.macroRecordingPaused) this.macroRecording = true
   }
 
   setSpellingEnabled(enabled: boolean): void {
