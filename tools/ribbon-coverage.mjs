@@ -145,6 +145,10 @@ const WIRING = {
     toggleGridlines: { target: "store", implemented: true }, toggleNavigation: { target: "store", implemented: true },
     toggleRuler: { target: "store", implemented: true }, toggleSpellCheck: { target: "store", implemented: true },
     zoomIn: { target: "store", implemented: true }, zoomOut: { target: "store", implemented: true },
+    zoomTo100: { target: "store", implemented: true }, interfaceTheme: { target: "store", implemented: true },
+    toggleDarkDocument: { target: "store", implemented: true },
+    macros: { target: "panel", implemented: true },
+    recordMacro: { target: "store", implemented: true }, pauseMacroRecording: { target: "store", implemented: true },
     // forms
     insertCheckboxControl: { target: "panel", implemented: true }, insertDatePickerControl: { target: "panel", implemented: true },
     insertDropdownControl: { target: "panel", implemented: true }, insertPlainTextControl: { target: "panel", implemented: true },

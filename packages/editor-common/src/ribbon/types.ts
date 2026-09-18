@@ -35,6 +35,8 @@ export interface RibbonContext {
   gridlinesVisible?: boolean
   /** Navigation pane is visible */
   navigationVisible?: boolean
+  /** Dark document (view) mode is active */
+  darkDocument?: boolean
   /** Spell check is enabled */
   spellcheckEnabled?: boolean
   /** Different first page header/footer */
