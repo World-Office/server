@@ -202,6 +202,10 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
 >>>>>>> b42fe095a (feat(WOI-DRAW): Draw tab parity)
       return
     }
+    if (command === "copyStyle") {
+      editorRef.current?.applyStructureOp("copy-style")
+      return
+    }
     const structureOp = structureOpForCommand(command)
     if (structureOp) {
       editorRef.current?.applyStructureOp(structureOp)

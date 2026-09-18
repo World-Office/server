@@ -189,6 +189,9 @@ describe("word-commands", () => {
         { cmd: "page-break", op: "page-break" },
         { cmd: "blockquote", op: "blockquote" },
         { cmd: "codeBlock", op: "code-block" },
+        { cmd: "drawSelect", op: "select-tool" },
+        { cmd: "drawEraser", op: "eraser-tool" },
+        { cmd: "copyStyle", op: "copy-style" },
       ]
       ops.forEach(({ cmd, op }) => {
         handler({ command: cmd })
