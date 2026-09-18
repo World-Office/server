@@ -88,6 +88,7 @@ export class DocumentStore {
   pageSize: "A4" | "A3" | "Letter" | "Legal" = "A4"
   pageMargins: "normal" | "narrow" | "wide" = "normal"
   columns: number = 1
+  multiplePages = false
 
   /* Page navigation */
   currentPage = 0
@@ -106,6 +107,12 @@ export class DocumentStore {
   /* Track changes */
   trackChanges = false
 
+  /**
+   * Format JSON captured by OO "Copy style" (Ctrl+Alt+C) — the run
+   * formatting snapshot read off the WASM engine, ready to be re-applied.
+   */
+  formatPainterFormat: string | null = null
+
   /* Header / Footer */
   headerHtml = ""
   footerHtml = ""
@@ -117,6 +124,7 @@ export class DocumentStore {
   rulerVisible = true
   gridlinesVisible = false
   navigationVisible = false
+  lineNumbersEnabled = false
 
   /* Spelling */
   spellingEnabled = true
@@ -126,6 +134,13 @@ export class DocumentStore {
 
   /* Theme */
   themeId = "office"
+
+  /* Dark document (view tab) */
+  darkDocument = false
+
+  /* Macros (view tab) */
+  macroRecording = false
+  macroRecordingPaused = false
 
   /* Find & Replace panel */
   showFindPanel = false
@@ -244,6 +259,11 @@ export class DocumentStore {
     if (value) this.fitToPage = false
   }
 
+  setZoomFit(fit: "page" | "width"): void {
+    if (fit === "page") this.setFitToPage(true)
+    else this.setFitToWidth(true)
+  }
+
   setToolbarVisible(visible: boolean): void {
     this.toolbarVisible = visible
   }
@@ -309,6 +329,10 @@ export class DocumentStore {
     this.languageCode = code
   }
 
+  setLanguage(code: string): void {
+    this.setLanguageCode(code)
+  }
+
   setWordCount(count: number): void {
     this.wordCount = count
   }
@@ -323,6 +347,10 @@ export class DocumentStore {
 
   setDifferentOddEven(value: boolean): void {
     this.differentOddEven = value
+  }
+
+  setMultiplePages(value: boolean): void {
+    this.multiplePages = value
   }
 
   clearHeader(): void {
@@ -343,6 +371,50 @@ export class DocumentStore {
 
   toggleNavigation(): void {
     this.navigationVisible = !this.navigationVisible
+  }
+
+  setLineNumbersEnabled(enabled: boolean): void {
+    this.lineNumbersEnabled = enabled
+  }
+
+  bringForward(): void {
+    console.log("Bring Forward clicked")
+    // TODO: Implement bring forward logic
+  }
+
+  sendBackward(): void {
+    console.log("Send Backward clicked")
+    // TODO: Implement send backward logic
+  }
+
+  alignObjects(): void {
+    console.log("Align Objects clicked")
+    // TODO: Implement align objects logic
+  }
+
+  groupObjects(): void {
+    console.log("Group Objects clicked")
+    // TODO: Implement group objects logic
+  }
+
+  mergeShapes(): void {
+    console.log("Merge Shapes clicked")
+    // TODO: Implement merge shapes logic
+  }
+
+  /* Dark document + macros (view tab) */
+  setDarkDocument(enabled: boolean): void {
+    this.darkDocument = enabled
+  }
+
+  toggleMacroRecording(): void {
+    this.macroRecording = !this.macroRecording
+    if (this.macroRecording) this.macroRecordingPaused = false
+  }
+
+  toggleMacroPause(): void {
+    this.macroRecordingPaused = !this.macroRecordingPaused
+    if (this.macroRecordingPaused) this.macroRecording = true
   }
 
   setSpellingEnabled(enabled: boolean): void {
