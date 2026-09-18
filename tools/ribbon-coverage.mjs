@@ -132,6 +132,7 @@ const WIRING = {
     zoomIn: { target: "store", implemented: true }, zoomOut: { target: "store", implemented: true },
     // forms
     insertCheckboxControl: { target: "panel", implemented: true }, insertDatePickerControl: { target: "panel", implemented: true },
+<<<<<<< HEAD
     insertDropdownControl: { target: "panel", implemented: true }, insertPlainTextControl: { target: "panel", implemented: true },
     // plugins
     pluginManager: { target: "panel", implemented: true }, backgroundPlugins: { target: "panel", implemented: true },
@@ -153,6 +154,18 @@ const WIRING = {
     protect: { target: "panel", implemented: true }, info: { target: "panel", implemented: true },
     advancedSettings: { target: "panel", implemented: true }, help: { target: "panel", implemented: true },
     suggestFeature: { target: "panel", implemented: true },
+=======
+    insertDropdownControl: { target: "panel", implemented: true }, 
+    insertPlainTextControl: { target: "panel", implemented: true },
+    copyStyle: { target: "router", implemented: true },
+    drawSelect: { target: "wasm", implemented: true },
+    drawEraser: { target: "wasm", implemented: true },
+    wordCount: { target: "store", implemented: true },
+    setDocumentLanguage: { target: "store", implemented: true },
+    toggleMultiplePages: { target: "store", implemented: true },
+    fitToPage: { target: "store", implemented: true },
+    fitToWidth: { target: "store", implemented: true },
+>>>>>>> b42fe095a (feat(WOI-DRAW): Draw tab parity)
   },
   sheet: {
     cut: { target: "router", implemented: true }, copy: { target: "router", implemented: true },

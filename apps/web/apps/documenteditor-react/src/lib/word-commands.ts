@@ -184,6 +184,7 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       )
       return
     }
+<<<<<<< HEAD
     if (command === "multilevelList") {
       // OO "Multilevel list" = a decimal-numbered list with nested levels.
       // The WASM engine has no single multilevel op, so run the two real
@@ -191,6 +192,14 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       // (ilvl + 1) so the item renders as a nested multi-level item.
       editorRef.current?.applyStructureOp("ordered-list")
       editorRef.current?.applyStructureOp("indent")
+=======
+    if (command === "drawSelect") {
+      editorRef.current?.applyStructureOp("select-tool")
+      return
+    }
+    if (command === "drawEraser") {
+      editorRef.current?.applyStructureOp("eraser-tool")
+>>>>>>> b42fe095a (feat(WOI-DRAW): Draw tab parity)
       return
     }
     const structureOp = structureOpForCommand(command)
@@ -322,6 +331,21 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         return
       case "download":
         documentStore.exportAsDownload()
+        return
+      case "wordCount":
+        documentStore.toggleRightPanel("word-count")
+        return
+      case "setDocumentLanguage":
+        documentStore.setLanguage(value || "en-US")
+        return
+      case "toggleMultiplePages":
+        documentStore.setMultiplePages(!documentStore.multiplePages)
+        return
+      case "fitToPage":
+        documentStore.setZoomFit("page")
+        return
+      case "fitToWidth":
+        documentStore.setZoomFit("width")
         return
       default:
         break
