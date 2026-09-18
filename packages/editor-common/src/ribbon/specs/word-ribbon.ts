@@ -1,5 +1,88 @@
-import type { RibbonSpec } from "../types"
+import type { RibbonGroupSpec, RibbonSpec } from "../types"
 import { cloudTab } from "./cloud-spec"
+
+/**
+ * Global quick-access groups shown at the trail of OO's Home and Plugins
+ * tabs (word count, document language, spell/track status, page fitting
+ * and zoom). Shared so both tabs carry identical controls.
+ */
+export const globalLanguageGroup: RibbonGroupSpec = {
+  id: "language",
+  label: "Language",
+  controls: [
+    {
+      id: "word-count",
+      type: "button",
+      icon: "FileText",
+      label: "Word count",
+      command: "wordCount",
+    },
+    {
+      id: "set-document-language",
+      type: "button",
+      icon: "Globe",
+      label: "English – United States",
+      command: "setDocumentLanguage",
+    },
+    {
+      id: "spell-checking",
+      type: "checkbox",
+      label: "Spell checking",
+      checked: (ctx) => ctx.spellcheckEnabled ?? true,
+      onChange: () => {},
+      command: "toggleSpellCheck",
+    },
+    {
+      id: "track-changes",
+      type: "button",
+      icon: "Eye",
+      label: "Track changes",
+      command: "toggleTrackChanges",
+    },
+  ],
+}
+
+export const globalViewGroup: RibbonGroupSpec = {
+  id: "view",
+  label: "View",
+  controls: [
+    {
+      id: "multiple-pages",
+      type: "button",
+      icon: "Layout",
+      label: "Multiple pages",
+      command: "multiplePages",
+    },
+    {
+      id: "fit-to-page",
+      type: "button",
+      icon: "Maximize",
+      label: "Fit to page",
+      command: "fitToPage",
+    },
+    {
+      id: "fit-to-width",
+      type: "button",
+      icon: "Maximize2",
+      label: "Fit to width",
+      command: "fitToWidth",
+    },
+    {
+      id: "zoom-out",
+      type: "button",
+      icon: "ZoomOut",
+      label: "Zoom out",
+      command: "zoomOut",
+    },
+    {
+      id: "zoom-in",
+      type: "button",
+      icon: "ZoomIn",
+      label: "Zoom in",
+      command: "zoomIn",
+    },
+  ],
+}
 
 /**
  * Word editor ribbon spec — mirrors ONLYOFFICE Document Editor ribbon 1:1.
@@ -9,6 +92,84 @@ import { cloudTab } from "./cloud-spec"
  */
 export const wordRibbonSpec: RibbonSpec = {
   tabs: [
+    {
+      id: "file",
+      label: "File",
+      // OnlyOffice backstage (File tab) — each button opens the matching
+      // FileMenu backstage panel via a real command in word-commands.ts.
+      groups: [
+        {
+          id: "backstage",
+          label: "File",
+          controls: [
+            {
+              id: "backstage-back",
+              type: "button",
+              icon: "ChevronLeft",
+              label: "Back",
+              command: "back",
+            },
+            {
+              id: "backstage-save",
+              type: "button",
+              icon: "Save",
+              label: "Save",
+              command: "save",
+            },
+            {
+              id: "backstage-download-as",
+              type: "button",
+              icon: "Download",
+              label: "Download As",
+              command: "downloadAs",
+            },
+            {
+              id: "backstage-print",
+              type: "button",
+              icon: "Printer",
+              label: "Print",
+              command: "print",
+            },
+            {
+              id: "backstage-protect",
+              type: "button",
+              icon: "Lock",
+              label: "Protect",
+              command: "protect",
+            },
+            {
+              id: "backstage-info",
+              type: "button",
+              icon: "FileText",
+              label: "Info",
+              command: "info",
+            },
+            {
+              id: "backstage-advanced-settings",
+              type: "button",
+              icon: "Settings",
+              label: "Advanced Settings",
+              command: "advancedSettings",
+            },
+            {
+              id: "backstage-help",
+              type: "button",
+              icon: "HelpCircle",
+              label: "Help",
+              command: "help",
+            },
+            {
+              id: "backstage-suggest-feature",
+              type: "button",
+              icon: "MessageSquare",
+              label: "Suggest a Feature",
+              command: "suggestFeature",
+            },
+          ],
+        },
+      ],
+    },
+
     {
       id: "home",
       label: "Home",
@@ -56,6 +217,14 @@ export const wordRibbonSpec: RibbonSpec = {
               label: "Redo",
               command: "redo",
               shortcut: "Ctrl+Y",
+            },
+            {
+              id: "copy-style",
+              type: "button",
+              icon: "CopyText",
+              label: "Copy style",
+              command: "copyStyle",
+              shortcut: "Ctrl+Alt+C",
             },
           ],
         },
@@ -418,6 +587,8 @@ export const wordRibbonSpec: RibbonSpec = {
             },
           ],
         },
+        globalLanguageGroup,
+        globalViewGroup,
       ],
     },
 
@@ -431,10 +602,17 @@ export const wordRibbonSpec: RibbonSpec = {
           label: "Pages",
           controls: [
             {
+              id: "blank-page",
+              type: "button",
+              icon: "SquarePlus",
+              label: "Blank Page",
+              command: "blankPage",
+            },
+            {
               id: "page-break",
               type: "button",
               icon: "Minus",
-              label: "Break",
+              label: "Breaks",
               command: "pageBreak",
             },
           ],
@@ -457,6 +635,27 @@ export const wordRibbonSpec: RibbonSpec = {
           label: "Media",
           controls: [
             { id: "insert-image", type: "button", icon: "Image", label: "Image", command: "image" },
+            {
+              id: "insert-shape",
+              type: "button",
+              icon: "Shapes",
+              label: "Shape",
+              command: "insertShape",
+            },
+            {
+              id: "insert-smart-art",
+              type: "button",
+              icon: "Layers",
+              label: "SmartArt",
+              command: "insertSmartArt",
+            },
+            {
+              id: "insert-chart",
+              type: "button",
+              icon: "BarChart3",
+              label: "Chart",
+              command: "insertChart",
+            },
           ],
         },
         {
@@ -483,6 +682,67 @@ export const wordRibbonSpec: RibbonSpec = {
               icon: "Minus",
               label: "HR",
               command: "horizontalRule",
+            },
+            {
+              id: "insert-text-box",
+              type: "button",
+              icon: "TextCursorInput",
+              label: "Text Box",
+              command: "textBox",
+            },
+            {
+              id: "insert-text-art",
+              type: "button",
+              icon: "Type",
+              label: "Text Art",
+              command: "textArt",
+            },
+            {
+              id: "insert-drop-cap",
+              type: "button",
+              icon: "Text",
+              label: "Drop Cap",
+              command: "dropCap",
+            },
+            {
+              id: "text-from-file",
+              type: "button",
+              icon: "FileText",
+              label: "Text from File",
+              command: "textFromFile",
+            },
+          ],
+        },
+        {
+          id: "objects",
+          label: "Objects",
+          controls: [
+            {
+              id: "insert-equation",
+              type: "button",
+              icon: "Sigma",
+              label: "Equation",
+              command: "equation",
+            },
+            {
+              id: "insert-symbol",
+              type: "button",
+              icon: "Omega",
+              label: "Symbol",
+              command: "symbol",
+            },
+          ],
+        },
+        {
+          id: "content-controls",
+          label: "Content Controls",
+          controls: [
+            {
+              id: "insert-content-control",
+              type: "button",
+              icon: "CheckSquare",
+              label: "Content Controls",
+              command: "insertContentControl",
             },
           ],
         },
@@ -520,6 +780,96 @@ export const wordRibbonSpec: RibbonSpec = {
               label: "Columns",
               command: "columns",
             },
+            {
+              id: "line-numbers",
+              type: "button",
+              icon: "ListOrdered",
+              label: "Line Numbers",
+              command: "lineNumbers",
+              toggleable: true,
+            },
+            {
+              id: "hyphenation",
+              type: "button",
+              icon: "Minus",
+              label: "Hyphenation",
+              command: "hyphenation",
+            },
+            {
+              id: "wrapping",
+              type: "button",
+              icon: "AlignJustify",
+              label: "Wrapping",
+              command: "wrapping",
+            },
+          ],
+        },
+        {
+          id: "arrange",
+          label: "Arrange",
+          controls: [
+            {
+              id: "bring-forward",
+              type: "button",
+              icon: "ChevronUp",
+              label: "Bring Forward",
+              command: "bringForward",
+            },
+            {
+              id: "send-backward",
+              type: "button",
+              icon: "ChevronDown",
+              label: "Send Backward",
+              command: "sendBackward",
+            },
+            {
+              id: "align",
+              type: "button",
+              icon: "AlignCenter",
+              label: "Align",
+              command: "alignObjects",
+            },
+            {
+              id: "group",
+              type: "button",
+              icon: "Layers",
+              label: "Group",
+              command: "groupObjects",
+            },
+            {
+              id: "merge-shapes",
+              type: "button",
+              icon: "Combine",
+              label: "Merge Shapes",
+              command: "mergeShapes",
+            },
+          ],
+        },
+        {
+          id: "page-background",
+          label: "Page Background",
+          controls: [
+            {
+              id: "watermark",
+              type: "button",
+              icon: "Image",
+              label: "Watermark",
+              command: "watermark",
+            },
+            {
+              id: "page-color",
+              type: "button",
+              icon: "StopCircle",
+              label: "Page Color",
+              command: "pageColor",
+            },
+            {
+              id: "colors",
+              type: "button",
+              icon: "Palette",
+              label: "Colors",
+              command: "documentColors",
+            },
           ],
         },
         {
@@ -527,25 +877,11 @@ export const wordRibbonSpec: RibbonSpec = {
           label: "Breaks",
           controls: [
             {
-              id: "page-break",
+              id: "breaks",
               type: "button",
               icon: "Remove",
-              label: "Page Break",
-              command: "pageBreak",
-            },
-            {
-              id: "section-break-next",
-              type: "button",
-              icon: "Remove",
-              label: "Section",
-              command: "insertSectionBreak",
-            },
-            {
-              id: "section-break-continuous",
-              type: "button",
-              icon: "Remove",
-              label: "Continuous",
-              command: "insertContinuousSectionBreak",
+              label: "Breaks",
+              command: "openBreaksPanel",
             },
           ],
         },
@@ -564,7 +900,7 @@ export const wordRibbonSpec: RibbonSpec = {
         },
         {
           id: "header-footer",
-          label: "Header/Footer",
+          label: "Header & Footer",
           controls: [
             {
               id: "edit-header",
@@ -828,6 +1164,13 @@ export const wordRibbonSpec: RibbonSpec = {
               command: "rejectAllChanges",
             },
             {
+              id: "previous-change",
+              type: "button",
+              icon: "ChevronLeft",
+              label: "Previous",
+              command: "previousChange",
+            },
+            {
               id: "next-change",
               type: "button",
               icon: "ChevronRight",
@@ -841,11 +1184,78 @@ export const wordRibbonSpec: RibbonSpec = {
           label: "Comments",
           controls: [
             {
+              id: "add-comment",
+              type: "button",
+              icon: "Plus",
+              label: "Add Comment",
+              command: "addComment",
+            },
+            {
+              id: "delete-comment",
+              type: "button",
+              icon: "Trash2",
+              label: "Delete",
+              command: "deleteComment",
+            },
+            {
+              id: "resolve-comment",
+              type: "button",
+              icon: "Check",
+              label: "Resolve",
+              command: "resolveComment",
+            },
+            {
               id: "comments-panel",
               type: "button",
               icon: "MessageSquare",
               label: "Comments",
               command: "toggleComment",
+            },
+          ],
+        },
+        {
+          id: "display",
+          label: "Display",
+          controls: [
+            {
+              id: "display-mode",
+              type: "button",
+              icon: "LayoutDashboard",
+              label: "Display Mode",
+              command: "displayMode",
+            },
+          ],
+        },
+        {
+          id: "compare",
+          label: "Compare",
+          controls: [
+            {
+              id: "compare-documents",
+              type: "button",
+              icon: "FileDiff",
+              label: "Compare",
+              command: "compareDocuments",
+            },
+            {
+              id: "combine-documents",
+              type: "button",
+              icon: "Merge",
+              label: "Combine",
+              command: "combineDocuments",
+            },
+          ],
+        },
+        {
+          id: "mail-merge",
+          label: "Mail Merge",
+          controls: [
+            {
+              id: "mail-merge",
+              type: "button",
+              icon: "Mail",
+              label: "Mail Merge",
+              command: "mailMerge",
             },
           ],
         },
@@ -880,6 +1290,186 @@ export const wordRibbonSpec: RibbonSpec = {
               label: "Protect Document",
               command: "protect-document",
             },
+            {
+              id: "encrypt",
+              type: "button",
+              icon: "LockKey",
+              label: "Encrypt",
+              command: "encrypt",
+            },
+          ],
+        },
+      ],
+    },
+
+    {
+      id: "draw",
+      label: "Draw",
+      visible: (ctx) => ctx.isEditMode,
+      groups: [
+        {
+          id: "draw-clipboard",
+          label: "Clipboard",
+          controls: [
+            {
+              id: "draw-cut",
+              type: "button",
+              icon: "Scissors",
+              label: "Cut",
+              command: "cut",
+              shortcut: "Ctrl+X",
+            },
+            {
+              id: "draw-copy",
+              type: "button",
+              icon: "Copy",
+              label: "Copy",
+              command: "copy",
+              shortcut: "Ctrl+C",
+            },
+            {
+              id: "draw-paste",
+              type: "button",
+              icon: "ClipboardPaste",
+              label: "Paste",
+              command: "paste",
+              shortcut: "Ctrl+V",
+            },
+            {
+              id: "draw-copy-style",
+              type: "button",
+              icon: "Copy",
+              label: "Copy style",
+              command: "copyStyle",
+              shortcut: "Ctrl+Alt+C",
+            },
+          ],
+        },
+        {
+          id: "draw-tools",
+          label: "Tools",
+          controls: [
+            {
+              id: "draw-select",
+              type: "button",
+              icon: "MousePointer2",
+              label: "Select",
+              command: "drawSelect",
+            },
+            {
+              id: "draw-eraser",
+              type: "button",
+              icon: "Eraser",
+              label: "Eraser",
+              command: "drawEraser",
+            },
+          ],
+        },
+        {
+          id: "draw-info",
+          label: "Info",
+          controls: [
+            {
+              id: "draw-word-count",
+              type: "button",
+              icon: "FileText",
+              label: "Word count",
+              command: "wordCount",
+            },
+          ],
+        },
+        {
+          id: "draw-language",
+          label: "Language",
+          controls: [
+            {
+              id: "draw-language-select",
+              type: "select",
+              label: "English – United States",
+              options: [
+                { value: "en-US", label: "English – United States" },
+                { value: "en-GB", label: "English – United Kingdom" },
+                { value: "de-DE", label: "German" },
+                { value: "fr-FR", label: "French" },
+              ],
+              value: () => "en-US",
+              onChange: (val: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", { detail: { command: "setDocumentLanguage", value: val } }),
+                ),
+            },
+            {
+              id: "draw-set-language",
+              type: "button",
+              icon: "Globe",
+              label: "Set document language",
+              command: "setDocumentLanguage",
+            },
+            {
+              id: "draw-spell-checking",
+              type: "checkbox",
+              label: "Spell checking",
+              checked: (ctx) => ctx.spellcheckEnabled ?? true,
+              onChange: () => {},
+              command: "toggleSpellCheck",
+            },
+          ],
+        },
+        {
+          id: "draw-review",
+          label: "Review",
+          controls: [
+            {
+              id: "draw-track-changes",
+              type: "checkbox",
+              label: "Track changes",
+              checked: (ctx) => ctx.trackChangesEnabled ?? false,
+              onChange: () => {},
+              command: "toggleTrackChanges",
+            },
+          ],
+        },
+        {
+          id: "draw-view",
+          label: "View",
+          controls: [
+            {
+              id: "draw-multiple-pages",
+              type: "button",
+              icon: "Layout",
+              label: "Multiple pages",
+              command: "toggleMultiplePages",
+            },
+            {
+              id: "draw-fit-to-page",
+              type: "button",
+              icon: "Maximize",
+              label: "Fit to page",
+              command: "fitToPage",
+            },
+            {
+              id: "draw-fit-to-width",
+              type: "button",
+              icon: "Maximize",
+              label: "Fit to width",
+              command: "fitToWidth",
+            },
+            {
+              id: "draw-zoom-out",
+              type: "button",
+              icon: "ZoomOut",
+              label: "Zoom out",
+              command: "zoomOut",
+              shortcut: "Ctrl+-",
+            },
+            {
+              id: "draw-zoom-in",
+              type: "button",
+              icon: "ZoomIn",
+              label: "Zoom in",
+              command: "zoomIn",
+              shortcut: "Ctrl+Num +",
+            },
           ],
         },
       ],
@@ -900,6 +1490,13 @@ export const wordRibbonSpec: RibbonSpec = {
               icon: "ZoomOut",
               label: "Zoom Out",
               command: "zoomOut",
+            },
+            {
+              id: "zoom-100",
+              type: "button",
+              icon: "Percent",
+              label: "Zoom to 100%",
+              command: "zoomTo100",
             },
           ],
         },
@@ -934,10 +1531,69 @@ export const wordRibbonSpec: RibbonSpec = {
             {
               id: "navigation",
               type: "checkbox",
-              label: "Navigation",
+              label: "Headings",
               checked: (ctx) => ctx.navigationVisible ?? false,
               onChange: () => {},
               command: "toggleNavigation",
+            },
+            {
+              id: "dark-document",
+              type: "checkbox",
+              label: "Dark Document",
+              checked: (ctx) => ctx.darkDocument ?? false,
+              onChange: () => {},
+              command: "toggleDarkDocument",
+            },
+          ],
+        },
+        {
+          id: "interface-theme",
+          label: "Interface Theme",
+          controls: [
+            {
+              id: "interface-theme",
+              type: "select",
+              label: "Interface Theme",
+              options: [
+                { value: "office", label: "Light" },
+                { value: "classic", label: "Classic Light" },
+                { value: "dark", label: "Dark" },
+                { value: "contrast", label: "Contrast Black" },
+              ],
+              value: () => "office",
+              onChange: (val: string) =>
+                window.dispatchEvent(
+                  new CustomEvent("wo-command", {
+                    detail: { command: "interfaceTheme", value: val },
+                  }),
+                ),
+            },
+          ],
+        },
+        {
+          id: "macros",
+          label: "Macros",
+          controls: [
+            {
+              id: "macros",
+              type: "button",
+              icon: "Code2",
+              label: "Macros",
+              command: "macros",
+            },
+            {
+              id: "record-macro",
+              type: "button",
+              icon: "Play",
+              label: "Record Macro",
+              command: "recordMacro",
+            },
+            {
+              id: "pause-recording",
+              type: "button",
+              icon: "Timer",
+              label: "Pause Recording",
+              command: "pauseMacroRecording",
             },
           ],
         },
@@ -1126,78 +1782,12 @@ export const wordRibbonSpec: RibbonSpec = {
         {
           id: "language",
           label: "Language",
-          controls: [
-            {
-              id: "word-count",
-              type: "button",
-              icon: "FileText",
-              label: "Word count",
-              command: "wordCount",
-            },
-            {
-              id: "set-document-language",
-              type: "button",
-              icon: "Globe",
-              label: "English – United States",
-              command: "setDocumentLanguage",
-            },
-            {
-              id: "spell-checking",
-              type: "checkbox",
-              label: "Spell checking",
-              checked: (ctx) => ctx.spellcheckEnabled ?? true,
-              onChange: () => {},
-              command: "toggleSpellCheck",
-            },
-            {
-              id: "track-changes",
-              type: "button",
-              icon: "Eye",
-              label: "Track changes",
-              command: "toggleTrackChanges",
-            },
-          ],
+          controls: globalLanguageGroup.controls,
         },
         {
           id: "view",
           label: "View",
-          controls: [
-            {
-              id: "multiple-pages",
-              type: "button",
-              icon: "Layout",
-              label: "Multiple pages",
-              command: "multiplePages",
-            },
-            {
-              id: "fit-to-page",
-              type: "button",
-              icon: "Maximize",
-              label: "Fit to page",
-              command: "fitToPage",
-            },
-            {
-              id: "fit-to-width",
-              type: "button",
-              icon: "Maximize2",
-              label: "Fit to width",
-              command: "fitToWidth",
-            },
-            {
-              id: "zoom-out",
-              type: "button",
-              icon: "ZoomOut",
-              label: "Zoom out",
-              command: "zoomOut",
-            },
-            {
-              id: "zoom-in",
-              type: "button",
-              icon: "ZoomIn",
-              label: "Zoom in",
-              command: "zoomIn",
-            },
-          ],
+          controls: globalViewGroup.controls,
         },
       ],
     },
@@ -1211,11 +1801,130 @@ export const wordRibbonSpec: RibbonSpec = {
           label: "AI Assistant",
           controls: [
             {
+              id: "ai-settings",
+              type: "button",
+              icon: "Settings",
+              label: "Settings",
+              command: "aiSettings",
+            },
+            {
+              id: "ai-chatbot",
+              type: "button",
+              icon: "MessageSquare",
+              label: "Chatbot",
+              command: "aiChatbot",
+            },
+            {
+              id: "ai-summarization",
+              type: "button",
+              icon: "FileText",
+              label: "Summarization",
+              command: "aiSummarization",
+            },
+            {
+              id: "ai-translation",
+              type: "button",
+              icon: "Globe",
+              label: "Translation",
+              command: "aiTranslation",
+            },
+            {
+              id: "ai-grammar-spelling",
+              type: "button",
+              icon: "CheckCircle",
+              label: "Grammar &Spelling",
+              command: "aiGrammarSpelling",
+            },
+            {
               id: "ai-assistant-panel",
               type: "button",
               icon: "Smile",
-              label: "AI Assistant",
+              label: "Create AIassistant",
               command: "ai-assistant",
+            },
+          ],
+        },
+      ],
+    },
+
+    {
+      id: "chart-design",
+      label: "Chart Design",
+      groups: [
+        {
+          id: "chart-elements",
+          label: "Chart Elements",
+          controls: [
+            {
+              id: "chart-elements",
+              type: "button",
+              icon: "BarChart3",
+              label: "ChartElements",
+              command: "chartElements",
+            },
+            {
+              id: "edit-chart-data",
+              type: "button",
+              icon: "Table",
+              label: "EditData",
+              command: "editChartData",
+            },
+            {
+              id: "update-chart-data",
+              type: "button",
+              icon: "RefreshCw",
+              label: "UpdateData",
+              command: "updateChartData",
+            },
+          ],
+        },
+        {
+          id: "chart-type",
+          label: "Type",
+          controls: [
+            {
+              id: "chart-type",
+              type: "select",
+              label: "Chart type",
+              command: "chartType",
+              options: [
+                { value: "bar", label: "Bar" },
+                { value: "line", label: "Line" },
+                { value: "pie", label: "Pie" },
+                { value: "area", label: "Area" },
+              ],
+            },
+          ],
+        },
+        {
+          id: "chart-arrange",
+          label: "Arrange",
+          controls: [
+            {
+              id: "chart-advanced-settings",
+              type: "button",
+              icon: "Settings",
+              label: "Advanced settings",
+              command: "chartAdvancedSettings",
+            },
+            {
+              id: "chart-wrapping",
+              type: "select",
+              label: "Wrapping",
+              command: "chartWrapping",
+              options: [
+                { value: "inline", label: "Inline" },
+                { value: "square", label: "Square" },
+                { value: "tight", label: "Tight" },
+                { value: "top-and-bottom", label: "Top and bottom" },
+              ],
+            },
+            {
+              id: "chart-3d-rotation",
+              type: "button",
+              icon: "Rotate3d",
+              label: "3Drotation",
+              command: "chart3DRotation",
             },
           ],
         },

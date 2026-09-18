@@ -15,6 +15,7 @@
 
 import { togglePluginEnabled, type WoCommand } from "@world-office/editor-common"
 import type { RichTextCommand } from "./rte-command"
+import { getWasmApi } from "./wasm-renderer"
 import { documentStore } from "../stores/DocumentStore"
 import type { CanvasEditorHandle } from "../components/CanvasEditor"
 
@@ -59,6 +60,11 @@ export function structureOpForCommand(command: string): string | null {
       return "horizontal-rule"
     case "pageBreak":
     case "page-break":
+      return "page-break"
+    // OO "Blank Page" inserts a page break at the cursor, pushing the
+    // following content onto a fresh page (same real WASM model op).
+    case "blankPage":
+    case "blank-page":
       return "page-break"
     case "blockquote":
       return "blockquote"
@@ -187,6 +193,14 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       editorRef.current?.applyStructureOp("indent")
       return
     }
+    if (command === "drawSelect") {
+      editorRef.current?.applyStructureOp("select-tool")
+      return
+    }
+    if (command === "drawEraser") {
+      editorRef.current?.applyStructureOp("eraser-tool")
+      return
+    }
     const structureOp = structureOpForCommand(command)
     if (structureOp) {
       editorRef.current?.applyStructureOp(structureOp)
@@ -311,11 +325,99 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "closeHeaderFooter":
         documentStore.headerFooterMode = "none"
         return
+      case "lineNumbers":
+        documentStore.setLineNumbersEnabled(!documentStore.lineNumbersEnabled)
+        return
+      case "bringForward":
+        documentStore.bringForward()
+        return
+      case "sendBackward":
+        documentStore.sendBackward()
+        return
+      case "alignObjects":
+        documentStore.alignObjects()
+        return
+      case "groupObjects":
+        documentStore.groupObjects()
+        return
+      case "mergeShapes":
+        documentStore.mergeShapes()
+        return
+      // View tab
+      case "zoomTo100":
+        documentStore.setZoomLevel(100)
+        return
+      case "interfaceTheme":
+        if (value) documentStore.setTheme(value)
+        return
+      case "toggleDarkDocument":
+        documentStore.setDarkDocument(value !== "false")
+        return
+      case "macros":
+        documentStore.toggleRightPanel("plugins")
+        return
+      case "recordMacro":
+        documentStore.toggleMacroRecording()
+        return
+      case "pauseMacroRecording":
+        documentStore.toggleMacroPause()
+        return
       case "save":
         void documentStore.saveToWopi()
         return
       case "download":
         documentStore.exportAsDownload()
+        return
+      case "wordCount":
+        documentStore.toggleRightPanel("word-count")
+        return
+      case "setDocumentLanguage":
+        documentStore.setLanguage(value || "en-US")
+        return
+      case "toggleMultiplePages":
+        documentStore.setMultiplePages(!documentStore.multiplePages)
+        return
+      case "fitToPage":
+        documentStore.setZoomFit("page")
+        return
+      case "fitToWidth":
+        documentStore.setZoomFit("width")
+        return
+      default:
+        break
+    }
+
+    // 3b. OnlyOffice File backstage — open the matching FileMenu panel (or
+    //     return to the document). The panel ids mirror FileMenuItems actions.
+    switch (command) {
+      case "back":
+        documentStore.setFileMenuOpen(false)
+        documentStore.setActiveFileMenuPanel(null)
+        return
+      case "downloadAs":
+        documentStore.setFileMenuOpen(true)
+        documentStore.setActiveFileMenuPanel("saveas")
+        return
+      case "print":
+        documentStore.setFileMenuOpen(true)
+        documentStore.setActiveFileMenuPanel("printpreview")
+        return
+      case "protect":
+        documentStore.setFileMenuOpen(true)
+        documentStore.setActiveFileMenuPanel("protect")
+        return
+      case "info":
+        documentStore.setFileMenuOpen(true)
+        documentStore.setActiveFileMenuPanel("info")
+        return
+      case "advancedSettings":
+        documentStore.setFileMenuOpen(true)
+        documentStore.setActiveFileMenuPanel("opts")
+        return
+      case "help":
+      case "suggestFeature":
+        documentStore.setFileMenuOpen(true)
+        documentStore.setActiveFileMenuPanel("help")
         return
       default:
         break
@@ -375,8 +477,40 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         break
     }
 
+    // 4.5. Insert text from a file — OO "Text from File" opens a picker and
+    //      inserts the chosen file's contents at the cursor. Real behavior:
+    //      hidden file input → read as text → WASM insertText model op.
+    if (command === "textFromFile") {
+      const input = document.createElement("input")
+      input.type = "file"
+      input.accept = ".txt,.md,.csv,.html,.rtf,.doc,.docx"
+      input.style.display = "none"
+      input.onchange = () => {
+        const file = input.files?.[0]
+        if (!file) return
+        const reader = new FileReader()
+        reader.onload = () => {
+          const text = typeof reader.result === "string" ? reader.result : ""
+          if (text && editorRef.current) {
+            editorRef.current.applyFormatting({ insertText: text })
+          }
+        }
+        reader.readAsText(file)
+      }
+      document.body.appendChild(input)
+      input.click()
+      input.remove()
+      return
+    }
+
     // 5. Panel-opening commands
     switch (command) {
+      case "protectDocument":
+      case "protect-document":
+      case "encrypt":
+        documentStore.setFileMenuOpen(true)
+        documentStore.setActiveFileMenuPanel("protect")
+        return
       case "find":
         onFind?.(false)
         return
@@ -385,6 +519,8 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         return
       case "addComment":
       case "toggleComment":
+      case "deleteComment":
+      case "resolveComment":
         documentStore.toggleRightPanel("comments")
         return
       case "image":
@@ -396,8 +532,49 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "insertTable":
         documentStore.toggleRightPanel("table")
         return
+      // Insert-tab media/objects: Shape, SmartArt and Text Box land on the
+      // existing shapes panel (the graphic-object surface; the WASM engine
+      // has no op for floating frames yet) — ponytail: add a real
+      // object-insertion model op when the engine exposes them.
+      case "insertShape":
+      case "insertSmartArt":
+      case "textBox":
+        documentStore.toggleRightPanel("shape")
+        return
+      case "insertChart":
+        documentStore.toggleRightPanel("chart")
+        return
+      case "textArt":
+        documentStore.toggleRightPanel("textart")
+        return
+      case "dropCap":
+        // Drop cap is paragraph-level formatting → paragraph settings panel
+        documentStore.toggleRightPanel("paragraph")
+        return
+      case "insertContentControl":
+        documentStore.toggleRightPanel("form")
+        return
+      case "equation":
+      case "symbol":
+        // ponytail: no dedicated equation/symbol surface yet — land in the
+        // plugins panel (it lists the enabled Equation Editor plugin); add a
+        // real picker panel when the engine exposes object insertion.
+        documentStore.toggleRightPanel("plugins")
+        return
       case "openTheme":
         documentStore.toggleRightPanel("theme")
+        return
+      case "openBreaksPanel":
+        documentStore.toggleRightPanel("paragraph")
+        return
+      case "hyphenation":
+      case "wrapping":
+        documentStore.toggleRightPanel("paragraph")
+        return
+      case "watermark":
+      case "pageColor":
+      case "documentColors":
+        documentStore.toggleRightPanel("image")
         return
       case "insertPlainTextControl":
       case "insertCheckboxControl":
@@ -407,6 +584,9 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         return
       case "chat":
         documentStore.toggleLeftPanel("chat")
+        return
+      case "protect-document":
+        documentStore.toggleRightPanel("review")
         return
       case "plugins":
         documentStore.toggleRightPanel("plugins")
@@ -437,7 +617,45 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         documentStore.toggleRightPanel("plugins")
         return
       case "aiAssistant":
+      case "ai-assistant":
+      case "aiChatbot":
+      case "aiSummarization":
+      case "aiTranslation":
+      case "aiGrammarSpelling":
+      case "aiSettings":
         documentStore.toggleRightPanel("ai-assistant")
+        return
+      // Chart Design (contextual) commands — real chart panel + view-state
+      // events consumed by the canvas chart layer.
+      case "chartElements":
+      case "editChartData":
+      case "chartAdvancedSettings":
+      case "chart3DRotation":
+        documentStore.toggleRightPanel("chart")
+        return
+      case "chartElementAxisTitles":
+        window.dispatchEvent(new CustomEvent("world-office:chart-element", { detail: { element: "axis-titles" } }))
+        return
+      case "chartElementLegend":
+        window.dispatchEvent(new CustomEvent("world-office:chart-element", { detail: { element: "legend" } }))
+        return
+      case "chartElementDataLabels":
+        window.dispatchEvent(new CustomEvent("world-office:chart-element", { detail: { element: "data-labels" } }))
+        return
+      case "chartElementGridlines":
+        window.dispatchEvent(new CustomEvent("world-office:chart-element", { detail: { element: "gridlines" } }))
+        return
+      case "chartElementErrorBars":
+        window.dispatchEvent(new CustomEvent("world-office:chart-element", { detail: { element: "error-bars" } }))
+        return
+      case "chartType":
+        window.dispatchEvent(new CustomEvent("world-office:chart-type", { detail: { type: typeof value === "string" && value ? value : "bar" } }))
+        return
+      case "chartWrapping":
+        window.dispatchEvent(new CustomEvent("world-office:chart-wrapping", { detail: { mode: typeof value === "string" && value ? value : "inline" } }))
+        return
+      case "updateChartData":
+        window.dispatchEvent(new CustomEvent("world-office:chart-update", { detail: { at: Date.now() } }))
         return
       // Track Changes commands
       case "toggleTrackChanges":
@@ -448,7 +666,15 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "rejectChange":
       case "rejectAllChanges":
       case "nextChange":
+      case "previousChange":
+      case "compareDocuments":
+      case "combineDocuments":
+      case "displayMode":
         documentStore.toggleRightPanel("review")
+        return
+      // Mail Merge opens the mailmerge panel
+      case "mailMerge":
+        documentStore.toggleRightPanel("mailmerge")
         return
       // Reference commands open the crossreference panel
       case "insertFootnote":
@@ -468,6 +694,21 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "togglePlugin":
         if (typeof value === "string" && value) togglePluginEnabled(value)
         return
+      case "copyStyle": {
+        // OO "Copy style" (Ctrl+Alt+C): capture the formatting of the run
+        // at the current cursor into app state so a surface with a matching
+        // apply-path can re-use it (format painter pattern).
+        const docHandle = editorRef.current?.getDocHandle?.() ?? null
+        const api = docHandle !== null ? getWasmApi() : null
+        if (api !== null && docHandle !== null) {
+          try {
+            documentStore.formatPainterFormat = api.get_run_formatting(docHandle)
+          } catch {
+            // WASM not ready — leave the previously copied format untouched
+          }
+        }
+        return
+      }
       // Home paragraph-formatting / view controls that have no dedicated
       // WASM model op yet land in the existing paragraph settings panel
       // (StylesPanel — the right-rail component rendered for "paragraph").
