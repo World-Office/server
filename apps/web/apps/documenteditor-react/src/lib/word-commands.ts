@@ -324,6 +324,7 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       }
       case "closeHeaderFooter":
         documentStore.headerFooterMode = "none"
+        return
       case "lineNumbers":
         documentStore.setLineNumbersEnabled(!documentStore.lineNumbersEnabled)
         return
@@ -341,6 +342,25 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         return
       case "mergeShapes":
         documentStore.mergeShapes()
+        return
+      // View tab
+      case "zoomTo100":
+        documentStore.setZoomLevel(100)
+        return
+      case "interfaceTheme":
+        if (value) documentStore.setTheme(value)
+        return
+      case "toggleDarkDocument":
+        documentStore.setDarkDocument(value !== "false")
+        return
+      case "macros":
+        documentStore.toggleRightPanel("plugins")
+        return
+      case "recordMacro":
+        documentStore.toggleMacroRecording()
+        return
+      case "pauseMacroRecording":
+        documentStore.toggleMacroPause()
         return
       case "save":
         void documentStore.saveToWopi()

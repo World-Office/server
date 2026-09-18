@@ -38,6 +38,11 @@ vi.mock("../stores/DocumentStore", () => ({
     exportAsDownload: vi.fn(),
     toggleRightPanel: vi.fn(),
     setFitToPage: vi.fn(),
+    setZoomLevel: vi.fn(),
+    setTheme: vi.fn(),
+    setDarkDocument: vi.fn(),
+    toggleMacroRecording: vi.fn(),
+    toggleMacroPause: vi.fn(),
     setLanguage: vi.fn(),
     setFitToWidth: vi.fn(),
     setFileMenuOpen: vi.fn(),
@@ -687,6 +692,26 @@ describe("word-commands", () => {
       vi.restoreAllMocks()
     })
   })
+
+    it("should handle view-tab zoom/theme/dark-document commands", () => {
+      handler({ command: "zoomTo100" })
+      expect(documentStore.setZoomLevel).toHaveBeenCalledWith(100)
+      handler({ command: "interfaceTheme", value: "dark" })
+      expect(documentStore.setTheme).toHaveBeenCalledWith("dark")
+      handler({ command: "toggleDarkDocument", value: "true" })
+      expect(documentStore.setDarkDocument).toHaveBeenCalledWith(true)
+      handler({ command: "toggleDarkDocument", value: "false" })
+      expect(documentStore.setDarkDocument).toHaveBeenCalledWith(false)
+    })
+
+    it("should handle view-tab macro commands", () => {
+      handler({ command: "macros" })
+      expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("plugins")
+      handler({ command: "recordMacro" })
+      expect(documentStore.toggleMacroRecording).toHaveBeenCalled()
+      handler({ command: "pauseMacroRecording" })
+      expect(documentStore.toggleMacroPause).toHaveBeenCalled()
+    })
 
   describe("unknown commands", () => {
     it("should log a warning for unknown commands and not throw", () => {
