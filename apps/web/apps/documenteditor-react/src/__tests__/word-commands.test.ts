@@ -376,7 +376,7 @@ describe("word-commands", () => {
     })
 
     it("should toggle review panel for track changes", () => {
-      const cmds = ["acceptChange", "acceptAllChanges", "rejectChange", "rejectAllChanges", "nextChange"]
+      const cmds = ["toggleTrackChanges", "acceptChange", "acceptAllChanges", "rejectChange", "rejectAllChanges", "nextChange", "previousChange"]
       cmds.forEach(cmd => {
         handler({ command: cmd })
         expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("review")
@@ -423,6 +423,27 @@ describe("word-commands", () => {
         handler({ command: cmd })
         expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("plugins")
       })
+    })
+
+    it("should toggle comments panel for comment commands", () => {
+      const cmds = ["addComment", "toggleComment", "deleteComment", "resolveComment"]
+      cmds.forEach(cmd => {
+        handler({ command: cmd })
+        expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("comments")
+      })
+    })
+
+    it("should toggle review panel for compare and display commands", () => {
+      const cmds = ["compareDocuments", "combineDocuments", "displayMode"]
+      cmds.forEach(cmd => {
+        handler({ command: cmd })
+        expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("review")
+      })
+    })
+
+    it("should toggle mailmerge panel for mail merge", () => {
+      handler({ command: "mailMerge" })
+      expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("mailmerge")
     })
 
     it("should toggle crossreference panel for references", () => {

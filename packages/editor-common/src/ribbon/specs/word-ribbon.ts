@@ -828,6 +828,13 @@ export const wordRibbonSpec: RibbonSpec = {
               command: "rejectAllChanges",
             },
             {
+              id: "previous-change",
+              type: "button",
+              icon: "ChevronLeft",
+              label: "Previous",
+              command: "previousChange",
+            },
+            {
               id: "next-change",
               type: "button",
               icon: "ChevronRight",
@@ -841,11 +848,78 @@ export const wordRibbonSpec: RibbonSpec = {
           label: "Comments",
           controls: [
             {
+              id: "add-comment",
+              type: "button",
+              icon: "Plus",
+              label: "Add Comment",
+              command: "addComment",
+            },
+            {
+              id: "delete-comment",
+              type: "button",
+              icon: "Trash2",
+              label: "Delete",
+              command: "deleteComment",
+            },
+            {
+              id: "resolve-comment",
+              type: "button",
+              icon: "Check",
+              label: "Resolve",
+              command: "resolveComment",
+            },
+            {
               id: "comments-panel",
               type: "button",
               icon: "MessageSquare",
               label: "Comments",
               command: "toggleComment",
+            },
+          ],
+        },
+        {
+          id: "display",
+          label: "Display",
+          controls: [
+            {
+              id: "display-mode",
+              type: "button",
+              icon: "LayoutDashboard",
+              label: "Display Mode",
+              command: "displayMode",
+            },
+          ],
+        },
+        {
+          id: "compare",
+          label: "Compare",
+          controls: [
+            {
+              id: "compare-documents",
+              type: "button",
+              icon: "FileDiff",
+              label: "Compare",
+              command: "compareDocuments",
+            },
+            {
+              id: "combine-documents",
+              type: "button",
+              icon: "Merge",
+              label: "Combine",
+              command: "combineDocuments",
+            },
+          ],
+        },
+        {
+          id: "mail-merge",
+          label: "Mail Merge",
+          controls: [
+            {
+              id: "mail-merge",
+              type: "button",
+              icon: "Mail",
+              label: "Mail Merge",
+              command: "mailMerge",
             },
           ],
         },

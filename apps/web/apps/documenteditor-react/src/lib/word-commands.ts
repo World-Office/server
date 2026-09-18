@@ -391,6 +391,8 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         return
       case "addComment":
       case "toggleComment":
+      case "deleteComment":
+      case "resolveComment":
         documentStore.toggleRightPanel("comments")
         return
       case "image":
@@ -413,6 +415,9 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         return
       case "chat":
         documentStore.toggleLeftPanel("chat")
+        return
+      case "protect-document":
+        documentStore.toggleRightPanel("review")
         return
       case "plugins":
         documentStore.toggleRightPanel("plugins")
@@ -443,6 +448,7 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         documentStore.toggleRightPanel("plugins")
         return
       case "aiAssistant":
+      case "ai-assistant":
         documentStore.toggleRightPanel("ai-assistant")
         return
       // Track Changes commands
@@ -454,7 +460,15 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "rejectChange":
       case "rejectAllChanges":
       case "nextChange":
+      case "previousChange":
+      case "compareDocuments":
+      case "combineDocuments":
+      case "displayMode":
         documentStore.toggleRightPanel("review")
+        return
+      // Mail Merge opens the mailmerge panel
+      case "mailMerge":
+        documentStore.toggleRightPanel("mailmerge")
         return
       // Reference commands open the crossreference panel
       case "insertFootnote":
