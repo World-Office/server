@@ -84,6 +84,13 @@ const WIRING = {
     selectAll: { target: "router", implemented: true },
     // insert
     horizontalRule: { target: "wasm", implemented: true }, image: { target: "panel", implemented: true },
+    blankPage: { target: "wasm", implemented: true },
+    insertShape: { target: "panel", implemented: true }, insertSmartArt: { target: "panel", implemented: true },
+    insertChart: { target: "panel", implemented: true }, textBox: { target: "panel", implemented: true },
+    textArt: { target: "panel", implemented: true }, dropCap: { target: "panel", implemented: true },
+    textFromFile: { target: "router", implemented: true },
+    equation: { target: "panel", implemented: true }, symbol: { target: "panel", implemented: true },
+    insertContentControl: { target: "panel", implemented: true },
     link: { target: "panel", implemented: true }, insertTable: { target: "wasm", implemented: true },
     pageBreak: { target: "wasm", implemented: true },
     // layout
@@ -109,8 +116,16 @@ const WIRING = {
     insertTableOfFigures: { target: "panel", implemented: true },
     // review
     acceptAllChanges: { target: "panel", implemented: true }, acceptChange: { target: "panel", implemented: true },
-    nextChange: { target: "panel", implemented: true }, rejectAllChanges: { target: "panel", implemented: true },
-    rejectChange: { target: "panel", implemented: true }, toggleTrackChanges: { target: "panel", implemented: true },
+    nextChange: { target: "panel", implemented: true }, previousChange: { target: "panel", implemented: true },
+    rejectAllChanges: { target: "panel", implemented: true }, rejectChange: { target: "panel", implemented: true },
+    toggleTrackChanges: { target: "panel", implemented: true },
+    // collaboration - comments
+    addComment: { target: "panel", implemented: true }, toggleComment: { target: "panel", implemented: true },
+    deleteComment: { target: "panel", implemented: true }, resolveComment: { target: "panel", implemented: true },
+    // collaboration - compare
+    compareDocuments: { target: "panel", implemented: true }, combineDocuments: { target: "panel", implemented: true },
+    // collaboration - display & mail merge
+    displayMode: { target: "panel", implemented: true }, mailMerge: { target: "panel", implemented: true },
     // view
     toggleGridlines: { target: "store", implemented: true }, toggleNavigation: { target: "store", implemented: true },
     toggleRuler: { target: "store", implemented: true }, toggleSpellCheck: { target: "store", implemented: true },
@@ -128,14 +143,16 @@ const WIRING = {
     copyStyle: { target: "router", implemented: true }, wordCount: { target: "panel", implemented: true },
     setDocumentLanguage: { target: "panel", implemented: true }, multiplePages: { target: "panel", implemented: true },
     fitToPage: { target: "store", implemented: true }, fitToWidth: { target: "store", implemented: true },
+    // protection
+    encrypt: { target: "panel", implemented: true }, "protect-document": { target: "panel", implemented: true },
+    plugins: { target: "panel", implemented: true }, "ai-assistant": { target: "panel", implemented: true },
+    chat: { target: "panel", implemented: true },
     // file backstage
     back: { target: "state", implemented: true }, save: { target: "store", implemented: true },
     downloadAs: { target: "panel", implemented: true }, print: { target: "panel", implemented: true },
     protect: { target: "panel", implemented: true }, info: { target: "panel", implemented: true },
     advancedSettings: { target: "panel", implemented: true }, help: { target: "panel", implemented: true },
     suggestFeature: { target: "panel", implemented: true },
-    chat: { target: "panel", implemented: true }, "protect-document": { target: "panel", implemented: true },
-    "ai-assistant": { target: "panel", implemented: true },
   },
   sheet: {
     cut: { target: "router", implemented: true }, copy: { target: "router", implemented: true },
