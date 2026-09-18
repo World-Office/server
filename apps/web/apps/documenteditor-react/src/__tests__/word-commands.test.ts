@@ -30,6 +30,8 @@ vi.mock("../stores/DocumentStore", () => ({
     toggleRightPanel: vi.fn(),
     setFitToPage: vi.fn(),
     setFitToWidth: vi.fn(),
+    setFileMenuOpen: vi.fn(),
+    setActiveFileMenuPanel: vi.fn(),
     pageOrientation: "portrait",
     pageSize: "A4",
     pageMargins: "normal",
@@ -337,6 +339,16 @@ describe("word-commands", () => {
   })
 
   describe("panel commands", () => {
+    it("should open the file-menu protect panel for protection commands", () => {
+      const cmds = ["protect-document", "protectDocument", "encrypt"]
+      for (const cmd of cmds) {
+        vi.clearAllMocks()
+        handler({ command: cmd })
+        expect(documentStore.setFileMenuOpen).toHaveBeenCalledWith(true)
+        expect(documentStore.setActiveFileMenuPanel).toHaveBeenCalledWith("protect")
+      }
+    })
+
     it("should handle find/replace", () => {
       handler({ command: "find" })
       expect(deps.onFind).toHaveBeenCalledWith(false)

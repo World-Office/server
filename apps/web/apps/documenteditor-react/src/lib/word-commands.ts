@@ -377,6 +377,12 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
 
     // 5. Panel-opening commands
     switch (command) {
+      case "protectDocument":
+      case "protect-document":
+      case "encrypt":
+        documentStore.setFileMenuOpen(true)
+        documentStore.setActiveFileMenuPanel("protect")
+        return
       case "find":
         onFind?.(false)
         return
