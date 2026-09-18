@@ -34,6 +34,11 @@ vi.mock("@world-office/wopi-client", () => ({
   detectWopiParams: vi.fn(() => null),
   loadDocument: loadDocumentMock,
   putFile: vi.fn(),
+  // Mirror the real isEditable (packages/wopi-client/src/wopi-types.ts):
+  // UserCanWrite wins when present, otherwise default editable unless ReadOnly.
+  isEditable: vi.fn((info: { UserCanWrite?: boolean; ReadOnly?: boolean }) =>
+    info.UserCanWrite !== undefined ? info.UserCanWrite : !(info.ReadOnly ?? false),
+  ),
 }))
 vi.mock("../lib/conversion", () => ({
   convertToHtml: convertToHtmlMock,
@@ -58,6 +63,10 @@ function wopiInfo(overrides: Record<string, unknown> = {}) {
 describe("DocumentStore lifecycle", () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Never-resolving fetch keeps the store's constructor-time loadFromDemo()
+    // (reached via detectAndLoadWopi when no WOPI params are present) from
+    // mutating state mid-test, mirroring DocumentStore.blob.test.ts.
+    vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})))
     convertToHtmlMock.mockResolvedValue("<p>x</p>")
     toDocxForCanvasMock.mockImplementation((_b: Blob) => Promise.resolve(makeDocx()))
     convertFromHtmlMock.mockResolvedValue(makeDocx())
