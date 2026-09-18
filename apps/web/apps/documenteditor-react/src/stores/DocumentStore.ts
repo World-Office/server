@@ -124,6 +124,7 @@ export class DocumentStore {
   rulerVisible = true
   gridlinesVisible = false
   navigationVisible = false
+  lineNumbersEnabled = false
 
   /* Spelling */
   spellingEnabled = true
@@ -363,6 +364,35 @@ export class DocumentStore {
 
   toggleNavigation(): void {
     this.navigationVisible = !this.navigationVisible
+  }
+
+  setLineNumbersEnabled(enabled: boolean): void {
+    this.lineNumbersEnabled = enabled
+  }
+
+  bringForward(): void {
+    console.log("Bring Forward clicked")
+    // TODO: Implement bring forward logic
+  }
+
+  sendBackward(): void {
+    console.log("Send Backward clicked")
+    // TODO: Implement send backward logic
+  }
+
+  alignObjects(): void {
+    console.log("Align Objects clicked")
+    // TODO: Implement align objects logic
+  }
+
+  groupObjects(): void {
+    console.log("Group Objects clicked")
+    // TODO: Implement group objects logic
+  }
+
+  mergeShapes(): void {
+    console.log("Merge Shapes clicked")
+    // TODO: Implement merge shapes logic
   }
 
   setSpellingEnabled(enabled: boolean): void {
