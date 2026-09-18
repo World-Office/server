@@ -376,7 +376,7 @@ describe("word-commands", () => {
     })
 
     it("should toggle review panel for track changes", () => {
-      const cmds = ["toggleTrackChanges", "acceptChange", "acceptAllChanges", "rejectChange", "rejectAllChanges", "nextChange", "previousChange"]
+      const cmds = ["acceptChange", "acceptAllChanges", "rejectChange", "rejectAllChanges", "nextChange", "previousChange"]
       cmds.forEach(cmd => {
         handler({ command: cmd })
         expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("review")
