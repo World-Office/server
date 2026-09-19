@@ -391,6 +391,11 @@
     <button type="button" id="btn-textfile" data-i18n="Insert.TextFromFile">Text from file…</button>
     <button type="button" id="btn-mailmerge" data-i18n="Insert.MailMerge">Mail merge…</button>
     <button type="button" id="btn-addtext" data-i18n="Insert.AddText">Add text</button>
+    <button type="button" id="btn-field" data-i18n="Insert.Field">Field…</button>
+    <button type="button" id="btn-contentcontrol" data-i18n="Insert.ContentControl">Content control…</button>
+    <button type="button" id="btn-chart" data-i18n="Insert.ChartEditor">Chart editor…</button>
+    <button type="button" id="btn-equation" data-i18n="Insert.Equation">Equation…</button>
+    <button type="button" id="btn-smartart" data-i18n="Insert.SmartArt">SmartArt…</button>
     </div>
     <!-- OO-parity tab pages. Buttons for features WO lacks carry data-stub="<ref>":
          they are LOUD stubs — clicking reports the ref via setStatus — and the
@@ -404,6 +409,8 @@
     <button type="button" id="btn-ink-eraser" data-cmd="toggleInk" data-value="eraser" data-i18n="Draw.Eraser" title="Eraser" data-i18n-title="Draw.EraserTitle" aria-pressed="false">Eraser</button>
     <button type="button" id="btn-ink-color" data-cmd="inkColor" data-i18n="Draw.Ink" title="Ink color" data-i18n-title="Draw.InkTitle">Ink color</button>
     <button type="button" id="btn-ink-thickness" data-cmd="inkThickness" data-i18n="Draw.InkThickness" title="Ink thickness" data-i18n-title="Draw.InkThicknessTitle">Ink thickness</button>
+    <button type="button" id="btn-group" data-i18n="Draw.Group" title="Group selected strokes" aria-label="Group selected strokes">Group</button>
+    <button type="button" id="btn-mergeshapes" data-i18n="Draw.Merge" title="Merge selected strokes into one" aria-label="Merge selected strokes">Merge shapes</button>
     </div>
     <div class="ribbon-page" data-tab="layout" role="group" aria-label="Layout ribbon">
     <button id="btn-page-break" title="Insert page break" aria-label="Insert page break">⏎</button>
@@ -1246,5 +1253,152 @@
 
   <input type="file" id="textfile-input" accept=".txt,.md,.html,.htm,.csv,.docx" hidden>
   <input type="file" id="mailmerge-csv" accept=".csv,.txt" hidden>
+
+  <!-- Wave G2: Field dialog (OO Insert>Field) + content controls + chart
+       editor + equation + SmartArt gallery + object layout (float). -->
+  <div id="field-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="field-dialog-title">
+    <div class="dialog">
+      <h3 id="field-dialog-title" data-i18n="Backstage.FieldTitle">Insert field</h3>
+      <div class="dialog-field">
+        <label for="field-type">Field type</label>
+        <select id="field-type">
+          <option value="PAGE">Page number</option>
+          <option value="DATE">Date</option>
+          <option value="TIME">Time</option>
+          <option value="AUTHOR">Author</option>
+          <option value="FILENAME">File name</option>
+          <option value="WORDS">Word count</option>
+        </select>
+      </div>
+      <p class="dialog-hint">The field shows its live value; on save the value
+         stays in the document.</p>
+      <div class="dialog-actions">
+        <button id="btn-field-cancel">Cancel</button>
+        <button id="btn-field-ok" class="primary">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="cc-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="cc-dialog-title">
+    <div class="dialog">
+      <h3 id="cc-dialog-title" data-i18n="Backstage.CCTitle">Content control</h3>
+      <div class="dialog-field">
+        <label for="cc-type">Type</label>
+        <select id="cc-type">
+          <option value="plain">Plain text</option>
+          <option value="rich">Rich text</option>
+          <option value="dropdown">Drop-down list</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label for="cc-title">Title (optional)</label>
+        <input id="cc-title" type="text" placeholder="e.g. Customer name">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-cc-cancel">Cancel</button>
+        <button id="btn-cc-ok" class="primary">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="chart-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="chart-dialog-title">
+    <div class="dialog">
+      <h3 id="chart-dialog-title" data-i18n="Backstage.ChartTitle">Chart editor</h3>
+      <div class="dialog-field">
+        <label for="chart-type-select">Chart type</label>
+        <select id="chart-type-select">
+          <option value="bar">Bar</option>
+          <option value="line">Line</option>
+          <option value="pie">Pie</option>
+          <option value="area">Area</option>
+        </select>
+        <label for="chart-title">Title</label>
+        <input id="chart-title" type="text" value="">
+      </div>
+      <div class="dialog-field">
+        <label>Data (label, value per row)</label>
+        <div id="chart-data" class="chart-grid">
+          <input data-ci="0" data-cj="0" placeholder="Label">
+          <input data-ci="0" data-cj="1" placeholder="Value" type="number">
+          <input data-ci="1" data-cj="0" placeholder="Label">
+          <input data-ci="1" data-cj="1" placeholder="Value" type="number">
+          <input data-ci="2" data-cj="0" placeholder="Label">
+          <input data-ci="2" data-cj="1" placeholder="Value" type="number">
+          <input data-ci="3" data-cj="0" placeholder="Label">
+          <input data-ci="3" data-cj="1" placeholder="Value" type="number">
+        </div>
+      </div>
+      <div class="dialog-field">
+        <label>Preview (updates live)</label>
+        <div id="chart-preview"></div>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-chart-cancel">Cancel</button>
+        <button id="btn-chart-ok" class="primary">Insert chart</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="equation-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="equation-dialog-title">
+    <div class="dialog">
+      <h3 id="equation-dialog-title" data-i18n="Backstage.EquationTitle">Equation</h3>
+      <div class="dialog-field">
+        <label for="equation-input">Linear notation (^ superscript, _ subscript, sqrt(), a/b)</label>
+        <textarea id="equation-input" rows="3" placeholder="x = (-b + sqrt(b^2 - 4ac)) / (2a)"></textarea>
+      </div>
+      <div class="dialog-field">
+        <label>Preview</label>
+        <div id="equation-preview"></div>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-equation-cancel">Cancel</button>
+        <button id="btn-equation-ok" class="primary">Insert equation</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="smartart-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="smartart-dialog-title">
+    <div class="dialog">
+      <h3 id="smartart-dialog-title" data-i18n="Backstage.SmartArtTitle">SmartArt diagram</h3>
+      <div class="dialog-field">
+        <label for="smartart-type">Layout</label>
+        <select id="smartart-type">
+          <option value="process">Process (arrows)</option>
+          <option value="cycle">Cycle</option>
+          <option value="hierarchy">Hierarchy</option>
+          <option value="matrix">Matrix</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label>Preview</label>
+        <div id="smartart-preview"></div>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-smartart-cancel">Cancel</button>
+        <button id="btn-smartart-ok" class="primary">Insert diagram</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="objlayout-pop" class="insert-pop dialog-overlay" role="dialog" aria-modal="false" aria-labelledby="objlayout-title" hidden>
+    <div class="insert-pop-body">
+      <h4 id="objlayout-title" data-i18n="Backstage.ObjLayout">Object layout</h4>
+      <div class="objlayout-row"><span>Wrap</span>
+        <button type="button" id="btn-wrap-inline" data-objwrap="inline" class="primary-sm">Inline</button>
+        <button type="button" id="btn-wrap-square" data-objwrap="square">Square</button>
+        <button type="button" id="btn-wrap-behind" data-objwrap="behind">Behind</button>
+      </div>
+      <div class="objlayout-row"><span>Align</span>
+        <button type="button" id="btn-align-left" data-objalign="left">Left</button>
+        <button type="button" id="btn-align-center" data-objalign="center">Center</button>
+        <button type="button" id="btn-align-right" data-objalign="right">Right</button>
+      </div>
+      <div class="objlayout-row"><span>Layer</span>
+        <button type="button" id="btn-layer-back" data-objlayer="back">Send backward</button>
+        <button type="button" id="btn-layer-front" data-objlayer="front">Bring forward</button>
+      </div>
+      <button type="button" id="btn-objlayout-close" class="primary">Done</button>
+    </div>
+  </div>
 </body>
 </html>

@@ -5844,5 +5844,335 @@
     } catch { setStatus(on ? "Background plugins on" : "Background plugins off"); }
   });
 
+  // ------------------------------------------------------------------
+  // Wave G2 — fields, content controls, chart editor, equation, SmartArt,
+  // object layout (float) + ink group/merge (OO-parity backlog closure).
+  // ------------------------------------------------------------------
+  function _escXml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" }[c]));
+  }
+  function svgToDataURI(svgMarkup) {
+    return "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgMarkup)));
+  }
+  function insertSVGImage(svgMarkup, widthPx) {
+    // Rasterize the SVG to PNG in the browser: the DOCX exporter embeds via
+    // PIL (python-docx add_picture), which cannot open SVG — PNG data URIs
+    // round-trip like any insert-image. Insertion is async (image load).
+    const url = URL.createObjectURL(new Blob([svgMarkup], { type: "image/svg+xml" }));
+    const src = new Image();
+    src.onload = () => {
+      const scale = 2;
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, src.naturalWidth) * scale;
+      c.height = Math.max(1, src.naturalHeight) * scale;
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(src, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      const img = document.createElement("img");
+      img.src = c.toDataURL("image/png");
+      img.classList.add("inline-object");
+      img.style.width = (widthPx || 420) + "px";
+      img.alt = "inserted object";
+      editor.focus();
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount && !sel.isCollapsed) sel.deleteFromDocument();
+      document.execCommand("insertHTML", false, img.outerHTML);
+    };
+    src.onerror = () => { URL.revokeObjectURL(url); setStatus("Could not render object", true); };
+    src.src = url;
+  }
+
+  // -- Insert > Field (OO Insert>Field; PAGE/DATE/TIME/AUTHOR/FILENAME/WORDS).
+  const btnField = document.getElementById("btn-field");
+  if (btnField) btnField.addEventListener("click", () => { if (READ_ONLY) return; openDlg("field-dialog"); });
+  const btnFieldCancel = document.getElementById("btn-field-cancel");
+  if (btnFieldCancel) btnFieldCancel.addEventListener("click", () => closeDlg("field-dialog"));
+  const btnFieldOk = document.getElementById("btn-field-ok");
+  if (btnFieldOk) btnFieldOk.addEventListener("click", () => {
+    const typeEl = document.getElementById("field-type");
+    if (!typeEl || !typeEl.value) return;
+    const type = typeEl.value;
+    const now = new Date();
+    let value = "";
+    switch (type) {
+      case "PAGE": value = "1"; break;
+      case "DATE": value = now.toLocaleDateString(); break;
+      case "TIME": value = now.toLocaleTimeString(); break;
+      case "AUTHOR": value = "editor"; break;
+      case "FILENAME": value = DOC_NAME || "document"; break;
+      case "WORDS": value = String((editor.innerText.trim().match(/\S+/g) || []).length); break;
+    }
+    const f = document.createElement("span");
+    f.className = "field";
+    f.setAttribute("data-field", type);
+    f.textContent = value;
+    editor.focus();
+    document.execCommand("insertHTML", false, f.outerHTML);
+    closeDlg("field-dialog");
+    setStatus(`Inserted ${type} field`);
+  });
+
+  // -- Insert > Content control (plain / rich / dropdown marker boxes).
+  const btnCc = document.getElementById("btn-contentcontrol");
+  if (btnCc) btnCc.addEventListener("click", () => { if (READ_ONLY) return; openDlg("cc-dialog"); });
+  const btnCcCancel = document.getElementById("btn-cc-cancel");
+  if (btnCcCancel) btnCcCancel.addEventListener("click", () => closeDlg("cc-dialog"));
+  const btnCcOk = document.getElementById("btn-cc-ok");
+  if (btnCcOk) btnCcOk.addEventListener("click", () => {
+    const t = document.getElementById("cc-type");
+    const title = document.getElementById("cc-title");
+    const type = (t && t.value) || "plain";
+    const label = ((title && title.value.trim()) || "Content control");
+    const html = type === "dropdown"
+      ? `<span class="content-control cc-dropdown" data-cc="dropdown" contenteditable="false" title="${_escXml(label)}">▾ ${_escXml(label)}</span>`
+      : `<p class="content-control" data-cc="${type}" title="${_escXml(label)}">${_escXml(label)}</p>`;
+    editor.focus();
+    document.execCommand("insertHTML", false, html);
+    closeDlg("cc-dialog");
+    setStatus(`Inserted ${type} content control`);
+  });
+
+  // -- Chart editor: type select + data grid -> live SVG preview -> image.
+  function chartSVG(type, title, rows) {
+    const W = 440, H = 260, M = 8;
+    const vals = rows.map((r) => parseFloat(r[1])).filter((v) => !isNaN(v));
+    const labels = rows.map((r) => r[0] || "");
+    const max = Math.max(1, ...vals);
+    const colors = ["#3f6fae", "#df8b3c", "#5aa469", "#b04a52", "#8a6fb0", "#c9a33c"];
+    let body = "";
+    if (type === "pie") {
+      const total = vals.reduce((a, b) => a + b, 0) || 1;
+      const cx = W / 2, cy = H / 2, R = 92;
+      let a0 = -Math.PI / 2;
+      vals.forEach((v, i) => {
+        if (v <= 0) return;
+        const a1 = a0 + (v / total) * Math.PI * 2;
+        const x0 = cx + R * Math.cos(a0), y0 = cy + R * Math.sin(a0);
+        const x1 = cx + R * Math.cos(a1), y1 = cy + R * Math.sin(a1);
+        const large = a1 - a0 > Math.PI ? 1 : 0;
+        body += `<path d="M${cx},${cy}L${x0.toFixed(1)},${y0.toFixed(1)}A${R},${R} 0 ${large} 1 ${x1.toFixed(1)},${y1.toFixed(1)}Z" fill="${colors[i % colors.length]}" stroke="#fff" stroke-width="1"/>`;
+        a0 = a1;
+      });
+      if (title) body += `<text x="${cx}" y="${M + 12}" text-anchor="middle" font-size="13" font-family="sans-serif">${_escXml(title)}</text>`;
+    } else {
+      const plotW = W - 130, plotH = H - 46, bx = 58, by = 22;
+      const n = Math.max(1, vals.length);
+      let lastX = 0, lastY = 0;
+      vals.forEach((v, i) => {
+        const h = (v / max) * plotH;
+        const x = bx + (i * plotW) / n + plotW / n * 0.18;
+        const bw = Math.max(8, plotW / n * 0.55);
+        const y = by + plotH - h;
+        if (type === "bar" || type === "area") body += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}" fill="${colors[i % colors.length]}" rx="2"/>`;
+        const nx = x + bw / 2, ny = y;
+        if (type === "line" || type === "area") {
+          if (i > 0) body += `<line x1="${lastX.toFixed(1)}" y1="${lastY.toFixed(1)}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="${colors[i % colors.length]}" stroke-width="2"/>`;
+          body += `<circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="3" fill="${colors[i % colors.length]}"/>`;
+        }
+        if (type === "area") body += `<polygon points="${bx + (i * plotW) / n},${by + plotH} ${(bx + (i * plotW) / n + plotW / n).toFixed(1)},${by + plotH} ${nx.toFixed(1)},${ny.toFixed(1)}" fill="${colors[i % colors.length]}" opacity="0.25"/>`;
+        lastX = nx; lastY = ny;
+        if (labels[i]) body += `<text x="${x + bw / 2}" y="${by + plotH + 14}" text-anchor="middle" font-size="10" font-family="sans-serif">${_escXml(labels[i])}</text>`;
+        body += `<text x="${bx + plotW + 8}" y="${y + 3}" font-size="9" font-family="sans-serif" fill="#555">${v}</text>`;
+      });
+      if (title) body += `<text x="${W / 2}" y="${M + 12}" text-anchor="middle" font-size="13" font-family="sans-serif">${_escXml(title)}</text>`;
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="100%" height="100%" fill="#ffffff"/>${body}</svg>`;
+  }
+  function chartRowsFromDOM() {
+    return [...document.querySelectorAll("#chart-data input")]
+      .filter((el) => el.dataset.cj === "0")
+      .map((el) => [el.value, (document.querySelector(`#chart-data input[data-ci="${el.dataset.ci}"][data-cj="1"]`) || {}).value || "0"]);
+  }
+  function renderChartPreview() {
+    const type = document.getElementById("chart-type-select").value;
+    const title = document.getElementById("chart-title").value;
+    const prev = document.getElementById("chart-preview");
+    if (prev) prev.innerHTML = chartSVG(type, title, chartRowsFromDOM());
+  }
+  const btnChart = document.getElementById("btn-chart");
+  if (btnChart) btnChart.addEventListener("click", () => {
+    if (READ_ONLY) return;
+    openDlg("chart-dialog");
+    renderChartPreview();
+  });
+  const btnChartCancel = document.getElementById("btn-chart-cancel");
+  if (btnChartCancel) btnChartCancel.addEventListener("click", () => closeDlg("chart-dialog"));
+  document.getElementById("chart-type-select")?.addEventListener("change", renderChartPreview);
+  document.getElementById("chart-title")?.addEventListener("input", renderChartPreview);
+  document.querySelectorAll("#chart-data input").forEach((el) => el.addEventListener("input", renderChartPreview));
+  const btnChartOk = document.getElementById("btn-chart-ok");
+  if (btnChartOk) btnChartOk.addEventListener("click", () => {
+    const type = document.getElementById("chart-type-select").value;
+    const title = document.getElementById("chart-title").value;
+    insertSVGImage(chartSVG(type, title, chartRowsFromDOM()), 420);
+    closeDlg("chart-dialog");
+    setStatus("Inserted chart");
+  });
+
+  // -- Equation: linear notation -> SVG (sup/sub/sqrt, symbol passthrough).
+  function equationSVG(expr) {
+    const tokens = expr.replace(/\s+/g, " ").trim();
+    const W = Math.max(140, tokens.length * 13 + 40), H = 76;
+    let body = "";
+    let x = 12;
+    const push = (txt, size, dy) => {
+      body += `<text x="${x}" y="${42 + (dy || 0)}" font-size="${size || 18}" font-family="serif" font-style="italic">${_escXml(txt)}</text>`;
+      x += txt.length * ((size || 18) * 0.62) + 1;
+    };
+    let i = 0;
+    while (i < tokens.length) {
+      const ch = tokens[i];
+      if (ch === "^") {
+        let j = i + 1, run = "";
+        if (tokens[j] === "{") { j++; while (j < tokens.length && tokens[j] !== "}") run += tokens[j++]; i = j + 1; }
+        else { run = tokens[j] || ""; i = j + 1; }
+        push(run, 13, -12);
+      } else if (ch === "_") {
+        let j = i + 1, run = "";
+        if (tokens[j] === "{") { j++; while (j < tokens.length && tokens[j] !== "}") run += tokens[j++]; i = j + 1; }
+        else { run = tokens[j] || ""; i = j + 1; }
+        push(run, 13, 10);
+      } else if (ch === "*" && tokens[i + 1] === "*") {
+        body += `<circle cx="${x + 4}" cy="${38}" r="1.4" fill="currentColor"/>`; x += 10; i += 2;
+      } else {
+        push(ch, 18, 0); i++;
+      }
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="100%" height="100%" fill="#ffffff"/>${body}</svg>`;
+  }
+  const btnEquation = document.getElementById("btn-equation");
+  if (btnEquation) btnEquation.addEventListener("click", () => {
+    if (READ_ONLY) return;
+    openDlg("equation-dialog");
+    const input = document.getElementById("equation-input");
+    const prev = document.getElementById("equation-preview");
+    const refresh = () => { if (prev && input) prev.innerHTML = equationSVG(input.value || " "); };
+    input?.addEventListener("input", refresh);
+    refresh();
+  });
+  const btnEquationCancel = document.getElementById("btn-equation-cancel");
+  if (btnEquationCancel) btnEquationCancel.addEventListener("click", () => closeDlg("equation-dialog"));
+  const btnEquationOk = document.getElementById("btn-equation-ok");
+  if (btnEquationOk) btnEquationOk.addEventListener("click", () => {
+    const input = document.getElementById("equation-input");
+    const text = (input && input.value.trim()) || "x";
+    insertSVGImage(equationSVG(text), 260);
+    closeDlg("equation-dialog");
+    setStatus("Inserted equation");
+  });
+
+  // -- SmartArt gallery: diagram templates -> SVG -> image.
+  function smartartSVG(kind) {
+    const W = 420, H = 200;
+    const box = (x, y, w, h, t, fill) =>
+      `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" fill="${fill || "#3f6fae"}"/><text x="${x + w / 2}" y="${y + h / 2 + 4}" text-anchor="middle" font-size="12" fill="#fff" font-family="sans-serif">${_escXml(t)}</text>`;
+    const arrow = (x1, y1, x2, y2) => `<path d="M${x1},${y1}L${x2},${y2}" stroke="#8a8f98" stroke-width="2" marker-end="url(#a)"/>`;
+    let body = "";
+    if (kind === "process") {
+      for (let k = 0; k < 4; k++) body += box(10 + k * 105, 78, 70, 44, String(k + 1));
+      for (let k = 0; k < 3; k++) body += arrow(82 + k * 105, 100, 106 + k * 105, 100);
+    } else if (kind === "cycle") {
+      const cs = ["#3f6fae", "#df8b3c", "#5aa469", "#b04a52"];
+      for (let k = 0; k < 4; k++) {
+        const a = k * Math.PI / 2 - Math.PI / 2;
+        body += box(192 + 62 * Math.cos(a) - 26, 92 + 62 * Math.sin(a) - 26, 52, 52, String(k + 1), cs[k]);
+      }
+    } else if (kind === "hierarchy") {
+      body += box(160, 16, 100, 36, "Root");
+      body += `<line x1="210" y1="52" x2="95" y2="82" stroke="#8a8f98"/><line x1="210" y1="52" x2="210" y2="82" stroke="#8a8f98"/><line x1="210" y1="52" x2="325" y2="82" stroke="#8a8f98"/>`;
+      body += box(20, 84, 130, 40, "Child 1", "#5a8fb5") + box(145, 84, 130, 40, "Child 2", "#5a8fb5") + box(270, 84, 130, 40, "Child 3", "#5a8fb5");
+    } else if (kind === "matrix") {
+      body += box(40, 34, 150, 60, "A", "#3f6fae") + box(230, 34, 150, 60, "B", "#df8b3c")
+           + box(40, 112, 150, 60, "C", "#5aa469") + box(230, 112, 150, 60, "D", "#b04a52");
+    }
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><defs><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0L6,3L0,6Z" fill="#8a8f98"/></marker></defs><rect width="100%" height="100%" fill="#ffffff"/>${body}</svg>`;
+  }
+  const btnSmartArt = document.getElementById("btn-smartart");
+  if (btnSmartArt) btnSmartArt.addEventListener("click", () => {
+    if (READ_ONLY) return;
+    openDlg("smartart-dialog");
+    renderSmartArtPreview();
+  });
+  function renderSmartArtPreview() {
+    const kind = document.getElementById("smartart-type").value;
+    const prev = document.getElementById("smartart-preview");
+    if (prev) prev.innerHTML = smartartSVG(kind);
+  }
+  document.getElementById("smartart-type")?.addEventListener("change", renderSmartArtPreview);
+  const btnSmartArtCancel = document.getElementById("btn-smartart-cancel");
+  if (btnSmartArtCancel) btnSmartArtCancel.addEventListener("click", () => closeDlg("smartart-dialog"));
+  const btnSmartArtOk = document.getElementById("btn-smartart-ok");
+  if (btnSmartArtOk) btnSmartArtOk.addEventListener("click", () => {
+    insertSVGImage(smartartSVG(document.getElementById("smartart-type").value), 420);
+    closeDlg("smartart-dialog");
+    setStatus("Inserted SmartArt diagram");
+  });
+
+  // -- Object layout (float): wrap / align / layer popup on the selected image.
+  const objPopup = document.getElementById("objlayout-pop");
+  let floatImg = null;
+  function selectedImage() {
+    const sel = window.getSelection();
+    let node = null;
+    if (sel && sel.anchorNode) node = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentElement : sel.anchorNode;
+    if (node && node.closest && node.closest("img")) return node.closest("img");
+    if (document.activeElement && document.activeElement.tagName === "IMG") return document.activeElement;
+    return null;
+  }
+  document.addEventListener("selectionchange", () => {
+    const img = selectedImage();
+    if (img && objPopup) {
+      floatImg = img;
+      const r = img.getBoundingClientRect();
+      objPopup.style.left = Math.min(r.left, window.innerWidth - 220) + "px";
+      objPopup.style.top = (r.bottom + 6) + "px";
+      objPopup.hidden = false;
+    } else if (objPopup) {
+      objPopup.hidden = true;
+    }
+  });
+  function applyObjLayout(attr, value) {
+    if (!floatImg) return;
+    if (attr === "wrap") {
+      floatImg.classList.remove("obj-inline", "obj-square", "obj-right", "obj-behind");
+      if (value === "square") { floatImg.style.cssFloat = "left"; floatImg.style.margin = "4px 12px 6px 0"; }
+      else if (value === "behind") { floatImg.style.cssFloat = "none"; floatImg.style.display = "block"; floatImg.style.margin = "0 auto"; floatImg.style.zIndex = "-1"; floatImg.style.position = "relative"; floatImg.style.opacity = "0.85"; }
+      else { floatImg.style.cssFloat = "none"; floatImg.style.display = "inline"; floatImg.style.margin = "0 4px"; floatImg.style.zIndex = ""; floatImg.style.position = ""; floatImg.style.opacity = ""; }
+    } else if (attr === "align") {
+      floatImg.style.cssFloat = value === "left" ? "left" : value === "right" ? "right" : "none";
+      floatImg.style.display = "block";
+      floatImg.style.margin = value === "left" ? "4px 12px 6px 0" : value === "right" ? "4px 0 6px 12px" : "auto";
+    } else if (attr === "layer") {
+      const z = parseFloat(floatImg.style.zIndex) || 0;
+      floatImg.style.position = "relative";
+      floatImg.style.zIndex = String(value === "back" ? z - 1 : z + 1);
+    }
+    setStatus(`Object layout: ${attr} ${value}`);
+  }
+  objPopup?.querySelectorAll("[data-objwrap]").forEach((b) => b.addEventListener("click", () => applyObjLayout("wrap", b.dataset.objwrap)));
+  objPopup?.querySelectorAll("[data-objalign]").forEach((b) => b.addEventListener("click", () => applyObjLayout("align", b.dataset.objalign)));
+  objPopup?.querySelectorAll("[data-objlayer]").forEach((b) => b.addEventListener("click", () => applyObjLayout("layer", b.dataset.objlayer)));
+  document.getElementById("btn-objlayout-close")?.addEventListener("click", () => { if (objPopup) objPopup.hidden = true; });
+
+  // -- Draw > Group / Merge: combine selected ink strokes into one shape.
+  function combineInk(asMerge) {
+    if (selectedInk < 0) { setStatus("Select a stroke first (Select tool)", true); return; }
+    if (inkStrokes.length < 2) { setStatus("Need at least two strokes", true); return; }
+    const pts = [];
+    for (const s of inkStrokes) for (const p of s.points) pts.push(p);
+    inkStrokes = [{
+      points: pts,
+      color: inkStrokes[selectedInk] ? inkStrokes[selectedInk].color : inkStrokes[0].color,
+      thickness: Math.max(...inkStrokes.map((s) => s.thickness || 2)),
+      mode: "pen",
+    }];
+    selectedInk = 0;
+    redrawInk();
+    setStatus(asMerge ? "Merged strokes into one shape" : "Grouped strokes");
+  }
+  document.getElementById("btn-group")?.addEventListener("click", () => combineInk(false));
+  document.getElementById("btn-mergeshapes")?.addEventListener("click", () => combineInk(true));
+
   loadDocument();
 })();

@@ -1599,3 +1599,24 @@ body.multi-page-view #editor .page-break br { display: none; }
   content: "\00B6"; color: var(--accent); opacity: .55; font-size: .9em;
   margin-left: 1px; user-select: none; pointer-events: none;
 }
+
+/* Wave G2: fields, content controls, chart/equation/smartart previews,
+   object-layout popup. */
+#editor .field { border-bottom: 1px dotted var(--accent); padding: 0 1px;
+  background: rgba(63, 111, 174, 0.08); border-radius: 2px; }
+#editor .content-control { border: 1px dashed #8a8f98; border-radius: 4px;
+  padding: 2px 6px; background: rgba(128, 134, 146, 0.06); display: block; }
+#editor .content-control.cc-dropdown { display: inline-block; cursor: default;
+  user-select: none; }
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; max-width: 320px; }
+.chart-grid input { font-size: 10px; padding: 3px 5px; border: 1px solid var(--border); border-radius: 3px; }
+#chart-preview, #equation-preview, #smartart-preview { background: #fff;
+  border: 1px solid var(--border); border-radius: 4px; overflow: auto; max-height: 260px; }
+#chart-preview svg, #equation-preview svg, #smartart-preview svg { display: block; max-width: 100%; }
+.insert-pop-body { padding: 10px 12px; }
+.objlayout-row { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+.objlayout-row span { min-width: 44px; font-size: 10px; color: var(--muted, #666); }
+.objlayout-row button { font-size: 10px; padding: 3px 8px; border: 1px solid var(--border);
+  border-radius: 3px; background: var(--surface); cursor: pointer; }
+.objlayout-row button:hover { background: var(--accent); color: #fff; }
+.primary-sm { background: var(--accent); color: #fff; border: none; }
