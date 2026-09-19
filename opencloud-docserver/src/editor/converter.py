@@ -2195,6 +2195,24 @@ def _drawing_to_img(run, drawing) -> str:
         alt = _drawing_alt(drawing)
         if alt:
             attrs.append(f' alt="{escape(alt)}"')
+        anchor = drawing.find(qn("wp:anchor"))
+        if anchor is not None:
+            # anchored (floating) picture: carry the float classes so a save
+            # re-emits wp:anchor with the same text flow
+            cls = []
+            if anchor.find(qn("wp:wrapBehind")) is not None:
+                cls.append("obj-behind")
+            elif (anchor.find(qn("wp:wrapSquare")) is not None
+                  or anchor.find(qn("wp:wrapTight")) is not None
+                  or anchor.find(qn("wp:wrapThrough")) is not None):
+                cls.append("obj-square")
+            pos_h = anchor.find(qn("wp:positionH"))
+            if pos_h is not None:
+                align = pos_h.find(qn("wp:align"))
+                if align is not None and align.text == "right":
+                    cls.append("obj-right")
+            if cls:
+                attrs.append(f' class="{escape(" ".join(cls))}"')
         return "<img" + "".join(attrs) + "/>"
     return ""
 
@@ -3268,6 +3286,13 @@ class _InlineRunBuilder(HTMLParser):
                 token["float"] = "square"
             if "obj-right" in cls:
                 token["float_side"] = "right"
+            # object-layout popup also drives floats via inline style
+            style = a.get("style") or ""
+            fm = re.search(r"float\s*:\s*(left|right)", style)
+            if "float" not in token and fm:
+                token["float"] = "square"
+                if fm.group(1) == "right":
+                    token["float_side"] = "right"
             self.tokens.append(token)
             return
         elif tag in ("b", "strong"):
@@ -3924,6 +3949,11 @@ def _add_image_run(paragraph, token: dict) -> None:
     alt = (token.get("alt") or "").strip()
     if alt:
         _set_drawing_alt(run._r, alt)
+    # A floated picture becomes an ANCHORED drawing (wp:anchor + wrap), so
+    # text actually flows around it and Word keeps the float on round-trip.
+    wrap = token.get("float")
+    if wrap in ("square", "behind"):
+        _convert_inline_to_anchor(run._r, wrap, token.get("float_side"))
 
 
 def _set_drawing_alt(r, alt: str) -> None:
@@ -3934,6 +3964,64 @@ def _set_drawing_alt(r, alt: str) -> None:
     for docPr in drawing.iter(qn("wp:docPr")):
         docPr.set("descr", alt)
         break
+
+
+def _convert_inline_to_anchor(r, wrap: str, side: str | None) -> None:
+    """Turn a run's inline picture drawing into an anchored (floating) one.
+
+    ``wp:inline`` becomes ``wp:anchor`` carrying the wrap element and an
+    alignment-hint position, so text wraps around the picture and the float
+    survives DOCX -> HTML -> DOCX. ``wrap`` is ``square`` (wrapSquare) or
+    ``behind`` (wrapBehind, behindDoc=1); ``side`` left/right/None seeds the
+    horizontal anchor.
+    """
+    drawing = r.find(qn("w:drawing"))
+    if drawing is None:
+        return
+    inline = drawing.find(qn("wp:inline"))
+    if inline is None:
+        return
+    anchor = OxmlElement("wp:anchor")
+    behind = wrap == "behind"
+    for attr, val in (
+        ("distT", "0"), ("distB", "0"), ("distL", "0"), ("distR", "0"),
+        ("simplePos", "0"), ("relativeHeight", "251658240"),
+        ("behindDoc", "1" if behind else "0"), ("locked", "0"),
+        ("layoutInCell", "1"), ("allowOverlap", "1"),
+    ):
+        anchor.set(attr, val)
+    simple_pos = OxmlElement("wp:simplePos")
+    simple_pos.set(qn("wp:x"), "0")
+    simple_pos.set(qn("wp:y"), "0")
+    anchor.append(simple_pos)
+    pos_h = OxmlElement("wp:positionH")
+    pos_h.set("relativeFrom", "column")
+    h_align = OxmlElement("wp:align")
+    h_align.text = "right" if side == "right" else "left"
+    pos_h.append(h_align)
+    anchor.append(pos_h)
+    pos_v = OxmlElement("wp:positionV")
+    pos_v.set("relativeFrom", "paragraph")
+    v_offset = OxmlElement("wp:posOffset")
+    v_offset.text = "0"
+    pos_v.append(v_offset)
+    anchor.append(pos_v)
+    for tag in (
+        "wp:extent", "wp:effectExtent", "wp:docPr",
+        "wp:cNvGraphicFramePr", "a:graphic",
+    ):
+        el = inline.find(qn(tag))
+        if el is not None:
+            inline.remove(el)
+            anchor.append(el)
+    wrap_el = OxmlElement("wp:wrapSquare" if wrap == "square" else "wp:wrapBehind")
+    if wrap == "square":
+        wrap_el.set("wrapText", "bothSides")
+    # insert wrap element after extent/effectExtent, before docPr
+    docPr = anchor.find(qn("wp:docPr"))
+    anchor.insert(list(anchor).index(docPr), wrap_el)
+    drawing.remove(inline)
+    drawing.append(anchor)
 
 
 def _parse_border(style: str) -> str | None:

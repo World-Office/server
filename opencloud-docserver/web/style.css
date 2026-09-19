@@ -1620,3 +1620,13 @@ body.multi-page-view #editor .page-break br { display: none; }
   border-radius: 3px; background: var(--surface); cursor: pointer; }
 .objlayout-row button:hover { background: var(--accent); color: #fff; }
 .primary-sm { background: var(--accent); color: #fff; border: none; }
+
+/* Text-flow floats (object-layout popup + DOCX anchored drawings). The
+   classes are the canonical round-trip contract: obj-square=wrapSquare,
+   obj-right=right-aligned float, obj-behind=wrapBehind, obj-center=block. */
+#editor img.obj-inline { display: inline-block; margin: 0 4px; }
+#editor img.obj-square { float: left; margin: 4px 12px 6px 0; }
+#editor img.obj-square.obj-right { float: right; margin: 4px 0 6px 12px; }
+#editor img.obj-behind { float: none; display: block; margin: 0 auto;
+  position: relative; z-index: -1; opacity: .92; }
+#editor img.obj-center { display: block; margin: 4px auto; }
