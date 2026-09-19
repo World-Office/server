@@ -1059,7 +1059,7 @@ def _add_object(doc, typ: str, label: str, content: str) -> None:
     # Equations render as real OMML (editable in Word) rather than a shape.
     if typ == "equation":
         p = doc.add_paragraph()
-        _add_omml_equation(p, content)
+        _add_omml_equation(p, content, label)
         return
     p = doc.add_paragraph()
     drawing = OxmlElement("w:drawing")
@@ -1581,16 +1581,30 @@ def _linear_to_omml(text: str) -> str:
     return f'<m:oMath xmlns:m="{_M_NS}">{parse_expr()}</m:oMath>'
 
 
-def _add_omml_equation(paragraph, text: str) -> None:
+def _add_omml_equation(paragraph, text: str, label: str = "") -> None:
     """Emit a display equation: m:oMathPara DIRECTLY on w:p (m:oMath inside
-    w:r is schema-invalid — Word/LibreOffice silently drop it)."""
+    w:r is schema-invalid — Word/LibreOffice silently drop it).
+
+    An optional label wraps the OMML in a Word bookmark, so the
+    data-label marker survives the round-trip too (F086 contract)."""
     omml = _linear_to_omml(text)
     omml = omml.replace(
         "<m:oMath ",
         f'<m:oMathPara xmlns:m="{_M_NS}"><m:oMath ',
         1,
     ) + "</m:oMathPara>"
-    paragraph._p.append(parse_xml(omml))
+    if label:
+        bid = _next_bookmark_id(paragraph.part)
+        bm_start = OxmlElement("w:bookmarkStart")
+        bm_start.set(qn("w:id"), str(bid))
+        bm_start.set(qn("w:name"), label[:40])
+        bm_end = OxmlElement("w:bookmarkEnd")
+        bm_end.set(qn("w:id"), str(bid))
+        paragraph._p.append(bm_start)
+        paragraph._p.append(parse_xml(omml))
+        paragraph._p.append(bm_end)
+    else:
+        paragraph._p.append(parse_xml(omml))
 
 
 
@@ -1598,6 +1612,27 @@ def _docx_equation_text(node) -> str:
     return "".join(
         t.text or "" for t in node.iter() if t.tag in (qn("w:t"), qn("m:t"))
     )
+
+
+def _omml_linear(node) -> str:
+    """Reconstruct linear notation from an OMML subtree, so equations read
+    back exactly as typed ('E=mc^2' stays 'E=mc^2', not flattened 'E=mc2')."""
+    if node is None:
+        return ""
+    tag = node.tag
+    if tag == qn("m:t"):
+        return node.text or ""
+    if tag == qn("m:sSup"):
+        return f"{_omml_linear(node.find(qn('m:e')))}^{_omml_linear(node.find(qn('m:sup')))}"
+    if tag == qn("m:sSub"):
+        return f"{_omml_linear(node.find(qn('m:e')))}_{_omml_linear(node.find(qn('m:sub')))}"
+    if tag == qn("m:f"):
+        return f"{_omml_linear(node.find(qn('m:num')))}/{_omml_linear(node.find(qn('m:den')))}"
+    if tag == qn("m:rad"):
+        return f"sqrt({_omml_linear(node.find(qn('m:e')))})"
+    if tag == qn("m:d"):
+        return f"({_omml_linear(node.find(qn('m:e')))})"
+    return "".join(_omml_linear(c) for c in node)
 
 
 def _add_header(doc, content_html: str) -> None:
@@ -2159,8 +2194,18 @@ def _paragraph_inline(para, notes=None, comments=None) -> str:
             add(inner)
         if tag in (qn("m:oMath"), qn("m:oMathPara")):
             # paragraph-level equation (display equations are m:oMathPara
-            # children of w:p, not w:r — emit the editor's text marker)
-            add(f'<div class="object" data-type="equation">{escape(_docx_equation_text(child))}</div>')
+            # children of w:p, not w:r) — emit the editor's text marker with
+            # linear notation reconstructed (^ _ / sqrt survive). A wrapping
+            # bookmark carries the data-label and is consumed here so it is
+            # not re-emitted as a generic bookmark span.
+            label = ""
+            if in_bookmark is not None:
+                label = (in_bookmark[1] or "").strip()
+                in_bookmark = None
+            attrs = ' data-type="equation"'
+            if label:
+                attrs += f' data-label="{escape(label, quote=True)}"'
+            out.append(f'<div class="object"{attrs}>{escape(_omml_linear(child))}</div>')
             continue
         if tag == qn("w:fldSimple"):
             instr = (child.get(qn("w:instr")) or "").strip().upper()
@@ -2329,7 +2374,7 @@ def _run_to_html(run, notes=None) -> str:
                 buf = []
             chunks.append(
                 f'<div class="object" data-type="equation">'
-                f'{escape(_docx_equation_text(child))}</div>'
+                f'{escape(_omml_linear(child))}</div>'
             )
         elif child.tag in (qn("w:t"), qn("w:tab"), qn("w:br"), qn("w:cr")):
             buf.append(_text_child_value(child))
