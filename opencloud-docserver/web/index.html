@@ -388,14 +388,19 @@
     <button type="button" data-cmd="toggleDropcap" data-i18n="Insert.DropCap">Drop cap</button>
     <button type="button" data-cmd="insertObject" data-value="textbox" data-i18n="Insert.TextBox">Text box</button>
     <button type="button" data-cmd="link" data-i18n="Insert.Hyperlink">Hyperlink</button>
-    <button type="button" id="btn-textfile" data-i18n="Insert.TextFromFile">Text from file…</button>
-    <button type="button" id="btn-mailmerge" data-i18n="Insert.MailMerge">Mail merge…</button>
-    <button type="button" id="btn-addtext" data-i18n="Insert.AddText">Add text</button>
-    <button type="button" id="btn-field" data-i18n="Insert.Field">Field…</button>
-    <button type="button" id="btn-contentcontrol" data-i18n="Insert.ContentControl">Content control…</button>
-    <button type="button" id="btn-chart" data-i18n="Insert.ChartEditor">Chart editor…</button>
-    <button type="button" id="btn-equation" data-i18n="Insert.Equation">Equation…</button>
-    <button type="button" id="btn-smartart" data-i18n="Insert.SmartArt">SmartArt…</button>
+    <span class="menu rb-menu" style="--rb-x: 546px">
+      <button type="button" id="btn-insert-more" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Insert.More">Insert tools ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" id="btn-textfile" data-i18n="Insert.TextFromFile">Text from file…</button></li>
+        <li role="none"><button type="button" role="menuitem" id="btn-mailmerge" data-i18n="Insert.MailMerge">Mail merge…</button></li>
+        <li role="none"><button type="button" role="menuitem" id="btn-addtext" data-i18n="Insert.AddText">Add text</button></li>
+        <li role="none"><button type="button" role="menuitem" id="btn-field" data-i18n="Insert.Field">Field…</button></li>
+        <li role="none"><button type="button" role="menuitem" id="btn-contentcontrol" data-i18n="Insert.ContentControl">Content control…</button></li>
+        <li role="none"><button type="button" role="menuitem" id="btn-chart" data-i18n="Insert.ChartEditor">Chart editor…</button></li>
+        <li role="none"><button type="button" role="menuitem" id="btn-equation" data-i18n="Insert.Equation">Equation…</button></li>
+        <li role="none"><button type="button" role="menuitem" id="btn-smartart" data-i18n="Insert.SmartArt">SmartArt…</button></li>
+      </ul>
+    </span>
     </div>
     <!-- OO-parity tab pages. Buttons for features WO lacks carry data-stub="<ref>":
          they are LOUD stubs — clicking reports the ref via setStatus — and the

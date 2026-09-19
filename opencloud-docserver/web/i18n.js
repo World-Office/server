@@ -182,6 +182,7 @@
     "Insert.ChartEditor": "Chart editor…",
     "Insert.Equation": "Equation…",
     "Insert.SmartArt": "SmartArt…",
+    "Insert.More": "Insert tools",
     "View.Speech": "Speech",
     "View.ReadAloud": "Read aloud",
     "View.Dictate": "Dictate…",
