@@ -320,6 +320,7 @@
       // Anchor: an empty/blank document still needs a block element so
       // typing produces <p>…</p> (bare text would be lost in DOCX conversion).
       editor.innerHTML = data.html || "<p><br></p>";
+      hydrateVectorObjects();
       refreshToc();
       // Fresh load resets the snapshot chain: the loaded state becomes the
       // baseline the Undo/Redo-Kette walks back to.
@@ -1148,6 +1149,7 @@
 
   function restoreSnapshot(html) {
     editor.innerHTML = html;
+    hydrateVectorObjects();
     lastSnapshot = html;
     // Park the caret at the end so the user can keep typing right away.
     try {
@@ -5855,9 +5857,14 @@
     return "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgMarkup)));
   }
   function insertSVGImage(svgMarkup, widthPx) {
-    // Rasterize the SVG to PNG in the browser: the DOCX exporter embeds via
-    // PIL (python-docx add_picture), which cannot open SVG — PNG data URIs
-    // round-trip like any insert-image. Insertion is async (image load).
+    insertVectorObject(svgMarkup, "object", { width: widthPx || 420 });
+  }
+  // Insert an SVG as a crisp 2x PNG that stays POST-INSERT EDITABLE.
+  // - data-spec (JSON) drives re-editing in-session (double-click -> dialog).
+  // - the alt marker __wo-<kind>__<json> survives the DOCX round-trip (alt is
+  //   carried on wp:docPr descr), so a reloaded doc rehydrates the spec and
+  //   the object stays editable after save/reopen.
+  function insertVectorObject(svgMarkup, kind, spec) {
     const url = URL.createObjectURL(new Blob([svgMarkup], { type: "image/svg+xml" }));
     const src = new Image();
     src.onload = () => {
@@ -5871,15 +5878,92 @@
       URL.revokeObjectURL(url);
       const img = document.createElement("img");
       img.src = c.toDataURL("image/png");
-      img.classList.add("inline-object");
-      img.style.width = (widthPx || 420) + "px";
-      img.alt = "inserted object";
+      img.classList.add("inline-object", "vector-object");
+      img.setAttribute("data-kind", kind);
+      img.setAttribute("data-spec", JSON.stringify(spec));
+      img.style.width = (spec.width || 420) + "px";
+      img.alt = `__wo-${kind}__${JSON.stringify(spec)}`;
       editor.focus();
       const sel = window.getSelection();
       if (sel && sel.rangeCount && !sel.isCollapsed) sel.deleteFromDocument();
       document.execCommand("insertHTML", false, img.outerHTML);
     };
     src.onerror = () => { URL.revokeObjectURL(url); setStatus("Could not render object", true); };
+    src.src = url;
+  }
+  // Rehydrate editability: restored docs carry the spec only in the alt
+  // marker (data-spec does not survive the DOCX round-trip).
+  function hydrateVectorObjects(root) {
+    (root || document).querySelectorAll("img[alt^='__wo-']").forEach((img) => {
+      if (img.dataset.kind) return;
+      const m = (img.alt || "").match(/^__wo-([a-z]+)__(.+)$/);
+      if (!m) return;
+      try {
+        img.classList.add("vector-object");
+        img.setAttribute("data-kind", m[1]);
+        img.setAttribute("data-spec", m[2]);
+      } catch { img.setAttribute("data-kind", m[1]); }
+    });
+  }
+  // Double-click an inserted chart/equation/smartart -> re-open its dialog
+  // pre-filled from the stored spec -> re-render in place.
+  editor.addEventListener("dblclick", (ev) => {
+    const img = ev.target.closest ? ev.target.closest("img.vector-object") : null;
+    if (!img || READ_ONLY) return;
+    let spec = {};
+    try { spec = JSON.parse(img.dataset.spec || "{}"); } catch { spec = {}; }
+    const kind = img.dataset.kind;
+    if (kind === "chart" || kind === "equation" || kind === "smartart") {
+      ev.preventDefault();
+      openVectorEditor(kind, spec, img);
+    }
+  });
+  function openVectorEditor(kind, spec, img) {
+    if (kind === "chart") {
+      openDlg("chart-dialog");
+      document.getElementById("chart-type-select").value = spec.type || "bar";
+      document.getElementById("chart-title").value = spec.title || "";
+      const rows = spec.rows && spec.rows.length ? spec.rows : [["", 0], ["", 0], ["", 0], ["", 0]];
+      document.querySelectorAll("#chart-data input").forEach((el, k) => {
+        const row = rows[Math.floor(k / 2)];
+        el.value = row ? String(row[k % 2]) : "";
+      });
+      renderChartPreview();
+      pendingVectorReload = { kind, img };
+    } else if (kind === "equation") {
+      openDlg("equation-dialog");
+      document.getElementById("equation-input").value = spec.text || "";
+      document.getElementById("equation-preview").innerHTML = equationSVG(spec.text || " ");
+      pendingVectorReload = { kind, img };
+    } else if (kind === "smartart") {
+      openDlg("smartart-dialog");
+      document.getElementById("smartart-type").value = spec.kind || "process";
+      renderSmartArtPreview();
+      pendingVectorReload = { kind, img };
+    }
+  }
+  let pendingVectorReload = null;
+  function reloadVectorTarget(svgMarkup, kind, spec) {
+    if (!pendingVectorReload) return;
+    const img = pendingVectorReload.img;
+    pendingVectorReload = null;
+    const url = URL.createObjectURL(new Blob([svgMarkup], { type: "image/svg+xml" }));
+    const src = new Image();
+    src.onload = () => {
+      const scale = 2;
+      const c = document.createElement("canvas");
+      c.width = Math.max(1, src.naturalWidth) * scale;
+      c.height = Math.max(1, src.naturalHeight) * scale;
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(src, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      img.src = c.toDataURL("image/png");
+      img.setAttribute("data-spec", JSON.stringify(spec));
+      img.alt = `__wo-${kind}__${JSON.stringify(spec)}`;
+      setStatus("Object updated");
+    };
+    src.onerror = () => { URL.revokeObjectURL(url); };
     src.src = url;
   }
 
@@ -6004,7 +6088,9 @@
   if (btnChartOk) btnChartOk.addEventListener("click", () => {
     const type = document.getElementById("chart-type-select").value;
     const title = document.getElementById("chart-title").value;
-    insertSVGImage(chartSVG(type, title, chartRowsFromDOM()), 420);
+    const spec = { type, title, rows: chartRowsFromDOM(), width: 420 };
+    if (pendingVectorReload) reloadVectorTarget(chartSVG(type, title, spec.rows), "chart", spec);
+    else insertVectorObject(chartSVG(type, title, spec.rows), "chart", spec);
     closeDlg("chart-dialog");
     setStatus("Inserted chart");
   });
@@ -6056,7 +6142,9 @@
   if (btnEquationOk) btnEquationOk.addEventListener("click", () => {
     const input = document.getElementById("equation-input");
     const text = (input && input.value.trim()) || "x";
-    insertSVGImage(equationSVG(text), 260);
+    const spec = { text, width: 260 };
+    if (pendingVectorReload) reloadVectorTarget(equationSVG(text), "equation", spec);
+    else insertVectorObject(equationSVG(text), "equation", spec);
     closeDlg("equation-dialog");
     setStatus("Inserted equation");
   });
@@ -6103,7 +6191,10 @@
   if (btnSmartArtCancel) btnSmartArtCancel.addEventListener("click", () => closeDlg("smartart-dialog"));
   const btnSmartArtOk = document.getElementById("btn-smartart-ok");
   if (btnSmartArtOk) btnSmartArtOk.addEventListener("click", () => {
-    insertSVGImage(smartartSVG(document.getElementById("smartart-type").value), 420);
+    const kind = document.getElementById("smartart-type").value;
+    const spec = { kind, width: 420 };
+    if (pendingVectorReload) reloadVectorTarget(smartartSVG(kind), "smartart", spec);
+    else insertVectorObject(smartartSVG(kind), "smartart", spec);
     closeDlg("smartart-dialog");
     setStatus("Inserted SmartArt diagram");
   });
@@ -6134,18 +6225,21 @@
   function applyObjLayout(attr, value) {
     if (!floatImg) return;
     if (attr === "wrap") {
-      floatImg.classList.remove("obj-inline", "obj-square", "obj-right", "obj-behind");
-      if (value === "square") { floatImg.style.cssFloat = "left"; floatImg.style.margin = "4px 12px 6px 0"; }
-      else if (value === "behind") { floatImg.style.cssFloat = "none"; floatImg.style.display = "block"; floatImg.style.margin = "0 auto"; floatImg.style.zIndex = "-1"; floatImg.style.position = "relative"; floatImg.style.opacity = "0.85"; }
-      else { floatImg.style.cssFloat = "none"; floatImg.style.display = "inline"; floatImg.style.margin = "0 4px"; floatImg.style.zIndex = ""; floatImg.style.position = ""; floatImg.style.opacity = ""; }
+      floatImg.classList.remove("obj-inline", "obj-square", "obj-right", "obj-behind", "obj-center");
+      floatImg.style.position = ""; floatImg.style.zIndex = "";
+      if (value === "square") floatImg.classList.add("obj-square");
+      else if (value === "behind") floatImg.classList.add("obj-behind");
+      else floatImg.classList.add("obj-inline");
     } else if (attr === "align") {
-      floatImg.style.cssFloat = value === "left" ? "left" : value === "right" ? "right" : "none";
-      floatImg.style.display = "block";
-      floatImg.style.margin = value === "left" ? "4px 12px 6px 0" : value === "right" ? "4px 0 6px 12px" : "auto";
+      floatImg.classList.remove("obj-inline", "obj-square", "obj-right", "obj-behind", "obj-center");
+      if (value === "left") floatImg.classList.add("obj-square");
+      else if (value === "right") floatImg.classList.add("obj-square", "obj-right");
+      else floatImg.classList.add("obj-center");
     } else if (attr === "layer") {
-      const z = parseFloat(floatImg.style.zIndex) || 0;
       floatImg.style.position = "relative";
-      floatImg.style.zIndex = String(value === "back" ? z - 1 : z + 1);
+      floatImg.style.zIndex = String((parseFloat(floatImg.style.zIndex) || 0) + (value === "back" ? -1 : 1));
+      setStatus(`Object layout: layer ${value}`);
+      return;
     }
     setStatus(`Object layout: ${attr} ${value}`);
   }

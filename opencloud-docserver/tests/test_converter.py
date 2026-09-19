@@ -1458,3 +1458,55 @@ def test_docx_without_sectpr_does_not_crash():
     html = docx_to_html(buf.getvalue())
     assert isinstance(html, str)
     assert "hi" in html
+
+
+def test_field_span_roundtrips_as_live_field():
+    """Insert > Field: <span class="field" data-field="X">render</span> must
+    come back as the same field-carrying span, not flattened text."""
+    html = ('<p>A <span class="field" data-field="DATE">8/21/2026</span> '
+            'and <span class="field" data-field="PAGE">3</span>.</p>')
+    docx = html_to_docx(html)
+    # The DOCX carries real w:fldSimple instructions, not the raw marker.
+    xml = zipfile.ZipFile(io.BytesIO(docx)).read("word/document.xml").decode()
+    assert 'w:instr=" DATE "' in xml or 'w:instr=" PAGE "' in xml
+    out = docx_to_html(docx)
+    assert 'data-field="DATE"' in out and "8/21/2026" in out
+    assert 'data-field="PAGE"' in out
+
+
+def test_unknown_field_instruction_is_dropped():
+    """Hostile/unsupported instr strings never reach the document."""
+    docx = html_to_docx('<p><span class="field" data-field="IMPORT evil">x</span></p>')
+    out = docx_to_html(docx)
+    assert "evil" not in out
+
+
+def test_content_control_roundtrips_as_sdt():
+    """Content controls become real w:sdt blocks and come back."""
+    html = ('<p>Buy <span class="content-control" data-cc="plain" title="Company">ACME</span> '
+            '<span class="content-control" data-cc="dropdown" title="Status">Draft</span>.</p>')
+    docx = html_to_docx(html)
+    xml = zipfile.ZipFile(io.BytesIO(docx)).read("word/document.xml").decode()
+    assert "w:alias" in xml and "Company" in xml
+    out = docx_to_html(docx)
+    assert 'data-cc="plain"' in out and "ACME" in out
+    assert 'data-cc="dropdown"' in out and "Draft" in out
+
+
+def test_floated_image_roundtrips_as_anchored_drawing():
+    """obj-square / obj-behind images must become anchored wp:drawing and
+    keep their float classes through a DOCX round-trip."""
+    png = ("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8"
+           "/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==")
+    html = (f'<p>A <img class="obj-square" src="data:image/png;base64,{png}" '
+            f'width="80" alt="f"> B <img class="obj-behind" '
+            f'src="data:image/png;base64,{png}" width="40" alt="g"> C</p>')
+    docx = html_to_docx(html)
+    zf = zipfile.ZipFile(io.BytesIO(docx))
+    xml = zf.read("word/document.xml").decode()
+    assert xml.count("<wp:anchor ") == 2
+    assert xml.count("<wp:inline ") == 0
+    assert xml.count("wp:wrapSquare") == 1 and xml.count("wp:wrapBehind") == 1
+    out = docx_to_html(docx)
+    assert 'class="obj-square"' in out and 'class="obj-behind"' in out
+    assert 'alt="f"' in out and 'alt="g"' in out
