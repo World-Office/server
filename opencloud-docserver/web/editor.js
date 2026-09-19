@@ -1008,6 +1008,8 @@
     if (cmd === "toggleInk") { toggleInk(value); return; }
     if (cmd === "inkMode") { setInkMode(value); return; }
     if (cmd === "inkSelect") { inkSelect(); return; }
+    if (cmd === "readAloud") { readAloud(); return; }
+    if (cmd === "dictate") { dictate(); return; }
     if (cmd === "inkColor") { setInkColor(); return; }
     if (cmd === "inkThickness") { setInkThickness(); return; }
     if (cmd === "managePlugins") { managePlugins(); return; }
@@ -3198,6 +3200,37 @@
   }
   const gridlinesBtn = document.getElementById("btn-gridlines");
   if (gridlinesBtn) gridlinesBtn.addEventListener("click", toggleGridlines);
+
+  // View tab: formatting marks are another view-only overlay (like gridlines);
+  // the ¶ glyphs come from CSS on #editor.show-marks, nothing enters the doc.
+  const fmtMarksBtn = document.getElementById("btn-view-formatmarks");
+  if (fmtMarksBtn) fmtMarksBtn.addEventListener("click", () => {
+    const on = editor.classList.toggle("show-marks");
+    fmtMarksBtn.setAttribute("aria-pressed", String(on));
+    setStatus(on ? "Formatting marks on" : "Formatting marks off");
+  });
+
+  // Layout: page color (native picker -> --paper) and theme color schemes
+  // (OO Layout>Colors: named palettes swapping the paper/ink vars). These are
+  // document-surface settings, scoped to #editor so the golden chrome stays put.
+  const pageColor = document.getElementById("pagecolor");
+  if (pageColor) pageColor.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    editor.style.setProperty("--paper", pageColor.value);
+  });
+  const COLOR_SCHEMES = {
+    default: {},
+    gold: { "--paper": "#fdf8ec", "--ink": "#352a17" },
+    grayscale: { "--paper": "#ffffff", "--ink": "#1a1a1a" },
+    "blue-warm": { "--paper": "#f6faff", "--ink": "#1b2b3a" },
+    "green-yellow": { "--paper": "#feffea", "--ink": "#2a3314" },
+  };
+  const themeColorsSel = document.getElementById("themecolors");
+  if (themeColorsSel) themeColorsSel.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    const vars = COLOR_SCHEMES[themeColorsSel.value] || {};
+    for (const [k, v] of Object.entries(vars)) editor.style.setProperty(k, v);
+  });
 
   // View tab: navigation sidebar lists the document outline; clicking a
   // heading scrolls to it and flashes it. View-only UI, rebuilt on open.
@@ -5551,6 +5584,265 @@
 
   const pluginsCloseBtn = document.getElementById("btn-plugins-close");
   if (pluginsCloseBtn) pluginsCloseBtn.addEventListener("click", closePluginsDialog);
+
+  // ------------------------------------------------------------------
+  // Backstage + Insert/View extensions (OO-parity backlog closure).
+  // File > Info/Protect/Settings/Help/Suggest; View > Speech (TTS+STT);
+  // Insert > Text from File / Mail merge / Add text; statusbar multi-page
+  // view; Plugins > background mode. Same .dialog-overlay + setStatus
+  // patterns as the rest of the editor.
+  // ------------------------------------------------------------------
+  function openDlg(id) { const d = document.getElementById(id); if (d) d.classList.add("open"); }
+  function closeDlg(id) { const d = document.getElementById(id); if (d) d.classList.remove("open"); restoreFocus(); }
+  function _escHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+  // File > Protect: reuse the Protection-tab protection dialog.
+  const fileProtectBtn = document.getElementById("btn-fileprotect");
+  if (fileProtectBtn) fileProtectBtn.addEventListener("click", () => { closeAllMenus(); protectDialog(); });
+
+  // File > Info: live document statistics when opened.
+  function docStats() {
+    const text = editor.innerText || "";
+    const words = (text.trim().match(/\S+/g) || []).length;
+    const chars = text.replace(/\s/g, "").length;
+    const paras = editor.querySelectorAll("p, li").length;
+    const lang = editor.getAttribute("lang") || "en-US";
+    const langNames = { "en-US": "English (United States)", "en-GB": "English (United Kingdom)", "de-DE": "Deutsch (Deutschland)" };
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    set("info-name", DOC_NAME || "document");
+    set("info-path", "WOPI host (OpenCloud)");
+    set("info-lang", langNames[lang] || lang);
+    set("info-stats", `${words.toLocaleString()} words · ${chars.toLocaleString()} characters · ${paras} paragraphs`);
+    set("info-size", `${(editor.innerHTML.length / 1024).toFixed(1)} kB`);
+  }
+  const btnFileInfo = document.getElementById("btn-fileinfo");
+  if (btnFileInfo) btnFileInfo.addEventListener("click", () => { closeAllMenus(); docStats(); openDlg("info-dialog"); });
+  const btnInfoClose = document.getElementById("btn-info-close");
+  if (btnInfoClose) btnInfoClose.addEventListener("click", () => closeDlg("info-dialog"));
+
+  // File > Settings: theme / spellcheck / zoom, all applied live.
+  const btnFileSettings = document.getElementById("btn-filesettings");
+  if (btnFileSettings) btnFileSettings.addEventListener("click", () => {
+    closeAllMenus();
+    const spell = document.getElementById("settings-spellcheck");
+    const theme = document.getElementById("settings-theme");
+    const zoom = document.getElementById("settings-zoom");
+    if (spell) spell.checked = editor.getAttribute("spellcheck") !== "false";
+    if (theme) theme.value = document.documentElement.classList.contains("light") ? "light" : "dark";
+    if (zoom) zoom.value = String(Math.round((zoomLevel || 1) * 100));
+    openDlg("settings-dialog");
+  });
+  const btnSettingsOk = document.getElementById("btn-settings-ok");
+  if (btnSettingsOk) btnSettingsOk.addEventListener("click", () => {
+    const spell = document.getElementById("settings-spellcheck");
+    const theme = document.getElementById("settings-theme");
+    const zoom = document.getElementById("settings-zoom");
+    if (spell) editor.setAttribute("spellcheck", spell.checked ? "true" : "false");
+    if (theme) document.documentElement.classList.toggle("light", theme.value === "light");
+    if (zoom && !Number.isNaN(+zoom.value)) { zoomLevel = Math.min(2, Math.max(0.5, +zoom.value / 100)); applyZoom(); }
+    closeDlg("settings-dialog");
+    setStatus("Settings applied");
+  });
+  const btnSettingsCancel = document.getElementById("btn-settings-cancel");
+  if (btnSettingsCancel) btnSettingsCancel.addEventListener("click", () => closeDlg("settings-dialog"));
+
+  // File > Help / Suggest.
+  const btnFileHelp = document.getElementById("btn-filehelp");
+  if (btnFileHelp) btnFileHelp.addEventListener("click", () => { closeAllMenus(); openDlg("help-dialog"); });
+  const btnHelpClose = document.getElementById("btn-help-close");
+  if (btnHelpClose) btnHelpClose.addEventListener("click", () => closeDlg("help-dialog"));
+  const btnFileSuggest = document.getElementById("btn-filesuggest");
+  if (btnFileSuggest) btnFileSuggest.addEventListener("click", () => { closeAllMenus(); openDlg("suggest-dialog"); });
+  const suggestSend = document.getElementById("btn-suggest-send");
+  if (suggestSend) suggestSend.addEventListener("click", () => {
+    const feedback = document.getElementById("suggest-text");
+    const email = document.getElementById("suggest-email");
+    if (feedback && feedback.value.trim()) {
+      const subject = encodeURIComponent("[World-Office] Feature suggestion");
+      const body = encodeURIComponent(`${feedback.value.trim()}\n\n(from: ${(email && email.value.trim()) || "anonymous"})`);
+      window.location.href = `mailto:hello@worldoffice.example?subject=${subject}&body=${body}`;
+      setStatus("Suggestion composed in your mail client");
+    } else {
+      setStatus("Please enter a suggestion first", true);
+    }
+    closeDlg("suggest-dialog");
+  });
+  const btnSuggestCancel = document.getElementById("btn-suggest-cancel");
+  if (btnSuggestCancel) btnSuggestCancel.addEventListener("click", () => closeDlg("suggest-dialog"));
+
+  // View > Speech: read the selection/paragraph aloud (TTS) or dictate in (STT).
+  // Native Web Speech APIs — no network, no server involvement.
+  function readAloud() {
+    if (!("speechSynthesis" in window)) { setStatus("Text-to-speech not supported in this browser", true); return; }
+    const sel = window.getSelection();
+    let text = sel && sel.toString().trim();
+    if (!text) {
+      const node = sel && sel.anchorNode;
+      const block = node && node.nodeType === 3 ? node.parentElement : node;
+      const p = block && (block.closest("p, li, h1, h2, h3, h4, h5, h6") || block);
+      text = (p && p.innerText || "").trim();
+    }
+    if (!text) { setStatus("Nothing to read — select text or place the cursor in a paragraph", true); return; }
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = editor.getAttribute("lang") || "en-US";
+    u.onend = () => setStatus("Finished reading");
+    speechSynthesis.speak(u);
+    setStatus("Reading aloud…");
+  }
+  function dictate() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { setStatus("Speech input not supported in this browser", true); return; }
+    const rec = new SR();
+    rec.lang = editor.getAttribute("lang") || "en-US";
+    rec.interimResults = false;
+    rec.onresult = (ev) => {
+      const text = ev.results[0][0].transcript;
+      editor.focus();
+      document.execCommand("insertText", false, text);
+      setStatus("Dictated");
+    };
+    rec.onerror = (ev) => setStatus(`Dictation error: ${ev.error}`, true);
+    rec.start();
+    setStatus("Listening…");
+  }
+
+  // Insert > Text from File: txt/md/html/csv read directly; .docx goes through
+  // the host converter (POST /api/documents/{id}/import-docx -> HTML).
+  const btnTextFile = document.getElementById("btn-textfile");
+  const textFileInput = document.getElementById("textfile-input");
+  if (btnTextFile && textFileInput) btnTextFile.addEventListener("click", () => textFileInput.click());
+  if (textFileInput) textFileInput.addEventListener("change", async () => {
+    const file = textFileInput.files && textFileInput.files[0];
+    textFileInput.value = "";
+    if (!file) return;
+    const ext = (file.name.split(".").pop() || "").toLowerCase();
+    try {
+      let html;
+      if (ext === "docx") {
+        const fd = new FormData();
+        fd.append("file", file);
+        const resp = await fetch(`/api/documents/${encodeURIComponent(DOC_ID)}/import-docx`, { method: "POST", body: fd });
+        if (!resp.ok) throw new Error(((await resp.json()).error) || "conversion failed");
+        html = (await resp.json()).html;
+      } else {
+        const text = await file.text();
+        html = (ext === "html" || ext === "htm")
+          ? text
+          : text.split(/\r?\n/).map((l) => `<p>${_escHtml(l)}</p>`).join("");
+      }
+      editor.focus();
+      document.execCommand("insertHTML", false, html);
+      setStatus(`Inserted text from ${file.name}`);
+    } catch (err) {
+      setStatus(`Text from file failed: ${err.message}`, true);
+    }
+  });
+
+  // Insert > Mail merge: CSV source (first row = fields) -> «Field» markers in
+  // the document -> preview of the merged copies.
+  let mailMergeHeaders = [], mailMergeRows = [];
+  const btnMailMerge = document.getElementById("btn-mailmerge");
+  const mailCsvInput = document.getElementById("mailmerge-csv");
+  if (btnMailMerge && mailCsvInput) btnMailMerge.addEventListener("click", () => mailCsvInput.click());
+  const btnMailCsv = document.getElementById("btn-mailmerge-csv");
+  if (btnMailCsv && mailCsvInput) btnMailCsv.addEventListener("click", () => mailCsvInput.click());
+  if (mailCsvInput) mailCsvInput.addEventListener("change", () => {
+    const file = mailCsvInput.files && mailCsvInput.files[0];
+    mailCsvInput.value = "";
+    if (!file) return;
+    file.text().then((txt) => {
+      const lines = txt.split(/\r?\n/).filter((l) => l.trim() !== "");
+      mailMergeHeaders = lines[0].split(",").map((h) => h.trim());
+      mailMergeRows = lines.slice(1).map((l) => {
+        const cells = l.split(",");
+        const row = {};
+        mailMergeHeaders.forEach((h, i) => { row[h] = (cells[i] || "").trim(); });
+        return row;
+      });
+      const sel = document.getElementById("mailmerge-fields");
+      if (sel) {
+        sel.innerHTML = "";
+        mailMergeHeaders.forEach((h) => {
+          const o = document.createElement("option");
+          o.value = h; o.textContent = h; sel.appendChild(o);
+        });
+      }
+      const prev = document.getElementById("mailmerge-preview");
+      if (prev) prev.textContent = `${mailMergeRows.length} record(s), ${mailMergeHeaders.length} field(s). Insert fields, then preview merged copies.`;
+      setStatus(`Mail merge source: ${mailMergeRows.length} records`);
+      openDlg("mailmerge-dialog");
+    });
+  });
+  const btnMailField = document.getElementById("btn-mailmerge-field");
+  if (btnMailField) btnMailField.addEventListener("click", () => {
+    const sel = document.getElementById("mailmerge-fields");
+    if (!sel || !sel.value) { setStatus("Choose a CSV source first", true); return; }
+    editor.focus();
+    document.execCommand("insertText", false, `«${sel.value}»`);
+    closeDlg("mailmerge-dialog");
+  });
+  const btnMailPreview = document.getElementById("btn-mailmerge-preview");
+  if (btnMailPreview) btnMailPreview.addEventListener("click", () => {
+    if (!mailMergeRows.length) { setStatus("Choose a CSV source first", true); return; }
+    const base = editor.innerText;
+    const out = mailMergeRows.map((row) => {
+      let merged = base;
+      for (const h of mailMergeHeaders) merged = merged.split(`«${h}»`).join(row[h] || "");
+      return merged;
+    });
+    const prev = document.getElementById("mailmerge-preview");
+    if (prev) prev.textContent = out.join("\n\n─── NEXT RECORD ───\n\n");
+    setStatus(`Merged ${out.length} copies in the preview`);
+  });
+  const btnMailClose = document.getElementById("btn-mailmerge-close");
+  if (btnMailClose) btnMailClose.addEventListener("click", () => closeDlg("mailmerge-dialog"));
+
+  // Insert > Add text: mask the selected text as an annotation overlay (view
+  // surface only — the marker text itself stays in the document).
+  const btnAddText = document.getElementById("btn-addtext");
+  if (btnAddText) btnAddText.addEventListener("click", () => {
+    if (READ_ONLY) return;
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) { setStatus("Select text first", true); return; }
+    const already = sel.anchorNode && sel.anchorNode.parentElement
+      && (sel.anchorNode.parentElement.closest(".add-text-mask"));
+    if (already) {
+      const parent = already.parentNode;
+      parent.replaceChild(document.createTextNode(already.textContent || ""), already);
+      sel.removeAllRanges();
+      setStatus("Add-text mask removed");
+      return;
+    }
+    const wrap = document.createElement("span");
+    wrap.className = "add-text-mask";
+    wrap.setAttribute("data-addtext", "1");
+    wrap.title = "Add-text annotation";
+    try { sel.getRangeAt(0).surroundContents(wrap); } catch { setStatus("Selection spans a boundary — try a plain text selection", true); return; }
+    sel.removeAllRanges();
+    setStatus("Text masked as add-text annotation");
+  });
+
+  // Statusbar > multiple pages view: show page-separator gutters in the flow
+  // (CSS-only, nothing enters the document).
+  const btnMultipage = document.getElementById("btn-multipage");
+  if (btnMultipage) btnMultipage.addEventListener("click", () => {
+    const on = document.body.classList.toggle("multi-page-view");
+    btnMultipage.setAttribute("aria-pressed", String(on));
+    setStatus(on ? "Multiple pages view" : "Single page view");
+  });
+
+  // Plugins > background mode: run plugins without a foreground panel.
+  const btnBgPlugins = document.getElementById("btn-bgplugins");
+  if (btnBgPlugins) btnBgPlugins.addEventListener("click", async () => {
+    const on = !document.body.classList.contains("bg-plugins");
+    document.body.classList.toggle("bg-plugins", on);
+    btnBgPlugins.setAttribute("aria-pressed", String(on));
+    try {
+      const plugins = await _fetchPlugins();
+      setStatus(on ? `Background plugins on (${plugins.length} installed)` : "Background plugins off");
+    } catch { setStatus(on ? "Background plugins on" : "Background plugins off"); }
+  });
 
   loadDocument();
 })();

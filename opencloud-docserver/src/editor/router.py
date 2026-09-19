@@ -819,6 +819,23 @@ async def upload_document(file: UploadFile, request: Request) -> JSONResponse:
     return JSONResponse({"id": doc_id, "name": file.filename})
 
 
+@router.post("/api/documents/{doc_id}/import-docx")
+async def import_docx(doc_id: str, request: Request, file: UploadFile) -> JSONResponse:
+    """Convert an uploaded .docx to HTML for Insert > Text from File.
+
+    Reuses the same converter as document loading, so the inserted fragment
+    matches what the editor would render for that file. No store mutation.
+    """
+    data = await file.read()
+    if not data:
+        return JSONResponse({"error": "empty file"}, status_code=400)
+    try:
+        html = docx_to_html(data)
+    except Exception as exc:  # converter contract: report, never crash the host
+        return JSONResponse({"error": f"conversion failed: {exc}"}, status_code=422)
+    return JSONResponse({"html": html, "name": file.filename})
+
+
 # ----------------------------------------------------------------------
 # Real-time collaboration (CRDT)
 # ----------------------------------------------------------------------

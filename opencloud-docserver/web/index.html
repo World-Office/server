@@ -157,6 +157,12 @@
         <li role="none"><button type="button" id="btn-print" role="menuitem" data-i18n="Menu.Print">Print</button></li>
         <li role="none"><button type="button" id="btn-history" role="menuitem" data-i18n="Menu.History">History…</button></li>
         <li role="none"><button type="button" id="btn-ai-review" role="menuitem">AI changes…</button></li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
+        <li role="none"><button type="button" id="btn-fileinfo" role="menuitem" data-i18n="Menu.Info">Info…</button></li>
+        <li role="none"><button type="button" id="btn-fileprotect" role="menuitem" data-i18n="Menu.Protect">Protect document…</button></li>
+        <li role="none"><button type="button" id="btn-filesettings" role="menuitem" data-i18n="Menu.Settings">Settings…</button></li>
+        <li role="none"><button type="button" id="btn-filehelp" role="menuitem" data-i18n="Menu.Help">Help &amp; about</button></li>
+        <li role="none"><button type="button" id="btn-filesuggest" role="menuitem" data-i18n="Menu.Suggest">Suggest a feature…</button></li>
       </ul>
     </div>
     <span class="sep"></span>
@@ -382,6 +388,9 @@
     <button type="button" data-cmd="toggleDropcap" data-i18n="Insert.DropCap">Drop cap</button>
     <button type="button" data-cmd="insertObject" data-value="textbox" data-i18n="Insert.TextBox">Text box</button>
     <button type="button" data-cmd="link" data-i18n="Insert.Hyperlink">Hyperlink</button>
+    <button type="button" id="btn-textfile" data-i18n="Insert.TextFromFile">Text from file…</button>
+    <button type="button" id="btn-mailmerge" data-i18n="Insert.MailMerge">Mail merge…</button>
+    <button type="button" id="btn-addtext" data-i18n="Insert.AddText">Add text</button>
     </div>
     <!-- OO-parity tab pages. Buttons for features WO lacks carry data-stub="<ref>":
          they are LOUD stubs — clicking reports the ref via setStatus — and the
@@ -404,6 +413,18 @@
     <button type="button" data-cmd="toggleHyphenation" data-i18n="Layout.Hyphenation">Hyphenation</button>
     <button type="button" data-cmd="toggleLineNumbers" data-i18n="Layout.LineNumbers">Line numbers</button>
     <button type="button" data-cmd="toggleWatermark" data-i18n="Layout.Watermark">Watermark</button>
+    <label class="ribbon-picker" title="Page color" data-i18n-title="Layout.PageColor">
+      <input type="color" id="pagecolor" value="#ffffff" aria-label="Page color" data-i18n-aria-label="Layout.PageColor">
+    </label>
+    <label class="ribbon-picker" title="Color scheme" data-i18n-title="Layout.Colors">
+      <select id="themecolors" aria-label="Color scheme" data-i18n-aria-label="Layout.Colors">
+        <option value="default" data-i18n="Layout.Colors.Default">Default</option>
+        <option value="gold">Gold</option>
+        <option value="grayscale">Grayscale</option>
+        <option value="blue-warm">Blue Warm</option>
+        <option value="green-yellow">Green Yellow</option>
+      </select>
+    </label>
     </div>
     <div class="ribbon-page" data-tab="references" role="group" aria-label="References ribbon" data-i18n-aria-label="Tab.References">
     <button id="btn-toc" title="Insert table of contents" aria-label="Insert table of contents">☰</button>
@@ -437,14 +458,23 @@
          data-cmd, so the formatting-state mirror loop does not clobber its
          aria-pressed (a view toggle, not a caret format). -->
     <button id="btn-gridlines" type="button" data-i18n="View.Gridlines" aria-pressed="false">Gridlines</button>
+    <button id="btn-view-formatmarks" type="button" data-i18n="View.FormattingMarks" aria-pressed="false">Formatting marks</button>
     <button id="btn-nav-toggle" type="button" data-cmd="toggleNavigation" data-i18n="View.Navigation" aria-expanded="false">Navigation</button>
     <button id="btn-view-fullscreen" type="button" data-i18n="View.Fullscreen">Fullscreen</button>
     <button id="btn-view-theme" type="button" data-i18n="View.Theme" aria-pressed="false">Theme</button>
     <button id="btn-view-fit" type="button" data-i18n="View.Fit">Fit page</button>
+    <span class="menu rb-menu" style="--rb-x: 902px">
+      <button type="button" id="btn-speech" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="View.Speech">Speech ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" id="btn-readaloud" data-cmd="readAloud" data-i18n="View.ReadAloud">Read aloud</button></li>
+        <li role="none"><button type="button" role="menuitem" id="btn-dictate" data-cmd="dictate" data-i18n="View.Dictate">Dictate…</button></li>
+      </ul>
+    </span>
     </div>
     <div class="ribbon-page" data-tab="plugins" role="group" aria-label="Plugins ribbon" data-i18n-aria-label="Tab.Plugins">
     <button type="button" data-cmd="browsePlugins" data-i18n="Plugins.Browse">Browse plugins</button>
     <button type="button" data-cmd="managePlugins" data-i18n="Plugins.Manage">Manage plugins</button>
+    <button type="button" id="btn-bgplugins" data-i18n="Plugins.Background" aria-pressed="false">Background plugins</button>
     <button type="button" id="btn-ocr" data-cmd="ocrRun" data-i18n="Plugins.Ocr">OCR</button>
     <button type="button" data-cmd="photoEditor" data-i18n="Plugins.PhotoEditor">Photo editor</button>
     </div>
@@ -620,6 +650,7 @@
     </select>
     <span id="doc-lang-label-right" aria-hidden="true"><b data-slice="0:7" style="left:944px"></b><b data-slice="8:15" style="left:982px"></b><b data-slice="16:23" style="left:1027px"></b></span>
     <button class="sb menu-trigger caret-btn" id="doc-lang-caret" style="--sb-x: 1080px" title="Language options" aria-label="Language options">▾</button>
+    <button class="sb" id="btn-multipage" style="--sb-x: 1042px" title="Multiple pages view" aria-label="Multiple pages view" aria-pressed="false">▦</button>
   </footer>
 
   <!-- Right-click context menu (OO parity geometry). Honest subset: only
@@ -1124,5 +1155,96 @@
        under CSS canvas filters (brightness/contrast/saturation sliders +
        one-shot presets, reset/close). Like #nav-panel it never touches
        document content or the converters. -->
+  <!-- Backstage dialogs (OO File backstage parity: Info / Settings / Help /
+       Suggest; Protect reuses #protect-dialog). Same .dialog-overlay pattern. -->
+  <div id="info-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="info-dialog-title">
+    <div class="dialog">
+      <h3 id="info-dialog-title" data-i18n="Backstage.Info">Document info</h3>
+      <div class="dialog-field"><label>Name</label><span id="info-name">—</span></div>
+      <div class="dialog-field"><label>Location</label><span id="info-path">—</span></div>
+      <div class="dialog-field"><label>Language</label><span id="info-lang">—</span></div>
+      <div class="dialog-field"><label>Stats</label><span id="info-stats">—</span></div>
+      <div class="dialog-field"><label>HTML size</label><span id="info-size">—</span></div>
+      <div class="dialog-actions"><button id="btn-info-close">Close</button></div>
+    </div>
+  </div>
+
+  <div id="settings-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-dialog-title">
+    <div class="dialog">
+      <h3 id="settings-dialog-title" data-i18n="Backstage.Settings">Settings</h3>
+      <div class="dialog-field">
+        <label for="settings-theme">Interface theme</label>
+        <select id="settings-theme">
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label class="protect-check"><input id="settings-spellcheck" type="checkbox"><span>Spell checking</span></label>
+      </div>
+      <div class="dialog-field">
+        <label for="settings-zoom">Zoom (%)</label>
+        <input id="settings-zoom" type="number" min="50" max="200" step="10">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-settings-cancel">Cancel</button>
+        <button id="btn-settings-ok" class="primary">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="help-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="help-dialog-title">
+    <div class="dialog">
+      <h3 id="help-dialog-title" data-i18n="Backstage.Help">World-Office editor — help &amp; about</h3>
+      <p data-i18n="Backstage.About">Minimal Stoic document server: a fast, open, interoperable
+         WOPI host for OpenCloud. DOCX in, HTML editing, DOCX out.</p>
+      <p><kbd>Ctrl+Z</kbd> undo · <kbd>Ctrl+S</kbd> save · <kbd>Ctrl+F</kbd> find.
+         Learn more at the project repository.</p>
+      <div class="dialog-actions"><button id="btn-help-close">Close</button></div>
+    </div>
+  </div>
+
+  <div id="suggest-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="suggest-dialog-title">
+    <div class="dialog">
+      <h3 id="suggest-dialog-title" data-i18n="Backstage.Suggest">Suggest a feature</h3>
+      <div class="dialog-field">
+        <label for="suggest-text">Feedback</label>
+        <textarea id="suggest-text" rows="4" placeholder="What should World-Office do next?"></textarea>
+      </div>
+      <div class="dialog-field">
+        <label for="suggest-email">Email (optional)</label>
+        <input id="suggest-email" type="email" placeholder="you@example.org">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-suggest-cancel">Cancel</button>
+        <button id="btn-suggest-send" class="primary">Compose email</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="mailmerge-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="mailmerge-dialog-title">
+    <div class="dialog">
+      <h3 id="mailmerge-dialog-title" data-i18n="Backstage.MailMerge">Mail merge</h3>
+      <p class="dialog-hint">Choose a CSV source (first row = field names), place
+         <code>«Field»</code> markers in the document, then preview merged copies.</p>
+      <div class="dialog-field">
+        <label for="mailmerge-fields">Merge field</label>
+        <select id="mailmerge-fields"></select>
+      </div>
+      <div class="dialog-field">
+        <label>Source</label>
+        <button id="btn-mailmerge-csv" type="button">Choose CSV file…</button>
+      </div>
+      <pre id="mailmerge-preview" class="dialog-pre" role="region" aria-label="Merge preview"></pre>
+      <div class="dialog-actions">
+        <button id="btn-mailmerge-close">Close</button>
+        <button id="btn-mailmerge-field" class="primary">Insert field</button>
+        <button id="btn-mailmerge-preview" class="primary">Preview merged copies</button>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="textfile-input" accept=".txt,.md,.html,.htm,.csv,.docx" hidden>
+  <input type="file" id="mailmerge-csv" accept=".csv,.txt" hidden>
 </body>
 </html>
