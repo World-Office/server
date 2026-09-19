@@ -38,8 +38,8 @@ def _wopi_auth_gate(request: Request) -> None:
     DOCSERVER_REQUIRE_WOPI_AUTH) to validate every /wopi/* call. Failures
     surface as HTTP 401 via the global WopiError handler.
     """
-    cfg = request.app.state.config
-    if getattr(cfg, "require_wopi_auth", False):
+    cfg = getattr(request.app.state, "config", None)
+    if cfg and getattr(cfg, "require_wopi_auth", False):
         require_auth(request, cfg.jwt_secret or "change-me-32-chars-minimum")
 
 
