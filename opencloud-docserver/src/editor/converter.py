@@ -1335,7 +1335,10 @@ def _chart_spec_from_part(root) -> dict | None:
     def _cache_pts(holder) -> list[str]:
         if holder is None:
             return []
-        cache = holder.find(qn("c:strCache")) or holder.find(qn("c:numCache"))
+        # c:strCache/c:numCache live one level down (under c:strRef/c:numRef).
+        cache = next(holder.iter(qn("c:strCache")), None)
+        if cache is None:
+            cache = next(holder.iter(qn("c:numCache")), None)
         if cache is None:
             return []
         out = []
@@ -1479,20 +1482,29 @@ def _omml_plain(text: str) -> str:
 
 
 def _linear_to_omml(text: str) -> str:
-    """Linear notation (e.g. 'x^2 + a/b - sqrt(2)') -> OMML m:oMath XML."""
+    """Linear notation (e.g. 'x^2 + a/b - sqrt(2)') -> OMML m:oMath XML.
+
+    Whitespace around operators/fractions is ignored so 'a / b' behaves like
+    'a/b'; superscripts/subscripts via ^ and _, sqrt(x) becomes an m:rad."""
     src = text or ""
     pos = 0
+
+    def skip_ws() -> None:
+        nonlocal pos
+        while pos < len(src) and src[pos].isspace():
+            pos += 1
 
     def parse_expr() -> str:
         nonlocal pos
         parts = []
-        while pos < len(src):
-            ch = src[pos]
-            if ch in "()}]":
+        while True:
+            skip_ws()
+            if pos >= len(src) or src[pos] in "()}]":
                 break
+            ch = src[pos]
             if ch in "+-=*":
-                parts.append(_omml_plain(ch))
                 pos += 1
+                parts.append(_omml_plain(ch))
             else:
                 parts.append(parse_term())
         return "".join(parts) or _omml_plain("")
@@ -1500,27 +1512,38 @@ def _linear_to_omml(text: str) -> str:
     def parse_term() -> str:
         nonlocal pos
         left = parse_factor()
+        save = pos
+        skip_ws()
         if pos < len(src) and src[pos] == "/":
             pos += 1
             right = parse_factor()
             return f"<m:f><m:num>{left}</m:num><m:den>{right}</m:den></m:f>"
+        pos = save
         return left
 
     def parse_factor() -> str:
         nonlocal pos
+        skip_ws()
         atom = parse_atom()
-        while pos < len(src) and src[pos] in "^_":
-            op = src[pos]
-            pos += 1
-            arg = parse_atom()
-            if op == "^":
-                atom = f"<m:sSup><m:e>{atom}</m:e><m:sup>{arg}</m:sup></m:sSup>"
+        while True:
+            save = pos
+            skip_ws()
+            if pos < len(src) and src[pos] in "^_":
+                op = src[pos]
+                pos += 1
+                arg = parse_atom()
+                if op == "^":
+                    atom = f"<m:sSup><m:e>{atom}</m:e><m:sup>{arg}</m:sup></m:sSup>"
+                else:
+                    atom = f"<m:sSub><m:e>{atom}</m:e><m:sub>{arg}</m:sub></m:sSub>"
             else:
-                atom = f"<m:sSub><m:e>{atom}</m:e><m:sub>{arg}</m:sub></m:sSub>"
+                pos = save
+                break
         return atom
 
     def parse_atom() -> str:
         nonlocal pos
+        skip_ws()
         if pos >= len(src):
             return _omml_plain("")
         ch = src[pos]
@@ -1559,8 +1582,15 @@ def _linear_to_omml(text: str) -> str:
 
 
 def _add_omml_equation(paragraph, text: str) -> None:
-    run = paragraph.add_run()
-    run._r.append(parse_xml(_linear_to_omml(text)))
+    """Emit a display equation: m:oMathPara DIRECTLY on w:p (m:oMath inside
+    w:r is schema-invalid — Word/LibreOffice silently drop it)."""
+    omml = _linear_to_omml(text)
+    omml = omml.replace(
+        "<m:oMath ",
+        f'<m:oMathPara xmlns:m="{_M_NS}"><m:oMath ',
+        1,
+    ) + "</m:oMathPara>"
+    paragraph._p.append(parse_xml(omml))
 
 
 
@@ -2127,6 +2157,11 @@ def _paragraph_inline(para, notes=None, comments=None) -> str:
             if href:
                 inner = f'<a href="{escape(href, quote=True)}">{inner}</a>'
             add(inner)
+        if tag in (qn("m:oMath"), qn("m:oMathPara")):
+            # paragraph-level equation (display equations are m:oMathPara
+            # children of w:p, not w:r — emit the editor's text marker)
+            add(f'<div class="object" data-type="equation">{escape(_docx_equation_text(child))}</div>')
+            continue
         if tag == qn("w:fldSimple"):
             instr = (child.get(qn("w:instr")) or "").strip().upper()
             if instr in _FIELD_INSTRS:
