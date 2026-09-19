@@ -1562,3 +1562,40 @@ button.active {
   margin-right: 12px;
   font-weight: normal;
 }
+
+/* OO-parity backlog closures: backstage dialogs, add-text mask, multi-page
+   gutter view, statusbar page-view button. */
+.dialog-hint { font-size: 9px; color: var(--muted, #8a8a96); margin: 0 0 8px; line-height: 1.5; }
+.dialog-field span { font-size: 10px; }
+.dialog-field .protect-check { font-size: 10px; }
+.dialog-pre { font-size: 9px; line-height: 1.5; background: var(--surface);
+  border: 1px solid var(--border); border-radius: 4px; padding: 6px; max-height: 160px;
+  overflow: auto; white-space: pre-wrap; margin-top: 6px; user-select: text; }
+.dialog h3 kbd { font-size: 9px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 3px; padding: 0 3px; }
+#editor .add-text-mask { background: rgba(255, 183, 3, .26); box-shadow: 0 0 0 1px rgba(255, 183, 3, .5);
+  border-radius: 2px; color: #7a5c00; cursor: help; }
+body.multi-page-view #editor .page-break,
+body.multi-page-view #editor .section-break {
+  height: 20px; margin: 12px 0; background: var(--surface);
+  border-bottom: 2px dashed var(--border); border-radius: 2px;
+}
+body.multi-page-view #editor .page-break br { display: none; }
+#btn-multipage { font-size: 12px; }
+
+/* Layout: page color + theme color scheme (OO Layout>Page color / Colors).
+   Native color input styled as a swatch; select styled as a ribbon combo. */
+.ribbon-picker input[type="color"] {
+  width: 24px; height: 22px; padding: 0; border: 1px solid var(--border);
+  border-radius: 3px; background: transparent; cursor: pointer; vertical-align: middle;
+}
+.ribbon-picker select {
+  font-family: inherit; font-size: 9px; max-width: 86px; margin: 0 4px;
+  vertical-align: middle;
+}
+/* View>Formatting marks: non-printing pilcrows at block ends (CSS overlay
+   only — nothing enters the document, so no converter contract is involved). */
+#editor.show-marks :is(p, li, h1, h2, h3, h4, h5, h6)::after {
+  content: "\00B6"; color: var(--accent); opacity: .55; font-size: .9em;
+  margin-left: 1px; user-select: none; pointer-events: none;
+}
