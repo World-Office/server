@@ -12,7 +12,9 @@ from __future__ import annotations
 
 import base64
 import io
+import json
 import logging
+import math
 import re
 from html import escape
 from html.parser import HTMLParser
@@ -24,6 +26,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK
 from docx.opc.constants import CONTENT_TYPE as CT
 from docx.opc.constants import RELATIONSHIP_TYPE as RT
 from docx.opc.packuri import PackURI
+from docx.opc.part import Part
 from docx.oxml import OxmlElement
 from docx.oxml.ns import nsmap as _OXML_NSMAP
 from docx.oxml.ns import qn
@@ -1053,6 +1056,11 @@ def _add_object(doc, typ: str, label: str, content: str) -> None:
     text content in ``wps:txbxContent``, so docx_to_html can recover a
     <div class="object" data-type="..."> marker on the way back.
     """
+    # Equations render as real OMML (editable in Word) rather than a shape.
+    if typ == "equation":
+        p = doc.add_paragraph()
+        _add_omml_equation(p, content)
+        return
     p = doc.add_paragraph()
     drawing = OxmlElement("w:drawing")
     inline = OxmlElement("wp:inline")
@@ -1147,6 +1155,413 @@ def _docx_chart_label(drawing) -> str:
         if txt:
             return txt
     return "Chart"
+
+
+# ---------------------------------------------------------------------------
+# DrawingML chart engine (hand-rolled — no external chart library).
+#
+# Insert > Chart imgs (data-kind="chart" + JSON data-spec) become real chart
+# OPC parts (word/charts/chartN.xml) referenced from the w:drawing, so the
+# exported DOCX has a data-editable chart in Word/LibreOffice. Reading back,
+# the part is parsed into the same spec and re-emitted as an editable
+# vector-object img on reload.
+# ---------------------------------------------------------------------------
+
+_W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+_WP_NS = "http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"
+_A_NS = "http://schemas.openxmlformats.org/drawingml/2006/main"
+_C_NS = "http://schemas.openxmlformats.org/drawingml/2006/chart"
+_R_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+_M_NS = "http://schemas.openxmlformats.org/officeDocument/2006/math"
+_CHART_URI = "http://schemas.openxmlformats.org/drawingml/2006/chart"
+
+
+def _chart_num(v: float) -> str:
+    """Shortest decimal repr without exponent noise (1 -> "1", 2.5 -> "2.5")."""
+    return "%.12g" % v
+
+
+def _chart_spec_rows(spec: dict) -> list[list]:
+    rows = []
+    for r in spec.get("rows") or []:
+        if not isinstance(r, (list, tuple)) or len(r) < 2:
+            continue
+        try:
+            v = float(r[1] or 0)
+        except (TypeError, ValueError):
+            v = 0.0
+        rows.append([str(r[0]), v])
+    return rows or [["", 0.0]]
+
+
+def _chart_space_xml(spec: dict) -> str:
+    """ChartSpace XML for a single-series bar/line/pie/area chart."""
+    ctype = (spec.get("type") or "bar").strip().lower()
+    if ctype not in ("bar", "line", "pie", "area"):
+        ctype = "bar"
+    title = (spec.get("title") or "").strip()
+    rows = _chart_spec_rows(spec)
+    n = len(rows)
+    cats = "".join(
+        f'<c:pt idx="{i}"><c:v>{escape(str(l), quote=True)}</c:v></c:pt>'
+        for i, (l, _) in enumerate(rows)
+    )
+    nums = "".join(
+        f'<c:pt idx="{i}"><c:v>{_chart_num(v)}</c:v></c:pt>'
+        for i, (_, v) in enumerate(rows)
+    )
+    cat_ref = f"Sheet1!$A$2:$A${n + 1}"
+    val_ref = f"Sheet1!$B$2:$B${n + 1}"
+    ser = (
+        '<c:ser><c:idx val="0"/><c:order val="0"/>'
+        '<c:tx><c:strRef><c:f>Sheet1!$A$1</c:f><c:strCache><c:ptCount val="1"/>'
+        '<c:pt idx="0"><c:v>Series1</c:v></c:pt></c:strCache></c:strRef></c:tx>'
+        f'<c:cat><c:strRef><c:f>{cat_ref}</c:f><c:strCache><c:ptCount val="{n}"/>'
+        f'{cats}</c:strCache></c:strRef></c:cat>'
+        f'<c:val><c:numRef><c:f>{val_ref}</c:f><c:numCache><c:formatCode>General</c:formatCode>'
+        f'<c:ptCount val="{n}"/>{nums}</c:numCache></c:numRef></c:val>'
+        "</c:ser>"
+    )
+    val_ax = (
+        '<c:valAx><c:axId val="50000002"/><c:scaling><c:orientation val="minMax"/></c:scaling>'
+        '<c:delete val="0"/><c:axPos val="l"/><c:majorGridlines/><c:title/>'
+        '<c:numFmt formatCode="General" sourceLinked="0"/><c:crossAx val="50000001"/>'
+        '<c:crosses val="autoZero"/></c:valAx>'
+    )
+    cat_ax = (
+        '<c:catAx><c:axId val="50000001"/><c:scaling><c:orientation val="minMax"/></c:scaling>'
+        '<c:delete val="0"/><c:axPos val="b"/><c:title/>'
+        '<c:numFmt formatCode="General" sourceLinked="0"/><c:crossAx val="50000002"/>'
+        '<c:crosses val="autoZero"/></c:catAx>'
+    )
+    if ctype == "pie":
+        chart_el = (
+            '<c:pieChart><c:varyColors val="1"/>' + ser
+            + '<c:firstSliceAng val="0"/></c:pieChart>'
+        )
+        axis_xml = ""
+    elif ctype == "line":
+        chart_el = (
+            '<c:lineChart><c:grouping val="standard"/><c:varyColors val="0"/>' + ser
+            + '<c:marker val="1"/><c:axId val="50000001"/><c:axId val="50000002"/></c:lineChart>'
+        )
+        axis_xml = val_ax + cat_ax
+    elif ctype == "area":
+        chart_el = (
+            '<c:areaChart><c:grouping val="standard"/><c:varyColors val="0"/>' + ser
+            + '<c:axId val="50000001"/><c:axId val="50000002"/></c:areaChart>'
+        )
+        axis_xml = val_ax + cat_ax
+    else:
+        chart_el = (
+            '<c:barChart><c:barDir val="col"/><c:grouping val="clustered"/>'
+            '<c:varyColors val="0"/>' + ser
+            + '<c:axId val="50000001"/><c:axId val="50000002"/></c:barChart>'
+        )
+        axis_xml = val_ax + cat_ax
+    if title:
+        ttl = (
+            '<c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>'
+            f"{escape(title, quote=True)}</a:t></a:r></a:p></c:rich></c:tx>"
+            '<c:overlay val="0"/></c:title><c:autoTitleDeleted val="0"/>'
+        )
+    else:
+        ttl = '<c:autoTitleDeleted val="1"/>'
+    return (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        f'<c:chartSpace xmlns:c="{_C_NS}" xmlns:a="{_A_NS}" xmlns:r="{_R_NS}">'
+        f'<c:lang val="en-US"/><c:chart>{ttl}<c:plotArea><c:layout/>'
+        f'{chart_el}{axis_xml}</c:plotArea><c:plotVisOnly val="1"/></c:chart></c:chartSpace>'
+    )
+
+
+def _chart_space_docxml(chart_xml: bytes) -> object:
+    return parse_xml(chart_xml)
+
+
+def _new_chart_part(doc_part, chart_xml: bytes, index: int):
+    """Create + register a chart OPC part, returning its rId."""
+    partname = PackURI(f"/word/charts/chart{index}.xml")
+    part = Part(partname, CT.DML_CHART, chart_xml, doc_part.package)
+    return doc_part.relate_to(part, RT.CHART)
+
+
+def _chart_drawing_xml(r_id: str, width_px: int, height_px: int, docpr_id: int) -> str:
+    """Inline w:drawing referencing the chart part (chart graphicData)."""
+    return (
+        f'<w:drawing xmlns:w="{_W_NS}" xmlns:wp="{_WP_NS}" xmlns:a="{_A_NS}" xmlns:r="{_R_NS}">'
+        '<wp:inline distT="0" distB="0" distL="0" distR="0">'
+        f'<wp:extent cx="{width_px * _EMU_PER_PX}" cy="{height_px * _EMU_PER_PX}"/>'
+        '<wp:effectExtent l="0" t="0" r="0" b="0"/>'
+        f'<wp:docPr id="{docpr_id}" name="Chart{docpr_id}" descr="chart"/>'
+        f'<a:graphic><a:graphicData uri="{_CHART_URI}"><c:chart xmlns:c="{_C_NS}" r:id="{r_id}"/>'
+        '</a:graphicData></a:graphic></wp:inline></w:drawing>'
+    )
+
+
+def _add_chart_drawing(paragraph, spec: dict) -> None:
+    """Embed the chart spec as a real DrawingML chart part + drawing."""
+    doc_part = paragraph.part
+    existing = [
+        rel for rel in doc_part.rels.values()
+        if rel.reltype == RT.CHART and not rel.is_external
+    ]
+    index = len([r for r in existing if getattr(r, "target_ref", "").endswith(".xml")]) + 1
+    r_id = _new_chart_part(doc_part, _chart_space_xml(spec).encode("utf-8"), index)
+    width = int(float(spec.get("width") or 420))
+    height = max(40, int(width * 260 / 440))
+    docpr_id = index + 3
+    run = paragraph.add_run()
+    run._r.append(parse_xml(_chart_drawing_xml(r_id, width, height, docpr_id)))
+
+
+def _chart_spec_from_part(root) -> dict | None:
+    """Parse a ChartSpace part back into {type, title, rows}."""
+    chart = next(root.iter(qn("c:chart")), None)
+    if chart is None:
+        return None
+    plot = next(chart.iter(qn("c:plotArea")), None)
+    if plot is None:
+        return None
+    ctype = None
+    for tag, t in (("c:pieChart", "pie"), ("c:lineChart", "line"),
+                   ("c:areaChart", "area"), ("c:barChart", "bar")):
+        if plot.find(qn(tag)) is not None:
+            ctype = t
+            break
+    if ctype is None:
+        return None
+
+    def _cache_pts(holder) -> list[str]:
+        if holder is None:
+            return []
+        cache = holder.find(qn("c:strCache")) or holder.find(qn("c:numCache"))
+        if cache is None:
+            return []
+        out = []
+        for pt in cache.findall(qn("c:pt")):
+            v = pt.find(qn("c:v"))
+            out.append((v.text or "") if v is not None else "")
+        return out
+
+    ser = next(plot.iter(qn("c:ser")), None)
+    cats: list[str] = []
+    vals: list[float] = []
+    if ser is not None:
+        cats = _cache_pts(ser.find(qn("c:cat")))
+        try:
+            vals = [float(x) for x in _cache_pts(ser.find(qn("c:val")))]
+        except ValueError:
+            vals = []
+    rows = [[cats[i] if i < len(cats) else "", vals[i] if i < len(vals) else 0.0]
+            for i in range(max(len(cats), len(vals)))]
+    ttl = next(chart.iter(qn("a:t")), None)
+    title = (ttl.text or "") if ttl is not None else ""
+    return {"type": ctype, "title": title, "rows": rows}
+
+
+def _chart_svg(spec: dict, width_px: int) -> str:
+    """Server-side SVG preview (kept in sync with web/editor.js chartSVG)."""
+    ctype = (spec.get("type") or "bar").strip().lower()
+    if ctype not in ("bar", "line", "pie", "area"):
+        ctype = "bar"
+    title = (spec.get("title") or "").strip()
+    rows = _chart_spec_rows(spec)
+    W, H = 440, 260
+    hh = float(int(H * 0.72))
+    colors = ["#4f81bd", "#c0504d", "#9bbb59", "#8064a2", "#f79646", "#2d9cdb"]
+    elems = []
+    if ctype == "pie":
+        tot = sum(v for _, v in rows) or 1.0
+        cx, cy, r = 160, 130, 95
+        ang = -90.0
+        for i, (_, v) in enumerate(rows):
+            a2 = ang + 360.0 * (v / tot)
+            x1 = cx + r * math.cos(math.radians(ang)); y1 = cy + r * math.sin(math.radians(ang))
+            x2 = cx + r * math.cos(math.radians(a2)); y2 = cy + r * math.sin(math.radians(a2))
+            large = 1 if (a2 - ang) > 180 else 0
+            elems.append(
+                f'<path d="M{cx:.1f},{cy:.1f} L{x1:.1f},{y1:.1f} A{r},{r} 0 {large} 1 {x2:.1f},{y2:.1f} Z" '
+                f'fill="{colors[i % len(colors)]}" stroke="#fff" stroke-width="1"/>'
+            )
+            ang = a2
+    else:
+        vals = [v for _, v in rows]
+        vmax = max([abs(v) for v in vals] + [1.0])
+        pad_l, pad_b = 46, 34
+        ax, bx = pad_l, W - 12
+        ay, by = 12, H - pad_b
+        n = max(len(rows), 1)
+        slot = (bx - ax) / n
+        for i, (_, v) in enumerate(rows):
+            hh2 = abs(v) / vmax * (by - ay)
+            yy = by - hh2 if v >= 0 else by
+            x = ax + slot * i + slot * 0.18
+            w = slot * 0.64
+            if ctype == "bar":
+                elems.append(
+                    f'<rect x="{x:.1f}" y="{yy:.1f}" width="{w:.1f}" height="{max(hh2, 1):.1f}" '
+                    f'rx="2" fill="{colors[i % len(colors)]}"/>'
+                )
+            else:
+                px = x + w / 2
+                py = max(yy + 2 if hh2 < 3 else yy, ay)
+                elems.append(
+                    f'<line x1="{px:.1f}" y1="{by:.1f}" x2="{px:.1f}" y2="{py:.1f}" '
+                    f'stroke="{colors[i % len(colors)]}" stroke-width="2"/>'
+                )
+                elems.append(
+                    f'<circle cx="{px:.1f}" cy="{py:.1f}" r="3" fill="{colors[i % len(colors)]}"/>'
+                )
+        for k in range(0, 5):
+            gy = ay + (by - ay) * k / 4
+            elems.append(f'<line x1="{ax:.1f}" y1="{gy:.1f}" x2="{bx:.1f}" y2="{gy:.1f}" '
+                         'stroke="#e4e7eb" stroke-width="1"/>')
+        elems.append(f'<line x1="{ax:.1f}" y1="{by:.1f}" x2="{bx:.1f}" y2="{by:.1f}" '
+                     'stroke="#333" stroke-width="1.4"/>')
+        for i, (lbl, _) in enumerate(rows):
+            elems.append(
+                f'<text x="{ax + slot * i + slot / 2:.1f}" y="{H - 8:.1f}" '
+                f'font-size="10" text-anchor="middle" font-family="sans-serif">'
+                f'{escape(lbl[:12], quote=True)}</text>'
+            )
+    if title:
+        elems.append(
+            f'<text x="{W / 2:.1f}" y="20" font-size="13" font-weight="bold" '
+            'text-anchor="middle" font-family="sans-serif">' + escape(title, quote=True) + '</text>'
+        )
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" '
+        f'width="{width_px}" height="{int(width_px * H / W)}" >'
+        + "".join(elems) + "</svg>"
+    )
+
+
+def _docx_chart_to_img(run, drawing) -> str | None:
+    """A w:drawing carrying a chart part -> editable vector-object img."""
+    chart = next(drawing.iter(qn("c:chart")), None)
+    if chart is None:
+        return None
+    r_id = chart.get(qn("r:id"))
+    rel = None
+    if r_id:
+        rel = next((r for r in run.part.rels.values() if r.rId == r_id), None)
+    if rel is None or rel.is_external:
+        return None
+    try:
+        root = parse_xml(rel.target_part.blob)
+        spec = _chart_spec_from_part(root)
+    except Exception:
+        return None
+    if spec is None:
+        return None
+    width = 420
+    spec = {**spec, "width": width}
+    spec_json = json.dumps(spec)
+    svg_b64 = base64.b64encode(_chart_svg(spec, width).encode("utf-8")).decode("ascii")
+    return (
+        f'<img class="vector-object" data-kind="chart" '
+        f'data-spec="{escape(spec_json, quote=True)}" '
+        f'src="data:image/svg+xml;base64,{svg_b64}" width="{width}" '
+        f'alt="__wo-chart__{escape(spec_json, quote=True)}"/>'
+    )
+
+
+# ---------------------------------------------------------------------------
+# OMML equation engine (hand-rolled linear -> MathML-in-DOCX). Insert >
+# Equation imgs and <div class="object" data-type="equation"> markers become
+# m:oMath runs, so Word/LibreOffice edit them as real equations.
+# ---------------------------------------------------------------------------
+
+
+def _omml_plain(text: str) -> str:
+    return f'<m:r><m:t xml:space="preserve">{escape(text, quote=True)}</m:t></m:r>'
+
+
+def _linear_to_omml(text: str) -> str:
+    """Linear notation (e.g. 'x^2 + a/b - sqrt(2)') -> OMML m:oMath XML."""
+    src = text or ""
+    pos = 0
+
+    def parse_expr() -> str:
+        nonlocal pos
+        parts = []
+        while pos < len(src):
+            ch = src[pos]
+            if ch in "()}]":
+                break
+            if ch in "+-=*":
+                parts.append(_omml_plain(ch))
+                pos += 1
+            else:
+                parts.append(parse_term())
+        return "".join(parts) or _omml_plain("")
+
+    def parse_term() -> str:
+        nonlocal pos
+        left = parse_factor()
+        if pos < len(src) and src[pos] == "/":
+            pos += 1
+            right = parse_factor()
+            return f"<m:f><m:num>{left}</m:num><m:den>{right}</m:den></m:f>"
+        return left
+
+    def parse_factor() -> str:
+        nonlocal pos
+        atom = parse_atom()
+        while pos < len(src) and src[pos] in "^_":
+            op = src[pos]
+            pos += 1
+            arg = parse_atom()
+            if op == "^":
+                atom = f"<m:sSup><m:e>{atom}</m:e><m:sup>{arg}</m:sup></m:sSup>"
+            else:
+                atom = f"<m:sSub><m:e>{atom}</m:e><m:sub>{arg}</m:sub></m:sSub>"
+        return atom
+
+    def parse_atom() -> str:
+        nonlocal pos
+        if pos >= len(src):
+            return _omml_plain("")
+        ch = src[pos]
+        if ch == "(":
+            pos += 1
+            inner = parse_expr()
+            if pos < len(src) and src[pos] == ")":
+                pos += 1
+            return (
+                '<m:d><m:dPr><m:begChr val="("/><m:endChr val=")"/></m:dPr>'
+                f"<m:e>{inner}</m:e></m:d>"
+            )
+        if ch == "{":
+            pos += 1
+            inner = parse_expr()
+            if pos < len(src) and src[pos] == "}":
+                pos += 1
+            return inner
+        if src.startswith("sqrt(", pos):
+            pos += 5
+            inner = parse_expr()
+            if pos < len(src) and src[pos] == ")":
+                pos += 1
+            return (
+                '<m:rad><m:radPr><m:degHide val="1"/></m:radPr><m:deg/>'
+                f"<m:e>{inner}</m:e></m:rad>"
+            )
+        ch = src[pos]
+        pos += 1
+        while pos < len(src) and re.match(r"[A-Za-z0-9.\u0391-\u03C9]", src[pos]):
+            ch += src[pos]
+            pos += 1
+        return _omml_plain(ch)
+
+    return f'<m:oMath xmlns:m="{_M_NS}">{parse_expr()}</m:oMath>'
+
+
+def _add_omml_equation(paragraph, text: str) -> None:
+    run = paragraph.add_run()
+    run._r.append(parse_xml(_linear_to_omml(text)))
+
 
 
 def _docx_equation_text(node) -> str:
@@ -1860,6 +2275,13 @@ def _run_to_html(run, notes=None) -> str:
                     buf = []
                 chunks.append(img)
             else:
+                chart_img = _docx_chart_to_img(run, child)
+                if chart_img:
+                    if buf:
+                        chunks.append(_wrap_run_text(escape("".join(buf)), run))
+                        buf = []
+                    chunks.append(chart_img)
+                    continue
                 obj = _docx_drawing_object(child)
                 if obj:
                     if buf:
@@ -3278,6 +3700,14 @@ class _InlineRunBuilder(HTMLParser):
                 "width": _parse_px(a.get("width")),
                 "height": _parse_px(a.get("height")),
             }
+            # Chart/equation imgs: kind + JSON spec drive the real OOXML
+            # engines on save (chart part / OMML) instead of the bitmap.
+            dk = a.get("data-kind")
+            ds = a.get("data-spec")
+            if dk:
+                token["kind"] = dk
+            if ds:
+                token["spec"] = ds
             # Floating pictures (object-layout popup): carried on the token so
             # the writer emits an anchored w:drawing instead of an inline one.
             if "obj-behind" in cls:
@@ -3927,6 +4357,19 @@ def _add_image_run(paragraph, token: dict) -> None:
     round-trips back out.
     """
     mime, content = _decode_data_uri(token.get("src") or "")
+    # Hand-rolled object engines: chart/equation imgs carry a data-spec and
+    # are stored as real DrawingML chart parts / OMML instead of bitmaps.
+    try:
+        if token.get("kind") == "chart" and token.get("spec"):
+            spec = json.loads(token["spec"])
+            _add_chart_drawing(paragraph, spec)
+            return
+        if token.get("kind") == "equation" and token.get("spec"):
+            text = (json.loads(token["spec"]) or {}).get("text") or ""
+            _add_omml_equation(paragraph, text)
+            return
+    except Exception as exc:  # malformed spec must degrade to the PNG
+        logging.getLogger(__name__).warning("object engine fell back to PNG: %s", exc)
     if content is None:
         return
     width = token.get("width")
