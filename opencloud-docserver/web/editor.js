@@ -5924,9 +5924,8 @@
     const title = document.getElementById("cc-title");
     const type = (t && t.value) || "plain";
     const label = ((title && title.value.trim()) || "Content control");
-    const html = type === "dropdown"
-      ? `<span class="content-control cc-dropdown" data-cc="dropdown" contenteditable="false" title="${_escXml(label)}">▾ ${_escXml(label)}</span>`
-      : `<p class="content-control" data-cc="${type}" title="${_escXml(label)}">${_escXml(label)}</p>`;
+    const esc = _escXml(label);
+    const html = `<span class="content-control" data-cc="${type}" title="${esc}" contenteditable="false">${type === "dropdown" ? "▾ " : ""}${esc}</span>`;
     editor.focus();
     document.execCommand("insertHTML", false, html);
     closeDlg("cc-dialog");

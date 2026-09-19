@@ -34,6 +34,13 @@ from docx.table import _Cell
 from docx.text.paragraph import Paragraph
 from docx.text.run import Run
 
+# Field codes the editor round-trips as live Word fields (w:fldSimple). The
+# cached value renders immediately; Word re-computes on open/print.
+_FIELD_INSTRS = frozenset({
+    "PAGE", "NUMPAGES", "SECTIONPAGES", "DATE", "TIME", "AUTHOR",
+    "FILENAME", "WORDS", "CHARS", "USERNAME", "LASTSAVEDBY",
+})
+
 # WordprocessingShape namespace (not in python-docx's qn map).
 _OXML_NSMAP["wps"] = "http://schemas.microsoft.com/office/word/2010/wordprocessingShape"
 
@@ -1705,6 +1712,41 @@ def _paragraph_inline(para, notes=None, comments=None) -> str:
             if href:
                 inner = f'<a href="{escape(href, quote=True)}">{inner}</a>'
             add(inner)
+        if tag == qn("w:fldSimple"):
+            instr = (child.get(qn("w:instr")) or "").strip().upper()
+            if instr in _FIELD_INSTRS:
+                # p-level live field (the editor emits w:fldSimple as a
+                # paragraph child, like Word does). Render its cached value;
+                # data-field keeps the code for the next save.
+                text = "".join(t.text or "" for t in child.iter(qn("w:t")))
+                add(
+                    f'<span class="field" data-field="{escape(instr)}">'
+                    f"{escape(text)}</span>"
+                )
+            continue
+        elif tag == qn("w:sdt"):
+            # structured document tag (content control): emit the inline
+            # contract <span class="content-control" data-cc=.. title=..>
+            kind = "plain"
+            title = ""
+            sdtPr = child.find(qn("w:sdtPr"))
+            if sdtPr is not None:
+                tag_el = sdtPr.find(qn("w:tag"))
+                if tag_el is not None:
+                    kind = (tag_el.get(qn("w:val")) or "plain").strip()
+                alias_el = sdtPr.find(qn("w:alias"))
+                if alias_el is not None:
+                    title = alias_el.get(qn("w:val")) or ""
+            content = child.find(qn("w:sdtContent"))
+            if content is not None:
+                inner_runs = [Run(r, para) for r in content.findall(qn("w:r"))]
+                inner = _runs_to_html(inner_runs, notes)
+                escaped_title = escape(title)
+                add(
+                    f'<span class="content-control" data-cc="{escape(kind)}"'
+                    + (f' title="{escaped_title}"' if escaped_title else "")
+                    + f">{inner}</span>"
+                )
         elif tag == qn("w:r"):
             inner = _run_to_html(Run(child, para), notes)
             if in_comment is not None and child.find(qn("w:commentReference")) is not None:
@@ -1798,6 +1840,18 @@ def _run_to_html(run, notes=None) -> str:
                     buf = []
                 if text:
                     chunks.append(f'<span class="ref-index">{escape(text)}</span>')
+            elif instr.strip().upper() in _FIELD_INSTRS:
+                # Editor-added live fields (PAGE/DATE/TIME/...). The cached
+                # display renders; the field code rides data-field so a save
+                # re-emits w:fldSimple (Word keeps recomputing it).
+                text = "".join(t.text or "" for t in child.iter(qn("w:t")))
+                if buf:
+                    chunks.append(_wrap_run_text(escape("".join(buf)), run))
+                    buf = []
+                chunks.append(
+                    f'<span class="field" data-field="{escape(instr.strip().upper())}">'
+                    f"{escape(text)}</span>"
+                )
         elif child.tag == qn("w:drawing"):
             img = _drawing_to_img(run, child)
             if img:
@@ -2974,10 +3028,13 @@ class _InlineRunBuilder(HTMLParser):
         self._note = None       # pending footnote/endnote (see _start_note)
         self._comment = None    # pending comment span (see handle_starttag)
         self._bookmark = None   # pending bookmark span (see handle_starttag)
+        self._field = None      # pending field span (class="field" data-field=X)
+        self._cc = None         # pending content-control span (class="content-control")
         self._track = None      # pending track-change (see handle_starttag)
         self._citation = None   # pending ref-citation (see _start_citation)
         self._index_entry = None  # pending ref-index entry (see _start_index)
         self._buf: list[str] = []
+        self._float = None      # pending floated image (class obj-*)
 
     def _start_note(self, attrs) -> bool:
         """True when the attrs mark a footnote/endnote citation <sup>. Starts a
@@ -3100,6 +3157,18 @@ class _InlineRunBuilder(HTMLParser):
                 self._comment["depth"] += 1
             self._comment["html"].append(self.get_starttag_text())
             return
+        if self._field is not None:
+            # collect the field display span's inner markup
+            if tag not in _VOID_TAGS:
+                self._field["depth"] += 1
+            self._field["html"].append(self.get_starttag_text())
+            return
+        if self._cc is not None:
+            # collect the content-control span's inner markup
+            if tag not in _VOID_TAGS:
+                self._cc["depth"] += 1
+            self._cc["html"].append(self.get_starttag_text())
+            return
         if tag == "span" and "comment" in (dict(attrs).get("class") or "").split():
             # <span class="comment" data-author=.. data-comment=..>TEXT</span>
             self._flush()
@@ -3123,6 +3192,25 @@ class _InlineRunBuilder(HTMLParser):
             a = dict(attrs)
             self._bookmark = {
                 "name": a.get("data-name") or "",
+                "html": [],
+                "depth": 1,
+            }
+            return
+        if tag == "span" and "field" in (dict(attrs).get("class") or "").split():
+            # <span class="field" data-field="DATE">display</span>
+            self._flush()
+            a = dict(attrs)
+            kind = (a.get("data-field") or "").strip().upper()
+            if kind in _FIELD_INSTRS:
+                self._field = {"instr": kind, "html": [], "depth": 1}
+            return
+        if tag == "span" and "content-control" in (dict(attrs).get("class") or "").split():
+            # <span class="content-control" data-cc="plain">TEXT</span>
+            self._flush()
+            a = dict(attrs)
+            self._cc = {
+                "kind": (a.get("data-cc") or "plain").strip(),
+                "title": (a.get("title") or "").strip(),
                 "html": [],
                 "depth": 1,
             }
@@ -3164,13 +3252,24 @@ class _InlineRunBuilder(HTMLParser):
         if tag == "img":
             self._flush()
             a = dict(attrs)
-            self.tokens.append({
+            cls = set((a.get("class") or "").split())
+            token = {
                 "type": "image",
                 "src": a.get("src", ""),
                 "alt": a.get("alt", ""),
                 "width": _parse_px(a.get("width")),
                 "height": _parse_px(a.get("height")),
-            })
+            }
+            # Floating pictures (object-layout popup): carried on the token so
+            # the writer emits an anchored w:drawing instead of an inline one.
+            if "obj-behind" in cls:
+                token["float"] = "behind"
+            elif "obj-square" in cls or "obj-right" in cls:
+                token["float"] = "square"
+            if "obj-right" in cls:
+                token["float_side"] = "right"
+            self.tokens.append(token)
+            return
         elif tag in ("b", "strong"):
             self._flush()
             self._bold += 1
@@ -3289,6 +3388,33 @@ class _InlineRunBuilder(HTMLParser):
                     "html": "".join(bm["html"]),
                 })
             return
+        if self._field is not None:
+            if tag not in _VOID_TAGS:
+                self._field["depth"] = max(0, self._field["depth"] - 1)
+            self._field["html"].append(f"</{tag}>")
+            if self._field["depth"] == 0:
+                f = self._field
+                self._field = None
+                self.tokens.append({
+                    "type": "field",
+                    "instr": f["instr"],
+                    "html": "".join(f["html"]),
+                })
+            return
+        if self._cc is not None:
+            if tag not in _VOID_TAGS:
+                self._cc["depth"] = max(0, self._cc["depth"] - 1)
+            self._cc["html"].append(f"</{tag}>")
+            if self._cc["depth"] == 0:
+                cc = self._cc
+                self._cc = None
+                self.tokens.append({
+                    "type": "cc",
+                    "kind": cc["kind"],
+                    "title": cc["title"],
+                    "html": "".join(cc["html"]),
+                })
+            return
         if self._citation is not None:
             if tag == "sup":
                 citation = self._citation
@@ -3373,6 +3499,12 @@ class _InlineRunBuilder(HTMLParser):
             return
         if self._bookmark is not None:
             self._bookmark["html"].append(escape(data))
+            return
+        if self._field is not None:
+            self._field["html"].append(escape(data))
+            return
+        if self._cc is not None:
+            self._cc["html"].append(escape(data))
             return
         if self._citation is not None:
             self._citation["text"] += data
@@ -3517,6 +3649,12 @@ def _add_styled_runs(paragraph, html: str) -> None:
         if token["type"] == "ref-index":
             _add_ref_index(paragraph, token)
             continue
+        if token["type"] == "field":
+            _add_field(paragraph, token)
+            continue
+        if token["type"] == "cc":
+            _add_content_control(paragraph, token)
+            continue
         run = paragraph.add_run(token["text"])
         if token["bold"]:
             run.bold = True
@@ -3525,6 +3663,79 @@ def _add_styled_runs(paragraph, html: str) -> None:
         if token["underline"]:
             run.underline = True
         _apply_run_style(run, token)
+
+
+def _add_field(paragraph, token: dict) -> None:
+    """Emit a live Word field (``w:fldSimple``) with its display runs inside.
+
+    The cached value renders immediately; Word re-computes the field on
+    open/refresh. Only the safe instr set is accepted — anything else is
+    dropped (never smuggles a raw instr string into a document).
+    """
+    instr = (token.get("instr") or "").strip().upper()
+    if instr not in _FIELD_INSTRS:
+        return
+    fld = OxmlElement("w:fldSimple")
+    fld.set(qn("w:instr"), f" {instr} ")
+    for inner in _inline_tokens(token.get("html") or ""):
+        if inner["type"] != "text":
+            continue
+        r = OxmlElement("w:r")
+        if inner.get("bold") or inner.get("italic"):
+            rPr = OxmlElement("w:rPr")
+            if inner.get("bold"):
+                rPr.append(OxmlElement("w:b"))
+            if inner.get("italic"):
+                rPr.append(OxmlElement("w:i"))
+            r.append(rPr)
+        t = OxmlElement("w:t")
+        t.text = inner.get("text", "")
+        t.set(qn("xml:space"), "preserve")
+        r.append(t)
+        fld.append(r)
+    paragraph._p.append(fld)
+
+
+def _add_content_control(paragraph, token: dict) -> None:
+    """Emit a Word structured document tag (``w:sdt``) around runs.
+
+    The HTML contract (``<span class="content-control" data-cc=..>``)
+    round-trips: plain/rich get no dropdown items, ``dropdown`` gets an
+    empty list placeholder (the running selection is the cached value).
+    """
+    kind = (token.get("kind") or "plain").strip()
+    if kind not in {"plain", "rich", "dropdown"}:
+        kind = "plain"
+    sdt = OxmlElement("w:sdt")
+    pr = OxmlElement("w:sdtPr")
+    alias = OxmlElement("w:alias")
+    alias.set(qn("w:val"), token.get("title") or kind.title())
+    pr.append(alias)
+    tag = OxmlElement("w:tag")
+    tag.set(qn("w:val"), kind)
+    pr.append(tag)
+    if kind == "dropdown":
+        pr.append(OxmlElement("w:listItems"))  # placeholder; values stay in the doc
+    sdt.append(pr)
+    content = OxmlElement("w:sdtContent")
+    for inner in _inline_tokens(token.get("html") or ""):
+        if inner["type"] != "text":
+            continue
+        r = OxmlElement("w:r")
+        if inner.get("bold") or inner.get("italic"):
+            rPr = OxmlElement("w:rPr")
+            if inner.get("bold"):
+                rPr.append(OxmlElement("w:b"))
+            if inner.get("italic"):
+                rPr.append(OxmlElement("w:i"))
+            r.append(rPr)
+        t = OxmlElement("w:t")
+        t.text = inner.get("text", "")
+        t.set(qn("xml:space"), "preserve")
+        r.append(t)
+        content.append(r)
+    sdt.append(content)
+    paragraph._p.append(sdt)
 
 
 def _next_bookmark_id(part) -> int:
@@ -3557,6 +3768,10 @@ def _add_bookmark(paragraph, token: dict) -> None:
             _add_track_change(paragraph, inner)
         elif inner["type"] == "link":
             _add_hyperlink(paragraph, inner)
+        elif inner["type"] == "field":
+            _add_field(paragraph, inner)
+        elif inner["type"] == "cc":
+            _add_content_control(paragraph, inner)
         else:
             run = paragraph.add_run(inner.get("text", ""))
             if inner.get("bold"):
