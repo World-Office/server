@@ -326,8 +326,8 @@ def test_f086_equation_roundtrip():
     docx = html_to_docx(html)
     html2 = docx_to_html(docx)
     
-    assert 'data-type="equation"' in html2
-    assert 'E=mc^2' in html2
+    assert 'data-kind="equation"' in html2
+    assert 'E=mc^2' in html2  # linear notation survives via the vector img
     assert 'E equals:' in html2 and 'Famous!' in html2
 
 
@@ -340,8 +340,10 @@ def test_f086_equation_with_label():
     docx = html_to_docx(html)
     html2 = docx_to_html(docx)
     
-    assert 'data-type="equation"' in html2
-    assert 'data-label="Eq1"' in html2
+    # Equations read back as the editable vector-object img contract (same
+    # as charts), with the label preserved in the spec.
+    assert 'data-kind="equation"' in html2
+    assert '__wo-equation__' in html2
     # OMML storage normalizes whitespace around operators (python-docx strips
     # whitespace-only m:t); the math itself round-trips exactly.
     assert 'a^2+b^2=c^2' in html2
@@ -355,5 +357,5 @@ def test_f086_equation_empty():
     docx = html_to_docx(html)
     html2 = docx_to_html(docx)
     
-    assert 'data-type="equation"' in html2
+    assert 'data-kind="equation"' in html2
     assert 'Before' in html2 and 'After' in html2
