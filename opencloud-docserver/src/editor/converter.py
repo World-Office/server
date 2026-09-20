@@ -1635,6 +1635,69 @@ def _omml_linear(node) -> str:
     return "".join(_omml_linear(c) for c in node)
 
 
+
+def _equation_svg(expr: str) -> str:
+    """Server-side SVG preview for a linear equation (kept in sync with
+    web/editor.js equationSVG: ^ superscript, _ subscript, ** center dot)."""
+    tokens = re.sub(r"\s+", " ", expr or "").strip()
+    w = max(140, len(tokens) * 13 + 40)
+    h = 76
+    body = []
+    x = 12
+
+    def push(txt: str, size: int, dy: int) -> None:
+        nonlocal x
+        body.append(
+            f'<text x="{x}" y="{42 + dy}" font-size="{size}" '
+            f'font-family="serif" font-style="italic">{escape(txt)}</text>'
+        )
+        x += len(txt) * (size * 0.62) + 1
+
+    i = 0
+    while i < len(tokens):
+        ch = tokens[i]
+        if ch in "^_":
+            j, run = i + 1, ""
+            if j < len(tokens) and tokens[j] == "{":
+                j += 1
+                while j < len(tokens) and tokens[j] != "}":
+                    run += tokens[j]; j += 1
+                i = j + 1
+            else:
+                run = tokens[j] if j < len(tokens) else ""
+                i = j + 1
+            push(run, 13, -12 if ch == "^" else 10)
+        elif ch == "*" and i + 1 < len(tokens) and tokens[i + 1] == "*":
+            body.append(f'<circle cx="{x + 4}" cy="38" r="1.4" fill="currentColor"/>')
+            x += 10
+            i += 2
+        else:
+            push(ch, 18, 0)
+            i += 1
+    return (
+        f'<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" '
+        f'viewBox="0 0 {w} {h}"><rect width="100%" height="100%" fill="#ffffff"/>'
+        + "".join(body) + "</svg>"
+    )
+
+
+def _equation_vector_img(text: str, label: str = "") -> str:
+    """The editable vector-object img contract for equations (mirrors the
+    chart readback), so reloaded documents keep crisp, double-click-editable
+    equations instead of degrading to a text marker."""
+    spec = {"text": text, "width": 260}
+    if label:
+        spec["label"] = label
+    spec_json = json.dumps(spec)
+    svg_b64 = base64.b64encode(_equation_svg(text).encode("utf-8")).decode("ascii")
+    return (
+        f'<img class="vector-object" data-kind="equation" '
+        f'data-spec="{escape(spec_json, quote=True)}" '
+        f'src="data:image/svg+xml;base64,{svg_b64}" width="260" '
+        f'alt="__wo-equation__{escape(spec_json, quote=True)}"/>'
+    )
+
+
 def _add_header(doc, content_html: str) -> None:
     """Add a header with the given HTML content to the document.
 
@@ -2194,18 +2257,20 @@ def _paragraph_inline(para, notes=None, comments=None) -> str:
             add(inner)
         if tag in (qn("m:oMath"), qn("m:oMathPara")):
             # paragraph-level equation (display equations are m:oMathPara
-            # children of w:p, not w:r) — emit the editor's text marker with
-            # linear notation reconstructed (^ _ / sqrt survive). A wrapping
-            # bookmark carries the data-label and is consumed here so it is
-            # not re-emitted as a generic bookmark span.
+            # children of w:p, not w:r) — emit the editable vector-object img
+            # (linear notation reconstructed; a wrapping bookmark carries the
+            # label, consumed here so it isn't re-emitted as a bookmark span).
             label = ""
             if in_bookmark is not None:
                 label = (in_bookmark[1] or "").strip()
                 in_bookmark = None
-            attrs = ' data-type="equation"'
-            if label:
-                attrs += f' data-label="{escape(label, quote=True)}"'
-            out.append(f'<div class="object"{attrs}>{escape(_omml_linear(child))}</div>')
+            try:
+                out.append(_equation_vector_img(_omml_linear(child), label))
+            except Exception:
+                attrs = ' data-type="equation"'
+                if label:
+                    attrs += f' data-label="{escape(label, quote=True)}"'
+                out.append(f'<div class="object"{attrs}>{escape(_omml_linear(child))}</div>')
             continue
         if tag == qn("w:fldSimple"):
             instr = (child.get(qn("w:instr")) or "").strip().upper()
@@ -2372,10 +2437,13 @@ def _run_to_html(run, notes=None) -> str:
             if buf:
                 chunks.append(_wrap_run_text(escape("".join(buf)), run))
                 buf = []
-            chunks.append(
-                f'<div class="object" data-type="equation">'
-                f'{escape(_omml_linear(child))}</div>'
-            )
+            try:
+                chunks.append(_equation_vector_img(_omml_linear(child)))
+            except Exception:
+                chunks.append(
+                    f'<div class="object" data-type="equation">'
+                    f'{escape(_omml_linear(child))}</div>'
+                )
         elif child.tag in (qn("w:t"), qn("w:tab"), qn("w:br"), qn("w:cr")):
             buf.append(_text_child_value(child))
     if buf:
@@ -4445,8 +4513,8 @@ def _add_image_run(paragraph, token: dict) -> None:
             _add_chart_drawing(paragraph, spec)
             return
         if token.get("kind") == "equation" and token.get("spec"):
-            text = (json.loads(token["spec"]) or {}).get("text") or ""
-            _add_omml_equation(paragraph, text)
+            d = json.loads(token["spec"]) or {}
+            _add_omml_equation(paragraph, d.get("text") or "", d.get("label") or "")
             return
     except Exception as exc:  # malformed spec must degrade to the PNG
         logging.getLogger(__name__).warning("object engine fell back to PNG: %s", exc)

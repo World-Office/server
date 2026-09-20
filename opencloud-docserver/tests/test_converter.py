@@ -1331,7 +1331,12 @@ def test_html_to_docx_object_roundtrip():
         html += f'>{content}</div><p>After</p>'
         docx = html_to_docx(html)
         out = docx_to_html(docx)
-        assert f'data-type="{typ}"' in out, (typ, out)
+        # Equations read back as the editable vector-object img (upgraded
+        # contract); the other object types keep the data-type marker.
+        marker = 'data-kind\u003d"equation"' if typ == "equation" else f'data-type="{typ}"'
+        assert marker in out, (typ, out)
+        if typ == "equation":
+            assert "E=mc^2" in out
 
 
 def test_html_to_docx_bookmark_roundtrip():
@@ -1583,7 +1588,7 @@ def test_omml_roundtrips_to_equation_marker():
     html = "<p>" + _vector_img("equation", {"text": "a^2 + b^2 = c^2", "width": 260}) + "</p>"
     docx = html_to_docx(html)
     out = docx_to_html(docx)
-    assert 'data-type="equation"' in out
+    assert 'data-kind="equation"' in out and "a^2+b^2=c^2" in out
 
 
 def test_linear_to_omml_handles_sup_sub_fraction_sqrt():
