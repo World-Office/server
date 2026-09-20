@@ -845,7 +845,7 @@ def test_ai_propose_lands_as_tracked_change_accept_persists(servers):
     the save persists it to the WOPI host.
     """
     from playwright.sync_api import sync_playwright
-    from src.ai.propose import register_model
+    from src.ai.propose import MODEL_REGISTRY, register_model
 
     seed = _seed_doc(servers, "ai.docx", text="Alpha beta gamma")
 
@@ -913,6 +913,11 @@ def test_ai_propose_lands_as_tracked_change_accept_persists(servers):
         finally:
             ctx.close()
             browser.close()
+            # Clean up the module-global model registry: this test registers
+            # "default" and must not leak it into the shared MODEL_REGISTRY,
+            # or unit tests asserting on the registry contents (e.g. the
+            # typed-503 propose test) fail depending on test-file order.
+            MODEL_REGISTRY.pop("default", None)
 
 
 def test_command_recorder_replay_dom_hash(servers):
