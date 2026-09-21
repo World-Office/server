@@ -322,6 +322,7 @@
       editor.innerHTML = data.html || "<p><br></p>";
       hydrateVectorObjects();
       refreshToc();
+      paginateView();  // paginate the flow into LO/OO-style sheets
       // Fresh load resets the snapshot chain: the loaded state becomes the
       // baseline the Undo/Redo-Kette walks back to.
       undoStack.length = 0;
@@ -361,7 +362,7 @@
   function queueLocalEdit() {
     try {
       localStorage.setItem(OFFLINE_KEY, JSON.stringify({
-        ts: Date.now(), docId: DOC_ID, html: editor.innerHTML,
+        ts: Date.now(), docId: DOC_ID, html: flatHtml(),
       }));
     } catch (e) {}
     isOffline = true;
@@ -385,6 +386,7 @@
       return;
     }
     editor.innerHTML = queued.html;
+    paginateView();  // normalize legacy flat offline queues
     captureHistory();
     updateUndoRedoState();
     updateCounts();
@@ -420,7 +422,7 @@
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ html: editor.innerHTML }),
+          body: JSON.stringify({ html: flatHtml() }),
         }
       );
       if (!res.ok) {
@@ -1150,7 +1152,8 @@
   function restoreSnapshot(html) {
     editor.innerHTML = html;
     hydrateVectorObjects();
-    lastSnapshot = html;
+    paginateView();
+    lastSnapshot = editor.innerHTML;
     // Park the caret at the end so the user can keep typing right away.
     try {
       const sel = window.getSelection();
@@ -2339,7 +2342,7 @@
     return commandDomHash();
   }
   function commandDomHash() {
-    const html = editor.innerHTML;
+    const html = flatHtml();
     let h = 5381;
     for (let i = 0; i < html.length; i++) h = ((h << 5) + h + html.charCodeAt(i)) | 0;
     return (h >>> 0).toString(16);
@@ -3074,10 +3077,96 @@
     }
     const px = (name) => (parseInt(m.getAttribute(name), 10) || 0) / PS_TWIPS_PER_PX;
     rootStyle.setProperty("--wo-page-w", px("data-page-w").toFixed(1) + "px");
+    rootStyle.setProperty("--wo-page-h", px("data-page-h").toFixed(1) + "px");
     rootStyle.setProperty("--wo-pad-top", px("data-margin-top").toFixed(1) + "px");
     rootStyle.setProperty("--wo-pad-bottom", px("data-margin-bottom").toFixed(1) + "px");
     rootStyle.setProperty("--wo-pad-x",
       Math.max(px("data-margin-left"), px("data-margin-right")).toFixed(1) + "px");
+  }
+
+  // --- pagination (LO/OO/Word page model) ------------------------------
+  // The canonical document flow stays flat for converters, undo/redo and
+  // save (see flatHtml). paginateView wraps the flow into stacked fixed A4
+  // sheets for display, honours explicit .page-break markers and heading
+  // keep-with-next. Idempotent: it first unwraps any existing page layer.
+  function paginateView() {
+    if (!editor || !document.body.contains(editor)) return;
+    // unwrap a previous page layer back to the flat flow
+    editor.querySelectorAll(":scope > .wo-page").forEach((pg) => {
+      while (pg.firstChild) editor.insertBefore(pg.firstChild, pg);
+      pg.remove();
+    });
+    const keep = new Set();
+    editor.querySelectorAll(
+      ":scope > div.page-setup, :scope > div.hyphenation, :scope > div.line-numbers, " +
+      ":scope > header.page-header, :scope > footer.page-footer"
+    ).forEach((el) => keep.add(el));
+    const blocks = Array.from(editor.children).filter(
+      (el) => !keep.has(el) && el.tagName !== "STYLE");
+    if (blocks.length === 0) return;
+
+    const gs = document.documentElement.style;
+    const pageW = parseFloat(gs.getPropertyValue("--wo-page-w")) || 794;
+    const pageH = parseFloat(gs.getPropertyValue("--wo-page-h")) ||
+      Math.round(pageW * 16838 / 11906);
+    const padT = parseFloat(gs.getPropertyValue("--wo-pad-top")) || 96;
+    const padB = parseFloat(gs.getPropertyValue("--wo-pad-bottom")) || 96;
+    const maxH = pageH - padT - padB;
+    const zoom = parseFloat(editor.style.zoom) || 1; // offsetHeight is zoom-scaled
+
+    let cur = null;
+    const openPage = () => {
+      cur = document.createElement("div");
+      cur.className = "wo-page";
+      editor.appendChild(cur);
+    };
+    openPage();
+    let used = 0;
+    let prevBottom = 0; // previous block's bottom edge (page-relative)
+    blocks.forEach((blk) => {
+      if (blk.classList.contains("page-break")) {
+        // explicit break: marker stays as the last child of this page so
+        // flatHtml's unwrap puts it back in the flow for DOCX conversion
+        cur.appendChild(blk);
+        used = 0; prevBottom = 0;
+        openPage();
+        return;
+      }
+      cur.appendChild(blk);
+      const bottom = blk.offsetTop + blk.offsetHeight; // includes page padding offset
+      // advance vs the previous block captures margins, unlike offsetHeight alone
+      const adv = (cur.children.length === 1) ? blk.offsetHeight : (bottom - prevBottom) / zoom;
+      if (used + adv > maxH && cur.children.length > 0) {
+        cur.removeChild(blk);
+        used = 0; prevBottom = 0;
+        openPage();
+        cur.appendChild(blk);
+        used += blk.offsetHeight / zoom;
+      } else {
+        used += adv;
+        prevBottom = bottom;
+      }
+    });
+    // heading keep-with-next: a heading stranded at a sheet bottom moves with
+    // the paragraph it governs to the next sheet (Word/LO behaviour)
+    const pages = Array.from(editor.querySelectorAll(":scope > .wo-page"));
+    for (let i = 0; i < pages.length - 1; i++) {
+      const hd = pages[i].lastElementChild;
+      if (hd && /^H[1-3]$/.test(hd.tagName) && pages[i].children.length > 1) {
+        pages[i + 1].insertBefore(hd, pages[i + 1].firstChild);
+      }
+    }
+  }
+
+  function flatHtml() {
+    // Serialize the flat flow (page layer unwrapped) so converters, undo/redo
+    // and the save payload never see the display-only page layer.
+    const tmp = editor.cloneNode(true);
+    tmp.querySelectorAll(".wo-page").forEach((pg) => {
+      while (pg.firstChild) pg.parentNode.insertBefore(pg.firstChild, pg);
+      pg.remove();
+    });
+    return tmp.innerHTML;
   }
 
   function writePageSetupMarker(w, h, orient, mt, mb, ml, mr) {
