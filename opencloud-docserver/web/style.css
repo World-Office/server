@@ -993,7 +993,13 @@ main {
   color: var(--ink);
   padding: 24px 0 48px;
   position: relative;
-  font-size: 8px; /* golden-effective scale: OO renders this doc at ~half 12pt */
+  /* Real document face: 12pt serif in the same typeface LO/Word documents
+     use (Liberation Serif == Times New Roman metrics), so the canvas looks
+     and paginates like a real word processor and the visual gate compares
+     against the LO golden at the same scale with no capture-time overrides.
+     The 8px 'golden-effective' scale is retired. */
+  font-size: 12pt;
+  font-family: 'Liberation Serif', 'Times New Roman', Georgia, serif;
   line-height: 1.6;
   outline: none;
 }
