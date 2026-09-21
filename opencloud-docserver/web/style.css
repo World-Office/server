@@ -979,23 +979,44 @@ main {
 }
 
 #editor {
-  /* Page canvas. Geometry is driven by the .page-setup marker via CSS vars
-     (applyPageView in editor.js); the fallbacks are the fixed A4 look the
-     OO golden baseline was captured with (page x325-1119, first text line
-     96px in from top/left), so documents without page setup render
-     unchanged. */
-  width: min(var(--wo-page-w, 794px), 100%);
-  min-height: calc(100vh - 228px); /* fills to the statusbar like the OO golden */
+  /* Page stack: the document flow is paginated into stacked .wo-page sheets
+     (paginateView in editor.js). Geometry comes from the .page-setup marker
+     via CSS vars (applyPageView); fallbacks equal the previous fixed A4
+     look, so documents without page setup keep rendering as before. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: calc(100vh - 228px);
+  background: var(--app-bg, #ececed);
+  color: var(--ink);
+  padding: 24px 0 48px;
+  position: relative;
+  font-size: 8px; /* golden-effective scale: OO renders this doc at ~half 12pt */
+  line-height: 1.6;
+  outline: none;
+}
+
+.wo-page {
+  /* LO/OO/Word page model: fixed A4 sheet whose padding is the document's
+     margins. paginateView accumulates block heights against content height
+     (page height minus margins). */
+  width: var(--wo-page-w, 794px);
+  height: var(--wo-page-h, 1123px);
+  box-sizing: border-box;
   background: var(--paper);
   color: var(--ink);
   border-radius: 0; /* OO golden: crisp page edge, flat backdrop (no shadow) */
   border: 1px solid var(--border);
   padding: var(--wo-pad-top, 96px) var(--wo-pad-x, 96px) var(--wo-pad-bottom, 96px);
   position: relative;
-  left: 2px; /* OO page sits at x325-1119, centered would be x323-1117 */
-  font-size: 8px; /* golden-effective scale: OO renders this doc at ~half 12pt */
-  line-height: 1.6;
-  outline: none;
+  flex: 0 0 auto;
+  left: 2px; /* OO page sits at x325-1119 */
+  /* ponytail: overflow visible (not hidden) so typing past a page bottom in
+     the live view is never clipped. A mutation-driven reflow (re-paginate on
+     input) is the upgrade that clips properly. */
+  overflow: visible;
 }
 
 #editor:focus { box-shadow: 0 0 0 2px var(--accent); }
