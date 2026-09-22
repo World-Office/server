@@ -1488,8 +1488,9 @@ def test_wsb_compare_versions_tracked_diff(servers):
             doc_id = made["doc_id"]
             page.goto(f"http://127.0.0.1:{servers['doc_port']}/editor/{doc_id}")
             page.locator("#editor").wait_for(state="visible", timeout=45000)
-            # empty doc: ensure the editor finished rendering (blank <p>)
-            _wait(lambda: page.locator("#editor > p").count() >= 1)
+            # empty doc: ensure the editor finished rendering (blank <p>).
+            # Content lives inside .wo-page sheets since the editor paginates.
+            _wait(lambda: page.locator("#editor .wo-page p").count() >= 1)
 
             def _bus(cmd, value=None):
                 page.evaluate(
@@ -1499,15 +1500,17 @@ def test_wsb_compare_versions_tracked_diff(servers):
                 )
 
             # two snapshots: edit -> save, edit -> save
+            # (edit the LAST paragraph inside the sheets — the editor paginates,
+            #  so the last #editor child is a .wo-page, not a <p>)
             page.evaluate("document.getElementById('editor').focus()")
             page.evaluate(
-                "(() => { const el = document.getElementById('editor');"
-                " el.lastChild.textContent = 'Version two text here.'; })()")
+                "(() => { const ps = document.querySelectorAll('#editor .wo-page p');"
+                " ps[ps.length - 1].textContent = 'Version two text here.'; })()")
             page.locator("#btn-save").click()
             _wait(lambda: "Version two text here." in page.locator("#editor").inner_text())
             page.evaluate(
-                "(() => { const el = document.getElementById('editor');"
-                " el.lastChild.textContent += ' More later.'; })()")
+                "(() => { const ps = document.querySelectorAll('#editor .wo-page p');"
+                " ps[ps.length - 1].textContent += ' More later.'; })()")
             page.locator("#btn-save").click()
             _wait(lambda: "More later." in page.locator("#editor").inner_text())
 
