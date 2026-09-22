@@ -322,7 +322,7 @@
       editor.innerHTML = data.html || "<p><br></p>";
       hydrateVectorObjects();
       refreshToc();
-      paginateView();  // paginate the flow into LO/OO-style sheets
+      paginateQuiet();  // paginate the flow into LO/OO-style sheets
       // Fresh load resets the snapshot chain: the loaded state becomes the
       // baseline the Undo/Redo-Kette walks back to.
       undoStack.length = 0;
@@ -386,7 +386,7 @@
       return;
     }
     editor.innerHTML = queued.html;
-    paginateView();  // normalize legacy flat offline queues
+    paginateQuiet();  // normalize legacy flat offline queues
     captureHistory();
     updateUndoRedoState();
     updateCounts();
@@ -1152,7 +1152,7 @@
   function restoreSnapshot(html) {
     editor.innerHTML = html;
     hydrateVectorObjects();
-    paginateView();
+    paginateQuiet();
     lastSnapshot = editor.innerHTML;
     // Park the caret at the end so the user can keep typing right away.
     try {
@@ -3167,6 +3167,62 @@
       pg.remove();
     });
     return tmp.innerHTML;
+  }
+
+  // --- reflow on mutation ------------------------------------------------
+  // Re-paginate after editing/typing pauses so growing content re-snaps to
+  // the sheet grid (bleed below a sheet bottom is moved to the next sheet).
+  // Debounced so a typing burst doesn't churn the DOM; selection survives
+  // because paginateView MOVES block nodes (insertBefore) — they keep their
+  // identity, so a saved range is still valid after the rewrap.
+  // ponytail: block-granular — a paragraph taller than a full sheet still
+  // overflows (no intra-paragraph text splitting); that is the upgrade if
+  // pasted mega-paragraphs ever matter.
+  let reflowQuiet = false;
+  let reflowTimer = null;
+  function saveSelection() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    const r = sel.getRangeAt(0);
+    return { a: r.startContainer, ao: r.startOffset, f: r.endContainer, fo: r.endOffset };
+  }
+  function restoreSelection(s) {
+    if (!s || !s.a || !s.f) return;
+    try {
+      const doc = s.a.ownerDocument;
+      if (!doc.contains(s.a) || !doc.contains(s.f)) return; // node moved out
+      const maxOff = (n) => n.nodeType === 3 ? n.length : n.childNodes.length;
+      const r = doc.createRange();
+      r.setStart(s.a, Math.min(s.ao, maxOff(s.a)));
+      r.setEnd(s.f, Math.min(s.fo, maxOff(s.f)));
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(r);
+    } catch (e) { /* best-effort selection restore */ }
+  }
+  function paginateQuiet() {
+    // quiet window: the observer skips mutations this pagination itself causes
+    reflowQuiet = true;
+    paginateView();
+    setTimeout(() => { reflowQuiet = false; }, 0); // macrotask: after observer microtasks
+  }
+  function scheduleReflow() {
+    if (reflowTimer) return; // a reflow is already pending or just ran
+    reflowTimer = setTimeout(() => {
+      reflowTimer = null;
+      if (!editor || editor.innerHTML.trim() === "") return;
+      const saved = saveSelection();
+      const sc = window.scrollY;
+      paginateQuiet();
+      restoreSelection(saved);
+      window.scrollTo(0, sc);
+    }, 600);
+  }
+  if (window.MutationObserver) {
+    new MutationObserver(() => {
+      if (reflowQuiet) return;
+      scheduleReflow();
+    }).observe(editor, { childList: true, subtree: true, characterData: true });
   }
 
   function writePageSetupMarker(w, h, orient, mt, mb, ml, mr) {
