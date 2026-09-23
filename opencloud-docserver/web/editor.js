@@ -3089,13 +3089,98 @@
   // save (see flatHtml). paginateView wraps the flow into stacked fixed A4
   // sheets for display, honours explicit .page-break markers and heading
   // keep-with-next. Idempotent: it first unwraps any existing page layer.
+  function mergeSplits(root) {
+    // fold visual split continuations (.wo-cont) back into the paragraph
+    // they came from — pagination start and every serialization funnel
+    // call this so the canonical flow never sees view-layer fragments.
+    root.querySelectorAll(".wo-cont").forEach((c) => {
+      const prev = c.previousElementSibling;
+      if (prev && prev.tagName === c.tagName) {
+        while (c.firstChild) prev.appendChild(c.firstChild);
+        c.remove();
+      } else {
+        c.classList.remove("wo-cont"); // orphaned fragment: keep its content
+      }
+    });
+  }
+
+  function trySplitBlock(blk, avail, zoom) {
+    // Split blk at its last line that fits in `avail` px of sheet space;
+    // returns the continuation element holding the tail, or null when the
+    // block is too short to split honestly (widow/orphan control: keep at
+    // least 2 lines on each side). Purely visual: callers merge the
+    // fragments back before serializing (mergeSplits).
+    if (!/^(P|H[1-6]|BLOCKQUOTE)$/.test(blk.tagName)) return null;
+    const cs = getComputedStyle(blk);
+    const extras = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.borderTopWidth) || 0)
+      + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
+    const texts = [];
+    const tw = document.createTreeWalker(blk, NodeFilter.SHOW_TEXT);
+    let tn, total = 0;
+    while ((tn = tw.nextNode())) { texts.push({ node: tn, start: total }); total += tn.data.length; }
+    if (total < 2) return null;
+    // line boxes of the whole block (viewport px, zoom-scaled)
+    const r = document.createRange();
+    r.selectNodeContents(blk);
+    const lineMap = [];
+    Array.from(r.getClientRects()).forEach((rc) => {
+      const top = rc.top / zoom, bottom = rc.bottom / zoom;
+      const hit = lineMap.find((l) => Math.abs(l.top - top) < 1.5);
+      if (hit) { if (bottom > hit.bottom) hit.bottom = bottom; }
+      else lineMap.push({ top, bottom });
+    });
+    if (lineMap.length < 2) return null;
+    lineMap.sort((a, b) => a.top - b.top);
+    const origin = lineMap[0].top;
+    let fit = 0;
+    while (fit < lineMap.length && lineMap[fit].bottom - origin + extras <= avail) fit++;
+    if (fit < 2) return null;                       // orphan control
+    if (lineMap.length - fit < 2) { fit -= 1; if (fit < 2) return null; } // widow control
+    // global char offset of the first character on line `fit`
+    const at = (off) => {
+      let seg = texts[0];
+      for (let i = 0; i < texts.length; i++) { if (texts[i].start <= off) seg = texts[i]; }
+      return { node: seg.node, off: off - seg.start };
+    };
+    const lineOf = (off) => {
+      const p = at(off);
+      r.setStart(p.node, p.off);
+      r.setEnd(p.node, Math.min(p.off + 1, p.node.data.length));
+      const rc = r.getClientRects()[0];
+      if (!rc) return -1;
+      const t = rc.top / zoom;
+      for (let i = 0; i < lineMap.length; i++) if (Math.abs(lineMap[i].top - t) < 1.5) return i;
+      return -1;
+    };
+    let lo = 0, hi = total - 1, splitAt = -1; // first char on line `fit`
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      if (lineOf(mid) >= fit) { splitAt = mid; hi = mid - 1; } else lo = mid + 1;
+    }
+    if (splitAt <= 0) return null;
+    const sp = at(splitAt);
+    r.setStart(sp.node, sp.off);
+    r.setEndAfter(blk.lastChild);
+    const frag = r.extractContents();
+    if (!frag.textContent.trim() && !frag.querySelector("img")) {
+      blk.appendChild(frag); // nothing to move — restore
+      return null;
+    }
+    const cont = blk.cloneNode(false);
+    cont.classList.add("wo-cont");
+    cont.appendChild(frag);
+    return cont;
+  }
+
   function paginateView() {
     if (!editor || !document.body.contains(editor)) return;
-    // unwrap a previous page layer back to the flat flow
+    // unwrap a previous page layer back to the flat flow, folding split
+    // continuations (.wo-cont) back into their paragraph first
     editor.querySelectorAll(":scope > .wo-page").forEach((pg) => {
       while (pg.firstChild) editor.insertBefore(pg.firstChild, pg);
       pg.remove();
     });
+    mergeSplits(editor);
     const keep = new Set();
     editor.querySelectorAll(
       ":scope > div.page-setup, :scope > div.hyphenation, :scope > div.line-numbers, " +
@@ -3123,30 +3208,44 @@
     openPage();
     let used = 0;
     let prevBottom = 0; // previous block's bottom edge (page-relative)
-    blocks.forEach((blk) => {
+    const q = blocks.slice();
+    while (q.length) {
+      const blk = q.shift();
       if (blk.classList.contains("page-break")) {
         // explicit break: marker stays as the last child of this page so
         // flatHtml's unwrap puts it back in the flow for DOCX conversion
         cur.appendChild(blk);
         used = 0; prevBottom = 0;
         openPage();
-        return;
+        continue;
       }
       cur.appendChild(blk);
       const bottom = blk.offsetTop + blk.offsetHeight; // includes page padding offset
       // advance vs the previous block captures margins, unlike offsetHeight alone
       const adv = (cur.children.length === 1) ? blk.offsetHeight : (bottom - prevBottom) / zoom;
-      if (used + adv > maxH && cur.children.length > 0) {
-        cur.removeChild(blk);
-        used = 0; prevBottom = 0;
-        openPage();
-        cur.appendChild(blk);
-        used += blk.offsetHeight / zoom;
-      } else {
-        used += adv;
-        prevBottom = bottom;
+      if (used + adv > maxH) {
+        const avail = (cur.children.length === 1) ? maxH : maxH - used;
+        const cont = trySplitBlock(blk, avail, zoom);
+        if (cont) {
+          // sheet filled up to the split; the tail re-enters the queue and
+          // may itself split again on the next sheet (mega-paragraphs)
+          q.unshift(cont);
+          used = maxH;
+          prevBottom = blk.offsetTop + blk.offsetHeight;
+          continue;
+        }
+        if (cur.children.length > 1) {
+          cur.removeChild(blk);
+          used = 0; prevBottom = 0;
+          openPage();
+          q.unshift(blk);
+          continue;
+        }
+        // alone on a fresh sheet and unsplittable: tolerate the overflow
       }
-    });
+      used += adv;
+      prevBottom = bottom;
+    }
     // heading keep-with-next: a heading stranded at a sheet bottom moves with
     // the paragraph it governs to the next sheet (Word/LO behaviour)
     const pages = Array.from(editor.querySelectorAll(":scope > .wo-page"));
@@ -3159,13 +3258,15 @@
   }
 
   function flatHtml() {
-    // Serialize the flat flow (page layer unwrapped) so converters, undo/redo
-    // and the save payload never see the display-only page layer.
+    // Serialize the flat flow (page layer unwrapped, splits merged) so
+    // converters, undo/redo and the save payload never see the display-only
+    // page layer.
     const tmp = editor.cloneNode(true);
     tmp.querySelectorAll(".wo-page").forEach((pg) => {
       while (pg.firstChild) pg.parentNode.insertBefore(pg.firstChild, pg);
       pg.remove();
     });
+    mergeSplits(tmp);
     return tmp.innerHTML;
   }
 
@@ -3174,10 +3275,9 @@
   // the sheet grid (bleed below a sheet bottom is moved to the next sheet).
   // Debounced so a typing burst doesn't churn the DOM; selection survives
   // because paginateView MOVES block nodes (insertBefore) — they keep their
-  // identity, so a saved range is still valid after the rewrap.
-  // ponytail: block-granular — a paragraph taller than a full sheet still
-  // overflows (no intra-paragraph text splitting); that is the upgrade if
-  // pasted mega-paragraphs ever matter.
+  // identity, so a saved range is still valid after the rewrap. Paragraphs
+  // split at line boundaries across sheets (trySplitBlock) and the fragments
+  // merge back (mergeSplits) before any serialization.
   let reflowQuiet = false;
   let reflowTimer = null;
   function saveSelection() {
