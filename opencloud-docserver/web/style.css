@@ -1025,6 +1025,12 @@ main {
   overflow: visible;
 }
 
+.wo-page > .wo-cont {
+  /* continuation of a paragraph split across sheets: starts at the sheet
+     top without its own margin, like Word's "same paragraph" carryover */
+  margin-top: 0;
+}
+
 #editor:focus { box-shadow: 0 0 0 2px var(--accent); }
 
 /* Ink canvas overlay for Draw tab drawing. Positioned over the editor. */

@@ -1861,3 +1861,79 @@ def test_r6_fleet_feature_surfaces(servers):
                 timeout=30)
         finally:
             ctx.close()
+
+
+def test_paragraph_splits_across_pages_and_serializes_whole(servers):
+    """Line-granular pagination: a paragraph taller than the remaining page
+    space splits at a line boundary across sheets (Word/LO behaviour). The
+    split is purely visual — the saved document still contains the one
+    canonical paragraph (no .wo-page wrappers, no wo-cont fragments)."""
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            ctx = browser.new_context()
+            page = ctx.new_page()
+            made = json.loads(urllib.request.urlopen(
+                urllib.request.Request(
+                    f"http://127.0.0.1:{servers['doc_port']}/api/documents/new",
+                    data=b"",
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                ),
+                timeout=10,
+            ).read())
+            doc_id = made["doc_id"]
+            page.goto(f"http://127.0.0.1:{servers['doc_port']}/editor/{doc_id}")
+            page.locator("#editor").wait_for(state="visible", timeout=45000)
+            _wait(lambda: page.locator("#editor .wo-page p").count() >= 1)
+
+            # one paragraph, far taller than a sheet (~90 wrapped lines)
+            page.evaluate(
+                "(() => { const ed = document.getElementById('editor');"
+                " const line = 'Lorem ipsum dolor sit amet, consectetur"
+                " adipiscing elit, sed do eiusmod tempor incididunt ut labore"
+                " et dolore magna aliqua ut enim ad minim veniam quis nostrud. ';"
+                " const p = document.createElement('p');"
+                " p.textContent = line.repeat(90);"
+                " ed.appendChild(p); ed.focus(); })()"
+            )
+            _wait(lambda: page.locator("#editor .wo-page").count() >= 3)
+
+            # every sheet must hold its content: no overflow below the box
+            metrics = page.evaluate(
+                "(() => Array.from(document.querySelectorAll('#editor .wo-page'))"
+                " .map(pg => ({ s: pg.scrollHeight, c: pg.clientHeight })))()"
+            )
+            assert metrics, "no pages rendered"
+            for m in metrics:
+                assert m["s"] <= m["c"] + 1, f"page overflow: scroll={m['s']} client={m['c']}"
+
+            # the split must be visible: the first sheet ends mid-paragraph
+            # (its last block and the next sheet's first block share one
+            # logical paragraph -> next page starts with a continuation)
+            cont = page.evaluate(
+                "(() => { const pgs = document.querySelectorAll('#editor .wo-page');"
+                " return Array.from(pgs).filter(pg =>"
+                "   pg.querySelector(':scope > .wo-cont')).length })()"
+            )
+            assert cont >= 1, "expected at least one mid-paragraph continuation sheet"
+
+            # save; the serialized document keeps ONE canonical paragraph
+            page.locator("#btn-save").click()
+            _wait(lambda: "Lorem ipsum" in urllib.request.urlopen(
+                f"http://127.0.0.1:{servers['doc_port']}/api/documents/{doc_id}/html",
+                timeout=10).read().decode("utf-8", "replace"))
+            saved = json.loads(urllib.request.urlopen(
+                f"http://127.0.0.1:{servers['doc_port']}/api/documents/{doc_id}/html",
+                timeout=10,
+            ).read().decode("utf-8", "replace"))["html"]
+            assert "Lorem ipsum" in saved
+            # starter <p></p> + the one canonical mega-paragraph — the split
+            # fragments folded back into a single <p>, view layer stripped
+            assert saved.count("<p") == 2, f"paragraph count: {saved.count('<p')}"
+            assert "wo-cont" not in saved and "wo-page" not in saved
+        finally:
+            ctx.close()
+            browser.close()
