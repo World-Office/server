@@ -3099,6 +3099,30 @@
       const prev = c.previousElementSibling;
       if (prev && prev.tagName === c.tagName) {
         if (c.tagName === "TABLE" && prev.tBodies) {
+          // a leading .wo-row-cont tr is the tail of a row split mid-row —
+          // fold its cells' children into the previous table's last row so
+          // the canonical flow keeps ONE row
+          const ctb0 = c.tBodies[0];
+          const ftr = ctb0 && ctb0.firstElementChild;
+          if (ftr && ftr.classList.contains("wo-row-cont")) {
+            const ptb = prev.tBodies.length
+              ? prev.tBodies[prev.tBodies.length - 1]
+              : prev.appendChild(document.createElement("tbody"));
+            const prow = ptb.lastElementChild;
+            if (prow && prow.tagName === "TR") {
+              Array.from(ftr.children).forEach((fc, i) => {
+                const pc = prow.children[i];
+                if (pc) {
+                  while (fc.firstChild) pc.appendChild(fc.firstChild);
+                } else {
+                  prow.appendChild(fc); // extra tail cells: append whole
+                }
+              });
+              ftr.remove();
+            } else {
+              ftr.classList.remove("wo-row-cont"); // orphaned: keep its content
+            }
+          }
           const tgt = prev.tBodies.length
             ? prev.tBodies[prev.tBodies.length - 1]
             : prev.appendChild(document.createElement("tbody"));
@@ -3177,6 +3201,66 @@
     return cont;
   }
 
+  function splitCellAt(cell, avail, baseTop, zoom) {
+    // Move a table cell's content whose lines start below `avail` px (from
+    // baseTop, the ROW's top) into a cloned cell. A paragraph spanning the
+    // break splits mid-text via trySplitLines; unsplittable children stay
+    // whole in whichever side holds their first line.
+    const cont = cell.cloneNode(false);
+    let moved = false;
+    Array.from(cell.children).forEach((ch) => {
+      const r = ch.getBoundingClientRect ? ch.getBoundingClientRect() : null;
+      if (!r) return;
+      const top = (r.top - baseTop) / zoom;
+      const bottom = (r.bottom - baseTop) / zoom;
+      if (bottom <= avail + 0.5) return;                      // fully above: keep
+      if (top >= avail - 0.5) { cont.appendChild(ch); moved = true; return; }
+      // spans the break: split it at the line boundary like a paragraph
+      const tail = trySplitLines(ch, avail - top, zoom);
+      if (tail) { cont.appendChild(tail); moved = true; }
+    });
+    return moved ? cont : null;
+  }
+
+  function trySplitRow(row, avail, zoom) {
+    // Split a tr at a horizontal break line (Word's "allow row to break
+    // across pages"): every cell keeps what fits, the tails land in a
+    // continuation tr with cells aligned by index. Returns the tail tr or
+    // null when no cell can honestly split.
+    // normalize bare-text cells first (td > p is the converter's canonical
+    // shape) so children exist to measure and move
+    Array.from(row.children).forEach((cell) => {
+      if (!cell.children.length && cell.textContent.trim()) {
+        const wrap = document.createElement("p");
+        while (cell.firstChild) wrap.appendChild(cell.firstChild);
+        cell.appendChild(wrap);
+      }
+    });
+    const baseTop = row.getBoundingClientRect().top;
+    // refuse when no cell content starts above the break (avail ≤ 0, or a
+    // head row that would be empty): the layout loop then moves the whole
+    // row to the next sheet instead — and an everything-moves "split"
+    // would re-queue an identical block forever
+    const startsAbove = Array.from(row.children).some((cell) =>
+      Array.from(cell.children).some((ch) => {
+        const r = ch.getBoundingClientRect ? ch.getBoundingClientRect() : null;
+        return r && (r.top - baseTop) / zoom < avail - 0.5;
+      }));
+    if (!startsAbove) return null;
+    let any = false;
+    const tails = Array.from(row.children).map((cell) => {
+      const t = splitCellAt(cell, avail, baseTop, zoom);
+      if (t) any = true;
+      return t;
+    });
+    if (!any) return null;
+    const trCont = row.cloneNode(false);
+    trCont.classList.add("wo-row-cont");
+    Array.from(row.children).forEach((cell, i) =>
+      trCont.appendChild(tails[i] || document.createElement(cell.tagName)));
+    return trCont;
+  }
+
   function trySplitTable(blk, avail, zoom) {
     // Split TABLE at a row boundary: fitting tbody rows stay; the tail
     // moves to a continuation table that repeats the thead (Word keeps
@@ -3184,7 +3268,7 @@
     const rows = [];
     Array.from(blk.tBodies).forEach((tb) =>
       Array.from(tb.children).forEach((tr) => rows.push(tr)));
-    if (rows.length < 2) return null;
+    if (!rows.length) return null;
     // tr.offsetTop is TABLE-relative while the sheet math is page-relative —
     // measure bottoms against the table's own top instead (frame-safe)
     const baseTop = blk.getBoundingClientRect().top;
@@ -3194,14 +3278,31 @@
       if ((tr.getBoundingClientRect().bottom - baseTop) / zoom <= limit + 0.5) fit++;
       else break;
     }
-    if (fit < 1 || rows.length - fit < 1) return null;
+    if (fit >= 1 && rows.length - fit >= 1) {
+      const cont = blk.cloneNode(false);
+      cont.classList.add("wo-cont");
+      const colg = blk.querySelector("colgroup");
+      if (colg) cont.appendChild(colg.cloneNode(true));
+      if (blk.tHead) cont.appendChild(blk.tHead.cloneNode(true));
+      const tb = document.createElement("tbody");
+      for (let i = fit; i < rows.length; i++) tb.appendChild(rows[i]);
+      cont.appendChild(tb);
+      return cont;
+    }
+    // mid-row fallback: the next overflowing row is itself taller than
+    // what remains of the sheet — split it across the break like Word
+    const firstOverflow = rows[fit];
+    if (!firstOverflow) return null;
+    const trCont = trySplitRow(firstOverflow, avail, zoom);
+    if (!trCont) return null;
     const cont = blk.cloneNode(false);
     cont.classList.add("wo-cont");
     const colg = blk.querySelector("colgroup");
     if (colg) cont.appendChild(colg.cloneNode(true));
     if (blk.tHead) cont.appendChild(blk.tHead.cloneNode(true));
     const tb = document.createElement("tbody");
-    for (let i = fit; i < rows.length; i++) tb.appendChild(rows[i]);
+    tb.appendChild(trCont);
+    for (let i = fit + 1; i < rows.length; i++) tb.appendChild(rows[i]);
     cont.appendChild(tb);
     return cont;
   }
