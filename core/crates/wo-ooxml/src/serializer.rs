@@ -8,6 +8,26 @@ use std::io::{Cursor, Write as IoWrite};
 /// DOCX serializer — converts an `OoxmlDocument` into a valid DOCX ZIP.
 pub struct OoxmlSerializer;
 
+/// Remove existing header/footer reference elements from a verbatim
+/// `<w:sectPr>` string (they are re-injected with fresh rIds).
+fn strip_hf_refs(sect_pr: &str) -> String {
+    let mut out = String::with_capacity(sect_pr.len());
+    let mut rest = sect_pr;
+    while let Some(pos) = rest.find('<') {
+        out.push_str(&rest[..pos]);
+        let tag_rest = &rest[pos..];
+        let is_hf = tag_rest.starts_with("<w:headerReference")
+            || tag_rest.starts_with("<w:footerReference");
+        let end = tag_rest.find('>').map(|e| e + 1).unwrap_or(tag_rest.len());
+        if !is_hf {
+            out.push_str(&tag_rest[..end]);
+        }
+        rest = &tag_rest[end..];
+    }
+    out.push_str(rest);
+    out
+}
+
 impl OoxmlSerializer {
     pub fn new() -> Self {
         Self
@@ -37,9 +57,21 @@ impl OoxmlSerializer {
         zip.write_all(document_xml.as_bytes())?;
 
         // 4. word/_rels/document.xml.rels
-        let doc_rels = self.build_document_rels();
+        let doc_rels = self.build_document_rels(doc);
         zip.start_file("word/_rels/document.xml.rels", options)?;
         zip.write_all(doc_rels.as_bytes())?;
+
+        // 4b. page furniture parts (word/header1.xml / word/footer1.xml)
+        if let Some(ref body) = doc.docx_body {
+            if let Some(ref hf) = body.header {
+                zip.start_file("word/header1.xml", options)?;
+                zip.write_all(self.build_hf_xml("hdr", hf).as_bytes())?;
+            }
+            if let Some(ref hf) = body.footer {
+                zip.start_file("word/footer1.xml", options)?;
+                zip.write_all(self.build_hf_xml("ftr", hf).as_bytes())?;
+            }
+        }
 
         // 5. word/styles.xml
         let styles = self.build_styles_xml();
@@ -949,15 +981,26 @@ impl OoxmlSerializer {
         xml.push_str("\n      </p:txBody>");
     }
 
-    fn build_content_types(&self, _doc: &OoxmlDocument) -> String {
-        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    fn build_content_types(&self, doc: &OoxmlDocument) -> String {
+        let mut extra = String::new();
+        if let Some(ref body) = doc.docx_body {
+            if body.header.is_some() {
+                extra.push_str("\n  <Override PartName=\"/word/header1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml\"/>");
+            }
+            if body.footer.is_some() {
+                extra.push_str("\n  <Override PartName=\"/word/footer1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml\"/>");
+            }
+        }
+        format!(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
   <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
   <Default Extension="xml" ContentType="application/xml"/>
   <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
-  <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
-</Types>"#
-            .to_string()
+  <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>{}{}
+</Types>"#,
+            extra, ""
+        )
     }
 
     fn build_root_rels(&self) -> String {
@@ -968,12 +1011,62 @@ impl OoxmlSerializer {
             .to_string()
     }
 
-    fn build_document_rels(&self) -> String {
-        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    fn build_document_rels(&self, doc: &OoxmlDocument) -> String {
+        let mut extra = String::new();
+        if let Some(ref body) = doc.docx_body {
+            if body.header.is_some() {
+                extra.push_str(
+                    "\n  <Relationship Id=\"rIdHdr\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/header\" Target=\"header1.xml\"/>",
+                );
+            }
+            if body.footer.is_some() {
+                extra.push_str(
+                    "\n  <Relationship Id=\"rIdFtr\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer\" Target=\"footer1.xml\"/>",
+                );
+            }
+        }
+        format!(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
-</Relationships>"#
-            .to_string()
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>{}{}
+</Relationships>"#,
+            extra, ""
+        )
+    }
+
+    /// Serialize a header/footer part (w:hdr / w:ftr) reusing the body
+    /// block serializer.
+    fn build_hf_xml(&self, tag: &str, hf: &HeaderFooter) -> String {
+        let mut xml = String::new();
+        xml.push_str(&format!(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:{t} xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">"#,
+            t = tag
+        ));
+        for block in &hf.blocks {
+            match block {
+                DocxBlock::Paragraph(para) => xml.push_str(&self.serialize_paragraph(para)),
+                DocxBlock::Table(table) => xml.push_str(&self.serialize_table(table)),
+                DocxBlock::Image(_) => {}
+            }
+        }
+        xml.push_str(&format!("</w:{}>", tag));
+        xml
+    }
+
+    /// The header/footer references that must ride the body sectPr. Emitted
+    /// first (CT_SectPr puts EG_HdrFtrReferences before page geometry).
+    fn hf_sectpr_refs(doc: &OoxmlDocument) -> String {
+        let mut refs = String::new();
+        if let Some(ref body) = doc.docx_body {
+            if body.header.is_some() {
+                refs.push_str("<w:headerReference w:type=\"default\" r:id=\"rIdHdr\"/>");
+            }
+            if body.footer.is_some() {
+                refs.push_str("<w:footerReference w:type=\"default\" r:id=\"rIdFtr\"/>");
+            }
+        }
+        refs
     }
 
     fn build_document_xml(&self, doc: &OoxmlDocument) -> String {
@@ -1001,12 +1094,40 @@ impl OoxmlSerializer {
                 }
             }
 
-            // Verbatim body-level <w:sectPr> captured at parse time is
-            // re-emitted unchanged before </w:body>.
-            if let Some(ref raw) = body.raw_sect_pr {
-                xml.push_str("    ");
-                xml.push_str(raw);
-                xml.push('\n');
+            // Body-level <w:sectPr>: when page furniture is present the
+            // references are (re)injected with fresh rIds, since the parts are
+            // always re-emitted as header1/footer1.xml. Without furniture a
+            // verbatim sectPr survives unchanged (page geometry etc.).
+            let hf_refs = Self::hf_sectpr_refs(doc);
+            match (&body.raw_sect_pr, hf_refs.is_empty()) {
+                (Some(raw), true) => {
+                    xml.push_str("    ");
+                    xml.push_str(raw);
+                    xml.push('\n');
+                }
+                (Some(raw), false) => {
+                    // strip stale references, then inject fresh ones at the
+                    // start of the (first) sectPr content
+                    let stripped = strip_hf_refs(raw);
+                    if let Some(gt) = stripped.find('>') {
+                        xml.push_str("    ");
+                        xml.push_str(&stripped[..gt + 1]);
+                        xml.push_str(&hf_refs);
+                        xml.push_str(&stripped[gt + 1..]);
+                        xml.push('\n');
+                    } else {
+                        xml.push_str("    ");
+                        xml.push_str(raw);
+                        xml.push('\n');
+                    }
+                }
+                (None, false) => {
+                    xml.push_str(&format!(
+                        "    <w:sectPr>{}<w:pgSz w:w=\"11906\" w:h=\"16838\"/></w:sectPr>\n",
+                        hf_refs
+                    ));
+                }
+                (None, true) => {}
             }
         }
 
@@ -2466,7 +2587,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
-                raw_sect_pr: None,
+                raw_sect_pr: None, header: None, footer: None,
                 blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
@@ -2554,7 +2675,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
-                raw_sect_pr: None,
+                raw_sect_pr: None, header: None, footer: None,
                 blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
@@ -2647,7 +2768,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
-                raw_sect_pr: None,
+                raw_sect_pr: None, header: None, footer: None,
                 blocks: vec![
                     DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
@@ -2759,7 +2880,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
-                raw_sect_pr: None,
+                raw_sect_pr: None, header: None, footer: None,
                 blocks: vec![DocxBlock::Table(DocxTable {
                     rows: vec![
                         DocxTableRow {
@@ -3728,7 +3849,7 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
-                raw_sect_pr: None,
+                raw_sect_pr: None, header: None, footer: None,
                 blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
@@ -3783,7 +3904,7 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-            docx_body: Some(DocxBody { blocks: vec![], raw_sect_pr: None }),
+            docx_body: Some(DocxBody { blocks: vec![], raw_sect_pr: None, header: None, footer: None }),
         };
         let ser = OoxmlSerializer::new();
         let bytes = ser.serialize(&doc).unwrap();

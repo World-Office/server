@@ -3523,6 +3523,8 @@
     mergeSplits(tmp);
     return tmp.innerHTML;
   }
+  // Export hook for the bridge (fresh-content export); additive, no behavior change.
+  window.__WO_FLAT_HTML__ = flatHtml;
 
   // --- reflow on mutation ------------------------------------------------
   // Re-paginate after editing/typing pauses so growing content re-snaps to
