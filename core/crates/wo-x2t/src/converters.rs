@@ -249,7 +249,7 @@ impl FormatConverter for DocxToHtmlConverter {
             .parse(data)
             .map_err(|e| ConversionError::Parse(e.to_string()))?;
 
-        let mut html_doc = HtmlDocument {
+        let html_doc = HtmlDocument {
             doc_type: Some("html".into()),
             html_attributes: Vec::new(),
             head: HtmlHead {
