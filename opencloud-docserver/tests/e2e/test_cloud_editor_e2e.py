@@ -1937,3 +1937,130 @@ def test_paragraph_splits_across_pages_and_serializes_whole(servers):
         finally:
             ctx.close()
             browser.close()
+
+
+def test_list_splits_across_pages_and_serializes_whole(servers):
+    """List-granular pagination: an <ol> crossing the sheet bottom fills the
+    sheet with its fitting items and continues on the next sheet. Purely
+    visual — the saved document still holds the ONE list with all items."""
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            ctx = browser.new_context()
+            page = ctx.new_page()
+            made = json.loads(urllib.request.urlopen(
+                urllib.request.Request(
+                    f"http://127.0.0.1:{servers['doc_port']}/api/documents/new",
+                    data=b"",
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                ),
+                timeout=10,
+            ).read())
+            doc_id = made["doc_id"]
+            page.goto(f"http://127.0.0.1:{servers['doc_port']}/editor/{doc_id}")
+            page.locator("#editor").wait_for(state="visible", timeout=45000)
+            _wait(lambda: page.locator("#editor .wo-page p").count() >= 1)
+
+            page.evaluate(
+                "(() => { const ed = document.getElementById('editor');"
+                " const ol = document.createElement('ol');"
+                " for (let i = 1; i <= 140; i++) {"
+                "   const li = document.createElement('li');"
+                "   li.textContent = ('Item ' + i + ' — laboriosam at ')"
+                "     .repeat(3);"
+                "   ol.appendChild(li); }"
+                " ed.appendChild(ol); ed.focus(); })()"
+            )
+            _wait(lambda: page.locator("#editor .wo-page").count() >= 3)
+
+            metrics = page.evaluate(
+                "(() => Array.from(document.querySelectorAll('#editor .wo-page'))"
+                " .map(pg => pg.scrollHeight - pg.clientHeight))()"
+            )
+            assert metrics and all(m <= 1 for m in metrics), f"overflow: {metrics}"
+            cont = page.evaluate(
+                "(() => document.querySelectorAll('#editor .wo-cont').length)()"
+            )
+            assert cont >= 1, "expected a list continuation sheet"
+
+            page.locator("#btn-save").click()
+            _wait(lambda: "Item 140" in urllib.request.urlopen(
+                f"http://127.0.0.1:{servers['doc_port']}/api/documents/{doc_id}/html",
+                timeout=10).read().decode("utf-8", "replace"))
+            saved = json.loads(urllib.request.urlopen(
+                f"http://127.0.0.1:{servers['doc_port']}/api/documents/{doc_id}/html",
+                timeout=10,
+            ).read().decode("utf-8", "replace"))["html"]
+            assert saved.count("<ol") == 1, f"ol count: {saved.count('<ol')}"
+            assert saved.count("<li") == 140, f"li count: {saved.count('<li')}"
+            assert "wo-cont" not in saved and "wo-page" not in saved
+        finally:
+            ctx.close()
+            browser.close()
+
+
+def test_table_splits_across_pages_and_serializes_whole(servers):
+    """Row-granular pagination: a table crossing the sheet bottom splits at
+    a row boundary; the saved document still holds the ONE table with all
+    rows."""
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            ctx = browser.new_context()
+            page = ctx.new_page()
+            made = json.loads(urllib.request.urlopen(
+                urllib.request.Request(
+                    f"http://127.0.0.1:{servers['doc_port']}/api/documents/new",
+                    data=b"",
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                ),
+                timeout=10,
+            ).read())
+            doc_id = made["doc_id"]
+            page.goto(f"http://127.0.0.1:{servers['doc_port']}/editor/{doc_id}")
+            page.locator("#editor").wait_for(state="visible", timeout=45000)
+            _wait(lambda: page.locator("#editor .wo-page p").count() >= 1)
+
+            page.evaluate(
+                "(() => { const ed = document.getElementById('editor');"
+                " const t = document.createElement('table');"
+                " for (let r = 0; r < 80; r++) {"
+                "   const tr = t.insertRow();"
+                "   for (let c = 0; c < 2; c++) {"
+                "     tr.insertCell().textContent ="
+                "       ('Row ' + r + ' cell ' + c + ' veritatis netis ')"
+                "         .repeat(3); } }"
+                " ed.appendChild(t); ed.focus(); })()"
+            )
+            _wait(lambda: page.locator("#editor .wo-page").count() >= 3)
+
+            metrics = page.evaluate(
+                "(() => Array.from(document.querySelectorAll('#editor .wo-page'))"
+                " .map(pg => pg.scrollHeight - pg.clientHeight))()"
+            )
+            assert metrics and all(m <= 1 for m in metrics), f"overflow: {metrics}"
+            cont = page.evaluate(
+                "(() => document.querySelectorAll('#editor .wo-cont').length)()"
+            )
+            assert cont >= 1, "expected a table continuation sheet"
+
+            page.locator("#btn-save").click()
+            _wait(lambda: "Row 79" in urllib.request.urlopen(
+                f"http://127.0.0.1:{servers['doc_port']}/api/documents/{doc_id}/html",
+                timeout=10).read().decode("utf-8", "replace"))
+            saved = json.loads(urllib.request.urlopen(
+                f"http://127.0.0.1:{servers['doc_port']}/api/documents/{doc_id}/html",
+                timeout=10,
+            ).read().decode("utf-8", "replace"))["html"]
+            assert saved.count("<table") == 1, f"table count: {saved.count('<table')}"
+            assert saved.count("<tr") == 80, f"row count: {saved.count('<tr')}"
+            assert "wo-cont" not in saved and "wo-page" not in saved
+        finally:
+            ctx.close()
+            browser.close()
