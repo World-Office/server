@@ -2146,3 +2146,63 @@ def test_header_footer_repeat_on_every_sheet_and_serialize_once(servers):
         finally:
             ctx.close()
             browser.close()
+
+
+def test_single_tall_list_item_splits_across_sheets(servers):
+    """A single LI taller than a sheet (the old block-granular ceiling)
+    splits at a line boundary like a paragraph: head lines stay under the
+    bullet, the tail continues on the next sheet, and the saved document
+    still holds exactly ONE list item."""
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            ctx = browser.new_context()
+            page = ctx.new_page()
+            made = json.loads(urllib.request.urlopen(
+                urllib.request.Request(
+                    f"http://127.0.0.1:{servers['doc_port']}/api/documents/new",
+                    data=b"",
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                ),
+                timeout=10,
+            ).read())
+            doc_id = made["doc_id"]
+            page.goto(f"http://127.0.0.1:{servers['doc_port']}/editor/{doc_id}")
+            page.locator("#editor").wait_for(state="visible", timeout=45000)
+            _wait(lambda: page.locator("#editor .wo-page p").count() >= 1)
+
+            page.evaluate(
+                "(() => { const ed = document.getElementById('editor');"
+                " const ol = document.createElement('ol');"
+                " const li = document.createElement('li');"
+                " li.textContent = ('One enormous list item that runs far past a "
+                "single sheet, lorem ipsum dolor sit amet consectetur adipisci. ')"
+                "   .repeat(60);"
+                " ol.appendChild(li);"
+                " ed.appendChild(ol); ed.focus(); })()"
+            )
+            _wait(lambda: page.locator("#editor .wo-page").count() >= 3)
+
+            metrics = page.evaluate(
+                "(() => Array.from(document.querySelectorAll('#editor .wo-page'))"
+                " .map(pg => pg.scrollHeight - pg.clientHeight))()"
+            )
+            assert metrics and all(m <= 1 for m in metrics), f"overflow: {metrics}"
+
+            page.locator("#btn-save").click()
+            _wait(lambda: "enormous" in urllib.request.urlopen(
+                f"http://127.0.0.1:{servers['doc_port']}/api/documents/{doc_id}/html",
+                timeout=10).read().decode("utf-8", "replace"))
+            saved = json.loads(urllib.request.urlopen(
+                f"http://127.0.0.1:{servers['doc_port']}/api/documents/{doc_id}/html",
+                timeout=10,
+            ).read().decode("utf-8", "replace"))["html"]
+            assert saved.count("<ol") == 1, f"ol count: {saved.count('<ol')}"
+            assert saved.count("<li") == 1, f"li count: {saved.count('<li')}"
+            assert "wo-cont" not in saved and "wo-page" not in saved
+        finally:
+            ctx.close()
+            browser.close()
