@@ -2206,3 +2206,67 @@ def test_single_tall_list_item_splits_across_sheets(servers):
         finally:
             ctx.close()
             browser.close()
+
+
+def test_single_tall_table_row_splits_across_sheets(servers):
+    """A single TR taller than a sheet (the last block-granular ceiling)
+    splits mid-row like Word's 'allow row to break across pages': each cell
+    keeps the content above the break, the tail continues on the next sheet,
+    and the saved document still holds exactly ONE row."""
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            ctx = browser.new_context()
+            page = ctx.new_page()
+            made = json.loads(urllib.request.urlopen(
+                urllib.request.Request(
+                    f"http://127.0.0.1:{servers['doc_port']}/api/documents/new",
+                    data=b"",
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                ),
+                timeout=10,
+            ).read())
+            doc_id = made["doc_id"]
+            page.goto(f"http://127.0.0.1:{servers['doc_port']}/editor/{doc_id}")
+            page.locator("#editor").wait_for(state="visible", timeout=45000)
+            _wait(lambda: page.locator("#editor .wo-page p").count() >= 1)
+
+            page.evaluate(
+                "(() => { const ed = document.getElementById('editor');"
+                " const tbl = document.createElement('table');"
+                " const tb = document.createElement('tbody');"
+                " const tr = document.createElement('tr');"
+                " const td = document.createElement('td');"
+                " td.textContent = ('One enormous table cell that runs far past a "
+                "single sheet, lorem ipsum dolor sit amet consectetur adipisci elit "
+                "sed do eiusmod. ').repeat(120);"
+                " tr.appendChild(td); tb.appendChild(tr);"
+                " tbl.appendChild(tb); ed.appendChild(tbl); ed.focus(); })()"
+            )
+            _wait(lambda: page.locator("#editor .wo-page").count() >= 3)
+
+            metrics = page.evaluate(
+                "(() => Array.from(document.querySelectorAll('#editor .wo-page'))"
+                " .map(pg => pg.scrollHeight - pg.clientHeight))()"
+            )
+            assert metrics and all(m <= 1 for m in metrics), f"overflow: {metrics}"
+
+            page.locator("#btn-save").click()
+            _wait(lambda: "enormous" in urllib.request.urlopen(
+                f"http://127.0.0.1:{servers['doc_port']}/api/documents/{doc_id}/html",
+                timeout=10).read().decode("utf-8", "replace"))
+            saved = json.loads(urllib.request.urlopen(
+                f"http://127.0.0.1:{servers['doc_port']}/api/documents/{doc_id}/html",
+                timeout=10,
+            ).read().decode("utf-8", "replace"))["html"]
+            assert saved.count("<table") == 1, f"table count: {saved.count('<table')}"
+            assert saved.count("<tr") == 1, f"tr count: {saved.count('<tr')}"
+            assert saved.count("<td") == 1, f"td count: {saved.count('<td')}"
+            assert "wo-cont" not in saved and "wo-page" not in saved \
+                and "wo-row-cont" not in saved
+        finally:
+            ctx.close()
+            browser.close()
