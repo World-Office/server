@@ -3115,7 +3115,7 @@
     });
   }
 
-  function trySplitList(blk, avail) {
+  function trySplitList(blk, avail, zoom) {
     // Split OL/UL at an item boundary: items whose bottom fits in `avail`
     // stay; the tail moves to a continuation list. OL numbering continues
     // via the start attribute.
@@ -3141,7 +3141,7 @@
     return cont;
   }
 
-  function trySplitTable(blk, avail) {
+  function trySplitTable(blk, avail, zoom) {
     // Split TABLE at a row boundary: fitting tbody rows stay; the tail
     // moves to a continuation table that repeats the thead (Word keeps
     // column headers across the page break).
@@ -3179,8 +3179,8 @@
     // visual: callers merge the fragments back before serializing
     // (mergeSplits).
     const tag = blk.tagName;
-    if (tag === "OL" || tag === "UL") return trySplitList(blk, avail);
-    if (tag === "TABLE") return trySplitTable(blk, avail);
+    if (tag === "OL" || tag === "UL") return trySplitList(blk, avail, zoom);
+    if (tag === "TABLE") return trySplitTable(blk, avail, zoom);
     if (!/^(P|H[1-6]|BLOCKQUOTE)$/.test(tag)) return null;
     const cs = getComputedStyle(blk);
     const extras = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.borderTopWidth) || 0)
