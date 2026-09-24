@@ -1316,18 +1316,78 @@ impl OoxmlParser {
             Some(node) => self.parse_body_node(&node, &xml),
             None => DocxBody {
                 blocks: Vec::new(),
-                raw_sect_pr: None,
+                raw_sect_pr: None, header: None, footer: None,
             },
         };
+
+        // Page furniture: resolve the first headerReference/footerReference
+        // through word/_rels/document.xml.rels and parse those parts' blocks
+        // into the body's header/footer fields.
+        let mut body = body;
+        if let Ok(rels_xml) = self.read_zip_entry(archive, "word/_rels/document.xml.rels") {
+            if let Ok(rels) = self.parse_relationships(&rels_xml) {
+                for rel in &rels {
+                    let is_hf = rel.rel_type.ends_with("/header") || rel.rel_type.ends_with("/footer");
+                    if !is_hf {
+                        continue;
+                    }
+                    let target = rel.target.trim_start_matches('/');
+                    let part = if target.starts_with("word/") {
+                        target.to_string()
+                    } else {
+                        format!("word/{}", target)
+                    };
+                    let Ok(part_xml) = self.read_zip_entry(archive, &part) else {
+                        continue;
+                    };
+                    if let Ok(hf_doc) = XmlDoc::parse(&part_xml) {
+                        if let Some(hf_node) = hf_doc
+                            .descendants()
+                            .find(|n| n.has_tag_name("hdr") || n.has_tag_name("ftr"))
+                        {
+                            let blocks = self.parse_block_children(&hf_node, &part_xml);
+                            if !blocks.is_empty() {
+                                let hf = HeaderFooter { blocks, style_id: None };
+                                if rel.rel_type.ends_with("/header") && body.header.is_none() {
+                                    body.header = Some(hf);
+                                } else if rel.rel_type.ends_with("/footer") && body.footer.is_none() {
+                                    body.footer = Some(hf);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         Ok(Some(body))
     }
 
     fn parse_body_node(&self, body: &roxmltree::Node, xml: &str) -> DocxBody {
-        let mut blocks = Vec::new();
-        let mut raw_sect_pr = None;
+        // A body's w:sectPr is captured verbatim (page geometry survives a
+        // parse-serialize cycle); block children are shared with headers/footers.
+        let raw_sect_pr = body
+            .children()
+            .find(|c| {
+                c.is_element()
+                    && c.tag_name().name() == "sectPr"
+                    && c.tag_name().namespace() == Some(Self::W_NS)
+            })
+            .map(|c| xml[c.range()].to_string());
+        DocxBody {
+            blocks: self.parse_block_children(body, xml),
+            raw_sect_pr,
+            header: None,
+            footer: None,
+        }
+    }
 
-        for child in body.children() {
+    /// Parse the block-level children (w:p / w:tbl / w:sdt) of a body,
+    /// header, or footer element. Other children are ignored.
+    fn parse_block_children(&self, node: &roxmltree::Node, xml: &str) -> Vec<DocxBlock> {
+        let mut blocks = Vec::new();
+
+        for child in node.children() {
             if !child.is_element() {
                 continue;
             }
@@ -1343,13 +1403,6 @@ impl OoxmlParser {
                         blocks.push(DocxBlock::Table(table));
                     }
                 }
-                (Some(Self::W_NS), "sectPr") => {
-                    // Body-level section properties: capture the whole
-                    // <w:sectPr> subtree verbatim so page geometry and other
-                    // section features survive a parse-serialize cycle.
-                    let r = child.range();
-                    raw_sect_pr = Some(xml[r.start..r.end].to_string());
-                }
                 (Some(Self::W_NS), "sdt") => {
                     // Structured document tag — try to parse its content
                     for inner in child.descendants() {
@@ -1364,10 +1417,7 @@ impl OoxmlParser {
             }
         }
 
-        DocxBody {
-            blocks,
-            raw_sect_pr,
-        }
+        blocks
     }
 
     fn parse_paragraph(&self, p_node: &roxmltree::Node, xml: &str) -> DocxParagraph {

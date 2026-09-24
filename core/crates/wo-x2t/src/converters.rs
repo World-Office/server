@@ -49,8 +49,8 @@ use wo_odf::model::{
 use wo_odf::OdfSerializer;
 use wo_ooxml::model::{
     AdvanceMode, AnimationData as OoxmlAnimData, Bounds, ConnectorShape, ConnectorShapeType,
-    CoreProperties, DocxBlock, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun,
-    DocxTable, DocxTableCell, DocxTableRow, Fill, OoxmlDocument, OoxmlFormat, PictureShape,
+    CoreProperties, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, DocxTable,
+    DocxTableCell, DocxTableRow, Fill, HeaderFooter, OoxmlDocument, OoxmlFormat, PictureShape,
     PptxPresentation, Slide, SlideShape, SlideSize, SlideTransition, TextBody as OoxmlTextBody,
     TextBoxShape, TransitionEffect, UnderlineType,
 };
@@ -249,7 +249,7 @@ impl FormatConverter for DocxToHtmlConverter {
             .parse(data)
             .map_err(|e| ConversionError::Parse(e.to_string()))?;
 
-        let html_doc = HtmlDocument {
+        let mut html_doc = HtmlDocument {
             doc_type: Some("html".into()),
             html_attributes: Vec::new(),
             head: HtmlHead {
@@ -264,8 +264,70 @@ impl FormatConverter for DocxToHtmlConverter {
         };
 
         let html_string = HtmlSerializer::new().serialize(&html_doc);
+        let html_string = wrap_furniture(&doc, html_string);
         Ok(html_string.into_bytes())
     }
+}
+
+/// Page furniture: emit the editor dialect — `<header class="page-header">`
+/// as the first body element and `<footer class="page-footer">` as the last
+/// (matching the Python converter and editor.js flatHtml). The furniture
+/// blocks are converted through the same block pipeline as the body.
+fn wrap_furniture(doc: &OoxmlDocument, mut html: String) -> String {
+    let body = match &doc.docx_body {
+        Some(b) => b,
+        None => return html,
+    };
+    let hf_inner = |hf: &Option<HeaderFooter>| -> Option<String> {
+        let hf = hf.as_ref()?;
+        if hf.blocks.is_empty() {
+            return None;
+        }
+        let tmp = OoxmlDocument {
+            format: OoxmlFormat::Docx,
+            version: "1.0".to_string(),
+            content_types: vec![],
+            main_part: Some("word/document.xml".to_string()),
+            shared_strings: vec![],
+            part_count: 1,
+            core_properties: CoreProperties::default(),
+            relationships: vec![],
+            xlsx_workbook: None,
+            docx_body: Some(DocxBody {
+                blocks: hf.blocks.clone(),
+                raw_sect_pr: None,
+                header: None,
+                footer: None,
+            }),
+        };
+        let hd = HtmlDocument {
+            doc_type: Some("html".into()),
+            html_attributes: Vec::new(),
+            head: HtmlHead::default(),
+            body: HtmlBody {
+                elements: docx_body_to_html_blocks(&tmp),
+            },
+        };
+        let s = HtmlSerializer::new().serialize(&hd);
+        let start = s.find("<body>").map(|i| i + 6)?;
+        let end = s.rfind("</body>")?;
+        if end <= start {
+            return None;
+        }
+        Some(s[start..end].trim().to_string())
+    };
+
+    if let Some(h) = hf_inner(&body.header) {
+        if let Some(bp) = html.find("<body>") {
+            html.insert_str(bp + 6, &format!("<header class=\"page-header\">{}</header>\n", h));
+        }
+    }
+    if let Some(f) = hf_inner(&body.footer) {
+        if let Some(bp) = html.rfind("</body>") {
+            html.insert_str(bp, &format!("<footer class=\"page-footer\">{}</footer>\n", f));
+        }
+    }
+    html
 }
 
 /// Converts ODT → plain text.
@@ -2109,8 +2171,28 @@ fn txt_to_ooxml(txt_doc: &TxtDocument) -> OoxmlDocument {
 fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
     let mut paragraphs: Vec<DocxParagraph> = Vec::new();
     let mut tables: Vec<DocxTable> = Vec::new();
+    let mut header: Option<HeaderFooter> = None;
+    let mut footer: Option<HeaderFooter> = None;
 
-    for element in &html_doc.body.elements {
+    // Page furniture (editor dialect): a leading <header> (parsed as
+    // Div{class:"header"}) and/or trailing <footer> (Div{class:"footer"})
+    // become real header/footer parts instead of body flow.
+    let elements = &html_doc.body.elements;
+    let (start, end) = furniture_spans(elements);
+    if let Some(i) = start {
+        header = Some(elements_to_hf(&elements[i]));
+    }
+    if let Some(i) = end {
+        footer = Some(elements_to_hf(&elements[i]));
+    }
+    let flow: Vec<&BlockElement> = elements
+        .iter()
+        .enumerate()
+        .filter(|(i, _)| Some(*i) != start && Some(*i) != end)
+        .map(|(_, e)| e)
+        .collect();
+
+    for element in flow {
         match element {
             BlockElement::Heading { level, content, .. } => {
                 let text = extract_html_text(content);
@@ -2356,9 +2438,51 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
         core_properties: CoreProperties::default(),
         relationships: vec![],
         xlsx_workbook: None,
-        docx_body: Some(DocxBody::from_parts(paragraphs, tables)),
+docx_body: Some(DocxBody {
+            blocks: DocxBody::from_parts(paragraphs, tables).blocks,
+            raw_sect_pr: None,
+            header,
+            footer,
+        }),
     }
 }
+
+/// Indices of the leading `<header>` and trailing `<footer>` furniture
+/// elements (wo-html parses them as Div{class:"header"/"footer"}).
+fn furniture_spans(elements: &[BlockElement]) -> (Option<usize>, Option<usize>) {
+    let is_hf = |e: &BlockElement, want: &str| {
+        matches!(e, BlockElement::Div { class: Some(c), .. } if c == want)
+    };
+    let start = elements.first().filter(|e| is_hf(e, "header")).map(|_| 0);
+    let end = if elements.len() > start.map(|s| s + 1).unwrap_or(0) {
+        elements.last().filter(|e| is_hf(e, "footer")).map(|_| elements.len() - 1)
+    } else {
+        None
+    };
+    (start, end)
+}
+
+/// Convert a furniture element's children into HeaderFooter blocks by
+/// reusing the flow converter on a synthetic document holding just them.
+fn elements_to_hf(element: &BlockElement) -> HeaderFooter {
+    let inner: Vec<BlockElement> = match element {
+        BlockElement::Div { elements, .. } => elements.clone(),
+        _ => vec![element.clone()],
+    };
+    let tmp = HtmlDocument {
+        doc_type: Some("html".into()),
+        html_attributes: Vec::new(),
+        head: HtmlHead::default(),
+        body: HtmlBody { elements: inner },
+    };
+    let doc = html_to_ooxml(&tmp);
+    let body = doc.docx_body.unwrap_or_default();
+    HeaderFooter {
+        blocks: body.blocks,
+        style_id: None,
+    }
+}
+
 
 /// Convert HTML inline elements to DOCX runs.
 fn html_inlines_to_docx_runs(inlines: &[InlineElement]) -> Vec<DocxRun> {
@@ -7405,8 +7529,60 @@ mod tests {
     use wo_epub::is_epub_file;
     use wo_fb2::model::{Author, Stanza, TitleElement};
     use wo_html::model::ListItem;
-    use wo_ooxml::model::{DocxTableProperties, VerticalAlignment};
+    use wo_ooxml::model::{DocxBlock, DocxTableProperties, VerticalAlignment};
     use wo_rtf::model::{RtfTableCell, RtfTableRow};
+
+    // ── page furniture (headers/footers) ─────────────────────────────
+
+    #[test]
+    fn test_html_docx_header_footer_roundtrip() {
+        let html = b"<html><body><header class=\"page-header\"><p>Header text here</p></header><p>Body para</p><footer class=\"page-footer\"><p>Footer text here</p></footer></body></html>";
+        let docx = HtmlToDocxConverter.convert(html).expect("html->docx");
+
+        // the produced docx must carry real header/footer parts
+        let doc = OoxmlParser::new().parse(&docx).expect("re-parse docx");
+        let body = doc.docx_body.expect("body");
+        let hdr = body.header.expect("header part present");
+        let ftr = body.footer.expect("footer part present");
+        let hdr_text: String = hdr
+            .blocks
+            .iter()
+            .flat_map(|b| match b {
+                DocxBlock::Paragraph(p) => p.runs.iter().map(|r| r.text.clone()).collect(),
+                _ => vec![],
+            })
+            .collect();
+        let ftr_text: String = ftr
+            .blocks
+            .iter()
+            .flat_map(|b| match b {
+                DocxBlock::Paragraph(p) => p.runs.iter().map(|r| r.text.clone()).collect(),
+                _ => vec![],
+            })
+            .collect();
+        assert!(hdr_text.contains("Header text here"), "hdr: {}", hdr_text);
+        assert!(ftr_text.contains("Footer text here"), "ftr: {}", ftr_text);
+
+        // furniture must NOT leak into the body flow
+        let body_text: String = body
+            .blocks
+            .iter()
+            .flat_map(|b| match b {
+                DocxBlock::Paragraph(p) => p.runs.iter().map(|r| r.text.clone()).collect(),
+                _ => vec![],
+            })
+            .collect();
+        assert!(body_text.contains("Body para"));
+        assert!(!body_text.contains("Header text here"));
+        assert!(!body_text.contains("Footer text here"));
+
+        // docx -> html re-emits the editor dialect wrappers
+        let html2 = String::from_utf8(DocxToHtmlConverter.convert(&docx).expect("docx->html")).unwrap();
+        assert!(html2.contains("<header class=\"page-header\">"), "no header wrapper: {}", html2);
+        assert!(html2.contains("Header text here"));
+        assert!(html2.contains("<footer class=\"page-footer\">"), "no footer wrapper");
+        assert!(html2.contains("Footer text here"));
+    }
 
     // ── RtfToTxt ─────────────────────────────────────────────────────
 

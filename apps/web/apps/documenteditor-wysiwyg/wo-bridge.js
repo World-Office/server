@@ -133,8 +133,20 @@
 
         if (ep === "export") {
           const fmt = new URL(url, location.origin).searchParams.get("format") || "docx";
-          if (!lastDocx.length) return jres({ error: "nothing to export yet" }, 400);
-          const outB64 = await convert(b64encode(lastDocx), "docx", fmt);
+          // Export the CURRENT content: serialize the live editor (same path
+          // as save) instead of stale lastDocx bytes, so unsaved edits export.
+          let src = lastDocx;
+          try {
+            const ed = document.getElementById("editor");
+            const frag = window.__WO_FLAT_HTML__ ? window.__WO_FLAT_HTML__() : (ed ? ed.innerHTML : "");
+            if (frag && frag.trim()) {
+              const full = /^<(!doctype|html[\s>])/i.test(frag.trim())
+                ? frag : "<html><body>" + frag + "</body></html>";
+              src = b64decode(await convert(b64encode(new TextEncoder().encode(full)), "html", "docx"));
+            }
+          } catch (e) { /* fall back to lastDocx */ }
+          if (!src.length) return jres({ error: "nothing to export yet" }, 400);
+          const outB64 = await convert(b64encode(src), "docx", fmt);
           return new Response(b64decode(outB64), {
             headers: {
               "Content-Type": "application/octet-stream",

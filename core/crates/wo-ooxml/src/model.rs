@@ -479,12 +479,22 @@ pub struct DocxBody {
     /// (page size, margins, columns) survive a parse-serialize cycle.
     #[serde(default)]
     pub raw_sect_pr: Option<String>,
+    /// Default page header content (from word/headerN.xml via the first
+    /// headerReference). Serialized back as word/header1.xml with a fresh
+    /// relationship and sectPr reference.
+    #[serde(default)]
+    pub header: Option<HeaderFooter>,
+    /// Default page footer content (from word/footerN.xml).
+    #[serde(default)]
+    pub footer: Option<HeaderFooter>,
 }
 
 impl DocxBody {
     /// Create a new empty DocxBody
     pub fn new() -> Self {
         Self {
+            header: None,
+            footer: None,
             blocks: Vec::new(),
             raw_sect_pr: None,
         }
@@ -499,6 +509,8 @@ impl DocxBody {
         Self {
             blocks,
             raw_sect_pr: None,
+            header: None,
+            footer: None,
         }
     }
 
