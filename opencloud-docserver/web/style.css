@@ -1400,6 +1400,24 @@ hr.section-break {
   color: #555;
   font-size: 13px;
 }
+.wo-page > header.page-header,
+.wo-page > footer.page-footer {
+  /* Word page furniture: header/footer render inside the sheet margins.
+     Absolutely positioned so the content-flow math (offsetTop of blocks)
+     never sees them. */
+  position: absolute;
+  left: var(--wo-pad-x, 96px);
+  right: var(--wo-pad-x, 96px);
+  margin: 0;
+  box-sizing: border-box;
+}
+.wo-page > header.page-header { top: 28px; }
+.wo-page > footer.page-footer { bottom: 28px; }
+.wo-page > .wo-hf-clone {
+  /* display-only repeats: never focusable or editable */
+  pointer-events: none;
+  user-select: none;
+}
 .footnote, .endnote {
   font-size: 0.85em;
   color: #444;

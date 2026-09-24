@@ -1597,3 +1597,18 @@ def test_linear_to_omml_handles_sup_sub_fraction_sqrt():
     # whitespace-insensitive fraction/sqrt (regression: ' / ' upstream text)
     omml2 = _linear_to_omml("m / s + sqrt( 2 )")
     assert "m:f" in omml2 and "m:rad" in omml2 and "m:deg" in omml2
+
+
+def test_bare_text_header_footer_survives_docx_roundtrip():
+    """Typing into the header/footer div leaves bare text (no <p> wrapper);
+    the docx conversion must still emit the text, not an empty part."""
+    from src.editor.converter import html_to_docx, docx_to_html
+
+    docx = html_to_docx(
+        '<header class="page-header">Chapter One</header>'
+        "<p>Body</p>"
+        '<footer class="page-footer">Page footer note</footer>'
+    )
+    html = docx_to_html(docx)
+    assert "Chapter One" in html
+    assert "Page footer note" in html

@@ -1708,6 +1708,10 @@ def _add_header(doc, content_html: str) -> None:
     header = section.header
     header_para = header.paragraphs[0]
 
+    # bare text (typing into the header div leaves no <p> wrapper) still
+    # needs a run — wrap it so the paragraph loop below emits it
+    if "<p" not in content_html.lower():
+        content_html = f"<p>{content_html}</p>"
     # Parse the header content and add runs
     # Each <p> becomes a paragraph in the header
     for p_match in re.finditer(r'<p([^>]*)>(.*?)</p>', content_html, re.S | re.I):
@@ -1743,6 +1747,9 @@ def _add_footer(doc, content_html: str) -> None:
     footer = section.footer
     footer_para = footer.paragraphs[0]
 
+    # bare text (typing into the footer div) still needs a run — wrap it
+    if "<p" not in content_html.lower():
+        content_html = f"<p>{content_html}</p>"
     # Parse the footer content and add runs
     for p_match in re.finditer(r'<p([^>]*)>(.*?)</p>', content_html, re.S | re.I):
         p_inner = p_match.group(2)
