@@ -3121,10 +3121,13 @@
     // via the start attribute.
     const items = Array.from(blk.children).filter((el) => el.tagName === "LI");
     if (items.length < 2) return null;
-    const limit = blk.offsetTop + avail;
+    // rect-relative measurement: li/offsetTop frames vary (offsetParent is
+    // the page, the list, or the table depending on styling), rects don't
+    const baseTop = blk.getBoundingClientRect().top;
+    const limit = avail;
     let fit = 0;
     for (const it of items) {
-      if (it.offsetTop + it.offsetHeight <= limit + 0.5) fit++;
+      if ((it.getBoundingClientRect().bottom - baseTop) / zoom <= limit + 0.5) fit++;
       else break;
     }
     if (fit < 1 || items.length - fit < 1) return null;
@@ -3146,10 +3149,13 @@
     Array.from(blk.tBodies).forEach((tb) =>
       Array.from(tb.children).forEach((tr) => rows.push(tr)));
     if (rows.length < 2) return null;
-    const limit = blk.offsetTop + avail;
+    // tr.offsetTop is TABLE-relative while the sheet math is page-relative —
+    // measure bottoms against the table's own top instead (frame-safe)
+    const baseTop = blk.getBoundingClientRect().top;
+    const limit = avail;
     let fit = 0;
     for (const tr of rows) {
-      if (tr.offsetTop + tr.offsetHeight <= limit + 0.5) fit++;
+      if ((tr.getBoundingClientRect().bottom - baseTop) / zoom <= limit + 0.5) fit++;
       else break;
     }
     if (fit < 1 || rows.length - fit < 1) return null;
