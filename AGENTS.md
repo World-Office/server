@@ -1,6 +1,6 @@
 # World-Office WORKSPACE
 
-> ⚠️ **DEPRECATED — reference only.** This document describes the old Rust + TypeScript stack, which is superseded by the minimal Stoic Unix rewrite at **`server/opencloud-docserver/`** (Python + FastAPI + WOPI). Do not start new work on the crates/apps/services described here. The build that matters is `opencloud-docserver`.
+> ⚠️ **CANONICAL 2026-09-24 (updated: WYSIWYG live).** This Rust + TypeScript stack is the **active build** again: the Rust docserver container (`docserver-1`, port `:8082`) is the production editor backend behind `editor.cloud.graphwiz.ai` (traefik route committed as `d363467` in `/opt/git/docker-traefik`). **The Python WYSIWYG word editor was ported 2026-09-24** (commit `2a98734f9`): vendored unchanged at `apps/web/apps/documenteditor-wysiwyg/` (editor.js byte-identical) + `wo-bridge.js` WOPI adapter; deployed live over `{EDITOR_UI_DIR}/word/` (React/Monaco build backed up at `/home/weiss/editor-ui-ebae8fc3/word-react-backup-20260924`). The Python rewrite at `server/opencloud-docserver/` is **DEPRECATED — reference only** (container stopped 2026-09-24; its last state, including line-granular pagination and header/footer page furniture, is preserved at commit `cf98bf78e`).
 
 **Updated:** 2026-07-21
 **Source:** codeberg.org/World-Office/server (independent project)
