@@ -3106,6 +3106,20 @@
             while (tb.firstChild) tgt.appendChild(tb.firstChild);
           });
         } else {
+          // a leading .wo-li-cont is the tail of an item split mid-text —
+          // fold its children into the previous list's last LI so the
+          // canonical flow keeps ONE item
+          if (c.firstElementChild && c.firstElementChild.classList.contains("wo-li-cont")) {
+            const lc = c.firstElementChild;
+            const lastLi = prev.lastElementChild && prev.lastElementChild.tagName === "LI"
+              ? prev.lastElementChild : null;
+            if (lastLi) {
+              while (lc.firstChild) lastLi.appendChild(lc.firstChild);
+              lc.remove();
+            } else {
+              lc.classList.remove("wo-li-cont"); // orphaned: keep as its own item
+            }
+          }
           while (c.firstChild) prev.appendChild(c.firstChild);
         }
         c.remove();
@@ -3118,9 +3132,12 @@
   function trySplitList(blk, avail, zoom) {
     // Split OL/UL at an item boundary: items whose bottom fits in `avail`
     // stay; the tail moves to a continuation list. OL numbering continues
-    // via the start attribute.
+    // via the start attribute. A single item taller than the remaining
+    // space falls back to a mid-item line split (Word splits the item's
+    // paragraph across the page break; the tail LI carries wo-li-cont so
+    // mergeSplits folds it back into its head LI).
     const items = Array.from(blk.children).filter((el) => el.tagName === "LI");
-    if (items.length < 2) return null;
+    if (!items.length) return null;
     // rect-relative measurement: li/offsetTop frames vary (offsetParent is
     // the page, the list, or the table depending on styling), rects don't
     const baseTop = blk.getBoundingClientRect().top;
@@ -3130,14 +3147,33 @@
       if ((it.getBoundingClientRect().bottom - baseTop) / zoom <= limit + 0.5) fit++;
       else break;
     }
-    if (fit < 1 || items.length - fit < 1) return null;
+    const firstOverflow = items[fit];
+    if (fit >= 1 && items.length - fit >= 1) {
+      const cont = blk.cloneNode(false);
+      cont.classList.add("wo-cont");
+      if (blk.tagName === "OL") {
+        cont.setAttribute("start",
+          (parseInt(blk.getAttribute("start"), 10) || 1) + fit);
+      }
+      for (let i = fit; i < items.length; i++) cont.appendChild(items[i]);
+      return cont;
+    }
+    // line-granular fallback: the next overflowing item is itself taller
+    // than what remains of the sheet — split that LI like a paragraph
+    if (!firstOverflow) return null;
+    const itemTop = (firstOverflow.getBoundingClientRect().top - baseTop) / zoom;
+    const liCont = trySplitLines(firstOverflow, avail - itemTop, zoom);
+    if (!liCont) return null;
+    liCont.classList.add("wo-li-cont");
     const cont = blk.cloneNode(false);
     cont.classList.add("wo-cont");
     if (blk.tagName === "OL") {
+      // the tail LI continues the SAME item: number it like its head
       cont.setAttribute("start",
         (parseInt(blk.getAttribute("start"), 10) || 1) + fit);
     }
-    for (let i = fit; i < items.length; i++) cont.appendChild(items[i]);
+    cont.appendChild(liCont);
+    for (let i = fit + 1; i < items.length; i++) cont.appendChild(items[i]);
     return cont;
   }
 
@@ -3182,6 +3218,13 @@
     if (tag === "OL" || tag === "UL") return trySplitList(blk, avail, zoom);
     if (tag === "TABLE") return trySplitTable(blk, avail, zoom);
     if (!/^(P|H[1-6]|BLOCKQUOTE)$/.test(tag)) return null;
+    return trySplitLines(blk, avail, zoom);
+  }
+
+  function trySplitLines(blk, avail, zoom) {
+    // Split blk at its last child line that fits in `avail` px (widow/
+    // orphan control keeps at least 2 lines per side). Mutates blk: the
+    // tail moves into the returned continuation element.
     const cs = getComputedStyle(blk);
     const extras = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.borderTopWidth) || 0)
       + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
