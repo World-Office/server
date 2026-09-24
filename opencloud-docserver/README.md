@@ -1,5 +1,7 @@
 # opencloud-docserver
 
+> ⚠️ **DEPRECATED 2026-09-24 — reference only.** Prod editor traffic (`editor.cloud.graphwiz.ai`) is served by the **Rust docserver on `:8082`** again; this Python rewrite is no longer deployed (container stopped). Code, tests, and history are kept as reference. Final state includes: line-granular pagination everywhere (paragraphs, list items, table rows/cells), Word header/footer page furniture, bare-text converter fix, WOPI client mode — through commit `cf98bf78e`. Do not start new work here; new editor work goes to `server/services/` (Rust).
+
 Stoic Linux document server for [OpenCloud](https://opencloud.eu) (OCIS),
 integrated via the [WOPI](https://learn.microsoft.com/en-us/microsoft-365/cloud-storage-partner-program/rest/) protocol.
 
