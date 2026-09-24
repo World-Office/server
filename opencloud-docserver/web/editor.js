@@ -3245,13 +3245,25 @@
 
   function paginateView() {
     if (!editor || !document.body.contains(editor)) return;
-    // unwrap a previous page layer back to the flat flow, folding split
-    // continuations (.wo-cont) back into their paragraph first
+    // unwrap a previous page layer back to the flat flow: drop display-only
+    // header/footer clones, fold split continuations (.wo-cont) back, and
+    // restore header/footer to their canonical authoring positions
+    editor.querySelectorAll(".wo-hf-clone").forEach((el) => el.remove());
     editor.querySelectorAll(":scope > .wo-page").forEach((pg) => {
       while (pg.firstChild) editor.insertBefore(pg.firstChild, pg);
       pg.remove();
     });
     mergeSplits(editor);
+    const hdrSrc = editor.querySelector(":scope > header.page-header");
+    const ftrSrc = editor.querySelector(":scope > footer.page-footer");
+    if (hdrSrc) {
+      const firstBlock = Array.from(editor.children).find((el) =>
+        el.tagName !== "STYLE" && !el.matches(
+          "div.page-setup, div.hyphenation, div.line-numbers," +
+          " header.page-header, footer.page-footer"));
+      if (firstBlock) editor.insertBefore(hdrSrc, firstBlock);
+    }
+    if (ftrSrc) editor.appendChild(ftrSrc);
     const keep = new Set();
     editor.querySelectorAll(
       ":scope > div.page-setup, :scope > div.hyphenation, :scope > div.line-numbers, " +
@@ -3326,6 +3338,32 @@
         pages[i + 1].insertBefore(hd, pages[i + 1].firstChild);
       }
     }
+    // Word page furniture: the header repeats on EVERY sheet, so does the
+    // footer. The authoring originals live in the first/last sheet's margin
+    // (single editing point); the other sheets get display-only clones that
+    // unwrap/serialization strip (.wo-hf-clone).
+    if (hdrSrc || ftrSrc) {
+      pages.forEach((pg, i) => {
+        if (hdrSrc) {
+          if (i === 0) pg.insertBefore(hdrSrc, pg.firstChild);
+          else {
+            const hc = hdrSrc.cloneNode(true);
+            hc.classList.add("wo-hf-clone");
+            hc.setAttribute("aria-hidden", "true");
+            pg.insertBefore(hc, pg.firstChild);
+          }
+        }
+        if (ftrSrc) {
+          if (i === pages.length - 1) pg.appendChild(ftrSrc);
+          else {
+            const fc = ftrSrc.cloneNode(true);
+            fc.classList.add("wo-hf-clone");
+            fc.setAttribute("aria-hidden", "true");
+            pg.appendChild(fc);
+          }
+        }
+      });
+    }
   }
 
   function flatHtml() {
@@ -3333,6 +3371,7 @@
     // converters, undo/redo and the save payload never see the display-only
     // page layer.
     const tmp = editor.cloneNode(true);
+    tmp.querySelectorAll(".wo-hf-clone").forEach((el) => el.remove());
     tmp.querySelectorAll(".wo-page").forEach((pg) => {
       while (pg.firstChild) pg.parentNode.insertBefore(pg.firstChild, pg);
       pg.remove();

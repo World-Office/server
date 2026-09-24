@@ -2064,3 +2064,85 @@ def test_table_splits_across_pages_and_serializes_whole(servers):
         finally:
             ctx.close()
             browser.close()
+
+
+def test_header_footer_repeat_on_every_sheet_and_serialize_once(servers):
+    """Word behaviour: page header/footer repeat on EVERY sheet of the
+    paginated view (authoring original in the first/last sheet margin,
+    display-only clones elsewhere). Serialization keeps exactly one of
+    each at body start/end — clones never leak into the saved document."""
+    from playwright.sync_api import sync_playwright
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+        try:
+            ctx = browser.new_context()
+            page = ctx.new_page()
+            made = json.loads(urllib.request.urlopen(
+                urllib.request.Request(
+                    f"http://127.0.0.1:{servers['doc_port']}/api/documents/new",
+                    data=b"",
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                ),
+                timeout=10,
+            ).read())
+            doc_id = made["doc_id"]
+            page.goto(f"http://127.0.0.1:{servers['doc_port']}/editor/{doc_id}")
+            page.locator("#editor").wait_for(state="visible", timeout=45000)
+            _wait(lambda: page.locator("#editor .wo-page p").count() >= 1)
+
+            page.evaluate(
+                "(() => { const ed = document.getElementById('editor');"
+                " const h = document.createElement('header');"
+                " h.className = 'page-header'; h.textContent = 'Chapter One';"
+                " ed.insertBefore(h, ed.firstChild);"
+                " const f = document.createElement('footer');"
+                " f.className = 'page-footer'; f.textContent = 'Page footer note';"
+                " ed.appendChild(f);"
+                " const line = 'Body flow text for header repeat probing, "
+                "sed do eiusmod tempor incididunt ut labore et dolore magna. ';"
+                " for (let i = 0; i < 12; i++) {"
+                "   const p = document.createElement('p');"
+                "   p.textContent = line.repeat(12); ed.appendChild(p); }"
+                " ed.focus(); })()"
+            )
+            _wait(lambda: page.locator("#editor .wo-page").count() >= 3)
+
+            state = page.evaluate(
+                "(() => { const pgs ="
+                " document.querySelectorAll('#editor .wo-page');"
+                " return {"
+                "  sheets: pgs.length,"
+                "  headers: Array.from(pgs).filter(pg =>"
+                "    pg.querySelector(':scope > header.page-header')).length,"
+                "  footers: Array.from(pgs).filter(pg =>"
+                "    pg.querySelector(':scope > footer.page-footer')).length,"
+                "  headerOnAll: Array.from(pgs).every(pg =>"
+                "    (pg.innerText || '').includes('Chapter One')),"
+                "  footerOnAll: Array.from(pgs).every(pg =>"
+                "    (pg.innerText || '').includes('Page footer note')),"
+                "  overflow: Array.from(pgs).map(pg =>"
+                "    pg.scrollHeight - pg.clientHeight).filter(x => x > 1)"
+                " }; })()"
+            )
+            assert state["sheets"] >= 3, state
+            assert state["headers"] == state["sheets"], state
+            assert state["footers"] == state["sheets"], state
+            assert state["headerOnAll"] and state["footerOnAll"], state
+            assert not state["overflow"], state
+
+            page.locator("#btn-save").click()
+            _wait(lambda: "Chapter One" in urllib.request.urlopen(
+                f"http://127.0.0.1:{servers['doc_port']}/api/documents/{doc_id}/html",
+                timeout=10).read().decode("utf-8", "replace"))
+            saved = json.loads(urllib.request.urlopen(
+                f"http://127.0.0.1:{servers['doc_port']}/api/documents/{doc_id}/html",
+                timeout=10,
+            ).read().decode("utf-8", "replace"))["html"]
+            assert saved.count("page-header") == 1, "header serialized once"
+            assert saved.count("page-footer") == 1, "footer serialized once"
+            assert "wo-hf-clone" not in saved and "wo-page" not in saved
+        finally:
+            ctx.close()
+            browser.close()
