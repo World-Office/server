@@ -3090,13 +3090,24 @@
   // sheets for display, honours explicit .page-break markers and heading
   // keep-with-next. Idempotent: it first unwraps any existing page layer.
   function mergeSplits(root) {
-    // fold visual split continuations (.wo-cont) back into the paragraph
-    // they came from — pagination start and every serialization funnel
-    // call this so the canonical flow never sees view-layer fragments.
+    // fold visual split continuations (.wo-cont) back into the element they
+    // came from — pagination start and every serialization funnel call this
+    // so the canonical flow never sees view-layer fragments. Tables merge
+    // their rows into the previous table's last tbody (the continuation's
+    // cloned thead/colgroup are display-only and get dropped with it).
     root.querySelectorAll(".wo-cont").forEach((c) => {
       const prev = c.previousElementSibling;
       if (prev && prev.tagName === c.tagName) {
-        while (c.firstChild) prev.appendChild(c.firstChild);
+        if (c.tagName === "TABLE" && prev.tBodies) {
+          const tgt = prev.tBodies.length
+            ? prev.tBodies[prev.tBodies.length - 1]
+            : prev.appendChild(document.createElement("tbody"));
+          Array.from(c.tBodies).forEach((tb) => {
+            while (tb.firstChild) tgt.appendChild(tb.firstChild);
+          });
+        } else {
+          while (c.firstChild) prev.appendChild(c.firstChild);
+        }
         c.remove();
       } else {
         c.classList.remove("wo-cont"); // orphaned fragment: keep its content
@@ -3104,13 +3115,67 @@
     });
   }
 
+  function trySplitList(blk, avail) {
+    // Split OL/UL at an item boundary: items whose bottom fits in `avail`
+    // stay; the tail moves to a continuation list. OL numbering continues
+    // via the start attribute.
+    const items = Array.from(blk.children).filter((el) => el.tagName === "LI");
+    if (items.length < 2) return null;
+    const limit = blk.offsetTop + avail;
+    let fit = 0;
+    for (const it of items) {
+      if (it.offsetTop + it.offsetHeight <= limit + 0.5) fit++;
+      else break;
+    }
+    if (fit < 1 || items.length - fit < 1) return null;
+    const cont = blk.cloneNode(false);
+    cont.classList.add("wo-cont");
+    if (blk.tagName === "OL") {
+      cont.setAttribute("start",
+        (parseInt(blk.getAttribute("start"), 10) || 1) + fit);
+    }
+    for (let i = fit; i < items.length; i++) cont.appendChild(items[i]);
+    return cont;
+  }
+
+  function trySplitTable(blk, avail) {
+    // Split TABLE at a row boundary: fitting tbody rows stay; the tail
+    // moves to a continuation table that repeats the thead (Word keeps
+    // column headers across the page break).
+    const rows = [];
+    Array.from(blk.tBodies).forEach((tb) =>
+      Array.from(tb.children).forEach((tr) => rows.push(tr)));
+    if (rows.length < 2) return null;
+    const limit = blk.offsetTop + avail;
+    let fit = 0;
+    for (const tr of rows) {
+      if (tr.offsetTop + tr.offsetHeight <= limit + 0.5) fit++;
+      else break;
+    }
+    if (fit < 1 || rows.length - fit < 1) return null;
+    const cont = blk.cloneNode(false);
+    cont.classList.add("wo-cont");
+    const colg = blk.querySelector("colgroup");
+    if (colg) cont.appendChild(colg.cloneNode(true));
+    if (blk.tHead) cont.appendChild(blk.tHead.cloneNode(true));
+    const tb = document.createElement("tbody");
+    for (let i = fit; i < rows.length; i++) tb.appendChild(rows[i]);
+    cont.appendChild(tb);
+    return cont;
+  }
+
   function trySplitBlock(blk, avail, zoom) {
-    // Split blk at its last line that fits in `avail` px of sheet space;
-    // returns the continuation element holding the tail, or null when the
-    // block is too short to split honestly (widow/orphan control: keep at
-    // least 2 lines on each side). Purely visual: callers merge the
-    // fragments back before serializing (mergeSplits).
-    if (!/^(P|H[1-6]|BLOCKQUOTE)$/.test(blk.tagName)) return null;
+    // Split blk at its last child line that fits in `avail` px of sheet
+    // space; returns the continuation element holding the tail, or null
+    // when the block is too short to split honestly. Lists split at item
+    // and tables at row boundaries; paragraphs at line boundaries with
+    // widow/orphan control (keep at least 2 lines on each side). Purely
+    // visual: callers merge the fragments back before serializing
+    // (mergeSplits).
+    const tag = blk.tagName;
+    if (tag === "OL" || tag === "UL") return trySplitList(blk, avail);
+    if (tag === "TABLE") return trySplitTable(blk, avail);
+    if (!/^(P|H[1-6]|BLOCKQUOTE)$/.test(tag)) return null;
     const cs = getComputedStyle(blk);
     const extras = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.borderTopWidth) || 0)
       + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
