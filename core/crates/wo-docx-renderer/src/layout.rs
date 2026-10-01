@@ -1032,6 +1032,7 @@ impl LayoutEngine {
                 bold: false,
                 italic: false,
                 color: "000000".to_string(),
+                word_spacing: 0.0,
             });
         }
 
@@ -1040,6 +1041,25 @@ impl LayoutEngine {
         for line in &mut lines {
             line.y = y;
             y += line.height;
+        }
+
+        // Justified: distribute the leftover width across inter-word gaps on every
+        // line except the last (typographic rule: the final line of a justified
+        // paragraph stays left-aligned). Each line already carries its natural
+        // text `width`; add `extra / gaps` pt to every space so the right edge
+        // reaches the paragraph box, matching OO/LO justification. The PDF painter
+        // applies this via the `Tw` word-spacing operator.
+        if alignment == TextAlignment::Both && lines.len() > 1 {
+            let last = lines.len() - 1;
+            for line in &mut lines[..last] {
+                let extra = available_width - line.width;
+                if extra > 0.0 {
+                    let gaps = line.text.matches(' ').count();
+                    if gaps > 0 {
+                        line.word_spacing = extra / gaps as f32;
+                    }
+                }
+            }
         }
 
         lines
@@ -1070,7 +1090,7 @@ impl LayoutEngine {
             TextAlignment::Left => x_start,
             TextAlignment::Center => x_start + (available_width - line_width) / 2.0,
             TextAlignment::Right => x_start + available_width - line_width,
-            TextAlignment::Both => x_start, // Justified: we'd need word spacing; for now left-align
+            TextAlignment::Both => x_start, // Justified: x stays at start; per-gap word spacing is applied in the paragraph post-pass (see wrap_paragraph_into_lines)
         };
 
         lines.push(LayoutLine {
@@ -1083,6 +1103,9 @@ impl LayoutEngine {
             bold: first.bold,
             italic: first.italic,
             color: first.color.clone(),
+            // Justification is applied in a post-pass over the whole paragraph
+            // (per-gap word spacing on every line but the last).
+            word_spacing: 0.0,
         });
 
         line_runs.clear();
@@ -1314,6 +1337,11 @@ pub struct LayoutLine {
     pub bold: bool,
     pub italic: bool,
     pub color: String,
+    /// Extra spacing (pt) to add after every inter-word space, used by the PDF
+    /// `Tw` word-spacing operator to justify a line to the paragraph box width.
+    /// Non-zero only for `TextAlignment::Both` lines that are NOT the last line
+    /// of their paragraph. A justified-but-final line carries 0.0 (stays ragged).
+    pub word_spacing: f32,
 }
 
 /// A laid-out table.
@@ -1756,6 +1784,61 @@ mod tests {
         } else {
             panic!("Expected Paragraph element");
         }
+    }
+
+    #[test]
+    fn test_layout_justified_both() {
+        // A `Both`-aligned paragraph must justify every line except the last:
+        // the post-pass sets `word_spacing` > 0 on non-final lines (so the PDF
+        // `Tw` operator stretches them to the box width) and leaves the final
+        // line at 0.0 (it stays ragged, per typographic convention).
+        let engine = LayoutEngine::new(&default_config());
+        let long_text = "AAAAAAAAAA BBBBBBBBBB CCCCCCCCCC DDDDDDDDDD ".repeat(8);
+        let mut body = DocxBody::new();
+        body.push_paragraph(DocxParagraph {
+            style_id: None,
+            properties: DocxParagraphProperties {
+                alignment: Some(TextAlignment::Both),
+                ..Default::default()
+            },
+            runs: vec![DocxRun {
+                text: long_text,
+                bold: false,
+                italic: false,
+                underline: None,
+                strikethrough: false,
+                double_strikethrough: false,
+                font: None,
+                font_size: Some(24),
+                font_size_cs: None,
+                color: None,
+                highlight: None,
+                vertical_alignment: None,
+                small_caps: false,
+                all_caps: false,
+            ..Default::default()}],
+            section_properties: None,
+        ..Default::default()});
+
+        let pages = engine.layout(&body);
+        assert_eq!(pages.len(), 1);
+        let LayoutElement::Paragraph { lines, .. } = &pages[0].elements[0] else {
+            panic!("Expected Paragraph element");
+        };
+        assert!(lines.len() > 1, "long justified paragraph should wrap");
+        for line in &lines[..lines.len() - 1] {
+            assert!(
+                line.word_spacing > 0.0,
+                "non-final justified line should carry word_spacing"
+            );
+            // The stretched line must not exceed the box (extra is split across
+            // gaps, so spacing is bounded by the gap count).
+            assert!(line.word_spacing < 50.0, "sane per-gap spacing");
+        }
+        assert_eq!(
+            lines[lines.len() - 1].word_spacing, 0.0,
+            "final line of a justified paragraph stays ragged"
+        );
     }
 
     #[test]
