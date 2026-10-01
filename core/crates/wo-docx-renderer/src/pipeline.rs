@@ -252,6 +252,9 @@ fn generate_pdf(pages: &[LayoutPage], page_width: f32, page_height: f32) -> Vec<
         for line in &text_lines {
             content.begin_text();
             content.set_font(font_name, line.font_size);
+            // Justified lines carry per-gap word spacing (PDF `Tw`); non-justified
+            // lines are 0.0, so this is a no-op for them.
+            content.set_word_spacing(line.word_spacing);
             // PDF coordinates: origin at bottom-left, y increases upward.
             // Layout y is from top, so flip: pdf_y = page_height - layout_y
             let pdf_y = page_height - line.y;
@@ -284,6 +287,8 @@ struct PdfTextLine {
     x: f32,
     y: f32,
     font_size: f32,
+    /// Per-gap word spacing (pt) for justified lines; 0.0 otherwise.
+    word_spacing: f32,
 }
 
 /// Extract all text lines from a layout page.
@@ -302,6 +307,7 @@ fn extract_text_lines(page: &LayoutPage) -> Vec<PdfTextLine> {
                             x: line.x,
                             y: line.y,
                             font_size: line.font_size,
+                            word_spacing: line.word_spacing,
                         });
                     }
                 }
@@ -320,6 +326,7 @@ fn extract_text_lines(page: &LayoutPage) -> Vec<PdfTextLine> {
                                 x: cell.x + 4.0,
                                 y: text_y,
                                 font_size,
+                                word_spacing: 0.0,
                             });
                             text_y += font_size * 1.2;
                         }
