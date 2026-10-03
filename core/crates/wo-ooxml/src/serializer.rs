@@ -73,6 +73,14 @@ impl OoxmlSerializer {
             }
         }
 
+        // 4c. word/footnotes.xml (verbatim part so footnotes survive)
+        if let Some(ref body) = doc.docx_body {
+            if let Some(ref raw) = body.footnotes_raw {
+                zip.start_file("word/footnotes.xml", options)?;
+                zip.write_all(raw.as_bytes())?;
+            }
+        }
+
         // 5. word/styles.xml
         let styles = self.build_styles_xml();
         zip.start_file("word/styles.xml", options)?;
@@ -990,6 +998,9 @@ impl OoxmlSerializer {
             if body.footer.is_some() {
                 extra.push_str("\n  <Override PartName=\"/word/footer1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml\"/>");
             }
+            if body.footnotes_raw.is_some() {
+                extra.push_str("\n  <Override PartName=\"/word/footnotes.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml\"/>");
+            }
         }
         format!(
             r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -1022,6 +1033,11 @@ impl OoxmlSerializer {
             if body.footer.is_some() {
                 extra.push_str(
                     "\n  <Relationship Id=\"rIdFtr\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer\" Target=\"footer1.xml\"/>",
+                );
+            }
+            if body.footnotes_raw.is_some() {
+                extra.push_str(
+                    "\n  <Relationship Id=\"rIdFtn\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes\" Target=\"footnotes.xml\"/>",
                 );
             }
         }
@@ -1278,6 +1294,12 @@ impl OoxmlSerializer {
             }
         }
 
+        // Verbatim <w:fldSimple> subtrees (captured at parse time) so PAGE /
+        // NUMPAGES fields survive a round trip.
+        for fld in &para.raw_flds {
+            xml.push_str(fld);
+        }
+
         xml.push_str("</w:p>\n");
         xml
     }
@@ -1375,6 +1397,13 @@ impl OoxmlSerializer {
             // Verbatim <w:drawing> subtree (captured at parse time) — inline
             // graphics the typed model cannot represent survive a round trip.
             xml.push_str(drawing);
+        }
+
+        if let Some(rid) = &run.footnote_rid {
+            xml.push_str(&format!(
+                "<w:footnoteReference w:id=\"{}\"/>",
+                escape_xml(rid)
+            ));
         }
 
         if !run.text.is_empty() {
@@ -2587,11 +2616,19 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
-                raw_sect_pr: None, header: None, footer: None,
+                footnotes_raw: None,
+                media: vec![],
+                image_rels: vec![],
+                raw_sect_pr: None,
+                header: None,
+                footer: None,
                 blocks: vec![DocxBlock::Paragraph(DocxParagraph {
+                    raw_flds: Vec::new(),
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
                     runs: vec![DocxRun {
+                        footnote_rid: None,
+                        image_rid: None,
                         text: "Hello World".to_string(),
                         bold: false,
                         italic: false,
@@ -2675,12 +2712,20 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
-                raw_sect_pr: None, header: None, footer: None,
+                footnotes_raw: None,
+                media: vec![],
+                image_rels: vec![],
+                raw_sect_pr: None,
+                header: None,
+                footer: None,
                 blocks: vec![DocxBlock::Paragraph(DocxParagraph {
+                    raw_flds: Vec::new(),
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
                     runs: vec![
                         DocxRun {
+                            footnote_rid: None,
+                            image_rid: None,
                             text: "Bold".to_string(),
                             bold: true,
                             italic: false,
@@ -2700,6 +2745,8 @@ mod tests {
                             hyperlink_rid: None,
                         },
                         DocxRun {
+                            footnote_rid: None,
+                            image_rid: None,
                             text: "Italic".to_string(),
                             bold: false,
                             italic: true,
@@ -2719,6 +2766,8 @@ mod tests {
                             hyperlink_rid: None,
                         },
                         DocxRun {
+                            footnote_rid: None,
+                            image_rid: None,
                             text: "Underline".to_string(),
                             bold: false,
                             italic: false,
@@ -2768,12 +2817,20 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
-                raw_sect_pr: None, header: None, footer: None,
+                footnotes_raw: None,
+                media: vec![],
+                image_rels: vec![],
+                raw_sect_pr: None,
+                header: None,
+                footer: None,
                 blocks: vec![
                     DocxBlock::Paragraph(DocxParagraph {
+                        raw_flds: Vec::new(),
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
                         runs: vec![DocxRun {
+                            footnote_rid: None,
+                            image_rid: None,
                             text: "First".to_string(),
                             bold: false,
                             italic: false,
@@ -2796,12 +2853,15 @@ mod tests {
                         section_properties: None,
                     }),
                     DocxBlock::Paragraph(DocxParagraph {
+                        raw_flds: Vec::new(),
                         style_id: None,
                         properties: DocxParagraphProperties {
                             alignment: Some(TextAlignment::Center),
                             ..Default::default()
                         },
                         runs: vec![DocxRun {
+                            footnote_rid: None,
+                            image_rid: None,
                             text: "Second".to_string(),
                             bold: false,
                             italic: false,
@@ -2824,12 +2884,15 @@ mod tests {
                         section_properties: None,
                     }),
                     DocxBlock::Paragraph(DocxParagraph {
+                        raw_flds: Vec::new(),
                         style_id: None,
                         properties: DocxParagraphProperties {
                             alignment: Some(TextAlignment::Right),
                             ..Default::default()
                         },
                         runs: vec![DocxRun {
+                            footnote_rid: None,
+                            image_rid: None,
                             text: "Third".to_string(),
                             bold: false,
                             italic: false,
@@ -2880,16 +2943,24 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
-                raw_sect_pr: None, header: None, footer: None,
+                footnotes_raw: None,
+                media: vec![],
+                image_rels: vec![],
+                raw_sect_pr: None,
+                header: None,
+                footer: None,
                 blocks: vec![DocxBlock::Table(DocxTable {
                     rows: vec![
                         DocxTableRow {
                             cells: vec![
                                 DocxTableCell {
                                     paragraphs: vec![DocxParagraph {
+                                        raw_flds: Vec::new(),
                                         style_id: None,
                                         properties: DocxParagraphProperties::default(),
                                         runs: vec![DocxRun {
+                                            footnote_rid: None,
+                                            image_rid: None,
                                             text: "A1".to_string(),
                                             bold: true,
                                             italic: false,
@@ -2919,9 +2990,12 @@ mod tests {
                                 },
                                 DocxTableCell {
                                     paragraphs: vec![DocxParagraph {
+                                        raw_flds: Vec::new(),
                                         style_id: None,
                                         properties: DocxParagraphProperties::default(),
                                         runs: vec![DocxRun {
+                                            footnote_rid: None,
+                                            image_rid: None,
                                             text: "B1".to_string(),
                                             bold: true,
                                             italic: false,
@@ -2957,9 +3031,12 @@ mod tests {
                             cells: vec![
                                 DocxTableCell {
                                     paragraphs: vec![DocxParagraph {
+                                        raw_flds: Vec::new(),
                                         style_id: None,
                                         properties: DocxParagraphProperties::default(),
                                         runs: vec![DocxRun {
+                                            footnote_rid: None,
+                                            image_rid: None,
                                             text: "A2".to_string(),
                                             bold: false,
                                             italic: false,
@@ -2989,9 +3066,12 @@ mod tests {
                                 },
                                 DocxTableCell {
                                     paragraphs: vec![DocxParagraph {
+                                        raw_flds: Vec::new(),
                                         style_id: None,
                                         properties: DocxParagraphProperties::default(),
                                         runs: vec![DocxRun {
+                                            footnote_rid: None,
+                                            image_rid: None,
                                             text: "B2".to_string(),
                                             bold: false,
                                             italic: false,
@@ -3156,9 +3236,12 @@ mod tests {
                     },
                     text_body: TextBody {
                         paragraphs: vec![DocxParagraph {
+                            raw_flds: Vec::new(),
                             style_id: None,
                             properties: DocxParagraphProperties::default(),
                             runs: vec![DocxRun {
+                                footnote_rid: None,
+                                image_rid: None,
                                 text: "Hello PPTX".to_string(),
                                 ..DocxRun::default()
                             }],
@@ -3227,9 +3310,12 @@ mod tests {
                         },
                         text_body: TextBody {
                             paragraphs: vec![DocxParagraph {
+                                raw_flds: Vec::new(),
                                 style_id: None,
                                 properties: DocxParagraphProperties::default(),
                                 runs: vec![DocxRun {
+                                    footnote_rid: None,
+                                    image_rid: None,
                                     text: "Slide One".to_string(),
                                     ..DocxRun::default()
                                 }],
@@ -3261,9 +3347,12 @@ mod tests {
                         },
                         text_body: TextBody {
                             paragraphs: vec![DocxParagraph {
+                                raw_flds: Vec::new(),
                                 style_id: None,
                                 properties: DocxParagraphProperties::default(),
                                 runs: vec![DocxRun {
+                                    footnote_rid: None,
+                                    image_rid: None,
                                     text: "Slide Two".to_string(),
                                     ..DocxRun::default()
                                 }],
@@ -3384,9 +3473,12 @@ mod tests {
                     placeholder_type: "title".to_string(),
                     text_body: Some(TextBody {
                         paragraphs: vec![DocxParagraph {
+                            raw_flds: Vec::new(),
                             style_id: None,
                             properties: DocxParagraphProperties::default(),
                             runs: vec![DocxRun {
+                                footnote_rid: None,
+                                image_rid: None,
                                 text: "Title Placeholder".to_string(),
                                 ..DocxRun::default()
                             }],
@@ -3476,10 +3568,13 @@ mod tests {
                     },
                     text_body: TextBody {
                         paragraphs: vec![DocxParagraph {
+                            raw_flds: Vec::new(),
                             style_id: None,
                             properties: DocxParagraphProperties::default(),
                             runs: vec![
                                 DocxRun {
+                                    footnote_rid: None,
+                                    image_rid: None,
                                     text: "Bold ".to_string(),
                                     bold: true,
                                     italic: false,
@@ -3499,6 +3594,8 @@ mod tests {
                                     hyperlink_rid: None,
                                 },
                                 DocxRun {
+                                    footnote_rid: None,
+                                    image_rid: None,
                                     text: "Italic".to_string(),
                                     bold: false,
                                     italic: true,
@@ -3506,6 +3603,8 @@ mod tests {
                                     ..DocxRun::default()
                                 },
                                 DocxRun {
+                                    footnote_rid: None,
+                                    image_rid: None,
                                     text: "Underline ".to_string(),
                                     bold: false,
                                     italic: false,
@@ -3513,6 +3612,8 @@ mod tests {
                                     ..DocxRun::default()
                                 },
                                 DocxRun {
+                                    footnote_rid: None,
+                                    image_rid: None,
                                     text: "Strikethrough".to_string(),
                                     bold: false,
                                     italic: false,
@@ -3521,10 +3622,14 @@ mod tests {
                                     ..DocxRun::default()
                                 },
                                 DocxRun {
+                                    footnote_rid: None,
+                                    image_rid: None,
                                     text: "\n".to_string(),
                                     ..DocxRun::default()
                                 },
                                 DocxRun {
+                                    footnote_rid: None,
+                                    image_rid: None,
                                     text: "New line".to_string(),
                                     ..DocxRun::default()
                                 },
@@ -3650,9 +3755,12 @@ mod tests {
                     },
                     text_body: TextBody {
                         paragraphs: vec![DocxParagraph {
+                            raw_flds: Vec::new(),
                             style_id: None,
                             properties: DocxParagraphProperties::default(),
                             runs: vec![DocxRun {
+                                footnote_rid: None,
+                                image_rid: None,
                                 text: "Animated".to_string(),
                                 ..DocxRun::default()
                             }],
@@ -3849,11 +3957,19 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
-                raw_sect_pr: None, header: None, footer: None,
+                footnotes_raw: None,
+                media: vec![],
+                image_rels: vec![],
+                raw_sect_pr: None,
+                header: None,
+                footer: None,
                 blocks: vec![DocxBlock::Paragraph(DocxParagraph {
+                    raw_flds: Vec::new(),
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
                     runs: vec![DocxRun {
+                        footnote_rid: None,
+                        image_rid: None,
                         text: "Content".to_string(),
                         bold: false,
                         italic: false,
@@ -3904,7 +4020,15 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-            docx_body: Some(DocxBody { blocks: vec![], raw_sect_pr: None, header: None, footer: None }),
+            docx_body: Some(DocxBody {
+                blocks: vec![],
+                raw_sect_pr: None,
+                header: None,
+                footer: None,
+                footnotes_raw: None,
+                media: vec![],
+                image_rels: vec![],
+            }),
         };
         let ser = OoxmlSerializer::new();
         let bytes = ser.serialize(&doc).unwrap();

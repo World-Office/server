@@ -40,6 +40,7 @@ use wo_xps::model::{XpsGlyphs, XpsMetadata, XpsPage, XpsPageContent};
 use wo_xps::XpsParser;
 use wo_xps::XpsSerializer;
 
+use base64::Engine;
 use wo_odf::model::{
     CellType, OdfContent, OdfDocument, OdfList, OdfListItem, OdfListType, OdfMetadata, OdfTable,
     OdfTextContent, OdfType, SpreadsheetCell as OdfSpreadsheetCell,
@@ -50,9 +51,9 @@ use wo_odf::OdfSerializer;
 use wo_ooxml::model::{
     AdvanceMode, AnimationData as OoxmlAnimData, Bounds, ConnectorShape, ConnectorShapeType,
     CoreProperties, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, DocxTable,
-    DocxTableCell, DocxTableRow, Fill, HeaderFooter, OoxmlDocument, OoxmlFormat, PictureShape,
-    PptxPresentation, Slide, SlideShape, SlideSize, SlideTransition, TextBody as OoxmlTextBody,
-    TextBoxShape, TransitionEffect, UnderlineType,
+    DocxTableCell, DocxTableRow, Fill, HeaderFooter, MediaPart, OoxmlDocument, OoxmlFormat,
+    PictureShape, PptxPresentation, Relationship, Slide, SlideShape, SlideSize, SlideTransition,
+    TextBody as OoxmlTextBody, TextBoxShape, TransitionEffect, UnderlineType,
 };
 use wo_ooxml::{OoxmlParser, OoxmlSerializer};
 
@@ -298,6 +299,9 @@ fn wrap_furniture(doc: &OoxmlDocument, mut html: String) -> String {
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
+                media: Vec::new(),
+                image_rels: Vec::new(),
+                footnotes_raw: None,
             }),
         };
         let hd = HtmlDocument {
@@ -319,12 +323,18 @@ fn wrap_furniture(doc: &OoxmlDocument, mut html: String) -> String {
 
     if let Some(h) = hf_inner(&body.header) {
         if let Some(bp) = html.find("<body>") {
-            html.insert_str(bp + 6, &format!("<header class=\"page-header\">{}</header>\n", h));
+            html.insert_str(
+                bp + 6,
+                &format!("<header class=\"page-header\">{}</header>\n", h),
+            );
         }
     }
     if let Some(f) = hf_inner(&body.footer) {
         if let Some(bp) = html.rfind("</body>") {
-            html.insert_str(bp, &format!("<footer class=\"page-footer\">{}</footer>\n", f));
+            html.insert_str(
+                bp,
+                &format!("<footer class=\"page-footer\">{}</footer>\n", f),
+            );
         }
     }
     html
@@ -2149,8 +2159,10 @@ fn txt_to_ooxml(txt_doc: &TxtDocument) -> OoxmlDocument {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
-        ..Default::default()})
+                ..Default::default()
+            }],
+            ..Default::default()
+        })
         .collect();
 
     OoxmlDocument {
@@ -2217,8 +2229,10 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()}],
-                ..Default::default()});
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                });
             }
             BlockElement::Paragraph { content, .. } => {
                 let runs = html_inlines_to_docx_runs(content);
@@ -2228,7 +2242,8 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                         properties: DocxParagraphProperties::default(),
                         section_properties: None,
                         runs,
-                    ..Default::default()});
+                        ..Default::default()
+                    });
                 }
             }
             BlockElement::UnorderedList { items, .. } => {
@@ -2256,8 +2271,10 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
-                        ..Default::default()}],
-                    ..Default::default()});
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    });
                 }
             }
             BlockElement::OrderedList { items, start, .. } => {
@@ -2286,8 +2303,10 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
-                        ..Default::default()}],
-                    ..Default::default()});
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    });
                 }
             }
             BlockElement::Table { rows, .. } => {
@@ -2319,13 +2338,16 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                                             vertical_alignment: None,
                                             small_caps: false,
                                             all_caps: false,
-                                        ..Default::default()}],
-                                    ..Default::default()}],
+                                            ..Default::default()
+                                        }],
+                                        ..Default::default()
+                                    }],
                                     column_span: cell.colspan,
                                     row_span: cell.rowspan,
                                     width: None,
                                     shading: None,
-                                ..Default::default()}
+                                    ..Default::default()
+                                }
                             })
                             .collect(),
                         height: None,
@@ -2335,7 +2357,8 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                 tables.push(DocxTable {
                     rows: docx_rows,
                     properties: Default::default(),
-                ..Default::default()});
+                    ..Default::default()
+                });
             }
             BlockElement::HorizontalRule => {
                 paragraphs.push(DocxParagraph {
@@ -2357,8 +2380,10 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()}],
-                ..Default::default()});
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                });
             }
             BlockElement::Pre { content, .. } => {
                 for line in content.lines() {
@@ -2381,8 +2406,10 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
-                        ..Default::default()}],
-                    ..Default::default()});
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    });
                 }
             }
             BlockElement::Div { elements, .. } | BlockElement::Blockquote { elements, .. } => {
@@ -2421,8 +2448,10 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
-                        ..Default::default()}],
-                    ..Default::default()});
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    });
                 }
             }
         }
@@ -2438,11 +2467,14 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
         core_properties: CoreProperties::default(),
         relationships: vec![],
         xlsx_workbook: None,
-docx_body: Some(DocxBody {
+        docx_body: Some(DocxBody {
             blocks: DocxBody::from_parts(paragraphs, tables).blocks,
             raw_sect_pr: None,
             header,
             footer,
+            media: Vec::new(),
+            image_rels: Vec::new(),
+            footnotes_raw: None,
         }),
     }
 }
@@ -2450,12 +2482,13 @@ docx_body: Some(DocxBody {
 /// Indices of the leading `<header>` and trailing `<footer>` furniture
 /// elements (wo-html parses them as Div{class:"header"/"footer"}).
 fn furniture_spans(elements: &[BlockElement]) -> (Option<usize>, Option<usize>) {
-    let is_hf = |e: &BlockElement, want: &str| {
-        matches!(e, BlockElement::Div { class: Some(c), .. } if c == want)
-    };
+    let is_hf = |e: &BlockElement, want: &str| matches!(e, BlockElement::Div { class: Some(c), .. } if c == want);
     let start = elements.first().filter(|e| is_hf(e, "header")).map(|_| 0);
     let end = if elements.len() > start.map(|s| s + 1).unwrap_or(0) {
-        elements.last().filter(|e| is_hf(e, "footer")).map(|_| elements.len() - 1)
+        elements
+            .last()
+            .filter(|e| is_hf(e, "footer"))
+            .map(|_| elements.len() - 1)
     } else {
         None
     };
@@ -2483,7 +2516,6 @@ fn elements_to_hf(element: &BlockElement) -> HeaderFooter {
     }
 }
 
-
 /// Convert HTML inline elements to DOCX runs.
 fn html_inlines_to_docx_runs(inlines: &[InlineElement]) -> Vec<DocxRun> {
     let mut runs = Vec::new();
@@ -2506,7 +2538,8 @@ fn html_inlines_to_docx_runs(inlines: &[InlineElement]) -> Vec<DocxRun> {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()});
+                        ..Default::default()
+                    });
                 }
             }
             InlineElement::Bold { content } => {
@@ -2527,7 +2560,8 @@ fn html_inlines_to_docx_runs(inlines: &[InlineElement]) -> Vec<DocxRun> {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()});
+                        ..Default::default()
+                    });
                 }
             }
             InlineElement::Italic { content } => {
@@ -2548,7 +2582,8 @@ fn html_inlines_to_docx_runs(inlines: &[InlineElement]) -> Vec<DocxRun> {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()});
+                        ..Default::default()
+                    });
                 }
             }
             InlineElement::Underline { content } => {
@@ -2569,7 +2604,8 @@ fn html_inlines_to_docx_runs(inlines: &[InlineElement]) -> Vec<DocxRun> {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()});
+                        ..Default::default()
+                    });
                 }
             }
             InlineElement::Strikethrough { content } => {
@@ -2590,7 +2626,8 @@ fn html_inlines_to_docx_runs(inlines: &[InlineElement]) -> Vec<DocxRun> {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()});
+                        ..Default::default()
+                    });
                 }
             }
             InlineElement::Link { content, href, .. } => {
@@ -2611,7 +2648,8 @@ fn html_inlines_to_docx_runs(inlines: &[InlineElement]) -> Vec<DocxRun> {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()});
+                        ..Default::default()
+                    });
                 }
             }
             InlineElement::Code { content } => {
@@ -2631,7 +2669,8 @@ fn html_inlines_to_docx_runs(inlines: &[InlineElement]) -> Vec<DocxRun> {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()});
+                        ..Default::default()
+                    });
                 }
             }
             InlineElement::Image { alt, .. } => {
@@ -2652,7 +2691,8 @@ fn html_inlines_to_docx_runs(inlines: &[InlineElement]) -> Vec<DocxRun> {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
-                        ..Default::default()});
+                            ..Default::default()
+                        });
                     }
                 }
             }
@@ -2679,7 +2719,8 @@ fn html_inlines_to_docx_runs(inlines: &[InlineElement]) -> Vec<DocxRun> {
                         vertical_alignment: Some(wo_ooxml::model::VerticalAlignment::Superscript),
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()});
+                        ..Default::default()
+                    });
                 }
             }
             InlineElement::Subscript { content } => {
@@ -2700,7 +2741,8 @@ fn html_inlines_to_docx_runs(inlines: &[InlineElement]) -> Vec<DocxRun> {
                         vertical_alignment: Some(wo_ooxml::model::VerticalAlignment::Subscript),
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()});
+                        ..Default::default()
+                    });
                 }
             }
         }
@@ -3077,9 +3119,47 @@ fn docx_body_to_text_lines(doc: &OoxmlDocument) -> Vec<String> {
 }
 
 /// Convert DOCX runs to HTML inline elements.
-fn docx_runs_to_html_inlines(runs: &[DocxRun]) -> Vec<InlineElement> {
+/// Resolve a run's image rId to a data-URI src through the body's image rels
+/// + media parts (targets are relative to word/, e.g. "media/image1.png").
+fn docx_image_src(body: &DocxBody, rid: &str) -> Option<String> {
+    let target = body
+        .image_rels
+        .iter()
+        .find(|r| r.id == rid)?
+        .target
+        .trim_start_matches('/')
+        .trim_start_matches("word/")
+        .to_string();
+    let part = body
+        .media
+        .iter()
+        .find(|m| m.name == format!("word/{target}") || m.name.ends_with(&target))?;
+    let ext = part.name.rsplit('.').next().unwrap_or("png");
+    let mime = match ext.to_ascii_lowercase().as_str() {
+        "jpg" | "jpeg" => "image/jpeg",
+        "gif" => "image/gif",
+        "bmp" => "image/bmp",
+        "svg" => "image/svg+xml",
+        _ => "image/png",
+    };
+    let b64 = base64::engine::general_purpose::STANDARD.encode(&part.bytes);
+    Some(format!("data:{mime};base64,{b64}"))
+}
+
+fn docx_runs_to_html_inlines(body: &DocxBody, runs: &[DocxRun]) -> Vec<InlineElement> {
     let mut result = Vec::new();
     for run in runs {
+        // Inline image runs carry no text — emit before the empty-text skip.
+        if let Some(rid) = &run.image_rid {
+            if let Some(src) = docx_image_src(body, rid) {
+                result.push(InlineElement::Image {
+                    src,
+                    alt: None,
+                    title: None,
+                });
+                continue;
+            }
+        }
         let text = run.text.clone();
         if text.is_empty() {
             continue;
@@ -3139,7 +3219,7 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
             .and_then(|n| n.parse::<u32>().ok())
             .unwrap_or(1);
 
-        let inlines = docx_runs_to_html_inlines(&para.runs);
+        let inlines = docx_runs_to_html_inlines(body, &para.runs);
 
         if is_heading {
             result.push(BlockElement::Heading {
@@ -3167,7 +3247,7 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
                         let inlines: Vec<InlineElement> = cell
                             .paragraphs
                             .iter()
-                            .flat_map(|p| docx_runs_to_html_inlines(&p.runs))
+                            .flat_map(|p| docx_runs_to_html_inlines(body, &p.runs))
                             .collect();
                         TableCell {
                             content: inlines,
@@ -3332,8 +3412,10 @@ fn odf_to_ooxml(doc: &OdfDocument) -> OoxmlDocument {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
-                        ..Default::default()}],
-                    ..Default::default()});
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    });
                 }
                 OdfTextContent::Paragraph(p) => {
                     if p.spans.is_empty() {
@@ -3357,8 +3439,10 @@ fn odf_to_ooxml(doc: &OdfDocument) -> OoxmlDocument {
                                     vertical_alignment: None,
                                     small_caps: false,
                                     all_caps: false,
-                                ..Default::default()}],
-                            ..Default::default()});
+                                    ..Default::default()
+                                }],
+                                ..Default::default()
+                            });
                         }
                     } else {
                         let runs: Vec<DocxRun> = p
@@ -3383,7 +3467,8 @@ fn odf_to_ooxml(doc: &OdfDocument) -> OoxmlDocument {
                                 vertical_alignment: None,
                                 small_caps: false,
                                 all_caps: false,
-                            ..Default::default()})
+                                ..Default::default()
+                            })
                             .collect();
                         if !runs.is_empty() {
                             paragraphs.push(DocxParagraph {
@@ -3391,7 +3476,8 @@ fn odf_to_ooxml(doc: &OdfDocument) -> OoxmlDocument {
                                 properties: DocxParagraphProperties::default(),
                                 section_properties: None,
                                 runs,
-                            ..Default::default()});
+                                ..Default::default()
+                            });
                         }
                     }
                 }
@@ -3427,8 +3513,10 @@ fn odf_to_ooxml(doc: &OdfDocument) -> OoxmlDocument {
                                         vertical_alignment: None,
                                         small_caps: false,
                                         all_caps: false,
-                                    ..Default::default()}],
-                                ..Default::default()});
+                                        ..Default::default()
+                                    }],
+                                    ..Default::default()
+                                });
                             }
                         }
                     }
@@ -3461,13 +3549,16 @@ fn odf_to_ooxml(doc: &OdfDocument) -> OoxmlDocument {
                                             vertical_alignment: None,
                                             small_caps: false,
                                             all_caps: false,
-                                        ..Default::default()}],
-                                    ..Default::default()}],
+                                            ..Default::default()
+                                        }],
+                                        ..Default::default()
+                                    }],
                                     column_span: c.col_span,
                                     row_span: c.row_span,
                                     width: None,
                                     shading: None,
-                                ..Default::default()})
+                                    ..Default::default()
+                                })
                                 .collect(),
                             height: None,
                             is_header: false,
@@ -3476,7 +3567,8 @@ fn odf_to_ooxml(doc: &OdfDocument) -> OoxmlDocument {
                     tables.push(DocxTable {
                         rows: docx_rows,
                         properties: Default::default(),
-                    ..Default::default()});
+                        ..Default::default()
+                    });
                 }
                 OdfTextContent::Image(_) => {
                     // Images are not supported in cross-format conversion; skip
@@ -3521,7 +3613,8 @@ fn rtf_to_ooxml(rtf_doc: &RtfDocument) -> OoxmlDocument {
                         properties: DocxParagraphProperties::default(),
                         section_properties: None,
                         runs,
-                    ..Default::default()});
+                        ..Default::default()
+                    });
                 }
             }
             RtfBlock::Table { rows } => {
@@ -3542,13 +3635,15 @@ fn rtf_to_ooxml(rtf_doc: &RtfDocument) -> OoxmlDocument {
                                             properties: DocxParagraphProperties::default(),
                                             section_properties: None,
                                             runs,
-                                        ..Default::default()}]
+                                            ..Default::default()
+                                        }]
                                     },
                                     column_span: 1,
                                     row_span: 1,
                                     width: c.width.map(|w| w as i32),
                                     shading: None,
-                                ..Default::default()}
+                                    ..Default::default()
+                                }
                             })
                             .collect(),
                         height: None,
@@ -3560,7 +3655,8 @@ fn rtf_to_ooxml(rtf_doc: &RtfDocument) -> OoxmlDocument {
                     properties: DocxParagraphProperties::default(),
                     section_properties: None,
                     runs: vec![],
-                ..Default::default()});
+                    ..Default::default()
+                });
                 // Tables are collected separately
             }
         }
@@ -3586,12 +3682,14 @@ fn rtf_to_ooxml(rtf_doc: &RtfDocument) -> OoxmlDocument {
                                         properties: DocxParagraphProperties::default(),
                                         section_properties: None,
                                         runs,
-                                    ..Default::default()}],
+                                        ..Default::default()
+                                    }],
                                     column_span: 1,
                                     row_span: 1,
                                     width: c.width.map(|w| w as i32),
                                     shading: None,
-                                ..Default::default()}
+                                    ..Default::default()
+                                }
                             })
                             .collect(),
                         height: None,
@@ -3601,7 +3699,8 @@ fn rtf_to_ooxml(rtf_doc: &RtfDocument) -> OoxmlDocument {
                 Some(DocxTable {
                     rows: docx_rows,
                     properties: Default::default(),
-                ..Default::default()})
+                    ..Default::default()
+                })
             } else {
                 None
             }
@@ -3650,7 +3749,8 @@ fn rtf_inlines_to_docx_runs(inlines: &[RtfInline]) -> Vec<DocxRun> {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()});
+                        ..Default::default()
+                    });
                 }
             }
             RtfInline::Bold { content } => {
@@ -4262,8 +4362,10 @@ fn epub_to_ooxml(epub_doc: &EpubDocument) -> OoxmlDocument {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
-        ..Default::default()});
+                ..Default::default()
+            }],
+            ..Default::default()
+        });
     }
 
     for chapter in &epub_doc.chapters {
@@ -4288,8 +4390,10 @@ fn epub_to_ooxml(epub_doc: &EpubDocument) -> OoxmlDocument {
                     vertical_alignment: None,
                     small_caps: false,
                     all_caps: false,
-                ..Default::default()}],
-            ..Default::default()});
+                    ..Default::default()
+                }],
+                ..Default::default()
+            });
         }
 
         // Chapter content as plain text paragraphs
@@ -4315,8 +4419,10 @@ fn epub_to_ooxml(epub_doc: &EpubDocument) -> OoxmlDocument {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()}],
-                ..Default::default()});
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                });
             }
         }
     }
@@ -4393,8 +4499,10 @@ fn fb2_to_ooxml(fb2_doc: &Fb2Document) -> OoxmlDocument {
                     vertical_alignment: None,
                     small_caps: false,
                     all_caps: false,
-                ..Default::default()}],
-            ..Default::default()});
+                    ..Default::default()
+                }],
+                ..Default::default()
+            });
         }
     }
 
@@ -4488,8 +4596,10 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
                     vertical_alignment: None,
                     small_caps: false,
                     all_caps: false,
-                ..Default::default()}],
-            ..Default::default()});
+                    ..Default::default()
+                }],
+                ..Default::default()
+            });
         }
     }
 
@@ -4503,7 +4613,8 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
                         properties: DocxParagraphProperties::default(),
                         section_properties: None,
                         runs,
-                    ..Default::default()});
+                        ..Default::default()
+                    });
                 }
             }
             ContentElement::EmptyLine => {
@@ -4512,7 +4623,8 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
                     properties: DocxParagraphProperties::default(),
                     section_properties: None,
                     runs: vec![],
-                ..Default::default()});
+                    ..Default::default()
+                });
             }
             ContentElement::Subtitle { content } => {
                 let runs = fb2_formatting_to_docx_runs(content);
@@ -4522,7 +4634,8 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
                         properties: DocxParagraphProperties::default(),
                         section_properties: None,
                         runs,
-                    ..Default::default()});
+                        ..Default::default()
+                    });
                 }
             }
             ContentElement::Cite {
@@ -4540,7 +4653,8 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
                             },
                             section_properties: None,
                             runs,
-                        ..Default::default()});
+                            ..Default::default()
+                        });
                     }
                 }
             }
@@ -4555,7 +4669,8 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
                         },
                         section_properties: None,
                         runs,
-                    ..Default::default()});
+                        ..Default::default()
+                    });
                 }
             }
             ContentElement::Date { value, .. } => {
@@ -4578,8 +4693,10 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()}],
-                ..Default::default()});
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                });
             }
             ContentElement::Image { alt, .. } => {
                 if let Some(alt_text) = alt {
@@ -4603,8 +4720,10 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
                                 vertical_alignment: None,
                                 small_caps: false,
                                 all_caps: false,
-                            ..Default::default()}],
-                        ..Default::default()});
+                                ..Default::default()
+                            }],
+                            ..Default::default()
+                        });
                     }
                 }
             }
@@ -4638,8 +4757,10 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
                                 vertical_alignment: None,
                                 small_caps: false,
                                 all_caps: false,
-                            ..Default::default()}],
-                        ..Default::default()});
+                                ..Default::default()
+                            }],
+                            ..Default::default()
+                        });
                     }
                 }
                 for stanza in stanzas {
@@ -4668,8 +4789,10 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
                                     vertical_alignment: None,
                                     small_caps: false,
                                     all_caps: false,
-                                ..Default::default()}],
-                            ..Default::default()});
+                                    ..Default::default()
+                                }],
+                                ..Default::default()
+                            });
                         }
                     }
                     paragraphs.push(DocxParagraph {
@@ -4677,7 +4800,8 @@ fn fb2_section_to_docx_paragraphs(section: &Section, paragraphs: &mut Vec<DocxPa
                         properties: DocxParagraphProperties::default(),
                         section_properties: None,
                         runs: vec![],
-                    ..Default::default()});
+                        ..Default::default()
+                    });
                 }
             }
         }
@@ -4723,7 +4847,8 @@ fn fb2_formatting_to_docx_runs(formattings: &[Formatting]) -> Vec<DocxRun> {
             vertical_alignment,
             small_caps: false,
             all_caps: false,
-        ..Default::default()});
+            ..Default::default()
+        });
     }
     runs
 }
@@ -4977,8 +5102,10 @@ fn xps_to_ooxml(xps_doc: &wo_xps::model::XpsDocument) -> OoxmlDocument {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()}],
-                ..Default::default()});
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                });
             }
         }
     }
@@ -5057,8 +5184,10 @@ fn ofd_to_ooxml(ofd_doc: &wo_ofd::model::OfdDocument) -> OoxmlDocument {
                     vertical_alignment: None,
                     small_caps: false,
                     all_caps: false,
-                ..Default::default()}],
-            ..Default::default()});
+                    ..Default::default()
+                }],
+                ..Default::default()
+            });
         }
     }
 
@@ -5134,8 +5263,10 @@ fn hwp_to_ooxml(hwp_doc: &wo_hwp::model::HwpDocument) -> OoxmlDocument {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()}],
-                ..Default::default()});
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                });
             }
         }
     }
@@ -5164,8 +5295,10 @@ fn hwp_to_ooxml(hwp_doc: &wo_hwp::model::HwpDocument) -> OoxmlDocument {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
-        ..Default::default()});
+                ..Default::default()
+            }],
+            ..Default::default()
+        });
     }
 
     OoxmlDocument {
@@ -5247,8 +5380,10 @@ fn djvu_to_ooxml(djvu_doc: &wo_djvu::model::DjvuDocument) -> OoxmlDocument {
                     vertical_alignment: None,
                     small_caps: false,
                     all_caps: false,
-                ..Default::default()}],
-            ..Default::default()});
+                    ..Default::default()
+                }],
+                ..Default::default()
+            });
         }
     }
 
@@ -5275,8 +5410,10 @@ fn djvu_to_ooxml(djvu_doc: &wo_djvu::model::DjvuDocument) -> OoxmlDocument {
             vertical_alignment: None,
             small_caps: false,
             all_caps: false,
-        ..Default::default()}],
-    ..Default::default()});
+            ..Default::default()
+        }],
+        ..Default::default()
+    });
 
     OoxmlDocument {
         format: OoxmlFormat::Docx,
@@ -5561,7 +5698,8 @@ fn wo_shape_to_slide_shape(
                                 .map(|fc| fc.trim_start_matches('#').to_string()),
                             ..DocxRun::default()
                         }],
-                    ..Default::default()}],
+                        ..Default::default()
+                    }],
                 }
             } else {
                 OoxmlTextBody {
@@ -5570,7 +5708,8 @@ fn wo_shape_to_slide_shape(
                         properties: DocxParagraphProperties::default(),
                         section_properties: None,
                         runs: vec![],
-                    ..Default::default()}],
+                        ..Default::default()
+                    }],
                 }
             };
 
@@ -7577,10 +7716,18 @@ mod tests {
         assert!(!body_text.contains("Footer text here"));
 
         // docx -> html re-emits the editor dialect wrappers
-        let html2 = String::from_utf8(DocxToHtmlConverter.convert(&docx).expect("docx->html")).unwrap();
-        assert!(html2.contains("<header class=\"page-header\">"), "no header wrapper: {}", html2);
+        let html2 =
+            String::from_utf8(DocxToHtmlConverter.convert(&docx).expect("docx->html")).unwrap();
+        assert!(
+            html2.contains("<header class=\"page-header\">"),
+            "no header wrapper: {}",
+            html2
+        );
         assert!(html2.contains("Header text here"));
-        assert!(html2.contains("<footer class=\"page-footer\">"), "no footer wrapper");
+        assert!(
+            html2.contains("<footer class=\"page-footer\">"),
+            "no footer wrapper"
+        );
         assert!(html2.contains("Footer text here"));
     }
 
@@ -10871,13 +11018,16 @@ mod tests {
                                         vertical_alignment: None,
                                         small_caps: false,
                                         all_caps: false,
-                                    ..Default::default()}],
-                                ..Default::default()}],
+                                        ..Default::default()
+                                    }],
+                                    ..Default::default()
+                                }],
                                 column_span: 1,
                                 row_span: 1,
                                 width: None,
                                 shading: None,
-                            ..Default::default()},
+                                ..Default::default()
+                            },
                             DocxTableCell {
                                 paragraphs: vec![DocxParagraph {
                                     style_id: None,
@@ -10898,20 +11048,25 @@ mod tests {
                                         vertical_alignment: None,
                                         small_caps: false,
                                         all_caps: false,
-                                    ..Default::default()}],
-                                ..Default::default()}],
+                                        ..Default::default()
+                                    }],
+                                    ..Default::default()
+                                }],
                                 column_span: 2,
                                 row_span: 1,
                                 width: None,
                                 shading: None,
-                            ..Default::default()},
+                                ..Default::default()
+                            },
                         ],
                         height: None,
                         is_header: true,
                     }],
                     properties: Default::default(),
-                ..Default::default()})],
-            ..Default::default()}),
+                    ..Default::default()
+                })],
+                ..Default::default()
+            }),
         };
         let odf = docx_to_odf(&doc);
         assert_eq!(odf.metadata.title, Some("Doc Title".into()));
@@ -10968,8 +11123,10 @@ mod tests {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
-                        ..Default::default()}],
-                    ..Default::default()}),
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    }),
                     DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
@@ -10989,10 +11146,13 @@ mod tests {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
-                        ..Default::default()}],
-                    ..Default::default()}),
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    }),
                 ],
-            ..Default::default()}),
+                ..Default::default()
+            }),
         };
         let odf = docx_to_odf(&doc);
         match &odf.content {
@@ -13797,8 +13957,10 @@ mod tests {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
-                        ..Default::default()}],
-                    ..Default::default()}),
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    }),
                     DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
@@ -13818,10 +13980,13 @@ mod tests {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
-                        ..Default::default()}],
-                    ..Default::default()}),
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    }),
                 ],
-            ..Default::default()}),
+                ..Default::default()
+            }),
         };
         let serialized = OoxmlSerializer::new()
             .serialize(&ooxml)
@@ -13889,8 +14054,10 @@ mod tests {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
-                        ..Default::default()}],
-                    ..Default::default()}),
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    }),
                     DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
@@ -13910,10 +14077,13 @@ mod tests {
                             vertical_alignment: None,
                             small_caps: false,
                             all_caps: false,
-                        ..Default::default()}],
-                    ..Default::default()}),
+                            ..Default::default()
+                        }],
+                        ..Default::default()
+                    }),
                 ],
-            ..Default::default()}),
+                ..Default::default()
+            }),
         };
         let serialized = OoxmlSerializer::new().serialize(&ooxml).expect("serialize");
         let result = DocxToEpubConverter.convert(&serialized).expect("convert");
@@ -14016,13 +14186,47 @@ mod tests {
     }
 
     #[test]
+    fn test_docx_runs_to_html_inlines_image_rid() {
+        let runs = vec![DocxRun {
+            image_rid: Some("rId5".into()),
+            ..DocxRun::default()
+        }];
+        let body = DocxBody {
+            media: vec![MediaPart {
+                name: "word/media/image1.png".into(),
+                bytes: vec![0x89, 0x50, 0x4E, 0x47],
+            }],
+            image_rels: vec![Relationship {
+                id: "rId5".into(),
+                rel_type:
+                    "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+                        .into(),
+                target: "media/image1.png".into(),
+                target_mode: None,
+            }],
+            ..DocxBody::new()
+        };
+        let inlines = docx_runs_to_html_inlines(&body, &runs);
+        assert_eq!(inlines.len(), 1, "image run must emit an inline");
+        match &inlines[0] {
+            InlineElement::Image { src, .. } => {
+                assert!(
+                    src.starts_with("data:image/png;base64,"),
+                    "src must be a data URI, got: {src}"
+                );
+            }
+            _ => panic!("expected Image inline"),
+        }
+    }
+
+    #[test]
     fn test_docx_runs_to_html_inlines_strikethrough() {
         let runs = vec![DocxRun {
             text: "struck".into(),
             strikethrough: true,
             ..DocxRun::default()
         }];
-        let inlines = docx_runs_to_html_inlines(&runs);
+        let inlines = docx_runs_to_html_inlines(&DocxBody::new(), &runs);
         assert_eq!(inlines.len(), 1);
         match &inlines[0] {
             InlineElement::Strikethrough { content } => {
@@ -14041,7 +14245,7 @@ mod tests {
             underline: Some(UnderlineType::Single),
             ..DocxRun::default()
         }];
-        let inlines = docx_runs_to_html_inlines(&runs);
+        let inlines = docx_runs_to_html_inlines(&DocxBody::new(), &runs);
         assert_eq!(inlines.len(), 1);
         match &inlines[0] {
             InlineElement::Underline { content } => {
@@ -14062,7 +14266,7 @@ mod tests {
             italic: true,
             ..DocxRun::default()
         }];
-        let inlines = docx_runs_to_html_inlines(&runs);
+        let inlines = docx_runs_to_html_inlines(&DocxBody::new(), &runs);
         assert_eq!(inlines.len(), 1);
         match &inlines[0] {
             InlineElement::Bold { content } => match &content[0] {
@@ -14181,7 +14385,8 @@ mod tests {
                         text: "Hello ".into(),
                         ..DocxRun::default()
                     }],
-                ..Default::default()},
+                    ..Default::default()
+                },
                 DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
@@ -14190,7 +14395,8 @@ mod tests {
                         text: "World".into(),
                         ..DocxRun::default()
                     }],
-                ..Default::default()},
+                    ..Default::default()
+                },
             ],
         };
         let (text, _fs, _fc) = extract_text_info(&tb);
@@ -14210,7 +14416,8 @@ mod tests {
                     color: Some("FF0000".into()),
                     ..DocxRun::default()
                 }],
-            ..Default::default()}],
+                ..Default::default()
+            }],
         };
         let (text, font_size, font_color) = extract_text_info(&tb);
         assert_eq!(text, Some("Styled".to_string()));
@@ -14235,7 +14442,8 @@ mod tests {
                         ..DocxRun::default()
                     },
                 ],
-            ..Default::default()}],
+                ..Default::default()
+            }],
         };
         let (text, _fs, _fc) = extract_text_info(&tb);
         assert_eq!(text, Some("real".to_string()));
@@ -14267,7 +14475,8 @@ mod tests {
                         ..DocxRun::default()
                     },
                 ],
-            ..Default::default()}],
+                ..Default::default()
+            }],
         };
         let (_text, font_size, _fc) = extract_text_info(&tb);
         // First run's font_size (18) wins
@@ -14350,8 +14559,10 @@ mod tests {
                         text: "Hello XPS".into(),
                         ..DocxRun::default()
                     }],
-                ..Default::default()})],
-            ..Default::default()}),
+                    ..Default::default()
+                })],
+                ..Default::default()
+            }),
         };
         let xps = docx_to_xps(&doc);
         assert_eq!(xps.page_count, 1);
@@ -14381,7 +14592,8 @@ mod tests {
                             text: "First line".into(),
                             ..DocxRun::default()
                         }],
-                    ..Default::default()}),
+                        ..Default::default()
+                    }),
                     DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
@@ -14390,9 +14602,11 @@ mod tests {
                             text: "Second line".into(),
                             ..DocxRun::default()
                         }],
-                    ..Default::default()}),
+                        ..Default::default()
+                    }),
                 ],
-            ..Default::default()}),
+                ..Default::default()
+            }),
         };
         let xps = docx_to_xps(&doc);
         assert_eq!(xps.page_count, 1);
@@ -14423,8 +14637,10 @@ mod tests {
                         text: "Part1\nPart2".into(),
                         ..DocxRun::default()
                     }],
-                ..Default::default()})],
-            ..Default::default()}),
+                    ..Default::default()
+                })],
+                ..Default::default()
+            }),
         };
         let xps = docx_to_xps(&doc);
         // Both parts on same page
@@ -14456,7 +14672,8 @@ mod tests {
                             text: "".into(),
                             ..DocxRun::default()
                         }],
-                    ..Default::default()}),
+                        ..Default::default()
+                    }),
                     DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
@@ -14465,9 +14682,11 @@ mod tests {
                             text: "Real".into(),
                             ..DocxRun::default()
                         }],
-                    ..Default::default()}),
+                        ..Default::default()
+                    }),
                 ],
-            ..Default::default()}),
+                ..Default::default()
+            }),
         };
         let xps = docx_to_xps(&doc);
         assert_eq!(xps.pages[0].content.glyphs.len(), 1);
@@ -14558,7 +14777,8 @@ mod tests {
                         ..DocxRun::default()
                     },
                 ],
-            ..Default::default()}],
+                ..Default::default()
+            }],
         };
         let (text, font_size, font_color) = extract_text_info(&tb);
         assert_eq!(text, Some("Hello World".to_string()));
@@ -14754,7 +14974,8 @@ mod tests {
                             text: "Line1".into(),
                             ..DocxRun::default()
                         }],
-                    ..Default::default()}),
+                        ..Default::default()
+                    }),
                     DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
@@ -14763,9 +14984,11 @@ mod tests {
                             text: "Line2".into(),
                             ..DocxRun::default()
                         }],
-                    ..Default::default()}),
+                        ..Default::default()
+                    }),
                 ],
-            ..Default::default()}),
+                ..Default::default()
+            }),
         };
         let lines = docx_body_to_text_lines(&doc);
         assert_eq!(lines, vec!["Line1", "Line2"]);
@@ -14809,12 +15032,14 @@ mod tests {
                                         text: "A".into(),
                                         ..DocxRun::default()
                                     }],
-                                ..Default::default()}],
+                                    ..Default::default()
+                                }],
                                 column_span: 1,
                                 row_span: 1,
                                 width: None,
                                 shading: None,
-                            ..Default::default()},
+                                ..Default::default()
+                            },
                             DocxTableCell {
                                 paragraphs: vec![DocxParagraph {
                                     style_id: None,
@@ -14824,19 +15049,23 @@ mod tests {
                                         text: "B".into(),
                                         ..DocxRun::default()
                                     }],
-                                ..Default::default()}],
+                                    ..Default::default()
+                                }],
                                 column_span: 1,
                                 row_span: 1,
                                 width: None,
                                 shading: None,
-                            ..Default::default()},
+                                ..Default::default()
+                            },
                         ],
                         height: None,
                         is_header: false,
                     }],
                     properties: DocxTableProperties::default(),
-                ..Default::default()})],
-            ..Default::default()}),
+                    ..Default::default()
+                })],
+                ..Default::default()
+            }),
         };
         let table_lines = docx_body_to_text_lines(&doc_with_table);
         assert_eq!(table_lines, vec!["A\tB"]);
@@ -15365,8 +15594,10 @@ mod tests {
                     text: "Line1".into(),
                     ..DocxRun::default()
                 }],
-            ..Default::default()})],
-        ..Default::default()};
+                ..Default::default()
+            })],
+            ..Default::default()
+        };
         let ch = docx_body_to_epub_chapters(&body);
         assert_eq!(ch.len(), 1);
         assert_eq!(ch[0].0, "Line1");
@@ -15385,7 +15616,8 @@ mod tests {
                         text: "Ch1".into(),
                         ..DocxRun::default()
                     }],
-                ..Default::default()}),
+                    ..Default::default()
+                }),
                 DocxBlock::Paragraph(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
@@ -15394,7 +15626,8 @@ mod tests {
                         text: "Body1".into(),
                         ..DocxRun::default()
                     }],
-                ..Default::default()}),
+                    ..Default::default()
+                }),
                 DocxBlock::Paragraph(DocxParagraph {
                     style_id: Some("Heading2".into()),
                     properties: DocxParagraphProperties::default(),
@@ -15403,9 +15636,11 @@ mod tests {
                         text: "Ch2".into(),
                         ..DocxRun::default()
                     }],
-                ..Default::default()}),
+                    ..Default::default()
+                }),
             ],
-        ..Default::default()};
+            ..Default::default()
+        };
         let ch = docx_body_to_epub_chapters(&body);
         assert_eq!(ch.len(), 3);
         assert_eq!(ch[0].0, "Untitled");
@@ -15445,7 +15680,8 @@ mod tests {
                             text: "Ch1".into(),
                             ..DocxRun::default()
                         }],
-                    ..Default::default()}),
+                        ..Default::default()
+                    }),
                     DocxBlock::Paragraph(DocxParagraph {
                         style_id: None,
                         properties: DocxParagraphProperties::default(),
@@ -15454,9 +15690,11 @@ mod tests {
                             text: "Body".into(),
                             ..DocxRun::default()
                         }],
-                    ..Default::default()}),
+                        ..Default::default()
+                    }),
                 ],
-            ..Default::default()}),
+                ..Default::default()
+            }),
         };
         let epub = docx_to_epub(&doc);
         assert_eq!(epub.version, "3.0");
@@ -15501,7 +15739,10 @@ mod tests {
             core_properties: CoreProperties::default(),
             relationships: vec![],
             xlsx_workbook: None,
-            docx_body: Some(DocxBody { blocks: vec![], ..Default::default() }),
+            docx_body: Some(DocxBody {
+                blocks: vec![],
+                ..Default::default()
+            }),
         };
         let epub = docx_to_epub(&doc);
         assert_eq!(epub.chapters.len(), 1);

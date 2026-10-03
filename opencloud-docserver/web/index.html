@@ -723,6 +723,93 @@
     </div>
   </div>
 
+
+  <!-- OO-parity option modals (p2 divergence fixes, F-073/F-084/F-085):
+       the note / page-number / header-footer buttons open an options dialog
+       before invoking their existing commands, and Track Changes opens an
+       options dialog instead of silently toggling state. -->
+  <div id="notes-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="notes-dialog-title">
+    <div class="dialog">
+      <h3 id="notes-dialog-title">Footnote and Endnote</h3>
+      <div class="dialog-field">
+        <label for="notes-type">Insert</label>
+        <select id="notes-type">
+          <option value="footnote">Footnote</option>
+          <option value="endnote">Endnote</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label for="notes-format">Number format</label>
+        <select id="notes-format">
+          <option value="1">1, 2, 3</option>
+          <option value="a">a, b, c</option>
+          <option value="i">i, ii, iii</option>
+        </select>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-notes-close">Cancel</button>
+        <button id="btn-notes-ok" class="primary">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pagenumber-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="pagenumber-dialog-title">
+    <div class="dialog">
+      <h3 id="pagenumber-dialog-title">Page Number</h3>
+      <div class="dialog-field">
+        <label for="pagenumber-position">Position</label>
+        <select id="pagenumber-position">
+          <option value="top">Top of page (header)</option>
+          <option value="body">At cursor</option>
+          <option value="bottom">Bottom of page (footer)</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label for="pagenumber-align">Alignment</label>
+        <select id="pagenumber-align">
+          <option value="left">Left</option>
+          <option value="center">Center</option>
+          <option value="right">Right</option>
+        </select>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-pagenumber-close">Cancel</button>
+        <button id="btn-pagenumber-ok" class="primary">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="headerfooter-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="headerfooter-dialog-title">
+    <div class="dialog">
+      <h3 id="headerfooter-dialog-title">Header and Footer</h3>
+      <div class="dialog-field">
+        <label for="hf-different-first">Different first page</label>
+        <input id="hf-different-first" type="checkbox">
+      </div>
+      <div class="dialog-field">
+        <label for="hf-distance">Distance from edge (mm)</label>
+        <input id="hf-distance" type="number" min="0" max="50" value="12.5" inputmode="decimal">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-headerfooter-close">Cancel</button>
+        <button id="btn-headerfooter-ok" class="primary">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="trackchanges-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="trackchanges-dialog-title">
+    <div class="dialog">
+      <h3 id="trackchanges-dialog-title">Track Changes</h3>
+      <div class="dialog-field">
+        <label for="tc-enabled">Track changes while editing</label>
+        <input id="tc-enabled" type="checkbox">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-trackchanges-close">Cancel</button>
+        <button id="btn-trackchanges-ok" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
   <!-- Insert-image dialog (modal): a local image file is picked and
        previewed here, then embedded as a self-contained data-URI <img> at
        the saved cursor position. Nothing leaves the browser until the next

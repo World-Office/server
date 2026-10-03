@@ -952,6 +952,8 @@ impl OoxmlParser {
                         continue;
                     }
                     runs.push(DocxRun {
+                        footnote_rid: None,
+                        image_rid: None,
                         text: "\n".to_string(),
                         ..Default::default()
                     });
@@ -959,6 +961,7 @@ impl OoxmlParser {
             }
 
             paragraphs.push(DocxParagraph {
+                raw_flds: Vec::new(),
                 style_id: None,
                 properties: DocxParagraphProperties::default(),
                 runs,
@@ -1043,6 +1046,8 @@ impl OoxmlParser {
         }
 
         Some(DocxRun {
+            footnote_rid: None,
+            image_rid: None,
             text,
             bold,
             italic,
@@ -1294,6 +1299,24 @@ impl OoxmlParser {
     }
 
     /// Parse DOCX body from word/document.xml.
+    /// Read a zip entry as raw bytes (media parts are binary).
+    fn read_zip_entry_bytes(
+        &self,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+        path: &str,
+    ) -> Result<Vec<u8>> {
+        let mut file = archive.by_name(path).map_err(|e| CoreError::Parse {
+            format: "ooxml".into(),
+            message: format!("Missing {}: {}", path, e),
+        })?;
+        let mut buf = Vec::new();
+        Read::read_to_end(&mut file, &mut buf).map_err(|e| CoreError::Parse {
+            format: "ooxml".into(),
+            message: format!("Cannot read {}: {}", path, e),
+        })?;
+        Ok(buf)
+    }
+
     pub fn parse_docx_body(
         &self,
         archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
@@ -1315,8 +1338,13 @@ impl OoxmlParser {
         let body = match body_node {
             Some(node) => self.parse_body_node(&node, &xml),
             None => DocxBody {
+                footnotes_raw: None,
                 blocks: Vec::new(),
-                raw_sect_pr: None, header: None, footer: None,
+                raw_sect_pr: None,
+                header: None,
+                footer: None,
+                media: Vec::new(),
+                image_rels: Vec::new(),
             },
         };
 
@@ -1327,7 +1355,8 @@ impl OoxmlParser {
         if let Ok(rels_xml) = self.read_zip_entry(archive, "word/_rels/document.xml.rels") {
             if let Ok(rels) = self.parse_relationships(&rels_xml) {
                 for rel in &rels {
-                    let is_hf = rel.rel_type.ends_with("/header") || rel.rel_type.ends_with("/footer");
+                    let is_hf =
+                        rel.rel_type.ends_with("/header") || rel.rel_type.ends_with("/footer");
                     if !is_hf {
                         continue;
                     }
@@ -1347,16 +1376,51 @@ impl OoxmlParser {
                         {
                             let blocks = self.parse_block_children(&hf_node, &part_xml);
                             if !blocks.is_empty() {
-                                let hf = HeaderFooter { blocks, style_id: None };
+                                let hf = HeaderFooter {
+                                    blocks,
+                                    style_id: None,
+                                };
                                 if rel.rel_type.ends_with("/header") && body.header.is_none() {
                                     body.header = Some(hf);
-                                } else if rel.rel_type.ends_with("/footer") && body.footer.is_none() {
+                                } else if rel.rel_type.ends_with("/footer") && body.footer.is_none()
+                                {
                                     body.footer = Some(hf);
                                 }
                             }
                         }
                     }
                 }
+            }
+        }
+
+        // Embedded media + image relationships: converters resolve run
+        // image_rid -> data-URI <img> through these instead of dropping the image.
+        let media_names: Vec<String> = archive
+            .file_names()
+            .filter(|n| n.starts_with("word/media/"))
+            .map(|n| n.to_string())
+            .collect();
+        for name in media_names {
+            if let Ok(bytes) = self.read_zip_entry_bytes(archive, &name) {
+                body.media.push(MediaPart { name, bytes });
+            }
+        }
+        // Verbatim footnotes part so the footnote modal's data plane survives.
+        if archive.by_name("word/footnotes.xml").is_ok() {
+            if let Ok(raw) = self.read_zip_entry(archive, "word/footnotes.xml") {
+                body.footnotes_raw = Some(raw);
+            }
+        }
+        // Verbatim footnotes part so the footnote modal's data plane survives.
+        if archive.by_name("word/footnotes.xml").is_ok() {
+            if let Ok(raw) = self.read_zip_entry(archive, "word/footnotes.xml") {
+                body.footnotes_raw = Some(raw);
+            }
+        }
+        if let Ok(rels_xml) = self.read_zip_entry(archive, "word/_rels/document.xml.rels") {
+            if let Ok(rels) = self.parse_relationships(&rels_xml) {
+                body.image_rels
+                    .extend(rels.into_iter().filter(|r| r.rel_type.ends_with("/image")));
             }
         }
 
@@ -1375,10 +1439,13 @@ impl OoxmlParser {
             })
             .map(|c| xml[c.range()].to_string());
         DocxBody {
+            footnotes_raw: None,
             blocks: self.parse_block_children(body, xml),
             raw_sect_pr,
             header: None,
             footer: None,
+            media: Vec::new(),
+            image_rels: Vec::new(),
         }
     }
 
@@ -1425,6 +1492,7 @@ impl OoxmlParser {
         let mut properties = DocxParagraphProperties::default();
         let mut runs = Vec::new();
         let mut raw_ppr = None;
+        let mut raw_flds = Vec::new();
 
         for child in p_node.children() {
             if !child.is_element() {
@@ -1450,6 +1518,12 @@ impl OoxmlParser {
                 }
                 (Some(Self::W_NS), "r") => {
                     runs.push(self.parse_run(&child, xml));
+                }
+                (Some(Self::W_NS), "fldSimple") => {
+                    // Verbatim field subtree (PAGE, NUMPAGES, ...) so the
+                    // typed model's blind spot survives a round trip.
+                    let r = child.range();
+                    raw_flds.push(xml[r.start..r.end].to_string());
                 }
                 (Some(Self::W_NS), "hyperlink") => {
                     // Hyperlinks contain runs. Capture @r:id so the link
@@ -1483,6 +1557,7 @@ impl OoxmlParser {
             runs,
             section_properties: None,
             raw_ppr,
+            raw_flds,
         }
     }
 
@@ -1563,6 +1638,8 @@ impl OoxmlParser {
 
     fn parse_run(&self, r_node: &roxmltree::Node, xml: &str) -> DocxRun {
         let mut run = DocxRun {
+            footnote_rid: None,
+            image_rid: None,
             text: String::new(),
             bold: false,
             italic: false,
@@ -1609,6 +1686,18 @@ impl OoxmlParser {
                     // graphics survive a parse-serialize cycle.
                     let r = child.range();
                     run.drawing = Some(xml[r.start..r.end].to_string());
+                    // And remember the blip's r:embed so converters can emit
+                    // a data-URI <img> via DocxBody::media + image_rels.
+                    if let Some(blip) = child.descendants().find(|n| n.has_tag_name("blip")) {
+                        run.image_rid =
+                            blip.attribute((Self::R_NS, "embed")).map(|s| s.to_string());
+                    }
+                }
+                (Some(Self::W_NS), "footnoteReference") => {
+                    run.footnote_rid = child.attribute((Self::W_NS, "id")).map(|s| s.to_string());
+                }
+                (Some(Self::W_NS), "footnoteReference") => {
+                    run.footnote_rid = child.attribute((Self::W_NS, "id")).map(|s| s.to_string());
                 }
                 (Some(Self::W_NS), "br") => {
                     let br_type = child.attribute("type").unwrap_or("line");

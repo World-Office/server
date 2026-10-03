@@ -773,8 +773,14 @@ fn test_rich_corpus_round_trip() {
         document.contains(r#"<w:hyperlink r:id="rId7">"#),
         "hyperlink wrapper must survive"
     );
-    assert!(document.contains("<w:tblPr>"), "table properties must survive");
-    assert!(document.contains("<w:sectPr>"), "section properties must survive");
+    assert!(
+        document.contains("<w:tblPr>"),
+        "table properties must survive"
+    );
+    assert!(
+        document.contains("<w:sectPr>"),
+        "section properties must survive"
+    );
     assert!(
         document.contains(r#"<w:pgSz w:w="11906" w:h="16838"/>"#),
         "page geometry must survive verbatim"
@@ -797,4 +803,169 @@ fn test_rich_corpus_round_trip() {
     ] {
         assert!(document.contains(text), "text {:?} must survive", text);
     }
+}
+
+/// Extract an arbitrary part from a serialized DOCX archive ("" if absent).
+fn part_xml(bytes: &[u8], name: &str) -> String {
+    let cursor = Cursor::new(bytes);
+    let mut archive = zip::ZipArchive::new(cursor).expect("serialize produced a valid ZIP");
+    let Ok(mut part) = archive.by_name(name) else {
+        return String::new();
+    };
+    let mut content = String::new();
+    part.read_to_string(&mut content).unwrap();
+    content
+}
+
+/// Build a DOCX with a real footnote (word/footnotes.xml + a
+/// footnoteReference run): the footnote modal's data plane.
+fn docx_with_footnote() -> Vec<u8> {
+    let mut buf = Vec::new();
+    {
+        let mut zip = zip::ZipWriter::new(Cursor::new(&mut buf));
+        zip.start_file(
+            "[Content_Types].xml",
+            zip::write::SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/footnotes.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml"/>
+</Types>"#).unwrap();
+        zip.start_file(
+            "word/document.xml",
+            zip::write::SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t>Body text</w:t></w:r><w:r><w:footnoteReference w:id="2"/></w:r></w:p>
+  </w:body>
+</w:document>"#,
+        )
+        .unwrap();
+        zip.start_file(
+            "word/footnotes.xml",
+            zip::write::SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:footnotes xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:footnote w:type="separator" w:id="-1"><w:p><w:r><w:separator/></w:r></w:p></w:footnote>
+  <w:footnote w:id="2"><w:p><w:r><w:t>Footnote body</w:t></w:r></w:p></w:footnote>
+</w:footnotes>"#,
+        )
+        .unwrap();
+        zip.finish().unwrap();
+    }
+    buf
+}
+
+#[test]
+fn test_footnote_round_trip() {
+    let input = docx_with_footnote();
+    let parser = OoxmlParser::new();
+    let doc = parser.parse(&input).expect("parse should succeed");
+    let serializer = OoxmlSerializer::new();
+    let out = serializer
+        .serialize(&doc)
+        .expect("serialize should succeed");
+    let document = document_xml(&out);
+    assert!(
+        document.contains(r#"<w:footnoteReference w:id="2"/>"#),
+        "the footnote reference must survive the round trip"
+    );
+    let footnotes = part_xml(&out, "word/footnotes.xml");
+    assert!(
+        !footnotes.is_empty() && footnotes.contains("Footnote body"),
+        "word/footnotes.xml must survive the round trip"
+    );
+}
+
+/// Build a DOCX whose header carries a PAGE field (the pagenumber modal's
+/// data plane): fldSimple instr=" PAGE " inside word/header1.xml.
+fn docx_with_header_page_field() -> Vec<u8> {
+    let mut buf = Vec::new();
+    {
+        let mut zip = zip::ZipWriter::new(Cursor::new(&mut buf));
+        zip.start_file(
+            "[Content_Types].xml",
+            zip::write::SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>
+</Types>"#).unwrap();
+        zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>"#).unwrap();
+        zip.start_file(
+            "word/document.xml",
+            zip::write::SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <w:body>
+    <w:p><w:r><w:t>Page one</w:t></w:r></w:p>
+    <w:sectPr><w:headerReference w:type="default" r:id="rIdH1"/></w:sectPr>
+  </w:body>
+</w:document>"#).unwrap();
+        zip.start_file(
+            "word/_rels/document.xml.rels",
+            zip::write::SimpleFileOptions::default(),
+        )
+        .unwrap();
+        zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rIdH1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/>
+</Relationships>"#).unwrap();
+        zip.start_file("word/header1.xml", zip::write::SimpleFileOptions::default())
+            .unwrap();
+        zip.write_all(
+            br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:p><w:fldSimple w:instr=" PAGE "><w:r><w:t>1</w:t></w:r></w:fldSimple></w:p>
+</w:hdr>"#,
+        )
+        .unwrap();
+        zip.finish().unwrap();
+    }
+    buf
+}
+
+#[test]
+fn test_header_page_field_round_trip() {
+    let input = docx_with_header_page_field();
+    let parser = OoxmlParser::new();
+    let doc = parser.parse(&input).expect("parse should succeed");
+    assert!(
+        doc.docx_body
+            .as_ref()
+            .and_then(|b| b.header.as_ref())
+            .is_some(),
+        "the header part must be parsed into the body"
+    );
+    let serializer = OoxmlSerializer::new();
+    let out = serializer
+        .serialize(&doc)
+        .expect("serialize should succeed");
+    let header = part_xml(&out, "word/header1.xml");
+    assert!(
+        header.contains("PAGE"),
+        "the PAGE field instr must survive the header round trip, got: {header}"
+    );
 }
