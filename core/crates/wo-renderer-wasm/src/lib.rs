@@ -2350,6 +2350,7 @@ fn insert_char_at_cursor(
     body.blocks.push(DocxBlock::Paragraph(DocxParagraph {
         style_id: None,
         properties: DocxParagraphProperties::default(),
+        raw_flds: Vec::new(),
         runs: vec![DocxRun {
             text: ch.to_string(),
             ..Default::default()
@@ -2373,6 +2374,7 @@ fn insert_paragraph_break(
     let new_para = DocxParagraph {
         style_id: None,
         properties: DocxParagraphProperties::default(),
+        raw_flds: Vec::new(),
         runs: vec![DocxRun::default()],
         section_properties: None,
         raw_ppr: None,
@@ -3339,6 +3341,7 @@ pub fn apply_structure_op(
                 paragraphs: vec![DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
+                    raw_flds: Vec::new(),
                     runs: vec![DocxRun::default()],
                     section_properties: None,
                     raw_ppr: None,
@@ -3376,6 +3379,7 @@ pub fn apply_structure_op(
                     page_break_before: true,
                     ..Default::default()
                 },
+                raw_flds: Vec::new(),
                 runs: vec![DocxRun::default()],
                 section_properties: None,
                 raw_ppr: None,
@@ -3391,6 +3395,7 @@ pub fn apply_structure_op(
             let rule_para = DocxParagraph {
                 style_id: None,
                 properties: DocxParagraphProperties::default(),
+                raw_flds: Vec::new(),
                 runs: vec![DocxRun {
                     text: "─".repeat(80),
                     ..Default::default()
@@ -3408,6 +3413,7 @@ pub fn apply_structure_op(
                     page_break_before: true,
                     ..Default::default()
                 },
+                raw_flds: Vec::new(),
                 runs: vec![DocxRun::default()],
                 section_properties: None,
                 raw_ppr: None,
