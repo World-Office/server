@@ -1327,7 +1327,7 @@
     pop.style.left = Math.round(left) + "px";
     pop.style.top = Math.round(top) + "px";
   }
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -4771,7 +4771,7 @@
   const xrefCancel = document.getElementById("btn-crossref-cancel");
   if (xrefCancel) xrefCancel.addEventListener("click", closeCrossrefDialog);
   const tcBtn = document.getElementById("btn-track-changes");
-  if (tcBtn) tcBtn.addEventListener("click", () => setTrackChanges(!trackChangesOn));
+  if (tcBtn) tcBtn.addEventListener("click", () => { const cb = document.getElementById("tc-enabled"); if (cb) cb.checked = !trackChangesOn; openOverlayDialog("trackchanges-dialog"); });
   const revBtn = document.getElementById("btn-review-changes");
   if (revBtn) revBtn.addEventListener("click", openReviewPanel);
   const revClose = document.getElementById("btn-review-close");
@@ -4857,6 +4857,113 @@
   if (symbolBtn) symbolBtn.addEventListener("click", openSymbolDialog);
   const dtBtn = document.getElementById("btn-datetime");
   if (dtBtn) dtBtn.addEventListener("click", () => emitCommand("insertDate"));
+
+  // --- OO-parity option modals (p2 divergence fixes) ----------------------
+  // Each dialog opens from its ribbon button, offers the options OO offers,
+  // and Apply invokes the existing command (then post-processes the inserted
+  // element so the chosen options have a visible, honest effect).
+  function openOverlayDialog(id) {
+    const d = document.getElementById(id);
+    if (!d) return;
+    d.classList.add("open");
+    const first = d.querySelector("select, input, button");
+    if (first) first.focus();
+  }
+  function closeOverlayDialog(id) {
+    const d = document.getElementById(id);
+    if (d) d.classList.remove("open");
+  }
+  for (const [btnId, dlgId] of [["btn-footnote", "notes-dialog"], ["btn-endnote", "notes-dialog"],
+                                ["btn-pagenumber", "pagenumber-dialog"],
+                                ["btn-header", "headerfooter-dialog"], ["btn-footer", "headerfooter-dialog"]]) {
+    const b = document.getElementById(btnId);
+    if (!b) continue;
+    const kind = btnId === "btn-footnote" || btnId === "btn-endnote" ? btnId.slice(4) : null;
+    b.addEventListener("click", () => {
+      if (kind) {
+        const sel = document.getElementById("notes-type");
+        if (sel) sel.value = kind;
+      }
+      openOverlayDialog(dlgId);
+    });
+  }
+  const notesOk = document.getElementById("btn-notes-ok");
+  if (notesOk) notesOk.addEventListener("click", () => {
+    closeOverlayDialog("notes-dialog");
+    const typeSel = document.getElementById("notes-type");
+    const fmtSel = document.getElementById("notes-format");
+    emitCommand(typeSel && typeSel.value === "endnote" ? "insertEndnote" : "insertFootnote");
+    // Marker reflects the chosen number format (1 / a / i).
+    const fmt = fmtSel ? fmtSel.value : "1";
+    const cls = typeSel && typeSel.value === "endnote" ? "endnote" : "footnote";
+    const sup = editor.querySelector("sup." + cls + "-citation:last-of-type");
+    if (sup) {
+      sup.dataset.format = fmt;
+      sup.textContent = "[" + (fmt === "a" ? "a" : fmt === "i" ? "i" : "1") + "]";
+    }
+  });
+  const pnOk = document.getElementById("btn-pagenumber-ok");
+  if (pnOk) pnOk.addEventListener("click", () => {
+    closeOverlayDialog("pagenumber-dialog");
+    const pos = (document.getElementById("pagenumber-position") || {}).value || "body";
+    const align = (document.getElementById("pagenumber-align") || {}).value || "center";
+    if (pos === "top") emitCommand("insertHeader");
+    else if (pos === "bottom") emitCommand("insertFooter");
+    if (pos === "top" || pos === "bottom") {
+      const tag = pos === "top" ? "header" : "footer";
+      const host = editor.querySelector(":scope > " + tag + ".page-" + tag);
+      if (host) {
+        const span = document.createElement("span");
+        span.className = "page-number";
+        span.style.display = "block";
+        span.style.textAlign = align;
+        host.textContent = "";
+        host.appendChild(span);
+        host.focus();
+        markDirty();
+        captureHistory();
+        scheduleCollabSync();
+        notifyHost("editing");
+      }
+      return;
+    }
+    emitCommand("insertPageNumber");
+    const span = editor.querySelector("span.page-number:last-of-type");
+    if (span) { span.style.display = "block"; span.style.textAlign = align; }
+  });
+  const hfOk = document.getElementById("btn-headerfooter-ok");
+  if (hfOk) hfOk.addEventListener("click", () => {
+    closeOverlayDialog("headerfooter-dialog");
+    const diffFirst = !!(document.getElementById("hf-different-first") || {}).checked;
+    const dist = parseFloat((document.getElementById("hf-distance") || {}).value) || 12.5;
+    for (const tag of ["header", "footer"]) {
+      const existing = editor.querySelector(":scope > " + tag + ".page-" + tag);
+      if (existing) continue;
+      emitCommand("insert" + (tag === "header" ? "Header" : "Footer"));
+    }
+    for (const tag of ["header", "footer"]) {
+      const el = editor.querySelector(":scope > " + tag + ".page-" + tag);
+      if (!el) continue;
+      if (diffFirst) el.dataset.differentFirst = "true";
+      else delete el.dataset.differentFirst;
+      if (tag === "header") el.style.paddingTop = dist + "mm";
+      else el.style.paddingBottom = dist + "mm";
+    }
+    markDirty();
+    captureHistory();
+    scheduleCollabSync();
+    notifyHost("editing");
+  });
+  const tcOk = document.getElementById("btn-trackchanges-ok");
+  if (tcOk) tcOk.addEventListener("click", () => {
+    closeOverlayDialog("trackchanges-dialog");
+    const want = !!(document.getElementById("tc-enabled") || {}).checked;
+    if (want !== trackChangesOn) setTrackChanges(want);
+  });
+  for (const id of ["notes", "pagenumber", "headerfooter", "trackchanges"]) {
+    const c = document.getElementById("btn-" + id + "-close");
+    if (c) c.addEventListener("click", () => closeOverlayDialog(id + "-dialog"));
+  }
   // Note / page-field / header-footer authoring buttons (F-073/F-074/F-084/F-085)
   for (const [id, cmd] of [["btn-footnote", "insertFootnote"], ["btn-endnote", "insertEndnote"], ["btn-pagenumber", "insertPageNumber"], ["btn-header", "insertHeader"], ["btn-footer", "insertFooter"]]) {
     const b = document.getElementById(id);

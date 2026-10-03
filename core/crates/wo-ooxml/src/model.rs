@@ -474,6 +474,17 @@ pub enum DocxBlock {
 pub struct DocxBody {
     /// Blocks preserving document order (paragraphs and tables interleaved)
     pub blocks: Vec<DocxBlock>,
+    /// Embedded media parts (word/media/*) so converters can emit data-URI
+    /// images instead of silently dropping inline graphics.
+    #[serde(default)]
+    pub media: Vec<MediaPart>,
+    /// Image relationships (rId -> word/media target) from document.xml.rels.
+    #[serde(default)]
+    pub image_rels: Vec<Relationship>,
+    /// Verbatim `word/footnotes.xml` content captured at parse time,
+    /// re-emitted unchanged so footnote bodies survive a round trip.
+    #[serde(default)]
+    pub footnotes_raw: Option<String>,
     /// Verbatim body-level `<w:sectPr>` captured at parse time. When set, the
     /// serializer emits it unchanged before `</w:body>`, so section features
     /// (page size, margins, columns) survive a parse-serialize cycle.
@@ -493,10 +504,13 @@ impl DocxBody {
     /// Create a new empty DocxBody
     pub fn new() -> Self {
         Self {
+            footnotes_raw: None,
             header: None,
             footer: None,
             blocks: Vec::new(),
             raw_sect_pr: None,
+            media: Vec::new(),
+            image_rels: Vec::new(),
         }
     }
 
@@ -507,10 +521,13 @@ impl DocxBody {
         let mut blocks: Vec<DocxBlock> = paragraphs.into_iter().map(DocxBlock::Paragraph).collect();
         blocks.extend(tables.into_iter().map(DocxBlock::Table));
         Self {
+            footnotes_raw: None,
             blocks,
             raw_sect_pr: None,
             header: None,
             footer: None,
+            media: Vec::new(),
+            image_rels: Vec::new(),
         }
     }
 
@@ -632,6 +649,11 @@ pub struct DocxParagraph {
     /// emits it verbatim instead of reconstructing the typed properties.
     #[serde(default)]
     pub raw_ppr: Option<String>,
+    /// Verbatim `<w:fldSimple>` subtrees captured at parse time (PAGE,
+    /// NUMPAGES and friends the typed model cannot represent), re-emitted
+    /// unchanged so fields survive a parse-serialize cycle.
+    #[serde(default)]
+    pub raw_flds: Vec<String>,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
@@ -737,6 +759,16 @@ pub struct DocxRun {
     /// sharing a r:id into a single `<w:hyperlink>` wrapper.
     #[serde(default)]
     pub hyperlink_rid: Option<String>,
+    /// Relationship id (`r:embed` on the drawing's blip) of an inline image,
+    /// extracted at parse time so converters can resolve it through
+    /// `DocxBody::image_rels` + `DocxBody::media` into a data-URI `<img>`.
+    #[serde(default)]
+    pub image_rid: Option<String>,
+    /// `w:id` of a `<w:footnoteReference>` in this run, re-emitted by the
+    /// serializer so the reference (and with `footnotes_raw` the body)
+    /// survives a round trip.
+    #[serde(default)]
+    pub footnote_rid: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -771,6 +803,14 @@ pub struct DocxTable {
     /// unchanged so column definitions (`w:gridCol`) survive a round trip.
     #[serde(default)]
     pub raw_tbl_grid: Option<String>,
+}
+
+/// An embedded media part (image bytes straight from the zip).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MediaPart {
+    /// Zip path, e.g. "word/media/image1.png".
+    pub name: String,
+    pub bytes: Vec<u8>,
 }
 
 /// An image in the document body.

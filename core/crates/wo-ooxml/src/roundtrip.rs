@@ -210,7 +210,7 @@ mod tests {
   <w:body>
     <w:p>
       <w:r>
-        <w:rPr><w:b/><w:i/><w:u val="single"/><w:color val="FF0000"/></w:rPr>
+        <w:rPr><w:b/><w:i/><w:u w:val="single"/><w:color w:val="FF0000"/></w:rPr>
         <w:t>Bold italic red underlined</w:t>
       </w:r>
     </w:p>
