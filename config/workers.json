@@ -1,0 +1,13 @@
+{
+  "workers": [
+    {
+      "name": "wo",
+      "provider": "litellm",
+      "model": "litellm/glm-4.6",
+      "cli": "opencode",
+      "command": "opencode run -m litellm/glm-4.6 \"$(cat {prompt})\"",
+      "api_key_env": "LITELLM_API_KEY",
+      "max_attempts": 3
+    }
+  ]
+}

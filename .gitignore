@@ -134,3 +134,6 @@ scripts/wo-orchestrator/state/
 
 # taskfleet worktrees (do not commit)
 .tf-worktrees/
+
+# agentflow campaign state
+.af-state/

@@ -1,0 +1,11 @@
+{
+  "tasks": [
+    {
+      "id": "X2T-TESTS",
+      "title": "Unit tests for wo-x2t converters (16k lines, 0 lib tests)",
+      "scope": ["server/core/crates/wo-x2t"],
+      "accept": "cd server && cargo test -p wo-x2t 2>&1 | grep -qE 'test result: ok. [1-9][0-9]+ passed'",
+      "acceptance_prose": "server/core/crates/wo-x2t/src/converters.rs is ~16k lines with 53 convert implementations and ZERO unit tests. Add #[cfg(test)] test modules (in converters.rs or a tests file wired into the crate) covering AT MINIMUM: RtfToTxt, RtfToHtml, HtmlToTxt, TxtToHtml, TxtToRtf, DocxToTxt. Each converter test: a small inline fixture (bytes/string), convert(), then assert on the essential content of the output (substring/structure checks, NOT exact formatting) plus at least one error-path test (empty/invalid input yields ConversionError, not a panic). Also test ConverterRegistry: registering a converter and looking it up by (source, target) pair, and the roundtrip.rs identity path. Target >= 20 new passing tests total (the gate greps for 'test result: ok' with a two-digit pass count). All pre-existing tests must keep passing. Do not change production behavior unless a test exposes a genuine bug - if so, fix it minimally and say so in the commit message. No new dependencies. cargo only (rustup toolchain via rust-toolchain.toml). Commit on the current branch with a conventional message."
+    }
+  ]
+}
