@@ -949,18 +949,7 @@
     // html===lastSnapshot guard keeps this a no-op when the event already ran.
     // --- WS-B promoted commands -------------------------------------
     if (cmd === "insertObject") { openObjectDialog(String(value || "shape")); return; }
-    if (cmd === "updateToc") {
-      if (!editor.querySelector("nav.toc")) {
-        editor.focus();
-        document.execCommand("insertHTML", false,
-          '<nav class="toc" data-title="Table of Contents"></nav><p><br></p>');
-        moveCaretPastStructuralMarkers();
-      }
-      refreshToc();
-      captureHistory(); markDirty(); scheduleCollabSync(); notifyHost("editing");
-      setStatus("TOC updated");
-      return;
-    }
+    if (cmd === "updateToc") { openUpdateTocDialog(); return; }
     if (cmd === "aiTranslate") {
       openAiPropose("Translate the document into " + String(value || "German") + ".");
       return;
@@ -977,7 +966,7 @@
       openAiPropose("Perform OCR on the document, extract all text, and return it as plain text.");
       return;
     }
-    if (cmd === "displayMode") { cycleDisplayMode(); return; }
+    if (cmd === "displayMode") { openDisplayModeDialog(); return; }
     if (cmd === "link") { insertLink(); return; }
     if (cmd === "toggleGridlines") { toggleGridlines(); return; }
     if (cmd === "toggleNavigation") { toggleNavigation(); return; }
@@ -988,9 +977,9 @@
     if (cmd === "compareVersion") { openCompareView(); return; }
     if (cmd === "prevTrackedChange") { prevTrackedChange(); return; }
     if (cmd === "nextTrackedChange") { nextTrackedChange(); return; }
-    if (cmd === "toggleHyphenation") { toggleSectionMarker("hyphenation", "data-auto=\"1\""); return; }
-    if (cmd === "toggleLineNumbers") { toggleSectionMarker("line-numbers", "data-restart=\"eachPage\""); return; }
-    if (cmd === "toggleWatermark") { toggleSectionMarker("watermark", "data-text=\"DRAFT\" data-color=\"#C0C0C0\""); return; }
+    if (cmd === "toggleHyphenation") { openHyphenationDialog(); return; }
+    if (cmd === "toggleLineNumbers") { openLineNumbersDialog(); return; }
+    if (cmd === "toggleWatermark") { openWatermarkDialog(); return; }
     if (cmd === "toggleDifferentFirst") { toggleSectionMarker("different-first", ""); return; }
     if (cmd === "toggleOddEven") { toggleSectionMarker("odd-even", ""); return; }
     // Distances use a non-default value (0.8") so the marker round-trips:
@@ -999,7 +988,7 @@
     // page-setup dialog) would be the natural upgrade.
     if (cmd === "toggleHeaderFromTop") { toggleSectionMarker("header-from-top", "data-inches=\"0.8\""); return; }
     if (cmd === "toggleFooterFromBottom") { toggleSectionMarker("footer-from-bottom", "data-inches=\"0.8\""); return; }
-    if (cmd === "toggleDropcap") { toggleDropcap(); return; }
+    if (cmd === "toggleDropcap") { openDropcapDialog(); return; }
     if (cmd === "openBorders") { openBordersDialog(); return; }
     if (cmd === "multilevel") { multilevelItem(); return; }
     if (cmd === "insertToF") { insertToFCommand(); return; }
@@ -1327,7 +1316,7 @@
     pop.style.left = Math.round(left) + "px";
     pop.style.top = Math.round(top) + "px";
   }
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -3523,6 +3512,8 @@
     mergeSplits(tmp);
     return tmp.innerHTML;
   }
+  // Export hook for the bridge (fresh-content export); additive, no behavior change.
+  window.__WO_FLAT_HTML__ = flatHtml;
 
   // --- reflow on mutation ------------------------------------------------
   // Re-paginate after editing/typing pauses so growing content re-snaps to
@@ -3719,6 +3710,13 @@
     if (READ_ONLY) return;
     editor.style.setProperty("--paper", pageColor.value);
   });
+  // OO-parity: Page Color opens a palette dialog (in-dialog swatches + custom
+  // color) instead of the bare native picker; the preview input stays for the
+  // dialog's custom-color row.
+  if (pageColor) pageColor.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    openPageColorDialog();
+  });
   const COLOR_SCHEMES = {
     default: {},
     gold: { "--paper": "#fdf8ec", "--ink": "#352a17" },
@@ -3731,6 +3729,12 @@
     if (READ_ONLY) return;
     const vars = COLOR_SCHEMES[themeColorsSel.value] || {};
     for (const [k, v] of Object.entries(vars)) editor.style.setProperty(k, v);
+  });
+  // OO-parity: Colors opens a scheme dialog (palette modal) instead of the
+  // bare native select.
+  if (themeColorsSel) themeColorsSel.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    openColorsDialog();
   });
 
   // View tab: navigation sidebar lists the document outline; clicking a
@@ -4962,6 +4966,215 @@
     const c = document.getElementById("btn-" + id + "-close");
     if (c) c.addEventListener("click", () => closeOverlayDialog(id + "-dialog"));
   }
+
+  // ── OO-parity option modals round 2 ──────────────────────────────────────
+  // drop-cap / line numbers / hyphenation / watermark / page color / theme
+  // colors / add-text / update-TOC / display-mode previously acted directly;
+  // like OO, each now opens an options dialog and only OK touches the
+  // document. Section-marker values are OOXML-canonical so the round-trip
+  // writes w:restart="newPage" etc. (not the old "eachPage" shorthand).
+  function removeSectionMarker(klass) {
+    const m = sectionMarkerEl(klass);
+    if (m) { m.remove(); markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing"); updateActiveStates(); }
+  }
+  function setSectionMarker(klass, attrs) {
+    if (sectionMarkerEl(klass)) removeSectionMarker(klass);
+    toggleSectionMarker(klass, attrs);
+  }
+
+  // Drop Cap (Insert). Replaces the fixed 2.6em drop with parameterized
+  // CSS vars so lines/distance/in-margin actually change the render.
+  function applyDropcap(opts) {
+    opts = opts || {};
+    editor.focus();
+    const sel = document.getSelection();
+    if (!sel || !sel.rangeCount) return;
+    const sc = sel.getRangeAt(0).startContainer;
+    let p = sc.nodeType === 1
+      ? (sc.closest ? sc.closest("p") : null)
+      : (sc.parentElement && sc.parentElement.closest("p"));
+    if (!p) {
+      if (editor.contains(sc)) p = editor.querySelector("p");
+      if (!p) return;
+    }
+    const existing = p.querySelector(":scope > span.dropcap");
+    if (existing) existing.remove();
+    const tn = firstTextNode(p);
+    if (!tn) return;
+    const ch = tn.data[0];
+    if (!ch || /\s/.test(ch)) return;
+    const span = document.createElement("span");
+    span.className = "dropcap" + (opts.inMargin ? " in-margin" : "");
+    if (opts.lines) span.style.setProperty("--drop-lines", String(opts.lines));
+    if (opts.distance) span.style.setProperty("--drop-distance", opts.distance + "pt");
+    span.textContent = ch;
+    tn.data = tn.data.slice(1);
+    tn.parentNode.insertBefore(span, tn);
+    captureHistory();
+    markDirty();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
+  }
+  function toggleDropcap() { applyDropcap({}); }
+  function confirmDropcapDialog() {
+    const pos = (document.getElementById("dropcap-position") || {}).value || "dropped";
+    if (pos === "none") { if (!READ_ONLY) removeDropcapOnly(); return; }
+    if (READ_ONLY) return;
+    const lines = parseInt((document.getElementById("dropcap-lines") || {}).value, 10);
+    const distance = parseFloat((document.getElementById("dropcap-distance") || {}).value);
+    applyDropcap({ inMargin: pos === "in-margin",
+                   lines: Number.isFinite(lines) ? Math.max(2, Math.min(5, lines)) : 3,
+                   distance: Number.isFinite(distance) ? Math.max(0, Math.min(50, distance)) : 0 });
+  }
+  function removeDropcapOnly() {
+    editor.focus();
+    const sel = document.getSelection();
+    if (!sel || !sel.rangeCount) return;
+    const sc = sel.getRangeAt(0).startContainer;
+    const p = sc.nodeType === 1 ? (sc.closest ? sc.closest("p") : null)
+      : (sc.parentElement && sc.parentElement.closest("p"));
+    if (!p) return;
+    const existing = p.querySelector(":scope > span.dropcap");
+    if (!existing) return;
+    existing.remove();
+    captureHistory(); markDirty(); scheduleCollabSync(); notifyHost("editing"); updateActiveStates();
+  }
+
+  // Line Numbers (Layout) -> data-restart="continuous|newPage|newSection".
+  function confirmLineNumbersDialog() {
+    const mode = (document.getElementById("ln-mode") || {}).value || "restart-each-page";
+    if (READ_ONLY) return;
+    if (mode === "none") { removeSectionMarker("line-numbers"); setStatus("Line numbers off"); return; }
+    const restart = mode === "continuous" ? "continuous"
+      : mode === "restart-each-section" ? "newSection"
+      : "newPage";
+    setSectionMarker("line-numbers", `data-restart="${restart}"`);
+    setStatus("Line numbers: " + restart);
+  }
+
+  // Hyphenation (Layout) -> data-auto="1".
+  function confirmHyphenationDialog() {
+    const mode = (document.getElementById("hy-mode") || {}).value || "auto";
+    if (READ_ONLY) return;
+    if (mode === "none") { removeSectionMarker("hyphenation"); setStatus("Hyphenation off"); return; }
+    setSectionMarker("hyphenation", 'data-auto="1"');
+    setStatus("Hyphenation on");
+  }
+
+  // Watermark (Layout) -> data-text + data-color.
+  function confirmWatermarkDialog() {
+    const mode = (document.getElementById("wm-mode") || {}).value || "draft";
+    const color = (document.getElementById("wm-color") || {}).value || "#C0C0C0";
+    if (READ_ONLY) return;
+    if (mode === "none") { removeSectionMarker("watermark"); setStatus("Watermark removed"); return; }
+    const text = (mode === "custom" ? ((document.getElementById("wm-text") || {}).value || "CONFIDENTIAL") : mode.toUpperCase())
+      .replace(/"/g, "");
+    setSectionMarker("watermark", `data-text="${text}" data-color="${color}"`);
+    setStatus("Watermark: " + text);
+  }
+
+  // Page Color (Layout) -> paper swatch palette (native picker replaced).
+  let pageColorPicked = null;
+  function openPageColorDialog() {
+    closeAllMenus();
+    pageColorPicked = null;
+    openOverlayDialog("pagecolor-dialog");
+  }
+  function confirmPageColorDialog() {
+    if (READ_ONLY) return;
+    const custom = document.getElementById("pagecolor-custom");
+    const color = pageColorPicked || (custom && custom.value) || "#ffffff";
+    editor.style.setProperty("--paper", color);
+    const pageColor = document.getElementById("pagecolor");
+    if (pageColor) pageColor.value = color.toLowerCase();
+    setStatus("Page color set");
+  }
+
+  // Theme colors (Layout) -> scheme dialog (native select replaced).
+  function openColorsDialog() {
+    closeAllMenus();
+    const sel = document.getElementById("cs-scheme");
+    const cur = document.getElementById("themecolors");
+    if (sel && cur) sel.value = cur.value || "default";
+    openOverlayDialog("colors-dialog");
+  }
+  function confirmColorsDialog() {
+    if (READ_ONLY) return;
+    const scheme = (document.getElementById("cs-scheme") || {}).value || "default";
+    const cur = document.getElementById("themecolors");
+    if (cur) cur.value = scheme;
+    const vars = COLOR_SCHEMES[scheme] || {};
+    for (const [k, v] of Object.entries(vars)) editor.style.setProperty(k, v);
+    setStatus("Color scheme: " + scheme);
+  }
+
+  // Update TOC (References) -> whole-table vs page-numbers-only choice.
+  function openUpdateTocDialog() {
+    closeAllMenus();
+    openOverlayDialog("updatetoc-dialog");
+  }
+  function confirmUpdateTocDialog() {
+    const choice = (document.getElementById("toc-update") || {}).value || "entire";
+    if (READ_ONLY) return;
+    if (!editor.querySelector("nav.toc")) {
+      editor.focus();
+      document.execCommand("insertHTML", false,
+        '<nav class="toc" data-title="Table of Contents"></nav><p><br></p>');
+      moveCaretPastStructuralMarkers();
+    }
+    refreshToc();
+    captureHistory(); markDirty(); scheduleCollabSync(); notifyHost("editing");
+    // ponytail: the live preview links headings, not rendered page numbers,
+    // so "page numbers only" re-links the same entries (honest, no fake diff).
+    setStatus(choice === "pages" ? "Page numbers updated" : "TOC updated");
+  }
+
+  // Display mode (Collaboration / View) -> Markup / Original / Final choice.
+  function openDisplayModeDialog() {
+    closeAllMenus();
+    const sel = document.getElementById("viewmode");
+    if (sel) sel.value = editor.dataset.viewMode || "markup";
+    openOverlayDialog("displaymode-dialog");
+  }
+  function confirmDisplayModeDialog() {
+    const mode = (document.getElementById("viewmode") || {}).value || "markup";
+    editor.dataset.viewMode = mode;
+    setStatus("Display mode: " + mode);
+  }
+
+  function openDropcapDialog() { closeAllMenus(); openOverlayDialog("dropcap-dialog"); }
+  function openLineNumbersDialog() { closeAllMenus(); openOverlayDialog("linenumbers-dialog"); }
+  function openHyphenationDialog() { closeAllMenus(); openOverlayDialog("hyphenation-dialog"); }
+  function openWatermarkDialog() { closeAllMenus(); openOverlayDialog("watermark-dialog"); }
+
+  const ROUND2 = [
+    ["dropcap", confirmDropcapDialog], ["linenumbers", confirmLineNumbersDialog],
+    ["hyphenation", confirmHyphenationDialog], ["watermark", confirmWatermarkDialog],
+    ["pagecolor", confirmPageColorDialog], ["colors", confirmColorsDialog],
+    ["addtext", null], ["updatetoc", confirmUpdateTocDialog],
+    ["displaymode", confirmDisplayModeDialog],
+  ];
+  for (const [name, confirm] of ROUND2) {
+    const ok = document.getElementById("btn-" + name + "-ok");
+    const close = document.getElementById("btn-" + name + "-close");
+    if (ok && confirm) ok.addEventListener("click", () => { closeOverlayDialog(name + "-dialog"); confirm(); });
+    if (close) close.addEventListener("click", () => closeOverlayDialog(name + "-dialog"));
+  }
+  const wmMode = document.getElementById("wm-mode");
+  if (wmMode) wmMode.addEventListener("change", () => {
+    const row = document.getElementById("wm-custom-row");
+    if (row) row.hidden = wmMode.value !== "custom";
+  });
+  const pageSwatches = document.getElementById("pagecolor-swatches");
+  if (pageSwatches) pageSwatches.addEventListener("click", (ev) => {
+    const btn = ev.target.closest && ev.target.closest(".color-swatch");
+    if (!btn) return;
+    pageColorPicked = btn.dataset.color || null;
+    pageSwatches.querySelectorAll(".color-swatch").forEach((s) => s.classList.toggle("sel", s === btn));
+    const custom = document.getElementById("pagecolor-custom");
+    if (custom && pageColorPicked && pageColorPicked.startsWith("#")) custom.value = pageColorPicked;
+  });
   // Note / page-field / header-footer authoring buttons (F-073/F-074/F-084/F-085)
   for (const [id, cmd] of [["btn-footnote", "insertFootnote"], ["btn-endnote", "insertEndnote"], ["btn-pagenumber", "insertPageNumber"], ["btn-header", "insertHeader"], ["btn-footer", "insertFooter"]]) {
     const b = document.getElementById(id);
@@ -6406,10 +6619,10 @@
   const btnMailClose = document.getElementById("btn-mailmerge-close");
   if (btnMailClose) btnMailClose.addEventListener("click", () => closeDlg("mailmerge-dialog"));
 
-  // Insert > Add text: mask the selected text as an annotation overlay (view
-  // surface only — the marker text itself stays in the document).
+  // Insert > Add text: OO-parity options dialog (level picker) around the
+  // selection-mask (view surface only — the marker text stays in the doc).
   const btnAddText = document.getElementById("btn-addtext");
-  if (btnAddText) btnAddText.addEventListener("click", () => {
+  function confirmAddTextDialog() {
     if (READ_ONLY) return;
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed || !sel.rangeCount) { setStatus("Select text first", true); return; }
@@ -6422,14 +6635,19 @@
       setStatus("Add-text mask removed");
       return;
     }
+    const level = (document.getElementById("addtext-level") || {}).value || "body";
     const wrap = document.createElement("span");
     wrap.className = "add-text-mask";
     wrap.setAttribute("data-addtext", "1");
+    if (level !== "body") wrap.setAttribute("data-level", level);
     wrap.title = "Add-text annotation";
     try { sel.getRangeAt(0).surroundContents(wrap); } catch { setStatus("Selection spans a boundary — try a plain text selection", true); return; }
     sel.removeAllRanges();
-    setStatus("Text masked as add-text annotation");
-  });
+    setStatus("Text masked as add-text annotation (level " + level + ")");
+  }
+  if (btnAddText) btnAddText.addEventListener("click", () => { closeAllMenus(); openOverlayDialog("addtext-dialog"); });
+  const btnAddTextOk = document.getElementById("btn-addtext-ok");
+  if (btnAddTextOk) btnAddTextOk.addEventListener("click", () => { closeOverlayDialog("addtext-dialog"); confirmAddTextDialog(); });
 
   // Statusbar > multiple pages view: show page-separator gutters in the flow
   // (CSS-only, nothing enters the document).

@@ -809,6 +809,212 @@
       </div>
     </div>
   </div>
+
+  <!-- OO-parity option modals round 2 (drop cap / line numbers / hyphenation /
+       watermark / page color / theme colors / add-text / update TOC / display
+       mode): the commands now open an options dialog (as OO does) and only the
+       OK button acts on the document. Round 1 covered notes / page number /
+       header-footer / track changes (F-073/F-084/F-085 & friends). -->
+  <div id="dropcap-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="dropcap-dialog-title">
+    <div class="dialog">
+      <h3 id="dropcap-dialog-title">Drop Cap</h3>
+      <div class="dialog-field">
+        <label for="dropcap-position">Position</label>
+        <select id="dropcap-position">
+          <option value="none">None</option>
+          <option value="dropped" selected>Dropped</option>
+          <option value="in-margin">In margin</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label for="dropcap-lines">Lines to drop</label>
+        <input id="dropcap-lines" type="number" min="2" max="5" value="3" inputmode="numeric">
+      </div>
+      <div class="dialog-field">
+        <label for="dropcap-distance">Distance from text (pt)</label>
+        <input id="dropcap-distance" type="number" min="0" max="50" value="0" inputmode="numeric">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-dropcap-close">Cancel</button>
+        <button id="btn-dropcap-ok" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="linenumbers-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="linenumbers-dialog-title">
+    <div class="dialog">
+      <h3 id="linenumbers-dialog-title">Line Numbers</h3>
+      <div class="dialog-field">
+        <label for="ln-mode">Apply to</label>
+        <select id="ln-mode">
+          <option value="none">No line numbers</option>
+          <option value="continuous">Continuous</option>
+          <option value="restart-each-page" selected>Restart each page</option>
+          <option value="restart-each-section">Restart each section</option>
+        </select>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-linenumbers-close">Cancel</button>
+        <button id="btn-linenumbers-ok" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="hyphenation-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="hyphenation-dialog-title">
+    <div class="dialog">
+      <h3 id="hyphenation-dialog-title">Hyphenation</h3>
+      <div class="dialog-field">
+        <label for="hy-mode">Hyphenation</label>
+        <select id="hy-mode">
+          <option value="none">None</option>
+          <option value="auto" selected>Automatic</option>
+        </select>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-hyphenation-close">Cancel</button>
+        <button id="btn-hyphenation-ok" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="watermark-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="watermark-dialog-title">
+    <div class="dialog">
+      <h3 id="watermark-dialog-title">Watermark</h3>
+      <div class="dialog-field">
+        <label for="wm-mode">Watermark</label>
+        <select id="wm-mode">
+          <option value="none">No watermark</option>
+          <option value="draft" selected>DRAFT</option>
+          <option value="confidential">CONFIDENTIAL</option>
+          <option value="custom">Custom text…</option>
+        </select>
+      </div>
+      <div class="dialog-field" id="wm-custom-row" hidden>
+        <label for="wm-text">Custom text</label>
+        <input id="wm-text" type="text" value="CONFIDENTIAL">
+      </div>
+      <div class="dialog-field">
+        <label for="wm-color">Color</label>
+        <select id="wm-color">
+          <option value="#C0C0C0" selected>Gray</option>
+          <option value="#CC3333">Red</option>
+          <option value="#000000">Black</option>
+        </select>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-watermark-close">Cancel</button>
+        <button id="btn-watermark-ok" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="pagecolor-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="pagecolor-dialog-title">
+    <div class="dialog">
+      <h3 id="pagecolor-dialog-title">Page Color</h3>
+      <div class="dialog-field">
+        <label>Swatches</label>
+        <div class="color-swatches" id="pagecolor-swatches">
+          <button type="button" class="color-swatch sel" data-color="#ffffff" style="background:#ffffff" aria-label="White"></button>
+          <button type="button" class="color-swatch" data-color="#fdf8ec" style="background:#fdf8ec" aria-label="Cream"></button>
+          <button type="button" class="color-swatch" data-color="#f6faff" style="background:#f6faff" aria-label="Blue tint"></button>
+          <button type="button" class="color-swatch" data-color="#feffea" style="background:#feffea" aria-label="Green tint"></button>
+          <button type="button" class="color-swatch" data-color="#fff0f0" style="background:#fff0f0" aria-label="Red tint"></button>
+          <button type="button" class="color-swatch" data-color="#eef2fa" style="background:#eef2fa" aria-label="Slate"></button>
+          <button type="button" class="color-swatch" data-color="#f0f7f0" style="background:#f0f7f0" aria-label="Mint"></button>
+          <button type="button" class="color-swatch" data-color="#e0e0e0" style="background:#e0e0e0" aria-label="Light gray"></button>
+          <button type="button" class="color-swatch" data-color="#dbeafe" style="background:#dbeafe" aria-label="Sky"></button>
+          <button type="button" class="color-swatch" data-color="#c7d2e8" style="background:#c7d2e8" aria-label="Steel"></button>
+          <button type="button" class="color-swatch" data-color="#e7dfcf" style="background:#e7dfcf" aria-label="Sand"></button>
+          <button type="button" class="color-swatch" data-color="#ffffff" style="background:linear-gradient(135deg, #fff 45%, #ccc 46%, #ccc 54%, #fff 55%) 0 0/8px 8px; background-color:#fff" aria-label="No fill"></button>
+        </div>
+      </div>
+      <div class="dialog-field">
+        <label for="pagecolor-custom">Custom color</label>
+        <input id="pagecolor-custom" type="color" value="#ffffff">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-pagecolor-close">Cancel</button>
+        <button id="btn-pagecolor-ok" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="colors-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="colors-dialog-title">
+    <div class="dialog">
+      <h3 id="colors-dialog-title">Color Scheme</h3>
+      <div class="dialog-field">
+        <label for="cs-scheme">Scheme</label>
+        <select id="cs-scheme">
+          <option value="default" data-i18n="Layout.Colors.Default">Default</option>
+          <option value="gold">Gold</option>
+          <option value="grayscale">Grayscale</option>
+          <option value="blue-warm">Blue Warm</option>
+          <option value="green-yellow">Green Yellow</option>
+        </select>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-colors-close">Cancel</button>
+        <button id="btn-colors-ok" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="addtext-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="addtext-dialog-title">
+    <div class="dialog">
+      <h3 id="addtext-dialog-title">Add Text</h3>
+      <div class="dialog-field">
+        <label for="addtext-level">Level</label>
+        <select id="addtext-level">
+          <option value="body">Body text</option>
+          <option value="1">Level 1</option>
+          <option value="2">Level 2</option>
+          <option value="3">Level 3</option>
+          <option value="4">Level 4</option>
+          <option value="5">Level 5</option>
+          <option value="6">Level 6</option>
+        </select>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-addtext-close">Cancel</button>
+        <button id="btn-addtext-ok" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="updatetoc-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="updatetoc-dialog-title">
+    <div class="dialog">
+      <h3 id="updatetoc-dialog-title">Update Table of Contents</h3>
+      <div class="dialog-field">
+        <label for="toc-update">Update</label>
+        <select id="toc-update">
+          <option value="entire" selected>Update entire table</option>
+          <option value="pages">Update page numbers only</option>
+        </select>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-updatetoc-close">Cancel</button>
+        <button id="btn-updatetoc-ok" class="primary">Update</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="displaymode-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="displaymode-dialog-title">
+    <div class="dialog">
+      <h3 id="displaymode-dialog-title">Display Mode</h3>
+      <div class="dialog-field">
+        <label for="viewmode">View</label>
+        <select id="viewmode">
+          <option value="markup" selected>Markup</option>
+          <option value="original">Original</option>
+          <option value="final">Final</option>
+        </select>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-displaymode-close">Cancel</button>
+        <button id="btn-displaymode-ok" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
   <!-- Insert-image dialog (modal): a local image file is picked and
        previewed here, then embedded as a self-contained data-URI <img> at
        the saved cursor position. Nothing leaves the browser until the next
