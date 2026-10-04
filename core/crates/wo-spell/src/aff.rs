@@ -792,9 +792,12 @@ REP f ph"#;
 
     #[test]
     fn test_parse_real_en_us_aff() {
-        // Load the actual en-US.aff file
-        let aff_path =
-            "/home/weiss/git/World-Office/server/frontend-dist/word/dictionaries/en-US.aff";
+        // Load the actual en-US.aff file (repo-relative, was a machine-pinned
+        // frontend-dist path that only existed on one dev box)
+        let aff_path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../apps/web/apps/documenteditor-react/public/dictionaries/en-US.aff"
+        );
         let content = std::fs::read_to_string(aff_path).expect("Failed to read en-US.aff");
         let result = parse_aff(&content);
 
