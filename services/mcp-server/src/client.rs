@@ -271,7 +271,9 @@ impl StorageClient {
         let body = CreateFileRequest {
             name: name.to_string(),
             content_type: "text/plain".to_string(),
-            data: content.to_string(),
+            // storage-service POST /files expects base64 in `data` (its handler
+            // decodes); the MCP tool exposes plain-text `content`, so encode here.
+            data: BASE64.encode(content.as_bytes()),
         };
 
         let resp = self
@@ -308,8 +310,10 @@ impl StorageClient {
     }
 
     pub async fn write_file(&self, id: &str, content: &str) -> Result<()> {
+        // storage-service PUT /files/{id} expects base64 `content` (its
+        // handler decodes); the MCP tool exposes plain text — encode here.
         let body = serde_json::json!({
-            "content": content
+            "content": BASE64.encode(content.as_bytes())
         });
 
         let resp = self
