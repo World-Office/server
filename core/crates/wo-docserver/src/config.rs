@@ -77,8 +77,26 @@ mod tests {
     #[test]
     #[serial]
     fn test_config_from_env_defaults() {
+        // Hermetic: the assertions below verify DEFAULTS, so clear every
+        // config-relevant var that might leak in from the ambient shell
+        // (e.g. a compose/Docker env exporting WOPI_HOST_URL).
+        for var in [
+            "DOCSERVER_HOST",
+            "DOCSERVER_PORT",
+            "PORT",
+            "WOPI_HOST",
+            "WOPI_HOST_URL",
+            "DOCSERVER_PUBLIC_URL",
+            "PUBLIC_URL",
+            "EDITOR_UI_DIR",
+            "DOCSERVER_DATA_DIR",
+            "WOPI_TOKEN_MODE",
+            "DOCSERVER_WOPI_TOKEN_MODE",
+            "WOPI_INSECURE",
+        ] {
+            env::remove_var(var);
+        }
         env::set_var("DOCSERVER_PORT", "80");
-        env::remove_var("PORT");
         env::set_var("JWT_SECRET", "test-secret-for-unit-tests");
         let config = DocServerConfig::from_env();
         assert_eq!(config.host, "0.0.0.0");
