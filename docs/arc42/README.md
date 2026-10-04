@@ -1,10 +1,16 @@
 # World-Office (Rust) — Cloud & AI Platform — arc42 Documentation
 
 > **System:** World-Office Rust Cloud & AI Platform (`server/` — services, core crates, Node docserver)
-> **Status:** ⚠️ **REFERENCE / DEPRECATED as product roadmap.** The canonical product is the Stoic Python
-> rewrite at `server/opencloud-docserver/` (see `server-py/docs/arc42/`). This set documents the **Rust
-> cloud + AI architecture as it was implemented** — kept as the authoritative record of that stack.
+> **Status:** ✅ **CANONICAL (since the 2026-09-24 direction reversal — see workspace `AGENTS.md`).**
+> The Rust + TypeScript stack is the product again: the Rust docserver (`core/crates/wo-docserver`)
+> serves prod editor traffic (`editor.cloud.graphwiz.ai`). The Stoic Python rewrite at
+> `server/opencloud-docserver/` (documented in `server-py/docs/arc42/`) is **deprecated** — kept as
+> reference (line-granular pagination, header/footer furniture, converter lineage).
 > **Format:** [arc42](https://arc42.org) — one document per section, plus this index. **Focus:** cloud + AI.
+>
+> Note: some body sections below still describe the Node.js `services/server/` docserver of the
+> pre-Rust-docserver era; treat this set as the living record of the Rust cloud + AI architecture
+> and update section bodies as services evolve.
 
 This documentation deliberately **focuses on the cloud and AI layers** of the Rust stack: the
 microservices, the Node.js document server, the admin panel AI integration, and the Rust MCP server.
