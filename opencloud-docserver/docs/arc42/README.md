@@ -1,8 +1,13 @@
 # World-Office — Python Cloud & AI Platform — arc42 Documentation
 
 > **System:** opencloud-docserver (`server/opencloud-docserver/`) — the single FastAPI service that
-> *is* World-Office: WOPI docserver, real-time editor backend, document conversion, and the agent
+> *was* World-Office: WOPI docserver, real-time editor backend, document conversion, and the agent
 > (AI) surface.
+> **Status:** ⚠️ **DEPRECATED 2026-09-24** (direction reversed — the Rust + TypeScript stack is canonical
+> again; prod editor = Rust docserver on :8082, container `docserver-1`). This set is kept as the
+> architectural reference for the Python rewrite (line-granular pagination, header/footer page
+> furniture, converter lineage up to commit `cf98bf78e`). See `../../docs/arc42/` for the canonical
+> Rust cloud + AI architecture.
 > **Format:** [arc42](https://arc42.org) — one document per section, plus this index. **Focus: cloud + AI.**
 
 This is the **canonical** architecture record. The parallel set at `server/docs/arc42/` documents the
