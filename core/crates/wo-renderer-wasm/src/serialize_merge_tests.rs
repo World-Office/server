@@ -34,12 +34,17 @@ mod serialize_merge_tests {
         };
         doc.docx_body = Some(wo_ooxml::model::DocxBody {
             blocks: vec![DocxBlock::Paragraph(DocxParagraph {
-                runs: vec![DocxRun { text: "hello".into(), ..Default::default() }],
+                runs: vec![DocxRun {
+                    text: "hello".into(),
+                    ..Default::default()
+                }],
                 ..Default::default()
             })],
             ..Default::default()
         });
-        let base = OoxmlSerializer::new().serialize(&doc).expect("serialize base");
+        let base = OoxmlSerializer::new()
+            .serialize(&doc)
+            .expect("serialize base");
 
         let reader = Cursor::new(base);
         let mut in_zip = zip::ZipArchive::new(reader).expect("open base zip");
@@ -97,15 +102,32 @@ mod serialize_merge_tests {
             .lock()
             .unwrap()
             .insert(handle, ooxml);
-        set_cursor(handle, CursorPos { page: 0, para: 0, line: 0, char_idx: 5, x: 0.0, y: 0.0 });
+        set_cursor(
+            handle,
+            CursorPos {
+                page: 0,
+                para: 0,
+                line: 0,
+                char_idx: 5,
+                x: 0.0,
+                y: 0.0,
+            },
+        );
         insert_text(handle, "X", "A4", "portrait", 72.0).expect("insert");
 
         let saved = serialize_document(handle).expect("serialize");
 
         // edits present
-        assert!(part(&saved, "word/document.xml").contains('X'), "edit must land");
+        assert!(
+            part(&saved, "word/document.xml").contains('X'),
+            "edit must land"
+        );
         // unmodeled parts preserved from the original package
-        for p in ["word/theme/theme1.xml", "word/media/image1.png", "word/numbering.xml"] {
+        for p in [
+            "word/theme/theme1.xml",
+            "word/media/image1.png",
+            "word/numbering.xml",
+        ] {
             assert!(
                 part_names(&saved).contains(&p.to_string()),
                 "part {p} must survive the save"

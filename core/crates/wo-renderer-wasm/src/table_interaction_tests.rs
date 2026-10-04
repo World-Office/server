@@ -22,6 +22,7 @@ fn para(text: &str) -> DocxParagraph {
         runs: vec![run(text)],
         section_properties: None,
         raw_ppr: None,
+        raw_flds: Vec::new(),
     }
 }
 
@@ -62,6 +63,11 @@ fn table_doc() -> DocxBody {
             DocxBlock::Paragraph(para("after")),
         ],
         raw_sect_pr: None,
+        media: Vec::new(),
+        image_rels: Vec::new(),
+        footnotes_raw: None,
+        header: None,
+        footer: None,
     }
 }
 
@@ -108,8 +114,7 @@ fn para_text_of(body: &DocxBody, b: usize) -> String {
 
 fn cell_text(body: &DocxBody, r: usize, c: usize) -> String {
     match &body.blocks[1] {
-        DocxBlock::Table(t) => t.rows[r].cells[c].paragraphs
-            [0]
+        DocxBlock::Table(t) => t.rows[r].cells[c].paragraphs[0]
             .runs
             .iter()
             .map(|x| x.text.as_str())
@@ -129,7 +134,10 @@ fn char_coords(handle: u32, path: BlockPath) -> (f32, f32) {
         .iter()
         .find(|p| p.path == path)
         .expect("path laid out");
-    let ch = laid.lines[0].chars.first().expect("cell paragraph has text");
+    let ch = laid.lines[0]
+        .chars
+        .first()
+        .expect("cell paragraph has text");
     (ch.x + 1.0, ch.y + 5.0)
 }
 
@@ -238,7 +246,11 @@ fn click_in_cell_types_into_cell() {
     typed(h, "X");
 
     let body = extract_body(h).unwrap();
-    assert_eq!(cell_text(&body, 0, 0), "Xalpha", "typed char must land in the cell");
+    assert_eq!(
+        cell_text(&body, 0, 0),
+        "Xalpha",
+        "typed char must land in the cell"
+    );
     assert_eq!(cell_text(&body, 0, 1), "beta", "other cells untouched");
     assert_eq!(para_text_of(&body, 0), "before");
     assert_eq!(para_text_of(&body, 2), "after");
@@ -252,7 +264,10 @@ fn click_after_table_types_in_body_paragraph() {
     let r = handle_mouse_event(h, 0, x, y).unwrap();
     let pos: serde_json::Value = serde_json::from_str(&r).unwrap();
     assert_eq!(pos["found"], true);
-    assert_eq!(pos["para"], 5, "hit must land on the trailing body paragraph");
+    assert_eq!(
+        pos["para"], 5,
+        "hit must land on the trailing body paragraph"
+    );
 
     typed(h, "Z");
 

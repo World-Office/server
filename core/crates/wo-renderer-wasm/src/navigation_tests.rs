@@ -23,6 +23,7 @@ fn para(text: &str) -> DocxParagraph {
         runs: vec![run(text)],
         section_properties: None,
         raw_ppr: None,
+        raw_flds: Vec::new(),
     }
 }
 
@@ -545,6 +546,11 @@ fn ctrl_home_end_without_layout_resolves_through_block_paths() {
             DocxBlock::Paragraph(para("after")),
         ],
         raw_sect_pr: None,
+        media: Vec::new(),
+        image_rels: Vec::new(),
+        footnotes_raw: None,
+        header: None,
+        footer: None,
     };
     let h = inject(9312, body);
     set_cursor(

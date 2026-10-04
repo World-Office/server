@@ -89,9 +89,15 @@ fn partial_first_and_last_lines_but_full_middle() {
     // Para chars 2..25: line0 chars 2..10, line1 all, line2 chars 0..5.
     let rects = compute_selection_rects(&[three_line_page()], (0, 0, 2), (0, 0, 25));
     assert_eq!(rects[0].len(), 3);
-    assert!((rects[0][0].w - 80.0).abs() < 0.001, "line0 partial (8 chars)");
+    assert!(
+        (rects[0][0].w - 80.0).abs() < 0.001,
+        "line0 partial (8 chars)"
+    );
     assert!((rects[0][1].w - 100.0).abs() < 0.001, "line1 full middle");
-    assert!((rects[0][2].w - 50.0).abs() < 0.001, "line2 partial (5 chars)");
+    assert!(
+        (rects[0][2].w - 50.0).abs() < 0.001,
+        "line2 partial (5 chars)"
+    );
     assert_non_overlapping(&rects[0]);
 }
 
@@ -173,6 +179,7 @@ fn engine_layout_multiline_selection_rects_non_overlap() {
         }],
         section_properties: None,
         raw_ppr: None,
+        raw_flds: Vec::new(),
     }));
     let mut engine = LayoutEngine::new();
     let pages = engine.layout_document(&body, "A4", "portrait", 72.0);

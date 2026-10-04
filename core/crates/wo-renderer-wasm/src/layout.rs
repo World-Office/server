@@ -158,11 +158,20 @@ pub fn compute_selection_rects(
     anchor: (u32, usize, usize),
     head: (u32, usize, usize),
 ) -> Vec<Vec<SelectionRect>> {
-    let empty = || pages.iter().map(|_| Vec::new()).collect::<Vec<Vec<SelectionRect>>>();
+    let empty = || {
+        pages
+            .iter()
+            .map(|_| Vec::new())
+            .collect::<Vec<Vec<SelectionRect>>>()
+    };
     if anchor == head {
         return empty();
     }
-    let (start, end) = if anchor <= head { (anchor, head) } else { (head, anchor) };
+    let (start, end) = if anchor <= head {
+        (anchor, head)
+    } else {
+        (head, anchor)
+    };
 
     let mut out: Vec<Vec<SelectionRect>> = pages.iter().map(|_| Vec::new()).collect();
     for (pi, page) in pages.iter().enumerate() {
@@ -175,7 +184,11 @@ pub fn compute_selection_rects(
                 continue;
             }
             let para_chars: usize = para.lines.iter().map(|l| l.chars.len()).sum();
-            let sel_start = if pos == (start.0, start.1) { start.2 } else { 0 };
+            let sel_start = if pos == (start.0, start.1) {
+                start.2
+            } else {
+                0
+            };
             let sel_end = if pos == (end.0, end.1) {
                 end.2.min(para_chars)
             } else {
