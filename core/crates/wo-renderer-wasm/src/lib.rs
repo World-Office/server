@@ -21,8 +21,8 @@ use wasm_bindgen::prelude::*;
 use wo_common::op::EditableModel;
 use wo_common::path::{Path, Range};
 use wo_ooxml::model::{
-    DocxBlock, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, DocxTable,
-    OoxmlDocument, PptxPresentation, XlsxWorkbook,
+    DocxBlock, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, DocxTable, OoxmlDocument,
+    PptxPresentation, XlsxWorkbook,
 };
 use wo_ooxml::parser::OoxmlParser;
 use wo_ooxml::serializer::OoxmlSerializer;
@@ -1707,7 +1707,12 @@ fn paragraph_at(body: &DocxBody, path: BlockPath) -> Option<&DocxParagraph> {
             DocxBlock::Paragraph(p) => Some(p),
             _ => None,
         },
-        BlockPath::TableCell { table, row, cell, para } => table_at(body, table)?
+        BlockPath::TableCell {
+            table,
+            row,
+            cell,
+            para,
+        } => table_at(body, table)?
             .rows
             .get(row)?
             .cells
@@ -1724,7 +1729,12 @@ fn paragraph_at_mut(body: &mut DocxBody, path: BlockPath) -> Option<&mut DocxPar
             DocxBlock::Paragraph(p) => Some(p),
             _ => None,
         },
-        BlockPath::TableCell { table, row, cell, para } => table_at_mut(body, table)?
+        BlockPath::TableCell {
+            table,
+            row,
+            cell,
+            para,
+        } => table_at_mut(body, table)?
             .rows
             .get_mut(row)?
             .cells
@@ -2388,7 +2398,12 @@ fn insert_paragraph_break(
         y: cursor.y + 20.0,
     };
     match path {
-        Some(BlockPath::TableCell { table, row, cell, para }) => {
+        Some(BlockPath::TableCell {
+            table,
+            row,
+            cell,
+            para,
+        }) => {
             let cell_paras = table_at_mut(body, table)
                 .and_then(|t| t.rows.get_mut(row))
                 .and_then(|r| r.cells.get_mut(cell))
@@ -2436,9 +2451,8 @@ fn backspace_at_cursor(
     }
     match path {
         Some(BlockPath::BodyBlock(bi)) if bi > 0 && bi < body.blocks.len() => {
-            let mergeable =
-                matches!(body.blocks.get(bi - 1), Some(DocxBlock::Paragraph(_)))
-                    && matches!(body.blocks.get(bi), Some(DocxBlock::Paragraph(_)));
+            let mergeable = matches!(body.blocks.get(bi - 1), Some(DocxBlock::Paragraph(_)))
+                && matches!(body.blocks.get(bi), Some(DocxBlock::Paragraph(_)));
             if !mergeable {
                 return cursor;
             }
@@ -2462,7 +2476,12 @@ fn backspace_at_cursor(
                 ..cursor
             }
         }
-        Some(BlockPath::TableCell { table, row, cell, para }) if para > 0 => {
+        Some(BlockPath::TableCell {
+            table,
+            row,
+            cell,
+            para,
+        }) if para > 0 => {
             let cell_paras = table_at_mut(body, table)
                 .and_then(|t| t.rows.get_mut(row))
                 .and_then(|r| r.cells.get_mut(cell))
@@ -2489,11 +2508,7 @@ fn backspace_at_cursor(
 
 /// Delete: remove the char at the cursor; at the end of a paragraph, pull the
 /// next paragraph's runs up (body block or cell paragraph).
-fn delete_at_cursor(
-    body: &mut DocxBody,
-    cursor: CursorPos,
-    path: Option<BlockPath>,
-) -> CursorPos {
+fn delete_at_cursor(body: &mut DocxBody, cursor: CursorPos, path: Option<BlockPath>) -> CursorPos {
     if let Some(runs) = path.and_then(|p| resolve_block_path(body, p)) {
         if remove_char_at(runs, cursor.char_idx) {
             return cursor;
@@ -2516,7 +2531,12 @@ fn delete_at_cursor(
             body.blocks.remove(bi + 1);
             cursor
         }
-        Some(BlockPath::TableCell { table, row, cell, para }) => {
+        Some(BlockPath::TableCell {
+            table,
+            row,
+            cell,
+            para,
+        }) => {
             if let Some(paras) = table_at_mut(body, table)
                 .and_then(|t| t.rows.get_mut(row))
                 .and_then(|r| r.cells.get_mut(cell))
@@ -2655,13 +2675,12 @@ fn delete_selected(body: &mut DocxBody, anchor: CursorPos, cursor: CursorPos) ->
         // Merge-removal is only safe when the whole span is consecutive body
         // paragraph blocks; across table cells we trim in place so the table
         // structure survives.
-        let consecutive_body =
-            matches!(
-                (flat.get(sp), flat.get(last)),
-                (Some(BlockPath::BodyBlock(a)), Some(BlockPath::BodyBlock(b)))
-                    if *b - *a == last - sp
-            ) && (sp..=last)
-                .all(|i| matches!(flat.get(i), Some(BlockPath::BodyBlock(_))));
+        let consecutive_body = matches!(
+            (flat.get(sp), flat.get(last)),
+            (Some(BlockPath::BodyBlock(a)), Some(BlockPath::BodyBlock(b)))
+                if *b - *a == last - sp
+        ) && (sp..=last)
+            .all(|i| matches!(flat.get(i), Some(BlockPath::BodyBlock(_))));
         if consecutive_body {
             let (a, b) = match (flat[sp], flat[last]) {
                 (BlockPath::BodyBlock(a), BlockPath::BodyBlock(b)) => (a, b),
@@ -2961,7 +2980,7 @@ pub fn serialize_document(doc_handle: u32) -> Result<Vec<u8>, String> {
     }
 }
 
-/// Replace `word/document.xml` in `original` with the one from `edited`, 
+/// Replace `word/document.xml` in `original` with the one from `edited`,
 /// keeping every other original part (bytes untouched, order preserved).
 fn merge_document_xml(original: &[u8], edited: &[u8]) -> Result<Vec<u8>, String> {
     let mut edited_zip = zip::ZipArchive::new(Cursor::new(edited.to_vec()))
@@ -3367,7 +3386,8 @@ pub fn apply_structure_op(
             let table = DocxTable {
                 rows,
                 properties: DocxTableProperties::default(),
-                raw_tbl_pr: None, raw_tbl_grid: None,
+                raw_tbl_pr: None,
+                raw_tbl_grid: None,
             };
             let insert_at = (pidx + 1).min(body.blocks.len());
             body.blocks.insert(insert_at, DocxBlock::Table(table));
@@ -3385,7 +3405,8 @@ pub fn apply_structure_op(
                 raw_ppr: None,
             };
             let insert_at = (pidx + 1).min(body.blocks.len());
-            body.blocks.insert(insert_at, DocxBlock::Paragraph(new_para));
+            body.blocks
+                .insert(insert_at, DocxBlock::Paragraph(new_para));
         }
         "horizontal-rule" => {
             // Horizontal rule = paragraph with a bottom border rendered via
@@ -3404,7 +3425,8 @@ pub fn apply_structure_op(
                 raw_ppr: None,
             };
             let insert_at = (pidx + 1).min(body.blocks.len());
-            body.blocks.insert(insert_at, DocxBlock::Paragraph(rule_para));
+            body.blocks
+                .insert(insert_at, DocxBlock::Paragraph(rule_para));
         }
         "page-break" => {
             let new_para = DocxParagraph {
@@ -3419,7 +3441,8 @@ pub fn apply_structure_op(
                 raw_ppr: None,
             };
             let insert_at = (pidx + 1).min(body.blocks.len());
-            body.blocks.insert(insert_at, DocxBlock::Paragraph(new_para));
+            body.blocks
+                .insert(insert_at, DocxBlock::Paragraph(new_para));
         }
         "blockquote" => {
             if let Some(DocxBlock::Paragraph(para)) = body.blocks.get_mut(pidx) {
@@ -4061,15 +4084,15 @@ pub fn spell_release(lang: &str) -> Result<(), String> {
 // ── Tests ────────────────────────────────────────────────────────────
 
 #[cfg(test)]
+mod navigation_tests;
+#[cfg(test)]
+mod selection_rects_tests;
+#[cfg(test)]
 mod selection_undo_tests;
 #[cfg(test)]
 mod serialize_merge_tests;
 #[cfg(test)]
 mod table_interaction_tests;
-#[cfg(test)]
-mod selection_rects_tests;
-#[cfg(test)]
-mod navigation_tests;
 
 #[cfg(test)]
 mod tests {
@@ -4193,8 +4216,14 @@ mod tests {
         model_store.lock().unwrap().insert(doc_handle, doc);
         set_cursor(doc_handle, CursorPos::default());
 
-        apply_formatting(doc_handle, r##"{"bold": true, "align": "center"}"##, "A4", "portrait", 72.0)
-            .expect("apply_formatting should succeed");
+        apply_formatting(
+            doc_handle,
+            r##"{"bold": true, "align": "center"}"##,
+            "A4",
+            "portrait",
+            72.0,
+        )
+        .expect("apply_formatting should succeed");
 
         let body = extract_body(doc_handle).expect("body present after edit");
         let para = body.paragraphs()[0];
