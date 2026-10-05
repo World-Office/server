@@ -377,12 +377,6 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "toggleMultiplePages":
         documentStore.setMultiplePages(!documentStore.multiplePages)
         return
-      case "fitToPage":
-        documentStore.setZoomFit("page")
-        return
-      case "fitToWidth":
-        documentStore.setZoomFit("width")
-        return
       default:
         break
     }
@@ -584,9 +578,6 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         return
       case "chat":
         documentStore.toggleLeftPanel("chat")
-        return
-      case "protect-document":
-        documentStore.toggleRightPanel("review")
         return
       case "plugins":
         documentStore.toggleRightPanel("plugins")
