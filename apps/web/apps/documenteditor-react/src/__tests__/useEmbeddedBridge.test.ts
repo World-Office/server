@@ -46,7 +46,7 @@ interface Harness {
     onSetUser: (userId: string, userName: string) => void
     onThemeChange: (theme: "light" | "dark") => void
   }
-  postMessageCalls: Array<{ source: string; event: any }>
+  postMessageCalls: Array<{ source: string; event: MessageEvent }>
   rerender: (props: { embedded: boolean; callbacks: BridgeCallbacks }) => void
 }
 
@@ -58,7 +58,7 @@ function createHarness(): Harness {
   document.body.appendChild(container)
   const root = createRoot(container)
 
-  const postMessageCalls: Array<{ source: string; event: any }> = []
+  const postMessageCalls: Array<{ source: string; event: MessageEvent }> = []
   const callbacks = {
     onSave: vi.fn(async () => {}),
     onClose: vi.fn(),
@@ -98,7 +98,8 @@ function createHarness(): Harness {
 
   return {
     get returnValues() {
-      return returnValuesRef.current!
+      if (!returnValuesRef.current) throw new Error("return values not captured")
+      return returnValuesRef.current
     },
     callbacks,
     postMessageCalls,

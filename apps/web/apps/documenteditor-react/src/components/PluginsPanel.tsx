@@ -3,7 +3,12 @@
  * Lists available plugins with enable/disable toggles and install option.
  */
 import { type JSX, useState } from "react"
-import { type PluginConfig, loadPluginConfig, savePluginConfig, usePluginAppBar } from "../lib/plugin-runtime"
+import {
+  type PluginConfig,
+  loadPluginConfig,
+  savePluginConfig,
+  usePluginAppBar,
+} from "../lib/plugin-runtime"
 
 interface PluginsPanelProps {
   visible: boolean
@@ -82,7 +87,9 @@ function toConfig(list: PluginInfo[]): PluginConfig[] {
 function PluginsPanelInner({ visible }: PluginsPanelProps): JSX.Element | null {
   // Seed from persisted config so toggles are the single source of truth
   // (drives the plugin loader in editor-common when it is wired in).
-  const [plugins, setPlugins] = useState<PluginInfo[]>(() => mergePersisted(DEFAULT_PLUGINS, loadPluginConfig()))
+  const [plugins, setPlugins] = useState<PluginInfo[]>(() =>
+    mergePersisted(DEFAULT_PLUGINS, loadPluginConfig()),
+  )
   const hostButtons = usePluginAppBar()
 
   if (!visible) return null

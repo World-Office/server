@@ -21,13 +21,8 @@ if (typeof Blob.prototype.text !== "function") {
   }
 }
 
-import {
-  convertFromHtml,
-  convertToHtml,
-  downloadBlob,
-  toDocxForCanvas,
-} from "../lib/conversion"
 import { callAi, improveWriting, summarizeSelection } from "../lib/ai-service"
+import { convertFromHtml, convertToHtml, downloadBlob, toDocxForCanvas } from "../lib/conversion"
 
 const fetchMock = vi.fn()
 
@@ -125,9 +120,7 @@ describe("lib/conversion", () => {
   it("toDocxForCanvas converts odt via the backend and labels the result docx", async () => {
     fetchMock.mockResolvedValue(okJson({ status: "Success", data: b64("PK-docx") }))
     const out = await toDocxForCanvas(await makeBlob("odt-bytes"), "odt")
-    expect(out.type).toBe(
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    )
+    expect(out.type).toBe("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
     expect(await out.text()).toBe("PK-docx")
   })
 
@@ -199,9 +192,7 @@ describe("lib/ai-service", () => {
   it("summarizeSelection and improveWriting send their system prompts", async () => {
     fetchMock.mockImplementation(() => Promise.resolve(okJson({ content: "out" })))
     await summarizeSelection("some text")
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body).messages[0].content).toContain(
-      "Summarize",
-    )
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).messages[0].content).toContain("Summarize")
     await improveWriting("some text")
     expect(JSON.parse(fetchMock.mock.calls[1][1].body).messages[0].content).toContain(
       "Improve the writing",

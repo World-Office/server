@@ -5,11 +5,11 @@
 :root {
   /* Golden ratio base unit: 8px (Fibonacci number) */
   --golden-base: 8px;
-  
+
   /* Golden ratio scaling factors */
   --phi: 1.6180339887;
   --phi-inverse: 0.6180339887;
-  
+
   /* Fibonacci-based spacing scale */
   --space-1: 1px;
   --space-2: 2px;
@@ -22,86 +22,86 @@
   --space-55: 55px;
   --space-89: 89px;
   --space-144: 144px;
-  
+
   /* Golden ratio derived dimensions */
-  --ribbon-height: 55px;           /* 34 * φ ≈ 55 */
-  --ribbon-height-compact: 34px;  /* 21 * φ ≈ 34 */
-  --toolbar-height: 55px;          /* Aligns with ribbon */
+  --ribbon-height: 55px; /* 34 * φ ≈ 55 */
+  --ribbon-height-compact: 34px; /* 21 * φ ≈ 34 */
+  --toolbar-height: 55px; /* Aligns with ribbon */
   --toolbar-height-compact: 34px;
-  
+
   /* Button dimensions using golden proportions */
-  --ribbon-btn-width: 55px;        /* φ * 34 ≈ 55 */
-  --ribbon-btn-height: 55px;       /* Square aspect follows golden section */
-  --ribbon-btn-icon-size: 21px;    /* 13 * φ ≈ 21 */
-  
+  --ribbon-btn-width: 55px; /* φ * 34 ≈ 55 */
+  --ribbon-btn-height: 55px; /* Square aspect follows golden section */
+  --ribbon-btn-icon-size: 21px; /* 13 * φ ≈ 21 */
+
   /* Status bar - follows golden section of toolbar */
-  --statusbar-height: 34px;        /* 55 * φ⁻¹ ≈ 34 */
+  --statusbar-height: 34px; /* 55 * φ⁻¹ ≈ 34 */
   --statusbar-height-expanded: 55px;
-  
+
   /* Side menus - vertical golden proportions */
-  --leftmenu-width: 55px;          /* φ * 34 ≈ 55 */
-  --leftmenu-width-expanded: 233px;/* 144 * φ ≈ 233 */
+  --leftmenu-width: 55px; /* φ * 34 ≈ 55 */
+  --leftmenu-width-expanded: 233px; /* 144 * φ ≈ 233 */
   --rightmenu-width: 55px;
   --rightmenu-width-expanded: 233px;
-  
+
   /* Menu item heights */
-  --menu-item-height: 34px;        /* Fibonacci: 34 */
-  --menu-icon-size: 21px;          /* Fibonacci: 21 */
-  
+  --menu-item-height: 34px; /* Fibonacci: 34 */
+  --menu-icon-size: 21px; /* Fibonacci: 21 */
+
   /* Group spacing in ribbon */
-  --ribbon-group-padding: 13px;    /* Fibonacci: 13 */
-  --ribbon-group-gap: 8px;         /* Fibonacci: 8 */
-  --ribbon-btn-gap: 3px;           /* Fibonacci: 3 */
-  
+  --ribbon-group-padding: 13px; /* Fibonacci: 13 */
+  --ribbon-group-gap: 8px; /* Fibonacci: 8 */
+  --ribbon-btn-gap: 3px; /* Fibonacci: 3 */
+
   /* Page margins - golden section of A4 */
   /* A4 width: 210mm. 210 * φ⁻¹ ≈ 130mm content, 80mm margins total */
   /* Distribute as 25mm + 30mm + 25mm for symmetry */
-  --page-margin-narrow: 21mm;      /* 21 (Fibonacci) */
-  --page-margin-normal: 25.4mm;    /* Existing standard ≈ 25 */
-  --page-margin-wide: 34mm;        /* Fibonacci: 34 */
-  
+  --page-margin-narrow: 21mm; /* 21 (Fibonacci) */
+  --page-margin-normal: 25.4mm; /* Existing standard ≈ 25 */
+  --page-margin-wide: 34mm; /* Fibonacci: 34 */
+
   /* Column spacing */
-  --column-gap: 21mm;              /* Fibonacci: 21 */
-  
+  --column-gap: 21mm; /* Fibonacci: 21 */
+
   /* Canvas editor padding */
   --editor-padding-vertical: 55px; /* φ * 34 ≈ 55 */
-  --editor-padding-horizontal: 34px;/* Fibonacci: 34 */
-  
+  --editor-padding-horizontal: 34px; /* Fibonacci: 34 */
+
   /* Form element sizing */
-  --form-input-height: 34px;       /* Fibonacci: 34 */
-  --form-labeled-gap: 8px;         /* Fibonacci: 8 */
-  
+  --form-input-height: 34px; /* Fibonacci: 34 */
+  --form-labeled-gap: 8px; /* Fibonacci: 8 */
+
   /* Panel widths */
-  --panel-width-sidebar: 233px;    /* 144 * φ ≈ 233 */
-  --panel-width-modal: 377px;      /* 233 * φ ≈ 377 */
-  --panel-width-large: 610px;      /* 377 * φ ≈ 610 */
-  
+  --panel-width-sidebar: 233px; /* 144 * φ ≈ 233 */
+  --panel-width-modal: 377px; /* 233 * φ ≈ 377 */
+  --panel-width-large: 610px; /* 377 * φ ≈ 610 */
+
   /* Typography following golden ratio vertical rhythm */
   --text-scale-ratio: var(--phi);
   --text-base: 12px;
-  --text-sm: 8px;                  /* 12 * φ⁻¹ ≈ 7.3 → 8 */
-  --text-md: 12px;                 /* Base */
-  --text-lg: 19px;                 /* 12 * φ ≈ 19.4 → 19 */
-  --text-xl: 31px;                 /* 19 * φ ≈ 30.7 → 31 */
-  --text-2xl: 50px;                /* 31 * φ ≈ 50.2 → 50 */
-  
+  --text-sm: 8px; /* 12 * φ⁻¹ ≈ 7.3 → 8 */
+  --text-md: 12px; /* Base */
+  --text-lg: 19px; /* 12 * φ ≈ 19.4 → 19 */
+  --text-xl: 31px; /* 19 * φ ≈ 30.7 → 31 */
+  --text-2xl: 50px; /* 31 * φ ≈ 50.2 → 50 */
+
   /* Line heights using golden ratio */
-  --line-height-tight: 1.3;        /* ~φ⁻¹ */
-  --line-height-normal: 1.618;     /* φ */
+  --line-height-tight: 1.3; /* ~φ⁻¹ */
+  --line-height-normal: 1.618; /* φ */
   --line-height-loose: 2.0;
-  
+
   /* Border radius */
-  --radius-sm: 3px;                /* Fibonacci: 3 */
-  --radius-md: 5px;                /* Fibonacci: 5 */
-  --radius-lg: 8px;                /* Fibonacci: 8 */
-  --radius-xl: 13px;               /* Fibonacci: 13 */
-  
+  --radius-sm: 3px; /* Fibonacci: 3 */
+  --radius-md: 5px; /* Fibonacci: 5 */
+  --radius-lg: 8px; /* Fibonacci: 8 */
+  --radius-xl: 13px; /* Fibonacci: 13 */
+
   /* Shadow blending following Fibonacci */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.08);
   --shadow-md: 0 2px 5px rgba(0, 0, 0, 0.12);
   --shadow-lg: 0 5px 13px rgba(0, 0, 0, 0.16);
   --shadow-xl: 0 13px 21px rgba(0, 0, 0, 0.18);
-  
+
   /* Z-index following Fibonacci scale */
   --z-dropdown: 100;
   --z-sticky: 200;
@@ -343,7 +343,7 @@ label[class*="checkbox"] {
   .de-viewport {
     /* Full height remains, but we can hint at rule-of-thirds */
   }
-  
+
   /* The document area sits at the bottom-middle intersection of the rule-of-thirds grid */
   .de-viewport-editor {
     /* Middle third horizontally, bottom third vertically creates focal point */
@@ -378,12 +378,12 @@ label[class*="checkbox"] {
   :root {
     --space-55: calc(var(--space-34) + var(--space-21));
   }
-  
+
   .de-viewport-left-menu,
   .de-viewport-right-menu {
     width: var(--space-34) !important;
   }
-  
+
   .de-viewport-toolbar {
     height: var(--space-34) !important;
   }
@@ -394,12 +394,12 @@ label[class*="checkbox"] {
   :root {
     --golden-base: 5px;
   }
-  
+
   button[class*="btn"] {
     min-width: 44px; /* Touch target minimum */
     height: 44px;
   }
-  
+
   .de-viewport-editor {
     padding: var(--space-13) var(--space-8);
   }
@@ -413,11 +413,11 @@ label[class*="checkbox"] {
   .de-viewport-right-menu {
     display: none !important;
   }
-  
+
   .de-viewport-editor {
     padding: 0;
   }
-  
+
   .de-document-page {
     box-shadow: none;
     max-width: 100%;
@@ -431,17 +431,41 @@ label[class*="checkbox"] {
 /* ======================================== */
 
 @keyframes fadeInGolden {
-  0% { opacity: 0; transform: translateY(-21px); }
-  38.2% { opacity: 0.618; transform: translateY(-13px); }
-  61.8% { opacity: 0.8; transform: translateY(-8px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(-21px);
+  }
+  38.2% {
+    opacity: 0.618;
+    transform: translateY(-13px);
+  }
+  61.8% {
+    opacity: 0.8;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideInGolden {
-  0% { transform: translateX(-55px); opacity: 0; }
-  50% { transform: translateX(-21px); opacity: 0.5; }
-  80.2% { transform: translateX(-8px); opacity: 0.8; }
-  100% { transform: translateX(0); opacity: 1; }
+  0% {
+    transform: translateX(-55px);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(-21px);
+    opacity: 0.5;
+  }
+  80.2% {
+    transform: translateX(-8px);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 /* Apply golden animations to panels */

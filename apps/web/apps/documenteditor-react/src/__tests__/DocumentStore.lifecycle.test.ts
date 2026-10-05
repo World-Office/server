@@ -21,14 +21,13 @@ if (typeof Blob.prototype.text !== "function") {
   }
 }
 
-const { loadDocumentMock, convertToHtmlMock, toDocxForCanvasMock, convertFromHtmlMock } = vi.hoisted(
-  () => ({
+const { loadDocumentMock, convertToHtmlMock, toDocxForCanvasMock, convertFromHtmlMock } =
+  vi.hoisted(() => ({
     loadDocumentMock: vi.fn(),
     convertToHtmlMock: vi.fn(),
     toDocxForCanvasMock: vi.fn(),
     convertFromHtmlMock: vi.fn(),
-  }),
-)
+  }))
 
 vi.mock("@world-office/wopi-client", () => ({
   detectWopiParams: vi.fn(() => null),
@@ -66,7 +65,10 @@ describe("DocumentStore lifecycle", () => {
     // Never-resolving fetch keeps the store's constructor-time loadFromDemo()
     // (reached via detectAndLoadWopi when no WOPI params are present) from
     // mutating state mid-test, mirroring DocumentStore.blob.test.ts.
-    vi.stubGlobal("fetch", vi.fn(() => new Promise(() => {})))
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() => new Promise(() => {})),
+    )
     convertToHtmlMock.mockResolvedValue("<p>x</p>")
     toDocxForCanvasMock.mockImplementation((_b: Blob) => Promise.resolve(makeDocx()))
     convertFromHtmlMock.mockResolvedValue(makeDocx())
@@ -92,7 +94,10 @@ describe("DocumentStore lifecycle", () => {
 
   it("loadFromWopi sets edit mode false when UserCanWrite is false", async () => {
     const store = new DocumentStore()
-    loadDocumentMock.mockResolvedValue({ info: wopiInfo({ UserCanWrite: false }), content: makeDocx() })
+    loadDocumentMock.mockResolvedValue({
+      info: wopiInfo({ UserCanWrite: false }),
+      content: makeDocx(),
+    })
     await store.loadFromWopi({ wopiFileId: "F2", accessToken: "t" } as never)
     expect(store.isEditMode).toBe(false)
   })

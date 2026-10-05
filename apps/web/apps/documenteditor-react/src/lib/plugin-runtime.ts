@@ -1,8 +1,8 @@
 import {
-  createPluginContext,
-  pluginLoader,
   type PluginConfig,
   type WorldOfficePlugin,
+  createPluginContext,
+  pluginLoader,
 } from "@world-office/editor-common"
 import { useSyncExternalStore } from "react"
 

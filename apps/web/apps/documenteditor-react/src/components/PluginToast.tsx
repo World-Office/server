@@ -7,8 +7,7 @@ interface PluginToastProps {
 /** Minimal global toast for plugin notifications (plugin-show-toast). */
 export function PluginToast({ message }: PluginToastProps): JSX.Element {
   return (
-    <div
-      role="status"
+    <output
       style={{
         position: "fixed",
         top: 72,
@@ -26,6 +25,6 @@ export function PluginToast({ message }: PluginToastProps): JSX.Element {
       }}
     >
       {message}
-    </div>
+    </output>
   )
 }

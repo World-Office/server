@@ -1,13 +1,13 @@
 import { registerEditorRouter } from "@world-office/editor-common"
 import { observer } from "mobx-react-lite"
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react"
+import { useCanvasCollaboration } from "../hooks/useCanvasCollaboration"
+import { isCollaborationConfigured } from "../lib/collaboration-config"
 import { getWasmApi, isCanvasFormat } from "../lib/wasm-renderer"
 import { createWordCommandHandler } from "../lib/word-commands"
 import { documentStore } from "../stores/DocumentStore"
 import { CanvasEditor, type CanvasEditorHandle } from "./CanvasEditor"
 import { DocumentCanvas } from "./DocumentCanvas"
-import { isCollaborationConfigured } from "../lib/collaboration-config"
-import { useCanvasCollaboration } from "../hooks/useCanvasCollaboration"
 
 const MonacoEditor = lazy(() => import("./MonacoEditor").then((m) => ({ default: m.MonacoEditor })))
 
@@ -76,6 +76,7 @@ const WasmEditorCanvas = observer(
 
     // Register the model serializer so buildDocumentBlob() can persist
     // canvas edits via WOPI PutFile (serialize_document → OOXML bytes).
+    // biome-ignore lint/correctness/useExhaustiveDependencies: register once on mount; the serializer reads editorRef.current lazily
     useEffect(() => {
       documentStore.canvasSerializer = () => {
         const handle = editorRef.current?.getDocHandle() ?? null
@@ -302,7 +303,9 @@ export const DocumentHolder = observer(function DocumentHolder({ embedded }: Doc
             value={value}
             onChange={handleChange}
             language={languageForFile(fileName)}
-            isEditable={documentStore.wopiFileInfo ? !!documentStore.wopiFileInfo.UserCanWrite : true}
+            isEditable={
+              documentStore.wopiFileInfo ? !!documentStore.wopiFileInfo.UserCanWrite : true
+            }
             editorType="document"
           />
         </Suspense>

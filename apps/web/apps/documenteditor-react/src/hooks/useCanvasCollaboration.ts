@@ -18,8 +18,8 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { COAUTHORING_API_URL, COAUTHORING_WS_URL } from "../lib/collaboration-config"
 import type { CanvasEditorHandle } from "../components/CanvasEditor"
+import { COAUTHORING_API_URL, COAUTHORING_WS_URL } from "../lib/collaboration-config"
 
 // ── Types matching the Rust coauthoring protocol ─────────────────────
 
@@ -118,10 +118,7 @@ interface JoinSessionResponse {
   message: string
 }
 
-async function createSession(
-  apiUrl: string,
-  documentId: string,
-): Promise<CreateSessionResponse> {
+async function createSession(apiUrl: string, documentId: string): Promise<CreateSessionResponse> {
   const res = await fetch(`${apiUrl}/sessions`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -171,18 +168,13 @@ export function useCanvasCollaboration(
   const [participantCount, setParticipantCount] = useState(0)
   const [sessionColor, setSessionColor] = useState("#E74C3C")
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [remoteCursors, setRemoteCursors] = useState<Map<string, RemoteCursor>>(
-    () => new Map(),
-  )
+  const [remoteCursors, setRemoteCursors] = useState<Map<string, RemoteCursor>>(() => new Map())
   const sessionIdRef = useRef<string | undefined>(propSessionId)
   const revisionRef = useRef(0)
   const apiUrlRef = useRef(COAUTHORING_API_URL)
 
   // Generate stable user ID (persisted across sessions)
-  const userIdRef = useRef<string>(
-    propUserId ??
-      `user_${Math.random().toString(36).slice(2, 10)}`,
-  )
+  const userIdRef = useRef<string>(propUserId ?? `user_${Math.random().toString(36).slice(2, 10)}`)
   const usernameRef = useRef<string>(propUsername ?? "Anonymous")
 
   // ── Send a JSON message over WebSocket ──
@@ -251,9 +243,7 @@ export function useCanvasCollaboration(
             const participants = s?.participants ?? []
             setParticipantCount(participants.length)
             // Find our color
-            const us = participants.find(
-              (p) => p.user_id === userIdRef.current,
-            )
+            const us = participants.find((p) => p.user_id === userIdRef.current)
             if (us?.color) {
               setSessionColor(us.color as string)
             }
@@ -268,9 +258,7 @@ export function useCanvasCollaboration(
             }
             if (update) {
               setParticipantCount((prev) =>
-                update.event === "joined"
-                  ? prev + 1
-                  : Math.max(0, prev - 1),
+                update.event === "joined" ? prev + 1 : Math.max(0, prev - 1),
               )
               // If it's us joining, grab our color
               if (
@@ -316,13 +304,15 @@ export function useCanvasCollaboration(
           }
 
           case "cursor_update": {
-            const event = msg.event as {
-              user_id: string
-              anchor: CursorPosition
-              focus?: CursorPosition | null
-              username?: string
-              color?: string
-            } | undefined
+            const event = msg.event as
+              | {
+                  user_id: string
+                  anchor: CursorPosition
+                  focus?: CursorPosition | null
+                  username?: string
+                  color?: string
+                }
+              | undefined
             if (!event?.user_id || !event?.anchor) break
 
             // Skip our own cursor updates (echoed back by server)
@@ -479,6 +469,7 @@ export function useCanvasCollaboration(
   )
 
   // ── Auto-connect on mount when documentId provided ──
+  // biome-ignore lint/correctness/useExhaustiveDependencies: connect once on mount; later documentId/session changes are handled by the reconnect path
   useEffect(() => {
     if (documentId || propSessionId) {
       void connect()
@@ -486,7 +477,6 @@ export function useCanvasCollaboration(
     return () => {
       disconnectFn()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // ── Cleanup on unmount ──

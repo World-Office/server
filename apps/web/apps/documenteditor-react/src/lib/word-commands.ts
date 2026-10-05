@@ -13,11 +13,11 @@
  *   ui     → document events handled by App.tsx (find/replace etc.)
  */
 
-import { togglePluginEnabled, type WoCommand } from "@world-office/editor-common"
+import { type WoCommand, togglePluginEnabled } from "@world-office/editor-common"
+import type { CanvasEditorHandle } from "../components/CanvasEditor"
+import { documentStore } from "../stores/DocumentStore"
 import type { RichTextCommand } from "./rte-command"
 import { getWasmApi } from "./wasm-renderer"
-import { documentStore } from "../stores/DocumentStore"
-import type { CanvasEditorHandle } from "../components/CanvasEditor"
 
 export type WordCommandHandler = (cmd: WoCommand) => void
 
@@ -94,10 +94,7 @@ export function stepFontSize(value: string | undefined, dir: 1 | -1): number {
  * Map a ribbon command + value to a WASM applyFormatting JSON object.
  * Returns null when the command is not a formatting op.
  */
-export function commandToFormat(
-  command: string,
-  value?: string,
-): Record<string, unknown> | null {
+export function commandToFormat(command: string, value?: string): Record<string, unknown> | null {
   switch (command) {
     case "bold":
       return { bold: true }
@@ -421,8 +418,7 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
     //    (works without TipTap; Viewport.tsx listens for these)
     switch (command) {
       case "pageOrientation": {
-        const orientation =
-          value || documentStore.pageOrientation || "portrait"
+        const orientation = value || documentStore.pageOrientation || "portrait"
         window.dispatchEvent(
           new CustomEvent("world-office:page-layout", {
             detail: {
@@ -463,7 +459,9 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
       case "columns": {
         const n = value ? Number.parseInt(value, 10) : 2
         window.dispatchEvent(
-          new CustomEvent("world-office:columns", { detail: { count: Math.min(Math.max(n, 1), 3) } }),
+          new CustomEvent("world-office:columns", {
+            detail: { count: Math.min(Math.max(n, 1), 3) },
+          }),
         )
         return
       }
@@ -625,28 +623,48 @@ export function createWordCommandHandler(deps: WordCommandDeps): WordCommandHand
         documentStore.toggleRightPanel("chart")
         return
       case "chartElementAxisTitles":
-        window.dispatchEvent(new CustomEvent("world-office:chart-element", { detail: { element: "axis-titles" } }))
+        window.dispatchEvent(
+          new CustomEvent("world-office:chart-element", { detail: { element: "axis-titles" } }),
+        )
         return
       case "chartElementLegend":
-        window.dispatchEvent(new CustomEvent("world-office:chart-element", { detail: { element: "legend" } }))
+        window.dispatchEvent(
+          new CustomEvent("world-office:chart-element", { detail: { element: "legend" } }),
+        )
         return
       case "chartElementDataLabels":
-        window.dispatchEvent(new CustomEvent("world-office:chart-element", { detail: { element: "data-labels" } }))
+        window.dispatchEvent(
+          new CustomEvent("world-office:chart-element", { detail: { element: "data-labels" } }),
+        )
         return
       case "chartElementGridlines":
-        window.dispatchEvent(new CustomEvent("world-office:chart-element", { detail: { element: "gridlines" } }))
+        window.dispatchEvent(
+          new CustomEvent("world-office:chart-element", { detail: { element: "gridlines" } }),
+        )
         return
       case "chartElementErrorBars":
-        window.dispatchEvent(new CustomEvent("world-office:chart-element", { detail: { element: "error-bars" } }))
+        window.dispatchEvent(
+          new CustomEvent("world-office:chart-element", { detail: { element: "error-bars" } }),
+        )
         return
       case "chartType":
-        window.dispatchEvent(new CustomEvent("world-office:chart-type", { detail: { type: typeof value === "string" && value ? value : "bar" } }))
+        window.dispatchEvent(
+          new CustomEvent("world-office:chart-type", {
+            detail: { type: typeof value === "string" && value ? value : "bar" },
+          }),
+        )
         return
       case "chartWrapping":
-        window.dispatchEvent(new CustomEvent("world-office:chart-wrapping", { detail: { mode: typeof value === "string" && value ? value : "inline" } }))
+        window.dispatchEvent(
+          new CustomEvent("world-office:chart-wrapping", {
+            detail: { mode: typeof value === "string" && value ? value : "inline" },
+          }),
+        )
         return
       case "updateChartData":
-        window.dispatchEvent(new CustomEvent("world-office:chart-update", { detail: { at: Date.now() } }))
+        window.dispatchEvent(
+          new CustomEvent("world-office:chart-update", { detail: { at: Date.now() } }),
+        )
         return
       // Track Changes commands
       case "toggleTrackChanges":

@@ -28,12 +28,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { CanvasEditorHandle } from "../components/CanvasEditor"
 import {
-  useCanvasCollaboration,
   type CollaborationState,
   type CursorPosition,
   type ModelOpEnvelope,
   type RemoteCursor,
   type UseCanvasCollaborationOptions,
+  useCanvasCollaboration,
 } from "../hooks/useCanvasCollaboration"
 
 // ── Collaboration service URLs are made configurable via the config module.
@@ -122,9 +122,7 @@ function jsonResponse(body: unknown, ok = true): Response {
   return { ok, status: ok ? 200 : 500, json: async () => body } as unknown as Response
 }
 
-const DEFAULT_PARTICIPANTS = [
-  { user_id: "u-42", username: "Ada", color: "#27AE60" },
-]
+const DEFAULT_PARTICIPANTS = [{ user_id: "u-42", username: "Ada", color: "#27AE60" }]
 
 interface SessionFlow {
   sessionId?: string
@@ -371,9 +369,7 @@ describe("useCanvasCollaboration", () => {
 
       // One WebSocket, pointed at the resolved session/user.
       expect(FakeWebSocket.instances).toHaveLength(1)
-      expect(lastSocket().url).toBe(
-        "wss://collab.test/ws/sess-1?user_id=u-42&username=Ada",
-      )
+      expect(lastSocket().url).toBe("wss://collab.test/ws/sess-1?user_id=u-42&username=Ada")
       expect(harness.captures.state).toBe("connecting")
 
       act(() => {
@@ -506,9 +502,7 @@ describe("useCanvasCollaboration", () => {
       })
 
       expect(harness.captures.state).toBe("error")
-      expect(harness.captures.errorMessage).toBe(
-        "No session ID or document ID provided",
-      )
+      expect(harness.captures.errorMessage).toBe("No session ID or document ID provided")
       expect(fetchMock).not.toHaveBeenCalled()
       expect(FakeWebSocket.instances).toHaveLength(0)
     })
@@ -699,9 +693,7 @@ describe("useCanvasCollaboration", () => {
       expect(FakeWebSocket.instances).toHaveLength(2)
       expect(harness.captures.state).toBe("connecting")
       // The reconnect reuses the same session/user identity.
-      expect(lastSocket().url).toBe(
-        "wss://collab.test/ws/sess-1?user_id=u-42&username=Ada",
-      )
+      expect(lastSocket().url).toBe("wss://collab.test/ws/sess-1?user_id=u-42&username=Ada")
 
       act(() => {
         lastSocket().open()
@@ -1016,9 +1008,7 @@ describe("useCanvasCollaboration", () => {
 
       act(() => {
         socket.receive(JSON.stringify({ type: "cursor_update", event: {} }))
-        socket.receive(
-          JSON.stringify({ type: "cursor_update", event: { user_id: "u-7" } }),
-        )
+        socket.receive(JSON.stringify({ type: "cursor_update", event: { user_id: "u-7" } }))
       })
       expect(harness.captures.remoteCursors.size).toBe(0)
     })

@@ -31,13 +31,7 @@ interface CanvasEditorProps {
   /** Receive remote operations from collaboration service */
   onRemoteOp?: (op: unknown) => void
   /** Called when the user's cursor/selection changes position */
-  onCursorChange?: (
-    page: number,
-    para: number,
-    charIdx: number,
-    x: number,
-    y: number,
-  ) => void
+  onCursorChange?: (page: number, para: number, charIdx: number, x: number, y: number) => void
 }
 
 interface PageInfo {
@@ -75,11 +69,16 @@ export interface CanvasEditorHandle {
 }
 
 // Named function gives forwardRef a proper displayName
-const CanvasEditorInternal = (
-  props: CanvasEditorProps,
-  ref: React.Ref<CanvasEditorHandle>,
-) => {
-  const { docBlob, fileName, onChange: _onChange, onSerialize: _onSerialize, onLocalOp, onModelOp, onCursorChange } = props
+const CanvasEditorInternal = (props: CanvasEditorProps, ref: React.Ref<CanvasEditorHandle>) => {
+  const {
+    docBlob,
+    fileName,
+    onChange: _onChange,
+    onSerialize: _onSerialize,
+    onLocalOp,
+    onModelOp,
+    onCursorChange,
+  } = props
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
   const [status, setStatus] = useState<
@@ -379,13 +378,7 @@ const CanvasEditorInternal = (
     const api = wasmApi
 
     try {
-      const result = api.apply_structure_op(
-        docHandleRef.current,
-        op,
-        "A4",
-        "portrait",
-        72.0,
-      )
+      const result = api.apply_structure_op(docHandleRef.current, op, "A4", "portrait", 72.0)
       if (result && result !== "{}") {
         const layoutPages: PageInfo[] = JSON.parse(result).map(
           (p: { width: number; height: number; marginPx: number }, i: number) => ({
@@ -450,7 +443,11 @@ const CanvasEditorInternal = (
           if (ctx) {
             const page = layoutPages[i]
             const imageData = new ImageData(
-              new Uint8ClampedArray(pixels.buffer as ArrayBuffer, pixels.byteOffset, pixels.byteLength),
+              new Uint8ClampedArray(
+                pixels.buffer as ArrayBuffer,
+                pixels.byteOffset,
+                pixels.byteLength,
+              ),
               page.width,
               page.height,
             )
@@ -466,35 +463,38 @@ const CanvasEditorInternal = (
   }, [])
 
   /** Apply a ModelOp for collaboration (insert, delete, format, etc.). */
-  const applyOp = useCallback((op: unknown): boolean => {
-    if (!isWasmReady() || docHandleRef.current === null) {
-      console.warn("[CanvasEditor] applyOp: WASM not ready or no document handle")
-      return false
-    }
-
-    try {
-      const opJson = JSON.stringify(op)
-      const success = applyOpToDocument(docHandleRef.current, opJson)
-
-      if (success) {
-        void reRenderAfterLayoutChange()
-        if (onLocalOp && docHandleRef.current) {
-          onLocalOp(op, docHandleRef.current)
-        }
-        if (onModelOp && docHandleRef.current) {
-          onModelOp(op, docHandleRef.current)
-        }
-        if (_onChange) {
-          _onChange()
-        }
-        return true
+  const applyOp = useCallback(
+    (op: unknown): boolean => {
+      if (!isWasmReady() || docHandleRef.current === null) {
+        console.warn("[CanvasEditor] applyOp: WASM not ready or no document handle")
+        return false
       }
-      return false
-    } catch (err) {
-      console.error("[CanvasEditor] applyOp failed:", err)
-      return false
-    }
-  }, [onLocalOp, onModelOp, _onChange, reRenderAfterLayoutChange])
+
+      try {
+        const opJson = JSON.stringify(op)
+        const success = applyOpToDocument(docHandleRef.current, opJson)
+
+        if (success) {
+          void reRenderAfterLayoutChange()
+          if (onLocalOp && docHandleRef.current) {
+            onLocalOp(op, docHandleRef.current)
+          }
+          if (onModelOp && docHandleRef.current) {
+            onModelOp(op, docHandleRef.current)
+          }
+          if (_onChange) {
+            _onChange()
+          }
+          return true
+        }
+        return false
+      } catch (err) {
+        console.error("[CanvasEditor] applyOp failed:", err)
+        return false
+      }
+    },
+    [onLocalOp, onModelOp, _onChange, reRenderAfterLayoutChange],
+  )
 
   /** Get the current WASM document handle. */
   const getDocHandle = useCallback((): number | null => {
@@ -513,241 +513,252 @@ const CanvasEditorInternal = (
   )
 
   // ── Key handler — sends key to WASM engine ────────────────────────
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLCanvasElement>) => {
-    if (!isWasmReady() || docHandleRef.current === null) return
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLCanvasElement>) => {
+      if (!isWasmReady() || docHandleRef.current === null) return
 
-    const wasmApi = getWasmApi()
-    if (!wasmApi) return
-    const api = wasmApi
-    const docHandle = docHandleRef.current
+      const wasmApi = getWasmApi()
+      if (!wasmApi) return
+      const api = wasmApi
+      const docHandle = docHandleRef.current
 
-    // Map event.key to WASM key string
-    const keyStr = e.key
+      // Map event.key to WASM key string
+      const keyStr = e.key
 
-    // Ignore modifier-only keys and escape
-    if (
-      keyStr.startsWith("F") ||
-      keyStr === "Escape" ||
-      keyStr === "Tab" ||
-      keyStr === "Meta" ||
-      keyStr === "Control" ||
-      keyStr === "Shift" ||
-      keyStr === "Alt"
-    )
-      return
+      // Ignore modifier-only keys and escape
+      if (
+        keyStr.startsWith("F") ||
+        keyStr === "Escape" ||
+        keyStr === "Tab" ||
+        keyStr === "Meta" ||
+        keyStr === "Control" ||
+        keyStr === "Shift" ||
+        keyStr === "Alt"
+      )
+        return
 
-    e.preventDefault()
+      e.preventDefault()
 
-    // Parse updated layout and re-render all pages
-    const applyWasmResult = (result: string | null) => {
-      console.info("[CanvasEditor] apply_formatting result:", result?.substring(0, 80))
-      if (result && result !== "{}") {
-        const layoutPages: PageInfo[] = JSON.parse(result).map(
-          (p: { width: number; height: number; marginPx: number }, i: number) => ({
-            width: p.width,
-            height: p.height,
-            marginPx: p.marginPx,
-            index: i,
-          }),
+      // Parse updated layout and re-render all pages
+      const applyWasmResult = (result: string | null) => {
+        console.info("[CanvasEditor] apply_formatting result:", result?.substring(0, 80))
+        if (result && result !== "{}") {
+          const layoutPages: PageInfo[] = JSON.parse(result).map(
+            (p: { width: number; height: number; marginPx: number }, i: number) => ({
+              width: p.width,
+              height: p.height,
+              marginPx: p.marginPx,
+              index: i,
+            }),
+          )
+
+          // Re-render all pages
+          for (let i = 0; i < layoutPages.length; i++) {
+            if (canvasHandlesRef.current[i] === undefined) {
+              const h = api.create_canvas(layoutPages[i].width, layoutPages[i].height)
+              canvasHandlesRef.current[i] = h
+            }
+            try {
+              const h = canvasHandlesRef.current[i]
+              api.render_laid_out_page(docHandle, i, h)
+            } catch (err) {
+              console.error(`[CanvasEditor] Re-render page ${i} failed:`, err)
+            }
+          }
+
+          setPages(layoutPages)
+          // Mark the store modified so embedded autosave / Ctrl+S actually
+          // persist canvas-typed edits via WOPI PutFile. Without this, edits
+          // live only in memory and are silently lost on reload.
+          if (_onChange) {
+            _onChange()
+          }
+        }
+      }
+
+      try {
+        // Clipboard copy/cut/paste need the system clipboard, which the WASM
+        // engine cannot reach — handle those in JS. Every other key (including
+        // Ctrl+S/B/Z/Y) dispatches to the engine's handle_key_event, which
+        // interprets the modifier (save, bold, undo) instead of inserting the
+        // bare letter.
+        if (e.ctrlKey || e.metaKey) {
+          if (keyStr === "c" || keyStr === "C") {
+            try {
+              const text = api.get_selected_text(docHandle)
+              if (text) navigator.clipboard.writeText(text).catch(() => {})
+            } catch (err) {
+              console.error("[CanvasEditor] copy failed:", err)
+            }
+            return
+          }
+          if (keyStr === "x" || keyStr === "X") {
+            try {
+              const text = api.get_selected_text(docHandle)
+              if (text) navigator.clipboard.writeText(text).catch(() => {})
+              applyWasmResult(api.delete_selection(docHandle, "A4", "portrait", 72.0))
+            } catch (err) {
+              console.error("[CanvasEditor] cut failed:", err)
+            }
+            return
+          }
+          if (keyStr === "v" || keyStr === "V") {
+            navigator.clipboard
+              .readText()
+              .then((text) => {
+                if (!text) return
+                try {
+                  applyWasmResult(api.insert_text(docHandle, text, "A4", "portrait", 72.0))
+                } catch (err) {
+                  console.error("[CanvasEditor] insert_text failed:", err)
+                }
+              })
+              .catch((err) => console.error("[CanvasEditor] clipboard read failed:", err))
+            return
+          }
+        }
+
+        const result = api.handle_key_event(
+          docHandle,
+          keyStr,
+          e.ctrlKey,
+          e.shiftKey,
+          "A4",
+          "portrait",
+          72.0,
         )
 
-        // Re-render all pages
-        for (let i = 0; i < layoutPages.length; i++) {
-          if (canvasHandlesRef.current[i] === undefined) {
-            const h = api.create_canvas(layoutPages[i].width, layoutPages[i].height)
-            canvasHandlesRef.current[i] = h
-          }
-          try {
-            const h = canvasHandlesRef.current[i]
-            api.render_laid_out_page(docHandle, i, h)
-          } catch (err) {
-            console.error(`[CanvasEditor] Re-render page ${i} failed:`, err)
-          }
-        }
-
-        setPages(layoutPages)
-        // Mark the store modified so embedded autosave / Ctrl+S actually
-        // persist canvas-typed edits via WOPI PutFile. Without this, edits
-        // live only in memory and are silently lost on reload.
-        if (_onChange) {
-          _onChange()
-        }
+        applyWasmResult(result)
+      } catch (err) {
+        console.error("[CanvasEditor] handle_key_event failed:", err)
       }
-    }
-
-    try {
-      // Clipboard copy/cut/paste need the system clipboard, which the WASM
-      // engine cannot reach — handle those in JS. Every other key (including
-      // Ctrl+S/B/Z/Y) dispatches to the engine's handle_key_event, which
-      // interprets the modifier (save, bold, undo) instead of inserting the
-      // bare letter.
-      if (e.ctrlKey || e.metaKey) {
-        if (keyStr === "c" || keyStr === "C") {
-          try {
-            const text = api.get_selected_text(docHandle)
-            if (text) navigator.clipboard.writeText(text).catch(() => {})
-          } catch (err) {
-            console.error("[CanvasEditor] copy failed:", err)
-          }
-          return
-        }
-        if (keyStr === "x" || keyStr === "X") {
-          try {
-            const text = api.get_selected_text(docHandle)
-            if (text) navigator.clipboard.writeText(text).catch(() => {})
-            applyWasmResult(api.delete_selection(docHandle, "A4", "portrait", 72.0))
-          } catch (err) {
-            console.error("[CanvasEditor] cut failed:", err)
-          }
-          return
-        }
-        if (keyStr === "v" || keyStr === "V") {
-          navigator.clipboard
-            .readText()
-            .then((text) => {
-              if (!text) return
-              try {
-                applyWasmResult(api.insert_text(docHandle, text, "A4", "portrait", 72.0))
-              } catch (err) {
-                console.error("[CanvasEditor] insert_text failed:", err)
-              }
-            })
-            .catch((err) => console.error("[CanvasEditor] clipboard read failed:", err))
-          return
-        }
-      }
-
-      const result = api.handle_key_event(
-        docHandle,
-        keyStr,
-        e.ctrlKey,
-        e.shiftKey,
-        "A4",
-        "portrait",
-        72.0,
-      )
-
-      applyWasmResult(result)
-    } catch (err) {
-      console.error("[CanvasEditor] handle_key_event failed:", err)
-    }
-  }, [])
+    },
+    [_onChange],
+  )
 
   // ── Mouse handler — hit test → position cursor ────────────────────
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isWasmReady() || docHandleRef.current === null) return
+  // biome-ignore lint/correctness/useExhaustiveDependencies: drawCursorOverlay reads live refs/state and is recreated each render, so it is intentionally not a dependency
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!isWasmReady() || docHandleRef.current === null) return
 
-    const wasmApi = getWasmApi()
-    if (!wasmApi) return
-    const api = wasmApi
-    const docHandle = docHandleRef.current
+      const wasmApi = getWasmApi()
+      if (!wasmApi) return
+      const api = wasmApi
+      const docHandle = docHandleRef.current
 
-    // Find which page was clicked
-    let pageIndex = -1
-    for (let i = 0; i < canvasRefs.current.length; i++) {
-      if (canvasRefs.current[i] === e.target) {
-        pageIndex = i
-        break
+      // Find which page was clicked
+      let pageIndex = -1
+      for (let i = 0; i < canvasRefs.current.length; i++) {
+        if (canvasRefs.current[i] === e.target) {
+          pageIndex = i
+          break
+        }
       }
-    }
-    if (pageIndex < 0) return
+      if (pageIndex < 0) return
 
-    const rect = (e.target as HTMLCanvasElement).getBoundingClientRect()
-    // Convert CSS pixel coords → canvas pixel coords (canvas may be scaled
-    // by CSS; the WASM hit-test operates in canvas pixel space).
-    const canvas = e.target as HTMLCanvasElement
-    const scaleX = canvas.width / rect.width || 1
-    const scaleY = canvas.height / rect.height || 1
-    const x = (e.clientX - rect.left) * scaleX
-    const y = (e.clientY - rect.top) * scaleY
+      const rect = (e.target as HTMLCanvasElement).getBoundingClientRect()
+      // Convert CSS pixel coords → canvas pixel coords (canvas may be scaled
+      // by CSS; the WASM hit-test operates in canvas pixel space).
+      const canvas = e.target as HTMLCanvasElement
+      const scaleX = canvas.width / rect.width || 1
+      const scaleY = canvas.height / rect.height || 1
+      const x = (e.clientX - rect.left) * scaleX
+      const y = (e.clientY - rect.top) * scaleY
 
-    try {
-      const result = api.handle_mouse_event(docHandle, pageIndex, x, y)
-      const pos = JSON.parse(result) as {
-        para: number
-        line: number
-        charIdx: number
-        x: number
-        y: number
-        found: boolean
-      }
-
-      cursorPosRef.current = {
-        page: pageIndex,
-        para: pos.para,
-        line: pos.line,
-        charIdx: pos.charIdx,
-        x: pos.x,
-        y: pos.y,
-      }
-
-      // Force cursor visible
-      cursorVisibleRef.current = true
-
-      // Draw the caret immediately so users get instant feedback that the
-      // click registered (waiting for the 530ms blink tick feels dead).
-      drawCursorOverlay()
-
-      // Begin drag-select: mousemove until mouseup extends the selection.
-      draggingRef.current = true
-
-      // Notify parent about cursor position change (for collaboration)
-      if (onCursorChange && pos.found) {
-        onCursorChange(pageIndex, pos.para, pos.charIdx, pos.x, pos.y)
-      }
-    } catch (err) {
-      console.error("[CanvasEditor] handle_mouse_event failed:", err)
-    }
-  }, [])
-
-  // ── Drag-select: mousemove extends the selection, mouseup ends it ──
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!draggingRef.current || !isWasmReady() || docHandleRef.current === null) return
-    const wasmApi = getWasmApi()
-    if (!wasmApi) return
-    const api = wasmApi
-    const docHandle = docHandleRef.current
-
-    let pageIndex = -1
-    for (let i = 0; i < canvasRefs.current.length; i++) {
-      if (canvasRefs.current[i] === e.target) {
-        pageIndex = i
-        break
-      }
-    }
-    if (pageIndex < 0) return
-
-    const canvas = e.target as HTMLCanvasElement
-    const rect = canvas.getBoundingClientRect()
-    const scaleX = canvas.width / rect.width || 1
-    const scaleY = canvas.height / rect.height || 1
-    const x = (e.clientX - rect.left) * scaleX
-    const y = (e.clientY - rect.top) * scaleY
-
-    try {
-      // Engine moves the cursor and keeps the anchor (ponytail: selection is
-      // not visually highlighted — the canvas renderer draws text only; add
-      // selection-rect rendering if highlight is ever requested).
-      api.handle_mouse_drag(docHandle, pageIndex, x, y)
-      const posJson = api.get_cursor_position(docHandle)
-      if (posJson && posJson !== "null") {
-        const pos = JSON.parse(posJson) as {
+      try {
+        const result = api.handle_mouse_event(docHandle, pageIndex, x, y)
+        const pos = JSON.parse(result) as {
           para: number
           line: number
           charIdx: number
           x: number
           y: number
+          found: boolean
         }
+
+        cursorPosRef.current = {
+          page: pageIndex,
+          para: pos.para,
+          line: pos.line,
+          charIdx: pos.charIdx,
+          x: pos.x,
+          y: pos.y,
+        }
+
+        // Force cursor visible
         cursorVisibleRef.current = true
+
+        // Draw the caret immediately so users get instant feedback that the
+        // click registered (waiting for the 530ms blink tick feels dead).
         drawCursorOverlay()
-        if (onCursorChange) {
+
+        // Begin drag-select: mousemove until mouseup extends the selection.
+        draggingRef.current = true
+
+        // Notify parent about cursor position change (for collaboration)
+        if (onCursorChange && pos.found) {
           onCursorChange(pageIndex, pos.para, pos.charIdx, pos.x, pos.y)
         }
+      } catch (err) {
+        console.error("[CanvasEditor] handle_mouse_event failed:", err)
       }
-    } catch (err) {
-      console.error("[CanvasEditor] handle_mouse_drag failed:", err)
-    }
-  }, [])
+    },
+    [onCursorChange],
+  )
+
+  // ── Drag-select: mousemove extends the selection, mouseup ends it ──
+  // biome-ignore lint/correctness/useExhaustiveDependencies: drawCursorOverlay reads live refs/state and is recreated each render, so it is intentionally not a dependency
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      if (!draggingRef.current || !isWasmReady() || docHandleRef.current === null) return
+      const wasmApi = getWasmApi()
+      if (!wasmApi) return
+      const api = wasmApi
+      const docHandle = docHandleRef.current
+
+      let pageIndex = -1
+      for (let i = 0; i < canvasRefs.current.length; i++) {
+        if (canvasRefs.current[i] === e.target) {
+          pageIndex = i
+          break
+        }
+      }
+      if (pageIndex < 0) return
+
+      const canvas = e.target as HTMLCanvasElement
+      const rect = canvas.getBoundingClientRect()
+      const scaleX = canvas.width / rect.width || 1
+      const scaleY = canvas.height / rect.height || 1
+      const x = (e.clientX - rect.left) * scaleX
+      const y = (e.clientY - rect.top) * scaleY
+
+      try {
+        // Engine moves the cursor and keeps the anchor (ponytail: selection is
+        // not visually highlighted — the canvas renderer draws text only; add
+        // selection-rect rendering if highlight is ever requested).
+        api.handle_mouse_drag(docHandle, pageIndex, x, y)
+        const posJson = api.get_cursor_position(docHandle)
+        if (posJson && posJson !== "null") {
+          const pos = JSON.parse(posJson) as {
+            para: number
+            line: number
+            charIdx: number
+            x: number
+            y: number
+          }
+          cursorVisibleRef.current = true
+          drawCursorOverlay()
+          if (onCursorChange) {
+            onCursorChange(pageIndex, pos.para, pos.charIdx, pos.x, pos.y)
+          }
+        }
+      } catch (err) {
+        console.error("[CanvasEditor] handle_mouse_drag failed:", err)
+      }
+    },
+    [onCursorChange],
+  )
 
   const handleMouseUp = useCallback(() => {
     draggingRef.current = false

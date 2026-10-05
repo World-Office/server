@@ -1,3 +1,6 @@
+import { Editor, Extension } from "@tiptap/core"
+import { TextStyle } from "@tiptap/extension-text-style"
+import StarterKit from "@tiptap/starter-kit"
 // @vitest-environment jsdom
 /**
  * lib/content-controls, lib/cross-ref and lib/font-size-extension tests.
@@ -17,28 +20,25 @@
  * mocked editor surface for the click-handler wiring (which manipulates
  * window.prompt / DOM popups that a stock mock would obscure).
  */
-import { describe, expect, it, vi, afterEach, beforeEach } from "vitest"
-import { Editor, Extension } from "@tiptap/core"
-import StarterKit from "@tiptap/starter-kit"
-import { TextStyle } from "@tiptap/extension-text-style"
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
+import { Caption } from "../lib/caption"
 import {
-  PlainTextControl,
-  DropdownControl,
   CheckboxControl,
   DatePickerControl,
+  DropdownControl,
+  PlainTextControl,
   registerContentControlHandlers,
 } from "../lib/content-controls"
 import {
+  type CrossRefFormat,
+  type CrossRefType,
   CrossReference,
   collectTargets,
   createCrossRefPlugin,
   resolveRef,
-  type CrossRefFormat,
-  type CrossRefType,
 } from "../lib/cross-ref"
 import { FontSize } from "../lib/font-size-extension"
-import { Caption } from "../lib/caption"
 import { FootnoteItem, FootnoteReference, FootnoteSection } from "../lib/footnote-mark"
 import { SectionBreak } from "../lib/section-break"
 
@@ -193,7 +193,7 @@ describe("CheckboxControl", () => {
     expect(node?.attrs.checked).toBe(false)
   })
 
-  it("parses data-checked=\"true\" as checked", () => {
+  it('parses data-checked="true" as checked', () => {
     const ed = buildControlsEditor(
       '<p><span data-content-control="checkbox" data-checked="true"></span></p>',
     )
@@ -203,7 +203,7 @@ describe("CheckboxControl", () => {
     expect(ed.getHTML()).toContain("✓")
   })
 
-  it("parses data-checked=\"false\" (and any other value) as unchecked", () => {
+  it('parses data-checked="false" (and any other value) as unchecked', () => {
     const ed = buildControlsEditor(
       '<p><span data-content-control="checkbox" data-checked="false"></span></p>',
     )
@@ -317,8 +317,7 @@ function mockEditorSurface(): MockHandle {
     handler = cb
   })
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  registerContentControlHandlers(editor as any)
+  registerContentControlHandlers(editor as unknown as Editor)
   return { editor, view, chain, handler }
 }
 
@@ -389,14 +388,11 @@ describe("registerContentControlHandlers", () => {
     const select = document.body.querySelector("select")
     expect(select).not.toBeNull()
     // blank option + one per option
-    expect([...(select?.options ?? [])].map((o) => o.textContent)).toEqual([
-      "Select...",
-      "A",
-      "B",
-    ])
+    expect([...(select?.options ?? [])].map((o) => o.textContent)).toEqual(["Select...", "A", "B"])
     // choosing an option writes the value into the document
-    select!.value = "B"
-    select!.dispatchEvent(new Event("change"))
+    if (!select) throw new Error("select not rendered")
+    select.value = "B"
+    select.dispatchEvent(new Event("change"))
     expect(chain.insertContentAt).toHaveBeenCalledWith(3, "B")
     // popup removed from the DOM afterwards
     expect(document.body.contains(select)).toBe(false)
@@ -459,7 +455,7 @@ describe("CrossRef type catalog", () => {
 
 describe("CrossReference node", () => {
   it("defaults targetId/display to empty/placeholder and refType/format to heading/text", () => {
-    const ed = buildRefsEditor('<p><span data-cross-ref>Ref</span></p>')
+    const ed = buildRefsEditor("<p><span data-cross-ref>Ref</span></p>")
     const node = findNode(ed, "crossReference")
     expect(node).not.toBeNull()
     expect(node?.attrs.targetId).toBe("")
@@ -506,9 +502,7 @@ describe("CrossReference node", () => {
     // tiptap v3 does not surface node attrs in renderHTML's HTMLAttributes, so
     // the visible inner text always falls back to the placeholder. The real
     // display string lives in data-ref-display (see the skipped BUG test below).
-    const ed = buildRefsEditor(
-      '<p><span data-cross-ref data-ref-display="See Below">x</span></p>',
-    )
+    const ed = buildRefsEditor('<p><span data-cross-ref data-ref-display="See Below">x</span></p>')
     const html = ed.getHTML()
     expect(html).toContain("[Ref]")
     expect(html).toContain('data-ref-display="See Below"')
@@ -646,8 +640,7 @@ describe("collectTargets", () => {
   // never collected as cross-reference targets.
   it.skip("collects footnotes as footnote-N", () => {
     const ed = buildRefsEditor(
-      REF_DOC +
-        '<div data-footnote-section><li data-footnote-id="fn1" data-footnote-number="1"><span>Note text</span></li></div>',
+      `${REF_DOC}<div data-footnote-section><li data-footnote-id="fn1" data-footnote-number="1"><span>Note text</span></li></div>`,
     )
     const refs = collectTargets(ed)
     const fn = refs.find((r) => r.id === "footnote-1")

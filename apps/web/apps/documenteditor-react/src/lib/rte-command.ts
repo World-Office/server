@@ -893,5 +893,3 @@ export function dispatchRichTextCommand(command: RichTextCommand, value?: string
     }
   }
 }
-
-

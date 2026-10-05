@@ -237,7 +237,9 @@ describe("CommentsStore", () => {
 
     it("does nothing when commentId does not exist", () => {
       const store = new CommentsStore()
-      expect(() => store.addReply("non-existent-id", { author: "Bob", text: "Reply" })).not.toThrow()
+      expect(() =>
+        store.addReply("non-existent-id", { author: "Bob", text: "Reply" }),
+      ).not.toThrow()
       expect(store.comments).toHaveLength(0)
     })
 

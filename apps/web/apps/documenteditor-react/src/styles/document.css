@@ -17,12 +17,12 @@
 
 :root {
   /* Golden Ratio (φ ≈ 1.618) dimensions */
-  --wo-de-toolbar-height: 55px;        /* φ * 34 ≈ 55 */
-  --wo-de-toolbar-height-compact: 34px;/* Fibonacci: 34 */
-  --wo-de-statusbar-height: 34px;      /* φ⁻¹ * 55 ≈ 34 */
+  --wo-de-toolbar-height: 55px; /* φ * 34 ≈ 55 */
+  --wo-de-toolbar-height-compact: 34px; /* Fibonacci: 34 */
+  --wo-de-statusbar-height: 34px; /* φ⁻¹ * 55 ≈ 34 */
   --wo-de-statusbar-height-expanded: 55px;
-  --wo-de-leftmenu-width: 55px;        /* φ * 34 ≈ 55 */
-  --wo-de-leftmenu-min: 44px;         /* Touch minimum */
+  --wo-de-leftmenu-width: 55px; /* φ * 34 ≈ 55 */
+  --wo-de-leftmenu-min: 44px; /* Touch minimum */
   --wo-de-leftmenu-max: 300px;
   --wo-de-rightmenu-width: 55px;
   --wo-de-rightmenu-min: 44px;
@@ -440,7 +440,7 @@ body,
   .de-viewport-right-menu {
     width: 34px !important; /* φ⁻¹ * 55 ≈ 34 */
   }
-  
+
   .de-viewport-toolbar {
     height: 34px !important; /* φ⁻¹ * 55 ≈ 34 */
   }
@@ -469,7 +469,7 @@ body,
   .de-viewport-body {
     flex-direction: column;
   }
-  
+
   button[class*="btn"] {
     min-width: 44px; /* Touch minimum */
     height: 44px;

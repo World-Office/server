@@ -1,3 +1,6 @@
+import { Editor } from "@tiptap/core"
+import type { Node as PMNode } from "@tiptap/pm/model"
+import StarterKit from "@tiptap/starter-kit"
 // @vitest-environment jsdom
 /**
  * lib-marks — editor mark/node extensions and footnote commands.
@@ -19,21 +22,19 @@
  * of the extension layer. tiptap is available in the test environment.
  */
 import { afterEach, describe, expect, it } from "vitest"
-import { Editor } from "@tiptap/core"
-import StarterKit from "@tiptap/starter-kit"
 
+import { CommentMark } from "../lib/comment-mark"
+import { EndnoteMark, insertEndnoteCommand } from "../lib/endnote-mark"
 import {
-  FootnoteReference,
   FootnoteItem,
-  FootnoteSection,
   FootnoteMark,
-  insertFootnoteCommand,
+  FootnoteReference,
+  FootnoteSection,
   cleanupOrphanedFootnotes,
+  insertFootnoteCommand,
   removeEmptySection,
   updateFootnoteDisplayNumbers,
 } from "../lib/footnote-mark"
-import { CommentMark } from "../lib/comment-mark"
-import { EndnoteMark, insertEndnoteCommand } from "../lib/endnote-mark"
 
 // ── Helpers ────────────────────────────────────────────────────────
 
@@ -41,7 +42,14 @@ const editors: Editor[] = []
 
 function makeEditor(content = "<p>hello world</p>"): Editor {
   const ed = new Editor({
-    extensions: [StarterKit, FootnoteReference, FootnoteItem, FootnoteSection, CommentMark, EndnoteMark],
+    extensions: [
+      StarterKit,
+      FootnoteReference,
+      FootnoteItem,
+      FootnoteSection,
+      CommentMark,
+      EndnoteMark,
+    ],
     content,
   })
   editors.push(ed)
@@ -53,8 +61,8 @@ afterEach(() => {
 })
 
 /** Find the first node of a given type and return it (or null). */
-function findNode(ed: Editor, typeName: string): { node: any; pos: number } | null {
-  let result: { node: any; pos: number } | null = null
+function findNode(ed: Editor, typeName: string): { node: PMNode; pos: number } | null {
+  let result: { node: PMNode; pos: number } | null = null
   ed.state.doc.descendants((node, pos) => {
     if (!result && node.type.name === typeName) {
       result = { node, pos }
@@ -143,9 +151,9 @@ describe("EndnoteMark", () => {
     insertEndnoteCommand(ed)
     const sup = ed.view.dom.querySelector("sup[data-endnote-id]")
     expect(sup).toBeTruthy()
-    const id = sup!.getAttribute("data-endnote-id") as string
+    const id = sup?.getAttribute("data-endnote-id") as string
     expect(id).toMatch(/^en-\d+$/)
-    expect(sup!.textContent).toBe(id.slice(-3))
+    expect(sup?.textContent).toBe(id.slice(-3))
   })
 })
 
@@ -176,8 +184,8 @@ describe("FootnoteItem", () => {
     insertFootnoteCommand(ed)
     const item = findNode(ed, "footnoteItem")
     expect(item).not.toBeNull()
-    expect(item!.node.attrs.id).toMatch(/^fn-\d+-[a-z0-9]{4}$/)
-    expect(item!.node.attrs.number).toBe(999) // hardcoded in insertFootnoteCommand
+    expect(item?.node.attrs.id).toMatch(/^fn-\d+-[a-z0-9]{4}$/)
+    expect(item?.node.attrs.number).toBe(999) // hardcoded in insertFootnoteCommand
   })
 
   it("defaults: number=1, id=null when created without attrs", () => {
@@ -364,13 +372,13 @@ describe("updateFootnoteDisplayNumbers", () => {
     // Before: sup contains zero-width-space (insertion artifact)
     const supBefore = ed.view.dom.querySelector("sup[data-footnote-id]")
     expect(supBefore).toBeTruthy()
-    expect(supBefore!.textContent).toBe("\u200B")
+    expect(supBefore?.textContent).toBe("\u200B")
 
     updateFootnoteDisplayNumbers(ed)
 
     // After: sup contains the sequential number
     const supAfter = ed.view.dom.querySelector("sup[data-footnote-id]")
-    expect(supAfter!.textContent).toBe("1")
+    expect(supAfter?.textContent).toBe("1")
   })
 
   it("assigns sequential numbers to multiple footnotes", () => {

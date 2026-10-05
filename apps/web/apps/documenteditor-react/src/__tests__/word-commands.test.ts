@@ -1,9 +1,9 @@
-// @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from "vitest"
-import { createWordCommandHandler, type WordCommandDeps } from "../lib/word-commands"
-import { documentStore } from "../stores/DocumentStore"
-import type { CanvasEditorHandle } from "../components/CanvasEditor"
 import type { WoCommand } from "@world-office/editor-common"
+// @vitest-environment jsdom
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import type { CanvasEditorHandle } from "../components/CanvasEditor"
+import { type WordCommandDeps, createWordCommandHandler } from "../lib/word-commands"
+import { documentStore } from "../stores/DocumentStore"
 
 const wasmMocks = vi.hoisted(() => ({
   getWasmApi: vi.fn(() => null),
@@ -68,7 +68,7 @@ describe("word-commands", () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    wasmMocks.getWasmApi.mockReset();
+    wasmMocks.getWasmApi.mockReset()
     wasmMocks.getWasmApi.mockReturnValue(null)
     documentStore.headerFooterMode = "none"
     documentStore.headerHtml = ""
@@ -120,7 +120,9 @@ describe("word-commands", () => {
       handler({ command: "subscript" })
       expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ verticalAlignment: "subscript" })
       handler({ command: "superscript" })
-      expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ verticalAlignment: "superscript" })
+      expect(editorHandle.applyFormatting).toHaveBeenCalledWith({
+        verticalAlignment: "superscript",
+      })
     })
 
     it("should apply font size", () => {
@@ -159,10 +161,10 @@ describe("word-commands", () => {
         { cmd: "alignRight", val: "right" },
         { cmd: "alignJustify", val: "justify" },
       ]
-      aligns.forEach(({ cmd, val }) => {
+      for (const { cmd, val } of aligns) {
         handler({ command: cmd })
         expect(editorHandle.applyFormatting).toHaveBeenCalledWith({ align: val })
-      })
+      }
     })
 
     it("should apply heading levels", () => {
@@ -204,10 +206,10 @@ describe("word-commands", () => {
         { cmd: "drawSelect", op: "select-tool" },
         { cmd: "drawEraser", op: "eraser-tool" },
       ]
-      ops.forEach(({ cmd, op }) => {
+      for (const { cmd, op } of ops) {
         handler({ command: cmd })
         expect(editorHandle.applyStructureOp).toHaveBeenCalledWith(op)
-      })
+      }
     })
 
     it("should handle text direction", () => {
@@ -257,10 +259,10 @@ describe("word-commands", () => {
   describe("edit history", () => {
     it("should dispatch rich text commands for undo/redo/selectAll", () => {
       const cmds = ["undo", "redo", "selectAll"]
-      cmds.forEach(cmd => {
+      for (const cmd of cmds) {
         handler({ command: cmd })
         expect(deps.onRichTextCommand).toHaveBeenCalledWith(cmd, undefined)
-      })
+      }
     })
   })
 
@@ -349,34 +351,42 @@ describe("word-commands", () => {
   describe("page layout events", () => {
     it("should dispatch page-layout custom event", () => {
       const dispatchSpy = vi.spyOn(window, "dispatchEvent")
-      
+
       handler({ command: "pageOrientation", value: "landscape" })
-      expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        type: "world-office:page-layout",
-        detail: expect.objectContaining({ orientation: "landscape" })
-      }))
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "world-office:page-layout",
+          detail: expect.objectContaining({ orientation: "landscape" }),
+        }),
+      )
 
       handler({ command: "pageSize", value: "Letter" })
-      expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        type: "world-office:page-layout",
-        detail: expect.objectContaining({ pageSize: "Letter" })
-      }))
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "world-office:page-layout",
+          detail: expect.objectContaining({ pageSize: "Letter" }),
+        }),
+      )
 
       handler({ command: "pageMargins", value: "narrow" })
-      expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        type: "world-office:page-layout",
-        detail: expect.objectContaining({ margins: "narrow" })
-      }))
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "world-office:page-layout",
+          detail: expect.objectContaining({ margins: "narrow" }),
+        }),
+      )
     })
 
     it("should dispatch columns custom event", () => {
       const dispatchSpy = vi.spyOn(window, "dispatchEvent")
-      
+
       handler({ command: "columns", value: "3" })
-      expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        type: "world-office:columns",
-        detail: { count: 3 }
-      }))
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "world-office:columns",
+          detail: { count: 3 },
+        }),
+      )
     })
   })
 
@@ -417,18 +427,25 @@ describe("word-commands", () => {
         { cmd: "pageColor", panel: "image" },
         { cmd: "documentColors", panel: "image" },
       ]
-      panels.forEach(({ cmd, panel }) => {
+      for (const { cmd, panel } of panels) {
         handler({ command: cmd })
         expect(documentStore.toggleRightPanel).toHaveBeenCalledWith(panel)
-      })
+      }
     })
 
     it("should toggle review panel for track changes", () => {
-      const cmds = ["acceptChange", "acceptAllChanges", "rejectChange", "rejectAllChanges", "nextChange", "previousChange"]
-      cmds.forEach(cmd => {
+      const cmds = [
+        "acceptChange",
+        "acceptAllChanges",
+        "rejectChange",
+        "rejectAllChanges",
+        "nextChange",
+        "previousChange",
+      ]
+      for (const cmd of cmds) {
         handler({ command: cmd })
         expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("review")
-      })
+      }
     })
 
     it("should toggle track changes setting", () => {
@@ -442,9 +459,9 @@ describe("word-commands", () => {
 
     it("should toggle store settings", () => {
       const cmds = ["fitToPage", "fitToWidth"]
-      cmds.forEach(cmd => {
+      for (const cmd of cmds) {
         handler({ command: cmd })
-      })
+      }
       expect(documentStore.setFitToPage).toHaveBeenCalled()
       expect(documentStore.setFitToWidth).toHaveBeenCalled()
     })
@@ -467,26 +484,26 @@ describe("word-commands", () => {
         "setDocumentLanguage",
         "multiplePages",
       ]
-      cmds.forEach(cmd => {
+      for (const cmd of cmds) {
         handler({ command: cmd })
         expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("plugins")
-      })
+      }
     })
 
     it("should toggle comments panel for comment commands", () => {
       const cmds = ["addComment", "toggleComment", "deleteComment", "resolveComment"]
-      cmds.forEach(cmd => {
+      for (const cmd of cmds) {
         handler({ command: cmd })
         expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("comments")
-      })
+      }
     })
 
     it("should toggle review panel for compare and display commands", () => {
       const cmds = ["compareDocuments", "combineDocuments", "displayMode"]
-      cmds.forEach(cmd => {
+      for (const cmd of cmds) {
         handler({ command: cmd })
         expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("review")
-      })
+      }
     })
 
     it("should toggle mailmerge panel for mail merge", () => {
@@ -495,11 +512,24 @@ describe("word-commands", () => {
     })
 
     it("should toggle crossreference panel for references", () => {
-      const cmds = ["insertFootnote", "insertEndnote", "insertToc", "updateToc", "insertIndex", "updateIndex", "insertIndexEntry", "addTocText", "insertBookmark", "insertCaption", "insertCrossReference", "insertTableOfFigures"]
-      cmds.forEach(cmd => {
+      const cmds = [
+        "insertFootnote",
+        "insertEndnote",
+        "insertToc",
+        "updateToc",
+        "insertIndex",
+        "updateIndex",
+        "insertIndexEntry",
+        "addTocText",
+        "insertBookmark",
+        "insertCaption",
+        "insertCrossReference",
+        "insertTableOfFigures",
+      ]
+      for (const cmd of cmds) {
         handler({ command: cmd })
         expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("crossreference")
-      })
+      }
     })
   })
 
@@ -629,10 +659,10 @@ describe("word-commands", () => {
 
     it("should open the shapes panel for Shape / SmartArt / Text Box", () => {
       const cmds = ["insertShape", "insertSmartArt", "textBox"]
-      cmds.forEach((cmd) => {
+      for (const cmd of cmds) {
         handler({ command: cmd })
         expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("shape")
-      })
+      }
     })
 
     it("should open the chart panel for Chart", () => {
@@ -657,10 +687,10 @@ describe("word-commands", () => {
 
     it("should open the plugins panel for Equation and Symbol", () => {
       const cmds = ["equation", "symbol"]
-      cmds.forEach((cmd) => {
+      for (const cmd of cmds) {
         handler({ command: cmd })
         expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("plugins")
-      })
+      }
     })
 
     it("should insert the chosen file's text at the cursor for Text from File", async () => {
@@ -688,25 +718,25 @@ describe("word-commands", () => {
     })
   })
 
-    it("should handle view-tab zoom/theme/dark-document commands", () => {
-      handler({ command: "zoomTo100" })
-      expect(documentStore.setZoomLevel).toHaveBeenCalledWith(100)
-      handler({ command: "interfaceTheme", value: "dark" })
-      expect(documentStore.setTheme).toHaveBeenCalledWith("dark")
-      handler({ command: "toggleDarkDocument", value: "true" })
-      expect(documentStore.setDarkDocument).toHaveBeenCalledWith(true)
-      handler({ command: "toggleDarkDocument", value: "false" })
-      expect(documentStore.setDarkDocument).toHaveBeenCalledWith(false)
-    })
+  it("should handle view-tab zoom/theme/dark-document commands", () => {
+    handler({ command: "zoomTo100" })
+    expect(documentStore.setZoomLevel).toHaveBeenCalledWith(100)
+    handler({ command: "interfaceTheme", value: "dark" })
+    expect(documentStore.setTheme).toHaveBeenCalledWith("dark")
+    handler({ command: "toggleDarkDocument", value: "true" })
+    expect(documentStore.setDarkDocument).toHaveBeenCalledWith(true)
+    handler({ command: "toggleDarkDocument", value: "false" })
+    expect(documentStore.setDarkDocument).toHaveBeenCalledWith(false)
+  })
 
-    it("should handle view-tab macro commands", () => {
-      handler({ command: "macros" })
-      expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("plugins")
-      handler({ command: "recordMacro" })
-      expect(documentStore.toggleMacroRecording).toHaveBeenCalled()
-      handler({ command: "pauseMacroRecording" })
-      expect(documentStore.toggleMacroPause).toHaveBeenCalled()
-    })
+  it("should handle view-tab macro commands", () => {
+    handler({ command: "macros" })
+    expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("plugins")
+    handler({ command: "recordMacro" })
+    expect(documentStore.toggleMacroRecording).toHaveBeenCalled()
+    handler({ command: "pauseMacroRecording" })
+    expect(documentStore.toggleMacroPause).toHaveBeenCalled()
+  })
 
   describe("ai tab commands", () => {
     it("should open the AI assistant panel for each AI tab command", () => {
@@ -727,14 +757,13 @@ describe("word-commands", () => {
     })
   })
 
-
   describe("chart design parity commands", () => {
     it("should open the chart panel for OO chart dialog controls", () => {
       const cmds = ["chartElements", "editChartData", "chartAdvancedSettings", "chart3DRotation"]
-      cmds.forEach((cmd) => {
+      for (const cmd of cmds) {
         handler({ command: cmd })
         expect(documentStore.toggleRightPanel).toHaveBeenCalledWith("chart")
-      })
+      }
     })
 
     it("should dispatch chart-element view-state for Chart Elements dropdown items", () => {
@@ -746,53 +775,65 @@ describe("word-commands", () => {
         { cmd: "chartElementGridlines", key: "gridlines" },
         { cmd: "chartElementErrorBars", key: "error-bars" },
       ]
-      elements.forEach(({ cmd, key }) => {
+      for (const { cmd, key } of elements) {
         handler({ command: cmd })
-        expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
-          type: "world-office:chart-element",
-          detail: { element: key },
-        }))
-      })
+        expect(dispatchSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            type: "world-office:chart-element",
+            detail: { element: key },
+          }),
+        )
+      }
       dispatchSpy.mockRestore()
     })
 
     it("should dispatch chart-type view-state from the Chart type select", () => {
       const dispatchSpy = vi.spyOn(window, "dispatchEvent")
       handler({ command: "chartType" })
-      expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        type: "world-office:chart-type",
-        detail: { type: "bar" },
-      }))
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "world-office:chart-type",
+          detail: { type: "bar" },
+        }),
+      )
       handler({ command: "chartType", value: "line" })
-      expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        type: "world-office:chart-type",
-        detail: { type: "line" },
-      }))
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "world-office:chart-type",
+          detail: { type: "line" },
+        }),
+      )
       dispatchSpy.mockRestore()
     })
 
     it("should dispatch chart-wrapping view-state from the Wrapping select", () => {
       const dispatchSpy = vi.spyOn(window, "dispatchEvent")
       handler({ command: "chartWrapping" })
-      expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        type: "world-office:chart-wrapping",
-        detail: { mode: "inline" },
-      }))
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "world-office:chart-wrapping",
+          detail: { mode: "inline" },
+        }),
+      )
       handler({ command: "chartWrapping", value: "square" })
-      expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        type: "world-office:chart-wrapping",
-        detail: { mode: "square" },
-      }))
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "world-office:chart-wrapping",
+          detail: { mode: "square" },
+        }),
+      )
       dispatchSpy.mockRestore()
     })
 
     it("should dispatch a chart-update refresh event for Update data", () => {
       const dispatchSpy = vi.spyOn(window, "dispatchEvent")
       handler({ command: "updateChartData" })
-      expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({
-        type: "world-office:chart-update",
-        detail: expect.objectContaining({ at: expect.any(Number) }),
-      }))
+      expect(dispatchSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: "world-office:chart-update",
+          detail: expect.objectContaining({ at: expect.any(Number) }),
+        }),
+      )
       dispatchSpy.mockRestore()
     })
   })
@@ -801,7 +842,9 @@ describe("word-commands", () => {
     it("should log a warning for unknown commands and not throw", () => {
       const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {})
       expect(() => handler({ command: "unknown-cmd" })).not.toThrow()
-      expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("[word-commands] unhandled command: unknown-cmd"))
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("[word-commands] unhandled command: unknown-cmd"),
+      )
       warnSpy.mockRestore()
     })
   })

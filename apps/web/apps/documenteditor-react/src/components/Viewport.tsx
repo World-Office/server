@@ -1,7 +1,7 @@
 import { CollaboratorCursors } from "@world-office/collaboration-react"
+import { observer } from "mobx-react-lite"
 import { useEffect, useState } from "react"
 import type { ReactNode } from "react"
-import { observer } from "mobx-react-lite"
 import { collaborationStore } from "../lib/collaboration"
 import type { PageLayoutSettings, RichTextCommand } from "../lib/rte-command"
 import { documentStore } from "../stores/DocumentStore"
@@ -43,7 +43,7 @@ interface ViewportProps {
 }
 
 const PAGE_SIZE_CSS: Record<string, { width: string; height: string }> = {
-  A4: { width: "210mm", height: "297mm" }, /* φ ratio: 297/210 ≈ 1.414 (√2) */
+  A4: { width: "210mm", height: "297mm" } /* φ ratio: 297/210 ≈ 1.414 (√2) */,
   A3: { width: "297mm", height: "420mm" },
   Letter: { width: "215.9mm", height: "279.4mm" },
   Legal: { width: "215.9mm", height: "355.6mm" },
@@ -51,9 +51,9 @@ const PAGE_SIZE_CSS: Record<string, { width: string; height: string }> = {
 
 /* Golden ratio margins - Fibonacci-based: 21, 34, 55 */
 const MARGIN_CSS: Record<string, string> = {
-  normal: "25.4mm", /* Existing standard, close to Fibonacci 21+34=55 but in mm */
-  narrow: "21mm",    /* Fibonacci: 21 */
-  wide: "34mm",      /* Fibonacci: 34 */
+  normal: "25.4mm" /* Existing standard, close to Fibonacci 21+34=55 but in mm */,
+  narrow: "21mm" /* Fibonacci: 21 */,
+  wide: "34mm" /* Fibonacci: 34 */,
 }
 
 // Viewport reads documentStore directly (file-menu panel, about panel, find
@@ -157,7 +157,7 @@ export const Viewport = observer(function Viewport({
                 paddingTop: margin,
                 paddingBottom: margin,
                 columnCount: columns,
-                columnGap: columnGap, /* Golden ratio: 21mm when columns > 1 */
+                columnGap: columnGap /* Golden ratio: 21mm when columns > 1 */,
                 position: "relative",
               }}
             >

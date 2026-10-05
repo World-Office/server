@@ -87,7 +87,7 @@ export class DocumentStore {
   pageOrientation: "portrait" | "landscape" = "portrait"
   pageSize: "A4" | "A3" | "Letter" | "Legal" = "A4"
   pageMargins: "normal" | "narrow" | "wide" = "normal"
-  columns: number = 1
+  columns = 1
   multiplePages = false
 
   /* Page navigation */
@@ -562,7 +562,12 @@ export class DocumentStore {
   }
 
   async saveToWopi(): Promise<void> {
-    console.info("[StoreDebug] saveToWopi", { conn: !!this.wopiConnection, mod: this.isModified, dirty: this.isDirty, ser: !!this.canvasSerializer })
+    console.info("[StoreDebug] saveToWopi", {
+      conn: !!this.wopiConnection,
+      mod: this.isModified,
+      dirty: this.isDirty,
+      ser: !!this.canvasSerializer,
+    })
     if (!this.wopiConnection) return
     if (!this.isModified && !this.isDirty) return
     if (this.isSaving) return // guard against Ctrl+S racing the autosave debounce

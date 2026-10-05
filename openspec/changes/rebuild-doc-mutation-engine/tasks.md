@@ -31,7 +31,8 @@
 - [ ] 5.3 Rewrite `rte-command.ts` cases to dispatch via router (keep type names; drop TipTap chain calls)
 - [x] 5.4 **Fix `SelectControl` bug** in `ControlRenderer.tsx` → `dispatch.onCommand(spec.id, value)` (verified: the select dispatches `spec.id`+value and Toolbar `onCommand` camel-cases it, so `font-family` → `fontFamily` reaches the router)
 - [x] 5.5 Feature-flag TipTap behind `WO_TIPTAP=1`; remove from `main.tsx` default
-- [ ] 5.6 Acceptance DM-11/12: `pnpm lint && typecheck && build && test` green; font dropdown works; bold/italic still work
+- [x] 5.6 Acceptance DM-11/12: `pnpm lint && typecheck && build && test` green; font dropdown works; bold/italic still work
+  - Verified 2026-10-05: `pnpm --filter @world-office/documenteditor lint typecheck build test` all green (552 pass / 5 skip); Biome debt in this app cleared (89 → 0).
 
 > **Phase 5 reconciliation (2026-10-05).** 5.2/5.3 are **superseded, not pending.**
 > K3 (`apps/web/apps/documenteditor-react/src/lib/word-commands.ts`) replaced DM-11's
@@ -41,8 +42,9 @@
 > **collaboration/remote** ops only (`CanvasEditorHandle.applyOp` ← `onModelOp`). Emitting a
 > ModelOp for every local ribbon command (5.2/5.3 as written) would duplicate the working
 > `applyFormatting` path and needs cursor-path plumbing the engine does not expose; deferred to
-> CO-* where local→ModelOp uniformity actually pays off. 5.6 stays unchecked: app-wide Biome is
-> red on `main` and CI `lint-ts` is `continue-on-error: true`, so `pnpm lint` is not a real gate yet.
+> CO-* where local→ModelOp uniformity actually pays off. Workspace-wide CI `lint-ts` stays
+> `continue-on-error: true`; flipping it requires the other packages (wopi-client, …) green too —
+> tracked as a separate release-engineering item.
 
 ## 6. Validation
 - [x] 6.1 `openspec validate rebuild-doc-mutation-engine` → OK
