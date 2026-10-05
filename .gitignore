@@ -138,3 +138,4 @@ scripts/wo-orchestrator/state/
 # agentflow campaign state
 .af-state/
 core/crates/wo-renderer-wasm/pkg/
+tests/docker/opencloud-config/opencloud.yaml

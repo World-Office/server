@@ -1,0 +1,129 @@
+token_manager:
+  jwt_secret: "CHANGE_ME"
+machine_auth_api_key: "CHANGE_ME"
+system_user_api_key: "CHANGE_ME"
+transfer_secret: "CHANGE_ME"
+url_signing_secret: "CHANGE_ME"
+system_user_id: 5db74223-12a0-46b0-b041-6bbc319414bf
+admin_user_id: 04221028-e651-42bb-8e91-7feb352f206a
+graph:
+  application:
+    id: 48412cf6-1598-44c1-851e-f1ba8d72b73a
+  events:
+    tls_insecure: true
+  spaces:
+    insecure: true
+  identity:
+    ldap:
+      bind_password: "CHANGE_ME"
+  service_account:
+    service_account_id: 4044bf7f-1610-4a65-ab19-3e18af878a3e
+    service_account_secret: "CHANGE_ME"
+idp:
+  issuer: "https://localhost:9200"
+  ldap:
+    bind_password: "CHANGE_ME"
+idm:
+  service_user_passwords:
+    admin_password: "CHANGE_ME"
+    idm_password: "CHANGE_ME"
+    reva_password: "CHANGE_ME"
+    idp_password: "CHANGE_ME"
+collaboration:
+  wopi:
+    secret: "CHANGE_ME"
+  app:
+    insecure: true
+proxy:
+  oidc:
+    insecure: true
+  insecure_backends: true
+  service_account:
+    service_account_id: 4044bf7f-1610-4a65-ab19-3e18af878a3e
+    service_account_secret: "CHANGE_ME"
+frontend:
+  app_handler:
+    insecure: true
+  archiver:
+    insecure: true
+  service_account:
+    service_account_id: 4044bf7f-1610-4a65-ab19-3e18af878a3e
+    service_account_secret: "CHANGE_ME"
+auth_basic:
+  auth_providers:
+    ldap:
+      bind_password: "CHANGE_ME"
+auth_bearer:
+  auth_providers:
+    oidc:
+      insecure: true
+users:
+  drivers:
+    ldap:
+      bind_password: "CHANGE_ME"
+groups:
+  drivers:
+    ldap:
+      bind_password: "CHANGE_ME"
+ocdav:
+  insecure: true
+ocm:
+  service_account:
+    service_account_id: 4044bf7f-1610-4a65-ab19-3e18af878a3e
+    service_account_secret: "CHANGE_ME"
+thumbnails:
+  thumbnail:
+    transfer_secret: "CHANGE_ME"
+    webdav_allow_insecure: true
+    cs3_allow_insecure: true
+search:
+  events:
+    tls_insecure: true
+  service_account:
+    service_account_id: 4044bf7f-1610-4a65-ab19-3e18af878a3e
+    service_account_secret: "CHANGE_ME"
+audit:
+  events:
+    tls_insecure: true
+settings:
+  service_account_ids:
+  - 4044bf7f-1610-4a65-ab19-3e18af878a3e
+sharing:
+  events:
+    tls_insecure: true
+storage_users:
+  events:
+    tls_insecure: true
+  mount_id: 6525b4a1-2477-4f97-8401-c14c01a43d92
+  service_account:
+    service_account_id: 4044bf7f-1610-4a65-ab19-3e18af878a3e
+    service_account_secret: "CHANGE_ME"
+notifications:
+  notifications:
+    events:
+      tls_insecure: true
+  service_account:
+    service_account_id: 4044bf7f-1610-4a65-ab19-3e18af878a3e
+    service_account_secret: "CHANGE_ME"
+nats:
+  nats:
+    tls_skip_verify_client_cert: true
+gateway:
+  storage_registry:
+    storage_users_mount_id: 6525b4a1-2477-4f97-8401-c14c01a43d92
+userlog:
+  service_account:
+    service_account_id: 4044bf7f-1610-4a65-ab19-3e18af878a3e
+    service_account_secret: "CHANGE_ME"
+auth_service:
+  service_account:
+    service_account_id: 4044bf7f-1610-4a65-ab19-3e18af878a3e
+    service_account_secret: "CHANGE_ME"
+clientlog:
+  service_account:
+    service_account_id: 4044bf7f-1610-4a65-ab19-3e18af878a3e
+    service_account_secret: "CHANGE_ME"
+activitylog:
+  service_account:
+    service_account_id: 4044bf7f-1610-4a65-ab19-3e18af878a3e
+    service_account_secret: "CHANGE_ME"
