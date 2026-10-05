@@ -114,11 +114,11 @@ SCOPES: dict[str, dict] = {
                         "apps/web/apps/documenteditor-react/src/components/DocumentHolder.tsx",
                         "packages/editor-common/src/ribbon/components/ControlRenderer.tsx"],
               "section": "§5", "engine": "DM",
-              "accept": "pnpm --filter @world-office/documenteditor-react lint typecheck test"},
+              "accept": "pnpm --filter @world-office/documenteditor lint typecheck test"},
     "DM-12": {"scope": ["apps/web/apps/documenteditor-react/src/main.tsx",
                         "apps/web/apps/documenteditor-react/vite.config.ts"],
               "section": "§5", "engine": "DM",
-              "accept": "pnpm --filter @world-office/documenteditor-react typecheck build"},
+              "accept": "pnpm --filter @world-office/documenteditor typecheck build"},
     # --- TL (text layout) ---
     "TL-1": {"scope": ["core/crates/wo-docx-renderer/src/layout.rs"], "section": "§4", "engine": "TL",
              "accept": "cargo test -p wo-docx-renderer multicolumn", "manual": True},

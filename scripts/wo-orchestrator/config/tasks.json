@@ -271,7 +271,7 @@
         "apps/web/apps/documenteditor-react/src/components/DocumentHolder.tsx",
         "packages/editor-common/src/ribbon/components/ControlRenderer.tsx"
       ],
-      "accept": "pnpm --filter @world-office/documenteditor-react lint typecheck test",
+      "accept": "pnpm --filter @world-office/documenteditor lint typecheck test",
       "acceptance_prose": "8 currently-working cmds still work; **font dropdown works**",
       "manual": false
     },
@@ -287,7 +287,7 @@
         "apps/web/apps/documenteditor-react/src/main.tsx",
         "apps/web/apps/documenteditor-react/vite.config.ts"
       ],
-      "accept": "pnpm --filter @world-office/documenteditor-react typecheck build",
+      "accept": "pnpm --filter @world-office/documenteditor typecheck build",
       "acceptance_prose": "`pnpm build` smaller; typecheck green",
       "manual": false
     },
