@@ -8,9 +8,7 @@ export {
   type DetectedWopiParams,
 } from "./detect-wopi-params"
 
-export {
-  isEditable,
-} from "./wopi-types"
+export { isEditable } from "./wopi-types"
 
 export {
   checkFileInfo,

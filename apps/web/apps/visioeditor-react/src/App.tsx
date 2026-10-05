@@ -90,7 +90,9 @@ export const App = observer(function App() {
 					visioStore.setMinimapVisible(!visioStore.minimapVisible);
 					return;
 				case "toggleThemeVisio":
-					visioStore.setThemeMode(visioStore.themeMode === "dark" ? "light" : "dark");
+					visioStore.setThemeMode(
+						visioStore.themeMode === "dark" ? "light" : "dark",
+					);
 					return;
 				case "toggleWordWrap":
 					visioStore.setWordWrap(!visioStore.wordWrap);

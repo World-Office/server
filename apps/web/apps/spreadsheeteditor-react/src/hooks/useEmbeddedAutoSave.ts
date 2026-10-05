@@ -28,7 +28,10 @@ export function useEmbeddedAutoSave(
 			notifyDocumentSaved(Date.now().toString());
 		} catch (err) {
 			console.error("Auto-save failed:", err);
-			notifyError("AUTOSAVE_FAILED", err instanceof Error ? err.message : "Unknown error");
+			notifyError(
+				"AUTOSAVE_FAILED",
+				err instanceof Error ? err.message : "Unknown error",
+			);
 		}
 	}, [embedded, wopiConnection, save, notifyDocumentSaved, notifyError]);
 

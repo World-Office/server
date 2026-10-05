@@ -23,9 +23,7 @@ declare global {
      * Chrome DevTools-only API (not in lib.dom). Used by tests to clean up
      * listeners between cases; must be optional so it compiles everywhere.
      */
-    getEventListeners?: (
-      type: string,
-    ) => Array<{
+    getEventListeners?: (type: string) => Array<{
       listener: EventListenerOrEventListenerObject
       options?: AddEventListenerOptions | boolean
     }>

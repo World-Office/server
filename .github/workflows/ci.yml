@@ -228,10 +228,6 @@ jobs:
   lint-ts:
     name: TypeScript Lint
     runs-on: ubuntu-latest
-    # KNOWN-ISSUES: `pnpm lint` fails on a Biome format diff in
-    # packages/wopi-client. Source fix tracked separately; gate stays green
-    # until then. See docs/KNOWN-ISSUES.md §biome-format-debt.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         timeout-minutes: 5

@@ -1,20 +1,40 @@
-import { Button, makeStyles, tokens } from "@fluentui/react-components"
-import { flowchartStore } from "../../../../stores/FlowchartStore"
-import { visioStore } from "../../../../stores/VisioStore"
+import { Button, makeStyles, tokens } from "@fluentui/react-components";
+import { flowchartStore } from "../../../../stores/FlowchartStore";
+import { visioStore } from "../../../../stores/VisioStore";
 
 interface TemplateInfo {
-	id: string
-	name: string
-	description: string
-	icon: string
+	id: string;
+	name: string;
+	description: string;
+	icon: string;
 }
 
 const TEMPLATES: TemplateInfo[] = [
-	{ id: "blank", name: "Blank Diagram", description: "Empty diagram canvas", icon: "📄" },
-	{ id: "flowchart", name: "Flowchart", description: "Process flow diagram", icon: "🔀" },
-	{ id: "org-chart", name: "Org Chart", description: "Organizational hierarchy", icon: "🏢" },
-	{ id: "network", name: "Network Diagram", description: "Network topology map", icon: "🌐" },
-]
+	{
+		id: "blank",
+		name: "Blank Diagram",
+		description: "Empty diagram canvas",
+		icon: "📄",
+	},
+	{
+		id: "flowchart",
+		name: "Flowchart",
+		description: "Process flow diagram",
+		icon: "🔀",
+	},
+	{
+		id: "org-chart",
+		name: "Org Chart",
+		description: "Organizational hierarchy",
+		icon: "🏢",
+	},
+	{
+		id: "network",
+		name: "Network Diagram",
+		description: "Network topology map",
+		icon: "🌐",
+	},
+];
 
 const useStyles = makeStyles({
 	wrapper: {
@@ -73,23 +93,31 @@ const useStyles = makeStyles({
 		color: tokens.colorNeutralForeground3,
 		marginTop: "2px",
 	},
-})
+});
 
 export function CreateNewPanel({ visible }: { visible: boolean }) {
-	const styles = useStyles()
+	const styles = useStyles();
 
 	function handleUseTemplate(id: string): void {
-		if (id === "blank" || id === "flowchart" || id === "org-chart" || id === "network") {
-			flowchartStore.clear()
-			flowchartStore.history = []
-			flowchartStore.future = []
+		if (
+			id === "blank" ||
+			id === "flowchart" ||
+			id === "org-chart" ||
+			id === "network"
+		) {
+			flowchartStore.clear();
+			flowchartStore.history = [];
+			flowchartStore.future = [];
 		}
-		visioStore.setFileMenuOpen(false)
-		visioStore.setActiveFileMenuPanel(null)
+		visioStore.setFileMenuOpen(false);
+		visioStore.setActiveFileMenuPanel(null);
 	}
 
 	return (
-		<div className={styles.wrapper} style={{ display: visible ? "block" : "none", padding: 0 }}>
+		<div
+			className={styles.wrapper}
+			style={{ display: visible ? "block" : "none", padding: 0 }}
+		>
 			<div className={styles.header}>Create New</div>
 			<div className={styles.formats}>
 				{TEMPLATES.map((tpl) => (
@@ -109,5 +137,5 @@ export function CreateNewPanel({ visible }: { visible: boolean }) {
 				))}
 			</div>
 		</div>
-	)
+	);
 }

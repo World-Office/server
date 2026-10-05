@@ -283,22 +283,22 @@ function getActiveRange(): UniverRangeFacade | null {
 function rangeToRef(range: UniverRangeFacade): string {
 	if (typeof range.getCellRef === "function") {
 		try {
-			const ref = range.getCellRef()
-			if (ref && ref.length > 0) return ref
+			const ref = range.getCellRef();
+			if (ref && ref.length > 0) return ref;
 		} catch {
 			/* fall through to row/column derivation */
 		}
 	}
-	const row = typeof range.getRow === "function" ? range.getRow() : 0
-	const col = typeof range.getColumn === "function" ? range.getColumn() : 0
-	let colStr = ""
-	let c = col
+	const row = typeof range.getRow === "function" ? range.getRow() : 0;
+	const col = typeof range.getColumn === "function" ? range.getColumn() : 0;
+	let colStr = "";
+	let c = col;
 	while (c >= 0) {
-		colStr = String.fromCharCode(65 + (c % 26)) + colStr
-		c = Math.floor(c / 26) - 1
-		if (c < 0) break
+		colStr = String.fromCharCode(65 + (c % 26)) + colStr;
+		c = Math.floor(c / 26) - 1;
+		if (c < 0) break;
 	}
-	return `${colStr}${row + 1}`
+	return `${colStr}${row + 1}`;
 }
 
 /**

@@ -1,18 +1,29 @@
-import { Button, Divider, makeStyles, mergeClasses, tokens } from "@fluentui/react-components"
-import type { JSX } from "react"
-import { useTranslation } from "react-i18next"
-import { visioStore } from "../../../stores/VisioStore"
-import type { FileMenuAction } from "../../../types/visio"
+import {
+	Button,
+	Divider,
+	makeStyles,
+	mergeClasses,
+	tokens,
+} from "@fluentui/react-components";
+import type { JSX } from "react";
+import { useTranslation } from "react-i18next";
+import { visioStore } from "../../../stores/VisioStore";
+import type { FileMenuAction } from "../../../types/visio";
 
 interface FileMenuItemsProps {
-	onMenuClick: (action: string, hasPanel: boolean) => void
-	onBack: () => void
+	onMenuClick: (action: string, hasPanel: boolean) => void;
+	onBack: () => void;
 }
 
 interface MenuItem {
-	action: FileMenuAction | "close-editor" | "external-help" | "file:open" | "file:exit"
-	caption: string
-	hasPanel: boolean
+	action:
+		| FileMenuAction
+		| "close-editor"
+		| "external-help"
+		| "file:open"
+		| "file:exit";
+	caption: string;
+	hasPanel: boolean;
 }
 
 const MENU_ITEMS: MenuItem[] = [
@@ -26,7 +37,7 @@ const MENU_ITEMS: MenuItem[] = [
 	{ action: "opts", caption: "Advanced Settings...", hasPanel: true },
 	{ action: "help", caption: "Help...", hasPanel: true },
 	{ action: "exit", caption: "Go to Documents", hasPanel: false },
-]
+];
 
 const useStyles = makeStyles({
 	list: {
@@ -68,15 +79,18 @@ const useStyles = makeStyles({
 		overflow: "hidden",
 		textOverflow: "ellipsis",
 	},
-})
+});
 
-export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps): JSX.Element {
-	const { t } = useTranslation()
-	const styles = useStyles()
-	const activePanel = visioStore.activeFileMenuPanel
+export function FileMenuItems({
+	onMenuClick,
+	onBack,
+}: FileMenuItemsProps): JSX.Element {
+	const { t } = useTranslation();
+	const styles = useStyles();
+	const activePanel = visioStore.activeFileMenuPanel;
 
 	function handleBack(): void {
-		onBack()
+		onBack();
 	}
 
 	return (
@@ -97,12 +111,15 @@ export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps): JSX.
 					key={item.action}
 					appearance="subtle"
 					size="large"
-					className={mergeClasses(styles.item, activePanel === item.action ? styles.itemActive : undefined)}
+					className={mergeClasses(
+						styles.item,
+						activePanel === item.action ? styles.itemActive : undefined,
+					)}
 					onClick={() => onMenuClick(item.action, item.hasPanel)}
 				>
 					<span className={styles.caption}>{t(item.caption)}</span>
 				</Button>
 			))}
 		</ul>
-	)
+	);
 }

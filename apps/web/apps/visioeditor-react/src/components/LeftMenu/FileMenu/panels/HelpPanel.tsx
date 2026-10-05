@@ -1,4 +1,4 @@
-import { makeStyles, tokens } from "@fluentui/react-components"
+import { makeStyles, tokens } from "@fluentui/react-components";
 
 const useStyles = makeStyles({
 	wrapper: {
@@ -20,19 +20,23 @@ const useStyles = makeStyles({
 		lineHeight: 1.6,
 		color: tokens.colorNeutralForeground3,
 	},
-})
+});
 
 export function HelpPanel({ visible }: { visible: boolean }) {
-	const styles = useStyles()
+	const styles = useStyles();
 
 	return (
-		<div className={styles.wrapper} style={{ display: visible ? "block" : "none" }}>
+		<div
+			className={styles.wrapper}
+			style={{ display: visible ? "block" : "none" }}
+		>
 			<div className={styles.header}>Help</div>
 			<div className={styles.helpContent}>
 				<p>
-					Visit the World Office documentation for detailed guides and tutorials.
+					Visit the World Office documentation for detailed guides and
+					tutorials.
 				</p>
 			</div>
 		</div>
-	)
+	);
 }

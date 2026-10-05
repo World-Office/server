@@ -1395,7 +1395,9 @@ export const wordRibbonSpec: RibbonSpec = {
               value: () => "en-US",
               onChange: (val: string) =>
                 window.dispatchEvent(
-                  new CustomEvent("wo-command", { detail: { command: "setDocumentLanguage", value: val } }),
+                  new CustomEvent("wo-command", {
+                    detail: { command: "setDocumentLanguage", value: val },
+                  }),
                 ),
             },
             {
@@ -1924,7 +1926,9 @@ export const wordRibbonSpec: RibbonSpec = {
               value: () => "",
               onChange: (val: string) =>
                 window.dispatchEvent(
-                  new CustomEvent("wo-command", { detail: { command: "chartWrapping", value: val } }),
+                  new CustomEvent("wo-command", {
+                    detail: { command: "chartWrapping", value: val },
+                  }),
                 ),
             },
             {

@@ -1,5 +1,5 @@
-import { Button, makeStyles, tokens } from "@fluentui/react-components"
-import { visioStore } from "../../../../stores/VisioStore"
+import { Button, makeStyles, tokens } from "@fluentui/react-components";
+import { visioStore } from "../../../../stores/VisioStore";
 
 const FLOWCHART_FORMATS = [
 	{
@@ -7,11 +7,11 @@ const FLOWCHART_FORMATS = [
 		label: "WO Flowchart",
 		description: "World-Office Diagram (JSON)",
 	},
-]
+];
 
 const VSDX_FORMATS = [
 	{ id: "vsdx", label: "VSDX", description: "Visio Drawing" },
-]
+];
 
 const useStyles = makeStyles({
 	wrapper: {
@@ -67,24 +67,24 @@ const useStyles = makeStyles({
 		justifyContent: "flex-end",
 		padding: "12px 0",
 	},
-})
+});
 
 export function SaveAsPanel({ visible }: { visible: boolean }) {
-	const styles = useStyles()
+	const styles = useStyles();
 
 	function handleClose(): void {
-		visioStore.setFileMenuOpen(false)
-		visioStore.setActiveFileMenuPanel(null)
+		visioStore.setFileMenuOpen(false);
+		visioStore.setActiveFileMenuPanel(null);
 	}
 
 	async function handleExport(format: string): Promise<void> {
 		if (format === "wo-flowchart" || format === "vsdx") {
-			await visioStore.exportAsDownload()
-			handleClose()
-			return
+			await visioStore.exportAsDownload();
+			handleClose();
+			return;
 		}
 
-		alert(`Export to ${format.toUpperCase()} is not yet supported`)
+		alert(`Export to ${format.toUpperCase()} is not yet supported`);
 	}
 
 	return (
@@ -94,7 +94,9 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
 		>
 			<div className={styles.header}>Download as</div>
 			<div className={styles.body}>
-				<p className={styles.instruction}>Select a format to export the diagram.</p>
+				<p className={styles.instruction}>
+					Select a format to export the diagram.
+				</p>
 			</div>
 			<div className={styles.formats}>
 				{FLOWCHART_FORMATS.map((format) => (
@@ -141,5 +143,5 @@ export function SaveAsPanel({ visible }: { visible: boolean }) {
 				</Button>
 			</div>
 		</div>
-	)
+	);
 }

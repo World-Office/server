@@ -1,6 +1,12 @@
-import { Checkbox, Divider, makeStyles, Select, tokens } from "@fluentui/react-components"
-import i18n from "i18next"
-import { useTranslation } from "react-i18next"
+import {
+	Checkbox,
+	Divider,
+	Select,
+	makeStyles,
+	tokens,
+} from "@fluentui/react-components";
+import i18n from "i18next";
+import { useTranslation } from "react-i18next";
 
 const useStyles = makeStyles({
 	wrapper: {
@@ -37,14 +43,17 @@ const useStyles = makeStyles({
 	rightCell: {
 		textAlign: "right",
 	},
-})
+});
 
 export function SettingsPanel({ visible }: { visible: boolean }) {
-	const { t } = useTranslation()
-	const styles = useStyles()
+	const { t } = useTranslation();
+	const styles = useStyles();
 
 	return (
-		<div className={styles.wrapper} style={{ display: visible ? "block" : "none", padding: 0 }}>
+		<div
+			className={styles.wrapper}
+			style={{ display: visible ? "block" : "none", padding: 0 }}
+		>
 			<div className={styles.header}>{t("Advanced Settings")}</div>
 			<table className={styles.table}>
 				<tbody>
@@ -114,5 +123,5 @@ export function SettingsPanel({ visible }: { visible: boolean }) {
 				</tbody>
 			</table>
 		</div>
-	)
+	);
 }

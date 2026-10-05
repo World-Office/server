@@ -1,5 +1,5 @@
-import { Divider, makeStyles, tokens } from "@fluentui/react-components"
-import { visioStore } from "../../../../stores/VisioStore"
+import { Divider, makeStyles, tokens } from "@fluentui/react-components";
+import { visioStore } from "../../../../stores/VisioStore";
 
 const useStyles = makeStyles({
 	wrapper: {
@@ -38,11 +38,11 @@ const useStyles = makeStyles({
 			fontSize: tokens.fontSizeBase100,
 		},
 	},
-})
+});
 
 export function DocumentInfoPanel({ visible }: { visible: boolean }) {
-	const styles = useStyles()
-	const doc = visioStore.document
+	const styles = useStyles();
+	const doc = visioStore.document;
 
 	return (
 		<div
@@ -100,5 +100,5 @@ export function DocumentInfoPanel({ visible }: { visible: boolean }) {
 				</tbody>
 			</table>
 		</div>
-	)
+	);
 }

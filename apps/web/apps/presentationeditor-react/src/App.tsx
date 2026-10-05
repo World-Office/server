@@ -19,8 +19,8 @@ import { useEmbeddedMode } from "./hooks/useEmbeddedMode";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useTheme } from "./hooks/useTheme";
 import { isCollaborationConfigured } from "./lib/collaboration-config";
-import { presentationStore } from "./stores/PresentationStore";
 import { createPresentationCommandHandler } from "./lib/presentation-commands";
+import { presentationStore } from "./stores/PresentationStore";
 
 const PresentationCollaborationProvider = lazy(() =>
 	import("./components/PresentationCollaborationProvider").then((m) => ({
@@ -75,9 +75,12 @@ export const App = observer(function App(): JSX.Element {
 
 	// K6: route ribbon wo-command events to the presentation store
 	useEffect(() => {
-		const unregister = registerEditorRouter("slide", createPresentationCommandHandler())
-		return () => unregister()
-	}, [])
+		const unregister = registerEditorRouter(
+			"slide",
+			createPresentationCommandHandler(),
+		);
+		return () => unregister();
+	}, []);
 
 	useWoCommandListener({
 		onCommand: (command, _value) => {

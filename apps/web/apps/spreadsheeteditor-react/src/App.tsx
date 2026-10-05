@@ -59,9 +59,12 @@ export const App = observer(function App() {
 
 	// K5: route ribbon wo-command events not covered by Univer/panel paths
 	useEffect(() => {
-		const unregister = registerEditorRouter("sheet", createSpreadsheetCommandHandler())
-		return () => unregister()
-	}, [])
+		const unregister = registerEditorRouter(
+			"sheet",
+			createSpreadsheetCommandHandler(),
+		);
+		return () => unregister();
+	}, []);
 
 	useWoCommandListener({
 		onCommand: (command, value) => {

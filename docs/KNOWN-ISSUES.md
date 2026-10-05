@@ -158,20 +158,18 @@ fix in `wo-ooxml` or the typing engine that sets underlines.
 
 ---
 
-## 6. Biome format debt — packages/wopi-client
+## 6. Biome format debt — packages/wopi-client  ✅ resolved 2026-10-05
 
-**Affected:** `ci.yml` → job `lint-ts` (`pnpm lint`, red).
+**Was:** `ci.yml` → job `lint-ts` (`pnpm lint`, red) from a Biome format diff
+in `packages/wopi-client`.
 
-**Symptom (CI log):** `@world-office/wopi-client#lint` fails with
-`Formatter would have printed the following content` — a Biome formatting
-diff in `packages/wopi-client`.
-
-**Blocker:** source edit in `packages/wopi-client` (run `biome check --write`
-there) — outside CI-triage scope.
-
-**Workaround (in effect):** `lint-ts` has `continue-on-error: true`. Close by
-running `pnpm format` (Biome `check --write`) in the package and committing
-the formatting-only diff; then remove the `continue-on-error`.
+**Resolution:** ran `biome check --write` across the six red workspaces
+(`wopi-client`, `editor-common`, `pdfeditor`, `presentationeditor`,
+`spreadsheeteditor`, `visioeditor`) — safe format/organizeImports fixes only.
+`pnpm lint` is green (turbo 27/27) and `lint-ts` no longer sets
+`continue-on-error`. Per-package `typecheck` + `test` verified green
+(editor-common 335, wopi-client 18, pdfeditor 36, presentationeditor 114,
+spreadsheeteditor 38, visioeditor 70).
 
 ---
 
@@ -232,6 +230,6 @@ served by `deploy.yml`, which is green.
 | `coverage-rust` (ci.yml) | #2 pdfium guard | `core/crates/wo-pdf-render` | yes |
 | E2E/live (not a gate) | #3 ocis SSE TypeError | `opencloud-docserver` + editor client | n/a |
 | `lint-rust` (ci.yml) | #4 fmt/clippy debt | `cargo fmt --all` on main | yes |
-| `lint-ts` (ci.yml) | #5 wopi-client Biome | `packages/wopi-client` | yes |
+| `lint-ts` (ci.yml) | #5 wopi-client Biome | ✅ resolved 2026-10-05 | no |
 | `docserver-tests` (ci.yml) | #6 ruff spawn | `opencloud-docserver` pyproject/uv | yes |
 | `build-frontend`/`build-services` (docker.yml) | #7 wasm-pack + GHCR PAT | `docker.yml` + repo secrets | no |

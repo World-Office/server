@@ -4,8 +4,8 @@
  */
 
 import { type WoCommand, registerEditorRouter } from "@world-office/editor-common"
-import { createPdfCommandHandler } from "../lib/pdf-commands"
 import { useEffect } from "react"
+import { createPdfCommandHandler } from "../lib/pdf-commands"
 import { pdfStore } from "../stores/PdfStore"
 
 /**
@@ -191,18 +191,48 @@ export function usePdfCommandRouter(): void {
       "tableShading",
       "toggleHeaderRow",
       // K7: ribbon spec commands
-      "goToFirstPage", "goToNextPage", "goToPrevPage", "goToLastPage",
-      "setZoom", "toggleFitToPage", "toggleFitToWidth",
-      "toggleLeftPanel", "toggleRightPanel", "toggleMinimap",
-      "toggleStatusbar", "toggleCompactToolbar", "toggleTheme",
-      "toggleWordWrap", "toggleEditMode",
-      "annotationHighlight", "annotationUnderline", "annotationStrikeout",
-      "annotationTextComment", "annotationShapeComment", "annotationStamp",
-      "insertImage", "insertText", "insertShape", "insertTable", "insertChart",
-      "insertHyperlink", "insertEquation", "insertSymbol", "insertSmartArt",
-      "insertTextArt", "addFormField", "find", "replace", "findRedact",
-      "redactPages", "markRedaction", "applyRedactions",
-      "cut", "copy", "paste", "selectAll",
+      "goToFirstPage",
+      "goToNextPage",
+      "goToPrevPage",
+      "goToLastPage",
+      "setZoom",
+      "toggleFitToPage",
+      "toggleFitToWidth",
+      "toggleLeftPanel",
+      "toggleRightPanel",
+      "toggleMinimap",
+      "toggleStatusbar",
+      "toggleCompactToolbar",
+      "toggleTheme",
+      "toggleWordWrap",
+      "toggleEditMode",
+      "annotationHighlight",
+      "annotationUnderline",
+      "annotationStrikeout",
+      "annotationTextComment",
+      "annotationShapeComment",
+      "annotationStamp",
+      "insertImage",
+      "insertText",
+      "insertShape",
+      "insertTable",
+      "insertChart",
+      "insertHyperlink",
+      "insertEquation",
+      "insertSymbol",
+      "insertSmartArt",
+      "insertTextArt",
+      "addFormField",
+      "find",
+      "replace",
+      "findRedact",
+      "redactPages",
+      "markRedaction",
+      "applyRedactions",
+      "cut",
+      "copy",
+      "paste",
+      "selectAll",
     ])
 
     return unregister
