@@ -3583,9 +3583,11 @@ pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
         // Check if this is a DOCX document handle
         // We check DOC_MODEL_STORE which contains OoxmlDocument with optional docx_body
         let model_store = DOC_MODEL_STORE.get_or_init(|| Mutex::new(HashMap::new()));
-        let model_store = model_store.lock().unwrap();
-        if model_store.contains_key(&handle) {
+        let is_docx = model_store.lock().unwrap().contains_key(&handle);
+        if is_docx {
             // Extract body, wrap in EditableDocxBody, apply, convert back, store
+            // (extract_body/store_body re-lock DOC_MODEL_STORE, so the guard above
+            // must be dropped first — recursive lock panics on wasm32)
             let body = extract_body(handle)?;
             let mut editable = EditableDocxBody::from(body);
             editable.apply(&op).map_err(|e| e.to_string())?;
@@ -3598,9 +3600,11 @@ pub fn apply_op(handle: u32, op_json: &str) -> Result<(), String> {
     // Try PPTX model (§2.3, SL-6) - use extract/store pattern
     {
         let store = PPTX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
-        let store = store.lock().unwrap();
-        if store.contains_key(&handle) {
+        let is_pptx = store.lock().unwrap().contains_key(&handle);
+        if is_pptx {
             // Extract presentation, wrap in EditablePptxPresentation, apply, convert back, store
+            // (extract_pptx_pres/store_pptx_pres re-lock PPTX_STORE — guard must be
+            // dropped first, same as the DOCX branch above)
             let pres = extract_pptx_pres(handle)?;
             let mut editable = EditablePptxPresentation::from(pres);
             editable.apply(&op).map_err(|e| e.to_string())?;
