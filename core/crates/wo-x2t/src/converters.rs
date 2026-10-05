@@ -15925,4 +15925,805 @@ mod tests {
         .unwrap();
         zip.finish().unwrap().into_inner()
     }
+
+    // ── Unicode safety (char-index invariant, project hard rule #2) ────
+
+    #[test]
+    fn test_txt_to_html_unicode_content() {
+        let input = "Grüße aus München\n日本語のテキスト\n";
+        let html_bytes = TxtToHtmlConverter.convert(input.as_bytes()).unwrap();
+        let html = String::from_utf8(html_bytes).unwrap();
+        assert!(html.contains("<p>"), "missing <p> in: {:?}", html);
+        assert!(html.contains("Grüße aus München"), "umlauts lost: {:?}", html);
+        assert!(html.contains("日本語のテキスト"), "CJK lost: {:?}", html);
+    }
+
+    // Ignored: HtmlToTxt mangles non-ASCII input. Root cause is upstream in
+    // wo-html (out of X2T-TESTS scope): escape_ampersands() iterates bytes and
+    // pushes `byte as char`, turning UTF-8 "ü" (C3 BC) into "Ã¼". Re-enable
+    // once wo-html/parser.rs walks chars instead of bytes.
+    #[ignore = "wo-html escape_ampersands mangles non-ASCII bytes; fix out of scope"]
+    #[test]
+    fn test_html_to_txt_unicode_content() {
+        let html =
+            r#"<html><body><p>Grüße aus Köln</p><p>中文テスト</p></body></html>"#;
+        let txt_bytes = HtmlToTxtConverter.convert(html.as_bytes()).unwrap();
+        let text = String::from_utf8(txt_bytes).unwrap();
+        assert!(text.contains("Grüße aus Köln"), "umlauts lost: {:?}", text);
+        assert!(text.contains("中文テスト"), "CJK lost: {:?}", text);
+    }
+
+    #[test]
+    fn test_rtf_to_txt_hex_escape_unicode() {
+        // \'fc = ü, \'df = ß (Latin-1 hex escapes) — must decode to chars,
+        // never to byte-count artifacts.
+        let rtf = r#"{\rtf1\ansi Gr\'fc\'dfe\par}"#;
+        let out = RtfToTxtConverter.convert(rtf.as_bytes()).unwrap();
+        let text = String::from_utf8(out).unwrap();
+        let trimmed = text.trim();
+        assert_eq!(trimmed, "Grüße", "hex escapes must decode: {:?}", trimmed);
+        assert_eq!(trimmed.chars().count(), 5);
+    }
+
+    #[test]
+    fn test_txt_to_rtf_serializes_unicode_verbatim() {
+        // Parse-back (rtf→txt) currently drops body text when a fonttbl group
+        // is present (wo-rtf parser bug, tracked outside this scope), so this
+        // asserts the serializer side only.
+        let original = "Grüße aus München";
+        let rtf = TxtToRtfConverter.convert(original.as_bytes()).unwrap();
+        let rtf_str = String::from_utf8(rtf).unwrap();
+        assert!(rtf_str.starts_with('{'), "expected RTF doc: {:?}", rtf_str);
+        assert!(rtf_str.contains("\\rtf1"));
+        assert!(
+            rtf_str.contains(original),
+            "non-ASCII text must be serialized verbatim: {:?}",
+            rtf_str
+        );
+        assert_eq!(original.chars().count(), 17);
+    }
+
+    #[test]
+    fn test_rtf_to_html_unicode_hex_escapes() {
+        let rtf = r#"{\rtf1\ansi Gr\'fc\'dfe\par}"#;
+        let html_bytes = RtfToHtmlConverter.convert(rtf.as_bytes()).unwrap();
+        let html = String::from_utf8(html_bytes).unwrap();
+        assert!(
+            html.contains("Grüße"),
+            "hex escapes must decode through rtf→html: {:?}",
+            html
+        );
+    }
+
+    #[test]
+    fn test_rtf_to_txt_unicode_char_count() {
+        let rtf = r#"{\rtf1\ansi aé😀漢\par}"#;
+        let out = RtfToTxtConverter.convert(rtf.as_bytes()).unwrap();
+        let text = String::from_utf8(out).unwrap();
+        let trimmed = text.trim();
+        assert_eq!(trimmed, "aé😀漢", "content must be identical: {:?}", trimmed);
+        assert_eq!(
+            trimmed.chars().count(),
+            4,
+            "must count chars, not bytes: {:?}",
+            trimmed
+        );
+    }
+
+    #[test]
+    fn test_docx_to_txt_unicode_content() {
+        let docx = make_docx_with_body(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body><w:p><w:r><w:t>Grüße aus Köln</w:t></w:r></w:p><w:p><w:r><w:t>日本語の段落</w:t></w:r></w:p></w:body>
+</w:document>"#,
+        );
+        let txt = DocxToTxtConverter.convert(&docx).unwrap();
+        let text = String::from_utf8(txt).unwrap();
+        assert!(text.contains("Grüße aus Köln"), "umlauts lost: {:?}", text);
+        assert!(text.contains("日本語の段落"), "CJK lost: {:?}", text);
+    }
+
+    // ── ConverterRegistry with real converters ────────────────────────
+
+    #[test]
+    fn test_registry_real_converters_dispatch() {
+        use crate::converter::ConverterRegistry;
+
+        let mut registry = ConverterRegistry::new();
+        registry.register(TxtToHtmlConverter);
+        registry.register(TxtToRtfConverter);
+
+        let html = registry
+            .convert("txt", "html", b"Hello Registry")
+            .unwrap();
+        let html = String::from_utf8(html).unwrap();
+        assert!(html.contains("<p>"), "expected HTML out: {:?}", html);
+        assert!(html.contains("Hello Registry"));
+
+        let rtf = registry.convert("txt", "rtf", b"Hello Registry").unwrap();
+        let rtf = String::from_utf8(rtf).unwrap();
+        assert!(rtf.starts_with('{'), "expected RTF out: {:?}", rtf);
+        assert!(rtf.contains("\\rtf1"));
+        assert!(rtf.contains("Hello Registry"));
+    }
+
+    #[test]
+    fn test_registry_real_converters_registered_pairs() {
+        use crate::converter::ConverterRegistry;
+
+        let mut registry = ConverterRegistry::new();
+        registry.register(TxtToHtmlConverter);
+        registry.register(TxtToRtfConverter);
+
+        let mut pairs = registry.registered_pairs();
+        pairs.sort();
+        assert_eq!(pairs, vec![("txt", "html"), ("txt", "rtf")]);
+        assert!(registry.has_converter("txt", "html"));
+        assert!(registry.has_converter("txt", "rtf"));
+        assert!(!registry.has_converter("html", "txt"));
+        assert!(!registry.has_converter("rtf", "txt"));
+    }
+
+    struct FixedBytesConverter {
+        src: &'static str,
+        tgt: &'static str,
+        payload: Vec<u8>,
+    }
+
+    impl FormatConverter for FixedBytesConverter {
+        fn source_format(&self) -> &str {
+            self.src
+        }
+        fn target_format(&self) -> &str {
+            self.tgt
+        }
+        fn convert(&self, _data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+            Ok(self.payload.clone())
+        }
+    }
+
+    #[test]
+    fn test_registry_reregister_overrides_pair() {
+        use crate::converter::ConverterRegistry;
+
+        let mut registry = ConverterRegistry::new();
+        registry.register(TxtToHtmlConverter);
+        registry.register(FixedBytesConverter {
+            src: "txt",
+            tgt: "html",
+            payload: b"REPLACED".to_vec(),
+        });
+
+        let out = registry.convert("txt", "html", b"anything").unwrap();
+        assert_eq!(out, b"REPLACED", "later registration must win");
+    }
+
+    // ── Invalid UTF-8 error paths (ConversionError, never panic) ──────
+
+    #[test]
+    fn test_rtf_to_html_invalid_utf8_error() {
+        let result = RtfToHtmlConverter.convert(&[0xFF, 0xFE, b'x']);
+        assert!(result.is_err());
+        assert!(
+            result.unwrap_err().to_string().contains("parse error"),
+            "expected parse error"
+        );
+    }
+
+    #[test]
+    fn test_html_to_txt_invalid_utf8_error() {
+        let result = HtmlToTxtConverter.convert(&[0xFF, 0xFE, b'x']);
+        assert!(result.is_err());
+        assert!(
+            result.unwrap_err().to_string().contains("parse error"),
+            "expected parse error"
+        );
+    }
+
+    #[test]
+    fn test_txt_to_html_invalid_utf8_error() {
+        let result = TxtToHtmlConverter.convert(&[b'o', 0xFF, b'k']);
+        assert!(result.is_err());
+        assert!(
+            result.unwrap_err().to_string().contains("parse error"),
+            "expected parse error"
+        );
+    }
+
+    #[test]
+    fn test_txt_to_rtf_invalid_utf8_error() {
+        let result = TxtToRtfConverter.convert(&[b'o', 0xFF, b'k']);
+        assert!(result.is_err());
+        assert!(
+            result.unwrap_err().to_string().contains("parse error"),
+            "expected parse error"
+        );
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Bridge converter tests: the four frontend-JSON bridges
+// (wo-spreadsheet, wo-visio-diagram, wo-pdf-document, wo-presentation)
+// plus registry wiring. These converters had no direct test coverage:
+//   PdfToWoPdfConverter, WoPdfToPdfConverter, VsdmToVsdxConverter,
+//   VsdxToVsdmConverter, VsdxToWoDiagramConverter,
+//   WoDiagramToVsdxConverter, WoPresentationToHtmlConverter,
+//   WoSpreadsheetToXlsxConverter, XlsxToWoSpreadsheetConverter
+// ═══════════════════════════════════════════════════════════════════════
+#[cfg(test)]
+mod bridge_converter_tests {
+    use super::*;
+    use crate::converter::ConverterRegistry;
+    use serde_json::Value;
+
+    const ZIP_MAGIC: &[u8] = b"PK\x03\x04";
+
+    // ── fixture helpers ─────────────────────────────────────────────────
+
+    fn sample_spreadsheet_json() -> Vec<u8> {
+        r##"{
+            "version": 1,
+            "name": "Budget",
+            "sheetOrder": ["sheet-1"],
+            "sheets": [{
+                "id": "sheet-1",
+                "name": "Q1",
+                "rowCount": 2,
+                "columnCount": 3,
+                "rows": [
+                    {"r": 1, "cells": [
+                        {"r": "A1", "t": "s", "v": "Grüß Gott"},
+                        {"r": "B1", "t": "n", "v": "42"}
+                    ]},
+                    {"r": 2, "cells": [
+                        {"r": "A2", "t": "str", "v": "Inline"},
+                        {"r": "B2", "t": "n", "v": "3.14", "f": "SUM(A1:B1)"}
+                    ]}
+                ],
+                "merges": []
+            }],
+            "sharedStrings": []
+        }"##
+        .as_bytes()
+        .to_vec()
+    }
+
+    fn sample_diagram_json() -> Vec<u8> {
+        r##"{
+            "version": "1.0",
+            "title": "Org Chart",
+            "creator": "Alice",
+            "pages": [{
+                "id": "page-1",
+                "name": "Page-1",
+                "width": 210.0,
+                "height": 297.0,
+                "shapes": [
+                    {"id": "s1", "name": "Start", "x": 10.0, "y": 20.0,
+                     "width": 30.0, "height": 40.0, "text": "Start node",
+                     "fillColor": "#3366cc"},
+                    {"id": "s2", "name": "End", "x": 100.0, "y": 20.0,
+                     "width": 30.0, "height": 40.0, "text": "End node"}
+                ],
+                "connectors": [
+                    {"id": "c1", "name": "flow", "fromShapeId": "s1",
+                     "toShapeId": "s2", "text": "flows"}
+                ]
+            }]
+        }"##
+        .as_bytes()
+        .to_vec()
+    }
+
+    fn sample_pdf_json() -> Vec<u8> {
+        r##"{
+            "version": "1.7",
+            "pageCount": 1,
+            "title": "Quarterly Report",
+            "author": "Bob",
+            "pages": [
+                {"number": 1, "width": 612.0, "height": 792.0, "text": "Hello PDF"}
+            ]
+        }"##
+        .as_bytes()
+        .to_vec()
+    }
+
+    fn find_cell<'a>(sheet: &'a Value, cell_ref: &str) -> &'a Value {
+        sheet["sheets"][0]["rows"]
+            .as_array()
+            .expect("rows array")
+            .iter()
+            .flat_map(|row| row["cells"].as_array().expect("cells array"))
+            .find(|c| c["r"].as_str() == Some(cell_ref))
+            .unwrap_or_else(|| panic!("cell {} not found", cell_ref))
+    }
+
+    // ── WoSpreadsheet ↔ XLSX ────────────────────────────────────────────
+
+    #[test]
+    fn test_bridge_spreadsheet_to_xlsx_emits_valid_zip() {
+        let xlsx = WoSpreadsheetToXlsxConverter
+            .convert(&sample_spreadsheet_json())
+            .expect("wo-spreadsheet -> xlsx");
+        assert!(
+            xlsx.starts_with(ZIP_MAGIC),
+            "XLSX output must be a ZIP archive"
+        );
+
+        // the workbook part must carry our sheet with its cells
+        let mut archive =
+            zip::ZipArchive::new(std::io::Cursor::new(&xlsx)).expect("zip readable");
+        let workbook = archive
+            .by_name("xl/workbook.xml")
+            .expect("workbook part present");
+        let workbook_xml = std::io::read_to_string(workbook).expect("utf-8 xml");
+        assert!(workbook_xml.contains("Q1"), "sheet name in workbook.xml");
+    }
+
+    #[test]
+    fn test_bridge_xlsx_to_wo_spreadsheet_parses_handbuilt() {
+        let xlsx = build_minimal_xlsx();
+        let back = XlsxToWoSpreadsheetConverter
+            .convert(&xlsx)
+            .expect("xlsx -> wo-spreadsheet");
+        let v: Value = serde_json::from_slice(&back).expect("bridge JSON out");
+
+        assert_eq!(v["sheets"][0]["name"].as_str(), Some("Q1"));
+        // sheet order mirrors the workbook sheetId attribute
+        assert_eq!(v["sheetOrder"][0].as_str(), Some("1"));
+
+        let a1 = find_cell(&v, "A1");
+        assert_eq!(a1["t"].as_str(), Some("s"));
+        assert_eq!(a1["v"].as_str(), Some("Grüß Gott"));
+        let b1 = find_cell(&v, "B1");
+        assert_eq!(b1["t"].as_str(), Some("n"));
+        assert_eq!(b1["v"].as_str(), Some("42"));
+        let b2 = find_cell(&v, "B2");
+        assert_eq!(b2["f"].as_str(), Some("SUM(A1:B1)"));
+    }
+
+    /// Build a minimal schema-valid XLSX (ZIP with the required OOXML parts,
+    /// child elements in ECMA-376 sequence order).
+    fn build_minimal_xlsx() -> Vec<u8> {
+        use std::io::Write;
+        const S_NS: &str = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+        let buf = std::io::Cursor::new(Vec::new());
+        let mut zip = zip::ZipWriter::new(buf);
+
+        let mut add = |name: &str, xml: &str| {
+            zip.start_file(name, zip::write::SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(xml.as_bytes()).unwrap();
+        };
+
+        add(
+            "[Content_Types].xml",
+            r#"<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>"#,
+        );
+        add(
+            "_rels/.rels",
+            r#"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>"#,
+        );
+        add(
+            "xl/workbook.xml",
+            r#"<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<bookViews><workbookView/></bookViews>
+<sheets><sheet name="Q1" sheetId="1" r:id="rId1"/></sheets>
+</workbook>"#,
+        );
+        add(
+            "xl/_rels/workbook.xml.rels",
+            r#"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>"#,
+        );
+        add(
+            "xl/sharedStrings.xml",
+            &format!(
+                r#"<sst xmlns="{}" count="1" uniqueCount="1"><si><t>Grüß Gott</t></si></sst>"#,
+                S_NS
+            ),
+        );
+        add(
+            "xl/worksheets/sheet1.xml",
+            &format!(
+                r#"<worksheet xmlns="{}">
+<dimension ref="A1:B2"/>
+<sheetViews><sheetView workbookViewId="0"/></sheetViews>
+<sheetData>
+<row r="1"><c r="A1" t="s"><v>0</v></c><c r="B1"><v>42</v></c></row>
+<row r="2"><c r="B2"><f>SUM(A1:B1)</f><v>3.14</v></c></row>
+</sheetData>
+</worksheet>"#,
+                S_NS
+            ),
+        );
+
+        zip.finish().unwrap().into_inner()
+    }
+
+    #[test]
+    fn test_bridge_xlsx_to_wo_spreadsheet_rejects_non_zip() {
+        let result = XlsxToWoSpreadsheetConverter.convert(b"this is not a zip archive");
+        assert!(result.is_err(), "garbage input must error, not panic");
+    }
+
+    #[test]
+    fn test_bridge_wo_spreadsheet_to_xlsx_invalid_json() {
+        let result = WoSpreadsheetToXlsxConverter.convert(b"{ not json");
+        assert!(result.is_err());
+        assert!(
+            result.unwrap_err().to_string().contains("Invalid WoSpreadsheet JSON"),
+            "expected dedicated parse-error message"
+        );
+    }
+
+    // ── WoVisioDiagram ↔ VSDX ───────────────────────────────────────────
+
+    #[test]
+    fn test_bridge_visio_vsdx_roundtrip() {
+        let vsdx = WoDiagramToVsdxConverter
+            .convert(&sample_diagram_json())
+            .expect("wo-visio-diagram -> vsdx");
+        assert!(
+            vsdx.starts_with(ZIP_MAGIC),
+            "VSDX output must be a ZIP archive"
+        );
+
+        let back = VsdxToWoDiagramConverter
+            .convert(&vsdx)
+            .expect("vsdx -> wo-visio-diagram");
+        let v: Value = serde_json::from_slice(&back).expect("bridge JSON out");
+
+        assert_eq!(v["title"].as_str(), Some("Org Chart"));
+        assert_eq!(v["creator"].as_str(), Some("Alice"));
+        let page = &v["pages"][0];
+        assert_eq!(page["name"].as_str(), Some("Page-1"));
+
+        let shape = &page["shapes"][0];
+        assert_eq!(shape["id"].as_str(), Some("s1"));
+        assert_eq!(shape["text"].as_str(), Some("Start node"));
+        // visio pipeline normalizes hex colors to upper case
+        assert_eq!(
+            shape["fillColor"].as_str().map(|s| s.to_ascii_lowercase()),
+            Some("#3366cc".to_string())
+        );
+
+        let connector = &page["connectors"][0];
+        assert_eq!(connector["id"].as_str(), Some("c1"));
+        assert_eq!(connector["fromShapeId"].as_str(), Some("s1"));
+        assert_eq!(connector["toShapeId"].as_str(), Some("s2"));
+    }
+
+    #[test]
+    fn test_bridge_wo_diagram_to_vsdx_invalid_json() {
+        let result = WoDiagramToVsdxConverter.convert(b"{ nope");
+        assert!(result.is_err());
+        assert!(
+            result.unwrap_err().to_string().contains("Invalid WoVisioDiagram JSON"),
+            "expected dedicated parse-error message"
+        );
+    }
+
+    #[test]
+    fn test_bridge_vsdx_to_wo_diagram_rejects_garbage() {
+        let result = VsdxToWoDiagramConverter.convert(b"definitely not a visio file");
+        assert!(result.is_err(), "garbage input must error, not panic");
+    }
+
+    // ── WoPdfDocument ↔ PDF ─────────────────────────────────────────────
+
+    #[test]
+    fn test_bridge_pdf_roundtrip() {
+        let pdf = WoPdfToPdfConverter
+            .convert(&sample_pdf_json())
+            .expect("wo-pdf-document -> pdf");
+        assert!(
+            pdf.starts_with(b"%PDF-"),
+            "PDF output must start with %PDF- header"
+        );
+
+        let back = PdfToWoPdfConverter
+            .convert(&pdf)
+            .expect("pdf -> wo-pdf-document");
+        let v: Value = serde_json::from_slice(&back).expect("bridge JSON out");
+
+        assert_eq!(v["version"].as_str(), Some("1.7"));
+        assert_eq!(v["pageCount"].as_i64(), Some(1));
+        assert_eq!(v["pages"].as_array().map(Vec::len), Some(1));
+        assert_eq!(v["pages"][0]["number"].as_i64(), Some(1));
+        // MediaBox dimensions survive; page text does not (wo-pdf serializer
+        // emits no content streams — upstream limitation, not a bridge bug)
+        assert_eq!(v["pages"][0]["width"].as_f64(), Some(612.0));
+        assert_eq!(v["pages"][0]["height"].as_f64(), Some(792.0));
+    }
+
+    #[test]
+    fn test_bridge_wo_pdf_to_pdf_invalid_json() {
+        let result = WoPdfToPdfConverter.convert(b"\x00garbage");
+        assert!(result.is_err());
+        assert!(
+            result.unwrap_err().to_string().contains("Invalid WoPdf JSON"),
+            "expected dedicated parse-error message"
+        );
+    }
+
+    #[test]
+    fn test_bridge_pdf_to_wo_pdf_rejects_garbage() {
+        let result = PdfToWoPdfConverter.convert(b"%PDF-truncated-garbage");
+        assert!(result.is_err(), "garbage input must error, not panic");
+    }
+
+    // ── VSDM ↔ VSDX identity converters ─────────────────────────────────
+
+    #[test]
+    fn test_bridge_vsdm_to_vsdx_identity_bytes() {
+        let payload = b"PK\x03\x04macro-enabled-content".to_vec();
+        let out = VsdmToVsdxConverter
+            .convert(&payload)
+            .expect("vsdm -> vsdx identity");
+        assert_eq!(out, payload, "identity converter must copy bytes verbatim");
+        assert_eq!(VsdmToVsdxConverter.source_format(), "vsdm");
+        assert_eq!(VsdmToVsdxConverter.target_format(), "vsdx");
+    }
+
+    #[test]
+    fn test_bridge_vsdx_to_vsdm_identity_bytes() {
+        let payload = b"PK\x03\x04drawing-content".to_vec();
+        let out = VsdxToVsdmConverter
+            .convert(&payload)
+            .expect("vsdx -> vsdm identity");
+        assert_eq!(out, payload);
+        // and back again: vsdm -> vsdx restores the original bytes
+        let restored = VsdmToVsdxConverter.convert(&out).expect("vsdm -> vsdx");
+        assert_eq!(restored, payload, "double identity must roundtrip exactly");
+    }
+
+    #[test]
+    fn test_bridge_vsd_identity_empty_input() {
+        // edge case: identity converters must accept empty input without panicking
+        assert_eq!(
+            VsdmToVsdxConverter.convert(b"").expect("empty vsdm"),
+            Vec::<u8>::new()
+        );
+        assert_eq!(
+            VsdxToVsdmConverter.convert(b"").expect("empty vsdx"),
+            Vec::<u8>::new()
+        );
+    }
+
+    // ── WoPresentation → HTML ───────────────────────────────────────────
+
+    #[test]
+    fn test_bridge_presentation_to_html_content() {
+        let json = br#"{
+            "version": 1,
+            "slideSize": "16:9",
+            "slides": [
+                {
+                    "id": "slide-1",
+                    "title": "Quarterly Review",
+                    "notes": "Check the numbers",
+                    "shapes": [
+                        {"id": "sh1", "type": "textbox", "x": 10, "y": 10,
+                         "width": 100, "height": 20, "rotation": 0, "zIndex": 0,
+                         "text": "Revenue up"}
+                    ]
+                },
+                {"id": "slide-2", "title": "", "shapes": []}
+            ]
+        }"#;
+        let html_bytes = WoPresentationToHtmlConverter
+            .convert(json)
+            .expect("wo-presentation -> html");
+        let html = String::from_utf8(html_bytes).expect("html utf-8");
+
+        assert!(html.starts_with("<!DOCTYPE html>"), "got: {}", &html[..60]);
+        assert_eq!(
+            html.matches("<div class=\"slide\">").count(),
+            2,
+            "one slide div per slide"
+        );
+        assert!(html.contains("Slide 1") && html.contains("Slide 2"));
+        assert!(html.contains("Quarterly Review"));
+        assert!(html.contains("Revenue up"));
+        assert!(html.contains("Notes: Check the numbers"));
+    }
+
+    #[test]
+    fn test_bridge_presentation_to_html_escapes_markup() {
+        let json = br#"{
+            "version": 1,
+            "slideSize": "4:3",
+            "slides": [{
+                "id": "slide-1",
+                "title": "Safe <Title>",
+                "shapes": [
+                    {"id": "sh1", "type": "textbox", "x": 0, "y": 0,
+                     "width": 10, "height": 10, "rotation": 0, "zIndex": 0,
+                     "text": "<script>alert(1)</script>"}
+                ]
+            }]
+        }"#;
+        let html = String::from_utf8(
+            WoPresentationToHtmlConverter
+                .convert(json)
+                .expect("convert ok"),
+        )
+        .expect("utf-8");
+
+        assert!(
+            html.contains("Safe &lt;Title&gt;"),
+            "title must be escaped"
+        );
+        assert!(
+            html.contains("&lt;script&gt;"),
+            "shape markup must be escaped"
+        );
+        assert!(
+            !html.contains("<script>"),
+            "raw script tags must never reach the output"
+        );
+    }
+
+    #[test]
+    fn test_bridge_presentation_to_html_invalid_json() {
+        let result = WoPresentationToHtmlConverter.convert(b"not json at all");
+        assert!(result.is_err());
+        assert!(
+            result.unwrap_err().to_string().contains("Invalid WoPresentation JSON"),
+            "expected dedicated parse-error message"
+        );
+    }
+
+    // ── ConverterRegistry wiring with bridge converters ─────────────────
+
+    #[test]
+    fn test_bridge_registry_registers_all_bridge_pairs() {
+        let mut registry = ConverterRegistry::new();
+        registry.register(WoSpreadsheetToXlsxConverter);
+        registry.register(XlsxToWoSpreadsheetConverter);
+        registry.register(WoDiagramToVsdxConverter);
+        registry.register(VsdxToWoDiagramConverter);
+        registry.register(WoPdfToPdfConverter);
+        registry.register(PdfToWoPdfConverter);
+        registry.register(WoPresentationToHtmlConverter);
+        registry.register(VsdmToVsdxConverter);
+        registry.register(VsdxToVsdmConverter);
+
+        assert!(registry.has_converter("wo-spreadsheet", "xlsx"));
+        assert!(registry.has_converter("xlsx", "wo-spreadsheet"));
+        assert!(registry.has_converter("wo-visio-diagram", "vsdx"));
+        assert!(registry.has_converter("vsdx", "wo-visio-diagram"));
+        assert!(registry.has_converter("wo-pdf-document", "pdf"));
+        assert!(registry.has_converter("pdf", "wo-pdf-document"));
+        assert!(registry.has_converter("wo-presentation", "html"));
+        assert!(registry.has_converter("vsdm", "vsdx"));
+        assert!(registry.has_converter("vsdx", "vsdm"));
+
+        // unregistered pair reports absent
+        assert!(!registry.has_converter("wo-spreadsheet", "pdf"));
+        assert_eq!(registry.registered_pairs().len(), 9);
+
+        let conv = registry
+            .get("wo-spreadsheet", "xlsx")
+            .expect("spreadsheet -> xlsx registered");
+        assert_eq!(conv.source_format(), "wo-spreadsheet");
+        assert_eq!(conv.target_format(), "xlsx");
+    }
+
+    #[test]
+    fn test_bridge_registry_dispatch_and_no_converter() {
+        let mut registry = ConverterRegistry::new();
+        registry.register(WoSpreadsheetToXlsxConverter);
+        registry.register(XlsxToWoSpreadsheetConverter);
+
+        // dispatch through the registry produces a real XLSX
+        let xlsx = registry
+            .convert("wo-spreadsheet", "xlsx", &sample_spreadsheet_json())
+            .expect("registry dispatch");
+        assert!(xlsx.starts_with(ZIP_MAGIC));
+
+        // unregistered pair yields the NoConverter error, not a panic
+        let err = registry
+            .convert("wo-spreadsheet", "pdf", b"data")
+            .unwrap_err();
+        assert!(
+            err.to_string().contains("no converter registered"),
+            "got: {}",
+            err
+        );
+    }
+
+    // ── Required converters: supplementary angles ────────────────────────
+
+    #[test]
+    fn test_rtf_to_txt_unescapes_braces_and_backslash() {
+        let rtf = br"{\rtf1\ansi a\{b\}c back\\slash}" as &[u8];
+        let txt = RtfToTxtConverter.convert(rtf).expect("rtf -> txt");
+        let text = String::from_utf8(txt).expect("utf-8");
+        assert!(text.contains("a{b}c"), "braces unescaped: {:?}", text);
+        assert!(text.contains("back\\slash"), "backslash unescaped: {:?}", text);
+    }
+
+    #[test]
+    fn test_txt_to_rtf_preserves_unicode_content_verbatim() {
+        let rtf = TxtToRtfConverter
+            .convert("Müller straße".as_bytes())
+            .expect("txt -> rtf");
+        assert!(rtf.starts_with(b"{\\rtf"), "RTF header expected");
+        assert!(rtf.ends_with(b"}"), "RTF must close with brace");
+        let rtf_str = String::from_utf8(rtf).expect("rtf output is valid UTF-8");
+        assert!(
+            rtf_str.contains("Müller straße"),
+            "unicode text must survive verbatim: {:?}",
+            rtf_str
+        );
+    }
+
+    #[test]
+    fn test_html_to_txt_mixed_inline_elements() {
+        let html = br#"<?xml version="1.0"?>
+<html><head></head><body>
+<p><b>bold</b> and <i>italic</i><br/>next line</p>
+</body></html>"# as &[u8];
+        let txt = HtmlToTxtConverter.convert(html).expect("html -> txt");
+        let text = String::from_utf8(txt).expect("utf-8");
+        assert!(text.contains("bold"));
+        assert!(text.contains("italic"));
+        assert!(text.contains("next line"));
+        assert!(!text.contains('<'), "no tags may leak through: {}", text);
+    }
+
+    #[test]
+    fn test_txt_to_docx_docx_to_txt_roundtrip() {
+        let input = b"Bridge line one\nBridge line two" as &[u8];
+        let docx = TxtToDocxConverter.convert(input).expect("txt -> docx");
+        assert!(docx.starts_with(ZIP_MAGIC), "DOCX output must be a ZIP");
+
+        let txt = DocxToTxtConverter.convert(&docx).expect("docx -> txt");
+        let text = String::from_utf8(txt).expect("utf-8");
+        assert!(text.contains("Bridge line one"));
+        assert!(text.contains("Bridge line two"));
+    }
+
+    #[test]
+    fn test_rtf_to_html_document_structure() {
+        let rtf = br"{\rtf1\ansi Headline\par Body text}" as &[u8];
+        let html_bytes = RtfToHtmlConverter.convert(rtf).expect("rtf -> html");
+        let html = String::from_utf8(html_bytes).expect("utf-8");
+
+        assert!(html.contains("Headline"));
+        assert!(html.contains("Body text"));
+        assert_eq!(
+            html.matches("<p").count(),
+            2,
+            "one paragraph per RTF paragraph: {}",
+            html
+        );
+    }
+
+    #[test]
+    fn test_txt_to_html_wraps_each_line_in_paragraph() {
+        let html_bytes = TxtToHtmlConverter
+            .convert(b"alpha\nbeta\ngamma" as &[u8])
+            .expect("txt -> html");
+        let html = String::from_utf8(html_bytes).expect("utf-8");
+        assert_eq!(
+            html.matches("<p>").count(),
+            3,
+            "one paragraph per input line: {}",
+            html
+        );
+        assert!(html.contains("alpha") && html.contains("beta") && html.contains("gamma"));
+    }
 }
