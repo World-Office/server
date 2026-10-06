@@ -116,8 +116,8 @@ impl Gradient {
 
         // Find the two stops surrounding t
         let mut start_idx = 0;
-        for i in 1..self.stops.len() {
-            if self.stops[i].offset <= t {
+        for (i, stop) in self.stops.iter().enumerate().skip(1) {
+            if stop.offset <= t {
                 start_idx = i;
             } else {
                 break;

@@ -5,7 +5,6 @@ edition = "2021"
 license = "AGPL-3.0-or-later"
 description = "Font loading, caching, and CSS-compliant font matching for the World-Office document rendering engine"
 repository = "https://codeberg.org/World-Office/server"
-homepage = "https://codeberg.org/World-Office/server"
 keywords = ["fonts", "typography", "css", "font-matching"]
 categories = ["text-processing"]
 

@@ -49,40 +49,40 @@ pub enum Token {
     Eof,
 }
 
-impl Token {
-    pub fn to_string(&self) -> String {
+impl std::fmt::Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Token::Equal => "=".to_string(),
-            Token::NotEqual => "<>".to_string(),
-            Token::LessThan => "<".to_string(),
-            Token::LessThanOrEqual => "<=".to_string(),
-            Token::GreaterThan => ">".to_string(),
-            Token::GreaterThanOrEqual => ">=".to_string(),
-            Token::Plus => "+".to_string(),
-            Token::Minus => "-".to_string(),
-            Token::Multiply => "*".to_string(),
-            Token::Divide => "/".to_string(),
-            Token::Power => "^".to_string(),
-            Token::Concatenate => "&".to_string(),
-            Token::Range => ":".to_string(),
-            Token::LParen => "(".to_string(),
-            Token::RParen => ")".to_string(),
-            Token::Comma => ",".to_string(),
-            Token::Semicolon => ";".to_string(),
-            Token::LBrace => "{".to_string(),
-            Token::RBrace => "}".to_string(),
-            Token::Bang => "!".to_string(),
-            Token::Dollar => "$".to_string(),
-            Token::FormulaStart => "=".to_string(),
-            Token::True => "TRUE".to_string(),
-            Token::False => "FALSE".to_string(),
-            Token::Number(n) => n.to_string(),
-            Token::Text(s) => format!("\"{s}\""),
-            Token::Error(s) => s.clone(),
-            Token::Identifier(s) => s.clone(),
-            Token::CellRef(_) => "CellRef".to_string(),
-            Token::RangeRef(_) => "RangeRef".to_string(),
-            Token::Eof => "EOF".to_string(),
+            Token::Equal => write!(f, "="),
+            Token::NotEqual => write!(f, "<>"),
+            Token::LessThan => write!(f, "<"),
+            Token::LessThanOrEqual => write!(f, "<="),
+            Token::GreaterThan => write!(f, ">"),
+            Token::GreaterThanOrEqual => write!(f, ">="),
+            Token::Plus => write!(f, "+"),
+            Token::Minus => write!(f, "-"),
+            Token::Multiply => write!(f, "*"),
+            Token::Divide => write!(f, "/"),
+            Token::Power => write!(f, "^"),
+            Token::Concatenate => write!(f, "&"),
+            Token::Range => write!(f, ":"),
+            Token::LParen => write!(f, "("),
+            Token::RParen => write!(f, ")"),
+            Token::Comma => write!(f, ","),
+            Token::Semicolon => write!(f, ";"),
+            Token::LBrace => write!(f, "{{"),
+            Token::RBrace => write!(f, "}}"),
+            Token::Bang => write!(f, "!"),
+            Token::Dollar => write!(f, "$"),
+            Token::FormulaStart => write!(f, "="),
+            Token::True => write!(f, "TRUE"),
+            Token::False => write!(f, "FALSE"),
+            Token::Eof => write!(f, "EOF"),
+            Token::Number(n) => write!(f, "{n}"),
+            Token::Text(s) => write!(f, "\"{s}\""),
+            Token::Error(s) => write!(f, "{s}"),
+            Token::Identifier(s) => write!(f, "{s}"),
+            Token::CellRef(_) => write!(f, "CellRef"),
+            Token::RangeRef(_) => write!(f, "RangeRef"),
         }
     }
 }
@@ -168,7 +168,7 @@ impl<'a> Lexer<'a> {
 
     fn read_string(&mut self) -> Token {
         self.advance(); // Skip opening quote
-        let start = self.pos;
+        let _start = self.pos;
         let mut result = String::new();
 
         while let Some(c) = self.current() {
@@ -268,7 +268,7 @@ impl<'a> Lexer<'a> {
         }
 
         // Check for $ between column and row
-        let mut col_absolute = col_dollar
+        let col_absolute = col_dollar
             || if let Some('$') = self.current() {
                 self.advance();
                 true
@@ -439,13 +439,12 @@ impl<'a> Lexer<'a> {
                 let saved_pos = self.pos;
                 self.advance();
                 // If followed by a letter, it's an absolute column reference ($A1)
-                if let Some(c) = self.current() {
-                    if c.is_ascii_alphabetic() {
+                if let Some(c) = self.current()
+                    && c.is_ascii_alphabetic() {
                         // This is $A1 or similar
                         self.pos = saved_pos;
                         return self.read_cell_ref();
                     }
-                }
                 // If preceded by a letter and followed by a digit, it's A$1
                 // But we can't look behind, so just return Dollar standalone
                 // Actually, let's check if the previous position was alphabetic
@@ -453,7 +452,7 @@ impl<'a> Lexer<'a> {
                 // TODO: Handle A$1 case
                 Token::Dollar
             }
-            '"' => return self.read_string(),
+            '"' => self.read_string(),
             '<' => {
                 self.advance();
                 Token::LessThan
@@ -462,7 +461,7 @@ impl<'a> Lexer<'a> {
                 self.advance();
                 Token::GreaterThan
             }
-            c if c.is_ascii_digit() => return self.read_number(),
+            c if c.is_ascii_digit() => self.read_number(),
             c if c.is_ascii_alphabetic() => {
                 // Could be cell ref or identifier (function name)
                 let saved_pos = self.pos;
@@ -476,7 +475,7 @@ impl<'a> Lexer<'a> {
                         break;
                     }
                 }
-                let letters: String = self.input[saved_pos..self.pos].to_string();
+                let _letters: String = self.input[saved_pos..self.pos].to_string();
 
                 let mut has_digit = false;
                 while let Some(c) = self.current() {

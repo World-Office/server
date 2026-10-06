@@ -6,8 +6,8 @@
 //! `layout_and_render`) compiles and works end-to-end. Real document models
 //! (DOCX, XLSX, PPTX, …) replace this stub in later engine tasks.
 
-use std::collections::BTreeMap;
 use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::sync::Mutex;
 use std::sync::OnceLock;
 
@@ -134,10 +134,8 @@ impl EditableModel for StubModel {
                     return Err(StubModelError::CharOutOfRange(char_idx, chars_count));
                 }
                 let mut chars: Vec<char> = self.paragraphs[para].chars().collect();
-                let mut ci = char_idx;
-                for c in content.chars() {
-                    chars.insert(ci, c);
-                    ci += 1;
+                for (k, c) in content.chars().enumerate() {
+                    chars.insert(char_idx + k, c);
                 }
                 self.paragraphs[para] = chars.into_iter().collect();
             }
@@ -174,10 +172,8 @@ impl EditableModel for StubModel {
                 }
                 let mut chars: Vec<char> = self.paragraphs[para].chars().collect();
                 chars.remove(char_idx);
-                let mut ci = char_idx;
-                for c in content.chars() {
-                    chars.insert(ci, c);
-                    ci += 1;
+                for (k, c) in content.chars().enumerate() {
+                    chars.insert(char_idx + k, c);
                 }
                 self.paragraphs[para] = chars.into_iter().collect();
             }

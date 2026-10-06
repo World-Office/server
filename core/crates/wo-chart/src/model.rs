@@ -440,7 +440,7 @@ impl EditableModel for Chart {
                 })?;
 
                 match at {
-                    Path::Sheet { row, col: _, .. } => {
+                    Path::Sheet { row, .. } => {
                         // Insert series at a given index (row = series index)
                         let idx = *row as usize;
                         if idx > self.series.len() {
@@ -534,7 +534,7 @@ impl EditableModel for Chart {
             }
             ModelOp::Format { range, attrs } => {
                 match &range.start {
-                    Path::Sheet { row, col: _, .. } => {
+                    Path::Sheet { row, .. } => {
                         let series_idx = *row as usize;
                         let series = self
                             .series

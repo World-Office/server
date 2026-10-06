@@ -544,7 +544,7 @@ impl<'a> DocModel<'a> {
         let mut new_runs: Vec<DocxRun> = Vec::new();
 
         let mut current_offset = 0;
-        for (_run_idx, run) in paragraph.runs.iter().enumerate() {
+        for run in paragraph.runs.iter() {
             let run_len = run.text.chars().count();
             let run_start = current_offset;
             let run_end = current_offset + run_len;
@@ -645,8 +645,7 @@ impl<'a> DocModel<'a> {
             para,
             start_char,
             end_char,
-            attrs: old_attrs_map
-                .get(0)
+            attrs: old_attrs_map.first()
                 .map(|(_, attrs)| attrs.clone())
                 .unwrap_or_default(),
         })

@@ -51,8 +51,8 @@ use wo_odf::OdfSerializer;
 use wo_ooxml::model::{
     AdvanceMode, AnimationData as OoxmlAnimData, Bounds, ConnectorShape, ConnectorShapeType,
     CoreProperties, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, DocxTable,
-    DocxTableCell, DocxTableRow, Fill, HeaderFooter, MediaPart, OoxmlDocument, OoxmlFormat,
-    PictureShape, PptxPresentation, Relationship, Slide, SlideShape, SlideSize, SlideTransition,
+    DocxTableCell, DocxTableRow, Fill, HeaderFooter, OoxmlDocument, OoxmlFormat,
+    PictureShape, PptxPresentation, Slide, SlideShape, SlideSize, SlideTransition,
     TextBody as OoxmlTextBody, TextBoxShape, TransitionEffect, UnderlineType,
 };
 use wo_ooxml::{OoxmlParser, OoxmlSerializer};
@@ -7668,7 +7668,7 @@ mod tests {
     use wo_epub::is_epub_file;
     use wo_fb2::model::{Author, Stanza, TitleElement};
     use wo_html::model::ListItem;
-    use wo_ooxml::model::{DocxBlock, DocxTableProperties, VerticalAlignment};
+    use wo_ooxml::model::{DocxBlock, DocxTableProperties, MediaPart, Relationship, VerticalAlignment};
     use wo_rtf::model::{RtfTableCell, RtfTableRow};
 
     // ── page furniture (headers/footers) ─────────────────────────────

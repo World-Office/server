@@ -243,8 +243,8 @@ impl PdfRenderer for PdfiumBackend {
             .map_err(|e| crate::PdfError::PdfiumError(e.to_string()))?;
 
         // Get page dimensions in points
-        let page_width = pdf_page.width().value as f32;
-        let page_height = pdf_page.height().value as f32;
+        let page_width = pdf_page.width().value;
+        let page_height = pdf_page.height().value;
 
         // Convert to pixels at the given DPI
         // 1 point = 1/72 inch, so at DPI d, 1 point = d/72 pixels
@@ -334,10 +334,10 @@ impl PdfRenderer for PdfiumBackend {
             result.push(Annotation {
                 annotation_type,
                 rect: Rect::new(
-                    pdf_rect.left().value as f32,
-                    pdf_rect.bottom().value as f32,
-                    pdf_rect.width().value as f32,
-                    pdf_rect.height().value as f32,
+                    pdf_rect.left().value,
+                    pdf_rect.bottom().value,
+                    pdf_rect.width().value,
+                    pdf_rect.height().value,
                 ),
                 content,
             });

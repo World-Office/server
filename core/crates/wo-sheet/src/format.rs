@@ -19,7 +19,7 @@
 //! - `mm/dd/yyyy` - Date format
 //! - `h:mm AM/PM` - Time format
 
-use chrono::{Datelike, NaiveDate, NaiveDateTime, NaiveTime, Timelike};
+use chrono::{Datelike, DateTime, NaiveDate, NaiveTime, Timelike};
 
 /// Predefined Excel format code indices.
 /// These match the built-in Excel number formats.
@@ -88,7 +88,7 @@ impl FormatPattern {
                 pattern.negative = Some(parts[1].to_string());
                 pattern.zero = Some(parts[2].to_string());
             }
-            4 | _ => {
+            _ => {
                 pattern.positive = Some(parts[0].to_string());
                 pattern.negative = Some(parts[1].to_string());
                 pattern.zero = Some(parts[2].to_string());
@@ -365,7 +365,7 @@ fn format_percentage(value: f64, format_code: &str) -> String {
     // Percentage is value * 100
     let scaled = value * 100.0;
     // Determine decimal places from format
-    let decimal_places = format_code.chars().filter(|&c| c == '0').count();
+    let _decimal_places = format_code.chars().filter(|&c| c == '0').count();
     // Re-use numeric formatting
     let formatted = format_numeric(scaled, format_code);
     if format_code.contains('%') {
@@ -420,14 +420,13 @@ fn format_scientific(value: f64, format_code: &str) -> String {
     let mut result = format!("{:.6e}", value);
 
     // Check if format specifies precision
-    if let Some(start) = format_code.find("0.") {
-        if let Some(end) = format_code.find('e') {
+    if let Some(start) = format_code.find("0.")
+        && let Some(end) = format_code.find('e') {
             let prec_str = &format_code[start + 2..end];
             if let Ok(prec) = prec_str.parse::<usize>() {
                 result = format!("{:.1$e}", value, prec + 1);
             }
         }
-    }
 
     result
 }
@@ -451,8 +450,8 @@ fn format_date_value(value: f64, format_code: &str) -> String {
     // Excel dates are stored as serial numbers (days since 1899-12-31 or 1900-01-01)
     let date = if value >= 2958465.0 {
         // Likely Unix timestamp in seconds
-        if let Some(dt) = NaiveDateTime::from_timestamp_opt(value as i64, 0) {
-            dt.date()
+        if let Some(dt) = DateTime::from_timestamp(value as i64, 0) {
+            dt.date_naive()
         } else {
             NaiveDate::from_ymd_opt(1900, 1, 1).unwrap()
         }
@@ -527,7 +526,7 @@ fn format_date_internal(date: &NaiveDate, format_code: &str) -> String {
             }
             '"' => {
                 // Quoted string
-                while let Some(c) = chars.next() {
+                for c in chars.by_ref() {
                     if c == '"' {
                         break;
                     }
@@ -645,7 +644,7 @@ fn format_time_internal(time: &NaiveTime, format_code: &str) -> String {
             }
             '"' => {
                 // Quoted string
-                while let Some(c) = chars.next() {
+                for c in chars.by_ref() {
                     if c == '"' {
                         break;
                     }

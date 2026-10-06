@@ -1696,9 +1696,6 @@ impl OoxmlParser {
                 (Some(Self::W_NS), "footnoteReference") => {
                     run.footnote_rid = child.attribute((Self::W_NS, "id")).map(|s| s.to_string());
                 }
-                (Some(Self::W_NS), "footnoteReference") => {
-                    run.footnote_rid = child.attribute((Self::W_NS, "id")).map(|s| s.to_string());
-                }
                 (Some(Self::W_NS), "br") => {
                     let br_type = child.attribute("type").unwrap_or("line");
                     if br_type == "page" {

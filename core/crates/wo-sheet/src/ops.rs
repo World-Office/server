@@ -645,7 +645,7 @@ pub fn invert_sheetop(op: &SheetOp, _sheet: &Sheet) -> SheetOp {
             // Inverse of Paste is Clear
             let (start_row, start_col) = *at;
             let rows = data.len() as u32;
-            let cols = data.get(0).map(|row| row.len() as u32).unwrap_or(0);
+            let cols = data.first().map(|row| row.len() as u32).unwrap_or(0);
             SheetOp::Clear {
                 range: Range2d::new(
                     start_row,
@@ -713,7 +713,7 @@ pub fn invert_sheetop_with_workbook(op: &SheetOp, wb: &Workbook) -> SheetOp {
 
 /// Helper function to shift merge ranges vertically or horizontally.
 fn shift_merge_ranges(
-    merges: &mut Vec<MergeRange>,
+    merges: &mut [MergeRange],
     shift_row: u32,
     shift_col: u32,
     _row_delta: u32,
@@ -820,12 +820,11 @@ fn parse_raw_value(raw: &str) -> (CellValue, Option<wo_formula::ast::Expr>) {
     }
 
     // Try to parse as formula
-    if raw.starts_with('=') {
-        if let Ok(expr) = wo_formula::parse(&raw[1..]) {
+    if raw.starts_with('=')
+        && let Ok(expr) = wo_formula::parse(&raw[1..]) {
             // For now, we won't evaluate the formula
             return (CellValue::Text(raw.to_string()), Some(expr));
         }
-    }
 
     // Default to text
     (CellValue::Text(raw.to_string()), None)

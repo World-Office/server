@@ -211,7 +211,7 @@ impl EditableDocxBody {
                                     if let Some(n) = value.as_u64() {
                                         run_attrs.font_size = Some(n as u32);
                                     } else if let Some(f) = value.as_f64() {
-                                        let rounded = (f.round() as u32).max(1).min(32767);
+                                        let rounded = (f.round() as u32).clamp(1, 32767);
                                         run_attrs.font_size = Some(rounded);
                                     }
                                 }

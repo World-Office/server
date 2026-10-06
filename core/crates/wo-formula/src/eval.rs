@@ -196,15 +196,10 @@ fn fn_abs(args: &[Expr], sheet: &impl Sheet) -> Result<CellValue, FormulaError> 
     Ok(CellValue::Num(n.abs()))
 }
 
-fn fn_ceil(args: &[Expr], sheet: &impl Sheet) -> Result<CellValue, FormulaError> {
-    let n = single_num(args, sheet)?;
-    Ok(CellValue::Num(n.ceil()))
-}
-
 fn fn_ceiling(args: &[Expr], sheet: &impl Sheet) -> Result<CellValue, FormulaError> {
     // CEILING(number, significance)
     let nums = collect_nums(args, sheet)?;
-    if nums.len() < 1 {
+    if nums.is_empty() {
         return Err(FormulaError::WrongArgCount {
             func: "CEILING".to_string(),
             expected: 1,
@@ -307,7 +302,7 @@ fn fn_fact(args: &[Expr], sheet: &impl Sheet) -> Result<CellValue, FormulaError>
     let n_int = n as u64;
     let mut result = 1u128;
     for i in 2..=n_int {
-        result = result * i as u128;
+        result *= i as u128;
     }
     Ok(CellValue::Num(result as f64))
 }
@@ -621,7 +616,7 @@ fn fn_sumif(args: &[Expr], sheet: &impl Sheet) -> Result<CellValue, FormulaError
 fn fn_sumproduct(args: &[Expr], sheet: &impl Sheet) -> Result<CellValue, FormulaError> {
     let mut arrays: Vec<Vec<f64>> = Vec::new();
     for arg in args {
-        let vals = collect_nums_coerce(&[arg.clone()], sheet)?;
+        let vals = collect_nums_coerce(std::slice::from_ref(arg), sheet)?;
         arrays.push(vals);
     }
     if arrays.is_empty() {
@@ -781,7 +776,7 @@ fn fn_switch(args: &[Expr], sheet: &impl Sheet) -> Result<CellValue, FormulaErro
 }
 
 fn fn_ifs(args: &[Expr], sheet: &impl Sheet) -> Result<CellValue, FormulaError> {
-    if args.len() < 2 || args.len() % 2 != 0 {
+    if args.len() < 2 || !args.len().is_multiple_of(2) {
         return Err(FormulaError::WrongArgCount {
             func: "IFS".to_string(),
             expected: 2,
@@ -1527,7 +1522,7 @@ mod tests {
     #[test]
     fn eval_basic_trig() {
         let sheet = TestSheet::new();
-        let pi = std::f64::consts::PI;
+        let _pi = std::f64::consts::PI;
         // SIN(π/2) ≈ 1
         let result = eval(&parse("SIN(PI()/2)").unwrap(), &sheet).unwrap();
         if let CellValue::Num(n) = result {
@@ -1861,7 +1856,7 @@ mod tests {
     #[test]
     fn eval_basic_sin_cos_pi() {
         let sheet = TestSheet::new();
-        let pi = std::f64::consts::PI;
+        let _pi = std::f64::consts::PI;
         // sin^2 + cos^2 = 1
         let sin_val = eval(&parse("SIN(PI()/4)").unwrap(), &sheet).unwrap();
         let cos_val = eval(&parse("COS(PI()/4)").unwrap(), &sheet).unwrap();

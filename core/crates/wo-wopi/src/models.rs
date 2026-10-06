@@ -291,10 +291,10 @@ pub enum WopiOverride {
     GetShareUrl,
 }
 
-impl TryFrom<&str> for WopiOverride {
-    type Error = String;
+impl std::str::FromStr for WopiOverride {
+    type Err = String;
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
         match value {
             "CHECK_FILE_INFO" => Ok(WopiOverride::CheckFileInfo),
             "GET_FILE" => Ok(WopiOverride::GetFile),
@@ -313,6 +313,7 @@ impl TryFrom<&str> for WopiOverride {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::str::FromStr;
 
     #[test]
     fn test_check_file_info_response() {
@@ -346,17 +347,17 @@ mod tests {
     #[test]
     fn test_wopi_override_from_str() {
         assert_eq!(
-            WopiOverride::try_from("CHECK_FILE_INFO").unwrap(),
+            WopiOverride::from_str("CHECK_FILE_INFO").unwrap(),
             WopiOverride::CheckFileInfo
         );
         assert_eq!(
-            WopiOverride::try_from("GET_FILE").unwrap(),
+            WopiOverride::from_str("GET_FILE").unwrap(),
             WopiOverride::GetFile
         );
         assert_eq!(
-            WopiOverride::try_from("PUT_FILE").unwrap(),
+            WopiOverride::from_str("PUT_FILE").unwrap(),
             WopiOverride::PutFile
         );
-        assert!(WopiOverride::try_from("UNKNOWN").is_err());
+        assert!(WopiOverride::from_str("UNKNOWN").is_err());
     }
 }

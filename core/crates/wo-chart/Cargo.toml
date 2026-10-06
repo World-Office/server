@@ -5,7 +5,6 @@ edition = "2021"
 license.workspace = true
 description = "Chart model, serde, and rendering for the World-Office document editing suite"
 repository = "https://codeberg.org/World-Office/server"
-homepage = "https://codeberg.org/World-Office/server"
 keywords = ["chart", "bar", "line", "pie", "office"]
 categories = ["data-visualization"]
 

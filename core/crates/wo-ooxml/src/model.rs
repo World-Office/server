@@ -684,8 +684,10 @@ pub struct DocxParagraphProperties {
 /// Kind of tab stop.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum TabStopKind {
     /// Left-aligned tab (default).
+    #[default]
     Left,
     /// Center-aligned tab.
     Center,
@@ -697,11 +699,6 @@ pub enum TabStopKind {
     Bar,
 }
 
-impl Default for TabStopKind {
-    fn default() -> Self {
-        TabStopKind::Left
-    }
-}
 
 /// A single tab stop definition.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

@@ -5,7 +5,6 @@ edition = "2021"
 license.workspace = true
 description = "Presentation slide model, operations, and rendering for the World-Office document editing suite"
 repository = "https://codeberg.org/World-Office/server"
-homepage = "https://codeberg.org/World-Office/server"
 keywords = ["slide", "presentation", "office"]
 categories = ["multimedia"]
 

@@ -5,7 +5,6 @@ edition = "2021"
 license = "AGPL-3.0-or-later"
 description = "Canvas-based document rendering engine with text layout, gradients, transforms, and path rendering for the World-Office document editing suite"
 repository = "https://codeberg.org/World-Office/server"
-homepage = "https://codeberg.org/World-Office/server"
 keywords = ["rendering", "canvas", "text-layout", "document", "office"]
 categories = ["graphics", "rendering"]
 

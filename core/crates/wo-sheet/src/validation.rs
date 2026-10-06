@@ -86,8 +86,10 @@ pub enum ValidationOperator {
 /// Corresponds to Excel's `xlValidAlert*` constants.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(Default)]
 pub enum ValidationErrorStyle {
     /// Stop: prevents entry (default)
+    #[default]
     Stop,
     /// Warning: asks user to confirm
     Warning,
@@ -95,11 +97,6 @@ pub enum ValidationErrorStyle {
     Information,
 }
 
-impl Default for ValidationErrorStyle {
-    fn default() -> Self {
-        Self::Stop
-    }
-}
 
 /// A single data validation rule attached to a range of cells.
 ///
@@ -445,14 +442,14 @@ fn evaluate_rule(raw: &str, rule: &DataValidation) -> bool {
             // Split formula1 by comma (or newline) and check if raw matches any item
             let items: Vec<&str> = rule
                 .formula1
-                .split(|c| c == ',' || c == '\n')
+                .split([',', '\n'])
                 .map(|s| s.trim())
                 .filter(|s| !s.is_empty())
                 .collect();
             if items.is_empty() {
                 return true; // No items defined, always valid
             }
-            items.iter().any(|item| *item == raw)
+            items.contains(&raw)
         }
         ValidationType::Date => {
             // Date validation: try to parse as Excel serial date number or a date string
@@ -546,11 +543,11 @@ fn compare_value(
 }
 
 /// Find all validation rules that apply to a given cell position.
-pub fn rules_for_cell<'a>(
+pub fn rules_for_cell(
     row: u32,
     col: u32,
-    rules: &'a [DataValidation],
-) -> Vec<&'a DataValidation> {
+    rules: &[DataValidation],
+) -> Vec<&DataValidation> {
     rules
         .iter()
         .filter(|r| r.range.contains(row, col))

@@ -28,65 +28,11 @@ impl<'a> Parser<'a> {
     }
 
     fn current_is(&self, token: &Token) -> bool {
-        match (token, &self.current_token) {
-            (Token::FormulaStart, Token::FormulaStart) => true,
-            (Token::Plus, Token::Plus) => true,
-            (Token::Minus, Token::Minus) => true,
-            (Token::Multiply, Token::Multiply) => true,
-            (Token::Divide, Token::Divide) => true,
-            (Token::Power, Token::Power) => true,
-            (Token::Equal, Token::Equal) => true,
-            (Token::NotEqual, Token::NotEqual) => true,
-            (Token::LessThan, Token::LessThan) => true,
-            (Token::LessThanOrEqual, Token::LessThanOrEqual) => true,
-            (Token::GreaterThan, Token::GreaterThan) => true,
-            (Token::GreaterThanOrEqual, Token::GreaterThanOrEqual) => true,
-            (Token::Concatenate, Token::Concatenate) => true,
-            (Token::Range, Token::Range) => true,
-            (Token::LParen, Token::LParen) => true,
-            (Token::RParen, Token::RParen) => true,
-            (Token::Comma, Token::Comma) => true,
-            (Token::Semicolon, Token::Semicolon) => true,
-            (Token::LBrace, Token::LBrace) => true,
-            (Token::RBrace, Token::RBrace) => true,
-            (Token::Bang, Token::Bang) => true,
-            (Token::Dollar, Token::Dollar) => true,
-            (Token::True, Token::True) => true,
-            (Token::False, Token::False) => true,
-            (Token::Eof, Token::Eof) => true,
-            _ => false,
-        }
+        self.current_token == *token
     }
 
     fn peek_is(&self, token: &Token) -> bool {
-        match (token, &self.peek_token) {
-            (Token::FormulaStart, Token::FormulaStart) => true,
-            (Token::Plus, Token::Plus) => true,
-            (Token::Minus, Token::Minus) => true,
-            (Token::Multiply, Token::Multiply) => true,
-            (Token::Divide, Token::Divide) => true,
-            (Token::Power, Token::Power) => true,
-            (Token::Equal, Token::Equal) => true,
-            (Token::NotEqual, Token::NotEqual) => true,
-            (Token::LessThan, Token::LessThan) => true,
-            (Token::LessThanOrEqual, Token::LessThanOrEqual) => true,
-            (Token::GreaterThan, Token::GreaterThan) => true,
-            (Token::GreaterThanOrEqual, Token::GreaterThanOrEqual) => true,
-            (Token::Concatenate, Token::Concatenate) => true,
-            (Token::Range, Token::Range) => true,
-            (Token::LParen, Token::LParen) => true,
-            (Token::RParen, Token::RParen) => true,
-            (Token::Comma, Token::Comma) => true,
-            (Token::Semicolon, Token::Semicolon) => true,
-            (Token::LBrace, Token::LBrace) => true,
-            (Token::RBrace, Token::RBrace) => true,
-            (Token::Bang, Token::Bang) => true,
-            (Token::Dollar, Token::Dollar) => true,
-            (Token::True, Token::True) => true,
-            (Token::False, Token::False) => true,
-            (Token::Eof, Token::Eof) => true,
-            _ => false,
-        }
+        self.peek_token == *token
     }
 
     fn expect(&mut self, token: &Token) -> Result<(), FormulaError> {
@@ -143,10 +89,6 @@ impl<'a> Parser<'a> {
 
     fn is_right_associative(&self, token: &Token) -> bool {
         matches!(token, Token::Power)
-    }
-
-    fn is_unary_operator(&self, token: &Token) -> bool {
-        matches!(token, Token::Plus | Token::Minus)
     }
 
     fn get_infix_operator(&self) -> Option<Token> {

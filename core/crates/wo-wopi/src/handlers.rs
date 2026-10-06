@@ -17,6 +17,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::{Arc, OnceLock};
 use wo_x2t::ConversionRouter;
+use std::str::FromStr;
 
 /// Shared conversion router instance (cached after first use).
 fn conversion_router() -> &'static ConversionRouter {
@@ -385,7 +386,7 @@ pub async fn wopi_operation<S: StorageBackend>(
         .and_then(|v| v.to_str().ok())
         .ok_or_else(|| WopiError::InvalidRequest("Missing X-WOPI-Override header".to_string()))?;
 
-    match WopiOverride::try_from(override_header) {
+    match WopiOverride::from_str(override_header) {
         Ok(WopiOverride::Lock) => {
             lock_file(State(state), Path(file_id), Query(params), headers, body).await
         }

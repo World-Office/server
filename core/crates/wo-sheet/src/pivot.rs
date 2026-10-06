@@ -425,11 +425,10 @@ impl PivotEngine {
             ];
 
         // Build accumulators with the correct aggregation function per value field
-        for r in 0..row_keys_ordered.len() {
-            for c in 0..col_keys_ordered.len() {
-                for v in 0..num_value_fields {
-                    accumulators[r][c][v] =
-                        AggAccumulator::new(self.config.value_fields[v].agg_func);
+        for row_accs in &mut accumulators {
+            for cell_accs in row_accs {
+                for (v, acc) in cell_accs.iter_mut().enumerate() {
+                    *acc = AggAccumulator::new(self.config.value_fields[v].agg_func);
                 }
             }
         }
@@ -444,13 +443,12 @@ impl PivotEngine {
             .collect();
 
         // Fix aggregation functions for grand accumulators
-        for v in 0..num_value_fields {
-            let func = self.config.value_fields[v].agg_func;
-            for r in 0..row_keys_ordered.len() {
-                row_grand_accums[r][v] = AggAccumulator::new(func);
+        for (v, func) in self.config.value_fields.iter().map(|f| f.agg_func).enumerate() {
+            for ra in row_grand_accums.iter_mut() {
+                ra[v] = AggAccumulator::new(func);
             }
-            for c in 0..col_keys_ordered.len() {
-                col_grand_accums[c][v] = AggAccumulator::new(func);
+            for ca in col_grand_accums.iter_mut() {
+                ca[v] = AggAccumulator::new(func);
             }
             total_grand_accums[v] = AggAccumulator::new(func);
         }
@@ -483,11 +481,11 @@ impl PivotEngine {
         let mut data: Vec<Vec<CellValue>> = Vec::with_capacity(num_data_rows);
         let mut row_totals: Vec<CellValue> = Vec::with_capacity(num_data_rows);
 
-        for r in 0..num_data_rows {
+        for (r, row_accs) in accumulators.iter().enumerate() {
             let mut row_data: Vec<CellValue> = Vec::with_capacity(num_data_cols);
-            for c in 0..col_keys_ordered.len() {
-                for v in 0..num_value_fields {
-                    row_data.push(accumulators[r][c][v].result());
+            for cell_accs in row_accs {
+                for acc in cell_accs {
+                    row_data.push(acc.result());
                 }
             }
             data.push(row_data);
@@ -499,8 +497,8 @@ impl PivotEngine {
                 // For multiple value fields, average of the row's values
                 let mut sum = 0.0;
                 let mut count = 0;
-                for v in 0..num_value_fields {
-                    if let CellValue::Num(n) = row_grand_accums[r][v].result() {
+                for acc in &row_grand_accums[r] {
+                    if let CellValue::Num(n) = acc.result() {
                         sum += n;
                         count += 1;
                     }
@@ -516,9 +514,9 @@ impl PivotEngine {
 
         // Column grand totals
         let mut col_totals: Vec<CellValue> = Vec::with_capacity(num_data_cols);
-        for c in 0..col_keys_ordered.len() {
-            for v in 0..num_value_fields {
-                col_totals.push(col_grand_accums[c][v].result());
+        for accs in &col_grand_accums {
+            for acc in accs {
+                col_totals.push(acc.result());
             }
         }
 
@@ -528,8 +526,8 @@ impl PivotEngine {
         } else {
             let mut sum = 0.0;
             let mut count = 0;
-            for v in 0..num_value_fields {
-                if let CellValue::Num(n) = total_grand_accums[v].result() {
+            for acc in &total_grand_accums {
+                if let CellValue::Num(n) = acc.result() {
                     sum += n;
                     count += 1;
                 }

@@ -38,6 +38,9 @@ pub struct RunAttrs {
 }
 
 /// Document operation types
+// allow: one variant (table ops) legitimately carries a Vec of full rows; the
+// enum is serde-stable and small in the common cases.
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum DocOp {

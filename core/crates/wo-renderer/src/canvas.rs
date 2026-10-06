@@ -646,13 +646,14 @@ impl Canvas {
     /// Like [`draw_text`](Canvas::draw_text) but with an explicit bold flag.
     /// Bold is rendered by selecting a heavier font face from the library
     /// (fontdb weight query) rather than synthesizing.
+    #[allow(clippy::too_many_arguments)] // rendering API; signature is the contract
     pub fn draw_text_weighted(
         &mut self,
         text: &str,
         x: f64,
         y: f64,
         font_size: f64,
-        font: &str,
+        _font: &str,
         color: Color,
         bold: bool,
     ) {

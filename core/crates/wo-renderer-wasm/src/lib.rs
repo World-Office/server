@@ -528,8 +528,8 @@ fn extract_pptx_pres(handle: u32) -> Result<PptxPresentation, String> {
 fn store_pptx_pres(handle: u32, pres: PptxPresentation) -> Result<(), String> {
     let store = PPTX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
     let mut store = store.lock().unwrap();
-    if store.contains_key(&handle) {
-        store.insert(handle, pres);
+    if let std::collections::hash_map::Entry::Occupied(mut e) = store.entry(handle) {
+        e.insert(pres);
         Ok(())
     } else {
         Err(format!("PPTX handle {} not found", handle))
@@ -654,8 +654,8 @@ impl EditableModel for EditableXlsxWorkbook {
                         ));
                     }
                     let sheet_idx = 0;
-                    let row_idx = *row as usize;
-                    let col_idx = *col as usize;
+                    let row_idx = *row;
+                    let col_idx = *col;
 
                     while self.0.sheets[sheet_idx].rows.len() <= row_idx {
                         self.0.sheets[sheet_idx].rows.push(Default::default());
@@ -744,7 +744,7 @@ impl EditableModel for EditableXlsxWorkbook {
                     content: content.clone(),
                 })
             }
-            wo_common::op::ModelOp::Format { range, attrs: _ } => Ok(()),
+            wo_common::op::ModelOp::Format { range: _, attrs: _ } => Ok(()),
             wo_common::op::ModelOp::Move { from: _, to: _ } => Err(XlsxModelError::Invalid(
                 "Move not yet implemented for XLSX".to_string(),
             )),
@@ -753,7 +753,7 @@ impl EditableModel for EditableXlsxWorkbook {
 
     fn invert(&self, op: &wo_common::op::ModelOp) -> wo_common::op::ModelOp {
         match op {
-            wo_common::op::ModelOp::Insert { at, content } => wo_common::op::ModelOp::Delete {
+            wo_common::op::ModelOp::Insert { at, content: _ } => wo_common::op::ModelOp::Delete {
                 range: Range::new(at.clone(), at.clone()),
             },
             wo_common::op::ModelOp::Delete { range } => wo_common::op::ModelOp::Insert {
@@ -781,27 +781,6 @@ impl EditableModel for EditableXlsxWorkbook {
 }
 
 /// Extract an EditableXlsxWorkbook from the store.
-fn extract_xlsx_workbook(handle: u32) -> Result<EditableXlsxWorkbook, String> {
-    let store = XLSX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
-    let store = store.lock().unwrap();
-    store
-        .get(&handle)
-        .cloned()
-        .ok_or_else(|| format!("XLSX handle {} not found", handle))
-}
-
-/// Store an EditableXlsxWorkbook back into the store.
-fn store_xlsx_workbook(handle: u32, wb: EditableXlsxWorkbook) -> Result<(), String> {
-    let store = XLSX_STORE.get_or_init(|| Mutex::new(HashMap::new()));
-    let mut store = store.lock().unwrap();
-    if store.contains_key(&handle) {
-        store.insert(handle, wb);
-        Ok(())
-    } else {
-        Err(format!("XLSX handle {} not found", handle))
-    }
-}
-
 /// Check if bytes represent a valid XLSX file.
 fn is_valid_xlsx(bytes: &[u8]) -> bool {
     if bytes.len() < 4 {
@@ -813,12 +792,12 @@ fn is_valid_xlsx(bytes: &[u8]) -> bool {
 /// Convert cell reference (e.g., "A1", "B2") to (row, col) coordinates.
 fn cell_ref_to_coords(ref_str: &str) -> (u32, u32) {
     // Simple parser for cell references like "A1", "B2", etc.
-    let mut chars = ref_str.chars();
+    let chars = ref_str.chars();
     let mut col_str = String::new();
     let mut row_str = String::new();
 
     // Collect letters for column
-    while let Some(c) = chars.next() {
+    for c in chars {
         if c.is_ascii_alphabetic() {
             col_str.push(c.to_ascii_uppercase());
         } else if c.is_ascii_digit() {
@@ -2324,7 +2303,7 @@ fn insert_char_into_runs(runs: &mut Vec<DocxRun>, char_idx: usize, ch: char) {
 
 /// Remove the character at `char_idx` (char index). False when no character
 /// lives at that index (at/after end of text).
-fn remove_char_at(runs: &mut Vec<DocxRun>, char_idx: usize) -> bool {
+fn remove_char_at(runs: &mut [DocxRun], char_idx: usize) -> bool {
     let mut global_c = 0usize;
     for run in runs.iter_mut() {
         let run_len = run.text.chars().count();
@@ -2700,7 +2679,7 @@ fn delete_selected(body: &mut DocxBody, anchor: CursorPos, cursor: CursorPos) ->
             p_start.runs.extend(tail);
             body.blocks.drain(a + 1..=b);
         } else {
-            for i in sp..=last {
+            for (i, &para) in flat.iter().enumerate().take(last + 1).skip(sp) {
                 let (s, e) = if i == sp {
                     (sc, usize::MAX)
                 } else if i == last {
@@ -2708,7 +2687,7 @@ fn delete_selected(body: &mut DocxBody, anchor: CursorPos, cursor: CursorPos) ->
                 } else {
                     (0, usize::MAX)
                 };
-                if let Some(p) = paragraph_at_mut(body, flat[i]) {
+                if let Some(p) = paragraph_at_mut(body, para) {
                     delete_range_in_para(p, s, e);
                 }
             }
@@ -3000,7 +2979,7 @@ fn merge_document_xml(original: &[u8], edited: &[u8]) -> Result<Vec<u8>, String>
         .compression_method(zip::CompressionMethod::Deflated);
 
     for i in 0..original_zip.len() {
-        let mut entry = original_zip.by_index(i).map_err(|e| e.to_string())?;
+        let entry = original_zip.by_index(i).map_err(|e| e.to_string())?;
         let name = entry.name().to_string();
         if name == "word/document.xml" {
             out.start_file(&name, opts).map_err(|e| e.to_string())?;
@@ -3302,7 +3281,6 @@ pub fn get_run_formatting(doc_handle: u32) -> Result<String, String> {
 // while keeping the same JS-callable signatures.
 
 /// Create a model from bytes and return a handle.
-
 /// Apply a structure operation (list, table, section break, horizontal rule,
 /// page break, indent) at the current cursor paragraph.
 ///

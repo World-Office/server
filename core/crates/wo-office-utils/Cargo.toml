@@ -5,7 +5,6 @@ edition = "2021"
 license = "AGPL-3.0-or-later"
 description = "ZIP and archive manipulation utilities for the World-Office document editing suite"
 repository = "https://codeberg.org/World-Office/server"
-homepage = "https://codeberg.org/World-Office/server"
 keywords = ["zip", "archive", "office", "document"]
 categories = ["compression"]
 

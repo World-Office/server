@@ -83,6 +83,9 @@ impl std::fmt::Display for AcroFormFieldType {
 ///
 /// Represents an interactive form field in a PDF document. Fields are
 /// identified by name and have a type, current value, and visual bounds.
+// allow: presentational API fields are written by the form census and read by
+// the tests; the lib build flags them as never-read.
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct AcroFormField {
     /// The name of the form field (from the field dictionary).
@@ -102,6 +105,10 @@ pub struct AcroFormField {
 }
 
 /// Error type for AcroForm operations.
+// allow: FieldNotFound / UnsupportedFieldType are constructed only by the
+// form write-path methods (set_field_value etc.), which the lib build flags
+// as dead; they are kept for the upcoming write API + tests.
+#[allow(dead_code)]
 #[derive(Debug, thiserror::Error)]
 pub enum FormError {
     /// An underlying PDF error occurred.
@@ -290,6 +297,7 @@ pub fn get_field(
 /// - Returns `FormError::FieldNotFound` if the field doesn't exist.
 /// - Returns `FormError::UnsupportedFieldType` for non-text fields.
 /// - The returned bytes are a valid PDF with the field value persisted.
+#[allow(dead_code)] // write-path API under active development (lib build flags it dead)
 pub fn set_field_value(
     bytes: &[u8],
     backend: &PdfiumBackend,

@@ -5,7 +5,6 @@ edition = "2021"
 license = "AGPL-3.0-or-later"
 description = "OpenDocument Format (ODT/ODS/ODP) parser and serializer for the World-Office document editing suite"
 repository = "https://codeberg.org/World-Office/server"
-homepage = "https://codeberg.org/World-Office/server"
 keywords = ["odf", "odt", "ods", "odp", "open-document", "document"]
 categories = ["parser-implementations", "encoding"]
 

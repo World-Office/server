@@ -122,7 +122,7 @@ impl SlideOp {
                 let slide_obj = pres
                     .slides
                     .get(*slide)
-                    .ok_or({ SlideOpError::SlideOutOfRange(*slide, pres.slides.len()) })?;
+                    .ok_or(SlideOpError::SlideOutOfRange(*slide, pres.slides.len()))?;
                 let shape_index = slide_obj.shapes.len() - 1;
                 Ok(SlideOp::DeleteShape {
                     slide: *slide,
@@ -163,11 +163,11 @@ impl SlideOp {
                 let slide_obj = pres
                     .slides
                     .get(*slide)
-                    .ok_or({ SlideOpError::SlideOutOfRange(*slide, pres.slides.len()) })?;
+                    .ok_or(SlideOpError::SlideOutOfRange(*slide, pres.slides.len()))?;
                 let shape_obj = slide_obj
                     .shapes
                     .get(*shape)
-                    .ok_or({ SlideOpError::ShapeOutOfRange(*shape, slide_obj.shapes.len()) })?;
+                    .ok_or(SlideOpError::ShapeOutOfRange(*shape, slide_obj.shapes.len()))?;
 
                 // Get the original bounds - we need to store the original for proper invert
                 // For now, we'll use the current bounds as the "original" which works
@@ -203,11 +203,11 @@ impl SlideOp {
                 let slide_obj = pres
                     .slides
                     .get(*slide)
-                    .ok_or({ SlideOpError::SlideOutOfRange(*slide, pres.slides.len()) })?;
+                    .ok_or(SlideOpError::SlideOutOfRange(*slide, pres.slides.len()))?;
                 let shape_obj = slide_obj
                     .shapes
                     .get(*shape)
-                    .ok_or({ SlideOpError::ShapeOutOfRange(*shape, slide_obj.shapes.len()) })?;
+                    .ok_or(SlideOpError::ShapeOutOfRange(*shape, slide_obj.shapes.len()))?;
 
                 let original_text = match shape_obj {
                     Shape::TextBox(s) => get_run_text(&s.text_body, *run)?,
@@ -252,11 +252,11 @@ impl SlideOp {
                 let slide_obj = pres
                     .slides
                     .get(*slide)
-                    .ok_or({ SlideOpError::SlideOutOfRange(*slide, pres.slides.len()) })?;
+                    .ok_or(SlideOpError::SlideOutOfRange(*slide, pres.slides.len()))?;
                 let shape_obj = slide_obj
                     .shapes
                     .get(*shape)
-                    .ok_or({ SlideOpError::ShapeOutOfRange(*shape, slide_obj.shapes.len()) })?;
+                    .ok_or(SlideOpError::ShapeOutOfRange(*shape, slide_obj.shapes.len()))?;
 
                 let original_fill = match shape_obj {
                     Shape::TextBox(s) => {
@@ -314,7 +314,7 @@ impl SlideOp {
                 let slide_obj = pres
                     .slides
                     .get(*slide)
-                    .ok_or({ SlideOpError::SlideOutOfRange(*slide, pres.slides.len()) })?;
+                    .ok_or(SlideOpError::SlideOutOfRange(*slide, pres.slides.len()))?;
 
                 let original = slide_obj.transition.clone().unwrap_or_default();
 
@@ -367,7 +367,7 @@ fn apply_insert_shape(
     let slide = pres
         .slides
         .get_mut(slide_idx)
-        .ok_or({ SlideOpError::SlideOutOfRange(slide_idx, num_slides) })?;
+        .ok_or(SlideOpError::SlideOutOfRange(slide_idx, num_slides))?;
 
     let old_len = slide.shapes.len();
     slide.shapes.push(shape);
@@ -389,7 +389,7 @@ fn apply_delete_shape(
     let slide = pres
         .slides
         .get_mut(slide_idx)
-        .ok_or({ SlideOpError::SlideOutOfRange(slide_idx, num_slides) })?;
+        .ok_or(SlideOpError::SlideOutOfRange(slide_idx, num_slides))?;
 
     if shape_idx >= slide.shapes.len() {
         return Err(SlideOpError::ShapeOutOfRange(shape_idx, slide.shapes.len()));
@@ -415,13 +415,13 @@ fn apply_move_shape(
     let slide = pres
         .slides
         .get_mut(slide_idx)
-        .ok_or({ SlideOpError::SlideOutOfRange(slide_idx, num_slides) })?;
+        .ok_or(SlideOpError::SlideOutOfRange(slide_idx, num_slides))?;
 
     let num_shapes = slide.shapes.len();
     let shape = slide
         .shapes
         .get_mut(shape_idx)
-        .ok_or({ SlideOpError::ShapeOutOfRange(shape_idx, num_shapes) })?;
+        .ok_or(SlideOpError::ShapeOutOfRange(shape_idx, num_shapes))?;
 
     // Store original bounds for invert (not actually used - inverse uses negative delta)
     #[allow(unused_variables)]
@@ -493,13 +493,13 @@ fn apply_resize_shape(
     let slide = pres
         .slides
         .get_mut(slide_idx)
-        .ok_or({ SlideOpError::SlideOutOfRange(slide_idx, num_slides) })?;
+        .ok_or(SlideOpError::SlideOutOfRange(slide_idx, num_slides))?;
 
     let num_shapes = slide.shapes.len();
     let shape = slide
         .shapes
         .get_mut(shape_idx)
-        .ok_or({ SlideOpError::ShapeOutOfRange(shape_idx, num_shapes) })?;
+        .ok_or(SlideOpError::ShapeOutOfRange(shape_idx, num_shapes))?;
 
     // Store original bounds for invert
     let orig_bounds = match shape {
@@ -570,13 +570,13 @@ fn apply_set_text(
     let slide = pres
         .slides
         .get_mut(slide_idx)
-        .ok_or({ SlideOpError::SlideOutOfRange(slide_idx, num_slides) })?;
+        .ok_or(SlideOpError::SlideOutOfRange(slide_idx, num_slides))?;
 
     let num_shapes = slide.shapes.len();
     let shape = slide
         .shapes
         .get_mut(shape_idx)
-        .ok_or({ SlideOpError::ShapeOutOfRange(shape_idx, num_shapes) })?;
+        .ok_or(SlideOpError::ShapeOutOfRange(shape_idx, num_shapes))?;
 
     // Get the original text for invert
     let original_text = match shape {
@@ -631,13 +631,13 @@ fn apply_set_fill(
     let slide = pres
         .slides
         .get_mut(slide_idx)
-        .ok_or({ SlideOpError::SlideOutOfRange(slide_idx, num_slides) })?;
+        .ok_or(SlideOpError::SlideOutOfRange(slide_idx, num_slides))?;
 
     let num_shapes = slide.shapes.len();
     let shape = slide
         .shapes
         .get_mut(shape_idx)
-        .ok_or({ SlideOpError::ShapeOutOfRange(shape_idx, num_shapes) })?;
+        .ok_or(SlideOpError::ShapeOutOfRange(shape_idx, num_shapes))?;
 
     // Get the original fill for invert
     let original_fill = match shape {
@@ -703,14 +703,14 @@ fn apply_add_animation(
     let slide = pres
         .slides
         .get_mut(slide_idx)
-        .ok_or({ SlideOpError::SlideOutOfRange(slide_idx, num_slides) })?;
+        .ok_or(SlideOpError::SlideOutOfRange(slide_idx, num_slides))?;
 
     // Verify shape exists
     let num_shapes = slide.shapes.len();
     slide
         .shapes
         .get(shape_idx)
-        .ok_or({ SlideOpError::ShapeOutOfRange(shape_idx, num_shapes) })?;
+        .ok_or(SlideOpError::ShapeOutOfRange(shape_idx, num_shapes))?;
 
     // Add the animation
     slide.animations.push(anim.clone());
@@ -735,7 +735,7 @@ fn apply_set_transition(
     let slide = pres
         .slides
         .get_mut(slide_idx)
-        .ok_or({ SlideOpError::SlideOutOfRange(slide_idx, num_slides) })?;
+        .ok_or(SlideOpError::SlideOutOfRange(slide_idx, num_slides))?;
 
     // Get the original transition for invert
     let original = slide.transition.replace(t.clone());

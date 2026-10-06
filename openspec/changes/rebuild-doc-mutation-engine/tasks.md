@@ -48,5 +48,11 @@
 
 ## 6. Validation
 - [x] 6.1 `openspec validate rebuild-doc-mutation-engine` → OK
-- [ ] 6.2 `cargo clippy --workspace --lib -- -D warnings` → 0 warnings
+- [x] 6.2 `cargo clippy --workspace --lib -- -D warnings` → 0 warnings
+  - Verified 2026-10-06: exit 0 across wo-formula, wo-ooxml(/ops), wo-renderer(/wasm),
+    wo-pdf-render, wo-sheet, wo-x2t, wo-wopi, wo-docx-renderer + manifest homepage dupes.
+    (Test-target cross-cutting note: with clippy --lib clean, `cargo test --workspace --lib`
+    passes 1271 lib tests, 0 failures; ONE pre-existing host-specific hang
+    (`wo-renderer-wasm test_create_model_pdf_with_pages`, also hung yesterday)
+    blocks the full 2.4 green run on this machine - unrelated to this change.)
 - [ ] 6.3 Manual smoke: open DOCX, type, bold, insert table row — all reflect on canvas

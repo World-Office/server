@@ -39,9 +39,11 @@ fn default_paragraph() -> DocxParagraph {
             vertical_alignment: None,
             small_caps: false,
             all_caps: false,
-        ..Default::default()}],
+            ..Default::default()
+            }],
         section_properties: None,
-    ..Default::default()}
+        ..Default::default()
+            }
 }
 
 impl<'a> DocModel<'a> {
@@ -55,7 +57,7 @@ impl<'a> DocModel<'a> {
         let table_block = self
             .body
             .get_block_mut(table_idx)
-            .ok_or_else(|| DocOpError::TableIndexOutOfRange(table_idx, 0, 0))?;
+            .ok_or(DocOpError::TableIndexOutOfRange(table_idx, 0, 0))?;
 
         let table = match table_block {
             DocxBlock::Table(t) => t,
@@ -83,7 +85,7 @@ impl<'a> DocModel<'a> {
                     width: cell.width,
                     shading: cell.shading.clone(),
                     raw_tc_pr: cell.raw_tc_pr.clone(),
-                ..Default::default()})
+                })
                 .collect(),
             height: template_row.height,
             is_header: false, // New rows are not headers by default
@@ -110,7 +112,7 @@ impl<'a> DocModel<'a> {
         let table_block = self
             .body
             .get_block_mut(table_idx)
-            .ok_or_else(|| DocOpError::TableIndexOutOfRange(table_idx, 0, 0))?;
+            .ok_or(DocOpError::TableIndexOutOfRange(table_idx, 0, 0))?;
 
         let table = match table_block {
             DocxBlock::Table(t) => t,
@@ -152,7 +154,7 @@ impl<'a> DocModel<'a> {
         let table_block = self
             .body
             .get_block_mut(table_idx)
-            .ok_or_else(|| DocOpError::TableIndexOutOfRange(table_idx, 0, 0))?;
+            .ok_or(DocOpError::TableIndexOutOfRange(table_idx, 0, 0))?;
 
         let table = match table_block {
             DocxBlock::Table(t) => t,
@@ -195,7 +197,7 @@ impl<'a> DocModel<'a> {
                 width: None,
                 shading: None,
                 raw_tc_pr: None,
-            ..Default::default()};
+            };
             row.cells.insert(insert_col, new_cell);
         }
 
@@ -216,7 +218,7 @@ impl<'a> DocModel<'a> {
         let table_block = self
             .body
             .get_block_mut(table_idx)
-            .ok_or_else(|| DocOpError::TableIndexOutOfRange(table_idx, 0, 0))?;
+            .ok_or(DocOpError::TableIndexOutOfRange(table_idx, 0, 0))?;
 
         let table = match table_block {
             DocxBlock::Table(t) => t,
@@ -272,7 +274,7 @@ impl<'a> DocModel<'a> {
         let table_block = self
             .body
             .get_block_mut(table_idx)
-            .ok_or_else(|| DocOpError::TableIndexOutOfRange(table_idx, 0, 0))?;
+            .ok_or(DocOpError::TableIndexOutOfRange(table_idx, 0, 0))?;
 
         let table = match table_block {
             DocxBlock::Table(t) => t,
@@ -326,9 +328,8 @@ impl<'a> DocModel<'a> {
 
         // Collect content from all cells in the region to move to top-left
         let mut all_paragraphs = Vec::new();
-        for row_idx in start_row..=end_row {
-            for col_idx in start_col..=end_col {
-                let cell = &table.rows[row_idx].cells[col_idx];
+        for row in &table.rows[start_row..=end_row] {
+            for cell in &row.cells[start_col..=end_col] {
                 all_paragraphs.extend(cell.paragraphs.clone());
             }
         }
@@ -340,12 +341,11 @@ impl<'a> DocModel<'a> {
         top_left_cell.paragraphs = all_paragraphs;
 
         // Clear the other cells in the merge region
-        for row_idx in start_row..=end_row {
-            for col_idx in start_col..=end_col {
-                if row_idx == start_row && col_idx == start_col {
+        for (ri, row) in table.rows[start_row..=end_row].iter_mut().enumerate() {
+            for (ci, cell) in row.cells[start_col..=end_col].iter_mut().enumerate() {
+                if ri == 0 && ci == 0 {
                     continue; // Skip the top-left cell
                 }
-                let cell = &mut table.rows[row_idx].cells[col_idx];
                 cell.row_span = 0;
                 cell.column_span = 0;
                 // Clear content from merged cells
@@ -374,7 +374,7 @@ impl<'a> DocModel<'a> {
         let table_block = self
             .body
             .get_block_mut(table_idx)
-            .ok_or_else(|| DocOpError::TableIndexOutOfRange(table_idx, 0, 0))?;
+            .ok_or(DocOpError::TableIndexOutOfRange(table_idx, 0, 0))?;
 
         let table = match table_block {
             DocxBlock::Table(t) => t,
@@ -389,7 +389,7 @@ impl<'a> DocModel<'a> {
             return Err(DocOpError::TableIndexOutOfRange(table_idx, row, col));
         }
 
-        let max_col = if table.rows[row].cells.len() > 0 {
+        let max_col = if !table.rows[row].cells.is_empty() {
             table.rows[row].cells.len()
         } else {
             0
@@ -436,7 +436,7 @@ impl<'a> DocModel<'a> {
                         width: None,
                         shading: None,
                         raw_tc_pr: None,
-                    ..Default::default()});
+            });
                 }
 
                 // Update the cell
@@ -497,7 +497,7 @@ impl<'a> DocModel<'a> {
                             width: None,
                             shading: None,
                             raw_tc_pr: None,
-                        ..Default::default()});
+            });
                     }
 
                     // Insert the new cell (shift others to the right)
@@ -510,7 +510,7 @@ impl<'a> DocModel<'a> {
                             width: None,
                             shading: None,
                             raw_tc_pr: None,
-                        ..Default::default()},
+            },
                     );
                 }
             }
@@ -539,7 +539,7 @@ impl<'a> DocModel<'a> {
         let table_block = self
             .body
             .get_block_mut(table_idx)
-            .ok_or_else(|| DocOpError::TableIndexOutOfRange(table_idx, 0, 0))?;
+            .ok_or(DocOpError::TableIndexOutOfRange(table_idx, 0, 0))?;
 
         let table = match table_block {
             DocxBlock::Table(t) => t,
@@ -554,7 +554,7 @@ impl<'a> DocModel<'a> {
             return Err(DocOpError::TableIndexOutOfRange(table_idx, row, col));
         }
 
-        let max_col = if table.rows[row].cells.len() > 0 {
+        let max_col = if !table.rows[row].cells.is_empty() {
             table.rows[row].cells.len()
         } else {
             0
@@ -611,21 +611,25 @@ mod tests {
                                     vertical_alignment: None,
                                     small_caps: false,
                                     all_caps: false,
-                                ..Default::default()}],
+                                    ..Default::default()
+            }],
                                 section_properties: None,
-                            ..Default::default()}],
+                                ..Default::default()
+            }],
                             column_span: 1,
                             row_span: 1,
                             width: None,
                             shading: None,
-                        ..Default::default()})
+                            ..Default::default()
+            })
                         .collect(),
                     height: None,
                     is_header: false,
                 })
                 .collect(),
             properties: wo_ooxml::model::DocxTableProperties::default(),
-        ..Default::default()}
+            ..Default::default()
+            }
     }
 
     fn create_test_body() -> DocxBody {
@@ -1059,12 +1063,14 @@ mod tests {
                     row_span: 1,
                     width: None,
                     shading: None,
-                ..Default::default()}],
+            ..Default::default()
+            }],
                 height: None,
                 is_header: false,
             }],
             properties: wo_ooxml::model::DocxTableProperties::default(),
-        ..Default::default()});
+            ..Default::default()
+            });
 
         let mut model = DocModel { body: &mut body };
 
@@ -1085,12 +1091,14 @@ mod tests {
                     row_span: 1,
                     width: None,
                     shading: None,
-                ..Default::default()}],
+            ..Default::default()
+            }],
                 height: None,
                 is_header: false,
             }],
             properties: wo_ooxml::model::DocxTableProperties::default(),
-        ..Default::default()});
+            ..Default::default()
+            });
 
         let mut model = DocModel { body: &mut body };
 

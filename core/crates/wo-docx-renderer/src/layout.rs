@@ -30,7 +30,7 @@ pub enum WrapMode {
 
 impl WrapMode {
     /// Parse a wrap mode from its string representation.
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse(s: &str) -> Self {
         match s.to_lowercase().as_str() {
             "inline" => WrapMode::Inline,
             "square" => WrapMode::Square,
@@ -125,7 +125,7 @@ impl LayoutEngine {
             }
         }
 
-        let is_multicolumn = current_cols.map_or(false, |c| c > 1);
+        let is_multicolumn = current_cols.is_some_and(|c| c > 1);
 
         if is_multicolumn {
             // Multi-column layout: flow content across columns
@@ -496,10 +496,9 @@ impl LayoutEngine {
                     if new_cursor_y > max_col_bottom {
                         // Try next column
                         let mut found_column = false;
-                        for next_col in (current_col + 1)..(num_cols as usize) {
-                            if col_cursor_y[next_col] + total_height_with_spacing <= max_col_bottom
-                            {
-                                current_col = next_col;
+                        for (i, cy) in col_cursor_y.iter().enumerate().skip(current_col + 1) {
+                            if cy + total_height_with_spacing <= max_col_bottom {
+                                current_col = i;
                                 found_column = true;
                                 break;
                             }
@@ -778,6 +777,7 @@ impl LayoutEngine {
     }
 
     /// Wrap paragraph text into lines using character-level width estimation.
+    #[allow(clippy::too_many_arguments)] // layout geometry; signature is the contract
     fn wrap_paragraph_into_lines(
         &self,
         para: &DocxParagraph,
@@ -1177,7 +1177,8 @@ impl LayoutEngine {
         }
 
         // Add data rows from start_row
-        for i in start_row..num_rows {
+        for (rel, row) in table.rows[start_row..num_rows].iter().enumerate() {
+            let i = start_row + rel;
             // Skip rows that are headers (they're handled above if repeating)
             if header_indices.contains(&i) && repeat_headers {
                 // Header rows were already placed above; skip them as data rows
@@ -1185,7 +1186,7 @@ impl LayoutEngine {
                 continue;
             }
 
-            let rh = self.compute_row_height(&table.rows[i], col_width);
+            let rh = self.compute_row_height(row, col_width);
 
             if y + rh > max_y && !chunk_row_heights.is_empty() {
                 // Row doesn't fit — stop here
@@ -1696,7 +1697,7 @@ impl LayoutEngine {
             } else {
                 None
             }
-        } else if page_number % 2 == 0 {
+        } else if page_number.is_multiple_of(2) {
             section_props.header_even.as_ref()
         } else {
             section_props.header.as_ref()
@@ -1709,7 +1710,7 @@ impl LayoutEngine {
             } else {
                 None
             }
-        } else if page_number % 2 == 0 {
+        } else if page_number.is_multiple_of(2) {
             section_props.footer_even.as_ref()
         } else {
             section_props.footer.as_ref()
@@ -3016,20 +3017,20 @@ mod wrap_mode {
     #[test]
     fn test_wrap_mode_parsing() {
         // Test that all 7 wrap modes parse correctly from strings
-        assert_eq!(WrapMode::from_str("inline"), WrapMode::Inline);
-        assert_eq!(WrapMode::from_str("INLINE"), WrapMode::Inline);
-        assert_eq!(WrapMode::from_str("square"), WrapMode::Square);
-        assert_eq!(WrapMode::from_str("tight"), WrapMode::Tight);
-        assert_eq!(WrapMode::from_str("through"), WrapMode::Through);
-        assert_eq!(WrapMode::from_str("topBottom"), WrapMode::TopBottom);
-        assert_eq!(WrapMode::from_str("top-bottom"), WrapMode::TopBottom);
-        assert_eq!(WrapMode::from_str("behind"), WrapMode::Behind);
-        assert_eq!(WrapMode::from_str("inFront"), WrapMode::InFront);
-        assert_eq!(WrapMode::from_str("in-front"), WrapMode::InFront);
+        assert_eq!(WrapMode::parse("inline"), WrapMode::Inline);
+        assert_eq!(WrapMode::parse("INLINE"), WrapMode::Inline);
+        assert_eq!(WrapMode::parse("square"), WrapMode::Square);
+        assert_eq!(WrapMode::parse("tight"), WrapMode::Tight);
+        assert_eq!(WrapMode::parse("through"), WrapMode::Through);
+        assert_eq!(WrapMode::parse("topBottom"), WrapMode::TopBottom);
+        assert_eq!(WrapMode::parse("top-bottom"), WrapMode::TopBottom);
+        assert_eq!(WrapMode::parse("behind"), WrapMode::Behind);
+        assert_eq!(WrapMode::parse("inFront"), WrapMode::InFront);
+        assert_eq!(WrapMode::parse("in-front"), WrapMode::InFront);
 
         // Test unknown mode defaults to Inline
-        assert_eq!(WrapMode::from_str("unknown"), WrapMode::Inline);
-        assert_eq!(WrapMode::from_str(""), WrapMode::Inline);
+        assert_eq!(WrapMode::parse("unknown"), WrapMode::Inline);
+        assert_eq!(WrapMode::parse(""), WrapMode::Inline);
     }
 
     #[test]

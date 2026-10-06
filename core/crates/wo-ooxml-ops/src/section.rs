@@ -51,9 +51,8 @@ impl<'a> DocModel<'a> {
             let section_props = match next_block {
                 DocxBlock::Paragraph(p) => {
                     // Get existing section properties for inverse
-                    let old_section_props = std::mem::replace(
-                        &mut p.section_properties,
-                        Some(SectionProperties {
+                    
+                    p.section_properties.replace(SectionProperties {
                             header_first: None,
                             header_even: None,
                             header: None,
@@ -61,9 +60,7 @@ impl<'a> DocModel<'a> {
                             footer_even: None,
                             footer: None,
                             cols: Some(cols),
-                        }),
-                    );
-                    old_section_props
+                        })
                 }
                 DocxBlock::Table(_) => {
                     // Cannot insert section break before a table
