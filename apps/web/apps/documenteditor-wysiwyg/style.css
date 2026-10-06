@@ -598,7 +598,19 @@ select option { background: var(--bg); color: var(--text); }
 .toolbar input[type="color"]::-webkit-color-swatch { border: none; border-radius: 2px; }
 .toolbar input[type="color"]:disabled { opacity: 0.45; cursor: default; }
 
-.toolbar button svg { display: block; margin: 0 auto; }
+.toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.toolbar button svg {
+  display: block;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+}
+/* Helper glyphs are not toolbar icons: keep the styles-trigger caret 10x6. */
+.toolbar .styles-trigger svg { width: 10px; height: 6px; flex: 0 0 auto; }
 
 .toolbar .spacer { flex: 0 1 12px; }  /* in wrap mode a grow-1 spacer would open a full-width gap row */
 
