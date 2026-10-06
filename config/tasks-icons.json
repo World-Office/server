@@ -1,0 +1,16 @@
+{
+  "tasks": [
+    {
+      "id": "WO-RIBBON-ICONS",
+      "title": "Normalize WO toolbar icon rendering (24px, centered, consistent — keep WO icon designs)",
+      "scope": [
+        "apps/web/apps/documenteditor-wysiwyg/index.html",
+        "apps/web/apps/documenteditor-wysiwyg/style.css",
+        "apps/web/apps/documenteditor-wysiwyg/editor.js"
+      ],
+      "accept": "export PATH=\"/home/weiss/.bun/bin:/home/weiss/.local/share/pnpm:/home/weiss/.cargo/bin:$PATH\" && node tools/ribbon-icons-check.mjs",
+      "accept_timeout_s": 1200,
+      "acceptance_prose": "CONTEXT: the WO toolbar's ribbon icons are WO-authored inline SVGs (stroke-based, viewBox ~ 0 0 16 16) in apps/web/apps/documenteditor-wysiwyg/index.html, currently rendered at inconsistent sizes (8-19px: width=\"15\"\", \"14\"\", \"16\"\", \"17\"\") with mixed stroke-widths (1.4 / 1.5 / 1.8). style.css line ~601 has only `.toolbar button svg { display: block; margin: 0 auto; }` - horizontal centering only, no vertical centering, no uniform size, inside the now-46px-tall toolbar buttons.\n\nIMPORTANT - ICON IDENTITY: the icons stay WO-designed. Do NOT replace any WO SVG with OnlyOffice/assets. OnlyOffice is OUT OF SCOPE except as the pixel-gate judge after merge. This task is WO-internal polish: every icon should render the same size, centered, crisp, consistent weight - a coherent WO icon set, NOT a clone of anyone's assets.\n\nGOAL:\n1. style.css `.toolbar button svg`: uniform width and height of 24px (accept 22-24px), display: block, both horizontally AND vertically centered within the 46px button (e.g. make the button display:flex align-items:center justify-content:center, or absolute positioning with top:50%; left:50%; transform:translate(-50%,-50%)). The rule must NOT affect non-toolbar svgs (there is an embedded 640x400 image - keep it out).\n2. index.html: strip redundant per-icon width/height attributes on the toolbar button svgs (or set them to \"24\") so the single CSS rule governs; KEEP every viewBox, every path/d path, fill/stroke settings as-is. Do not redraw icons.\n3. Consistency: for the viewBox 0 0 16 16 toolbar icons, unify stroke-width to a single value (recommend 1.75) so all icons share the same weight. Small helper glyphs (caret 10x6, checkbox 8x8, and the like inside menus/pickers) are NOT toolbar buttons - leave them alone.\n4. Keep toolbar total height 112px; keep all ids, data-cmd values, aria labels, data-i18n attributes.\nHARD CONSTRAINTS: only apps/web/apps/documenteditor-wysiwyg files; no id/data-cmd/design changes; no SVG replacement; do not run servers (no unit tests exist; the chrome pixel gate + geometry gate re-run after merge in the main checkout). Commit on the worktree branch with a conventional message.\n\nWorktree layout: you are at the monorepo root; paths are relative to it. Read style.css around lines 595-615 and scan index.html for `<svg` in the #toolbar section before editing."
+    }
+  ]
+}
