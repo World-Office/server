@@ -609,6 +609,14 @@ select option { background: var(--bg); color: var(--text); }
   height: 24px;
   flex: 0 0 auto;
 }
+.toolbar button.rb {
+  /* icon-only ribbon buttons: 24px glyph + 2px padding + 1px border
+     fits the OO-golden slot pitch (28-34px) without overlapping - the
+     generic .toolbar button min-width:34px + 8px padding made every
+     icon button 42px wide after the 24px icon normalization. */
+  min-width: 24px;
+  padding: 0 2px;
+}
 /* Helper glyphs are not toolbar icons: keep the styles-trigger caret 10x6. */
 .toolbar .styles-trigger svg { width: 10px; height: 6px; flex: 0 0 auto; }
 
