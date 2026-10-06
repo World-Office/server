@@ -130,6 +130,7 @@ body {
   background: var(--ribbon);
   border-bottom: 1px solid var(--border);
   flex: 0 0 auto;
+  position: relative;        /* containing block for the 28px ribbon-tab strip */
 }
 
 /* Ribbon pages: one visible control group per tab (default Home). */
@@ -143,9 +144,12 @@ body {
   width: 100%;
 }
 
-/* Home ribbon (single row): the row fills the 112px band; its absolutely
-   positioned controls use --rb-x slots and --rb-y line centers (34px primary
-   line, 84px wrapped right-edge tools). */
+/* Home ribbon (single row): the row fills the 112px band below the 28px
+   tab strip; its absolutely positioned controls use --rb-x slots and --rb-y
+   line centers measured in the old full-band coordinates (34px primary line,
+   84px wrapped right-edge tools), now mapped into the 84px control band via
+   calc(--rb-y * 0.72 + 28px): primary ~52px, wrapped ~88px — both fully
+   under the strip. */
 .ribbon-row { display: flex; align-items: center; gap: 2px; }
 .ribbon-page.active .ribbon-row { width: 100%; align-self: stretch; }
 
@@ -197,9 +201,18 @@ body {
   letter-spacing: 0;
   color: var(--text);
 }
-/* Ribbon tabs live in the app row at the OO-golden tab pitch; 3px active
-   underline so it registers as ink (2px AA-spreads away at capture zoom). */
-.menu-bar .ribbon-tab {
+/* Ribbon tabs live in a 28px strip pinned to the top of #toolbar (OO's
+   internal box-tabs row, WO-RIBBON-TABS): label tabs at the OO-golden tab
+   pitch; 3px active underline so it registers as ink (2px AA-spreads away at
+   capture zoom). */
+.ribbon-tabs {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+}
+.toolbar .ribbon-tab {
   position: absolute;
   left: var(--qa-x);
   top: 50%;
@@ -322,7 +335,7 @@ select option { background: var(--bg); color: var(--text); }
 .toolbar .rb {
   position: absolute;
   left: calc(var(--rb-x) - 12px);  /* minus toolbar padding: var = OO page x */
-  top: var(--rb-y, 34px);
+  top: calc(var(--rb-y, 34px) * 0.72 + 28px);  /* below the 28px tab strip */
   transform: translate(-50%, -50%);
 }
 .menu-bar { position: relative; }
@@ -487,7 +500,7 @@ select option { background: var(--bg); color: var(--text); }
 .toolbar .rb-menu {
   position: absolute;
   left: calc(var(--rb-x) - 12px);
-  top: var(--rb-y, 34px);
+  top: calc(var(--rb-y, 34px) * 0.72 + 28px);  /* below the 28px tab strip */
   transform: translate(-50%, -50%);
 }
 /* Ribbon split-button carets: real split-arrow buttons chained to their

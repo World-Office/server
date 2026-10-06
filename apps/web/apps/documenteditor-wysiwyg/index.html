@@ -165,19 +165,6 @@
       </ul>
     </div>
     <span class="sep"></span>
-    <!-- Ribbon tabs (OO-golden app-row slot pitch): real tab strip, same
-         .ribbon-tab pipeline as before the titlebar move. -->
-    <button type="button" class="ribbon-tab" data-tab="home" role="tab" aria-selected="true" style="--qa-x: 92px" data-i18n="Tab.Home">Home</button>
-    <button type="button" class="ribbon-tab" data-tab="insert" role="tab" aria-selected="false" style="--qa-x: 150px" data-i18n="Tab.Insert">Insert</button>
-    <button type="button" class="ribbon-tab" data-tab="draw" role="tab" aria-selected="false" style="--qa-x: 205px" data-i18n="Tab.Draw">Draw</button>
-    <button type="button" class="ribbon-tab" data-tab="layout" role="tab" aria-selected="false" style="--qa-x: 264px" data-i18n="Tab.Layout">Layout</button>
-    <button type="button" class="ribbon-tab" data-tab="references" role="tab" aria-selected="false" style="--qa-x: 340px" data-i18n="Tab.References">References</button>
-    <button type="button" class="ribbon-tab" data-tab="collaboration" role="tab" aria-selected="false" style="--qa-x: 436px" data-i18n="Tab.Collaboration">Collaboration</button>
-    <button type="button" class="ribbon-tab" data-tab="protection" role="tab" aria-selected="false" style="--qa-x: 528px" data-i18n="Tab.Protection">Protection</button>
-    <button type="button" class="ribbon-tab" data-tab="view" role="tab" aria-selected="false" style="--qa-x: 594px" data-i18n="Tab.View">View</button>
-    <button type="button" class="ribbon-tab" data-tab="plugins" role="tab" aria-selected="false" style="--qa-x: 654px" data-i18n="Tab.Plugins">Plugins</button>
-    <button type="button" class="ribbon-tab" data-tab="ai" role="tab" aria-selected="false" style="--qa-x: 705px" data-i18n="Tab.AI">AI</button>
-    <button type="button" class="ribbon-tab" data-tab="header-footer" role="tab" aria-selected="false" style="--qa-x: 747px" data-i18n="Tab.HeaderFooter" hidden>Header &amp; Footer</button>
     <!-- Quick-access cluster (right edge only: Print + Redo). The old
          text-labeled duplicates (Underline/Bold/H1/H2/H3/... + font selects)
          floated above the ribbon as a visual overlay — removed 2026-09-12;
@@ -199,6 +186,22 @@
     <span class="spacer"></span>
   </nav>
   <header id="toolbar" class="toolbar" role="toolbar" aria-label="Formatting toolbar" data-i18n-aria-label="Toolbar.Region">
+    <!-- Ribbon tabs (OO-golden slot pitch): 28px tab strip pinned to the top
+         of #toolbar (WO-RIBBON-TABS, 2026-10-06) — moved from the menu-bar so
+         the toolbar mirrors OO's internal structure (28px tabs + 84px controls). -->
+    <div class="ribbon-tabs" role="tablist">
+    <button type="button" class="ribbon-tab" data-tab="home" role="tab" aria-selected="true" style="--qa-x: 92px" data-i18n="Tab.Home">Home</button>
+    <button type="button" class="ribbon-tab" data-tab="insert" role="tab" aria-selected="false" style="--qa-x: 150px" data-i18n="Tab.Insert">Insert</button>
+    <button type="button" class="ribbon-tab" data-tab="draw" role="tab" aria-selected="false" style="--qa-x: 205px" data-i18n="Tab.Draw">Draw</button>
+    <button type="button" class="ribbon-tab" data-tab="layout" role="tab" aria-selected="false" style="--qa-x: 264px" data-i18n="Tab.Layout">Layout</button>
+    <button type="button" class="ribbon-tab" data-tab="references" role="tab" aria-selected="false" style="--qa-x: 340px" data-i18n="Tab.References">References</button>
+    <button type="button" class="ribbon-tab" data-tab="collaboration" role="tab" aria-selected="false" style="--qa-x: 436px" data-i18n="Tab.Collaboration">Collaboration</button>
+    <button type="button" class="ribbon-tab" data-tab="protection" role="tab" aria-selected="false" style="--qa-x: 528px" data-i18n="Tab.Protection">Protection</button>
+    <button type="button" class="ribbon-tab" data-tab="view" role="tab" aria-selected="false" style="--qa-x: 594px" data-i18n="Tab.View">View</button>
+    <button type="button" class="ribbon-tab" data-tab="plugins" role="tab" aria-selected="false" style="--qa-x: 654px" data-i18n="Tab.Plugins">Plugins</button>
+    <button type="button" class="ribbon-tab" data-tab="ai" role="tab" aria-selected="false" style="--qa-x: 705px" data-i18n="Tab.AI">AI</button>
+    <button type="button" class="ribbon-tab" data-tab="header-footer" role="tab" aria-selected="false" style="--qa-x: 747px" data-i18n="Tab.HeaderFooter" hidden>Header &amp; Footer</button>
+    </div>
     <!-- Format group: character styles, font size/family, text color, highlight -->
     <!-- aria-pressed reflects the live on/off state (JS updateActiveStates);
          aria-keyshortcuts mirrors the keyboard shortcuts handled in editor.js. -->

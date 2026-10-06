@@ -289,7 +289,10 @@
     editor.setAttribute("aria-readonly", "true");
     saveBtn.disabled = true;
     const toolbar = document.getElementById("toolbar");
-    if (toolbar) toolbar.querySelectorAll("button").forEach((b) => (b.disabled = true));
+    // Ribbon tabs are navigation (they only toggle ribbon pages), so they
+    // stay enabled in read-only documents — same as when they lived in the
+    // menu-bar before WO-RIBBON-TABS moved them into #toolbar.
+    if (toolbar) toolbar.querySelectorAll("button:not(.ribbon-tab)").forEach((b) => (b.disabled = true));
     // The full-toolbar selects (font size/family, line spacing) and color
     // pickers are form controls, not buttons — disable them too.
     if (toolbar) toolbar.querySelectorAll("select, input[type='color']").forEach((el) => (el.disabled = true));
