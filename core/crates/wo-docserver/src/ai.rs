@@ -11,9 +11,12 @@
 //! Every handler that touches the LLM does a REAL call; failures surface as
 //! a 500 (honest — a green gate never hides a dead provider).
 
+use std::collections::HashMap;
+use std::sync::{Mutex, OnceLock};
+
 use axum::extract::{Path, State};
 use axum::Json;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::AppError;
@@ -169,10 +172,38 @@ pub async fn ai_generate(Json(req): Json<AiGenerateReq>) -> Result<Json<Value>, 
     })))
 }
 
+/// One recorded AI proposal for a document (F-149 review surface).
+#[derive(Debug, Clone, Serialize)]
+pub struct AiOp {
+    pub rev: u64,
+    pub agent: String,
+    pub summary: String,
+    pub instruction: String,
+    pub content: String,
+}
+
+/// Per-doc AI-op store (in-memory; the editor's collab poll projects applied
+/// ops as tracked-change spans). Review list/reject read and mutate this.
+static AI_OPS: OnceLock<Mutex<HashMap<String, Vec<AiOp>>>> = OnceLock::new();
+fn ai_ops() -> &'static Mutex<HashMap<String, Vec<AiOp>>> {
+    AI_OPS.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn push_ai_op(doc_id: &str, op: AiOp) {
+    ai_ops()
+        .lock()
+        .unwrap()
+        .entry(doc_id.to_string())
+        .or_default()
+        .push(op);
+}
+
 #[derive(Deserialize)]
 pub struct AiProposeReq {
     #[serde(default)]
     pub instruction: String,
+    #[serde(default)]
+    pub model: String,
 }
 
 /// POST /api/documents/{id}/ai/propose — F-149: AI-attributed propose op.
@@ -197,6 +228,24 @@ pub async fn ai_propose(
         &instruction,
     )
     .await?;
+    let summary: String = content.chars().take(96).collect();
+    let rev = {
+        let next = {
+            let ops = ai_ops().lock().unwrap();
+            ops.get(&doc_id).map_or(0, |v| v.len()) as u64 + 1
+        };
+        next
+    };
+    push_ai_op(
+        &doc_id,
+        AiOp {
+            rev,
+            agent: format!("AI ({model})"),
+            summary: summary.clone(),
+            instruction: instruction.clone(),
+            content: content.clone(),
+        },
+    );
     Ok(Json(json!({
         "op": "propose",
         "doc_id": doc_id,
@@ -204,7 +253,41 @@ pub async fn ai_propose(
         "instruction": instruction,
         "content": content,
         "model": model,
+        "revision": {"rev": rev, "agent": format!("AI ({model})"), "summary": summary},
     })))
+}
+
+/// GET /api/documents/{id}/ai/review — AI-attributed op list for the editor's
+/// review-changes dialog ({ops:[{rev,agent,summary}]}).
+pub async fn ai_review(Path(doc_id): Path<String>) -> Json<Value> {
+    let ops = ai_ops().lock().unwrap().get(&doc_id).cloned().unwrap_or_default();
+    Json(json!({ "ops": ops }))
+}
+
+#[derive(Deserialize)]
+pub struct AiRejectReq {
+    #[serde(default)]
+    pub revs: Vec<u64>,
+    #[serde(default)]
+    pub all: bool,
+}
+
+/// POST /api/documents/{id}/ai/review/reject — remove proposals (by rev or all).
+pub async fn ai_review_reject(
+    Path(doc_id): Path<String>,
+    Json(req): Json<AiRejectReq>,
+) -> Json<Value> {
+    let mut ops = ai_ops().lock().unwrap();
+    let entry = ops.entry(doc_id).or_default();
+    if req.all {
+        let n = entry.len();
+        entry.clear();
+        Json(json!({ "ok": true, "rejected": n }))
+    } else {
+        let before = entry.len();
+        entry.retain(|o| !req.revs.contains(&o.rev));
+        Json(json!({ "ok": true, "rejected": before - entry.len() }))
+    }
 }
 
 #[cfg(test)]

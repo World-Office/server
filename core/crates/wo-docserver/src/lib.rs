@@ -969,6 +969,8 @@ pub fn create_app(config: DocServerConfig) -> Router {
         .route("/api/ai/tools", get(ai::ai_tools))
         .route("/ai/generate", post(ai::ai_generate))
         .route("/api/documents/{id}/ai/propose", post(ai::ai_propose))
+        .route("/api/documents/{id}/ai/review", get(ai::ai_review))
+        .route("/api/documents/{id}/ai/review/reject", post(ai::ai_review_reject))
         .route("/demo/info", get(demo_info_handler))
         .route("/demo/document", get(demo_document_handler))
         // Dictionary files for frontend spellchecker
