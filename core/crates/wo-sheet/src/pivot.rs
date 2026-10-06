@@ -13,7 +13,9 @@
 //! The result is a compact cross-tabulation with row labels, column headers,
 //! and aggregated data cells.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
+#[cfg(test)]
+use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 use wo_formula::ast::CellValue;

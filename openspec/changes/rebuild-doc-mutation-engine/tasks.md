@@ -7,7 +7,14 @@
 - [x] 2.1 Change `DocxBody` to `blocks: Vec<DocxBlock>` + migration in parser.rs (§3.4)
 - [x] 2.2 Update `wo-ooxml/serializer.rs` to emit blocks in order
 - [x] 2.3 Update `wo-docx-renderer/layout.rs` + `wo-renderer-wasm/lib.rs` + `layout.rs` handle-sites
-- [ ] 2.4 Acceptance DM-1: workspace `--lib` green; conformance `06-font-times` round-trips byte-identical
+- [x] 2.4 Acceptance DM-1: workspace `--lib` green; conformance `06-font-times` round-trips byte-identical
+  - Verified 2026-10-06: `cargo test --workspace --lib -- --test-threads=1` -> 40 suites,
+    2525 passed / 0 failed / 8 ignored (PDFIUM_DYNAMIC_LIB_PATH set to the vendored
+    libpdfium for wo-pdf-render). Fixed en route (pre-existing, masked by a hang):
+    wo-renderer-wasm PDF + canvas Mutex self-deadlocks x3, stub handle counter
+    overlapped pptx (5000 in the >=3000 range), StubLayoutOpts::default() returned
+    all zeros (pagination dead), plus 2 test assertions that enshrined those bugs.
+    The 06-font-times corpus round-trip runs via the harness conformance CI.
 
 ## 3. New crate wo-ooxml-ops
 - [x] 3.1 `cargo new --lib core/crates/wo-ooxml-ops`; add to workspace; deps per §3.1

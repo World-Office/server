@@ -7,6 +7,7 @@
 //! (DOCX, XLSX, PPTX, …) replace this stub in later engine tasks.
 
 use std::collections::HashMap;
+#[cfg(test)]
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 use std::sync::OnceLock;
@@ -23,7 +24,7 @@ pub static STUB_MODEL_STORE: OnceLock<Mutex<HashMap<u32, StubModel>>> = OnceLock
 
 /// Next available stub-model handle (separate namespace starting at 5000
 /// to avoid collisions with `DOC_STORE` handles).
-static mut NEXT_STUB_HANDLE: u32 = 5000;
+static mut NEXT_STUB_HANDLE: u32 = 100; /* <2000: disjoint from pdf/pptx/xlsx handle ranges so layout_and_render routes stub models to the stub branch */
 
 /// Allocate the next stub-model handle.
 ///
@@ -274,7 +275,7 @@ impl EditableModel for StubModel {
 // ---------------------------------------------------------------------------
 
 /// Options for [`layout_stub_model`].
-#[derive(Debug, Clone, Default, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Deserialize)]
 pub struct StubLayoutOpts {
     /// Page width in pixels (default 794 ≈ A4 @ 96 DPI).
     #[serde(default = "default_width")]
@@ -288,6 +289,17 @@ pub struct StubLayoutOpts {
     /// Margin in points (default 72 = 1 inch).
     #[serde(default = "default_margin")]
     pub margin_pt: f32,
+}
+
+impl Default for StubLayoutOpts {
+    fn default() -> Self {
+        Self {
+            width: default_width(),
+            height: default_height(),
+            font_size: default_font_size(),
+            margin_pt: default_margin(),
+        }
+    }
 }
 
 fn default_width() -> u32 {
@@ -726,7 +738,27 @@ mod tests {
         let json = layout_stub_model(&m, &opts);
         let serialized = serde_json::to_string(&json).unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&serialized).unwrap();
-        assert_eq!(json, parsed);
+        // f32 values written to JSON (e.g. 14.399999618530273) parse back to a
+        // neighbouring f64 (14.399999618530272); compare structurally with a
+        // float tolerance instead of bit equality.
+        fn eq(a: &serde_json::Value, b: &serde_json::Value) -> bool {
+            match (a, b) {
+                (serde_json::Value::Number(x), serde_json::Value::Number(y)) => match (x.as_f64(), y.as_f64()) {
+                    (Some(x), Some(y)) => (x - y).abs() < 1e-3,
+                    _ => x == y,
+                },
+                (serde_json::Value::Array(x), serde_json::Value::Array(y)) => {
+                    x.len() == y.len() && x.iter().zip(y).all(|(p, q)| eq(p, q))
+                }
+                (serde_json::Value::Object(x), serde_json::Value::Object(y)) => {
+                    x.len() == y.len()
+                        && x.iter()
+                            .all(|(k, v)| y.get(k).map_or(false, |w| eq(v, w)))
+                }
+                _ => a == b,
+            }
+        }
+        assert!(eq(&json, &parsed), "JSON roundtrip drifted: {json} != {parsed}");
     }
 
     #[test]

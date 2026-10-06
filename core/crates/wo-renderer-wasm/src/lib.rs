@@ -236,46 +236,47 @@ fn layout_pdf_document(handle: u32, opts: &PdfLayoutOpts, canvas: u32) -> Result
 
     // Optionally render page outlines to canvas.
     if canvas != 0 {
-        let canvas_store = canvas_bridge::get_canvas_store();
-        let mut canvas_store = canvas_store.lock().unwrap();
-        if let Some(canvas_obj) = canvas_store.get_mut(&canvas) {
-            // White background
-            canvas_obj.set_fill(wo_renderer::color::Paint::Color(
-                wo_renderer::color::Color::new(1.0, 1.0, 1.0, 1.0),
-            ));
-            let total_w = info.pages.iter().map(|p| p.width).max().unwrap_or(794) as f32;
-            let total_h = info.pages.iter().map(|p| p.height).max().unwrap_or(1123) as f32;
-            canvas_obj.fill_rect(0.0, 0.0, total_w, total_h);
-
-            // Draw page outlines
-            for (i, page) in info.pages.iter().enumerate() {
-                let is_active = i == opts.page;
-                let border_color = if is_active { "#2563EB" } else { "#D1D5DB" };
-                let _ = canvas_bridge::render_rect(
-                    canvas,
-                    0.0,
-                    0.0,
-                    page.width as f32,
-                    page.height as f32,
-                    border_color,
-                );
-                // Page number label
-                let label = format!("Page {}/{}", i + 1, info.page_count);
-                let _ = canvas_bridge::render_text(
-                    canvas,
-                    &label,
-                    8.0,
-                    20.0,
-                    Some(if is_active {
-                        "#2563EB".to_string()
-                    } else {
-                        "#6B7280".to_string()
-                    }),
-                    Some(14.0),
-                );
+        {
+            let canvas_store = canvas_bridge::get_canvas_store();
+            let mut canvas_store = canvas_store.lock().unwrap();
+            if let Some(canvas_obj) = canvas_store.get_mut(&canvas) {
+                // White background
+                canvas_obj.set_fill(wo_renderer::color::Paint::Color(
+                    wo_renderer::color::Color::new(1.0, 1.0, 1.0, 1.0),
+                ));
+                let total_w = info.pages.iter().map(|p| p.width).max().unwrap_or(794) as f32;
+                let total_h = info.pages.iter().map(|p| p.height).max().unwrap_or(1123) as f32;
+                canvas_obj.fill_rect(0.0, 0.0, total_w, total_h);
             }
+        } // CANVAS_STORE guard dropped: render_rect/render_text below re-lock it
+
+        // Draw page outlines
+        for (i, page) in info.pages.iter().enumerate() {
+            let is_active = i == opts.page;
+            let border_color = if is_active { "#2563EB" } else { "#D1D5DB" };
+            let _ = canvas_bridge::render_rect(
+                canvas,
+                0.0,
+                0.0,
+                page.width as f32,
+                page.height as f32,
+                border_color,
+            );
+            // Page number label
+            let label = format!("Page {}/{}", i + 1, info.page_count);
+            let _ = canvas_bridge::render_text(
+                canvas,
+                &label,
+                8.0,
+                20.0,
+                Some(if is_active {
+                    "#2563EB".to_string()
+                } else {
+                    "#6B7280".to_string()
+                }),
+                Some(14.0),
+            );
         }
-        drop(canvas_store);
     }
 
     let result = serde_json::json!({
@@ -3704,9 +3705,15 @@ pub fn layout_and_render(handle: u32, opts_json: &str, canvas: u32) -> Result<St
     if handle >= 2000 {
         let pdf_opts: PdfLayoutOpts =
             serde_json::from_str(opts_json).map_err(|e| format!("Invalid opts JSON: {}", e))?;
-        let info_store = PDF_INFO_STORE.get_or_init(|| Mutex::new(HashMap::new()));
-        let info_store = info_store.lock().unwrap();
-        if info_store.contains_key(&handle) {
+        let in_store = {
+            let info_store = PDF_INFO_STORE.get_or_init(|| Mutex::new(HashMap::new()));
+            let info_store = info_store.lock().unwrap();
+            info_store.contains_key(&handle)
+        };
+        if in_store {
+            // The guard above is dropped before the call: layout_pdf_document
+            // locks the SAME PDF_INFO_STORE, and holding the guard here was a
+            // self-deadlock (std Mutex blocks rather than panicking).
             return layout_pdf_document(handle, &pdf_opts, canvas);
         }
     }
@@ -3724,31 +3731,31 @@ pub fn layout_and_render(handle: u32, opts_json: &str, canvas: u32) -> Result<St
 
     // Optionally render to canvas.
     if canvas != 0 {
-        let canvas_store = canvas_bridge::get_canvas_store();
-        let mut canvas_store = canvas_store.lock().unwrap();
-        let canvas_obj = canvas_store.get_mut(&canvas);
-        if let Some(canvas_obj) = canvas_obj {
-            // White background.
-            canvas_obj.set_fill(wo_renderer::color::Paint::Color(
-                wo_renderer::color::Color::new(1.0, 1.0, 1.0, 1.0),
-            ));
-            canvas_obj.fill_rect(0.0, 0.0, opts.width as f32, opts.height as f32);
-            // Render each paragraph as a line of text.
-            let mut cursor_y = opts.margin_pt * stub_model::PT_TO_PX;
-            for para_text in &model.paragraphs {
-                let baseline_y = cursor_y + opts.font_size * 0.8;
-                let _ = canvas_bridge::render_text(
-                    canvas,
-                    para_text,
-                    opts.margin_pt * stub_model::PT_TO_PX,
-                    baseline_y,
-                    None,
-                    Some(opts.font_size),
-                );
-                cursor_y += opts.font_size * 1.2;
+        {
+            let canvas_store = canvas_bridge::get_canvas_store();
+            let mut canvas_store = canvas_store.lock().unwrap();
+            if let Some(canvas_obj) = canvas_store.get_mut(&canvas) {
+                // White background.
+                canvas_obj.set_fill(wo_renderer::color::Paint::Color(
+                    wo_renderer::color::Color::new(1.0, 1.0, 1.0, 1.0),
+                ));
+                canvas_obj.fill_rect(0.0, 0.0, opts.width as f32, opts.height as f32);
             }
+        } // CANVAS_STORE guard dropped: render_text() below re-locks it (self-deadlock otherwise)
+        // Render each paragraph as a line of text.
+        let mut cursor_y = opts.margin_pt * stub_model::PT_TO_PX;
+        for para_text in &model.paragraphs {
+            let baseline_y = cursor_y + opts.font_size * 0.8;
+            let _ = canvas_bridge::render_text(
+                canvas,
+                para_text,
+                opts.margin_pt * stub_model::PT_TO_PX,
+                baseline_y,
+                None,
+                Some(opts.font_size),
+            );
+            cursor_y += opts.font_size * 1.2;
         }
-        drop(canvas_store);
     }
 
     serde_json::to_string(&layout_json).map_err(|e| format!("JSON serialization failed: {}", e))
@@ -4258,7 +4265,7 @@ mod tests {
     fn test_create_model_stub() {
         let bytes = br#"["Hello", "World"]"#;
         let handle = create_model(bytes, "stub").unwrap();
-        assert!(handle >= 5000);
+        assert!(handle < 2000, "stub handles live below the pdf range (>=2000)");
         release_stub_model(handle).ok();
     }
 
@@ -4770,7 +4777,8 @@ SFX N e ness e
         // Empty bytes should fail
         let result = create_model(b"", "pptx");
         assert!(result.is_err());
-        assert!(result.unwrap_err().contains("PPTX bytes are empty"));
+        // the global empty-bytes guard fires before the per-format message
+        assert!(result.unwrap_err().contains("Model bytes are empty"));
     }
 
     #[test]
