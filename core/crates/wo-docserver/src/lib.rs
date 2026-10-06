@@ -2,6 +2,7 @@
 //
 // Serves the React editor UI and proxies WOPI requests to OCIS.
 
+pub mod ai;
 pub mod config;
 pub mod static_files;
 pub mod wopi;
@@ -963,6 +964,11 @@ pub fn create_app(config: DocServerConfig) -> Router {
         )
         .route("/api/conversion/convert", post(conversion_convert))
         .route("/api/conversion/formats", get(conversion_formats))
+        // ── AI provider gateway (F-148..F-152) ────────────────────────
+        .route("/ai/config", get(ai::ai_config))
+        .route("/api/ai/tools", get(ai::ai_tools))
+        .route("/ai/generate", post(ai::ai_generate))
+        .route("/api/documents/{id}/ai/propose", post(ai::ai_propose))
         .route("/demo/info", get(demo_info_handler))
         .route("/demo/document", get(demo_document_handler))
         // Dictionary files for frontend spellchecker
