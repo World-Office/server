@@ -125,7 +125,7 @@ body {
   flex-wrap: wrap;
   align-items: center;
   padding: 0 12px;
-  height: 86px;              /* OO golden ribbon band y55–138 (fixed: rows must fit) */
+  height: 112px;             /* OO #toolbar reference: 112px band (28px tab strip + 84px control row) */
   overflow: hidden;
   background: var(--ribbon);
   border-bottom: 1px solid var(--border);
@@ -143,9 +143,11 @@ body {
   width: 100%;
 }
 
-/* Home ribbon: two control rows like the OO golden (content y~58–124). */
-.ribbon-page.two-row { flex-direction: column; justify-content: center; gap: 4px; flex-wrap: nowrap; align-items: stretch; }
+/* Home ribbon (single row): the row fills the 112px band; its absolutely
+   positioned controls use --rb-x slots and --rb-y line centers (34px primary
+   line, 84px wrapped right-edge tools). */
 .ribbon-row { display: flex; align-items: center; gap: 2px; }
+.ribbon-page.active .ribbon-row { width: 100%; align-self: stretch; }
 
 /* Title bar (band y0–28): brand, document name, ribbon tabs, view toggles. */
 .titlebar {
@@ -253,7 +255,7 @@ body {
 
 .toolbar button {
   min-width: 34px;
-  height: 32px;
+  height: 46px;
   padding: 0 8px;
   border: 1px solid transparent;
   border-radius: 6px;
@@ -286,7 +288,7 @@ body {
 
 /* ---- full-toolbar controls: selects, color pickers, icons ---- */
 .toolbar .toolbar-select {
-  height: 32px;
+  height: 46px;
   max-width: 110px;
   padding: 0 6px;
   border: 1px solid transparent; /* OO renders the font widgets borderless */
@@ -313,14 +315,14 @@ select option { background: var(--bg); color: var(--text); }
 .ribbon-row { position: relative; min-height: 24px; }
 .ribbon-row[hidden] { display: none; }
 .toolbar .ribbon-page.active { align-self: stretch; height: 100%; align-content: center; }
-/* single-tab pages (insert/layout/review): one centered row, no wrapping */
+/* single-tab pages (insert/layout/review) and the merged Home row: one line,
+   no wrapping of the flex container itself */
 .ribbon-page.active:not(.two-row) { flex-wrap: nowrap; align-items: center; }
 .ribbon-page.active:not(.two-row) button { flex: 0 0 auto; }
-.two-row .ribbon-row { flex: 1; }  /* fill the 86px band → rows at OO y80/116 */
 .toolbar .rb {
   position: absolute;
   left: calc(var(--rb-x) - 12px);  /* minus toolbar padding: var = OO page x */
-  top: var(--rb-y, 50%);
+  top: var(--rb-y, 34px);
   transform: translate(-50%, -50%);
 }
 .menu-bar { position: relative; }
@@ -471,7 +473,7 @@ select option { background: var(--bg); color: var(--text); }
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  height: 32px;
+  height: 46px;
   padding: 0 4px;
   border: 1px solid transparent;
   border-radius: 6px;
@@ -485,7 +487,7 @@ select option { background: var(--bg); color: var(--text); }
 .toolbar .rb-menu {
   position: absolute;
   left: calc(var(--rb-x) - 12px);
-  top: var(--rb-y, 50%);
+  top: var(--rb-y, 34px);
   transform: translate(-50%, -50%);
 }
 /* Ribbon split-button carets: real split-arrow buttons chained to their
@@ -497,9 +499,9 @@ select option { background: var(--bg); color: var(--text); }
   background: none;
   padding: 0;
   min-width: 22px;
-  height: 32px;
+  height: 46px;
   font-size: 10px;
-  line-height: 32px;
+  line-height: 46px;
   color: var(--text);
   cursor: pointer;
   border-radius: 6px;
@@ -522,7 +524,7 @@ select option { background: var(--bg); color: var(--text); }
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  height: 32px;
+  height: 46px;
   padding: 0 10px;
   border: 1px solid var(--border);
   border-radius: 6px;
