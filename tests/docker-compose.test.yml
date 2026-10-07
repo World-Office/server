@@ -32,6 +32,28 @@ services:
       start_period: 30s
       retries: 15
 
+  # Coauthoring service - real-time collaboration (E-CO-1)
+  coauthoring:
+    build:
+      context: ./docker/coauthoring-service
+      dockerfile: Dockerfile
+    container_name: test-coauthoring
+    hostname: coauthoring
+    restart: "no"
+    ports:
+      - "8004:8004"
+    environment:
+      - SERVICE_HOST=0.0.0.0
+      - SERVICE_PORT=8004
+    networks:
+      - test-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 10s
+      timeout: 5s
+      start_period: 60s
+      retries: 15
+
   # OCIS - WOPI Host
   ocis:
     image: owncloud/ocis:5.0

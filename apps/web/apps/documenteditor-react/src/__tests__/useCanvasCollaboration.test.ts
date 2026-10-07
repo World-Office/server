@@ -745,7 +745,9 @@ describe("useCanvasCollaboration", () => {
       expect(msg.envelope.session_id).toBe("sess-1")
       expect(msg.envelope.user_id).toBe("u-42")
       expect(msg.envelope.revision).toBe(1)
-      expect(msg.envelope.payload).toEqual(payload)
+      // flattening: the model-op fields ride at envelope level
+      expect(msg.envelope).toEqual(expect.objectContaining({ version: 1 } as object))
+      expect(msg.envelope).toEqual(expect.objectContaining(payload as object))
       expect(typeof msg.envelope.timestamp).toBe("string")
       // onLocalModelOp receives the exact envelope that was broadcast.
       expect(onLocalModelOp).toHaveBeenCalledTimes(1)
@@ -895,17 +897,28 @@ describe("useCanvasCollaboration", () => {
           JSON.stringify({
             type: "document_op",
             envelope: {
+              version: 1,
               session_id: "sess-1",
               user_id: "u-7",
               revision: 4,
               timestamp: "2026-01-01T00:00:00.000Z",
-              payload: { op: "insert_text", text: "remote" },
+              op: "insert",
+              at: { kind: "text", para: 0, run: 0, char: 3 },
+              content: "remote",
             },
           }),
         )
       })
       expect(applyOp).toHaveBeenCalledTimes(1)
-      expect(applyOp).toHaveBeenCalledWith({ op: "insert_text", text: "remote" })
+      expect(applyOp).toHaveBeenCalledWith({
+        op: "insert",
+        at: { kind: "text", para: 0, run: 0, char: 3 },
+        content: "remote",
+        range: undefined,
+        attrs: undefined,
+        from: undefined,
+        to: undefined,
+      })
 
       // The server echoes our own op back: it must NOT be re-applied.
       act(() => {

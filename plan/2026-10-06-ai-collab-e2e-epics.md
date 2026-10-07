@@ -40,6 +40,14 @@ reject, and generate — all against the rust docserver gateway
 **Goal:** two editors, one document — model ops converge, cursors and
 presence are visible, no clobbering.
 
+**Status (2026-10-06):** ✅ wire substrate proven + spec added. The engine
+mismatch that silently dropped document ops was fixed: `useCanvasCollaboration`
+now speaks the flattened WIRE_SCHEMA_VERSION=1 envelope (was nested `payload`,
+which the coauthoring service's serde rejected). Live two-client check verified
+A's insert reaches B (`coauth-sync-check.cjs`); 31 hook tests pass;
+`collaboration.spec.ts` added; the coauthoring service joined the e2e stack
+(`tests/docker-compose.test.yml`).
+
 **User stories**
 
 | id | as a … | I want to … | so that … | acceptance |

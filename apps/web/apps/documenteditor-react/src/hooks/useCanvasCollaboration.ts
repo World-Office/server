@@ -23,14 +23,25 @@ import { COAUTHORING_API_URL, COAUTHORING_WS_URL } from "../lib/collaboration-co
 
 // ── Types matching the Rust coauthoring protocol ─────────────────────
 
-/** ModeOpEnvelope — wraps a ModelOp with session/user metadata. */
+/** ModelOpEnvelope — wire schema from the coauthoring service (WIRE_SCHEMA_VERSION=1).
+ * The ModelOp fields are FLATTENED at the envelope level (not nested under
+ * "payload") — this matches services/coauthoring-service/src/model_op.rs.
+ * A nested-payload shape was silently dropped by the service's deserializer,
+ * so document ops never reached co-authors (E-CO-1). */
 export interface ModelOpEnvelope {
+  version: number
   session_id: string
   user_id: string
   revision: number
   timestamp: string
-  /** JSON payload applied via WASM apply_op. */
-  payload: unknown
+  /** Flattened ModelOp: op kind */
+  op: string
+  at?: CursorPosition
+  range?: { start?: CursorPosition; end?: CursorPosition }
+  content?: string
+  attrs?: Record<string, unknown>
+  from?: CursorPosition
+  to?: CursorPosition
 }
 
 /** Cursor position as Path (mirrors Rust wo_common::Path). */
@@ -281,15 +292,24 @@ export function useCanvasCollaboration(
           }
 
           case "document_op": {
-            // Remote DocumentOp (ModelOp wrapper) received
+            // Remote DocumentOp (ModelOp wrapper) received — flattened wire
             const envelope = msg.envelope as ModelOpEnvelope
-            if (!envelope || !envelope.payload) break
+            if (!envelope || !envelope.op) break
 
             // Skip our own ops (echoed back by server)
             if (envelope.user_id === userIdRef.current) break
 
-            // Apply remote operation to CanvasEditor
-            editorRef.current?.applyOp(envelope.payload)
+            // Reassemble the ModelOp from the flattened fields for apply_op
+            const op = {
+              op: envelope.op,
+              at: envelope.at,
+              range: envelope.range,
+              content: envelope.content,
+              attrs: envelope.attrs,
+              from: envelope.from,
+              to: envelope.to,
+            }
+            editorRef.current?.applyOp(op)
 
             // Track revision
             if (envelope.revision > revisionRef.current) {
@@ -434,13 +454,17 @@ export function useCanvasCollaboration(
       if (!sid) return
 
       revisionRef.current += 1
+      // Flattened wire schema: the ModelOp fields ride at envelope level
+      // (version + op/at/content) so the coauthoring service's serde parse
+      // accepts the frame and broadcasts it to the session.
       const envelope: ModelOpEnvelope = {
+        version: 1,
         session_id: sid,
         user_id: userIdRef.current,
         revision: revisionRef.current,
         timestamp: new Date().toISOString(),
-        payload,
-      }
+        ...(payload as Record<string, unknown>),
+      } as ModelOpEnvelope
 
       // Broadcast as WsMessage::DocumentOp
       sendMessage({
