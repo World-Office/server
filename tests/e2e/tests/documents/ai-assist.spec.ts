@@ -34,25 +34,35 @@ test.describe("AI assist (E-AI-1)", () => {
     page.on("pageerror", (e) => errors.push(String(e.message)))
 
     await page.goto("/documenteditor/")
-    const proposeButton = page.locator("#btn-ai-assistant")
-    if ((await proposeButton.count()) === 0) {
+    const aiTab = page.locator('#toolbar .ribbon-tab[data-tab="ai"]')
+    if ((await aiTab.count()) === 0) {
       test.skip(true, "AI tab not deployed in this stack")
       return
     }
-    await expect(proposeButton.first()).toBeVisible({ timeout: 30_000 })
-    await proposeButton.first().click()
+    // DOM-dispatched clicks: the contenteditable #editor intercepts pointer
+    // events in headless (verified quirk); the interaction census uses the
+    // same technique.
+    await aiTab.evaluate((el) => (el as HTMLElement).click())
+    await page.locator("#btn-ai-assistant").evaluate((el) => (el as HTMLElement).click())
 
     const dialog = page.locator("#ai-propose-dialog")
     await expect(dialog).toHaveClass(/open/, { timeout: 15_000 })
-    await page.locator("#ai-propose-instruction").fill("Add a closing sentence about reliability.")
-    await page.locator("#btn-ai-propose-run").click()
+    await page.locator("#ai-propose-instruction").evaluate((el) => {
+      const input = el as HTMLInputElement
+      input.value = "Add a closing sentence about reliability."
+      input.dispatchEvent(new Event("input", { bubbles: true }))
+    })
+    await page.locator("#btn-ai-propose-run").evaluate((el) => (el as HTMLElement).click())
 
     // Run returns -> dialog closes (server recorded the op; collab poll projects it).
     await expect(page.locator("#btn-ai-propose-run")).toBeDisabled({ timeout: 90_000 }).catch(() => {})
     await expect(dialog).not.toHaveClass(/open/, { timeout: 60_000 })
 
     // Review surfaces the attributed op.
-    await page.locator("#btn-ai-review-tab, #btn-ai-review").first().click()
+    await page
+      .locator("#btn-ai-review-tab, #btn-ai-review")
+      .first()
+      .evaluate((el) => (el as HTMLElement).click())
     const review = page.locator("#ai-review-dialog")
     await expect(review).toHaveClass(/open/, { timeout: 15_000 })
     await expect(page.locator("#ai-review-list .ai-review-item").first()).toBeVisible({ timeout: 60_000 })
@@ -60,7 +70,7 @@ test.describe("AI assist (E-AI-1)", () => {
     await expect(row).toContainText("AI (")
 
     // Reject one -> row leaves the list (server store shrinks).
-    await row.locator("button.ai-reject").click()
+    await row.locator("button.ai-reject").evaluate((el) => (el as HTMLElement).click())
     await expect(page.locator("#ai-review-list .ai-review-item")).toHaveCount(0, { timeout: 60_000 })
 
     expect(errors.filter((e) => !e.includes("favicon"))).toEqual([])

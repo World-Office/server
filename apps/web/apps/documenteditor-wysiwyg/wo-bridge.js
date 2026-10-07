@@ -170,8 +170,10 @@
         if (ep === "protect") return jres({ restrict_editing: false, password_set: false });
         if (ep.indexOf("collab/") === 0)
           return jres(ep === "collab/sync" ? { ok: true, clients: [] } : { clients: [] });
-        if (ep.indexOf("ai/") === 0)
-          return jres({ error: "AI review is not available in this deployment" }, 503);
+        // ai/* pass through to the docserver backend: the rust gateway serves
+        // propose/review/reject (E-AI-1). A 503 stub here disabled the AI tab
+        // even when the backend implements it.
+        if (ep.indexOf("ai/") === 0) return realFetch(input, init);
       } catch (e) {
         return jres({ error: String(e && e.message || e) }, 502);
       }

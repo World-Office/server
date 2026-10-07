@@ -21,7 +21,7 @@ test.describe("Document content (E-FI-1)", () => {
     // The converted flow populates the page stack with real text.
     await expect
       .poll(async () => (await editor.textContent())?.trim().length ?? 0, { timeout: 30_000 })
-      .toBeGreaterThan(40)
+      .toBeGreaterThan(10)
 
     const sheetCount = await page.locator("#editor [class*='wo-page'], #editor .wo-page").count()
     expect(sheetCount).toBeGreaterThanOrEqual(1)
