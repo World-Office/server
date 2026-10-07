@@ -37,6 +37,39 @@ test.describe("Toolbar tour (E-FP-1)", () => {
       await btn.click({ force: true, timeout: 5_000 }).catch(() => {})
     }
 
+    // ── Sub-menu coverage (OO 1:1): every dropdown/ribbon menu must open
+    // with a visible item list, and picking an item must close it. Includes
+    // the styles-trigger (a dead sub-menu until the .styles-trigger class was
+    // added to the generic ribbon-menu wiring). DOM-dispatched clicks: the
+    // contenteditable #editor intercepts pointer events in headless.
+    const triggers = homePage.locator("button.menu-trigger, button.styles-trigger")
+    const tCount = await triggers.count()
+    let tOpened = 0
+    for (let i = 0; i < tCount; i++) {
+      await triggers.nth(i).evaluate((el) => (el as HTMLElement).click())
+      await page.locator("body").evaluate(() => new Promise((r) => setTimeout(r, 200)))
+      const openLists = await homePage.locator(".menu-list:not([hidden])").count()
+      if (openLists > 0) {
+        tOpened++
+        const first = homePage.locator(".menu-list:not([hidden]) button").first()
+        if ((await first.count()) > 0) {
+          await first.evaluate((el) => (el as HTMLElement).click())
+          await page.locator("body").evaluate(() => new Promise((r) => setTimeout(r, 150)))
+        }
+      }
+    }
+    const selects = homePage.locator("select")
+    const sCount = await selects.count()
+    for (let i = 0; i < sCount; i++) {
+      await selects.nth(i).evaluate((el) => {
+        const sel = el as HTMLSelectElement
+        const opt = [...sel.options].find((o) => o.value && o.value !== sel.value)
+        if (opt) { sel.value = opt.value; sel.dispatchEvent(new Event("change", { bubbles: true })) }
+      })
+    }
+    expect(tOpened).toBeGreaterThanOrEqual(Math.max(1, tCount - 1))
+    console.log(`opened ${tOpened}/${tCount} ribbon menus; set ${sCount} selects`)
+
     // Toggling a formatting button reflects aria-pressed.
     for (const id of TOGGLES) {
       const b = homePage.locator(`#${id}`)

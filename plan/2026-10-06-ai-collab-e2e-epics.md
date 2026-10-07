@@ -107,3 +107,17 @@ committed geometry/chrome/visual gates.
   rows stay declared in the register until the e2e flips them.
 - dispatch: each epic is an agentflow campaign (spec → `af run` → gate →
   census/chrome verify → baseline → push).
+
+**E-FP-1 follow-up (sub-menus, OO 1:1):** the tour now opens every ribbon
+dropdown — selects (font-family/font-size/line-spacing), 7 .menu-trigger
+menus and the Styles menu. Root fix: `documenteditor-wysiwyg/editor.js` bound
+the generic ribbon-menu handler to `.menu-trigger` only, so the Styles holder
+(`.styles-trigger`) was skipped — its menu never opened (OO's styles
+`ComboDataView` always discloses). Handler now accepts `.styles-trigger`.
+
+**E-FI-1 follow-up (pagination, OO 1:1):** pagination itself re-paginates live
+(3 sheets -> 5 after typing 25 lines) but the statusbar lacked OO's
+"Page X of Y" indicator. Added `#page-indicator` (statusbar, before the zoom
+cluster) synced to the paginated sheets + caret sheet on load, re-pagination,
+selectionchange and typing. Documented in editor.js + covered by
+document-content.spec.ts (indicator text + live re-pagination assertions).

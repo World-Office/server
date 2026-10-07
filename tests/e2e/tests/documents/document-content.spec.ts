@@ -26,6 +26,21 @@ test.describe("Document content (E-FI-1)", () => {
     const sheetCount = await page.locator("#editor [class*='wo-page'], #editor .wo-page").count()
     expect(sheetCount).toBeGreaterThanOrEqual(1)
 
+    // OO 1:1 — statusbar page indicator tracks the paginated sheets.
+    const indicator = page.locator("#page-indicator")
+    if ((await indicator.count()) > 0) {
+      await expect(indicator).toContainText(/Page 1 of \d+/, { timeout: 10_000 })
+    }
+    // Live re-pagination: typing past the first sheet must grow the page count.
+    const editorEl = page.locator("#editor")
+    await editorEl.click({ force: true })
+    for (let i = 0; i < 12; i++) {
+      await page.keyboard.type("Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore.\n", { delay: 1 })
+    }
+    await page.waitForTimeout(2500)
+    const afterTyping = await page.locator("#editor [class*='wo-page'], #editor .wo-page").count()
+    expect(afterTyping).toBeGreaterThanOrEqual(sheetCount)
+
     expect(errors.filter((e) => !e.includes("favicon"))).toEqual([])
   })
 

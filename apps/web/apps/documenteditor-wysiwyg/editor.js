@@ -310,6 +310,25 @@
     status.textContent = text;
     status.style.color = isError ? "#f87171" : "";
   }
+  /** Page indicator (OO statusbar "Page X of Y"): total sheets from the
+   *  paginated DOM, current = the sheet holding the caret. Updates on load,
+   *  re-pagination, caret moves and typing. */
+  function currentPageInfo() {
+    const sheets = Array.from(document.querySelectorAll('#editor [class*="wo-page"]'));
+    const sel = window.getSelection();
+    const node = sel && sel.rangeCount ? sel.getRangeAt(0).startContainer : null;
+    const pageEl = node && node.parentElement
+      ? node.parentElement.closest('[class*="wo-page"]')
+      : null;
+    return { cur: pageEl ? sheets.indexOf(pageEl) + 1 : 1, total: sheets.length };
+  }
+  function updatePageIndicator() {
+    const el = document.getElementById('page-indicator');
+    if (!el) return;
+    const { cur, total } = currentPageInfo();
+    el.textContent = `Page ${cur} of ${total}${total ? '' : ''}`;
+  }
+
 
   // ------------------------------------------------------------------
   // Load
@@ -336,6 +355,7 @@
       setStatus(data.blank ? t("Status.EmptyDocument") : t("Status.Ready"));
       updateUndoRedoState();
       updateCounts();
+      updatePageIndicator();
       // An offline snapshot queued by a previous session in this browser
       // overrides the freshly fetched (stale) document and is marked dirty
       // so it is re-pushed on the next save.
@@ -3552,6 +3572,7 @@
     // quiet window: the observer skips mutations this pagination itself causes
     reflowQuiet = true;
     paginateView();
+    updatePageIndicator();
     setTimeout(() => { reflowQuiet = false; }, 0); // macrotask: after observer microtasks
   }
   function scheduleReflow() {
@@ -5398,7 +5419,7 @@
   // Generic ribbon caret menus: trigger discloses, items dispatch commands
   // through the same runCommand pipeline as the toolbar buttons.
   document.querySelectorAll(".rb-menu").forEach((holder) => {
-    const trig = holder.querySelector(".menu-trigger");
+    const trig = holder.querySelector(".menu-trigger, .styles-trigger");
     const list = holder.querySelector(".menu-list");
     if (!trig || !list) return;
     // Keep the editor's live selection active: without this, the mousedown
@@ -5560,7 +5581,8 @@
   // The user moved the caret in the editor: drop the match-derived anchor so
   // the next search picks up from the new caret position. The highlight the
   // find dialog sets is excluded via the updatingFindSelection flag.
-  document.addEventListener("selectionchange", () => {
+  document.addEventListener("selectionchange", updatePageIndicator)
+    document.addEventListener("selectionchange", () => {
     if (updatingFindSelection) return;
     if (findState.anchorPos && !selectionEqualsCurrentMatch()) findState.anchorPos = null;
   });
@@ -5764,7 +5786,8 @@
     emitCommand(command);
   }
 
-  document.addEventListener("selectionchange", updateActiveStates);
+  document.addEventListener("selectionchange", updatePageIndicator)
+    document.addEventListener("selectionchange", updateActiveStates);
 
   // ------------------------------------------------------------------
   // Autosave every 30 s of inactivity
@@ -7037,7 +7060,8 @@
     if (document.activeElement && document.activeElement.tagName === "IMG") return document.activeElement;
     return null;
   }
-  document.addEventListener("selectionchange", () => {
+  document.addEventListener("selectionchange", updatePageIndicator)
+    document.addEventListener("selectionchange", () => {
     const img = selectedImage();
     if (img && objPopup) {
       floatImg = img;
