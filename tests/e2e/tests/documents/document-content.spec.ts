@@ -39,6 +39,10 @@ test.describe("Document content (E-FI-1)", () => {
     }
     await page.waitForTimeout(2500)
     const afterTyping = await page.locator("#editor [class*='wo-page'], #editor .wo-page").count()
+    // C-P5: the caret's page drives the indicator (typing lands at the end,
+    // which is on/after page 2 for the expanded document).
+    const ind2 = await page.locator("#page-indicator").textContent().catch(() => "")
+    expect(ind2).toMatch(/Page [2-9\\d] of \\d+/)
     expect(afterTyping).toBeGreaterThanOrEqual(sheetCount)
 
     expect(errors.filter((e) => !e.includes("favicon"))).toEqual([])

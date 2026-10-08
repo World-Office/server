@@ -51,6 +51,8 @@ test.describe("Toolbar tour (E-FP-1)", () => {
       const openLists = await homePage.locator(".menu-list:not([hidden])").count()
       if (openLists > 0) {
         tOpened++
+        // C-M3: the trigger's aria-expanded reflects the open state.
+        await expect(triggers.nth(i)).toHaveAttribute("aria-expanded", "true", { timeout: 5_000 })
         const first = homePage.locator(".menu-list:not([hidden]) button").first()
         if ((await first.count()) > 0) {
           await first.evaluate((el) => (el as HTMLElement).click())
