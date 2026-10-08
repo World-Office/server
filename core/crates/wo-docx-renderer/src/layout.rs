@@ -3158,3 +3158,197 @@ mod wrap_mode {
         }
     }
 }
+
+// ============================================================================
+// Pagination Contract Test Module (E-FI-1: C-P1/C-P4/C-P6/C-P7)
+// ============================================================================
+
+#[cfg(test)]
+mod pagination {
+    use super::*;
+
+    fn default_config() -> RenderConfig {
+        RenderConfig::default()
+    }
+
+    fn run(text: &str) -> DocxRun {
+        DocxRun {
+            text: text.to_string(),
+            font_size: Some(24),
+            ..Default::default()
+        }
+    }
+
+    fn para(text: &str, page_break_before: bool) -> DocxParagraph {
+        DocxParagraph {
+            properties: DocxParagraphProperties {
+                page_break_before,
+                ..Default::default()
+            },
+            runs: vec![run(text)],
+            ..Default::default()
+        }
+    }
+
+    /// C-P6 (first half): `page_break_before` must only break when the current
+    /// page is non-empty (layout.rs single-column line ~179 and multi-column
+    /// line ~422 both guard with `!current_page.elements.is_empty()`).
+    /// A break-before paragraph that is the FIRST block must therefore not
+    /// produce a phantom empty first page.
+    #[test]
+    fn layout_page_break_suppressed_on_empty_first_page() {
+        let engine = LayoutEngine::new(&default_config());
+        let body = DocxBody {
+            blocks: vec![DocxBlock::Paragraph(para("Starts with a break", true))],
+            ..Default::default()
+        };
+
+        let pages = engine.layout(&body);
+        assert_eq!(
+            pages.len(),
+            1,
+            "page_break_before on an empty first page must not create a phantom page"
+        );
+        assert_eq!(pages[0].elements.len(), 1, "content must be laid out");
+        match &pages[0].elements[0] {
+            LayoutElement::Paragraph { lines, .. } => {
+                assert_eq!(lines[0].text, "Starts with a break");
+            }
+            other => panic!("Expected Paragraph element, got {:?}", other),
+        }
+    }
+
+    /// C-P6 (second half): the same `page_break_before` paragraph DOES start a
+    /// new page when the current page already holds content.
+    #[test]
+    fn layout_page_break_fires_on_non_empty_page() {
+        let engine = LayoutEngine::new(&default_config());
+        let body = DocxBody {
+            blocks: vec![
+                DocxBlock::Paragraph(para("Page 1", false)),
+                DocxBlock::Paragraph(para("Page 2", true)),
+            ],
+            ..Default::default()
+        };
+
+        let pages = engine.layout(&body);
+        assert_eq!(pages.len(), 2, "break on a non-empty page → exactly 2 pages");
+        let first_text = match &pages[0].elements[0] {
+            LayoutElement::Paragraph { lines, .. } => lines[0].text.clone(),
+            other => panic!("Expected Paragraph element, got {:?}", other),
+        };
+        let second_text = match &pages[1].elements[0] {
+            LayoutElement::Paragraph { lines, .. } => lines[0].text.clone(),
+            other => panic!("Expected Paragraph element, got {:?}", other),
+        };
+        assert_eq!(first_text, "Page 1");
+        assert_eq!(second_text, "Page 2");
+    }
+
+    /// C-P7: a table taller than one page height is laid out and flows across
+    /// pages; every row must be present across the LayoutPage list — no row
+    /// dropped. 13 rows × 100pt = 1300pt > one A4 content area (~698pt).
+    #[test]
+    fn layout_table_taller_than_page_flows_without_losing_rows() {
+        let engine = LayoutEngine::new(&default_config());
+        let num_rows = 13usize;
+        let rows: Vec<DocxTableRow> = (0..num_rows)
+            .map(|i| DocxTableRow {
+                cells: vec![DocxTableCell {
+                    paragraphs: vec![para(&format!("Row {}", i), false)],
+                    ..Default::default()
+                }],
+                height: Some(2000), // twips → 100pt per row
+                is_header: false,
+            })
+            .collect();
+        let body = DocxBody {
+            blocks: vec![DocxBlock::Table(DocxTable {
+                rows,
+                ..Default::default()
+            })],
+            ..Default::default()
+        };
+
+        let pages = engine.layout(&body);
+        assert!(
+            pages.len() >= 2,
+            "table taller than one page must flow across pages, got {} page(s)",
+            pages.len()
+        );
+
+        // No headers are configured, so the sum of per-chunk row_heights must
+        // equal the total row count: each source row placed exactly once.
+        let mut placed_rows = 0usize;
+        let mut cell_texts: Vec<String> = Vec::new();
+        for page in &pages {
+            for elem in &page.elements {
+                if let LayoutElement::Table {
+                    row_heights, cells, ..
+                } = elem
+                {
+                    placed_rows += row_heights.len();
+                    for cell in cells {
+                        for p in &cell.paragraphs {
+                            let text: String =
+                                p.runs.iter().map(|r| r.text.as_str()).collect();
+                            cell_texts.push(text);
+                        }
+                    }
+                }
+            }
+        }
+        assert_eq!(
+            placed_rows, num_rows,
+            "every table row must be placed exactly once across pages (no row dropped)"
+        );
+        for i in 0..num_rows {
+            let want = format!("Row {}", i);
+            assert!(
+                cell_texts.iter().any(|t| *t == want),
+                "row '{}' was dropped from the layout",
+                want
+            );
+        }
+    }
+
+    /// C-P4: page count must be monotonic non-decreasing as content is
+    /// appended, and overflow content must grow the sheet count.
+    #[test]
+    fn layout_page_count_monotonic_as_content_grows() {
+        let engine = LayoutEngine::new(&default_config());
+
+        // Each paragraph wraps to far more lines than fit on one page, so
+        // every appended paragraph consumes at least one additional page.
+        fn big_para() -> DocxBlock {
+            DocxBlock::Paragraph(para(&"word ".repeat(800), false))
+        }
+
+        let page_counts: Vec<usize> = (1..=3)
+            .map(|n| {
+                let body = DocxBody {
+                    blocks: (0..n).map(|_| big_para()).collect(),
+                    ..Default::default()
+                };
+                engine.layout(&body).len()
+            })
+            .collect();
+
+        assert!(
+            page_counts[0] >= 1,
+            "a non-empty document must produce at least one page"
+        );
+        for w in page_counts.windows(2) {
+            assert!(
+                w[0] <= w[1],
+                "page count must be monotonic non-decreasing as content is appended: {:?}",
+                page_counts
+            );
+        }
+        assert!(
+            page_counts[2] > page_counts[0],
+            "overflowing content must grow the sheet count: {:?}",
+            page_counts
+        );
+    }
+}
