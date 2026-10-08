@@ -1,0 +1,24 @@
+{
+ "tasks": [
+  {
+   "id": "HONE-PAGETABLE",
+   "title": "Hone pagination contract tests: page_break_before + a table spanning pages (C-P1..C-P4)",
+   "scope": ["core/crates/wo-docx-renderer/src/layout.rs"],
+   "accept": "export PATH=\"/home/weiss/.cargo/bin:$PATH\" && cd core/crates/wo-docx-renderer && cargo test --lib layout 2>&1 | tee /tmp/hone-pagetable-test.log | grep -qE '([1-9][0-9]* passed|test result: ok)'",
+   "accept_timeout_s": 1800,
+   "acceptance_prose": "Spec/contract: E-FI-1 pagination (C-P1 produce N pages for a doc taller than one page; C-P4 typing/bulk that overflows grows the sheet count; C-P6 an explicit page_break_before paragraph starts a new page; C-P7 a table wider/taller than one page is laid out and flows across pages without losing rows).\n\nCurrent wo-docx-renderer/src/layout.rs already has test_layout_page_breaks (asserts page_break_before creates a new page). HONE this test set, do NOT port OO source: add (or extend) tests that 1) assert page_break_before only breaks when the current page is non-empty (match the existing line 179/422 semantics), 2) a table with enough rows to exceed one page height is split across pages (every row present across the LayoutPage list, no row dropped), and 3) the resulting LayoutPage count is monotonic non-decreasing as content is appended (C-P4). Fix the layout code only if a test proves it violates a contract. Keep it minimal and idiomatic to the existing file. Icons/DOM untouched.",
+   "project": "world-office",
+   "priority": "high"
+  },
+  {
+   "id": "HONE-STATUSBAR-ID",
+   "title": "Harden statusbar page-indicator contract: #page-indicator present, role=status, before zoom cluster (C-P3)",
+   "scope": ["apps/web/apps/documenteditor-wysiwyg/index.html"],
+   "accept": "F=apps/web/apps/documenteditor-wysiwyg/index.html; N=$(grep -n 'id=\"page-indicator\"' $F | head -1 | cut -d: -f1); Z=$(grep -n 'id=\"zoom-slider\"' $F | head -1 | cut -d: -f1); L=$(grep 'id=\"page-indicator\"' $F | head -1); [ -n \"$N\" ] && [ -n \"$Z\" ] && [ \"$N\" -lt \"$Z\" ] && echo \"$L\" | grep -q 'role=\"status\"' && echo \"$L\" | grep -q 'aria-live=\"polite\"'",
+   "accept_timeout_s": 120,
+   "acceptance_prose": "Spec/contract: E-FI-1 C-P3 — the statusbar shows 'Page X of Y' via a dedicated #page-indicator element (port of OO's statusbar page slot). It must 1) exist inside the statusbar footer, 2) expose role=\"status\" and aria-live=\"polite\" (accessibility: announce page changes), 3) appear BEFORE the zoom cluster so the OO-golden order (page info left-of zoom) is preserved.\n\nThis is an additive-hardening task: if the element is already present with role=status + aria-live and ordered before the zoom controls, the task is met without changes (leave it as-is, it already passes). Only add/repair what's missing. Keep styling neutral (status-meta class, no layout shift). Do not touch editor.js (another task owns it) or move the zoom cluster.",
+   "project": "world-office",
+   "priority": "high"
+  }
+ ]
+}
