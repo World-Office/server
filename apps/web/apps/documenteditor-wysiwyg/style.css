@@ -126,11 +126,17 @@ body {
   align-items: center;
   padding: 0 12px;
   height: 112px;             /* OO #toolbar reference: 112px band (28px tab strip + 84px control row) */
-  overflow: hidden;
+  /* ponytail: overflow hidden on the toolbar clipped the .menu-list dropdowns
+     (they hang below the 112px band via position:absolute; top:100%) so every
+     ribbon sub-menu was visually cut. Dropped to visible; the fixed height +
+     single-row ribbon no longer needs the clamp. */
+  overflow: visible;
   background: var(--ribbon);
   border-bottom: 1px solid var(--border);
   flex: 0 0 auto;
   position: relative;        /* containing block for the 28px ribbon-tab strip */
+  z-index: 10;               /* stack above the editor pages so the absolute
+                                .menu-list dropdowns hang over (not under) them */
 }
 
 /* Ribbon pages: one visible control group per tab (default Home). */

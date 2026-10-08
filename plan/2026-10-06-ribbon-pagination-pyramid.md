@@ -30,6 +30,7 @@ available layer has a GREEN assertion for each satisfied contract.
 | C-M2 | The disclosed list contains `button[data-cmd]` items; an item click dispatches `runCommand(cmd, value)` **and** closes the list. |
 | C-M3 | The trigger's `aria-expanded` mirrors the open state (`true` while open). |
 | C-M4 | There is no dead sub-menu: every Home dropdown opens a list (0 silent). |
+| C-M5 | An open dropdown **paints above** the editor page surface and is not clipped by the toolbar at any window size (default + maximized). |
 
 (OO behavioral parity: a ribbon dropdown discloses → pick → command → close;
 this is the semantic contract ported, not OO's markup.)
@@ -60,6 +61,7 @@ this is the semantic contract ported, not OO's markup.)
 | C-M2 (pick→command→close) | L3 + L1 | L3: click first item → lists close + (US-FP-2) computed font changes; L1: `word-commands.test.ts` command dispatch | 🟢 |
 | C-M3 (aria-expanded mirrors) | L3 | `toolbar-tour`: open → trigger `aria-expanded === "true"` | 🟢 (added) |
 | C-M4 (0 dead sub-menus) | L2 + L3 | parity `fx` census (0 silent) + L3 tour count | 🟢 |
+| C-M5 (paints over page, not clipped) | L2 | `menucut.cjs`: box inside viewport + `elementFromPoint` returns a menu item at default & maximized; root-cause fix `.toolbar{overflow:visible; z-index:10}` | 🟢 8/8×2 |
 | C-P1 (>1 sheet) | L2 | parity harness long-doc: 3 sheets for 40 paras | 🟢 (verified) |
 | C-P2 ({cur,total} invariant) | L3 | by construction; asserted via C-P3/C-P5 output | 🟢 |
 | C-P3 (Page X of Y + tracks) | L3 | `document-content`: indicator matches `/Page \d+ of \d+/`; count grows with sheets | 🟢 |
