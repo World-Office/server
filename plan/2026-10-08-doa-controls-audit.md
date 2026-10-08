@@ -1,107 +1,63 @@
-# Watchdog: DOA GUI controls vs the OnlyOffice reference
+# Dead-control audit — CORRECTED (2026-10-08)
 
-**Date:** 2026-10-08
-**Scope:** `apps/web/apps/documenteditor-wysiwyg` — every visible/clickable
-control that had *no function* at audit time, matched against the OO reference
-(`/tmp/oo-src/Toolbar.js`, OO web-apps Common UI view) and the WO converters'
-existing round-trip capabilities.
+**Bottom line:** *both* editors' command wires are essentially complete. The
+first pass of this audit ("many elements have no function") was dominated by
+false positives from a naive static grep. Corrected with **live isolated
+clicks** (the only authoritative gate) plus confirming the three dynamic
+binding patterns this codebase uses. Documenting them so no future audit
+repeats the mistake.
 
-## Method
+## Why the first pass lied
+A control is "dead" iff it is reachable *and* no click has any effect. Grepping
+for `getElementById(...)` under-counts because binding here uses:
 
-For every `<button>`/`<select>` id in `index.html` we checked two independent
-wiring paths:
+1. **Delegated `data-cmd`** — `editor.js:2781` binds every `button[data-cmd]`
+   → `emitCommand` → `wo-command` → `runCommand`. The ids never appear.
+2. **Object-literal key maps** — `tableOps = { "op-row-above": () => insertTableRow(true), … }`
+   then `Object.keys(tableOps).forEach(...)` (`editor.js:2783`). The ids appear
+   only as object keys, not in `getElementById`.
+3. **String-concat ids** — `ROUND2 = [["dropcap", confirmDropcapDialog], …]`
+   then `getElementById("btn-" + name + "-ok")` (`editor.js:5175`). The literal
+   `"btn-dropcap-ok"` never appears verbatim.
 
-- `data-cmd` present → bound by the delegated dispatch
-  (`editor.js:2781` `btn.addEventListener("click", () => emitCommand(...))`
-  → `wo-command` bus → `runCommand`, `editor.js:2316`), plus active-state echo
-  at `editor.js:1213`.
-- A direct handler reference (`getElementById`/`querySelector('#id')`) in
-  `editor.js`.
+Any audit claiming a control is dead must clear all three.
 
-A control is **DOA** iff it has neither. Working controls may still be silent
-in this grep because they are bound via `data-cmd` delegation.
+## Verified live (isolated clicks, wysiwyg editor)
+All opened a dialog / changed content / set status — none inert:
+`openBorders · toggleDropcap · insetCaption · insertCitation · insertObject ·
+link · ocrRun · browsePlugins · photoEditor · aiSummarize · aiTranslate ·
+aiRewrite (open AI propose) · toggleInk/inkMode · toggleNavigation`.
+All 8 Layout dialogs' OK buttons are bound via ROUND2 and all 8 `confirm*Dialog`
+functions exist. Table ops run end-to-end: injected 3×2 → `op-row-above` 4r →
+`op-col-left` 4r×3c → `op-del-col` 4r×2c (merge needs a multi-cell selection by
+design).
 
-## Round 1 fix (landed now): the notes/header/page-number buttons
+## Actually wired this session
+Round-1 fix (previous turn) stays: `btn-pagenumber/header/footer` (Insert) and
+`btn-footnote/endnote` (References) gained `data-cmd` → `insertPageNumber /
+insertHeader / insertFooter / insertFootnote / insertEndnote`. The converters
+round-trip the exact markers. Probe (`census/probe-wire.cjs`): 5/5 markers.
 
-`runCommand` has **long supported** `insertFootnote`, `insertEndnote`,
-`insertHeader`, `insertFooter`, `insertPageNumber` (F-073/F-074/F-084/F-085),
-and the DOCX/ODT converters round-trip the exact HTML markers
-(`sup.footnote-citation + span.footnote`, `header.page-header`,
-`footer.page-footer`, `span.page-number`). The DOM buttons existed but were
-**never given `data-cmd`** → dead even though the whole pipeline was ready.
-Added the `data-cmd` attributes (smallest diff, no JS change).
+## React (= deployed docker/prod **:8082**) editor
+`documenteditor-react`: `rte-command.ts` dispatcher switch covers **107/107**
+`RichTextCommand` union members — zero unhandled. `structureOpForCommand`
+(core-common) covers the WASM structure ops; `createWordCommandHandler`
+(`word-commands.ts:162`) carries the word/object flavor (chart, macros,
+watermark, pageColor, …). Both kernels are complete at the command layer.
 
-Live probe (`census/probe-wire.cjs`) on a spawned docserver:
+## Genuine remaining dead candidates (narrow)
+- **`Toolbar.tsx` is a 112-line wrapper** over `@world-office/editor-common`
+  ribbon; the buttons live in `packages/editor-common/src/ribbon/`. If any
+  ribbon button emits a literal command string that routes to none of
+  `structureOpForCommand` / `rte-command` / `createWordCommandHandler`, the
+  click is silent. That is the single remaining place to hunt "GUI elements
+  without function" — and it must be settled **by clicking**, then diffing the
+  dispatched command against the three handlers, not by grep.
+- The unreachable `*.dialog-overlay` scaffolding and the object-layout
+  `btn-align-*/wrap-*/layer-*` (no object model yet — YAGNI) are inert but not
+  user-facing.
 
-```
-OK header:<header>        (Insert tab)
-OK footer:<footer>
-OK footnote:<sup>          (References tab)
-OK endnote:<sup>
-OK page-number:<span>
-```
-
-## Still DOA (audit — not yet wired)
-
-Grouped by what the OnlyOffice reference does; dependency noted so each is a
-bounded future slice. None are one-attribute fixes like Round 1 — each needs a
-little runtime (a selection model, a dialog apply-path, or a command).
-
-### A. Table operations — `op-*` (index.html ~line 712, table toolset)
-`op-row-above / op-row-below / op-col-left / op-col-right / op-del-row /
-op-del-col / op-merge / op-split`
-OO equivalent: table right-click toolbar "Insert Rows Above/Below / Insert
-Columns Left/Right / Delete Row/Column / Merge Cells / Split Cell", driven by
-the table cursor-selection model.
-WO status: **do not exist** — needs table cell-hit + a `runCommand("tableOp",
-…)` applying a DOM table transform (perssistible/round-trippable). Sizable.
-
-### B. Object layout (shape/image/textart) — index.html ~line 1680+
-`btn-align-left/center/right` (`data-objalign`) · `btn-wrap-inline/square/
-behind` · `btn-layer-front/back`
-OO: object contextual toolbar when an object is selected (align / wrap /
-bring-forward / send-back). OO view lists `id-toolbar-btn-align-left/right/
-center` and border/wrap controls.
-WO status: pure `data-objalign`/`data-wrap`/`data-layer` DOM but **no object
-selection model exists** (no shapes/drawings are rendered in the wysiwyg
-canvas yet). Wiring them is premature — YAGNI until objects can be selected.
-
-### C. Dialog apply-paths — X-ok / X-close pairs (all DOA)
-`colors`, `dropcap`, `watermark`, `pagecolor`, `linenumbers`, `hyphenation`,
-`displaymode`, `updatetoc`, `pagenumber`, `headerfooter`, `notes`,
-`trackchanges`, `addtext`, `btn-insert-more`
-OO: each is a modal whose OK applies a setting to the selected/whole document.
-WO status: the dialog **markup** exists; the triggers don't open them and the
-OK/Apply have no target (e.g. `toggleDropcap`/`openBorders` commands exist in
-menus but the dialog apply is unbound). Needs per-dialog: open trigger + OK →
-`runCommand`/DOM apply. The two with an existing command —
-`toggleDropcap`, `openBorders` — are the cheapest next slice.
-
-### D. File menu + app bar
-`#menu-bar` `btn-file` submenu: `btn-new/open/print/history/export/fileinfo/
-fileprotect/filesettings/filehelp/filesuggest` + `btn-save`
-WO status: `btn-save` is wired (`:save`), `btn-undo-tb/btn-redo-qa` are wired
-via `data-cmd`. The File **submenu items** that mutate/save (New/Open/Export/
-Print/History) need host-bridge actions (New/Open/Export are real wopi/fs
-ops). Split out the wired ones (Save/Undo/Redo/export=pdf/odt/html/docx exist
-behind the export submenu) from the still-open ones.
-
-### E. Ink / draw / AI-speech (status uncertain — re-inventory high-signal)
-`btn-ink-*` (`toggleInk`/`inkMode`/`inkSelect` referenced in `editor.js:1226`)
-and `btn-dictate/ocr/readaloud/speech`. The active-state echo already handles
-`toggleInk`/`inkMode`/`inkSelect`, so Ink may be partially live; the AI-speech
-cluster is unbound.
-
-## Recommendation
-
-Landed now: **Round 1** (notes/header/page-number). Next bounded slices, in
-dependency order that each yields a user-visible, gated feature:
-
-1. Table operations (A) — table cursor model + `tableOp` DOM transform.
-2. Borders + Drop-cap dialogs (C) — both have an entry command already.
-3. File submenu live items (D) — New/Open/Export/Print via host bridge.
-
-Object layout (B) stays parked until objects exist. This audit is the
-"analyse the OO code more closely" result: WO's converters already carry the
-round-trip surface for notes/headers/page-number — the buttons were the only
-missing link, and they are now wired.
+## Method rule (for the team)
+Feature/dialog work must verify by **live isolated click → observable effect**
+content delta / `.open` dialog / status text. Static grep is only a
+hypothesis-generator here.
