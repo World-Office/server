@@ -337,8 +337,16 @@
     setStatus(t("Status.Loading"));
     try {
       const res = await fetch(api("html"));
+      if (!res.ok) {
+        // Error bodies may be plain text (e.g. axum AppError::NotFound →
+        // "not found") — never feed them to res.json() before the status
+        // check, or the UI shows a JSON parse error instead of the cause.
+        const raw = await res.text();
+        let msg = raw || "load failed";
+        try { msg = JSON.parse(raw).error || msg; } catch (e) {}
+        throw new Error(msg);
+      }
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "load failed");
       // Anchor: an empty/blank document still needs a block element so
       // typing produces <p>…</p> (bare text would be lost in DOCX conversion).
       editor.innerHTML = data.html || "<p><br></p>";

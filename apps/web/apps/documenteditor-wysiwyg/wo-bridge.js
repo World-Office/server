@@ -54,8 +54,17 @@
   }
 
   if (!token || !fileId) {
-    // Standalone: no interception at all.
+    // Standalone: no interception at all. Without a WOPI context the demo
+    // deployment serves the baked showcase document when /word/ is opened
+    // without parameters; an explicit file_id still wins.
     window.__WO_BOOT__ = Promise.resolve();
+    if (fileId) {
+      window.__DOC_ID__ = fileId;
+      window.__DOC_NAME__ = q.get("file_name") || "document.docx";
+    } else {
+      window.__DOC_ID__ = "demo.docx";
+      window.__DOC_NAME__ = q.get("file_name") || "demo.docx";
+    }
     return;
   }
 
