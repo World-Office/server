@@ -3608,7 +3608,7 @@ mod tests {
         let mut archive2 = zip::ZipArchive::new(cursor2).unwrap();
         let pres = parser.parse_pptx(&mut archive2).unwrap().unwrap();
 
-        assert_eq!(pres.slide_size.cx, 9144000);
+        assert_eq!(pres.slide_size.cx, 10 * wo_common::units::IN_TO_EMU);
         assert_eq!(pres.slide_size.cy, 6858000);
     }
 
