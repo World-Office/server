@@ -48,10 +48,11 @@ DOCUMENT = f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document {NS}>
   <w:body>
     <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Welcome to World Office</w:t></w:r></w:p>
-    <w:p><w:r><w:t>This demo document exercises the editing and conversion stack: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>bold</w:t></w:r><w:r><w:t> and </w:t></w:r><w:r><w:rPr><w:i/></w:rPr><w:t>italic</w:t></w:r><w:r><w:t> runs, a bullet list, a table and a page break (pageBreakBefore).</w:t></w:r></w:p>
+    <w:p><w:r><w:t>This demo document exercises the editing and conversion stack: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>bold</w:t></w:r><w:r><w:t> and </w:t></w:r><w:r><w:rPr><w:i/></w:rPr><w:t>italic</w:t></w:r><w:r><w:t> runs, a bullet list, a table and an explicit page break.</w:t></w:r></w:p>
     {BULLETS}
     <w:tbl><w:tblPr><w:tblW w:w="0" w:type="auto"/><w:tblBorders/></w:tblPr><w:tblGrid><w:gridCol/><w:gridCol/><w:gridCol/></w:tblGrid>{ROWS}</w:tbl>
-    <w:p><w:pPr><w:pStyle w:val="Heading1"/><w:pageBreakBefore/></w:pPr><w:r><w:t>Page two</w:t></w:r></w:p>
+    <w:p><w:r><w:br w:type="page"/></w:r></w:p>
+    <w:p><w:pPr><w:pStyle w:val="Heading1"/></w:pPr><w:r><w:t>Page two</w:t></w:r></w:p>
     <w:p><w:r><w:t>The heading above starts a fresh page — pagination, shared strings and unit conversion all follow the OO core contracts.</w:t></w:r></w:p>
     <w:sectPr><w:pgSz w:w="11906" w:tw="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr>
   </w:body>

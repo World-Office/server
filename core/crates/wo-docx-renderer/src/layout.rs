@@ -177,7 +177,9 @@ impl LayoutEngine {
             match item {
                 BodyItem::Paragraph(para) => {
                     // Handle page_break_before
-                    if para.properties.page_break_before && !current_page.elements.is_empty() {
+                    if (para.properties.page_break_before || Self::is_pure_page_break(para))
+                        && !current_page.elements.is_empty()
+                    {
                         pages.push(current_page);
                         current_page = LayoutPage {
                             elements: Vec::new(),
@@ -420,7 +422,9 @@ impl LayoutEngine {
             match item {
                 BodyItem::Paragraph(para) => {
                     // Handle page_break_before - start new page
-                    if para.properties.page_break_before && !current_page.elements.is_empty() {
+                    if (para.properties.page_break_before || Self::is_pure_page_break(para))
+                        && !current_page.elements.is_empty()
+                    {
                         pages.push(current_page);
                         current_page = LayoutPage {
                             elements: Vec::new(),
@@ -777,6 +781,24 @@ impl LayoutEngine {
 
     /// Wrap paragraph text into lines using character-level width estimation.
     #[allow(clippy::too_many_arguments)] // layout geometry; signature is the contract
+    /// A paragraph whose text carries only a `<w:br w:type="page"/>` form feed
+    /// (plus whitespace) is an explicit page break — Word emits exactly this
+    /// shape as a standalone paragraph; the layout loop splits pages on it.
+    fn is_pure_page_break(para: &DocxParagraph) -> bool {
+        let mut has_break = false;
+        para.runs.iter().all(|r| {
+            r.text.chars().all(|c| {
+                if c == '\x0C' {
+                    has_break = true;
+                    true
+                } else {
+                    c.is_whitespace()
+                }
+            })
+        }) && has_break
+    }
+
+    #[allow(clippy::too_many_arguments)] // layout geometry; signature is the contract
     fn wrap_paragraph_into_lines(
         &self,
         para: &DocxParagraph,
@@ -805,7 +827,9 @@ impl LayoutEngine {
             let mut word_start = 0;
 
             for (i, ch) in text.char_indices() {
-                if ch == '\n' {
+                if ch == '\n' || ch == '\x0C' {
+                    // Hard line break (\x0C mid-paragraph degrades to a line
+                    // break; a pure-break paragraph splits pages in the caller).
                     // Hard line break
                     let word = &text[word_start..i];
                     if !word.is_empty() {
@@ -1937,6 +1961,38 @@ mod tests {
             pages.len() >= 2,
             "page_break_before should create a new page"
         );
+    }
+
+    #[test]
+    fn test_layout_run_page_break_form_feed() {
+        // <w:r><w:br w:type="page"/></w:r> — the parser encodes this as \x0C
+        // inside run.text (parser.rs br handler). The layout must close the
+        // current page on a pure-break paragraph, like page_break_before.
+        let engine = LayoutEngine::new(&default_config());
+        let mk = |text: &str| DocxBlock::Paragraph(DocxParagraph {
+            style_id: None,
+            properties: DocxParagraphProperties::default(),
+            runs: vec![DocxRun {
+                text: text.to_string(),
+                ..Default::default()
+            }],
+            section_properties: None,
+            ..Default::default()
+        });
+        let body = DocxBody {
+            blocks: vec![mk("Intro on page one"), mk("\x0C"), mk("Page two text")],
+            ..Default::default()
+        };
+        let pages = engine.layout(&body);
+        assert_eq!(pages.len(), 2, "pure-break paragraph must split pages");
+        let second = &pages[1];
+        let has_text = second.elements.iter().any(|e| match e {
+            LayoutElement::Paragraph { lines, .. } => {
+                lines.iter().any(|l| l.text.contains("Page two"))
+            }
+            _ => false,
+        });
+        assert!(has_text, "'Page two text' must land on page 2");
     }
 
     #[test]

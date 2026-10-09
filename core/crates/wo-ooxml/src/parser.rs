@@ -22,6 +22,26 @@ impl OoxmlParser {
         Self
     }
 
+    /// Namespace-aware `w:val` read. roxmltree's plain-string attribute
+    /// lookup matches only unprefixed attributes, so Word's `w:val` needs
+    /// the (ns, name) form; fall back to plain for legacy input.
+    fn attr_val<'a, 'input>(&self, node: roxmltree::Node<'a, 'input>) -> Option<&'a str> {
+        self.attr_ns(node, "val")
+    }
+
+    /// Namespace-aware `w:<name>` read. roxmltree's plain-string attribute
+    /// lookup matches only unprefixed attributes, but WordprocessingML
+    /// prefixes every attribute (`w:val`, `w:left`, ...). Try the qualified
+    /// form first, fall back to plain for legacy/unprefixed input.
+    fn attr_ns<'a, 'input>(
+        &self,
+        node: roxmltree::Node<'a, 'input>,
+        name: &'a str,
+    ) -> Option<&'a str> {
+        node.attribute((Self::W_NS, name))
+            .or_else(|| node.attribute(name))
+    }
+
     /// Parse OOXML data (ZIP bytes) into an OoxmlDocument.
     pub fn parse(&self, data: &[u8]) -> Result<OoxmlDocument> {
         if data.is_empty() {
@@ -1512,7 +1532,7 @@ impl OoxmlParser {
                         .children()
                         .find(|n| n.is_element() && n.tag_name().name() == "pStyle")
                     {
-                        style_id = pstyle.attribute("val").map(|s| s.to_string());
+                        style_id = self.attr_ns(pstyle, "val").map(|s| s.to_string());
                     }
                     properties = self.parse_paragraph_properties(&child);
                 }
@@ -1571,7 +1591,7 @@ impl OoxmlParser {
             }
             match child.tag_name().name() {
                 "jc" => {
-                    props.alignment = match child.attribute("val") {
+                    props.alignment = match self.attr_ns(child, "val") {
                         Some("center") => Some(TextAlignment::Center),
                         Some("right") => Some(TextAlignment::Right),
                         Some("both") => Some(TextAlignment::Both),
@@ -1579,33 +1599,33 @@ impl OoxmlParser {
                     };
                 }
                 "ind" => {
-                    props.indent_left = child.attribute("left").and_then(|v| v.parse().ok());
-                    props.indent_right = child.attribute("right").and_then(|v| v.parse().ok());
+                    props.indent_left = self.attr_ns(child, "left").and_then(|v| v.parse().ok());
+                    props.indent_right = self.attr_ns(child, "right").and_then(|v| v.parse().ok());
                     props.indent_first_line =
-                        child.attribute("firstLine").and_then(|v| v.parse().ok());
-                    props.indent_hanging = child.attribute("hanging").and_then(|v| v.parse().ok());
+                        self.attr_ns(child, "firstLine").and_then(|v| v.parse().ok());
+                    props.indent_hanging = self.attr_ns(child, "hanging").and_then(|v| v.parse().ok());
                 }
                 "spacing" => {
-                    props.spacing_before = child.attribute("before").and_then(|v| v.parse().ok());
-                    props.spacing_after = child.attribute("after").and_then(|v| v.parse().ok());
-                    props.spacing_line = child.attribute("line").and_then(|v| v.parse().ok());
-                    props.spacing_line_rule = match child.attribute("lineRule") {
+                    props.spacing_before = self.attr_ns(child, "before").and_then(|v| v.parse().ok());
+                    props.spacing_after = self.attr_ns(child, "after").and_then(|v| v.parse().ok());
+                    props.spacing_line = self.attr_ns(child, "line").and_then(|v| v.parse().ok());
+                    props.spacing_line_rule = match self.attr_ns(child, "lineRule") {
                         Some("exact") => Some(LineSpacingRule::Exact),
                         Some("atLeast") => Some(LineSpacingRule::AtLeast),
                         _ => Some(LineSpacingRule::Auto),
                     };
                 }
                 "keepLines" => {
-                    props.keep_lines = child.attribute("val") != Some("false");
+                    props.keep_lines = self.attr_ns(child, "val") != Some("false");
                 }
                 "keepNext" => {
-                    props.keep_next = child.attribute("val") != Some("false");
+                    props.keep_next = self.attr_val(child) != Some("false");
                 }
                 "pageBreakBefore" => {
-                    props.page_break_before = child.attribute("val") != Some("false");
+                    props.page_break_before = self.attr_val(child) != Some("false");
                 }
                 "outlineLvl" => {
-                    props.outline_level = child.attribute("val").and_then(|v| v.parse().ok());
+                    props.outline_level = self.attr_ns(child, "val").and_then(|v| v.parse().ok());
                 }
                 "tabs" => {
                     for tab_child in child.children() {
@@ -1613,18 +1633,17 @@ impl OoxmlParser {
                             continue;
                         }
                         if tab_child.tag_name().name() == "tab" {
-                            let pos: i32 = tab_child
-                                .attribute("pos")
+                            let pos: i32 = self.attr_ns(tab_child, "pos")
                                 .and_then(|v| v.parse::<i32>().ok())
                                 .unwrap_or(0);
-                            let kind = match tab_child.attribute("val") {
+                            let kind = match self.attr_ns(tab_child, "val") {
                                 Some("center") => TabStopKind::Center,
                                 Some("right") => TabStopKind::Right,
                                 Some("decimal") => TabStopKind::Decimal,
                                 Some("bar") => TabStopKind::Bar,
                                 _ => TabStopKind::Left,
                             };
-                            let leader = tab_child.attribute("leader").map(|s| s.to_string());
+                            let leader = self.attr_ns(tab_child, "leader").map(|s| s.to_string());
                             props.tab_stops.push(TabStop { pos, kind, leader });
                         }
                     }
@@ -1697,7 +1716,13 @@ impl OoxmlParser {
                     run.footnote_rid = child.attribute((Self::W_NS, "id")).map(|s| s.to_string());
                 }
                 (Some(Self::W_NS), "br") => {
-                    let br_type = child.attribute("type").unwrap_or("line");
+                    // w:type is namespace-qualified; roxmltree's plain-string
+                    // lookup matches only unprefixed attributes, so try the
+                    // (ns, name) form first and fall back for legacy input.
+                    let br_type = child
+                        .attribute((Self::W_NS, "type"))
+                        .or_else(|| self.attr_ns(child, "type"))
+                        .unwrap_or("line");
                     if br_type == "page" {
                         run.text.push('\x0C'); // form feed for page break
                     } else {
@@ -1724,19 +1749,19 @@ impl OoxmlParser {
             }
             match child.tag_name().name() {
                 "b" => {
-                    run.bold = child.attribute("val") != Some("false");
-                    if child.attribute("val").is_none() && !child.children().count() > 0 {
+                    run.bold = self.attr_ns(child, "val") != Some("false");
+                    if self.attr_ns(child, "val").is_none() && !child.children().count() > 0 {
                         run.bold = true;
                     }
                 }
                 "i" => {
-                    run.italic = child.attribute("val") != Some("false");
-                    if child.attribute("val").is_none() && !child.children().count() > 0 {
+                    run.italic = self.attr_ns(child, "val") != Some("false");
+                    if self.attr_ns(child, "val").is_none() && !child.children().count() > 0 {
                         run.italic = true;
                     }
                 }
                 "u" => {
-                    run.underline = match child.attribute("val") {
+                    run.underline = match self.attr_ns(child, "val") {
                         Some("double") => Some(UnderlineType::Double),
                         Some("thick") => Some(UnderlineType::Thick),
                         Some("dotted") => Some(UnderlineType::Dotted),
@@ -1749,43 +1774,42 @@ impl OoxmlParser {
                     };
                 }
                 "strike" => {
-                    run.strikethrough = child.attribute("val") != Some("false");
+                    run.strikethrough = self.attr_ns(child, "val") != Some("false");
                 }
                 "dstrike" => {
-                    run.double_strikethrough = child.attribute("val") != Some("false");
+                    run.double_strikethrough = self.attr_ns(child, "val") != Some("false");
                 }
                 "rFonts" => {
                     // Try ascii, hAnsi, then eastAsia, then cs
-                    run.font = child
-                        .attribute("ascii")
-                        .or_else(|| child.attribute("hAnsi"))
-                        .or_else(|| child.attribute("eastAsia"))
+                    run.font = self.attr_ns(child, "ascii")
+                        .or_else(|| self.attr_ns(child, "hAnsi"))
+                        .or_else(|| self.attr_ns(child, "eastAsia"))
                         .map(|s| s.to_string());
                 }
                 "sz" => {
-                    run.font_size = child.attribute("val").and_then(|v| v.parse().ok());
+                    run.font_size = self.attr_ns(child, "val").and_then(|v| v.parse().ok());
                 }
                 "szCs" => {
-                    run.font_size_cs = child.attribute("val").and_then(|v| v.parse().ok());
+                    run.font_size_cs = self.attr_ns(child, "val").and_then(|v| v.parse().ok());
                 }
                 "color" => {
-                    run.color = child.attribute("val").map(|s| s.to_string());
+                    run.color = self.attr_ns(child, "val").map(|s| s.to_string());
                 }
                 "highlight" => {
-                    run.highlight = child.attribute("val").map(|s| s.to_string());
+                    run.highlight = self.attr_ns(child, "val").map(|s| s.to_string());
                 }
                 "vertAlign" => {
-                    run.vertical_alignment = match child.attribute("val") {
+                    run.vertical_alignment = match self.attr_ns(child, "val") {
                         Some("superscript") => Some(VerticalAlignment::Superscript),
                         Some("subscript") => Some(VerticalAlignment::Subscript),
                         _ => None,
                     };
                 }
                 "smallCaps" => {
-                    run.small_caps = child.attribute("val") != Some("false");
+                    run.small_caps = self.attr_ns(child, "val") != Some("false");
                 }
                 "caps" => {
-                    run.all_caps = child.attribute("val") != Some("false");
+                    run.all_caps = self.attr_ns(child, "val") != Some("false");
                 }
                 _ => {}
             }
@@ -1841,13 +1865,13 @@ impl OoxmlParser {
             }
             match child.tag_name().name() {
                 "tblW" => {
-                    props.width = child.attribute("w").and_then(|v| v.parse().ok());
+                    props.width = self.attr_ns(child, "w").and_then(|v| v.parse().ok());
                 }
                 "tblInd" => {
-                    props.indent = child.attribute("w").and_then(|v| v.parse().ok());
+                    props.indent = self.attr_ns(child, "w").and_then(|v| v.parse().ok());
                 }
                 "jc" => {
-                    props.alignment = match child.attribute("val") {
+                    props.alignment = match self.attr_ns(child, "val") {
                         Some("center") => Some(TextAlignment::Center),
                         Some("right") => Some(TextAlignment::Right),
                         _ => Some(TextAlignment::Left),
@@ -1871,7 +1895,7 @@ impl OoxmlParser {
             }
             match child.tag_name().name() {
                 "trPr" => {
-                    height = child.attribute("trHeight").and_then(|v| v.parse().ok());
+                    height = self.attr_ns(child, "trHeight").and_then(|v| v.parse().ok());
                     // Check for tblHeader
                     for inner in child.children() {
                         if inner.has_tag_name("tblHeader") {
@@ -1912,18 +1936,16 @@ impl OoxmlParser {
                     // element form, tcBorders, ...) survive a round trip.
                     let r = child.range();
                     raw_tc_pr = Some(xml[r.start..r.end].to_string());
-                    column_span = child
-                        .attribute("gridSpan")
+                    column_span = self.attr_ns(child, "gridSpan")
                         .and_then(|v| v.parse().ok())
                         .unwrap_or(1);
-                    row_span = child
-                        .attribute("vMerge")
+                    row_span = self.attr_ns(child, "vMerge")
                         .and_then(|v| v.parse().ok())
                         .unwrap_or(1);
-                    width = child.attribute("tcW").and_then(|v| v.parse().ok());
+                    width = self.attr_ns(child, "tcW").and_then(|v| v.parse().ok());
                     for inner in child.children() {
                         if inner.has_tag_name("shd") {
-                            shading = inner.attribute("fill").map(|s| s.to_string());
+                            shading = self.attr_ns(inner, "fill").map(|s| s.to_string());
                         }
                     }
                 }
@@ -1966,15 +1988,15 @@ impl OoxmlParser {
             if !node.is_element() {
                 continue;
             }
-            let style_type = node.attribute("type").unwrap_or("");
-            let style_id = node.attribute("styleId").unwrap_or("");
+            let style_type = self.attr_ns(node, "type").unwrap_or("");
+            let style_id = self.attr_ns(node, "styleId").unwrap_or("");
 
             if style_id.is_empty() {
                 continue;
             }
 
-            let name = node.attribute("name").map(|s| s.to_string());
-            let based_on = node.attribute("basedOn").map(|s| s.to_string());
+            let name = self.attr_ns(node, "name").map(|s| s.to_string());
+            let based_on = self.attr_ns(node, "basedOn").map(|s| s.to_string());
 
             match style_type {
                 "paragraph" => {
@@ -2060,22 +2082,21 @@ impl OoxmlParser {
             }
             match child.tag_name().name() {
                 "b" => {
-                    props.bold = Some(child.attribute("val") != Some("false"));
+                    props.bold = Some(self.attr_ns(child, "val") != Some("false"));
                 }
                 "i" => {
-                    props.italic = Some(child.attribute("val") != Some("false"));
+                    props.italic = Some(self.attr_ns(child, "val") != Some("false"));
                 }
                 "rFonts" => {
-                    props.font = child
-                        .attribute("ascii")
-                        .or_else(|| child.attribute("hAnsi"))
+                    props.font = self.attr_ns(child, "ascii")
+                        .or_else(|| self.attr_ns(child, "hAnsi"))
                         .map(|s| s.to_string());
                 }
                 "sz" => {
-                    props.font_size = child.attribute("val").and_then(|v| v.parse().ok());
+                    props.font_size = self.attr_ns(child, "val").and_then(|v| v.parse().ok());
                 }
                 "color" => {
-                    props.color = child.attribute("val").map(|s| s.to_string());
+                    props.color = self.attr_ns(child, "val").map(|s| s.to_string());
                 }
                 _ => {}
             }
@@ -2976,6 +2997,49 @@ mod tests {
         assert!(is_ooxml_file(&docx));
         assert!(!is_ooxml_file(b"<html>not ooxml</html>"));
         assert!(!is_ooxml_file(b""));
+    }
+
+    /// Regression: WordprocessingML attributes are namespace-qualified
+    /// (`w:type`, `w:left`, ...) and roxmltree's plain-string lookup matches
+    /// only unprefixed attributes — these reads silently defaulted until the
+    /// attr_ns helper. Both a run break (`<w:br w:type="page"/>`) and
+    /// paragraph properties (`w:ind`, `w:spacing`) must parse for real.
+    #[test]
+    fn test_parse_docx_namespaced_attributes() {
+        let mut buf = Vec::new();
+        {
+            let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+            zip.start_file("[Content_Types].xml", zip::write::SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(br#"<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>"#)
+                .unwrap();
+            zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(br#"<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>"#)
+                .unwrap();
+            zip.start_file("word/document.xml", zip::write::SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:pPr><w:ind w:left="720"/><w:spacing w:before="240"/></w:pPr><w:r><w:t>before</w:t></w:r><w:r><w:br w:type="page"/></w:r><w:r><w:t>after</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#,
+            )
+            .unwrap();
+            zip.finish().unwrap();
+        }
+        let doc = OoxmlParser::new().parse(&buf).unwrap();
+        let para = match &doc.docx_body.as_ref().unwrap().blocks[0] {
+            DocxBlock::Paragraph(p) => p,
+            _ => panic!("expected paragraph"),
+        };
+        assert_eq!(para.properties.indent_left, Some(720), "w:left must parse");
+        assert_eq!(para.properties.spacing_before, Some(240), "w:before must parse");
+        // <w:br w:type="page"/> -> form feed, not a plain line break
+        let joined: String = para.runs.iter().map(|r| r.text.as_str()).collect();
+        assert!(joined.contains('\x0C'), "page break must be \\x0C, got {joined:?}");
     }
 
     #[test]
