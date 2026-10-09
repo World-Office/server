@@ -14,7 +14,8 @@ use std::time::Instant;
 use crate::converter::{error_result, success_result, unsupported_result, ConverterRegistry};
 use crate::converters::{
     DjvuToDocxConverter, DjvuToTxtConverter, DocxToEpubConverter, DocxToHtmlConverter,
-    DocxToOdtConverter, DocxToTxtConverter, DocxToXpsConverter, EpubToDocxConverter,
+    DocxToOdtConverter, DocxToPdfConverter, DocxToTxtConverter, DocxToXpsConverter,
+    EpubToDocxConverter,
     EpubToHtmlConverter, EpubToTxtConverter, Fb2ToDocxConverter, Fb2ToTxtConverter,
     HtmlToDocxConverter, HtmlToEpubConverter, HtmlToFb2Converter, HtmlToOdtConverter,
     HtmlToRtfConverter, HtmlToTxtConverter, HwpToDocxConverter, HwpToTxtConverter,
@@ -92,6 +93,7 @@ impl ConversionRouter {
         registry.register(HwpToDocxConverter);
         registry.register(DjvuToDocxConverter);
         registry.register(DocxToXpsConverter);
+        registry.register(DocxToPdfConverter);
         registry.register(WoPresentationToPptxConverter);
         registry.register(PptxToWoPresentationConverter);
         registry.register(WoPresentationToOdpConverter);
@@ -231,6 +233,27 @@ impl ConversionRouter {
             return success_result(data.to_vec(), target, 0);
         }
 
+        // F-400: content wins over the declared label (OO parity,
+        // OfficeFileFormatChecker2.cpp:1007-1095). When the declared source is
+        // an OPC family but the container's [Content_Types].xml names a
+        // different family, fail loudly instead of silently converting the
+        // wrong model (which previously produced empty/garbage "Success").
+        if is_opc_source(source) {
+            if let Some(detected) = sniff_opc_family(data) {
+                if detected != source {
+                    let mut r = error_result(
+                        format!(
+                            "format mismatch: declared source '{}' but [Content_Types].xml is {} — send source_format '{}' instead",
+                            source, detected, detected
+                        ),
+                        0,
+                    );
+                    r.status = ConversionStatus::UnsupportedFormat;
+                    return r;
+                }
+            }
+        }
+
         // Try direct conversion first
         if self.registry.has_converter(source, target) {
             let start = Instant::now();
@@ -319,6 +342,36 @@ impl Default for ConversionRouter {
     }
 }
 
+/// Declared formats whose input should be an OPC (OOXML zip) container.
+fn is_opc_source(source: &str) -> bool {
+    matches!(source, "docx" | "xlsx" | "pptx")
+}
+
+/// Read the container's [Content_Types].xml main+xml override and map it to
+/// the family id. Returns None for non-zip data or unreadable/unknown parts
+/// (letting the normal converters produce their own parse errors).
+fn sniff_opc_family(data: &[u8]) -> Option<&'static str> {
+    use std::io::Read;
+    if !data.starts_with(b"PK\x03\x04") {
+        return None;
+    }
+    let mut zip = zip::ZipArchive::new(std::io::Cursor::new(data)).ok()?;
+    let mut xml = String::new();
+    zip.by_name("[Content_Types].xml")
+        .ok()?
+        .read_to_string(&mut xml)
+        .ok()?;
+    if xml.contains("wordprocessingml.document.main+xml") {
+        Some("docx")
+    } else if xml.contains("spreadsheetml.sheet.main+xml") {
+        Some("xlsx")
+    } else if xml.contains("presentationml.presentation.main+xml") {
+        Some("pptx")
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -370,8 +423,38 @@ mod tests {
         assert!(router.is_supported("djvu", "docx"));
         assert!(router.is_supported("docx", "xps"));
         // Pairs with no converter should be false
-        assert!(!router.is_supported("docx", "pdf"));
+        assert!(router.is_supported("docx", "pdf"), "F-403: docx->pdf is a real pair now");
         assert!(!router.is_supported("xlsx", "pdf"));
+    }
+
+    /// F-400: a pptx renamed to .docx must fail loudly naming the detected
+    /// family — never silently convert the wrong model (empty "Success").
+    #[test]
+    fn test_mislabeled_opc_container_fails_loudly() {
+        use std::io::Write;
+        let pptx_bytes = {
+            let buf = std::io::Cursor::new(Vec::new());
+            let mut zip = zip::ZipWriter::new(buf);
+            zip.start_file(
+                "[Content_Types].xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(
+                br#"<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/></Types>"#,
+            )
+            .unwrap();
+            zip.finish().unwrap().into_inner()
+        };
+        let router = ConversionRouter::new();
+        let r = router.convert("docx", "txt", &pptx_bytes);
+        assert_eq!(r.status, ConversionStatus::UnsupportedFormat);
+        let err = r.error.unwrap_or_default();
+        assert!(
+            err.contains("pptx"),
+            "error must name the detected family: {}",
+            err
+        );
     }
 
     #[test]
@@ -452,7 +535,9 @@ mod tests {
     #[test]
     fn test_convert_no_converter() {
         let router = ConversionRouter::new();
-        let result = router.convert("odt", "pdf", b"some data");
+        // odt->pdf became reachable via the docx->pdf chain; xlsb has no
+        // incoming converters at all (loud taxonomy member).
+        let result = router.convert("odt", "xlsb", b"some data");
         assert_eq!(result.status, ConversionStatus::UnsupportedFormat);
         assert!(result.error.unwrap().contains("not supported"));
     }
@@ -514,9 +599,11 @@ mod tests {
         // ODS spreadsheet format converters
         assert!(pairs.contains(&("ods", "wo-spreadsheet")));
         assert!(pairs.contains(&("wo-spreadsheet", "ods")));
+        // DOCX -> PDF (F-403)
+        assert!(pairs.contains(&("docx", "pdf")));
         assert_eq!(
             pairs.len(),
-            53,
+            54,
             "expected 53 registered converters, got {}",
             pairs.len()
         );
@@ -607,11 +694,11 @@ mod tests {
         // to find naturally. Instead, verify that a truly unreachable format
         // returns UnsupportedFormat (not an infinite loop or stack overflow).
         let router = ConversionRouter::new();
-        // "pdf" has no incoming converters at all
-        let result = router.convert("djvu", "pdf", b"test");
+        // "pdf" gained an incoming converter (docx->pdf); xlsb has none
+        let result = router.convert("djvu", "xlsb", b"test");
         assert_eq!(result.status, ConversionStatus::UnsupportedFormat);
         // Same for xlsx
-        let result = router.convert("rtf", "xlsx", b"test");
+        let result = router.convert("rtf", "xlsb", b"test");
         assert_eq!(result.status, ConversionStatus::UnsupportedFormat);
     }
 

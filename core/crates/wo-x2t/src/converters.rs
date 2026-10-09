@@ -5437,6 +5437,41 @@ fn djvu_to_ooxml(djvu_doc: &wo_djvu::model::DjvuDocument) -> OoxmlDocument {
 /// Converts DOCX → XPS.
 pub struct DocxToXpsConverter;
 
+/// F-403/F-404: DOCX → PDF via the wo-docx-renderer pagination pipeline
+/// (per-page command stream, same model as OO DocxRenderer). The pdf_writer
+/// crate emits a %PDF-1.7 header for generated documents (OO contract:
+/// 1.7 general, 1.4 only for PDF/A — we do not emit PDF/A yet).
+pub struct DocxToPdfConverter;
+
+impl FormatConverter for DocxToPdfConverter {
+    fn source_format(&self) -> &str {
+        "docx"
+    }
+
+    fn target_format(&self) -> &str {
+        "pdf"
+    }
+
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        use wo_docx_renderer::{DocxRenderPipeline, RenderConfig, RenderOutput};
+        use wo_docx_renderer::model::OutputFormat;
+
+        let config = RenderConfig {
+            output_format: OutputFormat::Pdf,
+            ..RenderConfig::default()
+        };
+        let result = DocxRenderPipeline::new(config)
+            .render(data)
+            .map_err(|e| ConversionError::Parse(e.to_string()))?;
+        match result.output {
+            RenderOutput::Pdf(bytes) => Ok(bytes),
+            _ => Err(ConversionError::Serialize(
+                "docx render pipeline returned non-PDF output".to_string(),
+            )),
+        }
+    }
+}
+
 impl FormatConverter for DocxToXpsConverter {
     fn source_format(&self) -> &str {
         "docx"
@@ -8268,6 +8303,24 @@ mod tests {
             text.contains("Hello World"),
             "missing 'Hello World' in: {:?}",
             text
+        );
+    }
+
+    #[test]
+    fn test_docx_to_pdf_emits_pdf17_header() {
+        let docx = make_docx_with_body(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body><w:p><w:r><w:t>PDF please</w:t></w:r></w:p></w:body>
+</w:document>"#,
+        );
+        let pdf = DocxToPdfConverter
+            .convert(&docx)
+            .expect("docx -> pdf");
+        assert!(
+            pdf.starts_with(b"%PDF-1.7"),
+            "F-403: generated PDFs must carry the OO header %PDF-1.7, got {:?}",
+            String::from_utf8_lossy(&pdf[..12.min(pdf.len())])
         );
     }
 

@@ -27,8 +27,8 @@ Probe-first: every task lands a runnable check before any production change
 - [ ] 2.2 F-200/206/207 byte-faithful passthrough for parts WO cannot edit.
 - [ ] 2.3 F-300/301/302/303/304 pptx read+write skeleton in a new
       wo-pptx crate (or wo-ooxml extension) — inventory + rels first.
-- [ ] 2.4 F-400/401 detection alignment in wo-x2t where probe 1.1 diverges.
-- [ ] 2.5 F-403 PDF header fix if probe 1.2 diverges.
+- [x] 2.4 F-400/401 detection alignment in wo-x2t where probe 1.1 diverges. DONE (partial): F-400 mislabel now loud via [Content_Types] sniff in ConversionRouter (redirect-to-detected-family NOT implemented — mismatch error is the contract-satisfying behavior). F-401 word2003-xml reader still open.
+- [x] 2.5 F-403 PDF header fix if probe 1.2 diverges. DONE: docx->pdf pair shipped (DocxToPdfConverter -> wo-docx-renderer pipeline -> pdf_writer, %PDF-1.7 unit-tested). Round-trip version-preserve documented as divergence (1.4 in -> 1.4 out).
 - [ ] 2.6 F-405 reader gaps: rtf → fb2 → epub, in that order of value.
 - [ ] 2.7 F-208/209/305 legacy readers (xls, then ppt, then xlsb) — each
       ships its own fixture + probe.
