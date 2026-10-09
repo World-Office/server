@@ -609,6 +609,36 @@ async fn serve_editor_assets(
 // Direct-editor-path wrappers (frontend uses vite base /word/ etc.). The
 // browser never hits /editors/{type}/; these hardcode the editor type so
 // the cache-aware handlers serve the real paths.
+
+/// Fallback for flat editor-UI files (word/editor.js, word/wo-bridge.js,…)
+/// that the explicit routes don't cover. Serves with `Cache-Control:
+/// no-cache` — ServeDir's headerless responses let browsers keep stale JS
+/// for hours after a deploy (the prod "old editor.js" incident).
+async fn serve_ui_fallback(
+    uri: axum::http::Uri,
+    State(state): State<AppState>,
+) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), axum::http::StatusCode>
+{
+    let rel = uri.path().trim_start_matches('/');
+    if rel.is_empty() || rel.split('/').any(|seg| seg == "..") {
+        return Err(axum::http::StatusCode::NOT_FOUND);
+    }
+    let file_path = std::path::Path::new(&state.config.editor_ui_dir).join(rel);
+    let data = tokio::fs::read(&file_path)
+        .await
+        .map_err(|_| axum::http::StatusCode::NOT_FOUND)?;
+
+    let mut headers = axum::http::HeaderMap::new();
+    if let Ok(v) = axum::http::HeaderValue::from_str(mime_for_filename(&file_path)) {
+        headers.insert(axum::http::header::CONTENT_TYPE, v);
+    }
+    headers.insert(
+        axum::http::header::CACHE_CONTROL,
+        axum::http::HeaderValue::from_static("no-cache"),
+    );
+    Ok((axum::http::StatusCode::OK, headers, data))
+}
+
 async fn serve_word_index(
     State(state): State<AppState>,
 ) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), axum::http::StatusCode> {
@@ -1333,6 +1363,12 @@ fn init_metrics() {
 /// Build the application router.
 pub fn create_app(config: DocServerConfig) -> Router {
     let state = AppState::new(config.clone());
+    // State-applied fallback router for the flat vendored editor files
+    // (word/editor.js, word/wo-bridge.js, …) — built before `state` is
+    // consumed by the main router's with_state below.
+    let ui_fallback = axum::Router::new()
+        .fallback(serve_ui_fallback)
+        .with_state(state.clone());
 
     // Initialize metrics
     init_metrics();
@@ -1385,11 +1421,12 @@ pub fn create_app(config: DocServerConfig) -> Router {
         .with_state(state);
 
     // Serve editor UI if the directory exists, otherwise fall back to landing page
-    if let Some(serve_dir) = static_files::editor_ui_service(&config.editor_ui_dir) {
-        // Redirect root to the word editor, then serve static files as fallback
+    if static_files::editor_ui_service(&config.editor_ui_dir).is_some() {
+        // Redirect root to the word editor; the fallback serves the flat
+        // vendored editor files (word/editor.js, …) with no-cache headers.
         app = app
             .route("/", get(|| async { Redirect::permanent("/word/") }))
-            .fallback_service(serve_dir);
+            .fallback_service(ui_fallback);
     } else {
         app = app.route("/", get(static_files::landing_page_handler));
     }
@@ -1602,5 +1639,44 @@ mod tests {
         let resp_json: ConversionResponse = serde_json::from_slice(&body_bytes).unwrap();
         assert_eq!(resp_json.status, "UnsupportedFormat");
         assert!(resp_json.error.is_some());
+    }
+
+    #[tokio::test]
+    async fn test_flat_editor_files_served_with_no_cache() {
+        // The fallback serves the vendored flat files (word/editor.js, …).
+        // Without Cache-Control the browser heuristic-caches them and keeps
+        // stale JS alive for hours after a deploy (prod incident).
+        let dir = std::env::temp_dir().join("wo-fallback-ui-test/word");
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("editor.js"), "// probe").unwrap();
+
+        let mut cfg = test_config();
+        cfg.editor_ui_dir = dir
+            .parent()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
+        let app = create_app(cfg);
+
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/word/editor.js")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(resp.status(), StatusCode::OK);
+        assert_eq!(
+            resp.headers()
+                .get(axum::http::header::CACHE_CONTROL)
+                .and_then(|v| v.to_str().ok()),
+            Some("no-cache"),
+            "flat editor files must revalidate after deploy"
+        );
+        std::fs::remove_dir_all(dir.parent().unwrap()).ok();
     }
 }
