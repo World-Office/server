@@ -6,17 +6,17 @@ Probe-first: every task lands a runnable check before any production change
 2026-10-09); recompile graph.json after parity flips.
 
 ## 1. Truth probes (no production code)
-- [ ] 1.1 Detection matrix probe (F-400/401): fixture containers — clean
+- [x] 1.1 Detection matrix probe (F-400/401): fixture containers — clean
       docx/xlsx/pptx, mislabeled extension, Word2003-XML, MHTML progid —
       assert wo-x2t decision per case; record divergences in features.yaml.
-- [ ] 1.2 PDF header probe (F-403): render docx→pdf, assert first bytes
+- [x] 1.2 PDF header probe (F-403): render docx→pdf, assert first bytes
       `%PDF-1.7` (and 1.4 for the PDF/A path if exposed).
-- [ ] 1.3 XLSX part-model probe (F-200/201/204): fixture workbook with
+- [x] 1.3 XLSX part-model probe (F-200/201/204): fixture workbook with
       charts/pivot/comments; re-save via WO; diff part inventory, sharedStrings
       dedup, empty-cell elision.
-- [ ] 1.4 PPTX probe (F-300/301/302): fixture deck; reorder slides; assert
+- [x] 1.4 PPTX probe (F-300/301/302): fixture deck; reorder slides; assert
       only sldIdLst changed; assert no property flattening on re-save.
-- [ ] 1.5 Units probe (F-500): assert 914400 EMU/in, 1440 twips/in, 96 px/in,
+- [x] 1.5 Units probe (F-500): assert 914400 EMU/in, 1440 twips/in, 96 px/in,
       12700 EMU/pt, 635 EMU/twip against WO's units code paths.
 - [ ] 1.6 Format-taxonomy audit (F-402): enumerate wo-x2t's accepted set vs
       OfficeFileFormats.h; write loud-unsupported divergences.
@@ -38,3 +38,5 @@ Probe-first: every task lands a runnable check before any production change
 - [ ] 3.1 Flip parity/fidelity rows as probes go green; keep IDs stable.
 - [ ] 3.2 Cross-link probe files in features.yaml `commands` where the
       census wires them.
+
+<!-- probe results 2026-10-09: 1.1: probed: labeled OK; mislabel = silent empty Success (divergence recorded F-400) | 1.2: probed: pdf round-trip emits %PDF-1.4 (OO: 1.7) + no docx->pdf pair (F-403) | 1.3: probed: parts/addr/elision OK; FOUND+FIXED silent shared-string corruption (F-201, wo-x2t converters.rs, regression test added) | 1.4: probed: 2 slides + sldIdLst order preserved (F-300/302); inheritance chain unprobed | 1.5: probed static: 914400/1440/635/360000 present, 12700 absent, scattered (F-500) -->

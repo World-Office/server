@@ -6679,12 +6679,12 @@ impl FormatConverter for XlsxToWoSpreadsheetConverter {
                                     XlsxCellType::E => "e",
                                     XlsxCellType::D => "d",
                                 };
-                                let v = if cell.t == XlsxCellType::S {
-                                    let idx: usize = cell.v.parse().unwrap_or(0);
-                                    wb.shared_strings.get(idx).cloned().unwrap_or_default()
-                                } else {
-                                    cell.v.clone()
-                                };
+                                // wo-ooxml's parse_xlsx_cell already resolves
+                                // t="s" indices to literal strings (parser.rs).
+                                // Re-resolving here corrupts data: "Beta".parse::<usize>()
+                                // fails -> unwrap_or(0) -> sharedStrings[0]. One
+                                // resolution authority: the parser. (F-201)
+                                let v = cell.v.clone();
                                 WoCell {
                                     r: cell.r.clone(),
                                     t: t.to_string(),
@@ -16282,6 +16282,86 @@ mod bridge_converter_tests {
         assert_eq!(b1["v"].as_str(), Some("42"));
         let b2 = find_cell(&v, "B2");
         assert_eq!(b2["f"].as_str(), Some("SUM(A1:B1)"));
+    }
+
+    /// F-201 regression: shared-string index >= 1 must resolve to its own
+    /// string. The converter used to re-resolve already-resolved values
+    /// ("Beta".parse::<usize>() -> 0 -> sharedStrings[0]) silently rewriting
+    /// every string cell to the first shared string.
+    #[test]
+    fn test_bridge_xlsx_shared_string_index_one() {
+        let two = build_two_string_xlsx();
+        let back = XlsxToWoSpreadsheetConverter
+            .convert(&two)
+            .expect("xlsx -> wo-spreadsheet");
+        let v: Value = serde_json::from_slice(&back).expect("bridge JSON out");
+        let a1 = find_cell(&v, "A1");
+        assert_eq!(a1["t"].as_str(), Some("s"));
+        assert_eq!(a1["v"].as_str(), Some("Zwei"), "idx 1 must resolve to the second shared string, not the first");
+        let b1 = find_cell(&v, "B1");
+        assert_eq!(b1["v"].as_str(), Some("Eins"), "idx 0 still resolves");
+    }
+
+    /// Same skeleton as build_minimal_xlsx but with TWO shared strings and
+    /// cells referencing idx 1 and idx 0 (in that order).
+    fn build_two_string_xlsx() -> Vec<u8> {
+        use std::io::Write;
+        const S_NS: &str = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+        let buf = std::io::Cursor::new(Vec::new());
+        let mut zip = zip::ZipWriter::new(buf);
+        let mut add = |name: &str, xml: &str| {
+            zip.start_file(name, zip::write::SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(xml.as_bytes()).unwrap();
+        };
+        add(
+            "[Content_Types].xml",
+            r#"<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+</Types>"#,
+        );
+        add(
+            "_rels/.rels",
+            r#"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>"#,
+        );
+        add(
+            "xl/workbook.xml",
+            &format!(
+                r#"<workbook xmlns="{}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="S" sheetId="1" r:id="rId1"/></sheets>
+</workbook>"#,
+                S_NS
+            ),
+        );
+        add(
+            "xl/_rels/workbook.xml.rels",
+            r#"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>"#,
+        );
+        add(
+            "xl/sharedStrings.xml",
+            &format!(
+                r#"<sst xmlns="{}" count="2" uniqueCount="2"><si><t>Eins</t></si><si><t>Zwei</t></si></sst>"#,
+                S_NS
+            ),
+        );
+        add(
+            "xl/worksheets/sheet1.xml",
+            &format!(
+                r#"<worksheet xmlns="{}">
+<sheetData>
+<row r="1"><c r="A1" t="s"><v>1</v></c><c r="B1" t="s"><v>0</v></c></row>
+</sheetData>
+</worksheet>"#,
+                S_NS
+            ),
+        );
+        zip.finish().unwrap().into_inner()
     }
 
     /// Build a minimal schema-valid XLSX (ZIP with the required OOXML parts,
