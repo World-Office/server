@@ -1187,7 +1187,7 @@ mod tests {
         let app = create_app(test_config());
         let payload = serde_json::json!({
             "source_format": "docx",
-            "target_format": "pdf",
+            "target_format": "xlsb",
             "data": BASE64.encode(b"fake docx"),
         });
 
