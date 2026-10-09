@@ -59,6 +59,10 @@ COPY --chown=worldoffice:worldoffice assets/dictionaries/ /app/assets/dictionari
 # Copy a minimal demo document for the standalone demo endpoint.
 COPY --chown=worldoffice:worldoffice assets/demo.docx /app/assets/demo.docx
 
+# Writable data dir for saved editor documents (DOCSERVER_DATA_DIR default
+# "./data" resolves to /app/data in the container workdir).
+RUN mkdir -p /app/data && chown worldoffice:worldoffice /app/data
+
 # Create data directories expected by the OpenCloud integration volumes.
 RUN mkdir -p /var/www/worldoffice/Data /var/log/worldoffice /var/lib/worldoffice && \
     chown -R worldoffice:worldoffice /var/www/worldoffice /var/log/worldoffice /var/lib/worldoffice
