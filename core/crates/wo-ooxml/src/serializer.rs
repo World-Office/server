@@ -4,6 +4,7 @@
 
 use crate::model::*;
 use std::io::{Cursor, Write as IoWrite};
+use wo_common::units;
 
 /// DOCX serializer — converts an `OoxmlDocument` into a valid DOCX ZIP.
 pub struct OoxmlSerializer;
@@ -902,7 +903,7 @@ impl OoxmlSerializer {
             conn.bounds.cx,
             conn.bounds.cy,
             prst,
-            conn.line_width.unwrap_or(6350),
+            conn.line_width.unwrap_or(units::EMU_PER_PT / 2),
         ));
         if conn.has_start_arrow {
             xml.push_str(
@@ -3305,8 +3306,8 @@ mod tests {
                         bounds: Bounds {
                             x: 0,
                             y: 0,
-                            cx: 9144000,
-                            cy: 6858000,
+                            cx: 10 * units::IN_TO_EMU,
+                            cy: 15 * units::IN_TO_EMU / 2,
                         },
                         text_body: TextBody {
                             paragraphs: vec![DocxParagraph {
@@ -3342,8 +3343,8 @@ mod tests {
                         bounds: Bounds {
                             x: 0,
                             y: 0,
-                            cx: 9144000,
-                            cy: 6858000,
+                            cx: 10 * units::IN_TO_EMU,
+                            cy: 15 * units::IN_TO_EMU / 2,
                         },
                         text_body: TextBody {
                             paragraphs: vec![DocxParagraph {

@@ -689,10 +689,9 @@ impl LayoutEngine {
         wrap: WrapMode,
         cursor_y: f32,
     ) -> (LayoutImage, f32) {
-        // Convert EMUs to points
-        // DOCX spec: English Metric Unit (EMU) = 1/360000 inch
-        // 1 inch = 72 points, so 1 point = 1/72 inch = 360000/72 = 5000 EMUs
-        // Therefore: points = emus / 5000.0
+        // Convert EMUs to points at this engine's 5000 EMU/pt scale.
+        // Deliberately NOT units::EMU_PER_PT (= 12700 EMU/pt): changing the
+        // scale alters every layout metric and its tests.
         let width_pt = img.width_emu as f32 / 5000.0;
         let height_pt = img.height_emu as f32 / 5000.0;
 
@@ -2036,24 +2035,24 @@ mod tests {
         let mut engine = LayoutEngine::new(&default_config());
         let tabs = vec![
             TabStop {
-                pos: 1440,
+                pos: wo_common::units::TWIPS_PER_IN as i32,
                 kind: TabStopKind::Left,
                 leader: None,
             },
             TabStop {
-                pos: 2880,
+                pos: 2 * wo_common::units::TWIPS_PER_IN as i32,
                 kind: TabStopKind::Center,
                 leader: None,
             },
             TabStop {
-                pos: 4320,
+                pos: 3 * wo_common::units::TWIPS_PER_IN as i32,
                 kind: TabStopKind::Right,
                 leader: None,
             },
         ];
         engine.set_tab_stops(&tabs);
         assert_eq!(engine.tab_stops.len(), 3);
-        assert_eq!(engine.tab_stops[0].pos, 1440);
+        assert_eq!(engine.tab_stops[0].pos, wo_common::units::TWIPS_PER_IN as i32);
         assert_eq!(engine.tab_stops[1].kind, TabStopKind::Center);
         assert_eq!(engine.tab_stops[2].kind, TabStopKind::Right);
     }
@@ -2061,9 +2060,9 @@ mod tests {
     #[test]
     fn tab_stop_advances_position() {
         let mut engine = LayoutEngine::new(&default_config());
-        // Set a tab stop at 2 inches (2880 twips = 144 pt)
+        // Set a tab stop at 2 inches (2 * TWIPS_PER_IN twips = 144 pt)
         let tabs = vec![TabStop {
-            pos: 2880,
+            pos: 2 * wo_common::units::TWIPS_PER_IN as i32,
             kind: TabStopKind::Left,
             leader: None,
         }];
@@ -2118,7 +2117,7 @@ mod tests {
         // Paragraph with its OWN tab stops (should override engine defaults)
         let mut props = DocxParagraphProperties::default();
         props.tab_stops.push(TabStop {
-            pos: 1440, // 1 inch = 72 pt
+            pos: wo_common::units::TWIPS_PER_IN as i32, // 1 inch = 72 pt
             kind: TabStopKind::Left,
             leader: None,
         });
@@ -2167,9 +2166,9 @@ mod tests {
     #[test]
     fn tab_stop_tab_at_start_of_line() {
         let mut engine = LayoutEngine::new(&default_config());
-        // Set tab stop at 1 inch (1440 twips)
+        // Set tab stop at 1 inch (TWIPS_PER_IN twips)
         let tabs = vec![TabStop {
-            pos: 1440,
+            pos: wo_common::units::TWIPS_PER_IN as i32,
             kind: TabStopKind::Left,
             leader: None,
         }];
@@ -2223,17 +2222,17 @@ mod tests {
         // Set tab stops at 1 inch, 2 inch, 3 inch
         let tabs = vec![
             TabStop {
-                pos: 1440,
+                pos: wo_common::units::TWIPS_PER_IN as i32,
                 kind: TabStopKind::Left,
                 leader: None,
             },
             TabStop {
-                pos: 2880,
+                pos: 2 * wo_common::units::TWIPS_PER_IN as i32,
                 kind: TabStopKind::Left,
                 leader: None,
             },
             TabStop {
-                pos: 4320,
+                pos: 3 * wo_common::units::TWIPS_PER_IN as i32,
                 kind: TabStopKind::Left,
                 leader: None,
             },
@@ -3054,7 +3053,8 @@ mod wrap_mode {
     #[test]
     fn test_layout_float_square() {
         let engine = LayoutEngine::new(&default_config());
-        let img = create_test_image("square", 360000, 240000); // 72pt x 48pt
+        // CM_TO_EMU renders as 72pt under this engine's 5000 EMU/pt scale.
+        let img = create_test_image("square", wo_common::units::CM_TO_EMU as u32, 240000);
 
         let (layout_img, advance) = engine.layout_float(&img, WrapMode::Square, 100.0);
 

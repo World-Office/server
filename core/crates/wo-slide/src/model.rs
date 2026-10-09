@@ -10,6 +10,7 @@
 //! - Full serde serialization/deserialization
 
 use serde::{Deserialize, Serialize};
+use wo_common::units;
 
 /// A complete presentation document.
 ///
@@ -577,16 +578,16 @@ impl SlideSize {
     /// Standard 4:3 slide size (10 × 7.5 inches in EMU).
     pub fn standard() -> Self {
         Self {
-            cx: 9144000,
-            cy: 6858000,
+            cx: 10 * units::IN_TO_EMU,
+            cy: 15 * units::IN_TO_EMU / 2,
         }
     }
 
     /// Widescreen 16:9 slide size (13.33 × 7.5 inches in EMU).
     pub fn widescreen() -> Self {
         Self {
-            cx: 12192000,
-            cy: 6858000,
+            cx: 40 * units::IN_TO_EMU / 3,
+            cy: 15 * units::IN_TO_EMU / 2,
         }
     }
 }
