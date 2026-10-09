@@ -87,3 +87,28 @@ forever; every contract needs a covering probe or a divergence entry).
 3. Honest starting states (this document): sheets format layer **partial**,
    slides format layer **missing**, cross-family **partial** — recorded in
    `features.yaml` so the roadmap tells the truth from day one.
+
+## Second pass (same day) — behavioral contracts + formal specs
+
+Deeper read of the implementation (not just inventories) produced:
+
+1. **Unit matrix (F-500)** — `OOXML/Base/Unit.{h,cpp}` is a complete
+   cross-family conversion authority: `Cm_To_Emu = ×360000`,
+   `Emu_To_Pt = ÷12700`, `Dx_To_Sx = ×635`, Pt=72/in, **Px=96/in**
+   (`×72×4/3`), Dx/Multi = twips = 1440/in, Sx = EMU. WO: one units module,
+   these exact constants, everywhere.
+2. **Encryption (F-501)** — `OfficeCryptReader/source/ECMACryptFile.h:33-34`
+   `DecryptOfficeFile/EncryptOfficeFile` (ECMA-376 agile + standard).
+3. **ODF write mechanism** — `OdfFile/Writer/Converter` is a single
+   Oox2Odf path with per-family contexts: `DocxConverter` (odt),
+   `XlsxConverter` → `ods_conversion_context`, `PptxConverter` →
+   `odp_conversion_context` (F-210/F-306 mechanism confirmed).
+4. **Slide→Layout binding** — `PPTXFormat/Slide.cpp:292` resolves the
+   layout through FileContainer rels; the chain is relationship-based, so
+   F-301's "no flattening" means: preserve rels, never copy inherited props.
+
+Formalized as OpenSpec change **`derive-oo-core-contracts`**
+(proposal + design grounding + three validated spec deltas:
+`sheet-format-contracts`, `slide-format-contracts`,
+`core-conversion-contracts` + probe-first tasks). Registry rows appended:
+F-500, F-501 (137 features total).
