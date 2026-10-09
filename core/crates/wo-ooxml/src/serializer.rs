@@ -2677,6 +2677,8 @@ mod tests {
                     runs: vec![DocxRun {
                         footnote_rid: None,
                         image_rid: None,
+                        image_width_emu: None,
+                        image_height_emu: None,
                         text: "Hello World".to_string(),
                         bold: false,
                         italic: false,
@@ -2808,6 +2810,8 @@ mod tests {
                         DocxRun {
                             footnote_rid: None,
                             image_rid: None,
+                            image_width_emu: None,
+                            image_height_emu: None,
                             text: "Bold".to_string(),
                             bold: true,
                             italic: false,
@@ -2829,6 +2833,8 @@ mod tests {
                         DocxRun {
                             footnote_rid: None,
                             image_rid: None,
+                            image_width_emu: None,
+                            image_height_emu: None,
                             text: "Italic".to_string(),
                             bold: false,
                             italic: true,
@@ -2850,6 +2856,8 @@ mod tests {
                         DocxRun {
                             footnote_rid: None,
                             image_rid: None,
+                            image_width_emu: None,
+                            image_height_emu: None,
                             text: "Underline".to_string(),
                             bold: false,
                             italic: false,
@@ -2913,6 +2921,8 @@ mod tests {
                         runs: vec![DocxRun {
                             footnote_rid: None,
                             image_rid: None,
+                            image_width_emu: None,
+                            image_height_emu: None,
                             text: "First".to_string(),
                             bold: false,
                             italic: false,
@@ -2944,6 +2954,8 @@ mod tests {
                         runs: vec![DocxRun {
                             footnote_rid: None,
                             image_rid: None,
+                            image_width_emu: None,
+                            image_height_emu: None,
                             text: "Second".to_string(),
                             bold: false,
                             italic: false,
@@ -2975,6 +2987,8 @@ mod tests {
                         runs: vec![DocxRun {
                             footnote_rid: None,
                             image_rid: None,
+                            image_width_emu: None,
+                            image_height_emu: None,
                             text: "Third".to_string(),
                             bold: false,
                             italic: false,
@@ -3043,6 +3057,8 @@ mod tests {
                                         runs: vec![DocxRun {
                                             footnote_rid: None,
                                             image_rid: None,
+                                            image_width_emu: None,
+                                            image_height_emu: None,
                                             text: "A1".to_string(),
                                             bold: true,
                                             italic: false,
@@ -3078,6 +3094,8 @@ mod tests {
                                         runs: vec![DocxRun {
                                             footnote_rid: None,
                                             image_rid: None,
+                                            image_width_emu: None,
+                                            image_height_emu: None,
                                             text: "B1".to_string(),
                                             bold: true,
                                             italic: false,
@@ -3119,6 +3137,8 @@ mod tests {
                                         runs: vec![DocxRun {
                                             footnote_rid: None,
                                             image_rid: None,
+                                            image_width_emu: None,
+                                            image_height_emu: None,
                                             text: "A2".to_string(),
                                             bold: false,
                                             italic: false,
@@ -3154,6 +3174,8 @@ mod tests {
                                         runs: vec![DocxRun {
                                             footnote_rid: None,
                                             image_rid: None,
+                                            image_width_emu: None,
+                                            image_height_emu: None,
                                             text: "B2".to_string(),
                                             bold: false,
                                             italic: false,
@@ -3324,6 +3346,8 @@ mod tests {
                             runs: vec![DocxRun {
                                 footnote_rid: None,
                                 image_rid: None,
+                                image_width_emu: None,
+                                image_height_emu: None,
                                 text: "Hello PPTX".to_string(),
                                 ..DocxRun::default()
                             }],
@@ -3398,6 +3422,8 @@ mod tests {
                                 runs: vec![DocxRun {
                                     footnote_rid: None,
                                     image_rid: None,
+                                    image_width_emu: None,
+                                    image_height_emu: None,
                                     text: "Slide One".to_string(),
                                     ..DocxRun::default()
                                 }],
@@ -3435,6 +3461,8 @@ mod tests {
                                 runs: vec![DocxRun {
                                     footnote_rid: None,
                                     image_rid: None,
+                                    image_width_emu: None,
+                                    image_height_emu: None,
                                     text: "Slide Two".to_string(),
                                     ..DocxRun::default()
                                 }],
@@ -3561,6 +3589,8 @@ mod tests {
                             runs: vec![DocxRun {
                                 footnote_rid: None,
                                 image_rid: None,
+                                image_width_emu: None,
+                                image_height_emu: None,
                                 text: "Title Placeholder".to_string(),
                                 ..DocxRun::default()
                             }],
@@ -3657,6 +3687,8 @@ mod tests {
                                 DocxRun {
                                     footnote_rid: None,
                                     image_rid: None,
+                                    image_width_emu: None,
+                                    image_height_emu: None,
                                     text: "Bold ".to_string(),
                                     bold: true,
                                     italic: false,
@@ -3678,6 +3710,8 @@ mod tests {
                                 DocxRun {
                                     footnote_rid: None,
                                     image_rid: None,
+                                    image_width_emu: None,
+                                    image_height_emu: None,
                                     text: "Italic".to_string(),
                                     bold: false,
                                     italic: true,
@@ -3687,6 +3721,8 @@ mod tests {
                                 DocxRun {
                                     footnote_rid: None,
                                     image_rid: None,
+                                    image_width_emu: None,
+                                    image_height_emu: None,
                                     text: "Underline ".to_string(),
                                     bold: false,
                                     italic: false,
@@ -3696,6 +3732,8 @@ mod tests {
                                 DocxRun {
                                     footnote_rid: None,
                                     image_rid: None,
+                                    image_width_emu: None,
+                                    image_height_emu: None,
                                     text: "Strikethrough".to_string(),
                                     bold: false,
                                     italic: false,
@@ -3706,12 +3744,16 @@ mod tests {
                                 DocxRun {
                                     footnote_rid: None,
                                     image_rid: None,
+                                    image_width_emu: None,
+                                    image_height_emu: None,
                                     text: "\n".to_string(),
                                     ..DocxRun::default()
                                 },
                                 DocxRun {
                                     footnote_rid: None,
                                     image_rid: None,
+                                    image_width_emu: None,
+                                    image_height_emu: None,
                                     text: "New line".to_string(),
                                     ..DocxRun::default()
                                 },
@@ -3843,6 +3885,8 @@ mod tests {
                             runs: vec![DocxRun {
                                 footnote_rid: None,
                                 image_rid: None,
+                                image_width_emu: None,
+                                image_height_emu: None,
                                 text: "Animated".to_string(),
                                 ..DocxRun::default()
                             }],
@@ -4052,6 +4096,8 @@ mod tests {
                     runs: vec![DocxRun {
                         footnote_rid: None,
                         image_rid: None,
+                        image_width_emu: None,
+                        image_height_emu: None,
                         text: "Content".to_string(),
                         bold: false,
                         italic: false,

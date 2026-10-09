@@ -762,6 +762,14 @@ pub struct DocxRun {
     /// `DocxBody::image_rels` + `DocxBody::media` into a data-URI `<img>`.
     #[serde(default)]
     pub image_rid: Option<String>,
+    /// Display extents of the inline image (`wp:extent cx/cy` on the
+    /// drawing, EMU). Converters map these to CSS pixels (÷9525 @96dpi) so
+    /// scaled images keep their size — without them every image renders at
+    /// native resolution regardless of the stored scale.
+    #[serde(default)]
+    pub image_width_emu: Option<u32>,
+    #[serde(default)]
+    pub image_height_emu: Option<u32>,
     /// `w:id` of a `<w:footnoteReference>` in this run, re-emitted by the
     /// serializer so the reference (and with `footnotes_raw` the body)
     /// survives a round trip.

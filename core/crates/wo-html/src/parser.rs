@@ -491,7 +491,15 @@ impl HtmlParser {
                     let src = attr(&ch, "src").unwrap_or_default();
                     let alt = attr(&ch, "alt");
                     let title = attr(&ch, "title");
-                    elements.push(InlineElement::Image { src, alt, title });
+                    let width = attr(&ch, "width").and_then(|w| w.parse().ok());
+                    let height = attr(&ch, "height").and_then(|h| h.parse().ok());
+                    elements.push(InlineElement::Image {
+                        src,
+                        alt,
+                        title,
+                        width,
+                        height,
+                    });
                 }
                 "span" => {
                     // page-break marker (see html_to_xml_compatible): round-
@@ -817,7 +825,12 @@ mod tests {
 
         match &doc.body.elements[1] {
             BlockElement::Paragraph { content, .. } => match &content[0] {
-                InlineElement::Image { src, alt, title } => {
+                InlineElement::Image {
+                    src,
+                    alt,
+                    title,
+                    ..
+                } => {
                     assert_eq!(src, "photo.jpg");
                     assert_eq!(alt.as_deref(), Some("A photo"));
                     assert_eq!(title.as_deref(), Some("Photo"));

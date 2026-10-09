@@ -133,6 +133,10 @@ pub enum InlineElement {
         src: String,
         alt: Option<String>,
         title: Option<String>,
+        #[serde(default)]
+        width: Option<u32>,
+        #[serde(default)]
+        height: Option<u32>,
     },
     LineBreak,
 }

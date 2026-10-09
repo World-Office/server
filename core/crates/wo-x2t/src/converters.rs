@@ -2822,15 +2822,26 @@ fn html_inlines_to_docx_runs(
     let mut runs = Vec::new();
     for inline in inlines {
         match inline {
-            InlineElement::Image { src, alt, .. } => {
+            InlineElement::Image {
+                src,
+                alt,
+                width,
+                height,
+                ..
+            } => {
                 // Embedded data-URL images become real word/media parts + a
                 // run drawing, so a save round-trip preserves the picture.
                 if let Some((bytes, ext)) = decode_data_image(src) {
                     let n = media.len() + 1;
                     let rid = format!("rIdImg{n}");
                     let name = format!("word/media/image{n}.{ext}");
-                    let (w_px, h_px) =
+                    // Explicit width/height (from a previously saved docx's
+                    // wp:extent) win over the image's native pixels so a
+                    // scaled picture stays scaled through the round trip.
+                    let (native_w, native_h) =
                         image_dimensions(&bytes).unwrap_or((480, 320));
+                    let w_px = width.unwrap_or(native_w);
+                    let h_px = height.unwrap_or(native_h);
                     let (cx, cy) = (w_px * 9525, h_px * 9525); // EMU @96dpi
                     let drawing = format!(
                         r#"<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><wp:extent cx="{cx}" cy="{cy}"/><wp:docPr id="{n}" name="Image{n}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="{n}" name="Image{n}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="{rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing>"#
@@ -3471,10 +3482,19 @@ fn docx_runs_to_html_inlines(body: &DocxBody, runs: &[DocxRun]) -> Vec<InlineEle
         // Inline image runs carry no text — emit before the empty-text skip.
         if let Some(rid) = &run.image_rid {
             if let Some(src) = docx_image_src(body, rid) {
+                // wp:extent (EMU) -> CSS px so scaled images keep their size.
+                let width = run
+                    .image_width_emu
+                    .map(|e| (e / wo_common::units::EMU_PER_PX as u32) as u32);
+                let height = run
+                    .image_height_emu
+                    .map(|e| (e / wo_common::units::EMU_PER_PX as u32) as u32);
                 result.push(InlineElement::Image {
                     src,
                     alt: None,
                     title: None,
+                    width,
+                    height,
                 });
                 continue;
             }
@@ -8040,6 +8060,32 @@ mod tests {
         assert!(html_out.contains("data:image/png;base64,"), "image lost on roundtrip");
     }
 
+    #[test]
+    fn test_image_scaled_dimensions_roundtrip() {
+        // A picture scaled via wp:extent must keep its size through the
+        // full round trip: html width/height -> docx extents -> html again.
+        let html = format!(
+            "<p><img src=\"{TINY_PNG_DATA_URL}\" width=\"72\" height=\"36\"/></p>"
+        );
+        let docx = HtmlToDocxConverter.convert(html.as_bytes()).unwrap();
+        let doc = OoxmlParser::new().parse(&docx).unwrap();
+        let body = doc.docx_body.as_ref().unwrap();
+        let para = body.blocks.iter().find_map(|b| match b {
+            DocxBlock::Paragraph(p) => p.runs.iter().find(|r| r.image_rid.is_some()).cloned(),
+            _ => None,
+        });
+        let run = para.expect("image run");
+        // 72 px * 9525 EMU/px @ 96dpi; 36 px * 9525.
+        assert_eq!(run.image_width_emu, Some(72 * 9525));
+        assert_eq!(run.image_height_emu, Some(36 * 9525));
+
+        // and back to html with the same dimensions, not native pixels.
+        let out = DocxToHtmlConverter.convert(&docx).unwrap();
+        let html_out = String::from_utf8(out).unwrap();
+        assert!(html_out.contains("width=\"72\""), "{html_out}");
+        assert!(html_out.contains("height=\"36\""), "{html_out}");
+    }
+
     use super::*;
     use base64::Engine;
     use std::io::Write;
@@ -11059,6 +11105,8 @@ mod tests {
                 src: "img.png".into(),
                 alt: Some("alt text".into()),
                 title: None,
+                width: None,
+                height: None,
             },
             InlineElement::LineBreak,
             InlineElement::Text {
@@ -11104,6 +11152,8 @@ mod tests {
                 src: "img.png".into(),
                 alt: None,
                 title: None,
+                width: None,
+                height: None,
             },
             InlineElement::Bold { content: vec![] },
         ];
@@ -11370,6 +11420,8 @@ mod tests {
                 src: "img.png".into(),
                 alt: Some("img alt".into()),
                 title: None,
+                width: None,
+                height: None,
             },
             InlineElement::Superscript {
                 content: vec![InlineElement::Text {
@@ -11424,6 +11476,8 @@ mod tests {
                 src: "img.png".into(),
                 alt: None,
                 title: None,
+                width: None,
+                height: None,
             },
         ]);
         assert!(spans.is_empty());
@@ -12387,6 +12441,8 @@ mod tests {
             src: "img.png".into(),
             alt: Some("alt text".into()),
             title: None,
+            width: None,
+            height: None,
         }]);
         assert_eq!(result.len(), 1);
         assert_eq!(result[0].text, "alt text");
@@ -12398,6 +12454,8 @@ mod tests {
             src: "img.png".into(),
             alt: None,
             title: None,
+            width: None,
+            height: None,
         }]);
         assert!(
             result.is_empty(),
@@ -12411,6 +12469,8 @@ mod tests {
             src: "img.png".into(),
             alt: Some(String::new()),
             title: None,
+            width: None,
+            height: None,
         }]);
         assert!(
             result.is_empty(),
@@ -12499,11 +12559,15 @@ mod tests {
                 src: "i.png".into(),
                 alt: Some(" img".into()),
                 title: None,
+                width: None,
+                height: None,
             },
             InlineElement::Image {
                 src: "i.png".into(),
                 alt: None,
                 title: None,
+                width: None,
+                height: None,
             },
             InlineElement::LineBreak,
             InlineElement::Text {
@@ -12552,6 +12616,8 @@ mod tests {
             src: "x.png".into(),
             alt: None,
             title: None,
+            width: None,
+            height: None,
         }]);
         assert_eq!(result, "", "image with no alt should contribute nothing");
     }
@@ -12906,11 +12972,15 @@ mod tests {
                 src: "x.png".into(),
                 alt: Some("alt".into()),
                 title: None,
+                width: None,
+                height: None,
             },
             InlineElement::Image {
                 src: "x.png".into(),
                 alt: None,
                 title: None,
+                width: None,
+                height: None,
             },
             InlineElement::LineBreak,
         ]);
@@ -12948,6 +13018,8 @@ mod tests {
                 src: "x.png".into(),
                 alt: Some(String::new()),
                 title: None,
+                width: None,
+                height: None,
             },
         ]);
         assert!(result.is_empty(), "empty elements should be skipped");
@@ -13275,11 +13347,15 @@ mod tests {
                 src: "img.png".into(),
                 alt: Some(" img".into()),
                 title: None,
+                width: None,
+                height: None,
             },
             InlineElement::Image {
                 src: "img.png".into(),
                 alt: None,
                 title: None,
+                width: None,
+                height: None,
             },
             InlineElement::LineBreak,
             InlineElement::Text {
@@ -13459,6 +13535,8 @@ mod tests {
                     src: "img.png".into(),
                     alt: Some("screenshot".into()),
                     title: None,
+                    width: None,
+                    height: None,
                 },
             ],
             id: None,
@@ -15598,6 +15676,8 @@ mod tests {
             src: "img.png".into(),
             alt: Some("alt text".into()),
             title: None,
+            width: None,
+            height: None,
         };
         assert_eq!(extract_html_text(&[img]), "alt text");
 
@@ -15622,6 +15702,8 @@ mod tests {
             src: "img.png".into(),
             alt: None,
             title: None,
+            width: None,
+            height: None,
         };
         assert_eq!(extract_html_text(&[img_no_alt]), "");
     }

@@ -974,6 +974,8 @@ impl OoxmlParser {
                     runs.push(DocxRun {
                         footnote_rid: None,
                         image_rid: None,
+                        image_width_emu: None,
+                        image_height_emu: None,
                         text: "\n".to_string(),
                         ..Default::default()
                     });
@@ -1659,6 +1661,8 @@ impl OoxmlParser {
         let mut run = DocxRun {
             footnote_rid: None,
             image_rid: None,
+            image_width_emu: None,
+            image_height_emu: None,
             text: String::new(),
             bold: false,
             italic: false,
@@ -1710,6 +1714,15 @@ impl OoxmlParser {
                     if let Some(blip) = child.descendants().find(|n| n.has_tag_name("blip")) {
                         run.image_rid =
                             blip.attribute((Self::R_NS, "embed")).map(|s| s.to_string());
+                    }
+                    // wp:extent carries the DISPLAY size of the image; without
+                    // it converters render every picture at native resolution,
+                    // ignoring the scale the document stores.
+                    if let Some(extent) = child.descendants().find(|n| n.has_tag_name("extent")) {
+                        run.image_width_emu =
+                            extent.attribute("cx").and_then(|v| v.parse().ok());
+                        run.image_height_emu =
+                            extent.attribute("cy").and_then(|v| v.parse().ok());
                     }
                 }
                 (Some(Self::W_NS), "footnoteReference") => {
@@ -3050,6 +3063,45 @@ mod tests {
         assert_eq!(doc.main_part.as_deref(), Some("word/document.xml"));
         assert_eq!(doc.core_properties.title.as_deref(), Some("Test Document"));
         assert_eq!(doc.core_properties.creator.as_deref(), Some("World Office"));
+    }
+
+    #[test]
+    fn test_parse_docx_inline_image_extents() {
+        // The display size lives in wp:extent cx/cy (EMU) inside the run
+        // drawing. Without it converters render every image at native
+        // resolution, so the parser must capture it on the run.
+        let mut buf = Vec::new();
+        {
+            let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+            zip.start_file("[Content_Types].xml", zip::write::SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(br#"<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>"#)
+                .unwrap();
+            zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(br#"<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>"#)
+                .unwrap();
+            zip.start_file("word/document.xml", zip::write::SimpleFileOptions::default())
+                .unwrap();
+            // 720×180 CSS px @96 dpi = 6858000×1714500 EMU.
+            zip.write_all(
+                br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">
+  <w:body>
+    <w:p><w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0"><wp:extent cx="6858000" cy="1714500"/><wp:docPr id="1" name="Image1"/></wp:inline></w:drawing></w:r></w:p>
+  </w:body>
+</w:document>"#,
+            )
+            .unwrap();
+            zip.finish().unwrap();
+        }
+        let doc = OoxmlParser::new().parse(&buf).unwrap();
+        let para = match &doc.docx_body.as_ref().unwrap().blocks[0] {
+            DocxBlock::Paragraph(p) => p,
+            other => panic!("expected paragraph, got {other:?}"),
+        };
+        assert_eq!(para.runs[0].image_width_emu, Some(6_858_000));
+        assert_eq!(para.runs[0].image_height_emu, Some(1_714_500));
     }
 
     #[test]

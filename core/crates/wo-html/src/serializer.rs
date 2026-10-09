@@ -321,7 +321,13 @@ impl HtmlSerializer {
                     out.push_str(&self.serialize_inline(content));
                     out.push_str("</a>");
                 }
-                InlineElement::Image { src, alt, title } => {
+                InlineElement::Image {
+                    src,
+                    alt,
+                    title,
+                    width,
+                    height,
+                } => {
                     out.push_str("<img src=\"");
                     out.push_str(&escape_attr(src));
                     out.push('"');
@@ -330,6 +336,12 @@ impl HtmlSerializer {
                     }
                     if let Some(t) = title {
                         out.push_str(&format!(" title=\"{}\"", escape_attr(t)));
+                    }
+                    if let Some(w) = width {
+                        out.push_str(&format!(" width=\"{w}\""));
+                    }
+                    if let Some(h) = height {
+                        out.push_str(&format!(" height=\"{h}\""));
                     }
                     out.push_str("/>");
                 }
@@ -494,6 +506,8 @@ mod tests {
                         src: "image?name=<test>&size=1".into(),
                         alt: Some("an \"image\"".into()),
                         title: None,
+                        width: None,
+                        height: None,
                     }],
                     id: None,
                 }],
@@ -1417,6 +1431,8 @@ mod tests {
                         src: "img.png".into(),
                         alt: None,
                         title: Some("tooltip".into()),
+                        width: None,
+                        height: None,
                     }],
                     id: None,
                 }],
@@ -1446,6 +1462,8 @@ mod tests {
                         src: "bare.png".into(),
                         alt: None,
                         title: None,
+                        width: None,
+                        height: None,
                     }],
                     id: None,
                 }],

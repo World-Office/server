@@ -20,7 +20,8 @@ pub const IN_TO_EMU: i64 = 914_400;
 
 /// EMU per point: 1 pt = 1/72 in = 12,700 EMU.
 pub const EMU_PER_PT: i64 = 12_700;
-
+/// EMU per CSS pixel: 1 in = 914,400 EMU = 96 px → 9,525 EMU/px.
+pub const EMU_PER_PX: i64 = 9_525;
 /// EMU per twip — the DXA→SX scale: 1 twip = 1/20 pt = 635 EMU.
 pub const DX_TO_SX: i64 = 635;
 
