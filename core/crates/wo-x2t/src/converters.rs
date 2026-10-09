@@ -52,8 +52,8 @@ use wo_odf::OdfSerializer;
 use wo_ooxml::model::{
     AdvanceMode, AnimationData as OoxmlAnimData, Bounds, ConnectorShape, ConnectorShapeType,
     CoreProperties, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, DocxTable,
-    DocxTableCell, DocxTableRow, Fill, HeaderFooter, OoxmlDocument, OoxmlFormat,
-    PictureShape, PptxPresentation, Slide, SlideShape, SlideSize, SlideTransition,
+    DocxTableCell, DocxTableRow, Fill, HeaderFooter, MediaPart, OoxmlDocument, OoxmlFormat,
+    PictureShape, PptxPresentation, Relationship, Slide, SlideShape, SlideSize, SlideTransition,
     TextBody as OoxmlTextBody, TextBoxShape, TransitionEffect, UnderlineType,
 };
 use wo_ooxml::{OoxmlParser, OoxmlSerializer};
@@ -2439,6 +2439,8 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
     let mut tables: Vec<DocxTable> = Vec::new();
     let mut header: Option<HeaderFooter> = None;
     let mut footer: Option<HeaderFooter> = None;
+    let mut media: Vec<MediaPart> = Vec::new();
+    let mut image_rels: Vec<Relationship> = Vec::new();
 
     // Page furniture (editor dialect): a leading <header> (parsed as
     // Div{class:"header"}) and/or trailing <footer> (Div{class:"footer"})
@@ -2461,35 +2463,20 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
     for element in flow {
         match element {
             BlockElement::Heading { level, content, .. } => {
-                let text = extract_html_text(content);
-                let font_size = 36u32 - (*level as u32 - 1) * 4;
-                let font_size = font_size.max(18);
+                // Style-based (Heading{n}): the docx -> html direction maps
+                // pStyle Heading{n} back to <h{n}>, so headings survive a
+                // save round-trip with their level intact.
+                let inlines = html_inlines_to_docx_runs(content, &mut media, &mut image_rels);
                 paragraphs.push(DocxParagraph {
-                    style_id: None,
+                    style_id: Some(format!("Heading{level}")),
                     properties: DocxParagraphProperties::default(),
                     section_properties: None,
-                    runs: vec![DocxRun {
-                        text,
-                        bold: true,
-                        italic: false,
-                        underline: None,
-                        strikethrough: false,
-                        double_strikethrough: false,
-                        font: None,
-                        font_size: Some(font_size),
-                        font_size_cs: None,
-                        color: None,
-                        highlight: None,
-                        vertical_alignment: None,
-                        small_caps: false,
-                        all_caps: false,
-                        ..Default::default()
-                    }],
+                    runs: inlines,
                     ..Default::default()
                 });
             }
             BlockElement::Paragraph { content, .. } => {
-                let runs = html_inlines_to_docx_runs(content);
+                let runs = html_inlines_to_docx_runs(content, &mut media, &mut image_rels);
                 if !runs.is_empty() {
                     paragraphs.push(DocxParagraph {
                         style_id: None,
@@ -2726,8 +2713,8 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
             raw_sect_pr: None,
             header,
             footer,
-            media: Vec::new(),
-            image_rels: Vec::new(),
+            media,
+            image_rels,
             footnotes_raw: None,
         }),
     }
@@ -2771,10 +2758,111 @@ fn elements_to_hf(element: &BlockElement) -> HeaderFooter {
 }
 
 /// Convert HTML inline elements to DOCX runs.
-fn html_inlines_to_docx_runs(inlines: &[InlineElement]) -> Vec<DocxRun> {
+/// Decode a `data:image/...;base64,` URL into (bytes, file extension).
+/// Returns None for non-base64 or non-image payloads.
+fn decode_data_image(src: &str) -> Option<(Vec<u8>, &'static str)> {
+    let rest = src.strip_prefix("data:")?;
+    let (meta, b64) = rest.split_once(',')?;
+    if !meta.to_ascii_lowercase().contains("base64") {
+        return None;
+    }
+    let mime = meta.split(';').next()?.to_ascii_lowercase();
+    let ext = match mime.as_str() {
+        "image/jpeg" => "jpeg",
+        "image/gif" => "gif",
+        "image/bmp" => "bmp",
+        "image/svg+xml" => "svg",
+        "image/png" => "png",
+        _ => return None,
+    };
+    use base64::Engine as _;
+    base64::engine::general_purpose::STANDARD
+        .decode(b64)
+        .ok()
+        .map(|bytes| (bytes, ext))
+}
+
+/// Natural (width, height) in pixels for PNG and JPEG; None otherwise.
+fn image_dimensions(bytes: &[u8]) -> Option<(u32, u32)> {
+    // PNG: 8-byte signature, IHDR at offset 16 (big-endian w/h at 16..24).
+    if bytes.len() >= 24 && bytes.starts_with(&[0x89, b'P', b'N', b'G']) {
+        let w = u32::from_be_bytes(bytes[16..20].try_into().ok()?);
+        let h = u32::from_be_bytes(bytes[20..24].try_into().ok()?);
+        return Some((w.max(1), h.max(1)));
+    }
+    // JPEG: scan markers for a SOF0..SOF15 frame header.
+    if bytes.len() > 4 && bytes[0] == 0xFF && bytes[1] == 0xD8 {
+        let mut i = 2;
+        while i + 9 <= bytes.len() {
+            if bytes[i] != 0xFF {
+                i += 1;
+                continue;
+            }
+            let marker = bytes[i + 1];
+            if (0xC0..=0xCF).contains(&marker)
+                && ![0xC4, 0xC8, 0xCC].contains(&marker)
+            {
+                let h = u16::from_be_bytes(bytes[i + 5..i + 7].try_into().ok()?) as u32;
+                let w = u16::from_be_bytes(bytes[i + 7..i + 9].try_into().ok()?) as u32;
+                return Some((w.max(1), h.max(1)));
+            }
+            let seg_len =
+                u16::from_be_bytes(bytes.get(i + 2..i + 4)?.try_into().ok()?) as usize;
+            i += 2 + seg_len;
+        }
+    }
+    None
+}
+
+fn html_inlines_to_docx_runs(
+    inlines: &[InlineElement],
+    media: &mut Vec<MediaPart>,
+    image_rels: &mut Vec<Relationship>,
+) -> Vec<DocxRun> {
     let mut runs = Vec::new();
     for inline in inlines {
         match inline {
+            InlineElement::Image { src, alt, .. } => {
+                // Embedded data-URL images become real word/media parts + a
+                // run drawing, so a save round-trip preserves the picture.
+                if let Some((bytes, ext)) = decode_data_image(src) {
+                    let n = media.len() + 1;
+                    let rid = format!("rIdImg{n}");
+                    let name = format!("word/media/image{n}.{ext}");
+                    let (w_px, h_px) =
+                        image_dimensions(&bytes).unwrap_or((480, 320));
+                    let (cx, cy) = (w_px * 9525, h_px * 9525); // EMU @96dpi
+                    let drawing = format!(
+                        r#"<w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing"><wp:extent cx="{cx}" cy="{cy}"/><wp:docPr id="{n}" name="Image{n}"/><a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="{n}" name="Image{n}"/><pic:cNvPicPr/></pic:nvPicPr><pic:blipFill><a:blip r:embed="{rid}"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill><pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{cx}" cy="{cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing>"#
+                    );
+                    media.push(MediaPart {
+                        name: name.clone(),
+                        bytes,
+                    });
+                    image_rels.push(Relationship {
+                        id: rid,
+                        rel_type:
+                            "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"
+                                .into(),
+                        target: name
+                            .trim_start_matches("word/")
+                            .to_string(),
+                        target_mode: None,
+                    });
+                    runs.push(DocxRun {
+                        drawing: Some(drawing),
+                        ..Default::default()
+                    });
+                } else if let Some(alt) = alt {
+                    // Non-data image (external URL): honest degradation to
+                    // alt text rather than a silent drop.
+                    runs.push(DocxRun {
+                        text: format!("[{}]", alt.trim()),
+                        italic: true,
+                        ..Default::default()
+                    });
+                }
+            }
             InlineElement::Text { text, .. } => {
                 if !text.is_empty() {
                     runs.push(DocxRun {
@@ -2925,29 +3013,6 @@ fn html_inlines_to_docx_runs(inlines: &[InlineElement]) -> Vec<DocxRun> {
                         all_caps: false,
                         ..Default::default()
                     });
-                }
-            }
-            InlineElement::Image { alt, .. } => {
-                if let Some(alt_text) = alt {
-                    if !alt_text.is_empty() {
-                        runs.push(DocxRun {
-                            text: alt_text.clone(),
-                            bold: false,
-                            italic: false,
-                            underline: None,
-                            strikethrough: false,
-                            double_strikethrough: false,
-                            font: None,
-                            font_size: None,
-                            font_size_cs: None,
-                            color: None,
-                            highlight: None,
-                            vertical_alignment: None,
-                            small_caps: false,
-                            all_caps: false,
-                            ..Default::default()
-                        });
-                    }
                 }
             }
             InlineElement::LineBreak => {
@@ -7951,6 +8016,30 @@ fn wo_connector_to_visio(c: &WoVisioConnector) -> VisioConnector {
 
 #[cfg(test)]
 mod tests {
+    // 1x1 red PNG as a data URL — the exact shape the editor sends on save.
+    const TINY_PNG_DATA_URL: &str = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
+
+    #[test]
+    fn test_html_to_docx_embeds_data_url_image() {
+        let html = format!(
+            "<h1>Titel</h1><p>Text mit Bild:</p><p><img src=\"{TINY_PNG_DATA_URL}\" alt=\"Banner\"/></p>"
+        );
+        let docx = HtmlToDocxConverter.convert(html.as_bytes()).unwrap();
+        let doc = OoxmlParser::new().parse(&docx).unwrap();
+        let body = doc.docx_body.as_ref().unwrap();
+        assert_eq!(body.media.len(), 1, "media part missing");
+        assert_eq!(body.media[0].name, "word/media/image1.png");
+        assert!(!body.media[0].bytes.is_empty());
+        let has_img_run = body.blocks.iter().any(|b| matches!(b, DocxBlock::Paragraph(p)
+            if p.runs.iter().any(|r| r.image_rid.is_some())));
+        assert!(has_img_run, "no image run in docx");
+
+        // and the docx converts back to html with the image inline
+        let out = DocxToHtmlConverter.convert(&docx).unwrap();
+        let html_out = String::from_utf8(out).unwrap();
+        assert!(html_out.contains("data:image/png;base64,"), "image lost on roundtrip");
+    }
+
     use super::*;
     use base64::Engine;
     use std::io::Write;
@@ -9177,7 +9266,10 @@ mod tests {
         let mut content = String::new();
         std::io::Read::read_to_string(&mut doc_file, &mut content).unwrap();
         assert!(content.contains("Title"), "missing 'Title'");
-        assert!(content.contains("<w:b/>"), "heading should be bold");
+        assert!(
+            content.contains("<w:pStyle w:val=\"Heading1\"/>"),
+            "heading must carry the Heading1 style"
+        );
     }
 
     #[test]
@@ -10696,10 +10788,9 @@ mod tests {
         let body = ooxml.docx_body.as_ref().unwrap();
         assert_eq!(body.paragraphs().len(), 3);
         assert_eq!(body.paragraphs()[0].runs[0].text, "H1 Title");
-        assert!(body.paragraphs()[0].runs[0].bold);
-        assert_eq!(body.paragraphs()[0].runs[0].font_size, Some(36));
-        assert_eq!(body.paragraphs()[1].runs[0].font_size, Some(32));
-        assert_eq!(body.paragraphs()[2].runs[0].font_size, Some(18));
+        assert_eq!(body.paragraphs()[0].style_id.as_deref(), Some("Heading1"));
+        assert_eq!(body.paragraphs()[1].style_id.as_deref(), Some("Heading2"));
+        assert_eq!(body.paragraphs()[2].style_id.as_deref(), Some("Heading6"));
     }
 
     #[test]
@@ -10975,7 +11066,7 @@ mod tests {
                 style: None,
             },
         ];
-        let runs = html_inlines_to_docx_runs(&inlines);
+        let runs = html_inlines_to_docx_runs(&inlines, &mut Vec::new(), &mut Vec::new());
         assert_eq!(runs.len(), 11);
         assert!(!runs[0].bold);
         assert_eq!(runs[0].text, "plain ");
@@ -10998,7 +11089,7 @@ mod tests {
         assert_eq!(runs[7].font, Some("Courier New".to_string()));
         assert!(runs[8].text.contains("link"));
         assert!(runs[8].text.contains("https://example.com"));
-        assert_eq!(runs[9].text, "alt text\n");
+        assert_eq!(runs[9].text, "[alt text]\n");
         assert!(runs[10].text.contains("end"));
     }
 
@@ -11016,7 +11107,7 @@ mod tests {
             },
             InlineElement::Bold { content: vec![] },
         ];
-        let runs = html_inlines_to_docx_runs(&inlines);
+        let runs = html_inlines_to_docx_runs(&inlines, &mut Vec::new(), &mut Vec::new());
         assert!(runs.is_empty());
     }
 
@@ -11033,7 +11124,7 @@ mod tests {
                 style: None,
             },
         ];
-        let runs = html_inlines_to_docx_runs(&inlines);
+        let runs = html_inlines_to_docx_runs(&inlines, &mut Vec::new(), &mut Vec::new());
         assert_eq!(runs.len(), 2);
         assert_eq!(runs[0].text, "line1\n");
     }
@@ -15673,7 +15764,7 @@ mod tests {
 
     #[test]
     fn test_html_inlines_to_docx_runs_empty() {
-        let runs = html_inlines_to_docx_runs(&[]);
+        let runs = html_inlines_to_docx_runs(&[], &mut Vec::new(), &mut Vec::new());
         assert!(runs.is_empty());
     }
 
@@ -15682,7 +15773,7 @@ mod tests {
         let runs = html_inlines_to_docx_runs(&[InlineElement::Text {
             text: "Hello".into(),
             style: None,
-        }]);
+        }], &mut Vec::new(), &mut Vec::new());
         assert_eq!(runs.len(), 1);
         assert_eq!(runs[0].text, "Hello");
         assert!(!runs[0].bold);
@@ -15695,7 +15786,7 @@ mod tests {
                 text: "bold".into(),
                 style: None,
             }],
-        }]);
+        }], &mut Vec::new(), &mut Vec::new());
         assert_eq!(runs.len(), 1);
         assert_eq!(runs[0].text, "bold");
         assert!(runs[0].bold);
@@ -15708,7 +15799,7 @@ mod tests {
                 text: "em".into(),
                 style: None,
             }],
-        }]);
+        }], &mut Vec::new(), &mut Vec::new());
         assert_eq!(runs.len(), 1);
         assert_eq!(runs[0].text, "em");
         assert!(runs[0].italic);
@@ -15733,7 +15824,7 @@ mod tests {
                     style: None,
                 }],
             },
-        ]);
+        ], &mut Vec::new(), &mut Vec::new());
         assert_eq!(runs.len(), 3);
         assert_eq!(runs[0].text, "A ");
         assert!(!runs[0].bold);
@@ -15751,7 +15842,7 @@ mod tests {
         let runs = html_inlines_to_docx_runs(&[InlineElement::Text {
             text: "".into(),
             style: None,
-        }]);
+        }], &mut Vec::new(), &mut Vec::new());
         assert!(runs.is_empty());
     }
 
@@ -15762,7 +15853,7 @@ mod tests {
                 text: "".into(),
                 style: None,
             }],
-        }]);
+        }], &mut Vec::new(), &mut Vec::new());
         assert!(runs.is_empty());
     }
 

@@ -147,6 +147,37 @@ impl HtmlParser {
 
         out = Self::escape_ampersands(&out);
 
+        // XML 1.0 forbids most control characters. The form feed is our
+        // page-break marker (docx -> html emits it raw), so re-encode it as a
+        // marker span that parse_inline_elements turns back into a \u{c} text
+        // run — pure-break paragraphs and mid-text breaks keep their docx
+        // semantics across a save round-trip. Other forbidden controls are
+        // stripped outright.
+        out = out
+            .replace('\u{c}', "<span class=\"wo-pagebreak\"></span>")
+            .replace(
+                ['\u{0}', '\u{1}', '\u{2}', '\u{3}', '\u{4}', '\u{5}', '\u{6}', '\u{7}', '\u{8}', '\u{b}', '\u{e}', '\u{f}', '\u{10}', '\u{11}', '\u{12}', '\u{13}', '\u{14}', '\u{15}', '\u{16}', '\u{17}', '\u{18}', '\u{19}', '\u{1a}', '\u{1b}', '\u{1c}', '\u{1d}', '\u{1e}', '\u{1f}'],
+                "",
+            );
+
+        // XML requires exactly one root element, but the editor sends body
+        // fragments (flatHtml() innerHTML). Wrap anything that does not open
+        // with an <html> root (skipping an optional <?xml?> declaration) so
+        // multi-block fragments parse as documents.
+        let probe = out.trim_start();
+        let probe = probe
+            .strip_prefix("<?xml")
+            .and_then(|rest| rest.find("?>").map(|i| &rest[i + 2..]))
+            .unwrap_or(probe);
+        if !probe
+            .trim_start()
+            .as_bytes()
+            .to_ascii_lowercase()
+            .starts_with(b"<html")
+        {
+            out = format!("<html><body>{}</body></html>", out);
+        }
+
         out
     }
 
@@ -463,6 +494,15 @@ impl HtmlParser {
                     elements.push(InlineElement::Image { src, alt, title });
                 }
                 "span" => {
+                    // page-break marker (see html_to_xml_compatible): round-
+                    // trips the \u{c} run the docx -> html emitter produced.
+                    if attr(&ch, "class").as_deref() == Some("wo-pagebreak") {
+                        elements.push(InlineElement::Text {
+                            text: "\u{c}".to_string(),
+                            style: None,
+                        });
+                        continue;
+                    }
                     let text = direct_text(&ch);
                     let style = attr(&ch, "style");
                     if !text.is_empty() {
@@ -625,6 +665,62 @@ impl Default for HtmlParser {
 mod tests {
     use super::*;
     use crate::is_html_file;
+
+    #[test]
+    #[test]
+    fn test_parse_pagebreak_marker_roundtrip() {
+        // docx -> html emits \u{c} as the page-break marker; html -> xml
+        // cleaning re-encodes it as a marker span; parsing must restore the
+        // \u{c} text run so the pure-break paragraph rule applies again.
+        let parser = HtmlParser::new();
+        let payload = "<p>vorher</p><p>\u{c}</p><p>foo\u{c}bar</p>";
+        let doc = parser.parse(payload.as_bytes()).unwrap();
+        assert_eq!(doc.body.elements.len(), 3);
+        let pure = match &doc.body.elements[1] {
+            BlockElement::Paragraph { content, .. } => match &content[0] {
+                InlineElement::Text { text, .. } => text.as_str(),
+                other => panic!("expected text, got {other:?}"),
+            },
+            other => panic!("expected paragraph, got {other:?}"),
+        };
+        assert_eq!(pure, "\u{c}");
+        match &doc.body.elements[2] {
+            BlockElement::Paragraph { content, .. } => {
+                let joined: String = content
+                    .iter()
+                    .map(|i| match i {
+                        InlineElement::Text { text, .. } => text.as_str().to_string(),
+                        _ => String::new(),
+                    })
+                    .collect();
+                assert_eq!(joined, "foo\u{c}bar");
+            }
+            other => panic!("expected paragraph, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn test_parse_fragment_without_root() {
+        // The editor saves body fragments (flatHtml()): heading + paragraph
+        // with no <html> root. Must parse to the same blocks as a document.
+        let parser = HtmlParser::new();
+        let doc = parser
+            .parse(b"<h1>Titel</h1><p>Absatz.</p><table><tr><td>1</td></tr></table>")
+            .unwrap();
+        assert_eq!(doc.body.elements.len(), 3, "got: {:?}", doc.body.elements);
+        assert!(matches!(
+            &doc.body.elements[0],
+            BlockElement::Heading { level: 1, .. }
+        ));
+        assert!(matches!(
+            &doc.body.elements[1],
+            BlockElement::Paragraph { .. }
+        ));
+        assert!(matches!(
+            &doc.body.elements[2],
+            BlockElement::Table { .. }
+        ));
+    }
 
     #[test]
     fn test_parse_simple_html() {

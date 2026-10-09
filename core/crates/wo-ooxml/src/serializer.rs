@@ -82,6 +82,15 @@ impl OoxmlSerializer {
             }
         }
 
+        // 4d. embedded media parts (names are already zip paths, e.g.
+        // "word/media/image1.png") so run drawings resolve their r:embed.
+        if let Some(ref body) = doc.docx_body {
+            for part in &body.media {
+                zip.start_file(&part.name, options)?;
+                zip.write_all(&part.bytes)?;
+            }
+        }
+
         // 5. word/styles.xml
         let styles = self.build_styles_xml();
         zip.start_file("word/styles.xml", options)?;
@@ -1002,6 +1011,28 @@ impl OoxmlSerializer {
             if body.footnotes_raw.is_some() {
                 extra.push_str("\n  <Override PartName=\"/word/footnotes.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml\"/>");
             }
+            let mut exts: Vec<&str> = body
+                .media
+                .iter()
+                .filter_map(|m| m.name.rsplit('.').next())
+                .filter(|e| e.len() <= 5 && e.len() > 1)
+                .collect();
+            exts.sort_unstable();
+            exts.dedup();
+            for e in exts {
+                let mime = match e.to_ascii_lowercase().as_str() {
+                    "jpg" | "jpeg" => "image/jpeg",
+                    "gif" => "image/gif",
+                    "bmp" => "image/bmp",
+                    "svg" => "image/svg+xml",
+                    "png" => "image/png",
+                    _ => continue, // unknown media type: leave it out rather than mislabel
+                };
+                extra.push_str(&format!(
+                    "\n  <Default Extension=\"{}\" ContentType=\"{}\"/>",
+                    e, mime
+                ));
+            }
         }
         format!(
             r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -1040,6 +1071,12 @@ impl OoxmlSerializer {
                 extra.push_str(
                     "\n  <Relationship Id=\"rIdFtn\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes\" Target=\"footnotes.xml\"/>",
                 );
+            }
+            for rel in &body.image_rels {
+                extra.push_str(&format!(
+                    "\n  <Relationship Id=\"{}\" Type=\"{}\" Target=\"{}\"/>",
+                    rel.id, rel.rel_type, rel.target
+                ));
             }
         }
         format!(
@@ -1408,9 +1445,19 @@ impl OoxmlSerializer {
         }
 
         if !run.text.is_empty() {
-            xml.push_str("<w:t xml:space=\"preserve\">");
-            xml.push_str(&escape_xml(&run.text));
-            xml.push_str("</w:t>");
+            // \u{c} is the in-model page-break marker; XML forbids the raw
+            // control char, so re-emit it as the canonical <w:br w:type="page"/>
+            // the parser maps back to \u{c} (mid-text breaks split the run).
+            for (i, seg) in run.text.split('\u{c}').enumerate() {
+                if i > 0 {
+                    xml.push_str("<w:br w:type=\"page\"/>");
+                }
+                if !seg.is_empty() {
+                    xml.push_str("<w:t xml:space=\"preserve\">");
+                    xml.push_str(&escape_xml(seg));
+                    xml.push_str("</w:t>");
+                }
+            }
         }
 
         xml.push_str("</w:r>");
@@ -2670,6 +2717,40 @@ mod tests {
         let mut contents = String::new();
         std::io::Read::read_to_string(&mut file, &mut contents).unwrap();
         contents
+    }
+
+    #[test]
+    fn test_serialize_pagebreak_run_roundtrip() {
+        // A \u{c} run (page-break marker from html -> docx) must serialize as
+        // the canonical <w:br w:type="page"/> — raw control chars are invalid
+        // XML — and parse back to a \u{c} run.
+        let mut doc = make_minimal_doc();
+        if let Some(body) = doc.docx_body.as_mut() {
+            body.blocks.insert(
+                0,
+                DocxBlock::Paragraph(DocxParagraph {
+                    runs: vec![DocxRun {
+                        text: "\u{c}".to_string(),
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                }),
+            );
+        }
+        let bytes = OoxmlSerializer::new().serialize(&doc).unwrap();
+        let doc_xml = read_zip_entry(&bytes, "word/document.xml");
+        assert!(doc_xml.contains("<w:br w:type=\"page\"/>"), "{doc_xml}");
+        assert!(!doc_xml.contains('\u{c}'), "raw control char in XML");
+        let parsed = crate::OoxmlParser::new().parse(&bytes).unwrap();
+        let para = match &parsed.docx_body.as_ref().unwrap().blocks[0] {
+            DocxBlock::Paragraph(p) => p,
+            other => panic!("expected paragraph, got {other:?}"),
+        };
+        assert_eq!(extract_run_text_joined(&para.runs), "\u{c}");
+    }
+
+    fn extract_run_text_joined(runs: &[DocxRun]) -> String {
+        runs.iter().map(|r| r.text.as_str()).collect()
     }
 
     #[test]

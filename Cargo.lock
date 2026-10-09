@@ -5548,6 +5548,7 @@ dependencies = [
  "thiserror 2.0.18",
  "wo-common",
  "wo-djvu",
+ "wo-docx-renderer",
  "wo-epub",
  "wo-fb2",
  "wo-html",
