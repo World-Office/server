@@ -5,7 +5,8 @@
 //! TXT→DOCX, HTML→DOCX, TXT→ODT, HTML→ODT,
 //! XPS→TXT, XPS→HTML, XPS→DOCX, OFD→TXT, OFD→HTML, OFD→DOCX,
 //! DJVU→TXT, DJVU→DOCX, HWP→DOCX, DOCX→XPS,
-//! TXT→EPUB, HTML→EPUB, DOCX→EPUB, TXT→FB2, HTML→FB2.
+//! TXT→EPUB, HTML→EPUB, DOCX→EPUB, TXT→FB2, HTML→FB2,
+//! Word 2003 flat XML (WordML) → DOCX.
 //!
 //! Each converter implements the `FormatConverter` trait, going directly
 //! from source native type to target native type (no intermediate document).
@@ -745,6 +746,259 @@ impl FormatConverter for HtmlToDocxConverter {
         OoxmlSerializer::new()
             .serialize(&ooxml_doc)
             .map_err(|e| ConversionError::Serialize(e.to_string()))
+    }
+}
+
+/// Converts Word 2003 flat XML (WordML) → DOCX.
+///
+/// The input must be flat Word 2003 XML whose root is `w:wordDocument`
+/// (local-name based, independent of the exact wordml namespace URL).
+/// Non-Word XML is rejected loudly with a parse error naming the root that
+/// was found — never silently converted into an empty DOCX.
+pub struct Word2003XmlToDocxConverter;
+
+impl FormatConverter for Word2003XmlToDocxConverter {
+    fn source_format(&self) -> &str {
+        "xml"
+    }
+
+    fn target_format(&self) -> &str {
+        "docx"
+    }
+
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        let xml = std::str::from_utf8(data).map_err(|_| {
+            ConversionError::Parse("not Word 2003 XML: input is not valid UTF-8".to_string())
+        })?;
+
+        let root = next_xml_tag(xml, 0).ok_or_else(|| {
+            ConversionError::Parse("not Word 2003 XML: no root element found".to_string())
+        })?;
+        if root.local_name != "wordDocument" {
+            return Err(ConversionError::Parse(format!(
+                "not Word 2003 XML: root is {}",
+                root.raw_name
+            )));
+        }
+
+        let ooxml_doc = word2003_xml_to_ooxml(extract_wordml_paragraphs(xml, &root));
+
+        OoxmlSerializer::new()
+            .serialize(&ooxml_doc)
+            .map_err(|e| ConversionError::Serialize(e.to_string()))
+    }
+}
+
+// ── Word 2003 flat XML (WordML) extraction ──────────────────────────
+
+/// A located XML tag: `<name ...>`, `</name>`, or `<name ... />`.
+struct XmlTag<'a> {
+    raw_name: &'a str,
+    local_name: &'a str,
+    start: usize,
+    end: usize,
+    is_close: bool,
+    is_self_closing: bool,
+}
+
+fn split_xml_local_name(raw: &str) -> &str {
+    match raw.split_once(':') {
+        Some((_, local)) => local,
+        None => raw,
+    }
+}
+
+/// Finds the next element tag at or after `from`, skipping XML declarations
+/// (`<?...?>`), comments (`<!--...-->`), and doctypes (`<!...>`). Only ASCII
+/// structural bytes are inspected, so multi-byte UTF-8 text content is safe.
+fn next_xml_tag(s: &str, from: usize) -> Option<XmlTag<'_>> {
+    let bytes = s.as_bytes();
+    let mut i = from;
+    while i < bytes.len() {
+        if bytes[i] != b'<' {
+            i += 1;
+            continue;
+        }
+        if s[i..].starts_with("<!--") {
+            let offset = s[i + 4..].find("-->")?;
+            i += offset + 7;
+            continue;
+        }
+        if s[i..].starts_with("<?") || s[i..].starts_with("<!") {
+            let offset = s[i..].find('>')?;
+            i += offset + 1;
+            continue;
+        }
+        let mut j = i + 1;
+        let is_close = bytes.get(j) == Some(&b'/');
+        if is_close {
+            j += 1;
+        }
+        let name_start = j;
+        while j < bytes.len() && !matches!(bytes[j], b' ' | b'\t' | b'\r' | b'\n' | b'>' | b'/') {
+            j += 1;
+        }
+        if j == name_start {
+            i += 1;
+            continue;
+        }
+        let raw_name = &s[name_start..j];
+        let tag_end = j + s[j..].find('>')?;
+        return Some(XmlTag {
+            raw_name,
+            local_name: split_xml_local_name(raw_name),
+            start: i,
+            end: tag_end + 1,
+            is_close,
+            is_self_closing: s[..=tag_end].ends_with("/>"),
+        });
+    }
+    None
+}
+
+/// Finds the byte offset of the `<` of the close tag for `raw_name`, scanning
+/// from `from`.
+fn find_close_tag(s: &str, from: usize, raw_name: &str) -> Option<usize> {
+    let mut pos = from;
+    while let Some(tag) = next_xml_tag(s, pos) {
+        if tag.is_close && tag.raw_name == raw_name {
+            return Some(tag.start);
+        }
+        pos = tag.end;
+    }
+    None
+}
+
+/// Extracts the text of every `w:p` paragraph inside the `w:body` element, in
+/// document order. Paragraph text is the concatenation of all `w:t` descendant
+/// runs; matching is local-name based so wordml namespace URL variants and
+/// prefix spellings do not matter.
+fn extract_wordml_paragraphs(xml: &str, root: &XmlTag<'_>) -> Vec<String> {
+    let mut pos = root.end;
+    let body_open = loop {
+        match next_xml_tag(xml, pos) {
+            None => return Vec::new(),
+            Some(tag) => {
+                if !tag.is_close && tag.local_name == "body" {
+                    break tag;
+                }
+                pos = tag.end;
+            }
+        }
+    };
+    if body_open.is_self_closing {
+        return Vec::new();
+    }
+
+    let body_end = find_close_tag(xml, body_open.end, body_open.raw_name).unwrap_or(xml.len());
+
+    let mut paragraphs = Vec::new();
+    let mut pos = body_open.end;
+    while pos < body_end {
+        let Some(tag) = next_xml_tag(xml, pos) else {
+            break;
+        };
+        if tag.start >= body_end {
+            break;
+        }
+        if tag.is_close || tag.local_name != "p" {
+            pos = tag.end;
+            continue;
+        }
+        if tag.is_self_closing {
+            paragraphs.push(String::new());
+            pos = tag.end;
+            continue;
+        }
+        let inner_end = find_close_tag(xml, tag.end, tag.raw_name).unwrap_or(body_end);
+        paragraphs.push(extract_wordml_text(xml, tag.end, inner_end));
+        pos = inner_end;
+    }
+    paragraphs
+}
+
+/// Concatenates the text of all `w:t` elements within `[from, to)`, resolving
+/// the predefined XML entity references.
+fn extract_wordml_text(s: &str, from: usize, to: usize) -> String {
+    let mut text = String::new();
+    let mut pos = from;
+    while pos < to {
+        let Some(tag) = next_xml_tag(s, pos) else {
+            break;
+        };
+        if tag.start >= to {
+            break;
+        }
+        pos = tag.end;
+        if tag.is_close || tag.is_self_closing || tag.local_name != "t" {
+            continue;
+        }
+        let close = find_close_tag(s, tag.end, tag.raw_name).unwrap_or(to);
+        text.push_str(&xml_unescape(&s[tag.end..close]));
+        pos = close;
+    }
+    text
+}
+
+fn xml_unescape(s: &str) -> String {
+    if !s.contains('&') {
+        return s.to_string();
+    }
+    let mut out = String::with_capacity(s.len());
+    let mut rest = s;
+    while let Some(idx) = rest.find('&') {
+        out.push_str(&rest[..idx]);
+        let tail = &rest[idx + 1..];
+        let semi = tail.find(';');
+        let decoded = semi.and_then(|pos| match &tail[..pos] {
+            "lt" => Some('<'),
+            "gt" => Some('>'),
+            "amp" => Some('&'),
+            "quot" => Some('"'),
+            "apos" => Some('\''),
+            _ => None,
+        });
+        match (semi, decoded) {
+            (Some(pos), Some(ch)) => {
+                out.push(ch);
+                rest = &tail[pos + 1..];
+            }
+            _ => {
+                out.push('&');
+                rest = tail;
+            }
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
+/// Builds an OOXML DOCX document from WordML paragraph texts, going through
+/// the same `OoxmlSerializer` emission path as `txt_to_ooxml` (one plain DOCX
+/// paragraph per source paragraph, no style/format mapping).
+fn word2003_xml_to_ooxml(paragraphs: Vec<String>) -> OoxmlDocument {
+    let docx_paragraphs: Vec<DocxParagraph> = paragraphs
+        .into_iter()
+        .map(|text| DocxParagraph {
+            runs: vec![DocxRun {
+                text,
+                ..Default::default()
+            }],
+            ..Default::default()
+        })
+        .collect();
+
+    OoxmlDocument {
+        format: OoxmlFormat::Docx,
+        version: "1.0".to_string(),
+        content_types: vec![],
+        main_part: Some("word/document.xml".to_string()),
+        shared_strings: vec![],
+        part_count: 1,
+        core_properties: CoreProperties::default(),
+        relationships: vec![],
+        docx_body: Some(DocxBody::from_parts(docx_paragraphs, vec![])),
+        xlsx_workbook: None,
     }
 }
 
@@ -8833,6 +9087,63 @@ mod tests {
         assert!(content.contains("Line 1"), "missing 'Line 1'");
         assert!(content.contains("Line 2"), "missing 'Line 2'");
         assert!(content.contains("Line 3"), "missing 'Line 3'");
+    }
+
+    // ── Word2003XmlToDocx ─────────────────────────────────────────────
+
+    #[test]
+    fn test_word2003_xml_to_docx_basic() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?mso-application progid="Word.Document"?>
+<w:wordDocument xmlns:w="http://schemas.microsoft.com/office/word/2003/wordml">
+  <w:body>
+    <w:p><w:r><w:t>First flat XML paragraph</w:t></w:r></w:p>
+    <w:p><w:r><w:t>Second &amp; final paragraph</w:t></w:r></w:p>
+  </w:body>
+</w:wordDocument>"#;
+        let converter = Word2003XmlToDocxConverter;
+        let result = converter.convert(xml.as_bytes()).unwrap();
+        assert!(result.len() > 4);
+        assert_eq!(result[0], 0x50);
+        assert_eq!(result[1], 0x4B);
+
+        let cursor = std::io::Cursor::new(&result);
+        let mut archive = zip::ZipArchive::new(cursor).unwrap();
+        let mut doc_file = archive.by_name("word/document.xml").unwrap();
+        let mut content = String::new();
+        std::io::Read::read_to_string(&mut doc_file, &mut content).unwrap();
+        assert!(
+            content.contains("First flat XML paragraph"),
+            "missing 'First flat XML paragraph'"
+        );
+        assert!(
+            content.contains("Second &amp; final paragraph"),
+            "missing 'Second & final paragraph' (expected re-escaped once in output XML)"
+        );
+        assert!(
+            !content.contains("&amp;amp;"),
+            "double-escaped entity — w:t text was not unescaped before serialization"
+        );
+    }
+
+    #[test]
+    fn test_word2003_xml_rejects_non_word() {
+        let xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<?mso-application progid="Excel.Sheet"?>
+<ss:Workbook xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+  <ss:Worksheet ss:Name="Sheet1"><ss:Table><ss:Row><ss:Cell><ss:Data>1</ss:Data></ss:Cell></ss:Row></ss:Table></ss:Worksheet>
+</ss:Workbook>"#;
+        let converter = Word2003XmlToDocxConverter;
+        let err = converter.convert(xml.as_bytes()).unwrap_err();
+        let message = err.to_string();
+        assert!(
+            message.contains("not Word 2003 XML"),
+            "expected loud 'not Word 2003 XML' error, got: {message}"
+        );
+        assert!(
+            message.contains("Workbook"),
+            "error should name the found root, got: {message}"
+        );
     }
 
     // ── HtmlToDocx ────────────────────────────────────────────────────
