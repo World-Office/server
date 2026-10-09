@@ -1,0 +1,24 @@
+{
+ "tasks": [
+  {
+   "id": "OO-F401-WORD2003XML",
+   "title": "F-401: Word 2003 flat-XML reader (xml -> docx) in wo-x2t, loud on non-Word XML",
+   "scope": ["core/crates/wo-x2t/src/converters.rs", "core/crates/wo-x2t/src/router.rs"],
+   "accept": "export PATH=\"/home/weiss/.cargo/bin:$PATH\" && cargo test -p wo-x2t --lib word2003 2>&1 | tee /tmp/oo-f401.log | grep -q 'test result: ok' && grep -q 'test_word2003_xml_to_docx_basic' /tmp/oo-f401.log && grep -q 'test_word2003_xml_rejects_non_word' /tmp/oo-f401.log && cargo clippy -p wo-x2t --lib -- -D warnings 2>&1 | tail -1 | grep -q Finished",
+   "accept_timeout_s": 1800,
+   "acceptance_prose": "Contract F-401 (OO core: OfficeFileFormatChecker2.cpp:1673-1701 sniffs the mso-application progid PI and the wordml namespace family). Add a Word2003XmlToDocxConverter to core/crates/wo-x2t/src/converters.rs: source_format \"xml\", target_format \"docx\". Input shape: flat Word 2003 XML = processing instruction <?mso-application progid=\"Word.Document\"?> and root w:wordDocument (wordml namespace, e.g. http://schemas.microsoft.com/office/word/for/word/2003/2/w or the 9/2002/wordml variant); body is w:body with w:p paragraphs containing w:r runs with w:t text. Extraction: local-name based (ignore namespace URL variants), paragraphs joined with newline. Reuse the docx zip emission already used by TxtToDocxConverter in this file (do not write a second zip builder). Register the converter in router.rs (registry.register + import; note pairs.len() assertion in test_registry_has_all_converters must be bumped to 55). Loud gate: if the root is not wordDocument (local-name match) return ConversionError::Parse naming what was found (e.g. 'not Word 2003 XML: root is ss:Workbook'); do NOT silently emit an empty docx. Tests (name them exactly): test_word2003_xml_to_docx_basic (fixture with progid PI + w:wordDocument + two paragraphs -> convert -> unzip result -> word/document.xml contains both paragraph texts), test_word2003_xml_rejects_non_word (SpreadsheetML ss:Workbook root -> Err with 'not Word 2003 XML' in message). Follow existing test fixture helpers in the file (make_docx_with_body pattern / zip::ZipWriter). Keep it minimal: text paragraphs only, no styling/format mapping.",
+   "project": "world-office",
+   "priority": "high"
+  },
+  {
+   "id": "OO-F500-UNITS",
+   "title": "F-500: central units module in wo-common with the exact OO Unit matrix + migrate scattered constants",
+   "scope": ["core/crates/wo-common/src/units.rs", "core/crates/wo-common/src/lib.rs", "core/crates/wo-docx-renderer/src/layout.rs", "core/crates/wo-ooxml/src/model.rs", "core/crates/wo-ooxml/src/parser.rs", "core/crates/wo-ooxml/src/serializer.rs", "core/crates/wo-slide/src/model.rs"],
+   "accept": "export PATH=\"/home/weiss/.cargo/bin:$PATH\" && cargo test -p wo-common --lib units 2>&1 | tee /tmp/oo-f500.log | grep -q 'test result: ok' && grep -q 'test_units_matrix' /tmp/oo-f500.log && cargo clippy -p wo-common -p wo-ooxml -p wo-docx-renderer -p wo-slide --lib -- -D warnings 2>&1 | tail -1 | grep -q Finished",
+   "accept_timeout_s": 1800,
+   "acceptance_prose": "Contract F-500 (OO core: OOXML/Base/Unit.{h,cpp} is the single conversion authority). Create core/crates/wo-common/src/units.rs (pub mod units; re-export from lib.rs) defining the exact OO matrix as constants + tiny conversion fns: CM_TO_EMU = 360_000, IN_TO_EMU = 914_400, EMU_PER_PT = 12_700, DX_TO_SX (twips->EMU) = 635, PT_PER_IN = 72.0, PX_PER_IN = 96.0, TWIPS_PER_IN = 1_440, plus pt_to_emu/emu_to_pt/twips_to_emu/emu_to_cm helpers (integer or f64 consistent with OO semantics; document any rounding). Test (exact name) test_units_matrix asserting the full matrix: 1in = 914400 EMU, 1cm = 360000 EMU, 1pt = 12700 EMU, 1twip = 635 EMU (scales: Sx == EMU), 1in = 72pt, 1in = 96px, 1in = 1440 twips, and cm<->in consistency (2.54cm == 1in in EMU within 1 EMU). Then migrate the SCATTERED magic numbers in the scope files ONLY (grep 914400, 1440, 635, 360000 in those files) to reference wo_common::units constants — mechanical swaps, no behavior change; tests in those crates must still pass. Do NOT touch core/crates/wo-x2t (parallel campaign task owns it). Do not add serde derives or config plumbing — plain constants.",
+   "project": "world-office",
+   "priority": "high"
+  }
+ ]
+}
