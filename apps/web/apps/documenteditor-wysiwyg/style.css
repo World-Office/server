@@ -1724,6 +1724,9 @@ body.multi-page-view #editor .page-break br { display: none; }
 /* Text-flow floats (object-layout popup + DOCX anchored drawings). The
    classes are the canonical round-trip contract: obj-square=wrapSquare,
    obj-right=right-aligned float, obj-behind=wrapBehind, obj-center=block. */
+/* Image-fit safety net (UI-IMG-FIT): content images never overflow the
+   page column, even before the JS clamp has run (e.g. slow img decode). */
+#editor img { max-width: 100%; height: auto; }
 #editor img.obj-inline { display: inline-block; margin: 0 4px; }
 #editor img.obj-square { float: left; margin: 4px 12px 6px 0; }
 #editor img.obj-square.obj-right { float: right; margin: 4px 0 6px 12px; }

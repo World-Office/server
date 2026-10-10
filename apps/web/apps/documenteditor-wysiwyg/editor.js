@@ -36,6 +36,61 @@
 "use strict";
 
 (function () {
+  // ------------------------------------------------------------------
+  // Image fit math (UI-IMG-FIT, 2026-10-10): pure, DOM-free helpers used
+  // by the insert-image dialog, image drag-resize and load-time clamp.
+  // The server round-trips wp:extent <-> width/height, so an <img> whose
+  // attributes are set here keeps its display size through save/reload.
+  // ------------------------------------------------------------------
+
+  /**
+   * Scale a natural-size image down to fit within maxW, preserving aspect
+   * ratio. Uses Math.round for integer pixel dimensions. Never upscales and
+   * never returns a zero-size dimension.
+   * @param {number} naturalW natural pixel width
+   * @param {number} naturalH natural pixel height
+   * @param {number} maxW      maximum display width (px)
+   * @returns {{width: number, height: number}}
+   */
+  function fitToWidth(naturalW, naturalH, maxW) {
+    if (!(naturalW > 0) || !(naturalH > 0)) return { width: 1, height: 1 };
+    if (naturalW <= maxW) {
+      return { width: Math.round(naturalW), height: Math.round(naturalH) };
+    }
+    const ratio = maxW / naturalW;
+    return {
+      width: Math.max(1, Math.round(naturalW * ratio)),
+      height: Math.max(1, Math.round(naturalH * ratio)),
+    };
+  }
+
+  /**
+   * Scale an image down to fit within a page box (pageW x pageH), preserving
+   * aspect ratio. Uses Math.round for integer pixel dimensions. Scales DOWN
+   * only — never upscales a smaller image, never returns zero-size.
+   * @param {number} imgW  current image width (px)
+   * @param {number} imgH  current image height (px)
+   * @param {number} pageW page content width (px)
+   * @param {number} pageH page content height (px)
+   * @returns {{width: number, height: number}}
+   */
+  function fitWithinPage(imgW, imgH, pageW, pageH) {
+    if (!(imgW > 0) || !(imgH > 0) || !(pageW > 0) || !(pageH > 0)) {
+      return { width: Math.max(1, Math.round(imgW)), height: Math.max(1, Math.round(imgH)) };
+    }
+    if (imgW <= pageW && imgH <= pageH) {
+      return { width: Math.round(imgW), height: Math.round(imgH) };
+    }
+    const ratio = Math.min(pageW / imgW, pageH / imgH);
+    return {
+      width: Math.max(1, Math.round(imgW * ratio)),
+      height: Math.max(1, Math.round(imgH * ratio)),
+    };
+  }
+  // Expose the pure helpers for tests and for reuse across the IIFE.
+  window.fitToWidth = fitToWidth;
+  window.fitWithinPage = fitWithinPage;
+
   const DOC_ID = window.__DOC_ID__ || "unknown";
   const DOC_NAME = window.__DOC_NAME__ || "document.docx";
   const docNameEl = document.querySelector(".doc-name");
@@ -350,6 +405,10 @@
       // Anchor: an empty/blank document still needs a block element so
       // typing produces <p>…</p> (bare text would be lost in DOCX conversion).
       editor.innerHTML = data.html || "<p><br></p>";
+      // Page-width image fit (UI-IMG-FIT): existing oversized <img>s get
+      // width/height attributes clamped to the content column, and not yet
+      // decoded images are fixed up the moment their natural size arrives.
+      clampImagesToPage(editor);
       hydrateVectorObjects();
       refreshToc();
       paginateQuiet();  // paginate the flow into LO/OO-style sheets
@@ -1763,16 +1822,41 @@
     editor.focus();
     const wIn = document.getElementById("image-width");
     const hIn = document.getElementById("image-height");
-    const dims = [];
     const wRaw = wIn ? wIn.value.trim() : "";
     const hRaw = hIn ? hIn.value.trim() : "";
-    if (/^\d+$/.test(wRaw) && Number(wRaw) > 0) dims.push(" width=\"" + Number(wRaw) + "\"");
-    if (/^\d+$/.test(hRaw) && Number(hRaw) > 0) dims.push(" height=\"" + Number(hRaw) + "\"");
+    let wNum = /^\d+$/.test(wRaw) && Number(wRaw) > 0 ? Number(wRaw) : 0;
+    let hNum = /^\d+$/.test(hRaw) && Number(hRaw) > 0 ? Number(hRaw) : 0;
+    // Page-width image fit (UI-IMG-FIT): an <img> wider than the content
+    // column is clamped proportionally (fitToWidth) before the HTML is
+    // committed, so the width/height survive save without overflowing.
+    {
+      const preview = document.getElementById("image-preview");
+      const natW = preview && preview.naturalWidth > 0 ? preview.naturalWidth : 0;
+      const natH = preview && preview.naturalHeight > 0 ? preview.naturalHeight : 0;
+      const maxW = contentColumnWidth();
+      if (natW > 0 && natH > 0) {
+        if ((wNum > 0 ? wNum : natW) > maxW) {
+          const fitted = fitToWidth(natW, natH, maxW);
+          wNum = fitted.width;
+          hNum = fitted.height;
+        }
+      } else if (wNum > maxW && hNum > 0) {
+        const fitted = fitToWidth(wNum, hNum, maxW);
+        wNum = fitted.width;
+        hNum = fitted.height;
+      }
+    }
+    const dims = [];
+    if (wNum > 0) dims.push(" width=\"" + wNum + "\"");
+    if (hNum > 0) dims.push(" height=\"" + hNum + "\"");
     document.execCommand(
       "insertHTML",
       false,
       '<img src="' + src + '" alt="' + alt + '"' + dims.join("") + '>'
     );
+    // Fix up any <img> whose rendered/natural width still exceeds the column
+    // (or that was not yet decoded): clamp + attach load-time fix-up.
+    clampImagesToPage(editor);
     captureHistory();
   }
 
@@ -1783,6 +1867,158 @@
     imageDataUrl = null;
     restoreFocus();
   }
+
+  // ------------------------------------------------------------------
+  // Page-width image fit + proportional drag-resize (UI-IMG-FIT)
+  // ------------------------------------------------------------------
+  // Content column width = page width minus the two horizontal margins
+  // (--wo-pad-x, default 96px on a 794px sheet -> 602px usable).
+  function contentColumnWidth() {
+    const page = editor.querySelector(":scope > .wo-page") || editor;
+    const cs = window.getComputedStyle(page);
+    const pageW = parseFloat(cs.getPropertyValue("--wo-page-w")) || 794;
+    const padX = parseFloat(cs.getPropertyValue("--wo-pad-x")) || 96;
+    return Math.max(1, Math.round(pageW - padX * 2));
+  }
+
+  // One <img>: if its width (attribute or natural) exceeds the content
+  // column, overwrite width/height with fitToWidth proportions.
+  function clampImgElement(img) {
+    if (!img || !editor.contains(img)) return;
+    const scaleW = img.naturalWidth > 0
+      ? img.naturalWidth
+      : (parseInt(img.getAttribute("width") || "0", 10) || 0);
+    const scaleH = img.naturalHeight > 0
+      ? img.naturalHeight
+      : (parseInt(img.getAttribute("height") || "0", 10) || 0);
+    if (scaleW <= 0 || scaleH <= 0) return;
+    if (scaleW > contentColumnWidth()) {
+      const fitted = fitToWidth(scaleW, scaleH, contentColumnWidth());
+      img.setAttribute("width", String(fitted.width));
+      img.setAttribute("height", String(fitted.height));
+    }
+  }
+
+  // Walk every <img> under root; clamp now and attach a one-shot load
+  // listener for images whose natural size is not decoded yet.
+  function clampImagesToPage(root) {
+    if (!root) return;
+    const imgs = Array.prototype.slice.call(root.querySelectorAll("img"));
+    imgs.forEach(function (img) {
+      if (img.complete && img.naturalWidth > 0) {
+        clampImgElement(img);
+      } else if (!img.complete) {
+        img.addEventListener("load", function onImgLoad() {
+          img.removeEventListener("load", onImgLoad);
+          clampImgElement(img);
+        });
+      } else {
+        clampImgElement(img);
+      }
+    });
+  }
+
+  // --- drag-resize handle ---
+  let imgResizeHandle = null;
+  let imgResizeDrag = null; // { img, startW, baseW, baseH, dragStartX, dragging }
+
+  function imgHandlePos(img) {
+    const er = editor.getBoundingClientRect();
+    const ir = img.getBoundingClientRect();
+    return { x: Math.round(ir.right - er.left), y: Math.round(ir.bottom - er.top) };
+  }
+
+  function imgResizeApply(e) {
+    if (!imgResizeDrag) return;
+    const d = imgResizeDrag;
+    if (!d.dragging) return;
+    if (e.clientX === undefined) return;
+    const delta = e.clientX - d.dragStartX;
+    const fitted = fitToWidth(d.baseW, d.baseH, Math.max(16, Math.round(d.startW + delta)));
+    d.img.setAttribute("width", String(fitted.width));
+    d.img.setAttribute("height", String(fitted.height));
+    const pos = imgHandlePos(d.img);
+    if (imgResizeHandle && pos) {
+      imgResizeHandle.style.left = pos.x + "px";
+      imgResizeHandle.style.top = pos.y + "px";
+    }
+  }
+
+  function imgResizeFinish() {
+    if (!imgResizeDrag) return;
+    const wasDragging = imgResizeDrag.dragging;
+    hideImageResizeHandle();
+    if (wasDragging) {
+      editor.dispatchEvent(new Event("input", { bubbles: true }));
+      captureHistory();
+      markDirty();
+      scheduleCollabSync();
+      notifyHost("editing");
+    }
+  }
+
+  function hideImageResizeHandle() {
+    if (imgResizeDetach) imgResizeDetach();
+    if (imgResizeHandle && imgResizeHandle.parentNode) {
+      imgResizeHandle.parentNode.removeChild(imgResizeHandle);
+    }
+    imgResizeHandle = null;
+    imgResizeDrag = null;
+  }
+
+  function showImageResizeHandle(img) {
+    hideImageResizeHandle();
+    if (!img || READ_ONLY || !editor.contains(img)) return;
+    if (img.naturalWidth <= 0 && !img.complete) return; // not decodable yet
+    const pos = imgHandlePos(img);
+    if (!pos) return;
+    const handle = document.createElement("div");
+    handle.className = "img-resize-handle";
+    handle.setAttribute("role", "presentation");
+    handle.style.left = pos.x + "px";
+    handle.style.top = pos.y + "px";
+    editor.appendChild(handle);
+    imgResizeHandle = handle;
+    const startW = parseInt(img.getAttribute("width") || "0", 10) ||
+      (img.naturalWidth > 0 ? img.naturalWidth : 0);
+    const baseW = img.naturalWidth > 0 ? img.naturalWidth : startW;
+    const baseH = img.naturalHeight > 0 ? img.naturalHeight :
+      (startW > 0 && img.width > 0 ? Math.round(startW * (img.height / img.width)) : startW);
+    imgResizeDrag = { img, startW, baseW, baseH, dragStartX: 0, dragging: false };
+    handle.addEventListener("mousedown", function onHandleDown(e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      if (!imgResizeDrag) return;
+      imgResizeDrag.dragging = true;
+      imgResizeDrag.dragStartX = e.clientX;
+      if (handle.setPointerCapture) {
+        try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+      }
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    handle.addEventListener("pointerdown", function onHandleDown(e) {
+      if (!imgResizeDrag) return;
+      imgResizeDrag.dragging = true;
+      imgResizeDrag.dragStartX = e.clientX;
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    const onDocMove = function (e) { imgResizeApply(e); };
+    const onDocUp = function () { imgResizeFinish(); };
+    document.addEventListener("mousemove", onDocMove);
+    document.addEventListener("pointermove", onDocMove);
+    document.addEventListener("mouseup", onDocUp);
+    document.addEventListener("pointerup", onDocUp);
+    document.addEventListener("keydown", hideImageResizeHandle, true);
+    imgResizeDetach = function () {
+      document.removeEventListener("mousemove", onDocMove);
+      document.removeEventListener("pointermove", onDocMove);
+      document.removeEventListener("mouseup", onDocUp);
+      document.removeEventListener("pointerup", onDocUp);
+      document.removeEventListener("keydown", hideImageResizeHandle, true);
+    };
+  }
+  let imgResizeDetach = function () {};
 
   // --- insert columns (toolbar button + dialog) ---------------------
   function openColumnsDialog() {
