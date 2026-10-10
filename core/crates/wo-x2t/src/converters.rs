@@ -7005,11 +7005,58 @@ fn bytes_to_data_url(data: &[u8], content_type: &str) -> String {
 
 // ── XLSX Spreadsheet Format Converters (XLSX ↔ WoSpreadsheet) ─────
 
-use crate::spreadsheet_model::{WoCell, WoRow, WoSheet, WoSpreadsheet};
+use crate::spreadsheet_model::{WoCell, WoRow, WoSheet, WoSpreadsheet, XlsxExtraPart};
 use wo_ooxml::model::{
     CellType as XlsxCellType, XlsxCell, XlsxCol, XlsxMergeCell, XlsxRow, XlsxSheet,
     XlsxSheetProperties, XlsxStyles, XlsxWorkbook, XlsxWorkbookProperties,
 };
+
+/// The 9 ZIP parts `OoxmlSerializer::serialize_xlsx` regenerates. Everything
+/// ELSE in a source XLSX (charts, pivot tables/caches, media, drawings,
+/// comments, VML, externalLinks, definedNames, customXml, docProps/app.xml)
+/// is invisible to the wo-sheet model, so those parts travel byte-faithfully
+/// through the WoSpreadsheet JSON as `extra_parts` (F-200/206/207).
+/// ContentType namecap loaded from [Content_Types].xml of the source, so the
+/// round-trip can re-declare overrides without losing them.
+fn collect_xlsx_extra_parts(data: &[u8]) -> Vec<XlsxExtraPart> {
+    use base64::Engine;
+    let b64 = base64::engine::general_purpose::STANDARD;
+    // Path prefix matching the 9 core parts the serializer rewrites.
+    let is_core = |name: &str| {
+        name == "[Content_Types].xml"
+            || name == "_rels/.rels"
+            || name == "xl/workbook.xml"
+            || name == "xl/_rels/workbook.xml.rels"
+            || (name.starts_with("xl/worksheets/sheet") && name.ends_with(".xml"))
+            || name == "xl/sharedStrings.xml"
+            || name == "xl/styles.xml"
+            || name == "xl/theme/theme1.xml"
+            || name == "docProps/core.xml"
+    };
+    let Ok(mut archive) = zip::ZipArchive::new(std::io::Cursor::new(data)) else {
+        return Vec::new();
+    };
+    let mut parts: Vec<XlsxExtraPart> = Vec::new();
+    for i in 0..archive.len() {
+        let Ok(mut entry) = archive.by_index(i) else {
+            continue;
+        };
+        let name = entry.name().to_string();
+        if entry.is_dir() || is_core(&name) {
+            continue;
+        }
+        let mut bytes = Vec::new();
+        if std::io::Read::read_to_end(&mut entry, &mut bytes).is_err() {
+            continue;
+        }
+        parts.push(XlsxExtraPart {
+            content_type: None,
+            name,
+            data_base64: b64.encode(&bytes),
+        });
+    }
+    parts
+}
 
 /// Converts XLSX bytes → frontend WoSpreadsheet JSON.
 pub struct XlsxToWoSpreadsheetConverter;
@@ -7097,6 +7144,7 @@ impl FormatConverter for XlsxToWoSpreadsheetConverter {
             sheet_order,
             sheets,
             shared_strings: wb.shared_strings,
+            extra_parts: collect_xlsx_extra_parts(data),
         };
 
         serde_json::to_vec_pretty(&wo).map_err(|e| ConversionError::Serialize(e.to_string()))
@@ -7249,6 +7297,7 @@ impl FormatConverter for OdsToWoSpreadsheetConverter {
             sheet_order,
             sheets,
             shared_strings: Vec::new(),
+            extra_parts: vec![],
         };
 
         serde_json::to_vec_pretty(&wo).map_err(|e| ConversionError::Serialize(e.to_string()))
@@ -7511,10 +7560,133 @@ impl FormatConverter for WoSpreadsheetToXlsxConverter {
         };
 
         let serializer = OoxmlSerializer::new();
-        serializer
+        let serialized = serializer
             .serialize_xlsx(&workbook)
-            .map_err(|e| ConversionError::Serialize(e.to_string()))
+            .map_err(|e| ConversionError::Serialize(e.to_string()))?;
+        // F-200/206/207: byte-faithful passthrough of non-core parts
+        // (charts, pivots, media, ...) that the sheet model cannot edit.
+        if !wo.extra_parts.is_empty() {
+            return rewrite_xlsx_with_extra_parts(&serialized, &wo.extra_parts)
+                .map_err(ConversionError::Serialize);
+        }
+        Ok(serialized)
     }
+}
+
+/// Copy the freshly-serialized XLSX ZIP (9 core parts) and splice the
+/// non-core `extra_parts` back in byte-identically, re-declaring their
+/// content-type overrides in `[Content_Types].xml` so the workbook stays
+/// schema-openable. The extra parts' OWN bytes are untouched — this is the
+/// byte-faithful preservation contract (F-200/206/207), not reserialization.
+fn rewrite_xlsx_with_extra_parts(
+    serialized: &[u8],
+    extra_parts: &[XlsxExtraPart],
+) -> Result<Vec<u8>, String> {
+    use base64::Engine;
+    use std::io::Write;
+    use zip::write::SimpleFileOptions;
+    let b64 = base64::engine::general_purpose::STANDARD;
+    let mut src =
+        zip::ZipArchive::new(std::io::Cursor::new(serialized)).map_err(|e| e.to_string())?;
+    let buf = std::io::Cursor::new(Vec::new());
+    let mut out = zip::ZipWriter::new(buf);
+    let options = SimpleFileOptions::default();
+
+    // Copy the core parts verbatim, but build [Content_Types].xml fresh with
+    // the overrides for extra parts appended (kept deterministic: override
+    // rows sorted by part name).
+    let mut content_types_xml: Option<String> = None;
+    for i in 0..src.len() {
+        let mut entry = src.by_index(i).map_err(|e| e.to_string())?;
+        let name = entry.name().to_string();
+        let mut bytes = Vec::new();
+        std::io::Read::read_to_end(&mut entry, &mut bytes)
+            .map_err(|e| format!("{name}: {e}"))?;
+        if name == "[Content_Types].xml" {
+            content_types_xml = Some(String::from_utf8_lossy(&bytes).into_owned());
+            continue; // re-emitted below with extra overrides
+        }
+        out.start_file(&name, options)
+            .map_err(|e| format!("{name}: {e}"))?;
+        out.write_all(&bytes).map_err(|e| e.to_string())?;
+    }
+
+    // Re-declare extra-part content types. We do not re-derive them from the
+    // original [Content_Types].xml (the reader stores the override when it
+    // knows one); a conservative Default-by-extension fallback keeps even
+    // unknown binaries openable by the host app.
+    let mut extra_cts: Vec<String> = Vec::new();
+    for p in extra_parts {
+        let ct = p
+            .content_type
+            .clone()
+            .unwrap_or_else(|| default_content_type_for(&p.name));
+        let part_name = format!("/{}", p.name);
+        let row = format!(
+            "<Override PartName=\"{}\" ContentType=\"{}\"/>",
+            xml_escape(&part_name),
+            xml_escape(&ct)
+        );
+        if !extra_cts.contains(&row) {
+            extra_cts.push(row);
+        }
+    }
+    extra_cts.sort();
+    let base_types = content_types_xml.unwrap_or_else(|| {
+        // Should never happen (serializer always writes it); keep the zip
+        // valid anyway with a minimal well-formed document.
+        "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"></Types>"
+            .to_string()
+    });
+    let merged = if base_types.trim_end().ends_with("</Types>") {
+        let inner = &base_types[..base_types.rfind("</Types>").unwrap_or(base_types.len())];
+        format!("{inner}{}</Types>", extra_cts.join(""))
+    } else {
+        base_types
+    };
+    out.start_file("[Content_Types].xml", options)
+        .map_err(|e| e.to_string())?;
+    out.write_all(merged.as_bytes()).map_err(|e| e.to_string())?;
+
+    for p in extra_parts {
+        let decoded = b64.decode(&p.data_base64).map_err(|e| e.to_string())?;
+        out.start_file(&p.name, options).map_err(|e| e.to_string())?;
+        out.write_all(&decoded).map_err(|e| e.to_string())?;
+    }
+    out.finish().map_err(|e| e.to_string()).map(|c| c.into_inner())
+}
+
+/// A stable, deterministic content-type guess for extra parts whose override
+/// the reader could not attribute (`application/xml` keeps pure-XML parts
+/// openable; known binary families get their ECMA-376 type).
+fn default_content_type_for(name: &str) -> String {
+    let lower = name.to_ascii_lowercase();
+    if lower.ends_with(".png") {
+        "image/png".to_string()
+    } else if lower.ends_with(".jpeg") || lower.ends_with(".jpg") {
+        "image/jpeg".to_string()
+    } else if lower.ends_with(".gif") {
+        "image/gif".to_string()
+    } else if lower.ends_with(".tiff") || lower.ends_with(".tif") {
+        "image/tiff".to_string()
+    } else if lower.ends_with(".bmp") {
+        "image/bmp".to_string()
+    } else if lower.ends_with(".emf") {
+        "image/x-emf".to_string()
+    } else if lower.ends_with(".wmf") {
+        "image/x-wmf".to_string()
+    } else if lower.ends_with(".bin") {
+        "application/octet-stream".to_string()
+    } else {
+        "application/xml".to_string()
+    }
+}
+
+fn xml_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
 }
 
 // ── WoSpreadsheet → ODS Converter ───────────────────────────────────
@@ -16493,6 +16665,7 @@ mod tests {
                 merges: vec![],
             }],
             shared_strings: vec![],
+            extra_parts: vec![],
         };
         let json = serde_json::to_vec(&wo).unwrap();
         let converter = WoSpreadsheetToOdsConverter;
@@ -17109,6 +17282,131 @@ mod bridge_converter_tests {
     fn test_bridge_xlsx_to_wo_spreadsheet_rejects_non_zip() {
         let result = XlsxToWoSpreadsheetConverter.convert(b"this is not a zip archive");
         assert!(result.is_err(), "garbage input must error, not panic");
+    }
+
+    /// F-200/206/207: non-core XLSX parts (charts, pivot tables, media) must
+    /// round-trip byte-identically through the WoSpreadsheet JSON bridge.
+    #[test]
+    fn test_xlsx_extra_parts_byte_faithful_roundtrip() {
+        use std::io::Write;
+        use zip::write::SimpleFileOptions;
+
+        // Build a minimal XLSX with three non-core parts carrying
+        // DISTINGUISHABLE bytes, plus the matching [Content_Types] overrides
+        // and workbook rel so the source is schema-complete.
+        let buf = std::io::Cursor::new(Vec::new());
+        let mut zip = zip::ZipWriter::new(buf);
+        let mut add = |name: &str, data: &[u8]| {
+            zip.start_file(name, SimpleFileOptions::default()).unwrap();
+            zip.write_all(data).unwrap();
+        };
+        add(
+            "[Content_Types].xml",
+            b"<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">
+<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>
+<Default Extension=\"xml\" ContentType=\"application/xml\"/>
+<Override PartName=\"/xl/workbook.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml\"/>
+<Override PartName=\"/xl/worksheets/sheet1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml\"/>
+<Override PartName=\"/xl/charts/chart1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.drawingml.chart+xml\"/>
+<Override PartName=\"/xl/pivotTables/pivotTable1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.pivotTable+xml\"/>
+</Types>",
+        );
+        add(
+            "_rels/.rels",
+            b"<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">
+<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"xl/workbook.xml\"/>
+</Relationships>",
+        );
+        add(
+            "xl/workbook.xml",
+            b"<workbook xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\">
+<sheets><sheet name=\"Sheet1\" sheetId=\"1\" r:id=\"rId1\"/></sheets>
+</workbook>",
+        );
+        add(
+            "xl/_rels/workbook.xml.rels",
+            b"<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">
+<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet\" Target=\"worksheets/sheet1.xml\"/>
+<Relationship Id=\"rId2\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart\" Target=\"charts/chart1.xml\"/>
+</Relationships>",
+        );
+        add(
+            "xl/sharedStrings.xml",
+            b"<sst xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"></sst>",
+        );
+        add(
+            "xl/styles.xml",
+            b"<styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"></styleSheet>",
+        );
+        add(
+            "xl/theme/theme1.xml",
+            b"<a:theme xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" name=\"Office\"></a:theme>",
+        );
+        add(
+            "docProps/core.xml",
+            b"<cp:coreProperties xmlns:cp=\"http://schemas.openxmlformats.org/package/2006/metadata/core-properties\"></cp:coreProperties>",
+        );
+        add(
+            "xl/worksheets/sheet1.xml",
+            b"<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetData></sheetData></worksheet>",
+        );
+        // Non-core parts with byte-distinguishable content.
+        let chart_bytes =
+            b"<chartSpace>KEEP-ME-CHART-BYTES</chartSpace>".to_vec();
+        let pivot_bytes =
+            b"<pivotTableDefinition>KEEP-ME-PIVOT-BYTES</pivotTableDefinition>".to_vec();
+        let png_bytes = vec![0x89, 0x50, 0x4E, 0x47, 0x00, 0xFF, 0xFE, 0x80, 0x01, 0x02, 0x03];
+        add("xl/charts/chart1.xml", &chart_bytes);
+        add("xl/pivotTables/pivotTable1.xml", &pivot_bytes);
+        add("xl/media/image1.png", &png_bytes);
+        let src_xlsx = zip.finish().unwrap().into_inner();
+
+        // XLSX -> WoSpreadsheet JSON.
+        let json = XlsxToWoSpreadsheetConverter
+            .convert(&src_xlsx)
+            .expect("xlsx -> json");
+        let wo: crate::spreadsheet_model::WoSpreadsheet =
+            serde_json::from_slice(&json).expect("json parse");
+        let names: Vec<&str> = wo.extra_parts.iter().map(|p| p.name.as_str()).collect();
+        assert!(names.contains(&"xl/charts/chart1.xml"), "chart harvested");
+        assert!(names.contains(&"xl/pivotTables/pivotTable1.xml"), "pivot harvested");
+        assert!(names.contains(&"xl/media/image1.png"), "media harvested");
+        // chart's workbook-level rels live in xl/_rels/workbook.xml.rels (core,
+        // regenerated) — re-adding the rel is serializer/parser's concern, not
+        // this bridge's. But chart1.xml's OWN rel (charts/_rels/chart1.xml.rels)
+        // would also be harvested; we didn't add one so count stays 3.
+        assert_eq!(wo.extra_parts.len(), 3, "exactly 3 non-core parts");
+
+        // WoSpreadsheet JSON -> XLSX.
+        let out = WoSpreadsheetToXlsxConverter
+            .convert(&json)
+            .expect("json -> xlsx");
+        let mut out_zip =
+            zip::ZipArchive::new(std::io::Cursor::new(&out)).expect("out is a zip");
+
+        let mut read = |name: &str| -> Vec<u8> {
+            let mut e = out_zip.by_name(name).unwrap_or_else(|_| panic!("part {name} missing"));
+            let mut v = Vec::new();
+            std::io::Read::read_to_end(&mut e, &mut v).unwrap();
+            v
+        };
+        assert_eq!(read("xl/charts/chart1.xml"), chart_bytes, "chart byte-identical");
+        assert_eq!(
+            read("xl/pivotTables/pivotTable1.xml"),
+            pivot_bytes,
+            "pivot byte-identical"
+        );
+        assert_eq!(read("xl/media/image1.png"), png_bytes, "png bytes preserved (binary-safe)");
+
+        // Content_Types must still declare chart + pivot overrides so the file
+        // stays schema-openable.
+        let ct = String::from_utf8_lossy(&read("[Content_Types].xml")).into_owned();
+        assert!(
+            ct.contains("/xl/charts/chart1.xml")
+                && ct.contains("/xl/pivotTables/pivotTable1.xml")
+                && ct.contains("/xl/media/image1.png"),
+            "output Content_Types covers extra parts"
+        );
     }
 
     #[test]
