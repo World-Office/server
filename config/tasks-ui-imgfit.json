@@ -1,0 +1,18 @@
+{
+ "tasks": [
+  {
+   "id": "UI-IMG-FIT",
+   "title": "Wysiwyg editor: page-width image fit + proportional drag-resize (width/height survive save)",
+   "scope": [
+    "apps/web/apps/documenteditor-wysiwyg/editor.js",
+    "apps/web/apps/documenteditor-wysiwyg/style.css",
+    "apps/web/apps/documenteditor-wysiwyg/index.html"
+   ],
+   "accept": "node --check apps/web/apps/documenteditor-wysiwyg/editor.js && node apps/web/apps/documenteditor-wysiwyg/image-fit.test.mjs 2>&1 | grep -q 'IMAGE-FIT-PASS'",
+   "accept_timeout_s": 1800,
+   "acceptance_prose": "The server now round-trips image dimensions (docx wp:extent <-> HTML width/height, committed 2026-10-10), so an <img> with width/height attributes keeps its display size through save/reload. The editor (apps/web/apps/documenteditor-wysiwyg/editor.js, flat vanilla JS, no build) currently does two things wrong: (a) a wide image renders at full pixel width overflowing the content column; (b) there is no drag-resize, so a user cannot scale a picture.\n\nDELIVERABLES, probe-first (write the test file BEFORE the feature, then implement until it passes):\n1. Pure math in a testable form: implement TWO pure functions near the top of editor.js (module scope, referenced by name, no DOM): fitToWidth(naturalW, naturalH, maxW) -> {width, height} preserving aspect ratio (Math.round, never zero-size), and fitWithinPage(imgW, imgH, pageW, pageH) -> {width, height} scaling DOWN only (never upscale).\n2. Create apps/web/apps/documenteditor-wysiwyg/image-fit.test.mjs \u2014 a Node built-in test (node:assert, no framework, exit 0 on success) that: asserts fitToWidth(960,240,602) gives {602,150} (602/960*240=150.5 round -> 150 or 151, assert the exact round you implement), asserts fitWithinPage leaves a small image untouched (no upscale), asserts fitWithinPage scales a 960x240 banner into 602 or fewer px wide, and asserts aspect ratio is preserved within 1% for three sample pairs. Print the string 'IMAGE-FIT-PASS' at the end of a successful run.\n3. Editor behavior: on load and on image insert (confirmImageDialog already writes width/height attributes from two inputs, editor.js ~1774), clamp: any <img> whose natural width exceeds the content column width gets its width/height attributes set to fitToWidth(naturalW, naturalH, contentWidth) BEFORE the html is committed (do it in the same place the dialog builds dims, and also fix-up existing oversized imgs on document load).\n4. Drag-resize: when an <img> inside the editable content is selected, overlay a resize handle at its bottom-right corner; dragging it live-sets the img's width AND height attributes with fitToWidth-derived proportional values (src natural size as the base, canvas single-pixel mousemove, pointerup removes the handle and fires input/change so autosave captures the new attributes). Keep it dependency-free and self-contained \u2014 the file has no bundler or test runner; do not add npm dependencies and do not break the existing toolbar/dialog code.\n5. style.css: img elements inside the editable content get max-width:100% as a safety net (never overflow the column).\n\nThis is a real prod file WITHOUT a test harness \u2014 the only automated proof is the node test you add. The acceptance gate runs node --check plus your test file. Keep all existing editor features intact (grep for the dialog/table/heading code paths you touch; leave them working). Commit on the current branch with a conventional message.\n\nABSOLUTE RULES: do not reformat/rewrite unrelated sections of the 307KB editor.js; minimal targeted edits only; no new files except the test; no npm deps. node is /usr/bin/node (v22, has node:assert and --test).",
+   "project": "world-office",
+   "priority": "high"
+  }
+ ]
+}
