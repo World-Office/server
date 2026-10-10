@@ -5,6 +5,19 @@
 
 use serde::{Deserialize, Serialize};
 
+/// A non-core PPTX ZIP part preserved for byte-faithful round-tripping.
+/// Mirrors wo-x2t's XlsxExtraPart: charts, media, layouts, notes masters,
+/// comments, VML, externalLinks, customXml etc. that the pptx serializer
+/// does not regenerate travel unchanged through the WoPresentation JSON.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PptxExtraPart {
+    /// ZIP entry path (e.g., "ppt/slideLayouts/slideLayout1.xml").
+    pub name: String,
+    /// Base64-encoded part bytes.
+    pub data_base64: String,
+}
+
 /// A complete presentation, matching the frontend toJSON() shape.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -16,6 +29,9 @@ pub struct WoPresentation {
     #[serde(default)]
     pub theme: Option<WoTheme>,
     pub slides: Vec<WoSlide>,
+    /// Non-core PPTX parts preserved for byte-faithful round-tripping.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub extra_parts: Vec<PptxExtraPart>,
 }
 
 /// A single slide in the presentation.

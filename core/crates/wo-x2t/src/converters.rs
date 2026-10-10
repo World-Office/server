@@ -62,7 +62,7 @@ use wo_formula::ast::{CellErr, CellValue, FormulaError, a1_to_col};
 use wo_formula::eval::{Sheet as FormulaSheet, eval_str};
 
 use crate::presentation_model::{
-    WoAnimationData, WoImageData, WoPresentation, WoShapeData, WoSlide,
+    PptxExtraPart, WoAnimationData, WoImageData, WoPresentation, WoShapeData, WoSlide,
 };
 
 // ── Converter structs ────────────────────────────────────────────────
@@ -6442,9 +6442,17 @@ impl FormatConverter for WoPresentationToPptxConverter {
         };
 
         let serializer = OoxmlSerializer::new();
-        serializer
+        let serialized = serializer
             .serialize_pptx(&pptx)
-            .map_err(|e| ConversionError::Serialize(e.to_string()))
+            .map_err(|e| ConversionError::Serialize(e.to_string()))?;
+        // F-300/304: byte-faithful passthrough of non-core parts (layouts,
+        // notes masters, media, charts, comments, ...) that the pptx
+        // serializer does not regenerate.
+        if !wo.extra_parts.is_empty() {
+            return rewrite_pptx_with_extra_parts(&serialized, &wo.extra_parts)
+                .map_err(ConversionError::Serialize);
+        }
+        Ok(serialized)
     }
 }
 
@@ -6544,6 +6552,7 @@ impl FormatConverter for PptxToWoPresentationConverter {
             theme_type: "builtin".to_string(),
             theme: None,
             slides,
+            extra_parts: collect_pptx_extra_parts(data),
         };
 
         serde_json::to_vec_pretty(&wo).map_err(|e| ConversionError::Serialize(e.to_string()))
@@ -6654,6 +6663,7 @@ impl FormatConverter for OdpToWoPresentationConverter {
             theme_type: "builtin".to_string(),
             theme: None,
             slides,
+            extra_parts: vec![],
         };
 
         serde_json::to_vec_pretty(&wo).map_err(|e| ConversionError::Serialize(e.to_string()))
@@ -7687,6 +7697,132 @@ fn xml_escape(s: &str) -> String {
         .replace('<', "&lt;")
         .replace('>', "&gt;")
         .replace('"', "&quot;")
+}
+
+/// Core PPTX parts `OoxmlSerializer::serialize_pptx` regenerates: anything
+/// else from the source ZIP is carried byte-faithfully as `extra_parts`
+/// (F-300/303/304 — part inventory, notes slides, theme/layout media).
+fn collect_pptx_extra_parts(data: &[u8]) -> Vec<PptxExtraPart> {
+    use base64::Engine;
+    let b64 = base64::engine::general_purpose::STANDARD;
+    let is_core = |name: &str| {
+        name == "[Content_Types].xml"
+            || name == "_rels/.rels"
+            || name == "ppt/presentation.xml"
+            || name == "ppt/_rels/presentation.xml.rels"
+            || (name.starts_with("ppt/slides/slide") && name.ends_with(".xml"))
+            || name == "ppt/theme/theme1.xml"
+            || (name.starts_with("ppt/slideMasters/slideMaster") && name.ends_with(".xml"))
+            || name == "docProps/core.xml"
+    };
+    let Ok(mut archive) = zip::ZipArchive::new(std::io::Cursor::new(data)) else {
+        return Vec::new();
+    };
+    let mut parts: Vec<PptxExtraPart> = Vec::new();
+    for i in 0..archive.len() {
+        let Ok(mut entry) = archive.by_index(i) else {
+            continue;
+        };
+        let name = entry.name().to_string();
+        if entry.is_dir() || is_core(&name) {
+            continue;
+        }
+        let mut bytes = Vec::new();
+        if std::io::Read::read_to_end(&mut entry, &mut bytes).is_err() {
+            continue;
+        }
+        parts.push(PptxExtraPart {
+            name,
+            data_base64: b64.encode(&bytes),
+        });
+    }
+    parts
+}
+
+/// Copy the freshly-serialized PPTX ZIP (core parts) and splice the
+/// non-core `extra_parts` back in byte-identically, merging content-type
+/// overrides into `[Content_Types].xml` so the deck stays openable.
+fn rewrite_pptx_with_extra_parts(
+    serialized: &[u8],
+    extra_parts: &[PptxExtraPart],
+) -> Result<Vec<u8>, String> {
+    use base64::Engine;
+    use std::io::Write;
+    use zip::write::SimpleFileOptions;
+    let b64 = base64::engine::general_purpose::STANDARD;
+    let mut src =
+        zip::ZipArchive::new(std::io::Cursor::new(serialized)).map_err(|e| e.to_string())?;
+    let buf = std::io::Cursor::new(Vec::new());
+    let mut out = zip::ZipWriter::new(buf);
+    let options = SimpleFileOptions::default();
+
+    let mut content_types_xml: Option<String> = None;
+    for i in 0..src.len() {
+        let mut entry = src.by_index(i).map_err(|e| e.to_string())?;
+        let name = entry.name().to_string();
+        let mut bytes = Vec::new();
+        std::io::Read::read_to_end(&mut entry, &mut bytes)
+            .map_err(|e| format!("{name}: {e}"))?;
+        if name == "[Content_Types].xml" {
+            content_types_xml = Some(String::from_utf8_lossy(&bytes).into_owned());
+            continue; // re-emitted below with extra overrides
+        }
+        out.start_file(&name, options).map_err(|e| format!("{name}: {e}"))?;
+        out.write_all(&bytes).map_err(|e| e.to_string())?;
+    }
+
+    let mut extra_rows: Vec<String> = Vec::new();
+    for p in extra_parts {
+        let ct = pptx_content_type_for(&p.name);
+        let row = format!(
+            "<Override PartName=\"/{}\" ContentType=\"{}\"/>",
+            xml_escape(&p.name),
+            xml_escape(&ct)
+        );
+        if !extra_rows.contains(&row) {
+            extra_rows.push(row);
+        }
+    }
+    extra_rows.sort();
+    let base_types = content_types_xml.unwrap_or_else(|| {
+        "<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\"></Types>"
+            .to_string()
+    });
+    let merged = if base_types.trim_end().ends_with("</Types>") {
+        let inner = &base_types[..base_types.rfind("</Types>").unwrap_or(base_types.len())];
+        format!("{inner}{}</Types>", extra_rows.join(""))
+    } else {
+        base_types
+    };
+    out.start_file("[Content_Types].xml", options).map_err(|e| e.to_string())?;
+    out.write_all(merged.as_bytes()).map_err(|e| e.to_string())?;
+
+    for p in extra_parts {
+        let decoded = b64.decode(&p.data_base64).map_err(|e| e.to_string())?;
+        out.start_file(&p.name, options).map_err(|e| e.to_string())?;
+        out.write_all(&decoded).map_err(|e| e.to_string())?;
+    }
+    out.finish().map_err(|e| e.to_string()).map(|c| c.into_inner())
+}
+
+fn pptx_content_type_for(name: &str) -> String {
+    let lower = name.to_ascii_lowercase();
+    if lower.ends_with(".png") {
+        "image/png".to_string()
+    } else if lower.ends_with(".jpeg") || lower.ends_with(".jpg") {
+        "image/jpeg".to_string()
+    } else if lower.ends_with(".bin") {
+        "application/vnd.openxmlformats-officedocument.oleObject".to_string()
+    } else if lower.ends_with(".xml")
+        || lower.contains("layout")
+        || lower.contains("notesMaster")
+        || lower.contains("handoutMaster")
+    {
+        "application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"
+            .to_string()
+    } else {
+        "application/xml".to_string()
+    }
 }
 
 // ── WoSpreadsheet → ODS Converter ───────────────────────────────────
@@ -11041,6 +11177,110 @@ mod tests {
         let pptx_wo = PptxToWoPresentationConverter;
         assert_eq!(pptx_wo.source_format(), "pptx");
         assert_eq!(pptx_wo.target_format(), "wo-presentation");
+    }
+
+    /// F-300/303/304: non-core PPTX parts (layouts, notes, media, ...) must
+    /// round-trip byte-identically through the WoPresentation JSON bridge.
+    #[test]
+    fn test_pptx_extra_parts_byte_faithful_roundtrip() {
+        use std::io::Write;
+        use zip::write::SimpleFileOptions;
+
+        // Minimal PPTX with three non-core parts carrying distinguishable
+        // bytes: a slide layout XML, a notes slide XML, and a binary media
+        // part with non-UTF8 bytes.
+        let buf = std::io::Cursor::new(Vec::new());
+        let mut zip = zip::ZipWriter::new(buf);
+        let mut add = |name: &str, data: &[u8]| {
+            zip.start_file(name, SimpleFileOptions::default()).unwrap();
+            zip.write_all(data).unwrap();
+        };
+        add(
+            "[Content_Types].xml",
+            b"<Types xmlns=\"http://schemas.openxmlformats.org/package/2006/content-types\">
+<Default Extension=\"rels\" ContentType=\"application/vnd.openxmlformats-package.relationships+xml\"/>
+<Default Extension=\"xml\" ContentType=\"application/xml\"/>
+<Override PartName=\"/ppt/presentation.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml\"/>
+<Override PartName=\"/ppt/slides/slide1.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.presentationml.slide+xml\"/>
+</Types>",
+        );
+        add(
+            "_rels/.rels",
+            b"<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">
+<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument\" Target=\"ppt/presentation.xml\"/>
+</Relationships>",
+        );
+        add(
+            "ppt/presentation.xml",
+            b"<p:presentation xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\"><p:sldIdLst><p:sldId id=\"256\" r:id=\"rId1\" xmlns:r=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships\"/></p:sldIdLst></p:presentation>",
+        );
+        add(
+            "ppt/_rels/presentation.xml.rels",
+            b"<Relationships xmlns=\"http://schemas.openxmlformats.org/package/2006/relationships\">
+<Relationship Id=\"rId1\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide\" Target=\"slides/slide1.xml\"/>
+</Relationships>",
+        );
+        add(
+            "ppt/slides/slide1.xml",
+            b"<p:sld xmlns:p=\"http://schemas.openxmlformats.org/presentationml/2006/main\"><p:cSld><p:spTree></p:spTree></p:cSld></p:sld>",
+        );
+        // Non-core parts.
+        let layout_bytes = b"<p:sldLayout>KEEP-ME-LAYOUT</p:sldLayout>".to_vec();
+        let notes_bytes = b"<p:notes>KEEP-ME-NOTES</p:notes>".to_vec();
+        let media_bytes =
+            vec![0x89, 0x50, 0x4E, 0x47, 0x00, 0xFF, 0xFE, 0x80, 0x11, 0x22, 0x33];
+        add("ppt/slideLayouts/slideLayout1.xml", &layout_bytes);
+        add("ppt/notesSlides/notesSlide1.xml", &notes_bytes);
+        add("ppt/media/image1.png", &media_bytes);
+        let src_pptx = zip.finish().unwrap().into_inner();
+
+        // PPTX -> WoPresentation JSON.
+        let json = PptxToWoPresentationConverter
+            .convert(&src_pptx)
+            .expect("pptx -> json");
+        let wo: crate::presentation_model::WoPresentation =
+            serde_json::from_slice(&json).expect("json parse");
+        assert_eq!(wo.extra_parts.len(), 3, "exactly 3 non-core parts");
+        let names: Vec<&str> = wo.extra_parts.iter().map(|p| p.name.as_str()).collect();
+        assert!(names.contains(&"ppt/slideLayouts/slideLayout1.xml"));
+        assert!(names.contains(&"ppt/notesSlides/notesSlide1.xml"));
+        assert!(names.contains(&"ppt/media/image1.png"));
+
+        // WoPresentation JSON -> PPTX.
+        let out = WoPresentationToPptxConverter
+            .convert(&json)
+            .expect("json -> pptx");
+        let mut out_zip = zip::ZipArchive::new(std::io::Cursor::new(&out)).expect("out is a zip");
+        let mut read = |name: &str| -> Vec<u8> {
+            let mut e = out_zip
+                .by_name(name)
+                .unwrap_or_else(|_| panic!("part {name} missing"));
+            let mut v = Vec::new();
+            std::io::Read::read_to_end(&mut e, &mut v).unwrap();
+            v
+        };
+        assert_eq!(
+            read("ppt/slideLayouts/slideLayout1.xml"),
+            layout_bytes,
+            "layout byte-identical"
+        );
+        assert_eq!(
+            read("ppt/notesSlides/notesSlide1.xml"),
+            notes_bytes,
+            "notes slide byte-identical"
+        );
+        assert_eq!(
+            read("ppt/media/image1.png"),
+            media_bytes,
+            "media bytes preserved (binary-safe)"
+        );
+        let ct = String::from_utf8_lossy(&read("[Content_Types].xml")).into_owned();
+        assert!(
+            ct.contains("slideLayout1.xml")
+                && ct.contains("notesSlide1.xml")
+                && ct.contains("image1.png"),
+            "output Content_Types covers extra parts"
+        );
     }
 
     #[test]
