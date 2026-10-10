@@ -31,7 +31,7 @@ Probe-first: every task lands a runnable check before any production change
       decision locked (omitted on rewrite, comment in writer); tests
       test_xlsx_recalc_on_edit + test_xlsx_cached_value_not_stale; registry
       flipped F-202/F-203 -> real on 2026-10-10.
-- [ ] 2.2 F-200/206/207 byte-faithful passthrough for parts WO cannot edit.
+- [x] 2.2 F-200/206/207 byte-faithful passthrough for parts WO cannot edit. DONE 2026-10-11: extra_parts channel on WoSpreadsheet (harvest non-core zip parts + base64, splice-back after serialize_xlsx with Content_Types override merge), servers b3a9c8 = b4d419c81; test_xlsx_extra_parts_byte_faithful_roundtrip asserts chart1.xml + pivotTable1.xml + binary image1.png byte-identical. Registry flipped F-200/206/207 -> real on 2026-10-11 (LOCKED, wo-test-harness 9c7012b).
 - [ ] 2.3 F-300/301/302/303/304 pptx read+write skeleton in a new
       wo-pptx crate (or wo-ooxml extension) — inventory + rels first.
 - [x] 2.4 F-400/401 detection alignment in wo-x2t where probe 1.1 diverges. DONE (partial): F-400 mislabel now loud via [Content_Types] sniff in ConversionRouter (redirect-to-detected-family NOT implemented — mismatch error is the contract-satisfying behavior). F-401 DONE (af campaign OO-F401-WORD2003XML): Word2003XmlToDocxConverter (local-name root guard, loud 'not Word 2003 XML: root is X'), reuses OoxmlSerializer; live-probed Success.
