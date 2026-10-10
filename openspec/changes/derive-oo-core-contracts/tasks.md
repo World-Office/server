@@ -32,8 +32,8 @@ Probe-first: every task lands a runnable check before any production change
       test_xlsx_recalc_on_edit + test_xlsx_cached_value_not_stale; registry
       flipped F-202/F-203 -> real on 2026-10-10.
 - [x] 2.2 F-200/206/207 byte-faithful passthrough for parts WO cannot edit. DONE 2026-10-11: extra_parts channel on WoSpreadsheet (harvest non-core zip parts + base64, splice-back after serialize_xlsx with Content_Types override merge), servers b3a9c8 = b4d419c81; test_xlsx_extra_parts_byte_faithful_roundtrip asserts chart1.xml + pivotTable1.xml + binary image1.png byte-identical. Registry flipped F-200/206/207 -> real on 2026-10-11 (LOCKED, wo-test-harness 9c7012b).
-- [ ] 2.3 F-300/301/302/303/304 pptx read+write skeleton in a new
-      wo-pptx crate (or wo-ooxml extension) — inventory + rels first.
+- [x] 2.3 F-300/301/302/303/304 pptx read+write skeleton in a new
+      wo-pptx crate (or wo-ooxml extension) — inventory + rels first. DONE 2026-10-11 (simplified: wo-x2t already has PptxToWoPresentationConverter + WoPresentationToPptxConverter; the gap was part loss on save, fixed with the xlsx extra_parts channel): WoPresentation.extra_parts harvest+splice, test_pptx_extra_parts_byte_faithful_roundtrip, server 2368fe55b; registry flipped F-300/303/304 -> real (LOCKED, wo-test-harness 63d9b3c). F-301 inheritance + F-302 reorder-only remain unprobed (registry partial/missing).
 - [x] 2.4 F-400/401 detection alignment in wo-x2t where probe 1.1 diverges. DONE (partial): F-400 mislabel now loud via [Content_Types] sniff in ConversionRouter (redirect-to-detected-family NOT implemented — mismatch error is the contract-satisfying behavior). F-401 DONE (af campaign OO-F401-WORD2003XML): Word2003XmlToDocxConverter (local-name root guard, loud 'not Word 2003 XML: root is X'), reuses OoxmlSerializer; live-probed Success.
 - [x] 2.5 F-403 PDF header fix if probe 1.2 diverges. DONE: docx->pdf pair shipped (DocxToPdfConverter -> wo-docx-renderer pipeline -> pdf_writer, %PDF-1.7 unit-tested). Round-trip version-preserve documented as divergence (1.4 in -> 1.4 out).
 - [ ] 2.6 F-405 reader gaps: rtf → fb2 → epub, in that order of value.
