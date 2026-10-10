@@ -5,6 +5,26 @@
 
 use serde::{Deserialize, Serialize};
 
+/// A non-core XLSX ZIP part preserved for byte-faithful round-tripping
+/// (charts, pivot tables, media, drawings, comments, etc.).
+///
+/// The 9 core parts that the serializer regenerates are excluded:
+/// `[Content_Types].xml`, `_rels/.rels`, `xl/workbook.xml`,
+/// `xl/_rels/workbook.xml.rels`, `xl/worksheets/sheetN.xml`,
+/// `xl/sharedStrings.xml`, `xl/styles.xml`, `xl/theme/theme1.xml`,
+/// `docProps/core.xml`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct XlsxExtraPart {
+    /// ZIP entry path (e.g., "xl/charts/chart1.xml").
+    pub name: String,
+    /// Base64-encoded part bytes.
+    pub data_base64: String,
+    /// Content-type override from `[Content_Types].xml`, if any.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub content_type: Option<String>,
+}
+
 /// A complete spreadsheet, matching the frontend shape.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -14,6 +34,9 @@ pub struct WoSpreadsheet {
     pub sheet_order: Vec<String>,
     pub sheets: Vec<WoSheet>,
     pub shared_strings: Vec<String>,
+    /// Non-core XLSX parts preserved for byte-faithful round-tripping.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub extra_parts: Vec<XlsxExtraPart>,
 }
 
 /// A single sheet in the spreadsheet.
