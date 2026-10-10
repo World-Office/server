@@ -5,6 +5,7 @@
 //! text-processing functions.
 
 use crate::ast::{BinaryOp, CellErr, CellValue, Expr, FormulaError, UnaryOp};
+use crate::parse;
 
 /// Trait representing a spreadsheet-like data source.
 pub trait Sheet {
@@ -16,6 +17,14 @@ pub trait Sheet {
 /// Evaluate an expression against a sheet.
 pub fn eval(expr: &Expr, sheet: &impl Sheet) -> Result<CellValue, FormulaError> {
     eval_expr(expr, sheet)
+}
+
+/// Parse and evaluate a formula string against a sheet.
+/// Returns Ok if the formula is valid and evaluates successfully,
+/// or Err with the parse or evaluation error.
+pub fn eval_str(formula: &str, sheet: &impl Sheet) -> Result<CellValue, FormulaError> {
+    let expr = parse(formula)?;
+    eval(&expr, sheet)
 }
 
 fn eval_expr(expr: &Expr, sheet: &impl Sheet) -> Result<CellValue, FormulaError> {

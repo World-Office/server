@@ -58,6 +58,9 @@ use wo_ooxml::model::{
 };
 use wo_ooxml::{OoxmlParser, OoxmlSerializer};
 
+use wo_formula::ast::{CellErr, CellValue, FormulaError, a1_to_col};
+use wo_formula::eval::{Sheet as FormulaSheet, eval_str};
+
 use crate::presentation_model::{
     WoAnimationData, WoImageData, WoPresentation, WoShapeData, WoSlide,
 };
@@ -3485,10 +3488,10 @@ fn docx_runs_to_html_inlines(body: &DocxBody, runs: &[DocxRun]) -> Vec<InlineEle
                 // wp:extent (EMU) -> CSS px so scaled images keep their size.
                 let width = run
                     .image_width_emu
-                    .map(|e| (e / wo_common::units::EMU_PER_PX as u32) as u32);
+                    .map(|e| e / wo_common::units::EMU_PER_PX as u32);
                 let height = run
                     .image_height_emu
-                    .map(|e| (e / wo_common::units::EMU_PER_PX as u32) as u32);
+                    .map(|e| e / wo_common::units::EMU_PER_PX as u32);
                 result.push(InlineElement::Image {
                     src,
                     alt: None,
@@ -7252,6 +7255,97 @@ impl FormatConverter for OdsToWoSpreadsheetConverter {
     }
 }
 
+/// Parse an A1-style cell reference ("B3") into 0-based (row, col).
+fn parse_cell_ref_a1(ref_str: &str) -> Option<(u32, u32)> {
+    let col_len = ref_str
+        .chars()
+        .take_while(|c| c.is_ascii_alphabetic())
+        .count();
+    if col_len == 0 {
+        return None;
+    }
+    let (col_part, row_part) = ref_str.split_at(col_len);
+    let col = a1_to_col(col_part).ok()?;
+    let row: u32 = row_part.parse().ok()?;
+    if row == 0 {
+        return None;
+    }
+    Some((row - 1, col))
+}
+
+/// Convert a WoCell to a CellValue for formula evaluation.
+fn wo_cell_to_cell_value(cell: &WoCell) -> CellValue {
+    match cell.t.as_str() {
+        "n" => cell.v.parse::<f64>().map(CellValue::Num).unwrap_or(CellValue::Empty),
+        "b" => match cell.v.to_lowercase().as_str() {
+            "1" | "true" => CellValue::Bool(true),
+            "0" | "false" => CellValue::Bool(false),
+            _ => CellValue::Empty,
+        },
+        "e" => CellValue::Err(CellErr::DivByZero),
+        _ => CellValue::Text(cell.v.clone()),
+    }
+}
+
+/// Convert a CellValue back to a string for XLSX serialization.
+/// Formula results are serialized as inline strings, not shared strings.
+fn cell_value_to_string(value: &CellValue) -> String {
+    match value {
+        CellValue::Num(n) => {
+            if n.fract() == 0.0 {
+                (n.trunc() as i64).to_string()
+            } else {
+                n.to_string()
+            }
+        }
+        CellValue::Bool(b) => b.to_string(),
+        CellValue::Text(s) => s.clone(),
+        CellValue::Empty => String::new(),
+        CellValue::Err(e) => e.to_string(),
+        CellValue::Date(d) => d.to_string(),
+    }
+}
+
+fn formula_error_str(err: &FormulaError) -> String {
+    use FormulaError::*;
+    match err {
+        DivByZero => "#DIV/0!".into(),
+        ValueError => "#VALUE!".into(),
+        RefError | InvalidReference(_) | CircularReference => "#REF!".into(),
+        NameError | FunctionNotFound(_) => "#NAME?".into(),
+        NullError => "#NULL!".into(),
+        NumError => "#NUM!".into(),
+        NotAvailable => "#N/A".into(),
+        Syntax { .. } | UnexpectedEof | InvalidToken(_) | InvalidNumber(_) | WrongArgCount { .. }
+        | TypeMismatch(_) => "#VALUE!".into(),
+    }
+}
+
+/// Sheet implementation for formula evaluation. Owns a pre-built value map.
+struct ValueSheet {
+    values: std::collections::HashMap<(u32, u32), CellValue>,
+}
+
+impl FormulaSheet for ValueSheet {
+    fn cell(&self, row: u32, col: u32) -> Option<&CellValue> {
+        self.values.get(&(row, col))
+    }
+    fn cell_mut(&mut self, _row: u32, _col: u32) -> Option<&mut CellValue> {
+        None
+    }
+    fn range(&self, start_row: u32, start_col: u32, end_row: u32, end_col: u32) -> Vec<&CellValue> {
+        let mut result = Vec::new();
+        for row in start_row..=end_row {
+            for col in start_col..=end_col {
+                if let Some(v) = self.values.get(&(row, col)) {
+                    result.push(v);
+                }
+            }
+        }
+        result
+    }
+}
+
 /// Converts frontend WoSpreadsheet JSON → XLSX bytes.
 pub struct WoSpreadsheetToXlsxConverter;
 
@@ -7281,11 +7375,39 @@ impl FormatConverter for WoSpreadsheetToXlsxConverter {
             }
         }
 
+        // calcChain.xml: omitted on rewrite — spreadsheet apps rebuild it lazily (F-203 decision documented 2026-10-10)
+
         let xlsx_sheets: Vec<XlsxSheet> = wo
             .sheets
             .iter()
             .enumerate()
             .map(|(i, sheet)| {
+                let mut value_map: std::collections::HashMap<(u32, u32), CellValue> = std::collections::HashMap::new();
+                for row in &sheet.rows {
+                    for cell in &row.cells {
+                        if let Some((row_idx, col_idx)) = parse_cell_ref_a1(&cell.r) {
+                            value_map.insert((row_idx, col_idx), wo_cell_to_cell_value(cell));
+                        }
+                    }
+                }
+                let value_sheet = ValueSheet { values: value_map };
+
+                let recalc_map: std::collections::HashMap<String, Result<String, String>> = sheet
+                    .rows
+                    .iter()
+                    .flat_map(|r| &r.cells)
+                    .filter_map(|cell| {
+                        cell.f.as_ref().map(|f| {
+                            let result = match eval_str(f, &value_sheet) {
+                                Ok(CellValue::Err(e)) => Err(e.to_string()),
+                                Ok(v) => Ok(cell_value_to_string(&v)),
+                                Err(e) => Err(formula_error_str(&e)),
+                            };
+                            (cell.r.clone(), result)
+                        })
+                    })
+                    .collect();
+
                 let rows: Vec<XlsxRow> = sheet
                     .rows
                     .iter()
@@ -7294,7 +7416,7 @@ impl FormatConverter for WoSpreadsheetToXlsxConverter {
                             .cells
                             .iter()
                             .map(|cell| {
-                                let cell_type = match cell.t.as_str() {
+                                let mut cell_type = match cell.t.as_str() {
                                     "n" => XlsxCellType::N,
                                     "s" => XlsxCellType::S,
                                     "str" => XlsxCellType::Str,
@@ -7303,23 +7425,38 @@ impl FormatConverter for WoSpreadsheetToXlsxConverter {
                                     "d" => XlsxCellType::D,
                                     _ => XlsxCellType::N,
                                 };
-                                let v = if cell_type == XlsxCellType::S {
+
+                                let (v, has_formula) = if let Some(ref _f) = cell.f {
+                                    match recalc_map.get(&cell.r) {
+                                        Some(Ok(value)) => (value.clone(), true),
+                                        Some(Err(error)) => {
+                                            cell_type = XlsxCellType::E;
+                                            (error.clone(), true)
+                                        }
+                                        None => (cell.v.clone(), true),
+                                    }
+                                } else {
+                                    (cell.v.clone(), false)
+                                };
+
+                                let final_v = if cell_type == XlsxCellType::S && !has_formula {
                                     ss_index
-                                        .get(&cell.v)
+                                        .get(&v)
                                         .map(|i| i.to_string())
                                         .unwrap_or_default()
                                 } else {
-                                    cell.v.clone()
+                                    v
                                 };
+
                                 XlsxCell {
                                     r: cell.r.clone(),
                                     t: cell_type,
-                                    v,
+                                    v: final_v,
                                     s: cell.s,
                                     f: cell.f.clone(),
                                 }
                             })
-                            .collect();
+                             .collect();
                         XlsxRow {
                             r: row.r,
                             ht: None,
@@ -16981,6 +17118,130 @@ mod bridge_converter_tests {
         assert!(
             result.unwrap_err().to_string().contains("Invalid WoSpreadsheet JSON"),
             "expected dedicated parse-error message"
+        );
+    }
+
+    /// Extract the XML block for a single cell element, e.g. `<c r="B1">...</c>`.
+    fn cell_xml_block<'a>(sheet_xml: &'a str, cell_ref: &str) -> &'a str {
+        let start = sheet_xml
+            .find(&format!(r#"<c r="{}""#, cell_ref))
+            .unwrap_or_else(|| panic!("cell {} not found in sheet XML", cell_ref));
+        let end = sheet_xml[start..]
+            .find("</c>")
+            .map(|i| start + i + 4)
+            .expect("unterminated cell element");
+        &sheet_xml[start..end]
+    }
+
+    #[test]
+    fn test_xlsx_recalc_on_edit() {
+        let wo_json = r##"{
+            "version": 1,
+            "name": "Test",
+            "sheetOrder": ["sheet-1"],
+            "sheets": [{
+                "id": "sheet-1",
+                "name": "Sheet1",
+                "rowCount": 1,
+                "columnCount": 2,
+                "rows": [{
+                    "r": 1,
+                    "cells": [
+                        {"r": "A1", "t": "n", "v": "3"},
+                        {"r": "B1", "t": "n", "v": "4", "f": "=A1*2"}
+                    ]
+                }],
+                "merges": []
+            }],
+            "sharedStrings": []
+        }"##;
+        let xlsx = WoSpreadsheetToXlsxConverter
+            .convert(wo_json.as_bytes())
+            .expect("convert wo-spreadsheet to xlsx");
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&xlsx))
+            .expect("xlsx should be valid zip");
+        let sheet_xml = archive
+            .by_name("xl/worksheets/sheet1.xml")
+            .expect("sheet1.xml should exist");
+        let sheet_content = std::io::read_to_string(sheet_xml).expect("read sheet1.xml");
+
+        let b1 = cell_xml_block(&sheet_content, "B1");
+        assert!(
+            b1.starts_with(r#"<c r="B1">"#),
+            "F-204: B1 address r=\"B1\" preserved (got: {})",
+            &b1[..b1.find('>').map_or(b1.len(), |i| i + 1)]
+        );
+        assert!(
+            !b1.contains(r#"t="s""#) && !b1.contains(r#"t="str""#),
+            "F-204: B1 stays numeric (t=n maps to XLSX default N, no string t attr)"
+        );
+        assert!(b1.contains("<f>=A1*2</f>"), "B1 formula preserved");
+        assert!(
+            b1.contains("<v>6</v>"),
+            "B1 recalculated to 6, not stale 4 (got: {})",
+            b1
+        );
+    }
+
+    #[test]
+    fn test_xlsx_cached_value_not_stale() {
+        let wo_json = r##"{
+            "version": 1,
+            "name": "Test",
+            "sheetOrder": ["sheet-1"],
+            "sheets": [{
+                "id": "sheet-1",
+                "name": "Sheet1",
+                "rowCount": 2,
+                "columnCount": 2,
+                "rows": [
+                    {
+                        "r": 1,
+                        "cells": [
+                            {"r": "A1", "t": "n", "v": "3"},
+                            {"r": "B1", "t": "n", "v": "6", "f": "=A1*2"}
+                        ]
+                    },
+                    {
+                        "r": 2,
+                        "cells": [
+                            {"r": "A2", "t": "n", "v": "5"},
+                            {"r": "B2", "t": "n", "v": "0", "f": "=A1/0"}
+                        ]
+                    }
+                ],
+                "merges": []
+            }],
+            "sharedStrings": []
+        }"##;
+        let xlsx = WoSpreadsheetToXlsxConverter
+            .convert(wo_json.as_bytes())
+            .expect("convert wo-spreadsheet to xlsx");
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&xlsx))
+            .expect("xlsx should be valid zip");
+        let sheet_xml = archive
+            .by_name("xl/worksheets/sheet1.xml")
+            .expect("sheet1.xml should exist");
+        let sheet_content = std::io::read_to_string(sheet_xml).expect("read sheet1.xml");
+
+        let b1 = cell_xml_block(&sheet_content, "B1");
+        assert!(b1.contains("<f>=A1*2</f>"), "B1 formula preserved");
+        assert!(
+            b1.contains("<v>6</v>"),
+            "B1 value recomputed to 6, cached value must not go stale (got: {})",
+            b1
+        );
+
+        let b2 = cell_xml_block(&sheet_content, "B2");
+        assert!(
+            b2.contains("<f>=A1/0</f>"),
+            "B2 broken formula preserved (got: {})",
+            b2
+        );
+        assert!(
+            b2.contains(r#"t="e""#) && b2.contains("<v>#DIV/0!</v>"),
+            "B2 evaluates to error; deterministic error value, not stale 0 (got: {})",
+            b2
         );
     }
 

@@ -17,6 +17,8 @@ wo-html = { path = "../wo-html" }
 wo-txt = { path = "../wo-txt" }
 wo-ooxml = { path = "../wo-ooxml" }
 wo-odf = { path = "../wo-odf" }
+wo-sheet = { path = "../wo-sheet" }
+wo-formula = { path = "../wo-formula" }
 wo-docx-renderer = { path = "../wo-docx-renderer" }
 wo-epub = { path = "../wo-epub" }
 wo-fb2 = { path = "../wo-fb2" }
