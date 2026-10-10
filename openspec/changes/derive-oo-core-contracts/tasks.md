@@ -22,8 +22,15 @@ Probe-first: every task lands a runnable check before any production change
       OfficeFileFormats.h; write loud-unsupported divergences.
 
 ## 2. Implementation slices (agentflow-shaped, each gated by its probe)
-- [ ] 2.1 F-201/202/204 xlsx serialization correctness in wo-sheet
-      (sharedStrings dedup, <f>+<v> recache, type elision).
+- [x] 2.1 F-201/202/204 xlsx serialization correctness in wo-sheet
+      (sharedStrings dedup, <f>+<v> recache, type elision). DONE (af campaign
+      OO-2.1-XLSX-RECACHE on TUD worker, merged server eaf34c584): recalc-on-edit
+      implemented — sheet->xlsx serializer recomputes cached <v> via wo-formula
+      eval_str + A1 ref resolution, errors as #DIV/0! etc, stale <v> omitted;
+      F-204 r-addr + t-type preserved in test assertions; F-203 calcChain
+      decision locked (omitted on rewrite, comment in writer); tests
+      test_xlsx_recalc_on_edit + test_xlsx_cached_value_not_stale; registry
+      flipped F-202/F-203 -> real on 2026-10-10.
 - [ ] 2.2 F-200/206/207 byte-faithful passthrough for parts WO cannot edit.
 - [ ] 2.3 F-300/301/302/303/304 pptx read+write skeleton in a new
       wo-pptx crate (or wo-ooxml extension) — inventory + rels first.
