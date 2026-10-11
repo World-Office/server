@@ -899,4 +899,78 @@ mod tests {
             );
         }
     }
+
+    /// 1.6 (F-402): enumerate the OO format taxonomy (the concrete members of
+    /// Common/OfficeFileFormats.h) against this router's registry. Everything
+    /// OO can read or write that WO cannot must fail loudly, naming both
+    /// members — gate-tells-the-truth law — instead of silently doing
+    /// nothing.
+    #[test]
+    fn test_oo_format_taxonomy_loud_unsupported() {
+        // The concrete member formats from AVS_OFFICESTUDIO_FILE_* in
+        // OO's Common/OfficeFileFormats.h (extensions lowercase, family
+        // prefixes stripped), 2026-10-11. WO-internal "wo-" formats are
+        // not in OO's taxonomy and are deliberately omitted.
+        let oo_formats: &[&str] = &[
+            // document
+            "doc", "docx", "odt", "rtf", "txt", "html", "mht", "epub", "fb2",
+            "mobi", "docm", "dotx", "dotm", "odt_flat", "ott", "doc_flat",
+            "docx_flat", "docx_package", "oform", "docxf", "oform_pdf", "pages",
+            "hwp", "hwpx", "hwpml", "md", "xml", "docy",
+            // presentation
+            "pptx", "ppt", "odp", "ppsx", "pptm", "potx", "potm", "odp_flat",
+            "otp", "odg", "key", "pptx_package", "ppty",
+            // spreadsheet
+            "xlsx", "xls", "ods", "csv", "xlsm", "xltx", "xltm", "xlsb",
+            "ods_flat", "ots", "xlsx_flat", "xlsx_package", "numbers", "tsv",
+            "scsv", "xlsy",
+            // crossplatform
+            "pdf", "swf", "djvu", "xps", "svg", "htmlr", "htmlrm", "htmlrc",
+            "pdfa", "ofd",
+            // image
+            "jpg", "tiff", "tga", "gif", "png", "emf", "wmf", "bmp", "cr2",
+            "pcx", "ras", "psd", "ico",
+            // draw
+            "vsdx", "vssx", "vstx", "vsdm", "vssm", "vstm", "vsdy",
+            // other — containers/crypto are detected, but as conversion
+            // sources they must answer loudly, never silently
+            "zip", "json", "htmlzip", "ms_offcrypto", "ms_mitcrypto",
+            "ms_vbaproject", "package_in_ole", "compound", "ooxml", "odf",
+            "old_document", "old_presentation", "old_drawing", "extract_image",
+        ];
+
+        let router = ConversionRouter::new();
+        let mut loud_unsupported = Vec::new();
+        for &fmt in oo_formats {
+            // WO accepts the format if it appears as a source or a target
+            // in the registry — those are not part of the gate this audit
+            // guards (dedicated probes cover them).
+            let supported = oo_formats.iter().any(|&t| {
+                t != fmt && (router.is_supported(fmt, t) || router.is_supported(t, fmt))
+            });
+            if supported {
+                continue;
+            }
+            let res = router.convert(fmt, "txt", b"probe");
+            assert_eq!(
+                res.status,
+                ConversionStatus::UnsupportedFormat,
+                "{fmt}: unsupported OO format must answer loudly"
+            );
+            let msg = res.error.as_deref().unwrap_or("");
+            assert!(
+                msg.contains(fmt) && msg.contains("txt"),
+                "{fmt}: message names both members, got: {msg}"
+            );
+            loud_unsupported.push(fmt);
+        }
+
+        // A non-empty audit: we are asserting against the taxonomy, not past
+        // ourselves. The set shrinks only as converters are added.
+        assert!(
+            loud_unsupported.len() > 70,
+            "expected an overwhelming majority of OO's ~106 formats to be loud-unsupported, got {}: {loud_unsupported:?}",
+            loud_unsupported.len()
+        );
+    }
 }
