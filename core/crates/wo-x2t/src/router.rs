@@ -19,7 +19,7 @@ use crate::converters::{
     EpubToHtmlConverter, EpubToTxtConverter, Fb2ToDocxConverter, Fb2ToTxtConverter,
     HtmlToDocxConverter, HtmlToEpubConverter, HtmlToFb2Converter, HtmlToOdtConverter,
     HtmlToRtfConverter, HtmlToTxtConverter, HwpToDocxConverter, HwpToTxtConverter,
-    OdpToWoPresentationConverter, OdsToWoSpreadsheetConverter, OdtToDocxConverter,
+    PptToWoPresentationConverter, OdpToWoPresentationConverter, OdsToWoSpreadsheetConverter, OdtToDocxConverter,
     OdtToHtmlConverter, OdtToTxtConverter, OfdToDocxConverter, OfdToHtmlConverter,
     OfdToTxtConverter, PdfToWoPdfConverter, PptxToWoPresentationConverter, RtfToDocxConverter,
     RtfToHtmlConverter, RtfToTxtConverter, TxtToDocxConverter, TxtToEpubConverter,
@@ -97,6 +97,7 @@ impl ConversionRouter {
         registry.register(WoPresentationToPptxConverter);
         registry.register(PptxToWoPresentationConverter);
         registry.register(WoPresentationToOdpConverter);
+        registry.register(PptToWoPresentationConverter);
         registry.register(OdpToWoPresentationConverter);
         registry.register(WoPresentationToHtmlConverter);
         registry.register(XlsxToWoSpreadsheetConverter);
@@ -607,8 +608,8 @@ mod tests {
         assert!(pairs.contains(&("xml", "docx")));
         assert_eq!(
             pairs.len(),
-            56,
-            "expected 56 registered converters, got {}",
+            57,
+            "expected 57 registered converters, got {}",
             pairs.len()
         );
     }

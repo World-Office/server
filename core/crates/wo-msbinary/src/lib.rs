@@ -9,6 +9,7 @@ pub mod biff8;
 pub mod detector;
 pub mod model;
 pub mod ole;
+pub mod ppt;
 pub mod roundtrip;
 
 pub use biff8::{parse_biff8_workbook, Biff8Cell, Biff8CellValue, Biff8Sheet, Biff8Workbook};
@@ -16,6 +17,7 @@ pub use biff8::{parse_biff8_workbook, Biff8Cell, Biff8CellValue, Biff8Sheet, Bif
 pub use detector::detect_binary_format;
 pub use model::{BinaryFormat, MsBinaryDocument};
 pub use ole::OleCompoundDoc;
+pub use ppt::{parse_ppt_text, PptDocument, PptSlide};
 pub use roundtrip::MsbinaryRoundtrip;
 
 pub const FORMAT_NAME: &str = "msbinary";

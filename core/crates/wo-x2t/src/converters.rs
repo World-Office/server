@@ -7167,6 +7167,91 @@ impl FormatConverter for XlsxToWoSpreadsheetConverter {
 /// Uses the wo-odf parser to read the ODS ZIP archive and extract sheet/row/cell data.
 pub struct OdsToWoSpreadsheetConverter;
 
+/// Converts legacy PPT bytes → frontend WoPresentation JSON (F-305).
+///
+/// Uses wo-msbinary's OLE reader + minimal PowerPoint 97-2003 text reader:
+/// each slide yields a title + one textbox shape per body paragraph.
+/// Read-only and text-only by design (fidelity L4); positioning, images,
+/// charts and notes are out of scope.
+pub struct PptToWoPresentationConverter;
+
+impl FormatConverter for PptToWoPresentationConverter {
+    fn source_format(&self) -> &str {
+        "ppt"
+    }
+    fn target_format(&self) -> &str {
+        "wo-presentation"
+    }
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        use wo_msbinary::ole::OleCompoundDoc;
+
+        let ole = OleCompoundDoc::parse(data)
+            .map_err(|e| ConversionError::Parse(format!("Invalid PPT (OLE): {e}")))?;
+        let stream = ole
+            .read_stream_by_name("PowerPoint Document")
+            .map_err(|e| ConversionError::Parse(format!("No PowerPoint Document stream: {e}")))?;
+        let doc = wo_msbinary::parse_ppt_text(&stream);
+
+        let slides: Vec<WoSlide> = doc
+            .slides
+            .iter()
+            .enumerate()
+            .map(|(i, s)| {
+                let body_shapes: Vec<WoShapeData> = s
+                    .body
+                    .iter()
+                    .enumerate()
+                    .map(|(j, text)| WoShapeData {
+                        id: format!("body{}_{}", i, j),
+                        shape_type: "textbox".to_string(),
+                        text: Some(text.clone()),
+                        x: 0.0,
+                        y: 0.0,
+                        width: 0.0,
+                        height: 0.0,
+                        rotation: 0.0,
+                        z_index: 0,
+                        fill_color: None,
+                        stroke_color: None,
+                        stroke_width: None,
+                        font_size: None,
+                        font_color: None,
+                        image_data: None,
+                        group_id: None,
+                        connector: None,
+                        chart: None,
+                        gradient_fill: None,
+                        shadow: None,
+                    })
+                    .collect();
+                WoSlide {
+                    id: format!("slide{}", i + 1),
+                    title: s.title.clone(),
+                    layout: "blank".to_string(),
+                    notes: None,
+                    transition_effect: None,
+                    transition_duration: None,
+                    transition_sound_enabled: None,
+                    advance_mode: None,
+                    advance_timing: None,
+                    animations: Vec::new(),
+                    shapes: body_shapes,
+                }
+            })
+            .collect();
+
+        let wo = WoPresentation {
+            version: 1,
+            slide_size: "12192000x6858000".to_string(), // 16:9
+            theme_type: "default".to_string(),
+            theme: None,
+            slides,
+            extra_parts: Vec::new(),
+        };
+        serde_json::to_vec_pretty(&wo).map_err(|e| ConversionError::Serialize(e.to_string()))
+    }
+}
+
 /// Converts legacy XLS bytes → frontend WoSpreadsheet JSON (F-208).
 ///
 /// Uses the wo-msbinary OLE/CFB reader to open the `Workbook` stream and the
@@ -8762,6 +8847,31 @@ mod tests {
         assert_eq!(v(2, 1), "700");
         assert_eq!(v(3, 0), "Gamma");
         assert_eq!(v(3, 1), "3");
+    }
+
+    /// Converts legacy PPT bytes → frontend WoPresentation JSON (F-305).
+    #[test]
+    fn test_ppt_legacy_fixture_slides() {
+        // LibreOffice-generated .ppt (PowerPoint 97 binary) with two real
+        // slides; the file also carries ~13 layout/master containers whose
+        // text is placeholder boilerplate and must be filtered out.
+        let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/legacy-two-slides.ppt");
+        let data = std::fs::read(&fixture).expect("fixture present");
+        let converter = PptToWoPresentationConverter;
+        assert_eq!(converter.source_format(), "ppt");
+        let json = converter.convert(&data).expect("ppt -> wo-presentation");
+        let wo: crate::presentation_model::WoPresentation =
+            serde_json::from_slice(&json).expect("output is WoPresentation JSON");
+        assert_eq!(wo.slides.len(), 2, "two real slides, layouts filtered");
+        assert_eq!(wo.slides[0].title, "Hello PPT");
+        assert_eq!(wo.slides[0].shapes.len(), 1, "one body paragraph");
+        assert_eq!(
+            wo.slides[0].shapes[0].text.as_deref(),
+            Some("Second line")
+        );
+        assert_eq!(wo.slides[1].title, "Bye");
+        assert_eq!(wo.slides[1].shapes[0].text.as_deref(), Some("Last slide"));
     }
 
     /// F-405: doc-family readers must be reachable via the router's chain

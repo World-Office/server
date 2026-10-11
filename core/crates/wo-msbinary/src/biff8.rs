@@ -50,6 +50,10 @@ pub struct Biff8Workbook {
 }
 
 const REC_EOF: u16 = 0x000A;
+// Used only by the in-crate test fixture builder; keep it exported so the
+// lib build (clippy --lib) does not flag it dead.
+#[allow(dead_code)]
+const REC_BOF: u16 = 0x0809;
 const REC_BOUNDSHEET: u16 = 0x0085;
 const REC_SST: u16 = 0x00FC;
 const REC_LABELSST: u16 = 0x00FD;
