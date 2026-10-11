@@ -28,6 +28,7 @@ wo-ofd = { path = "../wo-ofd" }
 wo-djvu = { path = "../wo-djvu" }
 wo-visio = { path = "../wo-visio" }
 wo-pdf = { path = "../wo-pdf" }
+wo-msbinary = { path = "../wo-msbinary" }
 
 [dev-dependencies]
 zip = { workspace = true }

@@ -7167,6 +7167,116 @@ impl FormatConverter for XlsxToWoSpreadsheetConverter {
 /// Uses the wo-odf parser to read the ODS ZIP archive and extract sheet/row/cell data.
 pub struct OdsToWoSpreadsheetConverter;
 
+/// Converts legacy XLS bytes → frontend WoSpreadsheet JSON (F-208).
+///
+/// Uses the wo-msbinary OLE/CFB reader to open the `Workbook` stream and the
+/// minimal BIFF8 reader to extract cells + shared strings. Read-only: formulas
+/// yield their cached value, formatting is not carried over.
+pub struct XlsToWoSpreadsheetConverter;
+
+impl FormatConverter for XlsToWoSpreadsheetConverter {
+    fn source_format(&self) -> &str {
+        "xls"
+    }
+    fn target_format(&self) -> &str {
+        "wo-spreadsheet"
+    }
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        use wo_msbinary::ole::OleCompoundDoc;
+
+        let ole = OleCompoundDoc::parse(data)
+            .map_err(|e| ConversionError::Parse(format!("Invalid XLS (OLE): {e}")))?;
+        // BIFF8 stores the main workbook in the "Workbook" stream; older
+        // BIFF5/7 use "Book".
+        let stream_name = if ole.list_streams().iter().any(|s| s == "Workbook") {
+            "Workbook"
+        } else {
+            "Book"
+        };
+        let wb_stream = ole.read_stream_by_name(stream_name).map_err(|e| {
+            ConversionError::Parse(format!("XLS has no '{stream_name}' stream: {e}"))
+        })?;
+        let wb = wo_msbinary::parse_biff8_workbook(&wb_stream)
+            .map_err(|e| ConversionError::Parse(format!("BIFF8 parse: {e}")))?;
+
+        let mut sheets: Vec<WoSheet> = Vec::new();
+        let mut sheet_order: Vec<String> = Vec::new();
+        for (i, bs) in wb.sheets.iter().enumerate() {
+            // Group cells by row, preserving BIFF8 stream order.
+            let mut by_row: Vec<(u32, Vec<WoCell>)> = Vec::new();
+            let mut max_col = 0u32;
+            for c in &bs.cells {
+                max_col = max_col.max(c.col);
+                // rows always carry cells, keys are u32 in stream order.
+                let row1 = c.row + 1;
+                match by_row.iter_mut().find(|(r, _)| *r == row1) {
+                    Some((_, cells)) => cells.push(cell_to_wo(c)),
+                    None => by_row.push((row1, vec![cell_to_wo(c)])),
+                }
+            }
+            by_row.sort_by_key(|(r, _)| *r);
+            let rows: Vec<WoRow> = by_row
+                .into_iter()
+                .map(|(r, cells)| WoRow { r, cells })
+                .collect();
+            let id = format!("sheet{}", i + 1);
+            sheet_order.push(id.clone());
+            sheets.push(WoSheet {
+                id,
+                name: bs.name.clone(),
+                row_count: rows.len() as u32,
+                column_count: max_col + 1,
+                rows,
+                merges: Vec::new(),
+            });
+        }
+
+        let wo = WoSpreadsheet {
+            version: 3,
+            name: "Book1".to_string(),
+            sheet_order,
+            sheets,
+            shared_strings: Vec::new(), // values resolved into cell v
+            extra_parts: Vec::new(),
+        };
+        serde_json::to_vec_pretty(&wo).map_err(|e| ConversionError::Serialize(e.to_string()))
+    }
+}
+
+/// Map one BIFF8 cell to the WoCell frontend shape.
+fn cell_to_wo(c: &wo_msbinary::Biff8Cell) -> WoCell {
+    use wo_msbinary::Biff8CellValue;
+    let (t, v) = match &c.value {
+        Biff8CellValue::Text(s) => ("s", s.clone()),
+        Biff8CellValue::Number(n) => ("n", format_number_wo(*n)),
+        Biff8CellValue::Bool(b) => (
+            "b",
+            if *b { "TRUE".to_string() } else { "FALSE".to_string() },
+        ),
+        Biff8CellValue::Err(code) => ("e", format!("#Err(0x{code:02X})")),
+        Biff8CellValue::Empty => ("n", String::new()),
+        Biff8CellValue::CachedString(s) => ("s", s.clone()),
+    };
+    // BIFF8 rows are 0-based; the frontend bridge is 1-based.
+    let row1 = c.row + 1;
+    WoCell {
+        r: ods_cell_ref(row1, c.col),
+        t: t.to_string(),
+        v,
+        s: None,
+        f: None,
+    }
+}
+
+/// Format a numeric value the way the JSON bridge expects (no trailing .0).
+fn format_number_wo(n: f64) -> String {
+    if n.fract() == 0.0 && n.abs() < 1e15 {
+        format!("{}", n as i64)
+    } else {
+        format!("{n}")
+    }
+}
+
 /// Convert a 0-based column index to an Excel-style column letter (A, B, ..., Z, AA, AB, ...).
 fn ods_col_to_letter(col: u32) -> String {
     let mut result = String::new();
@@ -8613,6 +8723,45 @@ mod tests {
             "missing 'Hello World' in: {:?}",
             text
         );
+    }
+
+    /// Converts RTF bytes → frontend WoSpreadsheet JSON (F-208).
+    #[test]
+    fn test_xls_legacy_fixture_roundtrip() {
+        // Real LibreOffice-generated .xls (Excel 97/BIFF8) stored as a fixture
+        // under tests/fixtures/legacy-data.xls (5.5K).
+        let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/legacy-data.xls");
+        let data = std::fs::read(&fixture).expect("fixture present");
+        let converter = XlsToWoSpreadsheetConverter;
+        assert_eq!(converter.source_format(), "xls");
+        let json = converter.convert(&data).expect("xls -> wo-spreadsheet");
+        let wo: crate::spreadsheet_model::WoSpreadsheet =
+            serde_json::from_slice(&json).expect("output is WoSpreadsheet JSON");
+        assert_eq!(wo.sheets.len(), 1, "one sheet");
+        let sheet = &wo.sheets[0];
+        assert_eq!(sheet.name, "data");
+        // Header + 3 data rows, values verified for real BIFF8 encoding
+        // (NUMBER for 42.5, RK or NUMBER for 700, TEXT via LABELSST+UTF-16).
+        let v = |r: u32, c: u32| {
+            sheet
+                .rows
+                .iter()
+                .find(|row| row.r == r + 1) // frontend rows are 1-based
+                .and_then(|row| row.cells.iter().find(|cell| {
+                    cell.r == format!("{}{}", (b'A' + c as u8) as char, r + 1)
+                }))
+                .map(|cell| cell.v.clone())
+                .unwrap_or_default()
+        };
+        assert_eq!(v(0, 0), "Name");
+        assert_eq!(v(0, 1), "Score");
+        assert_eq!(v(1, 0), "Alpha");
+        assert_eq!(v(1, 1), "42.5");
+        assert_eq!(v(2, 0), "Beta");
+        assert_eq!(v(2, 1), "700");
+        assert_eq!(v(3, 0), "Gamma");
+        assert_eq!(v(3, 1), "3");
     }
 
     /// F-405: doc-family readers must be reachable via the router's chain
