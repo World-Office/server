@@ -48,7 +48,7 @@ Probe-first: every task lands a runnable check before any production change
       (xlsx2xlsb/xlsb2xlsx Euro-Office examples). Registry flipped F-208 ->
       real (harness f2aa61e), F-305 -> real (harness fba6329), F-209 ->
       real (harness 520a27a), all LOCKED.
-- [ ] 2.8 F-501 ECMA-376 decrypt (read path) with loud wrong-password error.
+- [x] 2.8 F-501 ECMA-376 decrypt (read path) with loud wrong-password error. DONE 2026-10-11: wo-msbinary crypt.rs (is_encrypted_ooxml on CFB EncryptionInfo+EncryptedPackage, decrypt_ooxml wrapping msoffice-crypto agile+standard) + wo-x2t convert_with_password; real Word-encrypted agile and standard fixtures decrypt end-to-end (txt contains lorem ipsum); no-password and wrong-password fail loudly by name. Registry flipped F-501 -> real (harness 0024f4f, LOCKED server bac356b66).
 
 ## 3. Registry hygiene
 - [x] 3.1 Flip parity/fidelity rows as probes go green; keep IDs stable. DONE 2026-10-09: 11/1 PASS/DIVERGE recorded (F-400/401/402/403a/500 -> real; F-403 round-trip version-preserve documented divergence).
