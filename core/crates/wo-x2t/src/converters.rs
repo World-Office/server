@@ -8615,6 +8615,46 @@ mod tests {
         );
     }
 
+    /// F-405: doc-family readers must be reachable via the router's chain
+    /// fallback (rtf → html → fb2/epub, fb2 → docx → epub) when no direct
+    /// converter exists.
+    #[test]
+    fn test_rtf_fb2_epub_reachable_via_chains() {
+        use crate::router::ConversionRouter;
+        let router = ConversionRouter::new();
+        let rtf = r#"{\rtf1\ansi Hello World!\par}"#.as_bytes().to_vec();
+
+        // rtf -> fb2 via html (2 steps).
+        let fb2 = router.convert("rtf", "fb2", &rtf);
+        assert!(
+            fb2.status == crate::model::ConversionStatus::Success,
+            "rtf->fb2 chain failed: {:?}",
+            fb2.error
+        );
+        let fb2_str = String::from_utf8_lossy(&fb2.output.as_ref().unwrap().data);
+        assert!(
+            fb2_str.contains("Hello World"),
+            "fb2 output missing content: {fb2_str}"
+        );
+
+        // rtf -> epub via html (2 steps).
+        let epub = router.convert("rtf", "epub", &rtf);
+        assert!(
+            epub.status == crate::model::ConversionStatus::Success,
+            "rtf->epub chain failed: {:?}",
+            epub.error
+        );
+
+        // fb2 -> epub via docx (2 steps).
+        let fb2_doc = router.convert("rtf", "fb2", &rtf).output.unwrap().data;
+        let epub2 = router.convert("fb2", "epub", &fb2_doc);
+        assert!(
+            epub2.status == crate::model::ConversionStatus::Success,
+            "fb2->epub chain failed: {:?}",
+            epub2.error
+        );
+    }
+
     #[test]
     fn test_rtf_to_txt_multiple_paragraphs() {
         let rtf = r#"{\rtf1\ansi First\par Second\par Third\par}"#;
