@@ -27,7 +27,7 @@ use crate::converters::{
     VsdmToVsdxConverter, VsdxToVsdmConverter, VsdxToWoDiagramConverter, WoDiagramToVsdxConverter,
     WoPdfToPdfConverter, WoPresentationToHtmlConverter, WoPresentationToOdpConverter,
     WoPresentationToPptxConverter,     WoSpreadsheetToOdsConverter, WoSpreadsheetToXlsxConverter, Word2003XmlToDocxConverter,
-    XlsxToWoSpreadsheetConverter, XlsToWoSpreadsheetConverter, XpsToDocxConverter, XpsToHtmlConverter, XpsToTxtConverter,
+    XlsxToWoSpreadsheetConverter, XlsbToWoSpreadsheetConverter, XlsToWoSpreadsheetConverter, XpsToDocxConverter, XpsToHtmlConverter, XpsToTxtConverter,
 };
 use crate::model::{ConversionOutput, ConversionResult, ConversionStatus};
 use crate::FormatConverter;
@@ -102,6 +102,7 @@ impl ConversionRouter {
         registry.register(WoPresentationToHtmlConverter);
         registry.register(XlsxToWoSpreadsheetConverter);
         registry.register(XlsToWoSpreadsheetConverter);
+        registry.register(XlsbToWoSpreadsheetConverter);
         registry.register(OdsToWoSpreadsheetConverter);
         registry.register(WoSpreadsheetToXlsxConverter);
         registry.register(WoSpreadsheetToOdsConverter);
@@ -608,8 +609,8 @@ mod tests {
         assert!(pairs.contains(&("xml", "docx")));
         assert_eq!(
             pairs.len(),
-            57,
-            "expected 57 registered converters, got {}",
+            58,
+            "expected 58 registered converters, got {}",
             pairs.len()
         );
     }

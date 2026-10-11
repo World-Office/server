@@ -10,6 +10,7 @@ pub mod detector;
 pub mod model;
 pub mod ole;
 pub mod ppt;
+pub mod xlsb;
 pub mod roundtrip;
 
 pub use biff8::{parse_biff8_workbook, Biff8Cell, Biff8CellValue, Biff8Sheet, Biff8Workbook};
@@ -19,5 +20,6 @@ pub use model::{BinaryFormat, MsBinaryDocument};
 pub use ole::OleCompoundDoc;
 pub use ppt::{parse_ppt_text, PptDocument, PptSlide};
 pub use roundtrip::MsbinaryRoundtrip;
+pub use xlsb::{parse_xlsb_sheet, parse_xlsb_sst, parse_xlsb_workbook, XlsbCell, XlsbCellValue};
 
 pub const FORMAT_NAME: &str = "msbinary";

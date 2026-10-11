@@ -7328,6 +7328,157 @@ impl FormatConverter for XlsToWoSpreadsheetConverter {
     }
 }
 
+/// XLSB (Excel Binary Workbook) → wo-spreadsheet.
+///
+/// XLSB is a ZIP package with binary parts; this converter reads the
+/// workbook part for sheet names, the shared-strings part for the SST,
+/// then each sheet part's records (read-only, value-level — F-209).
+pub struct XlsbToWoSpreadsheetConverter;
+
+impl FormatConverter for XlsbToWoSpreadsheetConverter {
+    fn source_format(&self) -> &str {
+        "xlsb"
+    }
+    fn target_format(&self) -> &str {
+        "wo-spreadsheet"
+    }
+    fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
+        use wo_msbinary::{parse_xlsb_sheet, parse_xlsb_sst, parse_xlsb_workbook};
+
+        let cursor = std::io::Cursor::new(data);
+        let mut zip = zip::ZipArchive::new(cursor)
+            .map_err(|e| ConversionError::Parse(format!("Invalid XLSB (zip): {e}")))?;
+        let mut entry_reader = |name: &str| -> Result<Vec<u8>, ConversionError> {
+            let mut e = zip
+                .by_name(name)
+                .map_err(|e| ConversionError::Parse(format!("XLSB missing part '{name}': {e}")))?;
+            let mut v = Vec::new();
+            std::io::Read::read_to_end(&mut e, &mut v)
+                .map_err(|e| ConversionError::Parse(format!("XLSB part '{name}' read: {e}")))?;
+            Ok(v)
+        };
+
+        let wb_bytes = entry_reader("xl/workbook.bin")?;
+        let sheets = parse_xlsb_workbook(&wb_bytes)
+            .map_err(|e| ConversionError::Parse(format!("XLSB workbook parse: {e}")))?;
+        if sheets.is_empty() {
+            return Err(ConversionError::Parse("XLSB has no sheets".to_string()));
+        }
+        // RelId → sheet part target via the package rels.
+        let rels: std::collections::HashMap<String, String> = match entry_reader("xl/_rels/workbook.bin.rels") {
+            Ok(xml) => parse_xlsb_rels(&xml),
+            Err(_) => std::collections::HashMap::new(),
+        };
+        // Shared strings are optional.
+        let sst = entry_reader("xl/sharedStrings.bin")
+            .map(|b| parse_xlsb_sst(&b))
+            .unwrap_or_default();
+
+        let mut out_sheets: Vec<WoSheet> = Vec::new();
+        let mut sheet_order: Vec<String> = Vec::new();
+        for (i, sh) in sheets.iter().enumerate() {
+            let target = rels
+                .get(&sh.rel_id)
+                .cloned()
+                .unwrap_or_else(|| format!("worksheets/sheet{}.bin", i + 1));
+            let part = format!("xl/{target}");
+            let bytes = entry_reader(&part)?;
+            let cells = parse_xlsb_sheet(&bytes, &sst);
+
+            let mut by_row: Vec<(u32, Vec<WoCell>)> = Vec::new();
+            let mut max_col = 0u32;
+            for c in &cells {
+                max_col = max_col.max(c.col);
+                // frontend rows are 1-based.
+                let row1 = c.row + 1;
+                let wc = xlsb_cell_to_wo(c);
+                match by_row.iter_mut().find(|(r, _)| *r == row1) {
+                    Some((_, cells)) => cells.push(wc),
+                    None => by_row.push((row1, vec![wc])),
+                }
+            }
+            by_row.sort_by_key(|(r, _)| *r);
+            let rows: Vec<WoRow> = by_row
+                .into_iter()
+                .map(|(r, cells)| WoRow { r, cells })
+                .collect();
+            let id = format!("sheet{}", i + 1);
+            sheet_order.push(id.clone());
+            out_sheets.push(WoSheet {
+                id,
+                name: sh.name.clone(),
+                row_count: rows.len() as u32,
+                column_count: max_col + 1,
+                rows,
+                merges: Vec::new(),
+            });
+        }
+
+        let wo = WoSpreadsheet {
+            version: 3,
+            name: "Book1".to_string(),
+            sheet_order,
+            sheets: out_sheets,
+            shared_strings: Vec::new(), // values resolved into cell v
+            extra_parts: Vec::new(),
+        };
+        serde_json::to_vec_pretty(&wo).map_err(|e| ConversionError::Serialize(e.to_string()))
+    }
+}
+
+/// Parse workbook-level relationships (`workbook.bin.rels`) mapping
+/// rId → target path.
+fn parse_xlsb_rels(xml: &[u8]) -> std::collections::HashMap<String, String> {
+    let mut out = std::collections::HashMap::new();
+    let text = String::from_utf8_lossy(xml);
+    // Minimal, dependency-free scan: every Relationship element carries Id + Target.
+    for m in text.match_indices("<Relationship") {
+        let tag = &text[m.0..];
+        let end = tag.find('>').unwrap_or(tag.len());
+        let tag = &tag[..end];
+        let id = attr(tag, "Id");
+        let tgt = attr(tag, "Target");
+        if let (Some(id), Some(tgt)) = (id, tgt) {
+            out.insert(id, tgt);
+        }
+    }
+    out
+}
+
+fn attr(tag: &str, name: &str) -> Option<String> {
+    let needle = format!("{}=\"", name);
+    let i = tag.find(&needle)?;
+    let rest = &tag[i + needle.len()..];
+    let j = rest.find('"')?;
+    Some(rest[..j].to_string())
+}
+
+/// Map one XLSB cell to the WoCell frontend shape (1-based row in r).
+fn xlsb_cell_to_wo(c: &wo_msbinary::XlsbCell) -> WoCell {
+    let (t, v) = match &c.value {
+        wo_msbinary::XlsbCellValue::Text(s)
+        | wo_msbinary::XlsbCellValue::CachedString(s) => ("s", s.clone()),
+        wo_msbinary::XlsbCellValue::Number(n) => ("n", format_number_wo(*n)),
+        wo_msbinary::XlsbCellValue::Bool(b) => (
+            "b",
+            if *b { "TRUE".to_string() } else { "FALSE".to_string() },
+        ),
+        wo_msbinary::XlsbCellValue::Err(code) => (
+            "e",
+            format!("#Err(0x{code:02X})"),
+        ),
+        wo_msbinary::XlsbCellValue::Blank => ("n", String::new()),
+    };
+    let row1 = c.row + 1;
+    WoCell {
+        r: ods_cell_ref(row1, c.col),
+        t: t.to_string(),
+        v,
+        s: None,
+        f: None,
+    }
+}
+
 /// Map one BIFF8 cell to the WoCell frontend shape.
 fn cell_to_wo(c: &wo_msbinary::Biff8Cell) -> WoCell {
     use wo_msbinary::Biff8CellValue;
@@ -8847,6 +8998,79 @@ mod tests {
         assert_eq!(v(2, 1), "700");
         assert_eq!(v(3, 0), "Gamma");
         assert_eq!(v(3, 1), "3");
+    }
+
+    /// F-209: real XLSB files (from Euro-Office's OOXML test corpus) parse
+    /// with the same cell values that the independent pyxlsb reader reports
+    /// ((2,2)=1.0, (2,3)="qwerty").
+    #[test]
+    fn test_xlsb_real_files_match_pyxlsb() {
+        let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures");
+        for name in ["legacy-real-xlsx2xlsb.xlsb", "legacy-real-xlsb2xlsx.xlsb"] {
+            let data = std::fs::read(base.join(name)).expect("fixture present");
+            let converter = XlsbToWoSpreadsheetConverter;
+            let json = converter.convert(&data).expect("xlsb -> wo-spreadsheet");
+            let wo: crate::spreadsheet_model::WoSpreadsheet =
+                serde_json::from_slice(&json).expect("output is WoSpreadsheet JSON");
+            assert_eq!(wo.sheets.len(), 1, "{name}: one sheet");
+            let sheet = &wo.sheets[0];
+            // pyxlsb reports for the real files: row 3 (0-based), cols 2=1.0,
+            // 3='qwerty' (i.e. the 4th data row: [None,None,1.0,'qwerty']).
+            let v = |r: u32, c: u32| {
+                sheet
+                    .rows
+                    .iter()
+                    .find(|row| row.r == r + 1)
+                    .and_then(|row| row.cells.iter().find(|cell| {
+                        cell.r == format!("{}{}", (b'A' + c as u8) as char, r + 1)
+                    }))
+                    .map(|cell| cell.v.clone())
+                    .unwrap_or_default()
+            };
+            assert_eq!(v(3, 2), "1", "{name} numeric cell");
+            assert_eq!(v(3, 3), "qwerty", "{name} string cell");
+        }
+    }
+
+    /// F-209: XLSB → wo-spreadsheet via the hand-built fixture, which was
+    /// independently validated with pyxlsb before being committed.
+    #[test]
+    fn test_xlsb_legacy_fixture_roundtrip() {
+        let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/legacy-data.xlsb");
+        let data = std::fs::read(&fixture).expect("fixture present");
+        let converter = XlsbToWoSpreadsheetConverter;
+        assert_eq!(converter.source_format(), "xlsb");
+        let json = converter.convert(&data).expect("xlsb -> wo-spreadsheet");
+        let wo: crate::spreadsheet_model::WoSpreadsheet =
+            serde_json::from_slice(&json).expect("output is WoSpreadsheet JSON");
+        assert_eq!(wo.sheets.len(), 2);
+        assert_eq!(wo.sheets[0].name, "Names");
+        assert_eq!(wo.sheets[1].name, "Data");
+        let v = |sheet: &crate::spreadsheet_model::WoSheet, r: u32, c: u32| {
+            sheet
+                .rows
+                .iter()
+                .find(|row| row.r == r + 1) // frontend rows are 1-based
+                .and_then(|row| row.cells.iter().find(|cell| {
+                    cell.r == format!("{}{}", (b'A' + c as u8) as char, r + 1)
+                }))
+                .map(|cell| cell.v.clone())
+                .unwrap_or_default()
+        };
+        let s0 = &wo.sheets[0];
+        assert_eq!(v(s0, 0, 0), "Name");
+        assert_eq!(v(s0, 0, 1), "Score");
+        assert_eq!(v(s0, 1, 0), "Alpha");
+        assert_eq!(v(s0, 1, 1), "42.5");
+        assert_eq!(v(s0, 2, 0), "Beta");
+        assert_eq!(v(s0, 2, 1), "42");
+        let s1 = &wo.sheets[1];
+        assert_eq!(v(s1, 0, 0), "Gamma");
+        assert_eq!(v(s1, 0, 1), "TRUE");
+        assert_eq!(v(s1, 1, 0), "Name");
+        assert_eq!(v(s1, 1, 1), "#Err(0x1F)");
     }
 
     /// Converts legacy PPT bytes → frontend WoPresentation JSON (F-305).
