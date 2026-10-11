@@ -18,8 +18,14 @@ Probe-first: every task lands a runnable check before any production change
       only sldIdLst changed; assert no property flattening on re-save.
 - [x] 1.5 Units probe (F-500): assert 914400 EMU/in, 1440 twips/in, 96 px/in,
       12700 EMU/pt, 635 EMU/twip against WO's units code paths.
-- [ ] 1.6 Format-taxonomy audit (F-402): enumerate wo-x2t's accepted set vs
-      OfficeFileFormats.h; write loud-unsupported divergences.
+- [x] 1.6 Format-taxonomy audit (F-402): enumerate wo-x2t's accepted set vs
+      OfficeFileFormats.h; write loud-unsupported divergences. DONE 2026-10-11:
+      test_oo_format_taxonomy_loud_unsupported in router.rs enumerates the
+      ~106 concrete members of OO Common/OfficeFileFormats.h against the
+      registry. 23 are actually reachable (docx, odt, rtf, txt, html, epub,
+      fb2, pptx, ppt, odp, xlsx, xls, ods, xlsb, pdf, djvu, xps, ofd, hwp,
+      xml, vsdx, vsdm, ...); the other 79 answer UnsupportedFormat naming
+      both members (gate-tells-the-truth). Server 49f9f4381.
 
 ## 2. Implementation slices (agentflow-shaped, each gated by its probe)
 - [x] 2.1 F-201/202/204 xlsx serialization correctness in wo-sheet
