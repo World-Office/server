@@ -38,12 +38,13 @@ Probe-first: every task lands a runnable check before any production change
 - [x] 2.5 F-403 PDF header fix if probe 1.2 diverges. DONE: docx->pdf pair shipped (DocxToPdfConverter -> wo-docx-renderer pipeline -> pdf_writer, %PDF-1.7 unit-tested). Round-trip version-preserve documented as divergence (1.4 in -> 1.4 out).
 - [x] 2.6 F-405 reader gaps: rtf → fb2 → epub, in that order of value. DONE 2026-10-11 (probe, no new code needed): the router's BFS chain fallback already resolves every doc-family path (rtf→html→fb2, rtf→html→epub, fb2→docx→epub) via existing parsers (RtfParser, wo-fb2 Fb2Parser, wo-epub EpubParser); test_rtf_fb2_epub_reachable_via_chains, server 7183af02b; registry F-405 -> real (LOCKED, wo-test-harness 0d94f5f).
 - [ ] 2.7 F-208/209/305 legacy readers (xls, then ppt, then xlsb) — each
-      ships its own fixture + probe. PARTIAL 2026-10-11: F-208 DONE —
-      wo-msbinary BIFF8 reader + XlsToWoSpreadsheetConverter, real
-      LibreOffice fixture test, server 3e4996ada; registry flipped F-208 ->
-      real (LOCKED, wo-test-harness f2aa61e). REMAINING: F-305 legacy PPT
-      (OLE writing is not needed, read-only slide extraction), then F-209
-      XLSB (MS-XLSB binary records + rels).
+      ships its own fixture + probe. PARTIAL 2026-10-11: F-208 (xls, server
+      3e4996ada) + F-305 (ppt, server c879b7243) DONE — wo-msbinary BIFF8
+      reader + XlsToWoSpreadsheetConverter and parse_ppt_text +
+      PptToWoPresentationConverter, both validated on real LibreOffice
+      fixtures. Registry flipped F-208 -> real (harness f2aa61e) and F-305
+      -> real (harness fba6329), both LOCKED. REMAINING: F-209 XLSB
+      (MS-XLSB binary records in ZIP).
 - [ ] 2.8 F-501 ECMA-376 decrypt (read path) with loud wrong-password error.
 
 ## 3. Registry hygiene
