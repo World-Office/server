@@ -58,7 +58,13 @@ Probe-first: every task lands a runnable check before any production change
 
 ## 3. Registry hygiene
 - [x] 3.1 Flip parity/fidelity rows as probes go green; keep IDs stable. DONE 2026-10-09: 11/1 PASS/DIVERGE recorded (F-400/401/402/403a/500 -> real; F-403 round-trip version-preserve documented divergence).
-- [ ] 3.2 Cross-link probe files in features.yaml `commands` where the
-      census wires them.
+- [x] 3.2 Cross-link probe files in features.yaml `commands` where the
+      census wires them. DONE 2026-10-11: seed.py inventories
+      census/probe-*.cjs as Probe nodes and wires each F-ID in a probe's
+      header to its feature via PROBES edges (same mechanism as pytest
+      COVERS). Tagged: probe-wire (F-073/074/084/085), probe-table +
+      probe-merge (F-070), probe-ai (F-143), probe-effect (F-143/073/074).
+      probe-home/probe-tabs stay untagged — honest inventory-only probes.
+      Graph edges 1632 -> 1642 (harness d5c57a6).
 
 <!-- probe results 2026-10-09: 1.1: probed: labeled OK; mislabel = silent empty Success (divergence recorded F-400) | 1.2: probed: pdf round-trip emits %PDF-1.4 (OO: 1.7) + no docx->pdf pair (F-403) | 1.3: probed: parts/addr/elision OK; FOUND+FIXED silent shared-string corruption (F-201, wo-x2t converters.rs, regression test added) | 1.4: probed: 2 slides + sldIdLst order preserved (F-300/302); inheritance chain unprobed | 1.5: probed static: 914400/1440/635/360000 present, 12700 absent, scattered (F-500) -->
