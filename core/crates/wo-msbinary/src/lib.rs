@@ -6,6 +6,7 @@
 //! Replaces the C++ MsBinaryFile module (2,954 files).
 
 pub mod biff8;
+pub mod crypt;
 pub mod detector;
 pub mod model;
 pub mod ole;
@@ -14,6 +15,7 @@ pub mod xlsb;
 pub mod roundtrip;
 
 pub use biff8::{parse_biff8_workbook, Biff8Cell, Biff8CellValue, Biff8Sheet, Biff8Workbook};
+pub use crypt::{decrypt_ooxml, is_encrypted_ooxml, OoxmlDecryptError};
 
 pub use detector::detect_binary_format;
 pub use model::{BinaryFormat, MsBinaryDocument};

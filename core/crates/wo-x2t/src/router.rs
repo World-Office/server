@@ -232,6 +232,44 @@ impl ConversionRouter {
     /// Tries direct conversion first, then falls back to multi-step chains
     /// (up to 3 steps) via intermediate formats.
     pub fn convert(&self, source: &str, target: &str, data: &[u8]) -> ConversionResult {
+        // F-501: a password-protected OOXML file is a CFB container, not a
+        // package. Without a password no converter can open it; fail loudly
+        // instead of letting every converter report a bogus "not a zip".
+        if wo_msbinary::is_encrypted_ooxml(data) {
+            let mut r = error_result(
+                "password-protected ECMA-376 document: provide a password via convert_with_password"
+                    .to_string(),
+                0,
+            );
+            r.status = ConversionStatus::UnsupportedFormat;
+            return r;
+        }
+        self.convert_inner(source, target, data)
+    }
+
+    /// F-501: convert a password-protected OOXML package (ECMA-376 agile or
+    /// standard encryption). Decrypts to the plain ZIP, then runs the normal
+    /// pipeline. Loud, specific error on wrong password.
+    pub fn convert_with_password(
+        &self,
+        source: &str,
+        target: &str,
+        data: &[u8],
+        password: &str,
+    ) -> ConversionResult {
+        match wo_msbinary::decrypt_ooxml(data, password) {
+            Ok(package) => self.convert_inner(source, target, &package),
+            Err(e) => {
+                let mut r = error_result(e.to_string(), 0);
+                if matches!(e, wo_msbinary::OoxmlDecryptError::WrongPassword) {
+                    r.status = ConversionStatus::UnsupportedFormat;
+                }
+                r
+            }
+        }
+    }
+
+    fn convert_inner(&self, source: &str, target: &str, data: &[u8]) -> ConversionResult {
         // Same format = no-op
         if source == target {
             return success_result(data.to_vec(), target, 0);
@@ -817,5 +855,48 @@ mod tests {
         assert!(path.len() >= 3);
         assert_eq!(path.first().unwrap(), "fb2");
         assert_eq!(path.last().unwrap(), "html");
+    }
+
+    /// F-501: password-protected OOXML read path. Without a password the
+    /// router fails loudly (it is a CFB container, not a package); with the
+    /// right password it decrypts and converts; with the wrong one it says
+    /// so by name.
+    #[test]
+    fn test_encrypted_ooxml_requires_and_accepts_password() {
+        let router = ConversionRouter::new();
+        let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
+        for name in ["protected-agile.docx", "protected-standard.docx"] {
+            let data = std::fs::read(base.join(name)).expect("fixture present");
+
+            // no password: loud, cannot be mistaken for a valid conversion
+            let no_pw = router.convert("docx", "txt", &data);
+            assert_eq!(
+                no_pw.status,
+                ConversionStatus::UnsupportedFormat,
+                "{name}: no password is UnsupportedFormat"
+            );
+            let msg = no_pw.error.as_deref().unwrap_or("");
+            assert!(msg.contains("password"), "{name}: message names password: {msg}");
+
+            // wrong password: loud and names the cause
+            let bad = router.convert_with_password("docx", "txt", &data, "WrongPass99");
+            assert_eq!(
+                bad.status,
+                ConversionStatus::UnsupportedFormat,
+                "{name}: wrong password is UnsupportedFormat"
+            );
+            let msg = bad.error.as_deref().unwrap_or("");
+            assert!(msg.contains("wrong password"), "{name}: names wrong password: {msg}");
+
+            // right password: converts to text containing the fixture body
+            let ok = router.convert_with_password("docx", "txt", &data, "Password1234_");
+            assert_eq!(ok.status, ConversionStatus::Success, "{name}: {}", ok.error.as_deref().unwrap_or(""));
+            let out = ok.output.expect("output present");
+            let text = String::from_utf8_lossy(&out.data).to_lowercase();
+            assert!(
+                text.contains("lorem ipsum"),
+                "{name}: decrypted text contains lorem ipsum (got: {text:?})"
+            );
+        }
     }
 }
