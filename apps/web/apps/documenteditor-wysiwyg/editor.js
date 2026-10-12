@@ -381,7 +381,11 @@
     const el = document.getElementById('page-indicator');
     if (!el) return;
     const { cur, total } = currentPageInfo();
-    el.textContent = `Page ${cur} of ${total}${total ? '' : ''}`;
+    // During a reflow the pagination layer is unwound first (sheets.length hits
+    // 0 before the sheets are rebuilt), which would flash a bogus "Page 1 of 0".
+    // Keep the previous count until the layer is back — no flicker.
+    if (!total) return;
+    el.textContent = `Page ${cur} of ${total}`;
   }
 
 

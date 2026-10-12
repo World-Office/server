@@ -130,7 +130,13 @@ body {
      (they hang below the 112px band via position:absolute; top:100%) so every
      ribbon sub-menu was visually cut. Dropped to visible; the fixed height +
      single-row ribbon no longer needs the clamp. */
-  overflow: visible;
+  /* clip (not hidden/auto): the absolute 1411px ribbon row overflows on
+     narrower windows; scroll/hidden would re-introduce the dropdown clamp and
+     a full-scroll container. clip contains the horizontal overflow so the
+     page stops h-scrolling while the below-band .menu-list stays visible. */
+  max-width: 100%;
+  overflow-x: clip;
+  overflow-y: visible;
   background: var(--ribbon);
   border-bottom: 1px solid var(--border);
   flex: 0 0 auto;
@@ -637,6 +643,10 @@ select option { background: var(--bg); color: var(--text); }
   padding: 0 12px;
   background: var(--surface);
   flex: 0 0 auto;
+  /* its .qa quick-access buttons are absolutely pinned (--qa-x) for a wide
+     titlebar; clip the horizontal overhang so the page stops h-scrolling on
+     narrower windows (same containment as .toolbar). */
+  overflow-x: clip;
 }
 .menu-bar .spacer { flex: 1; }
 
@@ -826,6 +836,11 @@ select option { background: var(--bg); color: var(--text); }
   font-size: 12px;
   color: var(--muted);
   position: relative;
+  /* .sb zoom cluster is pinned (--sb-x) for a wide layout; clip horizontal
+     overhang so the page stops h-scrolling on narrower windows. overflow-y
+     visible so upward/sideways .menu-list dropdowns stay unclipped. */
+  overflow-x: clip;
+  overflow-y: visible;
 }
 /* Zoom cluster pinned at OO-golden coordinates (− / slider / + / fit / %) */
 .statusbar .sb {
@@ -1733,3 +1748,31 @@ body.multi-page-view #editor .page-break br { display: none; }
 #editor img.obj-behind { float: none; display: block; margin: 0 auto;
   position: relative; z-index: -1; opacity: .92; }
 #editor img.obj-center { display: block; margin: 4px auto; }
+
+/* ---- right-edge chrome clusters: pin to the window's right edge ----------
+   The OO-golden --qa-x / --rb-x / --sb-x coordinates assume a ~1420px chrome;
+   on common 1280-1366px windows the quick-access, ribbon right tools, zoom
+   cluster and multipage toggle ran off-screen (and dragged a horizontal page
+   scrollbar behind them). Anchoring with left: calc(100% - X) keeps each
+   element's exact design position at full width and pins it to the right
+   margin on narrower windows, so no chrome button is ever off-screen.
+   (translate(-50%) centers each on its computed left, same as the originals.) */
+.menu-bar #btn-redo-qa { left: calc(100% - 30px); }
+.menu-bar #user-chip { left: calc(100% - 84px); }
+.menu-bar #btn-print-qa { left: calc(100% - 131px); }
+.toolbar #btn-ribbon-collapse { left: calc(100% - 124px); }
+.toolbar #btn-theme { left: calc(100% - 90px); }
+.toolbar #btn-find { left: calc(100% - 56px); }
+.toolbar #btn-fullscreen { left: calc(100% - 24px); }
+.statusbar #doc-lang { left: calc(100% - 428px); }
+.statusbar #doc-lang-caret { left: calc(100% - 354px); }
+.statusbar #btn-zoom-out { left: calc(100% - 334px); }
+.statusbar #zoom-wrap { left: calc(100% - 279px); }
+.statusbar #btn-zoom-in { left: calc(100% - 216px); }
+.statusbar #btn-zoom-fit { left: calc(100% - 152px); }
+.statusbar #btn-zoom-reset { left: calc(100% - 85px); }
+.statusbar #btn-multipage { left: calc(100% - 24px); }
+/* language label slices carry inline left: Npx — override to follow the select */
+#doc-lang-label-right b:nth-of-type(1) { left: calc(100% - 490px) !important; }
+#doc-lang-label-right b:nth-of-type(2) { left: calc(100% - 452px) !important; }
+#doc-lang-label-right b:nth-of-type(3) { left: calc(100% - 407px) !important; }
