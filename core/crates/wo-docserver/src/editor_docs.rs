@@ -93,6 +93,7 @@ pub async fn document_html(
 
 #[derive(Deserialize)]
 struct SaveBody {
+    #[serde(default)]
     html: String,
 }
 
@@ -118,7 +119,7 @@ pub async fn save_document(
     if let Some(existing) = state.store.get_content(&id).await? {
         if crate::docx_util::is_restricted(&existing) {
             return Err(AppError::Forbidden(
-                "document is protected: restrict editing is on — unprotect to write".into(),
+                "document is protected: restrict editing is on — unprotect to save".into(),
             ));
         }
     }
@@ -145,6 +146,17 @@ pub async fn export_document(
         return Err(AppError::BadRequest("Invalid file id".into()));
     }
     let format = params.get("format").map(String::as_str).unwrap_or("pdf");
+    let mime = match format {
+        "html" => "text/html",
+        "odt" => "application/vnd.oasis.opendocument.text",
+        "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "pdf" => "application/pdf",
+        _ => {
+            return Err(AppError::BadRequest(format!(
+                "unsupported format: {format}"
+            )))
+        }
+    };
     let data = if let Some(d) = state.store.get_content(&id).await? {
         Some(d)
     } else if id == "demo.docx" {
@@ -157,13 +169,7 @@ pub async fn export_document(
     };
 
     let out = convert(&state, "docx", format, &data)?;
-    let mime = match format {
-        "pdf" => "application/pdf",
-        "html" => "text/html",
-        "txt" => "text/plain",
-        _ => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    };
-    let base = id.trim_end_matches(".docx");
+    let base = id.rsplit_once('.').map(|(b, _)| b).unwrap_or(&id);
     let mut headers = HeaderMap::new();
     headers.insert(header::CONTENT_TYPE, HeaderValue::from_static(mime));
     if let Ok(v) = HeaderValue::from_str(&format!("attachment; filename=\"{base}.{format}\"")) {

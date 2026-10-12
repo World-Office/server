@@ -2444,6 +2444,103 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_save_defaults_and_export_formats() {
+        let dir = std::env::temp_dir().join(format!(
+            "wo-export-{}-{}",
+            std::process::id(),
+            rand_suffix()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let mut cfg = test_config();
+        cfg.data_dir = dir.to_str().unwrap().to_string();
+        let app = create_app(cfg);
+
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/documents/new")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let doc_id = v["doc_id"].as_str().unwrap().to_string();
+
+        // a body without an html field still saves (Python defaults to "")
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/documents/{doc_id}/save"))
+                    .header("content-type", "application/json")
+                    .body(Body::from("{}"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK, "{{}} (no html) must save");
+
+        for (fmt, mime) in [
+            ("pdf", "application/pdf"),
+            ("odt", "application/vnd.oasis.opendocument.text"),
+            (
+                "docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ),
+            ("html", "text/html"),
+        ] {
+            let resp = app
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .method("POST")
+                        .uri(format!("/api/documents/{doc_id}/export?format={fmt}"))
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(resp.status(), StatusCode::OK, "export {fmt}");
+            assert_eq!(
+                resp.headers()
+                    .get("content-type")
+                    .and_then(|v| v.to_str().ok()),
+                Some(mime),
+                "export {fmt} mime"
+            );
+        }
+
+        // unsupported export formats are 400 (Python rejects them, no txt)
+        for fmt in ["txt", "bogus"] {
+            let resp = app
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .method("POST")
+                        .uri(format!("/api/documents/{doc_id}/export?format={fmt}"))
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(
+                resp.status(),
+                StatusCode::BAD_REQUEST,
+                "unsupported export format {fmt} -> 400"
+            );
+        }
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[tokio::test]
     async fn test_agents_run_detail_404_and_record() {
         let mut cfg = test_config();
         cfg.data_dir = std::env::temp_dir()
