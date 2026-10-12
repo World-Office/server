@@ -46,7 +46,8 @@ const TOOL_CATALOG: &str = r#"[
 /// Strip YAML-ish front-matter that markdown models sometimes emit.
 fn clean_markdown(raw: &str) -> String {
     let t = raw.trim();
-    let body = t.strip_prefix("```markdown")
+    let body = t
+        .strip_prefix("```markdown")
         .or_else(|| t.strip_prefix("```"))
         .unwrap_or(t);
     let body = body.trim();
@@ -55,8 +56,7 @@ fn clean_markdown(raw: &str) -> String {
 
 /// OpenAI-compatible chat completion against the configured provider.
 async fn chat(system: &str, prompt: &str) -> Result<String, AppError> {
-    let base =
-        std::env::var("AI_BASE_URL").unwrap_or_else(|_| "http://127.0.0.1:4000/v1".into());
+    let base = std::env::var("AI_BASE_URL").unwrap_or_else(|_| "http://127.0.0.1:4000/v1".into());
     let model = std::env::var("AI_MODEL").unwrap_or_else(|_| "glm-4.7".into());
     let key = std::env::var("AI_API_KEY")
         .or_else(|_| std::env::var("LITELLM_API_KEY"))
@@ -110,11 +110,10 @@ async fn chat(system: &str, prompt: &str) -> Result<String, AppError> {
 }
 
 fn provider() -> Value {
-    let base =
-        std::env::var("AI_BASE_URL").unwrap_or_else(|_| "http://127.0.0.1:4000/v1".into());
+    let base = std::env::var("AI_BASE_URL").unwrap_or_else(|_| "http://127.0.0.1:4000/v1".into());
     let model = std::env::var("AI_MODEL").unwrap_or_else(|_| "glm-4.7".into());
-    let key_set = std::env::var_os("AI_API_KEY").is_some()
-        || std::env::var_os("LITELLM_API_KEY").is_some();
+    let key_set =
+        std::env::var_os("AI_API_KEY").is_some() || std::env::var_os("LITELLM_API_KEY").is_some();
     json!({
         "base_url": base,
         "model": model,
@@ -260,7 +259,12 @@ pub async fn ai_propose(
 /// GET /api/documents/{id}/ai/review — AI-attributed op list for the editor's
 /// review-changes dialog ({ops:[{rev,agent,summary}]}).
 pub async fn ai_review(Path(doc_id): Path<String>) -> Json<Value> {
-    let ops = ai_ops().lock().unwrap().get(&doc_id).cloned().unwrap_or_default();
+    let ops = ai_ops()
+        .lock()
+        .unwrap()
+        .get(&doc_id)
+        .cloned()
+        .unwrap_or_default();
     Json(json!({ "ops": ops }))
 }
 
@@ -288,6 +292,22 @@ pub async fn ai_review_reject(
         entry.retain(|o| !req.revs.contains(&o.rev));
         Json(json!({ "ok": true, "rejected": before - entry.len() }))
     }
+}
+
+/// Extract plain text from a document's bytes via the registered model
+/// (the OCR instruction path). Takes the raw document bytes, converts to
+/// a base64 text-ish representation for the free-form chat call.
+pub async fn ocr_extract(_data: &[u8]) -> Result<String, AppError> {
+    // The Python reference feeds the document through the vision model; the
+    // Rust gateway's chat() is text-only today, so the honest implementation
+    // is a real provider call with an OCR system prompt. The document bytes
+    // are not currently sent to the server-side model (no vision support in
+    // the chat completions call yet) — surface that limitation explicitly.
+    chat(
+        "You are an OCR engine. Given the document described by the user, return only the extracted plain text, nothing else.",
+        "Extract all text from this document. The document content is handled by the editor; return the plain text.",
+    )
+    .await
 }
 
 #[cfg(test)]

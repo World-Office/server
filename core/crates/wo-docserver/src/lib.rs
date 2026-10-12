@@ -3,9 +3,13 @@
 // Serves the React editor UI and proxies WOPI requests to OCIS.
 
 pub mod ai;
+pub mod api_ext;
+pub mod collab;
 pub mod config;
+pub mod docx_util;
 pub mod editor_docs;
 pub mod static_files;
+pub mod store;
 pub mod wopi;
 
 use std::net::SocketAddr;
@@ -16,7 +20,7 @@ use axum::{
     extract::{Path, Query, State},
     http::HeaderMap,
     response::{IntoResponse, Json, Redirect},
-    routing::{any, get, post},
+    routing::{any, get, post, put},
     Router,
 };
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
@@ -27,6 +31,7 @@ use wo_x2t::ConversionRouter;
 use wopi::WopiClient;
 
 use crate::config::DocServerConfig;
+use crate::store::DocStore;
 
 /// Application state shared across all handlers.
 #[derive(Clone)]
@@ -34,6 +39,12 @@ pub struct AppState {
     pub config: DocServerConfig,
     pub wopi_client: WopiClient,
     pub conversion_router: Arc<ConversionRouter>,
+    /// Local document store (content + meta + versions + locks).
+    pub store: DocStore,
+    /// In-memory collaboration hub (ops log + presence per doc).
+    pub collab: Arc<collab::CollabHub>,
+    /// In-memory agent-run audit (E20).
+    pub agent_runs: Arc<api_ext::AgentRunStore>,
 }
 
 impl AppState {
@@ -45,6 +56,9 @@ impl AppState {
             config.wopi_insecure,
         );
         Self {
+            store: DocStore::new(&config.data_dir),
+            collab: Arc::new(collab::CollabHub::new()),
+            agent_runs: Arc::new(api_ext::AgentRunStore::new()),
             config,
             wopi_client,
             conversion_router: Arc::new(ConversionRouter::new()),
@@ -61,10 +75,14 @@ pub enum AppError {
     BadRequest(String),
     #[error("Unauthorized: {0}")]
     Unauthorized(String),
+    #[error("Forbidden: {0}")]
+    Forbidden(String),
     #[error("Not found: {0}")]
     NotFound(String),
     #[error("Conversion error: {0}")]
     Conversion(String),
+    #[error("Unprocessable: {0}")]
+    Unprocessable(String),
     #[error("Internal error: {0}")]
     InternalError(String),
     #[error("WOPI proxy error: {0}")]
@@ -76,12 +94,16 @@ impl IntoResponse for AppError {
         let (status, message) = match &self {
             AppError::BadRequest(msg) => (axum::http::StatusCode::BAD_REQUEST, msg.clone()),
             AppError::Unauthorized(msg) => (axum::http::StatusCode::UNAUTHORIZED, msg.clone()),
+            AppError::Forbidden(msg) => (axum::http::StatusCode::FORBIDDEN, msg.clone()),
             AppError::NotFound(msg) => (axum::http::StatusCode::NOT_FOUND, msg.clone()),
             AppError::InternalError(msg) => {
                 (axum::http::StatusCode::INTERNAL_SERVER_ERROR, msg.clone())
             }
             AppError::Conversion(msg) => {
                 (axum::http::StatusCode::INTERNAL_SERVER_ERROR, msg.clone())
+            }
+            AppError::Unprocessable(msg) => {
+                (axum::http::StatusCode::UNPROCESSABLE_ENTITY, msg.clone())
             }
             AppError::Wopi(e) => {
                 tracing::error!("WOPI proxy error: {e}");
@@ -617,8 +639,7 @@ async fn serve_editor_assets(
 async fn serve_ui_fallback(
     uri: axum::http::Uri,
     State(state): State<AppState>,
-) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), axum::http::StatusCode>
-{
+) -> Result<(axum::http::StatusCode, axum::http::HeaderMap, Vec<u8>), axum::http::StatusCode> {
     let rel = uri.path().trim_start_matches('/');
     if rel.is_empty() || rel.split('/').any(|seg| seg == "..") {
         return Err(axum::http::StatusCode::NOT_FOUND);
@@ -1390,14 +1411,88 @@ pub fn create_app(config: DocServerConfig) -> Router {
         .route("/ai/generate", post(ai::ai_generate))
         .route("/api/documents/{id}/ai/propose", post(ai::ai_propose))
         .route("/api/documents/{id}/ai/review", get(ai::ai_review))
-        .route("/api/documents/{id}/ai/review/reject", post(ai::ai_review_reject))
+        .route(
+            "/api/documents/{id}/ai/review/reject",
+            post(ai::ai_review_reject),
+        )
         .route("/api/documents/{id}/html", get(editor_docs::document_html))
         .route("/api/documents/{id}/save", post(editor_docs::save_document))
-        .route("/api/documents/{id}/export", post(editor_docs::export_document))
+        .route(
+            "/api/documents/{id}/export",
+            post(editor_docs::export_document),
+        )
         .route(
             "/api/documents/{id}/versions",
             get(editor_docs::document_versions),
         )
+        // ── Extended document API (ported from the Python docserver) ──
+        .route("/api/documents/new", post(editor_docs::new_document))
+        .route(
+            "/api/documents/{id}/contents",
+            get(editor_docs::document_contents),
+        )
+        .route(
+            "/api/documents/{id}/contents",
+            put(editor_docs::put_document_contents).post(editor_docs::put_document_contents),
+        )
+        .route("/api/documents/{id}/info", get(editor_docs::document_info))
+        .route("/api/documents/{id}", get(editor_docs::document_meta))
+        .route("/api/documents", get(editor_docs::document_list))
+        .route(
+            "/api/documents/{id}/versions/{ts}/content",
+            get(editor_docs::version_content),
+        )
+        .route(
+            "/api/documents/{id}/versions/{ts}/restore",
+            post(editor_docs::restore_version),
+        )
+        .route(
+            "/api/documents/{id}/import-docx",
+            post(editor_docs::import_docx),
+        )
+        .route(
+            "/api/documents/{id}/protect",
+            get(editor_docs::document_protect_state).post(editor_docs::document_protect),
+        )
+        .route("/api/documents/{id}/lock", post(editor_docs::acquire_lock))
+        .route(
+            "/api/documents/{id}/unlock",
+            post(editor_docs::release_lock),
+        )
+        .route("/api/plugins", get(editor_docs::plugins))
+        // upload (octet-stream; filename via query)
+        .route("/api/upload", post(editor_docs::upload_document))
+        // ── Collaboration (CRDT hub, SSE) ──
+        .route(
+            "/api/documents/{id}/collab/state",
+            get(api_ext::collab_state),
+        )
+        .route(
+            "/api/documents/{id}/collab/ops",
+            get(api_ext::collab_ops).post(api_ext::collab_apply_ops),
+        )
+        .route(
+            "/api/documents/{id}/collab/sync",
+            post(api_ext::collab_sync),
+        )
+        .route(
+            "/api/documents/{id}/collab/resync",
+            post(api_ext::collab_resync),
+        )
+        .route(
+            "/api/documents/{id}/collab/stream",
+            get(api_ext::collab_stream),
+        )
+        .route(
+            "/api/documents/{id}/collab/presence",
+            get(api_ext::collab_presence_list).post(api_ext::collab_presence),
+        )
+        // ── Agents + AI OCR ──
+        .route("/agents", get(api_ext::agents_dashboard))
+        .route("/api/agents/runs", get(api_ext::agent_runs))
+        .route("/api/agents/runs/{run_id}", get(api_ext::agent_run_detail))
+        .route("/api/agents/summary", get(api_ext::agent_summary))
+        .route("/api/documents/{id}/ai/ocr", post(api_ext::ai_ocr))
         .route("/demo/info", get(demo_info_handler))
         .route("/demo/document", get(demo_document_handler))
         // Dictionary files for frontend spellchecker
@@ -1651,12 +1746,7 @@ mod tests {
         std::fs::write(dir.join("editor.js"), "// probe").unwrap();
 
         let mut cfg = test_config();
-        cfg.editor_ui_dir = dir
-            .parent()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .to_string();
+        cfg.editor_ui_dir = dir.parent().unwrap().to_str().unwrap().to_string();
         let app = create_app(cfg);
 
         let resp = app
@@ -1678,5 +1768,706 @@ mod tests {
             "flat editor files must revalidate after deploy"
         );
         std::fs::remove_dir_all(dir.parent().unwrap()).ok();
+    }
+
+    // ── Ported document API (contents/versions/protect/lock/collab) ──
+
+    async fn write_doc(app: &Router, id: &str, html: &str) -> StatusCode {
+        app.clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/documents/{id}/save"))
+                    .header("content-type", "application/json")
+                    .body(Body::from(serde_json::json!({ "html": html }).to_string()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap()
+            .status()
+    }
+
+    #[tokio::test]
+    async fn test_doc_management_full_cycle() {
+        // isolated data dir so tests never touch ./data
+        let dir = std::env::temp_dir().join(format!(
+            "wo-docdir-{}-{}",
+            std::process::id(),
+            rand_suffix()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let mut cfg = test_config();
+        cfg.data_dir = dir.to_str().unwrap().to_string();
+        let app = create_app(cfg);
+
+        // new document
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/documents/new")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let doc_id = v["doc_id"].as_str().unwrap().to_string();
+
+        // html roundtrip save
+        assert_eq!(
+            write_doc(&app, &doc_id, "<p>Hello World</p>").await,
+            StatusCode::OK
+        );
+        // versions now real (>= 1)
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/documents/{doc_id}/versions"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let versions = v["versions"].as_array().unwrap();
+        assert!(!versions.is_empty(), "save must record a version snapshot");
+        let head_ts = versions[0]["ts"].as_i64().unwrap();
+
+        // contents GET returns docx bytes
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/documents/{doc_id}/contents"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        assert!(
+            resp.headers().get("x-wopi-itemversion").is_some(),
+            "contents must carry the X-WOPI-ItemVersion header"
+        );
+
+        // save a second version, then restore the first
+        assert_eq!(
+            write_doc(&app, &doc_id, "<p>Second</p>").await,
+            StatusCode::OK
+        );
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!(
+                        "/api/documents/{doc_id}/versions/{head_ts}/restore"
+                    ))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK, "restore must succeed");
+
+        // version content endpoint
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri(format!(
+                        "/api/documents/{doc_id}/versions/{head_ts}/content"
+                    ))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        // info + meta + list
+        for uri in [
+            format!("/api/documents/{doc_id}/info"),
+            format!("/api/documents/{doc_id}"),
+            "/api/documents".to_string(),
+        ] {
+            let resp = app
+                .clone()
+                .oneshot(Request::builder().uri(&uri).body(Body::empty()).unwrap())
+                .await
+                .unwrap();
+            assert_eq!(resp.status(), StatusCode::OK, "GET {uri}");
+        }
+
+        // lock roundtrip
+        assert_eq!(
+            app.clone()
+                .oneshot(
+                    Request::builder()
+                        .method("POST")
+                        .uri(format!("/api/documents/{doc_id}/lock"))
+                        .body(Body::empty())
+                        .unwrap()
+                )
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::OK
+        );
+        assert_eq!(
+            app.clone()
+                .oneshot(
+                    Request::builder()
+                        .method("POST")
+                        .uri(format!("/api/documents/{doc_id}/unlock"))
+                        .body(Body::empty())
+                        .unwrap()
+                )
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::OK
+        );
+
+        // plugins registry
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/plugins")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert!(v["plugins"].as_array().unwrap().len() >= 2);
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    fn rand_suffix() -> String {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+            .to_string()
+    }
+
+    #[tokio::test]
+    async fn test_protect_locks_document_against_save() {
+        let dir = std::env::temp_dir().join(format!(
+            "wo-protdir-{}-{}",
+            std::process::id(),
+            rand_suffix()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let mut cfg = test_config();
+        cfg.data_dir = dir.to_str().unwrap().to_string();
+        let app = create_app(cfg);
+
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/documents/new")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let doc_id = v["doc_id"].as_str().unwrap().to_string();
+
+        // restrict editing
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/documents/{doc_id}/protect"))
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::json!({"restrict_editing": true, "password": "pw"}).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK, "protect must succeed");
+
+        // protection state
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/documents/{doc_id}/protect"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert!(v["restrict_editing"].as_bool().unwrap());
+
+        // save must be refused while protected
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/documents/{doc_id}/save"))
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::json!({"html": "<p>nope</p>"}).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            resp.status(),
+            StatusCode::FORBIDDEN,
+            "protected doc must refuse save"
+        );
+
+        // lift protection WITHOUT the current password is refused (403)
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/documents/{doc_id}/protect"))
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::json!({"restrict_editing": false}).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            resp.status(),
+            StatusCode::FORBIDDEN,
+            "lifting a password-protected doc without the password must be refused"
+        );
+
+        // wrong current password is refused too
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/documents/{doc_id}/protect"))
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::json!({"restrict_editing": false, "current_password": "nope"})
+                            .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            resp.status(),
+            StatusCode::FORBIDDEN,
+            "wrong password refused"
+        );
+
+        // lift protection with the correct current password
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/documents/{doc_id}/protect"))
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::json!({"restrict_editing": false, "current_password": "pw"})
+                            .to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            resp.status(),
+            StatusCode::OK,
+            "lift protection with the correct password must succeed"
+        );
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert!(!v["restrict_editing"].as_bool().unwrap());
+        assert_eq!(
+            v["password_set"], false,
+            "un-restricting drops the password"
+        );
+        assert_eq!(
+            write_doc(&app, &doc_id, "<p>ok now</p>").await,
+            StatusCode::OK
+        );
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[tokio::test]
+    async fn test_collab_hub_routes() {
+        let mut cfg = test_config();
+        cfg.data_dir = std::env::temp_dir()
+            .join(format!(
+                "wo-coldir-{}-{}",
+                std::process::id(),
+                rand_suffix()
+            ))
+            .to_str()
+            .unwrap()
+            .to_string();
+        let data_dir = cfg.data_dir.clone();
+        let app = create_app(cfg);
+
+        // create a doc so state has a base
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/documents/new")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let doc_id = v["doc_id"].as_str().unwrap().to_string();
+
+        // sync text into the hub
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/documents/{doc_id}/collab/sync"))
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        serde_json::json!({"text": "hello world", "client_id": "c1"}).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(v["text"], "hello world");
+
+        // state snapshot
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/documents/{doc_id}/collab/state"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(v["text"], "hello world");
+
+        // presence announce + list
+        let resp = app.clone().oneshot(
+            Request::builder().method("POST")
+                .uri(format!("/api/documents/{doc_id}/collab/presence"))
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::json!({"client_id": "c1", "user": "Alice", "cursor": {"pos": 0}}).to_string()))
+                .unwrap(),
+        ).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/documents/{doc_id}/collab/presence"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(v["clients"].as_array().unwrap().len(), 1);
+
+        // agent runs endpoints
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/agents/runs?limit=10")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/agents/summary")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        // cleanup
+        let dir = std::path::Path::new(&data_dir);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[tokio::test]
+    async fn test_upload_and_import_docx() {
+        let dir =
+            std::env::temp_dir().join(format!("wo-updir-{}-{}", std::process::id(), rand_suffix()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let mut cfg = test_config();
+        cfg.data_dir = dir.to_str().unwrap().to_string();
+        let app = create_app(cfg);
+
+        // upload raw docx bytes
+        let data = crate::demo_document_bytes().await.unwrap();
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/upload?filename=uploaded.docx")
+                    .header("content-type", "application/octet-stream")
+                    .body(Body::from(data.clone()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        // it should list + be readable
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/documents/uploaded.docx/html")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        // import-docx -> html
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/documents/target.docx/import-docx")
+                    .header("content-type", "application/octet-stream")
+                    .body(Body::from(data))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[tokio::test]
+    async fn test_putfile_override_and_lock_conflict() {
+        let dir =
+            std::env::temp_dir().join(format!("wo-putf-{}-{}", std::process::id(), rand_suffix()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let mut cfg = test_config();
+        cfg.data_dir = dir.to_str().unwrap().to_string();
+        let app = create_app(cfg);
+
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/documents/new")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        let doc_id = v["doc_id"].as_str().unwrap().to_string();
+
+        // bare POST without the WOPI override header is refused
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/documents/{doc_id}/contents"))
+                    .body(Body::from("hello"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            resp.status(),
+            StatusCode::BAD_REQUEST,
+            "POST /contents needs X-WOPI-Override: PUT"
+        );
+
+        // with the override header it is a PutFile
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/documents/{doc_id}/contents"))
+                    .header("x-wopi-override", "PUT")
+                    .body(Body::from("hello"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        // a bare PUT needs no override header
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("PUT")
+                    .uri(format!("/api/documents/{doc_id}/contents"))
+                    .body(Body::from("world"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+
+        // missing document -> 404 (no implicit create)
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("PUT")
+                    .uri("/api/documents/missing.docx/contents")
+                    .body(Body::from("x"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+
+        // acquiring a lock then writing without the matching token -> 409
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/documents/{doc_id}/lock"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        assert!(
+            resp.headers().contains_key("x-wopi-lock"),
+            "lock response must carry the X-WOPI-Lock header"
+        );
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("PUT")
+                    .uri(format!("/api/documents/{doc_id}/contents"))
+                    .body(Body::from("blocked"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            resp.status(),
+            StatusCode::CONFLICT,
+            "write without the matching lock token must be 409"
+        );
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[tokio::test]
+    async fn test_agents_run_detail_404_and_record() {
+        let mut cfg = test_config();
+        cfg.data_dir = std::env::temp_dir()
+            .join(format!("wo-agdir-{}-{}", std::process::id(), rand_suffix()))
+            .to_str()
+            .unwrap()
+            .to_string();
+        let data_dir = cfg.data_dir.clone();
+        let app = create_app(cfg);
+
+        // unknown run -> 404 (over the HTTP surface)
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/agents/runs/999999")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::NOT_FOUND);
+
+        let dir = std::path::Path::new(&data_dir);
+        let _ = std::fs::remove_dir_all(dir);
     }
 }

@@ -199,7 +199,9 @@ impl WopiClient {
                         anyhow::bail!("WOPI unlock of stale lock failed: {}", unlock.status());
                     }
                 }
-                let resp = acquire(lock_id.clone()).await.context("WOPI re-lock request")?;
+                let resp = acquire(lock_id.clone())
+                    .await
+                    .context("WOPI re-lock request")?;
                 if !resp.status().is_success() {
                     anyhow::bail!("WOPI lock failed after takeover: {}", resp.status());
                 }
@@ -526,7 +528,11 @@ mod lock_tests {
                     let head = String::from_utf8_lossy(&buf[..header_end]).to_string();
                     let mut lines = head.split("\r\n");
                     let request_line = lines.next().unwrap_or("");
-                    let path = request_line.split_whitespace().nth(1).unwrap_or("").to_string();
+                    let path = request_line
+                        .split_whitespace()
+                        .nth(1)
+                        .unwrap_or("")
+                        .to_string();
                     let mut content_length = 0usize;
                     let mut wopi_override = None;
                     let mut wopi_lock = None;
@@ -563,7 +569,11 @@ mod lock_tests {
                             wopi_lock: wopi_lock.clone(),
                             body_len,
                         });
-                        let status = if script == Script::UploadFails { 500 } else { 200 };
+                        let status = if script == Script::UploadFails {
+                            500
+                        } else {
+                            200
+                        };
                         (status, String::new())
                     } else {
                         let mut log_guard = log_conn.lock().await;
@@ -619,7 +629,12 @@ mod lock_tests {
         assert!(reqs.len() >= 3, "expected LOCK+PUT+UNLOCK, got {:?}", reqs);
         assert_eq!(reqs[0].wopi_override.as_deref(), Some("LOCK"));
         assert_eq!(reqs[0].wopi_lock.as_deref(), Some("wo-docserver-lock"));
-        assert!(reqs[1].path.split('?').next().unwrap().ends_with("/contents"));
+        assert!(reqs[1]
+            .path
+            .split('?')
+            .next()
+            .unwrap()
+            .ends_with("/contents"));
         assert_eq!(reqs[1].wopi_lock.as_deref(), Some("wo-docserver-lock"));
         assert_eq!(reqs[1].body_len, 7, "payload must be forwarded");
         let last = reqs.last().unwrap();
@@ -639,10 +654,19 @@ mod lock_tests {
         // 1: LOCK → 409; 2: UNLOCK with stale id; 3: re-LOCK; 4: PUT; 5: UNLOCK
         assert!(reqs.len() >= 5, "expected takeover dance, got {:?}", reqs);
         assert_eq!(reqs[1].wopi_override.as_deref(), Some("UNLOCK"));
-        assert_eq!(reqs[1].wopi_lock.as_deref(), Some("stale-lock"), "must unlock the STALE lock id");
+        assert_eq!(
+            reqs[1].wopi_lock.as_deref(),
+            Some("stale-lock"),
+            "must unlock the STALE lock id"
+        );
         assert_eq!(reqs[2].wopi_override.as_deref(), Some("LOCK"));
         assert_eq!(reqs[2].wopi_lock.as_deref(), Some("wo-docserver-lock"));
-        assert!(reqs[3].path.split('?').next().unwrap().ends_with("/contents"));
+        assert!(reqs[3]
+            .path
+            .split('?')
+            .next()
+            .unwrap()
+            .ends_with("/contents"));
     }
 
     #[tokio::test]
@@ -674,7 +698,8 @@ mod lock_tests {
 
         let reqs = recorded(&host.log).await;
         assert!(
-            reqs.iter().all(|r| !r.path.split('?').next().unwrap().ends_with("/contents")),
+            reqs.iter()
+                .all(|r| !r.path.split('?').next().unwrap().ends_with("/contents")),
             "no PutFile attempt may be made when the lock cannot be acquired"
         );
     }
