@@ -59,12 +59,17 @@ pub async fn collab_ops(
 
 #[derive(Deserialize)]
 struct CollabOpsReq {
-    #[serde(default)]
+    #[serde(default = "anon")]
     client_id: String,
     #[serde(default)]
     base_rev: Option<usize>,
+    /// `ops` is required: Python 400s when it is missing or not a list.
     #[serde(default)]
-    ops: Vec<Value>,
+    ops: Option<Vec<Value>>,
+}
+
+fn anon() -> String {
+    "anon".into()
 }
 
 /// POST /api/documents/{id}/collab/ops
@@ -78,10 +83,13 @@ pub async fn collab_apply_ops(
     }
     let payload: CollabOpsReq =
         serde_json::from_slice(&body).map_err(|_| AppError::BadRequest("invalid JSON".into()))?;
+    let Some(ops) = payload.ops else {
+        return Err(AppError::BadRequest("ops must be a list".into()));
+    };
     Ok(Json(state.collab.apply_ops(
         &id,
         &payload.client_id,
-        &payload.ops,
+        &ops,
         payload.base_rev,
     )))
 }

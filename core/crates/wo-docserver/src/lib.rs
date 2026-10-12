@@ -2209,6 +2209,22 @@ mod tests {
         let v: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(v["text"], "hello world");
 
+        // applying ops with a body lacking "ops" is a 400 (Python contract), and
+        // a missing client_id defaults to "anon"
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/documents/{doc_id}/collab/ops"))
+                    .header("content-type", "application/json")
+                    .body(Body::from("{}"))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::BAD_REQUEST, "ops must be a list");
+
         // presence announce + list
         let resp = app.clone().oneshot(
             Request::builder().method("POST")
