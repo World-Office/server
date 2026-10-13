@@ -55,6 +55,13 @@ chrono = "0.4"
 uuid = { version = "1", features = ["v4", "serde"] }
 base64 = "0.22"
 sha2 = "0.10"
+# keep in sync with the outer workspace root (../Cargo.toml): wo-docserver is
+# a member of BOTH workspaces, so every inherited dep must exist in each root
+# or any cargo invocation resolved from core/ (wasm-pack in pnpm builds, CI)
+# fails to load the manifest
+futures-util = "0.3"
+hmac = "0.12"
+getrandom = "0.2"
 async-trait = "0.1"
 tower = "0.5"
 tower-http = "0.6"
