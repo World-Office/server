@@ -343,6 +343,13 @@ jobs:
       - uses: actions/checkout@v4
         timeout-minutes: 5
 
+      # ledger source (census/census/ledger.json is committed there)
+      - uses: actions/checkout@v4
+        with:
+          repository: World-Office/wo-test-harness
+          path: ../wo-test-harness
+        timeout-minutes: 5
+
       - uses: dtolnay/rust-toolchain@nightly
         timeout-minutes: 10
 

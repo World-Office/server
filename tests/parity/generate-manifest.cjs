@@ -17,7 +17,9 @@ const strict = args.includes('--strict');
 const arg = (name, def) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : def; };
 const HERE = __dirname;
 const LEDGER = arg('--ledger', process.env.WO_LEDGER ||
-  '/home/weiss/git/wo-test-harness/census/census/ledger.json');
+  // dev box: World-Office/{server/tests/parity -> wo-test-harness};
+  // CI: sibling checkout of wo-test-harness at ../wo-test-harness
+  path.resolve(__dirname, '..', '..', '..', '..', 'wo-test-harness', 'census', 'census', 'ledger.json'));
 const OUT = arg('--out', path.join(HERE, 'word-parity-contracts.json'));
 const OVERRIDES = arg('--overrides', path.join(HERE, 'word-parity-overrides.json'));
 

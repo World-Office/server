@@ -17,7 +17,7 @@ let results = null;
 try { results = JSON.parse(fs.readFileSync(path.join(HERE, 'contract-results.json'), 'utf8')); } catch {}
 
 const ledger = JSON.parse(fs.readFileSync(process.env.WO_LEDGER ||
-  '/home/weiss/git/World-Office/wo-test-harness/census/census/ledger.json', 'utf8')).ledger;
+  path.resolve(HERE, '..', '..', '..', '..', 'wo-test-harness', 'census', 'census', 'ledger.json'), 'utf8')).ledger;
 const rowOf = tok => ledger.find(r => r.token === tok) || {};
 
 const out = [];
