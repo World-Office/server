@@ -1,0 +1,78 @@
+{
+  "$comment": "Word parity contract overrides. Generator (generate-manifest.cjs) merges these over the census-diff.py ledger (key = OO census token). Entry fields: effektClass format|structure|dialog|op|view|stub|covered-cluster; selector: WO control selector (fallback: [data-cmd=<wo>] then #btn-<wo>); pre: prerequisite action ('file-menu' opens the File menu first); assertion: {kind: computed-style|dom-mutation|dialog-visible|op-emitted|viewport-flag, ...}; subFeatures: [{name, selector}] — dialog-visible entries MUST list them, every missing one is a FAIL; xfail: true marks a known gap (reported, non-gating); note: free text.",
+  "entries": {
+    "bold": {
+      "effektClass": "format",
+      "selector": "[data-cmd=\"bold\"]",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "font-weight",
+        "equals": "700"
+      }
+    },
+    "italic": {
+      "effektClass": "format",
+      "selector": "[data-cmd=\"italic\"]",
+      "assertion": {
+        "kind": "computed-style",
+        "prop": "font-style",
+        "equals": "italic"
+      }
+    },
+    "table": {
+      "effektClass": "structure",
+      "selector": "#btn-table",
+      "assertion": {
+        "kind": "dom-mutation",
+        "selector": "#editor table"
+      },
+      "post": "#btn-table-ok"
+    },
+    "protect": {
+      "effektClass": "dialog",
+      "selector": "[data-cmd=\"protectDialog\"]",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#protect-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "restrict toggle",
+          "selector": "#protect-check-restrict"
+        },
+        {
+          "name": "password input",
+          "selector": "#protect-new-password"
+        },
+        {
+          "name": "apply action",
+          "selector": "#btn-protect-apply"
+        }
+      ],
+      "woTab": "protection"
+    },
+    "paragraph-line-spacing": {
+      "effektClass": "dialog",
+      "xfail": true,
+      "note": "KNOWN GAP: OO's line-spacing entry leads to a ParagraphSettings dialog (alignment/indent/spacing/widow control). WO only has a line-height select — no dialog exists. Full OO ParagraphSettings lives in the right panel, which the census walk does not capture.",
+      "selector": "#line-spacing",
+      "assertion": {
+        "kind": "dialog-visible"
+      },
+      "subFeatures": [
+        {
+          "name": "spacing before/after numeric",
+          "selector": "[name=spacing-before]"
+        },
+        {
+          "name": "first-line indent",
+          "selector": "[name=first-line]"
+        },
+        {
+          "name": "widow/orphan control",
+          "selector": "[name=widow]"
+        }
+      ]
+    }
+  }
+}

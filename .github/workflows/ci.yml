@@ -335,6 +335,44 @@ jobs:
       - run: pnpm test
         timeout-minutes: 15
 
+  parity-contracts:
+    name: Word Parity Contracts (L2+L4)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        timeout-minutes: 5
+
+      - uses: dtolnay/rust-toolchain@nightly
+        timeout-minutes: 10
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: parity
+        timeout-minutes: 5
+
+      - name: Build docserver (protect route must exist — stale binary = false FAILs)
+        run: cargo build -p wo-docserver
+        timeout-minutes: 30
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+        timeout-minutes: 5
+
+      - name: Playwright module + chromium
+        working-directory: tests
+        run: |
+          npm install --no-save playwright@1.59.1
+          npx playwright install --with-deps chromium
+        timeout-minutes: 10
+
+      # Boot resolves playwright as a module (see parity/_boot.cjs).
+      - name: Run L2 contracts + L4 surfaces
+        working-directory: tests
+        run: npm run parity
+        timeout-minutes: 10
+
   build-rust:
     name: Rust Build Check
     runs-on: ubuntu-latest

@@ -11,9 +11,17 @@
     "test:api": "jest --testPathPattern=tests/e2e/api",
     "test:enterprise": "jest --testPathPattern=tests/e2e/enterprise",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "parity": "node parity/run-parity.cjs"
   },
-  "keywords": ["word-office", "e2e", "tests", "wopi", "ocis", "document-server"],
+  "keywords": [
+    "word-office",
+    "e2e",
+    "tests",
+    "wopi",
+    "ocis",
+    "document-server"
+  ],
   "author": "World Office",
   "license": "AGPL-3.0",
   "dependencies": {
