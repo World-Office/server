@@ -6,6 +6,10 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
+    "wo-renderer-wasm#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["pkg/**"]
+    },
     "dev": {
       "dependsOn": ["^dev"],
       "cache": false,
