@@ -244,6 +244,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
         timeout-minutes: 10
 
+      # turbo builds wo-renderer-wasm (wasm-pack) as a dependency; the runner
+      # image no longer ships wasm-pack preinstalled (same as typecheck-ts)
+      - uses: taiki-e/install-action@wasm-pack
+        timeout-minutes: 5
+
       - run: pnpm lint
         timeout-minutes: 10
 

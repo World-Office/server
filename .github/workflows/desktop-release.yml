@@ -69,6 +69,11 @@ jobs:
         run: pnpm install --frozen-lockfile
         timeout-minutes: 10
 
+      # turbo builds wo-renderer-wasm (wasm-pack) as a dep of build:web; the
+      # runner image no longer ships wasm-pack preinstalled
+      - uses: taiki-e/install-action@wasm-pack
+        timeout-minutes: 5
+
       - name: Build web frontend
         run: pnpm --filter @world-office/tauri-poc run build:web
         timeout-minutes: 10

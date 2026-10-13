@@ -9,6 +9,12 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
+# GITHUB_TOKEN needs packages:write to push images to ghcr.io/world-office/*
+# (denied: installation not allowed to Create organization package)
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build-frontend:
     name: Build Frontend
@@ -34,6 +40,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         timeout-minutes: 10
+
+      # wo-renderer-wasm's build script runs `wasm-pack build`; the runner
+      # image no longer ships wasm-pack preinstalled, so turbo's dependency
+      # build dies with "wasm-pack: not found" (same as ci.yml typecheck-ts)
+      - uses: taiki-e/install-action@wasm-pack
+        timeout-minutes: 5
 
       - name: Run build
         run: pnpm build --filter='!@world-office/tauri-poc'
