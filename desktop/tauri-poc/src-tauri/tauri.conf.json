@@ -1,6 +1,7 @@
 {
   "identifier": "com.worldoffice.desktop",
   "productName": "World Office",
+  "mainBinaryName": "world-office",
   "version": "0.1.0",
   "build": {
     "frontendDist": "../dist",
