@@ -23,18 +23,29 @@ const OVERRIDES = arg('--overrides', path.join(HERE, 'word-parity-overrides.json
 
 // Default effektClass by command family — first match wins. Override file wins over these.
 const CLASS_RULES = [
-  [/^(bold|italic|underline|strikeout|strikethrough|subscript|superscript|forecolor|hilitecolor|fontname|fontsize|fontsizeinc|fontsizedec|justifyleft|justifycenter|justifyright|justifyfull|justif|lineheight|line-spacing|indent|outdent|removeformat|cleardown|case|upper|lower|capitalize|ltr|rtl|text-direction|nonprinting|formatmarks|set-markers|copystyle)$/, 'format'],
-  [/^(insert|new|link|bookmark|toc|table-of-contents|footnote|endnote|insertfootnote|insertendnote|header|edit-header-footer|pagenumber|datetime|insertdatetime|insertfield|field|drop-cap|toggledropcap|watermark|togglewatermark|hyphenation|togglehyphenation|linenumbering|togglelinenumbers|smart-art|text-art|textfile|page-break|blank-page|addtext|mailmerge|multilevels|insertorderedlist|insertunorderedlist|insertUnorderedList|insertOrderedList)$/, 'structure'],
-  [/^(paragraph-settings|font-dialog|table-props|pagesetup|page-margins|page-size|page-orient|page-color|symbol|equation|chart|insertobject|protect|fileprotect|fileinfo|filesettings|filehelp|filesuggest|find|replace|styles|style-gallery)$/, 'dialog'],
-  [/^(track-changes|trackchanges|comment|addcomment|add-comment|chat|mention|presence)$/, 'op'],
-  [/^(zoom|zoom-down|zoom-up|zoom-topage|zoom-towidth|display-mode|displaymode|rulers|dark|theme|multiple-pages|single-page|status-btn)/, 'view'],
+  // ordered: op before dialog before structure — first match wins
+  [/^(track-changes|trackchanges|accept|reject|resolve|copy|paste|cut|select-all|copystyle|delete)/, 'op'],
+  [/^(bold|italic|underline|strikeout|strikethrough|subscript|superscript|forecolor|hilitecolor|fontname|fontsize|fontsizeinc|fontsizedec|justifyleft|justifycenter|justifyright|justifyfull|justif|lineheight|line-spacing|indent|outdent|removeformat|cleardown|case|upper|lower|capitalize|ltr|rtl|text-direction|set-markers|copystyle|change-?case|highlight-color|highlight|text-color|font-color|shading|multilevel|bring ?forward|send ?backward|align|group|mergeshapes|wrapping)/, 'format'],
+  [/^(zoom|zoom-down|zoom-up|zoom-topage|zoom-towidth|display-mode|displaymode|rulers|dark|theme|multiple-pages|single-page|status-btn|gridlines|grid|fullscreen|navigation|hf-close|close|nonprinting|formatmarks)/, 'view'],
+  // dialogs and pickers: open a UI surface, no direct document mutation
+  [/^(paragraph-settings|font-dialog|table-props|pagesetup|page-margins|page-size|page-orient|page-color|pagecolor|symbol|equation|chart|insertobject|protect|fileprotect|fileinfo|filesettings|filehelp|filesuggest|find|replace|styles|style-gallery|openBorders|borders|btn-page-setup|margins|orientation|size|columns|btn-open|open|btn-new|create|btn-export|download|btn-file|print|recent|info|help|suggest|settings|btn-mailmerge|mailmerge|compareVersion|compare|combine|photoEditor|photo|btn-ocr|ocr|btn-bgplugins|background|btn-readaloud|speech|btn-dictate|speechinput|btn-ai|ai-|chatbot|summarization|translation|grammar|openCrossref|cross-?ref|table-of-figures|btn-symbol|btn-equation|btn-smartart|smartart|btn-image|image|btn-link|link|btn-field|field|caption|btn-contentcontrol|contentcontrol|btn-pagenumber|pagenumber|insertdatetime|word-count|replace)/, 'dialog'],
+  // content structure: inserts that change the document body
+  [/^(insert|new|link|bookmark|toc|table-of-contents|footnote|endnote|insertfootnote|insertendnote|header|edit-header-footer|pagenumber|datetime|insertdatetime|insertfield|field|drop-cap|toggledropcap|watermark|togglewatermark|hyphenation|togglehyphenation|linenumbering|togglelinenumbers|smart-art|text-art|textfile|page-break|blank-page|addtext|mailmerge|multilevels|insertorderedlist|insertunorderedlist|btn-toc|updatetoc|btn-textfile|btn-addtext|btn-header|btn-footnote|btn-bookmark|update-toc|add-text|breaks|blankpage|addcomment)/, 'structure'],
 ];
+// label pass: same rules unanchored to word starts — icon-only asc-genNNN
+// rows carry their meaning only in the census label ("btn-view-*", "ai*",
+// camelCase like updateToc lowercase differently)
+const LABEL_RULES = CLASS_RULES.map(([re, cls]) => [new RegExp(re.source.replace(/^\^/, '\\b'), re.flags), cls]);
 
 function classify(row, override) {
   if (override && override.effektClass) return override.effektClass;
   if (row.status === 'real') {
+    // token first, but fall back to the label — icon-only OO controls come
+    // with asc-genNNN ids whose meaning only the census label carries
     const tok = (row.wo || row.token || '').toLowerCase();
+    const hay = (tok + ' ' + (row.label || '')).toLowerCase();
     for (const [re, cls] of CLASS_RULES) if (re.test(tok)) return cls;
+    for (const [re, cls] of LABEL_RULES) if (re.test(hay)) return cls;
     return 'unclassified';
   }
   if (row.status === 'covered') return 'covered-cluster';

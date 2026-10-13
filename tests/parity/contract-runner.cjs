@@ -220,9 +220,10 @@ async function subFeatureAudit(page, ov, dialogSel) {
     fail: fails,
     results,
   };
-  // census drift: OO blueprint controls without a classified contract yet.
-  // Non-blocking by design (spec: warn, don't gate) — the backlog for task 4.1.
-  const drift = manifest.entries.filter(e => !RUNNABLE.has(e.effektClass)).map(e => e.token);
+  // census drift: OO blueprint controls still without ANY class. covered-
+  // cluster rows are classified (deliberately not individually contracted)
+  // and are NOT drift. Non-blocking by design (spec: warn, don't gate).
+  const drift = manifest.entries.filter(e => e.effektClass === 'unclassified').map(e => e.token);
   summary.unclassified = drift;
   if (drift.length) {
     console.log(`\nWARNING (non-blocking): ${drift.length} census entries still unclassified — parity backlog:`);

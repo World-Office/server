@@ -73,6 +73,37 @@
           "selector": "[name=widow]"
         }
       ]
+    },
+    "info": {
+      "effektClass": "dialog",
+      "selector": "#btn-fileinfo",
+      "pre": "file-menu",
+      "assertion": {
+        "kind": "dialog-visible",
+        "dialogSelector": "#info-dialog"
+      },
+      "subFeatures": [
+        {
+          "name": "document name",
+          "selector": "#info-name"
+        },
+        {
+          "name": "document path",
+          "selector": "#info-path"
+        },
+        {
+          "name": "language",
+          "selector": "#info-lang"
+        },
+        {
+          "name": "word/char stats",
+          "selector": "#info-stats"
+        },
+        {
+          "name": "file size",
+          "selector": "#info-size"
+        }
+      ]
     }
   }
 }

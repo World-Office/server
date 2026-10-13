@@ -20,6 +20,7 @@ function run(label, cmd, args) {
 if ((layer === 'all' || layer === 'contracts')) {
   spawnSync('node', [path.join(HERE, 'generate-manifest.cjs')], { stdio: 'inherit' });
   run('contracts', 'node', [path.join(HERE, 'contract-runner.cjs')]);
+  spawnSync('node', [path.join(HERE, 'gen-gaps.cjs')], { stdio: 'inherit' });
 }
 if (layer === 'all' || layer === 'surfaces') {
   for (const probe of ['menu-hit', 'file-menu', 'first-open', 'tab-switch-widths']) {
