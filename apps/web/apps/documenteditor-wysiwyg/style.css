@@ -218,17 +218,22 @@ body {
    pitch; 3px active underline so it registers as ink (2px AA-spreads away at
    capture zoom). */
 .ribbon-tabs {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  /* WO-RIBBON-TABS-FLOW (2026-10-13): was an absolute strip with tabs at
+     hardcoded OO-golden --qa-x slots — but the in-flow .ribbon-row below
+     painted OVER the positioned tabs, leaving only a ~9px clickable sliver
+     (every tab hit-tested BLOCKED; real clicks landed on the ribbon row).
+     Tabs now flow in a plain flex row between menu-bar and ribbon row: no
+     overlap possible, no per-tab x needed, works at any viewport width. */
+  position: static;
+  display: flex;
+  align-items: center;
+  gap: 2px;
   height: 28px;
+  padding: 0 12px;
 }
 .toolbar .ribbon-tab {
-  position: absolute;
-  left: var(--qa-x);
-  top: 50%;
-  transform: translate(-50%, -50%);
+  position: static;
+  transform: none;
   border-bottom-width: 3px;
 }
 .titlebar button {
@@ -687,7 +692,9 @@ select option { background: var(--bg); color: var(--text); }
 .menu { position: relative; }
 
 .menu-trigger {
-  height: 22px;
+  /* WO-RIBBON-TABS-FLOW: was 22px — overflowed the menu-bar band into the
+     flow tab row below (a 29x7px dead-zone over Home's corner) */
+  height: 18px;
   padding: 0 10px;
   border: 1px solid transparent;
   border-radius: 6px;
