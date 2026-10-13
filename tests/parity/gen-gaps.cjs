@@ -16,8 +16,15 @@ const overrides = JSON.parse(fs.readFileSync(path.join(HERE, 'word-parity-overri
 let results = null;
 try { results = JSON.parse(fs.readFileSync(path.join(HERE, 'contract-results.json'), 'utf8')); } catch {}
 
-const ledger = JSON.parse(fs.readFileSync(process.env.WO_LEDGER ||
-  path.resolve(HERE, '..', '..', '..', '..', 'wo-test-harness', 'census', 'census', 'ledger.json'), 'utf8')).ledger;
+function ledgerDefault() {
+  for (const rel of ['../../wo-test-harness/census/census/ledger.json',
+                     '../../../../wo-test-harness/census/census/ledger.json']) {
+    const p = path.resolve(HERE, rel);
+    if (fs.existsSync(p)) return p;
+  }
+  throw new Error('ledger.json not found — set WO_LEDGER');
+}
+const ledger = JSON.parse(fs.readFileSync(process.env.WO_LEDGER || ledgerDefault(), 'utf8')).ledger;
 const rowOf = tok => ledger.find(r => r.token === tok) || {};
 
 const out = [];

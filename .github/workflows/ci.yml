@@ -347,7 +347,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: World-Office/wo-test-harness
-          path: ../wo-test-harness
+          path: wo-test-harness
         timeout-minutes: 5
 
       - uses: dtolnay/rust-toolchain@nightly

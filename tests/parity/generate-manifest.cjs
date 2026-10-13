@@ -16,10 +16,17 @@ const args = process.argv.slice(2);
 const strict = args.includes('--strict');
 const arg = (name, def) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : def; };
 const HERE = __dirname;
-const LEDGER = arg('--ledger', process.env.WO_LEDGER ||
-  // dev box: World-Office/{server/tests/parity -> wo-test-harness};
-  // CI: sibling checkout of wo-test-harness at ../wo-test-harness
-  path.resolve(__dirname, '..', '..', '..', '..', 'wo-test-harness', 'census', 'census', 'ledger.json'));
+const LEDGER = arg('--ledger', process.env.WO_LEDGER || ledgerDefault());
+// CI checks the harness out INSIDE the workspace (path: wo-test-harness); on
+// the dev box it is a sibling of the server git root — first existing wins
+function ledgerDefault() {
+  for (const rel of ['../../wo-test-harness/census/census/ledger.json',
+                     '../../../../wo-test-harness/census/census/ledger.json']) {
+    const p = path.resolve(__dirname, rel);
+    if (fs.existsSync(p)) return p;
+  }
+  throw new Error('ledger.json not found — checkout World-Office/wo-test-harness or set WO_LEDGER');
+}
 const OUT = arg('--out', path.join(HERE, 'word-parity-contracts.json'));
 const OVERRIDES = arg('--overrides', path.join(HERE, 'word-parity-overrides.json'));
 
