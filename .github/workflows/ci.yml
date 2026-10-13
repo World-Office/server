@@ -380,6 +380,71 @@ jobs:
         run: npm run parity
         timeout-minutes: 10
 
+  fig:
+    name: Strangler Fig (census+collab+auth+contracts+golden)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        timeout-minutes: 5
+
+      # fig harness (capabilities.json, run-fig.sh, golden references)
+      - uses: actions/checkout@v4
+        with:
+          repository: World-Office/wo-test-harness
+          path: wo-test-harness
+        timeout-minutes: 5
+
+      - uses: dtolnay/rust-toolchain@nightly
+        timeout-minutes: 10
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: fig
+        timeout-minutes: 5
+
+      - name: Build docserver + coauthoring-service (stale binary = false FAILs)
+        run: cargo build -p wo-docserver -p coauthoring-service
+        timeout-minutes: 30
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+        timeout-minutes: 5
+
+      - name: Playwright module + chromium
+        working-directory: tests
+        run: |
+          npm install --no-save playwright@1.59.1
+          npx playwright install --with-deps chromium
+        timeout-minutes: 10
+
+      - uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+        timeout-minutes: 5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+        timeout-minutes: 5
+
+      # the four react editor dists (fig census probes /sheet/ /slide/ /pdf/ /diagram/)
+      - name: Build react editor dists
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm --filter "@world-office/spreadsheeteditor" --filter "@world-office/presentationeditor" --filter "@world-office/pdfeditor" --filter "@world-office/visioeditor" exec vite build
+        timeout-minutes: 20
+
+      # poppler-utils: pdfinfo/pdftotext for the golden conversion oracle
+      - name: Install poppler-utils
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq poppler-utils
+        timeout-minutes: 5
+
+      - name: Run full fig pipeline
+        run: bash wo-test-harness/fig/run-fig.sh
+        timeout-minutes: 20
+
   build-rust:
     name: Rust Build Check
     runs-on: ubuntu-latest
