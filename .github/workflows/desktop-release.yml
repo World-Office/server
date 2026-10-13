@@ -160,7 +160,10 @@ jobs:
           sudo dpkg -i artifacts/*.deb || sudo apt-get install -f -y
           # A Tauri app under xvfb doesn't exit after --version; a clean 20s
           # run (timeout 124) means the binary launches — anything else fails
-          timeout 20 xvfb-run -a world-office --version; rc=$?
+          # (|| rc=$? because GHA runs steps with `bash -e`, which would
+          # otherwise abort on timeout before the guard line)
+          rc=0
+          timeout 20 xvfb-run -a world-office --version || rc=$?
           [ $rc -eq 0 ] || [ $rc -eq 124 ]
         timeout-minutes: 5
 

@@ -377,8 +377,7 @@ mod render_page {
         let _backend = PdfiumBackend::new().expect("Failed to initialize Pdfium");
 
         // The actual test would use a real PDF file
-        // For the acceptance gate, we just verify the backend exists
-        assert!(true, "Backend initialized successfully");
+        // For the acceptance gate, reaching here means the backend exists
     }
 
     /// Test that the PdfRenderer trait has the required methods
@@ -470,7 +469,7 @@ mod tests {
             "Rendered page should have some pixels"
         );
         assert!(
-            rgba_bytes.len() % 4 == 0,
+            rgba_bytes.len().is_multiple_of(4),
             "RGBA bytes should be divisible by 4"
         );
     }

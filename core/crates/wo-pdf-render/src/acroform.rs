@@ -634,7 +634,7 @@ mod tests {
     #[test]
     fn test_field_type_exhaustive() {
         // Verify all variants are constructable
-        let variants = vec![
+        let variants = [
             AcroFormFieldType::Unknown,
             AcroFormFieldType::PushButton,
             AcroFormFieldType::Checkbox,
