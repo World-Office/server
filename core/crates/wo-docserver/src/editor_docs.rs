@@ -59,6 +59,25 @@ async fn resolve_doc(id: &str) -> Result<Option<Vec<u8>>, AppError> {
     Ok(None)
 }
 
+fn now_millis() -> i64 {
+    use std::time::{SystemTime, UNIX_EPOCH};
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or(0)
+}
+
+/// Stored content with the demo.docx fallback — the same resolution the
+/// html/export/versions/contents endpoints already use, so every read view
+/// of `demo.docx` agrees instead of only `/html` working.
+async fn demo_or_stored(state: &AppState, id: &str) -> Option<Vec<u8>> {
+    match state.store.get_content(id).await {
+        Ok(Some(d)) => Some(d),
+        Ok(None) if id == "demo.docx" => crate::demo_document_bytes().await.ok(),
+        _ => None,
+    }
+}
+
 /// GET /api/documents/{id}/html — docx -> editable HTML.
 pub async fn document_html(
     State(state): State<AppState>,
@@ -424,20 +443,18 @@ pub async fn document_info(
     if !valid_doc_id(&id) {
         return Err(AppError::BadRequest("Invalid file id".into()));
     }
-    let Some(meta) = state.store.get(&id).await? else {
+    let Some(data) = demo_or_stored(&state, &id).await else {
         return Err(AppError::NotFound("not found".into()));
     };
-    let Some(data) = state.store.get_content(&id).await? else {
-        return Err(AppError::NotFound("not found".into()));
-    };
+    let ts = now_millis();
     Ok(Json(serde_json::json!({
         "id": id,
-        "name": meta.name,
-        "format": crate::store::format_of(&meta.name),
+        "name": id,
+        "format": crate::store::format_of(&id),
         "size": data.len(),
-        "created_at": meta.created_at,
-        "updated_at": meta.updated_at,
-        "version": meta.updated_at.to_string(),
+        "created_at": ts,
+        "updated_at": ts,
+        "version": ts.to_string(),
     })))
 }
 
@@ -451,6 +468,26 @@ pub async fn document_meta(
     }
     match state.store.document_meta(&id).await? {
         Some(v) => Ok(Json(v)),
+        // demo.docx fallback: synthesize the same WOPI-ish shape the store
+        // would return, so bare editor loads don't 404 on metadata.
+        None if id == "demo.docx" => {
+            let data = demo_or_stored(&state, &id).await.unwrap_or_default();
+            let ts = now_millis();
+            Ok(Json(serde_json::json!({
+                "id": id,
+                "name": id,
+                "size": data.len(),
+                "updated_at": ts,
+                "locked": false,
+                "base_file_name": id,
+                "format": crate::store::format_of(&id),
+                "mime_type": crate::store::content_type_of(&id),
+                "version": ts.to_string(),
+                "editable": true,
+                "writable": true,
+                "contents_url": format!("/api/documents/{id}/contents"),
+            })))
+        }
         None => Err(AppError::NotFound("not found".into())),
     }
 }
@@ -613,7 +650,7 @@ pub async fn document_protect_state(
     if !valid_doc_id(&id) {
         return Err(AppError::BadRequest("Invalid file id".into()));
     }
-    let Some(data) = state.store.get_content(&id).await? else {
+    let Some(data) = demo_or_stored(&state, &id).await else {
         return Err(AppError::NotFound("not found".into()));
     };
     let d = crate::docx_util::protection_detail(&data);
