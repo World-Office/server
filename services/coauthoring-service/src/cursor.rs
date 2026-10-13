@@ -1082,7 +1082,7 @@ mod tests {
                 CursorState::caret(text_path(0, 0, 48)),
             ];
 
-            for (alice_op, bob_op) in alice_updates.into_iter().zip(bob_updates.into_iter()) {
+            for (alice_op, bob_op) in alice_updates.into_iter().zip(bob_updates) {
                 server_tracker.update_cursor("alice", alice_op);
                 server_tracker.update_cursor("bob", bob_op);
             }

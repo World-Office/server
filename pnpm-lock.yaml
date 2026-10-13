@@ -787,6 +787,9 @@ importers:
       '@world-office/design-system':
         specifier: workspace:*
         version: link:../design-system
+      '@world-office/wo-renderer-wasm':
+        specifier: workspace:*
+        version: link:../../core/crates/wo-renderer-wasm
       jsdom:
         specifier: ^25.0.0
         version: 25.0.1

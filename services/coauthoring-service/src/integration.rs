@@ -13,7 +13,7 @@ use std::collections::BTreeMap;
 
 use crate::document::Document;
 use crate::model_op::ModelOpEnvelope;
-use crate::replay::{ReplayManager, ReplayRequest, ReplayResponse};
+use crate::replay::{ReplayManager, ReplayRequest};
 use wo_common::op::ModelOp;
 use wo_common::path::{Path, Range};
 

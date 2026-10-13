@@ -39,6 +39,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@world-office/design-system": "workspace:*",
+    "@world-office/wo-renderer-wasm": "workspace:*",
     "jsdom": "^25.0.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
