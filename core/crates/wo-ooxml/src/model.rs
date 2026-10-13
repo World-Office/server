@@ -700,7 +700,6 @@ pub enum TabStopKind {
     Bar,
 }
 
-
 /// A single tab stop definition.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TabStop {

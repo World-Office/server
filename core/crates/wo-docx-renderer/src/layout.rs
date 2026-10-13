@@ -1671,7 +1671,8 @@ impl LayoutEngine {
             let body = DocxBody {
                 blocks: hf.blocks.clone(),
                 raw_sect_pr: None,
-            ..Default::default()};
+                ..Default::default()
+            };
 
             // Layout the body content
             let pages = hf_engine.layout(&body);
@@ -1795,9 +1796,11 @@ mod tests {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: None,
-        ..Default::default()});
+            ..Default::default()
+        });
 
         let pages = engine.layout(&body);
         assert_eq!(pages.len(), 1);
@@ -1840,9 +1843,11 @@ mod tests {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: None,
-        ..Default::default()});
+            ..Default::default()
+        });
 
         let pages = engine.layout(&body);
         assert_eq!(pages.len(), 1);
@@ -1860,7 +1865,8 @@ mod tests {
             assert!(line.word_spacing < 50.0, "sane per-gap spacing");
         }
         assert_eq!(
-            lines[lines.len() - 1].word_spacing, 0.0,
+            lines[lines.len() - 1].word_spacing,
+            0.0,
             "final line of a justified paragraph stays ragged"
         );
     }
@@ -1888,9 +1894,11 @@ mod tests {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: None,
-        ..Default::default()});
+            ..Default::default()
+        });
 
         let pages = engine.layout(&body);
         assert_eq!(pages.len(), 1);
@@ -1929,9 +1937,11 @@ mod tests {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()}],
+                        ..Default::default()
+                    }],
                     section_properties: None,
-                ..Default::default()}),
+                    ..Default::default()
+                }),
                 DocxBlock::Paragraph(DocxParagraph {
                     style_id: None,
                     properties: props2,
@@ -1950,11 +1960,14 @@ mod tests {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()}],
+                        ..Default::default()
+                    }],
                     section_properties: None,
-                ..Default::default()}),
+                    ..Default::default()
+                }),
             ],
-        ..Default::default()};
+            ..Default::default()
+        };
 
         let pages = engine.layout(&body);
         assert!(
@@ -1969,16 +1982,18 @@ mod tests {
         // inside run.text (parser.rs br handler). The layout must close the
         // current page on a pure-break paragraph, like page_break_before.
         let engine = LayoutEngine::new(&default_config());
-        let mk = |text: &str| DocxBlock::Paragraph(DocxParagraph {
-            style_id: None,
-            properties: DocxParagraphProperties::default(),
-            runs: vec![DocxRun {
-                text: text.to_string(),
+        let mk = |text: &str| {
+            DocxBlock::Paragraph(DocxParagraph {
+                style_id: None,
+                properties: DocxParagraphProperties::default(),
+                runs: vec![DocxRun {
+                    text: text.to_string(),
+                    ..Default::default()
+                }],
+                section_properties: None,
                 ..Default::default()
-            }],
-            section_properties: None,
-            ..Default::default()
-        });
+            })
+        };
         let body = DocxBody {
             blocks: vec![mk("Intro on page one"), mk("\x0C"), mk("Page two text")],
             ..Default::default()
@@ -2021,14 +2036,17 @@ mod tests {
                                     vertical_alignment: None,
                                     small_caps: false,
                                     all_caps: false,
-                                ..Default::default()}],
+                                    ..Default::default()
+                                }],
                                 section_properties: None,
-                            ..Default::default()}],
+                                ..Default::default()
+                            }],
                             column_span: 1,
                             row_span: 1,
                             width: None,
                             shading: None,
-                        ..Default::default()},
+                            ..Default::default()
+                        },
                         DocxTableCell {
                             paragraphs: vec![DocxParagraph {
                                 style_id: None,
@@ -2048,21 +2066,26 @@ mod tests {
                                     vertical_alignment: None,
                                     small_caps: false,
                                     all_caps: false,
-                                ..Default::default()}],
+                                    ..Default::default()
+                                }],
                                 section_properties: None,
-                            ..Default::default()}],
+                                ..Default::default()
+                            }],
                             column_span: 1,
                             row_span: 1,
                             width: None,
                             shading: None,
-                        ..Default::default()},
+                            ..Default::default()
+                        },
                     ],
                     height: None,
                     is_header: false,
                 }],
                 properties: DocxTableProperties::default(),
-            ..Default::default()})],
-        ..Default::default()};
+                ..Default::default()
+            })],
+            ..Default::default()
+        };
 
         let pages = engine.layout(&body);
         assert_eq!(pages.len(), 1);
@@ -2076,7 +2099,10 @@ mod tests {
     #[test]
     fn test_layout_empty_body() {
         let engine = LayoutEngine::new(&default_config());
-        let body = DocxBody { blocks: vec![], ..Default::default() };
+        let body = DocxBody {
+            blocks: vec![],
+            ..Default::default()
+        };
 
         let pages = engine.layout(&body);
         // Should produce exactly 1 empty page (placeholder)
@@ -2108,7 +2134,10 @@ mod tests {
         ];
         engine.set_tab_stops(&tabs);
         assert_eq!(engine.tab_stops.len(), 3);
-        assert_eq!(engine.tab_stops[0].pos, wo_common::units::TWIPS_PER_IN as i32);
+        assert_eq!(
+            engine.tab_stops[0].pos,
+            wo_common::units::TWIPS_PER_IN as i32
+        );
         assert_eq!(engine.tab_stops[1].kind, TabStopKind::Center);
         assert_eq!(engine.tab_stops[2].kind, TabStopKind::Right);
     }
@@ -2144,9 +2173,11 @@ mod tests {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: None,
-        ..Default::default()});
+            ..Default::default()
+        });
 
         let pages = engine.layout(&body);
         assert_eq!(pages.len(), 1);
@@ -2197,9 +2228,11 @@ mod tests {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: None,
-        ..Default::default()});
+            ..Default::default()
+        });
 
         let pages = engine.layout(&body);
         assert_eq!(pages.len(), 1);
@@ -2250,9 +2283,11 @@ mod tests {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: None,
-        ..Default::default()});
+            ..Default::default()
+        });
 
         let pages = engine.layout(&body);
         assert_eq!(pages.len(), 1);
@@ -2315,9 +2350,11 @@ mod tests {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: None,
-        ..Default::default()});
+            ..Default::default()
+        });
 
         let pages = engine.layout(&body);
         assert_eq!(pages.len(), 1);
@@ -2371,9 +2408,11 @@ mod header_footer {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: None,
-        ..Default::default()}));
+            ..Default::default()
+        }));
         section_props.header = Some(header);
 
         // Layout header/footer for page 1 (should use default header)
@@ -2410,9 +2449,11 @@ mod header_footer {
                     vertical_alignment: None,
                     small_caps: false,
                     all_caps: false,
-                ..Default::default()}],
+                    ..Default::default()
+                }],
                 section_properties: None,
-            ..Default::default()}));
+                ..Default::default()
+            }));
         section_props.header_first = Some(first_header);
 
         let mut default_header = HeaderFooter::new();
@@ -2436,9 +2477,11 @@ mod header_footer {
                     vertical_alignment: None,
                     small_caps: false,
                     all_caps: false,
-                ..Default::default()}],
+                    ..Default::default()
+                }],
                 section_properties: None,
-            ..Default::default()}));
+                ..Default::default()
+            }));
         section_props.header = Some(default_header);
 
         // Page 1 should use first page header
@@ -2478,9 +2521,11 @@ mod header_footer {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: None,
-        ..Default::default()}));
+            ..Default::default()
+        }));
         section_props.header = Some(odd_header);
 
         let mut even_header = HeaderFooter::new();
@@ -2502,9 +2547,11 @@ mod header_footer {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: None,
-        ..Default::default()}));
+            ..Default::default()
+        }));
         section_props.header_even = Some(even_header);
 
         // Page 1 (odd) should use odd header
@@ -2552,9 +2599,11 @@ mod header_footer {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: None,
-        ..Default::default()}));
+            ..Default::default()
+        }));
         section_props.header = Some(header);
 
         let mut footer = HeaderFooter::new();
@@ -2576,9 +2625,11 @@ mod header_footer {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: None,
-        ..Default::default()}));
+            ..Default::default()
+        }));
         section_props.footer = Some(footer);
 
         // Layout should produce both header and footer
@@ -2631,9 +2682,11 @@ mod footnote {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: None,
-        ..Default::default()}
+            ..Default::default()
+        }
     }
 
     #[test]
@@ -2773,12 +2826,14 @@ mod multicolumn {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()}],
+                        ..Default::default()
+                    }],
                     section_properties: Some(SectionProperties {
                         cols: Some(2),
                         ..Default::default()
                     }),
-                ..Default::default()}),
+                    ..Default::default()
+                }),
                 DocxBlock::Paragraph(DocxParagraph {
                     style_id: None,
                     properties: DocxParagraphProperties::default(),
@@ -2797,11 +2852,14 @@ mod multicolumn {
                         vertical_alignment: None,
                         small_caps: false,
                         all_caps: false,
-                    ..Default::default()}],
+                        ..Default::default()
+                    }],
                     section_properties: None,
-                ..Default::default()}),
+                    ..Default::default()
+                }),
             ],
-        ..Default::default()};
+            ..Default::default()
+        };
 
         let pages = engine.layout(&body);
         // With multicolumn, content should be laid out
@@ -2844,9 +2902,11 @@ mod multicolumn {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: Some(section_props),
-        ..Default::default()}));
+            ..Default::default()
+        }));
 
         // Add several more paragraphs to fill the first column and spill into second
         for i in 0..3 {
@@ -2868,9 +2928,11 @@ mod multicolumn {
                     vertical_alignment: None,
                     small_caps: false,
                     all_caps: false,
-                ..Default::default()}],
+                    ..Default::default()
+                }],
                 section_properties: None,
-            ..Default::default()}));
+                ..Default::default()
+            }));
         }
 
         let pages = engine.layout(&body);
@@ -2952,9 +3014,11 @@ mod multicolumn {
                     vertical_alignment: None,
                     small_caps: false,
                     all_caps: false,
-                ..Default::default()}],
+                    ..Default::default()
+                }],
                 section_properties: None,
-            ..Default::default()}));
+                ..Default::default()
+            }));
         }
 
         let pages = engine.layout(&body);
@@ -2998,9 +3062,11 @@ mod multicolumn {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: Some(section_props),
-        ..Default::default()}));
+            ..Default::default()
+        }));
 
         // Add a long text to fill first column and push to second
         let long_text =
@@ -3023,9 +3089,11 @@ mod multicolumn {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: None,
-        ..Default::default()}));
+            ..Default::default()
+        }));
 
         let pages = engine.layout(&body);
         assert!(!pages.is_empty());
@@ -3288,7 +3356,11 @@ mod pagination {
         };
 
         let pages = engine.layout(&body);
-        assert_eq!(pages.len(), 2, "break on a non-empty page → exactly 2 pages");
+        assert_eq!(
+            pages.len(),
+            2,
+            "break on a non-empty page → exactly 2 pages"
+        );
         let first_text = match &pages[0].elements[0] {
             LayoutElement::Paragraph { lines, .. } => lines[0].text.clone(),
             other => panic!("Expected Paragraph element, got {:?}", other),
@@ -3346,8 +3418,7 @@ mod pagination {
                     placed_rows += row_heights.len();
                     for cell in cells {
                         for p in &cell.paragraphs {
-                            let text: String =
-                                p.runs.iter().map(|r| r.text.as_str()).collect();
+                            let text: String = p.runs.iter().map(|r| r.text.as_str()).collect();
                             cell_texts.push(text);
                         }
                     }

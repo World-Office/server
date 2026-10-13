@@ -97,7 +97,6 @@ pub enum ValidationErrorStyle {
     Information,
 }
 
-
 /// A single data validation rule attached to a range of cells.
 ///
 /// Mirrors Excel's data validation dialog with type, operator, formulas,
@@ -543,11 +542,7 @@ fn compare_value(
 }
 
 /// Find all validation rules that apply to a given cell position.
-pub fn rules_for_cell(
-    row: u32,
-    col: u32,
-    rules: &[DataValidation],
-) -> Vec<&DataValidation> {
+pub fn rules_for_cell(row: u32, col: u32, rules: &[DataValidation]) -> Vec<&DataValidation> {
     rules
         .iter()
         .filter(|r| r.range.contains(row, col))

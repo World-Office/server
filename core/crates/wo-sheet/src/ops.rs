@@ -821,10 +821,11 @@ fn parse_raw_value(raw: &str) -> (CellValue, Option<wo_formula::ast::Expr>) {
 
     // Try to parse as formula
     if raw.starts_with('=')
-        && let Ok(expr) = wo_formula::parse(&raw[1..]) {
-            // For now, we won't evaluate the formula
-            return (CellValue::Text(raw.to_string()), Some(expr));
-        }
+        && let Ok(expr) = wo_formula::parse(&raw[1..])
+    {
+        // For now, we won't evaluate the formula
+        return (CellValue::Text(raw.to_string()), Some(expr));
+    }
 
     // Default to text
     (CellValue::Text(raw.to_string()), None)

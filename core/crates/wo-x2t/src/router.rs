@@ -15,19 +15,20 @@ use crate::converter::{error_result, success_result, unsupported_result, Convert
 use crate::converters::{
     DjvuToDocxConverter, DjvuToTxtConverter, DocxToEpubConverter, DocxToHtmlConverter,
     DocxToOdtConverter, DocxToPdfConverter, DocxToTxtConverter, DocxToXpsConverter,
-    EpubToDocxConverter,
-    EpubToHtmlConverter, EpubToTxtConverter, Fb2ToDocxConverter, Fb2ToTxtConverter,
-    HtmlToDocxConverter, HtmlToEpubConverter, HtmlToFb2Converter, HtmlToOdtConverter,
-    HtmlToRtfConverter, HtmlToTxtConverter, HwpToDocxConverter, HwpToTxtConverter,
-    PptToWoPresentationConverter, OdpToWoPresentationConverter, OdsToWoSpreadsheetConverter, OdtToDocxConverter,
-    OdtToHtmlConverter, OdtToTxtConverter, OfdToDocxConverter, OfdToHtmlConverter,
-    OfdToTxtConverter, PdfToWoPdfConverter, PptxToWoPresentationConverter, RtfToDocxConverter,
-    RtfToHtmlConverter, RtfToTxtConverter, TxtToDocxConverter, TxtToEpubConverter,
-    TxtToFb2Converter, TxtToHtmlConverter, TxtToOdtConverter, TxtToRtfConverter,
-    VsdmToVsdxConverter, VsdxToVsdmConverter, VsdxToWoDiagramConverter, WoDiagramToVsdxConverter,
-    WoPdfToPdfConverter, WoPresentationToHtmlConverter, WoPresentationToOdpConverter,
-    WoPresentationToPptxConverter,     WoSpreadsheetToOdsConverter, WoSpreadsheetToXlsxConverter, Word2003XmlToDocxConverter,
-    XlsxToWoSpreadsheetConverter, XlsbToWoSpreadsheetConverter, XlsToWoSpreadsheetConverter, XpsToDocxConverter, XpsToHtmlConverter, XpsToTxtConverter,
+    EpubToDocxConverter, EpubToHtmlConverter, EpubToTxtConverter, Fb2ToDocxConverter,
+    Fb2ToTxtConverter, HtmlToDocxConverter, HtmlToEpubConverter, HtmlToFb2Converter,
+    HtmlToOdtConverter, HtmlToRtfConverter, HtmlToTxtConverter, HwpToDocxConverter,
+    HwpToTxtConverter, OdpToWoPresentationConverter, OdsToWoSpreadsheetConverter,
+    OdtToDocxConverter, OdtToHtmlConverter, OdtToTxtConverter, OfdToDocxConverter,
+    OfdToHtmlConverter, OfdToTxtConverter, PdfToWoPdfConverter, PptToWoPresentationConverter,
+    PptxToWoPresentationConverter, RtfToDocxConverter, RtfToHtmlConverter, RtfToTxtConverter,
+    TxtToDocxConverter, TxtToEpubConverter, TxtToFb2Converter, TxtToHtmlConverter,
+    TxtToOdtConverter, TxtToRtfConverter, VsdmToVsdxConverter, VsdxToVsdmConverter,
+    VsdxToWoDiagramConverter, WoDiagramToVsdxConverter, WoPdfToPdfConverter,
+    WoPresentationToHtmlConverter, WoPresentationToOdpConverter, WoPresentationToPptxConverter,
+    WoSpreadsheetToOdsConverter, WoSpreadsheetToXlsxConverter, Word2003XmlToDocxConverter,
+    XlsToWoSpreadsheetConverter, XlsbToWoSpreadsheetConverter, XlsxToWoSpreadsheetConverter,
+    XpsToDocxConverter, XpsToHtmlConverter, XpsToTxtConverter,
 };
 use crate::model::{ConversionOutput, ConversionResult, ConversionStatus};
 use crate::FormatConverter;
@@ -465,7 +466,10 @@ mod tests {
         assert!(router.is_supported("djvu", "docx"));
         assert!(router.is_supported("docx", "xps"));
         // Pairs with no converter should be false
-        assert!(router.is_supported("docx", "pdf"), "F-403: docx->pdf is a real pair now");
+        assert!(
+            router.is_supported("docx", "pdf"),
+            "F-403: docx->pdf is a real pair now"
+        );
         assert!(!router.is_supported("xlsx", "pdf"));
     }
 
@@ -876,7 +880,10 @@ mod tests {
                 "{name}: no password is UnsupportedFormat"
             );
             let msg = no_pw.error.as_deref().unwrap_or("");
-            assert!(msg.contains("password"), "{name}: message names password: {msg}");
+            assert!(
+                msg.contains("password"),
+                "{name}: message names password: {msg}"
+            );
 
             // wrong password: loud and names the cause
             let bad = router.convert_with_password("docx", "txt", &data, "WrongPass99");
@@ -886,11 +893,19 @@ mod tests {
                 "{name}: wrong password is UnsupportedFormat"
             );
             let msg = bad.error.as_deref().unwrap_or("");
-            assert!(msg.contains("wrong password"), "{name}: names wrong password: {msg}");
+            assert!(
+                msg.contains("wrong password"),
+                "{name}: names wrong password: {msg}"
+            );
 
             // right password: converts to text containing the fixture body
             let ok = router.convert_with_password("docx", "txt", &data, "Password1234_");
-            assert_eq!(ok.status, ConversionStatus::Success, "{name}: {}", ok.error.as_deref().unwrap_or(""));
+            assert_eq!(
+                ok.status,
+                ConversionStatus::Success,
+                "{name}: {}",
+                ok.error.as_deref().unwrap_or("")
+            );
             let out = ok.output.expect("output present");
             let text = String::from_utf8_lossy(&out.data).to_lowercase();
             assert!(
@@ -913,30 +928,114 @@ mod tests {
         // not in OO's taxonomy and are deliberately omitted.
         let oo_formats: &[&str] = &[
             // document
-            "doc", "docx", "odt", "rtf", "txt", "html", "mht", "epub", "fb2",
-            "mobi", "docm", "dotx", "dotm", "odt_flat", "ott", "doc_flat",
-            "docx_flat", "docx_package", "oform", "docxf", "oform_pdf", "pages",
-            "hwp", "hwpx", "hwpml", "md", "xml", "docy",
+            "doc",
+            "docx",
+            "odt",
+            "rtf",
+            "txt",
+            "html",
+            "mht",
+            "epub",
+            "fb2",
+            "mobi",
+            "docm",
+            "dotx",
+            "dotm",
+            "odt_flat",
+            "ott",
+            "doc_flat",
+            "docx_flat",
+            "docx_package",
+            "oform",
+            "docxf",
+            "oform_pdf",
+            "pages",
+            "hwp",
+            "hwpx",
+            "hwpml",
+            "md",
+            "xml",
+            "docy",
             // presentation
-            "pptx", "ppt", "odp", "ppsx", "pptm", "potx", "potm", "odp_flat",
-            "otp", "odg", "key", "pptx_package", "ppty",
+            "pptx",
+            "ppt",
+            "odp",
+            "ppsx",
+            "pptm",
+            "potx",
+            "potm",
+            "odp_flat",
+            "otp",
+            "odg",
+            "key",
+            "pptx_package",
+            "ppty",
             // spreadsheet
-            "xlsx", "xls", "ods", "csv", "xlsm", "xltx", "xltm", "xlsb",
-            "ods_flat", "ots", "xlsx_flat", "xlsx_package", "numbers", "tsv",
-            "scsv", "xlsy",
+            "xlsx",
+            "xls",
+            "ods",
+            "csv",
+            "xlsm",
+            "xltx",
+            "xltm",
+            "xlsb",
+            "ods_flat",
+            "ots",
+            "xlsx_flat",
+            "xlsx_package",
+            "numbers",
+            "tsv",
+            "scsv",
+            "xlsy",
             // crossplatform
-            "pdf", "swf", "djvu", "xps", "svg", "htmlr", "htmlrm", "htmlrc",
-            "pdfa", "ofd",
+            "pdf",
+            "swf",
+            "djvu",
+            "xps",
+            "svg",
+            "htmlr",
+            "htmlrm",
+            "htmlrc",
+            "pdfa",
+            "ofd",
             // image
-            "jpg", "tiff", "tga", "gif", "png", "emf", "wmf", "bmp", "cr2",
-            "pcx", "ras", "psd", "ico",
+            "jpg",
+            "tiff",
+            "tga",
+            "gif",
+            "png",
+            "emf",
+            "wmf",
+            "bmp",
+            "cr2",
+            "pcx",
+            "ras",
+            "psd",
+            "ico",
             // draw
-            "vsdx", "vssx", "vstx", "vsdm", "vssm", "vstm", "vsdy",
+            "vsdx",
+            "vssx",
+            "vstx",
+            "vsdm",
+            "vssm",
+            "vstm",
+            "vsdy",
             // other — containers/crypto are detected, but as conversion
             // sources they must answer loudly, never silently
-            "zip", "json", "htmlzip", "ms_offcrypto", "ms_mitcrypto",
-            "ms_vbaproject", "package_in_ole", "compound", "ooxml", "odf",
-            "old_document", "old_presentation", "old_drawing", "extract_image",
+            "zip",
+            "json",
+            "htmlzip",
+            "ms_offcrypto",
+            "ms_mitcrypto",
+            "ms_vbaproject",
+            "package_in_ole",
+            "compound",
+            "ooxml",
+            "odf",
+            "old_document",
+            "old_presentation",
+            "old_drawing",
+            "extract_image",
         ];
 
         let router = ConversionRouter::new();
@@ -945,9 +1044,9 @@ mod tests {
             // WO accepts the format if it appears as a source or a target
             // in the registry — those are not part of the gate this audit
             // guards (dedicated probes cover them).
-            let supported = oo_formats.iter().any(|&t| {
-                t != fmt && (router.is_supported(fmt, t) || router.is_supported(t, fmt))
-            });
+            let supported = oo_formats
+                .iter()
+                .any(|&t| t != fmt && (router.is_supported(fmt, t) || router.is_supported(t, fmt)));
             if supported {
                 continue;
             }

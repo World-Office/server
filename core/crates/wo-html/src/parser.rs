@@ -156,7 +156,12 @@ impl HtmlParser {
         out = out
             .replace('\u{c}', "<span class=\"wo-pagebreak\"></span>")
             .replace(
-                ['\u{0}', '\u{1}', '\u{2}', '\u{3}', '\u{4}', '\u{5}', '\u{6}', '\u{7}', '\u{8}', '\u{b}', '\u{e}', '\u{f}', '\u{10}', '\u{11}', '\u{12}', '\u{13}', '\u{14}', '\u{15}', '\u{16}', '\u{17}', '\u{18}', '\u{19}', '\u{1a}', '\u{1b}', '\u{1c}', '\u{1d}', '\u{1e}', '\u{1f}'],
+                [
+                    '\u{0}', '\u{1}', '\u{2}', '\u{3}', '\u{4}', '\u{5}', '\u{6}', '\u{7}',
+                    '\u{8}', '\u{b}', '\u{e}', '\u{f}', '\u{10}', '\u{11}', '\u{12}', '\u{13}',
+                    '\u{14}', '\u{15}', '\u{16}', '\u{17}', '\u{18}', '\u{19}', '\u{1a}', '\u{1b}',
+                    '\u{1c}', '\u{1d}', '\u{1e}', '\u{1f}',
+                ],
                 "",
             );
 
@@ -724,10 +729,7 @@ mod tests {
             &doc.body.elements[1],
             BlockElement::Paragraph { .. }
         ));
-        assert!(matches!(
-            &doc.body.elements[2],
-            BlockElement::Table { .. }
-        ));
+        assert!(matches!(&doc.body.elements[2], BlockElement::Table { .. }));
     }
 
     #[test]
@@ -826,10 +828,7 @@ mod tests {
         match &doc.body.elements[1] {
             BlockElement::Paragraph { content, .. } => match &content[0] {
                 InlineElement::Image {
-                    src,
-                    alt,
-                    title,
-                    ..
+                    src, alt, title, ..
                 } => {
                     assert_eq!(src, "photo.jpg");
                     assert_eq!(alt.as_deref(), Some("A photo"));

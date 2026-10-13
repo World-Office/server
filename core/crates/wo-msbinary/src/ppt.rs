@@ -82,7 +82,11 @@ fn slide_from_container(d: &[u8]) -> Option<PptSlide> {
         .into_iter()
         .filter_map(|mut s| {
             s = s.trim().to_string();
-            if s.is_empty() { None } else { Some(s) }
+            if s.is_empty() {
+                None
+            } else {
+                Some(s)
+            }
         })
         .filter(|s| !is_placeholder(s))
         .collect();
@@ -227,4 +231,3 @@ mod tests {
         assert!(ppt.slides[0].title.contains("Legacy bytes"));
     }
 }
-

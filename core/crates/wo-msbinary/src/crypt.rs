@@ -14,7 +14,9 @@ use thiserror::Error;
 pub enum OoxmlDecryptError {
     #[error("the document is not password-protected (no EncryptionInfo/EncryptedPackage streams)")]
     NotEncrypted,
-    #[error("wrong password: this ECMA-376-protected document did not decrypt with the given password")]
+    #[error(
+        "wrong password: this ECMA-376-protected document did not decrypt with the given password"
+    )]
     WrongPassword,
     #[error("unsupported encryption scheme: {0}")]
     Unsupported(String),
@@ -30,8 +32,7 @@ pub fn is_encrypted_ooxml(data: &[u8]) -> bool {
         return false;
     };
     let streams = doc.list_streams();
-    streams.iter().any(|s| s == "EncryptionInfo")
-        && streams.iter().any(|s| s == "EncryptedPackage")
+    streams.iter().any(|s| s == "EncryptionInfo") && streams.iter().any(|s| s == "EncryptedPackage")
 }
 
 /// Decrypt a password-protected OOXML package back to its plain ZIP bytes.
@@ -74,7 +75,8 @@ mod tests {
 
     #[test]
     fn encrypted_fixture_roundtrip_and_loud_wrong_password() {
-        let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../wo-x2t/tests/fixtures");
+        let base =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../wo-x2t/tests/fixtures");
         for (name, pw) in [
             // agile (Office 2010+), from msoffcrypto-tool test corpus
             ("protected-agile.docx", "Password1234_"),

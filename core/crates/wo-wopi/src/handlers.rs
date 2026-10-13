@@ -15,9 +15,9 @@ use axum::{
 };
 use serde::Deserialize;
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::{Arc, OnceLock};
 use wo_x2t::ConversionRouter;
-use std::str::FromStr;
 
 /// Shared conversion router instance (cached after first use).
 fn conversion_router() -> &'static ConversionRouter {

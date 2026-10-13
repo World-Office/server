@@ -151,9 +151,10 @@ impl DepGraph {
         let mut cycle = Vec::new();
         for node in all_nodes {
             if matches!(colour.get(&node), Some(Color::White))
-                && dfs(node, &self.forward, &mut colour, &mut parent, &mut cycle) {
-                    return Some(cycle);
-                }
+                && dfs(node, &self.forward, &mut colour, &mut parent, &mut cycle)
+            {
+                return Some(cycle);
+            }
         }
 
         None

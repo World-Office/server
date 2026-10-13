@@ -40,10 +40,10 @@ fn default_paragraph() -> DocxParagraph {
             small_caps: false,
             all_caps: false,
             ..Default::default()
-            }],
+        }],
         section_properties: None,
         ..Default::default()
-            }
+    }
 }
 
 impl<'a> DocModel<'a> {
@@ -436,7 +436,7 @@ impl<'a> DocModel<'a> {
                         width: None,
                         shading: None,
                         raw_tc_pr: None,
-            });
+                    });
                 }
 
                 // Update the cell
@@ -497,7 +497,7 @@ impl<'a> DocModel<'a> {
                             width: None,
                             shading: None,
                             raw_tc_pr: None,
-            });
+                        });
                     }
 
                     // Insert the new cell (shift others to the right)
@@ -510,7 +510,7 @@ impl<'a> DocModel<'a> {
                             width: None,
                             shading: None,
                             raw_tc_pr: None,
-            },
+                        },
                     );
                 }
             }
@@ -612,16 +612,16 @@ mod tests {
                                     small_caps: false,
                                     all_caps: false,
                                     ..Default::default()
-            }],
+                                }],
                                 section_properties: None,
                                 ..Default::default()
-            }],
+                            }],
                             column_span: 1,
                             row_span: 1,
                             width: None,
                             shading: None,
                             ..Default::default()
-            })
+                        })
                         .collect(),
                     height: None,
                     is_header: false,
@@ -629,7 +629,7 @@ mod tests {
                 .collect(),
             properties: wo_ooxml::model::DocxTableProperties::default(),
             ..Default::default()
-            }
+        }
     }
 
     fn create_test_body() -> DocxBody {
@@ -1063,14 +1063,14 @@ mod tests {
                     row_span: 1,
                     width: None,
                     shading: None,
-            ..Default::default()
-            }],
+                    ..Default::default()
+                }],
                 height: None,
                 is_header: false,
             }],
             properties: wo_ooxml::model::DocxTableProperties::default(),
             ..Default::default()
-            });
+        });
 
         let mut model = DocModel { body: &mut body };
 
@@ -1091,14 +1091,14 @@ mod tests {
                     row_span: 1,
                     width: None,
                     shading: None,
-            ..Default::default()
-            }],
+                    ..Default::default()
+                }],
                 height: None,
                 is_header: false,
             }],
             properties: wo_ooxml::model::DocxTableProperties::default(),
             ..Default::default()
-            });
+        });
 
         let mut model = DocModel { body: &mut body };
 

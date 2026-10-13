@@ -19,7 +19,7 @@
 //! - `mm/dd/yyyy` - Date format
 //! - `h:mm AM/PM` - Time format
 
-use chrono::{Datelike, DateTime, NaiveDate, NaiveTime, Timelike};
+use chrono::{DateTime, Datelike, NaiveDate, NaiveTime, Timelike};
 
 /// Predefined Excel format code indices.
 /// These match the built-in Excel number formats.
@@ -421,12 +421,13 @@ fn format_scientific(value: f64, format_code: &str) -> String {
 
     // Check if format specifies precision
     if let Some(start) = format_code.find("0.")
-        && let Some(end) = format_code.find('e') {
-            let prec_str = &format_code[start + 2..end];
-            if let Ok(prec) = prec_str.parse::<usize>() {
-                result = format!("{:.1$e}", value, prec + 1);
-            }
+        && let Some(end) = format_code.find('e')
+    {
+        let prec_str = &format_code[start + 2..end];
+        if let Ok(prec) = prec_str.parse::<usize>() {
+            result = format!("{:.1$e}", value, prec + 1);
         }
+    }
 
     result
 }

@@ -58,8 +58,8 @@ use wo_ooxml::model::{
 };
 use wo_ooxml::{OoxmlParser, OoxmlSerializer};
 
-use wo_formula::ast::{CellErr, CellValue, FormulaError, a1_to_col};
-use wo_formula::eval::{Sheet as FormulaSheet, eval_str};
+use wo_formula::ast::{a1_to_col, CellErr, CellValue, FormulaError};
+use wo_formula::eval::{eval_str, Sheet as FormulaSheet};
 
 use crate::presentation_model::{
     PptxExtraPart, WoAnimationData, WoImageData, WoPresentation, WoShapeData, WoSlide,
@@ -2802,15 +2802,12 @@ fn image_dimensions(bytes: &[u8]) -> Option<(u32, u32)> {
                 continue;
             }
             let marker = bytes[i + 1];
-            if (0xC0..=0xCF).contains(&marker)
-                && ![0xC4, 0xC8, 0xCC].contains(&marker)
-            {
+            if (0xC0..=0xCF).contains(&marker) && ![0xC4, 0xC8, 0xCC].contains(&marker) {
                 let h = u16::from_be_bytes(bytes[i + 5..i + 7].try_into().ok()?) as u32;
                 let w = u16::from_be_bytes(bytes[i + 7..i + 9].try_into().ok()?) as u32;
                 return Some((w.max(1), h.max(1)));
             }
-            let seg_len =
-                u16::from_be_bytes(bytes.get(i + 2..i + 4)?.try_into().ok()?) as usize;
+            let seg_len = u16::from_be_bytes(bytes.get(i + 2..i + 4)?.try_into().ok()?) as usize;
             i += 2 + seg_len;
         }
     }
@@ -2841,8 +2838,7 @@ fn html_inlines_to_docx_runs(
                     // Explicit width/height (from a previously saved docx's
                     // wp:extent) win over the image's native pixels so a
                     // scaled picture stays scaled through the round trip.
-                    let (native_w, native_h) =
-                        image_dimensions(&bytes).unwrap_or((480, 320));
+                    let (native_w, native_h) = image_dimensions(&bytes).unwrap_or((480, 320));
                     let w_px = width.unwrap_or(native_w);
                     let h_px = height.unwrap_or(native_h);
                     let (cx, cy) = (w_px * 9525, h_px * 9525); // EMU @96dpi
@@ -5795,8 +5791,8 @@ impl FormatConverter for DocxToPdfConverter {
     }
 
     fn convert(&self, data: &[u8]) -> Result<Vec<u8>, ConversionError> {
-        use wo_docx_renderer::{DocxRenderPipeline, RenderConfig, RenderOutput};
         use wo_docx_renderer::model::OutputFormat;
+        use wo_docx_renderer::{DocxRenderPipeline, RenderConfig, RenderOutput};
 
         let config = RenderConfig {
             output_format: OutputFormat::Pdf,
@@ -7365,10 +7361,11 @@ impl FormatConverter for XlsbToWoSpreadsheetConverter {
             return Err(ConversionError::Parse("XLSB has no sheets".to_string()));
         }
         // RelId → sheet part target via the package rels.
-        let rels: std::collections::HashMap<String, String> = match entry_reader("xl/_rels/workbook.bin.rels") {
-            Ok(xml) => parse_xlsb_rels(&xml),
-            Err(_) => std::collections::HashMap::new(),
-        };
+        let rels: std::collections::HashMap<String, String> =
+            match entry_reader("xl/_rels/workbook.bin.rels") {
+                Ok(xml) => parse_xlsb_rels(&xml),
+                Err(_) => std::collections::HashMap::new(),
+            };
         // Shared strings are optional.
         let sst = entry_reader("xl/sharedStrings.bin")
             .map(|b| parse_xlsb_sst(&b))
@@ -7456,17 +7453,19 @@ fn attr(tag: &str, name: &str) -> Option<String> {
 /// Map one XLSB cell to the WoCell frontend shape (1-based row in r).
 fn xlsb_cell_to_wo(c: &wo_msbinary::XlsbCell) -> WoCell {
     let (t, v) = match &c.value {
-        wo_msbinary::XlsbCellValue::Text(s)
-        | wo_msbinary::XlsbCellValue::CachedString(s) => ("s", s.clone()),
+        wo_msbinary::XlsbCellValue::Text(s) | wo_msbinary::XlsbCellValue::CachedString(s) => {
+            ("s", s.clone())
+        }
         wo_msbinary::XlsbCellValue::Number(n) => ("n", format_number_wo(*n)),
         wo_msbinary::XlsbCellValue::Bool(b) => (
             "b",
-            if *b { "TRUE".to_string() } else { "FALSE".to_string() },
+            if *b {
+                "TRUE".to_string()
+            } else {
+                "FALSE".to_string()
+            },
         ),
-        wo_msbinary::XlsbCellValue::Err(code) => (
-            "e",
-            format!("#Err(0x{code:02X})"),
-        ),
+        wo_msbinary::XlsbCellValue::Err(code) => ("e", format!("#Err(0x{code:02X})")),
         wo_msbinary::XlsbCellValue::Blank => ("n", String::new()),
     };
     let row1 = c.row + 1;
@@ -7487,7 +7486,11 @@ fn cell_to_wo(c: &wo_msbinary::Biff8Cell) -> WoCell {
         Biff8CellValue::Number(n) => ("n", format_number_wo(*n)),
         Biff8CellValue::Bool(b) => (
             "b",
-            if *b { "TRUE".to_string() } else { "FALSE".to_string() },
+            if *b {
+                "TRUE".to_string()
+            } else {
+                "FALSE".to_string()
+            },
         ),
         Biff8CellValue::Err(code) => ("e", format!("#Err(0x{code:02X})")),
         Biff8CellValue::Empty => ("n", String::new()),
@@ -7681,7 +7684,11 @@ fn parse_cell_ref_a1(ref_str: &str) -> Option<(u32, u32)> {
 /// Convert a WoCell to a CellValue for formula evaluation.
 fn wo_cell_to_cell_value(cell: &WoCell) -> CellValue {
     match cell.t.as_str() {
-        "n" => cell.v.parse::<f64>().map(CellValue::Num).unwrap_or(CellValue::Empty),
+        "n" => cell
+            .v
+            .parse::<f64>()
+            .map(CellValue::Num)
+            .unwrap_or(CellValue::Empty),
         "b" => match cell.v.to_lowercase().as_str() {
             "1" | "true" => CellValue::Bool(true),
             "0" | "false" => CellValue::Bool(false),
@@ -7721,7 +7728,11 @@ fn formula_error_str(err: &FormulaError) -> String {
         NullError => "#NULL!".into(),
         NumError => "#NUM!".into(),
         NotAvailable => "#N/A".into(),
-        Syntax { .. } | UnexpectedEof | InvalidToken(_) | InvalidNumber(_) | WrongArgCount { .. }
+        Syntax { .. }
+        | UnexpectedEof
+        | InvalidToken(_)
+        | InvalidNumber(_)
+        | WrongArgCount { .. }
         | TypeMismatch(_) => "#VALUE!".into(),
     }
 }
@@ -7787,7 +7798,8 @@ impl FormatConverter for WoSpreadsheetToXlsxConverter {
             .iter()
             .enumerate()
             .map(|(i, sheet)| {
-                let mut value_map: std::collections::HashMap<(u32, u32), CellValue> = std::collections::HashMap::new();
+                let mut value_map: std::collections::HashMap<(u32, u32), CellValue> =
+                    std::collections::HashMap::new();
                 for row in &sheet.rows {
                     for cell in &row.cells {
                         if let Some((row_idx, col_idx)) = parse_cell_ref_a1(&cell.r) {
@@ -7845,10 +7857,7 @@ impl FormatConverter for WoSpreadsheetToXlsxConverter {
                                 };
 
                                 let final_v = if cell_type == XlsxCellType::S && !has_formula {
-                                    ss_index
-                                        .get(&v)
-                                        .map(|i| i.to_string())
-                                        .unwrap_or_default()
+                                    ss_index.get(&v).map(|i| i.to_string()).unwrap_or_default()
                                 } else {
                                     v
                                 };
@@ -7861,7 +7870,7 @@ impl FormatConverter for WoSpreadsheetToXlsxConverter {
                                     f: cell.f.clone(),
                                 }
                             })
-                             .collect();
+                            .collect();
                         XlsxRow {
                             r: row.r,
                             ht: None,
@@ -7956,8 +7965,7 @@ fn rewrite_xlsx_with_extra_parts(
         let mut entry = src.by_index(i).map_err(|e| e.to_string())?;
         let name = entry.name().to_string();
         let mut bytes = Vec::new();
-        std::io::Read::read_to_end(&mut entry, &mut bytes)
-            .map_err(|e| format!("{name}: {e}"))?;
+        std::io::Read::read_to_end(&mut entry, &mut bytes).map_err(|e| format!("{name}: {e}"))?;
         if name == "[Content_Types].xml" {
             content_types_xml = Some(String::from_utf8_lossy(&bytes).into_owned());
             continue; // re-emitted below with extra overrides
@@ -8002,14 +8010,18 @@ fn rewrite_xlsx_with_extra_parts(
     };
     out.start_file("[Content_Types].xml", options)
         .map_err(|e| e.to_string())?;
-    out.write_all(merged.as_bytes()).map_err(|e| e.to_string())?;
+    out.write_all(merged.as_bytes())
+        .map_err(|e| e.to_string())?;
 
     for p in extra_parts {
         let decoded = b64.decode(&p.data_base64).map_err(|e| e.to_string())?;
-        out.start_file(&p.name, options).map_err(|e| e.to_string())?;
+        out.start_file(&p.name, options)
+            .map_err(|e| e.to_string())?;
         out.write_all(&decoded).map_err(|e| e.to_string())?;
     }
-    out.finish().map_err(|e| e.to_string()).map(|c| c.into_inner())
+    out.finish()
+        .map_err(|e| e.to_string())
+        .map(|c| c.into_inner())
 }
 
 /// A stable, deterministic content-type guess for extra parts whose override
@@ -8107,13 +8119,13 @@ fn rewrite_pptx_with_extra_parts(
         let mut entry = src.by_index(i).map_err(|e| e.to_string())?;
         let name = entry.name().to_string();
         let mut bytes = Vec::new();
-        std::io::Read::read_to_end(&mut entry, &mut bytes)
-            .map_err(|e| format!("{name}: {e}"))?;
+        std::io::Read::read_to_end(&mut entry, &mut bytes).map_err(|e| format!("{name}: {e}"))?;
         if name == "[Content_Types].xml" {
             content_types_xml = Some(String::from_utf8_lossy(&bytes).into_owned());
             continue; // re-emitted below with extra overrides
         }
-        out.start_file(&name, options).map_err(|e| format!("{name}: {e}"))?;
+        out.start_file(&name, options)
+            .map_err(|e| format!("{name}: {e}"))?;
         out.write_all(&bytes).map_err(|e| e.to_string())?;
     }
 
@@ -8140,15 +8152,20 @@ fn rewrite_pptx_with_extra_parts(
     } else {
         base_types
     };
-    out.start_file("[Content_Types].xml", options).map_err(|e| e.to_string())?;
-    out.write_all(merged.as_bytes()).map_err(|e| e.to_string())?;
+    out.start_file("[Content_Types].xml", options)
+        .map_err(|e| e.to_string())?;
+    out.write_all(merged.as_bytes())
+        .map_err(|e| e.to_string())?;
 
     for p in extra_parts {
         let decoded = b64.decode(&p.data_base64).map_err(|e| e.to_string())?;
-        out.start_file(&p.name, options).map_err(|e| e.to_string())?;
+        out.start_file(&p.name, options)
+            .map_err(|e| e.to_string())?;
         out.write_all(&decoded).map_err(|e| e.to_string())?;
     }
-    out.finish().map_err(|e| e.to_string()).map(|c| c.into_inner())
+    out.finish()
+        .map_err(|e| e.to_string())
+        .map(|c| c.into_inner())
 }
 
 fn pptx_content_type_for(name: &str) -> String {
@@ -8164,8 +8181,7 @@ fn pptx_content_type_for(name: &str) -> String {
         || lower.contains("notesMaster")
         || lower.contains("handoutMaster")
     {
-        "application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml"
-            .to_string()
+        "application/vnd.openxmlformats-officedocument.presentationml.slideLayout+xml".to_string()
     } else {
         "application/xml".to_string()
     }
@@ -8841,23 +8857,26 @@ mod tests {
         assert_eq!(body.media.len(), 1, "media part missing");
         assert_eq!(body.media[0].name, "word/media/image1.png");
         assert!(!body.media[0].bytes.is_empty());
-        let has_img_run = body.blocks.iter().any(|b| matches!(b, DocxBlock::Paragraph(p)
-            if p.runs.iter().any(|r| r.image_rid.is_some())));
+        let has_img_run = body.blocks.iter().any(|b| {
+            matches!(b, DocxBlock::Paragraph(p)
+            if p.runs.iter().any(|r| r.image_rid.is_some()))
+        });
         assert!(has_img_run, "no image run in docx");
 
         // and the docx converts back to html with the image inline
         let out = DocxToHtmlConverter.convert(&docx).unwrap();
         let html_out = String::from_utf8(out).unwrap();
-        assert!(html_out.contains("data:image/png;base64,"), "image lost on roundtrip");
+        assert!(
+            html_out.contains("data:image/png;base64,"),
+            "image lost on roundtrip"
+        );
     }
 
     #[test]
     fn test_image_scaled_dimensions_roundtrip() {
         // A picture scaled via wp:extent must keep its size through the
         // full round trip: html width/height -> docx extents -> html again.
-        let html = format!(
-            "<p><img src=\"{TINY_PNG_DATA_URL}\" width=\"72\" height=\"36\"/></p>"
-        );
+        let html = format!("<p><img src=\"{TINY_PNG_DATA_URL}\" width=\"72\" height=\"36\"/></p>");
         let docx = HtmlToDocxConverter.convert(html.as_bytes()).unwrap();
         let doc = OoxmlParser::new().parse(&docx).unwrap();
         let body = doc.docx_body.as_ref().unwrap();
@@ -8883,7 +8902,9 @@ mod tests {
     use wo_epub::is_epub_file;
     use wo_fb2::model::{Author, Stanza, TitleElement};
     use wo_html::model::ListItem;
-    use wo_ooxml::model::{DocxBlock, DocxTableProperties, MediaPart, Relationship, VerticalAlignment};
+    use wo_ooxml::model::{
+        DocxBlock, DocxTableProperties, MediaPart, Relationship, VerticalAlignment,
+    };
     use wo_rtf::model::{RtfTableCell, RtfTableRow};
 
     // ── page furniture (headers/footers) ─────────────────────────────
@@ -8966,8 +8987,8 @@ mod tests {
     fn test_xls_legacy_fixture_roundtrip() {
         // Real LibreOffice-generated .xls (Excel 97/BIFF8) stored as a fixture
         // under tests/fixtures/legacy-data.xls (5.5K).
-        let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("tests/fixtures/legacy-data.xls");
+        let fixture =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/legacy-data.xls");
         let data = std::fs::read(&fixture).expect("fixture present");
         let converter = XlsToWoSpreadsheetConverter;
         assert_eq!(converter.source_format(), "xls");
@@ -8984,9 +9005,11 @@ mod tests {
                 .rows
                 .iter()
                 .find(|row| row.r == r + 1) // frontend rows are 1-based
-                .and_then(|row| row.cells.iter().find(|cell| {
-                    cell.r == format!("{}{}", (b'A' + c as u8) as char, r + 1)
-                }))
+                .and_then(|row| {
+                    row.cells
+                        .iter()
+                        .find(|cell| cell.r == format!("{}{}", (b'A' + c as u8) as char, r + 1))
+                })
                 .map(|cell| cell.v.clone())
                 .unwrap_or_default()
         };
@@ -9005,8 +9028,7 @@ mod tests {
     /// ((2,2)=1.0, (2,3)="qwerty").
     #[test]
     fn test_xlsb_real_files_match_pyxlsb() {
-        let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("tests/fixtures");
+        let base = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures");
         for name in ["legacy-real-xlsx2xlsb.xlsb", "legacy-real-xlsb2xlsx.xlsb"] {
             let data = std::fs::read(base.join(name)).expect("fixture present");
             let converter = XlsbToWoSpreadsheetConverter;
@@ -9022,9 +9044,11 @@ mod tests {
                     .rows
                     .iter()
                     .find(|row| row.r == r + 1)
-                    .and_then(|row| row.cells.iter().find(|cell| {
-                        cell.r == format!("{}{}", (b'A' + c as u8) as char, r + 1)
-                    }))
+                    .and_then(|row| {
+                        row.cells
+                            .iter()
+                            .find(|cell| cell.r == format!("{}{}", (b'A' + c as u8) as char, r + 1))
+                    })
                     .map(|cell| cell.v.clone())
                     .unwrap_or_default()
             };
@@ -9053,9 +9077,11 @@ mod tests {
                 .rows
                 .iter()
                 .find(|row| row.r == r + 1) // frontend rows are 1-based
-                .and_then(|row| row.cells.iter().find(|cell| {
-                    cell.r == format!("{}{}", (b'A' + c as u8) as char, r + 1)
-                }))
+                .and_then(|row| {
+                    row.cells
+                        .iter()
+                        .find(|cell| cell.r == format!("{}{}", (b'A' + c as u8) as char, r + 1))
+                })
                 .map(|cell| cell.v.clone())
                 .unwrap_or_default()
         };
@@ -9090,10 +9116,7 @@ mod tests {
         assert_eq!(wo.slides.len(), 2, "two real slides, layouts filtered");
         assert_eq!(wo.slides[0].title, "Hello PPT");
         assert_eq!(wo.slides[0].shapes.len(), 1, "one body paragraph");
-        assert_eq!(
-            wo.slides[0].shapes[0].text.as_deref(),
-            Some("Second line")
-        );
+        assert_eq!(wo.slides[0].shapes[0].text.as_deref(), Some("Second line"));
         assert_eq!(wo.slides[1].title, "Bye");
         assert_eq!(wo.slides[1].shapes[0].text.as_deref(), Some("Last slide"));
     }
@@ -9671,9 +9694,7 @@ mod tests {
   <w:body><w:p><w:r><w:t>PDF please</w:t></w:r></w:p></w:body>
 </w:document>"#,
         );
-        let pdf = DocxToPdfConverter
-            .convert(&docx)
-            .expect("docx -> pdf");
+        let pdf = DocxToPdfConverter.convert(&docx).expect("docx -> pdf");
         assert!(
             pdf.starts_with(b"%PDF-1.7"),
             "F-403: generated PDFs must carry the OO header %PDF-1.7, got {:?}",
@@ -11750,8 +11771,9 @@ mod tests {
         // Non-core parts.
         let layout_bytes = b"<p:sldLayout>KEEP-ME-LAYOUT</p:sldLayout>".to_vec();
         let notes_bytes = b"<p:notes>KEEP-ME-NOTES</p:notes>".to_vec();
-        let media_bytes =
-            vec![0x89, 0x50, 0x4E, 0x47, 0x00, 0xFF, 0xFE, 0x80, 0x11, 0x22, 0x33];
+        let media_bytes = vec![
+            0x89, 0x50, 0x4E, 0x47, 0x00, 0xFF, 0xFE, 0x80, 0x11, 0x22, 0x33,
+        ];
         add("ppt/slideLayouts/slideLayout1.xml", &layout_bytes);
         add("ppt/notesSlides/notesSlide1.xml", &notes_bytes);
         add("ppt/media/image1.png", &media_bytes);
@@ -16924,10 +16946,14 @@ mod tests {
 
     #[test]
     fn test_html_inlines_to_docx_runs_plain_text() {
-        let runs = html_inlines_to_docx_runs(&[InlineElement::Text {
-            text: "Hello".into(),
-            style: None,
-        }], &mut Vec::new(), &mut Vec::new());
+        let runs = html_inlines_to_docx_runs(
+            &[InlineElement::Text {
+                text: "Hello".into(),
+                style: None,
+            }],
+            &mut Vec::new(),
+            &mut Vec::new(),
+        );
         assert_eq!(runs.len(), 1);
         assert_eq!(runs[0].text, "Hello");
         assert!(!runs[0].bold);
@@ -16935,12 +16961,16 @@ mod tests {
 
     #[test]
     fn test_html_inlines_to_docx_runs_bold() {
-        let runs = html_inlines_to_docx_runs(&[InlineElement::Bold {
-            content: vec![InlineElement::Text {
-                text: "bold".into(),
-                style: None,
+        let runs = html_inlines_to_docx_runs(
+            &[InlineElement::Bold {
+                content: vec![InlineElement::Text {
+                    text: "bold".into(),
+                    style: None,
+                }],
             }],
-        }], &mut Vec::new(), &mut Vec::new());
+            &mut Vec::new(),
+            &mut Vec::new(),
+        );
         assert_eq!(runs.len(), 1);
         assert_eq!(runs[0].text, "bold");
         assert!(runs[0].bold);
@@ -16948,12 +16978,16 @@ mod tests {
 
     #[test]
     fn test_html_inlines_to_docx_runs_italic() {
-        let runs = html_inlines_to_docx_runs(&[InlineElement::Italic {
-            content: vec![InlineElement::Text {
-                text: "em".into(),
-                style: None,
+        let runs = html_inlines_to_docx_runs(
+            &[InlineElement::Italic {
+                content: vec![InlineElement::Text {
+                    text: "em".into(),
+                    style: None,
+                }],
             }],
-        }], &mut Vec::new(), &mut Vec::new());
+            &mut Vec::new(),
+            &mut Vec::new(),
+        );
         assert_eq!(runs.len(), 1);
         assert_eq!(runs[0].text, "em");
         assert!(runs[0].italic);
@@ -16961,24 +16995,28 @@ mod tests {
 
     #[test]
     fn test_html_inlines_to_docx_runs_mixed() {
-        let runs = html_inlines_to_docx_runs(&[
-            InlineElement::Text {
-                text: "A ".into(),
-                style: None,
-            },
-            InlineElement::Bold {
-                content: vec![InlineElement::Text {
-                    text: "B".into(),
+        let runs = html_inlines_to_docx_runs(
+            &[
+                InlineElement::Text {
+                    text: "A ".into(),
                     style: None,
-                }],
-            },
-            InlineElement::Italic {
-                content: vec![InlineElement::Text {
-                    text: " C".into(),
-                    style: None,
-                }],
-            },
-        ], &mut Vec::new(), &mut Vec::new());
+                },
+                InlineElement::Bold {
+                    content: vec![InlineElement::Text {
+                        text: "B".into(),
+                        style: None,
+                    }],
+                },
+                InlineElement::Italic {
+                    content: vec![InlineElement::Text {
+                        text: " C".into(),
+                        style: None,
+                    }],
+                },
+            ],
+            &mut Vec::new(),
+            &mut Vec::new(),
+        );
         assert_eq!(runs.len(), 3);
         assert_eq!(runs[0].text, "A ");
         assert!(!runs[0].bold);
@@ -16993,21 +17031,29 @@ mod tests {
 
     #[test]
     fn test_html_inlines_to_docx_runs_skips_empty_text() {
-        let runs = html_inlines_to_docx_runs(&[InlineElement::Text {
-            text: "".into(),
-            style: None,
-        }], &mut Vec::new(), &mut Vec::new());
+        let runs = html_inlines_to_docx_runs(
+            &[InlineElement::Text {
+                text: "".into(),
+                style: None,
+            }],
+            &mut Vec::new(),
+            &mut Vec::new(),
+        );
         assert!(runs.is_empty());
     }
 
     #[test]
     fn test_html_inlines_to_docx_runs_skips_empty_bold() {
-        let runs = html_inlines_to_docx_runs(&[InlineElement::Bold {
-            content: vec![InlineElement::Text {
-                text: "".into(),
-                style: None,
+        let runs = html_inlines_to_docx_runs(
+            &[InlineElement::Bold {
+                content: vec![InlineElement::Text {
+                    text: "".into(),
+                    style: None,
+                }],
             }],
-        }], &mut Vec::new(), &mut Vec::new());
+            &mut Vec::new(),
+            &mut Vec::new(),
+        );
         assert!(runs.is_empty());
     }
 
@@ -17544,7 +17590,11 @@ mod tests {
         let html_bytes = TxtToHtmlConverter.convert(input.as_bytes()).unwrap();
         let html = String::from_utf8(html_bytes).unwrap();
         assert!(html.contains("<p>"), "missing <p> in: {:?}", html);
-        assert!(html.contains("Grüße aus München"), "umlauts lost: {:?}", html);
+        assert!(
+            html.contains("Grüße aus München"),
+            "umlauts lost: {:?}",
+            html
+        );
         assert!(html.contains("日本語のテキスト"), "CJK lost: {:?}", html);
     }
 
@@ -17555,8 +17605,7 @@ mod tests {
     #[ignore = "wo-html escape_ampersands mangles non-ASCII bytes; fix out of scope"]
     #[test]
     fn test_html_to_txt_unicode_content() {
-        let html =
-            r#"<html><body><p>Grüße aus Köln</p><p>中文テスト</p></body></html>"#;
+        let html = r#"<html><body><p>Grüße aus Köln</p><p>中文テスト</p></body></html>"#;
         let txt_bytes = HtmlToTxtConverter.convert(html.as_bytes()).unwrap();
         let text = String::from_utf8(txt_bytes).unwrap();
         assert!(text.contains("Grüße aus Köln"), "umlauts lost: {:?}", text);
@@ -17611,7 +17660,11 @@ mod tests {
         let out = RtfToTxtConverter.convert(rtf.as_bytes()).unwrap();
         let text = String::from_utf8(out).unwrap();
         let trimmed = text.trim();
-        assert_eq!(trimmed, "aé😀漢", "content must be identical: {:?}", trimmed);
+        assert_eq!(
+            trimmed, "aé😀漢",
+            "content must be identical: {:?}",
+            trimmed
+        );
         assert_eq!(
             trimmed.chars().count(),
             4,
@@ -17644,9 +17697,7 @@ mod tests {
         registry.register(TxtToHtmlConverter);
         registry.register(TxtToRtfConverter);
 
-        let html = registry
-            .convert("txt", "html", b"Hello Registry")
-            .unwrap();
+        let html = registry.convert("txt", "html", b"Hello Registry").unwrap();
         let html = String::from_utf8(html).unwrap();
         assert!(html.contains("<p>"), "expected HTML out: {:?}", html);
         assert!(html.contains("Hello Registry"));
@@ -17863,8 +17914,7 @@ mod bridge_converter_tests {
         );
 
         // the workbook part must carry our sheet with its cells
-        let mut archive =
-            zip::ZipArchive::new(std::io::Cursor::new(&xlsx)).expect("zip readable");
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&xlsx)).expect("zip readable");
         let workbook = archive
             .by_name("xl/workbook.xml")
             .expect("workbook part present");
@@ -17907,7 +17957,11 @@ mod bridge_converter_tests {
         let v: Value = serde_json::from_slice(&back).expect("bridge JSON out");
         let a1 = find_cell(&v, "A1");
         assert_eq!(a1["t"].as_str(), Some("s"));
-        assert_eq!(a1["v"].as_str(), Some("Zwei"), "idx 1 must resolve to the second shared string, not the first");
+        assert_eq!(
+            a1["v"].as_str(),
+            Some("Zwei"),
+            "idx 1 must resolve to the second shared string, not the first"
+        );
         let b1 = find_cell(&v, "B1");
         assert_eq!(b1["v"].as_str(), Some("Eins"), "idx 0 still resolves");
     }
@@ -18114,11 +18168,12 @@ mod bridge_converter_tests {
             b"<worksheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\"><sheetData></sheetData></worksheet>",
         );
         // Non-core parts with byte-distinguishable content.
-        let chart_bytes =
-            b"<chartSpace>KEEP-ME-CHART-BYTES</chartSpace>".to_vec();
+        let chart_bytes = b"<chartSpace>KEEP-ME-CHART-BYTES</chartSpace>".to_vec();
         let pivot_bytes =
             b"<pivotTableDefinition>KEEP-ME-PIVOT-BYTES</pivotTableDefinition>".to_vec();
-        let png_bytes = vec![0x89, 0x50, 0x4E, 0x47, 0x00, 0xFF, 0xFE, 0x80, 0x01, 0x02, 0x03];
+        let png_bytes = vec![
+            0x89, 0x50, 0x4E, 0x47, 0x00, 0xFF, 0xFE, 0x80, 0x01, 0x02, 0x03,
+        ];
         add("xl/charts/chart1.xml", &chart_bytes);
         add("xl/pivotTables/pivotTable1.xml", &pivot_bytes);
         add("xl/media/image1.png", &png_bytes);
@@ -18132,7 +18187,10 @@ mod bridge_converter_tests {
             serde_json::from_slice(&json).expect("json parse");
         let names: Vec<&str> = wo.extra_parts.iter().map(|p| p.name.as_str()).collect();
         assert!(names.contains(&"xl/charts/chart1.xml"), "chart harvested");
-        assert!(names.contains(&"xl/pivotTables/pivotTable1.xml"), "pivot harvested");
+        assert!(
+            names.contains(&"xl/pivotTables/pivotTable1.xml"),
+            "pivot harvested"
+        );
         assert!(names.contains(&"xl/media/image1.png"), "media harvested");
         // chart's workbook-level rels live in xl/_rels/workbook.xml.rels (core,
         // regenerated) — re-adding the rel is serializer/parser's concern, not
@@ -18144,22 +18202,31 @@ mod bridge_converter_tests {
         let out = WoSpreadsheetToXlsxConverter
             .convert(&json)
             .expect("json -> xlsx");
-        let mut out_zip =
-            zip::ZipArchive::new(std::io::Cursor::new(&out)).expect("out is a zip");
+        let mut out_zip = zip::ZipArchive::new(std::io::Cursor::new(&out)).expect("out is a zip");
 
         let mut read = |name: &str| -> Vec<u8> {
-            let mut e = out_zip.by_name(name).unwrap_or_else(|_| panic!("part {name} missing"));
+            let mut e = out_zip
+                .by_name(name)
+                .unwrap_or_else(|_| panic!("part {name} missing"));
             let mut v = Vec::new();
             std::io::Read::read_to_end(&mut e, &mut v).unwrap();
             v
         };
-        assert_eq!(read("xl/charts/chart1.xml"), chart_bytes, "chart byte-identical");
+        assert_eq!(
+            read("xl/charts/chart1.xml"),
+            chart_bytes,
+            "chart byte-identical"
+        );
         assert_eq!(
             read("xl/pivotTables/pivotTable1.xml"),
             pivot_bytes,
             "pivot byte-identical"
         );
-        assert_eq!(read("xl/media/image1.png"), png_bytes, "png bytes preserved (binary-safe)");
+        assert_eq!(
+            read("xl/media/image1.png"),
+            png_bytes,
+            "png bytes preserved (binary-safe)"
+        );
 
         // Content_Types must still declare chart + pivot overrides so the file
         // stays schema-openable.
@@ -18177,7 +18244,10 @@ mod bridge_converter_tests {
         let result = WoSpreadsheetToXlsxConverter.convert(b"{ not json");
         assert!(result.is_err());
         assert!(
-            result.unwrap_err().to_string().contains("Invalid WoSpreadsheet JSON"),
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Invalid WoSpreadsheet JSON"),
             "expected dedicated parse-error message"
         );
     }
@@ -18219,8 +18289,8 @@ mod bridge_converter_tests {
         let xlsx = WoSpreadsheetToXlsxConverter
             .convert(wo_json.as_bytes())
             .expect("convert wo-spreadsheet to xlsx");
-        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&xlsx))
-            .expect("xlsx should be valid zip");
+        let mut archive =
+            zip::ZipArchive::new(std::io::Cursor::new(&xlsx)).expect("xlsx should be valid zip");
         let sheet_xml = archive
             .by_name("xl/worksheets/sheet1.xml")
             .expect("sheet1.xml should exist");
@@ -18278,8 +18348,8 @@ mod bridge_converter_tests {
         let xlsx = WoSpreadsheetToXlsxConverter
             .convert(wo_json.as_bytes())
             .expect("convert wo-spreadsheet to xlsx");
-        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&xlsx))
-            .expect("xlsx should be valid zip");
+        let mut archive =
+            zip::ZipArchive::new(std::io::Cursor::new(&xlsx)).expect("xlsx should be valid zip");
         let sheet_xml = archive
             .by_name("xl/worksheets/sheet1.xml")
             .expect("sheet1.xml should exist");
@@ -18348,7 +18418,10 @@ mod bridge_converter_tests {
         let result = WoDiagramToVsdxConverter.convert(b"{ nope");
         assert!(result.is_err());
         assert!(
-            result.unwrap_err().to_string().contains("Invalid WoVisioDiagram JSON"),
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Invalid WoVisioDiagram JSON"),
             "expected dedicated parse-error message"
         );
     }
@@ -18391,7 +18464,10 @@ mod bridge_converter_tests {
         let result = WoPdfToPdfConverter.convert(b"\x00garbage");
         assert!(result.is_err());
         assert!(
-            result.unwrap_err().to_string().contains("Invalid WoPdf JSON"),
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Invalid WoPdf JSON"),
             "expected dedicated parse-error message"
         );
     }
@@ -18500,10 +18576,7 @@ mod bridge_converter_tests {
         )
         .expect("utf-8");
 
-        assert!(
-            html.contains("Safe &lt;Title&gt;"),
-            "title must be escaped"
-        );
+        assert!(html.contains("Safe &lt;Title&gt;"), "title must be escaped");
         assert!(
             html.contains("&lt;script&gt;"),
             "shape markup must be escaped"
@@ -18519,7 +18592,10 @@ mod bridge_converter_tests {
         let result = WoPresentationToHtmlConverter.convert(b"not json at all");
         assert!(result.is_err());
         assert!(
-            result.unwrap_err().to_string().contains("Invalid WoPresentation JSON"),
+            result
+                .unwrap_err()
+                .to_string()
+                .contains("Invalid WoPresentation JSON"),
             "expected dedicated parse-error message"
         );
     }
@@ -18591,7 +18667,11 @@ mod bridge_converter_tests {
         let txt = RtfToTxtConverter.convert(rtf).expect("rtf -> txt");
         let text = String::from_utf8(txt).expect("utf-8");
         assert!(text.contains("a{b}c"), "braces unescaped: {:?}", text);
-        assert!(text.contains("back\\slash"), "backslash unescaped: {:?}", text);
+        assert!(
+            text.contains("back\\slash"),
+            "backslash unescaped: {:?}",
+            text
+        );
     }
 
     #[test]

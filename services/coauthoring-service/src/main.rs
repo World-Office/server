@@ -801,7 +801,10 @@ async fn create_session(
     // Initialize cursor tracker for this session
     {
         let mut trackers = state.cursor_trackers.lock().await;
-        trackers.insert(session_id.clone(), coauthoring_service::cursor::CursorTracker::new());
+        trackers.insert(
+            session_id.clone(),
+            coauthoring_service::cursor::CursorTracker::new(),
+        );
     }
 
     // Create ephemeral cursor broadcast channel for this session

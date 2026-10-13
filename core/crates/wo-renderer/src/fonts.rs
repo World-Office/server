@@ -191,7 +191,8 @@ impl FontLibrary {
             fontdb::Weight::NORMAL
         };
         let id = self.best_face_id_for_weight(weight)?;
-        self.db.with_face_data(id, |data, index| (data.to_vec(), index))
+        self.db
+            .with_face_data(id, |data, index| (data.to_vec(), index))
     }
 }
 

@@ -1603,12 +1603,15 @@ impl OoxmlParser {
                 "ind" => {
                     props.indent_left = self.attr_ns(child, "left").and_then(|v| v.parse().ok());
                     props.indent_right = self.attr_ns(child, "right").and_then(|v| v.parse().ok());
-                    props.indent_first_line =
-                        self.attr_ns(child, "firstLine").and_then(|v| v.parse().ok());
-                    props.indent_hanging = self.attr_ns(child, "hanging").and_then(|v| v.parse().ok());
+                    props.indent_first_line = self
+                        .attr_ns(child, "firstLine")
+                        .and_then(|v| v.parse().ok());
+                    props.indent_hanging =
+                        self.attr_ns(child, "hanging").and_then(|v| v.parse().ok());
                 }
                 "spacing" => {
-                    props.spacing_before = self.attr_ns(child, "before").and_then(|v| v.parse().ok());
+                    props.spacing_before =
+                        self.attr_ns(child, "before").and_then(|v| v.parse().ok());
                     props.spacing_after = self.attr_ns(child, "after").and_then(|v| v.parse().ok());
                     props.spacing_line = self.attr_ns(child, "line").and_then(|v| v.parse().ok());
                     props.spacing_line_rule = match self.attr_ns(child, "lineRule") {
@@ -1635,7 +1638,8 @@ impl OoxmlParser {
                             continue;
                         }
                         if tab_child.tag_name().name() == "tab" {
-                            let pos: i32 = self.attr_ns(tab_child, "pos")
+                            let pos: i32 = self
+                                .attr_ns(tab_child, "pos")
                                 .and_then(|v| v.parse::<i32>().ok())
                                 .unwrap_or(0);
                             let kind = match self.attr_ns(tab_child, "val") {
@@ -1719,10 +1723,8 @@ impl OoxmlParser {
                     // it converters render every picture at native resolution,
                     // ignoring the scale the document stores.
                     if let Some(extent) = child.descendants().find(|n| n.has_tag_name("extent")) {
-                        run.image_width_emu =
-                            extent.attribute("cx").and_then(|v| v.parse().ok());
-                        run.image_height_emu =
-                            extent.attribute("cy").and_then(|v| v.parse().ok());
+                        run.image_width_emu = extent.attribute("cx").and_then(|v| v.parse().ok());
+                        run.image_height_emu = extent.attribute("cy").and_then(|v| v.parse().ok());
                     }
                 }
                 (Some(Self::W_NS), "footnoteReference") => {
@@ -1794,7 +1796,8 @@ impl OoxmlParser {
                 }
                 "rFonts" => {
                     // Try ascii, hAnsi, then eastAsia, then cs
-                    run.font = self.attr_ns(child, "ascii")
+                    run.font = self
+                        .attr_ns(child, "ascii")
                         .or_else(|| self.attr_ns(child, "hAnsi"))
                         .or_else(|| self.attr_ns(child, "eastAsia"))
                         .map(|s| s.to_string());
@@ -1949,10 +1952,12 @@ impl OoxmlParser {
                     // element form, tcBorders, ...) survive a round trip.
                     let r = child.range();
                     raw_tc_pr = Some(xml[r.start..r.end].to_string());
-                    column_span = self.attr_ns(child, "gridSpan")
+                    column_span = self
+                        .attr_ns(child, "gridSpan")
                         .and_then(|v| v.parse().ok())
                         .unwrap_or(1);
-                    row_span = self.attr_ns(child, "vMerge")
+                    row_span = self
+                        .attr_ns(child, "vMerge")
                         .and_then(|v| v.parse().ok())
                         .unwrap_or(1);
                     width = self.attr_ns(child, "tcW").and_then(|v| v.parse().ok());
@@ -2101,7 +2106,8 @@ impl OoxmlParser {
                     props.italic = Some(self.attr_ns(child, "val") != Some("false"));
                 }
                 "rFonts" => {
-                    props.font = self.attr_ns(child, "ascii")
+                    props.font = self
+                        .attr_ns(child, "ascii")
                         .or_else(|| self.attr_ns(child, "hAnsi"))
                         .map(|s| s.to_string());
                 }
@@ -3022,16 +3028,22 @@ mod tests {
         let mut buf = Vec::new();
         {
             let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
-            zip.start_file("[Content_Types].xml", zip::write::SimpleFileOptions::default())
-                .unwrap();
+            zip.start_file(
+                "[Content_Types].xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
             zip.write_all(br#"<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>"#)
                 .unwrap();
             zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default())
                 .unwrap();
             zip.write_all(br#"<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>"#)
                 .unwrap();
-            zip.start_file("word/document.xml", zip::write::SimpleFileOptions::default())
-                .unwrap();
+            zip.start_file(
+                "word/document.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
             zip.write_all(
                 br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
@@ -3049,10 +3061,17 @@ mod tests {
             _ => panic!("expected paragraph"),
         };
         assert_eq!(para.properties.indent_left, Some(720), "w:left must parse");
-        assert_eq!(para.properties.spacing_before, Some(240), "w:before must parse");
+        assert_eq!(
+            para.properties.spacing_before,
+            Some(240),
+            "w:before must parse"
+        );
         // <w:br w:type="page"/> -> form feed, not a plain line break
         let joined: String = para.runs.iter().map(|r| r.text.as_str()).collect();
-        assert!(joined.contains('\x0C'), "page break must be \\x0C, got {joined:?}");
+        assert!(
+            joined.contains('\x0C'),
+            "page break must be \\x0C, got {joined:?}"
+        );
     }
 
     #[test]
@@ -3073,16 +3092,22 @@ mod tests {
         let mut buf = Vec::new();
         {
             let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
-            zip.start_file("[Content_Types].xml", zip::write::SimpleFileOptions::default())
-                .unwrap();
+            zip.start_file(
+                "[Content_Types].xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
             zip.write_all(br#"<?xml version="1.0"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>"#)
                 .unwrap();
             zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default())
                 .unwrap();
             zip.write_all(br#"<?xml version="1.0"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>"#)
                 .unwrap();
-            zip.start_file("word/document.xml", zip::write::SimpleFileOptions::default())
-                .unwrap();
+            zip.start_file(
+                "word/document.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
             // 720×180 CSS px @96 dpi = 6858000×1714500 EMU.
             zip.write_all(
                 br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

@@ -164,10 +164,14 @@ impl SlideOp {
                     .slides
                     .get(*slide)
                     .ok_or(SlideOpError::SlideOutOfRange(*slide, pres.slides.len()))?;
-                let shape_obj = slide_obj
-                    .shapes
-                    .get(*shape)
-                    .ok_or(SlideOpError::ShapeOutOfRange(*shape, slide_obj.shapes.len()))?;
+                let shape_obj =
+                    slide_obj
+                        .shapes
+                        .get(*shape)
+                        .ok_or(SlideOpError::ShapeOutOfRange(
+                            *shape,
+                            slide_obj.shapes.len(),
+                        ))?;
 
                 // Get the original bounds - we need to store the original for proper invert
                 // For now, we'll use the current bounds as the "original" which works
@@ -204,10 +208,14 @@ impl SlideOp {
                     .slides
                     .get(*slide)
                     .ok_or(SlideOpError::SlideOutOfRange(*slide, pres.slides.len()))?;
-                let shape_obj = slide_obj
-                    .shapes
-                    .get(*shape)
-                    .ok_or(SlideOpError::ShapeOutOfRange(*shape, slide_obj.shapes.len()))?;
+                let shape_obj =
+                    slide_obj
+                        .shapes
+                        .get(*shape)
+                        .ok_or(SlideOpError::ShapeOutOfRange(
+                            *shape,
+                            slide_obj.shapes.len(),
+                        ))?;
 
                 let original_text = match shape_obj {
                     Shape::TextBox(s) => get_run_text(&s.text_body, *run)?,
@@ -253,10 +261,14 @@ impl SlideOp {
                     .slides
                     .get(*slide)
                     .ok_or(SlideOpError::SlideOutOfRange(*slide, pres.slides.len()))?;
-                let shape_obj = slide_obj
-                    .shapes
-                    .get(*shape)
-                    .ok_or(SlideOpError::ShapeOutOfRange(*shape, slide_obj.shapes.len()))?;
+                let shape_obj =
+                    slide_obj
+                        .shapes
+                        .get(*shape)
+                        .ok_or(SlideOpError::ShapeOutOfRange(
+                            *shape,
+                            slide_obj.shapes.len(),
+                        ))?;
 
                 let original_fill = match shape_obj {
                     Shape::TextBox(s) => {

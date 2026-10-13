@@ -3742,7 +3742,7 @@ pub fn layout_and_render(handle: u32, opts_json: &str, canvas: u32) -> Result<St
                 canvas_obj.fill_rect(0.0, 0.0, opts.width as f32, opts.height as f32);
             }
         } // CANVAS_STORE guard dropped: render_text() below re-locks it (self-deadlock otherwise)
-        // Render each paragraph as a line of text.
+          // Render each paragraph as a line of text.
         let mut cursor_y = opts.margin_pt * stub_model::PT_TO_PX;
         for para_text in &model.paragraphs {
             let baseline_y = cursor_y + opts.font_size * 0.8;
@@ -4265,7 +4265,10 @@ mod tests {
     fn test_create_model_stub() {
         let bytes = br#"["Hello", "World"]"#;
         let handle = create_model(bytes, "stub").unwrap();
-        assert!(handle < 2000, "stub handles live below the pdf range (>=2000)");
+        assert!(
+            handle < 2000,
+            "stub handles live below the pdf range (>=2000)"
+        );
         release_stub_model(handle).ok();
     }
 

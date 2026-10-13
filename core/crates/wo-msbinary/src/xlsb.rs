@@ -427,9 +427,9 @@ mod tests {
     #[test]
     fn sheet_reads_cells_with_shared_strings() {
         let sst = vec!["Alpha".to_string(), "Beta".to_string()];
-        let mut sh = rec(0x94, &[0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,0]); // WsDim
+        let mut sh = rec(0x94, &[0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0]); // WsDim
         sh.extend(rec(0x91, b"")); // BeginSheetData
-        // row 0
+                                   // row 0
         let mut r0 = 0u32.to_le_bytes().to_vec();
         r0.extend(vec![0u8; 14]);
         sh.extend(rec(0x0000, &r0));

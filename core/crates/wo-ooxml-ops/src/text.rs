@@ -300,7 +300,8 @@ impl<'a> DocModel<'a> {
                 runs: Vec::new(),
                 section_properties: None,
                 raw_ppr: None,
-            ..Default::default()},
+                ..Default::default()
+            },
         );
 
         let mut new_runs: Vec<DocxRun> = Vec::new();
@@ -337,7 +338,8 @@ impl<'a> DocModel<'a> {
             runs: runs_before_split,
             section_properties: None,
             raw_ppr: old_paragraph.raw_ppr.clone(),
-        ..Default::default()};
+            ..Default::default()
+        };
 
         // Create new paragraph with content after split
         let new_paragraph = DocxParagraph {
@@ -346,7 +348,8 @@ impl<'a> DocModel<'a> {
             runs: new_runs,
             section_properties: None,
             raw_ppr: old_paragraph.raw_ppr,
-        ..Default::default()};
+            ..Default::default()
+        };
 
         // Insert the new paragraph after the current one
         self.body
@@ -615,7 +618,8 @@ impl<'a> DocModel<'a> {
                 vertical_alignment: run.vertical_alignment, // not in RunAttrs
                 small_caps: run.small_caps,                 // not in RunAttrs
                 all_caps: run.all_caps,                     // not in RunAttrs
-            ..Default::default()});
+                ..Default::default()
+            });
 
             if run_end > end_char {
                 // part after range
@@ -645,7 +649,8 @@ impl<'a> DocModel<'a> {
             para,
             start_char,
             end_char,
-            attrs: old_attrs_map.first()
+            attrs: old_attrs_map
+                .first()
                 .map(|(_, attrs)| attrs.clone())
                 .unwrap_or_default(),
         })
@@ -676,9 +681,11 @@ mod tests {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: None,
-        ..Default::default()}
+            ..Default::default()
+        }
     }
 
     fn create_test_body_with_paragraph(text: &str) -> wo_ooxml::model::DocxBody {

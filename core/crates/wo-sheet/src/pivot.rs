@@ -445,7 +445,13 @@ impl PivotEngine {
             .collect();
 
         // Fix aggregation functions for grand accumulators
-        for (v, func) in self.config.value_fields.iter().map(|f| f.agg_func).enumerate() {
+        for (v, func) in self
+            .config
+            .value_fields
+            .iter()
+            .map(|f| f.agg_func)
+            .enumerate()
+        {
             for ra in row_grand_accums.iter_mut() {
                 ra[v] = AggAccumulator::new(func);
             }

@@ -36,7 +36,8 @@ impl<'a> DocModel<'a> {
                 runs: vec![],
                 section_properties: Some(section_props),
                 raw_ppr: None,
-            ..Default::default()};
+                ..Default::default()
+            };
 
             self.body.blocks.push(DocxBlock::Paragraph(new_para));
 
@@ -51,16 +52,16 @@ impl<'a> DocModel<'a> {
             let section_props = match next_block {
                 DocxBlock::Paragraph(p) => {
                     // Get existing section properties for inverse
-                    
+
                     p.section_properties.replace(SectionProperties {
-                            header_first: None,
-                            header_even: None,
-                            header: None,
-                            footer_first: None,
-                            footer_even: None,
-                            footer: None,
-                            cols: Some(cols),
-                        })
+                        header_first: None,
+                        header_even: None,
+                        header: None,
+                        footer_first: None,
+                        footer_even: None,
+                        footer: None,
+                        cols: Some(cols),
+                    })
                 }
                 DocxBlock::Table(_) => {
                     // Cannot insert section break before a table
@@ -106,9 +107,11 @@ mod tests {
                 vertical_alignment: None,
                 small_caps: false,
                 all_caps: false,
-            ..Default::default()}],
+                ..Default::default()
+            }],
             section_properties: None,
-        ..Default::default()}
+            ..Default::default()
+        }
     }
 
     #[test]

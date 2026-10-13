@@ -440,11 +440,12 @@ impl<'a> Lexer<'a> {
                 self.advance();
                 // If followed by a letter, it's an absolute column reference ($A1)
                 if let Some(c) = self.current()
-                    && c.is_ascii_alphabetic() {
-                        // This is $A1 or similar
-                        self.pos = saved_pos;
-                        return self.read_cell_ref();
-                    }
+                    && c.is_ascii_alphabetic()
+                {
+                    // This is $A1 or similar
+                    self.pos = saved_pos;
+                    return self.read_cell_ref();
+                }
                 // If preceded by a letter and followed by a digit, it's A$1
                 // But we can't look behind, so just return Dollar standalone
                 // Actually, let's check if the previous position was alphabetic

@@ -287,7 +287,9 @@ pub fn parse_biff8_workbook(stream: &[u8]) -> Result<Biff8Workbook, String> {
                         // Special cached values: first 4 bytes == 0xFFFFFFFF
                         // (XLUnicodeString flag) for strings, or 0xFFFF*0000 for
                         // bool/err/empty.
-                        if cached[0] == 0xFF && cached[1] == 0xFF && cached[2] == 0xFF
+                        if cached[0] == 0xFF
+                            && cached[1] == 0xFF
+                            && cached[2] == 0xFF
                             && cached[3] == 0xFF
                         {
                             // String: cch at [4..6] then data (we can't easily
@@ -299,7 +301,9 @@ pub fn parse_biff8_workbook(stream: &[u8]) -> Result<Biff8Workbook, String> {
                             if flags & 0x01 != 0 {
                                 for _ in 0..cch {
                                     if p + 2 <= 14 {
-                                        s.push(char::from_u32(u16_at(cached, p) as u32).unwrap_or('?'));
+                                        s.push(
+                                            char::from_u32(u16_at(cached, p) as u32).unwrap_or('?'),
+                                        );
                                         p += 2;
                                     }
                                 }
@@ -316,7 +320,9 @@ pub fn parse_biff8_workbook(stream: &[u8]) -> Result<Biff8Workbook, String> {
                                 col,
                                 value: Biff8CellValue::CachedString(s),
                             });
-                        } else if cached[0] == 0x00 && cached[1] == 0x00 && cached[2] == 0xFF
+                        } else if cached[0] == 0x00
+                            && cached[1] == 0x00
+                            && cached[2] == 0xFF
                             && cached[3] == 0xFF
                         {
                             // bool/err/empty: byte 6 selects.
@@ -380,7 +386,13 @@ mod tests {
         // Sheet substream first (so we know its absolute offset), then globals
         // are concatenated before it; boundsheet offset = globals.len().
         let mut sheet = Vec::new();
-        sheet.extend(rec(REC_BOF, &[0x00, 0x06, 0x00, 0x00, 0x10, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]));
+        sheet.extend(rec(
+            REC_BOF,
+            &[
+                0x00, 0x06, 0x00, 0x00, 0x10, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00,
+            ],
+        ));
         let num = 42.5f64;
         let mut nb = Vec::new();
         nb.extend_from_slice(&0u16.to_le_bytes()); // row 0
@@ -409,7 +421,13 @@ mod tests {
 
         // Globals with boundsheet pointing at sheet.
         let mut wb = Vec::new();
-        wb.extend(rec(REC_BOF, &[0x00, 0x06, 0x00, 0x00, 0x05, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]));
+        wb.extend(rec(
+            REC_BOF,
+            &[
+                0x00, 0x06, 0x00, 0x00, 0x05, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                0x00, 0x00,
+            ],
+        ));
         // SST: total=2 unique=2, "Alpha" (compressed), "Beta" (compressed)
         let ssta = b"Alpha";
         let sstb = b"Beta";
