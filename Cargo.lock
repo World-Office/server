@@ -5703,6 +5703,7 @@ name = "wo-x2t-wasm"
 version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
+ "getrandom 0.4.2",
  "js-sys",
  "wasm-bindgen",
  "wasm-bindgen-test",

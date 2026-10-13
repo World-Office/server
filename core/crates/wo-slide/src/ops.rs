@@ -1299,7 +1299,7 @@ mod tests {
         let op = SlideOp::AddAnimation {
             slide: 0,
             shape: 0,
-            anim: anim,
+            anim,
         };
 
         // apply() adds the animation and returns a non-revertible inverse

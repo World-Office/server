@@ -38,6 +38,7 @@ pub fn is_encrypted_ooxml(data: &[u8]) -> bool {
 /// Decrypt a password-protected OOXML package back to its plain ZIP bytes.
 /// Loud and specific on the two common failures: wrong password and "not
 /// actually encrypted".
+#[cfg(not(target_arch = "wasm32"))]
 pub fn decrypt_ooxml(data: &[u8], password: &str) -> Result<Vec<u8>, OoxmlDecryptError> {
     if !is_encrypted_ooxml(data) {
         return Err(OoxmlDecryptError::NotEncrypted);
@@ -45,6 +46,17 @@ pub fn decrypt_ooxml(data: &[u8], password: &str) -> Result<Vec<u8>, OoxmlDecryp
     msoffice_crypto::decrypt_ooxml(data, password).map_err(map_error)
 }
 
+/// wasm32: msoffice-crypto rc.5 does not compile on wasm (web_time/std
+/// SystemTime mismatch in its dataspaces.rs), and in-browser password
+/// decryption is not a supported path — surface Unsupported, never panic.
+#[cfg(target_arch = "wasm32")]
+pub fn decrypt_ooxml(_data: &[u8], _password: &str) -> Result<Vec<u8>, OoxmlDecryptError> {
+    Err(OoxmlDecryptError::Unsupported(
+        "password-protected OOXML decryption is not available on wasm".into(),
+    ))
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 fn map_error(e: msoffice_crypto::Error) -> OoxmlDecryptError {
     match e {
         msoffice_crypto::Error::WrongPassword => OoxmlDecryptError::WrongPassword,

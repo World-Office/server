@@ -1,0 +1,6 @@
+# getrandom 0.4 (pulled onto wasm32 targets via msoffice-crypto -> rand 0.10)
+# requires an explicit backend for wasm32-unknown-unknown; without this every
+# wasm-pack build of wo-x2t-wasm fails to compile getrandom.
+# See https://docs.rs/getrandom/0.4.2/#webassembly-support
+[target.wasm32-unknown-unknown]
+rustflags = ["--cfg", "getrandom_backend=\"wasm_js\""]

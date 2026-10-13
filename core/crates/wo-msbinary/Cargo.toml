@@ -10,6 +10,9 @@ thiserror = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 wo-common = { path = "../wo-common" }
+# wasm32: msoffice-crypto rc.5 does not compile on wasm — decrypt_ooxml has a
+# wasm stub returning Unsupported instead (see src/crypt.rs)
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 msoffice-crypto = { version = "=0.1.0-rc.5", features = ["crypto-ops"] }
 
 [dev-dependencies]
