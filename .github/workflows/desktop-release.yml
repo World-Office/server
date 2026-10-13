@@ -158,7 +158,10 @@ jobs:
       - name: Install and verify binary
         run: |
           sudo dpkg -i artifacts/*.deb || sudo apt-get install -f -y
-          xvfb-run world-office --version
+          # A Tauri app under xvfb doesn't exit after --version; a clean 20s
+          # run (timeout 124) means the binary launches — anything else fails
+          timeout 20 xvfb-run -a world-office --version; rc=$?
+          [ $rc -eq 0 ] || [ $rc -eq 124 ]
         timeout-minutes: 5
 
       - name: Run Rust unit tests
