@@ -445,6 +445,14 @@ jobs:
         run: bash wo-test-harness/fig/run-fig.sh
         timeout-minutes: 20
 
+      - name: Upload fig report (per-capability state)
+        uses: actions/upload-artifact@v4
+        with:
+          name: fig-status
+          path: wo-test-harness/fig/census/fig-status.md
+          retention-days: 7
+        if: always()
+
   build-rust:
     name: Rust Build Check
     runs-on: ubuntu-latest
