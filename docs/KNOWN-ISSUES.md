@@ -79,7 +79,7 @@ swallows its runner exit code (`|| true`), so it does not surface this.
 
 ---
 
-## 3. ocis SSE TypeError in the collaboration stream
+## 3. ocis SSE TypeError in the collaboration stream (HISTORICAL — python docserver removed 2026-10-14; kept as history)
 
 **Affected:** E2E / live integration with OpenCloud (OCIS). Not a pinned CI
 gate — this is a long-term integration defect to fix in the owning change.
@@ -170,35 +170,6 @@ in `packages/wopi-client`.
 `continue-on-error`. Per-package `typecheck` + `test` verified green
 (editor-common 335, wopi-client 18, pdfeditor 36, presentationeditor 114,
 spreadsheeteditor 38, visioeditor 70).
-
----
-
-## 6. docserver: `uv run ruff` can't spawn on CI
-
-**Affected:** `ci.yml` → job `docserver-tests` (step `Lint (ruff)`, exit 2).
-
-**Symptom (CI log):**
-```
-uv run ruff check src tests
-error: Failed to spawn: `ruff`
-```
-
-**Blocker:** `ruff>=0.8` **is** declared in
-`opencloud-docserver/pyproject.toml` (both `[project.optional-dependencies].dev`
-and `[dependency-groups].dev`) and in `uv.lock`, yet `uv run ruff` cannot
-find/spawn the binary in the CI environment. Likely env-resolution friction
-between the legacy `[project.optional-dependencies] dev` extra and the
-PEP 735 `[dependency-groups] dev` (ruff is only in the former →
-`uv run` on the default environment never installs it). Fixing belongs to
-the docserver change (align groups / pin via `uv sync --group dev`, or run
-`uvx ruff`).
-
-**Workaround (in effect):** `docserver-tests` has `continue-on-error: true`,
-so the (healthy) unit suite under it still runs and the workflow stays
-green. The `docserver-mutation-gate` job `needs: docserver-tests` but
-evaluates its own exit code, so the mutation gate still enforces the 100%
-score independently.
-
 ---
 
 ## 7. docker.yml: wasm-pack missing + GHCR org-package permission (out of ci.yml scope)
@@ -231,5 +202,4 @@ served by `deploy.yml`, which is green.
 | E2E/live (not a gate) | #3 ocis SSE TypeError | `opencloud-docserver` + editor client | n/a |
 | `lint-rust` (ci.yml) | #4 fmt/clippy debt | `cargo fmt --all` on main | yes |
 | `lint-ts` (ci.yml) | #5 wopi-client Biome | ✅ resolved 2026-10-05 | no |
-| `docserver-tests` (ci.yml) | #6 ruff spawn | `opencloud-docserver` pyproject/uv | yes |
 | `build-frontend`/`build-services` (docker.yml) | #7 wasm-pack + GHCR PAT | `docker.yml` + repo secrets | no |
