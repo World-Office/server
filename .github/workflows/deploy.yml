@@ -90,9 +90,6 @@ jobs:
         include:
           - service: docserver
             dockerfile: core/crates/wo-docserver/Dockerfile
-          - service: server
-            dockerfile: services/server/Dockerfile
-            context: services/server
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
