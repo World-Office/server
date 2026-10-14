@@ -1,3 +1,4 @@
+import { observer } from "mobx-react-lite";
 import type { ReactNode } from "react";
 import { spreadsheetStore } from "../stores/SpreadsheetStore";
 import { DocumentHolder } from "./DocumentHolder";
@@ -19,7 +20,13 @@ interface ViewportProps {
 	onMonacoCommand: (command: MonacoCommand) => void;
 }
 
-export function Viewport({
+// Viewport reads spreadsheetStore directly (file-menu panel, about panel) — it
+// MUST be a mobx observer or those overlays never re-render: clicking the File
+// tab flipped spreadsheetStore.isFileMenuOpen yet .se-file-menu-panel stayed
+// display:none until some *other* observer (the sheet's isModified flip)
+// happened to re-render the tree (the sheet twin of the word-editor
+// "WO file menu does nothing" bug).
+const ViewportInner = function Viewport({
 	toolbarVisible,
 	statusbarVisible,
 	leftMenuVisible,
@@ -104,4 +111,6 @@ export function Viewport({
 			</div>
 		</div>
 	);
-}
+};
+
+export const Viewport = observer(ViewportInner);
