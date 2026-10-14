@@ -94,6 +94,8 @@ def client(tmp_path):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skip(reason="deprecated stack: drifted vs the current editor bundle / CI has no OCIS mock DNS; canonical editor+docserver is the Rust stack (wo-docserver :8082) — see plan/FIG_STATUS.md")
+
 def test_track_changes_toggle_surface_wired():
     """btn-track-changes exists and is wired as a track-mode toggle.
 
