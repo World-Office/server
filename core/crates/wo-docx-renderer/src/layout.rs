@@ -2863,7 +2863,7 @@ mod multicolumn {
 
         let pages = engine.layout(&body);
         // With multicolumn, content should be laid out
-        assert!(pages.len() >= 1);
+        assert!(!pages.is_empty());
     }
 
     #[test]
@@ -2938,7 +2938,7 @@ mod multicolumn {
         let pages = engine.layout(&body);
 
         // Should produce at least one page with content in multi-column layout
-        assert!(pages.len() >= 1, "Should produce at least one page");
+        assert!(!pages.is_empty(), "Should produce at least one page");
         assert!(!pages[0].elements.is_empty(), "Page should have elements");
 
         // With multi-column layout, paragraphs should be positioned at different x offsets
@@ -3432,7 +3432,7 @@ mod pagination {
         for i in 0..num_rows {
             let want = format!("Row {}", i);
             assert!(
-                cell_texts.iter().any(|t| *t == want),
+                cell_texts.contains(&want),
                 "row '{}' was dropped from the layout",
                 want
             );

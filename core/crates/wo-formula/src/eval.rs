@@ -1220,9 +1220,6 @@ mod tests {
                 data: HashMap::new(),
             }
         }
-        fn set(&mut self, row: u32, col: u32, value: CellValue) {
-            self.data.insert((row, col), value);
-        }
     }
 
     impl Sheet for TestSheet {
@@ -1431,13 +1428,15 @@ mod tests {
     #[test]
     fn eval_basic_round() {
         let sheet = TestSheet::new();
+        // expected computed, not a literal (clippy::approx_constant)
+        let expected = (1.23456f64 * 100.0).round() / 100.0;
         assert_eq!(
-            eval(&parse("ROUND(3.14159,2)").unwrap(), &sheet).unwrap(),
-            CellValue::Num(3.14)
+            eval(&parse("ROUND(1.23456,2)").unwrap(), &sheet).unwrap(),
+            CellValue::Num(expected)
         );
         assert_eq!(
-            eval(&parse("ROUND(3.14159)").unwrap(), &sheet).unwrap(),
-            CellValue::Num(3.0)
+            eval(&parse("ROUND(1.23456)").unwrap(), &sheet).unwrap(),
+            CellValue::Num(1.0)
         );
     }
 
@@ -1824,7 +1823,7 @@ mod tests {
         );
         let result = eval(&parse("ATAN2(1,1)").unwrap(), &sheet).unwrap();
         if let CellValue::Num(n) = result {
-            assert!((n - 0.7853981633974483).abs() < 1e-10);
+            assert!((n - std::f64::consts::FRAC_PI_4).abs() < 1e-10);
         } else {
             panic!("Expected Num");
         }

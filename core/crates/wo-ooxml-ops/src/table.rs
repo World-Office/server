@@ -867,7 +867,7 @@ mod tests {
                 assert_eq!(table.rows[0].cells[0].row_span, 1);
                 // All cells in column 0 should have row_span=1
                 for r in 0..3 {
-                    if r < table.rows.len() && 0 < table.rows[r].cells.len() {
+                    if r < table.rows.len() && !table.rows[r].cells.is_empty() {
                         assert_eq!(
                             table.rows[r].cells[0].row_span, 1,
                             "Row {} col 0 should have row_span=1",

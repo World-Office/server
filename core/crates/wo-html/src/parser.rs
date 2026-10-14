@@ -680,7 +680,6 @@ mod tests {
     use crate::is_html_file;
 
     #[test]
-    #[test]
     fn test_parse_pagebreak_marker_roundtrip() {
         // docx -> html emits \u{c} as the page-break marker; html -> xml
         // cleaning re-encodes it as a marker span; parsing must restore the

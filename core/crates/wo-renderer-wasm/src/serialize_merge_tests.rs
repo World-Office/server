@@ -7,7 +7,7 @@ use super::*;
 /// customXml, thumbnail) survive an edit+save cycle.
 ///
 /// The original file bytes live in DOC_STORE from create_docx_model.
-mod serialize_merge_tests {
+mod tests {
     #[allow(unused_imports)]
     use super::*;
 

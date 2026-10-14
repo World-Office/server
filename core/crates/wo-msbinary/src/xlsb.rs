@@ -484,7 +484,7 @@ mod tests {
         assert_eq!(sst, vec!["Name", "Score", "Alpha", "Beta", "Gamma"]);
 
         let s1 = parse_xlsb_sheet(&read(&mut zip, "xl/worksheets/sheet1.bin"), &sst);
-        fn get<'a>(cells: &'a [XlsbCell], r: u32, c: u32) -> &'a XlsbCellValue {
+        fn get(cells: &[XlsbCell], r: u32, c: u32) -> &XlsbCellValue {
             &cells
                 .iter()
                 .find(|x| x.row == r && x.col == c)

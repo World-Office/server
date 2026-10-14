@@ -4462,15 +4462,12 @@ mod tests {
         )
         .unwrap();
         let layout: serde_json::Value = serde_json::from_str(&layout_json).unwrap();
-        assert!(
-            layout["pages"].as_array().unwrap()[0]["paragraphs"]
-                .as_array()
-                .unwrap()[0]["lines"][0]["chars"]
-                .as_array()
-                .unwrap()
-                .len()
-                > 0
-        );
+        assert!(!layout["pages"].as_array().unwrap()[0]["paragraphs"]
+            .as_array()
+            .unwrap()[0]["lines"][0]["chars"]
+            .as_array()
+            .unwrap()
+            .is_empty());
 
         release_stub_model(handle).ok();
     }
@@ -4806,8 +4803,7 @@ SFX N e ness e
         // This will likely fail because b"PK\x03\x04" is not a valid XLSX
         // but it should at least recognize the format and try to parse it
         // The error should NOT be "Unsupported format"
-        if result.is_err() {
-            let err = result.unwrap_err();
+        if let Err(err) = result {
             assert!(
                 !err.contains("Unsupported format"),
                 "XLSX should be a supported format, got error: {}",

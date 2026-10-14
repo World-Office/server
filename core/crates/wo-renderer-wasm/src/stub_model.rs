@@ -753,8 +753,7 @@ mod tests {
                     x.len() == y.len() && x.iter().zip(y).all(|(p, q)| eq(p, q))
                 }
                 (serde_json::Value::Object(x), serde_json::Value::Object(y)) => {
-                    x.len() == y.len()
-                        && x.iter().all(|(k, v)| y.get(k).map_or(false, |w| eq(v, w)))
+                    x.len() == y.len() && x.iter().all(|(k, v)| y.get(k).is_some_and(|w| eq(v, w)))
                 }
                 _ => a == b,
             }

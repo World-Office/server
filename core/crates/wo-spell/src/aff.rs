@@ -809,7 +809,7 @@ REP f ph"#;
                 eprintln!("  {}", err);
             }
         }
-        assert!(result.is_ok() || result.as_ref().err().map_or(false, |v| v.len() < 20));
+        assert!(result.is_ok() || result.as_ref().err().is_some_and(|v| v.len() < 20));
 
         let aff = result.unwrap();
 

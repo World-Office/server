@@ -309,8 +309,10 @@ mod tests {
 
         let mut model = DocModel { body: &mut body };
 
-        let mut new_props = DocxParagraphProperties::default();
-        new_props.alignment = Some(wo_ooxml::model::TextAlignment::Center);
+        let new_props = DocxParagraphProperties {
+            alignment: Some(wo_ooxml::model::TextAlignment::Center),
+            ..Default::default()
+        };
 
         let op = DocOp::SetParagraphProps {
             para: 0,
@@ -383,8 +385,10 @@ mod tests {
 
         let mut model = DocModel { body: &mut body };
 
-        let mut new_props = DocxParagraphProperties::default();
-        new_props.alignment = Some(wo_ooxml::model::TextAlignment::Right);
+        let new_props = DocxParagraphProperties {
+            alignment: Some(wo_ooxml::model::TextAlignment::Right),
+            ..Default::default()
+        };
 
         let set_op = DocOp::SetParagraphProps {
             para: 0,

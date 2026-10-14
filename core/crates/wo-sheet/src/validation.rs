@@ -666,16 +666,16 @@ mod tests {
         let rule = DataValidation::decimal(
             make_range(),
             ValidationOperator::EqualTo,
-            "3.14",
+            "2.5",
             None::<&str>,
         );
-        let cell = Cell::with_num(3.14);
-        let result = validate_cell(Some(&cell), 0, 0, &[rule.clone()]);
-        assert!(result.valid, "3.14 should equal 3.14");
+        let cell = Cell::with_num(2.5);
+        let result = validate_cell(Some(&cell), 0, 0, std::slice::from_ref(&rule));
+        assert!(result.valid, "2.5 should equal 2.5");
 
         let cell2 = Cell::with_num(2.71);
         let result2 = validate_cell(Some(&cell2), 0, 0, &[rule]);
-        assert!(!result2.valid, "2.71 should NOT equal 3.14");
+        assert!(!result2.valid, "2.71 should NOT equal 2.5");
         assert_eq!(result2.rejected_by, Some(0));
     }
 
@@ -704,7 +704,7 @@ mod tests {
             Some("20"),
         );
         let cell = Cell::with_num(25.0);
-        let result = validate_cell(Some(&cell), 0, 0, &[rule.clone()]);
+        let result = validate_cell(Some(&cell), 0, 0, std::slice::from_ref(&rule));
         assert!(result.valid, "25 should satisfy NotBetween 10 and 20");
 
         let cell2 = Cell::with_num(15.0);
@@ -750,7 +750,7 @@ mod tests {
             None::<&str>,
         );
         let cell = Cell::with_num(5.0);
-        let result = validate_cell(Some(&cell), 0, 0, &[rule.clone()]);
+        let result = validate_cell(Some(&cell), 0, 0, std::slice::from_ref(&rule));
         assert!(result.valid, "5 should be > 0");
 
         let cell2 = Cell::with_num(-1.0);
@@ -768,7 +768,7 @@ mod tests {
             None::<&str>,
         );
         let cell = Cell::with_num(10.0);
-        let result = validate_cell(Some(&cell), 0, 0, &[rule.clone()]);
+        let result = validate_cell(Some(&cell), 0, 0, std::slice::from_ref(&rule));
         assert!(result.valid, "10 should be <= 10");
 
         let cell2 = Cell::with_num(11.0);

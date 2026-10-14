@@ -15,7 +15,7 @@ fn test_sample_docx_to_html_conversion() {
         docx_path
     );
 
-    let data = fs::read(&docx_path).expect(&format!("Failed to read {:?}", docx_path));
+    let data = fs::read(&docx_path).unwrap_or_else(|e| panic!("Failed to read {docx_path:?}: {e}"));
     eprintln!("Read {} bytes from sample.docx", data.len());
 
     let router = wo_x2t::ConversionRouter::new();
@@ -56,6 +56,7 @@ fn test_sample_docx_to_html_conversion() {
     );
 
     let out_path = project_root.join("target").join("x2t-sample-output.html");
-    fs::write(&out_path, &output.data).expect(&format!("Failed to write output to {:?}", out_path));
+    fs::write(&out_path, &output.data)
+        .unwrap_or_else(|e| panic!("Failed to write output to {out_path:?}: {e}"));
     eprintln!("Output written to: {:?}", out_path);
 }

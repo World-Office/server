@@ -1423,9 +1423,9 @@ mod tests {
     #[test]
     fn test_cell_value_from_formula() {
         // Numeric cell
-        let cell = Cell::with_num(3.14);
-        assert_eq!(cell.value, CellValue::Num(3.14));
-        assert_eq!(cell.raw, "3.14");
+        let cell = Cell::with_num(2.5);
+        assert_eq!(cell.value, CellValue::Num(2.5));
+        assert_eq!(cell.raw, "2.5");
 
         // Text cell
         let cell = Cell::with_text("Hello");
