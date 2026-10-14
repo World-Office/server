@@ -17,6 +17,15 @@ impl PdfSerializer {
         Self
     }
 
+    /// The PDF header version emitted by the writer for non-PDF/A output.
+    ///
+    /// Per OO contract F-403 (OnlyOffice PdfFile/SrcWriter/Document.cpp:62-63),
+    /// the PDF writer must emit `%PDF-1.7` for every non-PDF/A output regardless
+    /// of the source document's version. The parsed source version is retained in
+    /// `PdfDocument::version` (parser preserves it) but is NOT used for the
+    /// output header. We do not emit PDF/A yet, so all output uses 1.7.
+    const OUTPUT_VERSION: &str = "1.7";
+
     /// Serialize a PdfDocument into PDF bytes.
     ///
     /// Object numbering scheme:
@@ -34,8 +43,9 @@ impl PdfSerializer {
             writeln!(out, "{} 0 obj", obj_num).map_err(|e| e.to_string())
         };
 
-        // Header
-        writeln!(output, "%PDF-{}", doc.version).map_err(|e| e.to_string())?;
+        // Header — F-403: normalize output header to %PDF-1.7 regardless of the
+        // source document's parsed version (doc.version keeps the SOURCE version).
+        writeln!(output, "%PDF-{}", Self::OUTPUT_VERSION).map_err(|e| e.to_string())?;
 
         // Object 1: Catalog
         begin_obj(1, &mut output)?;
