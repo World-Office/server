@@ -18478,6 +18478,52 @@ mod bridge_converter_tests {
         assert!(result.is_err(), "garbage input must error, not panic");
     }
 
+    // F-403: a %PDF-1.4 source must round-trip (pdf -> wo-pdf-document -> pdf)
+    // with the output header normalized to %PDF-1.7 regardless of the source
+    // version. The parsed source version is preserved in the wo-pdf-document
+    // JSON (doc.version stays the SOURCE version), but the writer emits 1.7.
+    #[test]
+    fn test_bridge_pdf_roundtrip_normalizes_header_to_pdf17() {
+        let input = b"%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >>
+endobj
+trailer
+<< /Size 4 /Root 1 0 R >>
+startxref
+0
+%%EOF
+";
+
+        // pdf -> wo-pdf-document
+        let wo = PdfToWoPdfConverter
+            .convert(input)
+            .expect("pdf -> wo-pdf-document");
+        let v: Value = serde_json::from_slice(&wo).expect("wo-pdf-document JSON");
+        // The parser must preserve the SOURCE version in the wo-pdf-document.
+        assert_eq!(
+            v["version"].as_str(),
+            Some("1.4"),
+            "parser must preserve the source version in the wo-pdf-document"
+        );
+
+        // wo-pdf-document -> pdf
+        let pdf = WoPdfToPdfConverter
+            .convert(&wo)
+            .expect("wo-pdf-document -> pdf");
+        assert!(
+            pdf.starts_with(b"%PDF-1.7"),
+            "F-403: round-tripped PDF header must start with %PDF-1.7, got {:?}",
+            String::from_utf8_lossy(&pdf[..12.min(pdf.len())])
+        );
+    }
+
     // ── VSDM ↔ VSDX identity converters ─────────────────────────────────
 
     #[test]
