@@ -26,7 +26,7 @@ const MENU_ITEMS: FileMenuItem[] = [
 	{ action: "save-copy", caption: "Save Copy as...", hasPanel: true },
 	{ action: "save-desktop", caption: "Save as...", hasPanel: false },
 	{ action: "export-pdf", caption: "Export to PDF", hasPanel: false },
-	{ action: "printpreview", caption: "Print with Preview", hasPanel: false },
+	{ action: "printpreview", caption: "Print with Preview", hasPanel: true },
 	{ action: "rename", caption: "Rename...", hasPanel: false },
 	{ action: "info", caption: "Document Info...", hasPanel: true },
 	{ action: "rights", caption: "Access Rights...", hasPanel: true },
@@ -36,9 +36,9 @@ const MENU_ITEMS: FileMenuItem[] = [
 	{ action: "exit", caption: "Go to Documents", hasPanel: false },
 	{ action: "close-editor", caption: "Close Editor", hasPanel: false },
 	{ action: "external-help", caption: "External Help", hasPanel: false },
-	{ action: "suggest", caption: "Suggest Feature", hasPanel: false },
-	{ action: "create-new", caption: "Create New", hasPanel: false },
-	{ action: "open-recent", caption: "Open Recent", hasPanel: false },
+	{ action: "suggest", caption: "Suggest Feature", hasPanel: true },
+	{ action: "create-new", caption: "Create New", hasPanel: true },
+	{ action: "open-recent", caption: "Open Recent", hasPanel: true },
 	{ action: "protect", caption: "Protect Document", hasPanel: true },
 ];
 

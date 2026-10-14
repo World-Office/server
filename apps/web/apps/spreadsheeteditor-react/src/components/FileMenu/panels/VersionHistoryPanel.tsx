@@ -132,7 +132,9 @@ export function VersionHistoryPanel({ visible }: { visible: boolean }) {
 			.catch((err) => {
 				if (!cancelled) {
 					setError(
-						err instanceof Error ? err.message : "Failed to load version history",
+						err instanceof Error
+							? err.message
+							: "Failed to load version history",
 					);
 				}
 			})
@@ -201,7 +203,8 @@ export function VersionHistoryPanel({ visible }: { visible: boolean }) {
 									: ""}
 							</span>
 							<span className="se-file-menu-version-meta">
-								{formatSize(version.size)} · {formatDateTime(version.lastModified)}
+								{formatSize(version.size)} ·{" "}
+								{formatDateTime(version.lastModified)}
 							</span>
 							<button
 								type="button"

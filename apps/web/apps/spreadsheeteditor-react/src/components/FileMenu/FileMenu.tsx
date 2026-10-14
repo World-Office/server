@@ -4,8 +4,8 @@ import {
 	type ExportFormat,
 	ExportWizard,
 } from "@world-office/editor-common";
-import { useCallback } from "react";
 import { observer } from "mobx-react-lite";
+import { useCallback } from "react";
 import { spreadsheetStore } from "../../stores/SpreadsheetStore";
 import { FileMenuItems } from "./FileMenuItems";
 import { CreateNewPanel } from "./panels/CreateNewPanel";
@@ -204,7 +204,7 @@ function FileMenuInner() {
 				<div className={styles.contentBoxBase}>
 					<SaveAsPanel visible={activePanel === "saveas"} />
 					<SaveCopyPanel visible={activePanel === "save-copy"} />
-					<RecentFilesPanel visible={activePanel === "recent"} />
+					<RecentFilesPanel visible={activePanel === "open-recent"} />
 					<CreateNewPanel visible={activePanel === "create-new"} />
 					<DocumentInfoPanel visible={activePanel === "info"} />
 					<DocumentRightsPanel visible={activePanel === "rights"} />
