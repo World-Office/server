@@ -72,7 +72,6 @@ checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
 name = "api-gateway"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "axum",
  "bytes",
  "chrono",
@@ -121,7 +120,6 @@ checksum = "1505bd5d3d116872e7271a6d4e16d81d0c8570876c8de68093a09ac269d8aac0"
 name = "audit-service"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "axum",
  "chrono",
  "futures-util",
@@ -132,7 +130,6 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.18",
  "tokio",
- "tower-http",
  "tracing",
  "tracing-subscriber",
  "uuid",
@@ -540,7 +537,6 @@ dependencies = [
 name = "coauthoring-service"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "axum",
  "base64 0.22.1",
  "chrono",
@@ -555,7 +551,6 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
- "tower-http",
  "tracing",
  "tracing-subscriber",
  "uuid",
@@ -616,7 +611,6 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tower",
- "tower-http",
  "tracing",
  "tracing-subscriber",
  "uuid",
@@ -1856,7 +1850,6 @@ checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 name = "identity-service"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "axum",
  "base64 0.22.1",
  "chrono",
@@ -3592,7 +3585,6 @@ dependencies = [
 name = "scim-service"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "axum",
  "base64 0.22.1",
  "chrono",
@@ -3603,7 +3595,6 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.18",
  "tokio",
- "tower-http",
  "tracing",
  "tracing-subscriber",
  "uuid",
@@ -3836,7 +3827,6 @@ dependencies = [
 name = "session-service"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "axum",
  "chrono",
  "jsonwebtoken",
@@ -3848,7 +3838,6 @@ dependencies = [
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
- "tower-http",
  "tracing",
  "tracing-subscriber",
  "uuid",
@@ -4023,7 +4012,6 @@ checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 name = "storage-service"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "axum",
  "base64 0.22.1",
  "bytes",
@@ -4036,7 +4024,6 @@ dependencies = [
  "thiserror 2.0.18",
  "tokio",
  "tower",
- "tower-http",
  "tracing",
  "tracing-subscriber",
  "uuid",
@@ -4928,24 +4915,11 @@ dependencies = [
 name = "webhook-service"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "axum",
- "chrono",
- "hex",
- "hmac",
- "metrics 0.24.6",
- "metrics-exporter-prometheus 0.18.3",
- "reqwest",
- "rusqlite",
  "serde",
  "serde_json",
- "sha2",
- "thiserror 2.0.18",
  "tokio",
- "tower-http",
  "tracing",
  "tracing-subscriber",
- "uuid",
 ]
 
 [[package]]
@@ -5258,7 +5232,6 @@ dependencies = [
 name = "wo-common"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
@@ -5303,7 +5276,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
- "wo-wopi",
  "wo-x2t",
  "zip",
 ]
@@ -5354,9 +5326,7 @@ dependencies = [
 name = "wo-fonts"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "serde",
- "thiserror 2.0.18",
  "ttf-parser 0.25.1",
 ]
 
@@ -5364,10 +5334,8 @@ dependencies = [
 name = "wo-formula"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "chrono",
  "serde",
- "serde_json",
  "thiserror 2.0.18",
 ]
 
@@ -5375,7 +5343,6 @@ dependencies = [
 name = "wo-html"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "regex",
  "roxmltree",
  "serde",
@@ -5398,7 +5365,6 @@ dependencies = [
 name = "wo-msbinary"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "msoffice-crypto",
  "serde",
  "serde_json",
@@ -5438,7 +5404,6 @@ dependencies = [
 name = "wo-office-utils"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "flate2",
  "serde",
  "thiserror 2.0.18",
@@ -5474,7 +5439,6 @@ dependencies = [
 name = "wo-pdf"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "flate2",
  "serde",
  "serde_json",
@@ -5491,23 +5455,19 @@ dependencies = [
  "js-sys",
  "pdfium-render",
  "serde",
- "serde_json",
  "tar",
  "thiserror 2.0.18",
  "wasm-bindgen",
- "wo-common",
 ]
 
 [[package]]
 name = "wo-renderer"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "fontdb",
  "rustybuzz",
  "serde",
  "swash",
- "thiserror 2.0.18",
  "wo-fonts",
 ]
 
@@ -5526,7 +5486,6 @@ dependencies = [
  "wo-ooxml",
  "wo-ooxml-ops",
  "wo-renderer",
- "wo-sheet",
  "wo-spell",
  "zip",
 ]
@@ -5542,7 +5501,6 @@ dependencies = [
 name = "wo-rtf"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "serde",
  "thiserror 2.0.18",
  "wo-common",
@@ -5577,20 +5535,16 @@ dependencies = [
 name = "wo-spell"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "serde",
  "serde_json",
  "serial_test",
  "thiserror 2.0.18",
- "wo-common",
- "wo-unicode",
 ]
 
 [[package]]
 name = "wo-txt"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "proptest",
  "thiserror 2.0.18",
  "wo-common",
@@ -5600,7 +5554,6 @@ dependencies = [
 name = "wo-unicode"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "encoding_rs",
  "serde",
  "thiserror 2.0.18",
@@ -5613,10 +5566,8 @@ name = "wo-visio"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "base64 0.22.1",
  "quick-xml 0.37.5",
  "serde",
- "serde_json",
  "thiserror 2.0.18",
  "uuid",
  "zip",
@@ -5640,7 +5591,6 @@ dependencies = [
  "tokio",
  "tokio-test",
  "tower",
- "tower-http",
  "urlencoding",
  "uuid",
 ]
@@ -5662,9 +5612,7 @@ dependencies = [
  "tokio",
  "tokio-test",
  "tower",
- "tower-http",
  "tracing",
- "urlencoding",
  "wo-x2t",
 ]
 
@@ -5691,7 +5639,6 @@ dependencies = [
  "wo-ooxml",
  "wo-pdf",
  "wo-rtf",
- "wo-sheet",
  "wo-txt",
  "wo-visio",
  "wo-xps",
