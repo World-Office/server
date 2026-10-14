@@ -6,9 +6,7 @@ edition = "2024"
 [dependencies]
 zip = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
 quick-xml = { version = "0.37", features = ["serialize"] }
-base64 = { workspace = true }
 uuid = { workspace = true }
 anyhow = { workspace = true }
 thiserror = { workspace = true }

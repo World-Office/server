@@ -17,7 +17,6 @@ anyhow = { workspace = true }
 urlencoding = { workspace = true }
 uuid = { workspace = true, features = ["v4", "serde"] }
 async-trait = { workspace = true }
-tower-http = { workspace = true }
 sha2 = { workspace = true }
 tower = { workspace = true }
 hex = "0.4"

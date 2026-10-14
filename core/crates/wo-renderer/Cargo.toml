@@ -9,8 +9,6 @@ keywords = ["rendering", "canvas", "text-layout", "document", "office"]
 categories = ["graphics", "rendering"]
 
 [dependencies]
-anyhow = { workspace = true }
-thiserror = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 fontdb = { workspace = true, features = ["fs"] }
 swash = { workspace = true }

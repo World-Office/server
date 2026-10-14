@@ -31,7 +31,6 @@ futures-util = { workspace = true }
 zip = { workspace = true }
 roxmltree = { workspace = true }
 wo-x2t = { path = "../wo-x2t" }
-wo-wopi = { path = "../wo-wopi" }
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls-webpki-roots"] }
 metrics = "0.22"
 metrics-exporter-prometheus = "0.13"

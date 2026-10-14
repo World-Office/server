@@ -9,7 +9,5 @@ keywords = ["fonts", "typography", "css", "font-matching"]
 categories = ["text-processing"]
 
 [dependencies]
-anyhow = { workspace = true }
-thiserror = { workspace = true }
 serde = { workspace = true }
 ttf-parser = { workspace = true }

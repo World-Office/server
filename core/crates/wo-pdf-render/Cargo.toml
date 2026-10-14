@@ -18,10 +18,8 @@ pdfium-render = { version = "0.9", default-features = false, features = [
     "pdfium_latest",
     "thread_safe",
 ] }
-wo-common = { path = "../wo-common" }
 thiserror = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
 
 # WASM target dependencies.
 # pdfium-render on wasm32 uses js-sys/wasm-bindgen to call an external

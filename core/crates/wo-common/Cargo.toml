@@ -9,7 +9,6 @@ keywords = ["document", "office", "word-processor", "common"]
 categories = ["parser-implementations"]
 
 [dependencies]
-anyhow = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }

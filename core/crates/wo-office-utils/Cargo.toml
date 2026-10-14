@@ -9,7 +9,6 @@ keywords = ["zip", "archive", "office", "document"]
 categories = ["compression"]
 
 [dependencies]
-anyhow = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 wo-common = { path = "../wo-common", version = "0.1.0" }
