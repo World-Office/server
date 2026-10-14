@@ -5,6 +5,7 @@ import {
 	ExportWizard,
 } from "@world-office/editor-common";
 import { useCallback } from "react";
+import { observer } from "mobx-react-lite";
 import { spreadsheetStore } from "../../stores/SpreadsheetStore";
 import { FileMenuItems } from "./FileMenuItems";
 import { CreateNewPanel } from "./panels/CreateNewPanel";
@@ -18,6 +19,7 @@ import { SaveAsPanel } from "./panels/SaveAsPanel";
 import { SaveCopyPanel } from "./panels/SaveCopyPanel";
 import { SettingsPanel } from "./panels/SettingsPanel";
 import { SuggestPanel } from "./panels/SuggestPanel";
+import { VersionHistoryPanel } from "./panels/VersionHistoryPanel";
 
 import { getUniverSnapshot } from "../../lib/univer-command";
 
@@ -48,11 +50,15 @@ const useStyles = makeStyles({
 		padding: "0 20px",
 		position: "relative",
 		overflow: "hidden",
-		display: "none",
+		// NOT display:none — each pane below carries its own
+		// `display: visible ? "block" : "none"`, so hiding the container here
+		// starved every pane (w=0/h=0) even when the entry activated it: the
+		// pane was mounted but no pointer could ever reach its controls.
+		display: "block",
 	},
 });
 
-export function FileMenu() {
+function FileMenuInner() {
 	const styles = useStyles();
 	const activePanel = spreadsheetStore.activeFileMenuPanel;
 
@@ -207,6 +213,7 @@ export function FileMenu() {
 					<ProtectPanel visible={activePanel === "protect"} />
 					<PrintPreviewPanel visible={activePanel === "printpreview"} />
 					<SuggestPanel visible={activePanel === "suggest"} />
+					<VersionHistoryPanel visible={activePanel === "history"} />
 				</div>
 			</div>
 
@@ -222,3 +229,9 @@ export function FileMenu() {
 		</div>
 	);
 }
+
+// FileMenu reads spreadsheetStore.activeFileMenuPanel inline — without the
+// observer a menu entry flipped the store yet the pane never switched, and the
+// ExportWizard's own ✕ never unmounted the dialog (the modal could not be
+// closed by the user).
+export const FileMenu = observer(FileMenuInner);

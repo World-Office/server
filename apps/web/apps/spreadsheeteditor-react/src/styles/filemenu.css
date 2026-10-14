@@ -212,6 +212,40 @@
 	color: var(--wo-se-text-secondary);
 }
 
+/* --- Version History panel --- */
+.se-file-menu-versions {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.se-file-menu-version {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 4px;
+	padding: 8px 0;
+}
+
+.se-file-menu-version-title {
+	font-size: 13px;
+	color: var(--wo-se-text-primary);
+}
+
+.se-file-menu-version-meta {
+	font-size: 11px;
+	color: var(--wo-se-text-secondary);
+}
+
+.se-file-menu-version-restore {
+	font-size: 11px;
+	color: var(--wo-se-accent);
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 0;
+}
+
 .se-template-card {
 	display: flex;
 	align-items: center;
