@@ -105,6 +105,35 @@ export type LeftMenuAction =
 	| "support"
 	| "about";
 
+/** A comment thread anchored to a cell (left-menu Comments panel). */
+export interface CellCommentThread {
+	id: string;
+	/** Sheet-qualified anchor, e.g. "Sheet1!B7". */
+	cellRef: string;
+	author: string;
+	text: string;
+	createdAt: number;
+	resolved: boolean;
+	replies: CellCommentReply[];
+}
+
+export interface CellCommentReply {
+	id: string;
+	author: string;
+	text: string;
+	createdAt: number;
+}
+
+/** One chat message (left-menu Chat panel). */
+export interface PanelChatMessage {
+	id: string;
+	author: string;
+	text: string;
+	createdAt: number;
+	/** true when written by the local user. */
+	self: boolean;
+}
+
 export type RightMenuPanel =
 	| "cellsettings"
 	| "shapesettings"

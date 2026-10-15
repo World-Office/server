@@ -12,7 +12,10 @@ import {
 } from "../lib/conversion";
 import { getUniverSnapshot, onUniverChange } from "../lib/univer-command";
 import type {
+	CellCommentReply,
+	CellCommentThread,
 	LeftMenuAction,
+	PanelChatMessage,
 	RightMenuPanel,
 	SheetInfo,
 	SpreadsheetDocument,
@@ -52,6 +55,12 @@ export class SpreadsheetStore {
 	activeLeftPanel: LeftMenuAction | null = null;
 	leftMenuMinWidth = 40;
 	leftMenuExpandedWidth = 300;
+	/* Left menu: cell comments (Comments panel) */
+	cellComments: CellCommentThread[] = [];
+	/* Left menu: session chat (Chat panel) */
+	chatMessages: PanelChatMessage[] = [];
+	/** Display name used for local comments and chat messages. */
+	chatAuthor = "You";
 
 	/* Right menu */
 	activeRightPanel: RightMenuPanel | null = null;
@@ -199,6 +208,75 @@ export class SpreadsheetStore {
 
 	toggleRightPanel(panel: RightMenuPanel): void {
 		this.setActiveRightPanel(this.activeRightPanel === panel ? null : panel);
+	}
+
+	/* ── Left-menu panels: comments + chat ── */
+
+	/** Anchor a new comment thread to a cell reference ("Sheet1!B7"). */
+	addCellComment(cellRef: string, text: string): CellCommentThread | null {
+		const clean = text.trim();
+		if (!clean) return null;
+		const thread: CellCommentThread = {
+			id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+			cellRef,
+			author: this.chatAuthor,
+			text: clean,
+			createdAt: Date.now(),
+			resolved: false,
+			replies: [],
+		};
+		this.cellComments.push(thread);
+		return thread;
+	}
+
+	addCellReply(threadId: string, text: string): CellCommentReply | null {
+		const clean = text.trim();
+		if (!clean) return null;
+		const thread = this.cellComments.find((t) => t.id === threadId);
+		if (!thread) return null;
+		const reply: CellCommentReply = {
+			id: `r-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+			author: this.chatAuthor,
+			text: clean,
+			createdAt: Date.now(),
+		};
+		thread.replies.push(reply);
+		return reply;
+	}
+
+	setCellCommentResolved(threadId: string, resolved: boolean): void {
+		const thread = this.cellComments.find((t) => t.id === threadId);
+		if (thread) thread.resolved = resolved;
+	}
+
+	deleteCellComment(threadId: string): void {
+		this.cellComments = this.cellComments.filter((t) => t.id !== threadId);
+	}
+
+	setCellComments(threads: CellCommentThread[]): void {
+		this.cellComments = threads;
+	}
+
+	addChatMessage(text: string): PanelChatMessage | null {
+		const clean = text.trim();
+		if (!clean) return null;
+		const message: PanelChatMessage = {
+			id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+			author: this.chatAuthor,
+			text: clean,
+			createdAt: Date.now(),
+			self: true,
+		};
+		this.chatMessages.push(message);
+		return message;
+	}
+
+	setChatMessages(messages: PanelChatMessage[]): void {
+		this.chatMessages = messages;
+	}
+
+	clearChatMessages(): void {
+		this.chatMessages = [];
 	}
 
 	/* Sheet navigation */
