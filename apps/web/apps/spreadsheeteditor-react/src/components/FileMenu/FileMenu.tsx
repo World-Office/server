@@ -15,6 +15,7 @@ import { HelpPanel } from "./panels/HelpPanel";
 import { PrintPreviewPanel } from "./panels/PrintPreviewPanel";
 import { ProtectPanel } from "./panels/ProtectPanel";
 import { RecentFilesPanel } from "./panels/RecentFilesPanel";
+import { RenamePanel } from "./panels/RenamePanel";
 import { SaveAsPanel } from "./panels/SaveAsPanel";
 import { SaveCopyPanel } from "./panels/SaveCopyPanel";
 import { SettingsPanel } from "./panels/SettingsPanel";
@@ -204,6 +205,7 @@ function FileMenuInner() {
 				<div className={styles.contentBoxBase}>
 					<SaveAsPanel visible={activePanel === "saveas"} />
 					<SaveCopyPanel visible={activePanel === "save-copy"} />
+					<RenamePanel visible={activePanel === "rename"} />
 					<RecentFilesPanel visible={activePanel === "open-recent"} />
 					<CreateNewPanel visible={activePanel === "create-new"} />
 					<DocumentInfoPanel visible={activePanel === "info"} />
