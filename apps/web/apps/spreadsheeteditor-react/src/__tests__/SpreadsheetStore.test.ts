@@ -75,6 +75,20 @@ describe("SpreadsheetStore", () => {
 		expect(store.isFileMenuOpen).toBe(true);
 	});
 
+	it("renames the document and ignores empty names", () => {
+		const store = new SpreadsheetStore();
+		store.setDocument({ title: "budget.xlsx", fileType: "xlsx" });
+		store.renameDocument("  Q3 budget.xlsx  ");
+		expect(store.document?.title).toBe("Q3 budget.xlsx");
+		// blank input must not clobber the title
+		store.renameDocument("   ");
+		expect(store.document?.title).toBe("Q3 budget.xlsx");
+		// no document open — a no-op, not a crash
+		const empty = new SpreadsheetStore();
+		empty.renameDocument("x.xlsx");
+		expect(empty.document).toBeNull();
+	});
+
 	it("sets tabs", () => {
 		const store = new SpreadsheetStore();
 		store.setActiveTab("home");

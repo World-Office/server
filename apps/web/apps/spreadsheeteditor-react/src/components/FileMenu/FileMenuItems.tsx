@@ -18,16 +18,26 @@ interface FileMenuItem {
 	action: FileMenuAction | "close-editor";
 	caption: string;
 	hasPanel: boolean;
+	/** panel the entry activates when it differs from the action id */
+	panel?: string;
 }
 
 const MENU_ITEMS: FileMenuItem[] = [
 	{ action: "saveas", caption: "Download as...", hasPanel: true },
 	{ action: "export", caption: "Export Wizard...", hasPanel: true },
 	{ action: "save-copy", caption: "Save Copy as...", hasPanel: true },
-	{ action: "save-desktop", caption: "Save as...", hasPanel: false },
+	// "Save as..." targets desktop storage in the desktop bridge builds; the
+	// web build has no such target, so it opens the same download/export
+	// surface as "Download as..." (the word editor's desktop-less fallback)
+	{
+		action: "save-desktop",
+		caption: "Save as...",
+		hasPanel: true,
+		panel: "saveas",
+	},
 	{ action: "export-pdf", caption: "Export to PDF", hasPanel: false },
 	{ action: "printpreview", caption: "Print with Preview", hasPanel: true },
-	{ action: "rename", caption: "Rename...", hasPanel: false },
+	{ action: "rename", caption: "Rename...", hasPanel: true },
 	{ action: "info", caption: "Document Info...", hasPanel: true },
 	{ action: "rights", caption: "Access Rights...", hasPanel: true },
 	{ action: "history", caption: "Version History...", hasPanel: true },
@@ -123,7 +133,7 @@ export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
 						styles.menuItem,
 						activePanel === item.action ? styles.active : undefined,
 					)}
-					onClick={() => onMenuClick(item.action, item.hasPanel)}
+					onClick={() => onMenuClick(item.panel ?? item.action, item.hasPanel)}
 					role="menuitem"
 				>
 					<span className={styles.caption}>{t(item.caption)}</span>

@@ -295,6 +295,17 @@ export class SpreadsheetStore {
 		this.activeFileMenuPanel = panel;
 	}
 
+	/**
+	 * Rename the open document (File → Rename...). Local in this build: the
+	 * WOPI host exposes no rename endpoint, so the new title drives the editor
+	 * title, the Document Info pane and every export/download file name.
+	 */
+	renameDocument(name: string): void {
+		const clean = name.trim();
+		if (!clean || !this.document) return;
+		this.document = { ...this.document, title: clean };
+	}
+
 	setLanguageCode(code: string): void {
 		this.languageCode = code;
 	}

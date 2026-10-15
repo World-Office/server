@@ -212,6 +212,84 @@
 	color: var(--wo-se-text-secondary);
 }
 
+/* --- Rename panel --- */
+.se-file-menu-body {
+	color: var(--wo-se-text-secondary);
+}
+
+.se-file-menu-instruction {
+	font-size: 12px;
+	color: var(--wo-se-text-secondary);
+	margin: 0 0 16px 0;
+}
+
+.se-file-menu-rename-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	max-width: 420px;
+}
+
+.se-file-menu-rename-input {
+	flex: 1;
+	min-width: 0;
+	height: 32px;
+	padding: 0 10px;
+	border: 1px solid var(--wo-se-border);
+	border-radius: 3px;
+	background-color: var(--wo-se-bg-pane);
+	color: var(--wo-se-text-primary);
+	font-size: 13px;
+}
+
+.se-file-menu-rename-input:focus {
+	outline: none;
+	border-color: var(--wo-se-accent);
+}
+
+.se-file-menu-rename-ext {
+	font-size: 13px;
+	color: var(--wo-se-text-secondary);
+	white-space: nowrap;
+}
+
+.se-file-menu-footer {
+	display: flex;
+	gap: 8px;
+	padding-top: 20px;
+}
+
+.se-file-menu-footer button {
+	height: 32px;
+	padding: 0 16px;
+	border: 1px solid var(--wo-se-border);
+	border-radius: 3px;
+	background-color: var(--wo-se-bg-pane);
+	color: var(--wo-se-text-primary);
+	font-size: 13px;
+	cursor: pointer;
+}
+
+.se-file-menu-footer button:hover:not(:disabled) {
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+}
+
+.se-file-menu-footer button.se-file-menu-primary-btn {
+	background-color: var(--wo-se-accent);
+	border-color: var(--wo-se-accent);
+	color: #ffffff;
+}
+
+.se-file-menu-footer button.se-file-menu-primary-btn:hover:not(:disabled) {
+	background-color: var(--wo-se-accent);
+	opacity: 0.9;
+}
+
+.se-file-menu-footer button:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
 /* --- Version History panel --- */
 .se-file-menu-versions {
 	display: flex;
