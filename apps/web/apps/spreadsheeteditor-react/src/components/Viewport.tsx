@@ -4,6 +4,7 @@ import { spreadsheetStore } from "../stores/SpreadsheetStore";
 import { DocumentHolder } from "./DocumentHolder";
 import { FileMenu } from "./FileMenu/FileMenu";
 import { FormulaBar } from "./FormulaBar";
+import { AboutPanel } from "./LeftMenu/AboutPanel";
 import { LeftMenu } from "./LeftMenu/LeftMenu";
 import { RightMenu } from "./RightMenu/RightMenu";
 import { SheetTabBar } from "./SheetTabBar";
@@ -69,7 +70,16 @@ const ViewportInner = function Viewport({
 					{leftMenuVisible && (
 						<div
 							className="se-viewport-left-menu"
-							style={{ width: "var(--wo-se-leftmenu-width, 40px)" }}
+							style={{
+								// the rail grows by the panel width while one of its
+								// toggles is active, pushing the grid aside instead of
+								// covering it (the About toggle keeps its overlay below)
+								width:
+									spreadsheetStore.activeLeftPanel !== null &&
+									spreadsheetStore.activeLeftPanel !== "about"
+										? "calc(var(--wo-se-leftmenu-width, 40px) + var(--wo-se-leftpanel-width, 260px))"
+										: "var(--wo-se-leftmenu-width, 40px)",
+							}}
 						>
 							<LeftMenu />
 						</div>
@@ -82,7 +92,9 @@ const ViewportInner = function Viewport({
 							display:
 								spreadsheetStore.activeLeftPanel === "about" ? "block" : "none",
 						}}
-					/>
+					>
+						<AboutPanel />
+					</div>
 
 					{/* Editor container */}
 					<div className="se-viewport-editor">

@@ -8,6 +8,7 @@
 	--wo-se-leftmenu-width: 40px;
 	--wo-se-leftmenu-min: 40px;
 	--wo-se-leftmenu-max: 300px;
+	--wo-se-leftpanel-width: 260px;
 	--wo-se-rightmenu-width: 40px;
 	--wo-se-rightmenu-min: 40px;
 	--wo-se-rightmenu-max: 300px;
@@ -77,6 +78,7 @@ body,
 }
 
 .se-viewport-body {
+	position: relative; /* anchors the about-panel overlay to the body row */
 	flex: 1;
 	display: flex;
 	flex-direction: row;
