@@ -32,6 +32,7 @@ const PANEL_COMMANDS: Record<string, string> = {
 	insertLink: "cellsettings",
 	nameManager: "cellsettings",
 	cellStyles: "cellsettings",
+	formatCells: "cellsettings",
 	insertIcons: "imagesettings",
 	onlinePictures: "imagesettings",
 	createFromSelection: "cellsettings",
@@ -106,9 +107,32 @@ export function createSpreadsheetCommandHandler(): (cmd: WoCommand) => void {
 			return;
 		}
 
-		// 6. Commands already handled by the Toolbar's onRichTextCommand path
+		// 6. Commands that reach us ONLY as wo-command events: the spec's
+		//    color-pickers (textColor, fillColor) and page-setup selects
+		//    (setMargins, setOrientation, setPageSize) dispatch a bare
+		//    wo-command from their onChange — they never go through the
+		//    Toolbar's onRichTextCommand path, so this router is their only
+		//    chance to reach the engine. Dropping them silently would leave
+		//    the control dead.
+		const onChangeOnly = new Set([
+			"textColor",
+			"fillColor",
+			"setMargins",
+			"setOrientation",
+			"setPageSize",
+		]);
+		if (onChangeOnly.has(command)) {
+			dispatchUniverCommand(
+				command as Parameters<typeof dispatchUniverCommand>[0],
+				value,
+			);
+			return;
+		}
+
+		// 6b. Commands already handled by the Toolbar's onRichTextCommand path
 		//    (dispatchUniverCommand) — the ribbon fires onCommand in addition to
-		//    onRichTextCommand, so these arrive here too. Accept silently.
+		//    onRichTextCommand, so these arrive here too. Dispatching them again
+		//    would double-apply the mutation, so accept silently.
 		const handledByUniverPath = new Set([
 			"bold",
 			"italic",
@@ -117,8 +141,6 @@ export function createSpreadsheetCommandHandler(): (cmd: WoCommand) => void {
 			"increaseFontSize",
 			"decreaseFontSize",
 			"fontFamily",
-			"textColor",
-			"fillColor",
 			"alignLeft",
 			"alignCenter",
 			"alignRight",
@@ -151,9 +173,6 @@ export function createSpreadsheetCommandHandler(): (cmd: WoCommand) => void {
 			"funcMax",
 			"funcIf",
 			"funcVLookup",
-			"setMargins",
-			"setOrientation",
-			"setPageSize",
 			"bringForward",
 			"sendBackward",
 			"bringToFront",
