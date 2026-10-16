@@ -81,10 +81,12 @@ describe("spellcheck", () => {
 	});
 
 	it("collapses triple letters and matches the casing", () => {
-		expect(checkWord("worrd")).toEqual({
+		// "worrrd" carries a triple letter; collapsing yields the double-letter form
+		expect(checkWord("worrrd")).toEqual({
 			reason: "triple-letter",
-			suggestion: "worrd".replace(/(.)\1\1+/g, "$1$1"),
+			suggestion: "worrrd".replace(/(.)\1\1+/g, "$1$1"),
 		});
+		expect(checkWord("worrd")).toBeNull(); // double letters are legitimate
 	});
 
 	it("finds issues per cell, including repeated words", () => {
@@ -95,7 +97,7 @@ describe("spellcheck", () => {
 				row: 0,
 				col: 0,
 				ref: "A1",
-				value: "teh teh total",
+				value: "teh teh thier",
 			},
 		];
 		const issues = findSpellIssues(cells);
