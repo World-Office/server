@@ -1,6 +1,7 @@
 import i18n from "i18next";
 import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
+import { presentationStore } from "../../../stores/PresentationStore";
 
 export function SettingsPanel({ visible }: { visible: boolean }): JSX.Element {
 	const { t } = useTranslation();
@@ -113,7 +114,10 @@ export function SettingsPanel({ visible }: { visible: boolean }): JSX.Element {
 				</tbody>
 			</table>
 			<div className="prese-file-menu-footer">
-				<button type="button" onClick={() => {}}>
+				<button
+					type="button"
+					onClick={() => presentationStore.setActiveFileMenuPanel(null)}
+				>
 					{t("Close")}
 				</button>
 			</div>

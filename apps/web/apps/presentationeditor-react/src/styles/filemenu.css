@@ -212,6 +212,119 @@
 	color: var(--wo-prese-text-secondary);
 }
 
+/* --- Rename / Version History panels (shared pane copy + controls) --- */
+.prese-file-menu-body {
+	color: var(--wo-prese-text-secondary);
+}
+
+.prese-file-menu-instruction {
+	font-size: 12px;
+	color: var(--wo-prese-text-secondary);
+	margin: 0 0 16px 0;
+}
+
+.prese-file-menu-rename-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	max-width: 420px;
+}
+
+.prese-file-menu-rename-input {
+	flex: 1;
+	min-width: 0;
+	height: 32px;
+	padding: 0 10px;
+	border: 1px solid var(--wo-prese-border);
+	border-radius: 3px;
+	background-color: var(--wo-prese-bg-pane);
+	color: var(--wo-prese-text-primary);
+	font-size: 13px;
+}
+
+.prese-file-menu-rename-input:focus {
+	outline: none;
+	border-color: var(--wo-prese-accent, #426ab3);
+}
+
+.prese-file-menu-rename-ext {
+	font-size: 13px;
+	color: var(--wo-prese-text-secondary);
+	white-space: nowrap;
+}
+
+.prese-file-menu-footer {
+	display: flex;
+	gap: 8px;
+	padding-top: 20px;
+}
+
+.prese-file-menu-footer button {
+	height: 32px;
+	padding: 0 16px;
+	border: 1px solid var(--wo-prese-border);
+	border-radius: 3px;
+	background-color: var(--wo-prese-bg-pane);
+	color: var(--wo-prese-text-primary);
+	font-size: 13px;
+	cursor: pointer;
+}
+
+.prese-file-menu-footer button:hover:not(:disabled) {
+	background-color: var(--wo-color-bg-secondary, #f5f5f5);
+}
+
+.prese-file-menu-footer button.prese-file-menu-primary-btn {
+	background-color: var(--wo-prese-accent, #426ab3);
+	border-color: var(--wo-prese-accent, #426ab3);
+	color: #ffffff;
+}
+
+.prese-file-menu-footer button.prese-file-menu-primary-btn:hover:not(:disabled) {
+	background-color: var(--wo-prese-accent, #426ab3);
+	opacity: 0.9;
+}
+
+.prese-file-menu-footer button:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+/* --- Version History panel --- */
+.prese-file-menu-versions {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.prese-file-menu-version {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 4px;
+	padding: 8px 0;
+}
+
+.prese-file-menu-version-title {
+	font-size: 13px;
+	color: var(--wo-prese-text-primary);
+}
+
+.prese-file-menu-version-meta {
+	font-size: 11px;
+	color: var(--wo-prese-text-secondary);
+}
+
+.prese-file-menu-version-restore {
+	font-size: 11px;
+	color: var(--wo-prese-accent, #426ab3);
+	background: none;
+	border: none;
+	cursor: pointer;
+	padding: 0;
+}
+
+
 .prese-template-card {
 	display: flex;
 	align-items: center;

@@ -4,6 +4,7 @@ import {
 	type ExportFormat,
 	ExportWizard,
 } from "@world-office/editor-common";
+import { observer } from "mobx-react-lite";
 import { useCallback } from "react";
 import { presentationStore } from "../../stores/PresentationStore";
 import { FileMenuItems } from "./FileMenuItems";
@@ -13,10 +14,13 @@ import { HelpPanel } from "./panels/HelpPanel";
 import { PrintPreviewPanel } from "./panels/PrintPreviewPanel";
 import { ProtectPanel } from "./panels/ProtectPanel";
 import { RecentFilesPanel } from "./panels/RecentFilesPanel";
+import { RenamePanel } from "./panels/RenamePanel";
 import { RightsPanel } from "./panels/RightsPanel";
 import { SaveAsPanel } from "./panels/SaveAsPanel";
 import { SaveCopyPanel } from "./panels/SaveCopyPanel";
 import { SettingsPanel } from "./panels/SettingsPanel";
+import { SuggestPanel } from "./panels/SuggestPanel";
+import { VersionHistoryPanel } from "./panels/VersionHistoryPanel";
 
 const useStyles = makeStyles({
 	fileMenu: {
@@ -45,11 +49,15 @@ const useStyles = makeStyles({
 		padding: "0 20px",
 		position: "relative",
 		overflow: "hidden",
-		display: "none",
+		// NOT display:none — each pane below carries its own
+		// `display: visible ? "block" : "none"`, so hiding the container here
+		// starved every pane (w=0/h=0) even when the entry activated it: the
+		// pane was mounted but no pointer could ever reach its controls.
+		display: "block",
 	},
 });
 
-export function FileMenu() {
+function FileMenuInner() {
 	const styles = useStyles();
 	const activePanel = presentationStore.activeFileMenuPanel;
 
@@ -189,6 +197,7 @@ export function FileMenu() {
 				<div className={styles.contentBoxBase}>
 					<SaveAsPanel visible={activePanel === "saveas"} />
 					<SaveCopyPanel visible={activePanel === "save-copy"} />
+					<RenamePanel visible={activePanel === "rename"} />
 					<RecentFilesPanel visible={activePanel === "recent"} />
 					<CreateNewPanel visible={activePanel === "create-new"} />
 					<DocumentInfoPanel visible={activePanel === "info"} />
@@ -197,6 +206,8 @@ export function FileMenu() {
 					<HelpPanel visible={activePanel === "help"} />
 					<ProtectPanel visible={activePanel === "protect"} />
 					<PrintPreviewPanel visible={activePanel === "printpreview"} />
+					<SuggestPanel visible={activePanel === "suggest"} />
+					<VersionHistoryPanel visible={activePanel === "history"} />
 				</div>
 			</div>
 
@@ -212,3 +223,9 @@ export function FileMenu() {
 		</div>
 	);
 }
+
+// FileMenu reads presentationStore.activeFileMenuPanel inline — without the
+// observer a menu entry flipped the store yet the pane never switched, and the
+// ExportWizard's own ✕ never unmounted the dialog (the modal could not be
+// closed by the user).
+export const FileMenu = observer(FileMenuInner);

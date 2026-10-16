@@ -1,4 +1,5 @@
 import type { JSX } from "react";
+import { presentationStore } from "../../../stores/PresentationStore";
 
 export function RightsPanel({ visible }: { visible: boolean }): JSX.Element {
 	return (
@@ -13,7 +14,10 @@ export function RightsPanel({ visible }: { visible: boolean }): JSX.Element {
 				</p>
 			</div>
 			<div className="prese-file-menu-footer">
-				<button type="button" onClick={() => {}}>
+				<button
+					type="button"
+					onClick={() => presentationStore.setActiveFileMenuPanel(null)}
+				>
 					Close
 				</button>
 			</div>

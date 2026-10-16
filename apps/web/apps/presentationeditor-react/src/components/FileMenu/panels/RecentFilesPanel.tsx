@@ -1,8 +1,14 @@
 import type { JSX } from "react";
+import { presentationStore } from "../../../stores/PresentationStore";
 
 export function RecentFilesPanel({
 	visible,
 }: { visible: boolean }): JSX.Element {
+	function handleClose(): void {
+		presentationStore.setActiveFileMenuPanel(null);
+		presentationStore.setFileMenuOpen(false);
+	}
+
 	const recentDocs = [
 		{ id: 1, title: "Untitled Document", date: "2026-04-10" },
 		{ id: 2, title: "Presentation.pptx", date: "2026-04-09" },
@@ -21,7 +27,7 @@ export function RecentFilesPanel({
 				</p>
 			</div>
 			<div className="prese-file-menu-footer">
-				<button type="button" onClick={() => {}}>
+				<button type="button" onClick={handleClose}>
 					Cancel
 				</button>
 			</div>
