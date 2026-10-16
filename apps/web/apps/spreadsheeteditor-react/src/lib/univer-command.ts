@@ -20,6 +20,10 @@ import { createPivotTable } from "./pivot-table";
 
 /** Commands that the spreadsheet ribbon can dispatch. */
 export type UniverCommand =
+	// ── Clipboard ──
+	| "cut"
+	| "copy"
+	| "paste"
 	// ── Font formatting ──
 	| "bold"
 	| "italic"
@@ -87,6 +91,9 @@ export type UniverCommand =
 	// ── Find / Replace ──
 	| "find"
 	| "replace"
+	// ── Formula auditing ──
+	| "tracePrecedents"
+	| "traceDependents"
 	// ── Advanced ──
 	| "pivotTable"
 	| "conditionalFormat"
@@ -302,6 +309,26 @@ function rangeToRef(range: UniverRangeFacade): string {
 }
 
 /**
+ * Run an engine command through the active API's executeCommand facade.
+ * Returns false when the facade does not expose executeCommand (the caller
+ * then reports / falls back). Whether the engine implements the command id
+ * is the engine's concern — same contract as the chart & page-layout paths.
+ */
+function executeSheetCommand(id: string, params?: unknown): boolean {
+	const api = activeAPI as unknown as {
+		executeCommand?: (id: string, params?: unknown) => boolean;
+	} | null;
+	if (!api || typeof api.executeCommand !== "function") return false;
+	try {
+		api.executeCommand(id, params);
+		return true;
+	} catch {
+		console.warn(`[UniverCommand] executeCommand(${id}) threw an error`);
+		return false;
+	}
+}
+
+/**
  * Dispatch a formatting command to the active Univer instance.
  * Returns true if the command was handled, false if no Univer is active.
  */
@@ -313,6 +340,17 @@ export function dispatchUniverCommand(
 	if (!range) return false;
 
 	switch (command) {
+		// ── Clipboard ──
+		case "cut":
+		case "copy":
+		case "paste": {
+			// Univer registers sheet.command.cut/copy/paste in the sheets-ui
+			// plugin (part of the core preset).
+			if (executeSheetCommand(`sheet.command.${command}`)) return true;
+			console.warn(`[UniverCommand] ${command}: clipboard API not available`);
+			return false;
+		}
+
 		// ── Font formatting ──
 		case "bold":
 			range.setFontWeight("bold");
@@ -612,18 +650,64 @@ export function dispatchUniverCommand(
 			return false;
 		}
 
-		// ── Arrange (not applicable to spreadsheet cells; return false) ──
+		// ── Arrange (floating objects: charts / images / shapes) ──
 		case "bringForward":
 		case "sendBackward":
 		case "bringToFront":
-		case "sendToBack":
-		case "alignObjects":
-		case "groupObjects":
-		case "ungroupObjects":
-			// These commands apply to floating objects/shapes, not spreadsheet cells.
-			// They are listed in the ribbon for UI consistency but have no effect
-			// on a cell-based grid.
+		case "sendToBack": {
+			// sheet.command.set-drawing-arrange expects ArrangeTypeEnum:
+			// 0 = forward, 1 = backward, 2 = front, 3 = back.
+			const arrangeType =
+				command === "bringForward"
+					? 0
+					: command === "sendBackward"
+						? 1
+						: command === "bringToFront"
+							? 2
+							: 3;
+			if (
+				executeSheetCommand("sheet.command.set-drawing-arrange", {
+					arrangeType,
+				})
+			) {
+				return true;
+			}
+			console.warn(`[UniverCommand] ${command}: arrange API not available`);
 			return false;
+		}
+		case "alignObjects": {
+			// The ribbon exposes a single Align button — center the selected
+			// objects (the Univer image panel offers the fine-grained variants).
+			if (executeSheetCommand("sheet.operation.set-drawing-align-center")) {
+				return true;
+			}
+			console.warn("[UniverCommand] alignObjects: align API not available");
+			return false;
+		}
+		case "groupObjects":
+			if (executeSheetCommand("sheet.command.group-sheet-image")) return true;
+			console.warn("[UniverCommand] groupObjects: group API not available");
+			return false;
+		case "ungroupObjects":
+			if (executeSheetCommand("sheet.command.ungroup-sheet-image")) return true;
+			console.warn("[UniverCommand] ungroupObjects: ungroup API not available");
+			return false;
+
+		// ── Formula auditing ──
+		case "tracePrecedents":
+		case "traceDependents": {
+			if (
+				executeSheetCommand(
+					command === "tracePrecedents"
+						? "sheet.command.trace-precedents"
+						: "sheet.command.trace-dependents",
+				)
+			) {
+				return true;
+			}
+			console.warn(`[UniverCommand] ${command}: audit API not available`);
+			return false;
+		}
 
 		// ── Find / Replace ──
 		case "find":
