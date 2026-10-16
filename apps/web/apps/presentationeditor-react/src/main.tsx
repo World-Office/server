@@ -1,8 +1,10 @@
+import "./insecure-uuid";
 import deLocale from "@world-office/editor-common/locales/de.json";
 import { createI18n } from "@world-office/i18n";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
+
 import "./styles/presentation.css";
 import "./styles/toolbar.css";
 import "./styles/statusbar.css";
