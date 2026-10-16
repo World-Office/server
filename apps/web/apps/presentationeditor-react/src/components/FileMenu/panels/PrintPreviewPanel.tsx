@@ -1,8 +1,14 @@
 import type { JSX } from "react";
+import { presentationStore } from "../../../stores/PresentationStore";
 
 export function PrintPreviewPanel({
 	visible,
 }: { visible: boolean }): JSX.Element {
+	function handleClose(): void {
+		presentationStore.setActiveFileMenuPanel(null);
+		presentationStore.setFileMenuOpen(false);
+	}
+
 	return (
 		<div
 			className="prese-file-menu-content-box"
@@ -16,7 +22,7 @@ export function PrintPreviewPanel({
 					</p>
 				</div>
 				<div className="prese-print-preview-footer">
-					<button type="button" onClick={() => {}}>
+					<button type="button" onClick={handleClose}>
 						Close
 					</button>
 				</div>

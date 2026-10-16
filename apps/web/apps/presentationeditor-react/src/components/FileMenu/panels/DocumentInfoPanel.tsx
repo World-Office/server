@@ -107,7 +107,10 @@ export function DocumentInfoPanel({
 				</tbody>
 			</table>
 			<div className="prese-file-menu-footer">
-				<button type="button" onClick={() => {}}>
+				<button
+					type="button"
+					onClick={() => presentationStore.setActiveFileMenuPanel(null)}
+				>
 					Close
 				</button>
 			</div>

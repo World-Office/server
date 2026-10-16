@@ -18,16 +18,34 @@ interface FileMenuItem {
 	action: FileMenuAction | "close-editor";
 	caption: string;
 	hasPanel: boolean;
+	/** panel the entry activates when it differs from the action id */
+	panel?: string;
 }
 
 const MENU_ITEMS: FileMenuItem[] = [
 	{ action: "saveas", caption: "Download as...", hasPanel: true },
 	{ action: "export", caption: "Export Wizard...", hasPanel: true },
 	{ action: "save-copy", caption: "Save Copy as...", hasPanel: true },
-	{ action: "save-desktop", caption: "Save as...", hasPanel: false },
-	{ action: "print", caption: "Print", hasPanel: false },
-	{ action: "printpreview", caption: "Print with Preview", hasPanel: false },
-	{ action: "rename", caption: "Rename...", hasPanel: false },
+	// "Save as..." targets desktop storage in the desktop bridge builds; the
+	// web build has no such target, so it opens the same download/export
+	// surface as "Download as..." (the word editor's desktop-less fallback)
+	{
+		action: "save-desktop",
+		caption: "Save as...",
+		hasPanel: true,
+		panel: "saveas",
+	},
+	// "Print" opens the print-preview pane (the word editor's behaviour) — it
+	// used to just close the menu, leaving the shipped PrintPreviewPanel
+	// unreachable from the UI
+	{
+		action: "print",
+		caption: "Print",
+		hasPanel: true,
+		panel: "printpreview",
+	},
+	{ action: "printpreview", caption: "Print with Preview", hasPanel: true },
+	{ action: "rename", caption: "Rename...", hasPanel: true },
 	{ action: "info", caption: "Document Info...", hasPanel: true },
 	{ action: "rights", caption: "Access Rights...", hasPanel: true },
 	{ action: "history", caption: "Version History...", hasPanel: true },
@@ -36,9 +54,9 @@ const MENU_ITEMS: FileMenuItem[] = [
 	{ action: "exit", caption: "Go to Documents", hasPanel: false },
 	{ action: "close-editor", caption: "Close Editor", hasPanel: false },
 	{ action: "external-help", caption: "External Help", hasPanel: false },
-	{ action: "suggest", caption: "Suggest Feature", hasPanel: false },
-	{ action: "create-new", caption: "Create New", hasPanel: false },
-	{ action: "open-recent", caption: "Open Recent", hasPanel: false },
+	{ action: "suggest", caption: "Suggest Feature", hasPanel: true },
+	{ action: "create-new", caption: "Create New", hasPanel: true },
+	{ action: "open-recent", caption: "Open Recent", hasPanel: true, panel: "recent" },
 ];
 
 const useStyles = makeStyles({
@@ -128,11 +146,17 @@ export function FileMenuItems({ onMenuClick, onBack }: FileMenuItemsProps) {
 					key={item.action}
 					className={mergeClasses(
 						styles.menuItem,
-						activePanel === item.action ? styles.active : undefined,
+						activePanel === (item.panel ?? item.action)
+							? styles.active
+							: undefined,
 					)}
-					onClick={() => onMenuClick(item.action, item.hasPanel)}
+					onClick={() =>
+						onMenuClick(item.panel ?? item.action, item.hasPanel)
+					}
 					onKeyDown={(e) =>
-						handleKeyDown(e, () => onMenuClick(item.action, item.hasPanel))
+						handleKeyDown(e, () =>
+							onMenuClick(item.panel ?? item.action, item.hasPanel),
+						)
 					}
 					role="menuitem"
 				>

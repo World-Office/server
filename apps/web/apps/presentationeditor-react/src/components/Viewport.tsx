@@ -1,3 +1,4 @@
+import { observer } from "mobx-react-lite";
 import type { ReactNode } from "react";
 import { presentationStore } from "../stores/PresentationStore";
 import { DocumentHolder } from "./DocumentHolder";
@@ -17,7 +18,14 @@ interface ViewportProps {
 	onMonacoCommand: (command: MonacoCommand) => void;
 }
 
-export function Viewport({
+// Viewport reads presentationStore directly (file-menu panel, about panel) —
+// it MUST be a mobx observer or those overlays never re-render: clicking the
+// File tab flipped presentationStore.isFileMenuOpen yet .prese-file-menu-panel
+// stayed display:none until some *other* observer (the App root reading
+// isPresenting) happened to re-render the tree — and the same missing observer
+// made the menu impossible to CLOSE (the Back click flipped the store but the
+// panel stayed painted). Slide twin of the documented word/sheet File-menu bug.
+const ViewportInner = function Viewport({
 	toolbarVisible,
 	statusbarVisible,
 	leftMenuVisible,
@@ -98,4 +106,6 @@ export function Viewport({
 			</div>
 		</div>
 	);
-}
+};
+
+export const Viewport = observer(ViewportInner);

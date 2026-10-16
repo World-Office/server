@@ -1256,6 +1256,14 @@ export class PresentationStore {
 		this.document = doc;
 	}
 
+	/** File → Rename... — retitles the current document (extension kept) */
+	renameDocument(name: string): void {
+		const clean = name.trim();
+		if (!clean || !this.document) return;
+		this.document = { ...this.document, title: clean };
+		this.markModified();
+	}
+
 	setDocReady(ready: boolean): void {
 		this.isDocReady = ready;
 	}

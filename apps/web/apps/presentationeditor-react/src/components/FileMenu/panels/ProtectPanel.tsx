@@ -1,4 +1,5 @@
 import type { JSX } from "react";
+import { presentationStore } from "../../../stores/PresentationStore";
 
 export function ProtectPanel({ visible }: { visible: boolean }): JSX.Element {
 	return (
@@ -12,7 +13,10 @@ export function ProtectPanel({ visible }: { visible: boolean }): JSX.Element {
 					Configure document protection settings.
 				</p>
 				<div className="prese-file-menu-footer">
-					<button type="button" onClick={() => {}}>
+					<button
+						type="button"
+						onClick={() => presentationStore.setActiveFileMenuPanel(null)}
+					>
 						Close
 					</button>
 				</div>
