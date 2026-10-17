@@ -360,13 +360,47 @@ export class PdfStore {
   }
 
   async exportAsDownload(): Promise<void> {
-    const blob = await this.buildDocumentBlob()
+    await this.downloadBlob(await this.buildDocumentBlob(), this.document?.title || "document.pdf")
+  }
+
+  /** shared download path for the export / save-copy surfaces */
+  private async downloadBlob(blob: Blob, fileName: string): Promise<void> {
     const url = URL.createObjectURL(blob)
     const a = document.createElement("a")
     a.href = url
-    a.download = this.document?.title || "document.pdf"
+    a.download = fileName
+    document.body.appendChild(a)
     a.click()
+    document.body.removeChild(a)
     URL.revokeObjectURL(url)
+  }
+
+  /**
+   * File → Rename... — retitles the current document (extension kept). The
+   * WOPI host has no rename endpoint, so the change is local to the editor
+   * session, but it drives Document Info and every export/download file name.
+   * A standalone session (no WOPI file loaded) has no document yet — the
+   * editor has been showing "Untitled" all along, so the rename seeds it
+   * instead of silently doing nothing.
+   */
+  renameDocument(name: string): void {
+    const clean = name.trim()
+    if (!clean) return
+    const current = this.document ?? { title: "Untitled", fileType: "pdf" }
+    this.document = { ...current, title: clean }
+    this.isModified = true
+  }
+
+  /**
+   * File → Save Copy as... — downloads a copy of the current document
+   * (annotations included) under the given name; the ".pdf" extension is kept.
+   */
+  async saveCopyAs(fileName: string): Promise<void> {
+    const clean = fileName.trim()
+    if (!clean) return
+    const blob = await this.buildDocumentBlob()
+    const name = /\.[^.]+$/.test(clean) ? clean : `${clean}.pdf`
+    await this.downloadBlob(blob, name)
   }
 
   /**

@@ -394,6 +394,29 @@ describe("PdfStore", () => {
     expect(store.activeFileMenuPanel).toBeNull()
   })
 
+  it("retitles the document on rename", () => {
+    const store = new PdfStore()
+    store.setDocument({ title: "old.pdf", fileType: "pdf" })
+    store.renameDocument("renamed.pdf")
+    expect(store.document?.title).toBe("renamed.pdf")
+    expect(store.isModified).toBe(true)
+  })
+
+  it("seeds an untitled document when renaming a standalone session", () => {
+    // the bare /pdf/ page loads no WOPI file — the rename must not be a no-op
+    const store = new PdfStore()
+    store.renameDocument("  session.pdf  ")
+    expect(store.document?.title).toBe("session.pdf")
+    expect(store.document?.fileType).toBe("pdf")
+  })
+
+  it("ignores an empty rename", () => {
+    const store = new PdfStore()
+    store.setDocument({ title: "keep.pdf", fileType: "pdf" })
+    store.renameDocument("   ")
+    expect(store.document?.title).toBe("keep.pdf")
+  })
+
   // ── WOPI State ──
 
   it("initializes WOPI state correctly", () => {

@@ -1,12 +1,15 @@
 import { makeStyles, tokens } from "@fluentui/react-components"
 import { type EmailConfig, type ExportFormat, ExportWizard } from "@world-office/editor-common"
+import { observer } from "mobx-react-lite"
 import { useCallback } from "react"
 import { pdfStore } from "../../stores/PdfStore"
 import { FileMenuItems } from "./FileMenuItems"
 import { CreateNewPanel } from "./panels/CreateNewPanel"
 import { DocumentInfoPanel } from "./panels/DocumentInfoPanel"
 import { HelpPanel } from "./panels/HelpPanel"
+import { RenamePanel } from "./panels/RenamePanel"
 import { SaveAsPanel } from "./panels/SaveAsPanel"
+import { SaveCopyPanel } from "./panels/SaveCopyPanel"
 import { SettingsPanel } from "./panels/SettingsPanel"
 
 const useStyles = makeStyles({
@@ -36,11 +39,15 @@ const useStyles = makeStyles({
     padding: "0 20px",
     position: "relative",
     overflow: "hidden",
-    display: "none",
+    // NOT display:none — every pane below carries its own
+    // `display: visible ? "block" : "none"`, so hiding the container here
+    // starved each pane (w=0/h=0) even when its entry activated it: the pane
+    // was mounted but no pointer could ever reach its controls.
+    display: "block",
   },
 })
 
-export function FileMenu() {
+function FileMenuInner() {
   const styles = useStyles()
   const activePanel = pdfStore.activeFileMenuPanel
 
@@ -97,10 +104,12 @@ export function FileMenu() {
         <div className={styles.panelBox}>
           <CreateNewPanel visible={activePanel === "new"} />
           <SaveAsPanel visible={activePanel === "saveas"} />
+          <SaveCopyPanel visible={activePanel === "save-copy"} />
           <SettingsPanel visible={activePanel === "opts"} />
           <DocumentInfoPanel visible={activePanel === "info"} />
           <HelpPanel visible={activePanel === "help"} />
           <PrintPreviewPanel visible={activePanel === "printpreview"} />
+          <RenamePanel visible={activePanel === "rename"} />
         </div>
       </div>
 
@@ -116,6 +125,12 @@ export function FileMenu() {
     </div>
   )
 }
+
+// FileMenu reads pdfStore.activeFileMenuPanel inline — without the observer a
+// menu-entry click flipped the store yet the pane never switched (and the
+// ExportWizard's own ✕ could never unmount the dialog: the modal was impossible
+// to close for the user).
+export const FileMenu = observer(FileMenuInner)
 
 const usePrintPreviewStyles = makeStyles({
   wrapper: {

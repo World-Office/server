@@ -21,7 +21,9 @@ const MENU_ITEMS: MenuItem[] = [
   { action: "export", caption: "Export Wizard...", hasPanel: true },
   { action: "save-copy", caption: "Save Copy as...", hasPanel: true },
   { action: "printpreview", caption: "Print", hasPanel: true },
-  { action: "rename", caption: "Rename...", hasPanel: false },
+  // "Rename..." used to declare NO panel, so the click was a dead entry — it
+  // now opens the Rename pane (FileMenu renders it for activePanel "rename")
+  { action: "rename", caption: "Rename...", hasPanel: true },
   { action: "info", caption: "Document Info...", hasPanel: true },
   { action: "opts", caption: "Advanced Settings...", hasPanel: true },
   { action: "help", caption: "Help...", hasPanel: true },
