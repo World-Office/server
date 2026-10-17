@@ -19,11 +19,14 @@ import type {
 	AnimationData,
 	AnimationEffect,
 	LeftMenuAction,
+	PanelChatMessage,
 	PresentationDocument,
 	PresentationMode,
 	PresentationTab,
 	RightMenuPanel,
 	SlideBackground,
+	SlideCommentReply,
+	SlideCommentThread,
 	SlideLayout,
 	SlideSize,
 	StartAnimation,
@@ -38,6 +41,7 @@ import type {
 	ConnectorData,
 	ShapeData,
 } from "../types/presentation";
+import type { SlideTextHit } from "../lib/slide-text";
 
 export interface SlideData {
 	id: string;
@@ -246,6 +250,12 @@ export class PresentationStore {
 	activeLeftPanel: LeftMenuAction | null = null;
 	leftMenuMinWidth = 40;
 	leftMenuExpandedWidth = 300;
+	/* Left menu: slide comments (Comments panel) */
+	slideComments: SlideCommentThread[] = [];
+	/* Left menu: session chat (Chat panel) */
+	chatMessages: PanelChatMessage[] = [];
+	/** Display name used for local comments and chat messages. */
+	chatAuthor = "You";
 
 	/* Right menu */
 	activeRightPanel: RightMenuPanel | null = null;
@@ -1345,6 +1355,132 @@ export class PresentationStore {
 		this.setActiveLeftPanel(this.activeLeftPanel === action ? null : action);
 	}
 
+	/* ── Left-menu panels: comments + chat ── */
+
+	/** Anchor a new comment thread to a slide (0-based index). */
+	addSlideComment(slideIndex: number, text: string): SlideCommentThread | null {
+		const clean = text.trim();
+		if (!clean) return null;
+		const thread: SlideCommentThread = {
+			id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+			slideIndex,
+			author: this.chatAuthor,
+			text: clean,
+			createdAt: Date.now(),
+			resolved: false,
+			replies: [],
+		};
+		this.slideComments.push(thread);
+		return thread;
+	}
+
+	addSlideReply(threadId: string, text: string): SlideCommentReply | null {
+		const clean = text.trim();
+		if (!clean) return null;
+		const thread = this.slideComments.find((t) => t.id === threadId);
+		if (!thread) return null;
+		const reply: SlideCommentReply = {
+			id: `r-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+			author: this.chatAuthor,
+			text: clean,
+			createdAt: Date.now(),
+		};
+		thread.replies.push(reply);
+		return reply;
+	}
+
+	setSlideCommentResolved(threadId: string, resolved: boolean): void {
+		const thread = this.slideComments.find((t) => t.id === threadId);
+		if (thread) thread.resolved = resolved;
+	}
+
+	deleteSlideComment(threadId: string): void {
+		this.slideComments = this.slideComments.filter((t) => t.id !== threadId);
+	}
+
+	/** Drop every comment anchored to a slide that no longer exists. */
+	pruneSlideComments(): void {
+		this.slideComments = this.slideComments.filter(
+			(t) => t.slideIndex < this.slides.length,
+		);
+	}
+
+	/** Re-map comment anchors after slides move (null drops the thread). */
+	private reanchorSlideComments(map: (oldIndex: number) => number | null): void {
+		const next: SlideCommentThread[] = [];
+		for (const thread of this.slideComments) {
+			const mapped = map(thread.slideIndex);
+			if (mapped === null || mapped < 0 || mapped >= this.slides.length) continue;
+			next.push(mapped === thread.slideIndex ? thread : { ...thread, slideIndex: mapped });
+		}
+		this.slideComments = next;
+	}
+
+	setSlideComments(threads: SlideCommentThread[]): void {
+		this.slideComments = threads;
+	}
+
+	addChatMessage(text: string): PanelChatMessage | null {
+		const clean = text.trim();
+		if (!clean) return null;
+		const message: PanelChatMessage = {
+			id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+			author: this.chatAuthor,
+			text: clean,
+			createdAt: Date.now(),
+			self: true,
+		};
+		this.chatMessages.push(message);
+		return message;
+	}
+
+	setChatMessages(messages: PanelChatMessage[]): void {
+		this.chatMessages = messages;
+	}
+
+	clearChatMessages(): void {
+		this.chatMessages = [];
+	}
+
+	/**
+	 * Write new text into a search hit's target through the normal mutation
+	 * path (undo snapshot + collaboration notify), so Replace behaves like an
+	 * edit made on the canvas.
+	 */
+	applySlideText(hit: SlideTextHit, text: string): boolean {
+		const slide = this.slides[hit.slideIndex];
+		if (!slide) return false;
+
+		if (hit.kind === "title") {
+			this.setSlideTitle(hit.slideIndex, text);
+		} else if (hit.kind === "notes") {
+			this.setSlideNotes(hit.slideIndex, text);
+		} else if (hit.shapeId) {
+			const shape = slide.shapes?.find((s) => s.id === hit.shapeId);
+			if (!shape) return false;
+			if (hit.kind === "table" && shape.table && hit.row !== undefined) {
+				const cells = shape.table.cells.map((row, rowIdx) => ({
+					...row,
+					cells: row.cells.map((cell, columnIdx) =>
+						rowIdx === hit.row && columnIdx === hit.column
+							? { ...cell, text }
+							: { ...cell },
+					),
+				}));
+				this.updateShape(hit.slideIndex, hit.shapeId, {
+					table: { ...shape.table, cells },
+				});
+			} else {
+				this.updateShape(hit.slideIndex, hit.shapeId, { text });
+			}
+		} else {
+			return false;
+		}
+
+		this.markModified();
+		return true;
+	}
+
 	setActiveRightPanel(panel: RightMenuPanel | null): void {
 		this.activeRightPanel = panel;
 	}
@@ -1364,6 +1500,7 @@ export class PresentationStore {
 	setSlides(slides: SlideData[]): void {
 		this.slides = slides;
 		this.totalSlides = slides.length;
+		this.pruneSlideComments();
 	}
 
 	setActiveFileMenuPanel(panel: string | null): void {
@@ -1714,6 +1851,7 @@ export class PresentationStore {
 			this.totalSlides = this.slides.length;
 			this.currentSlide = 0;
 			this.selectedShapeIds = [];
+			this.pruneSlideComments();
 		} catch (e) {
 			console.error("Failed to load presentation:", e);
 		}
@@ -1804,6 +1942,11 @@ export class PresentationStore {
 		if (this.currentSlide >= this.totalSlides) {
 			this.currentSlide = this.totalSlides - 1;
 		}
+		// Keep the Comments panel anchors valid: threads on the deleted slide go
+		// away, the ones behind it shift up one slide.
+		this.reanchorSlideComments((oldIndex) =>
+			oldIndex === index ? null : oldIndex > index ? oldIndex - 1 : oldIndex,
+		);
 		this.notifyCollaboration("slide_delete", { slide_index: index });
 	}
 
@@ -1830,6 +1973,10 @@ export class PresentationStore {
 		this.slides.splice(index + 1, 0, clone);
 		this.totalSlides = this.slides.length;
 		this.currentSlide = index + 1;
+		// The duplicate shifts every slide behind it one slot down the deck.
+		this.reanchorSlideComments((oldIndex) =>
+			oldIndex > index ? oldIndex + 1 : oldIndex,
+		);
 	}
 
 	reorderSlides(fromIndex: number, toIndex: number): void {
@@ -1837,6 +1984,16 @@ export class PresentationStore {
 		const [moved] = this.slides.splice(fromIndex, 1);
 		this.slides.splice(toIndex, 0, moved);
 		this.currentSlide = toIndex;
+		this.reanchorSlideComments((oldIndex) => {
+			if (oldIndex === fromIndex) return toIndex;
+			if (fromIndex < toIndex && oldIndex > fromIndex && oldIndex <= toIndex) {
+				return oldIndex - 1;
+			}
+			if (fromIndex > toIndex && oldIndex >= toIndex && oldIndex < fromIndex) {
+				return oldIndex + 1;
+			}
+			return oldIndex;
+		});
 		this.notifyCollaboration("slide_reorder", {
 			from_index: fromIndex,
 			to_index: toIndex,

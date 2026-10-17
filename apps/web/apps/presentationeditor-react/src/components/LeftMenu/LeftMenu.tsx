@@ -3,8 +3,12 @@ import type { JSX } from "react";
 import { useTranslation } from "react-i18next";
 import { presentationStore } from "../../stores/PresentationStore";
 import type { LeftMenuAction } from "../../types/presentation";
-import { SlideThumbnails } from "../SlideThumbnails";
+import { ChatPanel } from "./ChatPanel";
+import { CommentsPanel } from "./CommentsPanel";
 import { LeftMenuButton } from "./LeftMenuButton";
+import { SearchPanel } from "./SearchPanel";
+import { SlideThumbnails } from "../SlideThumbnails";
+import { SupportPanel } from "./SupportPanel";
 
 const BUTTONS: Array<{ action: LeftMenuAction; title: string; icon: string }> =
 	[
@@ -18,6 +22,7 @@ const BUTTONS: Array<{ action: LeftMenuAction; title: string; icon: string }> =
 
 function LeftMenuInner(): JSX.Element {
 	const { t } = useTranslation();
+	const activePanel = presentationStore.activeLeftPanel;
 
 	return (
 		<div
@@ -25,6 +30,7 @@ function LeftMenuInner(): JSX.Element {
 			role="menubar"
 			aria-orientation="vertical"
 			aria-label="Left menu"
+			data-panel-open={activePanel !== null && activePanel !== "about"}
 		>
 			<div className="prese-left-menu-btns">
 				{BUTTONS.map(({ action, title, icon }) => (
@@ -38,15 +44,16 @@ function LeftMenuInner(): JSX.Element {
 					/>
 				))}
 			</div>
+			{/* Side panels — every rail toggle maps to a real panel here. The
+			    components stay mounted (display-toggled) so search results,
+			    comments, chat history and drafts survive a collapse. About is an
+			    overlay over the editor (see Viewport), not a side panel. */}
 			<div className="prese-left-panel-side">
-				{presentationStore.activeLeftPanel === "slides" && <SlideThumbnails />}
-				<div
-					className="prese-left-panel-chat"
-					style={{
-						display:
-							presentationStore.activeLeftPanel === "chat" ? "block" : "none",
-					}}
-				/>
+				{activePanel === "slides" && <SlideThumbnails />}
+				<SearchPanel active={activePanel === "search"} />
+				<CommentsPanel active={activePanel === "comments"} />
+				<ChatPanel active={activePanel === "chat"} />
+				<SupportPanel active={activePanel === "support"} />
 			</div>
 		</div>
 	);
