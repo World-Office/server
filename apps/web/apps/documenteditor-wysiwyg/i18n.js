@@ -342,6 +342,9 @@
    * JSON loaded via the `localePath` config option.
    */
   const LOCALE_DE = {
+    "Tab.Home": "Start",
+    "Tab.Insert": "Einfügen",
+    "Tab.Layout": "Layout",
     "Tab.Draw": "Zeichnen",
     "Tab.References": "Verweise",
     "Tab.Collaboration": "Zusammenarbeit",

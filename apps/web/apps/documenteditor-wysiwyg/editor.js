@@ -107,8 +107,14 @@
   let commentRange = null;
   const SESSION = window.__SESSION__ || "";
   const api = (path) => `/api/documents/${encodeURIComponent(DOC_ID)}/${path}?session=${encodeURIComponent(SESSION)}`;
-  // Resolve the UI language from the browser (falls back to English).
-  const detectedLng = window.detectLocale ? window.detectLocale() : (navigator.language || "en");
+  // Resolve the UI language: the WOPI locale param (UI_LLCC) wins over the
+  // browser locale — an en-GB WOPI session must never show German chrome
+  // just because the user's browser is de-DE (mixed-language bug, 2026-10-17).
+  const llcc = new URLSearchParams(window.location.search).get("UI_LLCC");
+  const llccLng = llcc ? llcc.toLowerCase().replace("_", "-") : null;
+  const detectedLng =
+    llccLng ? (llccLng.startsWith("de") ? "de" : "en")
+    : window.detectLocale ? window.detectLocale() : (navigator.language || "en");
   // New toolbar strings (heading H1-H3 button and insert-image dialog) are
   // not in the shipped i18n catalog yet (i18n.js is outside this editor's
   // file scope), so seed them here. Only missing keys are filled, so real
@@ -5494,6 +5500,7 @@
         t.setAttribute("aria-selected", String(t === tab)));
       document.querySelectorAll(".ribbon-page").forEach((p) =>
         p.classList.toggle("active", p.dataset.tab === tab.dataset.tab));
+      if (typeof closeAllMenus === "function") closeAllMenus();
     });
   });
 

@@ -138,8 +138,35 @@
     <button type="button" class="titlebar-fs" title="Fullscreen" aria-label="Fullscreen"><svg viewBox="0 0 8 8" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M1 3V1h2M7 5v2H5M1 5v2h2M7 3V1H5"/></svg></button>
   </div>
   <nav id="menu-bar" class="menu-bar" aria-label="Application menu" data-i18n-aria-label="MenuBar.Region">
-    <div class="menu">
-      <button type="button" id="btn-file" class="menu-trigger" aria-haspopup="true" aria-expanded="false" data-i18n="Menu.File">File</button>
+    <!-- Quick-access cluster (right edge only: Print + Redo). The old
+         text-labeled duplicates (Underline/Bold/H1/H2/H3/... + font selects)
+         floated above the ribbon as a visual overlay — removed 2026-09-12;
+         the ribbon rows carry those commands now (OO 2-row geometry).
+         File menu moved into the ribbon tab row (OO parity, 2026-10-17):
+         the File trigger is the FIRST entry of .ribbon-tabs. -->
+<button class="qa" id="btn-print-qa" style="--qa-x: 1303px" title="Print" data-i18n-title="Menu.Print" aria-label="Print"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6V2.5h7V6M4.5 12.5h-2a1 1 0 0 1-1-1V7.5a1.5 1.5 0 0 1 1.5-1.5h9a1.5 1.5 0 0 1 1.5 1.5v4a1 1 0 0 1-1 1h-2M4.5 10h7v4h-7z"/></svg></button>
+    <button class="qa" id="btn-redo-qa" data-cmd="redo" style="--qa-x: 1404px" title="Redo (Ctrl+Y)" data-i18n-title="Toolbar.RedoTitle" aria-label="Redo (quick access)" data-i18n-aria-label="Toolbar.Redo" aria-keyshortcuts="Control+Y Control+Shift+Z"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 7.5h-6a3.5 3.5 0 1 0 0 7H10"/><path d="M9.5 4 13 7.5 9.5 11"/></svg></button>
+    <div class="menu user-chip" id="user-chip" style="--qa-x: 1350px" hidden>
+      <button type="button" id="user-chip-btn" class="user-chip-btn" aria-haspopup="true" aria-expanded="false">
+        <span id="user-chip-name"></span>
+        <svg viewBox="0 0 10 6" width="10" height="6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1.25 5 4.75 9 1.25"/></svg>
+      </button>
+      <div class="user-chip-panel" id="user-chip-panel" hidden>
+        <span class="user-chip-label" data-i18n="User.EditingAs">Editing as</span>
+        <span class="user-chip-full" id="user-chip-full"></span>
+        <span class="user-chip-label" data-i18n="User.Document">Document</span>
+        <span class="user-chip-full" id="user-chip-doc"></span>
+      </div>
+    </div>
+    <span class="spacer"></span>
+  </nav>
+  <header id="toolbar" class="toolbar" role="toolbar" aria-label="Formatting toolbar" data-i18n-aria-label="Toolbar.Region">
+    <!-- Ribbon tabs (OO-golden slot pitch): 28px tab strip pinned to the top
+         of #toolbar (WO-RIBBON-TABS, 2026-10-06) — moved from the menu-bar so
+         the toolbar mirrors OO's internal structure (28px tabs + 84px controls). -->
+    <div class="ribbon-tabs" role="tablist">
+    <div class="menu ribbon-file">
+      <button type="button" id="btn-file" class="menu-trigger file-tab" aria-haspopup="true" aria-expanded="false" data-i18n="Menu.File">File</button>
       <ul id="file-menu" class="menu-list" role="menu" aria-labelledby="btn-file" hidden>
         <li role="none"><button type="button" id="btn-new" role="menuitem" data-i18n="Menu.New">New</button></li>
         <li role="none"><button type="button" id="btn-open" role="menuitem" data-i18n="Menu.Open">Open…</button></li>
@@ -164,32 +191,6 @@
         <li role="none"><button type="button" id="btn-filesuggest" role="menuitem" data-i18n="Menu.Suggest">Suggest a feature…</button></li>
       </ul>
     </div>
-    <span class="sep"></span>
-    <!-- Quick-access cluster (right edge only: Print + Redo). The old
-         text-labeled duplicates (Underline/Bold/H1/H2/H3/... + font selects)
-         floated above the ribbon as a visual overlay — removed 2026-09-12;
-         the ribbon rows carry those commands now (OO 2-row geometry). -->
-    <button class="qa" id="btn-print-qa" style="--qa-x: 1303px" title="Print" data-i18n-title="Menu.Print" aria-label="Print"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6V2.5h7V6M4.5 12.5h-2a1 1 0 0 1-1-1V7.5a1.5 1.5 0 0 1 1.5-1.5h9a1.5 1.5 0 0 1 1.5 1.5v4a1 1 0 0 1-1 1h-2M4.5 10h7v4h-7z"/></svg></button>
-    <button class="qa" id="btn-redo-qa" data-cmd="redo" style="--qa-x: 1404px" title="Redo (Ctrl+Y)" data-i18n-title="Toolbar.RedoTitle" aria-label="Redo (quick access)" data-i18n-aria-label="Toolbar.Redo" aria-keyshortcuts="Control+Y Control+Shift+Z"><svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 7.5h-6a3.5 3.5 0 1 0 0 7H10"/><path d="M9.5 4 13 7.5 9.5 11"/></svg></button>
-    <div class="menu user-chip" id="user-chip" style="--qa-x: 1350px" hidden>
-      <button type="button" id="user-chip-btn" class="user-chip-btn" aria-haspopup="true" aria-expanded="false">
-        <span id="user-chip-name"></span>
-        <svg viewBox="0 0 10 6" width="10" height="6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1.25 5 4.75 9 1.25"/></svg>
-      </button>
-      <div class="user-chip-panel" id="user-chip-panel" hidden>
-        <span class="user-chip-label" data-i18n="User.EditingAs">Editing as</span>
-        <span class="user-chip-full" id="user-chip-full"></span>
-        <span class="user-chip-label" data-i18n="User.Document">Document</span>
-        <span class="user-chip-full" id="user-chip-doc"></span>
-      </div>
-    </div>
-    <span class="spacer"></span>
-  </nav>
-  <header id="toolbar" class="toolbar" role="toolbar" aria-label="Formatting toolbar" data-i18n-aria-label="Toolbar.Region">
-    <!-- Ribbon tabs (OO-golden slot pitch): 28px tab strip pinned to the top
-         of #toolbar (WO-RIBBON-TABS, 2026-10-06) — moved from the menu-bar so
-         the toolbar mirrors OO's internal structure (28px tabs + 84px controls). -->
-    <div class="ribbon-tabs" role="tablist">
     <button type="button" class="ribbon-tab" data-tab="home" role="tab" aria-selected="true" style="--qa-x: 92px" data-i18n="Tab.Home">Home</button>
     <button type="button" class="ribbon-tab" data-tab="insert" role="tab" aria-selected="false" style="--qa-x: 150px" data-i18n="Tab.Insert">Insert</button>
     <button type="button" class="ribbon-tab" data-tab="draw" role="tab" aria-selected="false" style="--qa-x: 205px" data-i18n="Tab.Draw">Draw</button>

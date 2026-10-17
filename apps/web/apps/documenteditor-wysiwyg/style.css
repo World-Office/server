@@ -235,6 +235,9 @@ body {
   position: static;
   transform: none;
   border-bottom-width: 3px;
+  /* .toolbar button is 46px (control band) and out-specifies .ribbon-tab —
+     tabs must stay on the 24px band or the row misaligns (fig-ui G1/G2). */
+  height: 24px;
 }
 .titlebar button {
   min-width: 24px;
@@ -690,6 +693,30 @@ select option { background: var(--bg); color: var(--text); }
 }
 
 .menu { position: relative; }
+
+/* File tab lives IN the ribbon tab row (OO parity 2026-10-17): same band
+   geometry as .ribbon-tab, accent underline while its dropdown is open. */
+.ribbon-tabs .ribbon-file {
+  display: flex;
+  align-items: center;
+  height: 24px;
+}
+.ribbon-tabs .menu-trigger.file-tab {
+  height: 24px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+}
+.ribbon-tabs .menu-trigger.file-tab:hover { color: var(--text); background: var(--hover); }
+.ribbon-tabs .menu-trigger.file-tab[aria-expanded="true"] {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
 
 .menu-trigger {
   /* WO-RIBBON-TABS-FLOW: was 22px — overflowed the menu-bar band into the
