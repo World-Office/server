@@ -1,3 +1,4 @@
+import { observer } from "mobx-react-lite"
 import type { ReactNode } from "react"
 import { pdfStore } from "../stores/PdfStore"
 import { DocumentHolder } from "./DocumentHolder"
@@ -17,7 +18,13 @@ interface ViewportProps {
   onMonacoCommand: (command: MonacoCommand) => void
 }
 
-export function Viewport({
+// Viewport reads pdfStore observables inline (isFileMenuOpen for the File-menu
+// panel, activeLeftPanel for the about panel) — without the mobx observer a
+// File-tab click flipped the store yet the panel never painted, and the same
+// missing observer made the menu impossible to CLOSE (the Back click flipped
+// isFileMenuOpen but the panel stayed on screen). PDF twin of the documented
+// word/sheet/slide File-menu bug.
+const ViewportInner = function Viewport({
   toolbarVisible,
   statusbarVisible,
   leftMenuVisible,
@@ -90,3 +97,5 @@ export function Viewport({
     </div>
   )
 }
+
+export const Viewport = observer(ViewportInner)
