@@ -5,6 +5,7 @@ import type {
 } from "@world-office/editor-common";
 import { detectWopiParams } from "@world-office/wopi-client";
 import { observer } from "mobx-react-lite";
+import { translateRibbonControlCommand } from "../../lib/presentation-commands";
 import { presentationStore } from "../../stores/PresentationStore";
 import { FileTab } from "./FileTab";
 import type { MonacoCommand } from "./MonacoCommand";
@@ -31,11 +32,14 @@ const ObservedToolbar = observer(function ObservedToolbar({
 	};
 
 	const dispatch: RibbonCommandDispatch = {
+		// Text formatting flows through onCommand → the store router below;
+		// keeping this a no-op avoids dispatching every click twice (toggles
+		// would cancel themselves out).
 		onRichTextCommand: () => {},
 		onMonacoCommand: (command: string) => {
 			onMonacoCommand(command as MonacoCommand);
 		},
-		onCommand: (command: string) => {
+		onCommand: (command: string, value?: string) => {
 			switch (command) {
 				case "addSlide":
 					presentationStore.addSlide();
@@ -59,10 +63,18 @@ const ObservedToolbar = observer(function ObservedToolbar({
 				case "goToLastSlide":
 					presentationStore.setCurrentSlide(presentationStore.totalSlides - 1);
 					break;
-				default:
+				default: {
+					// Select controls fire onCommand with their CONTROL id after
+					// their own onChange — translate to the real command so this
+					// redundant dispatch reaches a handler too.
+					const translated = translateRibbonControlCommand(command, value);
+					const payload = translated ?? { command, value };
 					window.dispatchEvent(
-						new CustomEvent("wo-command", { detail: { command } }),
+						new CustomEvent("wo-command", {
+							detail: { command: payload.command, value: payload.value },
+						}),
 					);
+				}
 			}
 		},
 	};

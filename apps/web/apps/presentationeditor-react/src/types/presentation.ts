@@ -370,6 +370,28 @@ export interface ShapeData {
 	shadow?: ShadowEffect;
 	imageData?: ImageData;
 	groupId?: string;
+	/* Text formatting — written by the Home ▸ Font / Paragraph ribbon
+	   commands (see lib/presentation-commands.ts) and rendered by the canvas. */
+	bold?: boolean;
+	italic?: boolean;
+	underline?: boolean;
+	strike?: boolean;
+	/** Text highlight colour (Home ▸ Highlight). */
+	highlightColor?: string;
+	/** Horizontal text alignment inside the shape. */
+	textAlign?: "left" | "center" | "right" | "justify";
+	/** Vertical text alignment inside the shape. */
+	verticalAlign?: "top" | "middle" | "bottom";
+	/** Line spacing multiplier (Home ▸ Spacing). */
+	lineSpacing?: number;
+	/** List style applied to the shape's text. */
+	listType?: "bullet" | "numbered";
+	/** Nesting level for list text (Home ▸ Indent / Outdent). */
+	indentLevel?: number;
+	/** Direction of the shape's text. */
+	textDirection?: TextDirection;
+	/** Hyperlink target (Insert ▸ Link). */
+	link?: string;
 }
 
 export type ChartType = "bar" | "column" | "line" | "pie" | "doughnut";
