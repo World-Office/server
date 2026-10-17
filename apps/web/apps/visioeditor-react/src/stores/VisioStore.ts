@@ -177,12 +177,76 @@ export class VisioStore {
 
 	async exportAsDownload(): Promise<void> {
 		const blob = await this.buildDocumentBlob();
+		const baseName = this.document?.title?.replace(/\.[^.]+$/, "");
+		const fileName = `${baseName || "diagram"}.${this.diagramExtension(blob)}`;
+		this.downloadBlob(blob, fileName);
+	}
+
+	/**
+	 * File → Save Copy as... — downloads a copy of the current diagram under
+	 * the given name. The web build has no server-side "copy" target, so the
+	 * browser download IS the copy; the diagram extension is kept.
+	 */
+	async saveCopyAs(fileName: string): Promise<void> {
+		const clean = fileName.trim();
+		if (!clean) return;
+		const blob = await this.buildDocumentBlob();
+		const name = /\.[^.]+$/.test(clean)
+			? clean
+			: `${clean}.${this.diagramExtension(blob)}`;
+		this.downloadBlob(blob, name);
+	}
+
+	/**
+	 * File → Rename... — retitles the diagram (extension kept). The WOPI host
+	 * exposes no rename endpoint, so the change is local to the editor session,
+	 * but it drives Document Info and every export / download file name. A
+	 * standalone session (no WOPI file loaded) has no document yet — the editor
+	 * has been showing "Untitled" all along — so the rename seeds it instead of
+	 * silently doing nothing.
+	 */
+	renameDocument(name: string): void {
+		const clean = name.trim();
+		if (!clean) return;
+		const current = this.document ?? { title: "Untitled", fileType: "vsdx" };
+		this.document = { ...current, title: clean };
+		this.markModified();
+	}
+
+	/**
+	 * File → "Go to Documents" — leaves the editor for the host's document list
+	 * (customization.goback.url). Embedded sessions ask their host to close the
+	 * editor instead (the documented `request_close` postMessage); a standalone
+	 * session has no host page to return to, so the click closes the File menu
+	 * instead of stranding the user on a dead navigation.
+	 */
+	goToDocuments(): void {
+		const url = this.mode?.customization?.goback?.url;
+		this.setActiveFileMenuPanel(null);
+		this.setFileMenuOpen(false);
+		if (url) {
+			window.location.assign(url);
+			return;
+		}
+		if (window.parent !== window) {
+			window.parent.postMessage(
+				{ source: "worldoffice-editor", type: "request_close" },
+				"*",
+			);
+		}
+	}
+
+	/** Extension of the serialized diagram (VSDX when the backend conversion succeeded, native WoDiagram JSON otherwise). */
+	private diagramExtension(blob: Blob): string {
+		return blob.type.includes("visio") ? "vsdx" : "wo-flowchart";
+	}
+
+	/** Shared download path for the export / save-copy surfaces. */
+	private downloadBlob(blob: Blob, fileName: string): void {
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement("a");
 		a.href = url;
-		const baseName = this.document?.title?.replace(/\.[^.]+$/, "");
-		const ext = blob.type.includes("visio") ? "vsdx" : "wo-flowchart";
-		a.download = baseName ? `${baseName}.${ext}` : `diagram.${ext}`;
+		a.download = fileName;
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
