@@ -107,6 +107,34 @@ export type LeftMenuAction =
 	| "support"
 	| "about";
 
+/** A comment thread anchored to a slide (left-menu Comments panel). */
+export interface SlideCommentThread {
+	id: string;
+	/** 0-based index of the slide the thread is anchored to. */
+	slideIndex: number;
+	author: string;
+	text: string;
+	createdAt: number;
+	resolved: boolean;
+	replies: SlideCommentReply[];
+}
+
+export interface SlideCommentReply {
+	id: string;
+	author: string;
+	text: string;
+	createdAt: number;
+}
+
+/** Session chat message rendered by the left-menu Chat panel. */
+export interface PanelChatMessage {
+	id: string;
+	author: string;
+	text: string;
+	createdAt: number;
+	self: boolean;
+}
+
 export type RightMenuPanel =
 	| "paragraph"
 	| "table"

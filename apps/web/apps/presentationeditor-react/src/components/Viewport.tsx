@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { presentationStore } from "../stores/PresentationStore";
 import { DocumentHolder } from "./DocumentHolder";
 import { FileMenu } from "./FileMenu/FileMenu";
+import { AboutPanel } from "./LeftMenu/AboutPanel";
 import { LeftMenu } from "./LeftMenu/LeftMenu";
 import { RightMenu } from "./RightMenu/RightMenu";
 import { StatusBar } from "./StatusBar/StatusBar";
@@ -65,7 +66,17 @@ const ViewportInner = function Viewport({
 					{leftMenuVisible && (
 						<div
 							className="prese-viewport-left-menu"
-							style={{ width: "var(--wo-prese-leftmenu-width, 40px)" }}
+							style={{
+								// the rail grows by the panel width while one of its
+								// toggles is active, pushing the canvas aside instead of
+								// overflowing behind it (the fixed 40px inline width used
+								// to clip every panel); About keeps its overlay below.
+								width:
+									presentationStore.activeLeftPanel !== null &&
+									presentationStore.activeLeftPanel !== "about"
+										? "calc(var(--wo-prese-leftmenu-width, 40px) + var(--wo-prese-leftpanel-width, 250px))"
+										: "var(--wo-prese-leftmenu-width, 40px)",
+							}}
 						>
 							<LeftMenu />
 						</div>
@@ -80,7 +91,9 @@ const ViewportInner = function Viewport({
 									? "block"
 									: "none",
 						}}
-					/>
+					>
+						<AboutPanel />
+					</div>
 
 					{/* Editor container */}
 					<div className="prese-viewport-editor">

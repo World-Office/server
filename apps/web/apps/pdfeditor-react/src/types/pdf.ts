@@ -82,7 +82,42 @@ export type FileMenuAction =
   | "suggest"
   | "export"
 
-export type LeftMenuAction = "search" | "comments" | "chat" | "navigation" | "thumbnails" | "about"
+export type LeftMenuAction =
+  | "search"
+  | "comments"
+  | "chat"
+  | "navigation"
+  | "thumbnails"
+  | "support"
+  | "about"
+
+/** A comment thread anchored to a page (left-menu Comments panel). */
+export interface PdfCommentThread {
+  id: string
+  /** 0-based index of the page the thread is anchored to. */
+  pageIndex: number
+  author: string
+  text: string
+  createdAt: number
+  resolved: boolean
+  replies: PdfCommentReply[]
+}
+
+export interface PdfCommentReply {
+  id: string
+  author: string
+  text: string
+  createdAt: number
+}
+
+/** Session chat message rendered by the left-menu Chat panel. */
+export interface PanelChatMessage {
+  id: string
+  author: string
+  text: string
+  createdAt: number
+  self: boolean
+}
 
 export type RightMenuPanel =
   | "paragraph"

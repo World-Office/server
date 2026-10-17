@@ -8,6 +8,7 @@
   --wo-pdf-leftmenu-width: 40px;
   --wo-pdf-leftmenu-min: 40px;
   --wo-pdf-leftmenu-max: 300px;
+  --wo-pdf-leftpanel-width: 250px;
   --wo-pdf-rightmenu-width: 40px;
   --wo-pdf-rightmenu-min: 40px;
   --wo-pdf-rightmenu-max: 300px;
@@ -70,6 +71,7 @@ body,
 }
 
 .pdf-viewport-body {
+  position: relative; /* anchors the about-panel overlay to the body row */
   flex: 1;
   display: flex;
   flex-direction: row;

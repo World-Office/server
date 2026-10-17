@@ -3,13 +3,25 @@ import type { WopiConnection, WopiFileInfo } from "@world-office/wopi-client"
 import { makeAutoObservable } from "mobx"
 import type { PDFDocumentProxy } from "pdfjs-dist"
 import { produceAnnotatedPdf } from "../lib/annotation-conversion"
+import {
+  collectPdfOutline,
+  collectPdfText,
+  findPdfTextMatches,
+  type PdfTextDocumentSource,
+  type PdfTextMatch,
+  type PdfTextPage,
+} from "../lib/pdf-text"
 import type {
   AnnotationTool,
+  BookmarkNode,
   LeftMenuAction,
   PageInfo,
+  PdfCommentReply,
+  PdfCommentThread,
   PdfDocument,
   PdfMode,
   PdfTab,
+  PanelChatMessage,
   RightMenuPanel,
   Tool,
   ZoomLevel,
@@ -28,6 +40,13 @@ export interface PdfAnnotation {
 }
 
 const STORAGE_PREFIX = "pe-"
+
+/**
+ * Page-text cache, keyed by the document proxy. Deliberately outside the
+ * observable store: pdf.js page text is immutable for a loaded document, and
+ * re-extracting it on every keystroke would freeze large PDFs.
+ */
+const searchTextCache = new WeakMap<PdfTextDocumentSource, PdfTextPage[]>()
 
 export class PdfStore {
   mode: PdfMode | null = null
@@ -59,6 +78,18 @@ export class PdfStore {
   activeLeftPanel: LeftMenuAction | null = null
   leftMenuMinWidth = 40
   leftMenuExpandedWidth = 300
+
+  /* Left-menu Comments panel */
+  pageComments: PdfCommentThread[] = []
+  /** Display name used for local comments and chat messages. */
+  panelAuthor = "You"
+
+  /* Left-menu Chat panel */
+  chatMessages: PanelChatMessage[] = []
+
+  /* Left-menu Navigation panel */
+  bookmarks: BookmarkNode[] = []
+  isOutlineLoading = false
 
   /* Right menu */
   activeRightPanel: RightMenuPanel | null = null
@@ -93,6 +124,8 @@ export class PdfStore {
   /* Search */
   searchQuery = ""
   searchResults = 0
+  searchMatches: PdfTextMatch[] = []
+  isSearching = false
 
   /* Comments */
   commentCount = 0
@@ -222,13 +255,30 @@ export class PdfStore {
     this.currentPage = index
   }
 
+  /** Go to the 1-based page number shown in the panels, clamped to the doc. */
+  gotoPage(pageNumber: number): void {
+    if (!Number.isFinite(pageNumber)) return
+    const index = Math.min(Math.max(1, Math.trunc(pageNumber)), this.pageCount || 1) - 1
+    this.setCurrentPage(index)
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.pageCount - 1) this.setCurrentPage(this.currentPage + 1)
+  }
+
+  prevPage(): void {
+    if (this.currentPage > 0) this.setCurrentPage(this.currentPage - 1)
+  }
+
   setPageCount(count: number): void {
     this.pageCount = count
+    this.prunePageComments()
   }
 
   setPages(pages: PageInfo[]): void {
     this.pages = pages
     this.pageCount = pages.length
+    this.prunePageComments()
   }
 
   setActiveFileMenuPanel(panel: string | null): void {
@@ -276,6 +326,163 @@ export class PdfStore {
 
   setSearchResults(count: number): void {
     this.searchResults = count
+  }
+
+  setSearchMatches(matches: PdfTextMatch[]): void {
+    this.searchMatches = matches
+    this.searchResults = matches.length
+  }
+
+  /**
+   * Left-menu Search panel: extract the page text once per document and match
+   * the query against it. Works from a fake document in tests, and degrades to
+   * "no text layer" for scanned PDFs instead of throwing.
+   */
+  async searchDocument(query: string, options?: { matchCase?: boolean }): Promise<PdfTextMatch[]> {
+    this.searchQuery = query
+    if (!query.trim()) {
+      this.setSearchMatches([])
+      return []
+    }
+
+    const proxy = this.pdfDocProxy
+    if (!proxy) {
+      this.setSearchMatches([])
+      return []
+    }
+
+    this.isSearching = true
+    try {
+      let pages = searchTextCache.get(proxy)
+      if (!pages) {
+        pages = await collectPdfText(proxy)
+        searchTextCache.set(proxy, pages)
+      }
+      const matches = findPdfTextMatches(pages, query, options)
+      this.setSearchMatches(matches)
+      return matches
+    } catch {
+      this.setSearchMatches([])
+      return []
+    } finally {
+      this.isSearching = false
+    }
+  }
+
+  /* ── Left-menu panels: comments + chat ── */
+
+  /** Anchor a new comment thread to a page (0-based index). */
+  addPageComment(pageIndex: number, text: string): PdfCommentThread | null {
+    const clean = text.trim()
+    if (!clean) return null
+    const thread: PdfCommentThread = {
+      id: `c-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      pageIndex,
+      author: this.panelAuthor,
+      text: clean,
+      createdAt: Date.now(),
+      resolved: false,
+      replies: [],
+    }
+    this.pageComments.push(thread)
+    this.syncCommentCount()
+    return thread
+  }
+
+  addPageReply(threadId: string, text: string): PdfCommentReply | null {
+    const clean = text.trim()
+    if (!clean) return null
+    const thread = this.pageComments.find((t) => t.id === threadId)
+    if (!thread) return null
+    const reply: PdfCommentReply = {
+      id: `r-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      author: this.panelAuthor,
+      text: clean,
+      createdAt: Date.now(),
+    }
+    thread.replies.push(reply)
+    return reply
+  }
+
+  setPageCommentResolved(threadId: string, resolved: boolean): void {
+    const thread = this.pageComments.find((t) => t.id === threadId)
+    if (thread) thread.resolved = resolved
+    this.syncCommentCount()
+  }
+
+  deletePageComment(threadId: string): void {
+    this.pageComments = this.pageComments.filter((t) => t.id !== threadId)
+    this.syncCommentCount()
+  }
+
+  setPageComments(threads: PdfCommentThread[]): void {
+    this.pageComments = threads
+    this.prunePageComments()
+  }
+
+  /** Drop threads anchored to a page the document no longer has. */
+  prunePageComments(): void {
+    if (this.pageComments.length === 0) return
+    this.pageComments = this.pageComments.filter((t) => t.pageIndex < this.pageCount)
+    this.syncCommentCount()
+  }
+
+  private syncCommentCount(): void {
+    this.commentCount = this.pageComments.filter((t) => !t.resolved).length
+  }
+
+  addChatMessage(text: string): PanelChatMessage | null {
+    const clean = text.trim()
+    if (!clean) return null
+    const message: PanelChatMessage = {
+      id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      author: this.panelAuthor,
+      text: clean,
+      createdAt: Date.now(),
+      self: true,
+    }
+    this.chatMessages.push(message)
+    return message
+  }
+
+  setChatMessages(messages: PanelChatMessage[]): void {
+    this.chatMessages = messages
+  }
+
+  clearChatMessages(): void {
+    this.chatMessages = []
+  }
+
+  /* ── Left-menu Navigation panel: document outline (bookmarks) ── */
+
+  setBookmarks(nodes: BookmarkNode[]): void {
+    this.bookmarks = nodes
+  }
+
+  /**
+   * Read the PDF outline (bookmark tree) into the store. Documents without a
+   * bookmark tree — most exports — simply yield an empty list, and the panel
+   * falls back to page navigation.
+   */
+  async loadOutline(): Promise<BookmarkNode[]> {
+    const proxy = this.pdfDocProxy
+    if (!proxy || typeof proxy.getOutline !== "function") {
+      this.setBookmarks([])
+      return []
+    }
+
+    this.isOutlineLoading = true
+    try {
+      const nodes = await proxy.getOutline()
+      const bookmarks = collectPdfOutline(nodes)
+      this.setBookmarks(bookmarks)
+      return bookmarks
+    } catch {
+      this.setBookmarks([])
+      return []
+    } finally {
+      this.isOutlineLoading = false
+    }
   }
 
   setCompactToolbar(compact: boolean): void {

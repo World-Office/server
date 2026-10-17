@@ -8,6 +8,7 @@
 	--wo-prese-leftmenu-width: 40px;
 	--wo-prese-leftmenu-min: 40px;
 	--wo-prese-leftmenu-max: 300px;
+	--wo-prese-leftpanel-width: 250px;
 	--wo-prese-rightmenu-width: 40px;
 	--wo-prese-rightmenu-min: 40px;
 	--wo-prese-rightmenu-max: 300px;
@@ -83,6 +84,7 @@ body,
 }
 
 .prese-viewport-body {
+	position: relative; /* anchors the about-panel overlay to the body row */
 	flex: 1;
 	display: flex;
 	flex-direction: row;
