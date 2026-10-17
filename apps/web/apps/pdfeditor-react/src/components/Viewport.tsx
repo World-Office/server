@@ -3,6 +3,7 @@ import type { ReactNode } from "react"
 import { pdfStore } from "../stores/PdfStore"
 import { DocumentHolder } from "./DocumentHolder"
 import { FileMenu } from "./FileMenu/FileMenu"
+import { AboutPanel } from "./LeftMenu/AboutPanel"
 import { LeftMenu } from "./LeftMenu/LeftMenu"
 import { RightMenu } from "./RightMenu/RightMenu"
 import { StatusBar } from "./StatusBar/StatusBar"
@@ -60,7 +61,17 @@ const ViewportInner = function Viewport({
           {leftMenuVisible && (
             <div
               className="pdf-viewport-left-menu"
-              style={{ width: "var(--wo-pdf-leftmenu-width, 40px)" }}
+              style={{
+                // the rail grows by the panel width while one of its toggles
+                // is active, pushing the document aside instead of painting
+                // behind it (the fixed 40px inline width used to clip/overlap
+                // every panel); About keeps its overlay below.
+                width:
+                  pdfStore.activeLeftPanel !== null &&
+                  pdfStore.activeLeftPanel !== "about"
+                    ? "calc(var(--wo-pdf-leftmenu-width, 40px) + var(--wo-pdf-leftpanel-width, 250px))"
+                    : "var(--wo-pdf-leftmenu-width, 40px)",
+              }}
             >
               <LeftMenu />
             </div>
@@ -70,7 +81,9 @@ const ViewportInner = function Viewport({
           <div
             className="pdf-about-menu-panel"
             style={{ display: pdfStore.activeLeftPanel === "about" ? "block" : "none" }}
-          />
+          >
+            <AboutPanel />
+          </div>
 
           {/* Editor container */}
           <div className="pdf-viewport-editor">

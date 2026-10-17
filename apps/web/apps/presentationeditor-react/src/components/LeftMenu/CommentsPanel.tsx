@@ -8,7 +8,7 @@
  * state — no service is required for the panel to work.
  */
 import { observer } from "mobx-react-lite";
-import { type JSX, useEffect, useMemo, useState } from "react";
+import { type JSX, useEffect, useState } from "react";
 import { presentationStore } from "../../stores/PresentationStore";
 import type { SlideCommentThread } from "../../types/presentation";
 
@@ -53,10 +53,9 @@ function CommentsPanelInner({ active }: { active: boolean }): JSX.Element {
 	const [showResolved, setShowResolved] = useState(false);
 
 	const threads = presentationStore.slideComments;
-	const visible = useMemo(
-		() => threads.filter((t) => showResolved || !t.resolved),
-		[threads, showResolved],
-	);
+	// No useMemo here: the store mutates slideComments in place (push/splice),
+	// so the array reference stays identical and a memo would keep a stale list.
+	const visible = threads.filter((t) => showResolved || !t.resolved);
 	const currentSlide = presentationStore.currentSlide;
 	const slideTitle =
 		presentationStore.slides[currentSlide]?.title ?? `Slide ${currentSlide + 1}`;

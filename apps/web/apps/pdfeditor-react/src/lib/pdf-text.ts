@@ -15,7 +15,11 @@ export interface PdfTextItem {
 }
 
 export interface PdfTextPageSource {
-  getTextContent(): Promise<{ items: PdfTextItem[] }>
+  /**
+   * pdf.js interleaves real text items with marked-content markers
+   * (`{ type: "beginMarkedContent", … }`) — collectPdfText filters those out.
+   */
+  getTextContent(): Promise<{ items: unknown[] }>
 }
 
 export interface PdfOutlineSourceNode {
@@ -30,9 +34,9 @@ export interface PdfOutlineSourceNode {
 export interface PdfTextDocumentSource {
   numPages: number
   getPage(pageNumber: number): Promise<PdfTextPageSource>
-  getOutline?: () => Promise<PdfOutlineSourceNode[] | null>
-  getDestination?: (name: string) => Promise<unknown[] | null>
-  getPageIndex?: (ref: unknown) => Promise<number>
+  getOutline?(): Promise<PdfOutlineSourceNode[] | null>
+  getDestination?(name: string): Promise<unknown[] | null>
+  getPageIndex?(ref: unknown): Promise<number>
 }
 
 export interface PdfTextPage {
@@ -56,16 +60,36 @@ export interface PdfTextFindOptions {
   maxMatches?: number
 }
 
-/** Join pdf.js text items into one readable string per page. */
+/**
+ * Join pdf.js text items into one readable string per page. Items that are not
+ * line-final get a separating space — but never a second one, because pdf.js
+ * also splits on existing whitespace — and runs of spaces are collapsed so a
+ * query written the way it reads matches the extracted text.
+ */
 export function pageTextFromItems(items: PdfTextItem[]): string {
   let text = ""
   for (const item of items) {
     if (typeof item.str !== "string") continue
-    text += item.str
-    if (item.hasEOL) text += "\n"
-    else text += " "
+    if (item.hasEOL) {
+      text += `${item.str}\n`
+    } else {
+      text += text === "" || /\s$/.test(text) ? item.str : ` ${item.str}`
+    }
   }
-  return text.replace(/[ \t]+\n/g, "\n").trim()
+  return text
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/ {2,}/g, " ")
+    .trim()
+}
+
+/** Keep only the items that actually carry text (drops marked-content markers). */
+function textItems(content: { items?: unknown[] }): PdfTextItem[] {
+  return (content.items ?? []).filter(
+    (item): item is PdfTextItem =>
+      typeof item === "object" &&
+      item !== null &&
+      typeof (item as PdfTextItem).str === "string",
+  )
 }
 
 /** Extract the text of every page (bounded for huge documents). */
@@ -80,7 +104,7 @@ export async function collectPdfText(
     try {
       const pdfPage = await proxy.getPage(page)
       const content = await pdfPage.getTextContent()
-      pages.push({ page, text: pageTextFromItems(content.items ?? []) })
+      pages.push({ page, text: pageTextFromItems(textItems(content)) })
     } catch {
       // unreadable page (scanned image, corrupt xref) — keep the page count honest
       pages.push({ page, text: "" })

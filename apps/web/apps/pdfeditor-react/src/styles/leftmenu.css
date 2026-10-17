@@ -7,7 +7,6 @@
   background-color: var(--wo-pdf-bg-toolbar);
   border-right: 1px solid var(--wo-pdf-border);
   user-select: none;
-  transition: width 0.2s ease;
 }
 
 .pdf-left-menu[data-expanded="true"] {
@@ -18,7 +17,8 @@
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  flex: 1;
+  flex: none;
+  width: var(--wo-pdf-leftmenu-width);
 }
 
 /* Toolbar-style button (square, icon-only) */
@@ -56,19 +56,393 @@
   height: 100%;
 }
 
-/* Side panel area (expandable, sits beside the icon bar) */
+/* Side panel area (expandable, sits beside the icon bar). Hidden until one
+   of the rail toggles opens a panel — the rail itself stays 40px wide, so
+   the document is never covered by an empty pane. */
 .pdf-left-panel-side {
-  width: 250px;
+  display: none;
+  width: var(--wo-pdf-leftpanel-width, 250px);
   height: 100%;
   background-color: var(--wo-pdf-bg-pane);
   border-right: 1px solid var(--wo-pdf-border);
   overflow: hidden;
 }
 
-/* Chat panel placeholder */
+.pdf-left-menu[data-panel-open="true"] .pdf-left-panel-side {
+  display: flex;
+}
+
+/* Chat panel placeholder (kept for older builds) */
 .pdf-left-panel-chat {
   width: 100%;
   height: 100%;
+}
+
+/* ── Shared left-panel chrome (search / comments / chat / navigation / support) ── */
+
+.pdf-left-panel {
+  display: none;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  background-color: var(--wo-pdf-bg-pane);
+  color: var(--wo-pdf-text-primary);
+  font-size: 12px;
+}
+
+.pdf-left-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex: none;
+  height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--wo-pdf-border);
+  background-color: var(--wo-pdf-bg-toolbar);
+}
+
+.pdf-left-panel-count {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 9px;
+  background-color: var(--wo-pdf-accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.pdf-left-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 12px;
+}
+
+.pdf-left-panel-input,
+.pdf-left-panel-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 5px 8px;
+  border: 1px solid var(--wo-pdf-border);
+  border-radius: 3px;
+  background-color: #fff;
+  color: var(--wo-pdf-text-primary);
+  font: inherit;
+}
+
+.pdf-left-panel-textarea {
+  min-height: 56px;
+  resize: vertical;
+}
+
+.pdf-left-panel-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--wo-pdf-text-secondary);
+  cursor: pointer;
+}
+
+.pdf-left-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pdf-left-panel-btn {
+  padding: 4px 10px;
+  border: 1px solid var(--wo-pdf-border);
+  border-radius: 3px;
+  background-color: #fff;
+  color: var(--wo-pdf-text-primary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.pdf-left-panel-btn:hover:not(:disabled) {
+  background-color: var(--wo-color-bg-secondary, #f5f5f5);
+  border-color: var(--wo-pdf-accent);
+}
+
+.pdf-left-panel-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.pdf-left-panel-btn-primary {
+  background-color: var(--wo-pdf-accent);
+  border-color: var(--wo-pdf-accent);
+  color: #fff;
+}
+
+.pdf-left-panel-btn-primary:hover:not(:disabled) {
+  background-color: var(--wo-pdf-accent-hover, #355d9e);
+  border-color: var(--wo-pdf-accent-hover, #355d9e);
+  color: #fff;
+}
+
+.pdf-left-panel-btn-danger:hover:not(:disabled) {
+  color: #b3261e;
+  border-color: #b3261e;
+}
+
+.pdf-left-panel-muted {
+  color: var(--wo-pdf-text-secondary);
+  font-size: 11px;
+}
+
+.pdf-left-panel-footnote {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--wo-pdf-border);
+}
+
+.pdf-left-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pdf-left-panel-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  width: 100%;
+  padding: 5px 6px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.pdf-left-panel-row:hover {
+  background-color: var(--wo-color-bg-secondary, #f5f5f5);
+}
+
+.pdf-left-panel-row.selected {
+  border-color: var(--wo-pdf-accent);
+  background-color: #eef3fb;
+}
+
+.pdf-left-panel-row-text {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--wo-pdf-text-primary);
+}
+
+.pdf-left-panel-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--wo-pdf-border);
+  border-radius: 3px;
+  background-color: var(--wo-pdf-bg-toolbar);
+  color: var(--wo-pdf-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+button.pdf-left-panel-badge {
+  cursor: pointer;
+}
+
+button.pdf-left-panel-badge:hover {
+  border-color: var(--wo-pdf-accent);
+  color: var(--wo-pdf-accent);
+}
+
+/* ── Comments ─────────────────────────────────────────────────────────── */
+
+.pdf-comment-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--wo-pdf-border);
+  border-radius: 4px;
+  background-color: #fff;
+}
+
+.pdf-comment-thread.resolved {
+  opacity: 0.6;
+}
+
+.pdf-comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pdf-comment-author {
+  font-weight: 600;
+}
+
+.pdf-comment-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.pdf-comment-reply {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0 0 8px;
+  border-left: 2px solid var(--wo-pdf-border);
+  margin-left: 2px;
+}
+
+.pdf-comment-reply-box {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ── Chat ─────────────────────────────────────────────────────────────── */
+
+.pdf-chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 12px;
+}
+
+.pdf-chat-message {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 5px 8px;
+  border: 1px solid var(--wo-pdf-border);
+  border-radius: 4px;
+  background-color: #fff;
+  max-width: 92%;
+}
+
+.pdf-chat-message.self {
+  align-self: flex-end;
+  background-color: #eef3fb;
+  border-color: var(--wo-pdf-accent);
+}
+
+.pdf-chat-message-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.pdf-chat-message-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.pdf-chat-input-row {
+  display: flex;
+  gap: 6px;
+  flex: none;
+  padding: 8px 12px;
+  border-top: 1px solid var(--wo-pdf-border);
+}
+
+.pdf-chat-input-row .pdf-left-panel-input {
+  flex: 1;
+}
+
+.pdf-chat-footer {
+  display: flex;
+  justify-content: flex-end;
+  flex: none;
+  padding: 4px 12px 8px;
+}
+
+/* ── Support / About ──────────────────────────────────────────────────── */
+
+.pdf-support-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pdf-support-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--wo-pdf-text-secondary);
+}
+
+.pdf-support-btn {
+  text-align: left;
+}
+
+.pdf-support-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3px 10px;
+  margin: 0;
+}
+
+.pdf-support-facts dt {
+  color: var(--wo-pdf-text-secondary);
+}
+
+.pdf-support-facts dd {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdf-about-panel {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background-color: var(--wo-pdf-bg-pane);
+  color: var(--wo-pdf-text-primary);
+  font-size: 12px;
+}
+
+.pdf-about-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* ── Navigation (bookmarks + page controls) ───────────────────────────── */
+
+.pdf-outline-list {
+  gap: 2px;
+}
+
+.pdf-outline-row {
+  flex-direction: row;
+  align-items: center;
+  overflow: hidden;
+}
+
+.pdf-nav-goto {
+  padding: 0;
+  border-top: none;
 }
 
 .pdf-thumbnail-panel {
