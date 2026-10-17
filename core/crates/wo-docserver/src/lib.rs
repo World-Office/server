@@ -85,6 +85,8 @@ pub enum AppError {
     Unprocessable(String),
     #[error("Internal error: {0}")]
     InternalError(String),
+    #[error("Service unavailable: {0}")]
+    ServiceUnavailable(String),
     #[error("WOPI proxy error: {0}")]
     Wopi(#[from] anyhow::Error),
 }
@@ -98,6 +100,9 @@ impl IntoResponse for AppError {
             AppError::NotFound(msg) => (axum::http::StatusCode::NOT_FOUND, msg.clone()),
             AppError::InternalError(msg) => {
                 (axum::http::StatusCode::INTERNAL_SERVER_ERROR, msg.clone())
+            }
+            AppError::ServiceUnavailable(msg) => {
+                (axum::http::StatusCode::SERVICE_UNAVAILABLE, msg.clone())
             }
             AppError::Conversion(msg) => {
                 (axum::http::StatusCode::INTERNAL_SERVER_ERROR, msg.clone())

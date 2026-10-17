@@ -82,8 +82,7 @@ async fn chat(system: &str, prompt: &str) -> Result<String, AppError> {
         }
         req.send()
             .await
-            .map_err(|e| AppError::InternalError(format!("AI provider unreachable: {e}")))?
-    };
+            .map_err(|e| AppError::ServiceUnavailable(format!("AI provider unreachable: {e}")))?    };
     if !resp.status().is_success() {
         let status = resp.status();
         let text = resp.text().await.unwrap_or_default();
