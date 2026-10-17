@@ -40,6 +40,8 @@ import type {
 	ChartType,
 	ConnectorData,
 	ShapeData,
+	TableCell,
+	TableRow,
 } from "../types/presentation";
 import type { SlideTextHit } from "../lib/slide-text";
 
@@ -1108,6 +1110,60 @@ export class PresentationStore {
 		}
 	}
 
+	/* Format painter (Home ▸ Clipboard ▸ Painter) */
+	formatPainterActive = false;
+	formatPainterStyle: Partial<ShapeData> | null = null;
+
+	setFormatPainter(
+		active: boolean,
+		style: Partial<ShapeData> | null,
+	): void {
+		this.formatPainterActive = active;
+		this.formatPainterStyle = style;
+	}
+
+	/** Insert ▸ Table — grid shape with a header row (see Toolbar/TablePicker). */
+	addTableToSlide(slideIndex: number, rows: number, columns: number): void {
+		this.pushSnapshot();
+		const slide = this.slides[slideIndex];
+		if (!slide) return;
+		const existing = slide.shapes?.length ?? 0;
+		const cells: TableRow[] = [];
+		for (let ri = 0; ri < rows; ri++) {
+			const row: TableCell[] = [];
+			for (let ci = 0; ci < columns; ci++) {
+				row.push({ text: ri === 0 ? `Header ${ci + 1}` : `Cell ${ci + 1}` });
+			}
+			cells.push({ cells: row });
+		}
+		const tableShape: ShapeData = {
+			id: `table-${Date.now()}`,
+			type: "rect",
+			x: 80 + existing * 30,
+			y: 60 + existing * 20,
+			width: 480,
+			height: 240,
+			rotation: 0,
+			zIndex: existing,
+			fillColor: "#f8f9fa",
+			strokeColor: "#cccccc",
+			strokeWidth: 1,
+			table: {
+				rows,
+				columns,
+				headerRow: true,
+				cells,
+			},
+		};
+		if (!slide.shapes) slide.shapes = [];
+		slide.shapes.push(tableShape);
+		this.selectedShapeIds = [tableShape.id];
+		this.notifyCollaboration("shape_add", {
+			slide_index: slideIndex,
+			shape: tableShape,
+		});
+	}
+
 	/* Presenter view */
 	isPresenting = false;
 	presentStep = 0;
@@ -1753,36 +1809,54 @@ export class PresentationStore {
 
 	/* ── Image Upload ── */
 
+	/**
+	 * Insert a picture shape synchronously from an already-resolved source
+	 * (data URL or remote URL). The ribbon's Insert ▸ Picture / Online Picture
+	 * / Photo Album commands land here; `addImageToSlide` is the file-picker
+	 * variant that reads a File and forwards to this action.
+	 */
+	addImageShapeToSlide(
+		slideIndex: number,
+		src: string,
+		alt = "Picture",
+	): ShapeData | null {
+		this.pushSnapshot();
+		const slide = this.slides[slideIndex];
+		if (!slide) return null;
+		if (!slide.shapes) slide.shapes = [];
+		const existing = slide.shapes.length;
+		const centerX = Math.round((960 - 200) / 2); // centered on 960px wide slide
+		const centerY = Math.round(
+			(960 / (this.slideSize === "widescreen" ? 16 / 9 : 4 / 3) - 200) / 2,
+		);
+		const newShape: ShapeData = {
+			id: `image-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+			type: "image",
+			x: centerX + existing * 20,
+			y: centerY + existing * 20,
+			width: 200,
+			height: 200,
+			rotation: 0,
+			zIndex: existing,
+			imageData: { src, alt },
+		};
+		slide.shapes.push(newShape);
+		this.selectedShapeIds = [newShape.id];
+		this.notifyCollaboration("shape_add", {
+			slide_index: slideIndex,
+			shape: newShape,
+		});
+		return newShape;
+	}
+
 	addImageToSlide(slideIndex: number, file: File): void {
 		const reader = new FileReader();
 		reader.onload = () => {
-			const src = reader.result as string;
-			this.pushSnapshot();
-			const slide = this.slides[slideIndex];
-			if (!slide) return;
-			if (!slide.shapes) slide.shapes = [];
-			const existing = slide.shapes.length;
-			const centerX = Math.round((960 - 200) / 2); // centered on 960px wide slide
-			const centerY = Math.round(
-				(960 / (this.slideSize === "widescreen" ? 16 / 9 : 4 / 3) - 200) / 2,
+			this.addImageShapeToSlide(
+				slideIndex,
+				reader.result as string,
+				file.name,
 			);
-			const newShape: ShapeData = {
-				id: `image-${Date.now()}`,
-				type: "image",
-				x: centerX + existing * 20,
-				y: centerY + existing * 20,
-				width: 200,
-				height: 200,
-				rotation: 0,
-				zIndex: existing,
-				imageData: { src, alt: file.name },
-			};
-			slide.shapes.push(newShape);
-			this.selectedShapeIds = [newShape.id];
-			this.notifyCollaboration("shape_add", {
-				slide_index: slideIndex,
-				shape: newShape,
-			});
 		};
 		reader.readAsDataURL(file);
 	}

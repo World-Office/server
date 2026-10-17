@@ -101,7 +101,7 @@ describe("Left-menu panels", () => {
     sessionStorage.clear()
   })
 
-  it("paints a real Search panel and jumps to the slide of a hit", () => {
+  it("paints a real Search panel and jumps to the slide of a hit", async () => {
     const container = mount(createElement(LeftMenu))
     clickRailButton(container, "search")
 
@@ -111,7 +111,7 @@ describe("Left-menu panels", () => {
     expect(node?.textContent).toContain("Search")
 
     typeInto(container.querySelector<HTMLInputElement>('[data-action="search-query"]'), "overview")
-    clickButton(container, "search-run")
+    await clickButton(container, "search-run")
 
     expect(node?.textContent).toContain("Slide 2")
     expect(node?.textContent).toContain("Overview")
@@ -121,7 +121,7 @@ describe("Left-menu panels", () => {
     expect(presentationStore.currentSlide).toBe(1)
   })
 
-  it("paints a real Comments panel and anchors new threads to the slide on screen", () => {
+  it("paints a real Comments panel and anchors new threads to the slide on screen", async () => {
     const container = mount(createElement(LeftMenu))
     presentationStore.setCurrentSlide(2)
     clickRailButton(container, "comments")
@@ -133,25 +133,25 @@ describe("Left-menu panels", () => {
       container.querySelector<HTMLTextAreaElement>('[data-action="comment-text"]'),
       "tighten this",
     )
-    clickButton(container, "comment-add")
+    await clickButton(container, "comment-add")
 
     expect(presentationStore.slideComments).toHaveLength(1)
     expect(presentationStore.slideComments[0]?.slideIndex).toBe(2)
     expect(node?.textContent).toContain("tighten this")
     expect(node?.textContent).toContain("Slide 3")
 
-    clickButton(container, "comment-resolve")
+    await clickButton(container, "comment-resolve")
     expect(presentationStore.slideComments[0]?.resolved).toBe(true)
   })
 
-  it("paints a real Chat panel and sends a message", () => {
+  it("paints a real Chat panel and sends a message", async () => {
     const container = mount(createElement(LeftMenu))
     clickRailButton(container, "chat")
 
     expect(panel(container, "chat")?.style.display).toBe("flex")
 
     typeInto(container.querySelector<HTMLInputElement>('[data-action="chat-text"]'), "hello")
-    clickButton(container, "chat-send")
+    await clickButton(container, "chat-send")
 
     expect(presentationStore.chatMessages.map((m) => m.text)).toEqual(["hello"])
     expect(panel(container, "chat")?.textContent).toContain("hello")

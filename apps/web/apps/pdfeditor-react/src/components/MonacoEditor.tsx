@@ -4,7 +4,9 @@ import CssWorker from "monaco-editor/esm/vs/language/css/css.worker?worker"
 import HtmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker"
 import JsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker"
 import TsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker"
+import { observer } from "mobx-react-lite"
 import { useEffect, useRef, useState } from "react"
+import { pdfStore } from "../stores/PdfStore"
 
 if (typeof self !== "undefined") {
   self.MonacoEnvironment = {
@@ -41,7 +43,7 @@ interface MonacoEditorProps {
   readOnly?: boolean
 }
 
-export function MonacoEditor({
+function MonacoEditorImpl({
   value,
   onChange,
   language = "typescript",
@@ -69,13 +71,14 @@ export function MonacoEditor({
         language,
         theme,
         automaticLayout: true,
-        minimap: { enabled: false },
+        // View ▸ Code Editor toggles (ribbon → PdfStore)
+        minimap: { enabled: pdfStore.minimapEnabled },
         scrollBeyondLastLine: false,
         fontSize: 14,
         lineHeight: 20,
         tabSize: 2,
         insertSpaces: true,
-        wordWrap: "on",
+        wordWrap: pdfStore.wordWrapEnabled ? "on" : "off",
         readOnly: readOnly ?? (editorType === "presentation" || editorType === "pdf"),
       })
 
@@ -109,6 +112,16 @@ export function MonacoEditor({
       }
     }
   }, [value, isReady])
+
+  // Keep the live editor in sync with the ribbon's View ▸ Code Editor toggles
+  // (toggleWordWrap / toggleMinimap mutate the store; this applies them).
+  useEffect(() => {
+    if (!editorRef.current || !isReady) return
+    editorRef.current.updateOptions({
+      wordWrap: pdfStore.wordWrapEnabled ? "on" : "off",
+      minimap: { enabled: pdfStore.minimapEnabled },
+    })
+  }, [isReady, pdfStore.wordWrapEnabled, pdfStore.minimapEnabled])
 
   if (loadError) {
     return (
@@ -144,3 +157,5 @@ export function MonacoEditor({
     />
   )
 }
+
+export const MonacoEditor = observer(MonacoEditorImpl)

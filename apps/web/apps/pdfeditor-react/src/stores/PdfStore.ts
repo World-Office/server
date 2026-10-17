@@ -110,6 +110,12 @@ export class PdfStore {
   /* Annotations */
   annotations: PdfAnnotation[] = []
 
+  /** Annotations targeted by the Home ▸ Clipboard commands. */
+  selectedAnnotationIds: string[] = []
+
+  /** Clipboard for annotation cut/copy/paste (Home ▸ Clipboard). */
+  annotationClipboard: PdfAnnotation[] = []
+
   /* Form fields */
   currentFormFieldIndex = 0
   totalFormFields = 0
@@ -120,6 +126,11 @@ export class PdfStore {
 
   /* Tool selection */
   currentTool: Tool = "select"
+
+  /* View ▸ Theme / Code Editor options (consumed by the Monaco editor) */
+  interfaceTheme: "light" | "dark" = "light"
+  wordWrapEnabled = true
+  minimapEnabled = false
 
   /* Search */
   searchQuery = ""
@@ -289,6 +300,11 @@ export class PdfStore {
     this.activeAnnotationTool = tool
   }
 
+  /** Replace the whole annotation list (document reloads, tests). */
+  setAnnotations(annotations: PdfAnnotation[]): void {
+    this.annotations = annotations
+  }
+
   addAnnotation(annot: {
     page: number
     x: number
@@ -313,6 +329,90 @@ export class PdfStore {
 
   removeAnnotation(id: string): void {
     this.annotations = this.annotations.filter((a) => a.id !== id)
+    this.isModified = true
+  }
+
+  /* ── Annotation selection + clipboard (Home ▸ Clipboard) ── */
+
+  selectAnnotation(id: string | null): void {
+    this.selectedAnnotationIds = id ? [id] : []
+  }
+
+  toggleAnnotationSelection(id: string): void {
+    this.selectedAnnotationIds = this.selectedAnnotationIds.includes(id)
+      ? this.selectedAnnotationIds.filter((a) => a !== id)
+      : [...this.selectedAnnotationIds, id]
+  }
+
+  /** Select every annotation on the page on screen (Home ▸ Select All). */
+  selectAllAnnotations(): void {
+    this.selectedAnnotationIds = this.annotations
+      .filter((a) => a.page === this.currentPage + 1)
+      .map((a) => a.id)
+  }
+
+  private cloneAnnotation(annot: PdfAnnotation, offset: number): PdfAnnotation {
+    return {
+      ...annot,
+      id: `annot-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      x: annot.x + offset,
+      y: annot.y + offset,
+    }
+  }
+
+  copySelectedAnnotations(): void {
+    const selected = new Set(this.selectedAnnotationIds)
+    this.annotationClipboard = this.annotations
+      .filter((a) => selected.has(a.id))
+      .map((a) => this.cloneAnnotation(a, 0))
+  }
+
+  cutSelectedAnnotations(): void {
+    this.copySelectedAnnotations()
+    const selected = new Set(this.selectedAnnotationIds)
+    this.annotations = this.annotations.filter((a) => !selected.has(a.id))
+    this.selectedAnnotationIds = []
+    this.isModified = true
+  }
+
+  pasteAnnotations(): void {
+    if (this.annotationClipboard.length === 0) return
+    this.annotations = [
+      ...this.annotations,
+      ...this.annotationClipboard.map((a) => this.cloneAnnotation(a, 24)),
+    ]
+    this.isModified = true
+  }
+
+  /* ── View ▸ Theme / Code Editor toggles ── */
+
+  toggleInterfaceTheme(): void {
+    this.interfaceTheme = this.interfaceTheme === "light" ? "dark" : "light"
+    setStorageItem("theme", this.interfaceTheme)
+    document.documentElement.setAttribute("data-wo-theme", this.interfaceTheme)
+  }
+
+  toggleWordWrap(): void {
+    this.wordWrapEnabled = !this.wordWrapEnabled
+    setStorageItem("word-wrap", this.wordWrapEnabled ? "on" : "off")
+  }
+
+  toggleMinimap(): void {
+    this.minimapEnabled = !this.minimapEnabled
+    setStorageItem("minimap", this.minimapEnabled ? "on" : "off")
+  }
+
+  /* ── Redaction (Redact tab) ── */
+
+  setRedacting(active: boolean): void {
+    this.isRedacting = active
+  }
+
+  /** Commit every marked redaction (Redact ▸ Apply Redactions). */
+  applyRedactions(): void {
+    if (this.redactionApplied) return
+    this.redactionApplied = true
+    this.isRedacting = false
     this.isModified = true
   }
 
