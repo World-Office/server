@@ -876,6 +876,7 @@ mod tests {
         assert_eq!(pres.masters.len(), 1);
     }
 
+    // F-304
     #[test]
     fn test_set_theme() {
         let mut pres = Presentation::new();
@@ -890,6 +891,7 @@ mod tests {
         assert_eq!(pres.theme.as_ref().unwrap().name, "Test Theme");
     }
 
+    // F-300 F-302
     #[test]
     fn test_presentation_serde_roundtrip() {
         let pres = create_test_presentation();
@@ -1004,6 +1006,7 @@ mod tests {
         assert!(display.contains("out of range"));
     }
 
+    // F-304
     #[test]
     fn test_presentation_with_masters_serde() {
         let mut pres = Presentation::new();
@@ -1029,6 +1032,7 @@ mod tests {
         assert_eq!(pres.masters[0].name, pres2.masters[0].name);
     }
 
+    // F-300
     #[test]
     fn test_presentation_with_background_serde() {
         let mut pres = Presentation::new();
