@@ -18103,6 +18103,7 @@ mod bridge_converter_tests {
 
     /// F-200/206/207: non-core XLSX parts (charts, pivot tables, media) must
     /// round-trip byte-identically through the WoSpreadsheet JSON bridge.
+    // F-206: chart parts (xl/charts/chart1.xml) round-trip byte-identical
     #[test]
     fn test_xlsx_extra_parts_byte_faithful_roundtrip() {
         use std::io::Write;
