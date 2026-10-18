@@ -5510,6 +5510,7 @@ dependencies = [
 name = "wo-sheet"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "chrono",
  "rustc-hash",
  "serde",
@@ -5517,6 +5518,8 @@ dependencies = [
  "thiserror 2.0.18",
  "wo-common",
  "wo-formula",
+ "wo-odf",
+ "zip",
 ]
 
 [[package]]

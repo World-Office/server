@@ -4,6 +4,7 @@
 //! implementing the SS (Spreadsheet) engine contract from the execution plan.
 
 pub mod conditional;
+pub mod export;
 pub mod format;
 pub mod model;
 pub mod ops;
@@ -11,6 +12,7 @@ pub mod pivot;
 pub mod validation;
 
 pub use conditional::{ConditionalResult, apply_conditional_format};
+pub use export::export_ods;
 pub use format::{FormatContext, FormatPattern, format_number, format_value};
 pub use model::{
     Cell, CellStyle, ConditionalRule, DefinedName, MergeRange, Range2d, Sheet, SheetOp, SortKey,

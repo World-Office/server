@@ -168,6 +168,16 @@ impl Cell {
             style: CellStyle::default(),
         }
     }
+
+    /// Create a cell with a boolean value.
+    pub fn with_bool(value: bool) -> Self {
+        Self {
+            raw: value.to_string(),
+            value: CellValue::Bool(value),
+            formula: None,
+            style: CellStyle::default(),
+        }
+    }
 }
 
 /// A worksheet within a workbook.
