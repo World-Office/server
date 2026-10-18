@@ -616,6 +616,7 @@ mod lock_tests {
         log.lock().await.clone()
     }
 
+    // F-001: Save / autosave to WOPI - tests the LOCK->PUT->UNLOCK dance for saving
     #[tokio::test]
     async fn put_file_lock_dance_happy_path() {
         let host = spawn_mock(Script::Happy).await;
@@ -641,6 +642,7 @@ mod lock_tests {
         assert_eq!(last.wopi_override.as_deref(), Some("UNLOCK"));
     }
 
+    // F-001: Save / autosave to WOPI - tests stale lock takeover scenarios
     #[tokio::test]
     async fn put_file_takes_over_stale_lock_on_409() {
         let host = spawn_mock(Script::Takeover).await;
@@ -669,6 +671,7 @@ mod lock_tests {
             .ends_with("/contents"));
     }
 
+    // F-001: Save / autosave to WOPI - tests error handling when upload fails
     #[tokio::test]
     async fn put_file_failed_upload_releases_lock() {
         let host = spawn_mock(Script::UploadFails).await;
@@ -687,6 +690,7 @@ mod lock_tests {
         );
     }
 
+    // F-001: Save / autosave to WOPI - tests lock failure scenario
     #[tokio::test]
     async fn put_file_lock_failure_blocks_upload() {
         let host = spawn_mock(Script::LockFails).await;
