@@ -664,6 +664,7 @@ pub fn create_pivot(config: &PivotTableConfig, source_data: &[Vec<CellValue>]) -
 
 // ============================================================================
 // Tests (SS-5: 3 end-to-end pivots)
+// F-207: Pivot part preservation
 // ============================================================================
 
 #[cfg(test)]

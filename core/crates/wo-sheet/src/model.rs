@@ -857,6 +857,7 @@ mod tests {
     }
 
     // Test 2: Sheet cell operations
+    // F-204: Cell address + type model
     #[test]
     fn test_sheet_cell_operations() {
         let mut sheet = Sheet::new("Test");
@@ -871,6 +872,7 @@ mod tests {
     }
 
     // Test 3: Cell with formula
+    // F-202: Formula + cached value round-trip
     #[test]
     fn test_cell_with_formula() {
         use wo_formula::parse;
@@ -919,6 +921,7 @@ mod tests {
     }
 
     // Test 7: Cell serialization
+    // F-201: SharedStrings dedup round-trip
     #[test]
     fn test_cell_serde() {
         let cell = Cell::with_text("Test");
@@ -945,6 +948,7 @@ mod tests {
     }
 
     // Test 9: Workbook fields are accessible
+    // F-205: Workbook map + defined names
     #[test]
     fn test_workbook_fields() {
         let mut wb = Workbook::new();
@@ -1132,6 +1136,7 @@ mod tests {
     }
 
     // Test 19: DefinedName operations
+    // F-205: Workbook map + defined names
     #[test]
     fn test_defined_name() {
         let name = DefinedName::new("MyRange", "Sheet1!A1:B10");
@@ -1162,6 +1167,7 @@ mod tests {
     }
 
     // Test 21: Workbook serde round-trip
+    // F-200: XLSX part inventory round-trip
     #[test]
     fn test_workbook_serde_roundtrip() {
         let mut wb = Workbook::new();
@@ -1420,6 +1426,7 @@ mod tests {
     }
 
     // Test 30: CellValue conversion from wo-formula
+    // F-202: Formula + cached value round-trip
     #[test]
     fn test_cell_value_from_formula() {
         // Numeric cell
