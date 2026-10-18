@@ -313,6 +313,17 @@ pub async fn ocr_extract(_data: &[u8]) -> Result<String, AppError> {
 mod tests {
     use super::*;
 
+    // F-148: AI provider gateway - tests the provider config surface
+    #[test]
+    fn provider_config_shapes() {
+        let conf = provider();
+        assert!(conf["base_url"].is_string());
+        assert!(conf["model"].is_string());
+        assert!(conf["key_set"].is_boolean());
+        assert_eq!(conf["mode"], "server");
+    }
+
+    // F-150: Command tool registry - tests the JSON-schema tool catalog
     #[test]
     fn tool_catalog_shapes() {
         let tools: Value = serde_json::from_str(TOOL_CATALOG).unwrap();
@@ -325,6 +336,7 @@ mod tests {
         }
     }
 
+    // F-152: Text-to-document generation - markdown cleaning is part of the LLM->markdown->docx pipeline
     #[test]
     fn clean_markdown_strips_fences() {
         assert_eq!(clean_markdown("```markdown\n# Hi\n```"), "# Hi");
