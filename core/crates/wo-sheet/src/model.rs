@@ -42,6 +42,17 @@ impl Range2d {
     }
 }
 
+/// Helper function to encode bytes as lowercase hex string.
+fn hex_encode(bytes: &[u8]) -> String {
+    const HEX_CHARS: &[u8] = b"0123456789abcdef";
+    let mut result = String::with_capacity(bytes.len() * 2);
+    for &byte in bytes {
+        result.push(HEX_CHARS[((byte >> 4) & 0x0f) as usize] as char);
+        result.push(HEX_CHARS[(byte & 0x0f) as usize] as char);
+    }
+    result
+}
+
 /// Sheet protection settings.
 ///
 /// When enabled, only cells within allowed edit ranges can be modified.
@@ -54,6 +65,15 @@ pub struct SheetProtection {
     /// If None, all cells not in edit_ranges are locked when enabled.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub locked_cells: Option<Vec<Range2d>>,
+    /// Hex-encoded SHA-256 hash of the protection password. None means no password.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub password_hash: Option<String>,
+    /// User IDs who are exempt from protection.
+    #[serde(default)]
+    pub exempt_users: Vec<String>,
+    /// Group IDs whose members are exempt from protection.
+    #[serde(default)]
+    pub exempt_groups: Vec<String>,
 }
 
 impl SheetProtection {
@@ -62,6 +82,9 @@ impl SheetProtection {
         Self {
             enabled,
             locked_cells: None,
+            password_hash: None,
+            exempt_users: Vec::new(),
+            exempt_groups: Vec::new(),
         }
     }
 
@@ -75,12 +98,68 @@ impl SheetProtection {
         Self {
             enabled: true,
             locked_cells: None,
+            password_hash: None,
+            exempt_users: Vec::new(),
+            exempt_groups: Vec::new(),
         }
     }
 
     /// Check if the sheet is protected.
     pub fn is_protected(&self) -> bool {
         self.enabled
+    }
+
+    /// Set a password for protection. Hashes it using SHA-256 and stores as hex.
+    pub fn set_password(&mut self, password: &str) {
+        use sha2::{Digest, Sha256};
+        let mut hasher = Sha256::new();
+        hasher.update(password.as_bytes());
+        let hash = hasher.finalize();
+        self.password_hash = Some(hex_encode(&hash));
+    }
+
+    /// Verify a password against the stored hash.
+    /// Returns true if:
+    /// - No password is set (hash is None) and the provided password is empty
+    /// - The provided password's SHA-256 hash matches the stored hash
+    pub fn verify_password(&self, password: &str) -> bool {
+        match &self.password_hash {
+            None => password.is_empty(),
+            Some(hash) => {
+                use sha2::{Digest, Sha256};
+                let mut hasher = Sha256::new();
+                hasher.update(password.as_bytes());
+                let computed_hash = hasher.finalize();
+                hex_encode(&computed_hash) == *hash
+            }
+        }
+    }
+
+    /// Check if a password is set.
+    pub fn has_password(&self) -> bool {
+        self.password_hash.is_some()
+    }
+
+    /// Add a user exemption.
+    pub fn add_exempt_user(&mut self, user: impl Into<String>) {
+        self.exempt_users.push(user.into());
+    }
+
+    /// Add a group exemption.
+    pub fn add_exempt_group(&mut self, group: impl Into<String>) {
+        self.exempt_groups.push(group.into());
+    }
+
+    /// Check if a user (with their groups) is exempt from protection.
+    pub fn is_exempt_for(&self, user: Option<&str>, groups: &[&str]) -> bool {
+        // Check user exemption
+        if let Some(u) = user {
+            if self.exempt_users.contains(&u.to_string()) {
+                return true;
+            }
+        }
+        // Check group exemption
+        groups.iter().any(|g| self.exempt_groups.contains(&g.to_string()))
     }
 }
 
@@ -401,6 +480,37 @@ impl Sheet {
     pub fn clear_frozen(&mut self) {
         self.frozen = None;
     }
+}
+
+/// Protect a sheet with optional password.
+/// Enables protection and sets the password hash if provided.
+pub fn protect_sheet(sheet: &mut Sheet, password: Option<&str>) {
+    sheet.protection.enabled = true;
+    if let Some(pwd) = password {
+        sheet.protection.set_password(pwd);
+    } else {
+        sheet.protection.password_hash = None;
+    }
+}
+
+/// Unprotect a sheet with password verification.
+/// If protection is disabled or no password is set, it succeeds and disables protection.
+/// If a password is set and doesn't match, returns an error.
+pub fn unprotect_sheet(sheet: &mut Sheet, password: &str) -> Result<(), String> {
+    if !sheet.protection.enabled {
+        return Ok(());
+    }
+
+    if sheet.protection.has_password() {
+        if !sheet.protection.verify_password(password) {
+            return Err("wrong password".to_string());
+        }
+    }
+
+    // Successful unprotect: disable protection and clear password
+    sheet.protection.enabled = false;
+    sheet.protection.password_hash = None;
+    Ok(())
 }
 
 /// A named range in the workbook.
@@ -983,6 +1093,34 @@ pub fn is_edit_allowed(
     }
 
     in_edit_range
+}
+
+/// Check if a cell can be edited by a specific user with their groups.
+/// 
+/// This is like `is_edit_allowed` but also checks user/group exemptions.
+/// If the user or any of their groups are exempt, they can edit regardless
+/// of edit ranges and locked cells.
+/// 
+/// // ponytail: per-op/token flow can adopt this later without rework
+pub fn is_edit_allowed_for_user(
+    protection: &SheetProtection,
+    edit_ranges: &[EditRange],
+    cell: (u32, u32),
+    user: Option<&str>,
+    groups: &[&str],
+) -> bool {
+    // If protection is disabled, everything is allowed
+    if !protection.enabled {
+        return true;
+    }
+
+    // Check if user is exempt
+    if protection.is_exempt_for(user, groups) {
+        return true;
+    }
+
+    // Otherwise, use the standard edit range logic
+    is_edit_allowed(protection, edit_ranges, cell)
 }
 
 /// Get all edit ranges that contain the specified cell.
@@ -2158,5 +2296,141 @@ mod tests {
         assert!(edit_range.contains_cell((5, 5)));
         assert!(!edit_range.contains_cell((1, 2)));
         assert!(!edit_range.contains_cell((6, 5)));
+    }
+
+    // Test S15-PROTECT-PASSWORD-F146: protect/unprotect happy path
+    #[test]
+    fn test_protect_unprotect_happy_path() {
+        // F-146
+        let mut sheet = Sheet::new("Test");
+        protect_sheet(&mut sheet, Some("sekrit"));
+        
+        assert!(sheet.protection.enabled);
+        assert!(sheet.protection.has_password());
+        assert!(sheet.protection.password_hash.is_some());
+        assert_eq!(sheet.protection.password_hash.as_ref().unwrap().len(), 64); // SHA-256 hex
+        
+        let result = unprotect_sheet(&mut sheet, "sekrit");
+        assert!(result.is_ok());
+        assert!(!sheet.protection.enabled);
+        assert!(sheet.protection.password_hash.is_none());
+    }
+
+    // Test S15-PROTECT-PASSWORD-F146: wrong password
+    #[test]
+    fn test_protect_wrong_password() {
+        // F-146
+        let mut sheet = Sheet::new("Test");
+        protect_sheet(&mut sheet, Some("sekrit"));
+        
+        assert!(sheet.protection.enabled);
+        
+        let result = unprotect_sheet(&mut sheet, "nope");
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "wrong password");
+        assert!(sheet.protection.enabled); // Still protected
+    }
+
+    // Test S15-PROTECT-PASSWORD-F146: no-password protection
+    #[test]
+    fn test_protect_no_password() {
+        // F-146
+        let mut sheet = Sheet::new("Test");
+        protect_sheet(&mut sheet, None);
+        
+        assert!(sheet.protection.enabled);
+        assert!(!sheet.protection.has_password());
+        
+        // Any password should work when no password is set
+        let result = unprotect_sheet(&mut sheet, "");
+        assert!(result.is_ok());
+        assert!(!sheet.protection.enabled);
+    }
+
+    // Test S15-PROTECT-PASSWORD-F146: verify_password
+    #[test]
+    fn test_verify_password() {
+        // F-146
+        let mut protection = SheetProtection::new(false);
+        assert!(!protection.has_password());
+        
+        // Before setting password, empty password should pass (for no-password case)
+        assert!(protection.verify_password(""));
+        assert!(!protection.verify_password("x"));
+        
+        protection.set_password("test123");
+        assert!(protection.has_password());
+        assert!(protection.verify_password("test123"));
+        assert!(!protection.verify_password("wrong"));
+        assert!(!protection.verify_password(""));
+    }
+
+    // Test S15-PROTECT-PASSWORD-F146: exemptions - user exempt
+    #[test]
+    fn test_exemption_user() {
+        // F-146
+        let mut protection = SheetProtection::enabled();
+        protection.add_exempt_user("alice");
+        
+        // Sheet is fully locked (no edit ranges, no locked_cells)
+        assert!(!is_edit_allowed(&protection, &[], (5, 5)));
+        
+        // But alice is exempt
+        assert!(is_edit_allowed_for_user(&protection, &[], (5, 5), Some("alice"), &[]));
+        
+        // Base resolver unaffected
+        assert!(!is_edit_allowed(&protection, &[], (5, 5)));
+    }
+
+    // Test S15-PROTECT-PASSWORD-F146: exemptions - group exempt
+    #[test]
+    fn test_exemption_group() {
+        // F-146
+        let mut protection = SheetProtection::enabled();
+        protection.add_exempt_group("editors");
+        
+        // Non-exempt user with no groups should be blocked
+        assert!(!is_edit_allowed_for_user(&protection, &[], (5, 5), Some("bob"), &[]));
+        
+        // Non-exempt user with editors group should be allowed
+        assert!(is_edit_allowed_for_user(&protection, &[], (5, 5), Some("bob"), &["editors"]));
+        
+        // User with editors group should be allowed
+        assert!(is_edit_allowed_for_user(&protection, &[], (5, 5), None, &["editors"]));
+    }
+
+    // Test S15-PROTECT-PASSWORD-F146: hash stability
+    #[test]
+    fn test_hash_stability() {
+        // F-146
+        let mut protection1 = SheetProtection::new(false);
+        protection1.set_password("abc");
+        
+        let mut protection2 = SheetProtection::new(false);
+        protection2.set_password("abc");
+        
+        assert_eq!(protection1.password_hash, protection2.password_hash);
+        assert!(protection1.password_hash.as_ref().unwrap().len() == 64);
+        
+        // Hash should not contain the plaintext
+        assert!(!protection1.password_hash.as_ref().unwrap().contains("abc"));
+    }
+
+    // Test S15-PROTECT-PASSWORD-F146: serde round-trip
+    #[test]
+    fn test_sheet_protection_serde() {
+        // F-146
+        let mut protection = SheetProtection::new(true);
+        protection.set_password("test");
+        protection.add_exempt_user("alice");
+        protection.add_exempt_group("editors");
+        
+        let json = serde_json::to_string(&protection).unwrap();
+        let deserialized: SheetProtection = serde_json::from_str(&json).unwrap();
+        
+        assert!(deserialized.enabled);
+        assert_eq!(deserialized.password_hash, protection.password_hash);
+        assert_eq!(deserialized.exempt_users, protection.exempt_users);
+        assert_eq!(deserialized.exempt_groups, protection.exempt_groups);
     }
 }

@@ -18,6 +18,7 @@ wo-odf = { path = "../wo-odf", version = "0.1.0" }
 rustc-hash = "2"
 chrono = "0.4"
 thiserror = "2"
+sha2 = "0.10"
 
 
 [dev-dependencies]
