@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 /// ODF document type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -145,6 +146,9 @@ pub struct SpreadsheetSheet {
     pub name: String,
     pub rows: Vec<SpreadsheetRow>,
     pub max_column: usize,
+    /// Column widths (column index -> width in points)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub col_widths: Option<BTreeMap<u32, f32>>,
 }
 
 /// A spreadsheet row.
@@ -163,6 +167,12 @@ pub struct SpreadsheetCell {
     pub value: Option<f64>,
     pub formula: Option<String>,
     pub cell_type: CellType,
+    /// Number of columns this cell spans (for merged cells)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub col_span: Option<u32>,
+    /// Number of rows this cell spans (for merged cells)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub row_span: Option<u32>,
 }
 
 /// A presentation slide.

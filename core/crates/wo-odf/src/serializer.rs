@@ -321,11 +321,23 @@ fn build_content_xml(doc: &OdfDocument) -> String {
     )
     .unwrap();
 
-    // Automatic styles for bold/italic/underline spans
+    // Automatic styles for bold/italic/underline spans and column widths
     xml.push_str(" <office:automatic-styles>\n");
     let mut style_idx = 1u32;
     if let OdfContent::Text { content, .. } = &doc.content {
         collect_auto_styles(content, &mut xml, &mut style_idx);
+    } else if let OdfContent::Spreadsheet { sheets } = &doc.content {
+        // Collect column width styles for all sheets
+        for sheet in sheets {
+            if let Some(ref col_widths) = sheet.col_widths {
+                for (col_idx, &width_pts) in col_widths {
+                    // Convert points to cm: 1pt = 1/72in, 1in = 2.54cm
+                    let width_cm = width_pts as f64 / 72.0 * 2.54;
+                    let style_name = format!("co{}", col_idx);
+                    emit_column_width_style(&mut xml, &style_name, width_cm);
+                }
+            }
+        }
     }
     xml.push_str(" </office:automatic-styles>\n");
 
@@ -412,6 +424,23 @@ fn emit_span_style(xml: &mut String, idx: &mut u32, bold: bool, italic: bool, un
     .unwrap();
     writeln!(xml, "  </style:style>").unwrap();
     *idx += 1;
+}
+
+/// Emit a column width style in automatic-styles section.
+fn emit_column_width_style(xml: &mut String, style_name: &str, width_cm: f64) {
+    writeln!(
+        xml,
+        "  <style:style style:name=\"{}\" style:family=\"table-column\">",
+        style_name
+    )
+    .unwrap();
+    writeln!(
+        xml,
+        "   <style:table-column-properties style:column-width=\"{:.3}cm\"/> ",
+        width_cm
+    )
+    .unwrap();
+    writeln!(xml, "  </style:style>").unwrap();
 }
 
 fn serialize_text_content(item: &OdfTextContent, xml: &mut String, indent: usize) {
@@ -562,16 +591,44 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
     let sheet_name = escape_xml(&sheet.name);
     writeln!(xml, "{}<table:table table:name=\"{}\">", pad, sheet_name).unwrap();
 
+    // Emit column definitions with widths if present
+    if let Some(ref col_widths) = sheet.col_widths {
+        for (col_idx, _width) in col_widths {
+            let style_name = format!("co{}", col_idx);
+            writeln!(
+                xml,
+                "{}  <table:table-column table:style-name=\"{}\"/>",
+                pad, style_name
+            )
+            .unwrap();
+        }
+    }
+
     for row in &sheet.rows {
         writeln!(xml, "{}  <table:table-row>", pad).unwrap();
         for cell in &row.cells {
+            // Build cell attributes including span info
+            let mut cell_attrs = String::new();
+            
+            // Add span attributes if present
+            if let Some(span) = cell.col_span {
+                if span > 1 {
+                    write!(cell_attrs, " table:number-columns-spanned=\"{}\"", span).unwrap();
+                }
+            }
+            if let Some(span) = cell.row_span {
+                if span > 1 {
+                    write!(cell_attrs, " table:number-rows-spanned=\"{}\"", span).unwrap();
+                }
+            }
+            
             match cell.cell_type {
                 CellType::Number | CellType::Percentage | CellType::Currency => {
                     if let Some(v) = cell.value {
                         writeln!(
                             xml,
-                            "{}    <table:table-cell table:style-name=\"ce1\" office:value-type=\"float\" office:value=\"{}\">",
-                            pad, v
+                            "{}    <table:table-cell table:style-name=\"ce1\" office:value-type=\"float\" office:value=\"{}\"{}>",
+                            pad, v, cell_attrs
                         )
                         .unwrap();
                         writeln!(
@@ -583,7 +640,7 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
                         .unwrap();
                         writeln!(xml, "{}    </table:table-cell>", pad).unwrap();
                     } else {
-                        writeln!(xml, "{}    <table:table-cell table:style-name=\"ce1\" office:value-type=\"float\" office:value=\"0\">", pad).unwrap();
+                        writeln!(xml, "{}    <table:table-cell table:style-name=\"ce1\" office:value-type=\"float\" office:value=\"0\"{}>", pad, cell_attrs).unwrap();
                         writeln!(xml, "{}      <text:p>0</text:p>", pad).unwrap();
                         writeln!(xml, "{}    </table:table-cell>", pad).unwrap();
                     }
@@ -596,8 +653,8 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
                     };
                     writeln!(
                         xml,
-                        "{}    <table:table-cell office:value-type=\"boolean\" office:boolean-value=\"{}\">",
-                        pad, val
+                        "{}    <table:table-cell office:value-type=\"boolean\" office:boolean-value=\"{}\"{}>",
+                        pad, val, cell_attrs
                     )
                     .unwrap();
                     writeln!(xml, "{}      <text:p>{}</text:p>", pad, val).unwrap();
@@ -623,15 +680,15 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
                     if let Some(f) = &cell.formula {
                         writeln!(
                             xml,
-                            "{}    <table:table-cell table:formula=\"{}\" office:value-type=\"string\">",
-                            pad, escape_xml(f)
+                            "{}    <table:table-cell table:formula=\"{}\" office:value-type=\"string\"{}>",
+                            pad, escape_xml(f), cell_attrs
                         )
                         .unwrap();
                     } else {
                         writeln!(
                             xml,
-                            "{}    <table:table-cell office:value-type=\"string\">",
-                            pad
+                            "{}    <table:table-cell office:value-type=\"string\"{}>",
+                            pad, cell_attrs
                         )
                         .unwrap();
                     }

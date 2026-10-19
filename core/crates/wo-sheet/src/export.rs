@@ -5,13 +5,15 @@
 
 use anyhow::Result;
 
+use std::collections::BTreeMap;
+
 use wo_odf::model::{
     CellType, OdfContent, OdfDocument, OdfManifestEntry, OdfMetadata, OdfType,
     SpreadsheetCell, SpreadsheetRow, SpreadsheetSheet,
 };
 use wo_odf::OdfSerializer;
 
-use crate::model::{Cell, Workbook};
+use crate::model::{Cell, MergeRange, Workbook};
 
 /// Export a Workbook to ODS format bytes.
 ///
@@ -72,11 +74,19 @@ fn convert_sheets(sheets: &[crate::model::Sheet]) -> Vec<SpreadsheetSheet> {
         .map(|sheet| {
             let rows = convert_sheet_to_rows(sheet);
             let max_column = find_max_column(sheet);
+            
+            // Map col_widths
+            let col_widths = if sheet.col_widths.is_empty() {
+                None
+            } else {
+                Some(sheet.col_widths.clone())
+            };
 
             SpreadsheetSheet {
                 name: sheet.name.clone(),
                 rows,
                 max_column,
+                col_widths,
             }
         })
         .collect()
@@ -84,7 +94,7 @@ fn convert_sheets(sheets: &[crate::model::Sheet]) -> Vec<SpreadsheetSheet> {
 
 /// Convert a single Sheet to ODF rows.
 fn convert_sheet_to_rows(sheet: &crate::model::Sheet) -> Vec<SpreadsheetRow> {
-    use std::collections::BTreeSet;
+    use std::collections::{BTreeMap, BTreeSet};
 
     // Collect all unique row indices from the cell grid
     let row_indices: BTreeSet<u32> = sheet
@@ -92,6 +102,15 @@ fn convert_sheet_to_rows(sheet: &crate::model::Sheet) -> Vec<SpreadsheetRow> {
         .keys()
         .map(|&(row, _col)| row)
         .collect();
+
+    // Build a map of merge ranges for quick lookup: (row, col) -> (col_span, row_span)
+    // Only the top-left cell of each merge gets the span information
+    let mut merge_spans: BTreeMap<(u32, u32), (u32, u32)> = BTreeMap::new();
+    for merge in &sheet.merges {
+        let col_span = merge.end_col - merge.start_col + 1;
+        let row_span = merge.end_row - merge.start_row + 1;
+        merge_spans.insert((merge.start_row, merge.start_col), (col_span, row_span));
+    }
 
     let mut rows = Vec::new();
 
@@ -104,9 +123,19 @@ fn convert_sheet_to_rows(sheet: &crate::model::Sheet) -> Vec<SpreadsheetRow> {
             .map(|(&(_, col), cell)| (col, cell))
             .collect();
 
-        let odf_cells = row_cells
+        let odf_cells: Vec<SpreadsheetCell> = row_cells
             .into_iter()
-            .map(|(col, cell)| convert_cell(row_num, col, cell))
+            .map(|(col, cell)| {
+                let mut odf_cell = convert_cell(row_num, col, cell);
+                
+                // Check if this cell is the top-left of a merge range
+                if let Some((col_span, row_span)) = merge_spans.get(&(row_num, col)) {
+                    odf_cell.col_span = Some(*col_span);
+                    odf_cell.row_span = Some(*row_span);
+                }
+                
+                odf_cell
+            })
             .collect();
 
         rows.push(SpreadsheetRow {
@@ -141,6 +170,8 @@ fn convert_cell(row: u32, col: u32, cell: &Cell) -> SpreadsheetCell {
             value: None,
             formula: cell.formula.as_ref().map(|f| f.to_string()),
             cell_type: CellType::String,
+            col_span: None,
+            row_span: None,
         },
         wo_formula::ast::CellValue::Num(n) => SpreadsheetCell {
             row,
@@ -155,6 +186,8 @@ fn convert_cell(row: u32, col: u32, cell: &Cell) -> SpreadsheetCell {
             } else {
                 CellType::Number
             },
+            col_span: None,
+            row_span: None,
         },
         wo_formula::ast::CellValue::Text(s) => {
             // Check if this is actually a formula result
@@ -166,6 +199,8 @@ fn convert_cell(row: u32, col: u32, cell: &Cell) -> SpreadsheetCell {
                     value: None,
                     formula: cell.formula.as_ref().map(|f| f.to_string()),
                     cell_type: CellType::String,
+                    col_span: None,
+                    row_span: None,
                 }
             } else {
                 SpreadsheetCell {
@@ -175,6 +210,8 @@ fn convert_cell(row: u32, col: u32, cell: &Cell) -> SpreadsheetCell {
                     value: None,
                     formula: None,
                     cell_type: CellType::String,
+                    col_span: None,
+                    row_span: None,
                 }
             }
         }
@@ -185,6 +222,8 @@ fn convert_cell(row: u32, col: u32, cell: &Cell) -> SpreadsheetCell {
             value: Some(if *b { 1.0 } else { 0.0 }),
             formula: cell.formula.as_ref().map(|f| f.to_string()),
             cell_type: CellType::Boolean,
+            col_span: None,
+            row_span: None,
         },
         wo_formula::ast::CellValue::Err(_) => SpreadsheetCell {
             row,
@@ -193,6 +232,8 @@ fn convert_cell(row: u32, col: u32, cell: &Cell) -> SpreadsheetCell {
             value: None,
             formula: cell.formula.as_ref().map(|f| f.to_string()),
             cell_type: CellType::String,
+            col_span: None,
+            row_span: None,
         },
         wo_formula::ast::CellValue::Date(dt) => SpreadsheetCell {
             row,
@@ -201,6 +242,8 @@ fn convert_cell(row: u32, col: u32, cell: &Cell) -> SpreadsheetCell {
             value: None,
             formula: cell.formula.as_ref().map(|f| f.to_string()),
             cell_type: CellType::Date,
+            col_span: None,
+            row_span: None,
         },
     }
 }
@@ -510,6 +553,101 @@ mod tests {
             panic!("Expected Spreadsheet content type");
         }
 
+        Ok(())
+    }
+
+    // F-210: merged cells -> table:number-columns-spanned / number-rows-spanned on the top-left cell
+    #[test]
+    fn test_export_merged_cells_f210() -> Result<()> {
+        use crate::model::{Cell, MergeRange, Sheet};
+        use std::io::Read;
+
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("Merged");
+        sheet.cells.insert((0, 0), Cell::with_text("A1"));
+        sheet.cells.insert((0, 1), Cell::with_text("B1"));
+        sheet.add_merge(MergeRange::new(0, 0, 1, 1)); // 2x2 merge anchored at (0,0)
+        wb.add_sheet(sheet);
+
+        let bytes = export_ods(&wb)?;
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
+        let mut content = String::new();
+        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+
+        assert!(
+            content.contains("table:number-columns-spanned=\"2\""),
+            "top-left merged cell must carry number-columns-spanned=2"
+        );
+        assert!(
+            content.contains("table:number-rows-spanned=\"2\""),
+            "top-left merged cell must carry number-rows-spanned=2"
+        );
+        // exactly one cell gets the 2x2 span (only the merge anchor)
+        assert_eq!(content.matches("number-columns-spanned=\"2\"").count(), 1);
+        Ok(())
+    }
+
+    // F-210: column widths -> style:column-width automatic style + table:table-column
+    #[test]
+    fn test_export_column_widths_f210() -> Result<()> {
+        use crate::model::{Cell, Sheet};
+        use std::io::Read;
+
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("Widths");
+        sheet.cells.insert((0, 0), Cell::with_text("A1"));
+        // 100 points = 100/72*2.54 = 3.52778... cm -> {:.3} => "3.528cm"
+        sheet.col_widths.insert(0, 100.0);
+        wb.add_sheet(sheet);
+
+        let bytes = export_ods(&wb)?;
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
+        let mut content = String::new();
+        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+
+        assert!(
+            content.contains("style:family=\"table-column\""),
+            "automatic-styles must declare a table-column family style"
+        );
+        assert!(
+            content.contains("style:column-width=\"3.528cm\""),
+            "100pt must serialize as 3.528cm"
+        );
+        assert!(
+            content.contains("<table:table-column table:style-name=\"co0\"/>"),
+            "table-columnt element must reference co0"
+        );
+        Ok(())
+    }
+
+    // F-210: no merges/widths -> no span attrs and no column styles emitted
+    #[test]
+    fn test_export_plain_sheet_no_merge_artifacts_f210() -> Result<()> {
+        use crate::model::{Cell, Sheet};
+        use std::io::Read;
+
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("Plain");
+        sheet.cells.insert((0, 0), Cell::with_text("A1"));
+        wb.add_sheet(sheet);
+
+        let bytes = export_ods(&wb)?;
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
+        let mut content = String::new();
+        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+
+        assert!(
+            !content.contains("number-columns-spanned"),
+            "plain sheet must not emit span attrs"
+        );
+        assert!(
+            !content.contains("table:table-column"),
+            "plain sheet must not emit table-column elements"
+        );
+        assert!(
+            !content.contains("table-column-properties",),
+            "plain sheet must not emit width styles"
+        );
         Ok(())
     }
 }

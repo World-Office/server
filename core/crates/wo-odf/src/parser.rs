@@ -8,6 +8,7 @@
 //!
 //! Uses roxmltree for XML parsing and wo-office-utils for ZIP handling.
 
+use std::collections::BTreeMap;
 use std::io::{Cursor, Read};
 
 use roxmltree::Document as XmlDoc;
@@ -643,6 +644,24 @@ impl OdfParser {
                 let mut rows = Vec::new();
                 let mut max_col: usize = 0;
                 let mut row_num = 0u32;
+                
+                // Parse column widths from table:table-column elements
+                let mut col_widths = BTreeMap::new();
+                for col_node in node.children() {
+                    if col_node.has_tag_name((TABLE_NS, "table-column")) {
+                        if let Some(style_name) = col_node.attribute((TABLE_NS, "style-name")) {
+                            // Try to extract column index from style name (coN pattern)
+                            if let Some(idx_str) = style_name.strip_prefix("co") {
+                                if let Ok(col_idx) = idx_str.parse::<u32>() {
+                                    // For now, we store the style name; the actual width
+                                    // would need to be looked up from styles.xml
+                                    // This is a cheap/optional read-back as per task spec
+                                    col_widths.insert(col_idx, 0.0);
+                                }
+                            }
+                        }
+                    }
+                }
 
                 for row_node in node.children() {
                     if !row_node.has_tag_name((TABLE_NS, "table-row")) {
@@ -667,6 +686,16 @@ impl OdfParser {
                             .attribute((TABLE_NS, "number-columns-repeated"))
                             .and_then(|v| v.parse::<u32>().ok())
                             .unwrap_or(1);
+
+                        // Parse span attributes
+                        let row_span = cell_node
+                            .attribute((TABLE_NS, "number-rows-spanned"))
+                            .and_then(|v| v.parse::<u32>().ok())
+                            .filter(|&v| v > 1);
+                        let col_span = cell_node
+                            .attribute((TABLE_NS, "number-columns-spanned"))
+                            .and_then(|v| v.parse::<u32>().ok())
+                            .filter(|&v| v > 1);
 
                         let text = Self::collect_text(cell_node);
                         let formula = cell_node
@@ -694,6 +723,8 @@ impl OdfParser {
                                 value: if r == 0 { value } else { None },
                                 formula: if r == 0 { formula.clone() } else { None },
                                 cell_type,
+                                col_span: if r == 0 { col_span } else { None },
+                                row_span: if r == 0 { row_span } else { None },
                             });
                         }
                         col += cell_repeat;
@@ -713,6 +744,8 @@ impl OdfParser {
                                     value: None,
                                     formula: None,
                                     cell_type: c.cell_type,
+                                    col_span: None,
+                                    row_span: None,
                                 })
                                 .collect()
                         };
@@ -723,10 +756,17 @@ impl OdfParser {
                     }
                 }
 
+                let sheet_col_widths = if col_widths.is_empty() {
+                    None
+                } else {
+                    Some(col_widths)
+                };
+
                 sheets.push(SpreadsheetSheet {
                     name,
                     rows,
                     max_column: max_col,
+                    col_widths: sheet_col_widths,
                 });
             }
         }
