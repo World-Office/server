@@ -108,6 +108,7 @@ impl OdfParser {
             manifest,
             fonts,
             styles: all_styles,
+            automatic_cell_styles: vec![],
         })
     }
 
@@ -704,6 +705,9 @@ impl OdfParser {
                         let value = cell_node
                             .attribute((OFFICE_NS_FALLBACK, "value"))
                             .and_then(|v| v.parse::<f64>().ok());
+                        let style_name = cell_node
+                            .attribute((TABLE_NS, "style-name"))
+                            .map(|s| s.to_string());
 
                         let cell_type =
                             match cell_node.attribute((OFFICE_NS_FALLBACK, "value-type")) {
@@ -725,6 +729,7 @@ impl OdfParser {
                                 cell_type,
                                 col_span: if r == 0 { col_span } else { None },
                                 row_span: if r == 0 { row_span } else { None },
+                                style_name: if r == 0 { style_name.clone() } else { None },
                             });
                         }
                         col += cell_repeat;
@@ -746,6 +751,7 @@ impl OdfParser {
                                     cell_type: c.cell_type,
                                     col_span: None,
                                     row_span: None,
+                                    style_name: None,
                                 })
                                 .collect()
                         };

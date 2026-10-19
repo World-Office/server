@@ -3105,6 +3105,7 @@ fn txt_to_odf(txt_doc: &TxtDocument) -> OdfDocument {
         manifest: vec![],
         fonts: vec![],
         styles: vec![],
+        automatic_cell_styles: vec![],
     }
 }
 
@@ -3124,6 +3125,7 @@ fn html_to_odf(html_doc: &HtmlDocument) -> OdfDocument {
         manifest: vec![],
         fonts: vec![],
         styles: vec![],
+        automatic_cell_styles: vec![],
     }
 }
 
@@ -3699,6 +3701,7 @@ fn docx_to_odf(doc: &OoxmlDocument) -> OdfDocument {
         manifest: vec![],
         fonts: vec![],
         styles: vec![],
+        automatic_cell_styles: vec![],
     }
 }
 
@@ -6604,6 +6607,7 @@ impl FormatConverter for WoPresentationToOdpConverter {
             manifest: Vec::new(),
             fonts: Vec::new(),
             styles: Vec::new(),
+            automatic_cell_styles: vec![],
         };
 
         OdfSerializer::new()
@@ -8240,6 +8244,7 @@ impl FormatConverter for WoSpreadsheetToOdsConverter {
                                     cell_type,
                                     col_span: None,
                                     row_span: None,
+                                    style_name: None,
                                 }
                             })
                             .collect();
@@ -8271,6 +8276,7 @@ impl FormatConverter for WoSpreadsheetToOdsConverter {
             manifest: Vec::new(),
             fonts: Vec::new(),
             styles: Vec::new(),
+            automatic_cell_styles: vec![],
         };
 
         let serializer = OdfSerializer::new();
@@ -12857,6 +12863,7 @@ mod tests {
             manifest: vec![],
             fonts: vec![],
             styles: vec![],
+            automatic_cell_styles: vec![],
         };
         let ooxml = odf_to_ooxml(&odf);
         assert_eq!(ooxml.core_properties.title, Some("ODF Doc".into()));
@@ -12921,6 +12928,7 @@ mod tests {
             manifest: vec![],
             fonts: vec![],
             styles: vec![],
+            automatic_cell_styles: vec![],
         };
         let ooxml = odf_to_ooxml(&odf);
         let body = ooxml.docx_body.as_ref().unwrap();
@@ -12968,6 +12976,7 @@ mod tests {
             manifest: vec![],
             fonts: vec![],
             styles: vec![],
+            automatic_cell_styles: vec![],
         };
         let ooxml = odf_to_ooxml(&odf);
         let body = ooxml.docx_body.as_ref().unwrap();

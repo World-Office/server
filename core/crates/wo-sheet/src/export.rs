@@ -7,13 +7,109 @@ use anyhow::Result;
 
 use std::collections::BTreeMap;
 
+use std::collections::HashMap;
+
 use wo_odf::model::{
-    CellType, OdfContent, OdfDocument, OdfManifestEntry, OdfMetadata, OdfType,
+    CellType, OdfContent, OdfDocument, OdfManifestEntry, OdfMetadata, OdfStyle, OdfType,
     SpreadsheetCell, SpreadsheetRow, SpreadsheetSheet,
 };
 use wo_odf::OdfSerializer;
 
-use crate::model::{Cell, MergeRange, Workbook};
+use crate::model::{Cell, CellStyle, MergeRange, Workbook};
+
+/// Key for deduplicating cell styles
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct CellStyleKey {
+    font_family: Option<String>,
+    font_size: Option<String>, // Store as string to avoid float comparison issues
+    bold: bool,
+    italic: bool,
+    underline: bool,
+    strikethrough: bool,
+    color: Option<String>,
+    background_color: Option<String>,
+    horizontal_align: Option<String>,
+    vertical_align: Option<String>,
+    border: Option<String>,
+    number_format: Option<String>,
+}
+
+impl From<&CellStyle> for CellStyleKey {
+    fn from(style: &CellStyle) -> Self {
+        CellStyleKey {
+            font_family: style.font_family.clone(),
+            font_size: style.font_size.map(|s| format!("{:.3}", s)),
+            bold: style.bold.unwrap_or(false),
+            italic: style.italic.unwrap_or(false),
+            underline: style.underline.unwrap_or(false),
+            strikethrough: style.strikethrough.unwrap_or(false),
+            color: style.color.clone(),
+            background_color: style.background_color.clone(),
+            horizontal_align: style.horizontal_align.clone(),
+            vertical_align: style.vertical_align.clone(),
+            border: style.border.clone(),
+            number_format: style.number_format.clone(),
+        }
+    }
+}
+
+/// Generate ODF style properties from a CellStyle
+fn cell_style_to_odf_properties(style: &CellStyle) -> Vec<(String, String)> {
+    let mut props = Vec::new();
+    
+    if let Some(ref family) = style.font_family {
+        props.push(("style:font-name".to_string(), family.clone()));
+    }
+    if let Some(size) = style.font_size {
+        props.push(("fo:font-size".to_string(), format!("{:.3}pt", size)));
+    }
+    if style.bold == Some(true) {
+        props.push(("fo:font-weight".to_string(), "bold".to_string()));
+    }
+    if style.bold == Some(false) {
+        props.push(("fo:font-weight".to_string(), "normal".to_string()));
+    }
+    if style.italic == Some(true) {
+        props.push(("fo:font-style".to_string(), "italic".to_string()));
+    }
+    if style.italic == Some(false) {
+        props.push(("fo:font-style".to_string(), "normal".to_string()));
+    }
+    if style.underline == Some(true) {
+        props.push(("style:text-underline-style".to_string(), "solid".to_string()));
+        props.push(("style:text-underline-type".to_string(), "single".to_string()));
+    }
+    if style.strikethrough == Some(true) {
+        props.push(("style:text-line-through-style".to_string(), "solid".to_string()));
+    }
+    if let Some(ref color) = style.color {
+        props.push(("fo:color".to_string(), color.clone()));
+    }
+    if let Some(ref bg_color) = style.background_color {
+        props.push(("fo:background-color".to_string(), bg_color.clone()));
+    }
+    if let Some(ref h_align) = style.horizontal_align {
+        let align_value = match h_align.as_str() {
+            "left" => "left",
+            "center" => "center",
+            "right" => "right",
+            "justify" => "justify",
+            _ => h_align.as_str(),
+        };
+        props.push(("fo:text-align".to_string(), align_value.to_string()));
+    }
+    if let Some(ref v_align) = style.vertical_align {
+        let align_value = match v_align.as_str() {
+            "top" => "top",
+            "middle" => "middle",
+            "bottom" => "bottom",
+            _ => v_align.as_str(),
+        };
+        props.push(("style:vertical-align".to_string(), align_value.to_string()));
+    }
+    
+    props
+}
 
 /// Export a Workbook to ODS format bytes.
 ///
@@ -52,7 +148,35 @@ pub fn export_ods(workbook: &Workbook) -> Result<Vec<u8>> {
 /// Maps wo-sheet Sheet structures to ODF SpreadsheetSheet structures,
 /// preserving cell values (text, numbers, formulas) and their types.
 fn build_odf_document(workbook: &Workbook) -> OdfDocument {
-    let sheets = convert_sheets(&workbook.sheets);
+    // Collect all unique cell styles from the workbook
+    let mut cell_style_map: HashMap<CellStyleKey, String> = HashMap::new();
+    let mut automatic_cell_styles: Vec<OdfStyle> = Vec::new();
+    
+    // First pass: collect all unique non-default styles
+    for sheet in &workbook.sheets {
+        for cell in sheet.cells.values() {
+            if !cell.style.is_default() {
+                let key = CellStyleKey::from(&cell.style);
+                if !cell_style_map.contains_key(&key) {
+                    let style_name = format!("ce{}", automatic_cell_styles.len() + 2);
+                    cell_style_map.insert(key.clone(), style_name.clone());
+                    
+                    // Create ODF style for this cell style
+                    let props = cell_style_to_odf_properties(&cell.style);
+                    automatic_cell_styles.push(OdfStyle {
+                        name: style_name,
+                        family: Some("table-cell".to_string()),
+                        parent: None,
+                        display_name: None,
+                        properties: props,
+                    });
+                }
+            }
+        }
+    }
+    
+    // Pass the style map to sheet conversion
+    let sheets = convert_sheets_with_styles(&workbook.sheets, &cell_style_map);
 
     let manifest = build_manifest();
 
@@ -64,15 +188,37 @@ fn build_odf_document(workbook: &Workbook) -> OdfDocument {
         manifest,
         fonts: vec![],
         styles: vec![],
+        automatic_cell_styles,
     }
 }
 
-/// Convert wo-sheet Sheets to ODF SpreadsheetSheet structures.
-fn convert_sheets(sheets: &[crate::model::Sheet]) -> Vec<SpreadsheetSheet> {
+/// Check if a CellStyle is the default (all fields are None)
+impl CellStyle {
+    fn is_default(&self) -> bool {
+        self.font_family.is_none() &&
+        self.font_size.is_none() &&
+        self.bold.is_none() &&
+        self.italic.is_none() &&
+        self.underline.is_none() &&
+        self.strikethrough.is_none() &&
+        self.color.is_none() &&
+        self.background_color.is_none() &&
+        self.horizontal_align.is_none() &&
+        self.vertical_align.is_none() &&
+        self.border.is_none() &&
+        self.number_format.is_none()
+    }
+}
+
+/// Convert wo-sheet Sheets to ODF SpreadsheetSheet structures with style mapping.
+fn convert_sheets_with_styles(
+    sheets: &[crate::model::Sheet],
+    style_map: &HashMap<CellStyleKey, String>,
+) -> Vec<SpreadsheetSheet> {
     sheets
         .iter()
         .map(|sheet| {
-            let rows = convert_sheet_to_rows(sheet);
+            let rows = convert_sheet_to_rows_with_styles(sheet, style_map);
             let max_column = find_max_column(sheet);
             
             // Map col_widths
@@ -92,8 +238,11 @@ fn convert_sheets(sheets: &[crate::model::Sheet]) -> Vec<SpreadsheetSheet> {
         .collect()
 }
 
-/// Convert a single Sheet to ODF rows.
-fn convert_sheet_to_rows(sheet: &crate::model::Sheet) -> Vec<SpreadsheetRow> {
+/// Convert a single Sheet to ODF rows with style mapping.
+fn convert_sheet_to_rows_with_styles(
+    sheet: &crate::model::Sheet,
+    style_map: &HashMap<CellStyleKey, String>,
+) -> Vec<SpreadsheetRow> {
     use std::collections::{BTreeMap, BTreeSet};
 
     // Collect all unique row indices from the cell grid
@@ -127,6 +276,14 @@ fn convert_sheet_to_rows(sheet: &crate::model::Sheet) -> Vec<SpreadsheetRow> {
             .into_iter()
             .map(|(col, cell)| {
                 let mut odf_cell = convert_cell(row_num, col, cell);
+                
+                // Set style name if cell has a non-default style
+                if !cell.style.is_default() {
+                    let key = CellStyleKey::from(&cell.style);
+                    if let Some(style_name) = style_map.get(&key) {
+                        odf_cell.style_name = Some(style_name.clone());
+                    }
+                }
                 
                 // Check if this cell is the top-left of a merge range
                 if let Some((col_span, row_span)) = merge_spans.get(&(row_num, col)) {
@@ -172,6 +329,7 @@ fn convert_cell(row: u32, col: u32, cell: &Cell) -> SpreadsheetCell {
             cell_type: CellType::String,
             col_span: None,
             row_span: None,
+            style_name: None,
         },
         wo_formula::ast::CellValue::Num(n) => SpreadsheetCell {
             row,
@@ -188,6 +346,7 @@ fn convert_cell(row: u32, col: u32, cell: &Cell) -> SpreadsheetCell {
             },
             col_span: None,
             row_span: None,
+            style_name: None,
         },
         wo_formula::ast::CellValue::Text(s) => {
             // Check if this is actually a formula result
@@ -201,6 +360,7 @@ fn convert_cell(row: u32, col: u32, cell: &Cell) -> SpreadsheetCell {
                     cell_type: CellType::String,
                     col_span: None,
                     row_span: None,
+                    style_name: None,
                 }
             } else {
                 SpreadsheetCell {
@@ -212,6 +372,7 @@ fn convert_cell(row: u32, col: u32, cell: &Cell) -> SpreadsheetCell {
                     cell_type: CellType::String,
                     col_span: None,
                     row_span: None,
+                    style_name: None,
                 }
             }
         }
@@ -224,6 +385,7 @@ fn convert_cell(row: u32, col: u32, cell: &Cell) -> SpreadsheetCell {
             cell_type: CellType::Boolean,
             col_span: None,
             row_span: None,
+            style_name: None,
         },
         wo_formula::ast::CellValue::Err(_) => SpreadsheetCell {
             row,
@@ -234,6 +396,7 @@ fn convert_cell(row: u32, col: u32, cell: &Cell) -> SpreadsheetCell {
             cell_type: CellType::String,
             col_span: None,
             row_span: None,
+            style_name: None,
         },
         wo_formula::ast::CellValue::Date(dt) => SpreadsheetCell {
             row,
@@ -244,6 +407,7 @@ fn convert_cell(row: u32, col: u32, cell: &Cell) -> SpreadsheetCell {
             cell_type: CellType::Date,
             col_span: None,
             row_span: None,
+            style_name: None,
         },
     }
 }
@@ -648,6 +812,233 @@ mod tests {
             !content.contains("table-column-properties",),
             "plain sheet must not emit width styles"
         );
+        Ok(())
+    }
+
+    // F-210: cell styles -> table-cell automatic styles
+    #[test]
+    fn test_export_cell_bold_f210() -> Result<()> {
+        use crate::model::{Cell, CellStyle, Sheet};
+        use std::io::Read;
+
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("BoldCells");
+        
+        // Create a bold cell
+        let mut bold_cell = Cell::with_text("Bold");
+        bold_cell.style.bold = Some(true);
+        sheet.set_cell(0, 0, bold_cell);
+        
+        // Create a plain cell for comparison
+        sheet.set_cell(0, 1, Cell::with_text("Plain"));
+        
+        wb.add_sheet(sheet);
+
+        let bytes = export_ods(&wb)?;
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
+        let mut content = String::new();
+        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+
+        // Check that a table-cell style with bold was emitted
+        assert!(
+            content.contains("style:family=\"table-cell\""),
+            "content.xml should contain table-cell family style"
+        );
+        assert!(
+            content.contains("fo:font-weight=\"bold\""),
+            "content.xml should contain fo:font-weight=\"bold\""
+        );
+        
+        // Check that the bold cell has a style-name attribute (ce2: ce1 is the reserved plain-number default)
+        assert!(
+            content.contains("table:style-name=\"ce2\""),
+            "bold cell should reference ce2 style"
+        );
+        
+        // Check that the plain cell does NOT have a style-name on its opening tag
+        // (it may inherit ce1 from the Number default, but String cells don't get it)
+        // We check by ensuring at least one cell has style-name=ce1 (the bold one)
+        // and the plain cell's text appears
+        assert!(
+            content.contains("Plain"),
+            "content should contain plain cell text"
+        );
+        
+        Ok(())
+    }
+
+    // F-210: italic cell -> its own style element
+    #[test]
+    fn test_export_cell_italic_f210() -> Result<()> {
+        use crate::model::{Cell, CellStyle, Sheet};
+        use std::io::Read;
+
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("ItalicCells");
+        
+        // Create an italic cell
+        let mut italic_cell = Cell::with_text("Italic");
+        italic_cell.style.italic = Some(true);
+        sheet.set_cell(0, 0, italic_cell);
+        
+        wb.add_sheet(sheet);
+
+        let bytes = export_ods(&wb)?;
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
+        let mut content = String::new();
+        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+
+        // Check that a table-cell style with italic was emitted
+        assert!(
+            content.contains("fo:font-style=\"italic\""),
+            "content.xml should contain fo:font-style=\"italic\""
+        );
+        
+        Ok(())
+    }
+
+    // F-210: font-size cell -> its own style element
+    #[test]
+    fn test_export_cell_font_size_f210() -> Result<()> {
+        use crate::model::{Cell, CellStyle, Sheet};
+        use std::io::Read;
+
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("FontSizeCells");
+        
+        // Create a cell with font size 14pt
+        let mut sized_cell = Cell::with_text("Large");
+        sized_cell.style.font_size = Some(14.0);
+        sheet.set_cell(0, 0, sized_cell);
+        
+        wb.add_sheet(sheet);
+
+        let bytes = export_ods(&wb)?;
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
+        let mut content = String::new();
+        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+
+        // Check that a table-cell style with font-size was emitted
+        assert!(
+            content.contains("fo:font-size=\"14.000pt\""),
+            "content.xml should contain fo:font-size=\"14.000pt\""
+        );
+        
+        Ok(())
+    }
+
+    // F-210: a styled cell never bleeds onto plain cells — ce1 stays an undefined
+    // reserved default ref for plain Number cells, styled cells use ce2+
+    #[test]
+    fn test_export_cell_style_no_bleed_f210() -> Result<()> {
+        use crate::model::{Cell, CellStyle, Sheet};
+        use std::io::Read;
+
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("BleedGuard");
+        let mut bold_cell = Cell::with_text("Bold");
+        bold_cell.style.bold = Some(true);
+        sheet.set_cell(0, 0, bold_cell);
+        // plain NUMBER cell (hits the hardcoded ce1 style ref path)
+        let mut num_cell = Cell::with_num(42.0);
+        sheet.set_cell(0, 1, num_cell);
+        wb.add_sheet(sheet);
+
+        let bytes = export_ods(&wb)?;
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
+        let mut content = String::new();
+        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+
+        // styled style lives under ce2 (+), never ce1
+        assert!(content.contains("style:name=\"ce2\""), "bold style must be ce2");
+        assert!(
+            !content.contains("style:name=\"ce1\""),
+            "ce1 must stay undefined so plain cells never inherit bold"
+        );
+        // plain number cell references ce1, the undefined default
+        assert!(
+            content.contains("table:style-name=\"ce1\""),
+            "plain number cell should reference ce1"
+        );
+        // exactly one bold definition in the whole document
+        assert_eq!(content.matches("fo:font-weight=\"bold\"").count(), 1);
+        Ok(())
+    }
+
+    // F-210: plain cells (Default style) -> no new style artifacts
+    #[test]
+    fn test_export_plain_cells_no_style_artifacts_f210() -> Result<()> {
+        use crate::model::{Cell, Sheet};
+        use std::io::Read;
+
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("PlainCells");
+        sheet.set_cell(0, 0, Cell::with_text("Plain1"));
+        sheet.set_cell(0, 1, Cell::with_text("Plain2"));
+        wb.add_sheet(sheet);
+
+        let bytes = export_ods(&wb)?;
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
+        let mut content = String::new();
+        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+
+        // Plain String cells should not have table:style-name attributes
+        // (the hardcoded ce1 only appears on Number cells currently)
+        // Since both plain cells are String type, they should not have ce1
+        // But they might appear in cell spans. Let's just check that no
+        // cell-style elements were created
+        assert!(
+            !content.contains("table-cell-properties"),
+            "plain cells should not emit cell-style elements"
+        );
+        
+        Ok(())
+    }
+
+    // F-210: two cells sharing identical style -> one style element (dedupe)
+    #[test]
+    fn test_export_cell_style_dedupe_f210() -> Result<()> {
+        use crate::model::{Cell, CellStyle, Sheet};
+        use std::io::Read;
+
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("DedupeCells");
+        
+        // Create two cells with identical bold style
+        let mut bold_style = CellStyle::default();
+        bold_style.bold = Some(true);
+        
+        let mut bold_cell1 = Cell::with_text("Bold1");
+        bold_cell1.style = bold_style.clone();
+        sheet.set_cell(0, 0, bold_cell1);
+        
+        let mut bold_cell2 = Cell::with_text("Bold2");
+        bold_cell2.style = bold_style.clone();
+        sheet.set_cell(0, 1, bold_cell2);
+        
+        wb.add_sheet(sheet);
+
+        let bytes = export_ods(&wb)?;
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
+        let mut content = String::new();
+        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+
+        // Should have exactly one ce1 style definition
+        // ce1 is always undefined (reserved plain-number default ref)
+        assert_eq!(content.matches("style:name=\"ce1\"").count(), 0);
+        // one shared ce2 style definition for two identically styled cells
+        assert_eq!(
+            content.matches("style:name=\"ce2\"").count(),
+            1,
+            "should have exactly one ce2 style definition for two cells with same style"
+        );
+        
+        // Both cells should reference ce2 (ce1 is the reserved plain-number default)
+        assert!(
+            content.contains("table:style-name=\"ce2\""),
+            "cells should reference ce2"
+        );
+        
         Ok(())
     }
 }

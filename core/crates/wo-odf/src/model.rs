@@ -42,8 +42,11 @@ pub struct OdfDocument {
     pub manifest: Vec<OdfManifestEntry>,
     /// Font face declarations.
     pub fonts: Vec<OdfFontFace>,
-    /// Automatic styles.
+    /// Named styles (go to styles.xml).
     pub styles: Vec<OdfStyle>,
+    /// Automatic cell styles for spreadsheets (emitted in content.xml).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub automatic_cell_styles: Vec<OdfStyle>,
 }
 
 /// ODF document metadata.
@@ -173,6 +176,9 @@ pub struct SpreadsheetCell {
     /// Number of rows this cell spans (for merged cells)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub row_span: Option<u32>,
+    /// Style name for this cell (references automatic style in content.xml)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub style_name: Option<String>,
 }
 
 /// A presentation slide.
