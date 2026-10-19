@@ -8261,6 +8261,7 @@ impl FormatConverter for WoSpreadsheetToOdsConverter {
                     rows,
                     max_column: max_col,
                     col_widths: None,
+                    row_heights: None,
                 }
             })
             .collect();

@@ -662,6 +662,21 @@ impl OdfParser {
                         }
                     }
                 }
+                // Resolve table-row automatic styles (style:family="table-row",
+                // style:table-row-properties style:row-height="Ncm") to heights in points.
+                let mut row_height_map: BTreeMap<String, f32> = BTreeMap::new();
+                for st in styles {
+                    if st.family.as_deref() == Some("table-row") {
+                        for (k, v) in &st.properties {
+                            if k.ends_with("row-height") {
+                                if let Ok(cm) = v.trim_end_matches("cm").trim().parse::<f32>() {
+                                    row_height_map.insert(st.name.clone(), cm / 2.54 * 72.0);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
                 // Parse column widths from table:table-column elements (coN style-name)
                 let mut col_widths = BTreeMap::new();
                 for col_node in node.children() {
@@ -677,12 +692,24 @@ impl OdfParser {
                         }
                     }
                 }
+                // Parse row heights from table:table-row elements (roN style-name)
+                let mut row_heights = BTreeMap::new();
 
                 for row_node in node.children() {
                     if !row_node.has_tag_name((TABLE_NS, "table-row")) {
                         continue;
                     }
                     row_num += 1;
+                    
+                    // Parse row height from table:style-name attribute (roN pattern)
+                    if let Some(style_name) = row_node.attribute((TABLE_NS, "style-name")) {
+                        if let Some(idx_str) = style_name.strip_prefix("ro") {
+                            if let Ok(row_idx) = idx_str.parse::<u32>() {
+                                let height = row_height_map.get(style_name).copied().unwrap_or(0.0);
+                                row_heights.insert(row_idx, height);
+                            }
+                        }
+                    }
                     let mut cells = Vec::new();
                     let mut col: u32 = 0;
 
@@ -791,12 +818,18 @@ impl OdfParser {
                 } else {
                     Some(col_widths)
                 };
+                let sheet_row_heights = if row_heights.is_empty() {
+                    None
+                } else {
+                    Some(row_heights)
+                };
 
                 sheets.push(SpreadsheetSheet {
                     name,
                     rows,
                     max_column: max_col,
                     col_widths: sheet_col_widths,
+                    row_heights: sheet_row_heights,
                 });
             }
         }
@@ -1126,6 +1159,7 @@ impl OdfParser {
                                 || prop_child.has_tag_name((STYLE_NS, "text-properties"))
                                 || prop_child.has_tag_name((STYLE_NS, "paragraph-properties"))
                                 || prop_child.has_tag_name((STYLE_NS, "table-column-properties"))
+                                || prop_child.has_tag_name((STYLE_NS, "table-row-properties"))
                             {
                                 for attr in prop_child.attributes() {
                                     let key =

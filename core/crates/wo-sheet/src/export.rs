@@ -200,6 +200,10 @@ fn convert_odf_sheet_to_sheet(odf_sheet: &SpreadsheetSheet) -> Result<Sheet> {
     if let Some(ref col_widths) = odf_sheet.col_widths {
         sheet.col_widths = col_widths.clone();
     }
+    // Copy row heights
+    if let Some(ref row_heights) = odf_sheet.row_heights {
+        sheet.row_heights = row_heights.clone();
+    }
     
     // Track merge ranges to avoid duplicates
     let mut processed_merges: BTreeSet<(u32, u32, u32, u32)> = BTreeSet::new();
@@ -416,11 +420,19 @@ fn convert_sheets_with_styles(
                 Some(sheet.col_widths.clone())
             };
 
+            // Map row_heights
+            let row_heights = if sheet.row_heights.is_empty() {
+                None
+            } else {
+                Some(sheet.row_heights.clone())
+            };
+
             SpreadsheetSheet {
                 name: sheet.name.clone(),
                 rows,
                 max_column,
                 col_widths,
+                row_heights,
             }
         })
         .collect()
@@ -1494,6 +1506,128 @@ mod tests {
         let cell = imported_wb.sheets[1].get_cell(0, 0).expect("Sheet2 cell should exist");
         assert!(matches!(cell.value, CellValue::Num(n) if (n - 123.0).abs() < f64::EPSILON));
         
+        Ok(())
+    }
+    #[test]
+    fn test_export_row_heights_f210() -> Result<()> {
+        use crate::model::{Cell, Sheet};
+        use std::io::Read;
+
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("Heights");
+        sheet.cells.insert((0, 0), Cell::with_text("A1"));
+        sheet.cells.insert((1, 0), Cell::with_text("A2"));
+        sheet.cells.insert((2, 0), Cell::with_text("A3"));
+        // 30pt = 30/72*2.54 = 1.0583cm -> {:.3} => "1.058cm"; 45pt -> 1.5875 -> "1.587cm"
+        sheet.row_heights.insert(0, 30.0);
+        sheet.row_heights.insert(2, 45.0);
+        wb.add_sheet(sheet);
+
+        let bytes = export_ods(&wb)?;
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
+        let mut content = String::new();
+        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+
+        assert!(
+            content.contains("style:family=\"table-row\""),
+            "automatic-styles must declare a table-row family style"
+        );
+        assert!(
+            content.contains("style:row-height=\"1.058cm\""),
+            "30pt must serialize as 1.058cm"
+        );
+        assert!(
+            content.contains("style:row-height=\"1.587cm\""),
+            "45pt must serialize as 1.587cm"
+        );
+        // Both styled rows reference ro0/ro2; exactly two row style names
+        assert_eq!(
+            content.matches("table:style-name=\"ro").count(),
+            2,
+            "only rows 0 and 2 carry a roN style-name, row 1 stays plain"
+        );
+        assert!(
+            content.contains("<table:table-row table:style-name=\"ro0\">"),
+            "row 0 must reference ro0"
+        );
+        // Row 1 has a height style defined but must NOT be applied to any row
+        assert!(
+            !content.contains("table:style-name=\"ro1\""),
+            "row 1 must stay a plain table-row despite a ro0/ro2 gap"
+        );
+        // Every defined roN style is actually referenced (no orphan styles)
+        assert_eq!(
+            content.matches("style:name=\"ro").count(),
+            content.matches("table:style-name=\"ro").count(),
+            "every defined roN style must be referenced"
+        );
+        Ok(())
+    }
+    #[test]
+    fn test_export_plain_sheet_no_row_styles_f210() -> Result<()> {
+        use crate::model::{Cell, Sheet};
+        use std::io::Read;
+
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("Plain");
+        sheet.cells.insert((0, 0), Cell::with_text("A1"));
+        sheet.cells.insert((1, 0), Cell::with_text("A2"));
+        wb.add_sheet(sheet);
+
+        let bytes = export_ods(&wb)?;
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))?;
+        let mut content = String::new();
+        archive.by_name("content.xml")?.read_to_string(&mut content)?;
+
+        assert!(
+            !content.contains("table:style-name=\"ro"),
+            "no row style-name on plain rows"
+        );
+        assert!(
+            !content.contains("table-row-properties"),
+            "no table-row-properties on a plain sheet"
+        );
+        assert!(!content.contains("row-height"), "no row-height on a plain sheet");
+        Ok(())
+    }
+
+    #[test]
+    fn test_from_ods_roundtrip_row_heights_f210() -> Result<()> {
+        use crate::model::{Cell, Sheet};
+        use std::io::Read;
+
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("RT");
+        sheet.cells.insert((0, 0), Cell::with_text("A1"));
+        sheet.cells.insert((2, 0), Cell::with_text("A3"));
+        sheet.row_heights.insert(0, 30.0);
+        sheet.row_heights.insert(2, 45.0);
+        wb.add_sheet(sheet);
+
+        let bytes = export_ods(&wb)?;
+        let imported = from_ods(&bytes)?;
+
+        let imported_sheet = &imported.sheets[0];
+        assert_eq!(
+            imported_sheet.row_heights.len(),
+            2,
+            "row heights must round-trip"
+        );
+        // Serializer writes cm at {:.3}: worst-case cm rounding 0.0005cm -> 0.0142pt,
+        // so 0.02 is the honest tolerance bound (widths test pattern).
+        assert!(
+            (imported_sheet.row_heights.get(&0).copied().unwrap() - 30.0).abs() < 0.02,
+            "row 0 height within 0.02pt of 30.0"
+        );
+        assert!(
+            (imported_sheet.row_heights.get(&2).copied().unwrap() - 45.0).abs() < 0.02,
+            "row 2 height within 0.02pt of 45.0"
+        );
+        // Gap row must not gain a phantom row height
+        assert!(
+            !imported_sheet.row_heights.contains_key(&1),
+            "gap row 1 must not come back with a height"
+        );
         Ok(())
     }
 }

@@ -338,6 +338,17 @@ fn build_content_xml(doc: &OdfDocument) -> String {
                 }
             }
         }
+        // Collect row height styles for all sheets
+        for sheet in sheets {
+            if let Some(ref row_heights) = sheet.row_heights {
+                for (row_idx, &height_pts) in row_heights {
+                    // Convert points to cm: 1pt = 1/72in, 1in = 2.54cm
+                    let height_cm = height_pts as f64 / 72.0 * 2.54;
+                    let style_name = format!("ro{}", row_idx);
+                    emit_row_height_style(&mut xml, &style_name, height_cm);
+                }
+            }
+        }
         // Emit automatic cell styles
         for style in &doc.automatic_cell_styles {
             emit_cell_style(&mut xml, style);
@@ -442,6 +453,22 @@ fn emit_column_width_style(xml: &mut String, style_name: &str, width_cm: f64) {
         xml,
         "   <style:table-column-properties style:column-width=\"{:.3}cm\"/> ",
         width_cm
+    )
+    .unwrap();
+    writeln!(xml, "  </style:style>").unwrap();
+}
+
+fn emit_row_height_style(xml: &mut String, style_name: &str, height_cm: f64) {
+    writeln!(
+        xml,
+        "  <style:style style:name=\"{}\" style:family=\"table-row\">",
+        style_name
+    )
+    .unwrap();
+    writeln!(
+        xml,
+        "   <style:table-row-properties style:row-height=\"{:.3}cm\"/> ",
+        height_cm
     )
     .unwrap();
     writeln!(xml, "  </style:style>").unwrap();
@@ -629,7 +656,22 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
     }
 
     for row in &sheet.rows {
-        writeln!(xml, "{}  <table:table-row>", pad).unwrap();
+        // Check if this row has a custom height
+        let row_style_name = if let Some(ref row_heights) = sheet.row_heights {
+            if row_heights.contains_key(&row.row_num) {
+                Some(format!("ro{}", row.row_num))
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+        
+        if let Some(style_name) = row_style_name {
+            writeln!(xml, "{}  <table:table-row table:style-name=\"{}\">", pad, style_name).unwrap();
+        } else {
+            writeln!(xml, "{}  <table:table-row>", pad).unwrap();
+        }
         // ODF cell positions are purely sequential: pad any leading/gap columns
         // with empty cells so sparse rows (e.g. cells only at col 2,3) stay put.
         let mut col_pos: u32 = 0;

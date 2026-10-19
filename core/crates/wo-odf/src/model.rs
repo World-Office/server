@@ -152,6 +152,21 @@ pub struct SpreadsheetSheet {
     /// Column widths (column index -> width in points)
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub col_widths: Option<BTreeMap<u32, f32>>,
+    /// Row heights (row index -> height in points)
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub row_heights: Option<BTreeMap<u32, f32>>,
+}
+
+impl Default for SpreadsheetSheet {
+    fn default() -> Self {
+        SpreadsheetSheet {
+            name: String::new(),
+            rows: Vec::new(),
+            max_column: 0,
+            col_widths: None,
+            row_heights: None,
+        }
+    }
 }
 
 /// A spreadsheet row.
