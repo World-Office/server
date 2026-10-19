@@ -8,6 +8,7 @@
 // `wo-common` for shared types (path addressing, EditableModel, etc.).
 
 pub mod chart_embed;
+pub mod inheritance;
 pub mod model;
 pub mod ops;
 
@@ -19,5 +20,9 @@ pub use model::{
     ReflectionEffect, ShadowEffect, Shape, SlideBackground, SlideBackgroundType, SlideLayout,
     SlideMaster, SlideSize, SlideTransition, SmartArtShape, TableCell, TableColumn, TableRow,
     TableShape, TextBody, TextBoxShape, Theme, ThemeColor, ThemeFont, TransitionEffect,
+};
+pub use inheritance::{
+    get_layout, get_master, resolve_inheritance, ResolvedInheritance, ResolvedLayout,
+    ResolvedMaster,
 };
 pub use ops::{SlideOp, SlideOpError};
