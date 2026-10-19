@@ -42,6 +42,89 @@ impl Range2d {
     }
 }
 
+/// Sheet protection settings.
+///
+/// When enabled, only cells within allowed edit ranges can be modified.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct SheetProtection {
+    /// Whether protection is enabled for this sheet.
+    #[serde(default)]
+    pub enabled: bool,
+    /// Optional list of ranges that are explicitly locked (blocked from editing).
+    /// If None, all cells not in edit_ranges are locked when enabled.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub locked_cells: Option<Vec<Range2d>>,
+}
+
+impl SheetProtection {
+    /// Create a new SheetProtection with the given enabled state.
+    pub fn new(enabled: bool) -> Self {
+        Self {
+            enabled,
+            locked_cells: None,
+        }
+    }
+
+    /// Create a new disabled SheetProtection (default).
+    pub fn disabled() -> Self {
+        Self::default()
+    }
+
+    /// Create a new enabled SheetProtection.
+    pub fn enabled() -> Self {
+        Self {
+            enabled: true,
+            locked_cells: None,
+        }
+    }
+
+    /// Check if the sheet is protected.
+    pub fn is_protected(&self) -> bool {
+        self.enabled
+    }
+}
+
+/// A named range where editing is allowed even when the sheet is protected.
+///
+/// This corresponds to the "Allow Edit Ranges" feature in spreadsheet applications,
+/// where specific ranges can be designated as editable.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct EditRange {
+    /// Name of this edit range (user-visible identifier).
+    pub name: String,
+    /// The ranges where editing is allowed.
+    #[serde(default)]
+    pub ranges: Vec<Range2d>,
+}
+
+impl EditRange {
+    /// Create a new EditRange with the given name and a single range.
+    pub fn new(name: impl Into<String>, range: Range2d) -> Self {
+        Self {
+            name: name.into(),
+            ranges: vec![range],
+        }
+    }
+
+    /// Create a new EditRange with the given name and multiple ranges.
+    pub fn with_ranges(name: impl Into<String>, ranges: Vec<Range2d>) -> Self {
+        Self {
+            name: name.into(),
+            ranges,
+        }
+    }
+
+    /// Check if a specific cell is within any of this EditRange's ranges.
+    pub fn contains(&self, row: u32, col: u32) -> bool {
+        self.ranges.iter().any(|r| r.contains(row, col))
+    }
+
+    /// Check if a specific cell is within any of this EditRange's ranges.
+    pub fn contains_cell(&self, cell: (u32, u32)) -> bool {
+        self.contains(cell.0, cell.1)
+    }
+}
+
 /// A merged cell range in a spreadsheet.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct MergeRange {
@@ -201,6 +284,9 @@ pub struct Sheet {
     /// Visibility flag
     #[serde(default)]
     pub visible: bool,
+    /// Sheet protection settings.
+    #[serde(default)]
+    pub protection: SheetProtection,
 }
 
 impl Default for Sheet {
@@ -214,6 +300,7 @@ impl Default for Sheet {
             merges: Vec::new(),
             frozen: None,
             visible: true,
+            protection: SheetProtection::default(),
         }
     }
 }
@@ -231,6 +318,7 @@ impl Sheet {
             merges: Vec::new(),
             frozen: None,
             visible: true,
+            protection: SheetProtection::default(),
         }
     }
 
@@ -488,6 +576,9 @@ pub struct Workbook {
     /// Revision number for tracking changes
     #[serde(default)]
     pub revision: u64,
+    /// Edit ranges that allow editing even when sheet is protected.
+    #[serde(default)]
+    pub edit_ranges: Vec<EditRange>,
 }
 
 /// Calculation mode for the workbook.
@@ -844,6 +935,91 @@ impl EditableModel for Workbook {
         // self.revision - rev onwards. For now, return empty.
         Vec::new()
     }
+}
+
+// ============================================================================
+// Protection and Edit Range Resolution
+// ============================================================================
+
+/// Check if a cell is allowed to be edited given sheet protection and edit ranges.
+///
+/// Semantics:
+/// - If sheet protection is disabled: everything is allowed (returns true).
+/// - If sheet protection is enabled and there are no edit ranges: everything is blocked (returns false).
+/// - If sheet protection is enabled with edit ranges: only cells inside at least one EditRange are allowed.
+/// - If cell is in locked_cells explicitly: blocked even if in an edit range.
+///
+/// # Arguments
+/// * `protection` - The sheet's protection settings
+/// * `edit_ranges` - List of allowed edit ranges for the workbook
+/// * `cell` - The (row, col) coordinates to check
+///
+/// # Returns
+/// `true` if the cell can be edited, `false` otherwise.
+pub fn is_edit_allowed(
+    protection: &SheetProtection,
+    edit_ranges: &[EditRange],
+    cell: (u32, u32),
+) -> bool {
+    // If protection is disabled, everything is allowed
+    if !protection.enabled {
+        return true;
+    }
+
+    // If protection is enabled but no edit ranges exist, everything is blocked
+    if edit_ranges.is_empty() {
+        return false;
+    }
+
+    // Check if cell is in any edit range
+    let in_edit_range = edit_ranges.iter().any(|er| er.contains_cell(cell));
+
+    // Check if cell is explicitly locked
+    if let Some(locked) = &protection.locked_cells {
+        let is_locked = locked.iter().any(|r| r.contains(cell.0, cell.1));
+        if is_locked {
+            return false;
+        }
+    }
+
+    in_edit_range
+}
+
+/// Get all edit ranges that contain the specified cell.
+///
+/// This is useful for UI purposes to show which edit ranges a cell belongs to.
+pub fn allowed_edit_ranges(edit_ranges: &[EditRange], cell: (u32, u32)) -> Vec<&EditRange> {
+    edit_ranges
+        .iter()
+        .filter(|er| er.contains_cell(cell))
+        .collect()
+}
+
+/// Check if a range is fully contained within the allowed edit ranges.
+///
+/// Returns true if every cell in the given range is in at least one edit range.
+pub fn range_is_fully_allowed(
+    protection: &SheetProtection,
+    edit_ranges: &[EditRange],
+    range: &Range2d,
+) -> bool {
+    if !protection.enabled {
+        return true;
+    }
+
+    if edit_ranges.is_empty() {
+        return false;
+    }
+
+    // Check every cell in the range
+    for row in range.start_row..=range.end_row {
+        for col in range.start_col..=range.end_col {
+            if !is_edit_allowed(protection, edit_ranges, (row, col)) {
+                return false;
+            }
+        }
+    }
+    true
 }
 
 // ============================================================================
@@ -1678,5 +1854,309 @@ mod tests {
             let back: DatePeriod = serde_json::from_str(&json).unwrap();
             assert_eq!(*period, back);
         }
+    }
+
+    // ========================================================================
+    // Protection and Edit Range Tests // F-146
+    // ========================================================================
+
+    // Test (a): protection disabled -> any cell allowed
+    #[test]
+    fn test_protection_disabled_any_cell_allowed() {
+        // F-146
+        let sheet = Sheet::new("Test");
+        let workbook = Workbook::new();
+
+        // Sheet should have protection disabled by default
+        assert!(!sheet.protection.enabled);
+        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (0, 0)));
+        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (100, 100)));
+        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (50, 25)));
+    }
+
+    // Test (b): protection enabled + a named edit range -> inside allowed, outside blocked
+    #[test]
+    fn test_protection_enabled_with_edit_range() {
+        // F-146
+        let mut sheet = Sheet::new("Test");
+        sheet.protection = SheetProtection::enabled();
+
+        let mut workbook = Workbook::new();
+        workbook.edit_ranges = vec![EditRange::new("InputRange", Range2d::new(0, 0, 5, 5))];
+
+        // Cells inside the range should be allowed
+        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (0, 0)));
+        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (2, 3)));
+        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (5, 5)));
+
+        // Cells outside the range should be blocked
+        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (6, 0)));
+        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (0, 6)));
+        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (10, 10)));
+    }
+
+    // Test (c): protection enabled + no edit ranges -> everything blocked
+    #[test]
+    fn test_protection_enabled_no_edit_ranges() {
+        // F-146
+        let mut sheet = Sheet::new("Test");
+        sheet.protection = SheetProtection::enabled();
+
+        let workbook = Workbook::new();
+        // workbook.edit_ranges is empty by default
+
+        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (0, 0)));
+        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (1, 1)));
+        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (100, 100)));
+    }
+
+    // Test (d): multi-range edit range (rect union) resolves correctly
+    #[test]
+    fn test_multi_range_edit_range() {
+        // F-146
+        let mut sheet = Sheet::new("Test");
+        sheet.protection = SheetProtection::enabled();
+
+        let mut workbook = Workbook::new();
+        workbook.edit_ranges = vec![EditRange::with_ranges(
+            "MultiRange",
+            vec![
+                Range2d::new(0, 0, 2, 2),   // Top-left 3x3
+                Range2d::new(5, 5, 10, 10), // Bottom-right 6x6
+            ],
+        )];
+
+        // Cells in first range should be allowed
+        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (0, 0)));
+        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (1, 1)));
+        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (2, 2)));
+
+        // Cells in second range should be allowed
+        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (5, 5)));
+        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (7, 8)));
+        assert!(is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (10, 10)));
+
+        // Cells between ranges should be blocked
+        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (3, 3)));
+        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (4, 4)));
+        // Cells outside both ranges should be blocked
+        assert!(!is_edit_allowed(&sheet.protection, &workbook.edit_ranges, (11, 11)));
+    }
+
+    // Test (e): serde defaults - Sheet/Workbook without protection fields round-trips
+    #[test]
+    fn test_sheet_workbook_serde_with_protection_defaults() {
+        // F-146
+        let mut workbook = Workbook::new();
+        let sheet = Sheet::new("TestSheet");
+        workbook.add_sheet(sheet);
+
+        // Serialize and deserialize
+        let json = serde_json::to_string(&workbook).unwrap();
+        let back: Workbook = serde_json::from_str(&json).unwrap();
+
+        // Check that protection is disabled by default
+        assert!(back.sheets.len() == 1);
+        assert!(!back.sheets[0].protection.enabled);
+        assert!(back.edit_ranges.is_empty());
+    }
+
+    // Test: EditRange::contains with various cells
+    #[test]
+    fn test_edit_range_contains() {
+        // F-146
+        let range = Range2d::new(2, 2, 5, 5);
+        let edit_range = EditRange::new("Test", range);
+
+        // Inside
+        assert!(edit_range.contains(2, 2));
+        assert!(edit_range.contains(3, 4));
+        assert!(edit_range.contains(5, 5));
+
+        // Outside
+        assert!(!edit_range.contains(1, 2));
+        assert!(!edit_range.contains(2, 1));
+        assert!(!edit_range.contains(6, 5));
+        assert!(!edit_range.contains(5, 6));
+        assert!(!edit_range.contains(0, 0));
+    }
+
+    // Test: allowed_edit_ranges returns correct ranges
+    #[test]
+    fn test_allowed_edit_ranges_function() {
+        // F-146
+        let edit_ranges = vec![
+            EditRange::new("Range1", Range2d::new(0, 0, 5, 5)),
+            EditRange::new("Range2", Range2d::new(10, 10, 15, 15)),
+        ];
+
+        // Cell in first range
+        let ranges = allowed_edit_ranges(&edit_ranges, (2, 2));
+        assert_eq!(ranges.len(), 1);
+        assert_eq!(ranges[0].name, "Range1");
+
+        // Cell in second range
+        let ranges = allowed_edit_ranges(&edit_ranges, (12, 12));
+        assert_eq!(ranges.len(), 1);
+        assert_eq!(ranges[0].name, "Range2");
+
+        // Cell in no range
+        let ranges = allowed_edit_ranges(&edit_ranges, (7, 7));
+        assert!(ranges.is_empty());
+    }
+
+    // Test: range_is_fully_allowed
+    #[test]
+    fn test_range_is_fully_allowed() {
+        // F-146
+        let protection = SheetProtection::enabled();
+        let edit_ranges = vec![EditRange::new("BigRange", Range2d::new(0, 0, 10, 10))];
+
+        // Range fully within allowed range
+        assert!(range_is_fully_allowed(
+            &protection,
+            &edit_ranges,
+            &Range2d::new(2, 2, 5, 5)
+        ));
+
+        // Range partially outside allowed range
+        assert!(!range_is_fully_allowed(
+            &protection,
+            &edit_ranges,
+            &Range2d::new(5, 5, 15, 15)
+        ));
+
+        // Range completely outside allowed range
+        assert!(!range_is_fully_allowed(
+            &protection,
+            &edit_ranges,
+            &Range2d::new(11, 11, 20, 20)
+        ));
+    }
+
+    // Test: locked_cells takes precedence over edit ranges
+    #[test]
+    fn test_locked_cells_precedence() {
+        // F-146
+        let mut protection = SheetProtection::enabled();
+        protection.locked_cells = Some(vec![Range2d::new(0, 0, 2, 2)]);
+
+        let edit_ranges = vec![EditRange::new("Range", Range2d::new(0, 0, 5, 5))];
+
+        // Cells in edit range but also in locked range should be blocked
+        assert!(!is_edit_allowed(&protection, &edit_ranges, (0, 0)));
+        assert!(!is_edit_allowed(&protection, &edit_ranges, (1, 1)));
+        assert!(!is_edit_allowed(&protection, &edit_ranges, (2, 2)));
+
+        // Cells in edit range but not in locked range should be allowed
+        assert!(is_edit_allowed(&protection, &edit_ranges, (3, 3)));
+        assert!(is_edit_allowed(&protection, &edit_ranges, (5, 5)));
+    }
+
+    // Test: Workbook serde with explicit protection and edit ranges
+    #[test]
+    fn test_workbook_serde_with_protection_and_edit_ranges() {
+        // F-146
+        let mut workbook = Workbook::new();
+        let mut sheet = Sheet::new("ProtectedSheet");
+        sheet.protection = SheetProtection::enabled();
+        workbook.add_sheet(sheet);
+
+        workbook.edit_ranges = vec![
+            EditRange::new("InputArea", Range2d::new(0, 0, 10, 10)),
+            EditRange::with_ranges("MultiArea", vec![
+                Range2d::new(20, 20, 30, 30),
+                Range2d::new(40, 40, 50, 50),
+            ]),
+        ];
+
+        // Serialize and deserialize
+        let json = serde_json::to_string(&workbook).unwrap();
+        let back: Workbook = serde_json::from_str(&json).unwrap();
+
+        // Verify protection and edit ranges are preserved
+        assert!(back.sheets[0].protection.enabled);
+        assert_eq!(back.edit_ranges.len(), 2);
+        assert_eq!(back.edit_ranges[0].name, "InputArea");
+        assert_eq!(back.edit_ranges[1].name, "MultiArea");
+        assert_eq!(back.edit_ranges[1].ranges.len(), 2);
+    }
+
+    // Test: SheetProtection methods
+    #[test]
+    fn test_sheet_protection_methods() {
+        // F-146
+        let protection_disabled = SheetProtection::disabled();
+        assert!(!protection_disabled.enabled);
+        assert!(!protection_disabled.is_protected());
+
+        let protection_enabled = SheetProtection::enabled();
+        assert!(protection_enabled.enabled);
+        assert!(protection_enabled.is_protected());
+
+        let protection_new = SheetProtection::new(true);
+        assert!(protection_new.enabled);
+        assert!(protection_new.is_protected());
+    }
+
+    // Test: EditRange methods
+    #[test]
+    fn test_edit_range_methods() {
+        // F-146
+        let range1 = Range2d::new(0, 0, 5, 5);
+
+        let edit_range_single = EditRange::new("Single", range1.clone());
+        assert_eq!(edit_range_single.name, "Single");
+        assert_eq!(edit_range_single.ranges.len(), 1);
+        assert!(edit_range_single.contains(2, 2));
+        assert!(!edit_range_single.contains(12, 12));
+
+        let edit_range_multi = EditRange::with_ranges(
+            "Multi",
+            vec![range1, Range2d::new(10, 10, 15, 15)],
+        );
+        assert_eq!(edit_range_multi.name, "Multi");
+        assert_eq!(edit_range_multi.ranges.len(), 2);
+        assert!(edit_range_multi.contains(2, 2));
+        assert!(edit_range_multi.contains(12, 12));
+        assert!(!edit_range_multi.contains(7, 7));
+    }
+
+    // Test: Protection disabled at workbook level
+    #[test]
+    fn test_protection_disabled_workbook_level() {
+        // F-146
+        let mut workbook = Workbook::new();
+        let sheet_with_protection = Sheet {
+            id: "Sheet1".to_string(),
+            name: "Sheet1".to_string(),
+            cells: FxHashMap::default(),
+            col_widths: BTreeMap::new(),
+            row_heights: BTreeMap::new(),
+            merges: Vec::new(),
+            frozen: None,
+            visible: true,
+            protection: SheetProtection::enabled(),
+        };
+        workbook.add_sheet(sheet_with_protection);
+        workbook.edit_ranges = vec![EditRange::new("Range", Range2d::new(0, 0, 5, 5))];
+
+        // Even with protection enabled on sheet, if we pass disabled protection to is_edit_allowed, it should allow
+        let disabled_protection = SheetProtection::disabled();
+        assert!(is_edit_allowed(&disabled_protection, &workbook.edit_ranges, (100, 100)));
+    }
+
+    // Test: EditRange::contains_cell
+    #[test]
+    fn test_edit_range_contains_cell() {
+        // F-146
+        let range = Range2d::new(2, 2, 5, 5);
+        let edit_range = EditRange::new("Test", range);
+
+        assert!(edit_range.contains_cell((2, 2)));
+        assert!(edit_range.contains_cell((3, 4)));
+        assert!(edit_range.contains_cell((5, 5)));
+        assert!(!edit_range.contains_cell((1, 2)));
+        assert!(!edit_range.contains_cell((6, 5)));
     }
 }

@@ -15,8 +15,9 @@ pub use conditional::{ConditionalResult, apply_conditional_format};
 pub use export::export_ods;
 pub use format::{FormatContext, FormatPattern, format_number, format_value};
 pub use model::{
-    Cell, CellStyle, ConditionalRule, DefinedName, MergeRange, Range2d, Sheet, SheetOp, SortKey,
-    Workbook,
+    Cell, CellStyle, ConditionalRule, DefinedName, EditRange, MergeRange, Range2d, Sheet,
+    SheetOp, SheetProtection, SortKey, Workbook, allowed_edit_ranges, is_edit_allowed,
+    range_is_fully_allowed,
 };
 pub use ops::{SheetOpError, SheetOpResult, apply_to_sheet, apply_to_workbook, invert_sheetop};
 pub use validation::{
