@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use wo_formula::ast::CellValue;
 
 use super::model::{
-    Cell, CellStyle, MergeRange, Range2d, Sheet, SheetOp, SortKey, SortOrder, Workbook,
+    Cell, CellStyle, EditRange, MergeRange, Range2d, Sheet, SheetOp, SortKey, SortOrder, Workbook,
 };
 use crate::conditional::apply_conditional_format;
 
@@ -52,6 +52,8 @@ pub enum SheetOpError {
     DuplicateSheetName { name: String },
     #[error("sort range invalid: {reason}")]
     InvalidSort { reason: String },
+    #[error("operation not allowed: cell/range is protected")]
+    Protected,
 }
 
 /// Result type for SheetOp operations.
@@ -473,6 +475,178 @@ pub fn apply_to_sheet(sheet: &mut Sheet, op: &SheetOp) -> SheetOpResult<()> {
             })
         }
     }
+}
+
+/// Representation of the region(s) touched by a SheetOp.
+/// For most ops this is a single Range2d, but Copy touches both source and destination.
+#[derive(Debug, Clone)]
+enum OpTouchedRegion {
+    /// Operation touches a single cell
+    SingleCell(u32, u32),
+    /// Operation touches a range of cells
+    Range(Range2d),
+    /// Operation touches both a source range and a destination position (for Copy)
+    Copy { from: Range2d, to: (u32, u32) },
+    /// Structural operation (InsertRow, DeleteRow, InsertCol, DeleteCol, Merge, Unmerge)
+    /// These modify the structure but for F-146 minimal enforcement we allow them through
+    /// as they don't write cell VALUES directly
+    Structural,
+}
+
+/// Compute the region of cells that a SheetOp would touch.
+/// Returns None for operations that don't touch cells (like FreezePanes, SetColWidth, etc.)
+fn op_touched_region(op: &SheetOp) -> Option<OpTouchedRegion> {
+    match op {
+        SheetOp::SetCell { row, col, .. } => Some(OpTouchedRegion::SingleCell(*row, *col)),
+        SheetOp::InsertRow { .. } => Some(OpTouchedRegion::Structural),
+        SheetOp::DeleteRow { .. } => Some(OpTouchedRegion::Structural),
+        SheetOp::InsertCol { .. } => Some(OpTouchedRegion::Structural),
+        SheetOp::DeleteCol { .. } => Some(OpTouchedRegion::Structural),
+        SheetOp::Merge(_range) => Some(OpTouchedRegion::Structural),
+        SheetOp::Unmerge(_range) => Some(OpTouchedRegion::Structural),
+        SheetOp::SetStyle { range, .. } => Some(OpTouchedRegion::Range(range.clone())),
+        SheetOp::Sort { range, .. } => Some(OpTouchedRegion::Range(range.clone())),
+        SheetOp::ApplyConditionalFormat { range, .. } => Some(OpTouchedRegion::Range(range.clone())),
+        SheetOp::Clear { range } => Some(OpTouchedRegion::Range(range.clone())),
+        SheetOp::Copy { from, to } => Some(OpTouchedRegion::Copy {
+            from: from.clone(),
+            to: *to,
+        }),
+        SheetOp::Paste { at, data } => {
+            // Calculate the range covered by the paste operation
+            let rows = data.len() as u32;
+            let cols = data.first().map(|row| row.len() as u32).unwrap_or(0);
+            if rows == 0 || cols == 0 {
+                None
+            } else {
+                Some(OpTouchedRegion::Range(Range2d::new(
+                    at.0,
+                    at.1,
+                    at.0 + rows - 1,
+                    at.1 + cols - 1,
+                )))
+            }
+        }
+        // These operations don't modify cell values, so they don't need protection checks
+        SheetOp::SetColWidth { .. } => None,
+        SheetOp::SetRowHeight { .. } => None,
+        SheetOp::FreezePanes { .. } => None,
+        SheetOp::UnfreezePanes => None,
+        SheetOp::RenameSheet { .. } => None,
+        SheetOp::AddSheet { .. } => None,
+        SheetOp::RemoveSheet { .. } => None,
+        SheetOp::SetSheetVisibility { .. } => None,
+    }
+}
+
+/// Check if an operation is allowed given sheet protection and edit ranges.
+/// Returns true if protection is disabled or if all touched cells are allowed.
+fn is_op_allowed(
+    sheet: &Sheet,
+    edit_ranges: &[EditRange],
+    region: &OpTouchedRegion,
+) -> bool {
+    // If protection is disabled, everything is allowed
+    if !sheet.protection.enabled {
+        return true;
+    }
+
+    // If there are no edit ranges, everything is blocked when protection is enabled
+    if edit_ranges.is_empty() {
+        return false;
+    }
+
+    match region {
+        OpTouchedRegion::SingleCell(row, col) => {
+            // Use the existing is_edit_allowed function
+            super::model::is_edit_allowed(&sheet.protection, edit_ranges, (*row, *col))
+        }
+        OpTouchedRegion::Range(range) => {
+            // Use the existing range_is_fully_allowed function
+            super::model::range_is_fully_allowed(&sheet.protection, edit_ranges, range)
+        }
+        OpTouchedRegion::Copy { from, to } => {
+            // Both source and destination must be allowed
+            // Check source range
+            let source_range = from;
+            if !super::model::range_is_fully_allowed(&sheet.protection, edit_ranges, source_range) {
+                return false;
+            }
+            // Check destination - we need to calculate the destination range
+            let dest_rows = source_range.end_row - source_range.start_row + 1;
+            let dest_cols = source_range.end_col - source_range.start_col + 1;
+            let dest_range = Range2d::new(
+                to.0,
+                to.1,
+                to.0 + dest_rows - 1,
+                to.1 + dest_cols - 1,
+            );
+            super::model::range_is_fully_allowed(&sheet.protection, edit_ranges, &dest_range)
+        }
+        OpTouchedRegion::Structural => {
+            // For F-146 minimal enforcement: allow structural ops through
+            // They modify structure but don't write cell VALUES directly
+            // This is the "minimal honest slice" decision documented in the task
+            true
+        }
+    }
+}
+
+/// Apply a SheetOp to a Sheet with protection enforcement.
+/// 
+/// This function checks if the operation is allowed based on:
+/// - The sheet's protection settings
+/// - The workbook's edit ranges
+/// 
+/// If protection is disabled or the operation touches only allowed cells,
+/// it delegates to `apply_to_sheet`. Otherwise, returns a Protected error.
+/// 
+/// # Arguments
+/// * `sheet` - The sheet to apply the operation to
+/// * `workbook_edit_ranges` - The edit ranges from the containing workbook
+/// * `op` - The operation to apply
+/// 
+/// # Returns
+/// * `Ok(())` if the operation was applied successfully
+/// * `Err(SheetOpError::Protected)` if the operation would modify protected cells
+/// // F-146
+pub fn apply_to_sheet_protected(
+    sheet: &mut Sheet,
+    workbook_edit_ranges: &[EditRange],
+    op: &SheetOp,
+) -> SheetOpResult<()> {
+    // Compute the region touched by this operation
+    if let Some(region) = op_touched_region(op) {
+        // Check if the operation is allowed
+        if !is_op_allowed(sheet, workbook_edit_ranges, &region) {
+            return Err(SheetOpError::Protected);
+        }
+    }
+
+    // Operation is allowed, delegate to the original apply_to_sheet
+    apply_to_sheet(sheet, op)
+}
+
+/// Apply a SheetOp to a Workbook with protection enforcement.
+/// This applies protection checks using the sheet's protection and the workbook's edit ranges.
+/// // F-146
+pub fn apply_to_workbook_protected(
+    wb: &mut Workbook,
+    sheet_name: Option<&str>,
+    op: &SheetOp,
+) -> SheetOpResult<()> {
+    // Find the target sheet - use active sheet if not specified
+    // First, determine the sheet name without borrowing wb mutably
+    let target_sheet_name = if let Some(name) = sheet_name {
+        name.to_string()
+    } else {
+        wb.sheets.get(wb.active_sheet).map(|s| s.name.clone()).unwrap_or_else(|| "Sheet1".to_string())
+    };
+    
+    let sheet = wb.sheets.iter_mut().find(|s| s.name == target_sheet_name)
+        .ok_or_else(|| SheetOpError::SheetNotFound { name: target_sheet_name })?;
+    
+    apply_to_sheet_protected(sheet, &wb.edit_ranges, op)
 }
 
 /// Apply a SheetOp to a Workbook.
@@ -1423,5 +1597,296 @@ mod tests {
             wb.sheets[0].get_cell(0, 1).unwrap().value,
             CellValue::Num(30.0)
         );
+    }
+
+    // ========================================================================
+    // F-146 Protection Enforcement Tests
+    // ========================================================================
+
+    // Test F-146(a): Protected sheet + SetCell on disallowed cell -> Err
+    #[test]
+    fn test_protected_set_cell_disallowed() {
+        // F-146
+        use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
+        
+        let mut sheet = Sheet::new("ProtectedSheet");
+        sheet.protection = SheetProtection::enabled();
+        let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 5, 5))];
+
+        // Try to set a cell outside the allowed range
+        let op = SheetOp::SetCell {
+            row: 10,
+            col: 10,
+            raw: "test".to_string(),
+        };
+
+        let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
+        assert!(result.is_err());
+        assert!(matches!(result, Err(SheetOpError::Protected)));
+    }
+
+    // Test F-146(b): Protected sheet + SetCell inside edit range -> Ok and cell changed
+    #[test]
+    fn test_protected_set_cell_allowed() {
+        // F-146
+        use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
+        
+        let mut sheet = Sheet::new("ProtectedSheet");
+        sheet.protection = SheetProtection::enabled();
+        let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 5, 5))];
+
+        // Set a cell inside the allowed range
+        let op = SheetOp::SetCell {
+            row: 2,
+            col: 2,
+            raw: "test value".to_string(),
+        };
+
+        let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
+        assert!(result.is_ok());
+        
+        // Verify the cell was actually set
+        let cell = sheet.get_cell(2, 2).unwrap();
+        assert_eq!(cell.raw, "test value");
+    }
+
+    // Test F-146(c): Protection disabled -> ops go through (identical to plain apply_to_sheet)
+    #[test]
+    fn test_protection_disabled_ops_through() {
+        // F-146
+        use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
+        
+        let mut sheet = Sheet::new("UnprotectedSheet");
+        sheet.protection = SheetProtection::disabled();
+        let edit_ranges = vec![]; // No edit ranges needed when protection is disabled
+
+        // Try to set a cell anywhere
+        let op = SheetOp::SetCell {
+            row: 100,
+            col: 100,
+            raw: "test".to_string(),
+        };
+
+        let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
+        assert!(result.is_ok());
+        
+        // Verify the cell was set
+        let cell = sheet.get_cell(100, 100).unwrap();
+        assert_eq!(cell.raw, "test");
+    }
+
+    // Test F-146(d): Empty edit_ranges under protection -> any cell op errors
+    #[test]
+    fn test_protected_empty_edit_ranges() {
+        // F-146
+        use super::super::model::{Sheet, SheetProtection};
+        
+        let mut sheet = Sheet::new("ProtectedSheet");
+        sheet.protection = SheetProtection::enabled();
+        let edit_ranges = vec![]; // Empty edit ranges
+
+        // Try to set any cell
+        let op = SheetOp::SetCell {
+            row: 0,
+            col: 0,
+            raw: "test".to_string(),
+        };
+
+        let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
+        assert!(result.is_err());
+        assert!(matches!(result, Err(SheetOpError::Protected)));
+    }
+
+    // Test F-146(e): Copy where destination is outside but source inside -> errors
+    #[test]
+    fn test_protected_copy_dest_outside() {
+        // F-146
+        use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
+        
+        let mut sheet = Sheet::new("ProtectedSheet");
+        // Set up some cells to copy
+        sheet.set_cell(0, 0, super::super::model::Cell::with_text("data"));
+        sheet.protection = SheetProtection::enabled();
+        
+        // Edit range includes source but not destination
+        let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 5, 5))];
+
+        // Copy from (0,0) to (10,10) where destination is outside allowed range
+        let op = SheetOp::Copy {
+            from: Range2d::new(0, 0, 0, 0),
+            to: (10, 10),
+        };
+
+        let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
+        assert!(result.is_err());
+        assert!(matches!(result, Err(SheetOpError::Protected)));
+        
+        // Verify no cell was created at destination
+        assert!(sheet.get_cell(10, 10).is_none());
+    }
+
+    // Test F-146: SetStyle on locked range should error
+    #[test]
+    fn test_protected_set_style_disallowed() {
+        // F-146
+        use super::super::model::{CellStyle, EditRange, Range2d, Sheet, SheetProtection};
+        
+        let mut sheet = Sheet::new("ProtectedSheet");
+        sheet.protection = SheetProtection::enabled();
+        let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 5, 5))];
+
+        // Try to set style on a range outside the allowed range
+        let op = SheetOp::SetStyle {
+            range: Range2d::new(10, 10, 15, 15),
+            style: CellStyle::default(),
+        };
+
+        let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
+        assert!(result.is_err());
+        assert!(matches!(result, Err(SheetOpError::Protected)));
+    }
+
+    // Test F-146: Clear on locked range should error
+    #[test]
+    fn test_protected_clear_disallowed() {
+        // F-146
+        use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
+        
+        let mut sheet = Sheet::new("ProtectedSheet");
+        sheet.set_cell(10, 10, super::super::model::Cell::with_text("to clear"));
+        sheet.protection = SheetProtection::enabled();
+        let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 5, 5))];
+
+        // Try to clear a range outside the allowed range
+        let op = SheetOp::Clear {
+            range: Range2d::new(10, 10, 15, 15),
+        };
+
+        let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
+        assert!(result.is_err());
+        assert!(matches!(result, Err(SheetOpError::Protected)));
+        
+        // Verify cell still exists
+        assert!(sheet.get_cell(10, 10).is_some());
+    }
+
+    // Test F-146: Copy where both source and destination are allowed should succeed
+    #[test]
+    fn test_protected_copy_both_allowed() {
+        // F-146
+        use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
+        
+        let mut sheet = Sheet::new("ProtectedSheet");
+        sheet.set_cell(0, 0, super::super::model::Cell::with_text("data"));
+        sheet.protection = SheetProtection::enabled();
+        
+        // Edit range allows both source and destination
+        let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 10, 10))];
+
+        // Copy from (0,0) to (5,5) where both are inside allowed range
+        let op = SheetOp::Copy {
+            from: Range2d::new(0, 0, 0, 0),
+            to: (5, 5),
+        };
+
+        let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
+        assert!(result.is_ok());
+        
+        // Verify cell was copied
+        let cell = sheet.get_cell(5, 5).unwrap();
+        assert_eq!(cell.raw, "data");
+    }
+
+    // Test F-146: Structural ops (InsertRow) should be allowed through
+    #[test]
+    fn test_protected_insert_row_allowed() {
+        // F-146
+        use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
+        
+        let mut sheet = Sheet::new("ProtectedSheet");
+        sheet.set_cell(0, 0, super::super::model::Cell::with_text("row0"));
+        sheet.set_cell(1, 0, super::super::model::Cell::with_text("row1"));
+        sheet.set_cell(2, 0, super::super::model::Cell::with_text("row2"));
+        sheet.protection = SheetProtection::enabled();
+        let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 5, 5))];
+
+        // Insert a row after row 0 - this is a structural op and should be allowed
+        let op = SheetOp::InsertRow { after: 0, count: 1 };
+
+        let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
+        assert!(result.is_ok());
+        
+        // Verify cells were shifted: row0 stays, row1 and row2 shift down to row2 and row3
+        assert_eq!(sheet.get_cell(0, 0).unwrap().raw, "row0");
+        assert!(sheet.get_cell(1, 0).is_none()); // Empty row inserted at position 1
+        assert_eq!(sheet.get_cell(2, 0).unwrap().raw, "row1");
+        assert_eq!(sheet.get_cell(3, 0).unwrap().raw, "row2");
+    }
+
+    // Test F-146: Merge/Unmerge should be allowed through (structural ops)
+    #[test]
+    fn test_protected_merge_allowed() {
+        // F-146
+        use super::super::model::{EditRange, MergeRange, Range2d, Sheet, SheetProtection};
+        
+        let mut sheet = Sheet::new("ProtectedSheet");
+        sheet.protection = SheetProtection::enabled();
+        let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 5, 5))];
+
+        // Merge is a structural op and should be allowed
+        let op = SheetOp::Merge(MergeRange::new(0, 0, 2, 2));
+
+        let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
+        assert!(result.is_ok());
+        assert_eq!(sheet.merges.len(), 1);
+    }
+
+    // Test F-146: apply_to_workbook_protected works correctly
+    #[test]
+    fn test_apply_to_workbook_protected() {
+        // F-146
+        use super::super::model::{EditRange, Range2d, Sheet, SheetProtection, Workbook};
+        
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("ProtectedSheet");
+        sheet.protection = SheetProtection::enabled();
+        wb.add_sheet(sheet);
+        wb.edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 5, 5))];
+
+        // Try to set a cell outside the allowed range
+        let op = SheetOp::SetCell {
+            row: 10,
+            col: 10,
+            raw: "test".to_string(),
+        };
+
+        let result = apply_to_workbook_protected(&mut wb, None, &op);
+        assert!(result.is_err());
+        assert!(matches!(result, Err(SheetOpError::Protected)));
+    }
+
+    // Test F-146: Protection with locked_cells takes precedence
+    #[test]
+    fn test_protected_locked_cells_precedence() {
+        // F-146
+        use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
+        
+        let mut sheet = Sheet::new("ProtectedSheet");
+        sheet.protection = SheetProtection::enabled();
+        sheet.protection.locked_cells = Some(vec![Range2d::new(2, 2, 4, 4)]);
+        
+        // Edit range includes the locked area
+        let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 10, 10))];
+
+        // Try to set a cell in the locked range (which is in edit range but locked)
+        let op = SheetOp::SetCell {
+            row: 3,
+            col: 3,
+            raw: "test".to_string(),
+        };
+
+        let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
+        assert!(result.is_err());
+        assert!(matches!(result, Err(SheetOpError::Protected)));
     }
 }
