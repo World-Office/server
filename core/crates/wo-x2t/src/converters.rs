@@ -11829,6 +11829,8 @@ mod tests {
     }
 
     #[test]
+    // F-306: ODP write — WoPresentation -> ODP bytes via wo-odf (draw:page, shapes)
+    // F-303: Notes slides round-trip — slide.notes survive ODP write + read back
     fn test_odp_roundtrip() {
         let wo_json = r#"{
             "version": 1,
@@ -11838,6 +11840,7 @@ mod tests {
                 "id": "slide1",
                 "title": "Test Slide",
                 "layout": "title",
+                "notes": "Speaker notes must survive",
                 "shapes": [{
                     "id": "shape1",
                     "type": "textbox",
@@ -11877,6 +11880,7 @@ mod tests {
             .unwrap();
         assert!(content.contains("draw:page"));
         assert!(content.contains("Hello ODP World!"));
+        assert!(content.contains("Speaker notes must survive"));
 
         let odp_wo = OdpToWoPresentationConverter;
         let wo_bytes = odp_wo
@@ -11885,6 +11889,7 @@ mod tests {
         let wo_output = String::from_utf8(wo_bytes).expect("Output must be valid UTF-8");
         assert!(wo_output.contains("Hello ODP World!"));
         assert!(wo_output.contains("textbox"));
+        assert!(wo_output.contains("Speaker notes must survive"));
     }
 
     // ── Section B: html_to_ooxml / html_inlines_to_docx_runs ────────────
