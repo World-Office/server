@@ -8238,6 +8238,8 @@ impl FormatConverter for WoSpreadsheetToOdsConverter {
                                     value,
                                     formula: cell.f.clone(),
                                     cell_type,
+                                    col_span: None,
+                                    row_span: None,
                                 }
                             })
                             .collect();
@@ -8253,6 +8255,7 @@ impl FormatConverter for WoSpreadsheetToOdsConverter {
                     name: sheet.name.clone(),
                     rows,
                     max_column: max_col,
+                    col_widths: None,
                 }
             })
             .collect();
