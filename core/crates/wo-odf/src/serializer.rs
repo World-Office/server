@@ -630,7 +630,14 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
 
     for row in &sheet.rows {
         writeln!(xml, "{}  <table:table-row>", pad).unwrap();
+        // ODF cell positions are purely sequential: pad any leading/gap columns
+        // with empty cells so sparse rows (e.g. cells only at col 2,3) stay put.
+        let mut col_pos: u32 = 0;
         for cell in &row.cells {
+            while col_pos < cell.column {
+                writeln!(xml, "{}    <table:table-cell/>", pad).unwrap();
+                col_pos += 1;
+            }
             // Build cell attributes including span and style info
             let mut cell_attrs = String::new();
             
@@ -747,6 +754,7 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
                     writeln!(xml, "{}    </table:table-cell>", pad).unwrap();
                 }
             }
+            col_pos += cell.col_span.unwrap_or(1);
         }
         writeln!(xml, "{}  </table:table-row>", pad).unwrap();
     }

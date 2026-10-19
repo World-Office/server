@@ -12,7 +12,7 @@ pub mod pivot;
 pub mod validation;
 
 pub use conditional::{ConditionalResult, apply_conditional_format};
-pub use export::export_ods;
+pub use export::{export_ods, from_ods};
 pub use format::{FormatContext, FormatPattern, format_number, format_value};
 pub use model::{
     Cell, CellStyle, ConditionalRule, DefinedName, EditRange, MergeRange, Range2d, Sheet,

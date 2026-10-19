@@ -299,7 +299,7 @@ impl OdfParser {
     ) -> Result<OdfContent> {
         match doc_type {
             OdfType::Text => self.parse_text_content(doc, archive),
-            OdfType::Spreadsheet => self.parse_spreadsheet_content(doc, archive),
+            OdfType::Spreadsheet => self.parse_spreadsheet_content(doc, archive, styles),
             OdfType::Presentation => self.parse_presentation_content(doc, archive, styles),
             _ => Ok(OdfContent::Generic),
         }
@@ -633,6 +633,7 @@ impl OdfParser {
         &self,
         doc: &XmlDoc,
         _archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+        styles: &[OdfStyle],
     ) -> Result<OdfContent> {
         let mut sheets = Vec::new();
 
@@ -646,7 +647,22 @@ impl OdfParser {
                 let mut max_col: usize = 0;
                 let mut row_num = 0u32;
                 
-                // Parse column widths from table:table-column elements
+                // Resolve table-column automatic styles (style:family="table-column",
+                // style:table-column-properties style:column-width="Ncm") to widths in points.
+                let mut col_width_map: BTreeMap<String, f32> = BTreeMap::new();
+                for st in styles {
+                    if st.family.as_deref() == Some("table-column") {
+                        for (k, v) in &st.properties {
+                            if k.ends_with("column-width") {
+                                if let Ok(cm) = v.trim_end_matches("cm").trim().parse::<f32>() {
+                                    col_width_map.insert(st.name.clone(), cm / 2.54 * 72.0);
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                // Parse column widths from table:table-column elements (coN style-name)
                 let mut col_widths = BTreeMap::new();
                 for col_node in node.children() {
                     if col_node.has_tag_name((TABLE_NS, "table-column")) {
@@ -654,10 +670,8 @@ impl OdfParser {
                             // Try to extract column index from style name (coN pattern)
                             if let Some(idx_str) = style_name.strip_prefix("co") {
                                 if let Ok(col_idx) = idx_str.parse::<u32>() {
-                                    // For now, we store the style name; the actual width
-                                    // would need to be looked up from styles.xml
-                                    // This is a cheap/optional read-back as per task spec
-                                    col_widths.insert(col_idx, 0.0);
+                                    let width = col_width_map.get(style_name).copied().unwrap_or(0.0);
+                                    col_widths.insert(col_idx, width);
                                 }
                             }
                         }
@@ -704,7 +718,17 @@ impl OdfParser {
                             .map(|s| s.to_string());
                         let value = cell_node
                             .attribute((OFFICE_NS_FALLBACK, "value"))
-                            .and_then(|v| v.parse::<f64>().ok());
+                            .and_then(|v| v.parse::<f64>().ok())
+                            .or_else(|| {
+                                // booleans are written as office:boolean-value without office:value
+                                cell_node
+                                    .attribute((OFFICE_NS_FALLBACK, "boolean-value"))
+                                    .and_then(|v| match v.trim() {
+                                        "true" => Some(1.0),
+                                        "false" => Some(0.0),
+                                        _ => None,
+                                    })
+                            });
                         let style_name = cell_node
                             .attribute((TABLE_NS, "style-name"))
                             .map(|s| s.to_string());
@@ -1101,6 +1125,7 @@ impl OdfParser {
                             if prop_child.has_tag_name((STYLE_NS, "graphic-properties"))
                                 || prop_child.has_tag_name((STYLE_NS, "text-properties"))
                                 || prop_child.has_tag_name((STYLE_NS, "paragraph-properties"))
+                                || prop_child.has_tag_name((STYLE_NS, "table-column-properties"))
                             {
                                 for attr in prop_child.attributes() {
                                     let key =
