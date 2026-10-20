@@ -9712,6 +9712,87 @@ mod tests {
         );
     }
 
+    /// F-404: DOCX->PDF follows OO DocxRenderer's per-page BeginCommand/EndCommand
+    /// model: a 2-page document must produce TWO page objects each with its OWN
+    /// content stream, and each page's text must stay in its own stream (no
+    /// cross-page bleed), wrapped in BT..ET text objects.
+    // F-404
+    #[test]
+    fn test_docx_to_pdf_per_page_command_streams_f404() {
+        let docx = make_docx_with_body(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t>Alpha page</w:t></w:r></w:p>
+    <w:p><w:r><w:br w:type="page"/></w:r></w:p>
+    <w:p><w:r><w:t>Beta page</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#,
+        );
+        let pdf = DocxToPdfConverter.convert(&docx).expect("docx -> pdf");
+        let doc = pdf.clone();
+
+        // two pages, each with its own /Contents ref, refs distinct
+        assert_eq!(
+            doc.windows(b"/Contents".len())
+                .filter(|w| w == b"/Contents")
+                .count(),
+            2,
+            "exactly 2 page objects with content streams"
+        );
+        let contents_refs: Vec<String> = String::from_utf8_lossy(&doc)
+            .split("/Contents ")
+            .skip(1)
+            .map(|tail| {
+                tail.split_whitespace()
+                    .next()
+                    .unwrap_or("missing")
+                    .to_string()
+            })
+            .collect();
+        assert_eq!(contents_refs.len(), 2, "two refs");
+        assert_ne!(contents_refs[0], contents_refs[1], "per-page streams distinct");
+
+        // split the file into stream bodies (no font embedding -> the only
+        // streams are the two page content streams, uncompressed)
+        let mut bodies: Vec<String> = Vec::new();
+        let mut rest: &[u8] = &doc;
+        while let Some(pos) = rest.windows(b"stream".len()).position(|w| w == b"stream") {
+            let after = &rest[pos + b"stream".len()..];
+            let end = after
+                .windows(b"endstream".len())
+                .position(|w| w == b"endstream")
+                .expect("endstream");
+            bodies.push(String::from_utf8_lossy(&after[..end]).to_string());
+            rest = &after[end + b"endstream".len()..];
+        }
+        let content_bodies: Vec<&String> = bodies
+            .iter()
+            .filter(|b| b.contains("page") || b.contains("BT"))
+            .collect();
+        assert_eq!(content_bodies.len(), 2, "two content stream bodies");
+
+        // per-page isolation: Alpha only in one stream, Beta only in the other
+        let (has_alpha, has_beta): (Vec<_>, Vec<_>) = content_bodies
+            .iter()
+            .map(|b| (b.contains("Alpha page"), b.contains("Beta page")))
+            .unzip();
+        assert_eq!(
+            has_alpha,
+            [true, false],
+            "page 1 carries page-1 text only (BeginCommand/EndCommand isolation)"
+        );
+        assert_eq!(
+            has_beta,
+            [false, true],
+            "page 2 carries page-2 text only"
+        );
+        // and the text is wrapped in BT..ET text objects (the command stream)
+        for b in content_bodies {
+            assert!(b.contains("BT") && b.contains("ET"), "BT..ET per line");
+        }
+    }
+
     #[test]
     fn test_docx_to_txt_multiple_paragraphs() {
         let docx = make_docx_with_body(
