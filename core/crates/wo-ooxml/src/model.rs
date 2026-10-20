@@ -470,6 +470,25 @@ pub enum DocxBlock {
     Image(DocxImage),
 }
 
+/// A comment thread entry from word/comments.xml and word/commentsExtended.xml.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct Comment {
+    /// Unique numeric identifier (w:id).
+    pub id: String,
+    /// Author name (w:author).
+    pub author: String,
+    /// ISO-8601 date string (w:date).
+    pub date: String,
+    /// Plain text of the comment body.
+    pub text: String,
+    /// Whether the thread is marked as resolved/done (from w15:done in commentsExtended.xml).
+    #[serde(default)]
+    pub resolved: bool,
+    /// For reply comments: the parent comment's paraId (w15:paraIdParent in commentsExtended.xml).
+    #[serde(default)]
+    pub parent_id: Option<String>,
+}
+
 /// Document body content.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DocxBody {
@@ -499,6 +518,14 @@ pub struct DocxBody {
     /// Default page footer content (from word/footerN.xml).
     #[serde(default)]
     pub footer: Option<HeaderFooter>,
+    /// Comment threads parsed from word/comments.xml and word/commentsExtended.xml.
+    #[serde(default)]
+    pub comments: Vec<Comment>,
+    /// Comment anchors: tracks (comment_id, anchor_type) pairs found in document.xml
+    /// to preserve the link between comments and their positions in the text.
+    /// anchor_type: "start", "end", or "reference".
+    #[serde(default)]
+    pub comment_anchors: Vec<(String, String)>,
 }
 
 impl DocxBody {
@@ -510,6 +537,8 @@ impl DocxBody {
             footer: None,
             blocks: Vec::new(),
             raw_sect_pr: None,
+            comments: Vec::new(),
+            comment_anchors: Vec::new(),
             media: Vec::new(),
             image_rels: Vec::new(),
         }
@@ -526,6 +555,8 @@ impl DocxBody {
             blocks,
             raw_sect_pr: None,
             header: None,
+            comments: Vec::new(),
+            comment_anchors: Vec::new(),
             footer: None,
             media: Vec::new(),
             image_rels: Vec::new(),

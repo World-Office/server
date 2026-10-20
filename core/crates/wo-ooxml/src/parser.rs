@@ -324,6 +324,7 @@ impl OoxmlParser {
     // --- DOCX body parsing ---
 
     const W_NS: &str = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
+    const W15_NS: &str = "http://schemas.microsoft.com/office/word/2012/wordml";
 
     // --- PPTX namespaces ---
 
@@ -1365,6 +1366,8 @@ impl OoxmlParser {
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
+                comments: Vec::new(),
+                comment_anchors: Vec::new(),
                 media: Vec::new(),
                 image_rels: Vec::new(),
             },
@@ -1433,18 +1436,16 @@ impl OoxmlParser {
                 body.footnotes_raw = Some(raw);
             }
         }
-        // Verbatim footnotes part so the footnote modal's data plane survives.
-        if archive.by_name("word/footnotes.xml").is_ok() {
-            if let Ok(raw) = self.read_zip_entry(archive, "word/footnotes.xml") {
-                body.footnotes_raw = Some(raw);
-            }
-        }
         if let Ok(rels_xml) = self.read_zip_entry(archive, "word/_rels/document.xml.rels") {
             if let Ok(rels) = self.parse_relationships(&rels_xml) {
                 body.image_rels
                     .extend(rels.into_iter().filter(|r| r.rel_type.ends_with("/image")));
             }
         }
+
+        // Parse comments from word/comments.xml and word/commentsExtended.xml
+        body.comments = self.parse_comments(archive)?;
+        body.comment_anchors = self.parse_comment_anchors(&xml)?;
 
         Ok(Some(body))
     }
@@ -1466,9 +1467,123 @@ impl OoxmlParser {
             raw_sect_pr,
             header: None,
             footer: None,
+            comments: Vec::new(),
+            comment_anchors: Vec::new(),
             media: Vec::new(),
             image_rels: Vec::new(),
         }
+    }
+
+    /// Parse comments from word/comments.xml and word/commentsExtended.xml
+    fn parse_comments(
+        &self,
+        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
+    ) -> Result<Vec<Comment>> {
+        let mut comments: Vec<Comment> = Vec::new();
+        
+        // Parse comments.xml
+        if archive.by_name("word/comments.xml").is_ok() {
+            if let Ok(comments_xml) = self.read_zip_entry(archive, "word/comments.xml") {
+                if let Ok(doc) = XmlDoc::parse(&comments_xml) {
+                    for node in doc.descendants() {
+                        if node.has_tag_name("comment") && node.tag_name().namespace() == Some(Self::W_NS) {
+                            let id = node.attribute((Self::W_NS, "id"))
+                                .or_else(|| node.attribute("id"))
+                                .unwrap_or("").to_string();
+                            let author = node.attribute((Self::W_NS, "author"))
+                                .or_else(|| node.attribute("author"))
+                                .unwrap_or("").to_string();
+                            let date = node.attribute((Self::W_NS, "date"))
+                                .or_else(|| node.attribute("date"))
+                                .unwrap_or("").to_string();
+                            
+                            // Extract text from w:p/w:r/w:t
+                            let mut text = String::new();
+                            for p_node in node.descendants() {
+                                if p_node.has_tag_name("t") && p_node.tag_name().namespace() == Some(Self::W_NS) {
+                                    text.push_str(p_node.text().unwrap_or(""));
+                                }
+                            }
+                            
+                            comments.push(Comment {
+                                id,
+                                author,
+                                date,
+                                text,
+                                resolved: false,
+                                parent_id: None,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Parse commentsExtended.xml to get resolved flag and parent relationships
+        if archive.by_name("word/commentsExtended.xml").is_ok() {
+            if let Ok(comments_ext_xml) = self.read_zip_entry(archive, "word/commentsExtended.xml") {
+                if let Ok(doc) = XmlDoc::parse(&comments_ext_xml) {
+                    for node in doc.descendants() {
+                        if node.has_tag_name("commentEx") && node.tag_name().namespace() == Some(Self::W15_NS) {
+                            let para_id = node.attribute((Self::W15_NS, "paraId"))
+                                .or_else(|| node.attribute("paraId"))
+                                .unwrap_or("").to_string();
+                            let done = node.attribute((Self::W15_NS, "done"))
+                                .or_else(|| node.attribute("done"))
+                                .map(|v| v == "1" || v.to_lowercase() == "true")
+                                .unwrap_or(false);
+                            let parent_id = node.attribute((Self::W15_NS, "paraIdParent"))
+                                .or_else(|| node.attribute("paraIdParent"))
+                                .map(|s| s.to_string());
+                            
+                            // Find the comment with matching id and update it
+                            for comment in &mut comments {
+                                if comment.id == para_id {
+                                    comment.resolved = done;
+                                    comment.parent_id = parent_id.clone();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        Ok(comments)
+    }
+
+    /// Parse comment anchors (commentRangeStart, commentRangeEnd, commentReference) from document.xml
+    fn parse_comment_anchors(&self, document_xml: &str) -> Result<Vec<(String, String)>> {
+        let mut anchors: Vec<(String, String)> = Vec::new();
+        
+        if let Ok(doc) = XmlDoc::parse(document_xml) {
+            for node in doc.descendants() {
+                let tag_name = node.tag_name().name();
+                let ns = node.tag_name().namespace();
+                
+                if ns == Some(Self::W_NS) {
+                    match tag_name {
+                        "commentRangeStart" | "commentRangeEnd" | "commentReference" => {
+                            let id = node.attribute((Self::W_NS, "id"))
+                                .or_else(|| node.attribute("id"))
+                                .unwrap_or("").to_string();
+                            let anchor_type = match tag_name {
+                                "commentRangeStart" => "start",
+                                "commentRangeEnd" => "end",
+                                "commentReference" => "reference",
+                                _ => "unknown",
+                            };
+                            if !id.is_empty() {
+                                anchors.push((id, anchor_type.to_string()));
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        };
+        Ok(anchors)
     }
 
     /// Parse the block-level children (w:p / w:tbl / w:sdt) of a body,
@@ -2967,6 +3082,7 @@ impl Default for OoxmlParser {
 mod tests {
     use super::*;
     use crate::is_ooxml_file;
+    use crate::OoxmlSerializer;
     use std::io::Write;
 
     fn make_minimal_docx() -> Vec<u8> {
@@ -4032,5 +4148,176 @@ mod tests {
         assert_eq!(wb.sheets[0].rows[1].cells[1].v, "30");
         assert_eq!(wb.sheets[0].rows[2].cells[0].v, "Bob");
         assert_eq!(wb.sheets[0].rows[2].cells[1].v, "25");
+    }
+
+    /// Helper to build a docx with comments and commentsExtended
+    fn make_docx_with_comments(comments_xml: &str, comments_ext_xml: &str, document_xml: &str) -> Vec<u8> {
+        let mut buf = Vec::new();
+        {
+            let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
+            zip.start_file(
+                "[Content_Types].xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/comments.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"/>
+  <Override PartName="/word/commentsExtended.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.commentsExtended+xml"/>
+  <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+</Types>"#)
+            .unwrap();
+
+            zip.start_file(
+                "_rels/.rels",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>"#)
+            .unwrap();
+
+            zip.start_file(
+                "word/_rels/document.xml.rels",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments" Target="comments.xml"/>
+  <Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentsExtended" Target="commentsExtended.xml"/>
+</Relationships>"#)
+            .unwrap();
+
+            zip.start_file("word/styles.xml", zip::write::SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:docDefaults>
+    <w:rPrDefault><w:rPr><w:rFonts w:ascii="Times New Roman" w:hAnsi="Times New Roman"/><w:sz w:val="24"/></w:rPr></w:rPrDefault>
+    <w:pPrDefault><w:pPr><w:spacing w:after="200" w:line="276" w:lineRule="auto"/></w:pPr></w:pPrDefault>
+  </w:docDefaults>
+</w:styles>"#)
+            .unwrap();
+
+            zip.start_file("word/comments.xml", zip::write::SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(comments_xml.as_bytes()).unwrap();
+
+            zip.start_file("word/commentsExtended.xml", zip::write::SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(comments_ext_xml.as_bytes()).unwrap();
+
+            zip.start_file("word/document.xml", zip::write::SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(document_xml.as_bytes()).unwrap();
+
+            zip.finish().unwrap();
+        }
+        buf
+    }
+
+    // F-102: test parsing comments from word/comments.xml and word/commentsExtended.xml
+    #[test]
+    fn test_comments_parse_f102() {
+        let comments_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:comments xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:comment w:id="1" w:author="John Doe" w:date="2024-01-01T00:00:00Z"><w:p><w:r><w:t>First comment</w:t></w:r></w:p></w:comment>
+  <w:comment w:id="2" w:author="Jane Smith" w:date="2024-01-02T00:00:00Z"><w:p><w:r><w:t>Second comment</w:t></w:r></w:p></w:comment>
+</w:comments>"#;
+
+        let comments_ext_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w15:commentsEx xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml">
+  <w15:commentEx w15:paraId="1" w15:done="0"/>
+  <w15:commentEx w15:paraId="2" w15:done="1" w15:paraIdParent="1"/>
+</w15:commentsEx>"#;
+
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t>Some text</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#;
+
+        let docx = make_docx_with_comments(comments_xml, comments_ext_xml, document_xml);
+        let parser = OoxmlParser::new();
+        let doc = parser.parse(&docx).unwrap();
+        let body = doc.docx_body.unwrap();
+
+        assert_eq!(body.comments.len(), 2);
+
+        // Check first comment
+        assert_eq!(body.comments[0].id, "1");
+        assert_eq!(body.comments[0].author, "John Doe");
+        assert_eq!(body.comments[0].date, "2024-01-01T00:00:00Z");
+        assert_eq!(body.comments[0].text, "First comment");
+        assert!(!body.comments[0].resolved);
+        assert!(body.comments[0].parent_id.is_none());
+
+        // Check second comment (reply, resolved)
+        assert_eq!(body.comments[1].id, "2");
+        assert_eq!(body.comments[1].author, "Jane Smith");
+        assert_eq!(body.comments[1].date, "2024-01-02T00:00:00Z");
+        assert_eq!(body.comments[1].text, "Second comment");
+        assert!(body.comments[1].resolved);
+        assert_eq!(body.comments[1].parent_id, Some("1".to_string()));
+    }
+
+    // F-102: test serialize -> parse roundtrip
+    #[test]
+    fn test_comments_serialize_roundtrip_f102() {
+        let comments_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:comments xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:comment w:id="1" w:author="John Doe" w:date="2024-01-01T00:00:00Z"><w:p><w:r><w:t>First comment</w:t></w:r></w:p></w:comment>
+  <w:comment w:id="2" w:author="Jane Smith" w:date="2024-01-02T00:00:00Z"><w:p><w:r><w:t>Second comment reply</w:t></w:r></w:p></w:comment>
+</w:comments>"#;
+
+        let comments_ext_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w15:commentsEx xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml">
+  <w15:commentEx w15:paraId="1" w15:done="1"/>
+  <w15:commentEx w15:paraId="2" w15:done="0" w15:paraIdParent="1"/>
+</w15:commentsEx>"#;
+
+        let document_xml = r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p><w:r><w:t>Some text</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#;
+
+        let docx = make_docx_with_comments(comments_xml, comments_ext_xml, document_xml);
+        let parser = OoxmlParser::new();
+        let doc = parser.parse(&docx).unwrap();
+        let body = doc.docx_body.as_ref().unwrap();
+
+        // Serialize
+        let serializer = OoxmlSerializer::new();
+        let serialized = serializer.serialize(&doc).unwrap();
+
+        // Parse again
+        let reparsed = parser.parse(&serialized).unwrap();
+        let rebody = reparsed.docx_body.as_ref().unwrap();
+
+        // Verify comments are identical
+        assert_eq!(rebody.comments.len(), 2);
+        assert_eq!(rebody.comments[0].id, body.comments[0].id);
+        assert_eq!(rebody.comments[0].author, body.comments[0].author);
+        assert_eq!(rebody.comments[0].date, body.comments[0].date);
+        assert_eq!(rebody.comments[0].text, body.comments[0].text);
+        assert_eq!(rebody.comments[0].resolved, body.comments[0].resolved);
+        assert_eq!(rebody.comments[0].parent_id, body.comments[0].parent_id);
+
+        assert_eq!(rebody.comments[1].id, body.comments[1].id);
+        assert_eq!(rebody.comments[1].author, body.comments[1].author);
+        assert_eq!(rebody.comments[1].date, body.comments[1].date);
+        assert_eq!(rebody.comments[1].text, body.comments[1].text);
+        assert_eq!(rebody.comments[1].resolved, body.comments[1].resolved);
+        assert_eq!(rebody.comments[1].parent_id, body.comments[1].parent_id);
     }
 }

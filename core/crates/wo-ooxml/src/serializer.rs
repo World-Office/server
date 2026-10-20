@@ -91,6 +91,19 @@ impl OoxmlSerializer {
             }
         }
 
+        // 4e. word/comments.xml and word/commentsExtended.xml
+        if let Some(ref body) = doc.docx_body {
+            if !body.comments.is_empty() {
+                let comments_xml = self.build_comments_xml(&body.comments);
+                zip.start_file("word/comments.xml", options)?;
+                zip.write_all(comments_xml.as_bytes())?;
+
+                let comments_ext_xml = self.build_comments_extended_xml(&body.comments);
+                zip.start_file("word/commentsExtended.xml", options)?;
+                zip.write_all(comments_ext_xml.as_bytes())?;
+            }
+        }
+
         // 5. word/styles.xml
         let styles = self.build_styles_xml();
         zip.start_file("word/styles.xml", options)?;
@@ -1016,6 +1029,10 @@ impl OoxmlSerializer {
             if body.footnotes_raw.is_some() {
                 extra.push_str("\n  <Override PartName=\"/word/footnotes.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml\"/>");
             }
+            if !body.comments.is_empty() {
+                extra.push_str("\n  <Override PartName=\"/word/comments.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml\"/>");
+                extra.push_str("\n  <Override PartName=\"/word/commentsExtended.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.commentsExtended+xml\"/>");
+            }
             let mut exts: Vec<&str> = body
                 .media
                 .iter()
@@ -1075,6 +1092,14 @@ impl OoxmlSerializer {
             if body.footnotes_raw.is_some() {
                 extra.push_str(
                     "\n  <Relationship Id=\"rIdFtn\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/footnotes\" Target=\"footnotes.xml\"/>",
+                );
+            }
+            if !body.comments.is_empty() {
+                extra.push_str(
+                    "\n  <Relationship Id=\"rIdCmt\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments\" Target=\"comments.xml\"/>",
+                );
+                extra.push_str(
+                    "\n  <Relationship Id=\"rIdCmtEx\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentsExtended\" Target=\"commentsExtended.xml\"/>",
                 );
             }
             for rel in &body.image_rels {
@@ -1655,6 +1680,49 @@ impl OoxmlSerializer {
   </w:style>
 </w:styles>"#
             .to_string()
+    }
+
+    /// Build word/comments.xml
+    fn build_comments_xml(&self, comments: &[Comment]) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:comments xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">"#,
+        );
+        for comment in comments {
+            xml.push_str(&format!(
+                "\n  <w:comment w:id=\"{}\" w:author=\"{}\" w:date=\"{}\">",
+                escape_xml(&comment.id),
+                escape_xml(&comment.author),
+                escape_xml(&comment.date)
+            ));
+            xml.push_str("<w:p><w:r><w:t>");
+            xml.push_str(&escape_xml(&comment.text));
+            xml.push_str("</w:t></w:r></w:p>");
+            xml.push_str("</w:comment>");
+        }
+        xml.push_str("\n</w:comments>");
+        xml
+    }
+
+    /// Build word/commentsExtended.xml
+    fn build_comments_extended_xml(&self, comments: &[Comment]) -> String {
+        let mut xml = String::from(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w15:commentsEx xmlns:w15="http://schemas.microsoft.com/office/word/2012/wordml">"#,
+        );
+        for comment in comments {
+            xml.push_str(&format!(
+                "\n  <w15:commentEx w15:paraId=\"{}\" w15:done=\"{}\"",
+                escape_xml(&comment.id),
+                if comment.resolved { "1" } else { "0" }
+            ));
+            if let Some(ref parent_id) = comment.parent_id {
+                xml.push_str(&format!(" w15:paraIdParent=\"{}\"", escape_xml(parent_id)));
+            }
+            xml.push_str("/>");
+        }
+        xml.push_str("\n</w15:commentsEx>");
+        xml
     }
 
     fn build_core_properties(&self, props: &CoreProperties) -> String {
@@ -2680,6 +2748,8 @@ mod tests {
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
+                comments: Vec::new(),
+                comment_anchors: Vec::new(),
                 blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                     raw_flds: Vec::new(),
                     style_id: None,
@@ -2812,6 +2882,8 @@ mod tests {
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
+                comments: Vec::new(),
+                comment_anchors: Vec::new(),
                 blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                     raw_flds: Vec::new(),
                     style_id: None,
@@ -2923,6 +2995,8 @@ mod tests {
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
+                comments: Vec::new(),
+                comment_anchors: Vec::new(),
                 blocks: vec![
                     DocxBlock::Paragraph(DocxParagraph {
                         raw_flds: Vec::new(),
@@ -3055,6 +3129,8 @@ mod tests {
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
+                comments: Vec::new(),
+                comment_anchors: Vec::new(),
                 blocks: vec![DocxBlock::Table(DocxTable {
                     rows: vec![
                         DocxTableRow {
@@ -4099,6 +4175,8 @@ mod tests {
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
+                comments: Vec::new(),
+                comment_anchors: Vec::new(),
                 blocks: vec![DocxBlock::Paragraph(DocxParagraph {
                     raw_flds: Vec::new(),
                     style_id: None,
@@ -4159,6 +4237,8 @@ mod tests {
             relationships: vec![],
             xlsx_workbook: None,
             docx_body: Some(DocxBody {
+                comments: Vec::new(),
+                comment_anchors: Vec::new(),
                 blocks: vec![],
                 raw_sect_pr: None,
                 header: None,
