@@ -18224,6 +18224,122 @@ mod bridge_converter_tests {
     /// round-trip byte-identically through the WoSpreadsheet JSON bridge.
     // F-206: chart parts (xl/charts/chart1.xml) round-trip byte-identical
     #[test]
+    /// F-204: XLSX cell address (r=A1) and type (n/s/str/b/e/d) must survive
+    /// the Xlsx->WO bridge, and never-set cells must be elided from the output.
+    // F-204
+    #[test]
+    fn test_xlsx_cell_address_type_f204() {
+        let xlsx = build_six_type_xlsx();
+        let back = XlsxToWoSpreadsheetConverter
+            .convert(&xlsx)
+            .expect("xlsx -> wo-spreadsheet");
+        let v: Value = serde_json::from_slice(&back).expect("wo json");
+
+        // A1: shared string
+        let a1 = find_cell(&v, "A1");
+        assert_eq!(a1["r"].as_str(), Some("A1"), "r address kept");
+        assert_eq!(a1["t"].as_str(), Some("s"), "type s kept");
+        assert_eq!(a1["v"].as_str().unwrap().contains("Gott"), true, "shared string resolves");
+
+        // B1: inline string (must keep its CONTENT, not just the type token)
+        let b1 = find_cell(&v, "B1");
+        assert_eq!(b1["t"].as_str(), Some("str"), "inlineStr normalized to str");
+        assert_eq!(b1["v"].as_str(), Some("Inline"), "inline string content preserved");
+
+        // C1..F1: n / b / e / d types
+        let c1 = find_cell(&v, "C1");
+        assert_eq!(c1["t"].as_str(), Some("n"), "type n kept");
+        assert_eq!(c1["v"].as_str(), Some("42"));
+        let d1 = find_cell(&v, "D1");
+        assert_eq!(d1["t"].as_str(), Some("b"), "type b kept");
+        assert_eq!(d1["v"].as_str(), Some("1"));
+        let e1 = find_cell(&v, "E1");
+        assert_eq!(e1["t"].as_str(), Some("e"), "type e kept");
+        assert_eq!(e1["v"].as_str(), Some("#DIV/0!"), "error value kept");
+        let f1 = find_cell(&v, "F1");
+        assert_eq!(f1["t"].as_str(), Some("d"), "type d kept");
+        assert_eq!(f1["v"].as_str(), Some("44279"), "date serial kept");
+
+        // never-set cell (D7) must not materialize in the WO JSON
+        let json = String::from_utf8(back).expect("utf-8");
+        assert!(!json.contains("D7"), "never-set cell elided from the bridge output");
+    }
+
+    /// F-204: six-type worksheet fixture (shared string, inline string, number,
+    /// boolean, error, date) with row 7 deliberately absent (D7 elision check).
+    fn build_six_type_xlsx() -> Vec<u8> {
+        use std::io::Write;
+        const S_NS: &str = "http://schemas.openxmlformats.org/spreadsheetml/2006/main";
+        let buf = std::io::Cursor::new(Vec::new());
+        let mut zip = zip::ZipWriter::new(buf);
+        let mut add = |name: &str, xml: &str| {
+            zip.start_file(name, zip::write::SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(xml.as_bytes()).unwrap();
+        };
+        add(
+            "[Content_Types].xml",
+            r#"<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>"#,
+        );
+        add(
+            "_rels/.rels",
+            r#"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>"#,
+        );
+        add(
+            "xl/workbook.xml",
+            &format!(
+                r#"<workbook xmlns="{}" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="S" sheetId="1" r:id="rId1"/></sheets>
+</workbook>"#,
+                S_NS
+            ),
+        );
+        add(
+            "xl/_rels/workbook.xml.rels",
+            r#"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>"#,
+        );
+        add(
+            "xl/sharedStrings.xml",
+            &format!(
+                r#"<sst xmlns="{}" count="1" uniqueCount="1"><si><t>Grüß Gott</t></si></sst>"#,
+                S_NS
+            ),
+        );
+        add(
+            "xl/worksheets/sheet1.xml",
+            &format!(
+                r#"<worksheet xmlns="{}">
+<dimension ref="A1:F1"/>
+<sheetData>
+<row r="1">
+<c r="A1" t="s"><v>0</v></c>
+<c r="B1" t="inlineStr"><is><t>Inline</t></is></c>
+<c r="C1" t="n"><v>42</v></c>
+<c r="D1" t="b"><v>1</v></c>
+<c r="E1" t="e"><v>#DIV/0!</v></c>
+<c r="F1" t="d"><v>44279</v></c>
+</row>
+</sheetData>
+</worksheet>"#,
+                S_NS
+            ),
+        );
+        zip.finish().unwrap().into_inner()
+    }
+
+    /// F-200/206/207: non-core XLSX parts (charts, pivot tables, media) must
+    /// round-trip byte-identically through the WoSpreadsheet JSON bridge.
+    // F-206: chart parts (xl/charts/chart1.xml) round-trip byte-identical
+    #[test]
     fn test_xlsx_extra_parts_byte_faithful_roundtrip() {
         use std::io::Write;
         use zip::write::SimpleFileOptions;

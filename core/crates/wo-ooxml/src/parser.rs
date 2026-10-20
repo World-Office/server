@@ -2655,6 +2655,17 @@ impl OoxmlParser {
             v = v_elem.text().unwrap_or("").to_string();
         }
 
+        // Inline strings carry their content in <is><t>, not <v>.
+        if v.is_empty() && cell_type == CellType::InlineStr {
+            if let Some(is_t) = cell_elem
+                .descendants()
+                .find(|n| n.has_tag_name("is"))
+                .and_then(|is| is.descendants().find(|n| n.has_tag_name("t")))
+            {
+                v = is_t.text().unwrap_or("").to_string();
+            }
+        }
+
         // Resolve shared string index to actual value
         if cell_type == CellType::S {
             if let Ok(idx) = v.parse::<usize>() {
