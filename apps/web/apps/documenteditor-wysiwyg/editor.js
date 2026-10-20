@@ -91,6 +91,54 @@
   window.fitToWidth = fitToWidth;
   window.fitWithinPage = fitWithinPage;
 
+  /**
+   * Parse a comment span into a thread object.
+   * @param {HTMLElement} span - a span.comment element
+   * @returns {{id: string|null, author: string, text: string, replies: Array, resolved: boolean}}
+   */
+  function parseThread(span) {
+    const id = span.getAttribute("data-id");
+    const author = span.getAttribute("data-author") || "";
+    const text = span.getAttribute("data-comment") || "";
+    const repliesAttr = span.getAttribute("data-replies") || "[]";
+    let replies = [];
+    try { replies = JSON.parse(repliesAttr); } catch (e) { replies = []; }
+    const resolved = span.getAttribute("data-resolved") === "1";
+    return { id, author, text, replies, resolved };
+  }
+
+  /**
+   * Add a reply to a comment span's data-replies JSON array.
+   * @param {HTMLElement} span - a span.comment element
+   * @param {string} author - reply author name
+   * @param {string} text - reply text
+   */
+  function addReply(span, author, text) {
+    const repliesAttr = span.getAttribute("data-replies") || "[]";
+    let replies = [];
+    try { replies = JSON.parse(repliesAttr); } catch (e) { replies = []; }
+    replies.push({ author, text });
+    span.setAttribute("data-replies", JSON.stringify(replies));
+  }
+
+  /**
+   * Toggle the resolved state of a comment span.
+   * @param {HTMLElement} span - a span.comment element
+   */
+  function toggleResolved(span) {
+    const resolved = span.getAttribute("data-resolved") === "1";
+    if (resolved) {
+      span.removeAttribute("data-resolved");
+    } else {
+      span.setAttribute("data-resolved", "1");
+    }
+  }
+
+  // Expose pure helpers for tests
+  window.parseThread = parseThread;
+  window.addReply = addReply;
+  window.toggleResolved = toggleResolved;
+
   const DOC_ID = window.__DOC_ID__ || "unknown";
   const DOC_NAME = window.__DOC_NAME__ || "document.docx";
   const docNameEl = document.querySelector(".doc-name");
@@ -2536,13 +2584,15 @@
     if (!commentRange) { renderCommentsList(); openCommentsPanel(); return; }
     const span = document.createElement("span");
     span.className = "comment";
+    span.setAttribute("data-id", crypto.randomUUID());
     span.setAttribute("data-author", TRACK_AUTHOR);
     span.setAttribute("data-comment", body);
     try {
       commentRange.surroundContents(span);
     } catch (err) {
       const text = commentRange.toString();
-      const html = '<span class="comment" data-author="' + escapeAttr(TRACK_AUTHOR) +
+      const id = crypto.randomUUID();
+      const html = '<span class="comment" data-id="' + id + '" data-author="' + escapeAttr(TRACK_AUTHOR) +
         '" data-comment="' + escapeAttr(body) + '">' + escapeAttr(text) + '</span>';
       try { document.execCommand("insertHTML", false, html); } catch (e2) {}
       afterTrackEdit();
@@ -2575,16 +2625,64 @@
     list.innerHTML = "";
     if (empty) empty.style.display = items.length ? "none" : "block";
     items.forEach((el) => {
-      const author = el.getAttribute("data-author") || "";
-      const body = el.getAttribute("data-comment") || "";
+      const thread = parseThread(el);
       const item = document.createElement("div");
-      item.className = "review-item";
+      item.className = "review-item" + (thread.resolved ? " resolved" : "");
       const meta = document.createElement("div");
       meta.className = "review-meta";
-      meta.textContent = author ? "Comment — " + author : "Comment";
+      meta.textContent = (thread.author ? "Comment — " + thread.author : "Comment") +
+        (thread.resolved ? " (Resolved)" : "");
       const b = document.createElement("div");
       b.className = "review-text";
-      b.textContent = body || (el.textContent || "").slice(0, 120);
+      b.textContent = thread.text || (el.textContent || "").slice(0, 120);
+      item.appendChild(meta);
+      item.appendChild(b);
+
+      // Render replies
+      if (thread.replies && thread.replies.length > 0) {
+        const repliesContainer = document.createElement("div");
+        repliesContainer.className = "review-replies";
+        thread.replies.forEach((reply) => {
+          const replyEl = document.createElement("div");
+          replyEl.className = "review-reply";
+          const replyMeta = document.createElement("div");
+          replyMeta.className = "review-reply-meta";
+          replyMeta.textContent = reply.author ? "Reply — " + reply.author : "Reply";
+          const replyText = document.createElement("div");
+          replyText.className = "review-reply-text";
+          replyText.textContent = reply.text || "";
+          replyEl.appendChild(replyMeta);
+          replyEl.appendChild(replyText);
+          repliesContainer.appendChild(replyEl);
+        });
+        item.appendChild(repliesContainer);
+      }
+
+      // Reply input
+      const replyInputContainer = document.createElement("div");
+      replyInputContainer.className = "review-reply-input";
+      const replyTextarea = document.createElement("textarea");
+      replyTextarea.className = "reply-textarea";
+      replyTextarea.placeholder = "Add a reply...";
+      replyTextarea.rows = 2;
+      const replyButton = document.createElement("button");
+      replyButton.type = "button";
+      replyButton.className = "primary";
+      replyButton.textContent = "Post";
+      replyButton.addEventListener("click", () => {
+        const replyText = replyTextarea.value.trim();
+        if (replyText) {
+          addReply(el, TRACK_AUTHOR, replyText);
+          replyTextarea.value = "";
+          renderCommentsList();
+          openCommentsPanel();
+        }
+      });
+      replyInputContainer.appendChild(replyTextarea);
+      replyInputContainer.appendChild(replyButton);
+      item.appendChild(replyInputContainer);
+
+      // Actions: Go to, Delete, Resolve/Reopen
       const actions = document.createElement("div");
       actions.className = "review-actions";
       const locate = document.createElement("button");
@@ -2600,8 +2698,19 @@
       const del = document.createElement("button");
       del.type = "button"; del.className = "primary"; del.textContent = "Delete";
       del.addEventListener("click", () => deleteComment(el));
-      actions.appendChild(locate); actions.appendChild(del);
-      item.appendChild(meta); item.appendChild(b); item.appendChild(actions);
+      const resolveBtn = document.createElement("button");
+      resolveBtn.type = "button";
+      resolveBtn.textContent = thread.resolved ? "Reopen" : "Resolve";
+      resolveBtn.addEventListener("click", () => {
+        toggleResolved(el);
+        afterTrackEdit();
+        renderCommentsList();
+        openCommentsPanel();
+      });
+      actions.appendChild(locate);
+      actions.appendChild(del);
+      actions.appendChild(resolveBtn);
+      item.appendChild(actions);
       list.appendChild(item);
     });
   }

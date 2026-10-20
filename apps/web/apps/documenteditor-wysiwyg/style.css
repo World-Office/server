@@ -1691,6 +1691,48 @@ button.active {
 }
 .review-actions { display: flex; gap: 6px; }
 .review-empty { padding: 12px; color: #888; }
+/* Resolved threads are visually dimmed */
+.review-item.resolved {
+  opacity: 0.6;
+  background: #f5f5f5;
+}
+/* Reply styling */
+.review-replies {
+  margin: 6px 0;
+  padding-left: 12px;
+  border-left: 2px solid #e0e0e0;
+}
+.review-reply {
+  margin-bottom: 6px;
+  padding: 4px 0;
+}
+.review-reply-meta {
+  font-size: 11px;
+  color: #757575;
+  margin-bottom: 2px;
+}
+.review-reply-text {
+  font-size: 12px;
+  color: #333;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+/* Reply input */
+.review-reply-input {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.reply-textarea {
+  flex: 1;
+  font-size: 12px;
+  padding: 4px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  resize: vertical;
+  min-height: 40px;
+  font-family: inherit;
+}
 
 /* Page setup dialog: margin inputs in a 2x2 grid; radio labels inline. */
 .ps-margins {
