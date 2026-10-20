@@ -2258,6 +2258,66 @@
     renderReviewList();
   }
 
+  // ── F-063: rich clipboard paste ─────────────────────────────────
+  // Trust boundary: the SERVER sanitizer is the final gate on save, but
+  // pasted HTML lands in the live DOM first — so strip the executable
+  // surface here: scriptable elements and event-handler attributes must
+  // never reach the editor. Pure predicates are extracted by
+  // paste-sanitize.test.mjs (node), the DOM walk needs a browser.
+  const PASTE_BLOCKED_TAGS = [
+    "script", "style", "iframe", "object", "embed", "link", "meta", "base",
+  ];
+  function isBlockedPasteTag(tag) {
+    return PASTE_BLOCKED_TAGS.includes(String(tag || "").toLowerCase());
+  }
+  function isUnsafePasteAttr(name, value) {
+    const n = String(name || "").toLowerCase();
+    if (n.indexOf("on") === 0) return true;
+    const v = String(value || "").trim().toLowerCase();
+    return (n === "href" || n === "src" || n === "xlink:href") &&
+      (v.indexOf("javascript:") === 0 || v.indexOf("data:text/html") === 0);
+  }
+  function sanitizePasteHtml(html) {
+    try {
+      const doc = new DOMParser().parseFromString(String(html || ""), "text/html");
+      const walk = (node) => {
+        for (const child of Array.from(node.children || [])) {
+          if (isBlockedPasteTag(child.tagName)) { child.remove(); continue; }
+          for (const attr of Array.from(child.attributes || [])) {
+            if (isUnsafePasteAttr(attr.name, attr.value)) {
+              child.removeAttribute(attr.name);
+            }
+          }
+          walk(child);
+        }
+      };
+      walk(doc.body);
+      return doc.body.innerHTML;
+    } catch (err) {
+      return "";
+    }
+  }
+  // Rich tracked insert: wrap a sanitized HTML fragment in the ins element.
+  function insertTrackedHtml(tag, html) {
+    if (!html) return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const node = document.createElement(tag);
+    node.className = tag === "ins" ? "track-insert" : "track-delete";
+    node.setAttribute("data-author", TRACK_AUTHOR);
+    const frag = document.createElement("template");
+    frag.innerHTML = sanitizePasteHtml(html);
+    node.appendChild(frag.content);
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(node);
+    const r = document.createRange();
+    r.setStartAfter(node);
+    r.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(r);
+  }
+
   function insertTracked(tag, text) {
     if (!text) return;
     const sel = window.getSelection();
@@ -2301,6 +2361,9 @@
         afterTrackEdit();
       } else if (it === "insertFromPaste") {
         e.preventDefault();
+        // F-063: keep formatting during tracked paste too
+        const html = (e.dataTransfer && e.dataTransfer.getData("text/html")) || "";
+        if (html) { insertTrackedHtml("ins", html); afterTrackEdit(); return; }
         const text = (e.dataTransfer && e.dataTransfer.getData("text/plain")) || "";
         if (text) { insertTracked("ins", text); afterTrackEdit(); }
       } else if (it.indexOf("delete") === 0) {
@@ -5572,9 +5635,33 @@
       if (action === "cut" || action === "copy") {
         document.execCommand(action);
       } else if (action === "paste") {
-        navigator.clipboard.readText().then((text) => {
-          if (text) document.execCommand("insertText", false, text);
-        }).catch(() => {});
+        // F-063: rich paste — prefer text/html from the async clipboard and
+        // insert it sanitized; fall back to plain text when unavailable.
+        const pasteRich = async () => {
+          if (navigator.clipboard && navigator.clipboard.read) {
+            try {
+              const items = await navigator.clipboard.read();
+              for (const item of items) {
+                if (item.types && item.types.indexOf("text/html") !== -1) {
+                  const blob = await item.getType("text/html");
+                  const html = await blob.text();
+                  if (html) {
+                    editorEl.focus();
+                    document.execCommand("insertHTML", false, sanitizePasteHtml(html));
+                    return true;
+                  }
+                }
+              }
+            } catch (err) { /* permission denied etc. -> plain fallback */ }
+          }
+          return false;
+        };
+        pasteRich().then((rich) => {
+          if (rich) return;
+          navigator.clipboard.readText().then((text) => {
+            if (text) document.execCommand("insertText", false, text);
+          }).catch(() => {});
+        });
       } else if (action === "pagebreak") {
         emitCommand("insertPageBreak");
       } else if (action === "comment") {
