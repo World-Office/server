@@ -17984,6 +17984,107 @@ mod bridge_converter_tests {
         assert_eq!(b1["v"].as_str(), Some("Eins"), "idx 0 still resolves");
     }
 
+    /// F-201: the WoSpreadsheet -> Xlsx WRITER must dedupe repeated shared
+    /// strings into a single <si> (uniqueCount < count), and both cells must
+    /// still reference the shared string by index.
+    #[test]
+    fn test_writer_dedups_shared_strings_f201() {
+        // Two cells carrying the SAME shared-string text across two columns.
+        let json = r##"{
+            "version": 1,
+            "name": "Dedup",
+            "sheetOrder": ["s1"],
+            "sheets": [{
+                "id": "s1",
+                "name": "D",
+                "rowCount": 1,
+                "columnCount": 2,
+                "rows": [{"r": 1, "cells": [
+                    {"r": "A1", "t": "s", "v": "Beta"},
+                    {"r": "B1", "t": "s", "v": "Beta"}
+                ]}],
+                "merges": []
+            }],
+            "sharedStrings": []
+        }"##;
+        let xlsx = WoSpreadsheetToXlsxConverter
+            .convert(json.as_bytes())
+            .expect("json -> xlsx");
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&xlsx)).expect("zip");
+        let mut ss = String::new();
+        std::io::Read::read_to_string(
+            &mut archive.by_name("xl/sharedStrings.xml").expect("sst part"),
+            &mut ss,
+        )
+        .expect("utf-8");
+        eprintln!("SST-LEN: {}", ss.len());
+        assert_eq!(
+            ss.matches("<si>").count(),
+            1,
+            "Beta x2 must dedupe to exactly one <si>"
+        );
+        assert!(ss.contains("uniqueCount=\"1\""), "uniqueCount must be 1");
+        // both cells must still reference shared-string index 0
+        assert_eq!(
+            ss.matches("<si>").count(),
+            1,
+            "sanity: exactly one si"
+        );
+        let mut sheet = String::new();
+        std::io::Read::read_to_string(
+            &mut archive.by_name("xl/worksheets/sheet1.xml").expect("sheet1 part"),
+            &mut sheet,
+        )
+        .expect("utf-8");
+        assert_eq!(
+            sheet.matches("t=\"s\"").count(),
+            2,
+            "both cells stay shared-string typed"
+        );
+        assert_eq!(
+            sheet.matches("<v>0</v>").count(),
+            2,
+            "both cells reference deduped index 0"
+        );
+    }
+
+    /// F-201: full XLSX -> WO -> XLSX round trip preserves the dedup table
+    /// without index corruption: a two-string sst comes back with both strings
+    /// once each and both cell references still resolve.
+    #[test]
+    fn test_roundtrip_shared_strings_dedup_f201() {
+        let two = build_two_string_xlsx();
+        let back = XlsxToWoSpreadsheetConverter
+            .convert(&two)
+            .expect("xlsx -> wo-spreadsheet");
+        let rexported = WoSpreadsheetToXlsxConverter
+            .convert(&back)
+            .expect("wo-spreadsheet -> xlsx");
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&rexported)).expect("zip");
+        let mut ss = String::new();
+        std::io::Read::read_to_string(
+            &mut archive.by_name("xl/sharedStrings.xml").expect("sst part"),
+            &mut ss,
+        )
+        .expect("utf-8");
+        assert_eq!(ss.matches("<si>").count(), 2, "Eins + Zwei, one <si> each");
+        assert!(ss.contains("uniqueCount=\"2\""));
+        // both strings survive the hop; the WRITER rebuilds the table in
+        // first-occurrence cell-scan order (A1 before B1 -> Zwei before Eins)
+        // and the round-tripped workbook still resolves A1 -> Zwei, B1 -> Eins
+        let v: Value = serde_json::from_slice(&back).expect("wo json");
+        assert_eq!(
+            find_cell(&v, "A1")["v"].as_str(),
+            Some("Zwei"),
+            "A1 resolves idx 1 after round trip"
+        );
+        assert_eq!(
+            find_cell(&v, "B1")["v"].as_str(),
+            Some("Eins"),
+            "B1 resolves idx 0 after round trip"
+        );
+    }
+
     /// Same skeleton as build_minimal_xlsx but with TWO shared strings and
     /// cells referencing idx 1 and idx 0 (in that order).
     fn build_two_string_xlsx() -> Vec<u8> {
