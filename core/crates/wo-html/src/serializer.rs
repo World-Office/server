@@ -124,12 +124,31 @@ impl HtmlSerializer {
                 out.push_str(&self.serialize_inline(content));
                 out.push_str(&format!("</h{}>\n", level));
             }
-            BlockElement::Paragraph { content, id } => {
+            BlockElement::Paragraph {
+                content,
+                id,
+                dir,
+            } => {
                 out.push_str(&pad);
-                if let Some(id_val) = id {
-                    out.push_str(&format!("<p id=\"{}\">", escape_attr(id_val)));
-                } else {
-                    out.push_str("<p>");
+                // F-041: keep direction on round trip (dir attr wins over style)
+                let dir_attr = dir
+                    .as_ref()
+                    .map(|d| format!(" dir=\"{}\"", escape_attr(d)));
+                match (id, &dir_attr) {
+                    (Some(id_val), Some(d)) => {
+                        out.push_str(&format!(
+                            "<p id=\"{}\"{}>",
+                            escape_attr(id_val),
+                            d
+                        ));
+                    }
+                    (Some(id_val), None) => {
+                        out.push_str(&format!("<p id=\"{}\">", escape_attr(id_val)));
+                    }
+                    (None, Some(d)) => {
+                        out.push_str(&format!("<p{}>", d));
+                    }
+                    (None, None) => out.push_str("<p>"),
                 }
                 out.push_str(&self.serialize_inline(content));
                 out.push_str("</p>\n");
@@ -408,6 +427,7 @@ mod tests {
                         style: None,
                     }],
                     id: Some("foo\"bar".into()),
+                    dir: None,
                 }],
             },
         };
@@ -441,6 +461,7 @@ mod tests {
                         style: None,
                     }],
                     id: None,
+                    dir: None,
                 }],
             },
         };
@@ -474,6 +495,7 @@ mod tests {
                         }],
                     }],
                     id: None,
+                    dir: None,
                 }],
             },
         };
@@ -510,6 +532,7 @@ mod tests {
                         height: None,
                     }],
                     id: None,
+                    dir: None,
                 }],
             },
         };
@@ -594,6 +617,7 @@ mod tests {
                         content: "x < 1 & y > 2".into(),
                     }],
                     id: None,
+                    dir: None,
                 }],
             },
         };
@@ -808,6 +832,7 @@ mod tests {
                             style: None,
                         }],
                         id: None,
+                        dir: None,
                     }],
                     id: Some("main".into()),
                     class: Some("container".into()),
@@ -941,6 +966,7 @@ mod tests {
                             style: None,
                         }],
                         id: None,
+                        dir: None,
                     }],
                     id: Some("q1".into()),
                 }],
@@ -1009,6 +1035,7 @@ mod tests {
                         }],
                     }],
                     id: None,
+                    dir: None,
                 }],
             },
         };
@@ -1032,6 +1059,7 @@ mod tests {
                         }],
                     }],
                     id: None,
+                    dir: None,
                 }],
             },
         };
@@ -1055,6 +1083,7 @@ mod tests {
                         }],
                     }],
                     id: None,
+                    dir: None,
                 }],
             },
         };
@@ -1078,6 +1107,7 @@ mod tests {
                         }],
                     }],
                     id: None,
+                    dir: None,
                 }],
             },
         };
@@ -1101,6 +1131,7 @@ mod tests {
                         }],
                     }],
                     id: None,
+                    dir: None,
                 }],
             },
         };
@@ -1124,6 +1155,7 @@ mod tests {
                         }],
                     }],
                     id: None,
+                    dir: None,
                 }],
             },
         };
@@ -1142,6 +1174,7 @@ mod tests {
                 elements: vec![BlockElement::Paragraph {
                     content: vec![InlineElement::LineBreak],
                     id: None,
+                    dir: None,
                 }],
             },
         };
@@ -1202,6 +1235,7 @@ mod tests {
                         style: None,
                     }],
                     id: Some("p1".into()),
+                    dir: None,
                 }],
             },
         };
@@ -1230,6 +1264,7 @@ mod tests {
                             style: None,
                         }],
                         id: None,
+                        dir: None,
                     }],
                     id: None,
                     class: None,
@@ -1405,6 +1440,7 @@ mod tests {
                         }],
                     }],
                     id: None,
+                    dir: None,
                 }],
             },
         };
@@ -1435,6 +1471,7 @@ mod tests {
                         height: None,
                     }],
                     id: None,
+                    dir: None,
                 }],
             },
         };
@@ -1466,6 +1503,7 @@ mod tests {
                         height: None,
                     }],
                     id: None,
+                    dir: None,
                 }],
             },
         };
@@ -1550,6 +1588,7 @@ mod tests {
                         }],
                     }],
                     id: None,
+                    dir: None,
                 }],
             },
         };
@@ -1608,6 +1647,7 @@ mod tests {
                             style: None,
                         }],
                         id: Some("qp".into()),
+                        dir: None,
                     }],
                     id: Some("bq".into()),
                 }],

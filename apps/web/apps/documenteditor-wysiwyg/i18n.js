@@ -133,6 +133,7 @@
     "Home.StyleH1": "Heading 1",
     "Home.StyleH2": "Heading 2",
     "Home.StyleH3": "Heading 3",
+    "Home.StyleQuote": "Quote",
     "Insert.Shape": "Shape",
     "Insert.Chart": "Chart",
     "Insert.TextArt": "Text art",

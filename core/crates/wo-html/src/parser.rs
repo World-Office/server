@@ -44,6 +44,27 @@ fn attr(node: &roxmltree::Node, name: &str) -> Option<String> {
     node.attribute(name).map(|s| s.to_string())
 }
 
+/// F-041: block direction from `dir="rtl"` or `style="direction: rtl"`.
+fn block_direction(node: &roxmltree::Node) -> Option<String> {
+    if let Some(d) = attr(node, "dir") {
+        if d.eq_ignore_ascii_case("rtl") || d.eq_ignore_ascii_case("ltr") {
+            return Some(d.to_ascii_lowercase());
+        }
+    }
+    let style = attr(node, "style")?;
+    for decl in style.split(';') {
+        if let Some((prop, val)) = decl.split_once(':') {
+            if prop.trim().eq_ignore_ascii_case("direction") {
+                let v = val.trim().to_ascii_lowercase();
+                if v == "rtl" || v == "ltr" {
+                    return Some(v);
+                }
+            }
+        }
+    }
+    None
+}
+
 const VOID_ELEMENTS: &[&str] = &[
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",
     "track", "wbr",
@@ -277,6 +298,7 @@ impl HtmlParser {
                             style: None,
                         }],
                         id: None,
+                        dir: None,
                     });
                 }
                 continue;
@@ -302,6 +324,7 @@ impl HtmlParser {
                     elements.push(BlockElement::Paragraph {
                         content: self.parse_inline_elements(&ch),
                         id,
+                        dir: block_direction(&ch),
                     });
                 }
                 "div" => {
@@ -1184,6 +1207,35 @@ mod tests {
         let parser = HtmlParser::new();
         let doc = parser.parse(html.as_bytes()).unwrap();
         assert!(doc.body.elements.is_empty());
+    }
+
+    // F-041: paragraph direction from dir attr and style, with round trip
+    #[test]
+    fn test_paragraph_direction_parse_and_serialize_f041() {
+        let parser = HtmlParser::new();
+        let doc = parser
+            .parse(
+                br#"<html><body>
+<p dir="RTL">A</p>
+<p style="direction: rtl">B</p>
+<p style="direction: ltr">C</p>
+<p style="color: red">D</p>
+</body></html>"#,
+            )
+            .unwrap();
+        let dir_of = |i: usize| match &doc.body.elements[i] {
+            BlockElement::Paragraph { dir, .. } => dir.clone(),
+            _ => panic!("expected paragraph {i}"),
+        };
+        assert_eq!(dir_of(0).as_deref(), Some("rtl"), "dir attr (case-insensitive)");
+        assert_eq!(dir_of(1).as_deref(), Some("rtl"), "style direction: rtl");
+        assert_eq!(dir_of(2).as_deref(), Some("ltr"));
+        assert_eq!(dir_of(3), None, "unrelated style -> no direction");
+
+        // serializer keeps it on round trip (dir attr form)
+        let out = crate::serializer::HtmlSerializer::new().serialize(&doc);
+        assert_eq!(out.matches("dir=\"rtl\"").count(), 2);
+        assert_eq!(out.matches("dir=\"ltr\"").count(), 1);
     }
 
     #[test]

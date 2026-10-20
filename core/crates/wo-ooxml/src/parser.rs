@@ -1629,6 +1629,10 @@ impl OoxmlParser {
                 "pageBreakBefore" => {
                     props.page_break_before = self.attr_val(child) != Some("false");
                 }
+                // F-041: RTL paragraph direction (w:bidi is childless; presence = true)
+                "bidi" => {
+                    props.bidi = true;
+                }
                 "outlineLvl" => {
                     props.outline_level = self.attr_ns(child, "val").and_then(|v| v.parse().ok());
                 }
@@ -3400,6 +3404,33 @@ mod tests {
         let doc = parser.parse(&docx).unwrap();
         let body = doc.docx_body.unwrap();
         assert_eq!(body.paragraphs()[0].style_id.as_deref(), Some("Heading1"));
+    }
+
+    // F-041: <w:bidi/> in pPr parses to properties.bidi (RTL paragraph)
+    #[test]
+    fn test_parse_bidi_f041() {
+        let docx = make_docx_with_body(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    <w:p>
+      <w:pPr><w:bidi/></w:pPr>
+      <w:r><w:t>عربى</w:t></w:r>
+    </w:p>
+    <w:p><w:r><w:t>ltr</w:t></w:r></w:p>
+  </w:body>
+</w:document>"#,
+        );
+        let doc = OoxmlParser::new().parse(&docx).unwrap();
+        let body = doc.docx_body.unwrap();
+        assert!(
+            body.paragraphs()[0].properties.bidi,
+            "bidi paragraph must parse as RTL"
+        );
+        assert!(
+            !body.paragraphs()[1].properties.bidi,
+            "plain paragraph stays LTR"
+        );
     }
 
     // --- PPTX test helpers ---

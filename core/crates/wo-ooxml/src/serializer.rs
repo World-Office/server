@@ -1213,7 +1213,8 @@ impl OoxmlSerializer {
                 || para.properties.spacing_line.is_some()
                 || para.properties.keep_lines
                 || para.properties.keep_next
-                || para.properties.page_break_before;
+                || para.properties.page_break_before
+                || para.properties.bidi;
 
             if has_props {
                 xml.push_str("<w:pPr>");
@@ -1310,6 +1311,10 @@ impl OoxmlSerializer {
                 }
                 if para.properties.page_break_before {
                     xml.push_str("<w:pageBreakBefore/>");
+                }
+                // F-041: RTL paragraph direction
+                if para.properties.bidi {
+                    xml.push_str("<w:bidi/>");
                 }
                 xml.push_str("</w:pPr>");
             }

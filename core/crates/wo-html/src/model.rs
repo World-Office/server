@@ -45,6 +45,9 @@ pub enum BlockElement {
     Paragraph {
         content: Vec<InlineElement>,
         id: Option<String>,
+        /// Block text direction from `dir` attr / `style="direction: rtl"`
+        /// (F-041: survives HTML round trips, maps to OOXML w:bidi).
+        dir: Option<String>,
     },
     Div {
         elements: Vec<BlockElement>,

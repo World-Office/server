@@ -191,6 +191,7 @@ impl FormatConverter for TxtToHtmlConverter {
                     style: None,
                 }],
                 id: None,
+                dir: None,
             })
             .collect();
 
@@ -592,6 +593,7 @@ impl FormatConverter for EpubToHtmlConverter {
                             style: None,
                         }],
                         id: None,
+                        dir: None,
                     });
                 }
             }
@@ -1130,6 +1132,7 @@ impl FormatConverter for XpsToHtmlConverter {
                     elements: vec![BlockElement::Paragraph {
                         content: page_inlines,
                         id: None,
+                        dir: None,
                     }],
                     id: None,
                     class: None,
@@ -1256,6 +1259,7 @@ impl FormatConverter for OfdToHtmlConverter {
                     elements: vec![BlockElement::Paragraph {
                         content: page_inlines,
                         id: None,
+                        dir: None,
                     }],
                     id: None,
                     class: None,
@@ -2072,6 +2076,7 @@ fn rtf_blocks_to_html_blocks(blocks: &[RtfBlock]) -> Vec<BlockElement> {
                 result.push(BlockElement::Paragraph {
                     content: inlines,
                     id: None,
+                    dir: None,
                 });
             }
             RtfBlock::Table { rows } => {
@@ -2478,12 +2483,17 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                     ..Default::default()
                 });
             }
-            BlockElement::Paragraph { content, .. } => {
+            BlockElement::Paragraph { content, dir, .. } => {
                 let runs = html_inlines_to_docx_runs(content, &mut media, &mut image_rels);
                 if !runs.is_empty() {
+                    // F-041: direction: rtl on the block -> w:bidi in DOCX
+                    let properties = DocxParagraphProperties {
+                        bidi: dir.as_deref() == Some("rtl"),
+                        ..Default::default()
+                    };
                     paragraphs.push(DocxParagraph {
                         style_id: None,
-                        properties: DocxParagraphProperties::default(),
+                        properties,
                         section_properties: None,
                         runs,
                         ..Default::default()
@@ -2656,7 +2666,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                     });
                 }
             }
-            BlockElement::Div { elements, .. } | BlockElement::Blockquote { elements, .. } => {
+            BlockElement::Div { elements, .. } => {
                 let sub_doc = HtmlDocument {
                     doc_type: None,
                     html_attributes: vec![],
@@ -2668,6 +2678,26 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                 let sub = html_to_ooxml(&sub_doc);
                 if let Some(body) = &sub.docx_body {
                     paragraphs.extend(body.paragraphs().into_iter().cloned());
+                    tables.extend(body.tables().into_iter().cloned());
+                }
+            }
+            BlockElement::Blockquote { elements, .. } => {
+                // F-051: <blockquote> -> DOCX Quote style (Word convention),
+                // so a save round trip keeps the quote distinct from body text.
+                let sub_doc = HtmlDocument {
+                    doc_type: None,
+                    html_attributes: vec![],
+                    head: HtmlHead::default(),
+                    body: HtmlBody {
+                        elements: elements.clone(),
+                    },
+                };
+                let sub = html_to_ooxml(&sub_doc);
+                if let Some(body) = &sub.docx_body {
+                    for mut para in body.paragraphs().into_iter().cloned() {
+                        para.style_id = Some("Quote".to_string());
+                        paragraphs.push(para);
+                    }
                     tables.extend(body.tables().into_iter().cloned());
                 }
             }
@@ -3561,16 +3591,36 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
 
         let inlines = docx_runs_to_html_inlines(body, &para.runs);
 
+        let is_quote = para.style_id.as_deref() == Some("Quote");
         if is_heading {
             result.push(BlockElement::Heading {
                 level: level as u8,
                 content: inlines,
                 id: None,
             });
+        } else if is_quote {
+            // F-051: Quote-styled paragraph -> <blockquote>
+            result.push(BlockElement::Blockquote {
+                elements: vec![BlockElement::Paragraph {
+                    content: inlines,
+                    id: None,
+                    dir: None,
+                }],
+                id: None,
+            });
+        } else if para.properties.bidi {
+            // F-041: RTL paragraph -> direction on the HTML block (the editor
+            // save path re-imports this via html -> docx w:bidi)
+            result.push(BlockElement::Paragraph {
+                content: inlines,
+                id: None,
+                dir: Some("rtl".to_string()),
+            });
         } else {
             result.push(BlockElement::Paragraph {
                 content: inlines,
                 id: None,
+                dir: None,
             });
         }
     }
@@ -4228,6 +4278,7 @@ fn odf_content_to_html_blocks(content: &OdfContent) -> Vec<BlockElement> {
                 result.push(BlockElement::Paragraph {
                     content: inlines,
                     id: None,
+                    dir: None,
                 });
             }
             OdfTextContent::List(list) => {
@@ -9712,6 +9763,90 @@ mod tests {
         );
     }
 
+    /// F-041: RTL paragraph direction survives the FULL editor save path:
+    /// editor HTML (`<p style="direction: rtl">`, what toggleBlockDirection
+    /// produces) -> DOCX (w:bidi) -> HTML (direction: rtl) -> DOCX (w:bidi).
+    // F-041
+    #[test]
+    fn test_rtl_direction_survives_editor_save_cycle_f041() {
+        let editor_html = br#"<html><body>
+<p style="direction: rtl">Marhaba</p>
+<p>Left as before</p>
+</body></html>"#;
+
+        // save: html -> docx
+        let docx = HtmlToDocxConverter.convert(editor_html).expect("html -> docx");
+        let docx_str = extract_docx_document_xml_f041(&docx);
+        assert!(
+            docx_str.contains("<w:bidi/>"),
+            "saved DOCX must carry w:bidi for the RTL paragraph, got: {docx_str}"
+        );
+
+        // load: docx -> html
+        let html = DocxToHtmlConverter.convert(&docx).expect("docx -> html");
+        let html_str = String::from_utf8_lossy(&html).to_string();
+        assert!(
+            html_str.contains("direction: rtl") || html_str.contains("dir=\"rtl\""),
+            "reloaded HTML must express the RTL block, got: {}",
+            html_str
+        );
+
+        // re-save: html -> docx keeps bidi
+        let docx2 = HtmlToDocxConverter.convert(&html).expect("html -> docx (2)");
+        assert!(
+            extract_docx_document_xml_f041(&docx2).contains("<w:bidi/>"),
+            "second save must still carry w:bidi"
+        );
+    }
+
+    /// F-041/F-051 helper: extract word/document.xml from a DOCX zip as text.
+    fn extract_docx_document_xml_f041(docx: &[u8]) -> String {
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(docx))
+            .expect("docx zip");
+        let mut entry = archive
+            .by_name("word/document.xml")
+            .expect("word/document.xml");
+        let mut xml = String::new();
+        std::io::Read::read_to_string(&mut entry, &mut xml).expect("utf-8");
+        xml
+    }
+
+    /// F-051: block quote survives the FULL editor save path:
+    /// <blockquote> -> DOCX pStyle Quote -> <blockquote>.
+    // F-051
+    #[test]
+    fn test_blockquote_survives_editor_save_cycle_f051() {
+        let editor_html = br#"<html><body>
+<blockquote><p>To be, or not to be</p></blockquote>
+<p>Body text</p>
+</body></html>"#;
+
+        let docx = HtmlToDocxConverter.convert(editor_html).expect("html -> docx");
+        let docx_str = extract_docx_document_xml_f041(&docx);
+        assert!(
+            docx_str.contains("\"Quote\""),
+            "saved DOCX must style the quote as pStyle Quote, got: {docx_str}"
+        );
+
+        let html = DocxToHtmlConverter.convert(&docx).expect("docx -> html");
+        let html_str = String::from_utf8_lossy(&html).to_string();
+        assert!(
+            html_str.contains("<blockquote>"),
+            "reloaded HTML must re-emit <blockquote>, got: {}",
+            html_str
+        );
+        assert!(
+            html_str.contains("To be, or not to be"),
+            "quote text preserved"
+        );
+
+        let docx2 = HtmlToDocxConverter.convert(&html).expect("html -> docx (2)");
+        assert!(
+            extract_docx_document_xml_f041(&docx2).contains("\"Quote\""),
+            "second save must still style as Quote"
+        );
+    }
+
     /// F-404: DOCX->PDF follows OO DocxRenderer's per-page BeginCommand/EndCommand
     /// model: a 2-page document must produce TWO page objects each with its OWN
     /// content stream, and each page's text must stay in its own stream (no
@@ -12160,6 +12295,7 @@ mod tests {
                                 style: None,
                             }],
                             id: None,
+                            dir: None,
                         }],
                         id: None,
                         class: None,
@@ -12171,6 +12307,7 @@ mod tests {
                                 style: None,
                             }],
                             id: None,
+                            dir: None,
                         }],
                         id: None,
                     },
@@ -12410,6 +12547,7 @@ mod tests {
                     style: None,
                 }],
                 id: None,
+                dir: None,
             },
             BlockElement::UnorderedList {
                 items: vec![ListItem {
@@ -12456,6 +12594,7 @@ mod tests {
                         style: None,
                     }],
                     id: None,
+                    dir: None,
                 }],
                 id: None,
                 class: None,
@@ -12467,6 +12606,7 @@ mod tests {
                         style: None,
                     }],
                     id: None,
+                    dir: None,
                 }],
                 id: None,
             },
@@ -12555,6 +12695,7 @@ mod tests {
                 style: None,
             }],
             id: None,
+            dir: None,
         }];
         let content = html_blocks_to_odf_content(&elements);
         assert_eq!(content.len(), 1);
@@ -13275,6 +13416,7 @@ mod tests {
         let paragraph_with_empty_inlines = BlockElement::Paragraph {
             content: vec![InlineElement::Bold { content: vec![] }],
             id: None,
+            dir: None,
         };
         let html = HtmlDocument {
             doc_type: None,
@@ -13297,6 +13439,7 @@ mod tests {
                 style: None,
             }],
             id: None,
+            dir: None,
         }];
         let content = html_blocks_to_odf_content(&elements);
         assert_eq!(content.len(), 1);
@@ -13329,6 +13472,7 @@ mod tests {
                 style: None,
             }],
             id: None,
+            dir: None,
         }]);
         assert!(
             result.is_empty(),
@@ -13345,6 +13489,7 @@ mod tests {
                     style: None,
                 }],
                 id: None,
+                dir: None,
             }],
             id: None,
             class: None,
@@ -13366,6 +13511,7 @@ mod tests {
                     style: None,
                 }],
                 id: None,
+                dir: None,
             }],
             id: None,
         }]);
@@ -14290,6 +14436,7 @@ mod tests {
         let result = html_blocks_to_rtf_blocks(&[BlockElement::Paragraph {
             content: vec![],
             id: None,
+            dir: None,
         }]);
         assert!(
             result.is_empty(),
@@ -14307,6 +14454,7 @@ mod tests {
                         style: None,
                     }],
                     id: None,
+                    dir: None,
                 }],
                 id: None,
                 class: None,
@@ -14318,6 +14466,7 @@ mod tests {
                         style: None,
                     }],
                     id: None,
+                    dir: None,
                 }],
                 id: None,
             },
@@ -14589,6 +14738,7 @@ mod tests {
                     style: None,
                 }],
                 id: None,
+                dir: None,
             },
             BlockElement::Div {
                 elements: vec![BlockElement::Paragraph {
@@ -14597,6 +14747,7 @@ mod tests {
                         style: None,
                     }],
                     id: None,
+                    dir: None,
                 }],
                 id: None,
                 class: None,
@@ -14608,6 +14759,7 @@ mod tests {
                         style: None,
                     }],
                     id: None,
+                    dir: None,
                 }],
                 id: None,
             },
@@ -14712,6 +14864,7 @@ mod tests {
                 },
             ],
             id: None,
+            dir: None,
         }]);
         assert_eq!(result, vec!["line1", "line2"]);
     }
@@ -14733,6 +14886,7 @@ mod tests {
                 },
             ],
             id: None,
+            dir: None,
         }]);
         assert_eq!(result, vec!["see screenshot"]);
     }
@@ -14872,6 +15026,7 @@ mod tests {
                     style: None,
                 }],
                 id: None,
+                dir: None,
             },
             BlockElement::Heading {
                 level: 2,
@@ -14887,6 +15042,7 @@ mod tests {
                     style: None,
                 }],
                 id: None,
+                dir: None,
             },
         ];
         let chapters = html_to_epub_chapters(&elements);
@@ -14904,6 +15060,7 @@ mod tests {
                     style: None,
                 }],
                 id: None,
+                dir: None,
             },
             BlockElement::Paragraph {
                 content: vec![InlineElement::Text {
@@ -14911,6 +15068,7 @@ mod tests {
                     style: None,
                 }],
                 id: None,
+                dir: None,
             },
         ];
         let chapters = html_to_epub_chapters(&elements);
@@ -14953,6 +15111,7 @@ mod tests {
                 style: None,
             }],
             id: None,
+            dir: None,
         });
         assert_eq!(p, "<p>Hello</p>");
 
@@ -15000,6 +15159,7 @@ mod tests {
                     style: None,
                 }],
                 id: None,
+                dir: None,
             }],
             id: None,
             class: None,
@@ -15014,6 +15174,7 @@ mod tests {
                     style: None,
                 }],
                 id: None,
+                dir: None,
             }],
             id: None,
         });
@@ -16991,6 +17152,7 @@ mod tests {
                 style: None,
             }],
             id: None,
+            dir: None,
         }];
         let chapters = html_to_epub_chapters(&elements);
         assert_eq!(chapters.len(), 1);
@@ -17012,6 +17174,7 @@ mod tests {
                     style: None,
                 }],
                 id: None,
+                dir: None,
             },
             BlockElement::Heading {
                 level: 2,
@@ -17027,6 +17190,7 @@ mod tests {
                     style: None,
                 }],
                 id: None,
+                dir: None,
             },
         ];
         let ch = html_to_epub_chapters(&elements_h);

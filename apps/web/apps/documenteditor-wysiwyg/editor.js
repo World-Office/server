@@ -1107,7 +1107,7 @@
     if (cmd === "managePlugins") { managePlugins(); return; }
     if (cmd === "photoEditor") { openPhotoEditorDialog(); return; }
     const isBlock =
-      cmd === "formatBlock" && /^(H[1-6]|P)$/i.test(String(value || ""));
+      cmd === "formatBlock" && /^(H[1-6]|P|BLOCKQUOTE)$/i.test(String(value || ""));
     // Font size/family and color have no semantic tags (the sanitizer strips
     // <font>), so run them with styleWithCSS on: the browser then emits
     // span[style] with font-size/font-family/color/background-color, all
@@ -1381,6 +1381,10 @@
     while (node && node !== editor) {
       if (node.nodeType === 1 && /^H[1-6]$/.test(node.tagName)) {
         return node.tagName;
+      }
+      // F-051: block quote is a formatBlock target like headings
+      if (node.nodeType === 1 && node.tagName === "BLOCKQUOTE") {
+        return "BLOCKQUOTE";
       }
       node = node.parentNode;
     }
