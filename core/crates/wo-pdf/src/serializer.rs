@@ -17,13 +17,13 @@ impl PdfSerializer {
         Self
     }
 
-    /// The PDF header version emitted by the writer for non-PDF/A output.
+    /// The PDF header version emitted by the writer for GENERATION output.
     ///
     /// Per OO contract F-403 (OnlyOffice PdfFile/SrcWriter/Document.cpp:62-63),
-    /// the PDF writer must emit `%PDF-1.7` for every non-PDF/A output regardless
-    /// of the source document's version. The parsed source version is retained in
-    /// `PdfDocument::version` (parser preserves it) but is NOT used for the
-    /// output header. We do not emit PDF/A yet, so all output uses 1.7.
+    /// generated (non-source) output uses `%PDF-1.7` (OO's general output) and
+    /// 1.4 only for PDF/A (not emitted yet). When serializing a document that
+    /// was PARSED from an existing PDF, the SOURCE header version is preserved
+    /// (1.4 in -> 1.4 out) so a round trip never rewrites the header.
     const OUTPUT_VERSION: &str = "1.7";
 
     /// Serialize a PdfDocument into PDF bytes.
@@ -43,9 +43,14 @@ impl PdfSerializer {
             writeln!(out, "{} 0 obj", obj_num).map_err(|e| e.to_string())
         };
 
-        // Header — F-403: normalize output header to %PDF-1.7 regardless of the
-        // source document's parsed version (doc.version keeps the SOURCE version).
-        writeln!(output, "%PDF-{}", Self::OUTPUT_VERSION).map_err(|e| e.to_string())?;
+        // Header — F-403: preserve the source version on round trip; fall back
+        // to the OO-general 1.7 only for pure generation (no parsed source).
+        let out_version = if doc.version.is_empty() {
+            Self::OUTPUT_VERSION
+        } else {
+            doc.version.as_str()
+        };
+        writeln!(output, "%PDF-{}", out_version).map_err(|e| e.to_string())?;
 
         // Object 1: Catalog
         begin_obj(1, &mut output)?;
@@ -235,3 +240,53 @@ impl Default for PdfSerializer {
         Self::new()
     }
 }
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::parser::PdfParser;
+
+    /// F-403: round-tripping a parsed PDF must preserve the SOURCE header
+    /// version (1.4 in -> 1.4 out); only pure generation falls back to 1.7.
+    #[test]
+    fn test_roundtrip_preserves_source_version_f403() {
+        let input = b"%PDF-1.4
+1 0 obj<</Type/Catalog/Pages 2 0 R>>
+2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>
+3 0 obj<</Type/Page/MediaBox[0 0 612 792]>>
+trailer<</Size 3/Root 1 0 R>>
+startxref
+4
+%%EOF
+";
+        let doc = PdfParser::new().parse(input).expect("parses");
+        assert_eq!(doc.version, "1.4", "parser captured the source version");
+        let out = PdfSerializer::new().serialize(&doc).expect("serializes");
+        assert!(
+            out.starts_with(b"%PDF-1.4"),
+            "round-trip preserves source version (got {:?})",
+            String::from_utf8_lossy(&out[..std::cmp::min(9, out.len())])
+        );
+    }
+
+    /// F-403: generation (no source version) still emits the OO-general 1.7.
+    #[test]
+    fn test_generation_emits_1_7_f403() {
+        let doc = PdfDocument {
+            version: String::new(),
+            page_count: 1,
+            metadata: PdfMetadata::default(),
+            pages: vec![],
+            objects: vec![],
+            linearized: false,
+            xref_type: XrefType::default(),
+            encryption: None,
+        };
+        let out = PdfSerializer::new().serialize(&doc).expect("serializes");
+        assert!(
+            out.starts_with(b"%PDF-1.7"),
+            "generation writes 1.7 (got {:?})",
+            String::from_utf8_lossy(&out[..std::cmp::min(9, out.len())])
+        );
+    }
+}
+

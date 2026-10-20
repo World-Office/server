@@ -18715,11 +18715,13 @@ mod bridge_converter_tests {
     }
 
     // F-403: a %PDF-1.4 source must round-trip (pdf -> wo-pdf-document -> pdf)
-    // with the output header normalized to %PDF-1.7 regardless of the source
-    // version. The parsed source version is preserved in the wo-pdf-document
-    // JSON (doc.version stays the SOURCE version), but the writer emits 1.7.
+    // with the OUTPUT header PRESERVING the source version (1.4 in -> 1.4 out).
+    // The parser captures the source version into wo-pdf-document and the
+    // serializer now honors it: only pure GENERATION (no source version) emits
+    // the OO-general 1.7. (Supersedes the earlier normalize-to-1.7 contract:
+    // register F-403 declared 'round-trip is faithful' the remaining slice.)
     #[test]
-    fn test_bridge_pdf_roundtrip_normalizes_header_to_pdf17() {
+    fn test_bridge_pdf_roundtrip_preserves_source_version_f403() {
         let input = b"%PDF-1.4
 1 0 obj
 << /Type /Catalog /Pages 2 0 R >>
@@ -18754,8 +18756,8 @@ startxref
             .convert(&wo)
             .expect("wo-pdf-document -> pdf");
         assert!(
-            pdf.starts_with(b"%PDF-1.7"),
-            "F-403: round-tripped PDF header must start with %PDF-1.7, got {:?}",
+            pdf.starts_with(b"%PDF-1.4"),
+            "F-403: round-tripped PDF header must preserve the source version, got {:?}",
             String::from_utf8_lossy(&pdf[..12.min(pdf.len())])
         );
     }
