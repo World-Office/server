@@ -5,6 +5,7 @@
 
 pub mod conditional;
 pub mod export;
+pub mod formula_eval;
 pub mod format;
 pub mod model;
 pub mod ops;

@@ -428,6 +428,22 @@ impl Sheet {
             .unwrap_or_default()
     }
 
+    /// Get the maximum row index with data.
+    pub fn max_row(&self) -> u32 {
+        self.cells.keys()
+            .map(|&(row, _)| row)
+            .max()
+            .unwrap_or(0)
+    }
+
+    /// Get the maximum column index with data.
+    pub fn max_col(&self) -> u32 {
+        self.cells.keys()
+            .map(|&(_, col)| col)
+            .max()
+            .unwrap_or(0)
+    }
+
     /// Set column width.
     pub fn set_col_width(&mut self, col: u32, width: f32) {
         self.col_widths.insert(col, width);
