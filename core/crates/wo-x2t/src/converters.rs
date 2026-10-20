@@ -18340,6 +18340,136 @@ mod bridge_converter_tests {
     /// round-trip byte-identically through the WoSpreadsheet JSON bridge.
     // F-206: chart parts (xl/charts/chart1.xml) round-trip byte-identical
     #[test]
+    /// F-302: sldIdLst IS the slide order. Round-trip preserves it, and a
+    /// reorder-only edit (reordering the slides array in the WO JSON, what a
+    /// drag-and-drop produces) is faithfully re-emitted as the new sldIdLst
+    /// order with slide ids kept unique.
+    // F-302
+    #[test]
+    fn test_pptx_slide_order_roundtrip_and_reorder_f302() {
+        // 1) read: slides array order == sldIdLst order
+        let wo_bytes = PptxToWoPresentationConverter
+            .convert(&build_three_slide_pptx())
+            .expect("pptx -> wo-presentation");
+        let v: Value = serde_json::from_slice(&wo_bytes).expect("wo json");
+        let titles = |doc: &Value| -> Vec<String> {
+            doc["slides"]
+                .as_array()
+                .expect("slides array")
+                .iter()
+                .map(|s| s["title"].as_str().expect("title").to_string())
+                .collect()
+        };
+        assert_eq!(titles(&v), ["Alpha", "Beta", "Gamma"], "read order = sldIdLst order");
+
+        // 2) write-back UNEDITED: order preserved on round trip
+        let out = WoPresentationToPptxConverter
+            .convert(&wo_bytes)
+            .expect("wo-presentation -> pptx");
+        let back = PptxToWoPresentationConverter
+            .convert(&out)
+            .expect("pptx -> wo (round trip)");
+        let vb: Value = serde_json::from_slice(&back).expect("wo json");
+        assert_eq!(
+            titles(&vb),
+            ["Alpha", "Beta", "Gamma"],
+            "unedited round trip preserves sldIdLst order"
+        );
+
+        // 3) reorder-only edit: reverse the slides array (drag Gamma to front)
+        let mut edited: Value = serde_json::from_slice(&wo_bytes).expect("wo json");
+        edited["slides"]
+            .as_array_mut()
+            .expect("slides array")
+            .reverse();
+        let edited_bytes = serde_json::to_vec(&edited).expect("json");
+        let out2 = WoPresentationToPptxConverter
+            .convert(&edited_bytes)
+            .expect("reordered wo -> pptx");
+        let back2 = PptxToWoPresentationConverter
+            .convert(&out2)
+            .expect("reordered pptx -> wo");
+        let vb2: Value = serde_json::from_slice(&back2).expect("wo json");
+        assert_eq!(
+            titles(&vb2),
+            ["Gamma", "Beta", "Alpha"],
+            "reorder-only edit is re-emitted as the new sldIdLst order"
+        );
+        // slide ids must stay unique after the reorder
+        let mut ids: Vec<u32> = vb2["slides"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|s| s["id"].as_str().expect("id").parse().expect("numeric id"))
+            .collect();
+        ids.sort_unstable();
+        ids.dedup();
+        assert_eq!(ids.len(), 3, "slide ids stay unique after reorder");
+    }
+
+    /// F-302: three-slide pptx fixture with distinguishable slide names
+    /// (Alpha/Beta/Gamma) in sldIdLst order.
+    fn build_three_slide_pptx() -> Vec<u8> {
+        use std::io::Write;
+        let buf = std::io::Cursor::new(Vec::new());
+        let mut zip = zip::ZipWriter::new(buf);
+        let mut add = |name: &str, xml: &str| {
+            zip.start_file(name, zip::write::SimpleFileOptions::default())
+                .unwrap();
+            zip.write_all(xml.as_bytes()).unwrap();
+        };
+        add(
+            "[Content_Types].xml",
+            r#"<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+<Override PartName="/ppt/slides/slide1.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
+<Override PartName="/ppt/slides/slide2.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
+<Override PartName="/ppt/slides/slide3.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>
+</Types>"#,
+        );
+        add(
+            "_rels/.rels",
+            r#"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>"#,
+        );
+        add(
+            "ppt/_rels/presentation.xml.rels",
+            r#"<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide1.xml"/>
+<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide2.xml"/>
+<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide3.xml"/>
+</Relationships>"#,
+        );
+        add(
+            "ppt/presentation.xml",
+            r#"<p:presentation xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <p:sldSz cx="12192000" cy="6858000"/>
+  <p:sldIdLst>
+    <p:sldId id="256" r:id="rId1"/>
+    <p:sldId id="257" r:id="rId2"/>
+    <p:sldId id="258" r:id="rId3"/>
+  </p:sldIdLst>
+</p:presentation>"#,
+        );
+        for (i, name) in ["Alpha", "Beta", "Gamma"].iter().enumerate() {
+            add(
+                &format!("ppt/slides/slide{}.xml", i + 1),
+                &format!(
+                    r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" name="{name}">
+  <p:spTree>
+    <p:nvGrpSpPr><p:cNvPr id="1" name=""/></p:nvGrpSpPr>
+  </p:spTree>
+</p:sld>"#
+                ),
+            );
+        }
+        zip.finish().unwrap().into_inner()
+    }
+
     fn test_xlsx_extra_parts_byte_faithful_roundtrip() {
         use std::io::Write;
         use zip::write::SimpleFileOptions;

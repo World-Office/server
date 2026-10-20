@@ -347,6 +347,11 @@ impl OoxmlSerializer {
         if let Some(ref master_id) = slide.master_id {
             xml.push_str(&format!(r#" sldMasterId="{}""#, master_id));
         }
+        // F-302: slide names are user-visible (slide panel) — keep them on
+        // round trip instead of falling back to the reader's "Slide N".
+        if !slide.name.is_empty() {
+            xml.push_str(&format!(r#" name="{}""#, escape_xml(&slide.name)));
+        }
         xml.push('>');
 
         // spTree
