@@ -17,7 +17,8 @@ use crate::converter::FormatConverter;
 use crate::error::ConversionError;
 
 use wo_html::model::{
-    BlockElement, HtmlBody, HtmlDocument, HtmlHead, InlineElement, TableCell, TableRow,
+    BlockElement, HtmlBody, HtmlDocument, HtmlHead, InlineElement, ParagraphBorder,
+    ParagraphBorders, TableCell, TableRow,
 };
 use wo_html::{HtmlParser, HtmlSerializer};
 use wo_odf::OdfParser;
@@ -51,10 +52,11 @@ use wo_odf::model::{
 use wo_odf::OdfSerializer;
 use wo_ooxml::model::{
     AdvanceMode, AnimationData as OoxmlAnimData, Bounds, ConnectorShape, ConnectorShapeType,
-    CoreProperties, DocxBody, DocxParagraph, DocxParagraphProperties, DocxRun, DocxTable,
-    DocxTableCell, DocxTableRow, Fill, HeaderFooter, MediaPart, OoxmlDocument, OoxmlFormat,
-    PictureShape, PptxPresentation, Relationship, Slide, SlideShape, SlideSize, SlideTransition,
-    TextBody as OoxmlTextBody, TextBoxShape, TransitionEffect, UnderlineType,
+    CoreProperties, DocxBorder, DocxBody, DocxParagraph, DocxParagraphBorders,
+    DocxParagraphProperties, DocxRun, DocxTable, DocxTableCell, DocxTableRow, Fill, HeaderFooter,
+    MediaPart, OoxmlDocument, OoxmlFormat, PictureShape, PptxPresentation, Relationship, Slide,
+    SlideShape, SlideSize, SlideTransition, TextBody as OoxmlTextBody, TextBoxShape,
+    TransitionEffect, UnderlineType,
 };
 use wo_ooxml::model::{Comment, CommentAnchor};
 use wo_ooxml::{OoxmlParser, OoxmlSerializer};
@@ -194,6 +196,8 @@ impl FormatConverter for TxtToHtmlConverter {
                 }],
                 id: None,
                 dir: None,
+                background: None,
+                borders: None,
             })
             .collect();
 
@@ -598,6 +602,8 @@ impl FormatConverter for EpubToHtmlConverter {
                         }],
                         id: None,
                         dir: None,
+                        background: None,
+                        borders: None,
                     });
                 }
             }
@@ -1137,6 +1143,8 @@ impl FormatConverter for XpsToHtmlConverter {
                         content: page_inlines,
                         id: None,
                         dir: None,
+                        background: None,
+                        borders: None,
                     }],
                     id: None,
                     class: None,
@@ -1264,6 +1272,8 @@ impl FormatConverter for OfdToHtmlConverter {
                         content: page_inlines,
                         id: None,
                         dir: None,
+                        background: None,
+                        borders: None,
                     }],
                     id: None,
                     class: None,
@@ -2099,6 +2109,8 @@ fn rtf_blocks_to_html_blocks(blocks: &[RtfBlock]) -> Vec<BlockElement> {
                     content: inlines,
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 });
             }
             RtfBlock::Table { rows } => {
@@ -2532,13 +2544,21 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                     ..Default::default()
                 });
             }
-            BlockElement::Paragraph { content, dir, .. } => {
+            BlockElement::Paragraph { content, dir, background, borders, .. } => {
                 let runs =
                     html_inlines_to_docx_runs(content, &mut media, &mut image_rels, &mut comments);
                 if !runs.is_empty() {
                     // F-041: direction: rtl on the block -> w:bidi in DOCX
+                    // F-040: background-color -> w:shd, border-* -> w:pBdr
                     let properties = DocxParagraphProperties {
                         bidi: dir.as_deref() == Some("rtl"),
+                        shading: background.clone(),
+                        borders: borders.as_ref().map(|b| DocxParagraphBorders {
+                            top: b.top.as_ref().map(html_border_to_docx),
+                            bottom: b.bottom.as_ref().map(html_border_to_docx),
+                            left: b.left.as_ref().map(html_border_to_docx),
+                            right: b.right.as_ref().map(html_border_to_docx),
+                        }),
                         ..Default::default()
                     };
                     paragraphs.push(DocxParagraph {
@@ -2894,6 +2914,39 @@ fn image_dimensions(bytes: &[u8]) -> Option<(u32, u32)> {
         }
     }
     None
+}
+
+/// F-040: convert HTML paragraph border (CSS) to OOXML border.
+/// CSS `1pt solid #000000` -> w:sz=8 (eighths of a point), w:val=single.
+fn html_border_to_docx(b: &ParagraphBorder) -> DocxBorder {
+    // CSS border-width "1pt" -> OOXML w:sz in eighths of a point
+    let size = b.width.trim().trim_end_matches("pt").parse::<u32>().ok().map(|n| n * 8);
+    // CSS border-style "solid" -> OOXML "single"; others pass through
+    let style = match b.style.as_str() {
+        "solid" => "single",
+        s => s,
+    };
+    DocxBorder {
+        style: style.to_string(),
+        size,
+        color: Some(b.color.clone()),
+        space: None,
+    }
+}
+
+/// F-040: convert OOXML paragraph border to HTML (CSS).
+/// w:sz=8 (eighths of a point) -> CSS "1pt"; w:val=single -> "solid".
+fn docx_border_to_html(b: &DocxBorder) -> ParagraphBorder {
+    let width = format!("{}pt", b.size.unwrap_or(8) / 8);
+    let style = match b.style.as_str() {
+        "single" => "solid",
+        s => s,
+    };
+    ParagraphBorder {
+        width,
+        style: style.to_string(),
+        color: b.color.clone().unwrap_or_else(|| "#000000".to_string()),
+    }
 }
 
 fn html_inlines_to_docx_runs(
@@ -3754,6 +3807,15 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
 
         let inlines = docx_runs_to_html_inlines(body, &para.runs);
 
+        // F-040: map paragraph shading and borders to HTML
+        let background = para.properties.shading.clone();
+        let borders = para.properties.borders.as_ref().map(|b| ParagraphBorders {
+            top: b.top.as_ref().map(docx_border_to_html),
+            bottom: b.bottom.as_ref().map(docx_border_to_html),
+            left: b.left.as_ref().map(docx_border_to_html),
+            right: b.right.as_ref().map(docx_border_to_html),
+        });
+
         let is_quote = para.style_id.as_deref() == Some("Quote");
         if is_heading {
             result.push(BlockElement::Heading {
@@ -3768,6 +3830,8 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
                     content: inlines,
                     id: None,
                     dir: None,
+                    background: background.clone(),
+                    borders: borders.clone(),
                 }],
                 id: None,
             });
@@ -3778,12 +3842,16 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
                 content: inlines,
                 id: None,
                 dir: Some("rtl".to_string()),
+                background: background.clone(),
+                borders: borders.clone(),
             });
         } else {
             result.push(BlockElement::Paragraph {
                 content: inlines,
                 id: None,
                 dir: None,
+                background,
+                borders,
             });
         }
     }
@@ -4442,6 +4510,8 @@ fn odf_content_to_html_blocks(content: &OdfContent) -> Vec<BlockElement> {
                     content: inlines,
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 });
             }
             OdfTextContent::List(list) => {
@@ -10042,6 +10112,59 @@ mod tests {
         xml
     }
 
+    /// F-040: paragraph shading + borders survive the FULL editor save path:
+    /// style="background-color" on <p> -> w:shd -> style="background-color";
+    /// style="border-*" on <p> -> w:pBdr -> style="border-*".
+    // F-040
+    #[test]
+    fn test_paragraph_shading_borders_survive_editor_save_cycle_f040() {
+        let editor_html = br##"<html><body>
+<p style="background-color: #FFFF00; border-top: 1pt solid #000000">Shaded paragraph</p>
+</body></html>"##;
+
+        // save: html -> docx
+        let docx = HtmlToDocxConverter.convert(editor_html).expect("html -> docx");
+        let docx_str = extract_docx_document_xml_f041(&docx);
+        assert!(
+            docx_str.contains("w:shd") && docx_str.contains("FFFF00"),
+            "saved DOCX must carry w:shd with fill=FFFF00, got: {docx_str}"
+        );
+        assert!(
+            docx_str.contains("<w:pBdr>"),
+            "saved DOCX must carry w:pBdr, got: {docx_str}"
+        );
+        assert!(
+            docx_str.contains("w:val=\"single\"") && docx_str.contains("w:sz=\"8\""),
+            "saved DOCX must carry w:top with single border 8 eighths, got: {docx_str}"
+        );
+
+        // load: docx -> html keeps shading and borders
+        let html = DocxToHtmlConverter.convert(&docx).expect("docx -> html");
+        let html_str = String::from_utf8_lossy(&html).to_string();
+        assert!(
+            html_str.contains("background-color: #FFFF00"),
+            "reloaded HTML must carry background-color, got: {}",
+            html_str
+        );
+        assert!(
+            html_str.contains("border-top: 1pt solid #000000"),
+            "reloaded HTML must carry border-top, got: {}",
+            html_str
+        );
+
+        // re-save: html -> docx keeps shading and borders
+        let docx2 = HtmlToDocxConverter.convert(&html).expect("html -> docx (2)");
+        let docx2_str = extract_docx_document_xml_f041(&docx2);
+        assert!(
+            docx2_str.contains("w:shd") && docx2_str.contains("FFFF00"),
+            "second save must still carry w:shd"
+        );
+        assert!(
+            docx2_str.contains("<w:pBdr>"),
+            "second save must still carry w:pBdr"
+        );
+    }
+
     /// F-051: block quote survives the FULL editor save path:
     /// <blockquote> -> DOCX pStyle Quote -> <blockquote>.
     // F-051
@@ -12586,6 +12709,8 @@ mod tests {
                             }],
                             id: None,
                             dir: None,
+                            background: None,
+                            borders: None,
                         }],
                         id: None,
                         class: None,
@@ -12598,6 +12723,8 @@ mod tests {
                             }],
                             id: None,
                             dir: None,
+                            background: None,
+                            borders: None,
                         }],
                         id: None,
                     },
@@ -12838,6 +12965,8 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                background: None,
+                borders: None,
             },
             BlockElement::UnorderedList {
                 items: vec![ListItem {
@@ -12885,6 +13014,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
                 id: None,
                 class: None,
@@ -12897,6 +13028,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
                 id: None,
             },
@@ -12986,6 +13119,8 @@ mod tests {
             }],
             id: None,
             dir: None,
+            background: None,
+            borders: None,
         }];
         let content = html_blocks_to_odf_content(&elements);
         assert_eq!(content.len(), 1);
@@ -13707,6 +13842,8 @@ mod tests {
             content: vec![InlineElement::Bold { content: vec![] }],
             id: None,
             dir: None,
+            background: None,
+            borders: None,
         };
         let html = HtmlDocument {
             doc_type: None,
@@ -13730,6 +13867,8 @@ mod tests {
             }],
             id: None,
             dir: None,
+            background: None,
+            borders: None,
         }];
         let content = html_blocks_to_odf_content(&elements);
         assert_eq!(content.len(), 1);
@@ -13763,6 +13902,8 @@ mod tests {
             }],
             id: None,
             dir: None,
+            background: None,
+            borders: None,
         }]);
         assert!(
             result.is_empty(),
@@ -13780,6 +13921,8 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                background: None,
+                borders: None,
             }],
             id: None,
             class: None,
@@ -13802,6 +13945,8 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                background: None,
+                borders: None,
             }],
             id: None,
         }]);
@@ -14727,6 +14872,8 @@ mod tests {
             content: vec![],
             id: None,
             dir: None,
+            background: None,
+            borders: None,
         }]);
         assert!(
             result.is_empty(),
@@ -14745,6 +14892,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
                 id: None,
                 class: None,
@@ -14757,6 +14906,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
                 id: None,
             },
@@ -15029,6 +15180,8 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                background: None,
+                borders: None,
             },
             BlockElement::Div {
                 elements: vec![BlockElement::Paragraph {
@@ -15038,6 +15191,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
                 id: None,
                 class: None,
@@ -15050,6 +15205,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
                 id: None,
             },
@@ -15155,6 +15312,8 @@ mod tests {
             ],
             id: None,
             dir: None,
+            background: None,
+            borders: None,
         }]);
         assert_eq!(result, vec!["line1", "line2"]);
     }
@@ -15177,6 +15336,8 @@ mod tests {
             ],
             id: None,
             dir: None,
+            background: None,
+            borders: None,
         }]);
         assert_eq!(result, vec!["see screenshot"]);
     }
@@ -15317,6 +15478,8 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                background: None,
+                borders: None,
             },
             BlockElement::Heading {
                 level: 2,
@@ -15333,6 +15496,8 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                background: None,
+                borders: None,
             },
         ];
         let chapters = html_to_epub_chapters(&elements);
@@ -15351,6 +15516,8 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                background: None,
+                borders: None,
             },
             BlockElement::Paragraph {
                 content: vec![InlineElement::Text {
@@ -15359,6 +15526,8 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                background: None,
+                borders: None,
             },
         ];
         let chapters = html_to_epub_chapters(&elements);
@@ -15402,6 +15571,8 @@ mod tests {
             }],
             id: None,
             dir: None,
+            background: None,
+            borders: None,
         });
         assert_eq!(p, "<p>Hello</p>");
 
@@ -15450,6 +15621,8 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                background: None,
+                borders: None,
             }],
             id: None,
             class: None,
@@ -15465,6 +15638,8 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                background: None,
+                borders: None,
             }],
             id: None,
         });
@@ -17443,6 +17618,8 @@ mod tests {
             }],
             id: None,
             dir: None,
+            background: None,
+            borders: None,
         }];
         let chapters = html_to_epub_chapters(&elements);
         assert_eq!(chapters.len(), 1);
@@ -17465,6 +17642,8 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                background: None,
+                borders: None,
             },
             BlockElement::Heading {
                 level: 2,
@@ -17481,6 +17660,8 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                background: None,
+                borders: None,
             },
         ];
         let ch = html_to_epub_chapters(&elements_h);

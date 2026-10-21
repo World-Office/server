@@ -1768,6 +1768,43 @@ impl OoxmlParser {
                 "bidi" => {
                     props.bidi = true;
                 }
+                // F-040: paragraph shading (w:shd w:fill="...")
+                "shd" => {
+                    if let Some(fill) = self.attr_ns(child, "fill") {
+                        props.shading = Some(fill.to_string());
+                    }
+                }
+                // F-040: paragraph borders (w:pBdr with w:top/w:bottom/w:left/w:right)
+                "pBdr" => {
+                    let mut borders = DocxParagraphBorders::default();
+                    let mut found = false;
+                    for side_elem in child.children() {
+                        if !side_elem.is_element() {
+                            continue;
+                        }
+                        let side_name = side_elem.tag_name().name();
+                        let border = DocxBorder {
+                            style: self.attr_ns(side_elem, "val")
+                                .unwrap_or("single")
+                                .to_string(),
+                            size: self.attr_ns(side_elem, "sz")
+                                .and_then(|v| v.parse().ok()),
+                            color: self.attr_ns(side_elem, "color").map(|s| s.to_string()),
+                            space: self.attr_ns(side_elem, "space")
+                                .and_then(|v| v.parse().ok()),
+                        };
+                        match side_name {
+                            "top" => { borders.top = Some(border); found = true; }
+                            "bottom" => { borders.bottom = Some(border); found = true; }
+                            "left" => { borders.left = Some(border); found = true; }
+                            "right" => { borders.right = Some(border); found = true; }
+                            _ => {}
+                        }
+                    }
+                    if found {
+                        props.borders = Some(borders);
+                    }
+                }
                 "outlineLvl" => {
                     props.outline_level = self.attr_ns(child, "val").and_then(|v| v.parse().ok());
                 }

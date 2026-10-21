@@ -65,6 +65,55 @@ fn block_direction(node: &roxmltree::Node) -> Option<String> {
     None
 }
 
+/// F-040: paragraph background-color from `style="background-color: ..."`.
+fn block_background(node: &roxmltree::Node) -> Option<String> {
+    let style = attr(node, "style")?;
+    for decl in style.split(';') {
+        if let Some((prop, val)) = decl.split_once(':') {
+            if prop.trim().eq_ignore_ascii_case("background-color") {
+                let v = val.trim();
+                if !v.is_empty() {
+                    return Some(v.to_string());
+                }
+            }
+        }
+    }
+    None
+}
+
+/// F-040: paragraph borders from `style="border-{side}: {w}pt solid {color}"`.
+/// Parses per-side border declarations into a ParagraphBorders struct.
+fn block_borders(node: &roxmltree::Node) -> Option<ParagraphBorders> {
+    let style = attr(node, "style")?;
+    let mut borders = ParagraphBorders::default();
+    let mut found = false;
+    for decl in style.split(';') {
+        if let Some((prop, val)) = decl.split_once(':') {
+            let prop = prop.trim();
+            let val = val.trim();
+            // border-top: 1pt solid #000000
+            if let Some(side) = prop.strip_prefix("border-") {
+                let parts: Vec<&str> = val.split_whitespace().collect();
+                if parts.len() >= 3 {
+                    let border = ParagraphBorder {
+                        width: parts[0].to_string(),
+                        style: parts[1].to_string(),
+                        color: parts[2].to_string(),
+                    };
+                    match side {
+                        "top" => { borders.top = Some(border); found = true; }
+                        "bottom" => { borders.bottom = Some(border); found = true; }
+                        "left" => { borders.left = Some(border); found = true; }
+                        "right" => { borders.right = Some(border); found = true; }
+                        _ => {}
+                    }
+                }
+            }
+        }
+    }
+    if found { Some(borders) } else { None }
+}
+
 const VOID_ELEMENTS: &[&str] = &[
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",
     "track", "wbr",
@@ -299,6 +348,8 @@ impl HtmlParser {
                         }],
                         id: None,
                         dir: None,
+                        background: None,
+                        borders: None,
                     });
                 }
                 continue;
@@ -325,6 +376,8 @@ impl HtmlParser {
                         content: self.parse_inline_elements(&ch),
                         id,
                         dir: block_direction(&ch),
+                        background: block_background(&ch),
+                        borders: block_borders(&ch),
                     });
                 }
                 "div" => {

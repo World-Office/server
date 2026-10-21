@@ -128,27 +128,61 @@ impl HtmlSerializer {
                 content,
                 id,
                 dir,
+                background,
+                borders,
             } => {
                 out.push_str(&pad);
                 // F-041: keep direction on round trip (dir attr wins over style)
                 let dir_attr = dir
                     .as_ref()
                     .map(|d| format!(" dir=\"{}\"", escape_attr(d)));
-                match (id, &dir_attr) {
-                    (Some(id_val), Some(d)) => {
-                        out.push_str(&format!(
-                            "<p id=\"{}\"{}>",
-                            escape_attr(id_val),
-                            d
-                        ));
+                // F-040: paragraph-level background-color and borders as style
+                let mut style_parts: Vec<String> = Vec::new();
+                if let Some(bg) = background {
+                    style_parts.push(format!("background-color: {}", bg));
+                }
+                if let Some(b) = borders {
+                    if let Some(ref bd) = b.top {
+                        style_parts.push(format!("border-top: {} {} {}", bd.width, bd.style, bd.color));
                     }
-                    (Some(id_val), None) => {
+                    if let Some(ref bd) = b.bottom {
+                        style_parts.push(format!("border-bottom: {} {} {}", bd.width, bd.style, bd.color));
+                    }
+                    if let Some(ref bd) = b.left {
+                        style_parts.push(format!("border-left: {} {} {}", bd.width, bd.style, bd.color));
+                    }
+                    if let Some(ref bd) = b.right {
+                        style_parts.push(format!("border-right: {} {} {}", bd.width, bd.style, bd.color));
+                    }
+                }
+                let style_attr = if style_parts.is_empty() {
+                    None
+                } else {
+                    Some(format!(" style=\"{}\"", escape_attr(&style_parts.join("; "))))
+                };
+                match (id, &dir_attr, &style_attr) {
+                    (Some(id_val), Some(d), Some(s)) => {
+                        out.push_str(&format!("<p id=\"{}\"{}{}>", escape_attr(id_val), d, s));
+                    }
+                    (Some(id_val), Some(d), None) => {
+                        out.push_str(&format!("<p id=\"{}\"{}>", escape_attr(id_val), d));
+                    }
+                    (Some(id_val), None, Some(s)) => {
+                        out.push_str(&format!("<p id=\"{}\"{}>", escape_attr(id_val), s));
+                    }
+                    (Some(id_val), None, None) => {
                         out.push_str(&format!("<p id=\"{}\">", escape_attr(id_val)));
                     }
-                    (None, Some(d)) => {
+                    (None, Some(d), Some(s)) => {
+                        out.push_str(&format!("<p{}{}>", d, s));
+                    }
+                    (None, Some(d), None) => {
                         out.push_str(&format!("<p{}>", d));
                     }
-                    (None, None) => out.push_str("<p>"),
+                    (None, None, Some(s)) => {
+                        out.push_str(&format!("<p{}>", s));
+                    }
+                    (None, None, None) => out.push_str("<p>"),
                 }
                 out.push_str(&self.serialize_inline(content));
                 out.push_str("</p>\n");
@@ -459,6 +493,8 @@ mod tests {
                     }],
                     id: Some("foo\"bar".into()),
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
             },
         };
@@ -493,6 +529,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
             },
         };
@@ -527,6 +565,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
             },
         };
@@ -564,6 +604,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
             },
         };
@@ -649,6 +691,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
             },
         };
@@ -864,6 +908,8 @@ mod tests {
                         }],
                         id: None,
                         dir: None,
+                        background: None,
+                        borders: None,
                     }],
                     id: Some("main".into()),
                     class: Some("container".into()),
@@ -998,6 +1044,8 @@ mod tests {
                         }],
                         id: None,
                         dir: None,
+                        background: None,
+                        borders: None,
                     }],
                     id: Some("q1".into()),
                 }],
@@ -1067,6 +1115,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
             },
         };
@@ -1091,6 +1141,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
             },
         };
@@ -1115,6 +1167,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
             },
         };
@@ -1139,6 +1193,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
             },
         };
@@ -1163,6 +1219,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
             },
         };
@@ -1187,6 +1245,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
             },
         };
@@ -1206,6 +1266,8 @@ mod tests {
                     content: vec![InlineElement::LineBreak],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
             },
         };
@@ -1267,6 +1329,8 @@ mod tests {
                     }],
                     id: Some("p1".into()),
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
             },
         };
@@ -1296,6 +1360,8 @@ mod tests {
                         }],
                         id: None,
                         dir: None,
+                        background: None,
+                        borders: None,
                     }],
                     id: None,
                     class: None,
@@ -1472,6 +1538,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
             },
         };
@@ -1503,6 +1571,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
             },
         };
@@ -1535,6 +1605,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
             },
         };
@@ -1620,6 +1692,8 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    background: None,
+                    borders: None,
                 }],
             },
         };
@@ -1679,6 +1753,8 @@ mod tests {
                         }],
                         id: Some("qp".into()),
                         dir: None,
+                        background: None,
+                        borders: None,
                     }],
                     id: Some("bq".into()),
                 }],

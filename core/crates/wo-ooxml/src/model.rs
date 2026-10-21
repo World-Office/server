@@ -711,6 +711,12 @@ pub struct DocxParagraphProperties {
     /// Text direction (left-to-right, right-to-left).
     /// OOXML w:bidi (right-to-left) as a bool.
     pub bidi: bool,
+    /// Paragraph-level shading (F-040: w:shd w:fill="...").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shading: Option<String>,
+    /// Paragraph-level borders (F-040: w:pBdr).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub borders: Option<DocxParagraphBorders>,
 }
 
 /// Kind of tab stop.
@@ -897,6 +903,15 @@ pub struct DocxBorder {
     pub size: Option<u32>,
     pub color: Option<String>,
     pub space: Option<u32>,
+}
+
+/// Paragraph-level borders (F-040: w:pBdr). Per-side border definition.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct DocxParagraphBorders {
+    pub top: Option<DocxBorder>,
+    pub bottom: Option<DocxBorder>,
+    pub left: Option<DocxBorder>,
+    pub right: Option<DocxBorder>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

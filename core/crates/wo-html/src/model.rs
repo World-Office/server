@@ -48,6 +48,14 @@ pub enum BlockElement {
         /// Block text direction from `dir` attr / `style="direction: rtl"`
         /// (F-041: survives HTML round trips, maps to OOXML w:bidi).
         dir: Option<String>,
+        /// Paragraph-level background color (F-040: style="background-color"
+        /// on <p>, maps to OOXML w:shd).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        background: Option<String>,
+        /// Paragraph-level borders (F-040: style="border-{side}" on <p>,
+        /// maps to OOXML w:pBdr).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        borders: Option<ParagraphBorders>,
     },
     Div {
         elements: Vec<BlockElement>,
@@ -160,4 +168,25 @@ pub enum InlineElement {
 pub struct CommentReply {
     pub author: String,
     pub text: String,
+}
+
+/// Paragraph-level borders (F-040): per-side border from CSS
+/// `border-{side}: {width}pt solid {color}`. Maps to OOXML w:pBdr.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct ParagraphBorders {
+    pub top: Option<ParagraphBorder>,
+    pub bottom: Option<ParagraphBorder>,
+    pub left: Option<ParagraphBorder>,
+    pub right: Option<ParagraphBorder>,
+}
+
+/// One side of a paragraph border (F-040).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ParagraphBorder {
+    /// CSS border-width in pt (e.g. "1pt").
+    pub width: String,
+    /// CSS border-style (e.g. "solid").
+    pub style: String,
+    /// CSS border-color (e.g. "#000000").
+    pub color: String,
 }

@@ -5987,7 +5987,28 @@
   const shadingColor = document.getElementById("shading-color");
   if (shadingColor) shadingColor.addEventListener("change", () => {
     if (READ_ONLY) return;
-    emitCommand("backColor", shadingColor.value);
+    // F-040: paragraph-level shading (not selection-scoped backColor).
+    // Apply background-color to the <p> block containing the cursor.
+    const sel = document.getSelection();
+    if (!sel || !sel.rangeCount) return;
+    const sc = sel.getRangeAt(0).startContainer;
+    const block = sc.nodeType === 1
+      ? (sc.closest ? sc.closest("p") : null)
+      : (sc.parentElement && sc.parentElement.closest("p"));
+    if (!block) return;
+    const color = shadingColor.value;
+    const cur = block.getAttribute("style") || "";
+    const decls = cur.split(";").filter((d) => {
+      const kv = d.split(":");
+      return kv.length >= 2 && kv[0].trim() !== "background-color";
+    });
+    decls.push("background-color: " + color);
+    block.setAttribute("style", decls.join(";"));
+    captureHistory();
+    markDirty();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
   });
   const lineSpacingSel = document.getElementById("line-spacing");
   if (lineSpacingSel) lineSpacingSel.addEventListener("change", () => {

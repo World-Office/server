@@ -1239,7 +1239,9 @@ impl OoxmlSerializer {
                 || para.properties.keep_lines
                 || para.properties.keep_next
                 || para.properties.page_break_before
-                || para.properties.bidi;
+                || para.properties.bidi
+                || para.properties.shading.is_some()
+                || para.properties.borders.is_some();
 
             if has_props {
                 xml.push_str("<w:pPr>");
@@ -1340,6 +1342,30 @@ impl OoxmlSerializer {
                 // F-041: RTL paragraph direction
                 if para.properties.bidi {
                     xml.push_str("<w:bidi/>");
+                }
+                // F-040: paragraph shading (w:shd w:fill="...")
+                if let Some(ref fill) = para.properties.shading {
+                    xml.push_str(&format!(
+                        "<w:shd w:val=\"clear\" w:color=\"auto\" w:fill=\"{}\"/>",
+                        escape_xml(fill)
+                    ));
+                }
+                // F-040: paragraph borders (w:pBdr)
+                if let Some(ref borders) = para.properties.borders {
+                    xml.push_str("<w:pBdr>");
+                    if let Some(ref b) = borders.top {
+                        xml.push_str(&self.serialize_border("top", b));
+                    }
+                    if let Some(ref b) = borders.left {
+                        xml.push_str(&self.serialize_border("left", b));
+                    }
+                    if let Some(ref b) = borders.bottom {
+                        xml.push_str(&self.serialize_border("bottom", b));
+                    }
+                    if let Some(ref b) = borders.right {
+                        xml.push_str(&self.serialize_border("right", b));
+                    }
+                    xml.push_str("</w:pBdr>");
                 }
                 xml.push_str("</w:pPr>");
             }
