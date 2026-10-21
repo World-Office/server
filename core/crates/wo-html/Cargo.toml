@@ -8,5 +8,6 @@ license = "AGPL-3.0-or-later"
 thiserror = { workspace = true }
 wo-common = { path = "../wo-common" }
 serde = { workspace = true }
+serde_json = { workspace = true }
 roxmltree = "0.20"
 regex = "1"

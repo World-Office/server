@@ -1656,6 +1656,26 @@ impl OoxmlParser {
                 (Some(Self::W_NS), "r") => {
                     runs.push(self.parse_run(&child, xml));
                 }
+                (Some(Self::W_NS), "commentRangeStart")
+                | (Some(Self::W_NS), "commentRangeEnd")
+                | (Some(Self::W_NS), "commentReference") => {
+                    // F-102: comment anchor markers become empty marker runs
+                    // so run order (and thus anchor position) round-trips.
+                    let id = child
+                        .attributes()
+                        .find(|a| a.name() == "id")
+                        .map(|a| a.value().to_string())
+                        .unwrap_or_default();
+                    let anchor = match local {
+                        "commentRangeStart" => CommentAnchor::Start(id),
+                        "commentRangeEnd" => CommentAnchor::End(id),
+                        _ => CommentAnchor::Reference(id),
+                    };
+                    runs.push(DocxRun {
+                        comment_anchor: Some(anchor),
+                        ..DocxRun::default()
+                    });
+                }
                 (Some(Self::W_NS), "fldSimple") => {
                     // Verbatim field subtree (PAGE, NUMPAGES, ...) so the
                     // typed model's blind spot survives a round trip.
@@ -1782,6 +1802,7 @@ impl OoxmlParser {
 
     fn parse_run(&self, r_node: &roxmltree::Node, xml: &str) -> DocxRun {
         let mut run = DocxRun {
+            comment_anchor: None,
             footnote_rid: None,
             image_rid: None,
             image_width_emu: None,

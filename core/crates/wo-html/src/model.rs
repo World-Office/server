@@ -142,4 +142,22 @@ pub enum InlineElement {
         height: Option<u32>,
     },
     LineBreak,
+    /// A comment thread (F-102): anchored inline range with author, body
+    /// text and the thread metadata of the editor dialect (span.comment with
+    /// data-author/data-comment/data-id/data-resolved/data-replies).
+    Comment {
+        content: Vec<InlineElement>,
+        author: String,
+        comment: String,
+        id: Option<String>,
+        resolved: bool,
+        replies: Vec<CommentReply>,
+    },
+}
+
+/// One reply inside a comment thread (F-102).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct CommentReply {
+    pub author: String,
+    pub text: String,
 }

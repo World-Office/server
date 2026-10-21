@@ -539,6 +539,23 @@ impl HtmlParser {
                         });
                         continue;
                     }
+                    // F-102: comment thread anchor (editor dialect span.comment)
+                    if attr(&ch, "class").as_deref() == Some("comment") {
+                        let replies = attr(&ch, "data-replies")
+                            .and_then(|raw| {
+                              serde_json::from_str::<Vec<CommentReply>>(&raw).ok()
+                            })
+                            .unwrap_or_default();
+                        elements.push(InlineElement::Comment {
+                            content: self.parse_inline_elements(&ch),
+                            author: attr(&ch, "data-author").unwrap_or_default(),
+                            comment: attr(&ch, "data-comment").unwrap_or_default(),
+                            id: attr(&ch, "data-id"),
+                            resolved: attr(&ch, "data-resolved").as_deref() == Some("1"),
+                            replies,
+                        });
+                        continue;
+                    }
                     let text = direct_text(&ch);
                     let style = attr(&ch, "style");
                     if !text.is_empty() {
@@ -685,6 +702,18 @@ impl HtmlParser {
                     count += content.split_whitespace().count() as u32;
                 }
                 InlineElement::Image { .. } | InlineElement::LineBreak => {}
+                InlineElement::Comment {
+                    content,
+                    comment,
+                    replies,
+                    ..
+                } => {
+                    count += self.count_words_in_inline(content);
+                    count += comment.split_whitespace().count() as u32;
+                    for r in replies {
+                        count += r.text.split_whitespace().count() as u32;
+                    }
+                }
             }
         }
         count

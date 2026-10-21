@@ -56,6 +56,7 @@ use wo_ooxml::model::{
     PictureShape, PptxPresentation, Relationship, Slide, SlideShape, SlideSize, SlideTransition,
     TextBody as OoxmlTextBody, TextBoxShape, TransitionEffect, UnderlineType,
 };
+use wo_ooxml::model::{Comment, CommentAnchor};
 use wo_ooxml::{OoxmlParser, OoxmlSerializer};
 
 use wo_formula::ast::{a1_to_col, CellErr, CellValue, FormulaError};
@@ -307,6 +308,8 @@ fn wrap_furniture(doc: &OoxmlDocument, mut html: String) -> String {
                 media: Vec::new(),
                 image_rels: Vec::new(),
                 footnotes_raw: None,
+                comments: Vec::new(),
+                comment_anchors: Vec::new(),
             }),
         };
         let hd = HtmlDocument {
@@ -1810,6 +1813,12 @@ fn inline_elements_to_formatting(elements: &[InlineElement]) -> Vec<Formatting> 
     let mut result = Vec::new();
     for elem in elements {
         match elem {
+            // F-102: FB2 has no comment model — degrade to the visible text.
+            InlineElement::Comment { content, .. } => {
+                for f in inline_elements_to_formatting(content) {
+                    result.push(f);
+                }
+            }
             InlineElement::Text { text, .. } => {
                 if !text.is_empty() {
                     result.push(Formatting {
@@ -1931,6 +1940,18 @@ fn extract_inline_text(elements: &[InlineElement]) -> String {
                 result.push_str(&extract_inline_text(content));
             }
             InlineElement::Code { content } => result.push_str(content),
+            InlineElement::Comment {
+                content,
+                comment,
+                replies,
+                ..
+            } => {
+                result.push_str(&extract_inline_text(content));
+                result.push_str(comment);
+                for r in replies {
+                    result.push_str(&r.text);
+                }
+            }
             InlineElement::Link { content, .. } => {
                 result.push_str(&extract_inline_text(content));
             }
@@ -2110,6 +2131,18 @@ fn html_inlines_to_rtf_inlines(inlines: &[InlineElement]) -> Vec<RtfInline> {
     let mut result = Vec::new();
     for inline in inlines {
         match inline {
+            // F-102: RTF has no comment model — degrade to the visible text.
+            InlineElement::Comment { content, .. } => {
+                let inner = html_inlines_to_rtf_inlines(content);
+                if !inner.is_empty() {
+                    result.push(RtfInline::Text {
+                        text: inner.iter().map(|r| match r {
+                            RtfInline::Text { text } => text.clone(),
+                            _ => String::new(),
+                        }).collect::<String>(),
+                    });
+                }
+            }
             InlineElement::Text { text, .. } => {
                 if !text.is_empty() {
                     result.push(RtfInline::Text { text: text.clone() });
@@ -2330,6 +2363,18 @@ fn extract_html_text(inlines: &[InlineElement]) -> String {
                 }
             }
             InlineElement::LineBreak => result.push('\n'),
+            InlineElement::Comment {
+                content,
+                comment,
+                replies,
+                ..
+            } => {
+                result.push_str(&extract_html_text(content));
+                result.push_str(comment);
+                for r in replies {
+                    result.push_str(&r.text);
+                }
+            }
         }
     }
     result
@@ -2449,6 +2494,8 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
     let mut footer: Option<HeaderFooter> = None;
     let mut media: Vec<MediaPart> = Vec::new();
     let mut image_rels: Vec<Relationship> = Vec::new();
+    // F-102: comment entries collected while converting inline content.
+    let mut comments: Vec<Comment> = Vec::new();
 
     // Page furniture (editor dialect): a leading <header> (parsed as
     // Div{class:"header"}) and/or trailing <footer> (Div{class:"footer"})
@@ -2474,7 +2521,8 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                 // Style-based (Heading{n}): the docx -> html direction maps
                 // pStyle Heading{n} back to <h{n}>, so headings survive a
                 // save round-trip with their level intact.
-                let inlines = html_inlines_to_docx_runs(content, &mut media, &mut image_rels);
+                let inlines =
+                    html_inlines_to_docx_runs(content, &mut media, &mut image_rels, &mut comments);
                 paragraphs.push(DocxParagraph {
                     style_id: Some(format!("Heading{level}")),
                     properties: DocxParagraphProperties::default(),
@@ -2484,7 +2532,8 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                 });
             }
             BlockElement::Paragraph { content, dir, .. } => {
-                let runs = html_inlines_to_docx_runs(content, &mut media, &mut image_rels);
+                let runs =
+                    html_inlines_to_docx_runs(content, &mut media, &mut image_rels, &mut comments);
                 if !runs.is_empty() {
                     // F-041: direction: rtl on the block -> w:bidi in DOCX
                     let properties = DocxParagraphProperties {
@@ -2748,6 +2797,8 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
             footer,
             media,
             image_rels,
+            comments: comments,
+            comment_anchors: Vec::new(),
             footnotes_raw: None,
         }),
     }
@@ -2848,10 +2899,56 @@ fn html_inlines_to_docx_runs(
     inlines: &[InlineElement],
     media: &mut Vec<MediaPart>,
     image_rels: &mut Vec<Relationship>,
+    comments: &mut Vec<Comment>,
 ) -> Vec<DocxRun> {
     let mut runs = Vec::new();
     for inline in inlines {
         match inline {
+            // F-102: a comment thread fences its content between a
+            // commentRangeStart and a commentRangeEnd+reference pair and
+            // registers the entry (plus replies) in the comments part.
+            InlineElement::Comment {
+                content,
+                author,
+                comment,
+                id,
+                resolved,
+                replies,
+            } => {
+                let cid = match id {
+                    Some(existing) => existing.clone(),
+                    None => (comments.len() + 1).to_string(),
+                };
+                comments.push(Comment {
+                    id: cid.clone(),
+                    author: author.clone(),
+                    date: String::new(),
+                    text: comment.clone(),
+                    resolved: *resolved,
+                    parent_id: None,
+                });
+                for (n, reply) in replies.iter().enumerate() {
+                    comments.push(Comment {
+                        id: format!("{cid}r{n}"),
+                        author: reply.author.clone(),
+                        date: String::new(),
+                        text: reply.text.clone(),
+                        resolved: false,
+                        parent_id: Some(cid.clone()),
+                    });
+                }
+                runs.push(DocxRun {
+                    comment_anchor: Some(CommentAnchor::Start(cid.clone())),
+                    ..DocxRun::default()
+                });
+                runs.extend(html_inlines_to_docx_runs(
+                    content, media, image_rels, comments,
+                ));
+                runs.push(DocxRun {
+                    comment_anchor: Some(CommentAnchor::End(cid)),
+                    ..DocxRun::default()
+                });
+            }
             InlineElement::Image {
                 src,
                 alt,
@@ -3295,6 +3392,11 @@ fn html_inlines_to_odf_spans(inlines: &[InlineElement]) -> Vec<TextSpan> {
     let mut spans = Vec::new();
     for inline in inlines {
         match inline {
+            // F-102: ODF span list has no comment model here — degrade to
+            // the visible text (ODT comment wiring is a named register gap).
+            InlineElement::Comment { content, .. } => {
+                spans.extend(html_inlines_to_odf_spans(content));
+            }
             InlineElement::Text { text, .. } => {
                 if !text.is_empty() {
                     spans.push(TextSpan {
@@ -3509,7 +3611,63 @@ fn docx_image_src(body: &DocxBody, rid: &str) -> Option<String> {
 
 fn docx_runs_to_html_inlines(body: &DocxBody, runs: &[DocxRun]) -> Vec<InlineElement> {
     let mut result = Vec::new();
+    // F-102: reconstruct comment spans. Between a Start(id) marker and its
+    // End(id) marker the emitted inlines are wrapped in an
+    // InlineElement::Comment whose thread metadata comes from body.comments
+    // (top entry) + child entries with parent_id == id (replies).
+    let mut open_comment: Option<String> = None;
+    let mut comment_buffer: Vec<InlineElement> = Vec::new();
     for run in runs {
+        match &run.comment_anchor {
+            Some(CommentAnchor::Start(id)) => {
+                open_comment = Some(id.clone());
+                comment_buffer.clear();
+                continue;
+            }
+            Some(CommentAnchor::End(id)) => {
+                if open_comment.as_deref() == Some(id.as_str()) {
+                    let author = body
+                        .comments
+                        .iter()
+                        .find(|c| c.id == *id)
+                        .map(|c| c.author.clone())
+                        .unwrap_or_default();
+                    let text = body
+                        .comments
+                        .iter()
+                        .find(|c| c.id == *id)
+                        .map(|c| c.text.clone())
+                        .unwrap_or_default();
+                    let resolved = body
+                        .comments
+                        .iter()
+                        .find(|c| c.id == *id)
+                        .map(|c| c.resolved)
+                        .unwrap_or(false);
+                    let replies: Vec<wo_html::model::CommentReply> = body
+                        .comments
+                        .iter()
+                        .filter(|c| c.parent_id.as_deref() == Some(id.as_str()))
+                        .map(|c| wo_html::model::CommentReply {
+                            author: c.author.clone(),
+                            text: c.text.clone(),
+                        })
+                        .collect();
+                    let content = std::mem::take(&mut comment_buffer);
+                    result.push(InlineElement::Comment {
+                        content,
+                        author,
+                        comment: text,
+                        id: Some(id.clone()),
+                        resolved,
+                        replies,
+                    });
+                }
+                open_comment = None;
+                continue;
+            }
+            Some(CommentAnchor::Reference(_)) | None => {}
+        }
         // Inline image runs carry no text — emit before the empty-text skip.
         if let Some(rid) = &run.image_rid {
             if let Some(src) = docx_image_src(body, rid) {
@@ -3561,7 +3719,11 @@ fn docx_runs_to_html_inlines(body: &DocxBody, runs: &[DocxRun]) -> Vec<InlineEle
             InlineElement::Text { text, style: None }
         };
 
-        result.push(element);
+        if open_comment.is_some() {
+            comment_buffer.push(element);
+        } else {
+            result.push(element);
+        }
     }
     result
 }
@@ -9799,6 +9961,57 @@ mod tests {
         );
     }
 
+    /// F-102: comment thread survives the FULL editor save path:
+    /// span.comment -> DOCX comments part + anchors -> span.comment,
+    /// replies and resolve flag included; a second save keeps everything.
+    // F-102
+    #[test]
+    fn test_comments_survive_editor_save_cycle_f102() {
+        let editor_html = br#"<html><body>
+<p>Hello <span class="comment" data-author="Ann" data-comment="Check this" data-id="c1">world</span></p>
+</body></html>"#;
+        let docx = HtmlToDocxConverter.convert(editor_html).expect("html -> docx");
+
+        // comments part carries the entry
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&docx))
+            .expect("docx zip");
+        let mut comments_xml = String::new();
+        std::io::Read::read_to_string(
+            &mut archive.by_name("word/comments.xml").expect("comments part"),
+            &mut comments_xml,
+        )
+        .expect("utf-8");
+        assert!(
+            comments_xml.contains("Ann") && comments_xml.contains("Check this"),
+            "comments.xml must carry author+body, got: {comments_xml}"
+        );
+        let docx_str = extract_docx_document_xml_f041(&docx);
+        assert!(
+            docx_str.contains("commentRangeStart") && docx_str.contains("commentReference"),
+            "document.xml must carry the anchor apparatus, got: {docx_str}"
+        );
+
+        // load: docx -> html keeps the thread
+        let html = DocxToHtmlConverter.convert(&docx).expect("docx -> html");
+        let html_str = String::from_utf8_lossy(&html).to_string();
+        assert!(
+            html_str.contains("class=\"comment\"") && html_str.contains("data-comment=\"Check this\""),
+            "reloaded HTML must carry span.comment, got: {}",
+            html_str
+        );
+
+        // replies + resolved state survive a second save
+        let docx2 = HtmlToDocxConverter.convert(&html).expect("html -> docx (2)");
+        let mut arch2 = zip::ZipArchive::new(std::io::Cursor::new(&docx2)).expect("zip 2");
+        let mut comments2 = String::new();
+        std::io::Read::read_to_string(
+            &mut arch2.by_name("word/comments.xml").expect("comments part 2"),
+            &mut comments2,
+        )
+        .expect("utf-8");
+        assert!(comments2.contains("Check this"), "second save keeps the comment");
+    }
+
     /// F-041/F-051 helper: extract word/document.xml from a DOCX zip as text.
     fn extract_docx_document_xml_f041(docx: &[u8]) -> String {
         let mut archive = zip::ZipArchive::new(std::io::Cursor::new(docx))
@@ -12441,7 +12654,7 @@ mod tests {
                 style: None,
             },
         ];
-        let runs = html_inlines_to_docx_runs(&inlines, &mut Vec::new(), &mut Vec::new());
+        let runs = html_inlines_to_docx_runs(&inlines, &mut Vec::new(), &mut Vec::new(), &mut Vec::new());
         assert_eq!(runs.len(), 11);
         assert!(!runs[0].bold);
         assert_eq!(runs[0].text, "plain ");
@@ -12484,7 +12697,7 @@ mod tests {
             },
             InlineElement::Bold { content: vec![] },
         ];
-        let runs = html_inlines_to_docx_runs(&inlines, &mut Vec::new(), &mut Vec::new());
+        let runs = html_inlines_to_docx_runs(&inlines, &mut Vec::new(), &mut Vec::new(), &mut Vec::new());
         assert!(runs.is_empty());
     }
 
@@ -12501,7 +12714,7 @@ mod tests {
                 style: None,
             },
         ];
-        let runs = html_inlines_to_docx_runs(&inlines, &mut Vec::new(), &mut Vec::new());
+        let runs = html_inlines_to_docx_runs(&inlines, &mut Vec::new(), &mut Vec::new(), &mut Vec::new());
         assert_eq!(runs.len(), 2);
         assert_eq!(runs[0].text, "line1\n");
     }
@@ -17203,7 +17416,7 @@ mod tests {
 
     #[test]
     fn test_html_inlines_to_docx_runs_empty() {
-        let runs = html_inlines_to_docx_runs(&[], &mut Vec::new(), &mut Vec::new());
+        let runs = html_inlines_to_docx_runs(&[], &mut Vec::new(), &mut Vec::new(), &mut Vec::new());
         assert!(runs.is_empty());
     }
 
@@ -17216,7 +17429,7 @@ mod tests {
             }],
             &mut Vec::new(),
             &mut Vec::new(),
-        );
+            &mut Vec::new());
         assert_eq!(runs.len(), 1);
         assert_eq!(runs[0].text, "Hello");
         assert!(!runs[0].bold);
@@ -17233,7 +17446,7 @@ mod tests {
             }],
             &mut Vec::new(),
             &mut Vec::new(),
-        );
+            &mut Vec::new());
         assert_eq!(runs.len(), 1);
         assert_eq!(runs[0].text, "bold");
         assert!(runs[0].bold);
@@ -17250,7 +17463,7 @@ mod tests {
             }],
             &mut Vec::new(),
             &mut Vec::new(),
-        );
+            &mut Vec::new());
         assert_eq!(runs.len(), 1);
         assert_eq!(runs[0].text, "em");
         assert!(runs[0].italic);
@@ -17279,7 +17492,7 @@ mod tests {
             ],
             &mut Vec::new(),
             &mut Vec::new(),
-        );
+            &mut Vec::new());
         assert_eq!(runs.len(), 3);
         assert_eq!(runs[0].text, "A ");
         assert!(!runs[0].bold);
@@ -17301,7 +17514,7 @@ mod tests {
             }],
             &mut Vec::new(),
             &mut Vec::new(),
-        );
+            &mut Vec::new());
         assert!(runs.is_empty());
     }
 
@@ -17316,7 +17529,7 @@ mod tests {
             }],
             &mut Vec::new(),
             &mut Vec::new(),
-        );
+            &mut Vec::new());
         assert!(runs.is_empty());
     }
 
@@ -18475,6 +18688,7 @@ mod bridge_converter_tests {
     #[test]
     fn test_xlsx_cell_address_type_f204() {
         let xlsx = build_six_type_xlsx();
+
         let back = XlsxToWoSpreadsheetConverter
             .convert(&xlsx)
             .expect("xlsx -> wo-spreadsheet");
@@ -18595,7 +18809,7 @@ mod bridge_converter_tests {
         // 1) read: slides array order == sldIdLst order
         let wo_bytes = PptxToWoPresentationConverter
             .convert(&build_three_slide_pptx())
-            .expect("pptx -> wo-presentation");
+                        .expect("pptx -> wo-presentation");
         let v: Value = serde_json::from_slice(&wo_bytes).expect("wo json");
         let titles = |doc: &Value| -> Vec<String> {
             doc["slides"]

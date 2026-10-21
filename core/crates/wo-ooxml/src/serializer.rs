@@ -1352,6 +1352,40 @@ impl OoxmlSerializer {
             let run = &para.runs[i];
             match run.hyperlink_rid.as_deref() {
                 None => {
+                    // F-102: comment anchor markers are paragraph-level
+                    // siblings, not run content. Start/End hoist out as bare
+                    // markers; End also emits the reference run (Word order).
+                    match &run.comment_anchor {
+                        Some(CommentAnchor::Start(id)) => {
+                            xml.push_str(&format!(
+                                "<w:commentRangeStart w:id=\"{}\"/>",
+                                escape_xml(id)
+                            ));
+                            i += 1;
+                            continue;
+                        }
+                        Some(CommentAnchor::End(id)) => {
+                            xml.push_str(&format!(
+                                "<w:commentRangeEnd w:id=\"{}\"/>",
+                                escape_xml(id)
+                            ));
+                            xml.push_str(&format!(
+                                "<w:r><w:commentReference w:id=\"{}\"/></w:r>",
+                                escape_xml(id)
+                            ));
+                            i += 1;
+                            continue;
+                        }
+                        Some(CommentAnchor::Reference(id)) => {
+                            xml.push_str(&format!(
+                                "<w:r><w:commentReference w:id=\"{}\"/></w:r>",
+                                escape_xml(id)
+                            ));
+                            i += 1;
+                            continue;
+                        }
+                        None => {}
+                    }
                     xml.push_str(&self.serialize_run(run));
                     i += 1;
                 }
@@ -1478,6 +1512,8 @@ impl OoxmlSerializer {
                 escape_xml(rid)
             ));
         }
+
+
 
         if !run.text.is_empty() {
             // \u{c} is the in-model page-break marker; XML forbids the raw
@@ -2776,6 +2812,7 @@ mod tests {
                         raw_rpr: None,
                         drawing: None,
                         hyperlink_rid: None,
+                        comment_anchor: None,
                     }],
                     raw_ppr: None,
                     section_properties: None,
@@ -2911,6 +2948,7 @@ mod tests {
                             raw_rpr: None,
                             drawing: None,
                             hyperlink_rid: None,
+                            comment_anchor: None,
                         },
                         DocxRun {
                             footnote_rid: None,
@@ -2934,6 +2972,7 @@ mod tests {
                             raw_rpr: None,
                             drawing: None,
                             hyperlink_rid: None,
+                            comment_anchor: None,
                         },
                         DocxRun {
                             footnote_rid: None,
@@ -2957,6 +2996,7 @@ mod tests {
                             raw_rpr: None,
                             drawing: None,
                             hyperlink_rid: None,
+                            comment_anchor: None,
                         },
                     ],
                     raw_ppr: None,
@@ -3024,6 +3064,7 @@ mod tests {
                             raw_rpr: None,
                             drawing: None,
                             hyperlink_rid: None,
+                            comment_anchor: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -3057,6 +3098,7 @@ mod tests {
                             raw_rpr: None,
                             drawing: None,
                             hyperlink_rid: None,
+                            comment_anchor: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -3090,6 +3132,7 @@ mod tests {
                             raw_rpr: None,
                             drawing: None,
                             hyperlink_rid: None,
+                            comment_anchor: None,
                         }],
                         raw_ppr: None,
                         section_properties: None,
@@ -3162,6 +3205,7 @@ mod tests {
                                             raw_rpr: None,
                                             drawing: None,
                                             hyperlink_rid: None,
+                                            comment_anchor: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -3199,6 +3243,7 @@ mod tests {
                                             raw_rpr: None,
                                             drawing: None,
                                             hyperlink_rid: None,
+                                            comment_anchor: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -3242,6 +3287,7 @@ mod tests {
                                             raw_rpr: None,
                                             drawing: None,
                                             hyperlink_rid: None,
+                                            comment_anchor: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -3279,6 +3325,7 @@ mod tests {
                                             raw_rpr: None,
                                             drawing: None,
                                             hyperlink_rid: None,
+                                            comment_anchor: None,
                                         }],
                                         raw_ppr: None,
                                         section_properties: None,
@@ -3792,6 +3839,7 @@ mod tests {
                                     raw_rpr: None,
                                     drawing: None,
                                     hyperlink_rid: None,
+                                    comment_anchor: None,
                                 },
                                 DocxRun {
                                     footnote_rid: None,
@@ -4203,6 +4251,7 @@ mod tests {
                         raw_rpr: None,
                         drawing: None,
                         hyperlink_rid: None,
+                        comment_anchor: None,
                     }],
                     raw_ppr: None,
                     section_properties: None,

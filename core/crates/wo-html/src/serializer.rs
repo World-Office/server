@@ -367,6 +367,37 @@ impl HtmlSerializer {
                 InlineElement::LineBreak => {
                     out.push_str("<br/>");
                 }
+                InlineElement::Comment {
+                    content,
+                    author,
+                    comment,
+                    id,
+                    resolved,
+                    replies,
+                } => {
+                    // F-102: editor dialect span.comment; replies ride as a
+                    // data-replies JSON attribute (AF3 dialect).
+                    out.push_str("<span class=\"comment\"");
+                    if !author.is_empty() {
+                        out.push_str(&format!(" data-author=\"{}\"", escape_attr(author)));
+                    }
+                    if !comment.is_empty() {
+                        out.push_str(&format!(" data-comment=\"{}\"", escape_attr(comment)));
+                    }
+                    if let Some(id) = id {
+                        out.push_str(&format!(" data-id=\"{}\"", escape_attr(id)));
+                    }
+                    if *resolved {
+                        out.push_str(" data-resolved=\"1\"");
+                    }
+                    if !replies.is_empty() {
+                        let json = serde_json::to_string(replies).unwrap_or_default();
+                        out.push_str(&format!(" data-replies=\"{}\"", escape_attr(&json)));
+                    }
+                    out.push_str(">");
+                    out.push_str(&self.serialize_inline(content));
+                    out.push_str("</span>");
+                }
             }
         }
         out

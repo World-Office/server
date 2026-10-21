@@ -805,6 +805,21 @@ pub struct DocxRun {
     /// survives a round trip.
     #[serde(default)]
     pub footnote_rid: Option<String>,
+    /// Comment anchor marker carried by this run (F-102): the range start,
+    /// the range end, or the `<w:commentReference>`. Converters fence the
+    /// commented runs between a Start and an End+Reference pair; the
+    /// serializer re-emits the markers in run order.
+    #[serde(default)]
+    pub comment_anchor: Option<CommentAnchor>,
+}
+
+/// Which comment-range marker a run carries (F-102). The id is the numeric
+/// `w:id` shared with the `Comment` entry in `word/comments.xml`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum CommentAnchor {
+    Start(String),
+    End(String),
+    Reference(String),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
