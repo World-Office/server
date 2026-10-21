@@ -353,6 +353,24 @@ fn build_content_xml(doc: &OdfDocument) -> String {
         for style in &doc.automatic_cell_styles {
             emit_cell_style(&mut xml, style);
         }
+    } else if let OdfContent::Presentation { slides } = &doc.content {
+        // F-306: emit drawing-page-properties styles for slides with solid-color backgrounds
+        for (i, slide) in slides.iter().enumerate() {
+            if let Some(bg) = &slide.background {
+                if let Some(ref color) = bg.fill_color {
+                    let style_name = format!("pgbg{}", i + 1);
+                    xml.push_str(&format!(
+                        "  <style:style style:name=\"{}\" style:family=\"drawing-page\">\n",
+                        style_name
+                    ));
+                    xml.push_str(&format!(
+                        "   <style:drawing-page-properties draw:fill=\"solid\" draw:fill-color=\"{}\"/>\n",
+                        escape_xml(color)
+                    ));
+                    xml.push_str("  </style:style>\n");
+                }
+            }
+        }
     }
     xml.push_str(" </office:automatic-styles>\n");
 
@@ -371,8 +389,8 @@ fn build_content_xml(doc: &OdfDocument) -> String {
             }
         }
         OdfContent::Presentation { slides } => {
-            for slide in slides {
-                serialize_odp_slide(slide, &mut xml, 3);
+            for (i, slide) in slides.iter().enumerate() {
+                serialize_odp_slide(slide, &mut xml, 3, i);
             }
         }
         _ => {}
@@ -808,7 +826,7 @@ fn serialize_ods_sheet(sheet: &SpreadsheetSheet, xml: &mut String, indent: usize
 // ODP slide and shape serialization
 // ---------------------------------------------------------------------------
 
-fn serialize_odp_slide(slide: &PresentationSlide, xml: &mut String, indent: usize) {
+fn serialize_odp_slide(slide: &PresentationSlide, xml: &mut String, indent: usize, index: usize) {
     let pad = " ".repeat(indent);
     write!(xml, "{}<draw:page", pad).unwrap();
     if let Some(name) = &slide.name {
@@ -821,6 +839,12 @@ fn serialize_odp_slide(slide: &PresentationSlide, xml: &mut String, indent: usiz
             escape_xml(layout)
         )
         .unwrap();
+    }
+    // F-306: reference drawing-page-properties style for solid-color background
+    if let Some(bg) = &slide.background {
+        if bg.fill_color.is_some() {
+            write!(xml, " draw:style-name=\"pgbg{}\"", index + 1).unwrap();
+        }
     }
     writeln!(xml, ">").unwrap();
 
@@ -1353,5 +1377,53 @@ mod tests {
         assert!(content.contains("<text:span text:style-name=\"T2\">italic</text:span>"));
         assert!(content.contains("fo:font-weight=\"bold\""));
         assert!(content.contains("fo:font-style=\"italic\""));
+    }
+
+    // --- F-306: ODP slide background serialization ---
+    #[test]
+    fn test_f306_odp_slide_background_serialize() {
+        let doc = OdfDocument {
+            doc_type: OdfType::Presentation,
+            version: "1.2".to_string(),
+            metadata: OdfMetadata::default(),
+            content: OdfContent::Presentation {
+                slides: vec![PresentationSlide {
+                    name: Some("Slide1".to_string()),
+                    text_content: String::new(),
+                    notes: None,
+                    shapes: vec![],
+                    transition: None,
+                    slide_layout: None,
+                    background: Some(OdpSlideBackground {
+                        fill_color: Some("#3B82F6".to_string()),
+                    }),
+                }],
+            },
+            manifest: vec![],
+            fonts: vec![],
+            styles: vec![],
+            automatic_cell_styles: vec![],
+        };
+
+        let bytes = OdfSerializer::new().serialize(&doc).unwrap();
+        let content = zip_read(&bytes, "content.xml");
+        // drawing-page-properties style emitted in automatic-styles
+        assert!(
+            content.contains("style:family=\"drawing-page\""),
+            "drawing-page style family missing"
+        );
+        assert!(
+            content.contains("draw:fill=\"solid\""),
+            "draw:fill=solid missing"
+        );
+        assert!(
+            content.contains("draw:fill-color=\"#3B82F6\""),
+            "draw:fill-color missing"
+        );
+        // draw:page references the style
+        assert!(
+            content.contains("draw:style-name=\"pgbg1\""),
+            "draw:style-name=pgbg1 missing on draw:page"
+        );
     }
 }

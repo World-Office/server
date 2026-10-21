@@ -58,6 +58,19 @@ pub struct WoSlide {
     pub animations: Vec<WoAnimationData>,
     #[serde(default)]
     pub shapes: Vec<WoShapeData>,
+    /// Slide background (solid color for F-306; gradient/image fields are future work).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub background: Option<WoSlideBackground>,
+}
+
+/// Slide background (solid color only for F-306).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct WoSlideBackground {
+    #[serde(rename = "type")]
+    pub background_type: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
 }
 
 /// Animation data for a slide or shape.

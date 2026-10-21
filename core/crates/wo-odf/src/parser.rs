@@ -854,6 +854,22 @@ impl OdfParser {
                 let notes = self.parse_odp_notes(page_node);
                 let transition = self.parse_odp_transition(page_node);
 
+                // F-306: resolve slide background from draw:style-name → drawing-page-properties
+                let background = page_node
+                    .attribute((DRAW_NS, "style-name"))
+                    .and_then(|sn| {
+                        let fill_color = Self::resolve_style_property(
+                            styles,
+                            sn,
+                            "drawing-page-properties:fill-color",
+                        );
+                        if fill_color.is_some() {
+                            Some(OdpSlideBackground { fill_color })
+                        } else {
+                            None
+                        }
+                    });
+
                 slides.push(PresentationSlide {
                     name,
                     text_content: Self::collect_text(page_node),
@@ -863,6 +879,7 @@ impl OdfParser {
                     slide_layout: page_node
                         .attribute((DRAW_NS, "presentation-page-layout-name"))
                         .map(|s| s.to_string()),
+                    background,
                 });
             }
         }
@@ -1160,6 +1177,7 @@ impl OdfParser {
                                 || prop_child.has_tag_name((STYLE_NS, "paragraph-properties"))
                                 || prop_child.has_tag_name((STYLE_NS, "table-column-properties"))
                                 || prop_child.has_tag_name((STYLE_NS, "table-row-properties"))
+                                || prop_child.has_tag_name((STYLE_NS, "drawing-page-properties"))
                             {
                                 for attr in prop_child.attributes() {
                                     let key =

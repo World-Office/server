@@ -196,6 +196,13 @@ pub struct SpreadsheetCell {
     pub style_name: Option<String>,
 }
 
+/// Slide background (solid color only for F-306; gradient/image fields are future work).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OdpSlideBackground {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fill_color: Option<String>,
+}
+
 /// A presentation slide.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PresentationSlide {
@@ -209,6 +216,9 @@ pub struct PresentationSlide {
     pub transition: Option<OdpTransition>,
     /// Reference to a slide layout.
     pub slide_layout: Option<String>,
+    /// Slide background (solid color).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub background: Option<OdpSlideBackground>,
 }
 
 /// A manifest entry from META-INF/manifest.xml.

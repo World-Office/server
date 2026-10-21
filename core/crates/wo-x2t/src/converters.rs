@@ -64,6 +64,7 @@ use wo_formula::eval::{eval_str, Sheet as FormulaSheet};
 
 use crate::presentation_model::{
     PptxExtraPart, WoAnimationData, WoImageData, WoPresentation, WoShapeData, WoSlide,
+    WoSlideBackground,
 };
 
 // ── Converter structs ────────────────────────────────────────────────
@@ -6762,6 +6763,7 @@ impl FormatConverter for PptxToWoPresentationConverter {
                     advance_timing,
                     animations,
                     shapes,
+                    background: None,
                 }
             })
             .collect();
@@ -6783,7 +6785,7 @@ impl FormatConverter for PptxToWoPresentationConverter {
 
 use wo_odf::model::{
     OdfContent as OdpContent, OdfDocument as OdpDocument, OdfMetadata as OdpMetadata,
-    OdfType as OdpType, OdpImageRef, OdpShape, OdpShapeType, OdpTransition,
+    OdfType as OdpType, OdpImageRef, OdpShape, OdpShapeType, OdpSlideBackground, OdpTransition,
     PresentationSlide as OdpPresentationSlide,
 };
 
@@ -7006,6 +7008,9 @@ fn wo_slide_to_odp_slide(
         shapes,
         transition,
         slide_layout: Some("blank".to_string()),
+        background: ws.background.as_ref().map(|bg| OdpSlideBackground {
+            fill_color: bg.color.clone(),
+        }),
     }
 }
 
@@ -7094,6 +7099,10 @@ fn odf_slide_to_wo_slide(slide: &OdpPresentationSlide, is_widescreen: bool) -> W
         advance_timing: None,
         animations: Vec::new(),
         shapes,
+        background: slide.background.as_ref().map(|bg| WoSlideBackground {
+            background_type: "solid".to_string(),
+            color: bg.fill_color.clone(),
+        }),
     }
 }
 
@@ -7457,6 +7466,7 @@ impl FormatConverter for PptToWoPresentationConverter {
                     advance_timing: None,
                     animations: Vec::new(),
                     shapes: body_shapes,
+                    background: None,
                 }
             })
             .collect();
@@ -12337,6 +12347,65 @@ mod tests {
         assert!(wo_output.contains("Hello ODP World!"));
         assert!(wo_output.contains("textbox"));
         assert!(wo_output.contains("Speaker notes must survive"));
+    }
+
+    #[test]
+    // F-306: ODP slide background round-trip (Wo→ODP→Wo)
+    fn test_f306_odp_background_roundtrip() {
+        let wo_json = r##"{
+            "version": 1,
+            "slideSize": "widescreen",
+            "themeType": "default",
+            "slides": [{
+                "id": "slide1",
+                "title": "Bg Slide",
+                "layout": "blank",
+                "background": {"type": "solid", "color": "#3B82F6"},
+                "shapes": []
+            }]
+        }"##;
+
+        // Wo → ODP
+        let wo_odp = WoPresentationToOdpConverter;
+        let odp_bytes = wo_odp
+            .convert(wo_json.as_bytes())
+            .expect("WoPresentation→ODP should succeed");
+        use std::io::Read;
+        let cursor = std::io::Cursor::new(&odp_bytes);
+        let mut archive = zip::ZipArchive::new(cursor).expect("ODP must be readable as ZIP");
+        let mut content = String::new();
+        archive
+            .by_name("content.xml")
+            .unwrap()
+            .read_to_string(&mut content)
+            .unwrap();
+        assert!(
+            content.contains("style:family=\"drawing-page\""),
+            "F-306: drawing-page style family missing in ODP output"
+        );
+        assert!(
+            content.contains("draw:fill=\"solid\""),
+            "F-306: draw:fill=solid missing in ODP output"
+        );
+        assert!(
+            content.contains("draw:fill-color=\"#3B82F6\""),
+            "F-306: draw:fill-color=#3B82F6 missing in ODP output"
+        );
+
+        // ODP → Wo
+        let odp_wo = OdpToWoPresentationConverter;
+        let wo_bytes = odp_wo
+            .convert(&odp_bytes)
+            .expect("ODP→WoPresentation should succeed");
+        let wo_output = String::from_utf8(wo_bytes).expect("Output must be valid UTF-8");
+        assert!(
+            wo_output.contains("\"background\""),
+            "F-306: background field missing in Wo JSON output"
+        );
+        assert!(
+            wo_output.contains("#3B82F6"),
+            "F-306: fill color #3B82F6 missing in Wo JSON output"
+        );
     }
 
     // ── Section B: html_to_ooxml / html_inlines_to_docx_runs ────────────
@@ -18828,6 +18897,7 @@ mod bridge_converter_tests {
                 advance_timing: None,
                 animations: vec![],
                 shapes: vec![],
+                background: None,
             }],
             extra_parts: vec![],
         };
