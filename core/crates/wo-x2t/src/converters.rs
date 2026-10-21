@@ -6630,10 +6630,18 @@ impl FormatConverter for WoPresentationToPptxConverter {
                 // Parse slide id — if it's not a number, use index + 1
                 let slide_id: u32 = ws.id.parse().unwrap_or(0);
 
+                // F-301: pass layout_id through so the PPTX write path
+                // preserves the slide->layout link (sldLayoutId in the output).
+                let layout_id = if ws.layout.is_empty() {
+                    None
+                } else {
+                    Some(ws.layout.clone())
+                };
+
                 Slide {
                     id: slide_id,
                     name: ws.title.clone(),
-                    layout_id: None,
+                    layout_id,
                     master_id: None,
                     shapes,
                     notes: ws.notes.clone(),
@@ -18799,6 +18807,47 @@ mod bridge_converter_tests {
     /// round-trip byte-identically through the WoSpreadsheet JSON bridge.
     // F-206: chart parts (xl/charts/chart1.xml) round-trip byte-identical
     #[test]
+    /// F-301: PPTX write path passes layout_id through (sldLayoutId in output).
+    // F-301
+    #[test]
+    fn test_pptx_write_passes_layout_id_f301() {
+        let wo = WoPresentation {
+            version: 1,
+            slide_size: "standard".into(),
+            theme_type: String::new(),
+            theme: None,
+            slides: vec![WoSlide {
+                id: "1".into(),
+                title: "Title".into(),
+                layout: "title".into(),
+                notes: None,
+                transition_effect: None,
+                transition_duration: None,
+                transition_sound_enabled: None,
+                advance_mode: None,
+                advance_timing: None,
+                animations: vec![],
+                shapes: vec![],
+            }],
+            extra_parts: vec![],
+        };
+        let bytes = WoPresentationToPptxConverter
+            .convert(&serde_json::to_vec(&wo).unwrap())
+            .expect("wo -> pptx");
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))
+            .expect("pptx zip");
+        let mut pres = String::new();
+        std::io::Read::read_to_string(
+            &mut archive.by_name("ppt/presentation.xml").expect("presentation.xml"),
+            &mut pres,
+        )
+        .expect("utf-8");
+        assert!(
+            pres.contains("sldLayoutId"),
+            "PPTX write must pass layout_id through as sldLayoutId, got: {pres}"
+        );
+    }
+
     /// F-302: sldIdLst IS the slide order. Round-trip preserves it, and a
     /// reorder-only edit (reordering the slides array in the WO JSON, what a
     /// drag-and-drop produces) is faithfully re-emitted as the new sldIdLst
