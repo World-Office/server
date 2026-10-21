@@ -38,4 +38,37 @@ describe("CollaboratorList", () => {
     render(<CollaboratorList users={mockUsers} maxDisplay={2} />)
     expect(screen.getByText("+1")).toBeDefined()
   })
+
+  it("should render avatar images when provided", () => {
+    const usersWithAvatars: CollabUser[] = [
+      {
+        id: "u1",
+        name: "Alice",
+        color: "#E74C3C",
+        isCurrentUser: true,
+        avatar: "https://example.com/alice.png",
+      },
+      {
+        id: "u2",
+        name: "Bob",
+        color: "#3498DB",
+        isCurrentUser: false,
+        avatar: "https://example.com/bob.png",
+      },
+    ]
+    render(<CollaboratorList users={usersWithAvatars} />)
+    const avatars = screen.getAllByRole("img")
+    expect(avatars).toHaveLength(2)
+    expect(avatars[0].getAttribute("src")).toBe("https://example.com/alice.png")
+    expect(avatars[1].getAttribute("src")).toBe("https://example.com/bob.png")
+  })
+
+  it("should fall back to initials when no avatar", () => {
+    render(<CollaboratorList users={mockUsers} />)
+    expect(screen.getByText("A")).toBeDefined()
+    expect(screen.getByText("B")).toBeDefined()
+    expect(screen.getByText("C")).toBeDefined()
+    const avatars = screen.queryAllByRole("img")
+    expect(avatars).toHaveLength(0)
+  })
 })

@@ -7,6 +7,7 @@ export interface CollabUser {
   name: string
   color: string
   isCurrentUser: boolean
+  avatar?: string
 }
 
 export interface CollabComment {

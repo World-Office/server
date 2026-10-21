@@ -43,7 +43,20 @@ export function CollaboratorList({ users, maxDisplay = 5, className }: Collabora
           }}
           data-testid={`collaborator-${user.id}`}
         >
-          {getInitial(user.name)}
+          {user.avatar ? (
+            <img
+              src={user.avatar}
+              alt={getInitial(user.name)}
+              style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: "50%",
+                objectFit: "cover",
+              }}
+            />
+          ) : (
+            getInitial(user.name)
+          )}
         </span>
       ))}
       {overflow > 0 && (

@@ -189,6 +189,8 @@ struct PresenceReq {
     user: String,
     #[serde(default)]
     cursor: Option<Value>,
+    #[serde(default)]
+    avatar: Option<String>,
 }
 
 /// POST /api/documents/{id}/collab/presence — announce/leave.
@@ -208,7 +210,7 @@ pub async fn collab_presence(
     let cursor = payload.cursor.unwrap_or(Value::Null);
     let clients = state
         .collab
-        .set_presence(&id, &payload.client_id, &payload.user, cursor);
+        .set_presence(&id, &payload.client_id, &payload.user, cursor, payload.avatar.as_deref());
     Ok(Json(json!({ "ok": true, "clients": clients["clients"] })))
 }
 

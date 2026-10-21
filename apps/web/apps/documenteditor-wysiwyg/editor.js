@@ -6421,8 +6421,18 @@
       const chip = document.createElement("span");
       chip.className = "peer-chip";
       chip.style.background = color;
-      const label = (c.user || c.client).slice(0, 2).toUpperCase();
-      chip.textContent = label + (c.client === CLIENT_ID ? "\u2022" : "");
+      if (c.avatar) {
+        const img = document.createElement("img");
+        img.src = c.avatar;
+        img.alt = (c.user || c.client).slice(0, 2).toUpperCase();
+        img.style.width = "16px";
+        img.style.height = "16px";
+        img.style.borderRadius = "50%";
+        chip.appendChild(img);
+      } else {
+        const label = (c.user || c.client).slice(0, 2).toUpperCase();
+        chip.textContent = label + (c.client === CLIENT_ID ? "\u2022" : "");
+      }
       chip.title = (c.user || c.client) + (c.client === CLIENT_ID ? " (you)" : "");
       panel.appendChild(chip);
       if (c.client !== CLIENT_ID) renderRemoteCaret(c, color, overlay);
@@ -6620,10 +6630,14 @@
   // --- presence announce / leave -----------------------------------
   function announcePresence(cursor) {
     if (!COLLAB_ENABLED) return;
+    const userName = window.__USER_NAME__ || "Editor";
+    const userAvatar = window.__AVATAR__ || null;
+    const body = { client_id: CLIENT_ID, user: userName, cursor: cursor || { index: 0 } };
+    if (userAvatar) body.avatar = userAvatar;
     fetch(api("collab/presence"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ client_id: CLIENT_ID, user: "Editor", cursor: cursor || { index: 0 } }),
+      body: JSON.stringify(body),
     })
       .then((r) => r.json())
       .then((d) => renderPresence(d && d.clients))

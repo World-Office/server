@@ -84,6 +84,7 @@
     window.__READ_ONLY__ = info.ReadOnly === true || q.get("action") === "view";
     window.__USER_NAME__ = info.UserFriendlyName || info.OwnerFullName || "";
     window.__USER__ = window.__USER_NAME__;
+    window.__AVATAR__ = info.UserPhoto || info.UserPhotoUrl || info.Avatar || "";
 
     let lastDocx = new Uint8Array(0); // last saved/loaded document bytes (export source)
     let bootHtml = "";

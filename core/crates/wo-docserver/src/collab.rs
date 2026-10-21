@@ -282,22 +282,30 @@ impl CollabHub {
     }
 
     /// Announce a client (cursor shared) or leave (cursor `null`).
-    pub fn set_presence(&self, doc_id: &str, client_id: &str, user: &str, cursor: Value) -> Value {
+    pub fn set_presence(
+        &self,
+        doc_id: &str,
+        client_id: &str,
+        user: &str,
+        cursor: Value,
+        avatar: Option<&str>,
+    ) -> Value {
         let mut docs = self.docs.lock().unwrap();
         let doc = Self::ensure_locked(&mut docs, doc_id);
         if cursor.is_null() || client_id.is_empty() {
             doc.presence.remove(client_id);
         } else {
-            doc.presence.insert(
-                client_id.to_string(),
-                json!({
-                    "client": client_id,
-                    "user": if user.is_empty() { client_id } else { user },
-                    "cursor": cursor,
-                    "updated": now_f64(),
-                    "agent": client_id.starts_with("agent="),
-                }),
-            );
+            let mut presence = json!({
+                "client": client_id,
+                "user": if user.is_empty() { client_id } else { user },
+                "cursor": cursor,
+                "updated": now_f64(),
+                "agent": client_id.starts_with("agent="),
+            });
+            if let Some(avatar_url) = avatar {
+                presence["avatar"] = json!(avatar_url);
+            }
+            doc.presence.insert(client_id.to_string(), presence);
         }
         let clients_json: Vec<Value> = doc.presence.values().cloned().collect();
         drop(docs);
@@ -398,8 +406,8 @@ mod tests {
     fn state_returns_clients_and_ops() {
         let hub = CollabHub::new();
         hub.sync_text("doc-1", "c1", "abc");
-        hub.set_presence("doc-1", "c1", "Alice", json!({"pos": 0}));
-        hub.set_presence("doc-1", "agent=writer", "Writer", json!({"pos": 1}));
+        hub.set_presence("doc-1", "c1", "Alice", json!({"pos": 0}), None);
+        hub.set_presence("doc-1", "agent=writer", "Writer", json!({"pos": 1}), None);
         let state = hub.state("doc-1");
         let clients = state["clients"].as_array().unwrap();
         assert_eq!(clients.len(), 2);
@@ -434,5 +442,28 @@ mod tests {
         let snap = hub.resync("doc-1", "authoritative");
         assert_eq!(snap["text"], "authoritative");
         assert_eq!(hub.rev("doc-1"), 0, "resync resets the op log");
+    }
+
+    #[test]
+    fn f122_set_presence_with_avatar() {
+        let hub = CollabHub::new();
+        hub.set_presence(
+            "doc-1",
+            "c1",
+            "Alice",
+            json!({"pos": 0}),
+            Some("https://example.com/avatar.png"),
+        );
+        let state = hub.state("doc-1");
+        let clients = state["clients"].as_array().unwrap();
+        assert_eq!(clients.len(), 1);
+        assert_eq!(clients[0]["user"], "Alice");
+        assert_eq!(clients[0]["avatar"], "https://example.com/avatar.png");
+        hub.set_presence("doc-1", "c2", "Bob", json!({"pos": 1}), None);
+        let state = hub.state("doc-1");
+        let clients = state["clients"].as_array().unwrap();
+        assert_eq!(clients.len(), 2);
+        let bob = clients.iter().find(|c| c["client"] == "c2").unwrap();
+        assert!(bob.get("avatar").is_none());
     }
 }
