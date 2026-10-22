@@ -61,6 +61,9 @@ pub struct WoSlide {
     /// Slide background (solid color for F-306; gradient/image fields are future work).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub background: Option<WoSlideBackground>,
+    /// F-301: slide master ID for layout/master inheritance chain.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub master_id: Option<String>,
 }
 
 /// Slide background (solid color only for F-306).

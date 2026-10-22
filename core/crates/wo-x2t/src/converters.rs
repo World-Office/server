@@ -6713,7 +6713,7 @@ impl FormatConverter for WoPresentationToPptxConverter {
                     id: slide_id,
                     name: ws.title.clone(),
                     layout_id,
-                    master_id: None,
+                    master_id: ws.master_id.clone(),
                     shapes,
                     notes: ws.notes.clone(),
                     background: None,
@@ -6824,7 +6824,7 @@ impl FormatConverter for PptxToWoPresentationConverter {
                 WoSlide {
                     id: slide.id.to_string(),
                     title: slide.name.clone(),
-                    layout: "blank".to_string(),
+                    layout: slide.layout_id.clone().unwrap_or_else(|| "blank".to_string()),
                     notes: slide.notes.clone(),
                     transition_effect,
                     transition_duration,
@@ -6834,6 +6834,7 @@ impl FormatConverter for PptxToWoPresentationConverter {
                     animations,
                     shapes,
                     background: None,
+                    master_id: slide.master_id.clone(),
                 }
             })
             .collect();
@@ -7173,6 +7174,7 @@ fn odf_slide_to_wo_slide(slide: &OdpPresentationSlide, is_widescreen: bool) -> W
             background_type: "solid".to_string(),
             color: bg.fill_color.clone(),
         }),
+        master_id: None,
     }
 }
 
@@ -7537,6 +7539,7 @@ impl FormatConverter for PptToWoPresentationConverter {
                     animations: Vec::new(),
                     shapes: body_shapes,
                     background: None,
+                    master_id: None,
                 }
             })
             .collect();
@@ -19079,6 +19082,7 @@ mod bridge_converter_tests {
                 animations: vec![],
                 shapes: vec![],
                 background: None,
+                master_id: None,
             }],
             extra_parts: vec![],
         };
@@ -19096,6 +19100,72 @@ mod bridge_converter_tests {
         assert!(
             pres.contains("sldLayoutId"),
             "PPTX write must pass layout_id through as sldLayoutId, got: {pres}"
+        );
+    }
+
+    /// F-301: master_id passthrough — sldMasterId survives WO→PPTX and
+    /// PPTX→WO round trip. Also verifies layout_id round-trips (not hardcoded
+    /// to "blank" on read).
+    // F-301
+    #[test]
+    fn test_pptx_master_id_passthrough_f301() {
+        let wo = WoPresentation {
+            version: 1,
+            slide_size: "standard".into(),
+            theme_type: String::new(),
+            theme: None,
+            slides: vec![WoSlide {
+                id: "1".into(),
+                title: "Title".into(),
+                layout: "layout1".into(),
+                notes: None,
+                transition_effect: None,
+                transition_duration: None,
+                transition_sound_enabled: None,
+                advance_mode: None,
+                advance_timing: None,
+                animations: vec![],
+                shapes: vec![],
+                background: None,
+                master_id: Some("master1".into()),
+            }],
+            extra_parts: vec![],
+        };
+        let bytes = WoPresentationToPptxConverter
+            .convert(&serde_json::to_vec(&wo).unwrap())
+            .expect("wo -> pptx");
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))
+            .expect("pptx zip");
+        let mut pres = String::new();
+        std::io::Read::read_to_string(
+            &mut archive.by_name("ppt/presentation.xml").expect("presentation.xml"),
+            &mut pres,
+        )
+        .expect("utf-8");
+        assert!(
+            pres.contains("sldMasterId=\"master1\""),
+            "PPTX write must pass master_id through as sldMasterId, got: {pres}"
+        );
+        assert!(
+            pres.contains("sldLayoutId=\"layout1\""),
+            "PPTX write must pass layout_id through as sldLayoutId, got: {pres}"
+        );
+
+        // Round-trip: PPTX→WO must preserve master_id and layout_id (not hardcode "blank")
+        let back = PptxToWoPresentationConverter
+            .convert(&bytes)
+            .expect("pptx -> wo");
+        let v: Value = serde_json::from_slice(&back).expect("wo json");
+        let slide = &v["slides"][0];
+        assert_eq!(
+            slide["layout"].as_str(),
+            Some("layout1"),
+            "PPTX→WO must preserve layout_id (not hardcode 'blank')"
+        );
+        assert_eq!(
+            slide["masterId"].as_str(),
+            Some("master1"),
+            "PPTX→WO must preserve master_id"
         );
     }
 
