@@ -318,6 +318,20 @@ body {
   background: var(--border);
   margin: 0 6px;
 }
+/* Ribbon group separators (OO parity: vertical hairline between Clipboard,
+   Font, Paragraph, Styles, Editing groups). Absolutely positioned at the
+   gap between button clusters via --rb-x, same coordinate system as .rb. */
+.toolbar .rb-sep {
+  position: absolute;
+  left: calc(var(--rb-x) - 12px);
+  top: calc(var(--rb-y, 34px) * 0.72 + 28px);
+  transform: translate(-50%, -50%);
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  opacity: 0.45;
+  pointer-events: none;
+}
 
 /* ---- full-toolbar controls: selects, color pickers, icons ---- */
 .toolbar .toolbar-select {
@@ -444,6 +458,12 @@ select option { background: var(--bg); color: var(--text); }
   border-radius: 3px;
   padding: 0 4px;
   background: var(--bg);
+}
+/* .bare sets width:auto which collapses the size dropdown to 17px; restore
+   an explicit width so the number is visible (OO parity). */
+#font-size.bare {
+  width: 50px;
+  max-width: 50px;
 }
 
 /* Style gallery presets (real formatBlock/removeFormat commands) */

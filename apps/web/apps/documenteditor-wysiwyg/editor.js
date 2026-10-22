@@ -5777,6 +5777,9 @@
         openCommentDialog();
       } else if (action === "link") {
         insertLink();
+      } else if (action === "selectall") {
+        editorEl.focus();
+        document.execCommand("selectAll");
       }
     });
     document.addEventListener("mousedown", (e) => {
