@@ -662,4 +662,65 @@ mod tests {
         let handler = McpTools::new(client);
         assert!(handler.get_tool("nonexistent_tool").is_none());
     }
+
+    // F-151: HTTP/SSE transport (streamable HTTP) — initialize + tools/list over HTTP
+    #[tokio::test]
+    async fn test_http_transport_initialize_and_tools_list() {
+        use rmcp::ServiceExt;
+        use rmcp::transport::streamable_http_client::StreamableHttpClientTransport;
+        use rmcp::transport::streamable_http_server::{
+            StreamableHttpServerConfig, StreamableHttpService,
+        };
+        use rmcp::transport::streamable_http_server::session::local::LocalSessionManager;
+        use std::sync::Arc;
+        use tokio_util::sync::CancellationToken;
+
+        let config = StreamableHttpServerConfig {
+            sse_keep_alive: None,
+            sse_retry: Some(std::time::Duration::from_secs(3)),
+            stateful_mode: true,
+            cancellation_token: CancellationToken::new(),
+        };
+        let session_manager = Arc::new(LocalSessionManager::default());
+        let service: StreamableHttpService<McpTools, LocalSessionManager> =
+            StreamableHttpService::new(
+                || {
+                    let url = std::env::var("STORAGE_SERVICE_URL")
+                        .unwrap_or_else(|_| "http://localhost:9999".to_string());
+                    Ok(McpTools::new(crate::client::StorageClient::new(url)))
+                },
+                session_manager,
+                config,
+            );
+
+        let router = axum::Router::new().nest_service("/mcp", service);
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+
+        let handle = tokio::spawn(async move {
+            axum::serve(listener, router).await.unwrap();
+        });
+
+        // Give the server a moment to start
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+
+        // Use the rmcp client transport to initialize + list tools over HTTP/SSE
+        let transport =
+            StreamableHttpClientTransport::from_uri(format!("http://{addr}/mcp"));
+        let client = ().serve(transport).await.expect("client init failed");
+
+        let tools = client
+            .list_all_tools()
+            .await
+            .expect("tools/list failed");
+        assert!(!tools.is_empty(), "should have tools");
+        assert!(
+            tools.iter().any(|t| t.name.as_ref() == "list_documents"),
+            "should have list_documents tool"
+        );
+        assert_eq!(tools.len(), 15, "should have 15 tools");
+
+        client.cancel().await.ok();
+        handle.abort();
+    }
 }
