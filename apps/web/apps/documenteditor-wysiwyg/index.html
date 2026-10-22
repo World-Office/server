@@ -214,7 +214,8 @@
          (bullets/numbering + split carets, multilevel, indents, spacing,
          direction), alignment group, WO glyph extras, overflow + Styles
          dropdown. The four right-edge tools (collapse/theme/find/fullscreen)
-         wrap to a second visual line via --rb-y: 84px. Every control keeps
+         share the same row (--rb-y: 34px, default) and are pinned to the
+         right margin via calc(100% - X) overrides. Every control keeps
          its id and data-cmd; caret sub-buttons stay glued like OO split
          carets. Style gallery collapsed into one 'Styles' dropdown. -->
     <div class="ribbon-row">
@@ -357,10 +358,10 @@
         <li role="none"><button type="button" role="menuitem" data-cmd="formatBlock" data-value="BLOCKQUOTE" aria-pressed="false" data-i18n="Home.StyleQuote">Quote</button></li>
       </ul>
     </span>
-    <button id="btn-ribbon-collapse" class="rb rb-flat" style="--rb-x: 1296px; --rb-y: 84px; padding: 6px 8px" title="Show fewer toolbar buttons" data-i18n-title="Toolbar.CollapseTitle" aria-label="Show fewer toolbar buttons" data-i18n-aria-label="Toolbar.CollapseTitle" aria-expanded="true"><svg viewBox="0 0 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5 7 6 12.5 1.5"/></svg></button>
-    <button id="btn-theme" class="rb" style="--rb-x: 1330px; --rb-y: 84px" title="Toggle dark/light theme" aria-label="Toggle theme" aria-pressed="false">☾</button>
-    <button id="btn-find" class="rb" style="--rb-x: 1364px; --rb-y: 84px" title="Find and replace (Ctrl+F)" data-i18n-title="Toolbar.FindTitle" aria-label="Find and replace" data-i18n-aria-label="Toolbar.Find" aria-keyshortcuts="Control+F">⌕</button>
-    <button id="btn-fullscreen" class="rb rb-flat" style="--rb-x: 1396px; --rb-y: 84px" title="Toggle fullscreen" aria-label="Toggle fullscreen"><svg viewBox="0 0 19 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="1.5" width="16" height="14" rx="1.5"/><path d="M7 5.5 11.5 10M11.5 6.5V10.5H7.5"/></svg></button>
+    <button id="btn-ribbon-collapse" class="rb rb-flat" style="--rb-x: 1296px; padding: 6px 8px" title="Show fewer toolbar buttons" data-i18n-title="Toolbar.CollapseTitle" aria-label="Show fewer toolbar buttons" data-i18n-aria-label="Toolbar.CollapseTitle" aria-expanded="true"><svg viewBox="0 0 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5 7 6 12.5 1.5"/></svg></button>
+    <button id="btn-theme" class="rb" style="--rb-x: 1330px" title="Toggle dark/light theme" aria-label="Toggle theme" aria-pressed="false">☾</button>
+    <button id="btn-find" class="rb" style="--rb-x: 1364px" title="Find and replace (Ctrl+F)" data-i18n-title="Toolbar.FindTitle" aria-label="Find and replace" data-i18n-aria-label="Toolbar.Find" aria-keyshortcuts="Control+F">⌕</button>
+    <button id="btn-fullscreen" class="rb rb-flat" style="--rb-x: 1396px" title="Toggle fullscreen" aria-label="Toggle fullscreen"><svg viewBox="0 0 19 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="1.5" width="16" height="14" rx="1.5"/><path d="M7 5.5 11.5 10M11.5 6.5V10.5H7.5"/></svg></button>
     <!-- Paragraph shading (F-127): hidden picker so the More-formatting
          menu can open it via showPicker() without another toolbar swatch.
          backColor with styleWithCSS applies background to the selection. -->
