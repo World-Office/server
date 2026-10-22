@@ -7078,10 +7078,15 @@ fn wo_slide_to_odp_slide(
         notes: ws.notes.clone(),
         shapes,
         transition,
-        slide_layout: Some("blank".to_string()),
+        slide_layout: if ws.layout.is_empty() {
+            Some("blank".to_string())
+        } else {
+            Some(ws.layout.clone())
+        },
         background: ws.background.as_ref().map(|bg| OdpSlideBackground {
             fill_color: bg.color.clone(),
         }),
+        master_page: ws.master_id.clone(),
     }
 }
 
@@ -7161,7 +7166,7 @@ fn odf_slide_to_wo_slide(slide: &OdpPresentationSlide, is_widescreen: bool) -> W
     WoSlide {
         id: slide.name.clone().unwrap_or_default(),
         title: slide.name.clone().unwrap_or_default(),
-        layout: "blank".to_string(),
+        layout: slide.slide_layout.clone().unwrap_or_else(|| "blank".to_string()),
         notes: slide.notes.clone(),
         transition_effect,
         transition_duration,
@@ -7174,7 +7179,7 @@ fn odf_slide_to_wo_slide(slide: &OdpPresentationSlide, is_widescreen: bool) -> W
             background_type: "solid".to_string(),
             color: bg.fill_color.clone(),
         }),
-        master_id: None,
+        master_id: slide.master_page.clone(),
     }
 }
 
@@ -12531,6 +12536,65 @@ mod tests {
         assert!(
             wo_output.contains("#3B82F6"),
             "F-306: fill color #3B82F6 missing in Wo JSON output"
+        );
+    }
+
+    // F-306: ODP master page round-trip (Wo→ODP→Wo)
+    #[test]
+    fn test_f306_odp_master_page_roundtrip() {
+        let wo_json = r##"{
+            "version": 1,
+            "slideSize": "widescreen",
+            "themeType": "default",
+            "slides": [{
+                "id": "slide1",
+                "title": "Master Slide",
+                "layout": "titleSlide",
+                "masterId": "master1",
+                "shapes": []
+            }]
+        }"##;
+
+        // Wo → ODP
+        let wo_odp = WoPresentationToOdpConverter;
+        let odp_bytes = wo_odp
+            .convert(wo_json.as_bytes())
+            .expect("WoPresentation→ODP should succeed");
+        use std::io::Read;
+        let cursor = std::io::Cursor::new(&odp_bytes);
+        let mut archive = zip::ZipArchive::new(cursor).expect("ODP must be readable as ZIP");
+        let mut content = String::new();
+        archive
+            .by_name("content.xml")
+            .unwrap()
+            .read_to_string(&mut content)
+            .unwrap();
+        assert!(
+            content.contains("draw:master-page-name=\"master1\""),
+            "F-306: draw:master-page-name missing in ODP output"
+        );
+        assert!(
+            content.contains("draw:presentation-page-layout-name=\"titleSlide\""),
+            "F-306: draw:presentation-page-layout-name missing in ODP output"
+        );
+
+        // ODP → Wo
+        let odp_wo = OdpToWoPresentationConverter;
+        let wo_bytes = odp_wo
+            .convert(&odp_bytes)
+            .expect("ODP→WoPresentation should succeed");
+        let wo_output = String::from_utf8(wo_bytes).expect("Output must be valid UTF-8");
+        assert!(
+            wo_output.contains("masterId"),
+            "F-306: masterId missing in Wo JSON output"
+        );
+        assert!(
+            wo_output.contains("master1"),
+            "F-306: master1 value missing in Wo JSON output"
+        );
+        assert!(
+            wo_output.contains("titleSlide"),
+            "F-306: layout titleSlide missing in Wo JSON output"
         );
     }
 

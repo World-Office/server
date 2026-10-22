@@ -219,6 +219,9 @@ pub struct PresentationSlide {
     /// Slide background (solid color).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub background: Option<OdpSlideBackground>,
+    /// F-306: master page reference (draw:master-page-name).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub master_page: Option<String>,
 }
 
 /// A manifest entry from META-INF/manifest.xml.

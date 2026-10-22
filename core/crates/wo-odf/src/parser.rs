@@ -880,6 +880,9 @@ impl OdfParser {
                         .attribute((DRAW_NS, "presentation-page-layout-name"))
                         .map(|s| s.to_string()),
                     background,
+                    master_page: page_node
+                        .attribute((DRAW_NS, "master-page-name"))
+                        .map(|s| s.to_string()),
                 });
             }
         }

@@ -880,6 +880,10 @@ fn serialize_odp_slide(slide: &PresentationSlide, xml: &mut String, indent: usiz
         )
         .unwrap();
     }
+    // F-306: master page reference
+    if let Some(master) = &slide.master_page {
+        write!(xml, " draw:master-page-name=\"{}\"", escape_xml(master)).unwrap();
+    }
     // F-306: reference drawing-page-properties style for solid-color background
     if let Some(bg) = &slide.background {
         if bg.fill_color.is_some() {
@@ -1437,6 +1441,7 @@ mod tests {
                     background: Some(OdpSlideBackground {
                         fill_color: Some("#3B82F6".to_string()),
                     }),
+                    master_page: None,
                 }],
             },
             manifest: vec![],
