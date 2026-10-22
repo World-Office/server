@@ -1,5 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { SpreadsheetStore } from "../stores/SpreadsheetStore";
+
+const originalFetch = globalThis.fetch;
+
+afterEach(() => {
+	globalThis.fetch = originalFetch;
+});
 
 describe("SpreadsheetStore", () => {
 	it("initializes with default state", () => {
@@ -94,4 +100,113 @@ describe("SpreadsheetStore", () => {
 		store.setActiveTab("home");
 		expect(store.activeTab).toBe("home");
 	});
+});
+
+// F-146: protection state + API wiring
+it("initializes protection state as unrestricted", () => {
+	const store = new SpreadsheetStore();
+	expect(store.protectionState.restrict_editing).toBe(false);
+	expect(store.protectionState.password_set).toBe(false);
+	expect(store.protectionError).toBeNull();
+});
+
+it("refreshProtectionState fetches /api/documents/{id}/protect", async () => {
+	const store = new SpreadsheetStore();
+	store.wopiConnection = {
+		wopiFileId: "test-doc-123",
+		wopiAccessToken: "tok",
+		docserverBase: "http://localhost",
+	};
+	let fetchedUrl = "";
+	globalThis.fetch = ((url: string) => {
+		fetchedUrl = url;
+		return Promise.resolve(
+			new Response(
+				JSON.stringify({ restrict_editing: true, password_set: true }),
+				{
+					status: 200,
+					headers: { "Content-Type": "application/json" },
+				},
+			),
+		);
+	}) as typeof fetch;
+	await store.refreshProtectionState();
+	expect(fetchedUrl).toBe("/api/documents/test-doc-123/protect");
+	expect(store.protectionState.restrict_editing).toBe(true);
+	expect(store.protectionState.password_set).toBe(true);
+	expect(store.protectionError).toBeNull();
+	globalThis.fetch = originalFetch;
+});
+
+it("applyProtection POSTs to /api/documents/{id}/protect", async () => {
+	const store = new SpreadsheetStore();
+	store.wopiConnection = {
+		wopiFileId: "test-doc-456",
+		wopiAccessToken: "tok",
+		docserverBase: "http://localhost",
+	};
+	let fetchedUrl = "";
+	let fetchedMethod = "";
+	let fetchedBody = "";
+	globalThis.fetch = ((url: string, init: RequestInit) => {
+		fetchedUrl = url;
+		fetchedMethod = init.method || "GET";
+		fetchedBody = init.body as string;
+		return Promise.resolve(
+			new Response(
+				JSON.stringify({ restrict_editing: true, password_set: true }),
+				{
+					status: 200,
+					headers: { "Content-Type": "application/json" },
+				},
+			),
+		);
+	}) as typeof fetch;
+	const result = await store.applyProtection({
+		restrict_editing: true,
+		password: "secret",
+		clear_password: false,
+		current_password: null,
+	});
+	expect(fetchedUrl).toBe("/api/documents/test-doc-456/protect");
+	expect(fetchedMethod).toBe("POST");
+	const body = JSON.parse(fetchedBody);
+	expect(body.restrict_editing).toBe(true);
+	expect(body.password).toBe("secret");
+	expect(body.clear_password).toBe(false);
+	expect(result.ok).toBe(true);
+	expect(store.protectionState.restrict_editing).toBe(true);
+	globalThis.fetch = originalFetch;
+});
+
+it("applyProtection handles errors", async () => {
+	const store = new SpreadsheetStore();
+	store.wopiConnection = {
+		wopiFileId: "test-doc-789",
+		wopiAccessToken: "tok",
+		docserverBase: "http://localhost",
+	};
+	globalThis.fetch = (() =>
+		Promise.resolve(
+			new Response(JSON.stringify({ error: "wrong password" }), {
+				status: 403,
+				headers: { "Content-Type": "application/json" },
+			}),
+		)) as typeof fetch;
+	const result = await store.applyProtection({
+		restrict_editing: false,
+		password: null,
+		clear_password: false,
+		current_password: "bad",
+	});
+	expect(result.ok).toBe(false);
+	expect(result.error).toBe("wrong password");
+	globalThis.fetch = originalFetch;
+});
+
+it("protectUrl falls back to demo.xlsx without wopiConnection", () => {
+	const store = new SpreadsheetStore();
+	// @ts-expect-error: accessing private method
+	const url = store.protectUrl();
+	expect(url).toBe("/api/documents/demo.xlsx/protect");
 });

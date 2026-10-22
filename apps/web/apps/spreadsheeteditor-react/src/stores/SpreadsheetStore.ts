@@ -103,6 +103,10 @@ export class SpreadsheetStore {
 	wopiConnection: WopiConnection | null = null;
 	lastLoadedContent: Blob | null = null;
 
+	/* Protection (F-146) — restrict_editing + password via /api/documents/{id}/protect */
+	protectionState = { restrict_editing: false, password_set: false };
+	protectionError: string | null = null;
+
 	constructor() {
 		makeAutoObservable(this);
 		onUniverChange(() => {
@@ -486,6 +490,65 @@ export class SpreadsheetStore {
 		a.download = this.document?.title || "spreadsheet.xlsx";
 		a.click();
 		URL.revokeObjectURL(url);
+	}
+
+	/* ── Protection (F-146) ── */
+
+	private protectUrl(): string {
+		const id = this.wopiConnection?.wopiFileId ?? "demo.xlsx";
+		return `/api/documents/${encodeURIComponent(id)}/protect`;
+	}
+
+	async refreshProtectionState(): Promise<void> {
+		try {
+			const res = await fetch(this.protectUrl());
+			if (!res.ok) {
+				const data = await res.json().catch(() => ({}));
+				this.protectionError =
+					(data as Record<string, string>).error ||
+					`protect: HTTP ${res.status}`;
+				return;
+			}
+			this.protectionError = null;
+			const data = await res.json();
+			this.protectionState = {
+				restrict_editing: !!(data as Record<string, unknown>).restrict_editing,
+				password_set: !!(data as Record<string, unknown>).password_set,
+			};
+		} catch {
+			this.protectionError = "protect unavailable";
+		}
+	}
+
+	async applyProtection(body: {
+		restrict_editing: boolean;
+		password: string | null;
+		clear_password: boolean;
+		current_password: string | null;
+	}): Promise<{ ok: boolean; error?: string }> {
+		try {
+			const res = await fetch(this.protectUrl(), {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(body),
+			});
+			const data = await res.json().catch(() => ({}));
+			if (!res.ok) {
+				const err =
+					(data as Record<string, string>).error || `HTTP ${res.status}`;
+				return { ok: false, error: err };
+			}
+			this.protectionState = {
+				restrict_editing: !!(data as Record<string, unknown>).restrict_editing,
+				password_set: !!(data as Record<string, unknown>).password_set,
+			};
+			return { ok: true };
+		} catch (err) {
+			return {
+				ok: false,
+				error: err instanceof Error ? err.message : "protection failed",
+			};
+		}
 	}
 }
 

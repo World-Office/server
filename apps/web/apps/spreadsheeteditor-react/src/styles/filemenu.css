@@ -385,3 +385,48 @@
 	color: var(--wo-de-text-secondary);
 	border-bottom: 1px solid var(--wo-de-border);
 }
+
+/* F-146: Protect panel */
+.se-file-menu-check {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 8px 0;
+	font-size: 13px;
+	cursor: pointer;
+}
+
+.se-file-menu-check input[type="checkbox"] {
+	cursor: pointer;
+}
+
+.se-file-menu-error {
+	color: #d32f2f;
+	font-size: 12px;
+	margin-top: 8px;
+}
+
+.se-file-menu-status {
+	color: var(--wo-de-text-secondary);
+	font-size: 12px;
+	margin-top: 8px;
+}
+
+.se-file-menu-content-box .dialog-field {
+	margin: 8px 0;
+}
+
+.se-file-menu-content-box .dialog-field label {
+	display: block;
+	font-size: 12px;
+	margin-bottom: 4px;
+	color: var(--wo-de-text-secondary);
+}
+
+.se-file-menu-content-box .dialog-field input[type="password"] {
+	width: 100%;
+	padding: 6px 8px;
+	border: 1px solid var(--wo-de-border);
+	border-radius: 4px;
+	font-size: 13px;
+}
