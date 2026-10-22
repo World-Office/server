@@ -501,14 +501,54 @@ fn emit_cell_style(xml: &mut String, style: &OdfStyle) {
         style_name
     )
     .unwrap();
-    writeln!(xml, "   <style:table-cell-properties")
-        .unwrap();
     
-    // Emit all properties
-    for (key, value) in &style.properties {
-        write!(xml, " {}=\"{}\"", key, escape_xml(value)).unwrap();
+    // Group properties by ODF property family for correct XML emission
+    // text-properties: font-name, font-size, font-weight, font-style, text-underline-*, text-line-through-*, color
+    // table-cell-properties: background-color, border
+    // paragraph-properties: text-align, vertical-align
+    let mut text_props: Vec<&(String, String)> = Vec::new();
+    let mut cell_props: Vec<&(String, String)> = Vec::new();
+    let mut para_props: Vec<&(String, String)> = Vec::new();
+    for prop in &style.properties {
+        match prop.0.as_str() {
+            "style:font-name" | "fo:font-size" | "fo:font-weight" | "fo:font-style"
+            | "style:text-underline-style" | "style:text-underline-type"
+            | "style:text-line-through-style" | "fo:color" => {
+                text_props.push(prop);
+            }
+            "fo:background-color" | "fo:border" => {
+                cell_props.push(prop);
+            }
+            "fo:text-align" | "style:vertical-align" => {
+                para_props.push(prop);
+            }
+            _ => {
+                // Unknown property — put in table-cell-properties as fallback
+                cell_props.push(prop);
+            }
+        }
     }
-    writeln!(xml, "/>").unwrap();
+    if !text_props.is_empty() {
+        write!(xml, "   <style:text-properties").unwrap();
+        for (key, value) in &text_props {
+            write!(xml, " {}=\"{}\"", key, escape_xml(value)).unwrap();
+        }
+        writeln!(xml, "/>").unwrap();
+    }
+    if !cell_props.is_empty() {
+        write!(xml, "   <style:table-cell-properties").unwrap();
+        for (key, value) in &cell_props {
+            write!(xml, " {}=\"{}\"", key, escape_xml(value)).unwrap();
+        }
+        writeln!(xml, "/>").unwrap();
+    }
+    if !para_props.is_empty() {
+        write!(xml, "   <style:paragraph-properties").unwrap();
+        for (key, value) in &para_props {
+            write!(xml, " {}=\"{}\"", key, escape_xml(value)).unwrap();
+        }
+        writeln!(xml, "/>").unwrap();
+    }
     writeln!(xml, "  </style:style>").unwrap();
 }
 

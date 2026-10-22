@@ -108,6 +108,9 @@ fn cell_style_to_odf_properties(style: &CellStyle) -> Vec<(String, String)> {
         };
         props.push(("style:vertical-align".to_string(), align_value.to_string()));
     }
+    if let Some(ref border) = style.border {
+        props.push(("fo:border".to_string(), border.clone()));
+    }
     
     props
 }
@@ -181,11 +184,17 @@ pub fn from_ods(bytes: &[u8]) -> Result<Workbook> {
         anyhow::bail!("Not an ODS document: content is not Spreadsheet type");
     };
     
+    // Collect all styles (named + automatic) for cell style read-back
+    let all_styles: Vec<OdfStyle> = doc.styles.iter()
+        .chain(doc.automatic_cell_styles.iter())
+        .cloned()
+        .collect();
+    
     // Convert each ODF sheet to a wo-sheet Sheet
     let mut workbook = Workbook::new();
     
     for odf_sheet in sheets {
-        let sheet = convert_odf_sheet_to_sheet(&odf_sheet)?;
+        let sheet = convert_odf_sheet_to_sheet(&odf_sheet, &all_styles)?;
         workbook.add_sheet(sheet);
     }
     
@@ -193,7 +202,7 @@ pub fn from_ods(bytes: &[u8]) -> Result<Workbook> {
 }
 
 /// Convert an ODF SpreadsheetSheet to a wo-sheet Sheet.
-fn convert_odf_sheet_to_sheet(odf_sheet: &SpreadsheetSheet) -> Result<Sheet> {
+fn convert_odf_sheet_to_sheet(odf_sheet: &SpreadsheetSheet, styles: &[OdfStyle]) -> Result<Sheet> {
     let mut sheet = Sheet::new(&odf_sheet.name);
     
     // Copy column widths
@@ -223,7 +232,7 @@ fn convert_odf_sheet_to_sheet(odf_sheet: &SpreadsheetSheet) -> Result<Sheet> {
             let col_idx = cell.column;
             
             // Convert the cell
-            let wo_cell = convert_odf_cell_to_cell(cell)?;
+            let wo_cell = convert_odf_cell_to_cell(cell, styles)?;;
             
             // Set the cell in the sheet
             sheet.set_cell(row_idx, col_idx, wo_cell);
@@ -250,7 +259,63 @@ fn convert_odf_sheet_to_sheet(odf_sheet: &SpreadsheetSheet) -> Result<Sheet> {
 }
 
 /// Convert an ODF SpreadsheetCell to a wo-sheet Cell.
-fn convert_odf_cell_to_cell(odf_cell: &SpreadsheetCell) -> Result<Cell> {
+/// Read back CellStyle from ODF automatic styles by looking up the cell's
+/// style_name and mapping ODF style properties to CellStyle fields.
+/// F-210: styling fidelity read-back (font, color, border, alignment, etc.).
+/// Key format: "property_family:attr_local_name" (no namespace prefix on attr).
+fn read_back_cell_style(odf_cell: &SpreadsheetCell, styles: &[OdfStyle]) -> CellStyle {
+    let style_name = match &odf_cell.style_name {
+        Some(name) => name,
+        None => return CellStyle::default(),
+    };
+    let odf_style = match styles.iter().find(|s| s.name == *style_name) {
+        Some(s) => s,
+        None => return CellStyle::default(),
+    };
+    let mut cell_style = CellStyle::default();
+    for (key, val) in &odf_style.properties {
+        match key.as_str() {
+            "text-properties:font-size" => {
+                let pts = val.trim_end_matches("pt").parse::<f32>().ok();
+                cell_style.font_size = pts;
+            }
+            "text-properties:font-name" => {
+                cell_style.font_family = Some(val.clone());
+            }
+            "text-properties:font-weight" => {
+                cell_style.bold = Some(val == "bold");
+            }
+            "text-properties:font-style" => {
+                cell_style.italic = Some(val == "italic");
+            }
+            "text-properties:text-underline-style" => {
+                cell_style.underline = Some(val == "solid");
+            }
+            "text-properties:text-line-through-style" => {
+                cell_style.strikethrough = Some(val == "solid");
+            }
+            "text-properties:color" => {
+                cell_style.color = Some(val.clone());
+            }
+            "table-cell-properties:background-color" => {
+                cell_style.background_color = Some(val.clone());
+            }
+            "paragraph-properties:text-align" => {
+                cell_style.horizontal_align = Some(val.clone());
+            }
+            "paragraph-properties:vertical-align" => {
+                cell_style.vertical_align = Some(val.clone());
+            }
+            "table-cell-properties:border" => {
+                cell_style.border = Some(val.clone());
+            }
+            _ => {}
+        }
+    }
+    cell_style
+}
+
+fn convert_odf_cell_to_cell(odf_cell: &SpreadsheetCell, styles: &[OdfStyle]) -> Result<Cell> {
     // Parse formula if present
     let formula = odf_cell.formula.as_ref().and_then(|f| {
         parse_formula(f).ok()
@@ -327,11 +392,14 @@ fn convert_odf_cell_to_cell(odf_cell: &SpreadsheetCell) -> Result<Cell> {
         }
     };
     
+    // Read back cell style from ODF automatic styles (F-210 styling fidelity)
+    let style = read_back_cell_style(odf_cell, styles);
+    
     Ok(Cell {
         raw: raw_text,
         value,
         formula,
-        style: CellStyle::default(),
+        style,
     })
 }
 
@@ -1628,6 +1696,56 @@ mod tests {
             !imported_sheet.row_heights.contains_key(&1),
             "gap row 1 must not come back with a height"
         );
+        Ok(())
+    }
+
+    /// F-210: ODS cell style read-back — font, color, border, alignment, background
+    /// round-trip through export→import (styling fidelity).
+    #[test]
+    fn test_from_ods_roundtrip_cell_styles_f210() -> Result<()> {
+        use crate::model::{Cell, CellStyle, Sheet};
+
+        let mut wb = Workbook::new();
+        let mut sheet = Sheet::new("StyleRT");
+        // Bold + italic + font-size 14 + red color
+        let mut cell1 = Cell::with_text("Bold");
+        cell1.style = CellStyle {
+            bold: Some(true),
+            italic: Some(true),
+            font_size: Some(14.0),
+            color: Some("#FF0000".to_string()),
+            ..CellStyle::default()
+        };
+        // Border + background + right-align
+        let mut cell2 = Cell::with_text("Bordered");
+        cell2.style = CellStyle {
+            border: Some("0.5pt solid #000000".to_string()),
+            background_color: Some("#FFFF00".to_string()),
+            horizontal_align: Some("right".to_string()),
+            ..CellStyle::default()
+        };
+        sheet.cells.insert((0, 0), cell1);
+        sheet.cells.insert((0, 1), cell2);
+        wb.add_sheet(sheet);
+
+        let bytes = export_ods(&wb)?;
+        let imported = from_ods(&bytes)?;
+
+        let s = &imported.sheets[0];
+        let c1 = s.cells.get(&(0, 0)).expect("cell (0,0)");
+        let c2 = s.cells.get(&(0, 1)).expect("cell (0,1)");
+
+        // Cell 1: bold + italic + font-size + color
+        assert_eq!(c1.style.bold, Some(true), "bold must round-trip");
+        assert_eq!(c1.style.italic, Some(true), "italic must round-trip");
+        assert!(c1.style.font_size.is_some(), "font_size must round-trip");
+        assert_eq!(c1.style.color, Some("#FF0000".to_string()), "color must round-trip");
+
+        // Cell 2: border + background + horizontal_align
+        assert_eq!(c2.style.border, Some("0.5pt solid #000000".to_string()), "border must round-trip");
+        assert_eq!(c2.style.background_color, Some("#FFFF00".to_string()), "background_color must round-trip");
+        assert_eq!(c2.style.horizontal_align, Some("right".to_string()), "horizontal_align must round-trip");
+
         Ok(())
     }
 }

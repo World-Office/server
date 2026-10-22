@@ -1177,6 +1177,7 @@ impl OdfParser {
                                 || prop_child.has_tag_name((STYLE_NS, "paragraph-properties"))
                                 || prop_child.has_tag_name((STYLE_NS, "table-column-properties"))
                                 || prop_child.has_tag_name((STYLE_NS, "table-row-properties"))
+                                || prop_child.has_tag_name((STYLE_NS, "table-cell-properties"))
                                 || prop_child.has_tag_name((STYLE_NS, "drawing-page-properties"))
                             {
                                 for attr in prop_child.attributes() {
