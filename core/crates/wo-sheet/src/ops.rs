@@ -592,6 +592,67 @@ fn is_op_allowed(
     }
 }
 
+/// Like is_op_allowed but with user/group exemptions (F-146).
+fn is_op_allowed_for_user(
+    sheet: &Sheet,
+    edit_ranges: &[EditRange],
+    region: &OpTouchedRegion,
+    user: Option<&str>,
+    groups: &[&str],
+) -> bool {
+    if !sheet.protection.enabled {
+        return true;
+    }
+    // Exempt user bypasses all restrictions
+    if sheet.protection.is_exempt_for(user, groups) {
+        return true;
+    }
+    if edit_ranges.is_empty() {
+        return false;
+    }
+    match region {
+        OpTouchedRegion::SingleCell(row, col) => {
+            super::model::is_edit_allowed_for_user(
+                &sheet.protection,
+                edit_ranges,
+                (*row, *col),
+                user,
+                groups,
+            )
+        }
+        OpTouchedRegion::Range(range) => super::model::range_is_fully_allowed_for_user(
+            &sheet.protection,
+            edit_ranges,
+            range,
+            user,
+            groups,
+        ),
+        OpTouchedRegion::Copy { from, to } => {
+            let source_range = from;
+            if !super::model::range_is_fully_allowed_for_user(
+                &sheet.protection,
+                edit_ranges,
+                source_range,
+                user,
+                groups,
+            ) {
+                return false;
+            }
+            let dest_rows = source_range.end_row - source_range.start_row + 1;
+            let dest_cols = source_range.end_col - source_range.start_col + 1;
+            let dest_range = Range2d::new(to.0, to.1, to.0 + dest_rows - 1, to.1 + dest_cols - 1);
+            super::model::range_is_fully_allowed_for_user(
+                &sheet.protection,
+                edit_ranges,
+                &dest_range,
+                user,
+                groups,
+            )
+        }
+        OpTouchedRegion::Structural => true,
+    }
+}
+
 /// Apply a SheetOp to a Sheet with protection enforcement.
 /// 
 /// This function checks if the operation is allowed based on:
@@ -627,6 +688,24 @@ pub fn apply_to_sheet_protected(
     apply_to_sheet(sheet, op)
 }
 
+/// Apply a SheetOp to a Sheet with user-aware protection enforcement (F-146).
+/// Like apply_to_sheet_protected but uses is_edit_allowed_for_user so exempt
+/// users/groups bypass edit-range restrictions.
+pub fn apply_to_sheet_protected_for_user(
+    sheet: &mut Sheet,
+    workbook_edit_ranges: &[EditRange],
+    op: &SheetOp,
+    user: Option<&str>,
+    groups: &[&str],
+) -> SheetOpResult<()> {
+    if let Some(region) = op_touched_region(op) {
+        if !is_op_allowed_for_user(sheet, workbook_edit_ranges, &region, user, groups) {
+            return Err(SheetOpError::Protected);
+        }
+    }
+    apply_to_sheet(sheet, op)
+}
+
 /// Apply a SheetOp to a Workbook with protection enforcement.
 /// This applies protection checks using the sheet's protection and the workbook's edit ranges.
 /// // F-146
@@ -647,6 +726,24 @@ pub fn apply_to_workbook_protected(
         .ok_or_else(|| SheetOpError::SheetNotFound { name: target_sheet_name })?;
     
     apply_to_sheet_protected(sheet, &wb.edit_ranges, op)
+}
+
+/// Apply a SheetOp to a Workbook with user-aware protection enforcement (F-146).
+pub fn apply_to_workbook_protected_for_user(
+    wb: &mut Workbook,
+    sheet_name: Option<&str>,
+    op: &SheetOp,
+    user: Option<&str>,
+    groups: &[&str],
+) -> SheetOpResult<()> {
+    let target_sheet_name = if let Some(name) = sheet_name {
+        name.to_string()
+    } else {
+        wb.sheets.get(wb.active_sheet).map(|s| s.name.clone()).unwrap_or_else(|| "Sheet1".to_string())
+    };
+    let sheet = wb.sheets.iter_mut().find(|s| s.name == target_sheet_name)
+        .ok_or_else(|| SheetOpError::SheetNotFound { name: target_sheet_name })?;
+    apply_to_sheet_protected_for_user(sheet, &wb.edit_ranges, op, user, groups)
 }
 
 /// Apply a SheetOp to a Workbook.
@@ -1888,5 +1985,87 @@ mod tests {
         let result = apply_to_sheet_protected(&mut sheet, &edit_ranges, &op);
         assert!(result.is_err());
         assert!(matches!(result, Err(SheetOpError::Protected)));
+    }
+
+    // Test F-146: user-aware protection — exempt user bypasses restrictions
+    #[test]
+    fn test_apply_to_sheet_protected_for_user_exempt() {
+        use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
+
+        let mut sheet = Sheet::new("ProtectedSheet");
+        sheet.protection = SheetProtection::enabled();
+        sheet.protection.add_exempt_user("alice");
+
+        let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 5, 5))];
+
+        // alice is exempt — can edit outside the allowed range
+        let op = SheetOp::SetCell {
+            row: 10,
+            col: 10,
+            raw: "test".to_string(),
+        };
+        let result = apply_to_sheet_protected_for_user(&mut sheet, &edit_ranges, &op, Some("alice"), &[]);
+        assert!(result.is_ok(), "exempt user should bypass protection");
+    }
+
+    // Test F-146: user-aware protection — non-exempt user is blocked
+    #[test]
+    fn test_apply_to_sheet_protected_for_user_blocked() {
+        use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
+
+        let mut sheet = Sheet::new("ProtectedSheet");
+        sheet.protection = SheetProtection::enabled();
+        sheet.protection.add_exempt_user("alice");
+
+        let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 5, 5))];
+
+        // bob is NOT exempt — blocked from editing outside the allowed range
+        let op = SheetOp::SetCell {
+            row: 10,
+            col: 10,
+            raw: "test".to_string(),
+        };
+        let result = apply_to_sheet_protected_for_user(&mut sheet, &edit_ranges, &op, Some("bob"), &[]);
+        assert!(result.is_err());
+        assert!(matches!(result, Err(SheetOpError::Protected)));
+    }
+
+    // Test F-146: user-aware protection — exempt group bypasses restrictions
+    #[test]
+    fn test_apply_to_sheet_protected_for_user_exempt_group() {
+        use super::super::model::{EditRange, Range2d, Sheet, SheetProtection};
+
+        let mut sheet = Sheet::new("ProtectedSheet");
+        sheet.protection = SheetProtection::enabled();
+        sheet.protection.add_exempt_group("admins");
+
+        let edit_ranges = vec![EditRange::new("Allowed", Range2d::new(0, 0, 5, 5))];
+
+        // bob is in the "admins" group — exempt
+        let op = SheetOp::SetCell {
+            row: 10,
+            col: 10,
+            raw: "test".to_string(),
+        };
+        let result = apply_to_sheet_protected_for_user(&mut sheet, &edit_ranges, &op, Some("bob"), &["admins"]);
+        assert!(result.is_ok(), "exempt group should bypass protection");
+    }
+
+    // Test F-146: user-aware protection — protection disabled allows all
+    #[test]
+    fn test_apply_to_sheet_protected_for_user_disabled() {
+        use super::super::model::{EditRange, Range2d, Sheet};
+
+        let mut sheet = Sheet::new("Sheet");
+        // protection disabled by default
+        let edit_ranges: Vec<EditRange> = vec![];
+
+        let op = SheetOp::SetCell {
+            row: 10,
+            col: 10,
+            raw: "test".to_string(),
+        };
+        let result = apply_to_sheet_protected_for_user(&mut sheet, &edit_ranges, &op, None, &[]);
+        assert!(result.is_ok(), "protection disabled should allow all");
     }
 }

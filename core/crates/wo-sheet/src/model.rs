@@ -1176,6 +1176,33 @@ pub fn range_is_fully_allowed(
     true
 }
 
+/// Like range_is_fully_allowed but with user/group exemptions (F-146).
+pub fn range_is_fully_allowed_for_user(
+    protection: &SheetProtection,
+    edit_ranges: &[EditRange],
+    range: &Range2d,
+    user: Option<&str>,
+    groups: &[&str],
+) -> bool {
+    if !protection.enabled {
+        return true;
+    }
+    if protection.is_exempt_for(user, groups) {
+        return true;
+    }
+    if edit_ranges.is_empty() {
+        return false;
+    }
+    for row in range.start_row..=range.end_row {
+        for col in range.start_col..=range.end_col {
+            if !is_edit_allowed_for_user(protection, edit_ranges, (row, col), user, groups) {
+                return false;
+            }
+        }
+    }
+    true
+}
+
 // ============================================================================
 // Tests
 // ============================================================================
