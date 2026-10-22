@@ -20,6 +20,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use crate::AppError;
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 
 /// Server-side mirror of the ribbon command bus, exported as JSON-schema tools
 /// (OnlyOffice RegisteredFunction pattern). Kept here so the contract probe
@@ -52,6 +53,84 @@ fn clean_markdown(raw: &str) -> String {
         .unwrap_or(t);
     let body = body.trim();
     body.strip_suffix("```").unwrap_or(body).trim().to_string()
+}
+
+/// Minimal markdown → HTML converter for F-152 docx generation.
+/// Handles headings (h1-h3), bold, italic, bullet lists, numbered lists,
+/// and paragraphs. Good enough for LLM-generated markdown → docx.
+fn markdown_to_html(md: &str) -> String {
+    let mut html = String::new();
+    let mut in_ul = false;
+    let mut in_ol = false;
+    for line in md.lines() {
+        let trimmed = line.trim();
+        // Close any open list when hitting a non-list line
+        if in_ul && !(trimmed.starts_with("- ") || trimmed.starts_with("* ")) {
+            html.push_str("</ul>\n");
+            in_ul = false;
+        }
+        if in_ol && !trimmed.starts_with("1. ") && !trimmed.starts_with("2. ") {
+            html.push_str("</ol>\n");
+            in_ol = false;
+        }
+        if let Some(h) = trimmed.strip_prefix("# ") {
+            html.push_str(&format!("<h1>{}</h1>\n", inline_md(h)));
+        } else if let Some(h) = trimmed.strip_prefix("## ") {
+            html.push_str(&format!("<h2>{}</h2>\n", inline_md(h)));
+        } else if let Some(h) = trimmed.strip_prefix("### ") {
+            html.push_str(&format!("<h3>{}</h3>\n", inline_md(h)));
+        } else if let Some(h) = trimmed.strip_prefix("- ").or_else(|| trimmed.strip_prefix("* ")) {
+            if !in_ul { html.push_str("<ul>\n"); in_ul = true; }
+            html.push_str(&format!("<li>{}</li>\n", inline_md(h)));
+        } else if let Some(h) = trimmed.strip_prefix("1. ").or_else(|| trimmed.strip_prefix("2. ")) {
+            if !in_ol { html.push_str("<ol>\n"); in_ol = true; }
+            html.push_str(&format!("<li>{}</li>\n", inline_md(h)));
+        } else if !trimmed.is_empty() {
+            html.push_str(&format!("<p>{}</p>\n", inline_md(trimmed)));
+        }
+    }
+    if in_ul { html.push_str("</ul>\n"); }
+    if in_ol { html.push_str("</ol>\n"); }
+    html
+}
+
+/// Inline markdown: **bold** -> <strong>, *italic* -> <em>.
+fn inline_md(s: &str) -> String {
+    let mut out = String::new();
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '*' {
+            if chars.peek() == Some(&'*') {
+                chars.next();
+                let mut inner = String::new();
+                while let Some(&ch) = chars.peek() {
+                    if ch == '*' { break; }
+                    inner.push(ch);
+                    chars.next();
+                }
+                // consume closing **
+                if chars.peek() == Some(&'*') { chars.next(); }
+                if chars.peek() == Some(&'*') { chars.next(); }
+                out.push_str("<strong>");
+                out.push_str(&inner);
+                out.push_str("</strong>");
+            } else {
+                let mut inner = String::new();
+                while let Some(&ch) = chars.peek() {
+                    if ch == '*' { break; }
+                    inner.push(ch);
+                    chars.next();
+                }
+                if chars.peek() == Some(&'*') { chars.next(); }
+                out.push_str("<em>");
+                out.push_str(&inner);
+                out.push_str("</em>");
+            }
+        } else {
+            out.push(c);
+        }
+    }
+    out
 }
 
 /// OpenAI-compatible chat completion against the configured provider.
@@ -144,11 +223,14 @@ pub struct AiGenerateReq {
     pub format: String,
 }
 
-/// POST /ai/generate — F-152: LLM -> markdown generation.
-/// The docx-chaining half of the pipeline stays pinned by F-152b (the live
-/// /api/conversion/convert); this handler returns the generated markdown and
-/// reports the envelope honestly.
-pub async fn ai_generate(Json(req): Json<AiGenerateReq>) -> Result<Json<Value>, AppError> {
+/// POST /ai/generate — F-152: LLM -> markdown -> docx generation.
+/// When format=docx, converts markdown to HTML then to DOCX via the conversion
+/// router (the converter half pinned by F-152b). When format=markdown (default),
+/// returns the raw markdown.
+pub async fn ai_generate(
+    State(state): State<crate::AppState>,
+    Json(req): Json<AiGenerateReq>,
+) -> Result<Json<Value>, AppError> {
     let model = std::env::var("AI_MODEL").unwrap_or_else(|_| "glm-4.7".into());
     let prompt = if req.prompt.trim().is_empty() {
         "Write a short markdown document describing World-Office.".to_string()
@@ -161,12 +243,32 @@ pub async fn ai_generate(Json(req): Json<AiGenerateReq>) -> Result<Json<Value>, 
     )
     .await?;
     let markdown = clean_markdown(&raw);
+
+    if req.format == "docx" {
+        // F-152: markdown -> HTML -> DOCX via the conversion router
+        let html = markdown_to_html(&markdown);
+        let result = state.conversion_router.convert("html", "docx", html.as_bytes());
+        if let Some(output) = result.output {
+            return Ok(Json(json!({
+                "status": "Success",
+                "model": model,
+                "format": "docx",
+                "data": BASE64.encode(&output.data),
+                "filename": "generated.docx",
+            })));
+        }
+        return Ok(Json(json!({
+            "status": "error",
+            "error": result.error.unwrap_or_else(|| "conversion failed".to_string()),
+            "markdown": markdown,
+        })));
+    }
+
     Ok(Json(json!({
         "status": "Success",
         "model": model,
         "markdown": markdown,
         "format": "markdown",
-        "note": "docx envelope generation deferred; the converter half of the chain is pinned by contract F-152b",
     })))
 }
 
@@ -341,5 +443,25 @@ mod tests {
     fn clean_markdown_strips_fences() {
         assert_eq!(clean_markdown("```markdown\n# Hi\n```"), "# Hi");
         assert_eq!(clean_markdown("hello"), "hello");
+    }
+
+    // F-152: markdown_to_html converts headings, lists, and inline formatting
+    #[test]
+    fn markdown_to_html_headings_and_lists() {
+        let html = markdown_to_html("# Title\n\n- item 1\n- item 2\n\nParagraph with **bold** and *italic*.\n");
+        assert!(html.contains("<h1>Title</h1>"), "h1 heading: {html}");
+        assert!(html.contains("<ul>"), "ul list: {html}");
+        assert!(html.contains("<li>item 1</li>"), "li: {html}");
+        assert!(html.contains("<strong>bold</strong>"), "bold: {html}");
+        assert!(html.contains("<em>italic</em>"), "italic: {html}");
+        assert!(html.contains("<p>Paragraph"), "paragraph: {html}");
+    }
+
+    // F-152: markdown_to_html handles ordered lists
+    #[test]
+    fn markdown_to_html_ordered_list() {
+        let html = markdown_to_html("1. first\n2. second\n");
+        assert!(html.contains("<ol>"), "ol list: {html}");
+        assert!(html.contains("<li>first</li>"), "li: {html}");
     }
 }
