@@ -292,6 +292,7 @@ impl CollabHub {
     ) -> Value {
         let mut docs = self.docs.lock().unwrap();
         let doc = Self::ensure_locked(&mut docs, doc_id);
+        Self::prune_stale(&mut doc.presence);
         if cursor.is_null() || client_id.is_empty() {
             doc.presence.remove(client_id);
         } else {
@@ -319,12 +320,23 @@ impl CollabHub {
     }
 
     pub fn clients(&self, doc_id: &str) -> Value {
-        let docs = self.docs.lock().unwrap();
-        let clients: Vec<Value> = docs
-            .get(doc_id)
-            .map(|d| d.presence.values().cloned().collect())
-            .unwrap_or_default();
+        let mut docs = self.docs.lock().unwrap();
+        let clients = match docs.get_mut(doc_id) {
+            Some(d) => {
+                Self::prune_stale(&mut d.presence);
+                d.presence.values().cloned().collect::<Vec<Value>>()
+            }
+            None => Vec::new(),
+        };
         json!({ "clients": clients })
+    }
+
+    /// Drop presence entries that stopped announcing. The client re-announces
+    /// on a heartbeat (~30s); a hard tab close skips the leave POST (fetch on
+    /// beforeunload is best-effort), so without this ghosts linger forever.
+    fn prune_stale(presence: &mut HashMap<String, Value>) {
+        let cutoff = now_f64() - 90.0;
+        presence.retain(|_, p| p["updated"].as_f64().unwrap_or(0.0) >= cutoff);
     }
 
     /// Register a subscriber for a document's live events.

@@ -6687,11 +6687,17 @@
   }
   function leavePresence() {
     if (!COLLAB_ENABLED) return;
-    fetch(api("collab/presence"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ client_id: CLIENT_ID, cursor: null }),
-    }).catch(() => {});
+    const body = JSON.stringify({ client_id: CLIENT_ID, cursor: null });
+    // sendBeacon survives hard tab closes; fetch does not (ghost sessions).
+    if (typeof navigator.sendBeacon === "function") {
+      navigator.sendBeacon(api("collab/presence"), new Blob([body], { type: "application/json" }));
+    } else {
+      fetch(api("collab/presence"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      }).catch(() => {});
+    }
   }
 
   // --- live collaboration: poll the hub for changes -----------------
@@ -6738,6 +6744,9 @@
 
   pollCollab();
   announcePresence();
+  // Heartbeat: the server prunes silent clients after 90s (a hard tab close
+  // skips the leave POST), so keep re-announcing while the editor is open.
+  setInterval(() => announcePresence(), 30000);
 
   // --- photo editor plugin: canvas filter dialog (view-only UI) ------
   // Decodes a locally picked image into a canvas and previews CSS canvas
