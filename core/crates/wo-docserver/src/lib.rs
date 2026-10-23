@@ -2239,6 +2239,16 @@ mod tests {
                 .unwrap(),
         ).await.unwrap();
         assert_eq!(resp.status(), StatusCode::OK);
+        // OpenCloud space-aware file ids (space$file!version) are legal doc
+        // ids — the WOPI editor uses them verbatim; they must not 400.
+        let wopi_id = "1d97e670-f1e9-4e9b-8655-92f0ae5db78e$7a1ec2b4-85fb-4421-8eee-1be260cdfc40!f348d31d-eff6-47ac-9289-478a2a28844e";
+        let resp = app.clone().oneshot(
+            Request::builder()
+                .uri(format!("/api/documents/{wopi_id}/collab/state"))
+                .body(Body::empty())
+                .unwrap(),
+        ).await.unwrap();
+        assert_eq!(resp.status(), StatusCode::OK, "WOPI file ids must pass valid_doc_id");
         let resp = app
             .clone()
             .oneshot(

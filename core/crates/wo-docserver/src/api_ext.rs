@@ -25,7 +25,12 @@ fn valid_doc_id(id: &str) -> bool {
         && !id.starts_with('.')
         && id
             .chars()
-            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '.' | '_' | '-'))
+            .all(|c| {
+                c.is_ascii_alphanumeric()
+                    // '$' and '!' appear in OpenCloud space-aware file ids
+                    // (spaceId$fileId!version) used as the WOPI doc id.
+                    || matches!(c, '.' | '_' | '-' | '$' | '!')
+            })
 }
 
 /// GET /api/documents/{id}/collab/state
@@ -234,6 +239,17 @@ async fn seed_collab(state: &AppState, doc_id: &str) {
             .unwrap_or("")
             .is_empty()
     {
+        return;
+    }
+    // Live presence clients hold in-flight text that may be newer than the
+    // stored file (unsaved edits survive only in the hub + their editor DOM).
+    // Seeding the stored baseline over an active session would converge their
+    // editor back to the stale file on the next poll; their own collab/sync
+    // re-populates the hub instead, so stay empty until it arrives.
+    let live_clients = state.collab.clients(doc_id)["clients"]
+        .as_array()
+        .map_or(0, |a| a.len());
+    if live_clients > 0 {
         return;
     }
     let Ok(Some(data)) = state.store.get_content(doc_id).await else {

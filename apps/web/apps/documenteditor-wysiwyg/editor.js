@@ -6626,6 +6626,15 @@
     // still differ and converge normally.
     const norm = (s) => (s || "").replace(/\s+/g, " ").trim();
     if (norm(current) === norm(text)) return true;
+    // Server-state-loss guard: an empty remote snapshot over non-empty local
+    // content means the collab hub was wiped (server restart / seed failure),
+    // not that the document is empty — the user's own deletes flow up through
+    // collabSync, so the server can only be empty here if it never saw this
+    // text. Re-push local state instead of erasing it.
+    if (!norm(text) && norm(current)) {
+      collabSync();
+      return true;
+    }
     // Never clobber an open modal (find/table/image dialog): leave the editor
     // untouched and converge on the next tick after the dialog closes.
     if (getOpenDialog()) return false;
@@ -6722,7 +6731,19 @@
           const ops = Array.isArray(data.ops) ? data.ops : [];
           const newOps = lastSeenOpCount < 0 ? [] : ops.slice(Math.max(0, lastSeenOpCount));
           const agentEdits = newOps.some((op) => op && typeof op.s === "string" && op.s.indexOf("agent=") === 0);
-          if (agentEdits && !getOpenDialog()) {
+          // Out-of-band state replacement detector: the hub text moved while
+          // the op log shrank or stayed flat (seed_collab's resync resets the
+          // log to empty). That only happens when the server rebuilt its
+          // in-memory state — e.g. after a restart — and the stored baseline
+          // it reseeded from predates this tab's live text. Converging down
+          // would erase the user's unsaved edits (the silent-blank bug), so
+          // push the local snapshot up instead; the server diff-merges it
+          // via collab/sync.
+          const opCountDropped = lastSeenOpCount >= 0 && ops.length <= lastSeenOpCount;
+          if (opCountDropped && data.text !== collabText()) {
+            collabSync();
+            lastServerText = collabText();
+          } else if (agentEdits && !getOpenDialog()) {
             if (applyTrackedDiff(lastServerText, data.text)) lastServerText = data.text;
             // false: fall through to plain convergence on the next tick
           } else if (applyRemoteText(data.text)) {

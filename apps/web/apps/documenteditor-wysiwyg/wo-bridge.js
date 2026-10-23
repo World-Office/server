@@ -178,8 +178,11 @@
         if (ep === "versions") return jres({ versions: [] });
         if (ep === "unlock") return new Response(null, { status: 204 });
         if (ep === "protect") return jres({ restrict_editing: false, password_set: false });
-        if (ep.indexOf("collab/") === 0)
-          return jres(ep === "collab/sync" ? { ok: true, clients: [] } : { clients: [] });
+        // collab/* passes through to the hub: the old stub (fake empty state)
+        // existed because OpenCloud file ids ($...!) were rejected by
+        // valid_doc_id, so every real call 400'd. Ids are legal now — live
+        // presence/sync work in WOPI sessions, incl. the restart-survival
+        // push-up guards in pollCollab.
         // ai/* pass through to the docserver backend: the rust gateway serves
         // propose/review/reject (E-AI-1). A 503 stub here disabled the AI tab
         // even when the backend implements it.

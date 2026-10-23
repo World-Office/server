@@ -117,5 +117,27 @@ console.log("ok 15 leavePresence function exists")
 assert.ok(editorSrc.includes("COLLAB_ENABLED"), "COLLAB_ENABLED flag must exist")
 console.log("ok 16 COLLAB_ENABLED flag gates collab operations")
 
+// ── server-state-loss guards (restart must never blank a live editor) ──
+
+// pollCollab: out-of-band reseed detector (text moved, op log shrank) pushes
+// the local snapshot up instead of converging down to the stale baseline.
+assert.ok(
+  editorSrc.includes("opCountDropped"),
+  "pollCollab must detect out-of-band hub reseeds (op-log shrink)",
+)
+assert.ok(
+  /opCountDropped[\s\S]{0,400}collabSync\(\)/.test(editorSrc),
+  "reseed detector must re-push local text via collabSync",
+)
+console.log("ok 17 pollCollab reseed guard: push up, never converge down")
+
+// applyRemoteText: empty remote snapshot over non-empty local content is
+// hub state loss — re-push, never editor.innerText = "".
+assert.ok(
+  /!norm\(text\) && norm\(current\)/.test(editorSrc),
+  "applyRemoteText must refuse to blank non-empty local content",
+)
+console.log("ok 18 applyRemoteText empty-snapshot guard present")
+
 console.log("\nAll F-120 tests passed!\n")
 console.log("COLLAB-COEDITING-PASS")
