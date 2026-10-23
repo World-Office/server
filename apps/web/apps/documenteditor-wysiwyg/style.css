@@ -350,7 +350,7 @@ select option { background: var(--bg); color: var(--text); }
    the right-edge tool cluster (collapse/theme/find/fullscreen) pins via
    margin-left:auto. Dropdown .menu-lists anchor to their (relative) .menu
    span as before. Works at any viewport width; groups wrap on narrow ones. */
-.ribbon-row { position: relative; min-height: 24px; flex-wrap: wrap; row-gap: 6px; }
+.ribbon-row { position: relative; min-height: 24px; flex-wrap: nowrap; row-gap: 6px; overflow-x: clip; }
 .ribbon-row[hidden] { display: none; }
 .toolbar .ribbon-page.active { align-self: stretch; height: 100%; align-content: center; }
 .ribbon-page.active { flex-wrap: wrap; align-items: center; }
@@ -653,6 +653,115 @@ select option { background: var(--bg); color: var(--text); }
 }
 /* Helper glyphs are not toolbar icons: keep the styles-trigger caret 10x6. */
 .toolbar .styles-trigger svg { width: 10px; height: 6px; flex: 0 0 auto; }
+
+/* ---- WO-RIBBON-OO port (2026-10-23): OO 9.4 Home-tab structure ----
+   Measured off the real editor (rig at 1440x900): two 24px elset rows per
+   group, 2x2 quick-access panel, 1px 60px group separators, styles gallery
+   (110x46 cards + 30x46 toggle), 24px right-edge tools. */
+.rb-quick { display: flex; gap: 8px; flex: 0 0 auto; align-items: center; }
+.rb-quick .elset-col,
+.rb-edge .elset-col { display: flex; flex-direction: column; gap: 10px; }
+.rb-grid { display: flex; flex-direction: column; gap: 6px; flex: 0 0 auto; justify-content: center; }
+.rb-grid .elset-row { display: flex; align-items: center; gap: 2px; height: 24px; }
+.ribbon-row .rb-quick .rb,
+.rb-grid .rb,
+.rb-edge .rb {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0;
+}
+.ribbon-row .rb-quick .rb svg,
+.rb-grid .rb svg,
+.rb-edge .rb svg { width: 16px; height: 16px; }
+/* Selects live in the 24px elset rows (OO field pitch). */
+.rb-grid .toolbar-select { height: 24px; padding: 0 3px; border-radius: 4px; }
+/* OO bare-select pitch inside the elset rows: family 125, size 45 (id+class
+   beats the generic .bare rules above). */
+.rb-grid #font-family.bare { width: 125px; height: 24px; }
+.rb-grid #font-size.bare { width: 45px; height: 24px; }
+.rb-grid #line-spacing.bare { width: 46px; height: 24px; }
+.rb-grid .menu-trigger.caret-btn { height: 24px; line-height: 24px; min-width: 16px; }
+.rb-grid .menu-trigger.caret-btn::before { top: 3px; bottom: 3px; }
+/* Right-edge cluster: two 24px elset cols side by side (rb-grid would stack
+   them — OO's replace/select-all pattern is a horizontal pair of pairs). */
+.ribbon-row .rb-edge.rb-grid { flex-direction: row; align-items: center; gap: 8px; }
+/* Paste sits in a plain one-button group — same 24px pitch as the grids. */
+.ribbon-row .rb-group > .rb { width: 24px; height: 24px; padding: 0; }
+.ribbon-row .rb-group > .rb svg { width: 16px; height: 16px; }
+/* Text-capable caret (change-case split): OO 40x24 — keep natural width. */
+.rb-grid .caret-btn.case-btn { width: auto; min-width: 30px; padding: 0 5px; font-size: 11px; gap: 2px; }
+/* OO group separators: 1px x ~56px with 5px gutters. */
+.ribbon-row .rb-sep { height: 56px; margin: 0 5px; }
+/* Style gallery (OO combo-styles): track of 110x46 cards + 30x46 toggle. */
+.rb-styles { flex: 1 1 200px; min-width: 0; height: 46px; gap: 0; align-items: stretch; }
+.gallery-track {
+  display: flex;
+  align-items: stretch;
+  height: 46px;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px 0 0 6px;
+  background: var(--bg);
+  flex: 1 1 auto;
+}
+.gallery-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  width: 110px;
+  flex: 0 0 auto;
+  padding: 0 8px;
+  border: none;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+.gallery-card:last-child { border-right: none; }
+.gallery-card:hover { background: var(--hover); }
+.gallery-card.active,
+.gallery-card[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.gc-name { font-size: 10px; line-height: 1; white-space: nowrap; overflow: hidden; max-width: 94px; }
+.gc-preview { display: block; width: 78%; height: 2px; background: currentColor; opacity: 0.35; box-shadow: 0 5px 0 currentColor; }
+/* Card name rendered in its target style (OO preview typography). */
+.gc-p .gc-name { font-size: 11px; }
+.gc-h4 .gc-name { font-size: 13px; font-weight: 700; }
+.gc-h5 .gc-name { font-size: 12px; font-weight: 600; font-style: italic; }
+.gc-h1 .gc-name { font-size: 14px; font-weight: 800; }
+.gc-h2 .gc-name { font-size: 13px; font-weight: 700; }
+.gc-h3 .gc-name { font-size: 12px; font-weight: 700; }
+/* Toggle: 30x46 at the gallery's right edge (OO btn.dropdown-toggle). */
+.rb-styles .styles-trigger {
+  width: 30px;
+  height: 46px;
+  justify-content: center;
+  padding: 0;
+  border-radius: 0 6px 6px 0;
+  border-left: none;
+}
+/* Keep the i18n label for tests/i18n — visually hidden. */
+.rb-styles .styles-trigger span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+@media (max-width: 1100px) {
+  /* Narrow windows: cards clip, the dropdown keeps every style reachable. */
+  .gallery-track { flex: 0 0 auto; width: 110px; }
+}
+@media (max-width: 760px) {
+  .gallery-track { display: none; }
+  .rb-styles { flex: 0 0 auto; }
+  .rb-styles .styles-trigger { border-radius: 6px; border-left: 1px solid var(--border); }
+}
 
 .toolbar .spacer { flex: 0 1 12px; }  /* in wrap mode a grow-1 spacer would open a full-width gap row */
 
@@ -1397,6 +1506,10 @@ main {
   .toolbar .status, .statusbar .status, .statusbar .status-meta { display: none; }
   .statusbar { height: 34px; }
   .toolbar .toolbar-select { height: 36px; }
+  /* OO-port groups revert to flat touch rows on small screens. */
+  .rb-grid { flex-direction: row; flex-wrap: wrap; gap: 2px; }
+  .rb-grid .elset-row { display: contents; }
+  .rb-quick { gap: 4px; }
   #font-family { width: 120px; max-width: 120px; }
   #line-spacing { width: 84px; max-width: 84px; }
   main {

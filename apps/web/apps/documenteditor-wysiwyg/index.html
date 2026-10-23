@@ -215,21 +215,28 @@
          margin-left:auto. Every control keeps its id and data-cmd; caret
          sub-buttons stay glued like OO split carets. -->
     <div class="ribbon-row">
-    <!-- Clipboard group (WO-RIBBON-FLEX redesign, OO parity): paste/cut/copy
-         join the ribbon (were ctx-menu only); paste reuses the F-063 rich
-         paste path, cut/copy are plain execCommand. -->
-    <div class="rb-group" role="group" aria-label="Clipboard">
-    <button id="btn-paste" class="rb" title="Paste (Ctrl+V)" data-i18n-title="Toolbar.PasteTitle" aria-label="Paste" data-i18n-aria-label="Toolbar.Paste" aria-keyshortcuts="Control+V"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="8" height="10.5" rx="1.5"/><path d="M10 3.5V2a.9.9 0 0 0-.9-.9H4.9A.9.9 0 0 0 4 2v1.5M6 6h6M6 9h6M6 12h4"/></svg></button>
-    <button id="btn-cut" class="rb" title="Cut (Ctrl+X)" data-i18n-title="Toolbar.CutTitle" aria-label="Cut" data-i18n-aria-label="Ctx.Cut" aria-keyshortcuts="Control+X"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="4" cy="12.5" r="1.8"/><circle cx="12" cy="12.5" r="1.8"/><path d="M5.2 11 11 1.5M10.8 11 5 1.5"/></svg></button>
+    <!-- Quick-access 2x2 panel (OO 9.4 .panel.static slot map: copy/undo /
+         cut/redo) + a lone paste button — OO hides paste at 1440 but our
+         paste reuses the F-063 rich paste path so it stays visible. -->
+    <div class="rb-quick" role="group" aria-label="Quick access">
+    <div class="elset-col">
     <button id="btn-copy" class="rb" title="Copy (Ctrl+C)" data-i18n-title="Toolbar.CopyTitle" aria-label="Copy" data-i18n-aria-label="Ctx.Copy" aria-keyshortcuts="Control+C"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5V3a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v7A1.5 1.5 0 0 0 4 11.5h1.5"/></svg></button>
-    </div>
-    <span class="rb-sep" aria-hidden="true"></span>
-    <div class="rb-group" role="group" aria-label="Undo and redo">
     <button id="btn-undo" class="rb"  data-cmd="undo" title="Undo (Ctrl+Z)" data-i18n-title="Toolbar.UndoTitle" aria-label="Undo" data-i18n-aria-label="Toolbar.Undo" aria-keyshortcuts="Control+Z"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7.5h6a3.5 3.5 0 1 1 0 7H6"/><path d="M6.5 4 3 7.5l3.5 3.5"/></svg></button>
+    </div>
+    <div class="elset-col">
+    <button id="btn-cut" class="rb" title="Cut (Ctrl+X)" data-i18n-title="Toolbar.CutTitle" aria-label="Cut" data-i18n-aria-label="Ctx.Cut" aria-keyshortcuts="Control+X"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="4" cy="12.5" r="1.8"/><circle cx="12" cy="12.5" r="1.8"/><path d="M5.2 11 11 1.5M10.8 11 5 1.5"/></svg></button>
     <button id="btn-redo" class="rb"  data-cmd="redo" title="Redo (Ctrl+Y)" data-i18n-title="Toolbar.RedoTitle" aria-label="Redo" data-i18n-aria-label="Toolbar.Redo" aria-keyshortcuts="Control+Y Control+Shift+Z"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 7.5h-6a3.5 3.5 0 1 0 0 7H10"/><path d="M9.5 4 13 7.5 9.5 11"/></svg></button>
     </div>
+    </div>
     <span class="rb-sep" aria-hidden="true"></span>
-    <div class="rb-group" role="group" aria-label="Font">
+    <div class="rb-group" role="group" aria-label="Clipboard">
+    <button id="btn-paste" class="rb" title="Paste (Ctrl+V)" data-i18n-title="Toolbar.PasteTitle" aria-label="Paste" data-i18n-aria-label="Toolbar.Paste" aria-keyshortcuts="Control+V"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="8" height="10.5" rx="1.5"/><path d="M10 3.5V2a.9.9 0 0 0-.9-.9H4.9A.9.9 0 0 0 4 2v1.5M6 6h6M6 9h6M6 12h4"/></svg></button>
+    </div>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <!-- Font group (OO 9.4 slot map): two 24px elset rows —
+         row1 family·size·±·case, row2 BIUS·scripts·colors·clear. -->
+    <div class="rb-group rb-grid" role="group" aria-label="Font">
+    <div class="elset-row">
     <select id="font-family" class="toolbar-select rb bare"  title="Font family" data-i18n-title="Toolbar.FontFamilyTitle" aria-label="Font family">
       <option value="" selected>Default</option>
       <option value="Arial">Arial</option>
@@ -270,6 +277,19 @@
         <li role="none"><button type="button" role="menuitem" data-cmd="fontSize" data-value="7">36</button></li>
       </ul>
     </span>
+    <button class="rb" data-cmd="fontSizeDec" title="Decrease font size" data-i18n-title="Home.FontDec" aria-label="Decrease font size" data-i18n-aria-label="Home.FontDec"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M2.5 12.5h7M12 4.5 8.5 8l3.5 3.5"/></svg></button>
+    <button class="rb" data-cmd="fontSizeInc" title="Increase font size" data-i18n-title="Home.FontInc" aria-label="Increase font size" data-i18n-aria-label="Home.FontInc"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M2.5 12.5h7M8.5 4.5 12 8l-3.5 3.5"/></svg></button>
+    <span class="menu rb-menu">
+      <button type="button" class="menu-trigger caret-btn case-btn" aria-haspopup="true" aria-expanded="false" aria-label="Change case" data-i18n-aria-label="Home.ChangeCase">Aa▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="changeCase" data-value="sentence" data-i18n="Home.ChangeCase.Sentence">Sentence case</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="changeCase" data-value="lower" data-i18n="Home.ChangeCase.Lower">lowercase</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="changeCase" data-value="upper" data-i18n="Home.ChangeCase.Upper">UPPERCASE</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="changeCase" data-value="title" data-i18n="Home.ChangeCase.Title">Title Case</button></li>
+      </ul>
+    </span>
+    </div>
+    <div class="elset-row">
     <button class="rb" data-cmd="bold"  title="Bold (Ctrl+B)" data-i18n-title="Toolbar.BoldTitle" aria-label="Bold" data-i18n-aria-label="Toolbar.Bold" aria-pressed="false" aria-keyshortcuts="Control+B"><b>B</b></button>
     <button class="rb" data-cmd="italic"  title="Italic (Ctrl+I)" data-i18n-title="Toolbar.ItalicTitle" aria-label="Italic" data-i18n-aria-label="Toolbar.Italic" aria-pressed="false" aria-keyshortcuts="Control+I"><i>I</i></button>
     <button class="rb" data-cmd="underline"  title="Underline (Ctrl+U)" data-i18n-title="Toolbar.UnderlineTitle" aria-label="Underline" data-i18n-aria-label="Toolbar.Underline" aria-pressed="false" aria-keyshortcuts="Control+U"><u>U</u></button>
@@ -292,8 +312,10 @@
     </label>
     <button class="rb" data-cmd="removeFormat"  title="Clear formatting" aria-label="Clear formatting">&#9001;&#9002;</button>
     </div>
+    </div>
     <span class="rb-sep" aria-hidden="true"></span>
-    <div class="rb-group" role="group" aria-label="Paragraph">
+    <div class="rb-group rb-grid" role="group" aria-label="Paragraph">
+    <div class="elset-row">
     <button class="rb" data-cmd="insertUnorderedList"  title="Bullet list (Ctrl+Shift+8)" data-i18n-title="Toolbar.BulletListTitle" aria-label="Bullet list" data-i18n-aria-label="Toolbar.BulletList" aria-pressed="false" aria-keyshortcuts="Control+Shift+8"><svg viewBox="0 0 16 16" fill="currentColor" stroke="none" aria-hidden="true"><circle cx="4" cy="4" r="1.4"/><circle cx="4" cy="8" r="1.4"/><circle cx="4" cy="12" r="1.4"/><path d="M7 4h7M7 8h7M7 12h7" stroke="currentColor" stroke-width="1.75"/></svg></button>
     <span class="menu rb-menu" >
       <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" aria-label="Bullet style options">▾</button>
@@ -332,21 +354,15 @@
         <li role="none"><button type="button" role="menuitem" data-cmd="directionRtl" data-i18n="Toolbar.ToggleDirection">Toggle paragraph direction</button></li>
       </ul>
     </span>
+    </div>
+    <div class="elset-row">
     <button class="rb" data-cmd="justifyLeft"  title="Align left (Ctrl+Shift+L)" data-i18n-title="Toolbar.AlignLeftTitle" aria-label="Align left" data-i18n-aria-label="Toolbar.AlignLeft" aria-pressed="false" aria-keyshortcuts="Control+Shift+L"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M1.5 3.5h10M1.5 7h13M1.5 10.5h10M1.5 14h13"/></svg></button>
     <button class="rb" data-cmd="justifyCenter"  title="Center (Ctrl+E)" data-i18n-title="Toolbar.AlignCenterTitle" aria-label="Center" data-i18n-aria-label="Toolbar.AlignCenter" aria-pressed="false" aria-keyshortcuts="Control+E"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M2.5 3.5h11M1.5 7h13M2.5 10.5h11M1.5 14h13"/></svg></button>
     <button class="rb" data-cmd="justifyRight"  title="Align right (Ctrl+R)" data-i18n-title="Toolbar.AlignRightTitle" aria-label="Align right" data-i18n-aria-label="Toolbar.AlignRight" aria-pressed="false" aria-keyshortcuts="Control+R"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4.5 3.5h10M1.5 7h13M4.5 10.5h10M1.5 14h13"/></svg></button>
     <button class="rb" data-cmd="justifyFull"  title="Justify (Ctrl+J)" data-i18n-title="Toolbar.AlignJustifyTitle" aria-label="Align just" data-i18n-aria-label="Toolbar.AlignJustify" aria-pressed="false" aria-keyshortcuts="Control+J"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M1.5 3.5h13M1.5 7h13M1.5 10.5h13M1.5 14h13"/></svg></button>
-    </div>
-    <span class="rb-sep" aria-hidden="true"></span>
-    <div class="rb-group" role="group" aria-label="Text case and code">
-    <button class="rb" data-cmd="formatBlock" data-value="P"  title="Paragraph (Ctrl+Alt+0)" data-i18n-title="Toolbar.ParagraphTitle" aria-label="Paragraph" data-i18n-aria-label="Toolbar.ParagraphTitle" aria-pressed="false" aria-keyshortcuts="Control+Alt+0">&para;</button>
-    <button class="rb rb-glyph" data-cmd="smallCaps"  title="Small caps" data-i18n-title="Toolbar.SmallCapsTitle" aria-label="Small caps" data-i18n-aria-label="Toolbar.SmallCaps" aria-pressed="false">SC</button>
-    <button class="rb rb-glyph rb-glyph-code" data-cmd="code"  title="Inline code" data-i18n-title="Toolbar.CodeTitle" aria-label="Inline code" data-i18n-aria-label="Toolbar.Code" aria-pressed="false">&lt;/&gt;</button>
-    <button class="rb rb-glyph" data-cmd="allCaps"  title="All caps" data-i18n-title="Toolbar.AllCapsTitle" aria-label="All caps" data-i18n-aria-label="Toolbar.AllCaps" aria-pressed="false">AA</button>
-    </div>
-    <span class="rb-sep" aria-hidden="true"></span>
-    <div class="rb-group" role="group" aria-label="More formatting">
-    <span class="rb-sep"  aria-hidden="true"></span>
+    <!-- OO 9.4 has no glyph-extras group on Home: paragraph style / small
+         caps / all caps / inline code live in the More menu (same data-cmd
+         wiring, keyboard paths unchanged). -->
     <span class="menu rb-menu" >
       <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" aria-label="More formatting" data-i18n-aria-label="Home.MoreFormatting">▾</button>
       <ul class="menu-list" role="menu" hidden>
@@ -356,19 +372,31 @@
         <li role="none"><button type="button" role="menuitem" data-cmd="openBorders" data-i18n="Home.Borders">Borders</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="underlineDouble" data-i18n="Toolbar.UnderlineDouble">Double underline</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="strikeDouble" data-i18n="Toolbar.StrikeDouble">Double strikethrough</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="changeCase" data-value="sentence" data-i18n="Home.ChangeCase.Sentence">Sentence case</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="changeCase" data-value="lower" data-i18n="Home.ChangeCase.Lower">lowercase</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="changeCase" data-value="upper" data-i18n="Home.ChangeCase.Upper">UPPERCASE</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="changeCase" data-value="title" data-i18n="Home.ChangeCase.Title">Title Case</button></li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="formatBlock" data-value="P" data-i18n="Toolbar.ParagraphTitle">Paragraph</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="smallCaps" data-i18n="Toolbar.SmallCaps">Small caps</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="allCaps" data-i18n="Toolbar.AllCaps">All caps</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="code" data-i18n="Toolbar.Code">Inline code</button></li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="multilevel" data-i18n="Home.Multilevel">Multilevel list</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="fontSizeDec" data-i18n="Home.FontDec">Decrease font</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="fontSizeInc" data-i18n="Home.FontInc">Increase font</button></li>
       </ul>
     </span>
-    <span class="rb-sep"  aria-hidden="true"></span>
+    </div>
     </div>
     <span class="rb-sep" aria-hidden="true"></span>
-    <div class="rb-group" role="group" aria-label="Paragraph styles">
+    <!-- Style gallery (OO 9.4 combo-styles port): 110x46 preview cards for
+         the six common styles + the styles-trigger dropdown (same menu and
+         i18n keys as before; cards reuse the data-cmd wiring so clicks and
+         active states work without JS changes). Quote stays dropdown-only. -->
+    <div class="rb-group rb-styles" role="group" aria-label="Paragraph styles">
+    <div class="gallery-track" role="listbox" aria-label="Style gallery">
+    <button type="button" class="gallery-card gc-p" data-cmd="formatBlock" data-value="P" aria-pressed="false"><span class="gc-name" data-i18n="Home.StyleNormal">Normal text</span><span class="gc-preview" aria-hidden="true"></span></button>
+    <button type="button" class="gallery-card gc-h4" data-cmd="formatBlock" data-value="H4" aria-pressed="false"><span class="gc-name" data-i18n="Home.StyleTitle">Title</span><span class="gc-preview" aria-hidden="true"></span></button>
+    <button type="button" class="gallery-card gc-h5" data-cmd="formatBlock" data-value="H5" aria-pressed="false"><span class="gc-name" data-i18n="Home.StyleSubtitle">Subtitle</span><span class="gc-preview" aria-hidden="true"></span></button>
+    <button type="button" class="gallery-card gc-h1" data-cmd="formatBlock" data-value="H1" aria-pressed="false"><span class="gc-name" data-i18n="Home.StyleH1">Heading 1</span><span class="gc-preview" aria-hidden="true"></span></button>
+    <button type="button" class="gallery-card gc-h2" data-cmd="formatBlock" data-value="H2" aria-pressed="false"><span class="gc-name" data-i18n="Home.StyleH2">Heading 2</span><span class="gc-preview" aria-hidden="true"></span></button>
+    <button type="button" class="gallery-card gc-h3" data-cmd="formatBlock" data-value="H3" aria-pressed="false"><span class="gc-name" data-i18n="Home.StyleH3">Heading 3</span><span class="gc-preview" aria-hidden="true"></span></button>
+    </div>
     <span class="menu rb-menu" >
       <button type="button" class="styles-trigger" aria-haspopup="true" aria-expanded="false" aria-label="Paragraph styles"><span data-i18n="Home.Styles">Styles</span><svg viewBox="0 0 10 6" width="10" height="6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 1.25 5 4.75 9 1.25"/></svg></button>
       <ul class="menu-list" role="menu" hidden>
@@ -383,11 +411,15 @@
     </span>
     </div>
     <span class="rb-sep" aria-hidden="true"></span>
-    <div class="rb-group rb-edge" role="group" aria-label="Toolbar tools">
-    <button id="btn-ribbon-collapse" class="rb rb-flat" style="padding: 6px 8px" title="Show fewer toolbar buttons" data-i18n-title="Toolbar.CollapseTitle" aria-label="Show fewer toolbar buttons" data-i18n-aria-label="Toolbar.CollapseTitle" aria-expanded="true"><svg viewBox="0 0 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5 7 6 12.5 1.5"/></svg></button>
-    <button id="btn-theme" class="rb"  title="Toggle dark/light theme" aria-label="Toggle theme" aria-pressed="false">☾</button>
+    <div class="rb-group rb-edge rb-grid" role="group" aria-label="Toolbar tools">
+    <div class="elset-col">
     <button id="btn-find" class="rb"  title="Find and replace (Ctrl+F)" data-i18n-title="Toolbar.FindTitle" aria-label="Find and replace" data-i18n-aria-label="Toolbar.Find" aria-keyshortcuts="Control+F">⌕</button>
+    <button id="btn-ribbon-collapse" class="rb rb-flat" title="Show fewer toolbar buttons" data-i18n-title="Toolbar.CollapseTitle" aria-label="Show fewer toolbar buttons" data-i18n-aria-label="Toolbar.CollapseTitle" aria-expanded="true"><svg viewBox="0 0 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5 7 6 12.5 1.5"/></svg></button>
+    </div>
+    <div class="elset-col">
     <button id="btn-fullscreen" class="rb rb-flat"  title="Toggle fullscreen" aria-label="Toggle fullscreen"><svg viewBox="0 0 19 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="1.5" width="16" height="14" rx="1.5"/><path d="M7 5.5 11.5 10M11.5 6.5V10.5H7.5"/></svg></button>
+    <button id="btn-theme" class="rb"  title="Toggle dark/light theme" aria-label="Toggle theme" aria-pressed="false">☾</button>
+    </div>
     </div>
     <!-- Paragraph shading (F-127): hidden picker so the More-formatting
          menu can open it via showPicker() without another toolbar swatch.
