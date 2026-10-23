@@ -5723,6 +5723,43 @@
   // can perform (cut/copy/paste, page break, comment, link). Cut/copy/
   // paste go through execCommand so the existing input-event autosave and
   // snapshot chain arm exactly as for keyboard edits.
+  // F-063 rich paste, shared by the ctx menu and the ribbon Clipboard group
+  // (WO-RIBBON-FLEX): prefer text/html from the async clipboard, sanitized;
+  // fall back to plain text when unavailable.
+  async function richPaste() {
+    if (navigator.clipboard && navigator.clipboard.read) {
+      try {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          if (item.types && item.types.indexOf("text/html") !== -1) {
+            const blob = await item.getType("text/html");
+            const html = await blob.text();
+            if (html) {
+              editorEl.focus();
+              document.execCommand("insertHTML", false, sanitizePasteHtml(html));
+              return true;
+            }
+          }
+        }
+      } catch (err) { /* permission denied etc. -> plain fallback */ }
+    }
+    return false;
+  }
+  const editorEl = document.getElementById("editor");
+  // Ribbon Clipboard group: same actions as the ctx menu's Paste/Cut/Copy.
+  const clipPasteBtn = document.getElementById("btn-paste");
+  if (clipPasteBtn) clipPasteBtn.addEventListener("click", () => {
+    richPaste().then((rich) => {
+      if (rich) return;
+      navigator.clipboard.readText().then((text) => {
+        if (text) document.execCommand("insertText", false, text);
+      }).catch(() => {});
+    });
+  });
+  for (const id of ["btn-cut", "btn-copy"]) {
+    const b = document.getElementById(id);
+    if (b) b.addEventListener("click", () => document.execCommand(id === "btn-cut" ? "cut" : "copy"));
+  }
   const ctxMenu = document.getElementById("ctx-menu");
   if (ctxMenu) {
     const editorEl = document.getElementById("editor");
@@ -5744,28 +5781,7 @@
       if (action === "cut" || action === "copy") {
         document.execCommand(action);
       } else if (action === "paste") {
-        // F-063: rich paste — prefer text/html from the async clipboard and
-        // insert it sanitized; fall back to plain text when unavailable.
-        const pasteRich = async () => {
-          if (navigator.clipboard && navigator.clipboard.read) {
-            try {
-              const items = await navigator.clipboard.read();
-              for (const item of items) {
-                if (item.types && item.types.indexOf("text/html") !== -1) {
-                  const blob = await item.getType("text/html");
-                  const html = await blob.text();
-                  if (html) {
-                    editorEl.focus();
-                    document.execCommand("insertHTML", false, sanitizePasteHtml(html));
-                    return true;
-                  }
-                }
-              }
-            } catch (err) { /* permission denied etc. -> plain fallback */ }
-          }
-          return false;
-        };
-        pasteRich().then((rich) => {
+        richPaste().then((rich) => {
           if (rich) return;
           navigator.clipboard.readText().then((text) => {
             if (text) document.execCommand("insertText", false, text);
@@ -5821,10 +5837,12 @@
   if (printBtn) printBtn.addEventListener("click", () => window.print());
   const rcBtn = document.getElementById("btn-ribbon-collapse");
   if (rcBtn) rcBtn.addEventListener("click", () => {
-    const row2 = document.getElementById("ribbon-row-2");
-    if (!row2) return;
-    const hide = !row2.hasAttribute("hidden");
-    row2.toggleAttribute("hidden", hide);
+    // WO-RIBBON-FLEX: collapse hides the whole control band (tabs remain) —
+    // the old ribbon-row-2 target no longer exists in the single-row layout.
+    const toolbar = document.querySelector(".toolbar");
+    if (!toolbar) return;
+    const hide = !toolbar.classList.contains("ribbon-collapsed");
+    toolbar.classList.toggle("ribbon-collapsed", hide);
     rcBtn.setAttribute("aria-expanded", String(!hide));
   });
   if (themeBtn) themeBtn.addEventListener("click", toggleTheme);

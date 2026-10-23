@@ -125,13 +125,16 @@ body {
   flex-wrap: wrap;
   align-items: center;
   padding: 0 12px;
-  height: 112px;             /* OO #toolbar reference: 112px band (28px tab strip + 84px control row) */
+  /* WO-RIBBON-FLEX: band grows when the flowing groups wrap on narrow
+     windows (OO two-row ribbon) instead of clipping; 112px is the golden
+     single-row minimum. */
+  height: auto;
+  min-height: 112px;
   /* ponytail: overflow hidden on the toolbar clipped the .menu-list dropdowns
      (they hang below the 112px band via position:absolute; top:100%) so every
-     ribbon sub-menu was visually cut. Dropped to visible; the fixed height +
-     single-row ribbon no longer needs the clamp. */
-  /* clip (not hidden/auto): the absolute 1411px ribbon row overflows on
-     narrower windows; scroll/hidden would re-introduce the dropdown clamp and
+     ribbon sub-menu was visually cut. Dropped to visible. */
+  /* clip (not hidden/auto): wrapped ribbon groups overflow horizontally on
+     narrow windows; scroll/hidden would re-introduce the dropdown clamp and
      a full-scroll container. clip contains the horizontal overflow so the
      page stops h-scrolling while the below-band .menu-list stays visible. */
   max-width: 100%;
@@ -144,6 +147,9 @@ body {
   z-index: 10;               /* stack above the editor pages so the absolute
                                 .menu-list dropdowns hang over (not under) them */
 }
+/* Collapsed ribbon (btn-ribbon-collapse): hide the control band, keep tabs. */
+.toolbar.ribbon-collapsed { height: auto; min-height: 28px; }
+.toolbar.ribbon-collapsed .ribbon-page { display: none; }
 
 /* Ribbon pages: one visible control group per tab (default Home). */
 .ribbon-page { display: none; }
@@ -198,12 +204,9 @@ body {
   color: var(--muted);
 }
 .titlebar .titlebar-fs:hover { color: var(--text); }
-/* Titlebar icon buttons at OO-golden slots (save/undo quick access). */
+/* Titlebar icon buttons (save/undo quick access): flow after the wordmark. */
 .titlebar .tb-ico {
-  position: absolute;
-  left: var(--tb-x);
-  top: 50%;
-  transform: translate(-50%, -50%);
+  color: var(--muted);
 }
 /* Product wordmark at the padding edge (OO golden: titlebar's left blob is
    logo+product name centered ~x49; the document name stays centered). */
@@ -251,8 +254,6 @@ body {
      ratio against OO's compact icon tabs at x139/x176 */
   font-size: 11px;
 }
-.titlebar button[data-tab="layout"] { margin-left: -5px; }
-.titlebar button[data-tab="review"] { margin-left: -7px; }
 .titlebar button:hover { background: var(--hover); color: var(--text); }
 
 /* Ruler (band y138–172): cm ticks over the page width, backdrop elsewhere.
@@ -318,20 +319,6 @@ body {
   background: var(--border);
   margin: 0 6px;
 }
-/* Ribbon group separators (OO parity: vertical hairline between Clipboard,
-   Font, Paragraph, Styles, Editing groups). Absolutely positioned at the
-   gap between button clusters via --rb-x, same coordinate system as .rb. */
-.toolbar .rb-sep {
-  position: absolute;
-  left: calc(var(--rb-x) - 12px);
-  top: calc(var(--rb-y, 34px) * 0.72 + 28px);
-  transform: translate(-50%, -50%);
-  width: 1px;
-  height: 24px;
-  background: var(--border);
-  opacity: 0.45;
-  pointer-events: none;
-}
 
 /* ---- full-toolbar controls: selects, color pickers, icons ---- */
 .toolbar .toolbar-select {
@@ -357,27 +344,33 @@ select option { background: var(--bg); color: var(--text); }
 #font-size { width: 58px; max-width: 58px; }
 #font-family { width: 134px; max-width: 134px; }
 
-/* --- OO-golden slot placement (rb/qa): absolutely positioned controls ---
-   --rb-x/--qa-x is the component center; translate(-50%,-50%) centers on it. */
-.ribbon-row { position: relative; min-height: 24px; }
+/* Ribbon layout (WO-RIBBON-FLEX, 2026-10-22): full redesign from the old
+   absolute --rb-x/--rb-y slot system. Controls flow as flex items grouped
+   into .rb-group clusters separated by .rb-sep hairlines (OO group rhythm);
+   the right-edge tool cluster (collapse/theme/find/fullscreen) pins via
+   margin-left:auto. Dropdown .menu-lists anchor to their (relative) .menu
+   span as before. Works at any viewport width; groups wrap on narrow ones. */
+.ribbon-row { position: relative; min-height: 24px; flex-wrap: wrap; row-gap: 6px; }
 .ribbon-row[hidden] { display: none; }
 .toolbar .ribbon-page.active { align-self: stretch; height: 100%; align-content: center; }
-/* single-tab pages (insert/layout/review) and the merged Home row: one line,
-   no wrapping of the flex container itself */
-.ribbon-page.active:not(.two-row) { flex-wrap: nowrap; align-items: center; }
-.ribbon-page.active:not(.two-row) button { flex: 0 0 auto; }
-.toolbar .rb {
-  position: absolute;
-  left: calc(var(--rb-x) - 12px);  /* minus toolbar padding: var = OO page x */
-  top: calc(var(--rb-y, 34px) * 0.72 + 28px);  /* below the 28px tab strip */
-  transform: translate(-50%, -50%);
+.ribbon-page.active { flex-wrap: wrap; align-items: center; }
+.ribbon-page.active button { flex: 0 0 auto; }
+.ribbon-row .rb-group { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; }
+.toolbar .rb-sep {
+  flex: 0 0 auto;
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  opacity: 0.45;
+  margin: 0 3px;
+  align-self: center;
 }
-.menu-bar { position: relative; }
+/* Right-edge tool cluster (collapse/theme/find/fullscreen) pins to the
+   row's right margin. When the row wraps (narrow windows) the cluster
+   lands right-pinned on its own line — OO's two-row ribbon shape. */
+.ribbon-row .rb-edge { margin-left: auto; }
+.menu-bar { position: relative; display: flex; align-items: center; gap: 6px; }
 .menu-bar .qa {
-  position: absolute;
-  left: var(--qa-x);
-  top: 50%;
-  transform: translate(-50%, -50%);
   border: none;
   background: transparent;
   font-size: 12px;
@@ -386,14 +379,11 @@ select option { background: var(--bg); color: var(--text); }
   padding: 0 2px;
 }
 .menu-bar .qa:hover { background: var(--hover); }
-/* User identity chip (WOPI UserFriendlyName; caret opens identity panel).
-   Geometry mirrors the OO-golden app-row right cluster: short name text,
-   6px gap, 10x6 caret. Flat styling so only text/caret ink registers. */
+/* Quick-access cluster (print / user chip / redo) pins right. */
+.menu-bar #btn-print-qa { margin-left: auto; }
+/* User identity chip (WOPI UserFriendlyName; caret opens identity panel). */
 .menu-bar .user-chip {
-  position: absolute;
-  left: var(--qa-x);
-  top: 50%;
-  transform: translate(-50%, -50%);
+  position: relative;
 }
 .user-chip-btn {
   display: flex;
@@ -535,13 +525,14 @@ select option { background: var(--bg); color: var(--text); }
 
 .toolbar .color-btn:hover { background: var(--hover); }
 
-/* Ribbon dropdown carets: real disclosure menus at the OO-golden caret
-   slots (font family/size, case, script, paragraph direction). */
+/* Ribbon dropdown carets: real disclosure menus chained to their command
+   select/button (matched height + hairlike divider), not slim 7px slivers.
+   The caret opens the adjacent .menu-list dropdown (anchored via the .menu
+   base class's position:relative). */
 .toolbar .rb-menu {
-  position: absolute;
-  left: calc(var(--rb-x) - 12px);
-  top: calc(var(--rb-y, 34px) * 0.72 + 28px);  /* below the 28px tab strip */
-  transform: translate(-50%, -50%);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
 }
 /* Ribbon split-button carets: real split-arrow buttons chained to their
    command/select (matched height + hairlike divider), not slim 7px slivers.
@@ -650,12 +641,15 @@ select option { background: var(--bg); color: var(--text); }
   flex: 0 0 auto;
 }
 .toolbar button.rb {
-  /* icon-only ribbon buttons: 24px glyph + 2px padding + 1px border
-     fits the OO-golden slot pitch (28-34px) without overlapping - the
-     generic .toolbar button min-width:34px + 8px padding made every
-     icon button 42px wide after the 24px icon normalization. */
+  /* icon-only ribbon buttons: 20px glyph + 2px padding + 1px border = 24px
+     — the OO icon pitch. Lets the flowing Clipboard..Styles groups plus the
+     right-edge cluster fit one row at 1440px (WO-RIBBON-FLEX). */
   min-width: 24px;
-  padding: 0 2px;
+  padding: 0 1px;
+}
+.toolbar button.rb svg {
+  width: 20px;
+  height: 20px;
 }
 /* Helper glyphs are not toolbar icons: keep the styles-trigger caret 10x6. */
 .toolbar .styles-trigger svg { width: 10px; height: 6px; flex: 0 0 auto; }
@@ -877,7 +871,9 @@ select option { background: var(--bg); color: var(--text); }
   white-space: nowrap;
 }
 
-/* ---- status bar (bottom strip: word count / save status / zoom) ---- */
+/* ---- status bar (bottom strip: word count / save status / zoom) ----
+   WO-RIBBON-FLEX: .sb items flow (left cluster, spacer, right cluster) —
+   the old absolute --sb-x slot pins are gone. */
 .statusbar {
   display: flex;
   align-items: center;
@@ -890,21 +886,12 @@ select option { background: var(--bg); color: var(--text); }
   font-size: 12px;
   color: var(--muted);
   position: relative;
-  /* .sb zoom cluster is pinned (--sb-x) for a wide layout; clip horizontal
-     overhang so the page stops h-scrolling on narrower windows. overflow-y
-     visible so upward/sideways .menu-list dropdowns stay unclipped. */
+  /* clip horizontal overhang so the page stops h-scrolling on narrower
+     windows. overflow-y visible so .menu-list dropdowns stay unclipped. */
   overflow-x: clip;
   overflow-y: visible;
 }
-/* Zoom cluster pinned at OO-golden coordinates (− / slider / + / fit / %) */
-.statusbar .sb {
-  position: absolute;
-  left: var(--sb-x);
-  top: 50%;
-  transform: translate(-50%, -50%);
-}
-/* Document language select at the OO-golden x1006 slot. Text transparent:
-   the two overlay fragments render the label at the golden's tracking. */
+/* Document language select (drives spellcheck + lang attr). */
 select.sb#doc-lang {
   appearance: none;
   width: 124px;
@@ -912,26 +899,9 @@ select.sb#doc-lang {
   font-size: 10px;
   padding: 0 2px;
   background: var(--bg);
-  color: transparent;
   border: none;
   border-radius: 3px;
-}
-select.sb#doc-lang option { color: var(--text); }
-/* Language-label fragments, far-left and over the select. Positioned to the
-   golden's glyph-cluster geometry (letter-spacing replicates its tracking). */
-#doc-lang-label, #doc-lang-label-right {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-#doc-lang-label b, #doc-lang-label-right b {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 10px;
-  font-weight: normal;
-  color: var(--text);
-  white-space: nowrap;
+  text-align: center;
 }
 .sb-add-comment { font-size: 20px; line-height: 1; }
 /* statusbar caret: same trick as ribbon, but .menu-trigger lives outside
@@ -949,10 +919,6 @@ select.sb#doc-lang option { color: var(--text); }
 }
 html.light .statusbar { background: #fdfdfd; }  /* OO golden: near-white bar */
 .statusbar .spacer { flex: 1; }
-/* Left pad keeps the presence/status text group clear of the absolutely-
-   positioned word count at the OO-golden x=84 (collab chips are JS-inserted
-   before #status, so the pad must be the flow's first static child). */
-.statusbar .sb-leftpad { flex: 0 0 170px; }
 .statusbar #word-count.sb { white-space: nowrap; }
 .statusbar button {
   min-width: 24px;
@@ -1427,7 +1393,7 @@ main {
 @media (max-width: 768px) {
   .toolbar { flex-wrap: wrap; gap: 4px; padding: 6px 8px; }
   .toolbar button { min-width: 36px; height: 36px; }
-  .toolbar .sep { display: none; }
+  .toolbar .sep, .toolbar .rb-sep { display: none; }
   .toolbar .status, .statusbar .status, .statusbar .status-meta { display: none; }
   .statusbar { height: 34px; }
   .toolbar .toolbar-select { height: 36px; }
@@ -1845,30 +1811,7 @@ body.multi-page-view #editor .page-break br { display: none; }
   position: relative; z-index: -1; opacity: .92; }
 #editor img.obj-center { display: block; margin: 4px auto; }
 
-/* ---- right-edge chrome clusters: pin to the window's right edge ----------
-   The OO-golden --qa-x / --rb-x / --sb-x coordinates assume a ~1420px chrome;
-   on common 1280-1366px windows the quick-access, ribbon right tools, zoom
-   cluster and multipage toggle ran off-screen (and dragged a horizontal page
-   scrollbar behind them). Anchoring with left: calc(100% - X) keeps each
-   element's exact design position at full width and pins it to the right
-   margin on narrower windows, so no chrome button is ever off-screen.
-   (translate(-50%) centers each on its computed left, same as the originals.) */
-.menu-bar #btn-redo-qa { left: calc(100% - 30px); }
-.menu-bar #user-chip { left: calc(100% - 84px); }
-.menu-bar #btn-print-qa { left: calc(100% - 131px); }
-.toolbar #btn-ribbon-collapse { left: calc(100% - 124px); }
-.toolbar #btn-theme { left: calc(100% - 90px); }
-.toolbar #btn-find { left: calc(100% - 56px); }
-.toolbar #btn-fullscreen { left: calc(100% - 24px); }
-.statusbar #doc-lang { left: calc(100% - 428px); }
-.statusbar #doc-lang-caret { left: calc(100% - 354px); }
-.statusbar #btn-zoom-out { left: calc(100% - 334px); }
-.statusbar #zoom-wrap { left: calc(100% - 279px); }
-.statusbar #btn-zoom-in { left: calc(100% - 216px); }
-.statusbar #btn-zoom-fit { left: calc(100% - 152px); }
-.statusbar #btn-zoom-reset { left: calc(100% - 85px); }
-.statusbar #btn-multipage { left: calc(100% - 24px); }
-/* language label slices carry inline left: Npx — override to follow the select */
-#doc-lang-label-right b:nth-of-type(1) { left: calc(100% - 490px) !important; }
-#doc-lang-label-right b:nth-of-type(2) { left: calc(100% - 452px) !important; }
-#doc-lang-label-right b:nth-of-type(3) { left: calc(100% - 407px) !important; }
+/* WO-RIBBON-FLEX: the old right-edge calc(100% - X) pin overrides are gone —
+   every chrome cluster (menu-bar quick access, ribbon right tools, statusbar
+   zoom/language cluster) flows in flex and pins via spacer / margin-left:auto,
+   so nothing can run off-screen at any viewport width. */
