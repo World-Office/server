@@ -5859,22 +5859,66 @@
       if (!btn) return;
       closeCtx();
       const action = btn.dataset.ctx;
-      if (action === "cut" || action === "copy") {
-        document.execCommand(action);
-      } else if (action === "paste") {
+      // Clipboard
+      if (action === "Cut" || action === "Copy") {
+        document.execCommand(action.toLowerCase());
+      } else if (action === "Paste") {
         richPaste().then((rich) => {
           if (rich) return;
-          navigator.clipboard.readText().then((text) => {
-            if (text) document.execCommand("insertText", false, text);
-          }).catch(() => {});
+          navigator.clipboard
+            .readText()
+            .then((text) => {
+              if (text) document.execCommand("insertText", false, text);
+            })
+            .catch(() => {});
         });
-      } else if (action === "pagebreak") {
-        emitCommand("insertPageBreak");
-      } else if (action === "comment") {
+        // Undo/Redo
+      } else if (action === "Undo") {
+        emitCommand("undo");
+      } else if (action === "Redo") {
+        emitCommand("redo");
+        // Formatting
+      } else if (action === "Bold") {
+        emitCommand("bold");
+      } else if (action === "Italic") {
+        emitCommand("italic");
+      } else if (action === "Underline") {
+        emitCommand("underline");
+      } else if (action === "StrikeThrough") {
+        emitCommand("strikeThrough");
+      } else if (action === "RemoveFormat") {
+        emitCommand("removeFormat");
+        // Lists
+      } else if (action === "BulletList") {
+        emitCommand("insertUnorderedList");
+      } else if (action === "NumberedList") {
+        emitCommand("insertOrderedList");
+        // Insert
+      } else if (action === "HorizontalRule") {
+        emitCommand("insertHR");
+      } else if (action === "Caption") {
+        emitCommand("insertCaption");
+      } else if (action === "Footnote") {
+        emitCommand("insertFootnote");
+      } else if (action === "Endnote") {
+        emitCommand("insertEndnote");
+      } else if (action === "Symbol") {
+        openSymbolDialog();
+      } else if (action === "Date") {
+        emitCommand("insertDate");
+      } else if (action === "PageNumber") {
+        openOverlayDialog("pagenumber-dialog");
+        // Document
+      } else if (action === "AddComment") {
         openCommentDialog();
-      } else if (action === "link") {
+      } else if (action === "Link") {
         insertLink();
-      } else if (action === "selectall") {
+      } else if (action === "UpdateTOC") {
+        openUpdateTocDialog();
+      } else if (action === "PageBreakBefore") {
+        emitCommand("insertPageBreak");
+        // Selection
+      } else if (action === "SelectAll") {
         editorEl.focus();
         document.execCommand("selectAll");
       }

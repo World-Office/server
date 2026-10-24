@@ -751,15 +751,44 @@
        actions WO can really perform — OO's spellcheck/language/style/AI rows
        are features WO does not implement (see features.yaml divergences). -->
   <div id="ctx-menu" role="menu" aria-label="Context menu" hidden>
-    <button type="button" role="menuitem" data-ctx="cut" data-i18n="Ctx.Cut">Cut</button>
-    <button type="button" role="menuitem" data-ctx="copy" data-i18n="Ctx.Copy">Copy</button>
-    <button type="button" role="menuitem" data-ctx="paste" data-i18n="Ctx.Paste">Paste</button>
-    <button type="button" role="menuitem" data-ctx="selectall" data-i18n="Ctx.SelectAll">Select all</button>
+    <!-- Clipboard block -->
+    <button type="button" role="menuitem" data-ctx="Cut" data-i18n="Ctx.Cut">Cut</button>
+    <button type="button" role="menuitem" data-ctx="Copy" data-i18n="Ctx.Copy">Copy</button>
+    <button type="button" role="menuitem" data-ctx="Paste" data-i18n="Ctx.Paste">Paste</button>
     <div class="ctx-sep" role="separator"></div>
-    <button type="button" role="menuitem" data-ctx="pagebreak" data-i18n="Ctx.PageBreakBefore">Page break before</button>
+    <!-- Undo/Redo -->
+    <button type="button" role="menuitem" data-ctx="Undo" data-i18n="Ctx.Undo">Undo</button>
+    <button type="button" role="menuitem" data-ctx="Redo" data-i18n="Ctx.Redo">Redo</button>
     <div class="ctx-sep" role="separator"></div>
-    <button type="button" role="menuitem" data-ctx="comment" data-i18n="Ctx.AddComment">Add comment</button>
-    <button type="button" role="menuitem" data-ctx="link" data-i18n="Ctx.Link">Link</button>
+    <!-- Formatting block -->
+    <button type="button" role="menuitem" data-ctx="Bold" data-i18n="Ctx.Bold">Bold</button>
+    <button type="button" role="menuitem" data-ctx="Italic" data-i18n="Ctx.Italic">Italic</button>
+    <button type="button" role="menuitem" data-ctx="Underline" data-i18n="Ctx.Underline">Underline</button>
+    <button type="button" role="menuitem" data-ctx="StrikeThrough" data-i18n="Ctx.StrikeThrough">Strikethrough</button>
+    <button type="button" role="menuitem" data-ctx="RemoveFormat" data-i18n="Ctx.RemoveFormat">Clear formatting</button>
+    <div class="ctx-sep" role="separator"></div>
+    <!-- Lists -->
+    <button type="button" role="menuitem" data-ctx="BulletList" data-i18n="Ctx.BulletList">Bullet list</button>
+    <button type="button" role="menuitem" data-ctx="NumberedList" data-i18n="Ctx.NumberedList">Numbered list</button>
+    <div class="ctx-sep" role="separator"></div>
+    <!-- Insert block -->
+    <button type="button" role="menuitem" data-ctx="HorizontalRule" data-i18n="Ctx.HorizontalRule">Horizontal line</button>
+    <button type="button" role="menuitem" data-ctx="Caption" data-i18n="Ctx.Caption">Caption</button>
+    <button type="button" role="menuitem" data-ctx="Footnote" data-i18n="Ctx.Footnote">Footnote</button>
+    <button type="button" role="menuitem" data-ctx="Endnote" data-i18n="Ctx.Endnote">Endnote</button>
+    <button type="button" role="menuitem" data-ctx="Symbol" data-i18n="Ctx.Symbol">Symbol</button>
+    <button type="button" role="menuitem" data-ctx="Date" data-i18n="Ctx.Date">Date</button>
+    <button type="button" role="menuitem" data-ctx="PageNumber" data-i18n="Ctx.PageNumber">Page number</button>
+    <div class="ctx-sep" role="separator"></div>
+    <!-- Document block -->
+    <button type="button" role="menuitem" data-ctx="AddComment" data-i18n="Ctx.AddComment">Add comment</button>
+    <button type="button" role="menuitem" data-ctx="Link" data-i18n="Ctx.Link">Link</button>
+    <button type="button" role="menuitem" data-ctx="UpdateTOC" data-i18n="Ctx.UpdateTOC">Update table of contents</button>
+    <button type="button" role="menuitem" data-ctx="PageBreakBefore" data-i18n="Ctx.PageBreakBefore">Page break before</button>
+    <div class="ctx-sep" role="separator"></div>
+    <!-- Selection -->
+    <button type="button" role="menuitem" data-ctx="SelectAll" data-i18n="Ctx.SelectAll">Select all</button>
+  </div>
   </div>
 
   <!-- Insert-table popover (anchored dropdown under the ribbon button, NOT a
