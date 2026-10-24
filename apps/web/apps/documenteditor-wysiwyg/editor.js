@@ -432,7 +432,7 @@
     return { cur: pageEl ? sheets.indexOf(pageEl) + 1 : 1, total: sheets.length };
   }
   function updatePageIndicator() {
-    const el = document.getElementById('page-indicator');
+    const el = document.getElementById('sb-page-count');
     if (!el) return;
     const { cur, total } = currentPageInfo();
     // During a reflow the pagination layer is unwound first (sheets.length hits
@@ -2302,6 +2302,10 @@
     if (btn) {
       btn.setAttribute("aria-pressed", on ? "true" : "false");
       btn.classList.toggle("active", on);
+    }
+    const sbBtn = document.getElementById("sb-track-changes");
+    if (sbBtn) {
+      sbBtn.setAttribute("aria-pressed", on ? "true" : "false");
     }
     renderReviewList();
   }
@@ -5652,6 +5656,8 @@
     if (reset) reset.textContent = Math.round(zoomLevel * 100) + "%";
     const slider = document.getElementById("zoom-slider");
     if (slider) slider.value = String(Math.round(zoomLevel * 100));
+    const label = document.getElementById("sb-zoom-label");
+    if (label) label.textContent = Math.round(zoomLevel * 100) + "%";
     localStorage.setItem("wo-zoom", String(zoomLevel));
   }
   function applyTheme() {
@@ -5833,6 +5839,8 @@
     zoomLevel = Math.min(2, Math.max(0.5, avail / 830));
     applyZoom();
   });
+  const tcBtn = document.getElementById("sb-track-changes");
+  if (tcBtn) tcBtn.addEventListener("click", () => { setTrackChanges(!trackChangesOn); });
   const printBtn = document.getElementById("btn-print-qa");
   if (printBtn) printBtn.addEventListener("click", () => window.print());
   const rcBtn = document.getElementById("btn-ribbon-collapse");
@@ -6568,7 +6576,7 @@
     const text = (editor.innerText || "").trim();
     const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
     const chars = (editor.innerText || "").replace(/\n/g, "").length;
-    const el = document.getElementById("word-count");
+    const el = document.getElementById("sb-word-count");
     if (el) el.textContent = words + " words · " + chars + " characters";
   }
   function caretOffset(el) {
