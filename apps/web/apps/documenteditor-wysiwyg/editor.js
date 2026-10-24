@@ -1128,6 +1128,18 @@
     if (cmd === "toggleHyphenation") { openHyphenationDialog(); return; }
     if (cmd === "toggleLineNumbers") { openLineNumbersDialog(); return; }
     if (cmd === "toggleWatermark") { openWatermarkDialog(); return; }
+    if (cmd === "applyPageMargins") {
+      applyPageMarginsPreset(value);
+      return;
+    }
+    if (cmd === "applyPageSize") {
+      applyPageSizePreset(value);
+      return;
+    }
+    if (cmd === "applyPageOrientation") {
+      applyPageOrientationPreset(value);
+      return;
+    }
     if (cmd === "toggleDifferentFirst") { toggleSectionMarker("different-first", ""); return; }
     if (cmd === "toggleOddEven") { toggleSectionMarker("odd-even", ""); return; }
     // Distances use a non-default value (0.8") so the marker round-trips:
@@ -3507,7 +3519,13 @@
   // style.css fallbacks equal the previous fixed A4 look, so documents
   // without a marker render exactly as before.
   const PS_TWIPS_PER_PX = 15;  // 1440 twips/inch at 96 dpi
-  const PS_SIZES = { A4: [11906, 16838], Letter: [12240, 15840], Legal: [12240, 20160] };
+  const PS_SIZES = { A4: [11906, 16838], Letter: [12240, 15840], Legal: [12240, 20160], A5: [8391, 11906] };
+  const PS_MARGIN_PRESETS = {
+    normal: { top: 1440, bottom: 1440, left: 1440, right: 1440 },
+    narrow: { top: 720, bottom: 720, left: 720, right: 720 },
+    moderate: { top: 1440, bottom: 1440, left: 1080, right: 1080 },
+    wide: { top: 1440, bottom: 1440, left: 2880, right: 2880 }
+  };
 
   function psMarker() {
     return editor.querySelector(":scope > div.page-setup");
@@ -4045,6 +4063,63 @@
     scheduleCollabSync();
     notifyHost("editing");
     updateActiveStates();
+  }
+
+  // Preset handlers for layout ribbon menus — reuse writePageSetupMarker
+  function applyPageMarginsPreset(preset) {
+    const m = psMarker();
+    const current = m ? {
+      w: parseInt(m.getAttribute("data-page-w"), 10) || 11906,
+      h: parseInt(m.getAttribute("data-page-h"), 10) || 16838,
+      orient: m.getAttribute("data-orient") || "portrait",
+      mt: parseInt(m.getAttribute("data-margin-top"), 10) || 1440,
+      mb: parseInt(m.getAttribute("data-margin-bottom"), 10) || 1440,
+      ml: parseInt(m.getAttribute("data-margin-left"), 10) || 1440,
+      mr: parseInt(m.getAttribute("data-margin-right"), 10) || 1440
+    } : { w: 11906, h: 16838, orient: "portrait", mt: 1440, mb: 1440, ml: 1440, mr: 1440 };
+    const presetMargins = PS_MARGIN_PRESETS[preset] || PS_MARGIN_PRESETS.normal;
+    writePageSetupMarker(current.w, current.h, current.orient,
+                          presetMargins.top, presetMargins.bottom,
+                          presetMargins.left, presetMargins.right);
+  }
+
+  function applyPageSizePreset(size) {
+    const m = psMarker();
+    const current = m ? {
+      w: parseInt(m.getAttribute("data-page-w"), 10) || 11906,
+      h: parseInt(m.getAttribute("data-page-h"), 10) || 16838,
+      orient: m.getAttribute("data-orient") || "portrait",
+      mt: parseInt(m.getAttribute("data-margin-top"), 10) || 1440,
+      mb: parseInt(m.getAttribute("data-margin-bottom"), 10) || 1440,
+      ml: parseInt(m.getAttribute("data-margin-left"), 10) || 1440,
+      mr: parseInt(m.getAttribute("data-margin-right"), 10) || 1440
+    } : { w: 11906, h: 16838, orient: "portrait", mt: 1440, mb: 1440, ml: 1440, mr: 1440 };
+    const [w, h] = PS_SIZES[size] || PS_SIZES.A4;
+    let finalW = w, finalH = h;
+    if (current.orient === "landscape" && w <= h) { finalW = h; finalH = w; }
+    else if (current.orient === "portrait" && w > h) { finalW = h; finalH = w; }
+    writePageSetupMarker(finalW, finalH, current.orient,
+                          current.mt, current.mb, current.ml, current.mr);
+  }
+
+  function applyPageOrientationPreset(orient) {
+    const m = psMarker();
+    const current = m ? {
+      w: parseInt(m.getAttribute("data-page-w"), 10) || 11906,
+      h: parseInt(m.getAttribute("data-page-h"), 10) || 16838,
+      mt: parseInt(m.getAttribute("data-margin-top"), 10) || 1440,
+      mb: parseInt(m.getAttribute("data-margin-bottom"), 10) || 1440,
+      ml: parseInt(m.getAttribute("data-margin-left"), 10) || 1440,
+      mr: parseInt(m.getAttribute("data-margin-right"), 10) || 1440
+    } : { w: 11906, h: 16838, mt: 1440, mb: 1440, ml: 1440, mr: 1440 };
+    let finalW = current.w, finalH = current.h;
+    if (orient === "landscape" && current.w <= current.h) {
+      finalW = current.h; finalH = current.w;
+    } else if (orient === "portrait" && current.w > current.h) {
+      finalW = current.h; finalH = current.w;
+    }
+    writePageSetupMarker(finalW, finalH, orient,
+                          current.mt, current.mb, current.ml, current.mr);
   }
 
   const pageSetupDialog = document.getElementById("page-setup-dialog");

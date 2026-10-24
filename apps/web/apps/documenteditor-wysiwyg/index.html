@@ -480,6 +480,31 @@
     <button id="btn-page-break" title="Insert page break" aria-label="Insert page break">⏎</button>
     <button id="btn-section-break" title="Insert section break" aria-label="Insert section break">⇘</button>
     <button id="btn-columns" title="Insert columns" aria-label="Insert columns">▥</button>
+    <span class="menu rb-menu" >
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Margins">Margins ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageMargins" data-value="normal" data-i18n="Layout.Margins.Normal">Normal</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageMargins" data-value="narrow" data-i18n="Layout.Margins.Narrow">Narrow</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageMargins" data-value="moderate" data-i18n="Layout.Margins.Moderate">Moderate</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageMargins" data-value="wide" data-i18n="Layout.Margins.Wide">Wide</button></li>
+      </ul>
+    </span>
+    <span class="menu rb-menu" >
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Size">Size ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="A4" data-i18n="Layout.Size.A4">A4</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="Letter" data-i18n="Layout.Size.Letter">Letter</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="Legal" data-i18n="Layout.Size.Legal">Legal</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="A5" data-i18n="Layout.Size.A5">A5</button></li>
+      </ul>
+    </span>
+    <span class="menu rb-menu" >
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Orientation">Orientation ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageOrientation" data-value="portrait" data-i18n="Layout.Orientation.Portrait">Portrait</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageOrientation" data-value="landscape" data-i18n="Layout.Orientation.Landscape">Landscape</button></li>
+      </ul>
+    </span>
     <button type="button" id="btn-page-setup" data-i18n="Layout.PageSetup">Page setup</button>
     <button type="button" data-cmd="toggleHyphenation" data-i18n="Layout.Hyphenation">Hyphenation</button>
     <button type="button" data-cmd="toggleLineNumbers" data-i18n="Layout.LineNumbers">Line numbers</button>
