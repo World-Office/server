@@ -374,6 +374,134 @@ fn is_transient_error(err: &anyhow::Error) -> bool {
     false
 }
 
+/// A scripted upstream response served by [`mock_upstream::spawn`].
+#[cfg(test)]
+pub(crate) struct Script {
+    /// Requests whose path ends with this suffix consume this script.
+    pub path_suffix: &'static str,
+    pub status: u16,
+    pub headers: Vec<(&'static str, String)>,
+    pub body: Vec<u8>,
+}
+
+#[cfg(test)]
+impl Script {
+    pub fn json(path_suffix: &'static str, status: u16, body: serde_json::Value) -> Self {
+        Self {
+            path_suffix,
+            status,
+            headers: vec![("content-type", "application/json".into())],
+            body: body.to_string().into_bytes(),
+        }
+    }
+
+    pub fn bytes(path_suffix: &'static str, status: u16, body: &[u8]) -> Self {
+        Self {
+            path_suffix,
+            status,
+            headers: vec![("content-type", "application/octet-stream".into())],
+            body: body.to_vec(),
+        }
+    }
+}
+
+/// In-process scriptable fake of the OCIS WOPI host. Records every request
+/// (method, path, query, selected headers, body) and serves the first script
+/// matching the path suffix, popped in order; unmatched requests get 200 {}.
+#[cfg(test)]
+pub(crate) mod mock_upstream {
+    use super::Script;
+    use axum::body::Body;
+    use axum::extract::{Request, State};
+    use axum::http::Response;
+    use axum::routing::any;
+    use axum::Router;
+    use std::collections::HashMap;
+    use std::sync::Mutex;
+
+    #[derive(Clone)]
+    pub(crate) struct Recorded {
+        pub method: String,
+        pub path: String,
+        pub query: String,
+        pub headers: HashMap<String, String>,
+        pub body: Vec<u8>,
+    }
+
+    impl Recorded {
+        pub fn header(&self, name: &str) -> Option<&str> {
+            self.headers
+                .get(&name.to_ascii_lowercase())
+                .map(|s| s.as_str())
+        }
+    }
+
+    #[derive(Default)]
+    pub(crate) struct MockState {
+        pub requests: Mutex<Vec<Recorded>>,
+        pub scripts: Mutex<Vec<Script>>,
+    }
+
+    /// Spawn the mock on 127.0.0.1:0. Returns its base URL and shared state.
+    pub(crate) async fn spawn(scripts: Vec<Script>) -> (String, std::sync::Arc<MockState>) {
+        let state = std::sync::Arc::new(MockState {
+            requests: Mutex::new(Vec::new()),
+            scripts: Mutex::new(scripts),
+        });
+        let app = Router::new()
+            .route(
+                "/{*path}",
+                any(
+                    |State(st): State<std::sync::Arc<MockState>>, req: Request| async move {
+                        let (parts, body) = req.into_parts();
+                        let body = axum::body::to_bytes(body, 16 * 1024 * 1024)
+                            .await
+                            .unwrap_or_default();
+                        st.requests.lock().unwrap().push(Recorded {
+                            method: parts.method.to_string(),
+                            path: parts.uri.path().to_string(),
+                            query: parts.uri.query().unwrap_or("").to_string(),
+                            headers: parts
+                                .headers
+                                .iter()
+                                .map(|(k, v)| {
+                                    (
+                                        k.as_str().to_ascii_lowercase(),
+                                        v.to_str().unwrap_or("").to_string(),
+                                    )
+                                })
+                                .collect(),
+                            body: body.to_vec(),
+                        });
+                        let script = {
+                            let mut scripts = st.scripts.lock().unwrap();
+                            scripts
+                                .iter()
+                                .position(|s| parts.uri.path().ends_with(s.path_suffix))
+                                .map(|idx| scripts.remove(idx))
+                        };
+                        let script = script.unwrap_or(Script {
+                            path_suffix: "",
+                            status: 200,
+                            headers: vec![("content-type", "application/json".into())],
+                            body: b"{}".to_vec(),
+                        });
+                        let mut builder = Response::builder().status(script.status);
+                        for (k, v) in &script.headers {
+                            builder = builder.header(*k, v);
+                        }
+                        builder.body(Body::from(script.body)).unwrap()
+                    },
+                ),
+            )
+            .with_state(state.clone());
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("http://{}", listener.local_addr().unwrap());
+        tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+        (url, state)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -455,6 +583,211 @@ mod tests {
         let token = WopiClient::encode_token(&claims, "secret").unwrap();
         let result = WopiClient::validate_token(&token, "secret");
         assert!(result.is_err());
+    }
+
+    // ── PutFile lock lifecycle (OpenCloud requires Lock → PutFile → Unlock) ──
+
+    fn client_for(url: &str) -> WopiClient {
+        WopiClient::new(url.into(), "https://editor.example.com".into(), false)
+    }
+
+    async fn requests(state: &mock_upstream::MockState) -> Vec<mock_upstream::Recorded> {
+        state.requests.lock().unwrap().clone()
+    }
+
+    #[tokio::test]
+    async fn test_put_file_happy_path_lock_upload_unlock() {
+        let (url, state) = mock_upstream::spawn(vec![Script::bytes("/contents", 200, b"")]).await;
+        client_for(&url)
+            .put_file(
+                "file-1",
+                "tok-1",
+                b"PK\x03\x04docx".to_vec(),
+                Some("PUT".into()),
+                None,
+                Some("\"etag-7\"".into()),
+            )
+            .await
+            .unwrap();
+        let reqs = requests(&state).await;
+        let ops: Vec<(&str, String)> = reqs
+            .iter()
+            .map(|r| {
+                (
+                    if r.path.ends_with("/contents") {
+                        "contents"
+                    } else {
+                        r.header("x-wopi-override").unwrap_or("?")
+                    },
+                    r.header("x-wopi-lock").unwrap_or("").to_string(),
+                )
+            })
+            .collect();
+        assert_eq!(
+            ops,
+            vec![
+                ("LOCK", "wo-docserver-lock".into()),
+                ("contents", "wo-docserver-lock".into()),
+                ("UNLOCK", "wo-docserver-lock".into()),
+            ],
+            "must Lock → PutFile → Unlock in order"
+        );
+        let upload = reqs.iter().find(|r| r.path.ends_with("/contents")).unwrap();
+        assert_eq!(upload.method, "POST");
+        assert_eq!(upload.body, b"PK\x03\x04docx");
+        assert_eq!(
+            upload.header("x-wopi-override"),
+            Some("PUT"),
+            "OpenCloud collaboration requires X-WOPI-Override: PUT on uploads"
+        );
+        assert_eq!(upload.header("if-match"), Some("\"etag-7\""));
+        assert!(upload.query.contains("access_token=tok-1"));
+    }
+
+    #[tokio::test]
+    async fn test_put_file_takes_over_stale_lock_on_409() {
+        let (url, state) = mock_upstream::spawn(vec![
+            Script {
+                path_suffix: "/wopi/files/file-1",
+                status: 409,
+                headers: vec![("x-wopi-lock", "other-editor-lock".into())],
+                body: b"{}".to_vec(),
+            },
+            Script::bytes("/contents", 200, b""),
+        ])
+        .await;
+        client_for(&url)
+            .put_file(
+                "file-1",
+                "tok",
+                b"data".to_vec(),
+                Some("PUT".into()),
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+        let reqs = requests(&state).await;
+        // First request is the rejected LOCK; the very next must UNLOCK the
+        // foreign lock id from the 409's X-WOPI-Lock header, then re-lock.
+        assert_eq!(reqs[0].header("x-wopi-override"), Some("LOCK"));
+        assert_eq!(reqs[1].header("x-wopi-override"), Some("UNLOCK"));
+        assert_eq!(reqs[1].header("x-wopi-lock"), Some("other-editor-lock"));
+        assert_eq!(reqs[2].header("x-wopi-override"), Some("LOCK"));
+        assert_eq!(reqs[2].header("x-wopi-lock"), Some("wo-docserver-lock"));
+        assert!(reqs.iter().any(|r| r.path.ends_with("/contents")));
+    }
+
+    #[tokio::test]
+    async fn test_put_file_releases_lock_after_upstream_failure() {
+        let (url, state) =
+            mock_upstream::spawn(vec![Script::bytes("/contents", 500, b"boom")]).await;
+        let result = client_for(&url)
+            .put_file(
+                "file-1",
+                "tok",
+                b"data".to_vec(),
+                Some("PUT".into()),
+                None,
+                None,
+            )
+            .await;
+        assert!(result.is_err(), "upstream 500 must surface as an error");
+        let reqs = requests(&state).await;
+        let last = reqs.last().unwrap();
+        assert_eq!(
+            last.header("x-wopi-override"),
+            Some("UNLOCK"),
+            "lock must be released so the next autosave starts clean"
+        );
+        assert_eq!(last.header("x-wopi-lock"), Some("wo-docserver-lock"));
+    }
+
+    #[tokio::test]
+    async fn test_put_file_aborts_when_lock_cannot_be_acquired() {
+        let (url, state) = mock_upstream::spawn(vec![Script {
+            path_suffix: "/wopi/files/file-1",
+            status: 500,
+            headers: vec![],
+            body: b"no lock service".to_vec(),
+        }])
+        .await;
+        let result = client_for(&url)
+            .put_file(
+                "file-1",
+                "tok",
+                b"data".to_vec(),
+                Some("PUT".into()),
+                None,
+                None,
+            )
+            .await;
+        assert!(result.is_err());
+        let reqs = requests(&state).await;
+        assert!(
+            !reqs.iter().any(|r| r.path.ends_with("/contents")),
+            "must never upload without holding the lock"
+        );
+    }
+
+    // ── GetFile / CheckFileInfo proxying ──
+
+    #[tokio::test]
+    async fn test_get_file_returns_content_bytes() {
+        let payload = b"PK\x03\x04real-bytes";
+        let (url, state) =
+            mock_upstream::spawn(vec![Script::bytes("/contents", 200, payload)]).await;
+        let data = client_for(&url).get_file("f", "tok-9").await.unwrap();
+        assert_eq!(data, payload);
+        let req = &requests(&state).await[0];
+        assert!(req.query.contains("access_token=tok-9"));
+    }
+
+    #[tokio::test]
+    async fn test_get_file_rejects_html_error_page_with_200() {
+        let (url, _state) = mock_upstream::spawn(vec![Script {
+            path_suffix: "/contents",
+            status: 200,
+            headers: vec![("content-type", "text/html".into())],
+            body: b"<html>please log in</html>".to_vec(),
+        }])
+        .await;
+        let err = client_for(&url).get_file("f", "tok").await.unwrap_err();
+        assert!(format!("{err:#}").contains("HTML"), "got: {err:#}");
+    }
+
+    #[tokio::test]
+    async fn test_get_file_maps_upstream_error_status() {
+        let (url, _state) =
+            mock_upstream::spawn(vec![Script::bytes("/contents", 404, b"nope")]).await;
+        let err = client_for(&url).get_file("f", "tok").await.unwrap_err();
+        assert!(format!("{err:#}").contains("404"), "got: {err:#}");
+    }
+
+    #[tokio::test]
+    async fn test_check_file_info_parses_upstream_json() {
+        let (url, state) = mock_upstream::spawn(vec![Script::json(
+            "/wopi/files/doc",
+            200,
+            serde_json::json!({"BaseFileName": "parity.docx", "UserId": "alice"}),
+        )])
+        .await;
+        let info = client_for(&url).check_file_info("doc", "tk").await.unwrap();
+        assert_eq!(info["BaseFileName"], "parity.docx");
+        let req = &requests(&state).await[0];
+        assert!(req.path.ends_with("/wopi/files/doc"));
+        assert!(req.query.contains("access_token=tk"));
+    }
+
+    #[tokio::test]
+    async fn test_transient_connect_failures_are_retried_then_reported() {
+        // Port 1 is reserved and refuses connections — forces the retry path.
+        let client = client_for("http://127.0.0.1:1");
+        let err = client.get_file("f", "tok").await.unwrap_err();
+        assert!(
+            format!("{err:#}").contains("after 3 retries"),
+            "expected retry exhaustion, got: {err:#}"
+        );
     }
 }
 

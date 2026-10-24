@@ -23,14 +23,12 @@ fn valid_doc_id(id: &str) -> bool {
     !id.is_empty()
         && id.len() <= 255
         && !id.starts_with('.')
-        && id
-            .chars()
-            .all(|c| {
-                c.is_ascii_alphanumeric()
+        && id.chars().all(|c| {
+            c.is_ascii_alphanumeric()
                     // '$' and '!' appear in OpenCloud space-aware file ids
                     // (spaceId$fileId!version) used as the WOPI doc id.
                     || matches!(c, '.' | '_' | '-' | '$' | '!')
-            })
+        })
 }
 
 /// GET /api/documents/{id}/collab/state
@@ -213,9 +211,13 @@ pub async fn collab_presence(
         return Err(AppError::BadRequest("client_id required".into()));
     }
     let cursor = payload.cursor.unwrap_or(Value::Null);
-    let clients = state
-        .collab
-        .set_presence(&id, &payload.client_id, &payload.user, cursor, payload.avatar.as_deref());
+    let clients = state.collab.set_presence(
+        &id,
+        &payload.client_id,
+        &payload.user,
+        cursor,
+        payload.avatar.as_deref(),
+    );
     Ok(Json(json!({ "ok": true, "clients": clients["clients"] })))
 }
 

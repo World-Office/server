@@ -35,14 +35,12 @@ fn valid_doc_id(id: &str) -> bool {
     !id.is_empty()
         && id.len() <= 255
         && !id.starts_with('.')
-        && id
-            .chars()
-            .all(|c| {
-                c.is_ascii_alphanumeric()
+        && id.chars().all(|c| {
+            c.is_ascii_alphanumeric()
                     // '$' and '!' appear in OpenCloud space-aware file ids
                     // (spaceId$fileId!version) used as the WOPI doc id.
                     || matches!(c, '.' | '_' | '-' | '$' | '!')
-            })
+        })
 }
 
 fn docs_dir() -> PathBuf {

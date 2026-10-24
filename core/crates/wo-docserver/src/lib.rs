@@ -1604,6 +1604,165 @@ mod tests {
         );
     }
 
+    // ── WOPI proxy routes against a scripted mock OCIS upstream ──
+
+    fn wopi_config(mock_url: &str, token_mode: &str) -> DocServerConfig {
+        DocServerConfig {
+            wopi_host_url: mock_url.into(),
+            wopi_token_mode: token_mode.into(),
+            ..test_config()
+        }
+    }
+
+    fn valid_jwt() -> String {
+        WopiClient::encode_token(
+            &crate::wopi::Claims {
+                sub: "user-1".into(),
+                exp: chrono::Utc::now().timestamp() as usize + 3600,
+                iat: None,
+                user_id: Some("alice".into()),
+            },
+            "test-secret",
+        )
+        .unwrap()
+    }
+
+    #[tokio::test]
+    async fn test_wopi_check_file_info_proxies_json_with_valid_jwt() {
+        let (url, state) = wopi::mock_upstream::spawn(vec![wopi::Script::json(
+            "/wopi/files/parity.docx",
+            200,
+            serde_json::json!({"BaseFileName": "parity.docx", "Size": 42}),
+        )])
+        .await;
+        let app = create_app(wopi_config(&url, "jwt"));
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri(format!(
+                        "/wopi/files/parity.docx?access_token={}",
+                        valid_jwt()
+                    ))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        let info: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+        assert_eq!(info["BaseFileName"], "parity.docx");
+        let upstream = state.requests.lock().unwrap();
+        assert!(
+            upstream[0].query.contains("access_token="),
+            "raw token must reach the WOPI host"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_wopi_routes_reject_invalid_jwt() {
+        let (url, _state) = wopi::mock_upstream::spawn(vec![]).await;
+        for uri in [
+            format!("/wopi/files/f?access_token={}", valid_jwt() + "tampered"),
+            "/wopi/files/f/contents?access_token=not-a-jwt".to_string(),
+        ] {
+            let app = create_app(wopi_config(&url, "jwt"));
+            let resp = app
+                .oneshot(Request::builder().uri(uri).body(Body::empty()).unwrap())
+                .await
+                .unwrap();
+            assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+        }
+        assert!(
+            _state.requests.lock().unwrap().is_empty(),
+            "rejected requests must never reach the WOPI host"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_wopi_passthrough_mode_skips_jwt_validation() {
+        let (url, state) =
+            wopi::mock_upstream::spawn(vec![wopi::Script::bytes("/contents", 200, b"docx-bytes")])
+                .await;
+        let app = create_app(wopi_config(&url, "passthrough"));
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/wopi/files/f/contents?access_token=opaque-collab-token")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(resp.into_body(), 1024 * 1024)
+            .await
+            .unwrap();
+        assert_eq!(&bytes[..], b"docx-bytes");
+        assert_eq!(state.requests.lock().unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn test_wopi_put_file_forwards_wopi_headers_and_runs_lock_lifecycle() {
+        let (url, state) =
+            wopi::mock_upstream::spawn(vec![wopi::Script::bytes("/contents", 200, b"")]).await;
+        let app = create_app(wopi_config(&url, "jwt"));
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!(
+                        "/wopi/files/parity.docx/contents?access_token={}",
+                        valid_jwt()
+                    ))
+                    .header("x-wopi-override", "PUT")
+                    .header("x-wopi-lock", "browser-lock-1")
+                    .header("if-match", "\"v3\"")
+                    .body(Body::from(b"saved docx".to_vec()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::OK);
+        let reqs = state.requests.lock().unwrap();
+        let ops: Vec<String> = reqs
+            .iter()
+            .map(|r| {
+                r.header("x-wopi-override")
+                    .unwrap_or(if r.path.ends_with("/contents") {
+                        "contents"
+                    } else {
+                        "?"
+                    })
+                    .to_string()
+            })
+            .collect();
+        assert_eq!(ops, vec!["LOCK", "PUT", "UNLOCK"], "proxy manages the lock lifecycle around the upload; the upload carries the browser's X-WOPI-Override: PUT");
+        let upload = reqs.iter().find(|r| r.path.ends_with("/contents")).unwrap();
+        assert_eq!(upload.body, b"saved docx");
+        assert_eq!(upload.header("x-wopi-override"), Some("PUT"));
+        assert_eq!(upload.header("if-match"), Some("\"v3\""));
+    }
+
+    #[tokio::test]
+    async fn test_wopi_upstream_failure_maps_to_bad_gateway() {
+        let (url, _state) =
+            wopi::mock_upstream::spawn(vec![wopi::Script::bytes("/contents", 404, b"gone")]).await;
+        let app = create_app(wopi_config(&url, "passthrough"));
+        let resp = app
+            .oneshot(
+                Request::builder()
+                    .uri("/wopi/files/f/contents?access_token=t")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::BAD_GATEWAY);
+    }
+
     #[tokio::test]
     async fn test_conversion_formats_endpoint() {
         let app = create_app(test_config());
@@ -2242,13 +2401,21 @@ mod tests {
         // OpenCloud space-aware file ids (space$file!version) are legal doc
         // ids — the WOPI editor uses them verbatim; they must not 400.
         let wopi_id = "1d97e670-f1e9-4e9b-8655-92f0ae5db78e$7a1ec2b4-85fb-4421-8eee-1be260cdfc40!f348d31d-eff6-47ac-9289-478a2a28844e";
-        let resp = app.clone().oneshot(
-            Request::builder()
-                .uri(format!("/api/documents/{wopi_id}/collab/state"))
-                .body(Body::empty())
-                .unwrap(),
-        ).await.unwrap();
-        assert_eq!(resp.status(), StatusCode::OK, "WOPI file ids must pass valid_doc_id");
+        let resp = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/documents/{wopi_id}/collab/state"))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(
+            resp.status(),
+            StatusCode::OK,
+            "WOPI file ids must pass valid_doc_id"
+        );
         let resp = app
             .clone()
             .oneshot(

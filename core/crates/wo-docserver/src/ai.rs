@@ -79,18 +79,34 @@ fn markdown_to_html(md: &str) -> String {
             html.push_str(&format!("<h2>{}</h2>\n", inline_md(h)));
         } else if let Some(h) = trimmed.strip_prefix("### ") {
             html.push_str(&format!("<h3>{}</h3>\n", inline_md(h)));
-        } else if let Some(h) = trimmed.strip_prefix("- ").or_else(|| trimmed.strip_prefix("* ")) {
-            if !in_ul { html.push_str("<ul>\n"); in_ul = true; }
+        } else if let Some(h) = trimmed
+            .strip_prefix("- ")
+            .or_else(|| trimmed.strip_prefix("* "))
+        {
+            if !in_ul {
+                html.push_str("<ul>\n");
+                in_ul = true;
+            }
             html.push_str(&format!("<li>{}</li>\n", inline_md(h)));
-        } else if let Some(h) = trimmed.strip_prefix("1. ").or_else(|| trimmed.strip_prefix("2. ")) {
-            if !in_ol { html.push_str("<ol>\n"); in_ol = true; }
+        } else if let Some(h) = trimmed
+            .strip_prefix("1. ")
+            .or_else(|| trimmed.strip_prefix("2. "))
+        {
+            if !in_ol {
+                html.push_str("<ol>\n");
+                in_ol = true;
+            }
             html.push_str(&format!("<li>{}</li>\n", inline_md(h)));
         } else if !trimmed.is_empty() {
             html.push_str(&format!("<p>{}</p>\n", inline_md(trimmed)));
         }
     }
-    if in_ul { html.push_str("</ul>\n"); }
-    if in_ol { html.push_str("</ol>\n"); }
+    if in_ul {
+        html.push_str("</ul>\n");
+    }
+    if in_ol {
+        html.push_str("</ol>\n");
+    }
     html
 }
 
@@ -104,24 +120,34 @@ fn inline_md(s: &str) -> String {
                 chars.next();
                 let mut inner = String::new();
                 while let Some(&ch) = chars.peek() {
-                    if ch == '*' { break; }
+                    if ch == '*' {
+                        break;
+                    }
                     inner.push(ch);
                     chars.next();
                 }
                 // consume closing **
-                if chars.peek() == Some(&'*') { chars.next(); }
-                if chars.peek() == Some(&'*') { chars.next(); }
+                if chars.peek() == Some(&'*') {
+                    chars.next();
+                }
+                if chars.peek() == Some(&'*') {
+                    chars.next();
+                }
                 out.push_str("<strong>");
                 out.push_str(&inner);
                 out.push_str("</strong>");
             } else {
                 let mut inner = String::new();
                 while let Some(&ch) = chars.peek() {
-                    if ch == '*' { break; }
+                    if ch == '*' {
+                        break;
+                    }
                     inner.push(ch);
                     chars.next();
                 }
-                if chars.peek() == Some(&'*') { chars.next(); }
+                if chars.peek() == Some(&'*') {
+                    chars.next();
+                }
                 out.push_str("<em>");
                 out.push_str(&inner);
                 out.push_str("</em>");
@@ -161,7 +187,8 @@ async fn chat(system: &str, prompt: &str) -> Result<String, AppError> {
         }
         req.send()
             .await
-            .map_err(|e| AppError::ServiceUnavailable(format!("AI provider unreachable: {e}")))?    };
+            .map_err(|e| AppError::ServiceUnavailable(format!("AI provider unreachable: {e}")))?
+    };
     if !resp.status().is_success() {
         let status = resp.status();
         let text = resp.text().await.unwrap_or_default();
@@ -247,7 +274,9 @@ pub async fn ai_generate(
     if req.format == "docx" {
         // F-152: markdown -> HTML -> DOCX via the conversion router
         let html = markdown_to_html(&markdown);
-        let result = state.conversion_router.convert("html", "docx", html.as_bytes());
+        let result = state
+            .conversion_router
+            .convert("html", "docx", html.as_bytes());
         if let Some(output) = result.output {
             return Ok(Json(json!({
                 "status": "Success",
@@ -448,7 +477,9 @@ mod tests {
     // F-152: markdown_to_html converts headings, lists, and inline formatting
     #[test]
     fn markdown_to_html_headings_and_lists() {
-        let html = markdown_to_html("# Title\n\n- item 1\n- item 2\n\nParagraph with **bold** and *italic*.\n");
+        let html = markdown_to_html(
+            "# Title\n\n- item 1\n- item 2\n\nParagraph with **bold** and *italic*.\n",
+        );
         assert!(html.contains("<h1>Title</h1>"), "h1 heading: {html}");
         assert!(html.contains("<ul>"), "ul list: {html}");
         assert!(html.contains("<li>item 1</li>"), "li: {html}");
