@@ -18,28 +18,33 @@ console.log("Running AF3-STATUSBAR tests...\n")
 console.log("Checking statusbar elements in index.html...")
 const requiredIds = ["sb-word-count", "sb-page-count", "sb-zoom-label", "sb-track-changes"]
 for (const id of requiredIds) {
-  assert.ok(
-    htmlSrc.includes(`id="${id}"`),
-    `Statusbar element ${id} must exist in index.html`
-  )
+  assert.ok(htmlSrc.includes(`id="${id}"`), `Statusbar element ${id} must exist in index.html`)
   const elementMatch = htmlSrc.match(new RegExp(`id="${id}"[^>]*data-i18n="([^"]*)"`))
-  assert.ok(
-    elementMatch && elementMatch[1],
-    `Statusbar element ${id} must have data-i18n attribute`
-  )
+  assert.ok(elementMatch?.[1], `Statusbar element ${id} must have data-i18n attribute`)
 }
 console.log("All statusbar elements present\n")
 
 // 2. Check i18n keys exist for en and de
 console.log("Checking i18n translation keys...")
-const requiredKeys = ["Statusbar.Words", "Statusbar.PageOf", "Statusbar.Zoom", "Statusbar.TrackChanges"]
+const requiredKeys = [
+  "Statusbar.Words",
+  "Statusbar.PageOf",
+  "Statusbar.Zoom",
+  "Statusbar.TrackChanges",
+]
 for (const key of requiredKeys) {
   assert.ok(i18nSrc.includes(`"${key}":`), `i18n key ${key} must exist`)
 }
 assert.ok(i18nSrc.includes('"Statusbar.Words": "0 Wörter"'), "German Statusbar.Words must exist")
-assert.ok(i18nSrc.includes('"Statusbar.PageOf": "Seite 1 von 0"'), "German Statusbar.PageOf must exist")
+assert.ok(
+  i18nSrc.includes('"Statusbar.PageOf": "Seite 1 von 0"'),
+  "German Statusbar.PageOf must exist",
+)
 assert.ok(i18nSrc.includes('"Statusbar.Zoom": "100%"'), "German Statusbar.Zoom must exist")
-assert.ok(i18nSrc.includes('"Statusbar.TrackChanges": "Änderungen verfolgen"'), "German Statusbar.TrackChanges must exist")
+assert.ok(
+  i18nSrc.includes('"Statusbar.TrackChanges": "Änderungen verfolgen"'),
+  "German Statusbar.TrackChanges must exist",
+)
 console.log("All i18n keys present\n")
 
 // 3. Check zoom label is updated in applyZoom
@@ -49,11 +54,11 @@ assert.ok(applyZoomMatch, "applyZoom function must exist")
 const applyZoomBody = editorSrc.slice(applyZoomMatch.index)
 assert.ok(
   applyZoomBody.includes("sb-zoom-label") && applyZoomBody.includes("textContent"),
-  "applyZoom must update sb-zoom-label textContent"
+  "applyZoom must update sb-zoom-label textContent",
 )
 assert.ok(
   applyZoomBody.includes("Math.round(zoomLevel * 100)"),
-  "applyZoom must calculate zoom percentage"
+  "applyZoom must calculate zoom percentage",
 )
 console.log("applyZoom updates sb-zoom-label\n")
 
@@ -61,15 +66,15 @@ console.log("applyZoom updates sb-zoom-label\n")
 console.log("Checking track changes button wiring...")
 assert.ok(
   editorSrc.includes("sb-track-changes") && editorSrc.includes("addEventListener"),
-  "sb-track-changes must have event listener"
+  "sb-track-changes must have event listener",
 )
 assert.ok(
   editorSrc.includes("setTrackChanges") && editorSrc.includes("sb-track-changes"),
-  "sb-track-changes must call setTrackChanges"
+  "sb-track-changes must call setTrackChanges",
 )
 assert.ok(
   editorSrc.includes("aria-pressed") && editorSrc.includes("sb-track-changes"),
-  "sb-track-changes must have aria-pressed state"
+  "sb-track-changes must have aria-pressed state",
 )
 console.log("Track changes button is wired\n")
 
@@ -77,7 +82,7 @@ console.log("Track changes button is wired\n")
 console.log("Checking page count updates...")
 assert.ok(
   editorSrc.includes("updatePageIndicator") && editorSrc.includes("sb-page-count"),
-  "updatePageIndicator must update sb-page-count"
+  "updatePageIndicator must update sb-page-count",
 )
 console.log("Page count is updated\n")
 
@@ -85,11 +90,11 @@ console.log("Page count is updated\n")
 console.log("Checking word count updates...")
 assert.ok(
   editorSrc.includes("updateCounts") && editorSrc.includes("sb-word-count"),
-  "updateCounts must update sb-word-count"
+  "updateCounts must update sb-word-count",
 )
 assert.ok(
   editorSrc.includes(".split(/") && editorSrc.includes(".filter(Boolean"),
-  "Word count must split on whitespace and filter empty strings"
+  "Word count must split on whitespace and filter empty strings",
 )
 
 function countWords(html) {
@@ -110,11 +115,11 @@ console.log("Word count logic is correct\n")
 console.log("Checking event listeners call update functions...")
 assert.ok(
   editorSrc.includes('addEventListener("input"') && editorSrc.includes("updateCounts"),
-  "Input event must call updateCounts"
+  "Input event must call updateCounts",
 )
 assert.ok(
   editorSrc.includes("paginateView") && editorSrc.includes("updatePageIndicator"),
-  "Pagination must call updatePageIndicator"
+  "Pagination must call updatePageIndicator",
 )
 console.log("Event listeners are properly wired\n")
 
