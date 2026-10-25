@@ -1,29 +1,29 @@
 {
- "defaults": {
-  "max_attempts": 5,
-  "accept_timeout_s": 2400,
-  "agent_timeout_s": 3600
- },
- "workers": [
-  {
-   "name": "tud",
-   "provider": "litellm",
-   "model": "litellm/tud/Kimi-K2.6",
-   "api_key_env": "LITELLM_API_KEY",
-   "enabled": true,
-   "cli": "/home/weiss/git/agentflow/scripts/af-opencode.sh",
-   "output": "text",
-   "params_b": 35
+  "defaults": {
+    "max_attempts": 5,
+    "accept_timeout_s": 2400,
+    "agent_timeout_s": 3600
   },
-  {
-   "name": "wo",
-   "provider": "litellm",
-   "model": "litellm/glm-4.7",
-   "api_key_env": "LITELLM_API_KEY",
- "enabled": false,
-   "cli": "/home/weiss/git/agentflow/scripts/af-opencode.sh",
-   "output": "text",
-   "params_b": 4.7
-  }
- ]
+  "workers": [
+    {
+      "name": "tud",
+      "provider": "litellm",
+      "model": "litellm/tud/Kimi-K2.6",
+      "api_key_env": "LITELLM_API_KEY",
+      "enabled": false,
+      "cli": "/home/weiss/git/agentflow/scripts/af-opencode.sh",
+      "output": "text",
+      "params_b": 35
+    },
+    {
+      "name": "wo",
+      "provider": "litellm",
+      "model": "litellm/glm-4.7",
+      "api_key_env": "LITELLM_API_KEY",
+      "enabled": true,
+      "cli": "/home/weiss/git/agentflow/scripts/af-opencode.sh",
+      "output": "text",
+      "params_b": 4.7
+    }
+  ]
 }
