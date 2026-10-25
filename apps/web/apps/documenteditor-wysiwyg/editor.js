@@ -1246,6 +1246,40 @@
       applyObjectOp(value);
       return;
     }
+    if (cmd === "chartType") {
+      applyChartType(value);
+      return;
+    }
+    if (cmd === "chartElement") {
+      toggleChartElement(value);
+      return;
+    }
+    if (cmd === "chartEditData") {
+      editSelectedChartData();
+      return;
+    }
+    if (cmd === "chartUpdateData") {
+      updateSelectedChartData();
+      return;
+    }
+    if (cmd === "chartSize") {
+      const wIn = document.getElementById("chart-width-input");
+      const hIn = document.getElementById("chart-height-input");
+      applyChartSize(parseFloat(wIn && wIn.value), parseFloat(hIn && hIn.value));
+      return;
+    }
+    if (cmd === "chartSettings") {
+      const onChart = !!selectedChart();
+      window.dispatchEvent(new CustomEvent("wo:chart-settings", { detail: { onChart } }));
+      console.info("wo: chart-settings requested", onChart ? "(on chart)" : "(no chart selected)");
+      return;
+    }
+    if (cmd === "chart3d") {
+      const onChart = !!selectedChart();
+      window.dispatchEvent(new CustomEvent("wo:chart-3d", { detail: { onChart } }));
+      console.info("wo: chart-3d requested", onChart ? "(on chart)" : "(no chart selected)");
+      return;
+    }
     if (cmd === "openColumnsDialog") {
       openColumnsDialog();
       return;
@@ -8188,8 +8222,14 @@
   });
 
   // -- Chart editor: type select + data grid -> live SVG preview -> image.
-  function chartSVG(type, title, rows) {
+  function chartSVG(type, title, rows, elements) {
     const W = 440, H = 260, M = 8;
+    const els = elements || {};
+    const showTitle = !!title && els.title !== false;
+    const showLegend = els.legend === true;
+    const showGrid = els.gridlines === true;
+    const showVals = els.dataLabels !== false;
+    const legendH = showLegend ? 16 : 0;
     const vals = rows.map((r) => parseFloat(r[1])).filter((v) => !isNaN(v));
     const labels = rows.map((r) => r[0] || "");
     const max = Math.max(1, ...vals);
@@ -8197,7 +8237,7 @@
     let body = "";
     if (type === "pie") {
       const total = vals.reduce((a, b) => a + b, 0) || 1;
-      const cx = W / 2, cy = H / 2, R = 92;
+      const cx = W / 2, cy = (H - legendH) / 2, R = 92;
       let a0 = -Math.PI / 2;
       vals.forEach((v, i) => {
         if (v <= 0) return;
@@ -8208,9 +8248,15 @@
         body += `<path d="M${cx},${cy}L${x0.toFixed(1)},${y0.toFixed(1)}A${R},${R} 0 ${large} 1 ${x1.toFixed(1)},${y1.toFixed(1)}Z" fill="${colors[i % colors.length]}" stroke="#fff" stroke-width="1"/>`;
         a0 = a1;
       });
-      if (title) body += `<text x="${cx}" y="${M + 12}" text-anchor="middle" font-size="13" font-family="sans-serif">${_escXml(title)}</text>`;
+      if (showTitle) body += `<text x="${cx}" y="${M + 12}" text-anchor="middle" font-size="13" font-family="sans-serif">${_escXml(title)}</text>`;
     } else {
-      const plotW = W - 130, plotH = H - 46, bx = 58, by = 22;
+      const plotW = W - 130, plotH = H - 46 - legendH, bx = 58, by = 22;
+      if (showGrid) {
+        for (let g = 0; g <= 4; g++) {
+          const gy = by + (plotH * g) / 4;
+          body += `<line x1="${bx}" y1="${gy.toFixed(1)}" x2="${bx + plotW}" y2="${gy.toFixed(1)}" stroke="#d9d9d9" stroke-width="1"/>`;
+        }
+      }
       const n = Math.max(1, vals.length);
       let lastX = 0, lastY = 0;
       vals.forEach((v, i) => {
@@ -8227,9 +8273,19 @@
         if (type === "area") body += `<polygon points="${bx + (i * plotW) / n},${by + plotH} ${(bx + (i * plotW) / n + plotW / n).toFixed(1)},${by + plotH} ${nx.toFixed(1)},${ny.toFixed(1)}" fill="${colors[i % colors.length]}" opacity="0.25"/>`;
         lastX = nx; lastY = ny;
         if (labels[i]) body += `<text x="${x + bw / 2}" y="${by + plotH + 14}" text-anchor="middle" font-size="10" font-family="sans-serif">${_escXml(labels[i])}</text>`;
-        body += `<text x="${bx + plotW + 8}" y="${y + 3}" font-size="9" font-family="sans-serif" fill="#555">${v}</text>`;
+        if (showVals) body += `<text x="${bx + plotW + 8}" y="${y + 3}" font-size="9" font-family="sans-serif" fill="#555">${v}</text>`;
       });
-      if (title) body += `<text x="${W / 2}" y="${M + 12}" text-anchor="middle" font-size="13" font-family="sans-serif">${_escXml(title)}</text>`;
+      if (showTitle) body += `<text x="${W / 2}" y="${M + 12}" text-anchor="middle" font-size="13" font-family="sans-serif">${_escXml(title)}</text>`;
+    }
+    if (showLegend) {
+      let lx = 14;
+      const ly = H - 4;
+      rows.forEach((r, i) => {
+        const label = r[0] || "Item " + (i + 1);
+        body += `<rect x="${lx}" y="${ly - 8}" width="9" height="9" fill="${colors[i % colors.length]}"/>`;
+        body += `<text x="${lx + 13}" y="${ly}" font-size="9" font-family="sans-serif" fill="#333">${_escXml(label)}</text>`;
+        lx += 26 + label.length * 5.2;
+      });
     }
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="100%" height="100%" fill="#ffffff"/>${body}</svg>`;
   }
@@ -8259,12 +8315,157 @@
   if (btnChartOk) btnChartOk.addEventListener("click", () => {
     const type = document.getElementById("chart-type-select").value;
     const title = document.getElementById("chart-title").value;
-    const spec = { type, title, rows: chartRowsFromDOM(), width: 420 };
-    if (pendingVectorReload) reloadVectorTarget(chartSVG(type, title, spec.rows), "chart", spec);
-    else insertVectorObject(chartSVG(type, title, spec.rows), "chart", spec);
+    const prev = pendingVectorReload && pendingVectorReload.img ? readChartSpec(pendingVectorReload.img) : null;
+    const spec = {
+      type,
+      title,
+      rows: chartRowsFromDOM(),
+      width: (prev && prev.width) || 420,
+      elements: (prev && prev.elements) || {}
+    };
+    if (pendingVectorReload) reloadVectorTarget(chartSVG(type, title, spec.rows, spec.elements), "chart", spec);
+    else insertVectorObject(chartSVG(type, title, spec.rows, spec.elements), "chart", spec);
     closeDlg("chart-dialog");
     setStatus("Inserted chart");
   });
+
+  // -- Chart design tab (AF9-CHART-DESIGN, OO parity): contextual controls
+  // operating on the selected chart vector object (img[data-kind='chart']).
+  // The selected chart resolves through selectedChart(): live object
+  // selection first (selectedObject), last chart clicked second. With no
+  // chart selected the controls are aria-disabled and mutations no-op with
+  // a status line; the marker ops (wo:chart-settings / wo:chart-3d) always
+  // fire honestly. Re-renders reuse the dialog path (pendingVectorReload +
+  // reloadVectorTarget) so the object updates in place.
+  function readChartSpec(img) {
+    try {
+      const s = JSON.parse(img.dataset.spec || "{}");
+      return s && typeof s === "object" ? s : {};
+    } catch { return {}; }
+  }
+  let lastChartPick = null;
+  function selectedChart() {
+    const live = selectedObject();
+    if (live && live.matches && live.matches("img.vector-object[data-kind='chart']") && editor.contains(live)) return live;
+    if (lastChartPick && lastChartPick.matches && lastChartPick.matches("img.vector-object[data-kind='chart']") && editor.contains(lastChartPick)) return lastChartPick;
+    return null;
+  }
+  const chartDesignTab = document.querySelector('.ribbon-tab[data-tab="chart-design"]');
+  const chartDesignPage = document.querySelector('.ribbon-page[data-tab="chart-design"]');
+  function rerenderChart(img, spec) {
+    const w = parseInt(img.style.width, 10) || spec.width || 420;
+    spec.width = w;
+    img.style.width = w + "px";
+    pendingVectorReload = { kind: "chart", img };
+    reloadVectorTarget(chartSVG(spec.type, spec.title, spec.rows, spec.elements), "chart", spec);
+    markDirty();
+    captureHistory();
+    scheduleCollabSync();
+    notifyHost("editing");
+  }
+  function applyChartType(type) {
+    const img = selectedChart();
+    if (!img || READ_ONLY) { setStatus(t("Status.NotAvailable") + " chartType " + type); return; }
+    const spec = readChartSpec(img);
+    spec.type = String(type || "bar");
+    rerenderChart(img, spec);
+    setStatus("Chart type: " + spec.type);
+  }
+  function toggleChartElement(flag) {
+    const img = selectedChart();
+    if (!img || READ_ONLY) { setStatus(t("Status.NotAvailable") + " chartElement " + flag); return; }
+    const spec = readChartSpec(img);
+    const els = spec.elements || (spec.elements = {});
+    els[String(flag)] = !els[String(flag)];
+    rerenderChart(img, spec);
+    setStatus("Chart element " + flag + ": " + (els[flag] ? "on" : "off"));
+  }
+  function editSelectedChartData() {
+    const img = selectedChart();
+    if (!img) { setStatus(t("Status.NotAvailable") + " chartEditData"); return; }
+    openVectorEditor("chart", readChartSpec(img), img);
+    setStatus("Edit chart data");
+  }
+  function updateSelectedChartData() {
+    const img = selectedChart();
+    if (!img || READ_ONLY) { setStatus(t("Status.NotAvailable") + " chartUpdateData"); return; }
+    rerenderChart(img, readChartSpec(img));
+    setStatus("Chart data updated");
+  }
+  function applyChartSize(wpx, hpx) {
+    const img = selectedChart();
+    if (!img || READ_ONLY) { setStatus(t("Status.NotAvailable") + " chartSize"); return; }
+    const spec = readChartSpec(img);
+    const natW = img.naturalWidth || 880, natH = img.naturalHeight || 520;
+    const w = Math.max(40, Math.min(2000, Math.round(wpx || parseInt(img.style.width, 10) || 420)));
+    const h = Math.max(40, Math.min(2000, Math.round(hpx || (w * natH) / natW)));
+    img.style.width = w + "px";
+    img.style.height = h + "px";
+    spec.width = w;
+    spec.height = h;
+    img.setAttribute("data-spec", JSON.stringify(spec));
+    img.alt = `__wo-chart__${JSON.stringify(spec)}`;
+    markDirty();
+    captureHistory();
+    scheduleCollabSync();
+    notifyHost("editing");
+    setStatus("Chart size: " + w + "x" + h);
+  }
+  function updateChartDesignState() {
+    if (!chartDesignPage) return;
+    const has = !!selectedChart();
+    chartDesignPage.querySelectorAll("button").forEach((b) => {
+      if (has) b.removeAttribute("aria-disabled");
+      else b.setAttribute("aria-disabled", "true");
+    });
+    const wIn = document.getElementById("chart-width-input");
+    const hIn = document.getElementById("chart-height-input");
+    if (wIn) wIn.disabled = !has;
+    if (hIn) hIn.disabled = !has;
+    if (has) {
+      const img = selectedChart();
+      const natW = img.naturalWidth || 880, natH = img.naturalHeight || 520;
+      const spec = readChartSpec(img);
+      const w = parseInt(img.style.width, 10) || spec.width || 420;
+      if (wIn) wIn.value = String(w);
+      if (hIn) hIn.value = String(spec.height || Math.round((w * natH) / natW));
+    }
+  }
+  const chartWidthInput = document.getElementById("chart-width-input");
+  const chartHeightInput = document.getElementById("chart-height-input");
+  if (chartWidthInput) chartWidthInput.addEventListener("change", () => applyChartSize(parseFloat(chartWidthInput.value), NaN));
+  if (chartHeightInput) chartHeightInput.addEventListener("change", () => {
+    const img = selectedChart();
+    if (!img) return;
+    const natW = img.naturalWidth || 880;
+    applyChartSize(parseInt(img.style.width, 10) || natW / 2, parseFloat(chartHeightInput.value));
+  });
+  // Selection wiring (header-footer precedent): clicking a chart reveals
+  // and activates the contextual tab; clicking anywhere else in the
+  // document drops the pick, disables the controls and hides the tab.
+  editor.addEventListener("click", (ev) => {
+    const img = ev.target.closest ? ev.target.closest("img.vector-object[data-kind='chart']") : null;
+    if (img && !READ_ONLY) {
+      lastChartPick = img;
+      updateChartDesignState();
+      if (chartDesignTab && chartDesignTab.hidden) {
+        chartDesignTab.hidden = false;
+        chartDesignTab.click();
+      }
+    } else if (!READ_ONLY) {
+      if (lastChartPick || (chartDesignTab && !chartDesignTab.hidden)) {
+        lastChartPick = null;
+        updateChartDesignState();
+        if (chartDesignTab) {
+          chartDesignTab.hidden = true;
+          if (chartDesignTab.getAttribute("aria-selected") === "true") {
+            document.querySelector('.ribbon-tab[data-tab="home"]')?.click();
+          }
+        }
+      }
+    }
+  });
+  updateChartDesignState();
 
   // -- Equation: linear notation -> SVG (sup/sub/sqrt, symbol passthrough).
   function equationSVG(expr) {
