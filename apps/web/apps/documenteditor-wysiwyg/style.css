@@ -970,6 +970,18 @@ select option { background: var(--bg); color: var(--text); }
   background: var(--border);
 }
 
+/* AF14-CTX-DEPTH: submenu children (Text alignment / Text direction / AI)
+   indent under their header; spelling suggestions render bold like OO's. */
+#ctx-menu button[data-subitem] { padding-left: 52px; font-size: 11px; }
+#ctx-menu button[data-subitem][hidden] { display: none; }
+#ctx-menu button.ctx-suggest { font-weight: 600; }
+
+/* Block-level text direction (ctx menu > Text direction): the wo-textdir-*
+   classes carry the state through save/reload alongside data-textdir, even
+   where inline styles are sanitized away. */
+.wo-textdir-down { writing-mode: vertical-rl; }
+.wo-textdir-up { writing-mode: sideways-lr; }
+
 .menu-sep {
   height: 1px;
   margin: 4px 0;

@@ -1035,6 +1035,36 @@
     <button type="button" role="menuitem" data-ctx="IgnoreAll" data-showif="misspelled" data-i18n="Ctx.IgnoreAll">Ignore all</button>
     <button type="button" role="menuitem" data-ctx="AddToDictionary" data-showif="misspelled" data-i18n="Ctx.AddToDictionary">Add to dictionary</button>
     <button type="button" role="menuitem" data-ctx="SelectLanguage" data-showif="misspelled" data-i18n="Ctx.SelectLanguage">Select language</button>
+    <!-- AF14-CTX-DEPTH: spelling suggestion rows are inserted dynamically
+         right before the Ignore row when the menu opens (SpellSuggest rows
+         carrying data-word = candidate); no static placeholder rows. -->
+    <div class="ctx-sep" role="separator" data-showif="table"></div>
+    <!-- AF14-CTX-DEPTH: Text alignment submenu — visible only when the
+         selection sits inside a table cell (data-showif="table"); the header
+         toggles the child rows in place. Top/Middle/Bottom set vertical-align
+         on the selected td/th, Left/Center/Right set text-align. -->
+    <button type="button" role="menuitem" data-ctx="TextAlignment" data-showif="table" aria-haspopup="true" aria-expanded="false" data-i18n="Ctx.TextAlignment">Text alignment</button>
+    <button type="button" role="menuitem" data-ctx="TextAlignTop" data-subitem="text-align" data-showif="table" data-i18n="Ctx.TextAlignTop">Top</button>
+    <button type="button" role="menuitem" data-ctx="TextAlignMiddle" data-subitem="text-align" data-showif="table" data-i18n="Ctx.TextAlignMiddle">Middle</button>
+    <button type="button" role="menuitem" data-ctx="TextAlignBottom" data-subitem="text-align" data-showif="table" data-i18n="Ctx.TextAlignBottom">Bottom</button>
+    <button type="button" role="menuitem" data-ctx="TextAlignLeft" data-subitem="text-align" data-showif="table" data-i18n="Ctx.TextAlignLeft">Left</button>
+    <button type="button" role="menuitem" data-ctx="TextAlignCenter" data-subitem="text-align" data-showif="table" data-i18n="Ctx.TextAlignCenter">Center</button>
+    <button type="button" role="menuitem" data-ctx="TextAlignRight" data-subitem="text-align" data-showif="table" data-i18n="Ctx.TextAlignRight">Right</button>
+    <!-- AF14-CTX-DEPTH: Text direction submenu — writing-mode on the block
+         under the selection, persisted as data-textdir + a wo-textdir-* class
+         so it round-trips flatHtml()/save. -->
+    <button type="button" role="menuitem" data-ctx="TextDirection" aria-haspopup="true" aria-expanded="false" data-i18n="Ctx.TextDirection">Text direction</button>
+    <button type="button" role="menuitem" data-ctx="TextDirHorizontal" data-subitem="text-dir" data-i18n="Ctx.TextDirHorizontal">Horizontal</button>
+    <button type="button" role="menuitem" data-ctx="TextDirRotateDown" data-subitem="text-dir" data-i18n="Ctx.TextDirRotateDown">Rotate text down</button>
+    <button type="button" role="menuitem" data-ctx="TextDirRotateUp" data-subitem="text-dir" data-i18n="Ctx.TextDirRotateUp">Rotate text up</button>
+    <div class="ctx-sep" role="separator"></div>
+    <!-- AF14-CTX-DEPTH: Follow move (tracked changes only) + AI submenu
+         (Rewrite/Summarize/Translate reusing the ai* command handlers). -->
+    <button type="button" role="menuitem" data-ctx="FollowMove" data-showif="trackchanges" data-i18n="Ctx.FollowMove">Follow move</button>
+    <button type="button" role="menuitem" data-ctx="AI" aria-haspopup="true" aria-expanded="false" data-i18n="Ctx.AI">AI</button>
+    <button type="button" role="menuitem" data-ctx="AIRewrite" data-subitem="ai" data-i18n="Ctx.AIRewrite">AI Rewrite</button>
+    <button type="button" role="menuitem" data-ctx="AISummarize" data-subitem="ai" data-i18n="Ctx.AISummarize">AI Summarize</button>
+    <button type="button" role="menuitem" data-ctx="AITranslate" data-subitem="ai" data-i18n="Ctx.AITranslate">AI Translate</button>
     <div class="ctx-sep" role="separator"></div>
     <!-- Undo/Redo -->
     <button type="button" role="menuitem" data-ctx="Undo" data-i18n="Ctx.Undo">Undo</button>

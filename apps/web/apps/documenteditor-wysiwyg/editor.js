@@ -6613,13 +6613,23 @@
     const closeCtx = () => { ctxMenu.hidden = true; };
     editorEl.addEventListener("contextmenu", (e) => {
       e.preventDefault();
-      // AF11-SPELLCHECK-CLOSEOUT: spell rows carry data-showif="misspelled"
-      // and only appear when a misspell marker sits in or next to selection.
-      const hasMisspell = !!(e.target.closest && e.target.closest("span.wo-misspelled"))
-        || !!misspellAtSelection();
+      const misspellSpan = misspellAtSelection()
+        || (e.target.closest ? e.target.closest("span.wo-misspelled") : null);
+      const hasMisspell = !!misspellSpan;
+      // AF11 gating extended by AF14-CTX-DEPTH: data-showif="table" for
+      // table-cell rows, data-showif="trackchanges" for Follow move.
+      const inTable = selectionIsInTable();
       ctxMenu.querySelectorAll("[data-showif='misspelled']").forEach((el) => {
         el.hidden = !hasMisspell;
       });
+      ctxMenu.querySelectorAll("[data-showif='table']").forEach((el) => {
+        el.hidden = !inTable;
+      });
+      ctxMenu.querySelectorAll("[data-showif='trackchanges']").forEach((el) => {
+        el.hidden = !trackChangesOn;
+      });
+      refreshSpellSuggestionRows(misspellSpan);
+      collapseAllCtxSubmenus();
       ctxMenu.hidden = false;
       const r = ctxMenu.getBoundingClientRect();
       ctxMenu.style.left = Math.max(4, Math.min(e.clientX + 2, window.innerWidth - r.width - 4)) + "px";
@@ -6630,8 +6640,21 @@
     ctxMenu.addEventListener("click", (e) => {
       const btn = e.target.closest("button[data-ctx]");
       if (!btn) return;
-      closeCtx();
       const action = btn.dataset.ctx;
+      // AF14-CTX-DEPTH: headers toggle children in place instead of closing.
+      if (action === "TextAlignment") {
+        toggleCtxSubmenu(btn, "text-align");
+        return;
+      }
+      if (action === "TextDirection") {
+        toggleCtxSubmenu(btn, "text-dir");
+        return;
+      }
+      if (action === "AI") {
+        toggleCtxSubmenu(btn, "ai");
+        return;
+      }
+      closeCtx();
       // Clipboard
       if (action === "Cut" || action === "Copy") {
         document.execCommand(action.toLowerCase());
@@ -6779,6 +6802,35 @@
         if (langSel) {
           try { langSel.showPicker(); } catch (err) { langSel.focus(); }
         }
+      } else if (action === "SpellSuggest") {
+        spellReplaceAtSelection(btn.dataset.word);
+      } else if (action === "TextAlignTop") {
+        applyCellVerticalAlign("top");
+      } else if (action === "TextAlignMiddle") {
+        applyCellVerticalAlign("middle");
+      } else if (action === "TextAlignBottom") {
+        applyCellVerticalAlign("bottom");
+      } else if (action === "TextAlignLeft") {
+        applyCellTextAlign("left");
+      } else if (action === "TextAlignCenter") {
+        applyCellTextAlign("center");
+      } else if (action === "TextAlignRight") {
+        applyCellTextAlign("right");
+      } else if (action === "TextDirHorizontal") {
+        applyTextDirection("horizontal");
+      } else if (action === "TextDirRotateDown") {
+        applyTextDirection("rotate-down");
+      } else if (action === "TextDirRotateUp") {
+        applyTextDirection("rotate-up");
+      } else if (action === "FollowMove") {
+        window.dispatchEvent(new CustomEvent("wo:follow-move", { detail: { source: "ctx-menu" } }));
+        console.info("wo:follow-move requested (ctx menu)");
+      } else if (action === "AIRewrite") {
+        emitCommand("aiRewrite");
+      } else if (action === "AISummarize") {
+        emitCommand("aiSummarize");
+      } else if (action === "AITranslate") {
+        emitCommand("aiTranslate", "German");
       }
     });
     document.addEventListener("mousedown", (e) => {
@@ -6786,6 +6838,109 @@
     });
     window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeCtx(); });
     window.addEventListener("blur", closeCtx);
+  }
+
+  // --- AF14-CTX-DEPTH: ctx menu depth ------------------------------------
+  // Spelling suggestions (see spellSuggestions by the spell engine), table
+  // cell alignment, block text direction, submenu + dynamic row plumbing.
+  function selectionIsInTable() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return false;
+    const n = sel.getRangeAt(0).startContainer;
+    const el = n.nodeType === 1 ? n : n.parentNode;
+    const cell = el && el.closest ? el.closest("td, th") : null;
+    return !!(cell && editor.contains(cell));
+  }
+  function tableCellsInSelection() {
+    const cell = currentTableCell();
+    if (!cell) return [];
+    const table = cell.closest("table");
+    if (!table) return [cell];
+    const cells = selectedCells(table);
+    return cells.length ? cells : [cell];
+  }
+  function applyCellVerticalAlign(va) {
+    const cells = tableCellsInSelection();
+    if (!cells.length) return;
+    cells.forEach((c) => { c.style.verticalAlign = va; });
+    finalizeTableChange();
+  }
+  function applyCellTextAlign(align) {
+    const cells = tableCellsInSelection();
+    if (!cells.length) return;
+    cells.forEach((c) => { c.style.textAlign = align; });
+    finalizeTableChange();
+  }
+  // Text direction mirrors toggleBlockDirection: block-level style under
+  // the selection. data-textdir + a wo-textdir-* class carry the state so
+  // flatHtml()/save round-trips it even if inline styles are sanitized.
+  const TEXT_DIR_MODES = {
+    "horizontal": { writingMode: "", cls: null },
+    "rotate-down": { writingMode: "vertical-rl", cls: "wo-textdir-down" },
+    "rotate-up": { writingMode: "sideways-lr", cls: "wo-textdir-up" },
+  };
+  function applyTextDirection(mode) {
+    if (READ_ONLY) return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    if (!editor.contains(sel.getRangeAt(0).startContainer)) return;
+    const blocks = blocksUnderSelection(sel);
+    if (!blocks.length) return;
+    const spec = TEXT_DIR_MODES[mode];
+    if (!spec) return;
+    blocks.forEach((blk) => {
+      blk.classList.remove("wo-textdir-down", "wo-textdir-up");
+      if (spec.writingMode) blk.style.setProperty("writing-mode", spec.writingMode);
+      else blk.style.removeProperty("writing-mode");
+      if (spec.cls) {
+        blk.classList.add(spec.cls);
+        blk.setAttribute("data-textdir", mode);
+      } else {
+        blk.removeAttribute("data-textdir");
+      }
+    });
+    markDirty();
+    captureHistory();
+    scheduleCollabSync();
+    notifyHost("editing");
+  }
+  function collapseAllCtxSubmenus() {
+    ctxMenu.querySelectorAll("button[aria-haspopup='true']").forEach((el) => {
+      el.setAttribute("aria-expanded", "false");
+    });
+    ctxMenu.querySelectorAll("button[data-subitem]").forEach((el) => {
+      el.hidden = true;
+    });
+  }
+  function toggleCtxSubmenu(headerBtn, group) {
+    const willOpen = headerBtn.getAttribute("aria-expanded") !== "true";
+    collapseAllCtxSubmenus();
+    if (willOpen) {
+      headerBtn.setAttribute("aria-expanded", "true");
+      ctxMenu.querySelectorAll("button[data-subitem='" + group + "']").forEach((el) => {
+        el.hidden = false;
+      });
+    }
+  }
+  function refreshSpellSuggestionRows(misspellSpan) {
+    ctxMenu.querySelectorAll("button[data-dynamic='spell-suggest']").forEach((el) => el.remove());
+    if (!misspellSpan || !misspellSpan.isConnected) return;
+    const word = String(misspellSpan.getAttribute("data-word") || misspellSpan.textContent || "").trim();
+    if (!word) return;
+    const anchor = ctxMenu.querySelector("button[data-ctx='Ignore']");
+    for (const candidate of spellSuggestions(word, 5)) {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.setAttribute("role", "menuitem");
+      row.className = "ctx-suggest";
+      row.setAttribute("data-ctx", "SpellSuggest");
+      row.setAttribute("data-word", candidate);
+      row.setAttribute("data-showif", "misspelled");
+      row.setAttribute("data-dynamic", "spell-suggest");
+      row.textContent = candidate;
+      if (anchor) ctxMenu.insertBefore(row, anchor);
+      else ctxMenu.appendChild(row);
+    }
   }
 
   function toggleFullscreen() {
@@ -7494,6 +7649,62 @@
     spellState.userDict.add(w);
     saveSpellUserDict();
     runSpellCheck();
+  }
+  // AF14-CTX-DEPTH: sampled edit-distance suggestions. spellSuggestions()
+  // caps the scan at SPELL_SUGGEST_SAMPLE_MAX comparisons (every Nth
+  // dictionary word) — a naive full Levenshtein pass over a ~300k-entry
+  // dictionary would blow the ~50 ms ctx-open budget; the sample ceiling
+  // keeps it far below. spellLevenshtein abandons a row once its minimum
+  // exceeds the accepted distance, so long candidates cost O(1).
+  const SPELL_SUGGEST_SAMPLE_MAX = 6000;
+  function spellLevenshtein(a, b, max) {
+    if (Math.abs(a.length - b.length) > max) return max + 1;
+    let prev = new Array(b.length + 1);
+    for (let j = 0; j <= b.length; j++) prev[j] = j;
+    for (let i = 1; i <= a.length; i++) {
+      const cur = new Array(b.length + 1);
+      cur[0] = i;
+      let rowMin = i;
+      for (let j = 1; j <= b.length; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+        if (cur[j] < rowMin) rowMin = cur[j];
+      }
+      if (rowMin > max) return max + 1;
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+  function spellSuggestions(word, limit = 5) {
+    const dict = spellState.words;
+    if (!dict || dict.size === 0 || !word) return [];
+    const w = word.toLowerCase();
+    const all = Array.from(dict);
+    const step = Math.max(1, Math.ceil(all.length / SPELL_SUGGEST_SAMPLE_MAX));
+    const cands = [];
+    for (let i = 0; i < all.length; i += step) {
+      const c = all[i];
+      if (c === w) continue;
+      const d = spellLevenshtein(w, c, 2);
+      if (d <= 2) cands.push([c, d]);
+    }
+    cands.sort((x, y) => x[1] - y[1] || x[0].localeCompare(y[0]));
+    return cands.slice(0, limit).map((p) => p[0]);
+  }
+  function spellReplaceAtSelection(word) {
+    if (!word) return;
+    const span = misspellAtSelection();
+    if (!span || !editor.contains(span)) return;
+    span.textContent = word;
+    span.setAttribute("data-word", word);
+    // runSpellCheck unwraps all markers first, so the replaced word is
+    // re-evaluated (and unmarked when the candidate is a real fix).
+    runSpellCheck();
+    markDirty();
+    captureHistory();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
   }
   try {
     for (const w of JSON.parse(localStorage.getItem("wo-ignore-all") || "[]")) {
