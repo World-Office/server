@@ -6603,8 +6603,8 @@
     zoomLevel = Math.min(2, Math.max(0.5, avail / 830));
     applyZoom();
   });
-  const tcBtn = document.getElementById("sb-track-changes");
-  if (tcBtn) tcBtn.addEventListener("click", () => { setTrackChanges(!trackChangesOn); });
+  const sbTcBtn = document.getElementById("sb-track-changes");
+  if (sbTcBtn) sbTcBtn.addEventListener("click", () => { setTrackChanges(!trackChangesOn); });
   const printBtn = document.getElementById("btn-print-qa");
   if (printBtn) printBtn.addEventListener("click", () => window.print());
   const rcBtn = document.getElementById("btn-ribbon-collapse");

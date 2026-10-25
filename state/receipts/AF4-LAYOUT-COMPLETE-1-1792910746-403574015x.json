@@ -1,0 +1,12 @@
+{
+  "task": "AF4-LAYOUT-COMPLETE",
+  "attempt": 1,
+  "worker": "wo",
+  "model": "litellm/glm-4.7",
+  "wall_clock_s": 871.602346971,
+  "tokens": null,
+  "ts": 1792910746,
+  "outcome": "merged",
+  "error": null,
+  "cost_micros": null
+}

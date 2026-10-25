@@ -1,0 +1,18 @@
+{
+  "AF8-INSERT-CTX-CLEANUP": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1792942265,
+    "attempt_worker": "wo"
+  },
+  "AF7-RIGHT-PANEL": {
+    "state": "done",
+    "attempts": 1,
+    "last_error": null,
+    "phase": "gate_passed",
+    "attempt_started_ts": 1792941463,
+    "attempt_worker": "wo"
+  }
+}
