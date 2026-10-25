@@ -1951,3 +1951,11 @@ body.multi-page-view #editor .page-break br { display: none; }
    every chrome cluster (menu-bar quick access, ribbon right tools, statusbar
    zoom/language cluster) flows in flex and pins via spacer / margin-left:auto,
    so nothing can run off-screen at any viewport width. */
+
+/* AF6-VIEW-GAPS: View > Dark document — view-only darkening of the
+   document area (CSS only; nothing enters the saved document). */
+main.dark-document { background: #23232b; }
+main.dark-document #editor,
+main.dark-document #editor [class*="wo-page"] {
+  background-color: #1e1e28; color: #d4d4d8;
+}
