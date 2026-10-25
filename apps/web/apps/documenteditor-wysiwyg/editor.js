@@ -134,10 +134,22 @@
     }
   }
 
+  /**
+   * Remove a comment span, unwrapping its text back into the flow.
+   * @param {HTMLElement} span - a span.comment element
+   */
+  function removeComment(span) {
+    const parent = span.parentNode;
+    if (!parent) return;
+    while (span.firstChild) parent.insertBefore(span.firstChild, span);
+    parent.removeChild(span);
+  }
+
   // Expose pure helpers for tests
   window.parseThread = parseThread;
   window.addReply = addReply;
   window.toggleResolved = toggleResolved;
+  window.removeComment = removeComment;
 
   const DOC_ID = window.__DOC_ID__ || "unknown";
   const DOC_NAME = window.__DOC_NAME__ || "document.docx";
@@ -1223,6 +1235,35 @@
     if (cmd === "compareVersion") { openCompareView(); return; }
     if (cmd === "prevTrackedChange") { prevTrackedChange(); return; }
     if (cmd === "nextTrackedChange") { nextTrackedChange(); return; }
+    if (cmd === "resolveComment") {
+      const span = commentAtSelection();
+      if (span) {
+        toggleResolved(span);
+        afterTrackEdit();
+        renderCommentsList();
+        openCommentsPanel();
+      } else {
+        setStatus(t("Status.NoCommentAtCaret"));
+      }
+      return;
+    }
+    if (cmd === "deleteComment") {
+      const span = commentAtSelection();
+      if (span) {
+        removeComment(span);
+        afterTrackEdit();
+        renderCommentsList();
+        closeCommentsPanelIfEmpty();
+      } else {
+        setStatus(t("Status.NoCommentAtCaret"));
+      }
+      return;
+    }
+    if (cmd === "combineRevisions") {
+      window.dispatchEvent(new CustomEvent("wo:combine-revisions", { detail: { source: "ribbon" } }));
+      console.info("wo: combine-revisions: requested");
+      return;
+    }
     if (cmd === "toggleHyphenation") { openHyphenationDialog(); return; }
     if (cmd === "toggleLineNumbers") { openLineNumbersDialog(); return; }
     if (cmd === "toggleWatermark") { openWatermarkDialog(); return; }
@@ -2131,6 +2172,33 @@
       : null;
     window.dispatchEvent(new CustomEvent("wo:field-op", { detail: { op, onField: !!onField } }));
     console.info("wo: field-op:", op, onField ? "(on field)" : "(no field at caret)");
+  }
+
+  function commentAtSelection() {
+    const sel = window.getSelection();
+    let node = sel && sel.anchorNode;
+    if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+    return node && typeof node.closest === "function"
+      ? node.closest("#editor span.comment")
+      : null;
+  }
+
+  function contentControlAtSelection() {
+    const sel = window.getSelection();
+    let node = sel && sel.anchorNode;
+    if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+    return node && typeof node.closest === "function"
+      ? node.closest("#editor span.content-control")
+      : null;
+  }
+
+  function vectorObjectAtSelection() {
+    const sel = window.getSelection();
+    let node = sel && sel.anchorNode;
+    if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+    return node && typeof node.closest === "function"
+      ? node.closest("#editor img.vector-object[data-kind='equation']")
+      : null;
   }
 
   function saveImageSelection() {
@@ -3155,8 +3223,7 @@
   function deleteComment(el) {
     const parent = el.parentNode;
     if (!parent) return;
-    while (el.firstChild) parent.insertBefore(el.firstChild, el);
-    parent.removeChild(el);
+    removeComment(el);
     afterTrackEdit();
     renderCommentsList();
     closeCommentsPanelIfEmpty();
@@ -5950,6 +6017,12 @@
   editor.addEventListener("beforeinput", onBeforeInput);
   const commentBtn = document.getElementById("btn-comment");
   if (commentBtn) commentBtn.addEventListener("click", openCommentDialog);
+  const coeditModeSel = document.getElementById("coedit-mode");
+  if (coeditModeSel) coeditModeSel.addEventListener("change", () => {
+    const mode = coeditModeSel.value === "strict" ? "strict" : "fast";
+    window.dispatchEvent(new CustomEvent("wo:coedit-mode", { detail: { mode, source: "ribbon" } }));
+    console.info("wo: coedit-mode:", mode);
+  });
   const commentOk = document.getElementById("btn-comment-ok");
   if (commentOk) commentOk.addEventListener("click", confirmCommentDialog);
   const commentCancel = document.getElementById("btn-comment-cancel");
@@ -6594,6 +6667,38 @@
         trackedChangeAtSelection("accept");
       } else if (action === "RejectChange") {
         trackedChangeAtSelection("reject");
+      } else if (action === "DropcapSettings") {
+        openDropcapDialog();
+      } else if (action === "FrameSettings") {
+        window.dispatchEvent(new CustomEvent("wo:frame-settings", { detail: { source: "ctx-menu" } }));
+        console.info("wo: frame-settings requested (ctx menu)");
+      } else if (action === "EquationSettings") {
+        const img = vectorObjectAtSelection();
+        if (img) {
+          let spec = {};
+          try { spec = JSON.parse(img.dataset.spec || "{}"); } catch { spec = {}; }
+          openVectorEditor("equation", spec, img);
+        } else {
+          window.dispatchEvent(new CustomEvent("wo:equation-settings", { detail: { source: "ctx-menu" } }));
+          console.info("wo: equation-settings requested (ctx menu)");
+        }
+      } else if (action === "ContentControlSettings") {
+        window.dispatchEvent(new CustomEvent("wo:content-control-settings", { detail: { source: "ctx-menu", onControl: !!contentControlAtSelection() } }));
+        console.info("wo: content-control-settings requested (ctx menu)");
+      } else if (action === "RemoveContentControl") {
+        const cc = contentControlAtSelection();
+        if (cc && cc.parentNode) {
+          const parent = cc.parentNode;
+          while (cc.firstChild) parent.insertBefore(cc.firstChild, cc);
+          parent.removeChild(cc);
+          markDirty();
+          captureHistory();
+          scheduleCollabSync();
+          notifyHost("editing");
+          updateActiveStates();
+        } else {
+          setStatus(t("Status.NoContentControl"));
+        }
       } else if (action === "PrintSelection") {
         emitCommand("printSelection");
         // Selection

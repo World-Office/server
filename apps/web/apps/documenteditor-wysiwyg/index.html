@@ -611,6 +611,8 @@
     <button type="button" data-cmd="insertCitation" data-i18n="Ref.Citation">Citation</button>
     <button type="button" data-cmd="insertIndexEntry" data-i18n="Ref.Index">Index</button>
     <button type="button" data-cmd="updateToc" data-i18n="Ref.UpdateToc">Update TOC</button>
+    <button type="button" data-cmd="updateToc" data-i18n="Ref.UpdateTable">Update table</button>
+    <button type="button" data-cmd="insertToF" data-i18n="Ref.TableOfFigures">Table of figures</button>
     <button type="button" data-cmd="openCrossref" data-i18n="Ref.Crossref">Cross-reference</button>
     </div>
     <div class="ribbon-page" data-tab="collaboration" role="group" aria-label="Collaboration ribbon" data-i18n-aria-label="Tab.Collaboration">
@@ -618,9 +620,17 @@
     <button id="btn-review-changes" title="Review changes" aria-label="Review changes">✓</button>
     <button id="btn-comment" title="Add comment" aria-label="Add comment"><svg viewBox="0 0 18 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 2h14v8h-7.5L5 13v-3H2z"/></svg></button>
     <button id="btn-comments" title="Show comments" aria-label="Show comments">◫</button>
+    <button type="button" data-cmd="resolveComment" data-i18n="Collab.Resolve">Resolve</button>
+    <button type="button" data-cmd="deleteComment" data-i18n="Collab.Delete">Delete</button>
     <button id="btn-chat-toggle" type="button" data-cmd="toggleChat" data-i18n="Collab.Chat" aria-expanded="false">Chat</button>
     <button type="button" data-cmd="compareVersion" data-i18n="Collab.Compare">Compare</button>
+    <button type="button" data-cmd="combineRevisions" data-i18n="Collab.Combine">Combine</button>
     <button type="button" data-cmd="displayMode" data-i18n="Collab.Display">Display mode</button>
+    <label for="coedit-mode" data-i18n="Collab.CoEditMode">Co-editing mode</label>
+    <select id="coedit-mode" title="Co-editing mode" aria-label="Co-editing mode">
+      <option value="fast" data-i18n="Collab.CoEditFast">Fast</option>
+      <option value="strict" data-i18n="Collab.CoEditStrict">Strict</option>
+    </select>
     <button type="button" data-cmd="prevTrackedChange" data-i18n="Collab.PrevChange" title="Previous change" aria-label="Previous change">◀ change</button>
     <button type="button" data-cmd="nextTrackedChange" data-i18n="Collab.NextChange" title="Next change" aria-label="Next change">change ▶</button>
     </div>
@@ -1032,6 +1042,13 @@
     <button type="button" role="menuitem" data-ctx="PageBreakBefore" data-i18n="Ctx.PageBreakBefore">Page break before</button>
     <button type="button" role="menuitem" data-ctx="AcceptChange" data-i18n="Ctx.AcceptChange">Accept change</button>
     <button type="button" role="menuitem" data-ctx="RejectChange" data-i18n="Ctx.RejectChange">Reject change</button>
+    <div class="ctx-sep" role="separator"></div>
+    <!-- Advanced settings -->
+    <button type="button" role="menuitem" data-ctx="DropcapSettings" data-i18n="Ctx.DropcapSettings">Drop cap settings</button>
+    <button type="button" role="menuitem" data-ctx="FrameSettings" data-i18n="Ctx.FrameSettings">Frame advanced settings</button>
+    <button type="button" role="menuitem" data-ctx="EquationSettings" data-i18n="Ctx.EquationSettings">Equation settings</button>
+    <button type="button" role="menuitem" data-ctx="ContentControlSettings" data-i18n="Ctx.ContentControlSettings">Content control settings</button>
+    <button type="button" role="menuitem" data-ctx="RemoveContentControl" data-i18n="Ctx.RemoveContentControl">Remove content control</button>
     <div class="ctx-sep" role="separator"></div>
     <!-- Selection -->
     <button type="button" role="menuitem" data-ctx="PrintSelection" data-i18n="Ctx.PrintSelection">Print selection</button>
