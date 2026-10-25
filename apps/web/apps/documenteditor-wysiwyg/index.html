@@ -446,6 +446,7 @@
     <button id="btn-image" title="Insert image" data-i18n-title="Toolbar.InsertImageTitle" aria-label="Insert image" data-i18n-aria-label="Toolbar.InsertImageTitle"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><circle cx="5" cy="6" r="1.3"/><path d="M2.5 12.5 7 8l3 3 2-2 1.5 1.5"/></svg></button>
     <button id="btn-link" title="Insert link" aria-label="Insert link"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 9.5 9.5 6.5M5 11l-1.5 1.5a2.5 2.5 0 0 1-3.536-3.536L2.5 6.5M11 5l1.5-1.5a2.5 2.5 0 0 1 3.536 3.536L13.5 9.5" transform="translate(0.5 0)"/></svg></button>
     <button id="btn-hr" title="Insert horizontal rule" aria-label="Insert horizontal rule">─</button>
+    <button type="button" data-cmd="insertBlankPage" data-i18n="Insert.BlankPage" title="Insert blank page" aria-label="Insert blank page">Blank page</button>
 <button id="btn-object" title="Insert object" aria-label="Insert object">▢</button>
 <button id="btn-bookmark" title="Insert bookmark" aria-label="Insert bookmark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h9v13l-4.5-3.5-4.5 3.5z"/></svg></button>
 <button id="btn-crossref" title="Insert cross-reference" aria-label="Insert cross-reference"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 14V8a3 3 0 0 1 3-3h9M10.5 1.5 14 5l-3.5 3.5"/></svg></button>
@@ -456,10 +457,19 @@
 <button id="btn-footer" data-cmd="insertFooter" title="Insert page footer" data-i18n-title="Toolbar.FooterTitle" aria-label="Insert page footer">▁</button>
     <button type="button" data-cmd="insertObject" data-value="shape" data-i18n="Insert.Shape">Shape</button>
     <button type="button" data-cmd="insertObject" data-value="chart" data-i18n="Insert.Chart">Chart</button>
-    <button type="button" data-cmd="insertObject" data-value="textart" data-i18n="Insert.TextArt">Text art</button>
+    <button type="button" data-cmd="insertTextart" data-i18n="Insert.TextArt">Text art</button>
     <button type="button" data-cmd="toggleDropcap" data-i18n="Insert.DropCap">Drop cap</button>
-    <button type="button" data-cmd="insertObject" data-value="textbox" data-i18n="Insert.TextBox">Text box</button>
+    <button type="button" data-cmd="insertTextbox" data-i18n="Insert.TextBox">Text box</button>
     <button type="button" data-cmd="link" data-i18n="Insert.Hyperlink">Hyperlink</button>
+    <button type="button" data-cmd="insertComment" data-i18n="Insert.Comment" title="Insert comment" aria-label="Insert comment">Comment</button>
+    <span class="menu rb-menu" >
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Breaks">Breaks ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="insertPageBreak" data-i18n="Layout.Breaks.Page">Insert page break</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="insertColumnBreak" data-i18n="Layout.Breaks.Column">Insert column break</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="insertSectionBreak" data-i18n="Layout.Breaks.Section">Insert section break</button></li>
+      </ul>
+    </span>
     <span class="menu rb-menu" >
       <button type="button" id="btn-insert-more" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Insert.More">Insert tools ▾</button>
       <ul class="menu-list" role="menu" hidden>
@@ -920,10 +930,17 @@
     <button type="button" role="menuitem" data-ctx="Underline" data-i18n="Ctx.Underline">Underline</button>
     <button type="button" role="menuitem" data-ctx="StrikeThrough" data-i18n="Ctx.StrikeThrough">Strikethrough</button>
     <button type="button" role="menuitem" data-ctx="RemoveFormat" data-i18n="Ctx.RemoveFormat">Clear formatting</button>
+    <button type="button" role="menuitem" data-ctx="KeepLines" data-i18n="Ctx.KeepLines">Keep lines together</button>
+    <button type="button" role="menuitem" data-ctx="ParagraphSettings" data-i18n="Ctx.ParagraphSettings">Paragraph advanced settings</button>
+    <button type="button" role="menuitem" data-ctx="FormattingAsStyle" data-i18n="Ctx.FormattingAsStyle">Formatting as style</button>
     <div class="ctx-sep" role="separator"></div>
     <!-- Lists -->
     <button type="button" role="menuitem" data-ctx="BulletList" data-i18n="Ctx.BulletList">Bullet list</button>
     <button type="button" role="menuitem" data-ctx="NumberedList" data-i18n="Ctx.NumberedList">Numbered list</button>
+    <button type="button" role="menuitem" data-ctx="StartNewList" data-i18n="Ctx.StartNewList">Start new list</button>
+    <button type="button" role="menuitem" data-ctx="ContinueNumbering" data-i18n="Ctx.ContinueNumbering">Continue numbering</button>
+    <button type="button" role="menuitem" data-ctx="SetNumberingValue" data-i18n="Ctx.SetNumberingValue">Set numbering value</button>
+    <button type="button" role="menuitem" data-ctx="AdjustListIndents" data-i18n="Ctx.AdjustListIndents">Adjust list indents</button>
     <div class="ctx-sep" role="separator"></div>
     <!-- Insert block -->
     <button type="button" role="menuitem" data-ctx="HorizontalRule" data-i18n="Ctx.HorizontalRule">Horizontal line</button>
@@ -937,10 +954,19 @@
     <!-- Document block -->
     <button type="button" role="menuitem" data-ctx="AddComment" data-i18n="Ctx.AddComment">Add comment</button>
     <button type="button" role="menuitem" data-ctx="Link" data-i18n="Ctx.Link">Link</button>
+    <button type="button" role="menuitem" data-ctx="EditLink" data-i18n="Ctx.EditLink">Edit link</button>
+    <button type="button" role="menuitem" data-ctx="RemoveLink" data-i18n="Ctx.RemoveLink">Remove link</button>
     <button type="button" role="menuitem" data-ctx="UpdateTOC" data-i18n="Ctx.UpdateTOC">Update table of contents</button>
+    <button type="button" role="menuitem" data-ctx="TocSettings" data-i18n="Ctx.TocSettings">Table of contents settings</button>
+    <button type="button" role="menuitem" data-ctx="UpdateField" data-i18n="Ctx.UpdateField">Update field</button>
+    <button type="button" role="menuitem" data-ctx="EditField" data-i18n="Ctx.EditField">Edit field</button>
+    <button type="button" role="menuitem" data-ctx="ToggleFieldCodes" data-i18n="Ctx.ToggleFieldCodes">Toggle field codes</button>
     <button type="button" role="menuitem" data-ctx="PageBreakBefore" data-i18n="Ctx.PageBreakBefore">Page break before</button>
+    <button type="button" role="menuitem" data-ctx="AcceptChange" data-i18n="Ctx.AcceptChange">Accept change</button>
+    <button type="button" role="menuitem" data-ctx="RejectChange" data-i18n="Ctx.RejectChange">Reject change</button>
     <div class="ctx-sep" role="separator"></div>
     <!-- Selection -->
+    <button type="button" role="menuitem" data-ctx="PrintSelection" data-i18n="Ctx.PrintSelection">Print selection</button>
     <button type="button" role="menuitem" data-ctx="SelectAll" data-i18n="Ctx.SelectAll">Select all</button>
   </div>
   </div>
