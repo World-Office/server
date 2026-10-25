@@ -615,6 +615,14 @@ select option { background: var(--bg); color: var(--text); }
   padding: 0 1px;
 }
 
+.toolbar .color-key.key-shading {
+  background: #f4f4f4;
+  color: #1a1a1a;
+  border-radius: 2px;
+  padding: 0 1px;
+  box-shadow: 0 0 0 1px var(--border);
+}
+
 .toolbar input[type="color"] {
   width: 22px;
   height: 22px;
