@@ -3223,7 +3223,7 @@
     if (prevBtn) prevBtn.disabled = noMatch;
   }
 
-  function openFindDialog() {
+  function openFindDialog(focusReplace) {
     const dialog = document.getElementById("find-dialog");
     if (!dialog) return;
     const qInput = document.getElementById("find-query");
@@ -3235,9 +3235,10 @@
     }
     rememberFocus();
     dialog.classList.add("open");
-    if (qInput) {
-      qInput.focus();
-      qInput.select();
+    const target = focusReplace ? document.getElementById("find-replace") : qInput;
+    if (target) {
+      target.focus();
+      if (target === qInput) target.select();
     }
     findState.anchorPos = null; // start from the caret/selection this time
     performSearch({ forward: true, relative: false });
@@ -4365,14 +4366,20 @@
   const gridlinesBtn = document.getElementById("btn-gridlines");
   if (gridlinesBtn) gridlinesBtn.addEventListener("click", toggleGridlines);
 
-  // View tab: formatting marks are another view-only overlay (like gridlines);
-  // the ¶ glyphs come from CSS on #editor.show-marks, nothing enters the doc.
-  const fmtMarksBtn = document.getElementById("btn-view-formatmarks");
-  if (fmtMarksBtn) fmtMarksBtn.addEventListener("click", () => {
-    const on = editor.classList.toggle("show-marks");
-    fmtMarksBtn.setAttribute("aria-pressed", String(on));
+  // Formatting marks (nonprinting characters): view-only overlay (like
+  // gridlines); the ¶ glyphs come from CSS on #editor.show-marks, nothing
+  // enters the doc. The View-tab toggle and the home-ribbon button share
+  // one toggle so their aria-pressed states stay in sync.
+  function setFormatMarks(on) {
+    editor.classList.toggle("show-marks", on);
+    document.querySelectorAll("#btn-view-formatmarks, #btn-home-formatmarks")
+      .forEach((b) => b.setAttribute("aria-pressed", String(on)));
     setStatus(on ? "Formatting marks on" : "Formatting marks off");
-  });
+  }
+  const fmtMarksBtn = document.getElementById("btn-view-formatmarks");
+  if (fmtMarksBtn) fmtMarksBtn.addEventListener("click", () => setFormatMarks(!editor.classList.contains("show-marks")));
+  const homeFmtMarksBtn = document.getElementById("btn-home-formatmarks");
+  if (homeFmtMarksBtn) homeFmtMarksBtn.addEventListener("click", () => setFormatMarks(!editor.classList.contains("show-marks")));
 
   // Layout: page color (native picker -> --paper) and theme color schemes
   // (OO Layout>Colors: named palettes swapping the paper/ink vars). These are
@@ -5859,6 +5866,8 @@
     restoreFocus();
   });
   document.getElementById("btn-find").addEventListener("click", openFindDialog);
+  const replaceBtn = document.getElementById("btn-replace");
+  if (replaceBtn) replaceBtn.addEventListener("click", () => openFindDialog(true));
   saveBtn.addEventListener("click", saveDocument);
 
   // --- view controls: zoom / theme / fullscreen ----------------------
@@ -6427,6 +6436,25 @@
       if (ev.shiftKey && (ev.code === "Digit7" || ev.code === "Digit8")) {
         ev.preventDefault();
         emitCommand(ev.code === "Digit8" ? "insertUnorderedList" : "insertOrderedList");
+        return;
+      }
+      // Font size: Ctrl+] grow, Ctrl+[ shrink (OO 9.4 Home convention).
+      // ev.code match like the digits, so non-US layouts still resolve.
+      if (ev.code === "BracketRight" || ev.code === "BracketLeft") {
+        ev.preventDefault();
+        emitCommand(ev.code === "BracketRight" ? "fontSizeInc" : "fontSizeDec");
+        return;
+      }
+      // Subscript: Ctrl+. (OO 9.4 Home convention).
+      if (k === "." && !ev.shiftKey) {
+        ev.preventDefault();
+        emitCommand("subscript");
+        return;
+      }
+      // Replace: Ctrl+H, land in the replace field (Ctrl+F stays find).
+      if (k === "h" && !ev.shiftKey) {
+        ev.preventDefault();
+        openFindDialog(true);
         return;
       }
       // Paragraph alignment (Word / LibreOffice convention): Ctrl+E center,
