@@ -1219,6 +1219,19 @@
       openAiPropose("Summarize the document into a concise summary.");
       return;
     }
+    // AF11-SPELLCHECK-CLOSEOUT: AI-tab Settings opens the shared settings
+    // dialog (same state sync as the File > Settings row).
+    if (cmd === "aiSettings") {
+      syncSettingsDialog();
+      openOverlayDialog("settings-dialog");
+      return;
+    }
+    // Backstage Save row: same flush path as the titlebar save button.
+    if (cmd === "saveDocument") {
+      closeAllMenus();
+      saveDocument();
+      return;
+    }
     if (cmd === "ocrRun") {
       openAiPropose("Perform OCR on the document, extract all text, and return it as plain text.");
       return;
@@ -4480,12 +4493,19 @@
     // page layer.
     const tmp = editor.cloneNode(true);
     tmp.querySelectorAll(".wo-hf-clone").forEach((el) => el.remove());
+    // AF11-SPELLCHECK-CLOSEOUT: saved HTML must NOT contain misspell spans —
+    // the markers are display-only. Strip before any serialization (save,
+    // offline queue, __WO_FLAT_HTML__ export hook all funnel through here).
+    stripMisspellMarkers(tmp);
     tmp.querySelectorAll(".wo-page").forEach((pg) => {
       while (pg.firstChild) pg.parentNode.insertBefore(pg.firstChild, pg);
       pg.remove();
     });
     mergeSplits(tmp);
     return tmp.innerHTML;
+  }
+  function stripMisspellMarkers(root) {
+    unwrapMisspellMarkers(root);
   }
   // Export hook for the bridge (fresh-content export); additive, no behavior change.
   window.__WO_FLAT_HTML__ = flatHtml;
@@ -6058,6 +6078,7 @@
   if (docLang) docLang.addEventListener("change", () => {
     const ed = document.getElementById("editor");
     if (ed) ed.setAttribute("lang", docLang.value);
+    setSpellcheckLang(docLang.value);
     syncDocLangLabel();
   });
   syncDocLangLabel();
@@ -6558,6 +6579,13 @@
     const closeCtx = () => { ctxMenu.hidden = true; };
     editorEl.addEventListener("contextmenu", (e) => {
       e.preventDefault();
+      // AF11-SPELLCHECK-CLOSEOUT: spell rows carry data-showif="misspelled"
+      // and only appear when a misspell marker sits in or next to selection.
+      const hasMisspell = !!(e.target.closest && e.target.closest("span.wo-misspelled"))
+        || !!misspellAtSelection();
+      ctxMenu.querySelectorAll("[data-showif='misspelled']").forEach((el) => {
+        el.hidden = !hasMisspell;
+      });
       ctxMenu.hidden = false;
       const r = ctxMenu.getBoundingClientRect();
       ctxMenu.style.left = Math.max(4, Math.min(e.clientX + 2, window.innerWidth - r.width - 4)) + "px";
@@ -6705,6 +6733,18 @@
       } else if (action === "SelectAll") {
         editorEl.focus();
         document.execCommand("selectAll");
+        // AF11-SPELLCHECK-CLOSEOUT: spell rows (data-showif="misspelled").
+      } else if (action === "Ignore") {
+        spellIgnoreAtSelection(false);
+      } else if (action === "IgnoreAll") {
+        spellIgnoreAtSelection(true);
+      } else if (action === "AddToDictionary") {
+        spellAddToDictionaryAtSelection();
+      } else if (action === "SelectLanguage") {
+        const langSel = document.getElementById("doc-lang");
+        if (langSel) {
+          try { langSel.showPicker(); } catch (err) { langSel.focus(); }
+        }
       }
     });
     document.addEventListener("mousedown", (e) => {
@@ -7206,6 +7246,228 @@
   document.addEventListener("selectionchange", syncRightPanelControls);
 
   // ------------------------------------------------------------------
+  // AF11-SPELLCHECK-CLOSEOUT: Spellcheck engine
+  // ------------------------------------------------------------------
+  // Custom misspell marking on top of the flat flow: a lazy-loaded hunspell
+  // word set per language (the .dic files are plain word lists for our
+  // purposes — .aff rule flags after "/" are ignored), a session ignore set
+  // and a persisted user dictionary. Misspellings are wrapped in
+  // span.wo-misspelled markers for the ctx-menu spell rows; flatHtml()
+  // strips the markers again so saved/exported HTML never carries them.
+  const SPELL_DICT_FILES = {
+    "en-US": "dictionaries/en-US.dic",
+    "en-GB": "dictionaries/en-US.dic",
+    "de-DE": "dictionaries/de-DE.dic",
+  };
+  // Simple suffix fallback instead of .aff rule parsing: try each suffix
+  // stripped off the word as a dictionary base form.
+  const SPELL_SUFFIXES = {
+    en: ["s", "es", "ed", "ing", "er", "ers"],
+    de: ["n", "s", "e", "en", "ern", "es"],
+  };
+  const spellState = {
+    enabled: false,
+    lang: "en-US",
+    ignoreSet: new Set(),     // session ignore (Ignore / Ignore all)
+    userDict: new Set(),      // persisted under localStorage "wo-user-dict"
+    words: null,              // Set of base words for the current lang
+    loading: null,            // in-flight dictionary fetch
+  };
+  function loadSpellUserDict() {
+    try {
+      return new Set(JSON.parse(localStorage.getItem("wo-user-dict") || "[]"));
+    } catch (e) { return new Set(); }
+  }
+  function saveSpellUserDict() {
+    try {
+      localStorage.setItem("wo-user-dict", JSON.stringify([...spellState.userDict]));
+    } catch (e) {}
+  }
+  spellState.userDict = loadSpellUserDict();
+  function spellLangFamily() {
+    return spellState.lang && spellState.lang.startsWith("de") ? "de" : "en";
+  }
+  function spellKnowsWord(raw) {
+    if (!raw) return true;
+    const w = raw.toLowerCase();
+    if (!/^\p{L}+/u.test(w)) return true; // numbers/symbols: never flagged
+    if (spellState.userDict.has(w) || spellState.ignoreSet.has(w)) return true;
+    const words = spellState.words;
+    if (!words) return true; // dictionary not loaded (yet): fail open
+    if (words.has(w)) return true;
+    for (const s of SPELL_SUFFIXES[spellLangFamily()]) {
+      if (w.endsWith(s) && w.length - s.length >= 2 && words.has(w.slice(0, -s.length))) return true;
+    }
+    // German compounds: accept a clean two-word split (one pass, both parts >= 3 chars).
+    if (spellLangFamily() === "de") {
+      for (let i = 3; i <= w.length - 3; i++) {
+        if (words.has(w.slice(0, i)) && words.has(w.slice(i))) return true;
+      }
+    }
+    return false;
+  }
+  function ensureSpellDictionary() {
+    if (spellState.words || spellState.loading) return spellState.loading || Promise.resolve();
+    const file = SPELL_DICT_FILES[spellState.lang] || SPELL_DICT_FILES["en-US"];
+    spellState.loading = fetch(file)
+      .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+      .then((text) => {
+        const words = new Set();
+        for (const line of text.split(/\r?\n/)) {
+          // hunspell .dic: first line is the entry count, entries may carry
+          // "/FLAGS" affix refs (ignored), comment lines start with "#".
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith("#")) continue;
+          const slash = trimmed.indexOf("/");
+          const word = (slash === -1 ? trimmed : trimmed.slice(0, slash)).toLowerCase();
+          if (word && !/^[0-9]+$/.test(word)) words.add(word);
+        }
+        spellState.words = words;
+      })
+      .catch(() => { spellState.words = null; }) // fetch failed: fail open
+      .finally(() => { spellState.loading = null; });
+    return spellState.loading;
+  }
+  function toggleSpellcheck(enabled) {
+    spellState.enabled = !!enabled;
+    if (enabled) {
+      // Engine takes over from the native squiggles (double marking would
+      // otherwise draw both the browser underline and our marker).
+      editor.setAttribute("spellcheck", "false");
+      ensureSpellDictionary().then(() => scheduleSpellCheck());
+    } else {
+      editor.setAttribute("spellcheck", "true");
+      scheduleSpellCheck(); // debounced run unwraps all markers
+    }
+  }
+  function setSpellcheckLang(lang) {
+    if (!lang || lang === spellState.lang) return;
+    spellState.lang = lang;
+    spellState.words = null;
+    spellState.ignoreSet = new Set(); // session ignores are per language
+    if (spellState.enabled) ensureSpellDictionary().then(() => scheduleSpellCheck());
+  }
+  function unwrapMisspellMarkers(root) {
+    (root || editor).querySelectorAll("span.wo-misspelled").forEach((span) => {
+      const parent = span.parentNode;
+      if (!parent) return;
+      while (span.firstChild) parent.insertBefore(span.firstChild, span);
+      parent.removeChild(span);
+    });
+  }
+  function wrapMisspellsInTextNode(node, skipSet) {
+    if (skipSet && skipSet.has(node)) return false;
+    const text = node.nodeValue;
+    if (!text || !/\p{L}/u.test(text)) return false;
+    const re = /\p{L}+(?:[-'’]\p{L}+)*/gu;
+    let m;
+    const hits = [];
+    while ((m = re.exec(text))) {
+      if (!spellKnowsWord(m[0])) hits.push([m.index, m.index + m[0].length]);
+    }
+    if (!hits.length) return false;
+    // Split back-to-front so earlier offsets stay valid; the word text node
+    // is wrapped in the marker span, surrounding text nodes keep identity.
+    for (let i = hits.length - 1; i >= 0; i--) {
+      const [s, e] = hits[i];
+      node.splitText(e);
+      const wordNode = node.splitText(s);
+      const span = document.createElement("span");
+      span.className = "wo-misspelled";
+      span.setAttribute("data-word", wordNode.nodeValue);
+      wordNode.parentNode.insertBefore(span, wordNode);
+      span.appendChild(wordNode);
+    }
+    return true;
+  }
+  function runSpellCheck() {
+    unwrapMisspellMarkers();
+    if (!spellState.enabled) return;
+    // Skip the caret's own block: wrapping under an active caret eats the
+    // selection mid-typing; the block catches up on the next debounce tick.
+    const skipSet = new Set();
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount) {
+      const c = sel.getRangeAt(0).startContainer;
+      const blk = (c.nodeType === 1 ? c : c.parentNode);
+      const p = blk && blk.closest
+        ? blk.closest("p, li, h1, h2, h3, h4, h5, h6, td, th, blockquote")
+        : null;
+      if (p) {
+        const w = document.createTreeWalker(p, NodeFilter.SHOW_TEXT);
+        let n;
+        while ((n = w.nextNode())) skipSet.add(n);
+      }
+    }
+    const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const p = node.parentNode;
+        if (!p || !p.closest) return NodeFilter.FILTER_REJECT;
+        // Same family the paste sanitizer treats as non-prose: code, links.
+        return p.closest("code, pre, a, script, style")
+          ? NodeFilter.FILTER_REJECT
+          : NodeFilter.FILTER_ACCEPT;
+      },
+    });
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    for (const tn of nodes) wrapMisspellsInTextNode(tn, skipSet);
+  }
+  let spellTimer = null;
+  function scheduleSpellCheck() {
+    clearTimeout(spellTimer);
+    spellTimer = setTimeout(runSpellCheck, 800);
+  }
+  function misspellAtSelection() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    const node = sel.getRangeAt(0).startContainer;
+    const el = node.nodeType === 1 ? node : node.parentNode;
+    const hit = el && el.closest ? el.closest("span.wo-misspelled") : null;
+    if (hit && editor.contains(hit)) return hit;
+    // Caret adjacent to a marker (start/end boundary of a neighbour).
+    const p = node.parentNode;
+    if (!p) return null;
+    const kids = Array.prototype.slice.call(p.childNodes);
+    const idx = kids.indexOf(node.nodeType === 1 ? node : node);
+    for (const sib of [kids[idx - 1], kids[idx + 1]]) {
+      if (sib && sib.classList && sib.classList.contains("wo-misspelled")) return sib;
+    }
+    return null;
+  }
+  function spellWordAtSelection() {
+    const span = misspellAtSelection();
+    return span ? String(span.getAttribute("data-word") || span.textContent || "").trim() : "";
+  }
+  function spellIgnoreAtSelection(alsoPersist) {
+    const w = spellWordAtSelection().toLowerCase();
+    if (!w) return;
+    spellState.ignoreSet.add(w);
+    if (alsoPersist) {
+      // Ignore all: keep the session ignore set across reloads.
+      try {
+        const stored = JSON.parse(localStorage.getItem("wo-ignore-all") || "[]");
+        if (!stored.includes(w)) stored.push(w);
+        localStorage.setItem("wo-ignore-all", JSON.stringify(stored));
+      } catch (e) {}
+    }
+    runSpellCheck();
+  }
+  function spellAddToDictionaryAtSelection() {
+    const w = spellWordAtSelection().toLowerCase();
+    if (!w) return;
+    spellState.userDict.add(w);
+    saveSpellUserDict();
+    runSpellCheck();
+  }
+  try {
+    for (const w of JSON.parse(localStorage.getItem("wo-ignore-all") || "[]")) {
+      if (typeof w === "string") spellState.ignoreSet.add(w);
+    }
+  } catch (e) {}
+
+  // ------------------------------------------------------------------
   // Autosave every 30 s of inactivity
   // ------------------------------------------------------------------
   let saveTimer = null;
@@ -7236,6 +7498,7 @@
     scheduleCollabSync();
     notifyHost("editing");
     updateCounts();
+    scheduleSpellCheck();
   });
 
   // Release the WOPI lock on the remote host when the editor is closed
@@ -7488,7 +7751,9 @@
     const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
     const chars = (editor.innerText || "").replace(/\n/g, "").length;
     const el = document.getElementById("sb-word-count");
-    if (el) el.textContent = words + " words · " + chars + " characters";
+    if (!el) return;
+    const tpl = t("Statusbar.WordsCount") || "Words: {n} · Characters: {c}";
+    el.textContent = tpl.replace("{n}", String(words)).replace("{c}", String(chars));
   }
   function caretOffset(el) {
     const sel = window.getSelection();
@@ -7928,15 +8193,18 @@
   if (btnInfoClose) btnInfoClose.addEventListener("click", () => closeDlg("info-dialog"));
 
   // File > Settings: theme / spellcheck / zoom, all applied live.
-  const btnFileSettings = document.getElementById("btn-filesettings");
-  if (btnFileSettings) btnFileSettings.addEventListener("click", () => {
-    closeAllMenus();
+  function syncSettingsDialog() {
     const spell = document.getElementById("settings-spellcheck");
     const theme = document.getElementById("settings-theme");
     const zoom = document.getElementById("settings-zoom");
-    if (spell) spell.checked = editor.getAttribute("spellcheck") !== "false";
+    if (spell) spell.checked = spellState.enabled;
     if (theme) theme.value = document.documentElement.classList.contains("light") ? "light" : "dark";
     if (zoom) zoom.value = String(Math.round((zoomLevel || 1) * 100));
+  }
+  const btnFileSettings = document.getElementById("btn-filesettings");
+  if (btnFileSettings) btnFileSettings.addEventListener("click", () => {
+    closeAllMenus();
+    syncSettingsDialog();
     openDlg("settings-dialog");
   });
   const btnSettingsOk = document.getElementById("btn-settings-ok");
@@ -7944,7 +8212,7 @@
     const spell = document.getElementById("settings-spellcheck");
     const theme = document.getElementById("settings-theme");
     const zoom = document.getElementById("settings-zoom");
-    if (spell) editor.setAttribute("spellcheck", spell.checked ? "true" : "false");
+    if (spell) toggleSpellcheck(spell.checked);
     if (theme) document.documentElement.classList.toggle("light", theme.value === "light");
     if (zoom && !Number.isNaN(+zoom.value)) { zoomLevel = Math.min(2, Math.max(0.5, +zoom.value / 100)); applyZoom(); }
     closeDlg("settings-dialog");
