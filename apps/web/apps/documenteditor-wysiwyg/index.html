@@ -905,10 +905,11 @@
          aria-label="Document" data-i18n-aria-label="A11y.EditorLabel"></div>
     <!-- Ink canvas overlay for drawing (Draw tab). Positioned absolute over the editor. -->
     <canvas id="ink-canvas" class="ink-canvas" hidden aria-label="Ink drawing canvas"></canvas>
-    <!-- AF7-RIGHT-PANEL: right settings panel — 48px icon rail + 280px settings
-         body, absolutely positioned inside main (position:relative) so it never
-         covers titlebar/ribbon/statusbar. Paragraph section is live; the other
-         sections are honest placeholders for later slices. -->
+    <!-- AF7-RIGHT-PANEL / AF15-RIGHT-PANEL-BUILDOUT: right settings panel —
+         48px icon rail + 280px settings body, absolutely positioned inside
+         main (position:relative) so it never covers titlebar/ribbon/statusbar.
+         All five sections carry real controls (AF15); table/image/chart gate
+         on the live selection, mail merge is always available. -->
     <aside id="right-panel" hidden aria-label="Settings" data-i18n-aria-label="RightPanel.Title">
       <nav id="right-rail" aria-label="Settings sections" data-i18n-aria-label="RightPanel.Sections">
         <button type="button" class="rail-btn" data-panel="paragraph" aria-pressed="true" title="Paragraph" data-i18n-title="RightPanel.Paragraph"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 2.5v11M5 2.5h2.5M5 13.5h3"/><circle cx="11.75" cy="4.5" r="1.9"/><path d="M11.75 6.4v7.1M11.75 13.5h2"/></svg></button>
@@ -954,19 +955,106 @@
         </section>
         <section class="rp-section" data-section="table" hidden>
           <div class="rp-title" data-i18n="RightPanel.Table">Table</div>
-          <div class="rp-empty" data-i18n="RightPanel.NoTable">No table selected</div>
+          <div class="rp-group">
+            <label for="rp-table-border-style" data-i18n="RightPanel.BorderStyle">Border style</label>
+            <select id="rp-table-border-style">
+              <option value="solid" data-i18n="RightPanel.BorderSolid">Solid</option>
+              <option value="dashed" data-i18n="RightPanel.BorderDashed">Dashed</option>
+              <option value="dotted" data-i18n="RightPanel.BorderDotted">Dotted</option>
+              <option value="double" data-i18n="RightPanel.BorderDouble">Double</option>
+              <option value="none" data-i18n="RightPanel.BorderNone">None</option>
+            </select>
+          </div>
+          <div class="rp-group">
+            <label for="rp-table-border-color" data-i18n="RightPanel.BorderColor">Border color</label>
+            <input type="color" id="rp-table-border-color" value="#000000">
+          </div>
+          <div class="rp-group">
+            <label for="rp-table-background" data-i18n="RightPanel.BackgroundColor">Background</label>
+            <input type="color" id="rp-table-background" value="#ffffff">
+          </div>
+          <div class="rp-group">
+            <label for="rp-table-row-height" data-i18n="RightPanel.RowHeight">Row height (pt)</label>
+            <input type="number" id="rp-table-row-height" min="6" step="6" value="12">
+          </div>
+          <div class="rp-group">
+            <label for="rp-table-col-width" data-i18n="RightPanel.ColWidth">Column width (pt)</label>
+            <input type="number" id="rp-table-col-width" min="12" step="6" value="60">
+          </div>
+          <button type="button" id="rp-table-advanced" class="rp-link" data-i18n="RightPanel.Advanced">Show advanced settings</button>
         </section>
         <section class="rp-section" data-section="image" hidden>
           <div class="rp-title" data-i18n="RightPanel.Image">Image</div>
-          <div class="rp-empty" data-i18n="RightPanel.NoImage">No image selected</div>
+          <div class="rp-group">
+            <label for="rp-image-width" data-i18n="RightPanel.Width">Width (px)</label>
+            <input type="number" id="rp-image-width" min="16" step="8" value="0">
+          </div>
+          <div class="rp-group">
+            <label for="rp-image-height" data-i18n="RightPanel.Height">Height (px)</label>
+            <input type="number" id="rp-image-height" min="16" step="8" value="0">
+          </div>
+          <div class="rp-group">
+            <label for="rp-image-opacity" data-i18n="RightPanel.Opacity">Opacity (%)</label>
+            <input type="range" id="rp-image-opacity" min="0" max="100" step="5" value="100">
+          </div>
+          <div class="rp-row" role="group" aria-label="Rotate and flip">
+            <button type="button" id="rp-image-rotate" data-i18n="RightPanel.Rotate90">Rotate 90°</button>
+            <button type="button" id="rp-image-flip-h" data-i18n="RightPanel.FlipH">Flip horizontal</button>
+            <button type="button" id="rp-image-flip-v" data-i18n="RightPanel.FlipV">Flip vertical</button>
+          </div>
+          <div class="rp-group">
+            <label for="rp-image-wrap" data-i18n="RightPanel.Wrapping">Wrapping style</label>
+            <select id="rp-image-wrap">
+              <option value="wrap-inline" data-i18n="RightPanel.WrapInline">Inline</option>
+              <option value="wrap-square" data-i18n="RightPanel.WrapSquare">Square</option>
+              <option value="wrap-behind" data-i18n="RightPanel.WrapBehind">Behind text</option>
+            </select>
+          </div>
+          <div class="rp-group">
+            <label for="rp-image-fill" data-i18n="RightPanel.Fill">Fill</label>
+            <input type="color" id="rp-image-fill" value="#f5f5f5">
+          </div>
+          <div class="rp-group">
+            <label for="rp-image-line-color" data-i18n="RightPanel.LineColor">Line color</label>
+            <input type="color" id="rp-image-line-color" value="#aaaaaa">
+          </div>
+          <div class="rp-group">
+            <label for="rp-image-line-size" data-i18n="RightPanel.LineSize">Line size (pt)</label>
+            <input type="number" id="rp-image-line-size" min="0" max="12" step="0.5" value="1">
+          </div>
+          <button type="button" id="rp-image-advanced" class="rp-link" data-i18n="RightPanel.Advanced">Show advanced settings</button>
         </section>
         <section class="rp-section" data-section="chart" hidden>
           <div class="rp-title" data-i18n="RightPanel.Chart">Chart</div>
-          <div class="rp-empty" data-i18n="RightPanel.NoChart">No chart selected</div>
+          <div class="rp-group">
+            <label for="rp-chart-width" data-i18n="RightPanel.Width">Width (px)</label>
+            <input type="number" id="rp-chart-width" min="40" step="10" value="420">
+          </div>
+          <div class="rp-group">
+            <label for="rp-chart-height" data-i18n="RightPanel.Height">Height (px)</label>
+            <input type="number" id="rp-chart-height" min="40" step="10" value="248">
+          </div>
+          <div class="rp-group">
+            <label for="rp-chart-wrap" data-i18n="RightPanel.Wrapping">Wrapping style</label>
+            <select id="rp-chart-wrap">
+              <option value="wrap-inline" data-i18n="RightPanel.WrapInline">Inline</option>
+              <option value="wrap-square" data-i18n="RightPanel.WrapSquare">Square</option>
+              <option value="wrap-behind" data-i18n="RightPanel.WrapBehind">Behind text</option>
+            </select>
+          </div>
+          <button type="button" id="rp-chart-advanced" class="rp-link" data-i18n="RightPanel.Advanced">Show advanced settings</button>
         </section>
         <section class="rp-section" data-section="mailmerge" hidden>
           <div class="rp-title" data-i18n="RightPanel.MailMerge">Mail merge</div>
-          <div class="rp-empty" data-i18n="RightPanel.NoMailMerge">No mail-merge field selected</div>
+          <div class="rp-group">
+            <button type="button" id="rp-mm-recipients" data-i18n="RightPanel.Recipients">Recipients…</button>
+          </div>
+          <div class="rp-group">
+            <button type="button" id="rp-mm-fields" data-i18n="RightPanel.MergeFields">Merge fields…</button>
+          </div>
+          <div class="rp-group">
+            <button type="button" id="rp-mm-merge-to" data-i18n="RightPanel.MergeTo">Merge to (preview)</button>
+          </div>
         </section>
       </div>
     </aside>

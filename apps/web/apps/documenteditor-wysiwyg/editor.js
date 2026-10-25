@@ -4994,6 +4994,12 @@
     if (!rightPanel || rightPanel.hidden) return;
     const sel = window.getSelection();
     const block = sel && sel.anchorNode ? blockElementAt(sel.anchorNode) : null;
+    // AF15: table/image/chart sections gate on their own selection state
+    // (object under the caret), not on the caret's paragraph block, so they
+    // sync before the paragraph early-return below.
+    syncTablePanelControls();
+    syncImagePanelControls();
+    syncChartPanelControls();
     if (!block || block === editor) return;
     const cs = window.getComputedStyle(block);
     const lineSpacing = document.getElementById("rp-line-spacing");
@@ -5072,6 +5078,404 @@
       detail: { source: "right-panel" },
     }));
     console.info("wo: open-paragraph-settings requested (right panel)");
+  });
+
+  // ------------------------------------------------------------------
+  // AF15-RIGHT-PANEL-BUILDOUT: real contextual controls for the table,
+  // image/shape, chart and mail-merge sections (replacing the AF7
+  // placeholders). Gating mirrors the AF9 chart-design tab: the table,
+  // image and chart sections enable their controls only when the live
+  // selection matches; mail merge is always available. The selectionchange
+  // wiring above keeps the values synced via syncRightPanelControls.
+  // ------------------------------------------------------------------
+  function selectedTable() {
+    const sel = window.getSelection();
+    const node = sel && sel.focusNode
+      ? (sel.focusNode.nodeType === 1 ? sel.focusNode : sel.focusNode.parentElement)
+      : null;
+    const table = node && node.closest ? node.closest("table") : null;
+    return table && editor.contains(table) ? table : null;
+  }
+  // Image/Shape pick: same object surface as objectOp (img / div.object),
+  // charts excluded (they have their own section).
+  function selectedImageObject() {
+    const obj = selectedObject();
+    if (obj && editor.contains(obj) &&
+        !(obj.matches && obj.matches("img.vector-object[data-kind='chart']"))) return obj;
+    return null;
+  }
+  function setRpSectionEnabled(section, enabled) {
+    if (!rightPanelBody) return;
+    const sec = rightPanelBody.querySelector(`.rp-section[data-section='${section}']`);
+    if (!sec) return;
+    sec.querySelectorAll("input, select, button").forEach((el) => {
+      if (el.classList.contains("rp-link")) return; // advanced-settings marker stays clickable
+      if (enabled) el.removeAttribute("disabled");
+      else el.setAttribute("disabled", "disabled");
+    });
+  }
+  function markObjectMutation() {
+    markDirty();
+    captureHistory();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
+  }
+  function csToHex(cssColor) {
+    const m = cssColor && cssColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+    if (!m) return null;
+    if (m[4] !== undefined && parseFloat(m[4]) === 0) return null; // transparent
+    return "#" + [m[1], m[2], m[3]].map((c) => Number(c).toString(16).padStart(2, "0")).join("");
+  }
+  function ptToPx(pt) { return Math.round((parseFloat(pt) || 0) * 4 / 3); }
+  function pxToPt(px) { return Math.round((parseFloat(px) || 0) * 0.75); }
+
+  // -- Table section ---------------------------------------------------
+  function applyTableBorder(style, color) {
+    const table = selectedTable();
+    if (!table || READ_ONLY) { setStatus(t("Status.NotAvailable") + " tableBorder"); return; }
+    const border = style === "none" ? "none" : "1pt " + style + " " + (color || "#000000");
+    Array.prototype.forEach.call(table.querySelectorAll("td, th"), (cell) => {
+      cell.style.border = border;
+    });
+    markObjectMutation();
+    setStatus("Table border: " + style);
+  }
+  function applyTableBackground(color) {
+    const table = selectedTable();
+    if (!table || READ_ONLY) { setStatus(t("Status.NotAvailable") + " tableBackground"); return; }
+    Array.prototype.forEach.call(table.querySelectorAll("td, th"), (cell) => {
+      cell.style.backgroundColor = color || "";
+    });
+    markObjectMutation();
+    setStatus("Table background: " + color);
+  }
+  // No per-row/col resize machinery exists (table ops only insert/delete),
+  // so the size inputs apply to the whole selected table (closest table).
+  function applyTableRowHeight(pt) {
+    const table = selectedTable();
+    if (!table || READ_ONLY) { setStatus(t("Status.NotAvailable") + " tableRowHeight"); return; }
+    const px = Math.max(4, ptToPx(pt));
+    Array.prototype.forEach.call(table.querySelectorAll("tr"), (tr) => {
+      tr.style.height = px + "px";
+    });
+    markObjectMutation();
+    setStatus("Table row height: " + pt + "pt");
+  }
+  function applyTableColWidth(pt) {
+    const table = selectedTable();
+    if (!table || READ_ONLY) { setStatus(t("Status.NotAvailable") + " tableColWidth"); return; }
+    const px = Math.max(8, ptToPx(pt));
+    Array.prototype.forEach.call(table.querySelectorAll("td, th"), (cell) => {
+      cell.style.width = px + "px";
+    });
+    markObjectMutation();
+    setStatus("Table column width: " + pt + "pt");
+  }
+  function syncTablePanelControls() {
+    const table = selectedTable();
+    const on = !!table && !READ_ONLY;
+    setRpSectionEnabled("table", on);
+    if (!on) return;
+    const cell = table.querySelector("td, th");
+    const cs = cell ? window.getComputedStyle(cell) : null;
+    const styleSel = document.getElementById("rp-table-border-style");
+    if (cs && styleSel) {
+      const s = cs.borderTopStyle || "none";
+      styleSel.value = ["solid", "dashed", "dotted", "double", "none"].includes(s) ? s : "solid";
+    }
+    const colorIn = document.getElementById("rp-table-border-color");
+    if (cs && colorIn && csToHex(cs.borderTopColor)) colorIn.value = csToHex(cs.borderTopColor);
+    const bgIn = document.getElementById("rp-table-background");
+    if (cs && bgIn && csToHex(cs.backgroundColor)) bgIn.value = csToHex(cs.backgroundColor);
+    const rowIn = document.getElementById("rp-table-row-height");
+    if (rowIn && table.rows && table.rows.length) {
+      const h = table.rows[0].getBoundingClientRect().height;
+      if (h) rowIn.value = String(Math.max(6, pxToPt(h)));
+    }
+    const colIn = document.getElementById("rp-table-col-width");
+    if (colIn && cell) {
+      const w = cell.getBoundingClientRect().width;
+      if (w) colIn.value = String(Math.max(12, pxToPt(w)));
+    }
+  }
+
+  // -- Image/Shape section ---------------------------------------------
+  // Rotation/flips persist as data attributes and compose into one
+  // transform string, so repeated rotates and flip combos round-trip.
+  function applyImageTransform(obj) {
+    const steps = ((parseInt(obj.getAttribute("data-rotate-steps") || "0", 10) % 4) + 4) % 4;
+    const fh = obj.getAttribute("data-flip-h") === "1";
+    const fv = obj.getAttribute("data-flip-v") === "1";
+    const parts = [];
+    if (steps) parts.push(`rotate(${steps * 90}deg)`);
+    if (fh || fv) parts.push(`scale(${fh ? -1 : 1}, ${fv ? -1 : 1})`);
+    obj.style.transform = parts.join(" ");
+  }
+  function applyImageSize(w, h) {
+    const obj = selectedImageObject();
+    if (!obj || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageSize"); return; }
+    let w2;
+    let h2;
+    if (obj.matches("img")) {
+      w2 = Math.max(16, Math.round(w || parseInt(obj.getAttribute("width"), 10) || obj.naturalWidth || 100));
+      h2 = Math.max(16, Math.round(h || parseInt(obj.getAttribute("height"), 10) || w2));
+      obj.setAttribute("width", String(w2));
+      obj.setAttribute("height", String(h2));
+    } else {
+      w2 = Math.max(16, Math.round(w || parseInt(obj.style.width, 10) || 100));
+      h2 = Math.max(16, Math.round(h || parseInt(obj.style.height, 10) || w2));
+      obj.style.width = w2 + "px";
+      obj.style.height = h2 + "px";
+    }
+    markObjectMutation();
+    setStatus("Object size: " + w2 + "x" + h2);
+  }
+  function applyImageOpacity(pct) {
+    const obj = selectedImageObject();
+    if (!obj || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageOpacity"); return; }
+    const v = Math.max(0, Math.min(100, Math.round(pct)));
+    obj.style.opacity = String(v / 100);
+    markObjectMutation();
+    setStatus("Object opacity: " + v + "%");
+  }
+  function applyImageRotate90() {
+    const obj = selectedImageObject();
+    if (!obj || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageRotate"); return; }
+    obj.setAttribute("data-rotate-steps",
+      String((parseInt(obj.getAttribute("data-rotate-steps") || "0", 10) + 1) % 4));
+    applyImageTransform(obj);
+    markObjectMutation();
+    setStatus("Object rotated 90°");
+  }
+  function applyImageFlip(axis) {
+    const obj = selectedImageObject();
+    if (!obj || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageFlip " + axis); return; }
+    const attr = axis === "horizontal" ? "data-flip-h" : "data-flip-v";
+    obj.setAttribute(attr, obj.getAttribute(attr) === "1" ? "0" : "1");
+    applyImageTransform(obj);
+    markObjectMutation();
+    setStatus("Object flip " + axis);
+  }
+  function applyImageWrap(value) {
+    const obj = selectedImageObject();
+    if (!obj || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageWrap " + value); return; }
+    applyObjectOp(value); // same wrapping values/classes as the objectOp path
+    syncRightPanelControls();
+  }
+  function applyImageFill(color) {
+    const obj = selectedImageObject();
+    if (!obj || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageFill"); return; }
+    if (obj.matches("img")) obj.style.backgroundColor = color || "";
+    else obj.style.background = color || "";
+    markObjectMutation();
+    setStatus("Object fill: " + color);
+  }
+  function applyImageLine(color, size) {
+    const obj = selectedImageObject();
+    if (!obj || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageLine"); return; }
+    const pt = Math.max(0, parseFloat(size) || 0);
+    obj.style.border = pt > 0 && color ? pt + "pt solid " + color : "";
+    markObjectMutation();
+    setStatus("Object line: " + pt + "pt " + (color || ""));
+  }
+  function syncImagePanelControls() {
+    const obj = selectedImageObject();
+    const on = !!obj && !READ_ONLY;
+    setRpSectionEnabled("image", on);
+    if (!on) return;
+    const wIn = document.getElementById("rp-image-width");
+    const hIn = document.getElementById("rp-image-height");
+    if (obj.matches("img")) {
+      if (wIn) wIn.value = obj.getAttribute("width") || String(obj.naturalWidth || "");
+      if (hIn) hIn.value = obj.getAttribute("height") || String(obj.naturalHeight || "");
+    } else {
+      if (wIn) wIn.value = String(parseInt(obj.style.width, 10) || "");
+      if (hIn) hIn.value = String(parseInt(obj.style.height, 10) || "");
+    }
+    const opIn = document.getElementById("rp-image-opacity");
+    if (opIn) {
+      const o = parseFloat(window.getComputedStyle(obj).opacity);
+      opIn.value = String(isNaN(o) ? 100 : Math.round(o * 100));
+    }
+    const wrapSel = document.getElementById("rp-image-wrap");
+    if (wrapSel) {
+      wrapSel.value = obj.classList.contains("obj-square") ? "wrap-square"
+        : obj.classList.contains("obj-behind") ? "wrap-behind" : "wrap-inline";
+    }
+    const cs = window.getComputedStyle(obj);
+    const fillIn = document.getElementById("rp-image-fill");
+    if (fillIn && csToHex(cs.backgroundColor)) fillIn.value = csToHex(cs.backgroundColor);
+    const lineColorIn = document.getElementById("rp-image-line-color");
+    if (lineColorIn && csToHex(cs.borderTopColor)) lineColorIn.value = csToHex(cs.borderTopColor);
+    const lineSizeIn = document.getElementById("rp-image-line-size");
+    if (lineSizeIn) {
+      const bw = parseFloat(cs.borderTopWidth);
+      lineSizeIn.value = String(bw > 0 && cs.borderTopStyle !== "none" ? pxToPt(bw) : 0);
+    }
+  }
+
+  // -- Chart section -----------------------------------------------------
+  // Size reuses applyChartSize (AF9), wrapping reuses objectOp, advanced
+  // settings fire the same wo:chart-settings marker as chart-design.
+  function syncChartPanelControls() {
+    const img = typeof selectedChart === "function" ? selectedChart() : null;
+    const on = !!img && !READ_ONLY;
+    setRpSectionEnabled("chart", on);
+    if (!on) return;
+    const wIn = document.getElementById("rp-chart-width");
+    const hIn = document.getElementById("rp-chart-height");
+    if (wIn) wIn.value = String(parseInt(img.style.width, 10) || readChartSpec(img).width || 420);
+    if (hIn) hIn.value = String(readChartSpec(img).height || "");
+    const wrapSel = document.getElementById("rp-chart-wrap");
+    if (wrapSel) {
+      wrapSel.value = img.classList.contains("obj-square") ? "wrap-square"
+        : img.classList.contains("obj-behind") ? "wrap-behind" : "wrap-inline";
+    }
+  }
+  function applyChartPanelSize() {
+    const wIn = document.getElementById("rp-chart-width");
+    const hIn = document.getElementById("rp-chart-height");
+    if (!wIn) return;
+    applyChartSize(parseFloat(wIn.value), hIn ? parseFloat(hIn.value) : NaN);
+    syncRightPanelControls();
+  }
+
+  // Table section wiring.
+  const rpTableBorderStyle = document.getElementById("rp-table-border-style");
+  if (rpTableBorderStyle) rpTableBorderStyle.addEventListener("change", () => {
+    const colorIn = document.getElementById("rp-table-border-color");
+    if (READ_ONLY) return;
+    applyTableBorder(rpTableBorderStyle.value, colorIn && colorIn.value);
+  });
+  const rpTableBorderColor = document.getElementById("rp-table-border-color");
+  if (rpTableBorderColor) rpTableBorderColor.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyTableBorder(rpTableBorderStyle ? rpTableBorderStyle.value : "solid", rpTableBorderColor.value);
+  });
+  const rpTableBackground = document.getElementById("rp-table-background");
+  if (rpTableBackground) rpTableBackground.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyTableBackground(rpTableBackground.value);
+  });
+  const rpTableRowHeight = document.getElementById("rp-table-row-height");
+  if (rpTableRowHeight) rpTableRowHeight.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyTableRowHeight(rpTableRowHeight.value);
+  });
+  const rpTableColWidth = document.getElementById("rp-table-col-width");
+  if (rpTableColWidth) rpTableColWidth.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyTableColWidth(rpTableColWidth.value);
+  });
+  const rpTableAdvanced = document.getElementById("rp-table-advanced");
+  if (rpTableAdvanced) rpTableAdvanced.addEventListener("click", () => {
+    emitCommand("openBorders"); // existing borders/table dialog
+  });
+
+  // Image/Shape section wiring.
+  const rpImageWidth = document.getElementById("rp-image-width");
+  if (rpImageWidth) rpImageWidth.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyImageSize(parseFloat(rpImageWidth.value), NaN);
+  });
+  const rpImageHeight = document.getElementById("rp-image-height");
+  if (rpImageHeight) rpImageHeight.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyImageSize(NaN, parseFloat(rpImageHeight.value));
+  });
+  const rpImageOpacity = document.getElementById("rp-image-opacity");
+  if (rpImageOpacity) rpImageOpacity.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyImageOpacity(parseFloat(rpImageOpacity.value));
+  });
+  const rpImageRotate = document.getElementById("rp-image-rotate");
+  if (rpImageRotate) rpImageRotate.addEventListener("click", () => {
+    if (READ_ONLY) return;
+    applyImageRotate90();
+  });
+  const rpImageFlipH = document.getElementById("rp-image-flip-h");
+  if (rpImageFlipH) rpImageFlipH.addEventListener("click", () => {
+    if (READ_ONLY) return;
+    applyImageFlip("horizontal");
+  });
+  const rpImageFlipV = document.getElementById("rp-image-flip-v");
+  if (rpImageFlipV) rpImageFlipV.addEventListener("click", () => {
+    if (READ_ONLY) return;
+    applyImageFlip("vertical");
+  });
+  const rpImageWrap = document.getElementById("rp-image-wrap");
+  if (rpImageWrap) rpImageWrap.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyImageWrap(rpImageWrap.value);
+  });
+  const rpImageFill = document.getElementById("rp-image-fill");
+  if (rpImageFill) rpImageFill.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyImageFill(rpImageFill.value);
+  });
+  const rpImageLineColor = document.getElementById("rp-image-line-color");
+  if (rpImageLineColor) rpImageLineColor.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyImageLine(rpImageLineColor.value, document.getElementById("rp-image-line-size"));
+  });
+  const rpImageLineSize = document.getElementById("rp-image-line-size");
+  if (rpImageLineSize) rpImageLineSize.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    const colorIn = document.getElementById("rp-image-line-color");
+    applyImageLine(colorIn && colorIn.value, rpImageLineSize.value);
+  });
+  const rpImageAdvanced = document.getElementById("rp-image-advanced");
+  if (rpImageAdvanced) rpImageAdvanced.addEventListener("click", () => {
+    // Marker for the host page / future advanced image-settings dialog slice.
+    window.dispatchEvent(new CustomEvent("wo:open-image-settings", {
+      detail: { source: "right-panel" },
+    }));
+    console.info("wo: open-image-settings requested (right panel)");
+  });
+
+  // Chart section wiring.
+  const rpChartWidth = document.getElementById("rp-chart-width");
+  if (rpChartWidth) rpChartWidth.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyChartPanelSize();
+  });
+  const rpChartHeight = document.getElementById("rp-chart-height");
+  if (rpChartHeight) rpChartHeight.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyChartPanelSize();
+  });
+  const rpChartWrap = document.getElementById("rp-chart-wrap");
+  if (rpChartWrap) rpChartWrap.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    const obj = selectedChart();
+    if (!obj) return;
+    applyObjectOp(rpChartWrap.value);
+    syncRightPanelControls();
+  });
+  const rpChartAdvanced = document.getElementById("rp-chart-advanced");
+  if (rpChartAdvanced) rpChartAdvanced.addEventListener("click", () => {
+    emitCommand("chartSettings"); // same marker path as chart-design Advanced
+  });
+
+  // Mail merge section wiring: surface the three actions of the existing
+  // mailmerge-dialog (recipients = CSV source, merge fields, merge preview).
+  const rpMmRecipients = document.getElementById("rp-mm-recipients");
+  if (rpMmRecipients) rpMmRecipients.addEventListener("click", () => {
+    const btn = document.getElementById("btn-mailmerge");
+    if (btn) btn.click(); // opens the CSV recipients picker (existing path)
+  });
+  const rpMmFields = document.getElementById("rp-mm-fields");
+  if (rpMmFields) rpMmFields.addEventListener("click", () => {
+    openDlg("mailmerge-dialog");
+    const sel = document.getElementById("mailmerge-fields");
+    if (sel) sel.focus();
+  });
+  const rpMmMergeTo = document.getElementById("rp-mm-merge-to");
+  if (rpMmMergeTo) rpMmMergeTo.addEventListener("click", () => {
+    openDlg("mailmerge-dialog");
+    const btn = document.getElementById("btn-mailmerge-preview");
+    if (btn) btn.click();
   });
 
   // Multilevel list: nest the current list item under its previous
