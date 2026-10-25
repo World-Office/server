@@ -696,6 +696,21 @@
     <button type="button" id="btn-bgplugins" data-i18n="Plugins.Background" aria-pressed="false">Background plugins</button>
     <button type="button" id="btn-ocr" data-cmd="ocrRun" data-i18n="Plugins.Ocr">OCR</button>
     <button type="button" data-cmd="photoEditor" data-i18n="Plugins.PhotoEditor">Photo editor</button>
+    <!-- AF13-PLUGIN-GALLERY: OO-plugins-tab parity gallery. Cards wired to a
+         real command dispatch it (Translator/Speech/Speech input/Thesaurus/
+         Highlight code); cards whose third-party backend does not exist in
+         this build (YouTube/Mendeley/Zotero) carry wo:plugin-unavailable and
+         open the honest info dialog. -->
+    <div class="plugin-gallery" role="group" aria-label="Plugin gallery">
+    <button type="button" class="plugin-card" data-cmd="pluginUnavailable" data-plugin="YouTube" data-i18n="Plugins.YouTube">YouTube</button>
+    <button type="button" class="plugin-card" data-cmd="aiTranslate" data-value="German" data-i18n="Plugins.Translator">Translator</button>
+    <button type="button" class="plugin-card" data-cmd="pluginUnavailable" data-plugin="Mendeley" data-i18n="Plugins.Mendeley">Mendeley</button>
+    <button type="button" class="plugin-card" data-cmd="aiRewrite" data-value="Find synonyms for the selection." data-i18n="Plugins.Thesaurus">Thesaurus</button>
+    <button type="button" class="plugin-card" data-cmd="code" data-i18n="Plugins.HighlightCode">Highlight code</button>
+    <button type="button" class="plugin-card" data-cmd="pluginUnavailable" data-plugin="Zotero" data-i18n="Plugins.Zotero">Zotero</button>
+    <button type="button" class="plugin-card" data-cmd="readAloud" data-i18n="Plugins.Speech">Speech</button>
+    <button type="button" class="plugin-card" data-cmd="dictate" data-i18n="Plugins.SpeechInput">Speech input</button>
+    </div>
     </div>
     <div class="ribbon-page" data-tab="ai" role="group" aria-label="AI ribbon" data-i18n-aria-label="Tab.AI">
     <button id="btn-ai-review-tab" type="button" data-i18n="AI.ChangesTab">AI changes</button>
@@ -1734,6 +1749,20 @@
       <ul id="plugins-list" class="plugins-list" role="list" aria-label="Installed plugins"></ul>
       <div class="dialog-actions">
         <button id="btn-plugins-close" data-i18n="Plugins.Close">Close</button>
+      </div>
+    </div>
+  </div>
+  <!-- wo:plugin-unavailable: honest "not in this build" info dialog for
+       third-party gallery cards (YouTube/Mendeley/Zotero). -->
+  <div id="plugin-unavailable-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="plugin-unavailable-title" data-marker="wo:plugin-unavailable">
+    <div class="dialog plugin-unavailable-dialog">
+      <h3 id="plugin-unavailable-title" data-i18n="Plugins.UnavailableTitle">Plugin not available</h3>
+      <p class="plugin-unavailable-text">
+        <span data-plugin-name></span>
+        <span data-i18n="Plugins.UnavailableText">Third-party plugin — not available in this build.</span>
+      </p>
+      <div class="dialog-actions">
+        <button id="btn-plugin-unavailable-close" data-i18n="Plugins.Close">Close</button>
       </div>
     </div>
   </div>
