@@ -2093,6 +2093,49 @@ main.rp-open { padding-right: 344px; }
 }
 .rp-link:hover { color: var(--text); }
 
+/* AF15: button rows (rotate/flip, mail merge actions) inside rp sections. */
+.rp-row {
+  display: flex;
+  gap: 6px;
+  margin: 0 4px 12px;
+}
+.rp-row button {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rp-row button:hover:not([disabled]) { background: var(--hover); }
+.rp-group button {
+  width: 100%;
+  padding: 4px 6px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  box-sizing: border-box;
+}
+.rp-group button:hover:not([disabled]) { background: var(--hover); }
+#right-panel-body input[type="range"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+#right-panel-body input[disabled],
+#right-panel-body select[disabled],
+#right-panel-body button[disabled] { opacity: 0.5; cursor: not-allowed; }
+
 .rp-empty {
   margin: 8px 4px;
   font-size: 12px;
