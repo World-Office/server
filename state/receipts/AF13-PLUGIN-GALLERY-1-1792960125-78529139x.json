@@ -1,0 +1,12 @@
+{
+  "task": "AF13-PLUGIN-GALLERY",
+  "attempt": 1,
+  "worker": "wo",
+  "model": "litellm/glm-4.7",
+  "wall_clock_s": 301.955192227,
+  "tokens": null,
+  "ts": 1792960125,
+  "outcome": "merged",
+  "error": null,
+  "cost_micros": null
+}

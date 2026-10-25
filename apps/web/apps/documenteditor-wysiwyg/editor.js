@@ -1095,6 +1095,10 @@
       updateUndoRedoState();
       return;
     }
+    if (cmd === "insertHeaderFooter") {
+      openOverlayDialog("headerfooter-dialog");
+      return;
+    }
     if (cmd === "insertHeader" || cmd === "insertFooter") {
       // Header/footer authoring (F-084): the converters parse a
       // <header class="page-header"> at body start and a
