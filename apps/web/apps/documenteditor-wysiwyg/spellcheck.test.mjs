@@ -68,9 +68,9 @@ assert.ok(js.includes("span.wo-misspelled"),
 assert.ok(js.includes("function unwrapMisspellMarkers"),
   "editor.js must define unwrapMisspellMarkers")
 
-// (e) Statusbar word count span + i18n-driven text.
-assert.ok(/<span id="sb-word-count"[^>]*data-i18n="Statusbar.Words"/.test(html),
-  "statusbar word count must be a static span with Statusbar.Words i18n")
+// (e) Statusbar word count button + i18n-driven text (opens document info).
+assert.ok(/<button[^>]*id="sb-word-count"[^>]*data-cmd="showWordCount"/.test(html),
+  "statusbar word count must be a button dispatching showWordCount")
 assert.ok(js.includes("Statusbar.WordsCount"),
   "updateCounts must use the Statusbar.WordsCount i18n template")
 

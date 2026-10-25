@@ -1095,6 +1095,18 @@
       updateUndoRedoState();
       return;
     }
+    if (cmd === "createAiAssistant") {
+      openAiPropose("Improve the writing style of the document.");
+      return;
+    }
+    if (cmd === "showWordCount") {
+      closeAllMenus(); docStats(); openDlg("info-dialog");
+      return;
+    }
+    if (cmd === "closeFileMenu") {
+      closeAllMenus();
+      return;
+    }
     if (cmd === "insertHeaderFooter") {
       openOverlayDialog("headerfooter-dialog");
       return;

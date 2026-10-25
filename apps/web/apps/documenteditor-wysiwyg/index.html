@@ -167,6 +167,7 @@
     <div class="menu ribbon-file">
       <button type="button" id="btn-file" class="menu-trigger file-tab" aria-haspopup="true" aria-expanded="false" data-i18n="Menu.File">File</button>
       <ul id="file-menu" class="menu-list" role="menu" aria-labelledby="btn-file" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="closeFileMenu" data-i18n="Menu.Back">Back</button></li>
         <li role="none"><button type="button" id="btn-new" role="menuitem" data-i18n="Menu.New">New</button></li>
         <li role="none"><button type="button" id="btn-open" role="menuitem" data-i18n="Menu.Open">Open…</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="saveDocument" data-i18n="Menu.Save">Save</button></li>
@@ -720,6 +721,7 @@
     <button type="button" data-cmd="aiRewrite" data-i18n="AI.Rewrite">Rewrite</button>
     <button type="button" id="btn-ai-grammar" data-i18n="AI.Grammar">Grammar</button>
     <button type="button" id="btn-ai-assistant" data-i18n="AI.Assistant">AI assistant</button>
+    <button type="button" id="btn-create-ai-assistant" data-cmd="createAiAssistant" data-i18n="AI.CreateAssistant">Create AI assistant</button>
     <button type="button" data-cmd="aiSettings" data-i18n="AI.Settings">Settings</button>
     </div>
     <!-- Chart design (AF9-CHART-DESIGN, OO parity): contextual tab revealed
@@ -1077,7 +1079,7 @@
        messages are announced to screen readers as they change. -->
   <footer class="statusbar">
     <!-- Far-left: live word/character count (OO: 'Words: 0' far left). -->
-    <span id="sb-word-count" class="sb status-meta" role="status" aria-live="polite" aria-label="Word and character count" data-i18n="Statusbar.Words">0 words</span>
+    <button type="button" id="sb-word-count" class="sb status-meta" role="status" aria-live="polite" aria-label="Word and character count — opens document info" title="Word count" data-i18n="Statusbar.Words" data-cmd="showWordCount">0 words</button>
     <span id="status" class="status" role="status" aria-live="polite" data-i18n="Status.Ready">Ready</span>
     <!-- Offline indicator: shown (with the edit queue armed) whenever a save
          cannot reach the host; clears automatically on the next success. -->
