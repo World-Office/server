@@ -200,6 +200,7 @@
     <button type="button" class="ribbon-tab" data-tab="view" role="tab" aria-selected="false" data-i18n="Tab.View">View</button>
     <button type="button" class="ribbon-tab" data-tab="plugins" role="tab" aria-selected="false" data-i18n="Tab.Plugins">Plugins</button>
     <button type="button" class="ribbon-tab" data-tab="ai" role="tab" aria-selected="false" data-i18n="Tab.AI">AI</button>
+    <button type="button" class="ribbon-tab" data-tab="chart-design" role="tab" aria-selected="false" data-i18n="Tab.ChartDesign" hidden>Chart design</button>
     <button type="button" class="ribbon-tab" data-tab="header-footer" role="tab" aria-selected="false" data-i18n="Tab.HeaderFooter" hidden>Header &amp; Footer</button>
     </div>
     <!-- Format group: character styles, font size/family, text color, highlight -->
@@ -680,6 +681,73 @@
     <button type="button" data-cmd="aiRewrite" data-i18n="AI.Rewrite">Rewrite</button>
     <button type="button" id="btn-ai-grammar" data-i18n="AI.Grammar">Grammar</button>
     <button type="button" id="btn-ai-assistant" data-i18n="AI.Assistant">AI assistant</button>
+    </div>
+    <!-- Chart design (AF9-CHART-DESIGN, OO parity): contextual tab revealed
+         by editor.js when a chart vector object is picked. 8 control groups
+         operate on the selected img[data-kind='chart'] via its stored spec;
+         with no chart selected the controls are aria-disabled no-ops (the
+         marker ops still fire). -->
+    <div class="ribbon-page" data-tab="chart-design" role="group" aria-label="Chart design ribbon" data-i18n-aria-label="Tab.ChartDesign">
+    <div class="ribbon-row">
+    <div class="rb-group" role="group" aria-label="Chart type">
+    <span class="menu rb-menu" >
+    <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Chart.Type">Chart type ▾</button>
+    <ul class="menu-list" role="menu" hidden>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartType" data-value="bar" data-i18n="Chart.Type.Bar">Bar</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartType" data-value="line" data-i18n="Chart.Type.Line">Line</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartType" data-value="pie" data-i18n="Chart.Type.Pie">Pie</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartType" data-value="area" data-i18n="Chart.Type.Area">Area</button></li>
+    </ul>
+    </span>
+    </div>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <div class="rb-group" role="group" aria-label="Edit chart data">
+    <button type="button" data-cmd="chartEditData" data-i18n="Chart.EditData">Edit data</button>
+    </div>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <div class="rb-group" role="group" aria-label="Update chart data">
+    <button type="button" data-cmd="chartUpdateData" data-i18n="Chart.UpdateData">Update data</button>
+    </div>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <div class="rb-group" role="group" aria-label="Chart elements">
+    <span class="menu rb-menu" >
+    <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Chart.Elements">Chart elements ▾</button>
+    <ul class="menu-list" role="menu" hidden>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartElement" data-value="title" data-i18n="Chart.Elements.Title">Chart title</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartElement" data-value="legend" data-i18n="Chart.Elements.Legend">Legend</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartElement" data-value="gridlines" data-i18n="Chart.Elements.Gridlines">Gridlines</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartElement" data-value="dataLabels" data-i18n="Chart.Elements.DataLabels">Data labels</button></li>
+    </ul>
+    </span>
+    </div>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <div class="rb-group" role="group" aria-label="Chart settings">
+    <button type="button" data-cmd="chartSettings" data-i18n="Chart.Settings">Advanced settings</button>
+    </div>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <div class="rb-group" role="group" aria-label="Chart wrapping">
+    <span class="menu rb-menu" >
+    <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Chart.Wrapping">Wrapping ▾</button>
+    <ul class="menu-list" role="menu" hidden>
+      <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-inline" data-i18n="Layout.Wrapping.Inline">Inline</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-square" data-i18n="Layout.Wrapping.Square">Square</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-behind" data-i18n="Layout.Wrapping.Behind">Behind text</button></li>
+    </ul>
+    </span>
+    </div>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <div class="rb-group" role="group" aria-label="Chart size">
+    <label for="chart-width-input" data-i18n="Chart.Width">W</label>
+    <input id="chart-width-input" type="number" min="40" max="2000" step="1" aria-label="Width" data-i18n-aria-label="Chart.Width">
+    <label for="chart-height-input" data-i18n="Chart.Height">H</label>
+    <input id="chart-height-input" type="number" min="40" max="2000" step="1" aria-label="Height" data-i18n-aria-label="Chart.Height">
+    <button type="button" data-cmd="chartSize" data-i18n="Chart.Size.Apply">Apply size</button>
+    </div>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <div class="rb-group" role="group" aria-label="Chart 3D rotation">
+    <button type="button" data-cmd="chart3d" data-i18n="Chart.Rotation3D">3D rotation</button>
+    </div>
+    </div>
     </div>
     <div class="ribbon-page" data-tab="header-footer" role="group" aria-label="Header and Footer ribbon" data-i18n-aria-label="Tab.HeaderFooter">
     <button id="btn-hf-close" type="button" data-i18n="HF.Close">Close Header &amp; Footer</button>
