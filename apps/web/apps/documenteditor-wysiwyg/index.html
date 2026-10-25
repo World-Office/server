@@ -453,13 +453,13 @@
 <button id="btn-bookmark" title="Insert bookmark" aria-label="Insert bookmark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h9v13l-4.5-3.5-4.5 3.5z"/></svg></button>
 <button id="btn-crossref" title="Insert cross-reference" aria-label="Insert cross-reference"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 14V8a3 3 0 0 1 3-3h9M10.5 1.5 14 5l-3.5 3.5"/></svg></button>
 <button id="btn-symbol" title="Insert symbol" aria-label="Insert symbol">Ω</button>
-<button id="btn-datetime" title="Insert date" aria-label="Insert date"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="12" rx="1"/><path d="M1.5 6h13M5 1v3M11 1v3"/></svg></button>
+<button id="btn-datetime" title="Insert date" data-i18n-title="Toolbar.DateTimeTitle" aria-label="Insert date" data-i18n-aria-label="Toolbar.DateTimeTitle"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="12" rx="1"/><path d="M1.5 6h13M5 1v3M11 1v3"/></svg></button>
 <button id="btn-pagenumber" data-cmd="insertPageNumber" title="Insert page number field" data-i18n-title="Toolbar.PageNumberTitle" aria-label="Insert page number">#</button>
 <button id="btn-header" data-cmd="insertHeader" title="Insert page header" data-i18n-title="Toolbar.HeaderTitle" aria-label="Insert page header">▔</button>
 <button id="btn-footer" data-cmd="insertFooter" title="Insert page footer" data-i18n-title="Toolbar.FooterTitle" aria-label="Insert page footer">▁</button>
     <button type="button" data-cmd="insertObject" data-value="shape" data-i18n="Insert.Shape">Shape</button>
     <button type="button" data-cmd="insertObject" data-value="chart" data-i18n="Insert.Chart">Chart</button>
-    <button type="button" data-cmd="insertTextart" data-i18n="Insert.TextArt">Text art</button>
+    <button type="button" data-cmd="insertTextart" data-i18n="Insert.TextArt">TextArt</button>
     <button type="button" data-cmd="toggleDropcap" data-i18n="Insert.DropCap">Drop cap</button>
     <button type="button" data-cmd="insertTextbox" data-i18n="Insert.TextBox">Text box</button>
     <button type="button" data-cmd="link" data-i18n="Insert.Hyperlink">Hyperlink</button>
@@ -472,17 +472,17 @@
         <li role="none"><button type="button" role="menuitem" data-cmd="insertSectionBreak" data-i18n="Layout.Breaks.Section">Insert section break</button></li>
       </ul>
     </span>
+    <button type="button" id="btn-textfile" data-i18n="Insert.TextFromFile">Text from File</button>
+    <button type="button" id="btn-addtext" data-i18n="Insert.AddText">Add text</button>
+    <button type="button" id="btn-field" data-i18n="Insert.Field">Field</button>
+    <button type="button" id="btn-contentcontrol" data-i18n="Insert.ContentControl">Content Controls</button>
+    <button type="button" id="btn-equation" data-i18n="Insert.Equation">Equation</button>
+    <button type="button" id="btn-smartart" data-i18n="Insert.SmartArt">SmartArt</button>
     <span class="menu rb-menu" >
       <button type="button" id="btn-insert-more" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Insert.More">Insert tools ▾</button>
       <ul class="menu-list" role="menu" hidden>
-        <li role="none"><button type="button" role="menuitem" id="btn-textfile" data-i18n="Insert.TextFromFile">Text from file…</button></li>
         <li role="none"><button type="button" role="menuitem" id="btn-mailmerge" data-i18n="Insert.MailMerge">Mail merge…</button></li>
-        <li role="none"><button type="button" role="menuitem" id="btn-addtext" data-i18n="Insert.AddText">Add text</button></li>
-        <li role="none"><button type="button" role="menuitem" id="btn-field" data-i18n="Insert.Field">Field…</button></li>
-        <li role="none"><button type="button" role="menuitem" id="btn-contentcontrol" data-i18n="Insert.ContentControl">Content control…</button></li>
         <li role="none"><button type="button" role="menuitem" id="btn-chart" data-i18n="Insert.ChartEditor">Chart editor…</button></li>
-        <li role="none"><button type="button" role="menuitem" id="btn-equation" data-i18n="Insert.Equation">Equation…</button></li>
-        <li role="none"><button type="button" role="menuitem" id="btn-smartart" data-i18n="Insert.SmartArt">SmartArt…</button></li>
       </ul>
     </span>
     </div>
@@ -615,6 +615,9 @@
     <button type="button" data-cmd="updateToc" data-i18n="Ref.UpdateTable">Update table</button>
     <button type="button" data-cmd="insertToF" data-i18n="Ref.TableOfFigures">Table of figures</button>
     <button type="button" data-cmd="openCrossref" data-i18n="Ref.Crossref">Cross-reference</button>
+    <button type="button" data-cmd="link" data-i18n="Ref.Link">Link</button>
+    <button type="button" data-cmd="bookmark" data-i18n="Ref.Bookmark">Bookmark</button>
+    <button type="button" data-cmd="addText" data-i18n="Ref.AddText">Add Text</button>
     </div>
     <div class="ribbon-page" data-tab="collaboration" role="group" aria-label="Collaboration ribbon" data-i18n-aria-label="Tab.Collaboration">
     <button id="btn-track-changes" title="Track changes" aria-label="Track changes" aria-pressed="false">✎</button>
@@ -634,10 +637,13 @@
     </select>
     <button type="button" data-cmd="prevTrackedChange" data-i18n="Collab.PrevChange" title="Previous change" aria-label="Previous change">◀ change</button>
     <button type="button" data-cmd="nextTrackedChange" data-i18n="Collab.NextChange" title="Next change" aria-label="Next change">change ▶</button>
+    <button type="button" data-cmd="acceptTrackedChange" data-i18n="Collab.Accept">Accept</button>
+    <button type="button" data-cmd="rejectTrackedChange" data-i18n="Collab.Reject">Reject</button>
+    <button type="button" data-cmd="mailMerge" data-i18n="Collab.MailMerge">Mail Merge</button>
     </div>
     <div class="ribbon-page" data-tab="protection" role="group" aria-label="Protection ribbon" data-i18n-aria-label="Tab.Protection">
-    <button type="button" data-cmd="protectDialog" data-i18n="Prot.Password">Protect with password</button>
-    <button type="button" data-cmd="restrictEditing" data-i18n="Prot.Restrict">Restrict editing</button>
+    <button type="button" data-cmd="protectDialog" data-i18n="Prot.Password">Encrypt</button>
+    <button type="button" data-cmd="restrictEditing" data-i18n="Prot.Restrict">Protect Document</button>
     </div>
     <div class="ribbon-page" data-tab="view" role="group" aria-label="View ribbon" data-i18n-aria-label="Tab.View">
     <button type="button" data-cmd="displayMode" data-i18n="View.Mode">Document view</button>
@@ -668,8 +674,14 @@
     </select>
     </label>
     <button id="btn-view-darkdoc" type="button" data-i18n="View.DarkDocument" aria-pressed="false">Dark document</button>
-    <button id="btn-macro-record" type="button" data-i18n="View.RecordMacro">Record macro</button>
-    <button id="btn-macro-pause" type="button" data-i18n="View.PauseRecording">Pause recording</button>
+    <span class="menu rb-menu" >
+      <button type="button" id="btn-macro-menu" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="View.RecordMacro">Macros ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" id="btn-macro-record" data-i18n="View.MacroRecord">Record macro</button></li>
+        <li role="none"><button type="button" role="menuitem" id="btn-macro-pause" data-i18n="View.MacroPause">Pause recording</button></li>
+        <li role="none"><button type="button" role="menuitem" id="btn-macro-manager" data-i18n="View.MacroManager">Macro manager</button></li>
+      </ul>
+    </span>
     <span class="menu rb-menu" >
       <button type="button" id="btn-speech" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="View.Speech">Speech ▾</button>
       <ul class="menu-list" role="menu" hidden>
@@ -765,6 +777,8 @@
     <button id="btn-hf-close" type="button" data-i18n="HF.Close">Close Header &amp; Footer</button>
     <button id="btn-hf-pagenumber" type="button" data-i18n="HF.PageNumber">Page number</button>
     <button id="btn-hf-datetime" type="button" data-i18n="HF.DateTime">Date &amp; time</button>
+    <button id="btn-hf-field" type="button" data-i18n="HF.Field">Field</button>
+    <button id="btn-hf-image" type="button" data-i18n="HF.Image">Image</button>
     <button type="button" data-cmd="toggleDifferentFirst" data-i18n="HF.DifferentFirst">Different First Page</button>
     <button type="button" data-cmd="toggleOddEven" data-i18n="HF.OddEven">Different Odd &amp; Even</button>
     <button type="button" data-cmd="toggleHeaderFromTop" data-i18n="HF.HeaderFromTop">Header from Top</button>

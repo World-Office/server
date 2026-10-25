@@ -1238,6 +1238,9 @@
     }
     if (cmd === "displayMode") { openDisplayModeDialog(); return; }
     if (cmd === "link") { insertLink(); return; }
+    if (cmd === "bookmark") { openBookmarkDialog(); return; }
+    if (cmd === "addText") { closeAllMenus(); openOverlayDialog("addtext-dialog"); return; }
+    if (cmd === "mailMerge") { closeAllMenus(); const mmIn = document.getElementById("mailmerge-csv"); if (mmIn) mmIn.click(); return; }
     if (cmd === "toggleGridlines") { toggleGridlines(); return; }
     if (cmd === "toggleNavigation") { toggleNavigation(); return; }
     if (cmd === "toggleRightPanel") { toggleRightPanel(); return; }
@@ -1248,6 +1251,8 @@
     if (cmd === "compareVersion") { openCompareView(); return; }
     if (cmd === "prevTrackedChange") { prevTrackedChange(); return; }
     if (cmd === "nextTrackedChange") { nextTrackedChange(); return; }
+    if (cmd === "acceptTrackedChange") { trackedChangeAtSelection("accept"); return; }
+    if (cmd === "rejectTrackedChange") { trackedChangeAtSelection("reject"); return; }
     if (cmd === "resolveComment") {
       const span = commentAtSelection();
       if (span) {
@@ -4807,6 +4812,12 @@
   if (btnMacroRecord) btnMacroRecord.addEventListener("click", () => emitMacroMarker("record"));
   const btnMacroPause = document.getElementById("btn-macro-pause");
   if (btnMacroPause) btnMacroPause.addEventListener("click", () => emitMacroMarker("pause"));
+  const btnMacroManager = document.getElementById("btn-macro-manager");
+  if (btnMacroManager) btnMacroManager.addEventListener("click", () => {
+    window.dispatchEvent(new CustomEvent("wo:macro-manager", { detail: {} }));
+    console.info("wo:macro-manager: requested");
+    setStatus("Macro manager requested (marker only)");
+  });
 
   // Formatting marks (nonprinting characters): view-only overlay (like
   // gridlines); the ¶ glyphs come from CSS on #editor.show-marks, nothing
@@ -6529,6 +6540,22 @@
   if (hfPageNumber) hfPageNumber.addEventListener("click", () => emitCommand("insertPageNumber"));
   const hfDateTime = document.getElementById("btn-hf-datetime");
   if (hfDateTime) hfDateTime.addEventListener("click", () => emitCommand("insertDate"));
+  // AF12-LABEL-PARITY: header/footer Field & Image placement buttons. The
+  // field/image dialogs insert at the main-surface caret, not inside the HF
+  // container, so these fire the established marker pattern (CustomEvent +
+  // console.info) rather than pretending to insert into the header/footer.
+  const hfField = document.getElementById("btn-hf-field");
+  if (hfField) hfField.addEventListener("click", () => {
+    window.dispatchEvent(new CustomEvent("wo:header-field", { detail: {} }));
+    console.info("wo:header-field: requested");
+    setStatus("Header/footer field requested (marker only)");
+  });
+  const hfImage = document.getElementById("btn-hf-image");
+  if (hfImage) hfImage.addEventListener("click", () => {
+    window.dispatchEvent(new CustomEvent("wo:header-image", { detail: {} }));
+    console.info("wo:header-image: requested");
+    setStatus("Header/footer image requested (marker only)");
+  });
 
   // --- right-click context menu on the editing surface ----------------
   // OO parity: same geometry (210px, 26px rows) and item order as OO's
