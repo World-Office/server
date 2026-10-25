@@ -1590,6 +1590,12 @@ hr.section-break {
   border-top: 2px dashed #999;
   margin: 14px 0;
 }
+/* Keep-lines-together (ctx menu / OO Paragraph > Line and Page Breaks):
+   blocks with this class never split across a page boundary. */
+#editor .keep-lines {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
 /* Column break marker (Layout > Breaks): sibling of the page-break
    contract — a visible, selectable shape for a marker that round-trips. */
 .column-break {

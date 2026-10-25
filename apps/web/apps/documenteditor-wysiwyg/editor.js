@@ -999,7 +999,10 @@
     // an ordinary editable step (undoable via captureHistory, collab-synced
     // via the input event, persisted because the editor HTML carries the
     // <hr>/div.page-break markers and the plain-text symbols).
-    if (cmd === "insertHR" || cmd === "insertPageBreak") {
+    // insertBlankPage (Insert > Blank page) reuses the page-break contract:
+    // the break marker ends the current page and the trailing empty
+    // paragraph is the fresh page's first block (OO "Blank Page" parity).
+    if (cmd === "insertHR" || cmd === "insertPageBreak" || cmd === "insertBlankPage") {
       // A page break inserts a marker PLUS a trailing empty paragraph: with
       // nothing after the marker, Chromium appends subsequent typed text
       // INTO the page-break div (block-boundary behaviour), corrupting it.
@@ -1134,6 +1137,63 @@
     // html===lastSnapshot guard keeps this a no-op when the event already ran.
     // --- WS-B promoted commands -------------------------------------
     if (cmd === "insertObject") { openObjectDialog(String(value || "shape")); return; }
+    // AF8-INSERT-CTX-CLEANUP: dedicated insert-page controls. Text box and
+    // text art reuse the object-insert machinery (same dialog the
+    // btn-object flow drives); Comment reuses the ctx-menu AddComment path.
+    if (cmd === "insertTextbox") { openObjectDialog("textbox"); return; }
+    if (cmd === "insertTextart") { openObjectDialog("textart"); return; }
+    if (cmd === "insertComment") { openCommentDialog(); return; }
+    // Paragraph pagination (OO Paragraph > Line and Page Breaks > Keep
+    // lines together): toggle the keep-lines class on the block(s) touched
+    // by the selection and announce it on the wo:keep-lines bus.
+    if (cmd === "toggleKeepLines") {
+      if (READ_ONLY) return;
+      const sel = window.getSelection();
+      const anchor = sel && sel.anchorNode ? blockElementAt(sel.anchorNode) : null;
+      const focusBlk = sel && sel.focusNode ? blockElementAt(sel.focusNode) : null;
+      const targets = anchor ? [anchor] : [];
+      if (focusBlk && focusBlk !== anchor) targets.push(focusBlk);
+      if (!targets.length) {
+        setStatus(t("Status.NotAvailable") + " toggleKeepLines");
+        return;
+      }
+      const adding = !targets[0].classList.contains("keep-lines");
+      targets.forEach((blk) => blk.classList.toggle("keep-lines", adding));
+      window.dispatchEvent(new CustomEvent("wo:keep-lines", { detail: { on: adding } }));
+      console.info("wo: keep-lines:", adding ? "on" : "off");
+      markDirty();
+      captureHistory();
+      scheduleCollabSync();
+      notifyHost("editing");
+      updateActiveStates();
+      updateUndoRedoState();
+      return;
+    }
+    // Print selection (ctx menu): print ONLY the selected text in a scratch
+    // window — plain window.print() would print the whole document. The
+    // wo:print-selection event is the observable contract for agents/E2E.
+    if (cmd === "printSelection") {
+      const sel = window.getSelection();
+      const text = sel ? sel.toString() : "";
+      window.dispatchEvent(new CustomEvent("wo:print-selection", {
+        detail: { chars: text.length },
+      }));
+      console.info("wo: print-selection:", text.length + " chars");
+      if (!text) {
+        setStatus(t("Status.NotAvailable") + " printSelection (no selection)");
+        return;
+      }
+      try {
+        const w = window.open("", "_blank", "width=760,height=640");
+        if (!w) throw new Error("popup blocked");
+        w.document.body.textContent = text;
+        w.addEventListener("afterprint", () => w.close());
+        w.print();
+      } catch (err) {
+        console.info("wo: print-selection: scratch window unavailable (" + err.message + ")");
+      }
+      return;
+    }
     if (cmd === "updateToc") { openUpdateTocDialog(); return; }
     if (cmd === "aiTranslate") {
       openAiPropose("Translate the document into " + String(value || "German") + ".");
@@ -1910,11 +1970,15 @@
   }
 
   // --- insert hyperlink (toolbar button + dialog) -------------------
+  // editingAnchor is the <a> being retargeted via ctx > Edit link; null
+  // means the dialog is in plain insert mode.
+  let editingAnchor = null;
   function insertLink() {
     if (READ_ONLY) return;
     const dialog = document.getElementById("link-dialog");
     const urlInput = document.getElementById("link-url");
     if (!dialog || !urlInput) return;
+    editingAnchor = null;
     rememberFocus();
     urlInput.value = "";
     dialog.classList.add("open");
@@ -1926,7 +1990,18 @@
     const url = (urlInput && urlInput.value || "").trim();
     if (dialog) dialog.classList.remove("open");
     restoreFocus();
-    if (!url) return;
+    if (!url) { editingAnchor = null; return; }
+    // Edit-link mode: retarget the existing anchor in place instead of
+    // inserting a new one (the selection was not captured for the edit).
+    if (editingAnchor && editor.contains(editingAnchor)) {
+      editingAnchor.setAttribute("href", url);
+      editingAnchor = null;
+      captureHistory();
+      markDirty();
+      scheduleCollabSync();
+      notifyHost("editing");
+      return;
+    }
     editor.focus();
     const sel = window.getSelection();
     if (sel && sel.toString().trim() !== "") {
@@ -1939,6 +2014,89 @@
     markDirty();
     scheduleCollabSync();
     notifyHost("editing");
+  }
+
+  // AF8-INSERT-CTX-CLEANUP: Edit/Remove link + tracked-change/field ops
+  // for the ctx menu. anchorAtSelection resolves the <a> at the caret —
+  // works both inside a text selection and with the caret merely placed
+  // in the link, which is how browsers expose "edit link" contextually.
+  function anchorAtSelection() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    let node = sel.anchorNode;
+    if (!node || !editor.contains(node)) return null;
+    if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+    if (!node || typeof node.closest !== "function") return null;
+    const anchor = node.closest("#editor a[href]");
+    return anchor && editor.contains(anchor) ? anchor : null;
+  }
+  function editLinkAtSelection() {
+    if (READ_ONLY) return;
+    const a = anchorAtSelection();
+    if (!a) {
+      setStatus(t("Status.NotAvailable") + " editLink");
+      return;
+    }
+    const dialog = document.getElementById("link-dialog");
+    const urlInput = document.getElementById("link-url");
+    if (!dialog || !urlInput) return;
+    editingAnchor = a;
+    urlInput.value = a.getAttribute("href") || "";
+    rememberFocus();
+    dialog.classList.add("open");
+    urlInput.focus();
+  }
+  function removeLinkAtSelection() {
+    if (READ_ONLY) return;
+    const a = anchorAtSelection();
+    if (!a) {
+      setStatus(t("Status.NotAvailable") + " removeLink");
+      return;
+    }
+    editingAnchor = null;
+    const range = document.createRange();
+    range.selectNodeContents(a);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    editor.focus();
+    document.execCommand("unlink");
+    captureHistory();
+    markDirty();
+    scheduleCollabSync();
+    notifyHost("editing");
+  }
+  // Accept/reject the tracked insertion or deletion at the caret
+  // (reuse acceptChange/rejectChange; NoTrackedChanges mirrors the OO
+  // status bar when the caret sits on untracked text).
+  function trackedChangeAtSelection(kind) {
+    if (READ_ONLY) return;
+    const sel = window.getSelection();
+    let node = sel && sel.anchorNode;
+    if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+    const el = node && typeof node.closest === "function"
+      ? node.closest("#editor ins.track-insert, #editor del.track-delete")
+      : null;
+    if (!el) {
+      setStatus(t("Status.NoTrackedChanges"));
+      return;
+    }
+    const tracked = el.classList.contains("track-insert") ? "insert" : "delete";
+    if (kind === "accept") acceptChange(el, tracked);
+    else rejectChange(el, tracked);
+  }
+  // Field ops (update/edit/toggle codes) on the page-number or data-field
+  // element at the caret; wo:field-op is the observable contract — the
+  // field dialog slice resolves the op.
+  function fieldOpAtSelection(op) {
+    const sel = window.getSelection();
+    let node = sel && sel.anchorNode;
+    if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+    const onField = node && typeof node.closest === "function"
+      ? node.closest("#editor .page-number, #editor [data-field]")
+      : null;
+    window.dispatchEvent(new CustomEvent("wo:field-op", { detail: { op, onField: !!onField } }));
+    console.info("wo: field-op:", op, onField ? "(on field)" : "(no field at caret)");
   }
 
   function saveImageSelection() {
@@ -3488,6 +3646,7 @@
   if (linkCancel) linkCancel.addEventListener("click", () => {
     const d = document.getElementById("link-dialog");
     if (d) d.classList.remove("open");
+    editingAnchor = null;
     restoreFocus();
   });
   const linkInput = document.getElementById("link-url");
@@ -6362,6 +6521,47 @@
         openUpdateTocDialog();
       } else if (action === "PageBreakBefore") {
         emitCommand("insertPageBreak");
+        // AF8-INSERT-CTX-CLEANUP: OO-parity completion rows. Real DOM ops
+        // where they exist (links, lists, tracked changes), wo: marker
+        // events where a dialog slice is the follow-up (loud-stub contract).
+      } else if (action === "EditLink") {
+        editLinkAtSelection();
+      } else if (action === "RemoveLink") {
+        removeLinkAtSelection();
+      } else if (action === "KeepLines") {
+        emitCommand("toggleKeepLines");
+      } else if (action === "StartNewList") {
+        emitCommand("insertUnorderedList");
+      } else if (action === "ContinueNumbering") {
+        window.dispatchEvent(new CustomEvent("wo:list-settings", { detail: { op: "continue-numbering" } }));
+        console.info("wo: list-settings:", "continue-numbering");
+      } else if (action === "SetNumberingValue") {
+        window.dispatchEvent(new CustomEvent("wo:list-settings", { detail: { op: "set-numbering-value" } }));
+        console.info("wo: list-settings:", "set-numbering-value");
+      } else if (action === "AdjustListIndents") {
+        window.dispatchEvent(new CustomEvent("wo:list-settings", { detail: { op: "adjust-list-indents" } }));
+        console.info("wo: list-settings:", "adjust-list-indents");
+      } else if (action === "FormattingAsStyle") {
+        window.dispatchEvent(new CustomEvent("wo:style-from-format", { detail: { source: "ctx-menu" } }));
+        console.info("wo: style-from-format requested (ctx menu)");
+      } else if (action === "ParagraphSettings") {
+        window.dispatchEvent(new CustomEvent("wo:open-paragraph-settings", { detail: { source: "ctx-menu" } }));
+        console.info("wo: open-paragraph-settings requested (ctx menu)");
+      } else if (action === "TocSettings") {
+        window.dispatchEvent(new CustomEvent("wo:toc-settings", { detail: { source: "ctx-menu" } }));
+        console.info("wo: toc-settings requested (ctx menu)");
+      } else if (action === "UpdateField") {
+        fieldOpAtSelection("update");
+      } else if (action === "EditField") {
+        fieldOpAtSelection("edit");
+      } else if (action === "ToggleFieldCodes") {
+        fieldOpAtSelection("toggle-codes");
+      } else if (action === "AcceptChange") {
+        trackedChangeAtSelection("accept");
+      } else if (action === "RejectChange") {
+        trackedChangeAtSelection("reject");
+      } else if (action === "PrintSelection") {
+        emitCommand("printSelection");
         // Selection
       } else if (action === "SelectAll") {
         editorEl.focus();
