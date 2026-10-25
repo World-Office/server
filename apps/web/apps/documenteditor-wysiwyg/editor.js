@@ -889,6 +889,27 @@
       updateUndoRedoState();
       return;
     }
+    // AF7-RIGHT-PANEL: paragraph spacing / indent / shading are block-level
+    // styles like line spacing — applied to the block(s) under the selection
+    // (see applyParagraphSpacing / applyParagraphIndent / applyParagraphShading).
+    if (cmd === "spacingBefore" || cmd === "spacingAfter") {
+      applyParagraphSpacing(cmd === "spacingBefore" ? "margin-top" : "margin-bottom", value);
+      updateActiveStates();
+      syncRightPanelControls();
+      return;
+    }
+    if (cmd === "indentLeft" || cmd === "indentRight") {
+      applyParagraphIndent(cmd === "indentLeft" ? "margin-left" : "margin-right", value);
+      updateActiveStates();
+      syncRightPanelControls();
+      return;
+    }
+    if (cmd === "paragraphBackColor") {
+      applyParagraphShading(value);
+      updateActiveStates();
+      syncRightPanelControls();
+      return;
+    }
     // RTL is a block-level style, not an execCommand: toggle direction on
     // the block(s) under the selection (parity with applyLineHeight).
     if (cmd === "directionRtl") {
@@ -1134,6 +1155,7 @@
     if (cmd === "link") { insertLink(); return; }
     if (cmd === "toggleGridlines") { toggleGridlines(); return; }
     if (cmd === "toggleNavigation") { toggleNavigation(); return; }
+    if (cmd === "toggleRightPanel") { toggleRightPanel(); return; }
     if (cmd === "toggleChat") { toggleChat(); return; }
     if (cmd === "insertCaption") { insertCaptionCommand(); return; }
     if (cmd === "insertCitation") { insertCitation(); return; }
@@ -1298,6 +1320,78 @@
     captureHistory();
   }
 
+  // AF7-RIGHT-PANEL: paragraph spacing / indents — same shape as
+  // applyLineHeight: a unit-bearing inline style on the block(s) under the
+  // selection, "0"/empty resets to the document default. Values are points
+  // (the right-panel number inputs are labeled pt).
+  function applyParagraphSpacing(prop, value) {
+    if (READ_ONLY) return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    if (!editor.contains(range.startContainer)) return;
+    const blocks = blocksUnderSelection(sel);
+    if (blocks.length === 0) return;
+    const pt = parseFloat(String(value));
+    blocks.forEach((el) => {
+      if (pt > 0) el.style.setProperty(prop, pt + "pt");
+      else el.style.removeProperty(prop);
+    });
+    markDirty();
+    captureHistory();
+    scheduleCollabSync();
+    notifyHost("editing");
+  }
+
+  function applyParagraphIndent(prop, value) {
+    if (READ_ONLY) return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const range = sel.getRangeAt(0);
+    if (!editor.contains(range.startContainer)) return;
+    const blocks = blocksUnderSelection(sel);
+    if (blocks.length === 0) return;
+    const pt = parseFloat(String(value));
+    blocks.forEach((el) => {
+      if (pt > 0) el.style.setProperty(prop, pt + "pt");
+      else el.style.removeProperty(prop);
+    });
+    markDirty();
+    captureHistory();
+    scheduleCollabSync();
+    notifyHost("editing");
+  }
+
+  // Paragraph-level shading (F-040), shared by the ribbon #shading-color
+  // picker and the right settings panel (command paragraphBackColor).
+  // Empty string removes the background.
+  function applyParagraphShading(value) {
+    if (READ_ONLY) return;
+    const sel = document.getSelection();
+    if (!sel || !sel.rangeCount) return;
+    const sc = sel.getRangeAt(0).startContainer;
+    const block = sc.nodeType === 1
+      ? (sc.closest ? sc.closest("p") : null)
+      : (sc.parentElement && sc.parentElement.closest("p"));
+    if (!block) return;
+    const color = String(value || "");
+    if (!color) {
+      block.style.removeProperty("background-color");
+    } else {
+      const cur = block.getAttribute("style") || "";
+      const decls = cur.split(";").filter((d) => {
+        const kv = d.split(":");
+        return kv.length >= 2 && kv[0].trim() !== "background-color";
+      });
+      decls.push("background-color: " + color);
+      block.setAttribute("style", decls.join(";"));
+    }
+    captureHistory();
+    markDirty();
+    scheduleCollabSync();
+    notifyHost("editing");
+  }
+
   // ------------------------------------------------------------------
   // Undo/redo history — explicit innerHTML snapshot chain (US-31).
   //
@@ -1403,6 +1497,12 @@
         } else if (cmd === "inkSelect") {
           // Select tool button reflects the select stroke-tool.
           active = inkMode === "select";
+        } else if (cmd === "toggleRightPanel") {
+          // View-tab panel toggle reflects live panel visibility (read at
+          // call time — the element is created after this function's hoisted
+          // definition, so no closure constant here).
+          const rp = document.getElementById("right-panel");
+          active = !!(rp && !rp.hidden);
         } else {
           active = cmd === "formatBlock"
             ? (btn.dataset.value || "P") === currentBlockTag()
@@ -4541,6 +4641,141 @@
     setStatus(opening ? t("Status.ChatOpen") || "Chat open" : t("Status.ChatClosed") || "Chat closed");
   }
 
+  // AF7-RIGHT-PANEL: right settings panel — 48px icon rail + 280px body.
+  // Mirrors toggleNavigation/toggleChat: state lives on the element
+  // (hidden + the active rail button), the View-tab toggle reflects it via
+  // updateActiveStates. syncRightPanelControls mirrors the caret's block
+  // styles into the inputs (same idea as the line-spacing select sync).
+  const rightPanel = document.getElementById("right-panel");
+  const rightPanelToggleBtn = document.getElementById("btn-right-panel-toggle");
+  const rightRail = document.getElementById("right-rail");
+  const rightPanelBody = document.getElementById("right-panel-body");
+  let rightPanelSection = "paragraph";
+
+  function toggleRightPanel() {
+    if (!rightPanel) return;
+    const opening = rightPanel.hidden;
+    rightPanel.hidden = !opening;
+    const mainEl = document.querySelector("main");
+    if (mainEl) mainEl.classList.toggle("rp-open", opening);
+    if (rightPanelToggleBtn) {
+      rightPanelToggleBtn.setAttribute("aria-pressed", opening ? "true" : "false");
+    }
+    if (rightRail) {
+      Array.prototype.forEach.call(rightRail.querySelectorAll("button[data-panel]"), (btn) => {
+        btn.setAttribute("aria-pressed", opening && btn.dataset.panel === rightPanelSection ? "true" : "false");
+      });
+    }
+    setStatus(opening ? t("Status.RightPanelOpen") || "Settings panel open" : t("Status.RightPanelClosed") || "Settings panel closed");
+    if (opening) syncRightPanelControls();
+    updateActiveStates();
+  }
+
+  function openRightPanelSection(name) {
+    if (!rightPanel) return;
+    if (!rightPanel.hidden && name === rightPanelSection) {
+      toggleRightPanel();  // active rail icon again → collapse the panel
+      return;
+    }
+    rightPanelSection = name;
+    if (rightPanel.hidden) toggleRightPanel();
+    if (rightPanelBody) {
+      Array.prototype.forEach.call(rightPanelBody.querySelectorAll(".rp-section"), (sec) => {
+        sec.hidden = sec.dataset.section !== name;
+      });
+    }
+    if (rightRail) {
+      Array.prototype.forEach.call(rightRail.querySelectorAll("button[data-panel]"), (btn) => {
+        btn.setAttribute("aria-pressed", btn.dataset.panel === name ? "true" : "false");
+      });
+    }
+    syncRightPanelControls();
+  }
+
+  function syncRightPanelControls() {
+    if (!rightPanel || rightPanel.hidden) return;
+    const sel = window.getSelection();
+    const block = sel && sel.anchorNode ? blockElementAt(sel.anchorNode) : null;
+    if (!block || block === editor) return;
+    const cs = window.getComputedStyle(block);
+    const lineSpacing = document.getElementById("rp-line-spacing");
+    if (lineSpacing) {
+      const fs = parseFloat(cs.fontSize) || 16;
+      const ratio = Math.round(((parseFloat(cs.lineHeight) || fs * 1.2) / fs) * 100) / 100;
+      const match = Array.prototype.find.call(lineSpacing.options, (o) => {
+        return o.value !== "" && Math.abs(parseFloat(o.value) - ratio) < 0.026;
+      });
+      lineSpacing.value = match ? match.value : "";
+    }
+    // Computed styles are px; the panel inputs are labeled pt (1pt = 4/3px).
+    const map = [
+      ["rp-spacing-before", cs.marginTop],
+      ["rp-spacing-after", cs.marginBottom],
+      ["rp-indent-left", cs.marginLeft],
+      ["rp-indent-right", cs.marginRight],
+    ];
+    map.forEach(([id, px]) => {
+      const input = document.getElementById(id);
+      if (input) input.value = String(Math.round((parseFloat(px) || 0) * 0.75));
+    });
+    const shading = document.getElementById("rp-shading");
+    if (shading) {
+      const m = cs.backgroundColor && cs.backgroundColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      shading.value = m
+        ? "#" + [m[1], m[2], m[3]].map((c) => Number(c).toString(16).padStart(2, "0")).join("")
+        : "#ffffff";
+    }
+  }
+
+  if (rightRail) {
+    rightRail.addEventListener("click", (ev) => {
+      const btn = ev.target && ev.target.closest
+        ? ev.target.closest("button[data-panel]") : null;
+      if (!btn || !rightRail.contains(btn)) return;
+      openRightPanelSection(btn.dataset.panel);
+    });
+  }
+  const rpLineSpacing = document.getElementById("rp-line-spacing");
+  if (rpLineSpacing) rpLineSpacing.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    emitCommand("lineHeight", rpLineSpacing.value);
+    rpLineSpacing.value = ""; // re-synced from computed style below
+    syncRightPanelControls();
+  });
+  const rpSpacingBefore = document.getElementById("rp-spacing-before");
+  if (rpSpacingBefore) rpSpacingBefore.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    emitCommand("spacingBefore", rpSpacingBefore.value);
+  });
+  const rpSpacingAfter = document.getElementById("rp-spacing-after");
+  if (rpSpacingAfter) rpSpacingAfter.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    emitCommand("spacingAfter", rpSpacingAfter.value);
+  });
+  const rpIndentLeft = document.getElementById("rp-indent-left");
+  if (rpIndentLeft) rpIndentLeft.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    emitCommand("indentLeft", rpIndentLeft.value);
+  });
+  const rpIndentRight = document.getElementById("rp-indent-right");
+  if (rpIndentRight) rpIndentRight.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    emitCommand("indentRight", rpIndentRight.value);
+  });
+  const rpShading = document.getElementById("rp-shading");
+  if (rpShading) rpShading.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    emitCommand("paragraphBackColor", rpShading.value);
+  });
+  const rpAdvanced = document.getElementById("rp-advanced");
+  if (rpAdvanced) rpAdvanced.addEventListener("click", () => {
+    // Marker for the host page / future advanced-settings dialog slice.
+    window.dispatchEvent(new CustomEvent("wo:open-paragraph-settings", {
+      detail: { source: "right-panel" },
+    }));
+    console.info("wo: open-paragraph-settings requested (right panel)");
+  });
+
   // Multilevel list: nest the current list item under its previous
   // sibling, growing a real <li><ol> subtree (the canonical shape the
   // converters round-trip; Chromium's execCommand("indent") can emit a
@@ -6345,27 +6580,9 @@
   const shadingColor = document.getElementById("shading-color");
   if (shadingColor) shadingColor.addEventListener("change", () => {
     if (READ_ONLY) return;
-    // F-040: paragraph-level shading (not selection-scoped backColor).
-    // Apply background-color to the <p> block containing the cursor.
-    const sel = document.getSelection();
-    if (!sel || !sel.rangeCount) return;
-    const sc = sel.getRangeAt(0).startContainer;
-    const block = sc.nodeType === 1
-      ? (sc.closest ? sc.closest("p") : null)
-      : (sc.parentElement && sc.parentElement.closest("p"));
-    if (!block) return;
-    const color = shadingColor.value;
-    const cur = block.getAttribute("style") || "";
-    const decls = cur.split(";").filter((d) => {
-      const kv = d.split(":");
-      return kv.length >= 2 && kv[0].trim() !== "background-color";
-    });
-    decls.push("background-color: " + color);
-    block.setAttribute("style", decls.join(";"));
-    captureHistory();
-    markDirty();
-    scheduleCollabSync();
-    notifyHost("editing");
+    // F-040: paragraph-level shading — shared implementation with the
+    // right settings panel (applyParagraphShading / paragraphBackColor).
+    applyParagraphShading(shadingColor.value);
     updateActiveStates();
   });
   const lineSpacingSel = document.getElementById("line-spacing");
@@ -6519,6 +6736,12 @@
         openFindDialog(true);
         return;
       }
+      // Right settings panel: Ctrl+Shift+P (OO settings-panel convention).
+      if (k === "p" && ev.shiftKey) {
+        ev.preventDefault();
+        emitCommand("toggleRightPanel");
+        return;
+      }
       // Paragraph alignment (Word / LibreOffice convention): Ctrl+E center,
       // Ctrl+J justify, Ctrl+Shift+L left, Ctrl+R right. Ctrl+R overrides
       // browser reload while focus is inside the editor — exactly what
@@ -6641,6 +6864,7 @@
 
   document.addEventListener("selectionchange", updatePageIndicator)
     document.addEventListener("selectionchange", updateActiveStates);
+  document.addEventListener("selectionchange", syncRightPanelControls);
 
   // ------------------------------------------------------------------
   // Autosave every 30 s of inactivity

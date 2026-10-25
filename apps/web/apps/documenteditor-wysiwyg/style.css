@@ -1959,3 +1959,111 @@ main.dark-document #editor,
 main.dark-document #editor [class*="wo-page"] {
   background-color: #1e1e28; color: #d4d4d8;
 }
+
+/* AF7-RIGHT-PANEL: right settings panel — 48px icon rail + 280px body,
+   absolutely positioned inside main (position:relative) so it never covers
+   titlebar/ribbon/statusbar. main.rp-open shrinks the canvas so the
+   document never sits underneath the panel; on narrow viewports the panel
+   overlays instead (same behavior as the left nav panel). */
+main.rp-open { padding-right: 344px; }
+
+#right-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: row;
+  z-index: 40;
+  background: var(--bg);
+  border-left: 1px solid var(--border);
+  box-shadow: -2px 0 6px rgba(0, 0, 0, 0.08);
+}
+
+#right-rail {
+  width: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+  border-right: 1px solid var(--border);
+}
+
+.rail-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.rail-btn:hover { background: var(--hover); color: var(--text); }
+.rail-btn[aria-pressed="true"] { background: var(--hover); color: var(--text); }
+
+#right-panel-body {
+  width: 280px;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+.rp-title {
+  font-weight: 600;
+  margin: 4px 4px 12px;
+  color: var(--text);
+}
+
+.rp-group { margin: 0 4px 12px; }
+.rp-group label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+.rp-group select,
+.rp-group input[type="number"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+.rp-group input[type="color"] {
+  width: 100%;
+  height: 28px;
+  padding: 2px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.rp-link {
+  margin: 8px 4px 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+}
+.rp-link:hover { color: var(--text); }
+
+.rp-empty {
+  margin: 8px 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+@media (max-width: 900px) {
+  main.rp-open { padding-right: 16px; }
+  #right-panel-body { width: 260px; }
+}

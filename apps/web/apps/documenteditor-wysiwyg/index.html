@@ -626,6 +626,8 @@
     <button id="btn-gridlines" type="button" data-i18n="View.Gridlines" aria-pressed="false">Gridlines</button>
     <button id="btn-view-formatmarks" type="button" data-i18n="View.FormattingMarks" aria-pressed="false">Formatting marks</button>
     <button id="btn-nav-toggle" type="button" data-cmd="toggleNavigation" data-i18n="View.Navigation" aria-expanded="false">Navigation</button>
+    <!-- AF7-RIGHT-PANEL: right settings panel toggle (Ctrl+Shift+P, OO convention). -->
+    <button id="btn-right-panel-toggle" type="button" data-cmd="toggleRightPanel" data-i18n="View.RightPanel" aria-pressed="false">Settings panel</button>
     <button id="btn-view-fullscreen" type="button" data-i18n="View.Fullscreen">Fullscreen</button>
     <button id="btn-view-theme" type="button" data-i18n="View.Theme" aria-pressed="false">Theme</button>
     <button id="btn-view-fit" type="button" data-i18n="View.Fit">Fit page</button>
@@ -784,6 +786,71 @@
          aria-label="Document" data-i18n-aria-label="A11y.EditorLabel"></div>
     <!-- Ink canvas overlay for drawing (Draw tab). Positioned absolute over the editor. -->
     <canvas id="ink-canvas" class="ink-canvas" hidden aria-label="Ink drawing canvas"></canvas>
+    <!-- AF7-RIGHT-PANEL: right settings panel — 48px icon rail + 280px settings
+         body, absolutely positioned inside main (position:relative) so it never
+         covers titlebar/ribbon/statusbar. Paragraph section is live; the other
+         sections are honest placeholders for later slices. -->
+    <aside id="right-panel" hidden aria-label="Settings" data-i18n-aria-label="RightPanel.Title">
+      <nav id="right-rail" aria-label="Settings sections" data-i18n-aria-label="RightPanel.Sections">
+        <button type="button" class="rail-btn" data-panel="paragraph" aria-pressed="true" title="Paragraph" data-i18n-title="RightPanel.Paragraph"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M5 2.5v11M5 2.5h2.5M5 13.5h3"/><circle cx="11.75" cy="4.5" r="1.9"/><path d="M11.75 6.4v7.1M11.75 13.5h2"/></svg></button>
+        <button type="button" class="rail-btn" data-panel="table" aria-pressed="false" title="Table" data-i18n-title="RightPanel.Table"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1"/><path d="M2 6.5h12M2 10.5h12M6.5 2.5v11M10.5 2.5v11"/></svg></button>
+        <button type="button" class="rail-btn" data-panel="image" aria-pressed="false" title="Image" data-i18n-title="RightPanel.Image"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2.5" width="12" height="11" rx="1"/><circle cx="5.75" cy="6.25" r="1.25"/><path d="M14 11l-3.5-3.5-6 6"/></svg></button>
+        <button type="button" class="rail-btn" data-panel="chart" aria-pressed="false" title="Chart" data-i18n-title="RightPanel.Chart"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M2.5 2.5v11h11"/><path d="M5.5 11V7.5M8.5 11V4.5M11.5 11V8.5"/></svg></button>
+        <button type="button" class="rail-btn" data-panel="mailmerge" aria-pressed="false" title="Mail merge" data-i18n-title="RightPanel.MailMerge"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3.5" width="12" height="9" rx="1"/><path d="M2 5l6 4 6-4"/></svg></button>
+      </nav>
+      <div id="right-panel-body">
+        <section class="rp-section" data-section="paragraph">
+          <div class="rp-title" data-i18n="RightPanel.Paragraph">Paragraph</div>
+          <div class="rp-group">
+            <label for="rp-line-spacing" data-i18n="RightPanel.LineSpacing">Line spacing</label>
+            <select id="rp-line-spacing">
+              <option value="" data-i18n="RightPanel.Custom">Custom</option>
+              <option value="1">1.0</option>
+              <option value="1.15">1.15</option>
+              <option value="1.5">1.5</option>
+              <option value="2">2.0</option>
+            </select>
+          </div>
+          <div class="rp-group">
+            <label for="rp-spacing-before" data-i18n="RightPanel.SpacingBefore">Spacing before (pt)</label>
+            <input type="number" id="rp-spacing-before" min="0" step="6" value="0">
+          </div>
+          <div class="rp-group">
+            <label for="rp-spacing-after" data-i18n="RightPanel.SpacingAfter">Spacing after (pt)</label>
+            <input type="number" id="rp-spacing-after" min="0" step="6" value="0">
+          </div>
+          <div class="rp-group">
+            <label for="rp-indent-left" data-i18n="RightPanel.IndentLeft">Indent left (pt)</label>
+            <input type="number" id="rp-indent-left" min="0" step="12" value="0">
+          </div>
+          <div class="rp-group">
+            <label for="rp-indent-right" data-i18n="RightPanel.IndentRight">Indent right (pt)</label>
+            <input type="number" id="rp-indent-right" min="0" step="12" value="0">
+          </div>
+          <div class="rp-group">
+            <label for="rp-shading" data-i18n="RightPanel.Shading">Background</label>
+            <input type="color" id="rp-shading" value="#ffffff">
+          </div>
+          <button type="button" id="rp-advanced" class="rp-link" data-i18n="RightPanel.Advanced">Show advanced settings</button>
+        </section>
+        <section class="rp-section" data-section="table" hidden>
+          <div class="rp-title" data-i18n="RightPanel.Table">Table</div>
+          <div class="rp-empty" data-i18n="RightPanel.NoTable">No table selected</div>
+        </section>
+        <section class="rp-section" data-section="image" hidden>
+          <div class="rp-title" data-i18n="RightPanel.Image">Image</div>
+          <div class="rp-empty" data-i18n="RightPanel.NoImage">No image selected</div>
+        </section>
+        <section class="rp-section" data-section="chart" hidden>
+          <div class="rp-title" data-i18n="RightPanel.Chart">Chart</div>
+          <div class="rp-empty" data-i18n="RightPanel.NoChart">No chart selected</div>
+        </section>
+        <section class="rp-section" data-section="mailmerge" hidden>
+          <div class="rp-title" data-i18n="RightPanel.MailMerge">Mail merge</div>
+          <div class="rp-empty" data-i18n="RightPanel.NoMailMerge">No mail-merge field selected</div>
+        </section>
+      </div>
+    </aside>
   </main>
   <!-- View-tab navigation sidebar (document outline; view-only). -->
   <aside id="nav-panel" class="nav-panel" hidden aria-label="Navigation" data-i18n-aria-label="View.Navigation">
