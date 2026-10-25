@@ -629,6 +629,23 @@
     <button id="btn-view-fullscreen" type="button" data-i18n="View.Fullscreen">Fullscreen</button>
     <button id="btn-view-theme" type="button" data-i18n="View.Theme" aria-pressed="false">Theme</button>
     <button id="btn-view-fit" type="button" data-i18n="View.Fit">Fit page</button>
+    <!-- AF6-VIEW-GAPS (OO 9.4 View parity): fit/zoom reuse the statusbar
+         zoom machinery (btn-zoom-fit / btn-zoom-reset -> applyZoom), the
+         Headings/Multiple-pages toggles relay to their statusbar/nav
+         counterparts, the theme select reuses the wo-theme machinery. -->
+    <button id="btn-view-fit-width" type="button" data-i18n="View.FitWidth" aria-pressed="false">Fit width</button>
+    <button id="btn-view-zoom100" type="button" data-i18n="View.Zoom100">Zoom to 100%</button>
+    <button id="btn-view-headings" type="button" data-i18n="View.Headings" aria-pressed="false">Headings</button>
+    <button id="btn-view-multipages" type="button" data-i18n="View.MultiplePages" aria-pressed="false">Multiple pages</button>
+    <label class="ribbon-picker" title="Interface theme" data-i18n-title="View.InterfaceTheme">
+    <select id="view-theme-select" aria-label="Interface theme" data-i18n-aria-label="View.InterfaceTheme">
+      <option value="light" data-i18n="View.ThemeLight">Light</option>
+      <option value="dark" data-i18n="View.ThemeDark">Dark</option>
+    </select>
+    </label>
+    <button id="btn-view-darkdoc" type="button" data-i18n="View.DarkDocument" aria-pressed="false">Dark document</button>
+    <button id="btn-macro-record" type="button" data-i18n="View.RecordMacro">Record macro</button>
+    <button id="btn-macro-pause" type="button" data-i18n="View.PauseRecording">Pause recording</button>
     <span class="menu rb-menu" >
       <button type="button" id="btn-speech" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="View.Speech">Speech ▾</button>
       <ul class="menu-list" role="menu" hidden>

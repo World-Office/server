@@ -4345,7 +4345,15 @@
   const viewTheme = document.getElementById("btn-view-theme");
   if (viewTheme) viewTheme.addEventListener("click", () => document.getElementById("btn-theme")?.click());
   const viewFit = document.getElementById("btn-view-fit");
-  if (viewFit) viewFit.addEventListener("click", () => document.getElementById("btn-zoom-fit")?.click());
+  if (viewFit) viewFit.addEventListener("click", () => {
+    // Fit To Page (AF6-VIEW-GAPS): scale so the WHOLE page fits the
+    // viewport — the binding axis wins. Still the single zoom state:
+    // zoomLevel + the one applyZoom application function (same clamp).
+    const availW = Math.max(200, window.innerWidth - 96);
+    const availH = Math.max(200, window.innerHeight - 96);
+    zoomLevel = Math.min(2, Math.max(0.5, Math.min(availW / 830, availH / 1159)));
+    applyZoom();
+  });
   // View tab ruler toggle: hide/show the horizontal ruler
   const rulerToggle = document.getElementById("btn-ruler-toggle");
   if (rulerToggle) rulerToggle.addEventListener("click", () => {
@@ -4365,6 +4373,60 @@
   }
   const gridlinesBtn = document.getElementById("btn-gridlines");
   if (gridlinesBtn) gridlinesBtn.addEventListener("click", toggleGridlines);
+
+  // AF6-VIEW-GAPS (OO 9.4 View parity): the new View-tab controls relay to
+  // the existing single-source controls instead of owning state — zoom via
+  // the statusbar buttons (one zoomLevel + one applyZoom), headings via the
+  // nav panel, multiple pages via the statusbar gutter toggle, theme via
+  // the wo-theme machinery.
+  const viewFitWidth = document.getElementById("btn-view-fit-width");
+  if (viewFitWidth) viewFitWidth.addEventListener("click", () => document.getElementById("btn-zoom-fit")?.click());
+  const viewZoom100 = document.getElementById("btn-view-zoom100");
+  if (viewZoom100) viewZoom100.addEventListener("click", () => document.getElementById("btn-zoom-reset")?.click());
+  const viewHeadings = document.getElementById("btn-view-headings");
+  if (viewHeadings) viewHeadings.addEventListener("click", () => {
+    document.getElementById("btn-nav-toggle")?.click();
+    const navOpen = !document.getElementById("nav-panel")?.hidden;
+    viewHeadings.setAttribute("aria-pressed", String(Boolean(navOpen)));
+  });
+  const viewMultipages = document.getElementById("btn-view-multipages");
+  if (viewMultipages) viewMultipages.addEventListener("click", () => {
+    document.getElementById("btn-multipage")?.click();
+    viewMultipages.setAttribute("aria-pressed",
+      String(document.body.classList.contains("multi-page-view")));
+  });
+  const viewThemeSelect = document.getElementById("view-theme-select");
+  if (viewThemeSelect) {
+    viewThemeSelect.value =
+      document.documentElement.classList.contains("light") ? "light" : "dark";
+    viewThemeSelect.addEventListener("change", () => {
+      localStorage.setItem("wo-theme", viewThemeSelect.value === "light" ? "light" : "dark");
+      applyTheme();
+    });
+  }
+  const viewDarkDoc = document.getElementById("btn-view-darkdoc");
+  if (viewDarkDoc) viewDarkDoc.addEventListener("click", () => {
+    const mainEl = document.querySelector("main");
+    if (!mainEl) return;
+    const on = mainEl.classList.toggle("dark-document");
+    viewDarkDoc.setAttribute("aria-pressed", String(on));
+    setStatus(on ? "Dark document on" : "Dark document off");
+  });
+  // Macros group: honest event-marker stubs. No macro engine exists yet —
+  // the buttons emit the established marker pattern (CustomEvent + a
+  // console.info marker, like the persistence markers) so E2E/agents can
+  // observe the intent; a bare silent no-op would read as "broken".
+  function emitMacroMarker(action) {
+    window.dispatchEvent(new CustomEvent("wo:macro", { detail: { action } }));
+    console.info("wo:macro:", action);
+    setStatus(action === "record"
+      ? "Macro recording started (marker only)"
+      : "Macro recording paused (marker only)");
+  }
+  const btnMacroRecord = document.getElementById("btn-macro-record");
+  if (btnMacroRecord) btnMacroRecord.addEventListener("click", () => emitMacroMarker("record"));
+  const btnMacroPause = document.getElementById("btn-macro-pause");
+  if (btnMacroPause) btnMacroPause.addEventListener("click", () => emitMacroMarker("pause"));
 
   // Formatting marks (nonprinting characters): view-only overlay (like
   // gridlines); the ¶ glyphs come from CSS on #editor.show-marks, nothing
