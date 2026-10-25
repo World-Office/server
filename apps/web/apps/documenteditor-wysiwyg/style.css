@@ -1582,6 +1582,21 @@ hr.section-break {
   border-top: 2px dashed #999;
   margin: 14px 0;
 }
+/* Column break marker (Layout > Breaks): sibling of the page-break
+   contract — a visible, selectable shape for a marker that round-trips. */
+.column-break {
+  border: none;
+  border-top: 2px dotted #999;
+  margin: 10px 0;
+}
+/* Object group container (Layout > Group): dashed box around grouped
+   floating objects, matching the div.object affordance style. */
+div.object-group {
+  border: 1px dashed #7a91b8;
+  padding: 4px;
+  display: inline-block;
+  min-width: 80px;
+}
 /* Note / page-field / header-footer markers (F-073/F-074/F-084/F-085): the
    citation <sup> renders natively; the body spans and the PAGE field need
    an editable visible shape. */

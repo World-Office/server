@@ -725,7 +725,7 @@
     if (!focus || !editor.contains(focus)) return;
     const el = focus.nodeType === 1 ? focus : focus.parentElement;
     if (!el || !el.closest) return;
-    const marker = el.closest("hr, .page-break, .section-break, [data-columns], nav.toc, div.object");
+    const marker = el.closest("hr, .page-break, .column-break, .section-break, [data-columns], nav.toc, div.object");
     if (!marker) return;
     const r = document.createRange();
     r.setStartAfter(marker);
@@ -1013,6 +1013,22 @@
       updateUndoRedoState();
       return;
     }
+    if (cmd === "insertColumnBreak") {
+      // AF4-LAYOUT-COMPLETE: column break (Layout > Breaks menu). Same
+      // marker+trailing-paragraph contract as the page break above — the
+      // div.column-break marker is the round-trip contract for a column-type
+      // break, and the trailing <p> keeps typed text out of the marker.
+      const html = '<div class="column-break"><br></div><p><br></p>';
+      try { document.execCommand("insertHTML", false, html); } catch (err) {}
+      moveCaretPastStructuralMarkers();
+      markDirty();
+      captureHistory();
+      scheduleCollabSync();
+      notifyHost("editing");
+      updateActiveStates();
+      updateUndoRedoState();
+      return;
+    }
     if (cmd === "insertFootnote" || cmd === "insertEndnote") {
       // Note authoring (F-073/F-074): the HTML contract the converters
       // round-trip — a citation <sup> immediately followed by the body
@@ -1138,6 +1154,23 @@
     }
     if (cmd === "applyPageOrientation") {
       applyPageOrientationPreset(value);
+      return;
+    }
+    if (cmd === "applyColumns") {
+      applyColumnsPreset(value);
+      return;
+    }
+    if (cmd === "objectOp") {
+      applyObjectOp(value);
+      return;
+    }
+    if (cmd === "openColumnsDialog") {
+      openColumnsDialog();
+      return;
+    }
+    if (cmd === "openPageSetup") {
+      const psBtn = document.getElementById("btn-page-setup");
+      if (psBtn) psBtn.click();
       return;
     }
     if (cmd === "toggleDifferentFirst") { toggleSectionMarker("different-first", ""); return; }
@@ -2130,6 +2163,103 @@
     notifyHost("editing");
     updateActiveStates();
     updateUndoRedoState();
+  }
+
+  // AF4-LAYOUT-COMPLETE: Columns dropdown presets. Reuses the [data-columns]
+  // section-marker mechanism of confirmColumnsDialog (converter contract:
+  // DOCX w:cols / ODF multi-column section). left/right are OO asymmetric
+  // layouts: two columns with data-columns-layout marking the narrow side.
+  function applyColumnsPreset(preset) {
+    const presets = {
+      one: { cols: 1, layout: "" },
+      two: { cols: 2, layout: "" },
+      three: { cols: 3, layout: "" },
+      left: { cols: 2, layout: "left" },
+      right: { cols: 2, layout: "right" }
+    };
+    const cfg = presets[String(preset)] || presets.one;
+    const layoutAttr = cfg.layout ? ' data-columns-layout="' + cfg.layout + '"' : "";
+    editor.focus();
+    document.execCommand("insertHTML", false,
+      '<section data-columns="' + cfg.cols + '"' + layoutAttr + '><p><br></p></section>');
+    moveCaretPastStructuralMarkers();
+    captureHistory();
+    markDirty();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
+    updateUndoRedoState();
+  }
+
+  // AF4-LAYOUT-COMPLETE: object ops (OO Arrange group: Wrapping / Bring
+  // Forward / Send Backward / Align / Group / Merge Shapes). Operate on the
+  // floating object at the selection (img or div.object). Every op announces
+  // itself on the wo:object-op bus (the observable contract agents wait on)
+  // AND performs the real DOM mutation the obj-* class contract defines.
+  function selectedObject() {
+    const sel = window.getSelection();
+    let node = null;
+    if (sel && sel.anchorNode) node = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentElement : sel.anchorNode;
+    if (node && node.closest) {
+      const obj = node.closest("img, div.object");
+      if (obj && editor.contains(obj)) return obj;
+    }
+    return null;
+  }
+  const OBJ_LAYOUT_CLASSES = ["obj-inline", "obj-square", "obj-right", "obj-behind", "obj-center"];
+  function groupSelectedObjects(obj) {
+    const parent = obj.parentNode;
+    if (!parent || parent === editor) return false;
+    const groupables = Array.from(parent.children).filter(
+      (el) => el === obj || (el.matches && el.matches("img, div.object")));
+    if (groupables.length < 2) return false;
+    const group = document.createElement("div");
+    group.className = "object-group";
+    parent.insertBefore(group, groupables[0]);
+    groupables.forEach((el) => group.appendChild(el));
+    return true;
+  }
+  function applyObjectOp(op) {
+    const value = String(op || "");
+    window.dispatchEvent(new CustomEvent("wo:object-op", { detail: { op: value } }));
+    const obj = selectedObject();
+    if (!obj) {
+      setStatus(t("Status.NotAvailable") + " objectOp " + value);
+      return;
+    }
+    let mutated = false;
+    if (value === "bring-forward" || value === "send-backward") {
+      obj.style.position = "relative";
+      obj.style.zIndex = String((parseInt(obj.style.zIndex, 10) || 0) +
+        (value === "bring-forward" ? 1 : -1));
+      mutated = true;
+    } else if (value === "wrap-inline" || value === "wrap-square" || value === "wrap-behind") {
+      OBJ_LAYOUT_CLASSES.forEach((c) => obj.classList.remove(c));
+      obj.classList.add(value === "wrap-square" ? "obj-square"
+        : value === "wrap-behind" ? "obj-behind" : "obj-inline");
+      mutated = true;
+    } else if (/^align-/.test(value)) {
+      const dir = value.slice(6);
+      OBJ_LAYOUT_CLASSES.forEach((c) => obj.classList.remove(c));
+      if (dir === "left") obj.classList.add("obj-square");
+      else if (dir === "right") obj.classList.add("obj-square", "obj-right");
+      else if (dir === "center") obj.classList.add("obj-center");
+      else obj.style.verticalAlign = dir === "top" ? "top" : dir === "bottom" ? "bottom" : "middle";
+      mutated = true;
+    } else if (value === "group") {
+      mutated = groupSelectedObjects(obj);
+    } else if (value === "merge-union" || value === "merge-subtract" || value === "merge-intersect") {
+      obj.setAttribute("data-merge-op", value.slice(6));
+      mutated = true;
+    }
+    if (mutated) {
+      markDirty();
+      captureHistory();
+      scheduleCollabSync();
+      notifyHost("editing");
+      updateActiveStates();
+    }
+    setStatus("Object op: " + value);
   }
 
   // --- insert table of contents (toolbar button + dialog) ------------
@@ -3224,6 +3354,10 @@
   }
 
   document.querySelectorAll("button[data-cmd]").forEach((btn) => {
+    // rb-menu rows are wired once by the ribbon-menu block further down;
+    // wiring them here too ran every menu command twice (doubled breaks,
+    // doubled history entries).
+    if (btn.closest(".rb-menu")) return;
     btn.addEventListener("click", () => emitCommand(btn.dataset.cmd, btn.dataset.value));
   });
   document.getElementById("btn-table").addEventListener("click", insertTable);
@@ -3519,7 +3653,12 @@
   // style.css fallbacks equal the previous fixed A4 look, so documents
   // without a marker render exactly as before.
   const PS_TWIPS_PER_PX = 15;  // 1440 twips/inch at 96 dpi
-  const PS_SIZES = { A4: [11906, 16838], Letter: [12240, 15840], Legal: [12240, 20160], A5: [8391, 11906] };
+  const PS_SIZES = {
+    A4: [11906, 16838], Letter: [12240, 15840], Legal: [12240, 20160], A5: [8391, 11906],
+    B5: [10318, 14570], Env10: [5940, 13680], EnvDL: [6236, 12472],
+    Tabloid: [15840, 24480], A3: [16838, 23811], TabloidOversize: [15840, 25920],
+    ROC16K: [11170, 15591], EnvChoukei3: [6803, 13323], SuperB: [18720, 27360]
+  };
   const PS_MARGIN_PRESETS = {
     normal: { top: 1440, bottom: 1440, left: 1440, right: 1440 },
     narrow: { top: 720, bottom: 720, left: 720, right: 720 },
@@ -4131,7 +4270,7 @@
       const w = g("data-page-w", 11906), h = g("data-page-h", 16838);
       const known = Object.keys(PS_SIZES).find(
         (k) => PS_SIZES[k][0] === w && PS_SIZES[k][1] === h);
-      psSize.value = known || "custom";
+      psSize.value = known ? (PS_SIZES[known][0] + "x" + PS_SIZES[known][1]) : "custom";
       const orient = m ? (m.getAttribute("data-orient") || "portrait") : "portrait";
       const radio = pageSetupDialog.querySelector('input[name="ps-orient"][value="' + orient + '"]');
       if (radio) radio.checked = true;
