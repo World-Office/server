@@ -477,9 +477,6 @@
     <button type="button" id="btn-mergeshapes" data-i18n="Draw.Merge" title="Merge selected strokes into one" aria-label="Merge selected strokes">Merge shapes</button>
     </div>
     <div class="ribbon-page" data-tab="layout" role="group" aria-label="Layout ribbon">
-    <button id="btn-page-break" title="Insert page break" aria-label="Insert page break">⏎</button>
-    <button id="btn-section-break" title="Insert section break" aria-label="Insert section break">⇘</button>
-    <button id="btn-columns" title="Insert columns" aria-label="Insert columns">▥</button>
     <span class="menu rb-menu" >
       <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Margins">Margins ▾</button>
       <ul class="menu-list" role="menu" hidden>
@@ -487,15 +484,7 @@
         <li role="none"><button type="button" role="menuitem" data-cmd="applyPageMargins" data-value="narrow" data-i18n="Layout.Margins.Narrow">Narrow</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="applyPageMargins" data-value="moderate" data-i18n="Layout.Margins.Moderate">Moderate</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="applyPageMargins" data-value="wide" data-i18n="Layout.Margins.Wide">Wide</button></li>
-      </ul>
-    </span>
-    <span class="menu rb-menu" >
-      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Size">Size ▾</button>
-      <ul class="menu-list" role="menu" hidden>
-        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="A4" data-i18n="Layout.Size.A4">A4</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="Letter" data-i18n="Layout.Size.Letter">Letter</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="Legal" data-i18n="Layout.Size.Legal">Legal</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="A5" data-i18n="Layout.Size.A5">A5</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="openPageSetup" data-i18n="Layout.Margins.Custom">Custom margins</button></li>
       </ul>
     </span>
     <span class="menu rb-menu" >
@@ -503,6 +492,74 @@
       <ul class="menu-list" role="menu" hidden>
         <li role="none"><button type="button" role="menuitem" data-cmd="applyPageOrientation" data-value="portrait" data-i18n="Layout.Orientation.Portrait">Portrait</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="applyPageOrientation" data-value="landscape" data-i18n="Layout.Orientation.Landscape">Landscape</button></li>
+      </ul>
+    </span>
+    <span class="menu rb-menu" >
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Size">Size ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="Letter" data-i18n="Layout.Size.Letter">US Letter</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="Legal" data-i18n="Layout.Size.Legal">US Legal</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="A4" data-i18n="Layout.Size.A4">A4</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="A5" data-i18n="Layout.Size.A5">A5</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="B5" data-i18n="Layout.Size.B5">B5</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="Env10" data-i18n="Layout.Size.Env10">Envelope #10</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="EnvDL" data-i18n="Layout.Size.EnvDL">Envelope DL</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="Tabloid" data-i18n="Layout.Size.Tabloid">Tabloid</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="A3" data-i18n="Layout.Size.A3">A3</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="TabloidOversize" data-i18n="Layout.Size.TabloidOversize">Tabloid Oversize</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="ROC16K" data-i18n="Layout.Size.ROC16K">ROC 16K</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="EnvChoukei3" data-i18n="Layout.Size.EnvChoukei3">Envelope Choukei 3</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="SuperB" data-i18n="Layout.Size.SuperB">Super B/A3</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="openPageSetup" data-i18n="Layout.Size.Custom">Custom page size</button></li>
+      </ul>
+    </span>
+    <span class="menu rb-menu" >
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Columns">Columns ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyColumns" data-value="one" data-i18n="Layout.Columns.One">One</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyColumns" data-value="two" data-i18n="Layout.Columns.Two">Two</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyColumns" data-value="three" data-i18n="Layout.Columns.Three">Three</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyColumns" data-value="left" data-i18n="Layout.Columns.Left">Left</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyColumns" data-value="right" data-i18n="Layout.Columns.Right">Right</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="openColumnsDialog" data-i18n="Layout.Columns.Custom">Custom columns</button></li>
+      </ul>
+    </span>
+    <span class="menu rb-menu" >
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Breaks">Breaks ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="insertPageBreak" data-i18n="Layout.Breaks.Page">Insert page break</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="insertColumnBreak" data-i18n="Layout.Breaks.Column">Insert column break</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="insertSectionBreak" data-i18n="Layout.Breaks.Section">Insert section break</button></li>
+      </ul>
+    </span>
+    <span class="menu rb-menu" >
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Wrapping">Wrapping ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-inline" data-i18n="Layout.Wrapping.Inline">Inline</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-square" data-i18n="Layout.Wrapping.Square">Square</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-behind" data-i18n="Layout.Wrapping.Behind">Behind text</button></li>
+      </ul>
+    </span>
+    <button type="button" data-cmd="objectOp" data-value="bring-forward" data-i18n="Layout.Object.BringForward">Bring forward</button>
+    <button type="button" data-cmd="objectOp" data-value="send-backward" data-i18n="Layout.Object.SendBackward">Send backward</button>
+    <span class="menu rb-menu" >
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Align">Align ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="align-left" data-i18n="Layout.Align.Left">Align left</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="align-center" data-i18n="Layout.Align.Center">Align center</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="align-right" data-i18n="Layout.Align.Right">Align right</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="align-top" data-i18n="Layout.Align.Top">Align top</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="align-middle" data-i18n="Layout.Align.Middle">Align middle</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="align-bottom" data-i18n="Layout.Align.Bottom">Align bottom</button></li>
+      </ul>
+    </span>
+    <button type="button" data-cmd="objectOp" data-value="group" data-i18n="Layout.Object.Group">Group</button>
+    <span class="menu rb-menu" >
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.MergeShapes">Merge shapes ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="merge-union" data-i18n="Layout.Merge.Union">Union</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="merge-subtract" data-i18n="Layout.Merge.Subtract">Subtract</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="merge-intersect" data-i18n="Layout.Merge.Intersect">Intersect</button></li>
       </ul>
     </span>
     <button type="button" id="btn-page-setup" data-i18n="Layout.PageSetup">Page setup</button>
@@ -1362,6 +1419,16 @@
           <option value="11906x16838">A4</option>
           <option value="12240x15840">Letter</option>
           <option value="12240x20160">Legal</option>
+          <option value="8391x11906">A5</option>
+          <option value="10318x14570">B5</option>
+          <option value="5940x13680">Envelope #10</option>
+          <option value="6236x12472">Envelope DL</option>
+          <option value="15840x24480">Tabloid</option>
+          <option value="16838x23811">A3</option>
+          <option value="15840x25920">Tabloid Oversize</option>
+          <option value="11170x15591">ROC 16K</option>
+          <option value="6803x13323">Envelope Choukei 3</option>
+          <option value="18720x27360">Super B/A3</option>
           <option value="custom">Custom</option>
         </select>
       </div>
