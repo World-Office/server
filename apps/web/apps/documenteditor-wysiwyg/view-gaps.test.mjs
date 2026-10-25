@@ -37,8 +37,7 @@ const newControls = [
   "btn-view-multipages",
   "view-theme-select",
   "btn-view-darkdoc",
-  "btn-macro-record",
-  "btn-macro-pause",
+  "btn-macro-menu",
 ]
 for (const id of newControls) {
   assert.ok(viewTop.includes(`id="${id}"`),
@@ -56,13 +55,22 @@ const labelMarkers = {
   "btn-view-multipages": 'data-i18n="View.MultiplePages"',
   "view-theme-select": 'data-i18n-aria-label="View.InterfaceTheme"',
   "btn-view-darkdoc": 'data-i18n="View.DarkDocument"',
-  "btn-macro-record": 'data-i18n="View.RecordMacro"',
-  "btn-macro-pause": 'data-i18n="View.PauseRecording"',
+  "btn-macro-menu": 'data-i18n="View.RecordMacro"',
 }
 for (const [id, marker] of Object.entries(labelMarkers)) {
   assert.ok(viewTop.includes(marker),
     `Control ${id} must carry the i18n marker ${marker}`)
 }
+// AF12-LABEL-PARITY: the Macros caret-menu keeps its three rows in the
+// (not stripped) menu-list of the view block.
+for (const rowId of ["btn-macro-record", "btn-macro-pause", "btn-macro-manager"]) {
+  assert.ok(viewBlock.includes(`id="${rowId}"`),
+    `Macros menu row ${rowId} must exist in the view ribbon-page`)
+}
+assert.ok(viewBlock.includes('data-i18n="View.MacroRecord"') &&
+  viewBlock.includes('data-i18n="View.MacroPause"') &&
+  viewBlock.includes('data-i18n="View.MacroManager"'),
+  "Macros menu rows must carry their i18n markers")
 console.log("All View-tab controls carry i18n markers\n")
 
 // ── 2. Every data-cmd on the view page is dispatched in editor.js ──
@@ -87,7 +95,9 @@ const newKeys = [
   "View.ThemeDark",
   "View.DarkDocument",
   "View.RecordMacro",
-  "View.PauseRecording",
+  "View.MacroRecord",
+  "View.MacroPause",
+  "View.MacroManager",
 ]
 for (const key of newKeys) {
   const occurrences = (i18nSrc.match(new RegExp(`"${key}":`, "g")) || []).length
@@ -102,8 +112,10 @@ const germanValues = {
   "View.ThemeLight": "Hell",
   "View.ThemeDark": "Dunkel",
   "View.DarkDocument": "Dunkles Dokument",
-  "View.RecordMacro": "Makro aufzeichnen",
-  "View.PauseRecording": "Aufzeichnung pausieren",
+  "View.RecordMacro": "Makros",
+  "View.MacroRecord": "Makro aufzeichnen",
+  "View.MacroPause": "Aufzeichnung pausieren",
+  "View.MacroManager": "Makro-Manager",
 }
 for (const [key, value] of Object.entries(germanValues)) {
   assert.ok(i18nSrc.includes(`"${key}": "${value}"`),
