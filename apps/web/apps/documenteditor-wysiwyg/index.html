@@ -169,6 +169,7 @@
       <ul id="file-menu" class="menu-list" role="menu" aria-labelledby="btn-file" hidden>
         <li role="none"><button type="button" id="btn-new" role="menuitem" data-i18n="Menu.New">New</button></li>
         <li role="none"><button type="button" id="btn-open" role="menuitem" data-i18n="Menu.Open">Open…</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="saveDocument" data-i18n="Menu.Save">Save</button></li>
         <li role="none" class="menu-item-export">
           <button type="button" id="btn-export" role="menuitem" aria-haspopup="true" aria-expanded="false" data-i18n="Menu.Export">Export</button>
           <ul class="menu-sublist" role="menu" aria-label="Export as" hidden>
@@ -691,6 +692,7 @@
     <button type="button" data-cmd="aiRewrite" data-i18n="AI.Rewrite">Rewrite</button>
     <button type="button" id="btn-ai-grammar" data-i18n="AI.Grammar">Grammar</button>
     <button type="button" id="btn-ai-assistant" data-i18n="AI.Assistant">AI assistant</button>
+    <button type="button" data-cmd="aiSettings" data-i18n="AI.Settings">Settings</button>
     </div>
     <!-- Chart design (AF9-CHART-DESIGN, OO parity): contextual tab revealed
          by editor.js when a chart vector object is picked. 8 control groups
@@ -997,6 +999,13 @@
     <button type="button" role="menuitem" data-ctx="Cut" data-i18n="Ctx.Cut">Cut</button>
     <button type="button" role="menuitem" data-ctx="Copy" data-i18n="Ctx.Copy">Copy</button>
     <button type="button" role="menuitem" data-ctx="Paste" data-i18n="Ctx.Paste">Paste</button>
+    <div class="ctx-sep" role="separator" data-showif="misspelled"></div>
+    <!-- AF11-SPELLCHECK-CLOSEOUT: spell rows, visible only when a misspelled
+         word sits in or next to the selection (data-showif="misspelled"). -->
+    <button type="button" role="menuitem" data-ctx="Ignore" data-showif="misspelled" data-i18n="Ctx.Ignore">Ignore</button>
+    <button type="button" role="menuitem" data-ctx="IgnoreAll" data-showif="misspelled" data-i18n="Ctx.IgnoreAll">Ignore all</button>
+    <button type="button" role="menuitem" data-ctx="AddToDictionary" data-showif="misspelled" data-i18n="Ctx.AddToDictionary">Add to dictionary</button>
+    <button type="button" role="menuitem" data-ctx="SelectLanguage" data-showif="misspelled" data-i18n="Ctx.SelectLanguage">Select language</button>
     <div class="ctx-sep" role="separator"></div>
     <!-- Undo/Redo -->
     <button type="button" role="menuitem" data-ctx="Undo" data-i18n="Ctx.Undo">Undo</button>

@@ -2073,3 +2073,13 @@ main.rp-open { padding-right: 344px; }
   main.rp-open { padding-right: 16px; }
   #right-panel-body { width: 260px; }
 }
+
+/* AF11-SPELLCHECK-CLOSEOUT: custom misspell markers (spellcheck engine). */
+.wo-misspelled {
+  text-decoration: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: #e53e3e;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
