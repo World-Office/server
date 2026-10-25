@@ -1212,7 +1212,10 @@
       return;
     }
     if (cmd === "aiRewrite") {
-      openAiPropose("Rewrite the document to improve clarity, flow, and style while preserving its meaning and facts.");
+      // AF13-PLUGIN-GALLERY: callers may pass a specific instruction
+      // (Thesaurus card → "Find synonyms for the selection"); default is
+      // the general clarity rewrite.
+      openAiPropose(String(value || "Rewrite the document to improve clarity, flow, and style while preserving its meaning and facts."));
       return;
     }
     if (cmd === "aiSummarize") {
@@ -1373,6 +1376,10 @@
     if (cmd === "inkColor") { setInkColor(); return; }
     if (cmd === "inkThickness") { setInkThickness(); return; }
     if (cmd === "managePlugins") { managePlugins(); return; }
+    // wo:plugin-unavailable — honest stub for gallery cards whose third-party
+    // backend (YouTube/Mendeley/Zotero) does not exist in this build: say so
+    // instead of faking.
+    if (cmd === "pluginUnavailable") { openPluginUnavailable(value); return; }
     if (cmd === "photoEditor") { openPhotoEditorDialog(); return; }
     const isBlock =
       cmd === "formatBlock" && /^(H[1-6]|P|BLOCKQUOTE)$/i.test(String(value || ""));
@@ -8183,6 +8190,25 @@
 
   const pluginsCloseBtn = document.getElementById("btn-plugins-close");
   if (pluginsCloseBtn) pluginsCloseBtn.addEventListener("click", closePluginsDialog);
+
+  // AF13-PLUGIN-GALLERY: gallery cards for third-party plugins without a
+  // backend in this build open this info dialog instead of faking features.
+  function openPluginUnavailable(name) {
+    const dlg = document.getElementById("plugin-unavailable-dialog");
+    if (!dlg) return;
+    const nameEl = dlg.querySelector("[data-plugin-name]");
+    if (nameEl) nameEl.textContent = String(name || "");
+    dlg.classList.add("open");
+    setStatus(t("Plugins.UnavailableText"));
+  }
+  const pluginUnavailableCloseBtn = document.getElementById("btn-plugin-unavailable-close");
+  if (pluginUnavailableCloseBtn) {
+    pluginUnavailableCloseBtn.addEventListener("click", () => {
+      const dlg = document.getElementById("plugin-unavailable-dialog");
+      if (dlg) dlg.classList.remove("open");
+      restoreFocus();
+    });
+  }
 
   // ------------------------------------------------------------------
   // Backstage + Insert/View extensions (OO-parity backlog closure).
