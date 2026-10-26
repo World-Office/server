@@ -11,7 +11,9 @@ use wo_html::{HtmlParser, HtmlSerializer};
 // apps/web/apps/documenteditor-wysiwyg/editor.js (cross-checked by
 // roundtrip.test.mjs).
 pub const DOC_SEMANTIC_DATA_ATTRS: &[&str] = &[
-    // -> `dir` attribute carries bidi state (editor emits dir alongside)
+    // -> `dir` attribute carries bidi state (editor emits dir alongside);
+    // RES1: also promotes to Paragraph.writing_mode (style writing-mode
+    // rides back + data-textdir is re-emitted)
     "data-textdir",
     // -> img alt marker `__wo-<kind>__<json>` (hydrateVectorObjects restores)
     "data-kind",
@@ -27,7 +29,8 @@ pub const DOC_SEMANTIC_DATA_ATTRS: &[&str] = &[
     "data-id",
     // -> Comment.comment
     "data-comment",
-    // -> documented drop: text survives; no InlineElement channel today
+    // -> ContentControl.cc_type (RES1: real inline channel since the
+    // documented drop was closed)
     "data-cc",
     // -> documented drop: bookmark name; text survives
     "data-name",
@@ -157,17 +160,99 @@ fn assert_comment_channel() {
     assert!(!out.contains("data-replies"), "replies leaked: {out}");
 }
 
-/// data-cc channel (documented drop): content-control span has no wo-html
-/// inline channel, so the attr drops — but the control's text content must
-/// survive. Lifting data-cc into the model is blocked out-of-scope: wo-x2t
-/// matches InlineElement exhaustively (FB2 converter, no wildcard arm), so
-/// adding a variant breaks that crate.
-fn assert_content_control_text_channel() {
-    let out = roundtrip(
-        r#"<p><span class="content-control" data-cc="date" title="Date">2026-10-26</span></p>"#,
+/// data-cc channel (RES1): content-control spans parse into
+/// InlineElement::ContentControl — the control type, hover title and inner
+/// inline content all survive, and the saved fragment is byte-stable
+/// against the editor's exact dialect (class/data-cc/title/
+/// contenteditable="false" in that order).
+fn assert_content_control_channel() {
+    // Editor dialect (editor.js flatHtml): dropdown variant with the ▾ glyph.
+    let input = r#"<p><span class="content-control" data-cc="dropdown" title="Choose" contenteditable="false">▾ Choose</span></p>"#;
+    let out1 = roundtrip(input);
+    assert!(
+        out1.contains(r#"<span class="content-control" data-cc="dropdown" title="Choose" contenteditable="false">▾ Choose</span>"#),
+        "content-control fragment not byte-stable: {out1}"
     );
+    // Semantic check via model: cc_type/title/content parsed into fields.
+    let doc = roundtrip_doc(input);
+    let wo_html::model::BlockElement::Paragraph { content, .. } = &doc.body.elements[0] else {
+        panic!("expected Paragraph, got {:?}", doc.body.elements[0]);
+    };
+    let wo_html::model::InlineElement::ContentControl {
+        cc_type,
+        title,
+        content: inner,
+    } = &content[0]
+    else {
+        panic!("expected ContentControl inline, got {:?}", content[0]);
+    };
+    assert_eq!(cc_type, "dropdown");
+    assert_eq!(title.as_deref(), Some("Choose"));
+    assert!(inner
+        .iter()
+        .any(|e| matches!(e, wo_html::model::InlineElement::Text { .. })));
+    // Plain (non-dropdown) variant, second hop stability.
+    let plain = r#"<p><span class="content-control" data-cc="date" title="Date" contenteditable="false">2026-10-26</span></p>"#;
+    let out = roundtrip(plain);
     assert!(out.contains("2026-10-26"), "control text lost: {out}");
-    assert!(!out.contains("data-cc"), "data-cc unexpectedly kept: {out}");
+    assert!(out.contains(r#"data-cc="date""#), "cc type lost: {out}");
+    let doc2 = HtmlParser::new().parse(out.as_bytes()).expect("reparse");
+    let out2 = HtmlSerializer::new().serialize(&doc2);
+    assert_eq!(out, out2, "content-control channel not round-trip stable");
+}
+
+/// writing-mode channel (RES1): block vertical text direction. CSS
+/// `style="writing-mode"` is the standard channel; the editor's
+/// data-textdir attr (rotate-down -> vertical-rl, rotate-up -> sideways-lr)
+/// is parsed even when styles are sanitized away, and the serializer emits
+/// both back. Values survive unchanged 1:1.
+fn assert_writing_mode_channel() {
+    // CSS channel: value survives verbatim.
+    let out = roundtrip(r#"<p style="writing-mode: vertical-rl">回</p>"#);
+    assert!(
+        out.contains(r#"style="writing-mode: vertical-rl""#),
+        "writing-mode style lost: {out}"
+    );
+    assert!(out.contains("回"), "vertical text lost: {out}");
+    // Editor attr channel: rotate-down promotes to vertical-rl and rides
+    // back with both style + data-textdir.
+    let out = roundtrip(r#"<p data-textdir="rotate-down">x</p>"#);
+    assert!(
+        out.contains(r#"style="writing-mode: vertical-rl""#),
+        "rotate-down not promoted: {out}"
+    );
+    assert!(
+        out.contains(r#"data-textdir="rotate-down""#),
+        "editor state attr lost: {out}"
+    );
+    // rotate-up -> sideways-lr, same dual emission.
+    let out = roundtrip(r#"<p data-textdir="rotate-up">x</p>"#);
+    assert!(
+        out.contains(r#"style="writing-mode: sideways-lr""#),
+        "rotate-up not promoted: {out}"
+    );
+    assert!(
+        out.contains(r#"data-textdir="rotate-up""#),
+        "editor state attr lost: {out}"
+    );
+    // All 1:1 CSS values survive unchanged across a second hop.
+    for wm in [
+        "vertical-rl",
+        "vertical-lr",
+        "horizontal-tb",
+        "sideways-rl",
+        "sideways-lr",
+    ] {
+        let input = format!(r#"<p style="writing-mode: {wm}">x</p>"#);
+        let out = roundtrip(&input);
+        assert!(
+            out.contains(&format!(r#"style="writing-mode: {wm}""#)),
+            "writing-mode {wm} mutated: {out}"
+        );
+        let doc2 = HtmlParser::new().parse(out.as_bytes()).expect("reparse");
+        let out2 = HtmlSerializer::new().serialize(&doc2);
+        assert_eq!(out, out2, "writing-mode {wm} not round-trip stable");
+    }
 }
 
 /// data-name channel (documented drop): bookmark name has no channel; the
@@ -318,12 +403,15 @@ fn misspell_stripped_text_verbatim() {
 fn doc_semantic_attrs_have_channels() {
     for attr in DOC_SEMANTIC_DATA_ATTRS {
         match *attr {
-            "data-textdir" => assert_dir_channel(),
+            "data-textdir" => {
+                assert_dir_channel();
+                assert_writing_mode_channel();
+            }
             "data-kind" | "data-spec" => assert_alt_marker_channel(),
             "data-author" | "data-replies" | "data-resolved" | "data-id" | "data-comment" => {
                 assert_comment_channel()
             }
-            "data-cc" => assert_content_control_text_channel(),
+            "data-cc" => assert_content_control_channel(),
             "data-name" => assert_bookmark_text_channel(),
             "data-title" => assert_nav_title_drop(),
             other => panic!("DOC_SEMANTIC_DATA_ATTRS entry {other:?} has no contract channel"),

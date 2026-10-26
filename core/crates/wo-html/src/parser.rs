@@ -130,6 +130,29 @@ fn block_borders(node: &roxmltree::Node) -> Option<ParagraphBorders> {
     }
 }
 
+/// RES1: block vertical text direction. The CSS `writing-mode` value is the
+/// canonical channel; the editor's `data-textdir` attr fills in only when
+/// the style is absent (rotate-down -> vertical-rl, rotate-up -> sideways-lr).
+fn block_writing_mode(node: &roxmltree::Node) -> Option<String> {
+    if let Some(style) = attr(node, "style") {
+        for decl in style.split(';') {
+            if let Some((prop, val)) = decl.split_once(':') {
+                if prop.trim().eq_ignore_ascii_case("writing-mode") {
+                    let v = val.trim().to_ascii_lowercase();
+                    if !v.is_empty() {
+                        return Some(v);
+                    }
+                }
+            }
+        }
+    }
+    match attr(node, "data-textdir").as_deref() {
+        Some("rotate-down") => Some("vertical-rl".to_string()),
+        Some("rotate-up") => Some("sideways-lr".to_string()),
+        _ => None,
+    }
+}
+
 const VOID_ELEMENTS: &[&str] = &[
     "area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source",
     "track", "wbr",
@@ -362,6 +385,7 @@ impl HtmlParser {
                         dir: None,
                         background: None,
                         borders: None,
+                        writing_mode: None,
                     });
                 }
                 continue;
@@ -390,6 +414,7 @@ impl HtmlParser {
                         dir: block_direction(&ch),
                         background: block_background(&ch),
                         borders: block_borders(&ch),
+                        writing_mode: block_writing_mode(&ch),
                     });
                 }
                 "div" => {
@@ -634,6 +659,17 @@ impl HtmlParser {
                         });
                         continue;
                     }
+                    // RES1: content control (editor dialect span.content-control);
+                    // data-cc + title are the conversion channels,
+                    // contenteditable is editor-only state.
+                    if attr(&ch, "class").as_deref() == Some("content-control") {
+                        elements.push(InlineElement::ContentControl {
+                            cc_type: attr(&ch, "data-cc").unwrap_or_default(),
+                            title: attr(&ch, "title"),
+                            content: self.parse_inline_elements(&ch),
+                        });
+                        continue;
+                    }
                     let text = direct_text(&ch);
                     let style = attr(&ch, "style");
                     if !text.is_empty() {
@@ -791,6 +827,9 @@ impl HtmlParser {
                     for r in replies {
                         count += r.text.split_whitespace().count() as u32;
                     }
+                }
+                InlineElement::ContentControl { content, .. } => {
+                    count += self.count_words_in_inline(content);
                 }
             }
         }

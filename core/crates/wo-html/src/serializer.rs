@@ -130,6 +130,7 @@ impl HtmlSerializer {
                 dir,
                 background,
                 borders,
+                writing_mode,
             } => {
                 out.push_str(&pad);
                 // F-041: keep direction on round trip (dir attr wins over style)
@@ -165,6 +166,11 @@ impl HtmlSerializer {
                         ));
                     }
                 }
+                // RES1: vertical text direction — the CSS style is the
+                // standard channel; data-textdir mirrors the editor mode.
+                if let Some(wm) = writing_mode {
+                    style_parts.push(format!("writing-mode: {}", wm));
+                }
                 let style_attr = if style_parts.is_empty() {
                     None
                 } else {
@@ -173,30 +179,25 @@ impl HtmlSerializer {
                         escape_attr(&style_parts.join("; "))
                     ))
                 };
-                match (id, &dir_attr, &style_attr) {
-                    (Some(id_val), Some(d), Some(s)) => {
-                        out.push_str(&format!("<p id=\"{}\"{}{}>", escape_attr(id_val), d, s));
-                    }
-                    (Some(id_val), Some(d), None) => {
-                        out.push_str(&format!("<p id=\"{}\"{}>", escape_attr(id_val), d));
-                    }
-                    (Some(id_val), None, Some(s)) => {
-                        out.push_str(&format!("<p id=\"{}\"{}>", escape_attr(id_val), s));
-                    }
-                    (Some(id_val), None, None) => {
-                        out.push_str(&format!("<p id=\"{}\">", escape_attr(id_val)));
-                    }
-                    (None, Some(d), Some(s)) => {
-                        out.push_str(&format!("<p{}{}>", d, s));
-                    }
-                    (None, Some(d), None) => {
-                        out.push_str(&format!("<p{}>", d));
-                    }
-                    (None, None, Some(s)) => {
-                        out.push_str(&format!("<p{}>", s));
-                    }
-                    (None, None, None) => out.push_str("<p>"),
+                let textdir_attr = match writing_mode.as_deref() {
+                    Some("vertical-rl") => Some(" data-textdir=\"rotate-down\""),
+                    Some("sideways-lr") => Some(" data-textdir=\"rotate-up\""),
+                    _ => None,
+                };
+                let mut attrs = String::new();
+                if let Some(id_val) = id {
+                    attrs.push_str(&format!(" id=\"{}\"", escape_attr(id_val)));
                 }
+                if let Some(d) = &dir_attr {
+                    attrs.push_str(d);
+                }
+                if let Some(s) = &style_attr {
+                    attrs.push_str(s);
+                }
+                if let Some(t) = textdir_attr {
+                    attrs.push_str(t);
+                }
+                out.push_str(&format!("<p{}>", attrs));
                 out.push_str(&self.serialize_inline(content));
                 out.push_str("</p>\n");
             }
@@ -445,6 +446,25 @@ impl HtmlSerializer {
                     out.push_str(&self.serialize_inline(content));
                     out.push_str("</span>");
                 }
+                InlineElement::ContentControl {
+                    cc_type,
+                    title,
+                    content,
+                } => {
+                    // RES1: editor dialect span.content-control; attr order
+                    // mirrors editor.js flatHtml emission (byte-stable round
+                    // trip for the editor's exact fragment).
+                    out.push_str("<span class=\"content-control\"");
+                    if !cc_type.is_empty() {
+                        out.push_str(&format!(" data-cc=\"{}\"", escape_attr(cc_type)));
+                    }
+                    if let Some(t) = title {
+                        out.push_str(&format!(" title=\"{}\"", escape_attr(t)));
+                    }
+                    out.push_str(" contenteditable=\"false\">");
+                    out.push_str(&self.serialize_inline(content));
+                    out.push_str("</span>");
+                }
             }
         }
         out
@@ -508,6 +528,7 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+                    writing_mode: None,
                 }],
             },
         };
@@ -544,6 +565,7 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+                    writing_mode: None,
                 }],
             },
         };
@@ -580,6 +602,7 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+                    writing_mode: None,
                 }],
             },
         };
@@ -619,6 +642,7 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+                    writing_mode: None,
                 }],
             },
         };
@@ -706,6 +730,7 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+                    writing_mode: None,
                 }],
             },
         };
@@ -923,6 +948,7 @@ mod tests {
                         dir: None,
                         background: None,
                         borders: None,
+                        writing_mode: None,
                     }],
                     id: Some("main".into()),
                     class: Some("container".into()),
@@ -1059,6 +1085,7 @@ mod tests {
                         dir: None,
                         background: None,
                         borders: None,
+                        writing_mode: None,
                     }],
                     id: Some("q1".into()),
                 }],
@@ -1130,6 +1157,7 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+                    writing_mode: None,
                 }],
             },
         };
@@ -1156,6 +1184,7 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+                    writing_mode: None,
                 }],
             },
         };
@@ -1182,6 +1211,7 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+                    writing_mode: None,
                 }],
             },
         };
@@ -1208,6 +1238,7 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+                    writing_mode: None,
                 }],
             },
         };
@@ -1234,6 +1265,7 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+                    writing_mode: None,
                 }],
             },
         };
@@ -1260,6 +1292,7 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+                    writing_mode: None,
                 }],
             },
         };
@@ -1281,6 +1314,7 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+                    writing_mode: None,
                 }],
             },
         };
@@ -1344,6 +1378,7 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+                    writing_mode: None,
                 }],
             },
         };
@@ -1375,6 +1410,7 @@ mod tests {
                         dir: None,
                         background: None,
                         borders: None,
+                        writing_mode: None,
                     }],
                     id: None,
                     class: None,
@@ -1553,6 +1589,7 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+                    writing_mode: None,
                 }],
             },
         };
@@ -1586,6 +1623,7 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+                    writing_mode: None,
                 }],
             },
         };
@@ -1620,6 +1658,7 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+                    writing_mode: None,
                 }],
             },
         };
@@ -1707,6 +1746,7 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+                    writing_mode: None,
                 }],
             },
         };
@@ -1768,6 +1808,7 @@ mod tests {
                         dir: None,
                         background: None,
                         borders: None,
+                        writing_mode: None,
                     }],
                     id: Some("bq".into()),
                 }],

@@ -3611,7 +3611,6 @@ checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
 name = "wo-common"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "serde",
  "serde_json",
  "thiserror 2.0.18",
@@ -3656,7 +3655,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
- "wo-wopi",
  "wo-x2t",
  "zip",
 ]
@@ -3707,9 +3705,7 @@ dependencies = [
 name = "wo-fonts"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "serde",
- "thiserror 2.0.18",
  "ttf-parser 0.25.1",
 ]
 
@@ -3717,10 +3713,8 @@ dependencies = [
 name = "wo-formula"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "chrono",
  "serde",
- "serde_json",
  "thiserror 2.0.18",
 ]
 
@@ -3728,10 +3722,10 @@ dependencies = [
 name = "wo-html"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "regex",
  "roxmltree",
  "serde",
+ "serde_json",
  "thiserror 2.0.18",
  "wo-common",
 ]
@@ -3751,7 +3745,6 @@ dependencies = [
 name = "wo-msbinary"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "msoffice-crypto",
  "serde",
  "serde_json",
@@ -3791,7 +3784,6 @@ dependencies = [
 name = "wo-office-utils"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "flate2",
  "serde",
  "thiserror 2.0.18",
@@ -3827,7 +3819,6 @@ dependencies = [
 name = "wo-pdf"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "flate2",
  "serde",
  "serde_json",
@@ -3849,12 +3840,10 @@ dependencies = [
 name = "wo-renderer"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "fontdb",
  "rustybuzz",
  "serde",
  "swash",
- "thiserror 2.0.18",
  "wo-fonts",
 ]
 
@@ -3873,7 +3862,6 @@ dependencies = [
  "wo-ooxml",
  "wo-ooxml-ops",
  "wo-renderer",
- "wo-sheet",
  "wo-spell",
  "zip",
 ]
@@ -3882,43 +3870,25 @@ dependencies = [
 name = "wo-rtf"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "serde",
  "thiserror 2.0.18",
  "wo-common",
-]
-
-[[package]]
-name = "wo-sheet"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "rustc-hash",
- "serde",
- "serde_json",
- "thiserror 2.0.18",
- "wo-common",
- "wo-formula",
 ]
 
 [[package]]
 name = "wo-spell"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "serde",
  "serde_json",
  "serial_test",
  "thiserror 2.0.18",
- "wo-common",
- "wo-unicode",
 ]
 
 [[package]]
 name = "wo-txt"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "proptest",
  "thiserror 2.0.18",
  "wo-common",
@@ -3928,7 +3898,6 @@ dependencies = [
 name = "wo-unicode"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "encoding_rs",
  "serde",
  "thiserror 2.0.18",
@@ -3941,10 +3910,8 @@ name = "wo-visio"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "base64 0.22.1",
  "quick-xml 0.37.5",
  "serde",
- "serde_json",
  "thiserror 2.0.18",
  "uuid",
  "zip",
@@ -3968,7 +3935,6 @@ dependencies = [
  "tokio",
  "tokio-test",
  "tower",
- "tower-http",
  "urlencoding",
  "uuid",
 ]
@@ -3990,9 +3956,7 @@ dependencies = [
  "tokio",
  "tokio-test",
  "tower",
- "tower-http",
  "tracing",
- "urlencoding",
  "wo-x2t",
 ]
 
@@ -4019,7 +3983,6 @@ dependencies = [
  "wo-ooxml",
  "wo-pdf",
  "wo-rtf",
- "wo-sheet",
  "wo-txt",
  "wo-visio",
  "wo-xps",
@@ -4031,6 +3994,7 @@ name = "wo-x2t-wasm"
 version = "0.1.0"
 dependencies = [
  "console_error_panic_hook",
+ "getrandom 0.4.3",
  "js-sys",
  "wasm-bindgen",
  "wasm-bindgen-test",
