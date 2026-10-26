@@ -4562,6 +4562,50 @@
     }
   }
 
+  // ── BUG3-SERIALIZATION-SAFETY: save/export round-trip hygiene ──────
+  // flatHtml() is the single serialization point (save payload, offline
+  // queue, __WO_FLAT_HTML__ export hook). Everything in the live DOM that
+  // is DISPLAY-ONLY must never leak into the saved document; everything
+  // that is DOCUMENT SEMANTICS must survive every round-trip. The lists
+  // below are the contract — stripEditorInternals() enforces the internal
+  // half at the serialization point (root cause, not per-feature patches),
+  // and roundtrip.test.mjs pins both lists.
+  // Document-semantic data attributes — converters and the reload path
+  // parse these; they MUST be present in every save payload:
+  const DOC_SEMANTIC_DATA_ATTRS = [
+    "data-textdir",                  // block text direction (AF14)
+    "data-kind", "data-spec",        // vector objects: chart/equation/smartart/textart
+    "data-author",                   // comments + tracked-change authorship
+    "data-replies", "data-resolved", // comment thread state
+    "data-id", "data-comment",       // comment identity + body
+    "data-cc",                       // content control type
+    "data-name",                     // bookmark name
+    "data-title",                    // toc / list-of-figures caption
+  ];
+  // Editor-internal attributes that must NEVER appear in saved HTML:
+  const INTERNAL_SERIAL_ATTRS = [
+    "aria-pressed", // toolbar/toggle UI state
+    "data-cmd",     // command dispatcher hooks (toolbar rows)
+    "data-word",    // spell-check misspell cache (display only)
+    "data-peer",    // collab presence marker id (display only)
+  ];
+  // View-layer classes pagination can leave behind if a split fragment is
+  // orphaned (mergeSplits only folds them when the head element is intact):
+  const INTERNAL_SERIAL_CLASSES = [
+    "wo-cont", "wo-li-cont", "wo-row-cont",
+  ];
+  function stripEditorInternals(root) {
+    // Selection UI lives INSIDE the editor (the image resize handle is
+    // appended to the editor element while an image stays selected).
+    root.querySelectorAll(".img-resize-handle").forEach((el) => el.remove());
+    root.querySelectorAll("*").forEach((el) => {
+      for (const cls of INTERNAL_SERIAL_CLASSES) el.classList.remove(cls);
+      for (const attr of Array.from(el.attributes)) {
+        if (INTERNAL_SERIAL_ATTRS.indexOf(attr.name) !== -1) el.removeAttribute(attr.name);
+      }
+    });
+  }
+
   function flatHtml() {
     // Serialize the flat flow (page layer unwrapped, splits merged) so
     // converters, undo/redo and the save payload never see the display-only
@@ -4577,6 +4621,9 @@
       pg.remove();
     });
     mergeSplits(tmp);
+    // BUG3: final scrub of editor-internal state — saved/exported HTML
+    // carries document semantics only (see DOC_SEMANTIC_DATA_ATTRS above).
+    stripEditorInternals(tmp);
     return tmp.innerHTML;
   }
   function stripMisspellMarkers(root) {
