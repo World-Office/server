@@ -2943,6 +2943,20 @@
     return (n === "href" || n === "src" || n === "xlink:href") &&
       (v.indexOf("javascript:") === 0 || v.indexOf("data:text/html") === 0);
   }
+  // BUG6-EDGE: a pasted position:fixed box (inset:0 etc.) would cover the
+  // whole chrome — an overlay hijack that survives the tag/attr allowlist.
+  // Drop only the hostile positioning declarations; ordinary inline styles
+  // (color, font, margin…) keep working.
+  function stripHostilePositioning(styleValue) {
+    const kept = String(styleValue || "")
+      .split(";")
+      .filter((decl) => {
+        const m = decl.match(/^\s*position\s*:\s*([\w-]+)/i);
+        return !(m && m[1].toLowerCase() === "fixed");
+      })
+      .join(";");
+    return kept.trim();
+  }
   function sanitizePasteHtml(html) {
     try {
       const doc = new DOMParser().parseFromString(String(html || ""), "text/html");
@@ -2953,6 +2967,11 @@
             if (isUnsafePasteAttr(attr.name, attr.value)) {
               child.removeAttribute(attr.name);
             }
+          }
+          if (child.hasAttribute("style")) {
+            const clean = stripHostilePositioning(child.getAttribute("style"));
+            if (clean) child.setAttribute("style", clean);
+            else child.removeAttribute("style");
           }
           walk(child);
         }
@@ -3396,9 +3415,15 @@
   }
   // Replays entries (objects or JSONL strings) against the current document
   // and returns the resulting DOM hash for the record->replay equality gate.
+  // BUG6-EDGE: entries may arrive from a collab peer — a malformed JSONL
+  // string must skip that entry, not throw through the whole replay.
   function replayCommands(entries) {
-    (entries || []).forEach((e) => {
-      if (typeof e === "string") e = JSON.parse(e);
+    (entries || []).forEach((raw) => {
+      let e = raw;
+      if (typeof e === "string") {
+        try { e = JSON.parse(e); } catch (err) { return; }
+      }
+      if (!e || typeof e !== "object") return;
       const at = e.at || 0, len = e.len || 0;
       const r = logicalRange(at, at + len);
       if (r) {
@@ -7147,6 +7172,20 @@
     return false;
   }
   const editorEl = document.getElementById("editor");
+  // BUG6-EDGE: close the F-063 bypass — the native Ctrl+V paste event used to
+  // insert external HTML raw into the live DOM (only the ctx-menu/ribbon
+  // richPaste path went through sanitizePasteHtml). Route event-carried
+  // text/html through the same sanitizer; plain-text pastes keep the native
+  // path. Tracked-changes mode keeps its existing wrapper flow.
+  editorEl.addEventListener("paste", (e) => {
+    if (editorEl.classList.contains("track-on")) return;
+    const cd = e.clipboardData;
+    const html = cd && cd.getData ? cd.getData("text/html") : "";
+    if (!html) return;
+    e.preventDefault();
+    editorEl.focus();
+    document.execCommand("insertHTML", false, sanitizePasteHtml(html));
+  });
   // Ribbon Clipboard group: same actions as the ctx menu's Paste/Cut/Copy.
   const clipPasteBtn = document.getElementById("btn-paste");
   if (clipPasteBtn) clipPasteBtn.addEventListener("click", () => {
@@ -8048,14 +8087,25 @@
     words: null,              // Set of base words for the current lang
     loading: null,            // in-flight dictionary fetch
   };
+  // BUG6-EDGE: shape-validate + cap the persisted dictionary. Poisoned or
+  // oversized values must fall back to (or truncate to) a sane Set instead of
+  // growing without bound (localStorage quota) or loading junk entries.
+  const SPELL_USER_DICT_MAX = 10000;
   function loadSpellUserDict() {
     try {
-      return new Set(JSON.parse(localStorage.getItem("wo-user-dict") || "[]"));
+      const arr = JSON.parse(localStorage.getItem("wo-user-dict") || "[]");
+      const words = Array.isArray(arr) ? arr.filter((w) => typeof w === "string" && w) : [];
+      return new Set(words.slice(-SPELL_USER_DICT_MAX)); // cap: keep the newest
     } catch (e) { return new Set(); }
   }
   function saveSpellUserDict() {
     try {
-      localStorage.setItem("wo-user-dict", JSON.stringify([...spellState.userDict]));
+      let words = [...spellState.userDict].filter((w) => typeof w === "string" && w);
+      if (words.length > SPELL_USER_DICT_MAX) {
+        words = words.slice(words.length - SPELL_USER_DICT_MAX);
+        spellState.userDict = new Set(words);
+      }
+      localStorage.setItem("wo-user-dict", JSON.stringify(words));
     } catch (e) {}
   }
   spellState.userDict = loadSpellUserDict();
