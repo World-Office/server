@@ -52,7 +52,7 @@ use wo_odf::model::{
 use wo_odf::OdfSerializer;
 use wo_ooxml::model::{
     AdvanceMode, AnimationData as OoxmlAnimData, Bounds, ConnectorShape, ConnectorShapeType,
-    CoreProperties, DocxBorder, DocxBody, DocxParagraph, DocxParagraphBorders,
+    CoreProperties, DocxBody, DocxBorder, DocxParagraph, DocxParagraphBorders,
     DocxParagraphProperties, DocxRun, DocxTable, DocxTableCell, DocxTableRow, Fill, HeaderFooter,
     MediaPart, OoxmlDocument, OoxmlFormat, PictureShape, PptxPresentation, Relationship, Slide,
     SlideShape, SlideSize, SlideTransition, TextBody as OoxmlTextBody, TextBoxShape,
@@ -198,6 +198,8 @@ impl FormatConverter for TxtToHtmlConverter {
                 dir: None,
                 background: None,
                 borders: None,
+
+                writing_mode: None,
             })
             .collect();
 
@@ -604,6 +606,8 @@ impl FormatConverter for EpubToHtmlConverter {
                         dir: None,
                         background: None,
                         borders: None,
+
+                        writing_mode: None,
                     });
                 }
             }
@@ -1145,6 +1149,8 @@ impl FormatConverter for XpsToHtmlConverter {
                         dir: None,
                         background: None,
                         borders: None,
+
+                        writing_mode: None,
                     }],
                     id: None,
                     class: None,
@@ -1274,6 +1280,8 @@ impl FormatConverter for OfdToHtmlConverter {
                         dir: None,
                         background: None,
                         borders: None,
+
+                        writing_mode: None,
                     }],
                     id: None,
                     class: None,
@@ -1824,6 +1832,11 @@ fn inline_elements_to_formatting(elements: &[InlineElement]) -> Vec<Formatting> 
     let mut result = Vec::new();
     for elem in elements {
         match elem {
+            // RES1: FB2 has no content-control model — degrade to the
+            // visible content, mirroring the comment channel.
+            InlineElement::ContentControl { content, .. } => {
+                result.extend(inline_elements_to_formatting(content));
+            }
             // F-102: FB2 has no comment model — degrade to the visible text.
             InlineElement::Comment { content, .. } => {
                 for f in inline_elements_to_formatting(content) {
@@ -1962,6 +1975,10 @@ fn extract_inline_text(elements: &[InlineElement]) -> String {
                 for r in replies {
                     result.push_str(&r.text);
                 }
+            }
+            // RES1: plain-text extraction keeps the inner content.
+            InlineElement::ContentControl { content, .. } => {
+                result.push_str(&extract_inline_text(content));
             }
             InlineElement::Link { content, .. } => {
                 result.push_str(&extract_inline_text(content));
@@ -2111,6 +2128,8 @@ fn rtf_blocks_to_html_blocks(blocks: &[RtfBlock]) -> Vec<BlockElement> {
                     dir: None,
                     background: None,
                     borders: None,
+
+                    writing_mode: None,
                 });
             }
             RtfBlock::Table { rows } => {
@@ -2144,15 +2163,33 @@ fn html_inlines_to_rtf_inlines(inlines: &[InlineElement]) -> Vec<RtfInline> {
     let mut result = Vec::new();
     for inline in inlines {
         match inline {
+            // RES1: RTF has no content-control model — flatten to the
+            // inner text, mirroring the comment channel.
+            InlineElement::ContentControl { content, .. } => {
+                let inner = html_inlines_to_rtf_inlines(content);
+                let text = inner
+                    .iter()
+                    .map(|r| match r {
+                        RtfInline::Text { text } => text.clone(),
+                        _ => String::new(),
+                    })
+                    .collect::<String>();
+                if !text.is_empty() {
+                    result.push(RtfInline::Text { text });
+                }
+            }
             // F-102: RTF has no comment model — degrade to the visible text.
             InlineElement::Comment { content, .. } => {
                 let inner = html_inlines_to_rtf_inlines(content);
                 if !inner.is_empty() {
                     result.push(RtfInline::Text {
-                        text: inner.iter().map(|r| match r {
-                            RtfInline::Text { text } => text.clone(),
-                            _ => String::new(),
-                        }).collect::<String>(),
+                        text: inner
+                            .iter()
+                            .map(|r| match r {
+                                RtfInline::Text { text } => text.clone(),
+                                _ => String::new(),
+                            })
+                            .collect::<String>(),
                     });
                 }
             }
@@ -2376,6 +2413,10 @@ fn extract_html_text(inlines: &[InlineElement]) -> String {
                 }
             }
             InlineElement::LineBreak => result.push('\n'),
+            // RES1: plain-text extraction keeps the inner content.
+            InlineElement::ContentControl { content, .. } => {
+                result.push_str(&extract_html_text(content));
+            }
             InlineElement::Comment {
                 content,
                 comment,
@@ -2544,7 +2585,17 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                     ..Default::default()
                 });
             }
-            BlockElement::Paragraph { content, dir, background, borders, .. } => {
+            BlockElement::Paragraph {
+                content,
+                dir,
+                background,
+                borders,
+                ..
+            } => {
+                // RES1: `writing_mode` is intentionally dropped here — the
+                // wo-ooxml paragraph model has no w:textDirection field, so
+                // vertical text direction is pass-through-only (HTML keeps
+                // it, DOCX output cannot represent it).
                 let runs =
                     html_inlines_to_docx_runs(content, &mut media, &mut image_rels, &mut comments);
                 if !runs.is_empty() {
@@ -2920,7 +2971,13 @@ fn image_dimensions(bytes: &[u8]) -> Option<(u32, u32)> {
 /// CSS `1pt solid #000000` -> w:sz=8 (eighths of a point), w:val=single.
 fn html_border_to_docx(b: &ParagraphBorder) -> DocxBorder {
     // CSS border-width "1pt" -> OOXML w:sz in eighths of a point
-    let size = b.width.trim().trim_end_matches("pt").parse::<u32>().ok().map(|n| n * 8);
+    let size = b
+        .width
+        .trim()
+        .trim_end_matches("pt")
+        .parse::<u32>()
+        .ok()
+        .map(|n| n * 8);
     // CSS border-style "solid" -> OOXML "single"; others pass through
     let style = match b.style.as_str() {
         "solid" => "single",
@@ -2958,6 +3015,14 @@ fn html_inlines_to_docx_runs(
     let mut runs = Vec::new();
     for inline in inlines {
         match inline {
+            // RES1: DOCX (wo-ooxml) has no structured document tag
+            // (SDT) support — emit the inner runs plainly; the
+            // content-control chrome is dropped but the text survives.
+            InlineElement::ContentControl { content, .. } => {
+                runs.extend(html_inlines_to_docx_runs(
+                    content, media, image_rels, comments,
+                ));
+            }
             // F-102: a comment thread fences its content between a
             // commentRangeStart and a commentRangeEnd+reference pair and
             // registers the entry (plus replies) in the comments part.
@@ -3446,6 +3511,11 @@ fn html_inlines_to_odf_spans(inlines: &[InlineElement]) -> Vec<TextSpan> {
     let mut spans = Vec::new();
     for inline in inlines {
         match inline {
+            // RES1: ODF span list has no content-control model —
+            // degrade to the visible spans, mirroring the comment channel.
+            InlineElement::ContentControl { content, .. } => {
+                spans.extend(html_inlines_to_odf_spans(content));
+            }
             // F-102: ODF span list has no comment model here — degrade to
             // the visible text (ODT comment wiring is a named register gap).
             InlineElement::Comment { content, .. } => {
@@ -3832,6 +3902,8 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
                     dir: None,
                     background: background.clone(),
                     borders: borders.clone(),
+
+                    writing_mode: None,
                 }],
                 id: None,
             });
@@ -3844,6 +3916,8 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
                 dir: Some("rtl".to_string()),
                 background: background.clone(),
                 borders: borders.clone(),
+
+                writing_mode: None,
             });
         } else {
             result.push(BlockElement::Paragraph {
@@ -3852,6 +3926,8 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
                 dir: None,
                 background,
                 borders,
+
+                writing_mode: None,
             });
         }
     }
@@ -4512,6 +4588,8 @@ fn odf_content_to_html_blocks(content: &OdfContent) -> Vec<BlockElement> {
                     dir: None,
                     background: None,
                     borders: None,
+
+                    writing_mode: None,
                 });
             }
             OdfTextContent::List(list) => {
@@ -6824,7 +6902,10 @@ impl FormatConverter for PptxToWoPresentationConverter {
                 WoSlide {
                     id: slide.id.to_string(),
                     title: slide.name.clone(),
-                    layout: slide.layout_id.clone().unwrap_or_else(|| "blank".to_string()),
+                    layout: slide
+                        .layout_id
+                        .clone()
+                        .unwrap_or_else(|| "blank".to_string()),
                     notes: slide.notes.clone(),
                     transition_effect,
                     transition_duration,
@@ -7166,7 +7247,10 @@ fn odf_slide_to_wo_slide(slide: &OdpPresentationSlide, is_widescreen: bool) -> W
     WoSlide {
         id: slide.name.clone().unwrap_or_default(),
         title: slide.name.clone().unwrap_or_default(),
-        layout: slide.slide_layout.clone().unwrap_or_else(|| "blank".to_string()),
+        layout: slide
+            .slide_layout
+            .clone()
+            .unwrap_or_else(|| "blank".to_string()),
         notes: slide.notes.clone(),
         transition_effect,
         transition_duration,
@@ -10033,7 +10117,9 @@ mod tests {
 </body></html>"#;
 
         // save: html -> docx
-        let docx = HtmlToDocxConverter.convert(editor_html).expect("html -> docx");
+        let docx = HtmlToDocxConverter
+            .convert(editor_html)
+            .expect("html -> docx");
         let docx_str = extract_docx_document_xml_f041(&docx);
         assert!(
             docx_str.contains("<w:bidi/>"),
@@ -10050,7 +10136,9 @@ mod tests {
         );
 
         // re-save: html -> docx keeps bidi
-        let docx2 = HtmlToDocxConverter.convert(&html).expect("html -> docx (2)");
+        let docx2 = HtmlToDocxConverter
+            .convert(&html)
+            .expect("html -> docx (2)");
         assert!(
             extract_docx_document_xml_f041(&docx2).contains("<w:bidi/>"),
             "second save must still carry w:bidi"
@@ -10066,11 +10154,12 @@ mod tests {
         let editor_html = br#"<html><body>
 <p>Hello <span class="comment" data-author="Ann" data-comment="Check this" data-id="c1">world</span></p>
 </body></html>"#;
-        let docx = HtmlToDocxConverter.convert(editor_html).expect("html -> docx");
+        let docx = HtmlToDocxConverter
+            .convert(editor_html)
+            .expect("html -> docx");
 
         // comments part carries the entry
-        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&docx))
-            .expect("docx zip");
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&docx)).expect("docx zip");
         let mut comments_xml = String::new();
         std::io::Read::read_to_string(
             &mut archive.by_name("word/comments.xml").expect("comments part"),
@@ -10091,13 +10180,16 @@ mod tests {
         let html = DocxToHtmlConverter.convert(&docx).expect("docx -> html");
         let html_str = String::from_utf8_lossy(&html).to_string();
         assert!(
-            html_str.contains("class=\"comment\"") && html_str.contains("data-comment=\"Check this\""),
+            html_str.contains("class=\"comment\"")
+                && html_str.contains("data-comment=\"Check this\""),
             "reloaded HTML must carry span.comment, got: {}",
             html_str
         );
 
         // replies + resolved state survive a second save
-        let docx2 = HtmlToDocxConverter.convert(&html).expect("html -> docx (2)");
+        let docx2 = HtmlToDocxConverter
+            .convert(&html)
+            .expect("html -> docx (2)");
         let mut arch2 = zip::ZipArchive::new(std::io::Cursor::new(&docx2)).expect("zip 2");
         let mut comments2 = String::new();
         std::io::Read::read_to_string(
@@ -10105,13 +10197,15 @@ mod tests {
             &mut comments2,
         )
         .expect("utf-8");
-        assert!(comments2.contains("Check this"), "second save keeps the comment");
+        assert!(
+            comments2.contains("Check this"),
+            "second save keeps the comment"
+        );
     }
 
     /// F-041/F-051 helper: extract word/document.xml from a DOCX zip as text.
     fn extract_docx_document_xml_f041(docx: &[u8]) -> String {
-        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(docx))
-            .expect("docx zip");
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(docx)).expect("docx zip");
         let mut entry = archive
             .by_name("word/document.xml")
             .expect("word/document.xml");
@@ -10131,7 +10225,9 @@ mod tests {
 </body></html>"##;
 
         // save: html -> docx
-        let docx = HtmlToDocxConverter.convert(editor_html).expect("html -> docx");
+        let docx = HtmlToDocxConverter
+            .convert(editor_html)
+            .expect("html -> docx");
         let docx_str = extract_docx_document_xml_f041(&docx);
         assert!(
             docx_str.contains("w:shd") && docx_str.contains("FFFF00"),
@@ -10161,7 +10257,9 @@ mod tests {
         );
 
         // re-save: html -> docx keeps shading and borders
-        let docx2 = HtmlToDocxConverter.convert(&html).expect("html -> docx (2)");
+        let docx2 = HtmlToDocxConverter
+            .convert(&html)
+            .expect("html -> docx (2)");
         let docx2_str = extract_docx_document_xml_f041(&docx2);
         assert!(
             docx2_str.contains("w:shd") && docx2_str.contains("FFFF00"),
@@ -10183,7 +10281,9 @@ mod tests {
 <p>Body text</p>
 </body></html>"#;
 
-        let docx = HtmlToDocxConverter.convert(editor_html).expect("html -> docx");
+        let docx = HtmlToDocxConverter
+            .convert(editor_html)
+            .expect("html -> docx");
         let docx_str = extract_docx_document_xml_f041(&docx);
         assert!(
             docx_str.contains("\"Quote\""),
@@ -10202,7 +10302,9 @@ mod tests {
             "quote text preserved"
         );
 
-        let docx2 = HtmlToDocxConverter.convert(&html).expect("html -> docx (2)");
+        let docx2 = HtmlToDocxConverter
+            .convert(&html)
+            .expect("html -> docx (2)");
         assert!(
             extract_docx_document_xml_f041(&docx2).contains("\"Quote\""),
             "second save must still style as Quote"
@@ -10248,7 +10350,10 @@ mod tests {
             })
             .collect();
         assert_eq!(contents_refs.len(), 2, "two refs");
-        assert_ne!(contents_refs[0], contents_refs[1], "per-page streams distinct");
+        assert_ne!(
+            contents_refs[0], contents_refs[1],
+            "per-page streams distinct"
+        );
 
         // split the file into stream bodies (no font embedding -> the only
         // streams are the two page content streams, uncompressed)
@@ -10279,11 +10384,7 @@ mod tests {
             [true, false],
             "page 1 carries page-1 text only (BeginCommand/EndCommand isolation)"
         );
-        assert_eq!(
-            has_beta,
-            [false, true],
-            "page 2 carries page-2 text only"
-        );
+        assert_eq!(has_beta, [false, true], "page 2 carries page-2 text only");
         // and the text is wrapped in BT..ET text objects (the command stream)
         for b in content_bodies {
             assert!(b.contains("BT") && b.contains("ET"), "BT..ET per line");
@@ -12778,6 +12879,8 @@ mod tests {
                             dir: None,
                             background: None,
                             borders: None,
+
+                            writing_mode: None,
                         }],
                         id: None,
                         class: None,
@@ -12792,6 +12895,8 @@ mod tests {
                             dir: None,
                             background: None,
                             borders: None,
+
+                            writing_mode: None,
                         }],
                         id: None,
                     },
@@ -12925,7 +13030,8 @@ mod tests {
                 style: None,
             },
         ];
-        let runs = html_inlines_to_docx_runs(&inlines, &mut Vec::new(), &mut Vec::new(), &mut Vec::new());
+        let runs =
+            html_inlines_to_docx_runs(&inlines, &mut Vec::new(), &mut Vec::new(), &mut Vec::new());
         assert_eq!(runs.len(), 11);
         assert!(!runs[0].bold);
         assert_eq!(runs[0].text, "plain ");
@@ -12968,7 +13074,8 @@ mod tests {
             },
             InlineElement::Bold { content: vec![] },
         ];
-        let runs = html_inlines_to_docx_runs(&inlines, &mut Vec::new(), &mut Vec::new(), &mut Vec::new());
+        let runs =
+            html_inlines_to_docx_runs(&inlines, &mut Vec::new(), &mut Vec::new(), &mut Vec::new());
         assert!(runs.is_empty());
     }
 
@@ -12985,7 +13092,8 @@ mod tests {
                 style: None,
             },
         ];
-        let runs = html_inlines_to_docx_runs(&inlines, &mut Vec::new(), &mut Vec::new(), &mut Vec::new());
+        let runs =
+            html_inlines_to_docx_runs(&inlines, &mut Vec::new(), &mut Vec::new(), &mut Vec::new());
         assert_eq!(runs.len(), 2);
         assert_eq!(runs[0].text, "line1\n");
     }
@@ -13034,6 +13142,8 @@ mod tests {
                 dir: None,
                 background: None,
                 borders: None,
+
+                writing_mode: None,
             },
             BlockElement::UnorderedList {
                 items: vec![ListItem {
@@ -13083,6 +13193,8 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+
+                    writing_mode: None,
                 }],
                 id: None,
                 class: None,
@@ -13097,6 +13209,8 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+
+                    writing_mode: None,
                 }],
                 id: None,
             },
@@ -13188,6 +13302,8 @@ mod tests {
             dir: None,
             background: None,
             borders: None,
+
+            writing_mode: None,
         }];
         let content = html_blocks_to_odf_content(&elements);
         assert_eq!(content.len(), 1);
@@ -13911,6 +14027,8 @@ mod tests {
             dir: None,
             background: None,
             borders: None,
+
+            writing_mode: None,
         };
         let html = HtmlDocument {
             doc_type: None,
@@ -13936,6 +14054,8 @@ mod tests {
             dir: None,
             background: None,
             borders: None,
+
+            writing_mode: None,
         }];
         let content = html_blocks_to_odf_content(&elements);
         assert_eq!(content.len(), 1);
@@ -13971,6 +14091,8 @@ mod tests {
             dir: None,
             background: None,
             borders: None,
+
+            writing_mode: None,
         }]);
         assert!(
             result.is_empty(),
@@ -13990,6 +14112,8 @@ mod tests {
                 dir: None,
                 background: None,
                 borders: None,
+
+                writing_mode: None,
             }],
             id: None,
             class: None,
@@ -14014,6 +14138,8 @@ mod tests {
                 dir: None,
                 background: None,
                 borders: None,
+
+                writing_mode: None,
             }],
             id: None,
         }]);
@@ -14941,6 +15067,8 @@ mod tests {
             dir: None,
             background: None,
             borders: None,
+
+            writing_mode: None,
         }]);
         assert!(
             result.is_empty(),
@@ -14961,6 +15089,8 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+
+                    writing_mode: None,
                 }],
                 id: None,
                 class: None,
@@ -14975,6 +15105,8 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+
+                    writing_mode: None,
                 }],
                 id: None,
             },
@@ -15249,6 +15381,8 @@ mod tests {
                 dir: None,
                 background: None,
                 borders: None,
+
+                writing_mode: None,
             },
             BlockElement::Div {
                 elements: vec![BlockElement::Paragraph {
@@ -15260,6 +15394,8 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+
+                    writing_mode: None,
                 }],
                 id: None,
                 class: None,
@@ -15274,6 +15410,8 @@ mod tests {
                     dir: None,
                     background: None,
                     borders: None,
+
+                    writing_mode: None,
                 }],
                 id: None,
             },
@@ -15381,6 +15519,8 @@ mod tests {
             dir: None,
             background: None,
             borders: None,
+
+            writing_mode: None,
         }]);
         assert_eq!(result, vec!["line1", "line2"]);
     }
@@ -15405,6 +15545,8 @@ mod tests {
             dir: None,
             background: None,
             borders: None,
+
+            writing_mode: None,
         }]);
         assert_eq!(result, vec!["see screenshot"]);
     }
@@ -15547,6 +15689,8 @@ mod tests {
                 dir: None,
                 background: None,
                 borders: None,
+
+                writing_mode: None,
             },
             BlockElement::Heading {
                 level: 2,
@@ -15565,6 +15709,8 @@ mod tests {
                 dir: None,
                 background: None,
                 borders: None,
+
+                writing_mode: None,
             },
         ];
         let chapters = html_to_epub_chapters(&elements);
@@ -15585,6 +15731,8 @@ mod tests {
                 dir: None,
                 background: None,
                 borders: None,
+
+                writing_mode: None,
             },
             BlockElement::Paragraph {
                 content: vec![InlineElement::Text {
@@ -15595,6 +15743,8 @@ mod tests {
                 dir: None,
                 background: None,
                 borders: None,
+
+                writing_mode: None,
             },
         ];
         let chapters = html_to_epub_chapters(&elements);
@@ -15640,6 +15790,8 @@ mod tests {
             dir: None,
             background: None,
             borders: None,
+
+            writing_mode: None,
         });
         assert_eq!(p, "<p>Hello</p>");
 
@@ -15690,6 +15842,8 @@ mod tests {
                 dir: None,
                 background: None,
                 borders: None,
+
+                writing_mode: None,
             }],
             id: None,
             class: None,
@@ -15707,6 +15861,8 @@ mod tests {
                 dir: None,
                 background: None,
                 borders: None,
+
+                writing_mode: None,
             }],
             id: None,
         });
@@ -17687,6 +17843,8 @@ mod tests {
             dir: None,
             background: None,
             borders: None,
+
+            writing_mode: None,
         }];
         let chapters = html_to_epub_chapters(&elements);
         assert_eq!(chapters.len(), 1);
@@ -17711,6 +17869,8 @@ mod tests {
                 dir: None,
                 background: None,
                 borders: None,
+
+                writing_mode: None,
             },
             BlockElement::Heading {
                 level: 2,
@@ -17729,6 +17889,8 @@ mod tests {
                 dir: None,
                 background: None,
                 borders: None,
+
+                writing_mode: None,
             },
         ];
         let ch = html_to_epub_chapters(&elements_h);
@@ -17741,7 +17903,8 @@ mod tests {
 
     #[test]
     fn test_html_inlines_to_docx_runs_empty() {
-        let runs = html_inlines_to_docx_runs(&[], &mut Vec::new(), &mut Vec::new(), &mut Vec::new());
+        let runs =
+            html_inlines_to_docx_runs(&[], &mut Vec::new(), &mut Vec::new(), &mut Vec::new());
         assert!(runs.is_empty());
     }
 
@@ -17754,7 +17917,8 @@ mod tests {
             }],
             &mut Vec::new(),
             &mut Vec::new(),
-            &mut Vec::new());
+            &mut Vec::new(),
+        );
         assert_eq!(runs.len(), 1);
         assert_eq!(runs[0].text, "Hello");
         assert!(!runs[0].bold);
@@ -17771,7 +17935,8 @@ mod tests {
             }],
             &mut Vec::new(),
             &mut Vec::new(),
-            &mut Vec::new());
+            &mut Vec::new(),
+        );
         assert_eq!(runs.len(), 1);
         assert_eq!(runs[0].text, "bold");
         assert!(runs[0].bold);
@@ -17788,7 +17953,8 @@ mod tests {
             }],
             &mut Vec::new(),
             &mut Vec::new(),
-            &mut Vec::new());
+            &mut Vec::new(),
+        );
         assert_eq!(runs.len(), 1);
         assert_eq!(runs[0].text, "em");
         assert!(runs[0].italic);
@@ -17817,7 +17983,8 @@ mod tests {
             ],
             &mut Vec::new(),
             &mut Vec::new(),
-            &mut Vec::new());
+            &mut Vec::new(),
+        );
         assert_eq!(runs.len(), 3);
         assert_eq!(runs[0].text, "A ");
         assert!(!runs[0].bold);
@@ -17839,7 +18006,8 @@ mod tests {
             }],
             &mut Vec::new(),
             &mut Vec::new(),
-            &mut Vec::new());
+            &mut Vec::new(),
+        );
         assert!(runs.is_empty());
     }
 
@@ -17854,7 +18022,8 @@ mod tests {
             }],
             &mut Vec::new(),
             &mut Vec::new(),
-            &mut Vec::new());
+            &mut Vec::new(),
+        );
         assert!(runs.is_empty());
     }
 
@@ -18808,14 +18977,12 @@ mod bridge_converter_tests {
         );
         assert!(ss.contains("uniqueCount=\"1\""), "uniqueCount must be 1");
         // both cells must still reference shared-string index 0
-        assert_eq!(
-            ss.matches("<si>").count(),
-            1,
-            "sanity: exactly one si"
-        );
+        assert_eq!(ss.matches("<si>").count(), 1, "sanity: exactly one si");
         let mut sheet = String::new();
         std::io::Read::read_to_string(
-            &mut archive.by_name("xl/worksheets/sheet1.xml").expect("sheet1 part"),
+            &mut archive
+                .by_name("xl/worksheets/sheet1.xml")
+                .expect("sheet1 part"),
             &mut sheet,
         )
         .expect("utf-8");
@@ -19023,12 +19190,20 @@ mod bridge_converter_tests {
         let a1 = find_cell(&v, "A1");
         assert_eq!(a1["r"].as_str(), Some("A1"), "r address kept");
         assert_eq!(a1["t"].as_str(), Some("s"), "type s kept");
-        assert_eq!(a1["v"].as_str().unwrap().contains("Gott"), true, "shared string resolves");
+        assert_eq!(
+            a1["v"].as_str().unwrap().contains("Gott"),
+            true,
+            "shared string resolves"
+        );
 
         // B1: inline string (must keep its CONTENT, not just the type token)
         let b1 = find_cell(&v, "B1");
         assert_eq!(b1["t"].as_str(), Some("str"), "inlineStr normalized to str");
-        assert_eq!(b1["v"].as_str(), Some("Inline"), "inline string content preserved");
+        assert_eq!(
+            b1["v"].as_str(),
+            Some("Inline"),
+            "inline string content preserved"
+        );
 
         // C1..F1: n / b / e / d types
         let c1 = find_cell(&v, "C1");
@@ -19046,7 +19221,10 @@ mod bridge_converter_tests {
 
         // never-set cell (D7) must not materialize in the WO JSON
         let json = String::from_utf8(back).expect("utf-8");
-        assert!(!json.contains("D7"), "never-set cell elided from the bridge output");
+        assert!(
+            !json.contains("D7"),
+            "never-set cell elided from the bridge output"
+        );
     }
 
     /// F-204: six-type worksheet fixture (shared string, inline string, number,
@@ -19153,11 +19331,12 @@ mod bridge_converter_tests {
         let bytes = WoPresentationToPptxConverter
             .convert(&serde_json::to_vec(&wo).unwrap())
             .expect("wo -> pptx");
-        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))
-            .expect("pptx zip");
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes)).expect("pptx zip");
         let mut pres = String::new();
         std::io::Read::read_to_string(
-            &mut archive.by_name("ppt/presentation.xml").expect("presentation.xml"),
+            &mut archive
+                .by_name("ppt/presentation.xml")
+                .expect("presentation.xml"),
             &mut pres,
         )
         .expect("utf-8");
@@ -19198,11 +19377,12 @@ mod bridge_converter_tests {
         let bytes = WoPresentationToPptxConverter
             .convert(&serde_json::to_vec(&wo).unwrap())
             .expect("wo -> pptx");
-        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes))
-            .expect("pptx zip");
+        let mut archive = zip::ZipArchive::new(std::io::Cursor::new(&bytes)).expect("pptx zip");
         let mut pres = String::new();
         std::io::Read::read_to_string(
-            &mut archive.by_name("ppt/presentation.xml").expect("presentation.xml"),
+            &mut archive
+                .by_name("ppt/presentation.xml")
+                .expect("presentation.xml"),
             &mut pres,
         )
         .expect("utf-8");
@@ -19243,7 +19423,7 @@ mod bridge_converter_tests {
         // 1) read: slides array order == sldIdLst order
         let wo_bytes = PptxToWoPresentationConverter
             .convert(&build_three_slide_pptx())
-                        .expect("pptx -> wo-presentation");
+            .expect("pptx -> wo-presentation");
         let v: Value = serde_json::from_slice(&wo_bytes).expect("wo json");
         let titles = |doc: &Value| -> Vec<String> {
             doc["slides"]
@@ -19253,7 +19433,11 @@ mod bridge_converter_tests {
                 .map(|s| s["title"].as_str().expect("title").to_string())
                 .collect()
         };
-        assert_eq!(titles(&v), ["Alpha", "Beta", "Gamma"], "read order = sldIdLst order");
+        assert_eq!(
+            titles(&v),
+            ["Alpha", "Beta", "Gamma"],
+            "read order = sldIdLst order"
+        );
 
         // 2) write-back UNEDITED: order preserved on round trip
         let out = WoPresentationToPptxConverter

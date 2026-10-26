@@ -56,6 +56,12 @@ pub enum BlockElement {
         /// maps to OOXML w:pBdr).
         #[serde(default, skip_serializing_if = "Option::is_none")]
         borders: Option<ParagraphBorders>,
+        /// Block vertical text direction (RES1): CSS `writing-mode` value
+        /// (vertical-rl, vertical-lr, horizontal-tb, sideways-rl/lr), read
+        /// from style="writing-mode" and/or the editor's data-textdir attr.
+        /// Survives HTML round trips; format conversion drops it (documented).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        writing_mode: Option<String>,
     },
     Div {
         elements: Vec<BlockElement>,
@@ -160,6 +166,14 @@ pub enum InlineElement {
         id: Option<String>,
         resolved: bool,
         replies: Vec<CommentReply>,
+    },
+    /// A content control (RES1): editor dialect span.content-control with
+    /// data-cc type + title tooltip (plain, date, dropdown, ...). Content
+    /// carries the visible inline runs; contenteditable is editor-only.
+    ContentControl {
+        cc_type: String,
+        title: Option<String>,
+        content: Vec<InlineElement>,
     },
 }
 
