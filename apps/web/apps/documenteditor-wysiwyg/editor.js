@@ -1488,26 +1488,34 @@
     let node = sel.anchorNode;
     if (node && node.nodeType === 3) node = node.parentElement;
     let list = node && node.closest ? node.closest("#editor ul, #editor ol") : null;
-    if (!list) {
-      try { document.execCommand(ordered ? "insertOrderedList" : "insertUnorderedList"); } catch (err) { return; }
-      node = sel.anchorNode;
-      if (node && node.nodeType === 3) node = node.parentElement;
-      list = node && node.closest ? node.closest("#editor ul, #editor ol") : null;
-      if (!list) return;
+    // The execCommand paths below (creation / UL<->OL conversion) fire input
+    // events; suppress their captures so conversion + restyle land as ONE
+    // undoable step (see suppressInputCapture at the history machinery).
+    suppressInputCapture = true;
+    try {
+      if (!list) {
+        try { document.execCommand(ordered ? "insertOrderedList" : "insertUnorderedList"); } catch (err) { return; }
+        node = sel.anchorNode;
+        if (node && node.nodeType === 3) node = node.parentElement;
+        list = node && node.closest ? node.closest("#editor ul, #editor ol") : null;
+        if (!list) return;
+      }
+      if (list.tagName !== (ordered ? "OL" : "UL")) {
+        // BUG2-RUNTIME-SMOKE: mismatched type (numbering style on a UL, bullet
+        // style on an OL) used to silently no-op while the dirty/history
+        // pipeline still ran. Convert via the creation execCommand, then restyle.
+        try {
+          document.execCommand(ordered ? "insertOrderedList" : "insertUnorderedList");
+        } catch (err) { return; }
+        node = sel.anchorNode;
+        if (node && node.nodeType === 3) node = node.parentElement;
+        list = node && node.closest ? node.closest("#editor ul, #editor ol") : null;
+        if (!list) return;
+      }
+      if (list.tagName === (ordered ? "OL" : "UL")) list.style.listStyleType = type;
+    } finally {
+      suppressInputCapture = false;
     }
-    if (list.tagName !== (ordered ? "OL" : "UL")) {
-      // BUG2-RUNTIME-SMOKE: mismatched type (numbering style on a UL, bullet
-      // style on an OL) used to silently no-op while the dirty/history
-      // pipeline still ran. Convert via the creation execCommand, then restyle.
-      try {
-        document.execCommand(ordered ? "insertOrderedList" : "insertUnorderedList");
-      } catch (err) { return; }
-      node = sel.anchorNode;
-      if (node && node.nodeType === 3) node = node.parentElement;
-      list = node && node.closest ? node.closest("#editor ul, #editor ol") : null;
-      if (!list) return;
-    }
-    if (list.tagName === (ordered ? "OL" : "UL")) list.style.listStyleType = type;
     markDirty();
     captureHistory();
     scheduleCollabSync();
@@ -1621,6 +1629,10 @@
   const undoStack = [];      // states we can go BACK to (oldest first)
   const redoStack = [];      // states we can go FORWARD to (newest first)
   let lastSnapshot = null;   // DOM state the chain currently reflects
+  // Batched-command guard: while set, input events must NOT capture mid-step
+  // (applyListStyle conversion + restyle land as ONE undoable step, same
+  // contract as the replace-all bulkEdit batch in the find-replace closure).
+  let suppressInputCapture = false;
 
   // Capture the state we are LEAVING, then remember the new one. Call
   // after the DOM has settled (input, list toggle, table insert) so
@@ -8391,7 +8403,7 @@
     // Replace-all runs a batch of execCommand edits; the whole batch is
     // captured as ONE history step after the loop (see doReplaceAll), so
     // suppress the per-step capture here while it runs.
-    if (bulkEdit) return;
+    if (bulkEdit || suppressInputCapture) return;
     markDirty();
     autoConvertListMarker();
     // Snapshot AFTER the DOM settled so the whole smart-list conversion

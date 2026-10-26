@@ -336,6 +336,62 @@ async function groupA(page) {
   });
 }
 
+// --------------------------------------- group b: alignment / indents / lists --
+async function groupB(page) {
+  console.log("group b — alignment, indents, lists");
+
+  await probe(page, "b1 justifyCenter", { apply: (p) => clickCmd(p, "justifyCenter") });
+  await probe(page, "b2 justifyRight", { apply: (p) => clickCmd(p, "justifyRight") });
+  await probe(page, "b3 justifyFull", { apply: (p) => clickCmd(p, "justifyFull") });
+  // justifyLeft on an already-left paragraph is a DOM no-op; exercise the
+  // real transition instead (center -> left).
+  await probe(page, "b4 justifyLeft (from center)", {
+    prime: (p) => clickCmd(p, "justifyCenter"),
+    apply: (p) => clickCmd(p, "justifyLeft") });
+
+  await probe(page, "b5 indent", { apply: (p) => clickCmd(p, "indent") });
+  await probe(page, "b6 outdent (from indent)", {
+    prime: (p) => clickCmd(p, "indent"),
+    apply: (p) => clickCmd(p, "outdent") });
+
+  await probe(page, "b7 insertUnorderedList", {
+    apply: (p) => clickCmd(p, "insertUnorderedList") });
+  await probe(page, "b8 insertOrderedList", {
+    apply: (p) => clickCmd(p, "insertOrderedList") });
+
+  // Multilevel on a plain paragraph: creation path (insertOrderedList +
+  // history push inside multilevelItem).
+  await probe(page, "b9 multilevel creates list", {
+    apply: (p) => clickCmd(p, "multilevel") });
+  // Multilevel nesting: caret in the 2nd li -> nests it under the 1st.
+  // (Caret in the 1st li is a documented no-op: no previous sibling.)
+  await probe(page, "b10 multilevel nests item", {
+    prime: async (p) => {
+      await clickCmd(p, "insertOrderedList");
+      await p.locator("#editor").focus();
+      await p.keyboard.press("End");
+      await p.keyboard.press("Enter");
+      await p.waitForTimeout(120);
+    },
+    apply: (p) => clickCmd(p, "multilevel") });
+
+  await probe(page, "b11 listStyle square on UL", {
+    prime: (p) => clickCmd(p, "insertUnorderedList"),
+    apply: (p) => clickCmd(p, "listStyle", "square") });
+  // Mismatched type (decimal on a UL): converts UL->OL then restyles — the
+  // BUG2-RUNTIME-SMOKE regression path (used to no-op while history ran).
+  await probe(page, "b12 listStyle decimal converts UL->OL", {
+    prime: (p) => clickCmd(p, "insertUnorderedList"),
+    apply: (p) => clickCmd(p, "listStyle", "decimal") });
+
+  await probe(page, "b13 directionRtl", { apply: (p) => clickCmd(p, "directionRtl") });
+
+  // Creation path of applyListStyle (no list under the caret): the guarded
+  // execCommand creates the list, the restyle lands in the SAME step.
+  await probe(page, "b14 listStyle square creates list", {
+    apply: (p) => clickCmd(p, "listStyle", "square") });
+}
+
 // ------------------------------------------------------------------ main --
 async function main() {
   const port = await freePort(PORT);
@@ -356,6 +412,7 @@ async function main() {
     assert.ok(hasHook, "window.__WO_HISTORY__ hook must exist (editor.js)");
 
     await groupA(page);
+    await groupB(page);
 
     await browser.close();
   } finally {
