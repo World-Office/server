@@ -192,20 +192,17 @@
     "Image.TooLarge": "Image too large (max 10 MB)",
     "Image.ReadFailed": "Could not read the image",
   };
-  const HEADING3_UI_STRINGS = Object.assign(
-    { "Toolbar.Heading3": "Heading 3", "Toolbar.Heading3Title": "Heading 3" },
-    detectedLng.indexOf("de") === 0
-      ? { "Toolbar.Heading3": "Überschrift 3", "Toolbar.Heading3Title": "Überschrift 3" }
-      : {}
-  );
+  const HEADING3_UI_STRINGS_EN = { "Toolbar.Heading3": "Heading 3", "Toolbar.Heading3Title": "Heading 3" };
+  const HEADING3_UI_STRINGS_DE = { "Toolbar.Heading3": "Überschrift 3", "Toolbar.Heading3Title": "Überschrift 3" };
   function seedUiStrings(tFn) {
     const bucket = tFn && tFn.resources && tFn.resources[tFn.lng] && tFn.resources[tFn.lng].translation;
     if (!bucket) return;
+    const heading3Pair = tFn.lng.indexOf("de") === 0 ? HEADING3_UI_STRINGS_DE : HEADING3_UI_STRINGS_EN;
     Object.keys(IMAGE_UI_STRINGS).forEach((k) => {
       if (bucket[k] === undefined) bucket[k] = IMAGE_UI_STRINGS[k];
     });
-    Object.keys(HEADING3_UI_STRINGS).forEach((k) => {
-      if (bucket[k] === undefined) bucket[k] = HEADING3_UI_STRINGS[k];
+    Object.keys(heading3Pair).forEach((k) => {
+      if (bucket[k] === undefined) bucket[k] = heading3Pair[k];
     });
   }
   // Same pattern for the find-and-replace strings: the catalog (i18n.js) is
@@ -290,7 +287,7 @@
   function seedToolbarStrings(tFn) {
     const bucket = tFn && tFn.resources && tFn.resources[tFn.lng] && tFn.resources[tFn.lng].translation;
     if (!bucket) return;
-    const pair = detectedLng.indexOf("de") === 0 ? TOOLBAR_UI_STRINGS_DE : TOOLBAR_UI_STRINGS;
+    const pair = tFn.lng.indexOf("de") === 0 ? TOOLBAR_UI_STRINGS_DE : TOOLBAR_UI_STRINGS;
     Object.keys(pair).forEach((k) => {
       if (bucket[k] === undefined) bucket[k] = pair[k];
     });
@@ -312,7 +309,7 @@
   function seedA11yStrings(tFn) {
     const bucket = tFn && tFn.resources && tFn.resources[tFn.lng] && tFn.resources[tFn.lng].translation;
     if (!bucket) return;
-    const pair = detectedLng.indexOf("de") === 0 ? A11Y_UI_STRINGS_DE : A11Y_UI_STRINGS;
+    const pair = tFn.lng.indexOf("de") === 0 ? A11Y_UI_STRINGS_DE : A11Y_UI_STRINGS;
     Object.keys(pair).forEach((k) => {
       if (bucket[k] === undefined) bucket[k] = pair[k];
     });
@@ -374,7 +371,7 @@
   function seedVersionStrings(tFn) {
     const bucket = tFn && tFn.resources && tFn.resources[tFn.lng] && tFn.resources[tFn.lng].translation;
     if (!bucket) return;
-    const pair = detectedLng.indexOf("de") === 0 ? VERSION_UI_STRINGS_DE : VERSION_UI_STRINGS;
+    const pair = tFn.lng.indexOf("de") === 0 ? VERSION_UI_STRINGS_DE : VERSION_UI_STRINGS;
     Object.keys(pair).forEach((k) => {
       if (bucket[k] === undefined) bucket[k] = pair[k];
     });
@@ -382,7 +379,7 @@
   function seedMenuStrings(tFn) {
     const bucket = tFn && tFn.resources && tFn.resources[tFn.lng] && tFn.resources[tFn.lng].translation;
     if (!bucket) return;
-    const pair = detectedLng.indexOf("de") === 0 ? MENU_UI_STRINGS_DE : MENU_UI_STRINGS;
+    const pair = tFn.lng.indexOf("de") === 0 ? MENU_UI_STRINGS_DE : MENU_UI_STRINGS;
     Object.keys(pair).forEach((k) => {
       if (bucket[k] === undefined) bucket[k] = pair[k];
     });
@@ -401,6 +398,27 @@
   }
   const htmlEl = document.documentElement;
   if (htmlEl) htmlEl.setAttribute("lang", t.lng);
+  document.title = t("App.Title") || document.title;
+  // BUG4-LOCALE: single runtime locale-switch path. Everything the boot
+  // sequence did language-dependently replays here: t.changeLanguage swaps
+  // the translation bucket, the seeders re-fill locale-pair fallbacks into
+  // the NEW bucket (they key off t.lng, not the boot-time detectedLng), and
+  // applyTranslations rewrites every data-i18n marker in the document.
+  function applyLocale(code) {
+    const next = t.changeLanguage ? t.changeLanguage(code) : code;
+    seedUiStrings(t);
+    seedFindStrings(t);
+    seedToolbarStrings(t);
+    seedA11yStrings(t);
+    seedMenuStrings(t);
+    seedVersionStrings(t);
+    if (window.applyTranslations) {
+      window.applyTranslations(document, t);
+    }
+    if (htmlEl) htmlEl.setAttribute("lang", t.lng);
+    document.title = t("App.Title") || document.title;
+    return next;
+  }
   const editor = document.getElementById("editor");
   const status = document.getElementById("status");
   const saveBtn = document.getElementById("btn-save");
@@ -451,7 +469,13 @@
     // 0 before the sheets are rebuilt), which would flash a bogus "Page 1 of 0".
     // Keep the previous count until the layer is back — no flicker.
     if (!total) return;
-    el.textContent = `Page ${cur} of ${total}`;
+    // BUG4-LOCALE: the indicator must follow the active locale like every
+    // other statusbar string. AF3 pins the resources with literal digits
+    // ("Page 1 of 0" / "Seite 1 von 0"), so substitute total ("0", which
+    // sits last) before cur ("1") to keep multi-digit values intact.
+    el.textContent = (t("Statusbar.PageOf") || `Page ${cur} of ${total}`)
+      .replace("0", String(total))
+      .replace("1", String(cur));
   }
 
 
@@ -4887,15 +4911,13 @@
   if (viewZoom100) viewZoom100.addEventListener("click", () => document.getElementById("btn-zoom-reset")?.click());
   const viewHeadings = document.getElementById("btn-view-headings");
   if (viewHeadings) viewHeadings.addEventListener("click", () => {
+    // single state sink (BUG4-ARIA): btn-nav-toggle mirrors aria-pressed back
     document.getElementById("btn-nav-toggle")?.click();
-    const navOpen = !document.getElementById("nav-panel")?.hidden;
-    viewHeadings.setAttribute("aria-pressed", String(Boolean(navOpen)));
   });
   const viewMultipages = document.getElementById("btn-view-multipages");
   if (viewMultipages) viewMultipages.addEventListener("click", () => {
-    document.getElementById("btn-multipage")?.click();
-    viewMultipages.setAttribute("aria-pressed",
-      String(document.body.classList.contains("multi-page-view")));
+    // single state sink (BUG4-ARIA): setMultipage owns btn-multipage + this
+    setMultipage(!document.body.classList.contains("multi-page-view"));
   });
   const viewThemeSelect = document.getElementById("view-theme-select");
   if (viewThemeSelect) {
@@ -5028,6 +5050,11 @@
     }
     navPanel.hidden = !opening;
     if (btn) btn.setAttribute("aria-expanded", String(opening));
+    // BUG4-ARIA: the View-tab Headings button mirrors the panel state, so a
+    // nav toggle from ANY path (home ribbon, statusbar, View tab) leaves both
+    // buttons' aria-pressed consistent.
+    const viewHeadingsBtn = document.getElementById("btn-view-headings");
+    if (viewHeadingsBtn) viewHeadingsBtn.setAttribute("aria-pressed", String(opening));
     setStatus(opening ? "Navigation open" : "Navigation closed");
   }
 
@@ -8978,13 +9005,15 @@
   const btnInfoClose = document.getElementById("btn-info-close");
   if (btnInfoClose) btnInfoClose.addEventListener("click", () => closeDlg("info-dialog"));
 
-  // File > Settings: theme / spellcheck / zoom, all applied live.
+  // File > Settings: theme / language / spellcheck / zoom, all applied live.
   function syncSettingsDialog() {
     const spell = document.getElementById("settings-spellcheck");
     const theme = document.getElementById("settings-theme");
+    const lang = document.getElementById("settings-lang");
     const zoom = document.getElementById("settings-zoom");
     if (spell) spell.checked = spellState.enabled;
     if (theme) theme.value = document.documentElement.classList.contains("light") ? "light" : "dark";
+    if (lang) lang.value = t.lng;
     if (zoom) zoom.value = String(Math.round((zoomLevel || 1) * 100));
   }
   const btnFileSettings = document.getElementById("btn-filesettings");
@@ -8997,12 +9026,21 @@
   if (btnSettingsOk) btnSettingsOk.addEventListener("click", () => {
     const spell = document.getElementById("settings-spellcheck");
     const theme = document.getElementById("settings-theme");
+    const lang = document.getElementById("settings-lang");
     const zoom = document.getElementById("settings-zoom");
     if (spell) toggleSpellcheck(spell.checked);
-    if (theme) document.documentElement.classList.toggle("light", theme.value === "light");
+    if (lang && lang.value !== t.lng) applyLocale(lang.value);
+    // BUG4-ARIA: route the theme through the same applyTheme() sink as the
+    // ribbon toggle and the View-tab select — a direct classList.toggle here
+    // left #btn-theme's aria-pressed and the theme-color meta stale and did
+    // not persist to localStorage (reload reverted the choice).
+    if (theme) {
+      localStorage.setItem("wo-theme", theme.value === "light" ? "light" : "dark");
+      applyTheme();
+    }
     if (zoom && !Number.isNaN(+zoom.value)) { zoomLevel = Math.min(2, Math.max(0.5, +zoom.value / 100)); applyZoom(); }
     closeDlg("settings-dialog");
-    setStatus("Settings applied");
+    setStatus(t.lng === "de" ? "Einstellungen übernommen" : "Settings applied");
   });
   const btnSettingsCancel = document.getElementById("btn-settings-cancel");
   if (btnSettingsCancel) btnSettingsCancel.addEventListener("click", () => closeDlg("settings-dialog"));
@@ -9191,11 +9229,19 @@
 
   // Statusbar > multiple pages view: show page-separator gutters in the flow
   // (CSS-only, nothing enters the document).
+  // BUG4-ARIA: single state setter for BOTH the statusbar gutter toggle and
+  // the View-tab mirror button — the old per-handler writes left the View
+  // tab's aria-pressed stale whenever the statusbar (or a View-tab relay)
+  // changed the state.
+  function setMultipage(on) {
+    document.body.classList.toggle("multi-page-view", !!on);
+    document.querySelectorAll("#btn-multipage, #btn-view-multipages")
+      .forEach((b) => b.setAttribute("aria-pressed", String(!!on)));
+    setStatus(on ? "Multiple pages view" : "Single page view");
+  }
   const btnMultipage = document.getElementById("btn-multipage");
   if (btnMultipage) btnMultipage.addEventListener("click", () => {
-    const on = document.body.classList.toggle("multi-page-view");
-    btnMultipage.setAttribute("aria-pressed", String(on));
-    setStatus(on ? "Multiple pages view" : "Single page view");
+    setMultipage(!document.body.classList.contains("multi-page-view"));
   });
 
   // Plugins > background mode: run plugins without a foreground panel.
