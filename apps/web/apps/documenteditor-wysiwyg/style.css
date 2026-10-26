@@ -948,6 +948,11 @@ select option { background: var(--bg); color: var(--text); }
   border: 1px solid var(--border);
   border-radius: 4px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  /* BUG8-STATE-CONSISTENCY: the menu has ~77 rows — without a clamp it is
+     taller than short viewports and rows near the end are unreachable by
+     mouse (same viewport-overflow class the dialogs were fixed for). */
+  max-height: calc(100vh - 8px);
+  overflow-y: auto;
 }
 #ctx-menu[hidden] { display: none; }
 #ctx-menu button {

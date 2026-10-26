@@ -2545,112 +2545,6 @@
     });
   }
 
-  // --- drag-resize handle ---
-  let imgResizeHandle = null;
-  let imgResizeDrag = null; // { img, startW, baseW, baseH, dragStartX, dragging }
-
-  function imgHandlePos(img) {
-    const er = editor.getBoundingClientRect();
-    const ir = img.getBoundingClientRect();
-    return { x: Math.round(ir.right - er.left), y: Math.round(ir.bottom - er.top) };
-  }
-
-  function imgResizeApply(e) {
-    if (!imgResizeDrag) return;
-    const d = imgResizeDrag;
-    if (!d.dragging) return;
-    if (e.clientX === undefined) return;
-    const delta = e.clientX - d.dragStartX;
-    const fitted = fitToWidth(d.baseW, d.baseH, Math.max(16, Math.round(d.startW + delta)));
-    d.img.setAttribute("width", String(fitted.width));
-    d.img.setAttribute("height", String(fitted.height));
-    const pos = imgHandlePos(d.img);
-    if (imgResizeHandle && pos) {
-      imgResizeHandle.style.left = pos.x + "px";
-      imgResizeHandle.style.top = pos.y + "px";
-    }
-  }
-
-  function imgResizeFinish() {
-    if (!imgResizeDrag) return;
-    const wasDragging = imgResizeDrag.dragging;
-    hideImageResizeHandle();
-    if (wasDragging) {
-      editor.dispatchEvent(new Event("input", { bubbles: true }));
-      captureHistory();
-      markDirty();
-      scheduleCollabSync();
-      notifyHost("editing");
-      // BUG8-STATE-CONSISTENCY: the drag mutates width/height without a
-      // selectionchange, so the right panel's image inputs stayed stale
-      // until the user re-selected (same desync family BUG4 fixed for
-      // aria-pressed buttons). Re-mirror the live geometry into the panel.
-      syncRightPanelControls();
-    }
-  }
-
-  function hideImageResizeHandle() {
-    if (imgResizeDetach) imgResizeDetach();
-    if (imgResizeHandle && imgResizeHandle.parentNode) {
-      imgResizeHandle.parentNode.removeChild(imgResizeHandle);
-    }
-    imgResizeHandle = null;
-    imgResizeDrag = null;
-  }
-
-  function showImageResizeHandle(img) {
-    hideImageResizeHandle();
-    if (!img || READ_ONLY || !editor.contains(img)) return;
-    if (img.naturalWidth <= 0 && !img.complete) return; // not decodable yet
-    const pos = imgHandlePos(img);
-    if (!pos) return;
-    const handle = document.createElement("div");
-    handle.className = "img-resize-handle";
-    handle.setAttribute("role", "presentation");
-    handle.style.left = pos.x + "px";
-    handle.style.top = pos.y + "px";
-    editor.appendChild(handle);
-    imgResizeHandle = handle;
-    const startW = parseInt(img.getAttribute("width") || "0", 10) ||
-      (img.naturalWidth > 0 ? img.naturalWidth : 0);
-    const baseW = img.naturalWidth > 0 ? img.naturalWidth : startW;
-    const baseH = img.naturalHeight > 0 ? img.naturalHeight :
-      (startW > 0 && img.width > 0 ? Math.round(startW * (img.height / img.width)) : startW);
-    imgResizeDrag = { img, startW, baseW, baseH, dragStartX: 0, dragging: false };
-    handle.addEventListener("mousedown", function onHandleDown(e) {
-      if (e.button !== undefined && e.button !== 0) return;
-      if (!imgResizeDrag) return;
-      imgResizeDrag.dragging = true;
-      imgResizeDrag.dragStartX = e.clientX;
-      if (handle.setPointerCapture) {
-        try { handle.setPointerCapture(e.pointerId); } catch (err) {}
-      }
-      e.preventDefault();
-      e.stopPropagation();
-    });
-    handle.addEventListener("pointerdown", function onHandleDown(e) {
-      if (!imgResizeDrag) return;
-      imgResizeDrag.dragging = true;
-      imgResizeDrag.dragStartX = e.clientX;
-      e.preventDefault();
-      e.stopPropagation();
-    });
-    const onDocMove = function (e) { imgResizeApply(e); };
-    const onDocUp = function () { imgResizeFinish(); };
-    document.addEventListener("mousemove", onDocMove);
-    document.addEventListener("pointermove", onDocMove);
-    document.addEventListener("mouseup", onDocUp);
-    document.addEventListener("pointerup", onDocUp);
-    document.addEventListener("keydown", hideImageResizeHandle, true);
-    imgResizeDetach = function () {
-      document.removeEventListener("mousemove", onDocMove);
-      document.removeEventListener("pointermove", onDocMove);
-      document.removeEventListener("mouseup", onDocUp);
-      document.removeEventListener("pointerup", onDocUp);
-      document.removeEventListener("keydown", hideImageResizeHandle, true);
-    };
-  }
-  let imgResizeDetach = function () {};
 
   // --- insert columns (toolbar button + dialog) ---------------------
   function openColumnsDialog() {
@@ -5472,8 +5366,8 @@
     if (fh || fv) parts.push(`scale(${fh ? -1 : 1}, ${fv ? -1 : 1})`);
     obj.style.transform = parts.join(" ");
   }
-  function applyImageSize(w, h) {
-    const obj = selectedImageObject();
+  function applyImageSize(w, h, targetObj) {
+    const obj = targetObj || selectedImageObject();
     if (!obj || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageSize"); return; }
     let w2;
     let h2;
@@ -5532,8 +5426,8 @@
     return obj && obj.matches && obj.matches("img") &&
       !obj.classList.contains("vector-object") ? obj : null;
   }
-  function applyImageAltText(value) {
-    const img = plainImageSelection();
+  function applyImageAltText(value, targetImg) {
+    const img = targetImg || plainImageSelection();
     if (!img || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageAlt"); return false; }
     img.setAttribute("alt", String(value == null ? "" : value));
     markObjectMutation();
@@ -5541,12 +5435,18 @@
     setStatus("Image alt text updated");
     return true;
   }
+  // BUG8-STATE-CONSISTENCY: the dialog steals the DOM selection when its
+  // input takes focus, so the target image is captured at open time and
+  // handed to the apply funnel explicitly (selection-based resolution
+  // would silently no-op on OK).
+  let imageAltTarget = null;
   function openImageAltDialog() {
     const img = plainImageSelection();
     const dialog = document.getElementById("image-alt-dialog");
     const input = document.getElementById("image-alt-input");
     if (!dialog || !input) return;
     if (!img || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageAlt"); return; }
+    imageAltTarget = img;
     input.value = img.getAttribute("alt") || "";
     const wIn = document.getElementById("image-size-width");
     const hIn = document.getElementById("image-size-height");
@@ -5559,16 +5459,31 @@
   const imageAltOk = document.getElementById("btn-image-alt-ok");
   if (imageAltOk) imageAltOk.addEventListener("click", () => {
     const input = document.getElementById("image-alt-input");
-    applyImageAltText(input ? input.value : "");
+    const altValue = input ? input.value : "";
     const wIn = document.getElementById("image-size-width");
     const hIn = document.getElementById("image-size-height");
-    if (wIn && hIn) {
-      applyImageSize(parseFloat(wIn.value), parseFloat(hIn.value));
+    // Restore the editor selection onto the target image: the dialog input
+    // stole it, and both the apply funnel and syncRightPanelControls
+    // resolve state through the live selection.
+    if (imageAltTarget) {
+      const sel = window.getSelection();
+      const r = document.createRange();
+      r.selectNodeContents(imageAltTarget);
+      sel.removeAllRanges();
+      sel.addRange(r);
     }
+    applyImageAltText(altValue, imageAltTarget);
+    if (wIn && hIn) {
+      applyImageSize(parseFloat(wIn.value), parseFloat(hIn.value), imageAltTarget);
+    }
+    imageAltTarget = null;
     closeDlg("image-alt-dialog");
   });
   const imageAltCancel = document.getElementById("btn-image-alt-cancel");
-  if (imageAltCancel) imageAltCancel.addEventListener("click", () => closeDlg("image-alt-dialog"));
+  if (imageAltCancel) imageAltCancel.addEventListener("click", () => {
+    imageAltTarget = null;
+    closeDlg("image-alt-dialog");
+  });
   const imageAltInput = document.getElementById("image-alt-input");
   if (imageAltInput) imageAltInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); if (imageAltOk) imageAltOk.click(); }
@@ -5763,7 +5678,10 @@
   const rpChartWidth = document.getElementById("rp-chart-width");
   if (rpChartWidth) rpChartWidth.addEventListener("change", () => {
     if (READ_ONLY) return;
-    applyChartPanelSize();
+    // BUG8-STATE-CONSISTENCY: a width-only resize must preserve aspect like
+    // the chart-design width input (which passes NaN height). Sending the
+    // stale synced height made the two surfaces diverge.
+    applyChartSize(parseFloat(rpChartWidth.value), NaN);
   });
   const rpChartHeight = document.getElementById("rp-chart-height");
   if (rpChartHeight) rpChartHeight.addEventListener("change", () => {
