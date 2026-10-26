@@ -995,6 +995,8 @@
           <div class="rp-group">
             <label for="rp-image-height" data-i18n="RightPanel.Height">Height (px)</label>
             <input type="number" id="rp-image-height" min="16" step="8" value="0">
+            <label for="rp-image-alt" data-i18n="RightPanel.AltText">Alt text</label>
+            <input type="text" id="rp-image-alt">
           </div>
           <div class="rp-group">
             <label for="rp-image-opacity" data-i18n="RightPanel.Opacity">Opacity (%)</label>
@@ -1141,6 +1143,19 @@
     <button type="button" role="menuitem" data-ctx="TextAlignLeft" data-subitem="text-align" data-showif="table" data-i18n="Ctx.TextAlignLeft">Left</button>
     <button type="button" role="menuitem" data-ctx="TextAlignCenter" data-subitem="text-align" data-showif="table" data-i18n="Ctx.TextAlignCenter">Center</button>
     <button type="button" role="menuitem" data-ctx="TextAlignRight" data-subitem="text-align" data-showif="table" data-i18n="Ctx.TextAlignRight">Right</button>
+    <!-- BUG8-STATE-CONSISTENCY: table ops via ctx now route through the
+         same handlers as the table-ops dialog, so the same mutation
+         converges on both surfaces (previously the ctx menu had no table
+         op rows at all — only text alignment). -->
+    <div class="ctx-sep" role="separator" data-showif="table"></div>
+    <button type="button" role="menuitem" data-ctx="TableRowAbove" data-showif="table" data-i18n="Ctx.TableRowAbove">Insert row above</button>
+    <button type="button" role="menuitem" data-ctx="TableRowBelow" data-showif="table" data-i18n="Ctx.TableRowBelow">Insert row below</button>
+    <button type="button" role="menuitem" data-ctx="TableColLeft" data-showif="table" data-i18n="Ctx.TableColLeft">Insert col left</button>
+    <button type="button" role="menuitem" data-ctx="TableColRight" data-showif="table" data-i18n="Ctx.TableColRight">Insert col right</button>
+    <button type="button" role="menuitem" data-ctx="TableDeleteRow" data-showif="table" data-i18n="Ctx.TableDeleteRow">Delete row</button>
+    <button type="button" role="menuitem" data-ctx="TableDeleteCol" data-showif="table" data-i18n="Ctx.TableDeleteCol">Delete column</button>
+    <button type="button" role="menuitem" data-ctx="TableMergeCells" data-showif="table" data-i18n="Ctx.TableMergeCells">Merge cells</button>
+    <button type="button" role="menuitem" data-ctx="TableSplitCell" data-showif="table" data-i18n="Ctx.TableSplitCell">Split cell</button>
     <!-- AF14-CTX-DEPTH: Text direction submenu — writing-mode on the block
          under the selection, persisted as data-textdir + a wo-textdir-* class
          so it round-trips flatHtml()/save. -->
@@ -1193,6 +1208,9 @@
     <button type="button" role="menuitem" data-ctx="Link" data-i18n="Ctx.Link">Link</button>
     <button type="button" role="menuitem" data-ctx="EditLink" data-i18n="Ctx.EditLink">Edit link</button>
     <button type="button" role="menuitem" data-ctx="RemoveLink" data-i18n="Ctx.RemoveLink">Remove link</button>
+    <!-- BUG8-STATE-CONSISTENCY: alt text editing (a11y) — row only shows
+         when a plain (non-vector) image is selected; opens image-alt-dialog. -->
+    <button type="button" role="menuitem" data-ctx="EditAltText" data-showif="image" data-i18n="Ctx.EditAltText">Edit alt text…</button>
     <button type="button" role="menuitem" data-ctx="UpdateTOC" data-i18n="Ctx.UpdateTOC">Update table of contents</button>
     <button type="button" role="menuitem" data-ctx="TocSettings" data-i18n="Ctx.TocSettings">Table of contents settings</button>
     <button type="button" role="menuitem" data-ctx="UpdateField" data-i18n="Ctx.UpdateField">Update field</button>
@@ -1584,6 +1602,23 @@
     <div class="dialog-actions">
       <button id="btn-image-cancel" data-i18n="Image.Cancel">Cancel</button>
       <button id="btn-image-ok" class="primary" disabled data-i18n="Image.Insert">Insert</button>
+    </div>
+  </div>
+
+  <!-- BUG8-STATE-CONSISTENCY: image alt-text dialog — the only dialog
+       surface for editing an existing image's alt text; mirrors the
+       right-panel alt input so both surfaces converge. -->
+  <div id="image-alt-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="image-alt-dialog-title">
+    <div class="dialog">
+      <h3 id="image-alt-dialog-title" data-i18n="Dialog.ImageAltTitle">Image alt text</h3>
+      <div class="dialog-field">
+        <label for="image-alt-input" data-i18n="RightPanel.AltText">Alt text</label>
+        <input id="image-alt-input" type="text">
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-image-alt-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-image-alt-ok" class="primary" data-i18n="Dialog.Apply">Apply</button>
+      </div>
     </div>
   </div>
 

@@ -1870,7 +1870,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -2571,6 +2571,11 @@
       markDirty();
       scheduleCollabSync();
       notifyHost("editing");
+      // BUG8-STATE-CONSISTENCY: the drag mutates width/height without a
+      // selectionchange, so the right panel's image inputs stayed stale
+      // until the user re-selected (same desync family BUG4 fixed for
+      // aria-pressed buttons). Re-mirror the live geometry into the panel.
+      syncRightPanelControls();
     }
   }
 
@@ -5482,6 +5487,47 @@
     applyObjectOp(value); // same wrapping values/classes as the objectOp path
     syncRightPanelControls();
   }
+  // BUG8-STATE-CONSISTENCY: alt-text editing. Plain images only — vector
+  // objects encode their spec JSON in alt, so their alt channel stays
+  // reserved. The ctx row, the image-alt-dialog and the right-panel input
+  // all funnel through applyImageAltText so the surfaces converge.
+  function plainImageSelection() {
+    const obj = selectedImageObject();
+    return obj && obj.matches && obj.matches("img") &&
+      !obj.classList.contains("vector-object") ? obj : null;
+  }
+  function applyImageAltText(value) {
+    const img = plainImageSelection();
+    if (!img || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageAlt"); return false; }
+    img.setAttribute("alt", String(value == null ? "" : value));
+    markObjectMutation();
+    syncRightPanelControls();
+    setStatus("Image alt text updated");
+    return true;
+  }
+  function openImageAltDialog() {
+    const img = plainImageSelection();
+    const dialog = document.getElementById("image-alt-dialog");
+    const input = document.getElementById("image-alt-input");
+    if (!dialog || !input) return;
+    if (!img || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageAlt"); return; }
+    input.value = img.getAttribute("alt") || "";
+    rememberFocus();
+    dialog.classList.add("open");
+    input.focus();
+  }
+  const imageAltOk = document.getElementById("btn-image-alt-ok");
+  if (imageAltOk) imageAltOk.addEventListener("click", () => {
+    const input = document.getElementById("image-alt-input");
+    applyImageAltText(input ? input.value : "");
+    closeDlg("image-alt-dialog");
+  });
+  const imageAltCancel = document.getElementById("btn-image-alt-cancel");
+  if (imageAltCancel) imageAltCancel.addEventListener("click", () => closeDlg("image-alt-dialog"));
+  const imageAltInput = document.getElementById("image-alt-input");
+  if (imageAltInput) imageAltInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); if (imageAltOk) imageAltOk.click(); }
+  });
   function applyImageFill(color) {
     const obj = selectedImageObject();
     if (!obj || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageFill"); return; }
@@ -5512,6 +5558,8 @@
       if (wIn) wIn.value = String(parseInt(obj.style.width, 10) || "");
       if (hIn) hIn.value = String(parseInt(obj.style.height, 10) || "");
     }
+    const altIn = document.getElementById("rp-image-alt");
+    if (altIn) altIn.value = obj.matches("img") ? (obj.getAttribute("alt") || "") : "";
     const opIn = document.getElementById("rp-image-opacity");
     if (opIn) {
       const o = parseFloat(window.getComputedStyle(obj).opacity);
@@ -5627,6 +5675,11 @@
   if (rpImageWrap) rpImageWrap.addEventListener("change", () => {
     if (READ_ONLY) return;
     applyImageWrap(rpImageWrap.value);
+  });
+  const rpImageAlt = document.getElementById("rp-image-alt");
+  if (rpImageAlt) rpImageAlt.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyImageAltText(rpImageAlt.value);
   });
   const rpImageFill = document.getElementById("rp-image-fill");
   if (rpImageFill) rpImageFill.addEventListener("change", () => {
@@ -7265,6 +7318,15 @@
       ctxMenu.querySelectorAll("[data-showif='trackchanges']").forEach((el) => {
         el.hidden = !trackChangesOn;
       });
+      // BUG8-STATE-CONSISTENCY: data-showif="image" gates alt-text editing
+      // on a plain image selection. Vector objects keep their alt attribute
+      // as the spec JSON channel, so they are excluded.
+      const ctxImageSel = selectedObject();
+      const hasImageSel = !!(ctxImageSel && ctxImageSel.matches &&
+        ctxImageSel.matches("img") && !ctxImageSel.classList.contains("vector-object"));
+      ctxMenu.querySelectorAll("[data-showif='image']").forEach((el) => {
+        el.hidden = !hasImageSel;
+      });
       refreshSpellSuggestionRows(misspellSpan);
       collapseAllCtxSubmenus();
       ctxMenu.hidden = false;
@@ -7350,6 +7412,36 @@
         openUpdateTocDialog();
       } else if (action === "PageBreakBefore") {
         emitCommand("insertPageBreak");
+        // BUG8-STATE-CONSISTENCY: ctx table ops route through the exact
+        // handlers the table-ops dialog uses, so a merge/row/col mutation
+        // converges to identical HTML on both surfaces.
+      } else if (action === "TableRowAbove") {
+        closeCtx();
+        insertTableRow(true);
+      } else if (action === "TableRowBelow") {
+        closeCtx();
+        insertTableRow(false);
+      } else if (action === "TableColLeft") {
+        closeCtx();
+        insertTableCol(true);
+      } else if (action === "TableColRight") {
+        closeCtx();
+        insertTableCol(false);
+      } else if (action === "TableDeleteRow") {
+        closeCtx();
+        deleteTableRow();
+      } else if (action === "TableDeleteCol") {
+        closeCtx();
+        deleteTableCol();
+      } else if (action === "TableMergeCells") {
+        closeCtx();
+        mergeTableCells();
+      } else if (action === "TableSplitCell") {
+        closeCtx();
+        splitTableCell();
+      } else if (action === "EditAltText") {
+        closeCtx();
+        openImageAltDialog();
         // AF8-INSERT-CTX-CLEANUP: OO-parity completion rows. Real DOM ops
         // where they exist (links, lists, tracked changes), wo: marker
         // events where a dialog slice is the follow-up (loud-stub contract).
@@ -9745,6 +9837,12 @@
     captureHistory();
     scheduleCollabSync();
     notifyHost("editing");
+    // BUG8-STATE-CONSISTENCY: applyChartSize is reachable from three
+    // surfaces (ribbon chart-design inputs, chartSize command, right
+    // panel). Re-mirror the new geometry into the other two so the
+    // surfaces converge instead of showing stale values.
+    syncRightPanelControls();
+    updateChartDesignState();
     setStatus("Chart size: " + w + "x" + h);
   }
   function updateChartDesignState() {

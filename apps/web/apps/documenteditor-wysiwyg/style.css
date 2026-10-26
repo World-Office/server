@@ -1342,6 +1342,11 @@ main {
   border-radius: 10px;
   padding: 20px 24px;
   min-width: 260px;
+  /* BUG8-STATE-CONSISTENCY: tall dialogs (help/settings/version history)
+     must never clip below the fold on small viewports (800x600) — clamp
+     the dialog box to the viewport and scroll its content instead. */
+  max-height: calc(100vh - 32px);
+  overflow: auto;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 
