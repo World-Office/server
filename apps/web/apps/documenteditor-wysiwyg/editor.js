@@ -3361,6 +3361,11 @@
         if (replyText) {
           addReply(el, TRACK_AUTHOR, replyText);
           replyTextarea.value = "";
+          // BUG7-UNDO-DEEP: a reply mutates persisted document content
+          // (data-replies is serialized with the HTML), so it must push a
+          // history entry like resolve/delete do — otherwise the reply is
+          // not undoable and gets silently baked into the next snapshot.
+          afterTrackEdit();
           renderCommentsList();
           openCommentsPanel();
         }

@@ -248,29 +248,35 @@ async function probe(page, name, opts) {
     }
     if (expectDepth >= 1) {
       assert.notEqual(afterHtml, beforeHtml, "op must actually change the DOM");
+    } else {
+      assert.equal(afterHtml, beforeHtml, "no-op op must not change the DOM");
     }
 
-    // Undo exactly once (JS click: the undo handler is what's under test;
-    // ribbon-tab switches after e.g. header insertion hide the button from
-    // Playwright's actionability check, which is not a history concern).
-    await clickJs(page, "btn-undo");
-    await page.waitForTimeout(150);
-    const h2 = await hist(page);
-    assert.equal(h2.u, h0.u, "one undo must consume exactly one entry");
-    assert.equal(h2.r, h1.r + 1, "undo must push the entry onto the redo branch");
-    const undoneHtml = await normHtml(page);
-    assert.equal(undoneHtml, beforeHtml,
-      "one undo must restore the pre-apply DOM");
-    if (afterUndo) await afterUndo(page);
+    if (expectDepth >= 1) {
+      // Undo exactly once (JS click: the undo handler is what's under test;
+      // ribbon-tab switches after e.g. header insertion hide the button from
+      // Playwright's actionability check, which is not a history concern).
+      await clickJs(page, "btn-undo");
+      await page.waitForTimeout(150);
+      const h2 = await hist(page);
+      assert.equal(h2.u, h0.u, "one undo must consume exactly one entry");
+      assert.equal(h2.r, h1.r + 1, "undo must push the entry onto the redo branch");
+      const undoneHtml = await normHtml(page);
+      assert.equal(undoneHtml, beforeHtml,
+        "one undo must restore the pre-apply DOM");
+      if (afterUndo) await afterUndo(page);
 
-    // Redo mirrors.
-    await clickJs(page, "btn-redo");
-    await page.waitForTimeout(150);
-    const h3 = await hist(page);
-    assert.equal(h3.u, h1.u, "redo must push the entry back onto undo");
-    assert.equal(h3.r, h1.r, "redo must consume its redo entry");
-    const redoneHtml = await normHtml(page);
-    assert.equal(redoneHtml, afterHtml, "one redo must restore the post-apply DOM");
+      // Redo mirrors.
+      await clickJs(page, "btn-redo");
+      await page.waitForTimeout(150);
+      const h3 = await hist(page);
+      assert.equal(h3.u, h1.u, "redo must push the entry back onto undo");
+      assert.equal(h3.r, h1.r, "redo must consume its redo entry");
+      const redoneHtml = await normHtml(page);
+      assert.equal(redoneHtml, afterHtml, "one redo must restore the post-apply DOM");
+    } else if (afterUndo) {
+      await afterUndo(page);
+    }
   });
 }
 
@@ -633,6 +639,212 @@ async function groupD(page) {
   });
 }
 
+// ------------------------------------------------- group e: review/collab --
+async function groupE(page) {
+  console.log("group e — review/collab");
+  const selBravo = (p) => selectWord(p, "bravo");
+
+  // Collapse the selection to a caret just inside the first matched element
+  // (accept/reject/resolve/delete operate on the element at the caret).
+  const caretInside = (p, sel) =>
+    p.evaluate((sel) => {
+      const el = document.querySelector(sel);
+      if (!el) throw new Error(`no element ${sel}`);
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      r.collapse(true);
+      const s = window.getSelection();
+      s.removeAllRanges();
+      s.addRange(r);
+    }, sel);
+
+  // Prime: insert a comment on "bravo" via the real dialog path.
+  const primeComment = async (p) => {
+    await selectWord(p, "bravo");
+    await clickCmd(p, "insertComment");
+    await p.fill("#comment-body", "needs review");
+    await clickId(p, "btn-comment-ok");
+    await p.waitForTimeout(150);
+  };
+
+  // Track-changes mode carries over between probes (resetDoc only resets
+  // content/history), so primes must SET the mode, not blind-toggle it.
+  const setTrack = async (p, on) => {
+    const cur = await p.evaluate(() =>
+      document.getElementById("editor").classList.contains("track-on"));
+    if (cur !== on) await clickJs(p, "sb-track-changes");
+  };
+
+  // Prime: switch track-changes on (mode state — no history push) and put
+  // the caret before "bravo" with editor focus for real keyboard input.
+  const primeTrackCaret = async (p) => {
+    await setTrack(p, true);
+    await p.evaluate(() => {
+      document.getElementById("editor").focus();
+      const root = document.getElementById("editor");
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) {
+        const i = node.data.indexOf("bravo");
+        if (i >= 0) {
+          const r = document.createRange();
+          r.setStart(node, i);
+          r.collapse(true);
+          const s = window.getSelection();
+          s.removeAllRanges();
+          s.addRange(r);
+          return;
+        }
+      }
+      throw new Error("bravo not found");
+    });
+  };
+
+  // Prime: a tracked insertion of "X" before "bravo" (real beforeinput path).
+  const primeTrackedInsert = async (p) => {
+    await primeTrackCaret(p);
+    await p.keyboard.type("X");
+    await p.waitForTimeout(150);
+  };
+
+  // Prime: a tracked deletion of "bravo" (selection + Backspace).
+  const primeTrackedDelete = async (p) => {
+    await setTrack(p, true);
+    await p.evaluate(() => document.getElementById("editor").focus());
+    await selectWord(p, "bravo");
+    await p.keyboard.press("Backspace");
+    await p.waitForTimeout(150);
+  };
+
+  await probe(page, "e1 insert comment on selection", {
+    select: selBravo,
+    apply: async (p) => {
+      await clickCmd(p, "insertComment");
+      await p.fill("#comment-body", "needs review");
+      await clickId(p, "btn-comment-ok");
+    },
+    afterUndo: async (p) => assert.equal(await p.evaluate(() =>
+      document.querySelector("#editor span.comment") === null), true,
+      "undo must unwrap the comment span"),
+  });
+
+  await probe(page, "e2 reply to comment thread", {
+    prime: primeComment,
+    apply: async (p) => {
+      await p.fill(".review-reply-input .reply-textarea", "agreed");
+      await p.evaluate(() => {
+        const btn = document.querySelector(".review-reply-input button.primary");
+        if (!btn) throw new Error("no reply post button");
+        btn.click();
+      });
+    },
+    afterUndo: async (p) => assert.equal(await p.evaluate(() =>
+      document.querySelector("#editor span.comment")
+        .getAttribute("data-replies")), null,
+      "undo must remove the reply (data-replies back to unset)"),
+  });
+
+  await probe(page, "e3 resolve comment", {
+    prime: primeComment,
+    apply: async (p) => {
+      await caretInside(p, "#editor span.comment");
+      await clickCmd(p, "resolveComment");
+    },
+    afterUndo: async (p) => assert.equal(await p.evaluate(() =>
+      document.querySelector("#editor span.comment")
+        .getAttribute("data-resolved")), null,
+      "undo must clear the resolved flag"),
+  });
+
+  await probe(page, "e4 delete comment", {
+    prime: primeComment,
+    apply: async (p) => {
+      await caretInside(p, "#editor span.comment");
+      await clickCmd(p, "deleteComment");
+    },
+    afterUndo: async (p) => assert.notEqual(await p.evaluate(() =>
+      document.querySelector("#editor span.comment")), null,
+      "undo must restore the comment span"),
+  });
+
+  // Mode toggles are state, not content: no history entry, no DOM change.
+  await probe(page, "e5 track-changes toggle on (no-op)", {
+    expectDepth: 0,
+    skipDepth: true,
+    prime: (p) => setTrack(p, false),
+    apply: (p) => clickJs(p, "sb-track-changes"),
+    afterUndo: async (p) => assert.equal(await p.evaluate(() =>
+      document.getElementById("sb-track-changes").getAttribute("aria-pressed")), "true",
+      "track toggle must flip aria-pressed without touching history"),
+  });
+
+  await probe(page, "e6 tracked insert (typing)", {
+    prime: primeTrackCaret,
+    apply: (p) => p.keyboard.type("X"),
+  });
+
+  await probe(page, "e7 tracked delete (selection+backspace)", {
+    prime: async (p) => {
+      await setTrack(p, true);
+      await p.evaluate(() => document.getElementById("editor").focus());
+    },
+    select: selBravo,
+    apply: (p) => p.keyboard.press("Backspace"),
+  });
+
+  await probe(page, "e8 accept tracked insert", {
+    prime: primeTrackedInsert,
+    apply: async (p) => {
+      await caretInside(p, "#editor ins.track-insert");
+      await clickCmd(p, "acceptTrackedChange");
+    },
+  });
+
+  await probe(page, "e9 reject tracked insert", {
+    prime: primeTrackedInsert,
+    apply: async (p) => {
+      await caretInside(p, "#editor ins.track-insert");
+      await clickCmd(p, "rejectTrackedChange");
+    },
+    afterUndo: async (p) => assert.notEqual(await p.evaluate(() =>
+      document.querySelector("#editor ins.track-insert")), null,
+      "undo must restore the tracked insertion"),
+  });
+
+  await probe(page, "e10 accept tracked delete", {
+    prime: primeTrackedDelete,
+    apply: async (p) => {
+      await caretInside(p, "#editor del.track-delete");
+      await clickCmd(p, "acceptTrackedChange");
+    },
+    afterUndo: async (p) => assert.notEqual(await p.evaluate(() =>
+      document.querySelector("#editor del.track-delete")), null,
+      "undo must restore the tracked deletion"),
+  });
+
+  await probe(page, "e11 reject tracked delete", {
+    prime: primeTrackedDelete,
+    apply: async (p) => {
+      await caretInside(p, "#editor del.track-delete");
+      await clickCmd(p, "rejectTrackedChange");
+    },
+    afterUndo: async (p) => assert.notEqual(await p.evaluate(() =>
+      document.querySelector("#editor del.track-delete")), null,
+      "undo must restore the tracked deletion"),
+  });
+
+  // Toggle back off (no-op) so group F runs with tracking disabled.
+  await probe(page, "e12 track-changes toggle off (no-op)", {
+    expectDepth: 0,
+    skipDepth: true,
+    prime: (p) => setTrack(p, true),
+    apply: (p) => clickJs(p, "sb-track-changes"),
+    afterUndo: async (p) => assert.equal(await p.evaluate(() =>
+      document.getElementById("sb-track-changes").getAttribute("aria-pressed")), "false",
+      "track toggle must flip aria-pressed without touching history"),
+  });
+}
+
 // ------------------------------------------------------------------ main --
 async function main() {
   const port = await freePort(PORT);
@@ -656,6 +868,7 @@ async function main() {
     await groupB(page);
     await groupC(page);
     await groupD(page);
+    await groupE(page);
 
     await browser.close();
   } finally {
