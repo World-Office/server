@@ -1488,26 +1488,34 @@
     let node = sel.anchorNode;
     if (node && node.nodeType === 3) node = node.parentElement;
     let list = node && node.closest ? node.closest("#editor ul, #editor ol") : null;
-    if (!list) {
-      try { document.execCommand(ordered ? "insertOrderedList" : "insertUnorderedList"); } catch (err) { return; }
-      node = sel.anchorNode;
-      if (node && node.nodeType === 3) node = node.parentElement;
-      list = node && node.closest ? node.closest("#editor ul, #editor ol") : null;
-      if (!list) return;
+    // The execCommand paths below (creation / UL<->OL conversion) fire input
+    // events; suppress their captures so conversion + restyle land as ONE
+    // undoable step (see suppressInputCapture at the history machinery).
+    suppressInputCapture = true;
+    try {
+      if (!list) {
+        try { document.execCommand(ordered ? "insertOrderedList" : "insertUnorderedList"); } catch (err) { return; }
+        node = sel.anchorNode;
+        if (node && node.nodeType === 3) node = node.parentElement;
+        list = node && node.closest ? node.closest("#editor ul, #editor ol") : null;
+        if (!list) return;
+      }
+      if (list.tagName !== (ordered ? "OL" : "UL")) {
+        // BUG2-RUNTIME-SMOKE: mismatched type (numbering style on a UL, bullet
+        // style on an OL) used to silently no-op while the dirty/history
+        // pipeline still ran. Convert via the creation execCommand, then restyle.
+        try {
+          document.execCommand(ordered ? "insertOrderedList" : "insertUnorderedList");
+        } catch (err) { return; }
+        node = sel.anchorNode;
+        if (node && node.nodeType === 3) node = node.parentElement;
+        list = node && node.closest ? node.closest("#editor ul, #editor ol") : null;
+        if (!list) return;
+      }
+      if (list.tagName === (ordered ? "OL" : "UL")) list.style.listStyleType = type;
+    } finally {
+      suppressInputCapture = false;
     }
-    if (list.tagName !== (ordered ? "OL" : "UL")) {
-      // BUG2-RUNTIME-SMOKE: mismatched type (numbering style on a UL, bullet
-      // style on an OL) used to silently no-op while the dirty/history
-      // pipeline still ran. Convert via the creation execCommand, then restyle.
-      try {
-        document.execCommand(ordered ? "insertOrderedList" : "insertUnorderedList");
-      } catch (err) { return; }
-      node = sel.anchorNode;
-      if (node && node.nodeType === 3) node = node.parentElement;
-      list = node && node.closest ? node.closest("#editor ul, #editor ol") : null;
-      if (!list) return;
-    }
-    if (list.tagName === (ordered ? "OL" : "UL")) list.style.listStyleType = type;
     markDirty();
     captureHistory();
     scheduleCollabSync();
@@ -1621,6 +1629,10 @@
   const undoStack = [];      // states we can go BACK to (oldest first)
   const redoStack = [];      // states we can go FORWARD to (newest first)
   let lastSnapshot = null;   // DOM state the chain currently reflects
+  // Batched-command guard: while set, input events must NOT capture mid-step
+  // (applyListStyle conversion + restyle land as ONE undoable step, same
+  // contract as the replace-all bulkEdit batch in the find-replace closure).
+  let suppressInputCapture = false;
 
   // Capture the state we are LEAVING, then remember the new one. Call
   // after the DOM has settled (input, list toggle, table insert) so
@@ -1685,6 +1697,26 @@
     if (redoBtn) redoBtn.disabled = READ_ONLY || redoStack.length === 0;
   }
 
+  // BUG7-UNDO-DEEP: read-only automation hook over the history chain (same
+  // spirit as __WO_FLAT_HTML__) — the undo-deep probe asserts exact depths.
+  window.__WO_HISTORY__ = {
+    get undoDepth() { return undoStack.length; },
+    get redoDepth() { return redoStack.length; },
+    get snapshot() { return lastSnapshot; },
+    reset(html) {
+      undoStack.length = 0;
+      redoStack.length = 0;
+      if (typeof html === "string") {
+        editor.innerHTML = html;
+        hydrateVectorObjects();
+        paginateQuiet();
+      }
+      lastSnapshot = editor.innerHTML;
+      updateActiveStates();
+      updateUndoRedoState();
+    },
+  };
+
   function updateActiveStates() {
     document.querySelectorAll("button[data-cmd]").forEach((btn) => {
       const cmd = btn.dataset.cmd;
@@ -1741,7 +1773,10 @@
     if (sizeEl) {
       let size = "";
       try { size = document.queryCommandValue("fontSize"); } catch (err) { /* best effort */ }
-      if (size && sizeEl.querySelector('option[value="' + size + '"]')) sizeEl.value = size;
+      // Unresolved size -> placeholder, never a stale previous value
+      // (BUG7-UNDO-DEEP: undo restores toolbar state too).
+      sizeEl.value =
+        size && sizeEl.querySelector('option[value="' + size + '"]') ? size : "";
     }
     const famEl = document.getElementById("font-family");
     if (famEl) {
@@ -1753,11 +1788,14 @@
       // `system-ui, -apple-system, "Segoe UI", ...` whose embedded quotes
       // would make a querySelector value argument invalid (and spam errors
       // on every selectionchange).
+      // No match (default body font after undo) -> placeholder, not stale.
+      let matched = "";
       if (fam) {
         for (let i = 0; i < famEl.options.length; i++) {
-          if (famEl.options[i].value === fam) { famEl.value = fam; break; }
+          if (famEl.options[i].value === fam) { matched = fam; break; }
         }
       }
+      famEl.value = matched;
     }
     // Line spacing: resolve the block's computed line-height into the
     // nearest preset in the dropdown (default 1.0 / single = placeholder).
@@ -3323,6 +3361,11 @@
         if (replyText) {
           addReply(el, TRACK_AUTHOR, replyText);
           replyTextarea.value = "";
+          // BUG7-UNDO-DEEP: a reply mutates persisted document content
+          // (data-replies is serialized with the HTML), so it must push a
+          // history entry like resolve/delete do — otherwise the reply is
+          // not undoable and gets silently baked into the next snapshot.
+          afterTrackEdit();
           renderCommentsList();
           openCommentsPanel();
         }
@@ -7035,11 +7078,12 @@
     const custom = document.getElementById("pagecolor-custom");
     if (custom && pageColorPicked && pageColorPicked.startsWith("#")) custom.value = pageColorPicked;
   });
-  // Note / page-field / header-footer authoring buttons (F-073/F-074/F-084/F-085)
-  for (const [id, cmd] of [["btn-footnote", "insertFootnote"], ["btn-endnote", "insertEndnote"], ["btn-pagenumber", "insertPageNumber"], ["btn-header", "insertHeader"], ["btn-footer", "insertFooter"]]) {
-    const b = document.getElementById(id);
-    if (b) b.addEventListener("click", () => emitCommand(cmd));
-  }
+  // Note / page-field / header-footer authoring buttons (F-073/F-074/F-084/F-085):
+  // these carry data-cmd in index.html and are wired once by the generic
+  // data-cmd dispatcher above — a dedicated emitCommand listener here ran
+  // every command twice (doubled footnote/endnote/page-number markers,
+  // doubled history entries; same bug class as the rb-menu double-wiring).
+
   const symbolClose = document.getElementById("btn-symbol-close");
   if (symbolClose) symbolClose.addEventListener("click", () => {
     const d = document.getElementById("symbol-dialog");
@@ -8365,7 +8409,7 @@
     // Replace-all runs a batch of execCommand edits; the whole batch is
     // captured as ONE history step after the loop (see doReplaceAll), so
     // suppress the per-step capture here while it runs.
-    if (bulkEdit) return;
+    if (bulkEdit || suppressInputCapture) return;
     markDirty();
     autoConvertListMarker();
     // Snapshot AFTER the DOM settled so the whole smart-list conversion
