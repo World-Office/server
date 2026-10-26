@@ -1471,6 +1471,18 @@
       list = node && node.closest ? node.closest("#editor ul, #editor ol") : null;
       if (!list) return;
     }
+    if (list.tagName !== (ordered ? "OL" : "UL")) {
+      // BUG2-RUNTIME-SMOKE: mismatched type (numbering style on a UL, bullet
+      // style on an OL) used to silently no-op while the dirty/history
+      // pipeline still ran. Convert via the creation execCommand, then restyle.
+      try {
+        document.execCommand(ordered ? "insertOrderedList" : "insertUnorderedList");
+      } catch (err) { return; }
+      node = sel.anchorNode;
+      if (node && node.nodeType === 3) node = node.parentElement;
+      list = node && node.closest ? node.closest("#editor ul, #editor ol") : null;
+      if (!list) return;
+    }
     if (list.tagName === (ordered ? "OL" : "UL")) list.style.listStyleType = type;
     markDirty();
     captureHistory();
