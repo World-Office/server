@@ -1789,7 +1789,14 @@
     pop.style.left = Math.round(left) + "px";
     pop.style.top = Math.round(top) + "px";
   }
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog"];
+  // BUG1-STATIC-AUDIT: every .dialog-overlay in index.html is a modal
+  // overlay (aria-modal="true") and belongs in DIALOG_IDS so getOpenDialog()
+  // (modal Tab trap, WCAG focus clamp) sees it. Popovers that must stay
+  // non-modal use .insert-pop with aria-modal="false" and are deliberately
+  // absent (see anchorInsertPop above): table/image insert pops, and
+  // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
+  // styling (aria-modal="false", hidden-toggle instead of .open).
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -1797,6 +1804,34 @@
     }
     return null;
   }
+  // BUG1-STATIC-AUDIT: Esc closes the open modal overlay. Esc handling was
+  // ad-hoc before (only version-history, ai-review, protect, photo-editor,
+  // HF mode, ink select had listeners); the other 36 registered dialogs had
+  // no Esc path at all. DIALOG_CLOSE maps ids with bespoke close functions
+  // (extra state cleanup); everything else uses closeDlg (.open removal +
+  // restoreFocus), which is equivalent to the inline close handlers. The
+  // bespoke listeners stay; close calls are idempotent when both run.
+  const DIALOG_CLOSE = {
+    "find-dialog": closeFindDialog,
+    "table-ops-dialog": closeTableOpsDialog,
+    "borders-dialog": closeBordersDialog,
+    "bookmark-dialog": closeBookmarkDialog,
+    "columns-dialog": closeColumnsDialog,
+    "comment-dialog": closeCommentDialog,
+    "crossref-dialog": closeCrossrefDialog,
+    "object-dialog": closeObjectDialog,
+    "plugins-dialog": closePluginsDialog,
+    "toc-dialog": closeTocDialog,
+  };
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Escape") return;
+    const dialog = getOpenDialog();
+    if (!dialog) return;
+    ev.preventDefault();
+    const closer = DIALOG_CLOSE[dialog.id];
+    if (closer) closer();
+    else closeDlg(dialog.id);
+  });
   // Trap Tab / Shift+Tab inside the open modal overlay. Fully manual:
   // every Tab is intercepted and focus is moved within the dialog's own
   // focusables (with wrap-around). A boundary-only trap still lets native
@@ -6385,12 +6420,11 @@
   // --- insert misc: horizontal rule / page break / symbol picker -----
   const hrBtn = document.getElementById("btn-hr");
   if (hrBtn) hrBtn.addEventListener("click", () => emitCommand("insertHR"));
-  const pbBtn = document.getElementById("btn-page-break");
-  if (pbBtn) pbBtn.addEventListener("click", () => emitCommand("insertPageBreak"));
-  const sbBtn = document.getElementById("btn-section-break");
-  if (sbBtn) sbBtn.addEventListener("click", () => emitCommand("insertSectionBreak"));
-  const colsBtn = document.getElementById("btn-columns");
-  if (colsBtn) colsBtn.addEventListener("click", openColumnsDialog);
+  // BUG1-STATIC-AUDIT: btn-page-break/btn-section-break/btn-columns wiring
+  // was dead (no such ids in index.html). All three commands stay reachable
+  // through data-cmd routes: Layout > Breaks (insertPageBreak /
+  // insertSectionBreak) and Layout > Columns > Custom columns
+  // (openColumnsDialog).
   const tocBtn = document.getElementById("btn-toc");
   if (tocBtn) tocBtn.addEventListener("click", openTocDialog);
   const objBtn = document.getElementById("btn-object");
@@ -7544,17 +7578,10 @@
     if (READ_ONLY || !fontFamilySel.value) return;
     emitCommand("fontName", fontFamilySel.value);
   });
-  // Quick-access duplicates in the app row: same commands, mirrored state.
-  const fontSizeQa = document.getElementById("font-size-qa");
-  if (fontSizeQa) fontSizeQa.addEventListener("change", () => {
-    if (READ_ONLY || !fontSizeQa.value) return;
-    emitCommand("fontSize", fontSizeQa.value);
-  });
-  const fontFamilyQa = document.getElementById("font-family-qa");
-  if (fontFamilyQa) fontFamilyQa.addEventListener("change", () => {
-    if (READ_ONLY || !fontFamilyQa.value) return;
-    emitCommand("fontName", fontFamilyQa.value);
-  });
+  // BUG1-STATIC-AUDIT: font-size-qa/font-family-qa wiring was dead — the
+  // quick-access font selects were removed from the HTML on 2026-09-12 (see
+  // the menu-bar comment); the ribbon font-family/font-size selects carry
+  // these commands.
   const textColor = document.getElementById("text-color");
   if (textColor) textColor.addEventListener("change", () => {
     if (READ_ONLY) return;
@@ -7771,6 +7798,22 @@
       if (k === "u") {
         ev.preventDefault();
         emitCommand("underline");
+        return;
+      }
+      // Zoom: Ctrl+Minus out, Ctrl+Plus (or Ctrl+=, the unshifted key on
+      // US layouts) in. Keyboard equivalents of the statusbar zoom buttons,
+      // as declared via aria-keyshortcuts on #btn-zoom-out / #btn-zoom-in.
+      // ev.code matches like the brackets above, so numeric-keypad and
+      // non-US layouts resolve; applyZoom() clamps to 0.5–2.
+      if (
+        ev.code === "Minus" || ev.code === "Equal" ||
+        ev.code === "NumpadSubtract" || ev.code === "NumpadAdd" ||
+        k === "-" || k === "+" || k === "="
+      ) {
+        ev.preventDefault();
+        const out = ev.code === "Minus" || ev.code === "NumpadSubtract" || k === "-";
+        zoomLevel += out ? -0.1 : 0.1;
+        applyZoom();
         return;
       }
     }
