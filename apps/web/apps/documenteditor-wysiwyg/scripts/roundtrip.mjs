@@ -242,7 +242,8 @@ async function main() {
       const h = document.createElement("div");
       h.className = "img-resize-handle";
       h.setAttribute("aria-pressed", "false");
-      ed.appendChild(h); // exactly what showImageResizeHandle does
+      ed.appendChild(h); // synthetic editor-internal (the .img-resize-handle
+                         // class is stripped by stripEditorInternals on save)
       return !!ed.querySelector(":scope > .img-resize-handle");
     });
     check("internal leak bait planted (resize handle in live DOM)", bait);
