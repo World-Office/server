@@ -193,6 +193,36 @@ const emitCmd = (page, cmd, value) =>
     window.dispatchEvent(new CustomEvent("wo-command", { detail: { command: cmd, value } }));
   }, { cmd, value });
 
+/** Track-changes mode carries over between probes (resetDoc only resets
+ *  content/history), so primes must SET the mode, not blind-toggle it. */
+const trackOn = (p) => p.evaluate(() =>
+  document.getElementById("editor").classList.contains("track-on"));
+const setTrack = async (p, on) => {
+  if ((await trackOn(p)) !== on) await clickJs(p, "sb-track-changes");
+};
+
+/** Collapse the selection to a caret just before the first text match. */
+const caretBeforeWord = (p, word) =>
+  p.evaluate((word) => {
+    document.getElementById("editor").focus();
+    const root = document.getElementById("editor");
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      const i = node.data.indexOf(word);
+      if (i >= 0) {
+        const r = document.createRange();
+        r.setStart(node, i);
+        r.collapse(true);
+        const s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+        return;
+      }
+    }
+    throw new Error(`word ${JSON.stringify(word)} not found`);
+  }, word);
+
 /** Drive a toolbar <select> (font family / size) through its change path. */
 const setSelect = (page, id, value) =>
   page.evaluate(({ id, value }) => {
@@ -217,7 +247,7 @@ const setVault = (page, id, value) =>
  * depth delta -> undo once -> DOM match -> redo -> DOM match.
  */
 async function probe(page, name, opts) {
-  const { prime, apply, expectDepth = 1, select, afterUndo, skipDepth = false } = opts;
+  const { prime, apply, expectDepth = 1, select, afterApply, afterUndo, skipDepth = false } = opts;
   await step(name, async () => {
     await resetDoc(page);
     if (prime) await prime(page);
@@ -251,6 +281,7 @@ async function probe(page, name, opts) {
     } else {
       assert.equal(afterHtml, beforeHtml, "no-op op must not change the DOM");
     }
+    if (afterApply) await afterApply(page);
 
     if (expectDepth >= 1) {
       // Undo exactly once (JS click: the undo handler is what's under test;
@@ -667,37 +698,11 @@ async function groupE(page) {
     await p.waitForTimeout(150);
   };
 
-  // Track-changes mode carries over between probes (resetDoc only resets
-  // content/history), so primes must SET the mode, not blind-toggle it.
-  const setTrack = async (p, on) => {
-    const cur = await p.evaluate(() =>
-      document.getElementById("editor").classList.contains("track-on"));
-    if (cur !== on) await clickJs(p, "sb-track-changes");
-  };
-
   // Prime: switch track-changes on (mode state — no history push) and put
   // the caret before "bravo" with editor focus for real keyboard input.
   const primeTrackCaret = async (p) => {
     await setTrack(p, true);
-    await p.evaluate(() => {
-      document.getElementById("editor").focus();
-      const root = document.getElementById("editor");
-      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-      let node;
-      while ((node = walker.nextNode())) {
-        const i = node.data.indexOf("bravo");
-        if (i >= 0) {
-          const r = document.createRange();
-          r.setStart(node, i);
-          r.collapse(true);
-          const s = window.getSelection();
-          s.removeAllRanges();
-          s.addRange(r);
-          return;
-        }
-      }
-      throw new Error("bravo not found");
-    });
+    await caretBeforeWord(p, "bravo");
   };
 
   // Prime: a tracked insertion of "X" before "bravo" (real beforeinput path).
@@ -845,6 +850,97 @@ async function groupE(page) {
   });
 }
 
+// ------------------------------------------------------- group f: paste --
+async function groupF(page) {
+  console.log("group f — paste + select all");
+  const selBravo = (p) => selectWord(p, "bravo");
+
+  // Synthetic rich paste through the editor's paste-event listener
+  // (the handler reads e.clipboardData regardless of event trust).
+  const pasteHtml = (p, html) =>
+    p.evaluate((html) => {
+      const ed = document.getElementById("editor");
+      const dt = new DataTransfer();
+      dt.setData("text/html", html);
+      ed.dispatchEvent(new ClipboardEvent("paste", {
+        clipboardData: dt, bubbles: true, cancelable: true,
+      }));
+    }, html);
+
+  await probe(page, "f1 rich paste replaces selection", {
+    select: selBravo,
+    apply: (p) => pasteHtml(p, "<p>omega sigma</p>"),
+  });
+
+  await probe(page, "f2 paste sanitizer strips hostile markup", {
+    select: selBravo,
+    apply: (p) => pasteHtml(p,
+      '<p>safe<script>window.__pwned=(window.__pwned||0)+1</script></p>' +
+      '<p><a href="javascript:alert(1)">evil link</a>' +
+      '<b onmouseover="alert(2)">evil bold</b></p>'),
+    afterApply: async (p) => {
+      const clean = await p.evaluate(() => {
+        const ed = document.getElementById("editor");
+        const attrs = (el) => Array.from(el.attributes).map((a) => a.name);
+        return {
+          script: ed.querySelector("script") === null,
+          notRun: window.__pwned === undefined,
+          hrefsOk: Array.from(ed.querySelectorAll("[href]")).every(
+            (a) => !String(a.getAttribute("href")).startsWith("javascript:")),
+          noOnAttrs: Array.from(ed.querySelectorAll("*")).every(
+            (el) => attrs(el).every((n) => !n.startsWith("on"))),
+          pasted: ed.textContent.indexOf("safe") !== -1,
+        };
+      });
+      assert.equal(clean.script, true, "script tag must be stripped");
+      assert.equal(clean.notRun, true, "stripped script must not execute");
+      assert.equal(clean.hrefsOk, true, "javascript: hrefs must be stripped");
+      assert.equal(clean.noOnAttrs, true, "on* attributes must be stripped");
+      assert.equal(clean.pasted, true, "benign pasted text must survive");
+    },
+  });
+
+  // Real clipboard paste (trusted Ctrl+V): plain text takes the native path.
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await probe(page, "f3 plain-text paste via real Ctrl+V", {
+    select: selBravo,
+    apply: async (p) => {
+      await p.evaluate(() =>
+        navigator.clipboard.writeText("zulu yankee"));
+      await p.keyboard.press("Control+v");
+    },
+  });
+
+  // Select-all itself must not push (dedupe); the follow-up edit that uses
+  // the whole-document selection must land as exactly ONE entry.
+  await probe(page, "f4 select-all then bold is one entry", {
+    apply: async (p) => {
+      await clickCmd(p, "selectAll");
+      await clickCmd(p, "bold");
+    },
+  });
+
+  // Tracked rich paste: beforeinput insertFromPaste wraps in <ins> (F-063).
+  await probe(page, "f5 tracked rich paste wraps in ins", {
+    prime: async (p) => {
+      await setTrack(p, true);
+      await caretBeforeWord(p, "bravo");
+    },
+    apply: (p) => p.evaluate(() => {
+      const ed = document.getElementById("editor");
+      const dt = new DataTransfer();
+      dt.setData("text/html", "<b>tracked paste</b>");
+      ed.dispatchEvent(new InputEvent("beforeinput", {
+        inputType: "insertFromPaste", data: null, dataTransfer: dt,
+        bubbles: true, cancelable: true,
+      }));
+    }),
+    afterApply: async (p) => assert.notEqual(await p.evaluate(() =>
+      document.querySelector("#editor ins.track-insert")), null,
+      "tracked paste must wrap pasted content in ins.track-insert"),
+  });
+}
+
 // ------------------------------------------------------------------ main --
 async function main() {
   const port = await freePort(PORT);
@@ -869,6 +965,7 @@ async function main() {
     await groupC(page);
     await groupD(page);
     await groupE(page);
+    await groupF(page);
 
     await browser.close();
   } finally {
