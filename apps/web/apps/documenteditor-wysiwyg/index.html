@@ -973,6 +973,10 @@
             <input type="color" id="rp-table-border-color" value="#000000">
           </div>
           <div class="rp-group">
+            <label for="rp-table-border-width" data-i18n="RightPanel.BorderWidth">Border width (pt)</label>
+            <input type="number" id="rp-table-border-width" min="0.5" step="0.5" value="1">
+          </div>
+          <div class="rp-group">
             <label for="rp-table-background" data-i18n="RightPanel.BackgroundColor">Background</label>
             <input type="color" id="rp-table-background" value="#ffffff">
           </div>
@@ -1287,6 +1291,22 @@
         <button id="op-del-col" data-i18n="Table.DeleteCol">Delete column</button>
         <button id="op-merge" data-i18n="Table.MergeCells">Merge cells</button>
         <button id="op-split" data-i18n="Table.SplitCell">Split cell</button>
+      </div>
+      <div class="dialog-field table-ops-style">
+        <label for="table-ops-border-style" data-i18n="RightPanel.BorderStyle">Border style</label>
+        <select id="table-ops-border-style">
+          <option value="solid" data-i18n="RightPanel.BorderSolid">Solid</option>
+          <option value="dashed" data-i18n="RightPanel.BorderDashed">Dashed</option>
+          <option value="dotted" data-i18n="RightPanel.BorderDotted">Dotted</option>
+          <option value="double" data-i18n="RightPanel.BorderDouble">Double</option>
+          <option value="none" data-i18n="RightPanel.BorderNone">None</option>
+        </select>
+        <label for="table-ops-border-color" data-i18n="RightPanel.BorderColor">Border color</label>
+        <input type="color" id="table-ops-border-color" value="#000000">
+        <label for="table-ops-border-width" data-i18n="RightPanel.BorderWidth">Border width (pt)</label>
+        <input type="number" id="table-ops-border-width" min="0.5" step="0.5" value="1">
+        <label for="table-ops-background" data-i18n="RightPanel.BackgroundColor">Background</label>
+        <input type="color" id="table-ops-background" value="#ffffff">
       </div>
       <div class="dialog-actions">
         <button id="btn-table-ops-close" data-i18n="Dialog.Close">Close</button>

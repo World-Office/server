@@ -3933,6 +3933,24 @@
     const btn = document.getElementById(id);
     if (btn) btn.addEventListener("click", () => { tableOps[id](); closeTableOpsDialog(); });
   });
+  // BUG8-STATE-CONSISTENCY: the table-ops dialog owns the same border and
+  // background surfaces as the right panel; both funnel through
+  // applyTableBorder/applyTableBackground so the mutations converge.
+  const tableOpsBorderApply = () => {
+    const styleSel = document.getElementById("table-ops-border-style");
+    if (!styleSel) return;
+    const colorIn = document.getElementById("table-ops-border-color");
+    const widthIn = document.getElementById("table-ops-border-width");
+    applyTableBorder(styleSel.value, colorIn && colorIn.value, widthIn && widthIn.value);
+  };
+  ["table-ops-border-style", "table-ops-border-color", "table-ops-border-width"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("change", tableOpsBorderApply);
+  });
+  const tableOpsBackground = document.getElementById("table-ops-background");
+  if (tableOpsBackground) tableOpsBackground.addEventListener("change", () => {
+    applyTableBackground(tableOpsBackground.value);
+  });
   const tableOpsClose = document.getElementById("btn-table-ops-close");
   if (tableOpsClose) tableOpsClose.addEventListener("click", closeTableOpsDialog);
   document.getElementById("btn-image").addEventListener("click", insertImage);
@@ -5355,14 +5373,16 @@
   function pxToPt(px) { return Math.round((parseFloat(px) || 0) * 0.75); }
 
   // -- Table section ---------------------------------------------------
-  function applyTableBorder(style, color) {
+  function applyTableBorder(style, color, widthPt) {
     const table = selectedTable();
     if (!table || READ_ONLY) { setStatus(t("Status.NotAvailable") + " tableBorder"); return; }
-    const border = style === "none" ? "none" : "1pt " + style + " " + (color || "#000000");
+    const pt = Math.max(0.5, parseFloat(widthPt) || 1);
+    const border = style === "none" ? "none" : pt + "pt " + style + " " + (color || "#000000");
     Array.prototype.forEach.call(table.querySelectorAll("td, th"), (cell) => {
       cell.style.border = border;
     });
     markObjectMutation();
+    syncRightPanelControls();
     setStatus("Table border: " + style);
   }
   function applyTableBackground(color) {
@@ -5372,6 +5392,7 @@
       cell.style.backgroundColor = color || "";
     });
     markObjectMutation();
+    syncRightPanelControls();
     setStatus("Table background: " + color);
   }
   // No per-row/col resize machinery exists (table ops only insert/delete),
@@ -5410,6 +5431,11 @@
     }
     const colorIn = document.getElementById("rp-table-border-color");
     if (cs && colorIn && csToHex(cs.borderTopColor)) colorIn.value = csToHex(cs.borderTopColor);
+    const widthIn = document.getElementById("rp-table-border-width");
+    if (cs && widthIn) {
+      const w = parseFloat(cs.borderTopWidth);
+      if (w) widthIn.value = String(Math.max(0.5, pxToPt(w)));
+    }
     const bgIn = document.getElementById("rp-table-background");
     if (cs && bgIn && csToHex(cs.backgroundColor)) bgIn.value = csToHex(cs.backgroundColor);
     const rowIn = document.getElementById("rp-table-row-height");
@@ -5633,6 +5659,15 @@
   if (rpTableBorderColor) rpTableBorderColor.addEventListener("change", () => {
     if (READ_ONLY) return;
     applyTableBorder(rpTableBorderStyle ? rpTableBorderStyle.value : "solid", rpTableBorderColor.value);
+  });
+  const rpTableBorderWidth = document.getElementById("rp-table-border-width");
+  if (rpTableBorderWidth) rpTableBorderWidth.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyTableBorder(
+      rpTableBorderStyle ? rpTableBorderStyle.value : "solid",
+      rpTableBorderColor ? rpTableBorderColor.value : undefined,
+      rpTableBorderWidth.value
+    );
   });
   const rpTableBackground = document.getElementById("rp-table-background");
   if (rpTableBackground) rpTableBackground.addEventListener("change", () => {
