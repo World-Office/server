@@ -534,7 +534,14 @@ async function probeChartPairs(port, pageA, pageB) {
         undefined,
         { timeout: 4000 },
       );
-      await page.click('.ribbon-page[data-tab="chart-design"] [data-cmd="chartElement"][data-value="title"]');
+      // Synthetic click: the menu can auto-close between the visibility
+      // wait and Playwright's actionability checks (race with the global
+      // outside-click handler); the cmd dispatcher only needs the event.
+      await page.evaluate(() => {
+        document
+          .querySelector('.ribbon-page[data-tab="chart-design"] [data-cmd="chartElement"][data-value="title"]')
+          .click();
+      });
       await page.waitForTimeout(150);
     },
     chartFingerprint);
