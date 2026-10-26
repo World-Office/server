@@ -5650,25 +5650,19 @@
 
   // Table section wiring.
   const rpTableBorderStyle = document.getElementById("rp-table-border-style");
-  if (rpTableBorderStyle) rpTableBorderStyle.addEventListener("change", () => {
-    const colorIn = document.getElementById("rp-table-border-color");
-    if (READ_ONLY) return;
-    applyTableBorder(rpTableBorderStyle.value, colorIn && colorIn.value);
-  });
   const rpTableBorderColor = document.getElementById("rp-table-border-color");
-  if (rpTableBorderColor) rpTableBorderColor.addEventListener("change", () => {
-    if (READ_ONLY) return;
-    applyTableBorder(rpTableBorderStyle ? rpTableBorderStyle.value : "solid", rpTableBorderColor.value);
-  });
   const rpTableBorderWidth = document.getElementById("rp-table-border-width");
-  if (rpTableBorderWidth) rpTableBorderWidth.addEventListener("change", () => {
+  const rpTableBorderApply = () => {
     if (READ_ONLY) return;
     applyTableBorder(
       rpTableBorderStyle ? rpTableBorderStyle.value : "solid",
       rpTableBorderColor ? rpTableBorderColor.value : undefined,
-      rpTableBorderWidth.value
+      rpTableBorderWidth ? rpTableBorderWidth.value : undefined
     );
-  });
+  };
+  if (rpTableBorderStyle) rpTableBorderStyle.addEventListener("change", rpTableBorderApply);
+  if (rpTableBorderColor) rpTableBorderColor.addEventListener("change", rpTableBorderApply);
+  if (rpTableBorderWidth) rpTableBorderWidth.addEventListener("change", rpTableBorderApply);
   const rpTableBackground = document.getElementById("rp-table-background");
   if (rpTableBackground) rpTableBackground.addEventListener("change", () => {
     if (READ_ONLY) return;
