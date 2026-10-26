@@ -851,6 +851,11 @@
   // remove ``style="direction:rtl"``. Both converters round-trip the
   // property (DOCX w:bidi / ODF style:writing-mode) and the sanitizer's
   // style whitelist keeps ``direction`` on save.
+  // BUG9 (BUG3 follow-up): the toggle ALSO emits the standard ``dir``
+  // attribute — that is the attr the Rust converter (wo-html block_direction,
+  // F-041) parses, so direction survives conversion even when the inline
+  // style is sanitized away. data-textdir keeps carrying the vertical
+  // text-direction state (applyTextDirection); dir carries bidi direction.
   function blocksUnderSelection(sel) {
     // Shared block resolver for block-level commands (line spacing, RTL
     // direction). select-all yields startContainer === editor so the walk
@@ -880,8 +885,13 @@
     if (blocks.length === 0) return;
     const anyRtl = blocks.some((b) => b.style.direction === "rtl");
     blocks.forEach((el) => {
-      if (anyRtl) el.style.removeProperty("direction");
-      else el.style.setProperty("direction", "rtl");
+      if (anyRtl) {
+        el.style.removeProperty("direction");
+        el.removeAttribute("dir");
+      } else {
+        el.style.setProperty("direction", "rtl");
+        el.setAttribute("dir", "rtl");
+      }
     });
     markDirty();
     captureHistory();

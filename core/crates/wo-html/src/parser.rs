@@ -101,17 +101,33 @@ fn block_borders(node: &roxmltree::Node) -> Option<ParagraphBorders> {
                         color: parts[2].to_string(),
                     };
                     match side {
-                        "top" => { borders.top = Some(border); found = true; }
-                        "bottom" => { borders.bottom = Some(border); found = true; }
-                        "left" => { borders.left = Some(border); found = true; }
-                        "right" => { borders.right = Some(border); found = true; }
+                        "top" => {
+                            borders.top = Some(border);
+                            found = true;
+                        }
+                        "bottom" => {
+                            borders.bottom = Some(border);
+                            found = true;
+                        }
+                        "left" => {
+                            borders.left = Some(border);
+                            found = true;
+                        }
+                        "right" => {
+                            borders.right = Some(border);
+                            found = true;
+                        }
                         _ => {}
                     }
                 }
             }
         }
     }
-    if found { Some(borders) } else { None }
+    if found {
+        Some(borders)
+    } else {
+        None
+    }
 }
 
 const VOID_ELEMENTS: &[&str] = &[
@@ -258,10 +274,9 @@ impl HtmlParser {
 
     fn escape_ampersands(html: &str) -> String {
         let mut out = String::with_capacity(html.len());
-        let bytes = html.as_bytes();
-        let mut i = 0;
-        while i < bytes.len() {
-            if bytes[i] == b'&' {
+        let chars = html.char_indices();
+        for (i, c) in chars {
+            if c == '&' {
                 let rest = &html[i + 1..];
                 if rest.starts_with('#')
                     && (rest[1..].starts_with(|c: char| c.is_ascii_digit())
@@ -269,22 +284,19 @@ impl HtmlParser {
                     && rest.contains(';')
                 {
                     out.push('&');
-                    i += 1;
                     continue;
                 }
                 if let Some(semicolon) = rest.find(';') {
                     let entity = &rest[..semicolon];
                     if !entity.is_empty() && entity.chars().all(|c| c.is_ascii_alphanumeric()) {
                         out.push('&');
-                        i += 1;
                         continue;
                     }
                 }
                 out.push_str("&amp;");
             } else {
-                out.push(bytes[i] as char);
+                out.push(c);
             }
-            i += 1;
         }
         out
     }
@@ -421,10 +433,25 @@ impl HtmlParser {
                     elements.push(BlockElement::HorizontalRule);
                 }
                 "section" | "article" | "main" | "header" | "footer" | "nav" | "aside" => {
+                    // BUG9-CONVERTER-CONTRACT: for semantic containers (nav/
+                    // aside/section/article/main) merge the user `class` with
+                    // the tag so editor dialect classes survive round-trips
+                    // (e.g. `<nav class="toc">` -> Div{class:"nav toc"}).
+                    // header/footer are exempt: wo-x2t furniture_spans matches
+                    // `class == "header"` / `class == "footer"` by exact
+                    // equality, so those keep `class = tag` (user class dropped).
+                    let class = if matches!(tag, "header" | "footer") {
+                        Some(tag.to_string())
+                    } else {
+                        match attr(&ch, "class") {
+                            Some(user) => Some(format!("{tag} {user}")),
+                            None => Some(tag.to_string()),
+                        }
+                    };
                     elements.push(BlockElement::Div {
                         elements: self.parse_block_elements(&ch),
                         id,
-                        class: Some(tag.to_string()),
+                        class,
                     });
                 }
                 _ => {
@@ -595,9 +622,7 @@ impl HtmlParser {
                     // F-102: comment thread anchor (editor dialect span.comment)
                     if attr(&ch, "class").as_deref() == Some("comment") {
                         let replies = attr(&ch, "data-replies")
-                            .and_then(|raw| {
-                              serde_json::from_str::<Vec<CommentReply>>(&raw).ok()
-                            })
+                            .and_then(|raw| serde_json::from_str::<Vec<CommentReply>>(&raw).ok())
                             .unwrap_or_default();
                         elements.push(InlineElement::Comment {
                             content: self.parse_inline_elements(&ch),
@@ -1309,7 +1334,11 @@ mod tests {
             BlockElement::Paragraph { dir, .. } => dir.clone(),
             _ => panic!("expected paragraph {i}"),
         };
-        assert_eq!(dir_of(0).as_deref(), Some("rtl"), "dir attr (case-insensitive)");
+        assert_eq!(
+            dir_of(0).as_deref(),
+            Some("rtl"),
+            "dir attr (case-insensitive)"
+        );
         assert_eq!(dir_of(1).as_deref(), Some("rtl"), "style direction: rtl");
         assert_eq!(dir_of(2).as_deref(), Some("ltr"));
         assert_eq!(dir_of(3), None, "unrelated style -> no direction");

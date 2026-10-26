@@ -84,4 +84,35 @@ assert.ok(probe.includes("wo-misspelled") && probe.includes("aria-pressed") &&
     probe.includes("data-cmd"),
   "probe must assert the internal markers are GONE from the payload")
 
+// ── (e) BUG9-CONVERTER-CONTRACT: block direction emits BOTH carriers ──
+// wo-html parses text direction from the standard dir attribute (F-041,
+// wins over style.direction), so the RTL toggle must emit dir alongside
+// style.direction — and dir must NOT be scrubbed as editor-internal.
+const toggleBody = js.slice(js.indexOf("function toggleBlockDirection"),
+  js.indexOf("function toggleBlockDirection") + 2000)
+assert.ok(toggleBody.includes('setAttribute("dir", "rtl")'),
+  "toggleBlockDirection must emit dir=\"rtl\" (wo-html F-041 bidi channel)")
+assert.ok(toggleBody.includes('removeAttribute("dir")'),
+  "toggleBlockDirection must remove dir when toggling off (symmetric)")
+assert.ok(!internalAttrs[0].includes('"dir"'),
+  "INTERNAL_SERIAL_ATTRS must NOT cover dir (document-semantic, survives flatHtml)")
+
+// ── (f) BUG9-CONVERTER-CONTRACT: Rust-side fixture allowlist parity ──
+// core/crates/wo-html/tests/contract_fixtures.rs carries the same allowlist
+// (CONTRACT-ATTRS block) with a survival channel per attr; the two lists
+// must never drift apart.
+const rustFixturesPath = fileURLToPath(
+  new URL("../../../../core/crates/wo-html/tests/contract_fixtures.rs", import.meta.url))
+assert.ok(existsSync(rustFixturesPath),
+  "wo-html contract fixtures must exist (editor <-> converter shared contract)")
+const rustFixtures = readFileSync(rustFixturesPath, "utf8")
+const contractBlock = rustFixtures.match(
+  /CONTRACT-ATTRS-BEGIN[\s\S]*?CONTRACT-ATTRS-END/)
+assert.ok(contractBlock, "contract_fixtures.rs must mark the attr block")
+const rustAttrs = [...contractBlock[0].matchAll(/"(data-[a-z]+)"/g)].map(m => m[1]).sort()
+const editorAttrs = [...semantic[0].matchAll(/"(data-[a-z]+)"/g)].map(m => m[1]).sort()
+assert.ok(editorAttrs.length > 0, "editor allowlist extraction must find attrs")
+assert.deepEqual(rustAttrs, editorAttrs,
+  "DOC_SEMANTIC_DATA_ATTRS must match between editor.js and contract_fixtures.rs")
+
 console.log("roundtrip: all checks passed")
