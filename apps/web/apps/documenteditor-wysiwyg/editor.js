@@ -1761,7 +1761,10 @@
     if (sizeEl) {
       let size = "";
       try { size = document.queryCommandValue("fontSize"); } catch (err) { /* best effort */ }
-      if (size && sizeEl.querySelector('option[value="' + size + '"]')) sizeEl.value = size;
+      // Unresolved size -> placeholder, never a stale previous value
+      // (BUG7-UNDO-DEEP: undo restores toolbar state too).
+      sizeEl.value =
+        size && sizeEl.querySelector('option[value="' + size + '"]') ? size : "";
     }
     const famEl = document.getElementById("font-family");
     if (famEl) {
@@ -1773,11 +1776,14 @@
       // `system-ui, -apple-system, "Segoe UI", ...` whose embedded quotes
       // would make a querySelector value argument invalid (and spam errors
       // on every selectionchange).
+      // No match (default body font after undo) -> placeholder, not stale.
+      let matched = "";
       if (fam) {
         for (let i = 0; i < famEl.options.length; i++) {
-          if (famEl.options[i].value === fam) { famEl.value = fam; break; }
+          if (famEl.options[i].value === fam) { matched = fam; break; }
         }
       }
+      famEl.value = matched;
     }
     // Line spacing: resolve the block's computed line-height into the
     // nearest preset in the dropdown (default 1.0 / single = placeholder).

@@ -111,17 +111,18 @@ async function installNorm(page) {
   // Normalize away pagination drift: paginateView wraps blocks into
   // .wo-page divs inside #editor (and clones page furniture), which changes
   // innerHTML without being a user edit. Undo comparisons are semantic.
+  // NOTE: DocumentFragment has NO innerHTML property — serialize through a
+  // div (snapshot HTML is full blocks/tables, so div parsing is safe).
   await page.evaluate(() => {
     window.__norm = (html) => {
-      const t = document.createElement("template");
-      t.innerHTML = html;
-      const root = t.content;
-      root.querySelectorAll(".wo-page").forEach((pg) => {
+      const d = document.createElement("div");
+      d.innerHTML = html;
+      d.querySelectorAll(".wo-page").forEach((pg) => {
         while (pg.firstChild) pg.parentNode.insertBefore(pg.firstChild, pg);
         pg.remove();
       });
-      root.querySelectorAll(".wo-hf-clone").forEach((el) => el.remove());
-      return root.innerHTML;
+      d.querySelectorAll(".wo-hf-clone").forEach((el) => el.remove());
+      return d.innerHTML;
     };
   });
 }
@@ -191,7 +192,9 @@ const setVault = (page, id, value) =>
     const el = document.getElementById(id);
     if (!el) throw new Error(`no input #${id}`);
     el.value = value;
-    el.dispatchEvent(new Event("input", { bubbles: true }));
+    // Color vaults are wired on "change" (a real picker fires input+change;
+    // change is the committed-value event the editor listens for).
+    el.dispatchEvent(new Event("change", { bubbles: true }));
   }, { id, value });
 
 /**
@@ -236,7 +239,7 @@ async function probe(page, name, opts) {
     await page.click("#btn-undo");
     await page.waitForTimeout(150);
     const h2 = await hist(page);
-    assert.equal(h2.u, h0, "one undo must consume exactly one entry");
+    assert.equal(h2.u, h0.u, "one undo must consume exactly one entry");
     assert.equal(h2.r, h1.r + 1, "undo must push the entry onto the redo branch");
     const undoneHtml = await normHtml(page);
     assert.equal(undoneHtml, beforeHtml,
@@ -304,8 +307,11 @@ async function groupA(page) {
   await probe(page, "a18 strike double", {
     select: selBravo, apply: (p) => clickCmd(p, "strikeDouble") });
 
-  // Keyboard parity: Ctrl+Z / Ctrl+Y walk the same chain as the buttons.
-  await step("a19 keyboard Ctrl+Z / Ctrl+Y parity", async () => {
+  // Keyboard parity: Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z walk the same chain as
+  // the buttons. Binding (editor.js): Ctrl+Z = undo, Ctrl+Y = redo,
+  // Ctrl+Shift+Z = redo (macOS-style). So the redo branch must respond to
+  // BOTH redo keys, and two undos in a row walk two entries.
+  await step("a19 keyboard Ctrl+Z / Ctrl+Y / Ctrl+Shift+Z parity", async () => {
     await resetDoc(page);
     await clickCmd(page, "bold");
     await page.waitForTimeout(120);
@@ -321,9 +327,12 @@ async function groupA(page) {
     const h3 = await hist(page);
     assert.equal(h3.u, 1, "Ctrl+Y restored the entry");
     await page.locator("#editor").focus();
+    await page.keyboard.press("Control+z");
+    await page.waitForTimeout(120);
+    assert.equal((await hist(page)).u, 0, "second Ctrl+Z undoes again");
     await page.keyboard.press("Control+Shift+z");
     await page.waitForTimeout(120);
-    assert.equal((await hist(page)).u, 0, "Ctrl+Shift+Z undoes again");
+    assert.equal((await hist(page)).u, 1, "Ctrl+Shift+Z redoes (macOS binding)");
   });
 }
 
