@@ -147,6 +147,7 @@ const SHORTCUT_HANDLING = {
   "Control+H": 'k === "h"',
   "Control+Minus": '"Minus"',
   "Control+Plus": '"Equal"',
+  "Control+0": 'k === "0"',
 }
 const declared = new Set(
   [...htmlSrc.matchAll(/aria-keyshortcuts="([^"]+)"/g)]

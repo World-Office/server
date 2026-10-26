@@ -3002,6 +3002,18 @@
     sel.addRange(r);
   }
 
+  // beforeinput.getTargetRanges() yields StaticRange objects, which lack the
+  // mutation methods wrapRangeInDel needs (extractContents/insertNode) —
+  // project the boundaries onto a live Range first. Without this every
+  // tracked selection deletion threw (swallowed by onBeforeInput's catch)
+  // and silently no-opped: text neither deleted nor marked as tracked.
+  function liveRange(staticRange) {
+    const r = document.createRange();
+    r.setStart(staticRange.startContainer, staticRange.startOffset);
+    r.setEnd(staticRange.endContainer, staticRange.endOffset);
+    return r;
+  }
+
   function wrapRangeInDel(range) {
     if (!range || range.collapsed) return;
     const del = document.createElement("del");
@@ -3035,7 +3047,7 @@
       } else if (it.indexOf("delete") === 0) {
         e.preventDefault();
         const ranges = (typeof e.getTargetRanges === "function") ? e.getTargetRanges() : [];
-        if (ranges.length) wrapRangeInDel(ranges[0]);
+        if (ranges.length) wrapRangeInDel(liveRange(ranges[0]));
         afterTrackEdit();
       }
     } catch (err) { /* never let tracking break normal editing */ }
@@ -3966,8 +3978,10 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "restore failed");
       closeVersionHistory();
-      setStatus(t("VersionHistory.Restored"));
       await loadDocument();
+      // after loadDocument (not before): loadDocument writes Loading…/Ready,
+      // which would coalesce the success status away before any paint.
+      setStatus(t("VersionHistory.Restored"));
     } catch (err) {
       btn.disabled = false;
       btn.textContent = label;
@@ -7511,6 +7525,15 @@
     zoomLevel = Math.min(2, Math.max(0.5, avail / 830));
     applyZoom();
   });
+  // Ctrl/Cmd+wheel zooms the page in 10% steps (the mouse equivalent of
+  // the zoom buttons / Ctrl+Minus|Plus). passive:false so preventDefault()
+  // can stop the browser's own page-zoom gesture.
+  editor.addEventListener("wheel", (ev) => {
+    if (!(ev.ctrlKey || ev.metaKey)) return;
+    ev.preventDefault();
+    zoomLevel += ev.deltaY < 0 ? 0.1 : -0.1;
+    applyZoom();
+  }, { passive: false });
   const sbTcBtn = document.getElementById("sb-track-changes");
   if (sbTcBtn) sbTcBtn.addEventListener("click", () => { setTrackChanges(!trackChangesOn); });
   const printBtn = document.getElementById("btn-print-qa");
@@ -7712,13 +7735,24 @@
   if (btnFindNext) btnFindNext.addEventListener("click", () => findNav(true));
   if (btnFindPrev) btnFindPrev.addEventListener("click", () => findNav(false));
 
-  // Ctrl/Cmd+F opens find & replace; F3 / Shift+F3 steps next / previous
-  // (classic word-processor shortcuts, also with the dialog closed).
+  // Ctrl/Cmd+F opens find & replace; Ctrl/Cmd+H lands in the replace field;
+  // F3 / Shift+F3 steps next / previous (classic word-processor shortcuts,
+  // also with the dialog closed). Document-scoped so they work while focus
+  // sits inside the open find dialog itself (editor-scoped handlers never
+  // fire there — BUG5: Ctrl+H used to dead-end exactly in that state).
   document.addEventListener("keydown", (ev) => {
-    if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && ev.key.toLowerCase() === "f") {
-      ev.preventDefault();
-      openFindDialog();
-      return;
+    if ((ev.ctrlKey || ev.metaKey) && !ev.altKey) {
+      const k = ev.key.toLowerCase();
+      if (k === "f") {
+        ev.preventDefault();
+        openFindDialog();
+        return;
+      }
+      if (k === "h" && !ev.shiftKey) {
+        ev.preventDefault();
+        openFindDialog(true);
+        return;
+      }
     }
     if (ev.key === "F3") {
       ev.preventDefault();
@@ -7831,12 +7865,6 @@
         emitCommand("subscript");
         return;
       }
-      // Replace: Ctrl+H, land in the replace field (Ctrl+F stays find).
-      if (k === "h" && !ev.shiftKey) {
-        ev.preventDefault();
-        openFindDialog(true);
-        return;
-      }
       // Right settings panel: Ctrl+Shift+P (OO settings-panel convention).
       if (k === "p" && ev.shiftKey) {
         ev.preventDefault();
@@ -7899,6 +7927,15 @@
         ev.preventDefault();
         const out = ev.code === "Minus" || ev.code === "NumpadSubtract" || k === "-";
         zoomLevel += out ? -0.1 : 0.1;
+        applyZoom();
+        return;
+      }
+      // Ctrl+0 resets zoom to 100% (the statusbar #btn-zoom-reset
+      // equivalent, declared via its aria-keyshortcuts="Control+0").
+      // Shift+0 stays untouched for any future shifted binding.
+      if (k === "0" && !ev.shiftKey) {
+        ev.preventDefault();
+        zoomLevel = 1;
         applyZoom();
         return;
       }
