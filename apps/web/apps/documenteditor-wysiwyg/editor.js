@@ -5366,8 +5366,8 @@
     if (fh || fv) parts.push(`scale(${fh ? -1 : 1}, ${fv ? -1 : 1})`);
     obj.style.transform = parts.join(" ");
   }
-  function applyImageSize(w, h) {
-    const obj = selectedImageObject();
+  function applyImageSize(w, h, targetObj) {
+    const obj = targetObj || selectedImageObject();
     if (!obj || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageSize"); return; }
     let w2;
     let h2;
@@ -5426,8 +5426,8 @@
     return obj && obj.matches && obj.matches("img") &&
       !obj.classList.contains("vector-object") ? obj : null;
   }
-  function applyImageAltText(value) {
-    const img = plainImageSelection();
+  function applyImageAltText(value, targetImg) {
+    const img = targetImg || plainImageSelection();
     if (!img || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageAlt"); return false; }
     img.setAttribute("alt", String(value == null ? "" : value));
     markObjectMutation();
@@ -5435,12 +5435,18 @@
     setStatus("Image alt text updated");
     return true;
   }
+  // BUG8-STATE-CONSISTENCY: the dialog steals the DOM selection when its
+  // input takes focus, so the target image is captured at open time and
+  // handed to the apply funnel explicitly (selection-based resolution
+  // would silently no-op on OK).
+  let imageAltTarget = null;
   function openImageAltDialog() {
     const img = plainImageSelection();
     const dialog = document.getElementById("image-alt-dialog");
     const input = document.getElementById("image-alt-input");
     if (!dialog || !input) return;
     if (!img || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageAlt"); return; }
+    imageAltTarget = img;
     input.value = img.getAttribute("alt") || "";
     const wIn = document.getElementById("image-size-width");
     const hIn = document.getElementById("image-size-height");
@@ -5453,16 +5459,31 @@
   const imageAltOk = document.getElementById("btn-image-alt-ok");
   if (imageAltOk) imageAltOk.addEventListener("click", () => {
     const input = document.getElementById("image-alt-input");
-    applyImageAltText(input ? input.value : "");
+    const altValue = input ? input.value : "";
     const wIn = document.getElementById("image-size-width");
     const hIn = document.getElementById("image-size-height");
-    if (wIn && hIn) {
-      applyImageSize(parseFloat(wIn.value), parseFloat(hIn.value));
+    // Restore the editor selection onto the target image: the dialog input
+    // stole it, and both the apply funnel and syncRightPanelControls
+    // resolve state through the live selection.
+    if (imageAltTarget) {
+      const sel = window.getSelection();
+      const r = document.createRange();
+      r.selectNodeContents(imageAltTarget);
+      sel.removeAllRanges();
+      sel.addRange(r);
     }
+    applyImageAltText(altValue, imageAltTarget);
+    if (wIn && hIn) {
+      applyImageSize(parseFloat(wIn.value), parseFloat(hIn.value), imageAltTarget);
+    }
+    imageAltTarget = null;
     closeDlg("image-alt-dialog");
   });
   const imageAltCancel = document.getElementById("btn-image-alt-cancel");
-  if (imageAltCancel) imageAltCancel.addEventListener("click", () => closeDlg("image-alt-dialog"));
+  if (imageAltCancel) imageAltCancel.addEventListener("click", () => {
+    imageAltTarget = null;
+    closeDlg("image-alt-dialog");
+  });
   const imageAltInput = document.getElementById("image-alt-input");
   if (imageAltInput) imageAltInput.addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); if (imageAltOk) imageAltOk.click(); }
@@ -5657,7 +5678,10 @@
   const rpChartWidth = document.getElementById("rp-chart-width");
   if (rpChartWidth) rpChartWidth.addEventListener("change", () => {
     if (READ_ONLY) return;
-    applyChartPanelSize();
+    // BUG8-STATE-CONSISTENCY: a width-only resize must preserve aspect like
+    // the chart-design width input (which passes NaN height). Sending the
+    // stale synced height made the two surfaces diverge.
+    applyChartSize(parseFloat(rpChartWidth.value), NaN);
   });
   const rpChartHeight = document.getElementById("rp-chart-height");
   if (rpChartHeight) rpChartHeight.addEventListener("change", () => {
