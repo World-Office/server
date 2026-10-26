@@ -142,3 +142,6 @@ tests/docker/opencloud-config/opencloud.yaml
 
 # agentflow run state (tasks/prompts/worktrees are ephemeral)
 state/
+
+# stray test artifact written by wo-docserver test binary into its crate dir
+core/crates/wo-docserver/demo.docx
