@@ -3,8 +3,12 @@ use std::path::PathBuf;
 
 fn get_fixture_path(name: &str) -> PathBuf {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    // wo-x2t -> crates -> core -> server/assets (tracked fixture; the old
+    // wo-docserver/demo.docx path was a generated stray nobody committed)
     path.pop();
-    path.push("wo-docserver");
+    path.pop();
+    path.pop();
+    path.push("assets");
     path.push(name);
     path
 }
