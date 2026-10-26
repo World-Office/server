@@ -5512,6 +5512,10 @@
     if (!dialog || !input) return;
     if (!img || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageAlt"); return; }
     input.value = img.getAttribute("alt") || "";
+    const wIn = document.getElementById("image-size-width");
+    const hIn = document.getElementById("image-size-height");
+    if (wIn) wIn.value = img.getAttribute("width") || String(img.naturalWidth || "");
+    if (hIn) hIn.value = img.getAttribute("height") || String(img.naturalHeight || "");
     rememberFocus();
     dialog.classList.add("open");
     input.focus();
@@ -5520,6 +5524,11 @@
   if (imageAltOk) imageAltOk.addEventListener("click", () => {
     const input = document.getElementById("image-alt-input");
     applyImageAltText(input ? input.value : "");
+    const wIn = document.getElementById("image-size-width");
+    const hIn = document.getElementById("image-size-height");
+    if (wIn && hIn) {
+      applyImageSize(parseFloat(wIn.value), parseFloat(hIn.value));
+    }
     closeDlg("image-alt-dialog");
   });
   const imageAltCancel = document.getElementById("btn-image-alt-cancel");
@@ -5599,6 +5608,11 @@
       wrapSel.value = img.classList.contains("obj-square") ? "wrap-square"
         : img.classList.contains("obj-behind") ? "wrap-behind" : "wrap-inline";
     }
+    const spec = readChartSpec(img);
+    const typeSel = document.getElementById("rp-chart-type");
+    if (typeSel) typeSel.value = String(spec.type || "bar");
+    const titleChk = document.getElementById("rp-chart-title");
+    if (titleChk) titleChk.checked = !!(spec.elements && spec.elements.title);
   }
   function applyChartPanelSize() {
     const wIn = document.getElementById("rp-chart-width");
@@ -5728,6 +5742,22 @@
   const rpChartAdvanced = document.getElementById("rp-chart-advanced");
   if (rpChartAdvanced) rpChartAdvanced.addEventListener("click", () => {
     emitCommand("chartSettings"); // same marker path as chart-design Advanced
+  });
+  const rpChartType = document.getElementById("rp-chart-type");
+  if (rpChartType) rpChartType.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyChartType(rpChartType.value);
+    syncRightPanelControls();
+  });
+  const rpChartTitle = document.getElementById("rp-chart-title");
+  if (rpChartTitle) rpChartTitle.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    toggleChartElement("title");
+    syncRightPanelControls();
+  });
+  const rpChartEditData = document.getElementById("rp-chart-edit-data");
+  if (rpChartEditData) rpChartEditData.addEventListener("click", () => {
+    editSelectedChartData();
   });
 
   // Mail merge section wiring: surface the three actions of the existing
@@ -7327,6 +7357,13 @@
       ctxMenu.querySelectorAll("[data-showif='image']").forEach((el) => {
         el.hidden = !hasImageSel;
       });
+      // BUG8-STATE-CONSISTENCY: data-showif="object" gates the wrap rows on
+      // any selected object (image, chart, shape) so the ctx surface converges
+      // with the Layout menu and the right-panel wrapping select.
+      const hasObjectSel = !!ctxImageSel;
+      ctxMenu.querySelectorAll("[data-showif='object']").forEach((el) => {
+        el.hidden = !hasObjectSel;
+      });
       refreshSpellSuggestionRows(misspellSpan);
       collapseAllCtxSubmenus();
       ctxMenu.hidden = false;
@@ -7442,6 +7479,18 @@
       } else if (action === "EditAltText") {
         closeCtx();
         openImageAltDialog();
+      } else if (action === "WrapInline") {
+        closeCtx();
+        applyObjectOp("wrap-inline");
+        syncRightPanelControls();
+      } else if (action === "WrapSquare") {
+        closeCtx();
+        applyObjectOp("wrap-square");
+        syncRightPanelControls();
+      } else if (action === "WrapBehind") {
+        closeCtx();
+        applyObjectOp("wrap-behind");
+        syncRightPanelControls();
         // AF8-INSERT-CTX-CLEANUP: OO-parity completion rows. Real DOM ops
         // where they exist (links, lists, tracked changes), wo: marker
         // events where a dialog slice is the follow-up (loud-stub contract).

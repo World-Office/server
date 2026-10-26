@@ -1032,6 +1032,15 @@
         <section class="rp-section" data-section="chart" hidden>
           <div class="rp-title" data-i18n="RightPanel.Chart">Chart</div>
           <div class="rp-group">
+            <label for="rp-chart-type" data-i18n="RightPanel.ChartType">Chart type</label>
+            <select id="rp-chart-type">
+              <option value="bar">Bar</option>
+              <option value="line">Line</option>
+              <option value="pie">Pie</option>
+              <option value="area">Area</option>
+            </select>
+          </div>
+          <div class="rp-group">
             <label for="rp-chart-width" data-i18n="RightPanel.Width">Width (px)</label>
             <input type="number" id="rp-chart-width" min="40" step="10" value="420">
           </div>
@@ -1047,6 +1056,10 @@
               <option value="wrap-behind" data-i18n="RightPanel.WrapBehind">Behind text</option>
             </select>
           </div>
+          <div class="rp-group">
+            <label><input type="checkbox" id="rp-chart-title"> <span data-i18n="Backstage.ChartTitleToggle">Show title</span></label>
+          </div>
+          <button type="button" id="rp-chart-edit-data" data-i18n="Chart.EditData">Edit data</button>
           <button type="button" id="rp-chart-advanced" class="rp-link" data-i18n="RightPanel.Advanced">Show advanced settings</button>
         </section>
         <section class="rp-section" data-section="mailmerge" hidden>
@@ -1211,6 +1224,10 @@
     <!-- BUG8-STATE-CONSISTENCY: alt text editing (a11y) — row only shows
          when a plain (non-vector) image is selected; opens image-alt-dialog. -->
     <button type="button" role="menuitem" data-ctx="EditAltText" data-showif="image" data-i18n="Ctx.EditAltText">Edit alt text…</button>
+    <div class="ctx-sep" data-showif="object" role="separator"></div>
+    <button type="button" role="menuitem" data-ctx="WrapInline" data-showif="object" data-i18n="Ctx.WrapInline">Inline</button>
+    <button type="button" role="menuitem" data-ctx="WrapSquare" data-showif="object" data-i18n="Ctx.WrapSquare">Square</button>
+    <button type="button" role="menuitem" data-ctx="WrapBehind" data-showif="object" data-i18n="Ctx.WrapBehind">Behind text</button>
     <button type="button" role="menuitem" data-ctx="UpdateTOC" data-i18n="Ctx.UpdateTOC">Update table of contents</button>
     <button type="button" role="menuitem" data-ctx="TocSettings" data-i18n="Ctx.TocSettings">Table of contents settings</button>
     <button type="button" role="menuitem" data-ctx="UpdateField" data-i18n="Ctx.UpdateField">Update field</button>
@@ -1605,12 +1622,20 @@
     </div>
   </div>
 
-  <!-- BUG8-STATE-CONSISTENCY: image alt-text dialog — the only dialog
-       surface for editing an existing image's alt text; mirrors the
-       right-panel alt input so both surfaces converge. -->
+  <!-- BUG8-STATE-CONSISTENCY: image properties dialog — the dialog surface
+       for editing an existing image's size and alt text; mirrors the
+       right-panel inputs so both surfaces converge. -->
   <div id="image-alt-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="image-alt-dialog-title">
     <div class="dialog">
-      <h3 id="image-alt-dialog-title" data-i18n="Dialog.ImageAltTitle">Image alt text</h3>
+      <h3 id="image-alt-dialog-title" data-i18n="Dialog.ImagePropsTitle">Image properties</h3>
+      <div class="dialog-field">
+        <label for="image-size-width" data-i18n="Image.Width">Width</label>
+        <input id="image-size-width" type="number" min="16" step="1" inputmode="numeric">
+      </div>
+      <div class="dialog-field">
+        <label for="image-size-height" data-i18n="Image.Height">Height</label>
+        <input id="image-size-height" type="number" min="16" step="1" inputmode="numeric">
+      </div>
       <div class="dialog-field">
         <label for="image-alt-input" data-i18n="RightPanel.AltText">Alt text</label>
         <input id="image-alt-input" type="text">
