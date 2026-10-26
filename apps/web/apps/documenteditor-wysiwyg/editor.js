@@ -7073,11 +7073,12 @@
     const custom = document.getElementById("pagecolor-custom");
     if (custom && pageColorPicked && pageColorPicked.startsWith("#")) custom.value = pageColorPicked;
   });
-  // Note / page-field / header-footer authoring buttons (F-073/F-074/F-084/F-085)
-  for (const [id, cmd] of [["btn-footnote", "insertFootnote"], ["btn-endnote", "insertEndnote"], ["btn-pagenumber", "insertPageNumber"], ["btn-header", "insertHeader"], ["btn-footer", "insertFooter"]]) {
-    const b = document.getElementById(id);
-    if (b) b.addEventListener("click", () => emitCommand(cmd));
-  }
+  // Note / page-field / header-footer authoring buttons (F-073/F-074/F-084/F-085):
+  // these carry data-cmd in index.html and are wired once by the generic
+  // data-cmd dispatcher above — a dedicated emitCommand listener here ran
+  // every command twice (doubled footnote/endnote/page-number markers,
+  // doubled history entries; same bug class as the rb-menu double-wiring).
+
   const symbolClose = document.getElementById("btn-symbol-close");
   if (symbolClose) symbolClose.addEventListener("click", () => {
     const d = document.getElementById("symbol-dialog");

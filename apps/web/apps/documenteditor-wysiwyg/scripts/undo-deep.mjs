@@ -178,6 +178,21 @@ const clickCmd = (page, cmd, value) =>
     el.click();
   }, { cmd, value });
 
+/** Click an element by id via JS (same handler as a user click; ignores
+ *  ribbon-tab visibility, which is not what these probes assert). */
+const clickJs = (page, id) =>
+  page.evaluate((id) => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`no element #${id}`);
+    el.click();
+  }, id);
+
+/** Dispatch a wo-command directly (for commands with no toolbar button). */
+const emitCmd = (page, cmd, value) =>
+  page.evaluate(({ cmd, value }) => {
+    window.dispatchEvent(new CustomEvent("wo-command", { detail: { command: cmd, value } }));
+  }, { cmd, value });
+
 /** Drive a toolbar <select> (font family / size) through its change path. */
 const setSelect = (page, id, value) =>
   page.evaluate(({ id, value }) => {
@@ -235,8 +250,10 @@ async function probe(page, name, opts) {
       assert.notEqual(afterHtml, beforeHtml, "op must actually change the DOM");
     }
 
-    // Undo exactly once.
-    await page.click("#btn-undo");
+    // Undo exactly once (JS click: the undo handler is what's under test;
+    // ribbon-tab switches after e.g. header insertion hide the button from
+    // Playwright's actionability check, which is not a history concern).
+    await clickJs(page, "btn-undo");
     await page.waitForTimeout(150);
     const h2 = await hist(page);
     assert.equal(h2.u, h0.u, "one undo must consume exactly one entry");
@@ -247,7 +264,7 @@ async function probe(page, name, opts) {
     if (afterUndo) await afterUndo(page);
 
     // Redo mirrors.
-    await page.click("#btn-redo");
+    await clickJs(page, "btn-redo");
     await page.waitForTimeout(150);
     const h3 = await hist(page);
     assert.equal(h3.u, h1.u, "redo must push the entry back onto undo");
@@ -522,6 +539,100 @@ async function groupC(page) {
   });
 }
 
+// ------------------------------------------- group d: document structure --
+async function groupD(page) {
+  // Direct-command structural insertions: each execCommand's markup in and
+  // pushes exactly one history entry.
+  await probe(page, "d1 insert horizontal rule", {
+    // No toolbar button (context-menu action HorizontalRule routes here).
+    apply: (p) => emitCmd(p, "insertHR"),
+  });
+  await probe(page, "d2 insert page break", {
+    apply: (p) => clickCmd(p, "insertPageBreak"),
+  });
+  await probe(page, "d3 insert column break", {
+    apply: (p) => clickCmd(p, "insertColumnBreak"),
+  });
+  await probe(page, "d4 insert section break", {
+    apply: (p) => clickCmd(p, "insertSectionBreak"),
+  });
+  await probe(page, "d5 insert blank page", {
+    apply: (p) => clickCmd(p, "insertBlankPage"),
+  });
+  await probe(page, "d6 insert footnote", {
+    apply: (p) => clickCmd(p, "insertFootnote"),
+  });
+  await probe(page, "d7 insert endnote", {
+    apply: (p) => clickCmd(p, "insertEndnote"),
+  });
+  await probe(page, "d8 insert page number", {
+    apply: (p) => clickCmd(p, "insertPageNumber"),
+  });
+  await probe(page, "d9 insert header", {
+    apply: (p) => clickCmd(p, "insertHeader"),
+  });
+  await probe(page, "d10 insert footer", {
+    apply: (p) => clickCmd(p, "insertFooter"),
+  });
+
+  // Table of contents: dialog-driven insert, then a refresh of the same TOC.
+  await probe(page, "d11 insert table of contents", {
+    apply: async (p) => {
+      await clickId(p, "btn-toc");
+      await clickId(p, "btn-toc-ok");
+    },
+  });
+  await probe(page, "d12 update existing TOC", {
+    prime: async (p) => {
+      await clickId(p, "btn-toc");
+      await clickId(p, "btn-toc-ok");
+      await page.waitForTimeout(150);
+    },
+    apply: async (p) => {
+      await clickCmd(p, "updateToc");
+      await clickId(p, "btn-updatetoc-ok");
+    },
+  });
+  await probe(page, "d13 insert table of figures", {
+    apply: (p) => clickCmd(p, "insertToF"),
+  });
+  await probe(page, "d14 insert caption", {
+    apply: (p) => clickCmd(p, "insertCaption"),
+  });
+
+  // Hyperlink needs a text selection to wrap.
+  await probe(page, "d15 insert hyperlink on selection", {
+    select: (p) => selectWord(p, "bravo"),
+    apply: async (p) => {
+      await clickCmd(p, "link");
+      await p.fill("#link-url", "https://example.org/bravo");
+      await clickId(p, "btn-link-ok");
+    },
+  });
+
+  await probe(page, "d16 insert bookmark", {
+    apply: async (p) => {
+      await clickCmd(p, "bookmark");
+      await p.fill("#bookmark-name", "probe-anchor");
+      await clickId(p, "btn-bookmark-ok");
+    },
+  });
+
+  await probe(page, "d17 apply column layout", {
+    apply: async (p) => {
+      await clickCmd(p, "openColumnsDialog");
+      await clickId(p, "btn-columns-ok");
+    },
+  });
+
+  await probe(page, "d18 apply page setup", {
+    apply: async (p) => {
+      await clickId(p, "btn-page-setup");
+      await clickId(p, "btn-ps-apply");
+    },
+  });
+}
+
 // ------------------------------------------------------------------ main --
 async function main() {
   const port = await freePort(PORT);
@@ -544,6 +655,7 @@ async function main() {
     await groupA(page);
     await groupB(page);
     await groupC(page);
+    await groupD(page);
 
     await browser.close();
   } finally {
