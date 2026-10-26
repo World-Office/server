@@ -1933,7 +1933,7 @@
        disabled in read-only documents; finding stays available. Keyboard:
        Enter/Shift+Enter step next/previous, Ctrl+F re-opens, Escape
        closes. -->
-  <div id="find-dialog" class="dialog-overlay find-overlay" role="dialog" aria-labelledby="find-dialog-title">
+  <div id="find-dialog" class="dialog-overlay find-overlay" role="dialog" aria-modal="true" aria-labelledby="find-dialog-title">
     <div class="dialog find-dialog">
       <h3 id="find-dialog-title" class="find-title" data-i18n="Toolbar.Find">Find and replace</h3>
       <div class="find-field-row">
@@ -2034,14 +2034,23 @@
     <div class="dialog">
       <h3 id="settings-dialog-title" data-i18n="Backstage.Settings">Settings</h3>
       <div class="dialog-field">
-        <label for="settings-theme">Interface theme</label>
+        <label for="settings-theme" data-i18n="Settings.Theme">Interface theme</label>
         <select id="settings-theme">
           <option value="dark">Dark</option>
           <option value="light">Light</option>
         </select>
       </div>
       <div class="dialog-field">
-        <label class="protect-check"><input id="settings-spellcheck" type="checkbox"><span>Spell checking</span></label>
+        <label for="settings-lang" data-i18n="Settings.Language">Language</label>
+        <select id="settings-lang">
+          <!-- Option labels are proper nouns (endonym language names) and are
+               deliberately not translated. -->
+          <option value="en">English</option>
+          <option value="de">Deutsch</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label class="protect-check"><input id="settings-spellcheck" type="checkbox"><span data-i18n="Settings.Spellchecking">Spell checking</span></label>
       </div>
       <div class="dialog-field">
         <label for="settings-zoom">Zoom (%)</label>
