@@ -578,6 +578,7 @@ async function groupC(page) {
 
 // ------------------------------------------- group d: document structure --
 async function groupD(page) {
+  console.log("group d — document structure");
   // Direct-command structural insertions: each execCommand's markup in and
   // pushes exactly one history entry.
   await probe(page, "d1 insert horizontal rule", {
