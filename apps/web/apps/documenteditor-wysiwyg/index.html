@@ -135,7 +135,7 @@
     <!-- Window control at the OO-golden titlebar corner: duplicates the
          ribbon fullscreen toggle (same pattern as the statusbar comment
          shortcuts). -->
-    <button type="button" class="titlebar-fs" title="Fullscreen" aria-label="Fullscreen"><svg viewBox="0 0 8 8" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M1 3V1h2M7 5v2H5M1 5v2h2M7 3V1H5"/></svg></button>
+    <button type="button" class="titlebar-fs" title="Fullscreen" data-i18n-title="View.Fullscreen" data-i18n-aria-label="View.Fullscreen" aria-label="Fullscreen"><svg viewBox="0 0 8 8" width="8" height="8" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M1 3V1h2M7 5v2H5M1 5v2h2M7 3V1H5"/></svg></button>
   </div>
   <nav id="menu-bar" class="menu-bar" aria-label="Application menu" data-i18n-aria-label="MenuBar.Region">
     <!-- Quick-access cluster (right edge only: Print + Redo). The old
@@ -183,7 +183,7 @@
         <li role="none" class="menu-sep" aria-hidden="true"></li>
         <li role="none"><button type="button" id="btn-print" role="menuitem" data-i18n="Menu.Print">Print</button></li>
         <li role="none"><button type="button" id="btn-history" role="menuitem" data-i18n="Menu.History">History…</button></li>
-        <li role="none"><button type="button" id="btn-ai-review" role="menuitem">AI changes…</button></li>
+        <li role="none"><button type="button" id="btn-ai-review" data-i18n="AI.ChangesTab" role="menuitem">AI changes…</button></li>
         <li role="none" class="menu-sep" aria-hidden="true"></li>
         <li role="none"><button type="button" id="btn-fileinfo" role="menuitem" data-i18n="Menu.Info">Info…</button></li>
         <li role="none"><button type="button" id="btn-fileprotect" role="menuitem" data-i18n="Menu.Protect">Protect document…</button></li>
@@ -315,7 +315,7 @@
       <span class="color-key" aria-hidden="true">A</span>
       <input type="color" id="text-color" value="#333333" aria-label="Font color">
     </label>
-    <button class="rb" data-cmd="removeFormat"  title="Clear style" aria-label="Clear style">&#9001;&#9002;</button>
+    <button class="rb" data-cmd="removeFormat" data-i18n-title="Toolbar.ClearStyleTitle" data-i18n-aria-label="Toolbar.ClearStyleTitle"  title="Clear style" aria-label="Clear style">&#9001;&#9002;</button>
     </div>
     </div>
     <span class="rb-sep" aria-hidden="true"></span>
@@ -431,8 +431,8 @@
     <button id="btn-ribbon-collapse" class="rb rb-flat" title="Show fewer toolbar buttons" data-i18n-title="Toolbar.CollapseTitle" aria-label="Show fewer toolbar buttons" data-i18n-aria-label="Toolbar.CollapseTitle" aria-expanded="true"><svg viewBox="0 0 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5 7 6 12.5 1.5"/></svg></button>
     </div>
     <div class="elset-col">
-    <button id="btn-fullscreen" class="rb rb-flat"  title="Toggle fullscreen" aria-label="Toggle fullscreen"><svg viewBox="0 0 19 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="1.5" width="16" height="14" rx="1.5"/><path d="M7 5.5 11.5 10M11.5 6.5V10.5H7.5"/></svg></button>
-    <button id="btn-theme" class="rb"  title="Toggle dark/light theme" aria-label="Toggle theme" aria-pressed="false">☾</button>
+    <button id="btn-fullscreen" data-i18n-title="View.FullscreenToggle" data-i18n-aria-label="View.FullscreenToggle" class="rb rb-flat"  title="Toggle fullscreen" aria-label="Toggle fullscreen"><svg viewBox="0 0 19 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="1.5" width="16" height="14" rx="1.5"/><path d="M7 5.5 11.5 10M11.5 6.5V10.5H7.5"/></svg></button>
+    <button id="btn-theme" data-i18n-title="View.ThemeToggle" data-i18n-aria-label="View.ThemeToggle" class="rb"  title="Toggle dark/light theme" aria-label="Toggle theme" aria-pressed="false">☾</button>
     </div>
     <!-- AF5-HOME-DIRECT: replace/select-all promoted from the find dialog /
          context menu to direct edge buttons (dialog + ctx-menu paths stay). -->
@@ -445,15 +445,15 @@
     </div>
     <div class="ribbon-page" data-tab="insert" role="group" aria-label="Insert ribbon">
     <button id="btn-table" title="Insert table" data-i18n-title="Toolbar.InsertTableTitle" aria-label="Insert table" data-i18n-aria-label="Toolbar.InsertTable">▦</button>
-    <button id="btn-table-ops" title="Table actions (rows, columns, merge)" aria-label="Table actions">▦✎</button>
+    <button id="btn-table-ops" data-i18n-title="Table.ActionsTitle" data-i18n-aria-label="Table.Actions" title="Table actions (rows, columns, merge)" aria-label="Table actions">▦✎</button>
     <button id="btn-image" title="Insert image" data-i18n-title="Toolbar.InsertImageTitle" aria-label="Insert image" data-i18n-aria-label="Toolbar.InsertImageTitle"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><circle cx="5" cy="6" r="1.3"/><path d="M2.5 12.5 7 8l3 3 2-2 1.5 1.5"/></svg></button>
-    <button id="btn-link" title="Insert link" aria-label="Insert link"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 9.5 9.5 6.5M5 11l-1.5 1.5a2.5 2.5 0 0 1-3.536-3.536L2.5 6.5M11 5l1.5-1.5a2.5 2.5 0 0 1 3.536 3.536L13.5 9.5" transform="translate(0.5 0)"/></svg></button>
-    <button id="btn-hr" title="Insert horizontal rule" aria-label="Insert horizontal rule">─</button>
+    <button id="btn-link" data-i18n-title="Toolbar.InsertLinkTitle" data-i18n-aria-label="Toolbar.InsertLinkTitle" title="Insert link" aria-label="Insert link"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 9.5 9.5 6.5M5 11l-1.5 1.5a2.5 2.5 0 0 1-3.536-3.536L2.5 6.5M11 5l1.5-1.5a2.5 2.5 0 0 1 3.536 3.536L13.5 9.5" transform="translate(0.5 0)"/></svg></button>
+    <button id="btn-hr" data-i18n-title="Toolbar.HRTitle" data-i18n-aria-label="Toolbar.HRTitle" title="Insert horizontal rule" aria-label="Insert horizontal rule">─</button>
     <button type="button" data-cmd="insertBlankPage" data-i18n="Insert.BlankPage" title="Insert blank page" aria-label="Insert blank page">Blank page</button>
-<button id="btn-object" title="Insert object" aria-label="Insert object">▢</button>
-<button id="btn-bookmark" title="Insert bookmark" aria-label="Insert bookmark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h9v13l-4.5-3.5-4.5 3.5z"/></svg></button>
-<button id="btn-crossref" title="Insert cross-reference" aria-label="Insert cross-reference"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 14V8a3 3 0 0 1 3-3h9M10.5 1.5 14 5l-3.5 3.5"/></svg></button>
-<button id="btn-symbol" title="Insert symbol" aria-label="Insert symbol">Ω</button>
+<button id="btn-object" data-i18n-title="Toolbar.ObjectTitle" data-i18n-aria-label="Toolbar.ObjectTitle" title="Insert object" aria-label="Insert object">▢</button>
+<button id="btn-bookmark" data-i18n-title="Toolbar.BookmarkTitle" data-i18n-aria-label="Toolbar.BookmarkTitle" title="Insert bookmark" aria-label="Insert bookmark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h9v13l-4.5-3.5-4.5 3.5z"/></svg></button>
+<button id="btn-crossref" data-i18n-title="Toolbar.CrossrefTitle" data-i18n-aria-label="Toolbar.CrossrefTitle" title="Insert cross-reference" aria-label="Insert cross-reference"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 14V8a3 3 0 0 1 3-3h9M10.5 1.5 14 5l-3.5 3.5"/></svg></button>
+<button id="btn-symbol" data-i18n-title="Toolbar.SymbolTitle" data-i18n-aria-label="Toolbar.SymbolTitle" title="Insert symbol" aria-label="Insert symbol">Ω</button>
 <button id="btn-datetime" title="Insert date" data-i18n-title="Toolbar.DateTimeTitle" aria-label="Insert date" data-i18n-aria-label="Toolbar.DateTimeTitle"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="12" rx="1"/><path d="M1.5 6h13M5 1v3M11 1v3"/></svg></button>
 <button id="btn-pagenumber" data-cmd="insertPageNumber" title="Insert page number field" data-i18n-title="Toolbar.PageNumberTitle" aria-label="Insert page number">#</button>
 <button id="btn-header" data-cmd="insertHeader" title="Insert page header" data-i18n-title="Toolbar.HeaderTitle" aria-label="Insert page header">▔</button>
@@ -607,7 +607,7 @@
     </label>
     </div>
     <div class="ribbon-page" data-tab="references" role="group" aria-label="References ribbon" data-i18n-aria-label="Tab.References">
-    <button id="btn-toc" title="Insert table of contents" aria-label="Insert table of contents">☰</button>
+    <button id="btn-toc" data-i18n-title="Toolbar.TocTitle" data-i18n-aria-label="Toolbar.TocTitle" title="Insert table of contents" aria-label="Insert table of contents">☰</button>
     <button id="btn-footnote" data-cmd="insertFootnote" title="Insert footnote" data-i18n-title="Toolbar.FootnoteTitle" aria-label="Insert footnote">¹</button>
     <button id="btn-endnote" data-cmd="insertEndnote" title="Insert endnote" data-i18n-title="Toolbar.EndnoteTitle" aria-label="Insert endnote">ⁿ</button>
     <button type="button" data-cmd="insertCaption" data-i18n="Ref.Caption">Caption</button>
@@ -622,10 +622,10 @@
     <button type="button" data-cmd="addText" data-i18n="Ref.AddText">Add Text</button>
     </div>
     <div class="ribbon-page" data-tab="collaboration" role="group" aria-label="Collaboration ribbon" data-i18n-aria-label="Tab.Collaboration">
-    <button id="btn-track-changes" title="Track changes" aria-label="Track changes" aria-pressed="false">✎</button>
-    <button id="btn-review-changes" title="Review changes" aria-label="Review changes">✓</button>
-    <button id="btn-comment" title="Add comment" aria-label="Add comment"><svg viewBox="0 0 18 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 2h14v8h-7.5L5 13v-3H2z"/></svg></button>
-    <button id="btn-comments" title="Show comments" aria-label="Show comments">◫</button>
+    <button id="btn-track-changes" data-i18n-title="Statusbar.TrackChanges" data-i18n-aria-label="Statusbar.TrackChanges" title="Track changes" aria-label="Track changes" aria-pressed="false">✎</button>
+    <button id="btn-review-changes" data-i18n-title="Review.Changes" data-i18n-aria-label="Review.Changes" title="Review changes" aria-label="Review changes">✓</button>
+    <button id="btn-comment" data-i18n-title="Ctx.AddComment" data-i18n-aria-label="Ctx.AddComment" title="Add comment" aria-label="Add comment"><svg viewBox="0 0 18 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 2h14v8h-7.5L5 13v-3H2z"/></svg></button>
+    <button id="btn-comments" data-i18n-title="Comments.Show" data-i18n-aria-label="Comments.Show" title="Show comments" aria-label="Show comments">◫</button>
     <button type="button" data-cmd="resolveComment" data-i18n="Collab.Resolve">Resolve</button>
     <button type="button" data-cmd="deleteComment" data-i18n="Collab.Delete">Delete</button>
     <button id="btn-chat-toggle" type="button" data-cmd="toggleChat" data-i18n="Collab.Chat" aria-expanded="false">Chat</button>
@@ -1095,19 +1095,19 @@
       <option value="en-GB">English (United Kingdom)</option>
       <option value="de-DE">Deutsch (Deutschland)</option>
     </select>
-    <button class="sb menu-trigger caret-btn" id="doc-lang-caret" title="Language options" aria-label="Language options">▾</button>
+    <button class="sb menu-trigger caret-btn" id="doc-lang-caret" data-i18n-title="Menu.LanguageOptions" data-i18n-aria-label="Menu.LanguageOptions" title="Language options" aria-label="Language options">▾</button>
     <!-- Zoom cluster: − / slider / + / fit / %. The slider is the live zoom
          control (50%..200%, matches applyZoom). -->
-    <button class="sb" id="btn-zoom-out" title="Zoom out" aria-label="Zoom out" aria-keyshortcuts="Control+Minus"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5M4.5 7h5"/></svg></button>
+    <button class="sb" id="btn-zoom-out" data-i18n-title="View.ZoomOut" data-i18n-aria-label="View.ZoomOut" title="Zoom out" aria-label="Zoom out" aria-keyshortcuts="Control+Minus"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5M4.5 7h5"/></svg></button>
     <span class="sb" id="zoom-wrap">
     <input type="range" id="zoom-slider" class="zoom-slider" min="50" max="200" step="10" value="100"
            title="Zoom" aria-label="Zoom level">
     </span>
-    <button class="sb sb-boxed" id="btn-zoom-in" title="Zoom in" aria-label="Zoom in" aria-keyshortcuts="Control+Plus"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5M4.5 7h5M7 4.5v5"/></svg></button>
-    <button class="sb" id="btn-zoom-fit" title="Fit page width" aria-label="Fit page width">⤢</button>
-    <button class="sb" id="btn-zoom-reset" title="Reset zoom" aria-label="Reset zoom">100%</button>
+    <button class="sb sb-boxed" id="btn-zoom-in" data-i18n-title="View.ZoomIn" data-i18n-aria-label="View.ZoomIn" title="Zoom in" aria-label="Zoom in" aria-keyshortcuts="Control+Plus"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5M4.5 7h5M7 4.5v5"/></svg></button>
+    <button class="sb" id="btn-zoom-fit" data-i18n-title="View.Fit" data-i18n-aria-label="View.Fit" title="Fit page width" aria-label="Fit page width">⤢</button>
+    <button class="sb" id="btn-zoom-reset" data-i18n-title="View.ZoomReset" data-i18n-aria-label="View.ZoomReset" title="Reset zoom" aria-label="Reset zoom">100%</button>
     <span id="sb-zoom-label" class="sb status-meta" role="status" aria-live="polite" aria-label="Zoom percentage" data-i18n="Statusbar.Zoom">100%</span>
-    <button class="sb" id="btn-multipage" title="Multiple pages view" aria-label="Multiple pages view" aria-pressed="false">▦</button>
+    <button class="sb" id="btn-multipage" data-i18n-title="View.MultiplePages" data-i18n-aria-label="View.MultiplePages" title="Multiple pages view" aria-label="Multiple pages view" aria-pressed="false">▦</button>
     <button id="sb-track-changes" class="sb" title="Toggle track changes" aria-label="Toggle track changes" aria-pressed="false" data-i18n="Statusbar.TrackChanges">Track Changes</button>
   </footer>
 
@@ -1231,8 +1231,8 @@
       <input id="table-cols" type="number" min="1" max="10" value="3" inputmode="numeric">
     </div>
     <div class="dialog-actions">
-      <button id="btn-table-cancel">Cancel</button>
-      <button id="btn-table-ok" class="primary">Insert</button>
+      <button id="btn-table-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+      <button id="btn-table-ok" data-i18n="Dialog.Insert" class="primary">Insert</button>
     </div>
   </div>
 
@@ -1244,17 +1244,17 @@
       <h3 id="table-ops-title">Table actions</h3>
       <div id="table-ops-hint" class="table-ops-hint" hidden>A cell must be selected to act on a table.</div>
       <div class="table-ops-grid">
-        <button id="op-row-above">Insert row above</button>
-        <button id="op-row-below">Insert row below</button>
-        <button id="op-col-left">Insert col left</button>
-        <button id="op-col-right">Insert col right</button>
-        <button id="op-del-row">Delete row</button>
-        <button id="op-del-col">Delete column</button>
-        <button id="op-merge">Merge cells</button>
-        <button id="op-split">Split cell</button>
+        <button id="op-row-above" data-i18n="Table.InsertRowAbove">Insert row above</button>
+        <button id="op-row-below" data-i18n="Table.InsertRowBelow">Insert row below</button>
+        <button id="op-col-left" data-i18n="Table.InsertColLeft">Insert col left</button>
+        <button id="op-col-right" data-i18n="Table.InsertColRight">Insert col right</button>
+        <button id="op-del-row" data-i18n="Table.DeleteRow">Delete row</button>
+        <button id="op-del-col" data-i18n="Table.DeleteCol">Delete column</button>
+        <button id="op-merge" data-i18n="Table.MergeCells">Merge cells</button>
+        <button id="op-split" data-i18n="Table.SplitCell">Split cell</button>
       </div>
       <div class="dialog-actions">
-        <button id="btn-table-ops-close">Close</button>
+        <button id="btn-table-ops-close" data-i18n="Dialog.Close">Close</button>
       </div>
     </div>
   </div>
@@ -1283,8 +1283,8 @@
         </select>
       </div>
       <div class="dialog-actions">
-        <button id="btn-notes-close">Cancel</button>
-        <button id="btn-notes-ok" class="primary">Insert</button>
+        <button id="btn-notes-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-notes-ok" data-i18n="Dialog.Insert" class="primary">Insert</button>
       </div>
     </div>
   </div>
@@ -1309,8 +1309,8 @@
         </select>
       </div>
       <div class="dialog-actions">
-        <button id="btn-pagenumber-close">Cancel</button>
-        <button id="btn-pagenumber-ok" class="primary">Insert</button>
+        <button id="btn-pagenumber-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-pagenumber-ok" data-i18n="Dialog.Insert" class="primary">Insert</button>
       </div>
     </div>
   </div>
@@ -1327,8 +1327,8 @@
         <input id="hf-distance" type="number" min="0" max="50" value="12.5" inputmode="decimal">
       </div>
       <div class="dialog-actions">
-        <button id="btn-headerfooter-close">Cancel</button>
-        <button id="btn-headerfooter-ok" class="primary">Insert</button>
+        <button id="btn-headerfooter-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-headerfooter-ok" data-i18n="Dialog.Insert" class="primary">Insert</button>
       </div>
     </div>
   </div>
@@ -1341,8 +1341,8 @@
         <input id="tc-enabled" type="checkbox">
       </div>
       <div class="dialog-actions">
-        <button id="btn-trackchanges-close">Cancel</button>
-        <button id="btn-trackchanges-ok" class="primary">OK</button>
+        <button id="btn-trackchanges-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-trackchanges-ok" data-i18n="Dialog.OK" class="primary">OK</button>
       </div>
     </div>
   </div>
@@ -1372,8 +1372,8 @@
         <input id="dropcap-distance" type="number" min="0" max="50" value="0" inputmode="numeric">
       </div>
       <div class="dialog-actions">
-        <button id="btn-dropcap-close">Cancel</button>
-        <button id="btn-dropcap-ok" class="primary">OK</button>
+        <button id="btn-dropcap-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-dropcap-ok" data-i18n="Dialog.OK" class="primary">OK</button>
       </div>
     </div>
   </div>
@@ -1391,8 +1391,8 @@
         </select>
       </div>
       <div class="dialog-actions">
-        <button id="btn-linenumbers-close">Cancel</button>
-        <button id="btn-linenumbers-ok" class="primary">OK</button>
+        <button id="btn-linenumbers-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-linenumbers-ok" data-i18n="Dialog.OK" class="primary">OK</button>
       </div>
     </div>
   </div>
@@ -1408,8 +1408,8 @@
         </select>
       </div>
       <div class="dialog-actions">
-        <button id="btn-hyphenation-close">Cancel</button>
-        <button id="btn-hyphenation-ok" class="primary">OK</button>
+        <button id="btn-hyphenation-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-hyphenation-ok" data-i18n="Dialog.OK" class="primary">OK</button>
       </div>
     </div>
   </div>
@@ -1439,8 +1439,8 @@
         </select>
       </div>
       <div class="dialog-actions">
-        <button id="btn-watermark-close">Cancel</button>
-        <button id="btn-watermark-ok" class="primary">OK</button>
+        <button id="btn-watermark-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-watermark-ok" data-i18n="Dialog.OK" class="primary">OK</button>
       </div>
     </div>
   </div>
@@ -1470,8 +1470,8 @@
         <input id="pagecolor-custom" type="color" value="#ffffff">
       </div>
       <div class="dialog-actions">
-        <button id="btn-pagecolor-close">Cancel</button>
-        <button id="btn-pagecolor-ok" class="primary">OK</button>
+        <button id="btn-pagecolor-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-pagecolor-ok" data-i18n="Dialog.OK" class="primary">OK</button>
       </div>
     </div>
   </div>
@@ -1490,8 +1490,8 @@
         </select>
       </div>
       <div class="dialog-actions">
-        <button id="btn-colors-close">Cancel</button>
-        <button id="btn-colors-ok" class="primary">OK</button>
+        <button id="btn-colors-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-colors-ok" data-i18n="Dialog.OK" class="primary">OK</button>
       </div>
     </div>
   </div>
@@ -1512,8 +1512,8 @@
         </select>
       </div>
       <div class="dialog-actions">
-        <button id="btn-addtext-close">Cancel</button>
-        <button id="btn-addtext-ok" class="primary">OK</button>
+        <button id="btn-addtext-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-addtext-ok" data-i18n="Dialog.OK" class="primary">OK</button>
       </div>
     </div>
   </div>
@@ -1529,8 +1529,8 @@
         </select>
       </div>
       <div class="dialog-actions">
-        <button id="btn-updatetoc-close">Cancel</button>
-        <button id="btn-updatetoc-ok" class="primary">Update</button>
+        <button id="btn-updatetoc-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-updatetoc-ok" data-i18n="Dialog.Update" class="primary">Update</button>
       </div>
     </div>
   </div>
@@ -1547,8 +1547,8 @@
         </select>
       </div>
       <div class="dialog-actions">
-        <button id="btn-displaymode-close">Cancel</button>
-        <button id="btn-displaymode-ok" class="primary">OK</button>
+        <button id="btn-displaymode-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-displaymode-ok" data-i18n="Dialog.OK" class="primary">OK</button>
       </div>
     </div>
   </div>
@@ -1597,8 +1597,8 @@
         <input id="link-url" type="url" placeholder="https://example.com">
       </div>
       <div class="dialog-actions">
-        <button id="btn-link-cancel">Cancel</button>
-        <button id="btn-link-ok" class="primary">Insert</button>
+        <button id="btn-link-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-link-ok" data-i18n="Dialog.Insert" class="primary">Insert</button>
       </div>
     </div>
   </div>
@@ -1616,8 +1616,8 @@
         <input id="columns-gap" type="number" min="0" max="200" value="36">
       </div>
       <div class="dialog-actions">
-        <button id="btn-columns-cancel">Cancel</button>
-        <button id="btn-columns-ok" class="primary">Insert</button>
+        <button id="btn-columns-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-columns-ok" data-i18n="Dialog.Insert" class="primary">Insert</button>
       </div>
     </div>
   </div>
@@ -1631,8 +1631,8 @@
         <input id="toc-title" type="text" placeholder="Table of Contents" value="Table of Contents">
       </div>
       <div class="dialog-actions">
-        <button id="btn-toc-cancel">Cancel</button>
-        <button id="btn-toc-ok" class="primary">Insert</button>
+        <button id="btn-toc-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-toc-ok" data-i18n="Dialog.Insert" class="primary">Insert</button>
       </div>
     </div>
   </div>
@@ -1656,8 +1656,8 @@
         <input id="bd-color" type="color" value="#000000">
       </div>
       <div class="dialog-actions">
-        <button id="btn-borders-cancel">Cancel</button>
-        <button id="btn-borders-ok" class="primary">Apply</button>
+        <button id="btn-borders-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-borders-ok" data-i18n="Dialog.Apply" class="primary">Apply</button>
       </div>
     </div>
   </div>
@@ -1685,8 +1685,8 @@
         <textarea id="object-content" rows="3" placeholder="text inside the object (text box / equation)"></textarea>
       </div>
       <div class="dialog-actions">
-        <button id="btn-object-cancel">Cancel</button>
-        <button id="btn-object-ok" class="primary">Insert</button>
+        <button id="btn-object-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-object-ok" data-i18n="Dialog.Insert" class="primary">Insert</button>
       </div>
     </div>
   </div>
@@ -1700,8 +1700,8 @@
         <input id="bookmark-name" type="text" placeholder="e.g. Section1">
       </div>
       <div class="dialog-actions">
-        <button id="btn-bookmark-cancel">Cancel</button>
-        <button id="btn-bookmark-ok" class="primary">Insert</button>
+        <button id="btn-bookmark-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-bookmark-ok" data-i18n="Dialog.Insert" class="primary">Insert</button>
       </div>
     </div>
   </div>
@@ -1719,8 +1719,8 @@
         <input id="crossref-text" type="text" placeholder="optional (defaults to target name)">
       </div>
       <div class="dialog-actions">
-        <button id="btn-crossref-cancel">Cancel</button>
-        <button id="btn-crossref-ok" class="primary">Insert</button>
+        <button id="btn-crossref-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-crossref-ok" data-i18n="Dialog.Insert" class="primary">Insert</button>
       </div>
     </div>
   </div>
@@ -1750,8 +1750,8 @@
       <div id="ai-review-list" class="version-list" role="list" aria-label="AI changes"></div>
       <div id="ai-review-error" class="version-error" role="alert"></div>
       <div class="dialog-actions">
-        <button id="btn-ai-reject-all">Reject all</button>
-        <button id="btn-ai-review-close">Close</button>
+        <button id="btn-ai-reject-all" data-i18n="Dialog.RejectAll">Reject all</button>
+        <button id="btn-ai-review-close" data-i18n="Dialog.Close">Close</button>
       </div>
     </div>
   </div>
@@ -1767,8 +1767,8 @@
       </div>
       <div id="ai-propose-error" class="version-error" role="alert"></div>
       <div class="dialog-actions">
-        <button id="btn-ai-propose-cancel">Cancel</button>
-        <button id="btn-ai-propose-run" class="primary">Propose</button>
+        <button id="btn-ai-propose-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-ai-propose-run" data-i18n="Dialog.Propose" class="primary">Propose</button>
       </div>
     </div>
   </div>
@@ -1814,8 +1814,8 @@
         </div>
       </div>
       <div class="dialog-actions">
-        <button id="btn-ps-cancel">Cancel</button>
-        <button id="btn-ps-apply" class="primary">Apply</button>
+        <button id="btn-ps-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-ps-apply" data-i18n="Dialog.Apply" class="primary">Apply</button>
       </div>
     </div>
   </div>
@@ -1859,7 +1859,7 @@
       <h3 id="symbol-dialog-title">Insert symbol</h3>
       <div id="symbol-grid" class="symbol-grid" role="listbox" aria-label="Symbols"></div>
       <div class="dialog-actions">
-        <button id="btn-symbol-close">Close</button>
+        <button id="btn-symbol-close" data-i18n="Dialog.Close">Close</button>
       </div>
     </div>
   </div>
@@ -1942,7 +1942,7 @@
                data-i18n-placeholder="Find.SearchPlaceholder">
         <button id="btn-find-prev" class="find-arrow" title="Previous (Shift+Enter)" data-i18n-title="Find.Prev" aria-label="Previous match">▲</button>
         <button id="btn-find-next" class="find-arrow" title="Next (Enter)" data-i18n-title="Find.Next" aria-label="Next match">▼</button>
-        <button id="btn-find-close" class="find-close" title="Close" aria-label="Close find panel">✕</button>
+        <button id="btn-find-close" data-i18n-title="Dialog.Close" data-i18n-aria-label="Find.ClosePanel" class="find-close" title="Close" aria-label="Close find panel">✕</button>
       </div>
       <div class="find-field-row">
         <input id="find-replace" type="text" spellcheck="false" aria-label="Replace with"
@@ -1980,7 +1980,7 @@
   <aside id="review-panel" class="side-panel" aria-label="Review changes" hidden>
     <div class="side-panel-header">
       <h3>Review changes</h3>
-      <button id="btn-review-close" aria-label="Close review panel">✕</button>
+      <button id="btn-review-close" data-i18n-aria-label="Review.ClosePanel" aria-label="Close review panel">✕</button>
     </div>
     <div id="review-list" class="review-list"></div>
     <p id="review-empty" class="review-empty">No tracked changes.</p>
@@ -1995,8 +1995,8 @@
         <textarea id="comment-body" rows="3" placeholder="Your comment"></textarea>
       </div>
       <div class="dialog-actions">
-        <button id="btn-comment-cancel">Cancel</button>
-        <button id="btn-comment-ok" class="primary">Comment</button>
+        <button id="btn-comment-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-comment-ok" data-i18n="Dialog.Comment" class="primary">Comment</button>
       </div>
     </div>
   </div>
@@ -2005,7 +2005,7 @@
   <aside id="comments-panel" class="side-panel" aria-label="Comments" hidden>
     <div class="side-panel-header">
       <h3>Comments</h3>
-      <button id="btn-comments-close" aria-label="Close comments panel">✕</button>
+      <button id="btn-comments-close" data-i18n-aria-label="Comments.ClosePanel" aria-label="Close comments panel">✕</button>
     </div>
     <div id="comments-list" class="review-list"></div>
     <p id="comments-empty" class="review-empty">No comments.</p>
@@ -2026,7 +2026,7 @@
       <div class="dialog-field"><label>Language</label><span id="info-lang">—</span></div>
       <div class="dialog-field"><label>Stats</label><span id="info-stats">—</span></div>
       <div class="dialog-field"><label>HTML size</label><span id="info-size">—</span></div>
-      <div class="dialog-actions"><button id="btn-info-close">Close</button></div>
+      <div class="dialog-actions"><button id="btn-info-close" data-i18n="Dialog.Close">Close</button></div>
     </div>
   </div>
 
@@ -2048,8 +2048,8 @@
         <input id="settings-zoom" type="number" min="50" max="200" step="10">
       </div>
       <div class="dialog-actions">
-        <button id="btn-settings-cancel">Cancel</button>
-        <button id="btn-settings-ok" class="primary">Apply</button>
+        <button id="btn-settings-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-settings-ok" data-i18n="Dialog.Apply" class="primary">Apply</button>
       </div>
     </div>
   </div>
@@ -2061,7 +2061,7 @@
          WOPI host for OpenCloud. DOCX in, HTML editing, DOCX out.</p>
       <p><kbd>Ctrl+Z</kbd> undo · <kbd>Ctrl+S</kbd> save · <kbd>Ctrl+F</kbd> find.
          Learn more at the project repository.</p>
-      <div class="dialog-actions"><button id="btn-help-close">Close</button></div>
+      <div class="dialog-actions"><button id="btn-help-close" data-i18n="Dialog.Close">Close</button></div>
     </div>
   </div>
 
@@ -2077,8 +2077,8 @@
         <input id="suggest-email" type="email" placeholder="you@example.org">
       </div>
       <div class="dialog-actions">
-        <button id="btn-suggest-cancel">Cancel</button>
-        <button id="btn-suggest-send" class="primary">Compose email</button>
+        <button id="btn-suggest-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-suggest-send" data-i18n="Dialog.ComposeEmail" class="primary">Compose email</button>
       </div>
     </div>
   </div>
@@ -2094,13 +2094,13 @@
       </div>
       <div class="dialog-field">
         <label>Source</label>
-        <button id="btn-mailmerge-csv" type="button">Choose CSV file…</button>
+        <button id="btn-mailmerge-csv" data-i18n="Dialog.ChooseCsvFile" type="button">Choose CSV file…</button>
       </div>
       <pre id="mailmerge-preview" class="dialog-pre" role="region" aria-label="Merge preview"></pre>
       <div class="dialog-actions">
-        <button id="btn-mailmerge-close">Close</button>
-        <button id="btn-mailmerge-field" class="primary">Insert field</button>
-        <button id="btn-mailmerge-preview" class="primary">Preview merged copies</button>
+        <button id="btn-mailmerge-close" data-i18n="Dialog.Close">Close</button>
+        <button id="btn-mailmerge-field" data-i18n="Backstage.FieldTitle" class="primary">Insert field</button>
+        <button id="btn-mailmerge-preview" data-i18n="Dialog.PreviewMerged" class="primary">Preview merged copies</button>
       </div>
     </div>
   </div>
@@ -2127,8 +2127,8 @@
       <p class="dialog-hint">The field shows its live value; on save the value
          stays in the document.</p>
       <div class="dialog-actions">
-        <button id="btn-field-cancel">Cancel</button>
-        <button id="btn-field-ok" class="primary">Insert</button>
+        <button id="btn-field-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-field-ok" data-i18n="Dialog.Insert" class="primary">Insert</button>
       </div>
     </div>
   </div>
@@ -2149,8 +2149,8 @@
         <input id="cc-title" type="text" placeholder="e.g. Customer name">
       </div>
       <div class="dialog-actions">
-        <button id="btn-cc-cancel">Cancel</button>
-        <button id="btn-cc-ok" class="primary">Insert</button>
+        <button id="btn-cc-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-cc-ok" data-i18n="Dialog.Insert" class="primary">Insert</button>
       </div>
     </div>
   </div>
@@ -2187,8 +2187,8 @@
         <div id="chart-preview"></div>
       </div>
       <div class="dialog-actions">
-        <button id="btn-chart-cancel">Cancel</button>
-        <button id="btn-chart-ok" class="primary">Insert chart</button>
+        <button id="btn-chart-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-chart-ok" data-i18n="Dialog.InsertChart" class="primary">Insert chart</button>
       </div>
     </div>
   </div>
@@ -2205,8 +2205,8 @@
         <div id="equation-preview"></div>
       </div>
       <div class="dialog-actions">
-        <button id="btn-equation-cancel">Cancel</button>
-        <button id="btn-equation-ok" class="primary">Insert equation</button>
+        <button id="btn-equation-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-equation-ok" data-i18n="Dialog.InsertEquation" class="primary">Insert equation</button>
       </div>
     </div>
   </div>
@@ -2228,8 +2228,8 @@
         <div id="smartart-preview"></div>
       </div>
       <div class="dialog-actions">
-        <button id="btn-smartart-cancel">Cancel</button>
-        <button id="btn-smartart-ok" class="primary">Insert diagram</button>
+        <button id="btn-smartart-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-smartart-ok" data-i18n="Dialog.InsertDiagram" class="primary">Insert diagram</button>
       </div>
     </div>
   </div>
@@ -2238,20 +2238,20 @@
     <div class="insert-pop-body">
       <h4 id="objlayout-title" data-i18n="Backstage.ObjLayout">Object layout</h4>
       <div class="objlayout-row"><span>Wrap</span>
-        <button type="button" id="btn-wrap-inline" data-objwrap="inline" class="primary-sm">Inline</button>
-        <button type="button" id="btn-wrap-square" data-objwrap="square">Square</button>
-        <button type="button" id="btn-wrap-behind" data-objwrap="behind">Behind</button>
+        <button type="button" id="btn-wrap-inline" data-i18n="Layout.Wrapping.Inline" data-objwrap="inline" class="primary-sm">Inline</button>
+        <button type="button" id="btn-wrap-square" data-i18n="Layout.Wrapping.Square" data-objwrap="square">Square</button>
+        <button type="button" id="btn-wrap-behind" data-i18n="Layout.Wrapping.Behind" data-objwrap="behind">Behind</button>
       </div>
       <div class="objlayout-row"><span>Align</span>
-        <button type="button" id="btn-align-left" data-objalign="left">Left</button>
-        <button type="button" id="btn-align-center" data-objalign="center">Center</button>
-        <button type="button" id="btn-align-right" data-objalign="right">Right</button>
+        <button type="button" id="btn-align-left" data-i18n="Backstage.ObjLayout.AlignLeft" data-objalign="left">Left</button>
+        <button type="button" id="btn-align-center" data-i18n="Backstage.ObjLayout.AlignCenter" data-objalign="center">Center</button>
+        <button type="button" id="btn-align-right" data-i18n="Backstage.ObjLayout.AlignRight" data-objalign="right">Right</button>
       </div>
       <div class="objlayout-row"><span>Layer</span>
-        <button type="button" id="btn-layer-back" data-objlayer="back">Send backward</button>
-        <button type="button" id="btn-layer-front" data-objlayer="front">Bring forward</button>
+        <button type="button" id="btn-layer-back" data-i18n="Layout.Object.SendBackward" data-objlayer="back">Send backward</button>
+        <button type="button" id="btn-layer-front" data-i18n="Layout.Object.BringForward" data-objlayer="front">Bring forward</button>
       </div>
-      <button type="button" id="btn-objlayout-close" class="primary">Done</button>
+      <button type="button" id="btn-objlayout-close" data-i18n="Dialog.Done" class="primary">Done</button>
     </div>
   </div>
 </body>

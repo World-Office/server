@@ -1792,8 +1792,10 @@
   // BUG1-STATIC-AUDIT: every .dialog-overlay in index.html is a modal
   // overlay (aria-modal="true") and belongs in DIALOG_IDS so getOpenDialog()
   // (modal Tab trap, WCAG focus clamp) sees it. Popovers that must stay
-  // non-modal (table/image insert pops, aria-modal="false") use .insert-pop
-  // instead and are deliberately absent (see anchorInsertPop above).
+  // non-modal use .insert-pop with aria-modal="false" and are deliberately
+  // absent (see anchorInsertPop above): table/image insert pops, and
+  // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
+  // styling (aria-modal="false", hidden-toggle instead of .open).
   const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
@@ -7796,6 +7798,22 @@
       if (k === "u") {
         ev.preventDefault();
         emitCommand("underline");
+        return;
+      }
+      // Zoom: Ctrl+Minus out, Ctrl+Plus (or Ctrl+=, the unshifted key on
+      // US layouts) in. Keyboard equivalents of the statusbar zoom buttons,
+      // as declared via aria-keyshortcuts on #btn-zoom-out / #btn-zoom-in.
+      // ev.code matches like the brackets above, so numeric-keypad and
+      // non-US layouts resolve; applyZoom() clamps to 0.5–2.
+      if (
+        ev.code === "Minus" || ev.code === "Equal" ||
+        ev.code === "NumpadSubtract" || ev.code === "NumpadAdd" ||
+        k === "-" || k === "+" || k === "="
+      ) {
+        ev.preventDefault();
+        const out = ev.code === "Minus" || ev.code === "NumpadSubtract" || k === "-";
+        zoomLevel += out ? -0.1 : 0.1;
+        applyZoom();
         return;
       }
     }
