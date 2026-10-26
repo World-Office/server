@@ -1870,7 +1870,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -2571,6 +2571,11 @@
       markDirty();
       scheduleCollabSync();
       notifyHost("editing");
+      // BUG8-STATE-CONSISTENCY: the drag mutates width/height without a
+      // selectionchange, so the right panel's image inputs stayed stale
+      // until the user re-selected (same desync family BUG4 fixed for
+      // aria-pressed buttons). Re-mirror the live geometry into the panel.
+      syncRightPanelControls();
     }
   }
 
@@ -3927,6 +3932,24 @@
   Object.keys(tableOps).forEach((id) => {
     const btn = document.getElementById(id);
     if (btn) btn.addEventListener("click", () => { tableOps[id](); closeTableOpsDialog(); });
+  });
+  // BUG8-STATE-CONSISTENCY: the table-ops dialog owns the same border and
+  // background surfaces as the right panel; both funnel through
+  // applyTableBorder/applyTableBackground so the mutations converge.
+  const tableOpsBorderApply = () => {
+    const styleSel = document.getElementById("table-ops-border-style");
+    if (!styleSel) return;
+    const colorIn = document.getElementById("table-ops-border-color");
+    const widthIn = document.getElementById("table-ops-border-width");
+    applyTableBorder(styleSel.value, colorIn && colorIn.value, widthIn && widthIn.value);
+  };
+  ["table-ops-border-style", "table-ops-border-color", "table-ops-border-width"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("change", tableOpsBorderApply);
+  });
+  const tableOpsBackground = document.getElementById("table-ops-background");
+  if (tableOpsBackground) tableOpsBackground.addEventListener("change", () => {
+    applyTableBackground(tableOpsBackground.value);
   });
   const tableOpsClose = document.getElementById("btn-table-ops-close");
   if (tableOpsClose) tableOpsClose.addEventListener("click", closeTableOpsDialog);
@@ -5350,14 +5373,16 @@
   function pxToPt(px) { return Math.round((parseFloat(px) || 0) * 0.75); }
 
   // -- Table section ---------------------------------------------------
-  function applyTableBorder(style, color) {
+  function applyTableBorder(style, color, widthPt) {
     const table = selectedTable();
     if (!table || READ_ONLY) { setStatus(t("Status.NotAvailable") + " tableBorder"); return; }
-    const border = style === "none" ? "none" : "1pt " + style + " " + (color || "#000000");
+    const pt = Math.max(0.5, parseFloat(widthPt) || 1);
+    const border = style === "none" ? "none" : pt + "pt " + style + " " + (color || "#000000");
     Array.prototype.forEach.call(table.querySelectorAll("td, th"), (cell) => {
       cell.style.border = border;
     });
     markObjectMutation();
+    syncRightPanelControls();
     setStatus("Table border: " + style);
   }
   function applyTableBackground(color) {
@@ -5367,6 +5392,7 @@
       cell.style.backgroundColor = color || "";
     });
     markObjectMutation();
+    syncRightPanelControls();
     setStatus("Table background: " + color);
   }
   // No per-row/col resize machinery exists (table ops only insert/delete),
@@ -5405,6 +5431,11 @@
     }
     const colorIn = document.getElementById("rp-table-border-color");
     if (cs && colorIn && csToHex(cs.borderTopColor)) colorIn.value = csToHex(cs.borderTopColor);
+    const widthIn = document.getElementById("rp-table-border-width");
+    if (cs && widthIn) {
+      const w = parseFloat(cs.borderTopWidth);
+      if (w) widthIn.value = String(Math.max(0.5, pxToPt(w)));
+    }
     const bgIn = document.getElementById("rp-table-background");
     if (cs && bgIn && csToHex(cs.backgroundColor)) bgIn.value = csToHex(cs.backgroundColor);
     const rowIn = document.getElementById("rp-table-row-height");
@@ -5482,6 +5513,56 @@
     applyObjectOp(value); // same wrapping values/classes as the objectOp path
     syncRightPanelControls();
   }
+  // BUG8-STATE-CONSISTENCY: alt-text editing. Plain images only — vector
+  // objects encode their spec JSON in alt, so their alt channel stays
+  // reserved. The ctx row, the image-alt-dialog and the right-panel input
+  // all funnel through applyImageAltText so the surfaces converge.
+  function plainImageSelection() {
+    const obj = selectedImageObject();
+    return obj && obj.matches && obj.matches("img") &&
+      !obj.classList.contains("vector-object") ? obj : null;
+  }
+  function applyImageAltText(value) {
+    const img = plainImageSelection();
+    if (!img || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageAlt"); return false; }
+    img.setAttribute("alt", String(value == null ? "" : value));
+    markObjectMutation();
+    syncRightPanelControls();
+    setStatus("Image alt text updated");
+    return true;
+  }
+  function openImageAltDialog() {
+    const img = plainImageSelection();
+    const dialog = document.getElementById("image-alt-dialog");
+    const input = document.getElementById("image-alt-input");
+    if (!dialog || !input) return;
+    if (!img || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageAlt"); return; }
+    input.value = img.getAttribute("alt") || "";
+    const wIn = document.getElementById("image-size-width");
+    const hIn = document.getElementById("image-size-height");
+    if (wIn) wIn.value = img.getAttribute("width") || String(img.naturalWidth || "");
+    if (hIn) hIn.value = img.getAttribute("height") || String(img.naturalHeight || "");
+    rememberFocus();
+    dialog.classList.add("open");
+    input.focus();
+  }
+  const imageAltOk = document.getElementById("btn-image-alt-ok");
+  if (imageAltOk) imageAltOk.addEventListener("click", () => {
+    const input = document.getElementById("image-alt-input");
+    applyImageAltText(input ? input.value : "");
+    const wIn = document.getElementById("image-size-width");
+    const hIn = document.getElementById("image-size-height");
+    if (wIn && hIn) {
+      applyImageSize(parseFloat(wIn.value), parseFloat(hIn.value));
+    }
+    closeDlg("image-alt-dialog");
+  });
+  const imageAltCancel = document.getElementById("btn-image-alt-cancel");
+  if (imageAltCancel) imageAltCancel.addEventListener("click", () => closeDlg("image-alt-dialog"));
+  const imageAltInput = document.getElementById("image-alt-input");
+  if (imageAltInput) imageAltInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); if (imageAltOk) imageAltOk.click(); }
+  });
   function applyImageFill(color) {
     const obj = selectedImageObject();
     if (!obj || READ_ONLY) { setStatus(t("Status.NotAvailable") + " imageFill"); return; }
@@ -5512,6 +5593,8 @@
       if (wIn) wIn.value = String(parseInt(obj.style.width, 10) || "");
       if (hIn) hIn.value = String(parseInt(obj.style.height, 10) || "");
     }
+    const altIn = document.getElementById("rp-image-alt");
+    if (altIn) altIn.value = obj.matches("img") ? (obj.getAttribute("alt") || "") : "";
     const opIn = document.getElementById("rp-image-opacity");
     if (opIn) {
       const o = parseFloat(window.getComputedStyle(obj).opacity);
@@ -5551,6 +5634,11 @@
       wrapSel.value = img.classList.contains("obj-square") ? "wrap-square"
         : img.classList.contains("obj-behind") ? "wrap-behind" : "wrap-inline";
     }
+    const spec = readChartSpec(img);
+    const typeSel = document.getElementById("rp-chart-type");
+    if (typeSel) typeSel.value = String(spec.type || "bar");
+    const titleChk = document.getElementById("rp-chart-title");
+    if (titleChk) titleChk.checked = !!(spec.elements && spec.elements.title);
   }
   function applyChartPanelSize() {
     const wIn = document.getElementById("rp-chart-width");
@@ -5562,16 +5650,19 @@
 
   // Table section wiring.
   const rpTableBorderStyle = document.getElementById("rp-table-border-style");
-  if (rpTableBorderStyle) rpTableBorderStyle.addEventListener("change", () => {
-    const colorIn = document.getElementById("rp-table-border-color");
-    if (READ_ONLY) return;
-    applyTableBorder(rpTableBorderStyle.value, colorIn && colorIn.value);
-  });
   const rpTableBorderColor = document.getElementById("rp-table-border-color");
-  if (rpTableBorderColor) rpTableBorderColor.addEventListener("change", () => {
+  const rpTableBorderWidth = document.getElementById("rp-table-border-width");
+  const rpTableBorderApply = () => {
     if (READ_ONLY) return;
-    applyTableBorder(rpTableBorderStyle ? rpTableBorderStyle.value : "solid", rpTableBorderColor.value);
-  });
+    applyTableBorder(
+      rpTableBorderStyle ? rpTableBorderStyle.value : "solid",
+      rpTableBorderColor ? rpTableBorderColor.value : undefined,
+      rpTableBorderWidth ? rpTableBorderWidth.value : undefined
+    );
+  };
+  if (rpTableBorderStyle) rpTableBorderStyle.addEventListener("change", rpTableBorderApply);
+  if (rpTableBorderColor) rpTableBorderColor.addEventListener("change", rpTableBorderApply);
+  if (rpTableBorderWidth) rpTableBorderWidth.addEventListener("change", rpTableBorderApply);
   const rpTableBackground = document.getElementById("rp-table-background");
   if (rpTableBackground) rpTableBackground.addEventListener("change", () => {
     if (READ_ONLY) return;
@@ -5628,6 +5719,11 @@
     if (READ_ONLY) return;
     applyImageWrap(rpImageWrap.value);
   });
+  const rpImageAlt = document.getElementById("rp-image-alt");
+  if (rpImageAlt) rpImageAlt.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyImageAltText(rpImageAlt.value);
+  });
   const rpImageFill = document.getElementById("rp-image-fill");
   if (rpImageFill) rpImageFill.addEventListener("change", () => {
     if (READ_ONLY) return;
@@ -5675,6 +5771,22 @@
   const rpChartAdvanced = document.getElementById("rp-chart-advanced");
   if (rpChartAdvanced) rpChartAdvanced.addEventListener("click", () => {
     emitCommand("chartSettings"); // same marker path as chart-design Advanced
+  });
+  const rpChartType = document.getElementById("rp-chart-type");
+  if (rpChartType) rpChartType.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyChartType(rpChartType.value);
+    syncRightPanelControls();
+  });
+  const rpChartTitle = document.getElementById("rp-chart-title");
+  if (rpChartTitle) rpChartTitle.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    toggleChartElement("title");
+    syncRightPanelControls();
+  });
+  const rpChartEditData = document.getElementById("rp-chart-edit-data");
+  if (rpChartEditData) rpChartEditData.addEventListener("click", () => {
+    editSelectedChartData();
   });
 
   // Mail merge section wiring: surface the three actions of the existing
@@ -7265,6 +7377,22 @@
       ctxMenu.querySelectorAll("[data-showif='trackchanges']").forEach((el) => {
         el.hidden = !trackChangesOn;
       });
+      // BUG8-STATE-CONSISTENCY: data-showif="image" gates alt-text editing
+      // on a plain image selection. Vector objects keep their alt attribute
+      // as the spec JSON channel, so they are excluded.
+      const ctxImageSel = selectedObject();
+      const hasImageSel = !!(ctxImageSel && ctxImageSel.matches &&
+        ctxImageSel.matches("img") && !ctxImageSel.classList.contains("vector-object"));
+      ctxMenu.querySelectorAll("[data-showif='image']").forEach((el) => {
+        el.hidden = !hasImageSel;
+      });
+      // BUG8-STATE-CONSISTENCY: data-showif="object" gates the wrap rows on
+      // any selected object (image, chart, shape) so the ctx surface converges
+      // with the Layout menu and the right-panel wrapping select.
+      const hasObjectSel = !!ctxImageSel;
+      ctxMenu.querySelectorAll("[data-showif='object']").forEach((el) => {
+        el.hidden = !hasObjectSel;
+      });
       refreshSpellSuggestionRows(misspellSpan);
       collapseAllCtxSubmenus();
       ctxMenu.hidden = false;
@@ -7350,6 +7478,48 @@
         openUpdateTocDialog();
       } else if (action === "PageBreakBefore") {
         emitCommand("insertPageBreak");
+        // BUG8-STATE-CONSISTENCY: ctx table ops route through the exact
+        // handlers the table-ops dialog uses, so a merge/row/col mutation
+        // converges to identical HTML on both surfaces.
+      } else if (action === "TableRowAbove") {
+        closeCtx();
+        insertTableRow(true);
+      } else if (action === "TableRowBelow") {
+        closeCtx();
+        insertTableRow(false);
+      } else if (action === "TableColLeft") {
+        closeCtx();
+        insertTableCol(true);
+      } else if (action === "TableColRight") {
+        closeCtx();
+        insertTableCol(false);
+      } else if (action === "TableDeleteRow") {
+        closeCtx();
+        deleteTableRow();
+      } else if (action === "TableDeleteCol") {
+        closeCtx();
+        deleteTableCol();
+      } else if (action === "TableMergeCells") {
+        closeCtx();
+        mergeTableCells();
+      } else if (action === "TableSplitCell") {
+        closeCtx();
+        splitTableCell();
+      } else if (action === "EditAltText") {
+        closeCtx();
+        openImageAltDialog();
+      } else if (action === "WrapInline") {
+        closeCtx();
+        applyObjectOp("wrap-inline");
+        syncRightPanelControls();
+      } else if (action === "WrapSquare") {
+        closeCtx();
+        applyObjectOp("wrap-square");
+        syncRightPanelControls();
+      } else if (action === "WrapBehind") {
+        closeCtx();
+        applyObjectOp("wrap-behind");
+        syncRightPanelControls();
         // AF8-INSERT-CTX-CLEANUP: OO-parity completion rows. Real DOM ops
         // where they exist (links, lists, tracked changes), wo: marker
         // events where a dialog slice is the follow-up (loud-stub contract).
@@ -9745,6 +9915,12 @@
     captureHistory();
     scheduleCollabSync();
     notifyHost("editing");
+    // BUG8-STATE-CONSISTENCY: applyChartSize is reachable from three
+    // surfaces (ribbon chart-design inputs, chartSize command, right
+    // panel). Re-mirror the new geometry into the other two so the
+    // surfaces converge instead of showing stale values.
+    syncRightPanelControls();
+    updateChartDesignState();
     setStatus("Chart size: " + w + "x" + h);
   }
   function updateChartDesignState() {
