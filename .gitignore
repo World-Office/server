@@ -139,3 +139,6 @@ scripts/wo-orchestrator/state/
 .af-state/
 core/crates/wo-renderer-wasm/pkg/
 tests/docker/opencloud-config/opencloud.yaml
+
+# agentflow run state (tasks/prompts/worktrees are ephemeral)
+state/
