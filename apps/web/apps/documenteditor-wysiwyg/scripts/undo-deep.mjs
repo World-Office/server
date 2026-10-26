@@ -392,6 +392,136 @@ async function groupB(page) {
     apply: (p) => clickCmd(p, "listStyle", "square") });
 }
 
+// -------------------------------------------------------- group c: objects --
+// Click an element by id (menu items / ribbon buttons playwright would call
+// hidden; evaluate-click matches real dispatch without visibility checks).
+const clickId = (page, id) =>
+  page.evaluate((id) => {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`no element #${id}`);
+    el.click();
+  }, id);
+
+// 1x1 red PNG — enough for the image dialog's type/size validation.
+const PNG_1PX = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64");
+
+async function groupC(page) {
+  console.log("group c — objects");
+
+  await probe(page, "c1 insert shape object", {
+    apply: async (p) => {
+      await clickCmd(p, "insertObject", "shape");
+      await clickId(p, "btn-object-ok");
+    } });
+
+  await probe(page, "c2 insert table (2x3)", {
+    apply: async (p) => {
+      await clickId(p, "btn-table");
+      await clickId(p, "btn-table-ok");
+    } });
+
+  // Vector objects (chart/equation/smartart) render asynchronously via an
+  // Image onload -> execCommand insertHTML; wait for the img to land.
+  const insertVector = (openBtn, okBtn) => async (p) => {
+    await clickId(p, openBtn);
+    await clickId(p, okBtn);
+    await p.waitForSelector("#editor img.vector-object", { timeout: 5000 });
+    await p.waitForTimeout(200);
+  };
+  await probe(page, "c3 insert chart (vector)", {
+    apply: insertVector("btn-chart", "btn-chart-ok") });
+  await probe(page, "c4 insert equation (vector)", {
+    apply: insertVector("btn-equation", "btn-equation-ok") });
+  await probe(page, "c5 insert smartart (vector)", {
+    apply: insertVector("btn-smartart", "btn-smartart-ok") });
+
+  await probe(page, "c6 insert image", {
+    apply: async (p) => {
+      await clickId(p, "btn-image");
+      await p.setInputFiles("#image-file", {
+        name: "dot.png", mimeType: "image/png", buffer: PNG_1PX });
+      await p.waitForFunction(
+        () => !document.getElementById("btn-image-ok").disabled,
+        null, { timeout: 5000 });
+      await clickId(p, "btn-image-ok");
+    } });
+
+  await probe(page, "c7 insert content control", {
+    apply: async (p) => {
+      await clickId(p, "btn-contentcontrol");
+      await clickId(p, "btn-cc-ok");
+    } });
+
+  await probe(page, "c8 drop cap via dialog", {
+    apply: async (p) => {
+      await clickCmd(p, "toggleDropcap");
+      await clickId(p, "btn-dropcap-ok");
+    } });
+
+  // Object ops need a selected object: prime by inserting a shape, click it,
+  // then run the op through its data-cmd button (same executor as the UI).
+  const primedShape = async (p) => {
+    await clickCmd(p, "insertObject", "shape");
+    await clickId(p, "btn-object-ok");
+    await p.waitForTimeout(120);
+    await p.locator("#editor div.object").first().click();
+    await p.waitForTimeout(80);
+  };
+  await probe(page, "c9 object op bring-forward", {
+    prime: primedShape,
+    apply: (p) => clickCmd(p, "objectOp", "bring-forward") });
+  await probe(page, "c10 object op wrap-square", {
+    prime: primedShape,
+    apply: (p) => clickCmd(p, "objectOp", "wrap-square") });
+
+  await probe(page, "c11 chart resize (chart-size input)", {
+    prime: async (p) => {
+      await clickId(p, "btn-chart");
+      await clickId(p, "btn-chart-ok");
+      await p.waitForSelector("#editor img.vector-object", { timeout: 5000 });
+      await p.waitForTimeout(200);
+      await p.locator("#editor img.vector-object").first().click();
+      await p.waitForTimeout(120);
+      // Clicking the chart opens the chart-design ribbon tab (hiding the
+      // home ribbon and the undo button) and the object-layout popup.
+      // Return to home + close the popup so the probe can click undo.
+      await p.evaluate(() => {
+        document.getElementById("btn-objlayout-close")?.click();
+        document.querySelector('.ribbon-tab[data-tab="home"]')?.click();
+      });
+      await p.waitForTimeout(120);
+    },
+    apply: (p) => p.evaluate(() => {
+      const el = document.getElementById("chart-width-input");
+      el.disabled = false; // design tab arms it on selection; force-armed here
+      el.value = "300";
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }) });
+
+  // Phantom check: closing an insert dialog with Cancel must touch neither
+  // the DOM nor the history chain.
+  await step("c12 object dialog cancel is a no-op", async () => {
+    await resetDoc(page);
+    const beforeHtml = await normHtml(page);
+    const h0 = await hist(page);
+    const undoDisabledBefore = await page.evaluate(
+      () => document.getElementById("btn-undo").disabled);
+    await clickCmd(page, "insertObject", "shape");
+    await clickId(page, "btn-object-cancel");
+    await page.waitForTimeout(150);
+    assert.equal((await hist(page)).u, h0.u, "cancel must not push history");
+    assert.equal(await normHtml(page), beforeHtml, "cancel must not touch the DOM");
+    assert.equal(await page.evaluate(
+      () => document.getElementById("btn-undo").disabled), undoDisabledBefore,
+      "cancel must not enable undo");
+    const open = await page.evaluate(() =>
+      document.getElementById("object-dialog").classList.contains("open"));
+    assert.equal(open, false, "cancel must close the dialog");
+  });
+}
+
 // ------------------------------------------------------------------ main --
 async function main() {
   const port = await freePort(PORT);
@@ -413,6 +543,7 @@ async function main() {
 
     await groupA(page);
     await groupB(page);
+    await groupC(page);
 
     await browser.close();
   } finally {
