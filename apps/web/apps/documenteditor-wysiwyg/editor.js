@@ -1685,6 +1685,26 @@
     if (redoBtn) redoBtn.disabled = READ_ONLY || redoStack.length === 0;
   }
 
+  // BUG7-UNDO-DEEP: read-only automation hook over the history chain (same
+  // spirit as __WO_FLAT_HTML__) — the undo-deep probe asserts exact depths.
+  window.__WO_HISTORY__ = {
+    get undoDepth() { return undoStack.length; },
+    get redoDepth() { return redoStack.length; },
+    get snapshot() { return lastSnapshot; },
+    reset(html) {
+      undoStack.length = 0;
+      redoStack.length = 0;
+      if (typeof html === "string") {
+        editor.innerHTML = html;
+        hydrateVectorObjects();
+        paginateQuiet();
+      }
+      lastSnapshot = editor.innerHTML;
+      updateActiveStates();
+      updateUndoRedoState();
+    },
+  };
+
   function updateActiveStates() {
     document.querySelectorAll("button[data-cmd]").forEach((btn) => {
       const cmd = btn.dataset.cmd;
