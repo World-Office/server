@@ -14,6 +14,8 @@
   --ink: #1a1a1a;
   --hover: rgba(255, 255, 255, 0.08);
   --ribbon: #2a2a3a;
+  --titlebar: #2a2a3a;
+  --tab-active-bg: #3a3a4e;
   --ruler-tick: #4a4a5e;
 }
 
@@ -33,7 +35,9 @@ html.light {
   --paper: #ffffff;
   --ink: #1a1a1a;
   --hover: rgba(0, 0, 0, 0.06);
-  --ribbon: #fefefe;   /* OO golden ribbon band on white */
+  --ribbon: #f7f7f7;   /* OO classic-light function band (light gray) */
+  --titlebar: #f7f7f7; /* OO classic-light title row (same gray family) */
+  --tab-active-bg: #ffffff; /* filled contrast pill for the active tab */
   --ruler-tick: #b9b9b9;
 }
 
@@ -120,45 +124,43 @@ body {
 }
 
 /* ---- toolbar ---- */
+/* CHROME1-TITLE-TAB-ROW: the tab strip lives in .titlebar now, so this
+   header is ONLY the function band: a light-gray (OO classic-light) single
+   84px row. */
 .toolbar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   padding: 0 12px;
-  /* WO-RIBBON-FLEX: band grows when the flowing groups wrap on narrow
-     windows (OO two-row ribbon) instead of clipping; 112px is the golden
-     single-row minimum. */
   height: auto;
-  min-height: 112px;
-  /* ponytail: overflow hidden on the toolbar clipped the .menu-list dropdowns
-     (they hang below the 112px band via position:absolute; top:100%) so every
-     ribbon sub-menu was visually cut. Dropped to visible. */
-  /* clip (not hidden/auto): wrapped ribbon groups overflow horizontally on
-     narrow windows; scroll/hidden would re-introduce the dropdown clamp and
-     a full-scroll container. clip contains the horizontal overflow so the
-     page stops h-scrolling while the below-band .menu-list stays visible. */
+  min-height: 84px;
+  /* clip (not hidden/auto): the active page is translated horizontally by
+     the chevron scroll logic, so the band must clip the horizontal overflow
+     while staying overflow-y: visible — a scroll container (auto) would force
+     overflow-y to auto and clip the .menu-list dropdowns hanging below. */
   max-width: 100%;
   overflow-x: clip;
   overflow-y: visible;
   background: var(--ribbon);
   border-bottom: 1px solid var(--border);
   flex: 0 0 auto;
-  position: relative;        /* containing block for the 28px ribbon-tab strip */
+  position: relative;        /* containing block for the chevron buttons */
   z-index: 10;               /* stack above the editor pages so the absolute
                                 .menu-list dropdowns hang over (not under) them */
 }
-/* Collapsed ribbon (btn-ribbon-collapse): hide the control band, keep tabs. */
-.toolbar.ribbon-collapsed { height: auto; min-height: 28px; }
-.toolbar.ribbon-collapsed .ribbon-page { display: none; }
+/* Collapsed ribbon (btn-ribbon-collapse): the tabs live in row 1 (.titlebar),
+   so collapsing hides the whole band. */
+.toolbar.ribbon-collapsed { display: none; }
 
-/* Ribbon pages: one visible control group per tab (default Home). */
+/* Ribbon pages: one visible control group per tab (default Home).
+   CHROME1-TITLE-TAB-ROW: single left-to-right flow — NO wrapping. Overflow
+   is scrolled via transform (editor.js rib scroll logic), never wrapped. */
 .ribbon-page { display: none; }
 .ribbon-page.active {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 2px;
-  row-gap: 6px;
   width: 100%;
 }
 
@@ -171,27 +173,35 @@ body {
 .ribbon-row { display: flex; align-items: center; gap: 2px; }
 .ribbon-page.active .ribbon-row { width: 100%; align-self: stretch; }
 
-/* Title bar (band y0–28): brand, document name, ribbon tabs, view toggles. */
+/* Title bar (band y0–32, CHROME1-TITLE-TAB-ROW): wordmark + ribbon tab
+   strip + document name + quick-access cluster in ONE row (OO parity). */
 .titlebar {
   display: flex;
   align-items: center;
   gap: 4px;
-  height: 28px;
+  height: 32px;
   flex: 0 0 auto;
   padding: 0 12px;
-  background: var(--surface);
+  background: var(--titlebar);
   /* OO golden: no separator line under the titlebar — flat backdrop field */
   font-size: 12px;
   color: var(--muted);
+  /* the tab strip is wider than the window at small viewports: clip so the
+     page never h-scrolls (name + quick access stay reachable via the strip
+     shrink below) */
+  overflow: hidden;
 }
 .titlebar { position: relative; }
 .titlebar .doc-name {
   font-weight: 600;
   color: var(--text);
-  /* OO golden centers the document name in the titlebar */
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  /* CHROME1-TITLE-TAB-ROW: flows after the spacer (right-cluster head);
+     the old absolute centering would collide with the tab strip. */
+  min-width: 0;
+  max-width: 24vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .titlebar .spacer { flex: 1; }
 .titlebar .titlebar-fs {
@@ -216,31 +226,24 @@ body {
   letter-spacing: 0;
   color: var(--text);
 }
-/* Ribbon tabs live in a 28px strip pinned to the top of #toolbar (OO's
-   internal box-tabs row, WO-RIBBON-TABS): label tabs at the OO-golden tab
-   pitch; 3px active underline so it registers as ink (2px AA-spreads away at
-   capture zoom). */
+/* Ribbon tab strip (CHROME1-TITLE-TAB-ROW): lives IN the title row now,
+   after the wordmark. 28px strip vertically centered in the 32px titlebar,
+   OO tab pitch. */
 .ribbon-tabs {
-  /* WO-RIBBON-TABS-FLOW (2026-10-13): was an absolute strip with tabs at
-     hardcoded OO-golden --qa-x slots — but the in-flow .ribbon-row below
-     painted OVER the positioned tabs, leaving only a ~9px clickable sliver
-     (every tab hit-tested BLOCKED; real clicks landed on the ribbon row).
-     Tabs now flow in a plain flex row between menu-bar and ribbon row: no
-     overlap possible, no per-tab x needed, works at any viewport width. */
   position: static;
   display: flex;
   align-items: center;
   gap: 2px;
   height: 28px;
-  padding: 0 12px;
+  padding: 0 6px;
 }
-.toolbar .ribbon-tab {
-  position: static;
-  transform: none;
-  border-bottom-width: 3px;
-  /* .toolbar button is 46px (control band) and out-specifies .ribbon-tab —
-     tabs must stay on the 24px band or the row misaligns (fig-ui G1/G2). */
+/* .titlebar button (below) out-specifies .ribbon-tab — pin the tabs to the
+   24px band with the OO 12px label pitch. */
+.titlebar button.ribbon-tab {
   height: 24px;
+  min-width: 0;
+  padding: 0 8px;
+  font-size: 12px;
 }
 .titlebar button {
   min-width: 24px;
@@ -350,11 +353,46 @@ select option { background: var(--bg); color: var(--text); }
    the right-edge tool cluster (collapse/theme/find/fullscreen) pins via
    margin-left:auto. Dropdown .menu-lists anchor to their (relative) .menu
    span as before. Works at any viewport width; groups wrap on narrow ones. */
-.ribbon-row { position: relative; min-height: 24px; flex-wrap: nowrap; row-gap: 6px; overflow-x: clip; }
+.ribbon-row { position: relative; min-height: 24px; flex-wrap: nowrap; row-gap: 6px; }
 .ribbon-row[hidden] { display: none; }
 .toolbar .ribbon-page.active { align-self: stretch; height: 100%; align-content: center; }
-.ribbon-page.active { flex-wrap: wrap; align-items: center; }
+.ribbon-page.active { flex-wrap: nowrap; align-items: center; }
 .ribbon-page.active button { flex: 0 0 auto; }
+
+/* Overflow chevrons (CHROME1-TITLE-TAB-ROW): real <button>s edge-split at the
+   band's right corner (‹ top half, › bottom half, OO/Word style). editor.js
+   toggles the hidden attribute as the offset/max changes. */
+.toolbar button.rib-scroll-btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 20px;
+  min-width: 20px;
+  height: 50%;
+  min-height: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: var(--ribbon);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  box-shadow: -6px 0 8px rgba(0, 0, 0, 0.14);
+}
+.toolbar button.rib-scroll-btn[hidden] { display: none; }
+.toolbar button.rib-scroll-btn:hover { background: var(--hover); }
+#rib-scroll-left { top: 0; bottom: auto; box-shadow: inset 0 1px 0 var(--border), -6px 0 8px rgba(0, 0, 0, 0.14); }
+#rib-scroll-right { top: auto; bottom: 0; }
+@media (max-width: 760px) {
+  /* Tiny windows: keep the strip usable by letting only the icons cluster
+     show in the titlebar name slot. */
+  .titlebar .doc-name { display: none; }
+}
 .ribbon-row .rb-group { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; }
 .toolbar .rb-sep {
   flex: 0 0 auto;
@@ -370,7 +408,7 @@ select option { background: var(--bg); color: var(--text); }
    lands right-pinned on its own line — OO's two-row ribbon shape. */
 .ribbon-row .rb-edge { margin-left: auto; }
 .menu-bar { position: relative; display: flex; align-items: center; gap: 6px; }
-.menu-bar .qa {
+.titlebar .qa {
   border: none;
   background: transparent;
   font-size: 12px;
@@ -378,11 +416,9 @@ select option { background: var(--bg); color: var(--text); }
   cursor: pointer;
   padding: 0 2px;
 }
-.menu-bar .qa:hover { background: var(--hover); }
-/* Quick-access cluster (print / user chip / redo) pins right. */
-.menu-bar #btn-print-qa { margin-left: auto; }
+.titlebar .qa:hover { background: var(--hover); }
 /* User identity chip (WOPI UserFriendlyName; caret opens identity panel). */
-.menu-bar .user-chip {
+.titlebar .user-chip {
   position: relative;
 }
 .user-chip-btn {
@@ -416,7 +452,7 @@ select option { background: var(--bg); color: var(--text); }
 }
 .user-chip-label { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.4px; }
 .user-chip-full { color: var(--text); }
-.menu-bar select.qa {
+.titlebar select.qa {
   appearance: none;
   border: none;
   background: transparent;
@@ -701,8 +737,12 @@ select option { background: var(--bg); color: var(--text); }
 .rb-grid .caret-btn.case-btn { width: auto; min-width: 30px; padding: 0 5px; font-size: 11px; gap: 2px; }
 /* OO group separators: 1px x ~56px with 5px gutters. */
 .ribbon-row .rb-sep { height: 56px; margin: 0 5px; }
-/* Style gallery (OO combo-styles): track of 110x46 cards + 30x46 toggle. */
-.rb-styles { flex: 1 1 200px; min-width: 0; height: 46px; gap: 0; align-items: stretch; }
+/* Style gallery (OO combo-styles): track of 110x46 cards + 30x46 toggle.
+   CHROME1-TITLE-TAB-ROW: needs (0,3,0) specificity to beat .ribbon-row
+   .rb-group's flex: 0 0 auto — the gallery is the Home row's release valve:
+   floor 340px so Home FITS at 1440 (chevrons hidden) but overflows below
+   ~1200px (chevron scroll takes over). */
+.ribbon-row .rb-group.rb-styles { flex: 1 1 340px; min-width: 340px; height: 46px; gap: 0; align-items: stretch; }
 .gallery-track {
   display: flex;
   align-items: stretch;
@@ -767,7 +807,7 @@ select option { background: var(--bg); color: var(--text); }
 }
 @media (max-width: 760px) {
   .gallery-track { display: none; }
-  .rb-styles { flex: 0 0 auto; }
+  .ribbon-row .rb-group.rb-styles { flex: 0 0 auto; min-width: 0; }
   .rb-styles .styles-trigger { border-radius: 6px; border-left: 1px solid var(--border); }
 }
 
@@ -817,9 +857,13 @@ select option { background: var(--bg); color: var(--text); }
   cursor: pointer;
 }
 .ribbon-tab:hover { color: var(--text); background: var(--hover); }
+/* Active tab: filled contrast pill (white in light theme, OO style) —
+   CHROME1-TITLE-TAB-ROW replaced the accent underline. */
 .ribbon-tab[aria-selected="true"] {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+  color: var(--text);
+  background: var(--tab-active-bg);
+  border-bottom-color: transparent;
+  border-radius: 4px;
   font-weight: 600;
 }
 
@@ -844,8 +888,10 @@ select option { background: var(--bg); color: var(--text); }
 }
 .ribbon-tabs .menu-trigger.file-tab:hover { color: var(--text); background: var(--hover); }
 .ribbon-tabs .menu-trigger.file-tab[aria-expanded="true"] {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+  color: var(--text);
+  background: var(--tab-active-bg);
+  border-bottom-color: transparent;
+  border-radius: 4px;
   font-weight: 600;
 }
 
