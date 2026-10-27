@@ -18,6 +18,8 @@
   --ribbon-active: rgba(255, 255, 255, 0.16);
   --titlebar: #2a2a3a;
   --tab-active-bg: #3a3a4e;
+  --tab-file-tint: rgba(74, 108, 247, 0.14);
+  --ctx-tab-tint: rgba(74, 108, 247, 0.16);
   --ruler-tick: #4a4a5e;
 }
 
@@ -42,6 +44,8 @@ html.light {
   --ribbon-active: #d8d8d8;  /* OO group pressed */
   --titlebar: #f7f7f7; /* OO classic-light title row (same gray family) */
   --tab-active-bg: #ffffff; /* filled contrast pill for the active tab */
+  --tab-file-tint: rgba(55, 96, 143, 0.08);
+  --ctx-tab-tint: rgba(55, 96, 143, 0.10);
   --ruler-tick: #b9b9b9;
 }
 
@@ -102,9 +106,49 @@ body {
 .dialog-field input:focus-visible,
 .find-field-row input:focus-visible,
 .find-arrow:focus-visible,
-.find-check input:focus-visible {
+.find-check input:focus-visible,
+.titlebar button:focus-visible,
+.statusbar button:focus-visible,
+.menu-trigger:focus-visible,
+.gallery-card:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* CHROME5-POLISH-ACCENTS microstates: one shared press/hover/focus rhythm
+   across the chrome (ribbon buttons, tabs, quick-access, statusbar, menus).
+   Transitions ride background/border/color only (transform is instant so
+   the pressed offset feels mechanical). */
+.toolbar button,
+.titlebar button,
+.statusbar button,
+.menu-trigger,
+.gallery-card {
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.toolbar button:active,
+.titlebar button:active,
+.statusbar button:active {
+  transform: translateY(1px);
+  background: var(--ribbon-active);
+}
+.menu-trigger:active { transform: translateY(1px); }
+.toolbar button[aria-disabled="true"],
+.toolbar button:disabled,
+.titlebar button[aria-disabled="true"],
+.titlebar button:disabled,
+.statusbar button[aria-disabled="true"],
+.statusbar button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.toolbar button[aria-disabled="true"]:hover,
+.toolbar button:disabled:hover,
+.titlebar button[aria-disabled="true"]:hover,
+.titlebar button:disabled:hover,
+.statusbar button[aria-disabled="true"]:hover,
+.statusbar button:disabled:hover {
+  background: transparent;
 }
 
 /* aria-pressed mirror of the .active state: JS toggles both, this keeps the
@@ -247,12 +291,13 @@ body {
   padding: 0 6px;
 }
 /* .titlebar button (below) out-specifies .ribbon-tab — pin the tabs to the
-   24px band with the OO 12px label pitch. */
+   28px band with the OO label pitch (CHROME5: 12.5px, 12px side padding). */
 .titlebar button.ribbon-tab {
-  height: 24px;
+  height: 28px;
   min-width: 0;
-  padding: 0 8px;
-  font-size: 12px;
+  padding: 0 12px;
+  font-size: 12.5px;
+  font-weight: 400;
 }
 .titlebar button {
   min-width: 24px;
@@ -884,7 +929,18 @@ select option { background: var(--bg); color: var(--text); }
   background: var(--tab-active-bg);
   border-bottom-color: transparent;
   border-radius: 4px;
-  font-weight: 600;
+  font-weight: 500;
+}
+/* CHROME5-POLISH-ACCENTS: contextual tabs (Chart design, Draw, Header &
+   Footer) carry an accent underline + tinted inactive face while revealed,
+   OO style. Needs (0,3,1) to beat .titlebar button's border: none. The
+   active pill above stays — the accent border is added on top of it. */
+.titlebar button.ribbon-tab.contextual {
+  border-bottom: 2px solid var(--accent);
+}
+.titlebar button.ribbon-tab.contextual:not([aria-selected="true"]) {
+  background: var(--ctx-tab-tint);
+  color: var(--text);
 }
 
 .menu { position: relative; }
@@ -894,17 +950,19 @@ select option { background: var(--bg); color: var(--text); }
 .ribbon-tabs .ribbon-file {
   display: flex;
   align-items: center;
-  height: 24px;
+  height: 28px;
 }
+/* CHROME5: the File tab is tinted (OO: the app-menu entry sits apart from
+   the document tabs). */
 .ribbon-tabs .menu-trigger.file-tab {
-  height: 24px;
-  padding: 0 10px;
+  height: 28px;
+  padding: 0 12px;
   border: none;
   border-radius: 0;
   border-bottom: 2px solid transparent;
-  background: transparent;
+  background: var(--tab-file-tint);
   color: var(--muted);
-  font-size: 12px;
+  font-size: 12.5px;
 }
 .ribbon-tabs .menu-trigger.file-tab:hover { color: var(--text); background: var(--hover); }
 .ribbon-tabs .menu-trigger.file-tab[aria-expanded="true"] {
@@ -912,7 +970,7 @@ select option { background: var(--bg); color: var(--text); }
   background: var(--tab-active-bg);
   border-bottom-color: transparent;
   border-radius: 4px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .menu-trigger {
@@ -1134,23 +1192,33 @@ html.light .statusbar { background: #f3f2f1; }  /* OO parity: light-gray bar */
 .statusbar button:hover { background: var(--hover); color: var(--text); }
 .statusbar .sb svg { display: block; }
 .statusbar .sb { color: var(--muted); }
-/* OO renders the zoom +/fit actions as bordered square buttons */
+/* OO renders the zoom +/fit actions as bordered square buttons (CHROME5:
+   consistent 28px icon squares, aligned with the slider row). */
 .statusbar .sb-boxed {
-  width: 26px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid #a0a0a0;
-  border-radius: 3px;
+  border-radius: 4px;
   background: var(--bg);
+}
+.statusbar button.sb-zoom-square {
+  min-width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 /* Zoom slider: single native rendering via accent-color — the fill MOVES
    with the value and follows the theme. (Replaced the static OO-mimicry
-   gradient: it looked right at 100% only and never moved — "2 bars".) */
+   gradient: it looked right at 100% only and never moved — "2 bars".)
+   CHROME5: widened to the OO ~100px track. */
 .zoom-slider {
-  width: 70px;
-  height: 18px;
+  width: 100px;
+  height: 20px;
+  margin: 0 2px;
   accent-color: var(--accent);
   cursor: pointer;
 }

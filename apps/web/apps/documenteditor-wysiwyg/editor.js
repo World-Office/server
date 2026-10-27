@@ -7162,7 +7162,7 @@
     editor.style.zoom = String(zoomLevel);
     const reset = document.getElementById("btn-zoom-reset");
     if (reset) reset.textContent = Math.round(zoomLevel * 100) + "%";
-    const slider = document.getElementById("zoom-slider");
+    const slider = document.getElementById("sb-zoom-slider");
     if (slider) slider.value = String(Math.round(zoomLevel * 100));
     const label = document.getElementById("sb-zoom-label");
     if (label) label.textContent = Math.round(zoomLevel * 100) + "%";
@@ -7241,12 +7241,14 @@
     if (!hfMode || !hfTab) return;
     hfMode = false;
     hfTab.hidden = true;
+    hfTab.classList.remove("contextual");
     document.querySelector('.ribbon-tab[data-tab="home"]')?.click();
   }
   function enterHFMode() {
     if (!hfTab) return;
     hfMode = true;
     hfTab.hidden = false;
+    hfTab.classList.add("contextual");
     hfTab.click();
   }
   document.getElementById("editor")?.addEventListener("dblclick", (ev) => {
@@ -7256,7 +7258,7 @@
   });
   document.querySelectorAll(".ribbon-tab").forEach((tab) => {
     if (tab === hfTab) return;
-    tab.addEventListener("click", () => { if (hfMode) { hfMode = false; hfTab.hidden = true; } });
+    tab.addEventListener("click", () => { if (hfMode) { hfMode = false; hfTab.hidden = true; hfTab.classList.remove("contextual"); } });
   });
   document.addEventListener("keydown", (ev) => {
     if (ev.key === "Escape" && hfMode) { ev.preventDefault(); exitHFMode(); }
@@ -7746,7 +7748,7 @@
   const zoomInBtn = document.getElementById("btn-zoom-in");
   const zoomOutBtn = document.getElementById("btn-zoom-out");
   const zoomResetBtn = document.getElementById("btn-zoom-reset");
-  const zoomSlider = document.getElementById("zoom-slider");
+  const zoomSlider = document.getElementById("sb-zoom-slider");
   const zoomFitBtn = document.getElementById("btn-zoom-fit");
   const themeBtn = document.getElementById("btn-theme");
   const fsBtn = document.getElementById("btn-fullscreen");
@@ -10144,6 +10146,7 @@
       updateChartDesignState();
       if (chartDesignTab && chartDesignTab.hidden) {
         chartDesignTab.hidden = false;
+        chartDesignTab.classList.add("contextual");
         chartDesignTab.click();
       }
     } else if (!READ_ONLY) {
@@ -10152,6 +10155,7 @@
         updateChartDesignState();
         if (chartDesignTab) {
           chartDesignTab.hidden = true;
+          chartDesignTab.classList.remove("contextual");
           if (chartDesignTab.getAttribute("aria-selected") === "true") {
             document.querySelector('.ribbon-tab[data-tab="home"]')?.click();
           }
