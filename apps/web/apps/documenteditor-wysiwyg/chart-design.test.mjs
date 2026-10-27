@@ -21,8 +21,11 @@ const i18nSrc = readFileSync(new URL("./i18n.js", import.meta.url), "utf-8")
 console.log("Running AF9-CHART-DESIGN tests...\n")
 
 // --- (a) tab + page with 8 control groups ------------------------------
-const tabMatch = htmlSrc.match(/<button[^>]*class="ribbon-tab"[^>]*data-tab="chart-design"[^>]*>/)
+// CHROME5-POLISH-ACCENTS: chart-design is a contextual tab — it carries the
+// `contextual` accent class (accent underline + tinted inactive face).
+const tabMatch = htmlSrc.match(/<button[^>]*class="ribbon-tab[^"]*"[^>]*data-tab="chart-design"[^>]*>/)
 assert.ok(tabMatch, "chart-design ribbon tab button must exist in index.html")
+assert.ok(/class="ribbon-tab contextual"/.test(tabMatch[0]), "chart-design tab must carry the contextual accent class")
 assert.ok(tabMatch[0].includes('data-i18n="Tab.ChartDesign"'), "tab button must use the Tab.ChartDesign i18n key")
 
 const pageStart = htmlSrc.indexOf('<div class="ribbon-page" data-tab="chart-design"')

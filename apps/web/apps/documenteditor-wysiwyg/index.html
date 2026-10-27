@@ -141,7 +141,7 @@
     </div>
     <button type="button" class="ribbon-tab" data-tab="home" role="tab" aria-selected="true" data-i18n="Tab.Home">Home</button>
     <button type="button" class="ribbon-tab" data-tab="insert" role="tab" aria-selected="false" data-i18n="Tab.Insert">Insert</button>
-    <button type="button" class="ribbon-tab" data-tab="draw" role="tab" aria-selected="false" data-i18n="Tab.Draw">Draw</button>
+    <button type="button" class="ribbon-tab contextual" data-tab="draw" role="tab" aria-selected="false" data-i18n="Tab.Draw">Draw</button>
     <button type="button" class="ribbon-tab" data-tab='layout' role="tab" aria-selected="false" data-i18n="Tab.Layout">Layout</button>
     <button type="button" class="ribbon-tab" data-tab="references" role="tab" aria-selected="false" data-i18n="Tab.References">References</button>
     <button type="button" class="ribbon-tab" data-tab="collaboration" role="tab" aria-selected="false" data-i18n="Tab.Collaboration">Collaboration</button>
@@ -149,8 +149,8 @@
     <button type="button" class="ribbon-tab" data-tab="view" role="tab" aria-selected="false" data-i18n="Tab.View">View</button>
     <button type="button" class="ribbon-tab" data-tab="plugins" role="tab" aria-selected="false" data-i18n="Tab.Plugins">Plugins</button>
     <button type="button" class="ribbon-tab" data-tab="ai" role="tab" aria-selected="false" data-i18n="Tab.AI">AI</button>
-    <button type="button" class="ribbon-tab" data-tab="chart-design" role="tab" aria-selected="false" data-i18n="Tab.ChartDesign" hidden>Chart design</button>
-    <button type="button" class="ribbon-tab" data-tab="header-footer" role="tab" aria-selected="false" data-i18n="Tab.HeaderFooter" hidden>Header &amp; Footer</button>
+    <button type="button" class="ribbon-tab contextual" data-tab="chart-design" role="tab" aria-selected="false" data-i18n="Tab.ChartDesign" hidden>Chart design</button>
+    <button type="button" class="ribbon-tab contextual" data-tab="header-footer" role="tab" aria-selected="false" data-i18n="Tab.HeaderFooter" hidden>Header &amp; Footer</button>
     </div>
     <span class="spacer"></span>
     <span class="doc-name">WorldOffice</span>
@@ -1154,13 +1154,16 @@
       <span class="sb-sep" aria-hidden="true"></span>
       <!-- Zoom cluster: − / slider / + / fit / %. The slider is the live zoom
            control (50%..200%, matches applyZoom). -->
-      <button class="sb" id="btn-zoom-out" data-i18n-title="View.ZoomOut" data-i18n-aria-label="View.ZoomOut" title="Zoom out" aria-label="Zoom out" aria-keyshortcuts="Control+Minus"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5M4.5 7h5"/></svg></button>
+      <button class="sb sb-zoom-square" id="btn-zoom-out" data-i18n-title="View.ZoomOut" data-i18n-aria-label="View.ZoomOut" title="Zoom out" aria-label="Zoom out" aria-keyshortcuts="Control+Minus"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5M4.5 7h5"/></svg></button>
+      <!-- CHROME5-POLISH-ACCENTS: the slider is the live zoom control
+           (50%..200%, matches applyZoom); id sb-zoom-slider, aria-label
+           i18n'd (Statusbar.ZoomSlider) so the label localizes. -->
       <span class="sb" id="zoom-wrap">
-      <input type="range" id="zoom-slider" class="zoom-slider" min="50" max="200" step="10" value="100"
-             title="Zoom" aria-label="Zoom level">
+      <input type="range" id="sb-zoom-slider" class="zoom-slider" min="50" max="200" step="10" value="100"
+             title="Zoom" aria-label="Zoom slider" data-i18n-aria-label="Statusbar.ZoomSlider">
       </span>
       <button class="sb sb-boxed" id="btn-zoom-in" data-i18n-title="View.ZoomIn" data-i18n-aria-label="View.ZoomIn" title="Zoom in" aria-label="Zoom in" aria-keyshortcuts="Control+Plus"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5M4.5 7h5M7 4.5v5"/></svg></button>
-      <button class="sb" id="btn-zoom-fit" data-i18n-title="View.Fit" data-i18n-aria-label="View.Fit" title="Fit page width" aria-label="Fit page width">⤢</button>
+      <button class="sb sb-zoom-square" id="btn-zoom-fit" data-i18n-title="View.Fit" data-i18n-aria-label="View.Fit" title="Fit page width" aria-label="Fit page width">⤢</button>
       <button class="sb" id="btn-zoom-reset" data-i18n-title="View.ZoomReset" data-i18n-aria-label="View.ZoomReset" title="Reset zoom" aria-label="Reset zoom" aria-keyshortcuts="Control+0">100%</button>
       <span id="sb-zoom-label" class="sb status-meta" role="status" aria-live="polite" aria-label="Zoom percentage" data-i18n="Statusbar.Zoom">100%</span>
     </div>
