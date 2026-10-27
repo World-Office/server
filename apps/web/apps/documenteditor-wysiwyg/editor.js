@@ -4502,7 +4502,15 @@
     ).forEach((el) => keep.add(el));
     const blocks = Array.from(editor.children).filter(
       (el) => !keep.has(el) && el.tagName !== "STYLE");
-    if (blocks.length === 0) return;
+    // A wiped/empty document must still render ONE page sheet: an empty
+    // contenteditable #editor is the "gray void" bug — typing lands directly
+    // in the gray backdrop outside any page (seen live on prod 2026-10-27
+    // after a collab wipe: text like 'the quick brown fox...' stranded in
+    // the gray area). Always emit at least one (empty) .wo-page.
+    if (blocks.length === 0) {
+      openPage();
+      return;
+    }
 
     const gs = document.documentElement.style;
     const pageW = parseFloat(gs.getPropertyValue("--wo-page-w")) || 794;
@@ -8919,6 +8927,16 @@
   function applyRemoteText(text) {
     const current = editorPlainText();
     if (current === text) return true;
+    // Data-destruction guard (prod incident 2026-10-27): an EMPTY remote
+    // text must never replace a non-empty local document. The hub can hold
+    // an empty converged baseline (fresh container, seed race, resync);
+    // converging down would erase the just-loaded document and strand user
+    // typing in the gray void. Skip the apply and push the local snapshot up
+    // instead — the server diff-merges via collab/sync.
+    if (!(text || "").trim() && (current || "").trim()) {
+      collabSync();
+      return false;
+    }
     // The collab layer is a plain-text CRDT: tables, images, links and
     // formatting spans cannot be represented, and their contribution to the
     // plain-text projection is (nearly) all whitespace. Without this guard,
@@ -9043,7 +9061,14 @@
           // push the local snapshot up instead; the server diff-merges it
           // via collab/sync.
           const opCountDropped = lastSeenOpCount >= 0 && ops.length <= lastSeenOpCount;
-          if (opCountDropped && data.text !== collabText()) {
+          // First-poll out-of-band guard (prod incident 2026-10-27): a hub
+          // we have NEVER seen ops from (lastSeenOpCount still -1) that
+          // disagrees with the freshly loaded document is a poisoned/stale
+          // baseline (e.g. stray text synced from a gray-void session), not
+          // a live peer's edit. Push the local snapshot instead of
+          // converging down into it.
+          const firstPollMismatch = lastSeenOpCount < 0;
+          if ((opCountDropped || firstPollMismatch) && data.text !== collabText()) {
             collabSync();
             lastServerText = collabText();
           } else if (agentEdits && !getOpenDialog()) {
