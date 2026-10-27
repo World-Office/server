@@ -2595,3 +2595,8 @@ html.light {
   padding: 16px 40px;
 }
 
+
+/* LEDGER3: table pencil modes — draw/erase borders on click. */
+body.wo-table-draw #editor td, body.wo-table-draw #editor th { cursor: crosshair; }
+body.wo-table-erase #editor td, body.wo-table-erase #editor th { cursor: cell; }
+#text-to-table-dialog .dialog-field select { margin-right: 6px; }

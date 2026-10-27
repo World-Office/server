@@ -1393,6 +1393,17 @@
       console.info("wo: chart-3d requested", onChart ? "(on chart)" : "(no chart selected)");
       return;
     }
+    if (cmd === "hyphenationSet") {
+      if (READ_ONLY) return;
+      if (value === "none") { removeSectionMarker("hyphenation"); setStatus("Hyphenation off"); }
+      else { setSectionMarker("hyphenation", 'data-auto="1"'); setStatus("Hyphenation on"); }
+      return;
+    }
+    if (cmd === "openTableDialog") { insertTable(); return; }
+    if (cmd === "tableDrawMode") { toggleTableTool("draw"); return; }
+    if (cmd === "tableEraseMode") { toggleTableTool("erase"); return; }
+    if (cmd === "convertTextToTable") { openTextToTableDialog(); return; }
+    if (cmd === "equationTemplate") { insertEquationTemplate(value); return; }
     if (cmd === "openColumnsDialog") {
       openColumnsDialog();
       return;
@@ -2016,6 +2027,130 @@
     if (dialog) dialog.classList.remove("open");
     tableSelRange = null;
     restoreFocus();
+  }
+
+  // ------------------------------------------------------------------
+  // LEDGER3 table tools: Draw table / Erase table (pencil modes that
+  // toggle cell borders on click — the border lives on the cell style so
+  // it round-trips with the table) + Convert Text to Table.
+  // ------------------------------------------------------------------
+  let tableToolMode = null; // "draw" | "erase" | null
+  function toggleTableTool(mode) {
+    closeAllMenus();
+    if (READ_ONLY) return;
+    tableToolMode = tableToolMode === mode ? null : mode;
+    document.body.classList.toggle("wo-table-draw", tableToolMode === "draw");
+    document.body.classList.toggle("wo-table-erase", tableToolMode === "erase");
+    setStatus(tableToolMode ? ("Table tool: " + tableToolMode + " (click cells, Esc to exit)") : "Table tool off");
+  }
+  function exitTableTool() {
+    if (!tableToolMode) return;
+    tableToolMode = null;
+    document.body.classList.remove("wo-table-draw", "wo-table-erase");
+    setStatus("Table tool off");
+  }
+  document.addEventListener("click", (ev) => {
+    if (!tableToolMode) return;
+    const td = ev.target && ev.target.closest ? ev.target.closest("#editor td, #editor th") : null;
+    if (!td) return;
+    ev.preventDefault();
+    if (tableToolMode === "draw") {
+      td.style.border = "1px solid #444";
+    } else {
+      td.style.border = "none";
+    }
+    markDirty();
+    captureHistory();
+    scheduleCollabSync();
+  }, true);
+
+  function openTextToTableDialog() {
+    closeAllMenus();
+    if (READ_ONLY) return;
+    saveTableSelection();
+    rememberFocus();
+    const dialog = document.getElementById("text-to-table-dialog");
+    if (!dialog) return;
+    dialog.classList.add("open");
+    anchorInsertPop("text-to-table-dialog", "btn-table");
+  }
+  function closeTextToTableDialog() {
+    const dialog = document.getElementById("text-to-table-dialog");
+    if (dialog) dialog.classList.remove("open");
+    restoreFocus();
+  }
+  function confirmTextToTableDialog() {
+    const sepSel = document.getElementById("ttt-sep") || {};
+    const custom = (document.getElementById("ttt-custom") || {}).value || "";
+    let sep = sepSel.value || "auto";
+    if (sep === "custom") sep = custom || ";";
+    else if (sep === "comma") sep = ",";
+    else if (sep === "tab") sep = "\t";
+    else if (sep === "semicolon") sep = ";";
+    closeTextToTableDialog();
+    restoreTableSelection();
+    editor.focus();
+    // text source: current selection, else the block holding the caret
+    const sel = window.getSelection();
+    let text = "";
+    let range = null;
+    if (sel && sel.rangeCount > 0 && !sel.isCollapsed && editor.contains(sel.anchorNode)) {
+      text = sel.toString();
+      range = sel.getRangeAt(0);
+    } else {
+      let node = sel && sel.anchorNode ? sel.anchorNode : null;
+      while (node && node !== editor && node.nodeName !== "P" && node.nodeName !== "DIV" && node.nodeName !== "LI") node = node.parentNode;
+      if (node && node !== editor) { text = node.textContent || ""; range = document.createRange(); range.selectNodeContents(node); }
+    }
+    if (!text.trim()) { setStatus("Nothing to convert"); return; }
+    const lines = text.replace(/\r/g, "").split("\n").filter((l) => l.trim() !== "");
+    const split = (line) => {
+      if (sep === "auto") {
+        if (line.includes("\t")) return line.split("\t");
+        if ((line.match(/;/g) || []).length >= (line.match(/,/g) || []).length && line.includes(";")) return line.split(";");
+        return line.split(",");
+      }
+      return line.split(sep);
+    };
+    const rows = lines.map((l) => split(l).map((c) => c.trim()));
+    if (!rows.length) { setStatus("Nothing to convert"); return; }
+    const cols = Math.max(...rows.map((r) => r.length));
+    const html = "<table>" + rows.map((r) =>
+      "<tr>" + r.concat(Array(cols - r.length).fill("")).map((c) => "<td>" + _escXml(c) + "</td>").join("") + "</tr>"
+    ).join("") + "</table>";
+    if (range) range.deleteContents();
+    document.execCommand("insertHTML", false, html);
+    captureHistory();
+    setStatus("Converted text to table: " + rows.length + "x" + cols);
+  }
+  const btnTttCancel = document.getElementById("btn-ttt-cancel");
+  if (btnTttCancel) btnTttCancel.addEventListener("click", closeTextToTableDialog);
+  const btnTttOk = document.getElementById("btn-ttt-ok");
+  if (btnTttOk) btnTttOk.addEventListener("click", confirmTextToTableDialog);
+
+  // LEDGER3: OO equation symbol-gallery families -> built-in linear
+  // templates inserted straight into the document (same path as the
+  // equation dialog's OK).
+  const EQ_TEMPLATES = {
+    fractions: "\\frac{a}{b}",
+    scripts: "x^{2} + x_{1}",
+    radicals: "\\sqrt{x}",
+    integrals: "\\int f(x)dx",
+    "large-operators": "\\sum_{i=1}^{n} i",
+    brackets: "(a+b)·[c-d]",
+    functions: "sin x + cos x",
+    accents: "\\hat{x}",
+    "limits-and-logarithms": "\\lim_{x \\to 0} f(x)",
+    operators: "a + b = c",
+    matrices: "\\matrix{a b}{c d}",
+  };
+  function insertEquationTemplate(family) {
+    closeAllMenus();
+    if (READ_ONLY) return;
+    const text = EQ_TEMPLATES[family] || "x";
+    const spec = { text, width: 260 };
+    insertVectorObject(equationSVG(text), "equation", spec);
+    setStatus("Inserted equation: " + family);
   }
 
   // ------------------------------------------------------------------
@@ -4150,6 +4285,15 @@
     wide: { top: 1440, bottom: 1440, left: 2880, right: 2880 }
   };
 
+  // LEDGER3: "Last Custom" margins — remember the last dialog-applied custom
+  // geometry so the OO margins-menu entry can re-apply it.
+  function rememberCustomMargins(mt, mb, ml, mr) {
+    try { localStorage.setItem("wo-last-custom-margins", JSON.stringify({ top: mt, bottom: mb, left: ml, right: mr })); } catch (e) {}
+  }
+  function readCustomMargins() {
+    try { return JSON.parse(localStorage.getItem("wo-last-custom-margins") || "null"); } catch (e) { return null; }
+  }
+
   function psMarker() {
     return editor.querySelector(":scope > div.page-setup");
   }
@@ -4762,7 +4906,10 @@
       ml: parseInt(m.getAttribute("data-margin-left"), 10) || 1440,
       mr: parseInt(m.getAttribute("data-margin-right"), 10) || 1440
     } : { w: 11906, h: 16838, orient: "portrait", mt: 1440, mb: 1440, ml: 1440, mr: 1440 };
-    const presetMargins = PS_MARGIN_PRESETS[preset] || PS_MARGIN_PRESETS.normal;
+    const presetMargins = PS_MARGIN_PRESETS[preset] ||
+      (preset === "last-custom" && readCustomMargins()) ||
+      PS_MARGIN_PRESETS.normal;
+    if (preset === "last-custom" && !readCustomMargins()) { setStatus("No custom margins yet"); return; }
     writePageSetupMarker(current.w, current.h, current.orient,
                           presetMargins.top, presetMargins.bottom,
                           presetMargins.left, presetMargins.right);
@@ -4851,8 +4998,9 @@
       if (orient === "landscape" && w <= h) { const t = w; w = h; h = t; }
       if (orient === "portrait" && w > h) { const t = w; w = h; h = t; }
       const inches = (id) => Math.round((parseFloat(document.getElementById(id).value) || 1) * 1440);
-      writePageSetupMarker(w, h, orient,
-        inches("ps-mt"), inches("ps-mb"), inches("ps-ml"), inches("ps-mr"));
+      const mtCustom = inches("ps-mt"), mbCustom = inches("ps-mb"), mlCustom = inches("ps-ml"), mrCustom = inches("ps-mr");
+      rememberCustomMargins(mtCustom, mbCustom, mlCustom, mrCustom);
+      writePageSetupMarker(w, h, orient, mtCustom, mbCustom, mlCustom, mrCustom);
       pageSetupDialog.classList.remove("open");
       restoreFocus();
     });
@@ -6439,6 +6587,11 @@
       redrawInk();
       setStatus("Ink: selection cleared");
     }
+  });
+
+  // LEDGER3: Escape exits table pencil modes (draw/erase).
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && tableToolMode) exitTableTool();
   });
 
   function setInkColor() {
@@ -9919,7 +10072,13 @@
     const showLegend = els.legend === true;
     const showGrid = els.gridlines === true;
     const showVals = els.dataLabels !== false;
+    const showAxes = els.axes === true;
+    const showAxisTitles = els.axisTitles === true;
+    const showTrend = els.trendline === true;
+    const showErr = els.errorBars === true;
+    const showUD = els.upDownBars === true;
     const legendH = showLegend ? 16 : 0;
+    const axisTitleH = showAxisTitles ? 14 : 0;
     const vals = rows.map((r) => parseFloat(r[1])).filter((v) => !isNaN(v));
     const labels = rows.map((r) => r[0] || "");
     const max = Math.max(1, ...vals);
@@ -9940,15 +10099,26 @@
       });
       if (showTitle) body += `<text x="${cx}" y="${M + 12}" text-anchor="middle" font-size="13" font-family="sans-serif">${_escXml(title)}</text>`;
     } else {
-      const plotW = W - 130, plotH = H - 46 - legendH, bx = 58, by = 22;
+      const plotW = W - 130, plotH = H - 46 - legendH - axisTitleH, bx = 58, by = 22;
       if (showGrid) {
         for (let g = 0; g <= 4; g++) {
           const gy = by + (plotH * g) / 4;
           body += `<line x1="${bx}" y1="${gy.toFixed(1)}" x2="${bx + plotW}" y2="${gy.toFixed(1)}" stroke="#d9d9d9" stroke-width="1"/>`;
         }
       }
+      // LEDGER3: OO chart add-elements — axes lines, axis titles.
+      if (showAxes) {
+        body += `<line x1="${bx}" y1="${by}" x2="${bx}" y2="${by + plotH}" stroke="#555" stroke-width="1.4"/>`;
+        body += `<line x1="${bx}" y1="${by + plotH}" x2="${bx + plotW}" y2="${by + plotH}" stroke="#555" stroke-width="1.4"/>`;
+      }
+      if (showAxisTitles) {
+        body += `<text x="${bx + plotW / 2}" y="${by + plotH + 24}" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#666">Axis title</text>`;
+        body += `<text x="${bx - 34}" y="${by + plotH / 2}" text-anchor="middle" font-size="10" font-family="sans-serif" fill="#666" transform="rotate(-90 ${bx - 34} ${by + plotH / 2})">Axis title</text>`;
+      }
       const n = Math.max(1, vals.length);
       let lastX = 0, lastY = 0;
+      const plotStart = body.length;
+      const pts = [];
       vals.forEach((v, i) => {
         const h = (v / max) * plotH;
         const x = bx + (i * plotW) / n + plotW / n * 0.18;
@@ -9962,9 +10132,37 @@
         }
         if (type === "area") body += `<polygon points="${bx + (i * plotW) / n},${by + plotH} ${(bx + (i * plotW) / n + plotW / n).toFixed(1)},${by + plotH} ${nx.toFixed(1)},${ny.toFixed(1)}" fill="${colors[i % colors.length]}" opacity="0.25"/>`;
         lastX = nx; lastY = ny;
+        pts.push([nx, ny, v]);
+        // LEDGER3: error bars — ±6px T-bar at each plotted value.
+        if (showErr) {
+          body += `<line x1="${nx.toFixed(1)}" y1="${(ny - 6).toFixed(1)}" x2="${nx.toFixed(1)}" y2="${(ny + 6).toFixed(1)}" stroke="#777" stroke-width="1"/><line x1="${(nx - 4).toFixed(1)}" y1="${(ny - 6).toFixed(1)}" x2="${(nx + 4).toFixed(1)}" y2="${(ny - 6).toFixed(1)}" stroke="#777" stroke-width="1"/><line x1="${(nx - 4).toFixed(1)}" y1="${(ny + 6).toFixed(1)}" x2="${(nx + 4).toFixed(1)}" y2="${(ny + 6).toFixed(1)}" stroke="#777" stroke-width="1"/>`;
+        }
         if (labels[i]) body += `<text x="${x + bw / 2}" y="${by + plotH + 14}" text-anchor="middle" font-size="10" font-family="sans-serif">${_escXml(labels[i])}</text>`;
         if (showVals) body += `<text x="${bx + plotW + 8}" y="${y + 3}" font-size="9" font-family="sans-serif" fill="#555">${v}</text>`;
       });
+      // LEDGER3: up/down bars (line charts: fill between consecutive
+      // points, green when rising, red when falling) drawn UNDER the marks,
+      // and a least-squares trendline dashed across the plot.
+      if (showUD && pts.length > 1) {
+        let udFills = "";
+        for (let k = 1; k < pts.length; k++) {
+          const [px0, py0] = pts[k - 1], [px1, py1] = pts[k];
+          const base = by + plotH;
+          const rising = py1 < py0;
+          udFills += `<polygon points="${px0.toFixed(1)},${py0.toFixed(1)} ${px0.toFixed(1)},${base} ${px1.toFixed(1)},${base} ${px1.toFixed(1)},${py1.toFixed(1)}" fill="${rising ? "#5aa469" : "#b04a52"}" opacity="0.18"/>`;
+        }
+        body = body.slice(0, plotStart) + udFills + body.slice(plotStart);
+      }
+      if (showTrend && pts.length > 1) {
+        const xs = pts.map((p, k) => k), ys = pts.map((p) => p[2]);
+        const mx = (xs.reduce((a, b) => a + b, 0)) / xs.length, my = (ys.reduce((a, b) => a + b, 0)) / ys.length;
+        let num = 0, den = 0;
+        xs.forEach((xv, k) => { num += (xv - mx) * (ys[k] - my); den += (xv - mx) * (xv - mx); });
+        const slope = den ? num / den : 0;
+        const y0 = my + slope * (0 - mx), y1 = my + slope * ((xs.length - 1) - mx);
+        const ty0 = by + plotH - (y0 / max) * plotH, ty1 = by + plotH - (y1 / max) * plotH;
+        body += `<line x1="${pts[0][0].toFixed(1)}" y1="${ty0.toFixed(1)}" x2="${pts[pts.length - 1][0].toFixed(1)}" y2="${ty1.toFixed(1)}" stroke="#8a6fb0" stroke-width="1.6" stroke-dasharray="6 4"/>`;
+      }
       if (showTitle) body += `<text x="${W / 2}" y="${M + 12}" text-anchor="middle" font-size="13" font-family="sans-serif">${_escXml(title)}</text>`;
     }
     if (showLegend) {
@@ -10168,16 +10366,56 @@
   // -- Equation: linear notation -> SVG (sup/sub/sqrt, symbol passthrough).
   function equationSVG(expr) {
     const tokens = expr.replace(/\s+/g, " ").trim();
-    const W = Math.max(140, tokens.length * 13 + 40), H = 76;
+    const W = Math.max(140, tokens.length * 13 + 60), H = 96;
     let body = "";
     let x = 12;
     const push = (txt, size, dy) => {
-      body += `<text x="${x}" y="${42 + (dy || 0)}" font-size="${size || 18}" font-family="serif" font-style="italic">${_escXml(txt)}</text>`;
+      body += `<text x="${x}" y="${52 + (dy || 0)}" font-size="${size || 18}" font-family="serif" font-style="italic">${_escXml(txt)}</text>`;
       x += txt.length * ((size || 18) * 0.62) + 1;
+    };
+    // read a {...} group starting at i (after the brace); returns [content, nextIndex]
+    const readBrace = (i) => {
+      if (tokens[i] !== "{") return ["", i];
+      let j = i + 1, run = "";
+      while (j < tokens.length && tokens[j] !== "}") run += tokens[j++];
+      return [run, j + 1];
+    };
+    const stacked = (top, bottom, dy) => {
+      const wTop = top.length * 9 + 8, wBot = bottom.length * 9 + 8;
+      const wFrac = Math.max(wTop, wBot) + 6;
+      const cx = x + wFrac / 2;
+      body += `<text x="${cx}" y="${44 + (dy || 0)}" text-anchor="middle" font-size="13" font-family="serif" font-style="italic">${_escXml(top)}</text>`;
+      body += `<line x1="${x + 2}" y1="${50 + (dy || 0)}" x2="${x + wFrac - 2}" y2="${50 + (dy || 0)}" stroke="currentColor" stroke-width="1.2"/>`;
+      body += `<text x="${cx}" y="${64 + (dy || 0)}" text-anchor="middle" font-size="13" font-family="serif" font-style="italic">${_escXml(bottom)}</text>`;
+      x += wFrac + 4;
     };
     let i = 0;
     while (i < tokens.length) {
       const ch = tokens[i];
+      if (tokens.startsWith("\\frac", i)) {
+        let top, bot; [top, i] = readBrace(i + 5); [bot, i] = readBrace(i);
+        stacked(top, bot, 0); continue;
+      } else if (tokens.startsWith("\\sqrt", i)) {
+        let inner; [inner, i] = readBrace(i + 5);
+        push("\u221A", 20, 0);
+        body += `<text x="${x}" y="52" font-size="18" font-family="serif" font-style="italic">${_escXml(inner)}</text><line x1="${x - 1}" y1="36" x2="${x + inner.length * 11}" y2="36" stroke="currentColor" stroke-width="1.1"/>`;
+        x += inner.length * 11 + 6; continue;
+      } else if (tokens.startsWith("\\matrix", i)) {
+        let r1, r2; [r1, i] = readBrace(i + 7); [r2, i] = readBrace(i);
+        body += `<text x="${x}" y="52" font-size="26" font-family="serif">[</text>`;
+        body += `<text x="${x + 12}" y="44" font-size="13" font-family="serif" font-style="italic">${_escXml(r1)}</text>`;
+        body += `<text x="${x + 12}" y="62" font-size="13" font-family="serif" font-style="italic">${_escXml(r2)}</text>`;
+        body += `<text x="${x + 12 + Math.max(r1.length, r2.length) * 8 + 4}" y="52" font-size="26" font-family="serif">]</text>`;
+        x += 20 + Math.max(r1.length, r2.length) * 8 + 8; continue;
+      } else if (tokens.startsWith("\\hat", i)) {
+        let inner; [inner, i] = readBrace(i + 4);
+        push(inner + "\u0302", 18, 0); continue;
+      } else if (tokens.startsWith("\\int", i)) { push("\u222B", 24, 2); i += 4; continue;
+      } else if (tokens.startsWith("\\sum", i)) { push("\u2211", 24, -4); i += 4; continue;
+      } else if (tokens.startsWith("\\lim", i)) { push("lim", 16, 0); i += 4; continue;
+      } else if (tokens.startsWith("\\log", i)) { push("log", 16, 0); i += 4; continue;
+      } else if (tokens.startsWith("\\to", i)) { push("\u2192", 18, 0); i += 3; continue;
+      }
       if (ch === "^") {
         let j = i + 1, run = "";
         if (tokens[j] === "{") { j++; while (j < tokens.length && tokens[j] !== "}") run += tokens[j++]; i = j + 1; }

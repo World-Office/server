@@ -421,7 +421,16 @@
       </ul>
     </span>
     <span class="rb-sep" aria-hidden="true"></span>
-    <button id="btn-table" title="Insert table" data-i18n-title="Toolbar.InsertTableTitle" aria-label="Insert table" data-i18n-aria-label="Toolbar.InsertTable">▦</button>
+    <span class="menu rb-menu" >
+      <button type="button" id="btn-table" title="Insert table" data-i18n-title="Toolbar.InsertTableTitle" aria-label="Insert table" data-i18n-aria-label="Toolbar.InsertTable">▦</button>
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Insert.TableMenu">Table ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="openTableDialog" data-i18n="Insert.Table.Insert">Insert table…</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="tableDrawMode" data-i18n="Insert.Table.Draw">Draw table</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="tableEraseMode" data-i18n="Insert.Table.Erase">Erase table</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="convertTextToTable" data-i18n="Insert.Table.Convert">Convert Text to Table…</button></li>
+      </ul>
+    </span>
     <span class="rb-sep" aria-hidden="true"></span>
     <button id="btn-image" title="Insert image" data-i18n-title="Toolbar.InsertImageTitle" aria-label="Insert image" data-i18n-aria-label="Toolbar.InsertImageTitle"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><circle cx="5" cy="6" r="1.3"/><path d="M2.5 12.5 7 8l3 3 2-2 1.5 1.5"/></svg></button>
     <button type="button" data-cmd="insertObject" data-value="shape" data-i18n="Insert.Shape">Shape</button>
@@ -443,7 +452,23 @@
     <button type="button" id="btn-textfile" data-i18n="Insert.TextFromFile">Text from File</button>
     <button type="button" id="btn-field" data-i18n="Insert.Field">Field</button>
     <span class="rb-sep" aria-hidden="true"></span>
-    <button type="button" id="btn-equation" data-i18n="Insert.Equation">Equation</button>
+    <span class="menu rb-menu" >
+      <button type="button" id="btn-equation" data-i18n="Insert.Equation">Equation</button>
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Insert.EquationGallery">Symbols ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="fractions" data-i18n="Insert.Eq.Fractions">Fractions</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="scripts" data-i18n="Insert.Eq.Scripts">Scripts</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="radicals" data-i18n="Insert.Eq.Radicals">Radicals</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="integrals" data-i18n="Insert.Eq.Integrals">Integrals</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="large-operators" data-i18n="Insert.Eq.LargeOperators">Large operators</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="brackets" data-i18n="Insert.Eq.Brackets">Brackets</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="functions" data-i18n="Insert.Eq.Functions">Functions</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="accents" data-i18n="Insert.Eq.Accents">Accents</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="limits-and-logarithms" data-i18n="Insert.Eq.Limits">Limits and logarithms</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="operators" data-i18n="Insert.Eq.Operators">Operators</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="matrices" data-i18n="Insert.Eq.Matrices">Matrices</button></li>
+      </ul>
+    </span>
     <button id="btn-symbol" data-i18n-title="Toolbar.SymbolTitle" data-i18n-aria-label="Toolbar.SymbolTitle" title="Insert symbol" aria-label="Insert symbol">Ω</button>
     <button type="button" id="btn-contentcontrol" data-i18n="Insert.ContentControl">Content Controls</button>
     </div>
@@ -492,6 +517,7 @@
     <span class="menu rb-menu" >
       <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Margins">Margins ▾</button>
       <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageMargins" data-value="last-custom" data-i18n="Layout.Margins.LastCustom">Last Custom</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="applyPageMargins" data-value="normal" data-i18n="Layout.Margins.Normal">Normal</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="applyPageMargins" data-value="narrow" data-i18n="Layout.Margins.Narrow">Narrow</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="applyPageMargins" data-value="moderate" data-i18n="Layout.Margins.Moderate">Moderate</button></li>
@@ -545,7 +571,14 @@
       </ul>
     </span>
     <button type="button" data-cmd="toggleLineNumbers" data-i18n="Layout.LineNumbers">Line numbers</button>
-    <button type="button" data-cmd="toggleHyphenation" data-i18n="Layout.Hyphenation">Hyphenation</button>
+    <span class="menu rb-menu" >
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Hyphenation">Hyphenation ▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="hyphenationSet" data-value="auto" data-i18n="Layout.Hyphenation.Automatic">Automatic</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="hyphenationSet" data-value="none" data-i18n="Layout.Hyphenation.None">None</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="toggleHyphenation" data-i18n="Layout.Hyphenation.Options">Hyphenation options</button></li>
+      </ul>
+    </span>
     <span class="menu rb-menu" >
       <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Wrapping">Wrapping ▾</button>
       <ul class="menu-list" role="menu" hidden>
@@ -759,6 +792,11 @@
       <li role="none"><button type="button" role="menuitem" data-cmd="chartElement" data-value="legend" data-i18n="Chart.Elements.Legend">Legend</button></li>
       <li role="none"><button type="button" role="menuitem" data-cmd="chartElement" data-value="gridlines" data-i18n="Chart.Elements.Gridlines">Gridlines</button></li>
       <li role="none"><button type="button" role="menuitem" data-cmd="chartElement" data-value="dataLabels" data-i18n="Chart.Elements.DataLabels">Data labels</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartElement" data-value="axes" data-i18n="Chart.Elements.Axes">Axes</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartElement" data-value="axisTitles" data-i18n="Chart.Elements.AxisTitles">Axis Titles</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartElement" data-value="trendline" data-i18n="Chart.Elements.Trendline">Trendline</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartElement" data-value="errorBars" data-i18n="Chart.Elements.ErrorBars">Error Bars</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartElement" data-value="upDownBars" data-i18n="Chart.Elements.UpDownBars">Up/Down Bars</button></li>
     </ul>
     </span>
     </div>
@@ -1442,6 +1480,24 @@
        inserted at the saved cursor position. Anchored like OO's insert
        dropdown so the ribbon stays in context. All inner ids/handlers
        unchanged (table-rows, table-cols, btn-table-ok...). -->
+  <div id="text-to-table-dialog" class="insert-pop" role="dialog" aria-modal="false" aria-labelledby="ttt-dialog-title">
+    <h3 id="ttt-dialog-title" data-i18n="TextToTable.Title">Convert Text to Table</h3>
+    <div class="dialog-field">
+      <label for="ttt-sep" data-i18n="TextToTable.Separator">Separate text at</label>
+      <select id="ttt-sep">
+        <option value="auto" data-i18n="TextToTable.Auto">Automatic</option>
+        <option value="comma" data-i18n="TextToTable.Comma">Commas</option>
+        <option value="tab" data-i18n="TextToTable.Tab">Tabs</option>
+        <option value="semicolon" data-i18n="TextToTable.Semicolon">Semicolons</option>
+        <option value="custom" data-i18n="TextToTable.Custom">Custom</option>
+      </select>
+      <input id="ttt-custom" type="text" maxlength="4" placeholder="," aria-label="Custom separator">
+    </div>
+    <div class="dialog-actions">
+      <button id="btn-ttt-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+      <button id="btn-ttt-ok" data-i18n="Dialog.Insert" class="primary">Insert</button>
+    </div>
+  </div>
   <div id="table-dialog" class="insert-pop" role="dialog" aria-modal="false" aria-labelledby="table-dialog-title">
     <h3 id="table-dialog-title" data-i18n="Toolbar.InsertTable">Insert table</h3>
     <div class="dialog-field">
