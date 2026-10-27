@@ -191,6 +191,8 @@ let server = null;
 async function openSettings() {
   await page.click("#btn-file");
   await sleep(150);
+  await page.click(`.backstage-row[data-pane="settings"]`);
+  await sleep(150);
   await page.click("#btn-filesettings");
   await sleep(300);
 }
@@ -454,7 +456,8 @@ async function main() {
   }), "#objlayout-pop");
   // restore the pop's hidden state — a stray visible pop intercepts clicks
   // over half the ribbon (verified: this exact leak blanked later matrices).
-  await nonModalAudit("file-menu", () => page.click("#btn-file"), "#file-menu");
+  // (the File dropdown is now the modal #backstage-overlay, audited via
+  // DIALOG_IDS above — no non-modal audit needed for it anymore.)
   await nonModalAudit("styles-menu", () => page.click(".styles-trigger"),
     ".styles-trigger + .menu-list, .styles-trigger ~ .menu-list");
 

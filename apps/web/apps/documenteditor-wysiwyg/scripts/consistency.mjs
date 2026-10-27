@@ -677,7 +677,8 @@ async function probeSelectionEdges(pageA) {
         await pageA.keyboard.press("Escape");
         await pageA.locator("#editor p").first().click();
         await pageA.click("#btn-file");
-        await pageA.waitForSelector("#file-menu:not([hidden])", { timeout: 4000 });
+        await pageA.waitForSelector("#backstage-overlay.open", { timeout: 4000 });
+        await pageA.click(`.backstage-row[data-pane="settings"]`);
         await pageA.click("#btn-filesettings");
         await pageA.waitForSelector("#settings-dialog.open", { timeout: 4000 });
         await pageA.evaluate((on) => {

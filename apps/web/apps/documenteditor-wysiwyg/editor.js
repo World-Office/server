@@ -417,6 +417,7 @@
     }
     if (htmlEl) htmlEl.setAttribute("lang", t.lng);
     document.title = t("App.Title") || document.title;
+    syncStatusbarLang();
     return next;
   }
   const editor = document.getElementById("editor");
@@ -1880,7 +1881,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "backstage-overlay"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -1906,6 +1907,7 @@
     "object-dialog": closeObjectDialog,
     "plugins-dialog": closePluginsDialog,
     "toc-dialog": closeTocDialog,
+    "backstage-overlay": closeBackstage,
   };
   document.addEventListener("keydown", (ev) => {
     if (ev.key !== "Escape") return;
@@ -6760,8 +6762,18 @@
     if (ed) ed.setAttribute("lang", docLang.value);
     setSpellcheckLang(docLang.value);
     syncDocLangLabel();
+    syncStatusbarLang();
   });
   syncDocLangLabel();
+  syncStatusbarLang();
+  // CHROME3: OO language indicator in the right statusbar cluster mirrors
+  // the document/spellcheck language; looked up on demand (no consts) so
+  // applyLocale can safely call it from anywhere.
+  function syncStatusbarLang() {
+    const el = document.getElementById("sb-lang");
+    const sel = document.getElementById("doc-lang");
+    if (el && sel) el.textContent = sel.selectedOptions[0]?.label || sel.value;
+  }
   // The statusbar caret discloses the language select (appearance:none).
   const docLangCaret = document.getElementById("doc-lang-caret");
   if (docLangCaret && docLang) docLangCaret.addEventListener("click", () => {
@@ -7794,24 +7806,63 @@
   applyTheme();
 
   // ------------------------------------------------------------------
-  // File menu wiring (dropdown disclose + command dispatch)
+  // Backstage (File screen) wiring — OO-style full-screen File overlay
   // ------------------------------------------------------------------
   const fileTrigger = document.getElementById("btn-file");
-  const fileMenu = document.getElementById("file-menu");
+  const backstage = document.getElementById("backstage-overlay");
   const exportTrigger = document.getElementById("btn-export");
-  const exportSub = exportTrigger ? exportTrigger.parentElement.querySelector(".menu-sublist") : null;
+  const exportSub = document.getElementById("export-sub");
 
   function setMenu(menu, trigger, open) {
     if (!menu) return;
     menu.hidden = !open;
     if (trigger) trigger.setAttribute("aria-expanded", String(open));
   }
+  function isBackstageOpen() {
+    return !!(backstage && backstage.classList.contains("open"));
+  }
+  // Quiet hide: no focus restore (used by every dismiss path).
+  function hideBackstage() {
+    if (!backstage) return;
+    backstage.classList.remove("open");
+    if (fileTrigger) fileTrigger.setAttribute("aria-expanded", "false");
+  }
+  // User-facing close (Back row, Esc, btn-file toggle): restores focus.
+  function closeBackstage() {
+    hideBackstage();
+    restoreFocus();
+  }
+  function showBackstagePane(name) {
+    if (!backstage) return;
+    backstage.querySelectorAll(".backstage-row[data-pane]").forEach((row) => {
+      const active = row.dataset.pane === name;
+      row.classList.toggle("active", active);
+      if (active) row.setAttribute("aria-current", "true");
+      else row.removeAttribute("aria-current");
+    });
+    backstage.querySelectorAll(".backstage-view").forEach((view) => {
+      view.hidden = view.dataset.paneView !== name;
+    });
+  }
+  function openBackstage(pane) {
+    if (!backstage || isBackstageOpen()) return;
+    rememberFocus();
+    closeAllMenus();
+    backstage.classList.add("open");
+    if (fileTrigger) fileTrigger.setAttribute("aria-expanded", "true");
+    const target = pane || "info";
+    showBackstagePane(target);
+    const row = backstage.querySelector('.backstage-row[data-pane="' + target + '"]');
+    if (row) row.focus();
+  }
   function closeAllMenus() {
-    // Closes every dropdown (File menu, export sublist, ribbon caret menus).
+    // Closes every dropdown (export sublist, ribbon caret menus) and the
+    // backstage overlay.
     document.querySelectorAll(".menu-list").forEach((m) => { m.hidden = true; });
     document.querySelectorAll("[aria-haspopup='true']").forEach((t) => t.setAttribute("aria-expanded", "false"));
     const ucp = document.getElementById("user-chip-panel");
     if (ucp) ucp.hidden = true;
+    hideBackstage();
   }
 
   // Generic ribbon caret menus: trigger discloses, items dispatch commands
@@ -7849,21 +7900,24 @@
     });
   });
 
-  if (fileTrigger && fileMenu) {
-    // Toggle the File menu; stopPropagation so the document click handler
-    // doesn't immediately close it again on the same click.
+  if (fileTrigger && backstage) {
     fileTrigger.addEventListener("click", (ev) => {
       ev.stopPropagation();
-      const willOpen = fileMenu.hidden;
-      closeAllMenus();
-      if (willOpen) setMenu(fileMenu, fileTrigger, true);
+      if (isBackstageOpen()) closeBackstage();
+      else openBackstage();
     });
+    // Internal clicks must not bubble to the document-level closeAllMenus
+    // handler (which would close the overlay on the same click).
+    backstage.addEventListener("click", (ev) => ev.stopPropagation());
+    backstage.querySelectorAll(".backstage-row[data-pane]").forEach((row) => {
+      row.addEventListener("click", () => showBackstagePane(row.dataset.pane));
+    });
+    const backRow = backstage.querySelector(".backstage-back");
+    if (backRow) backRow.addEventListener("click", () => closeBackstage());
   }
   if (exportTrigger && exportSub) {
-    // Hover reveals the export submenu; click toggles it (keyboard path).
-    exportTrigger.addEventListener("mouseenter", () => {
-      if (!fileMenu.hidden) setMenu(exportSub, exportTrigger, true);
-    });
+    // Inside the backstage export pane the format list is always visible;
+    // the button keeps its old disclose semantics for assistive tech.
     exportTrigger.addEventListener("click", (ev) => {
       ev.stopPropagation();
       setMenu(exportSub, exportTrigger, exportSub.hidden);
