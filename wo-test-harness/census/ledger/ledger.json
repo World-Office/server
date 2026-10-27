@@ -1,6 +1,6 @@
 {
  "version": 1,
- "generated": "2026-10-27T13:25:56.184695",
+ "generated": "2026-10-27T14:11:11.126412",
  "levels": [
   "L0 missing",
   "L1 surface",
@@ -10,8 +10,8 @@
  ],
  "totals": {
   "L0": 19,
-  "L1": 203,
-  "L2": 0,
+  "L1": 121,
+  "L2": 82,
   "L3": 20,
   "L4": 0
  },
@@ -64,8 +64,10 @@
     "match": "insertBlankPage",
     "where": "tab:insert"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [insertBlankPage]: mutation verified"
+   ]
   },
   {
    "feature": "file.draw",
@@ -322,8 +324,10 @@
     "match": "font-family",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [font-family]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.font-size",
@@ -340,8 +344,10 @@
     "match": "font-size",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [font-size]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.increment-font-size-ctrl",
@@ -358,8 +364,10 @@
     "match": "font-size",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [font-size]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.decrement-font-size-ctrl",
@@ -376,8 +384,10 @@
     "match": "font-size",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [font-size]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.change-case",
@@ -539,8 +549,10 @@
     "match": "highlight-color",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [highlight-color]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.font-color",
@@ -562,8 +574,10 @@
     "match": "text-color",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [text-color]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.clear-style",
@@ -605,8 +619,10 @@
     "match": "insertUnorderedList",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [insertUnorderedList]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.numbering",
@@ -628,8 +644,10 @@
     "match": "Numbering style options",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [insertOrderedList]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.multilevel-list",
@@ -646,8 +664,10 @@
     "match": "multilevel",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [multilevel]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.decrease-indent-ctrl-shift-m",
@@ -664,8 +684,10 @@
     "match": "outdent",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [outdent]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.increase-indent-ctrl-m",
@@ -682,8 +704,10 @@
     "match": "indent",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [indent]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.paragraph-line-spacing",
@@ -700,8 +724,10 @@
     "match": "line-spacing",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [line-spacing]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.text-direction",
@@ -718,8 +744,10 @@
     "match": "directionRtl",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [directionRtl]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.align-left-ctrl-l",
@@ -736,8 +764,10 @@
     "match": "justifyLeft",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [justifyCenter]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.align-center-ctrl-e",
@@ -754,8 +784,10 @@
     "match": "justifyCenter",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [justifyCenter]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.align-right-ctrl-r",
@@ -772,8 +804,10 @@
     "match": "justifyRight",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [justifyCenter]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.justified-ctrl-j",
@@ -790,8 +824,10 @@
     "match": "justifyFull",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [justifyCenter]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.nonprinting-characters-ctrl-shift-8",
@@ -836,8 +872,10 @@
     "match": "Shading",
     "where": "menu:More formatting"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Shading]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.borders",
@@ -859,8 +897,10 @@
     "match": "openBorders",
     "where": "tab:home"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [openBorders]: mutation verified"
+   ]
   },
   {
    "feature": "formatting.replace-ctrl-h",
@@ -913,8 +953,10 @@
     "match": "insertBlankPage",
     "where": "tab:insert"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [insertBlankPage]: mutation verified"
+   ]
   },
   {
    "feature": "insert.breaks",
@@ -931,8 +973,10 @@
     "match": "Breaks",
     "where": "tab:insert"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Breaks]: mutation verified"
+   ]
   },
   {
    "feature": "table.table",
@@ -992,8 +1036,10 @@
     "match": "insertObject",
     "where": "tab:insert"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [insertObject]: mutation verified"
+   ]
   },
   {
    "feature": "insert.smartart",
@@ -1028,8 +1074,10 @@
     "match": "insertObject",
     "where": "tab:insert"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [insertObject]: mutation verified"
+   ]
   },
   {
    "feature": "review.comment",
@@ -1064,8 +1112,10 @@
     "match": "link",
     "where": "tab:references"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [link]: mutation verified"
+   ]
   },
   {
    "feature": "headerfooter.header-footer",
@@ -1107,8 +1157,10 @@
     "match": "btn-hf-pagenumber",
     "where": "tab:header-footer"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [btn-hf-pagenumber]: mutation verified"
+   ]
   },
   {
    "feature": "insert.text-box",
@@ -1125,8 +1177,10 @@
     "match": "insertTextbox",
     "where": "tab:insert"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [insertTextbox]: mutation verified"
+   ]
   },
   {
    "feature": "insert.text-art",
@@ -1143,8 +1197,10 @@
     "match": "insertTextart",
     "where": "tab:insert"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [insertTextart]: mutation verified"
+   ]
   },
   {
    "feature": "insert.drop-cap",
@@ -1161,8 +1217,10 @@
     "match": "toggleDropcap",
     "where": "tab:insert"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [toggleDropcap]: mutation verified"
+   ]
   },
   {
    "feature": "insert.date-time",
@@ -1327,8 +1385,10 @@
     "match": "Margins",
     "where": "tab:layout"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Margins]: mutation verified"
+   ]
   },
   {
    "feature": "page.orientation",
@@ -1345,8 +1405,10 @@
     "match": "Orientation",
     "where": "tab:layout"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Orientation]: mutation verified"
+   ]
   },
   {
    "feature": "page.size",
@@ -1363,8 +1425,10 @@
     "match": "Size",
     "where": "tab:layout"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Size]: mutation verified"
+   ]
   },
   {
    "feature": "page.columns",
@@ -1381,8 +1445,10 @@
     "match": "Columns",
     "where": "tab:layout"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Columns]: mutation verified"
+   ]
   },
   {
    "feature": "page.breaks",
@@ -1399,8 +1465,10 @@
     "match": "Breaks",
     "where": "tab:insert"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Breaks]: mutation verified"
+   ]
   },
   {
    "feature": "page.line-numbers",
@@ -1417,8 +1485,10 @@
     "match": "toggleLineNumbers",
     "where": "tab:layout"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [toggleLineNumbers]: mutation verified"
+   ]
   },
   {
    "feature": "page.hyphenation",
@@ -1435,8 +1505,10 @@
     "match": "Hyphenation",
     "where": "tab:layout"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Hyphenation]: mutation verified"
+   ]
   },
   {
    "feature": "page.wrapping",
@@ -1561,8 +1633,10 @@
     "match": "toggleWatermark",
     "where": "tab:layout"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [toggleWatermark]: mutation verified"
+   ]
   },
   {
    "feature": "page.page-color",
@@ -1579,8 +1653,10 @@
     "match": "pagecolor",
     "where": "tab:layout"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [pagecolor]: mutation verified"
+   ]
   },
   {
    "feature": "page.colors",
@@ -1597,8 +1673,10 @@
     "match": "themecolors",
     "where": "tab:layout"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [themecolors]: mutation verified"
+   ]
   },
   {
    "feature": "table.table-of-contents",
@@ -1615,8 +1693,10 @@
     "match": "btn-toc",
     "where": "tab:references"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [btn-toc]: mutation verified"
+   ]
   },
   {
    "feature": "references.add-text",
@@ -1656,8 +1736,10 @@
     "match": "updateToc",
     "where": "tab:references"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [updateToc]: mutation verified"
+   ]
   },
   {
    "feature": "references.footnote",
@@ -1674,8 +1756,10 @@
     "match": "insertFootnote",
     "where": "tab:references"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [insertFootnote]: mutation verified"
+   ]
   },
   {
    "feature": "references.link",
@@ -1692,8 +1776,10 @@
     "match": "link",
     "where": "tab:references"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [link]: mutation verified"
+   ]
   },
   {
    "feature": "references.bookmark",
@@ -1710,8 +1796,10 @@
     "match": "bookmark",
     "where": "tab:references"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [bookmark]: mutation verified"
+   ]
   },
   {
    "feature": "references.caption",
@@ -1728,8 +1816,10 @@
     "match": "insertCaption",
     "where": "tab:references"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [insertCaption]: mutation verified"
+   ]
   },
   {
    "feature": "references.cross-reference",
@@ -1764,8 +1854,10 @@
     "match": "insertToF",
     "where": "tab:references"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [insertToF]: mutation verified"
+   ]
   },
   {
    "feature": "review.co-editing-mode",
@@ -2463,8 +2555,10 @@
     "match": "btn-hf-pagenumber",
     "where": "tab:header-footer"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [btn-hf-pagenumber]: mutation verified"
+   ]
   },
   {
    "feature": "headerfooter.date-time",
@@ -2812,8 +2906,10 @@
     "match": "Insert page break",
     "where": "menu:Breaks"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Breaks]: mutation verified"
+   ]
   },
   {
    "feature": "insert.insert-column-break",
@@ -2830,8 +2926,10 @@
     "match": "Insert column break",
     "where": "menu:Breaks"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Insert column break]: mutation verified"
+   ]
   },
   {
    "feature": "insert.insert-section-break",
@@ -2848,8 +2946,10 @@
     "match": "Insert section break",
     "where": "menu:Breaks"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Insert section break]: mutation verified"
+   ]
   },
   {
    "feature": "table.insert-custom-table",
@@ -2886,8 +2986,10 @@
     "match": "Draw table",
     "where": "menu:Table ▾"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Draw table]: mutation verified"
+   ]
   },
   {
    "feature": "table.erase-table",
@@ -2904,8 +3006,10 @@
     "match": "Erase table",
     "where": "menu:Table ▾"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Erase table]: mutation verified"
+   ]
   },
   {
    "feature": "table.convert-text-to-table",
@@ -2997,8 +3101,10 @@
     "match": "Fractions",
     "where": "menu:Symbols ▾"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Fractions]: mutation verified"
+   ]
   },
   {
    "feature": "insert.scripts",
@@ -3015,8 +3121,10 @@
     "match": "Scripts",
     "where": "menu:Symbols ▾"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Scripts]: mutation verified"
+   ]
   },
   {
    "feature": "insert.radicals",
@@ -3033,8 +3141,10 @@
     "match": "Radicals",
     "where": "menu:Symbols ▾"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Scripts]: mutation verified"
+   ]
   },
   {
    "feature": "insert.integrals",
@@ -3051,8 +3161,10 @@
     "match": "Integrals",
     "where": "menu:Symbols ▾"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Scripts]: mutation verified"
+   ]
   },
   {
    "feature": "insert.large-operators",
@@ -3069,8 +3181,10 @@
     "match": "Large operators",
     "where": "menu:Symbols ▾"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Scripts]: mutation verified"
+   ]
   },
   {
    "feature": "insert.brackets",
@@ -3087,8 +3201,10 @@
     "match": "Brackets",
     "where": "menu:Symbols ▾"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Scripts]: mutation verified"
+   ]
   },
   {
    "feature": "insert.functions",
@@ -3105,8 +3221,10 @@
     "match": "Functions",
     "where": "menu:Symbols ▾"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Scripts]: mutation verified"
+   ]
   },
   {
    "feature": "insert.accents",
@@ -3123,8 +3241,10 @@
     "match": "Accents",
     "where": "menu:Symbols ▾"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Scripts]: mutation verified"
+   ]
   },
   {
    "feature": "insert.limits-and-logarithms",
@@ -3141,8 +3261,10 @@
     "match": "Limits and logarithms",
     "where": "menu:Symbols ▾"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Scripts]: mutation verified"
+   ]
   },
   {
    "feature": "insert.operators",
@@ -3159,8 +3281,10 @@
     "match": "Operators",
     "where": "menu:Symbols ▾"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Scripts]: mutation verified"
+   ]
   },
   {
    "feature": "insert.matrices",
@@ -3177,8 +3301,10 @@
     "match": "Matrices",
     "where": "menu:Symbols ▾"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Scripts]: mutation verified"
+   ]
   },
   {
    "feature": "page.last-custom",
@@ -3213,8 +3339,10 @@
     "match": "Normal",
     "where": "menu:Margins"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Margins]: mutation verified"
+   ]
   },
   {
    "feature": "page.narrow",
@@ -3231,8 +3359,10 @@
     "match": "Narrow",
     "where": "menu:Margins"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Margins]: mutation verified"
+   ]
   },
   {
    "feature": "page.moderate",
@@ -3249,8 +3379,10 @@
     "match": "Moderate",
     "where": "menu:Margins"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Margins]: mutation verified"
+   ]
   },
   {
    "feature": "page.wide",
@@ -3267,8 +3399,10 @@
     "match": "Wide",
     "where": "menu:Margins"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Margins]: mutation verified"
+   ]
   },
   {
    "feature": "page.custom-margins",
@@ -3285,8 +3419,10 @@
     "match": "Custom margins",
     "where": "menu:Margins"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Custom margins]: mutation verified"
+   ]
   },
   {
    "feature": "page.us-letter",
@@ -3303,8 +3439,10 @@
     "match": "Letter",
     "where": "menu:Size"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Size]: mutation verified"
+   ]
   },
   {
    "feature": "page.us-legal",
@@ -3555,8 +3693,10 @@
     "match": "One",
     "where": "menu:Columns"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Columns]: mutation verified"
+   ]
   },
   {
    "feature": "page.two",
@@ -3573,8 +3713,10 @@
     "match": "Two",
     "where": "menu:Columns"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Columns]: mutation verified"
+   ]
   },
   {
    "feature": "page.three",
@@ -3591,8 +3733,10 @@
     "match": "Three",
     "where": "menu:Columns"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Columns]: mutation verified"
+   ]
   },
   {
    "feature": "page.left",
@@ -3609,8 +3753,10 @@
     "match": "Left",
     "where": "menu:Columns"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Columns]: mutation verified"
+   ]
   },
   {
    "feature": "page.right",
@@ -3627,8 +3773,10 @@
     "match": "Right",
     "where": "menu:Columns"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Columns]: mutation verified"
+   ]
   },
   {
    "feature": "page.custom-columns",
@@ -3681,8 +3829,10 @@
     "match": "Automatic",
     "where": "menu:Hyphenation"
    },
-   "level": 1,
-   "evidence": []
+   "level": 2,
+   "evidence": [
+    "L2 probe ok [Automatic]: mutation verified"
+   ]
   },
   {
    "feature": "page.hyphenation-options",
@@ -3988,10 +4138,11 @@
     "match": "Margins",
     "where": "tab:layout"
    },
-   "level": 1,
+   "level": 2,
    "evidence": [
     "8 OO fields: Margins, Top, Bottom, Left, Right, Gutter position, Orientation, Multiple pages",
-    "8 OO fields: Margins, Top, Bottom, Left, Right, Gutter position, Orientation, Multiple pages"
+    "8 OO fields: Margins, Top, Bottom, Left, Right, Gutter position, Orientation, Multiple pages",
+    "L2 probe ok [Margins]: mutation verified"
    ]
   },
   {
@@ -4032,10 +4183,11 @@
     "match": "Size",
     "where": "tab:layout"
    },
-   "level": 1,
+   "level": 2,
    "evidence": [
     "3 OO fields: Preset, Width, Height",
-    "3 OO fields: Preset, Width, Height"
+    "3 OO fields: Preset, Width, Height",
+    "L2 probe ok [Size]: mutation verified"
    ]
   },
   {
@@ -4080,10 +4232,11 @@
     "match": "Columns",
     "where": "tab:layout"
    },
-   "level": 1,
+   "level": 2,
    "evidence": [
     "5 OO fields: Number of columns, 1, 2, Equal column width, Column divider",
-    "5 OO fields: Number of columns, 1, 2, Equal column width, Column divider"
+    "5 OO fields: Number of columns, 1, 2, Equal column width, Column divider",
+    "L2 probe ok [Columns]: mutation verified"
    ]
   },
   {
@@ -4122,10 +4275,11 @@
     "match": "Hyphenation",
     "where": "tab:layout"
    },
-   "level": 1,
+   "level": 2,
    "evidence": [
     "2 OO fields: Automatically hyphenate document, Hyphenate words in CAPS",
-    "2 OO fields: Automatically hyphenate document, Hyphenate words in CAPS"
+    "2 OO fields: Automatically hyphenate document, Hyphenate words in CAPS",
+    "L2 probe ok [Hyphenation]: mutation verified"
    ]
   },
   {
@@ -4187,9 +4341,10 @@
     "match": "insertCaption",
     "where": "tab:references"
    },
-   "level": 1,
+   "level": 2,
    "evidence": [
-    "8 OO fields: Caption, Insert, Label, Exclude label from caption, Numbering, Include chapter number, Chapter starts with style, Use separator"
+    "8 OO fields: Caption, Insert, Label, Exclude label from caption, Numbering, Include chapter number, Chapter starts with style, Use separator",
+    "L2 probe ok [insertCaption]: mutation verified"
    ]
   },
   {
@@ -4251,9 +4406,10 @@
     "match": "insertToF",
     "where": "tab:references"
    },
-   "level": 1,
+   "level": 2,
    "evidence": [
-    "7 OO fields: Show page numbers, Right align page numbers, Leader, Format table of figures as links, Build table of figures from, Include label and number, Styles"
+    "7 OO fields: Show page numbers, Right align page numbers, Leader, Format table of figures as links, Build table of figures from, Include label and number, Styles",
+    "L2 probe ok [insertToF]: mutation verified"
    ]
   },
   {
@@ -4284,9 +4440,10 @@
     "match": "btn-toc",
     "where": "tab:references"
    },
-   "level": 1,
+   "level": 2,
    "evidence": [
-    "7 OO fields: Show page numbers, Right align page numbers, Leader, Format table of contents as links, Build table of contents from, Levels, Styles"
+    "7 OO fields: Show page numbers, Right align page numbers, Leader, Format table of contents as links, Build table of contents from, Levels, Styles",
+    "L2 probe ok [btn-toc]: mutation verified"
    ]
   },
   {

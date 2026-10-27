@@ -1,0 +1,541 @@
+{
+  "generated": "2026-10-27T13:11:49.229Z",
+  "editor_dir": "/home/weiss/git/World-Office/server/apps/web/apps/documenteditor-wysiwyg",
+  "probed": 45,
+  "passed": 45,
+  "level2": 82,
+  "entries": [
+    {
+      "key": "Automatic",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3083,
+      "html": "<div class=\"hyphenation\" data-auto=\"1\"></div><p>Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "page.automatic"
+      ]
+    },
+    {
+      "key": "bookmark",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3069,
+      "html": "<p><span style=\"background-color: rgb(255, 248, 225); font-size: 12pt;\">ProbeMark</span>Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "references.bookmark"
+      ]
+    },
+    {
+      "key": "Breaks",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3068,
+      "html": "<p>Probe&nbsp;</p><div class=\"page-break\"><br></div><p><br></p><p>&nbsp;alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "insert.breaks",
+        "page.breaks",
+        "insert.insert-page-break"
+      ]
+    },
+    {
+      "key": "btn-hf-pagenumber",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3076,
+      "html": "<p>Probe&nbsp;<span class=\"page-number\"></span>&nbsp;alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "insert.page-number",
+        "headerfooter.page-number"
+      ]
+    },
+    {
+      "key": "btn-toc",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3077,
+      "html": "<nav class=\"toc\" data-title=\"Table of Contents\"></nav><p><br></p><p>Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "table.table-of-contents",
+        "table.dlg-table-of-contents"
+      ]
+    },
+    {
+      "key": "Columns",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3109,
+      "html": "<p>Probe&nbsp;</p><section data-columns=\"2\"><p><br></p></section><section data-columns=\"3\"><p><br></p></section><section data-columns=\"2\" data-columns-layout=\"left\"><p><br></p></section><section data-columns=\"2\" data-columns-layout=\"right\"><p><br></p></section><section data-columns=\"1\"><p><br></p></section><p>&nbsp;alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "page.columns",
+        "page.one",
+        "page.two",
+        "page.three",
+        "page.left",
+        "page.right",
+        "page.dlg-columns"
+      ]
+    },
+    {
+      "key": "Custom margins",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3058,
+      "html": "<div class=\"page-setup\" data-page-w=\"11906\" data-page-h=\"16838\" data-orient=\"portrait\" data-margin-top=\"1152\" data-margin-bottom=\"1440\" data-margin-left=\"1440\" data-margin-right=\"1440\"></div><p>Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "page.custom-margins"
+      ]
+    },
+    {
+      "key": "directionRtl",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3079,
+      "html": "<p dir=\"rtl\" style=\"direction: rtl;\">Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "formatting.text-direction"
+      ]
+    },
+    {
+      "key": "Draw table",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3053,
+      "html": "<p>Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "table.draw-table"
+      ]
+    },
+    {
+      "key": "Erase table",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3077,
+      "html": "<p>Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "table.erase-table"
+      ]
+    },
+    {
+      "key": "font-family",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3105,
+      "html": "<p>Probe <span style=\"font-family: &quot;Courier New&quot;;\">sentinel</span> alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "formatting.font"
+      ]
+    },
+    {
+      "key": "font-size",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3089,
+      "html": "<p>Probe <span style=\"font-size: xx-large;\">sentinel</span> alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "formatting.font-size",
+        "formatting.increment-font-size-ctrl",
+        "formatting.decrement-font-size-ctrl"
+      ]
+    },
+    {
+      "key": "Fractions",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3628,
+      "html": "<p>Probe&nbsp;<img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAZYAAADACAYAAAAnWEXIAAANO0lEQVR4AezcT6hU5RsH8AcJVLKoFv1dRWEgEUgmgQlamhAYIVErIwqCFi0irKBcRGR/bREErTOCCCpoEWWRlLUIi4qsjdWiiFoVQlpg3d/vvDilztXuvfPOOe97zkecMzPnzDznfT7PhS9z584smvGPAAECBAhkFFgU/hEgQIAAgYwCgiUjplIDF9A+AQJJQLAkBhsCBAgQyCUgWHJJqkOAAAECSSBDsKQ6NgQIECBAIAkIlsRgQ4AAAQK5BARLLkl1CGQQUIJAHwQESx+mqAcCBAgUJCBYChqGpRAgQKAPAmUESx",
+      "features": [
+        "insert.fractions"
+      ]
+    },
+    {
+      "key": "highlight-color",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3099,
+      "html": "<p>Probe <span style=\"background-color: rgb(255, 136, 0);\">sentinel</span> alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "formatting.highlight-color"
+      ]
+    },
+    {
+      "key": "Hyphenation",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3086,
+      "html": "<div class=\"hyphenation\" data-auto=\"1\"></div><p>Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "page.hyphenation",
+        "page.dlg-hyphenation"
+      ]
+    },
+    {
+      "key": "indent",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3131,
+      "html": "<blockquote style=\"margin: 0 0 0 40px; border: none; padding: 0px;\"><p>Probe sentinel alpha text.</p></blockquote><p>Second paragraph body here.</p>",
+      "features": [
+        "formatting.increase-indent-ctrl-m"
+      ]
+    },
+    {
+      "key": "Insert column break",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3080,
+      "html": "<p>Probe&nbsp;</p><div class=\"column-break\"><br></div><p><br></p><p>&nbsp;alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "insert.insert-column-break"
+      ]
+    },
+    {
+      "key": "Insert section break",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3070,
+      "html": "<p>Probe&nbsp;</p><hr class=\"section-break\"><p><br></p><p>&nbsp;alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "insert.insert-section-break"
+      ]
+    },
+    {
+      "key": "insertBlankPage",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3077,
+      "html": "<p>Probe&nbsp;</p><div class=\"page-break\"><br></div><p><br></p><p>&nbsp;alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "file.insert",
+        "insert.blank-page"
+      ]
+    },
+    {
+      "key": "insertCaption",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3086,
+      "html": "<p>Probe&nbsp;<em style=\"text-align: center; font-size: 12pt;\">Caption</em><span style=\"font-size: 12pt;\">&nbsp;alpha text.</span></p><p>Second paragraph body here.</p>",
+      "features": [
+        "references.caption",
+        "references.dlg-insert-caption"
+      ]
+    },
+    {
+      "key": "insertFootnote",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3075,
+      "html": "<p>Probe&nbsp;<sup class=\"footnote-citation\">[1]</sup><span class=\"footnote\">Footnote text</span>&nbsp;alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "references.footnote"
+      ]
+    },
+    {
+      "key": "insertObject",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3063,
+      "html": "<p>Probe&nbsp;</p><div class=\"object\" data-type=\"shape\"></div><p><br></p><p>&nbsp;alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "insert.shape",
+        "chart.chart"
+      ]
+    },
+    {
+      "key": "insertOrderedList",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3132,
+      "html": "<p><ol><li>Probe sentinel alpha text.</li></ol></p><p>Second paragraph body here.</p>",
+      "features": [
+        "formatting.numbering"
+      ]
+    },
+    {
+      "key": "insertTextart",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3102,
+      "html": "<p>Probe&nbsp;</p><div class=\"object\" data-type=\"textart\"></div><p><br></p><p>&nbsp;alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "insert.text-art"
+      ]
+    },
+    {
+      "key": "insertTextbox",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3082,
+      "html": "<p>Probe&nbsp;</p><div class=\"object\" data-type=\"textbox\"></div><p><br></p><p>&nbsp;alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "insert.text-box"
+      ]
+    },
+    {
+      "key": "insertToF",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3083,
+      "html": "<p>Probe&nbsp;</p><nav class=\"toc\" data-kind=\"figures\" data-title=\"List of Figures\"></nav><p><br></p><p>&nbsp;alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "table.table-of-figures",
+        "table.dlg-table-of-figures"
+      ]
+    },
+    {
+      "key": "insertUnorderedList",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3139,
+      "html": "<p><ul><li>Probe sentinel alpha text.</li></ul></p><p>Second paragraph body here.</p>",
+      "features": [
+        "formatting.bullets"
+      ]
+    },
+    {
+      "key": "justifyCenter",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3096,
+      "html": "<p style=\"text-align: justify;\">Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "formatting.align-left-ctrl-l",
+        "formatting.align-center-ctrl-e",
+        "formatting.align-right-ctrl-r",
+        "formatting.justified-ctrl-j"
+      ]
+    },
+    {
+      "key": "line-spacing",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3103,
+      "html": "<p style=\"line-height: 2;\">Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "formatting.paragraph-line-spacing"
+      ]
+    },
+    {
+      "key": "link",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3080,
+      "html": "<p><a href=\"https://probe.example/wo\" style=\"font-size: 12pt;\">https://probe.example/wo</a>Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "insert.link",
+        "references.link"
+      ]
+    },
+    {
+      "key": "Margins",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3098,
+      "html": "<div class=\"page-setup\" data-page-w=\"11906\" data-page-h=\"16838\" data-orient=\"portrait\" data-margin-top=\"1440\" data-margin-bottom=\"1440\" data-margin-left=\"2880\" data-margin-right=\"2880\"></div><p>Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "page.margins",
+        "page.normal",
+        "page.narrow",
+        "page.moderate",
+        "page.wide",
+        "page.dlg-margins"
+      ]
+    },
+    {
+      "key": "multilevel",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3119,
+      "html": "<p><ol><li>Probe sentinel alpha text.</li></ol></p><p>Second paragraph body here.</p>",
+      "features": [
+        "formatting.multilevel-list"
+      ]
+    },
+    {
+      "key": "openBorders",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3061,
+      "html": "<p style=\"border-top:1pt solid #000000;border-bottom:1pt solid #000000;border-left:1pt solid #000000;border-right:1pt solid #000000\">Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "formatting.borders"
+      ]
+    },
+    {
+      "key": "Orientation",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3075,
+      "html": "<div class=\"page-setup\" data-page-w=\"16838\" data-page-h=\"11906\" data-orient=\"landscape\" data-margin-top=\"1440\" data-margin-bottom=\"1440\" data-margin-left=\"1440\" data-margin-right=\"1440\"></div><p>Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "page.orientation"
+      ]
+    },
+    {
+      "key": "outdent",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3510,
+      "html": "<p>Probe sentinel alpha text.</p><p><br>Second paragraph body here.</p>",
+      "features": [
+        "formatting.decrease-indent-ctrl-shift-m"
+      ]
+    },
+    {
+      "key": "pagecolor",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3055,
+      "html": "<p>Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "page.page-color"
+      ]
+    },
+    {
+      "key": "Scripts",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3687,
+      "html": "<p>Probe&nbsp;<img src=\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcoAAADACAYAAACEcCMOAAAQAElEQVR4AezdeYwURRTH8ccKuiq4StRggolGjYmuBo9IxCAoiyeaoMTjDwWNCgp/GA/UEBS8RYSYaOIVQf7xXhDRyBFdEV0louIJEUWjEs7AhjNcK6/CTBZ2Z5mdma6uV/01dk9PT0/Xq09t9sfMzlRXNfMfAggggAACCBQUqBL+QwABBBBAAIGCAgRlQZoAH6AkBBBAAAHvAgSld3IaRAABBBCwJEBQWhotarUkQK0IIBCJAEEZyUDSDQQQQACBZAQIymRcOSsCCFgSoFYE2hEgKNvB4SEEEEAAAQQISn4GEEAAAQ",
+      "features": [
+        "insert.scripts",
+        "insert.radicals",
+        "insert.integrals",
+        "insert.large-operators",
+        "insert.brackets",
+        "insert.functions",
+        "insert.accents",
+        "insert.limits-and-logarithms",
+        "insert.operators",
+        "insert.matrices"
+      ]
+    },
+    {
+      "key": "Shading",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3082,
+      "html": "<p style=\"background-color: #ffee99\">Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "formatting.shading"
+      ]
+    },
+    {
+      "key": "Size",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3086,
+      "html": "<div class=\"page-setup\" data-page-w=\"12240\" data-page-h=\"15840\" data-orient=\"portrait\" data-margin-top=\"1440\" data-margin-bottom=\"1440\" data-margin-left=\"1440\" data-margin-right=\"1440\"></div><p>Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "page.size",
+        "page.us-letter",
+        "page.dlg-page-size"
+      ]
+    },
+    {
+      "key": "text-color",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3106,
+      "html": "<p>Probe <span style=\"color: rgb(204, 0, 0);\">sentinel</span> alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "formatting.font-color"
+      ]
+    },
+    {
+      "key": "themecolors",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3076,
+      "html": "<p>Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "page.colors"
+      ]
+    },
+    {
+      "key": "toggleDropcap",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3094,
+      "html": "<p><span class=\"dropcap\" style=\"--drop-lines: 3;\">P</span>robe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "insert.drop-cap"
+      ]
+    },
+    {
+      "key": "toggleLineNumbers",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3058,
+      "html": "<div class=\"line-numbers\" data-restart=\"newSection\"></div><p>Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "page.line-numbers"
+      ]
+    },
+    {
+      "key": "toggleWatermark",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3086,
+      "html": "<div class=\"watermark\" data-text=\"PROBE\" data-color=\"#C0C0C0\"></div><p>Probe sentinel alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "page.watermark"
+      ]
+    },
+    {
+      "key": "updateToc",
+      "ok": true,
+      "phase": "applied",
+      "detail": "mutation verified",
+      "ms": 3059,
+      "html": "<p>Probe&nbsp;</p><nav class=\"toc\" data-title=\"Table of Contents\"></nav><p><br></p><p>&nbsp;alpha text.</p><p>Second paragraph body here.</p>",
+      "features": [
+        "table.update-table"
+      ]
+    }
+  ]
+}
