@@ -1015,6 +1015,14 @@ select option { background: var(--bg); color: var(--text); }
 .menu-list[hidden],
 .menu-sublist[hidden] { display: none; }
 
+/* Eq symbol-gallery flyouts: a family row with a .menu-sublist opens it on
+   hover/keyboard focus (no hidden attr — purely CSS-driven, unlike the
+   JS-toggled export sublist). */
+.menu-list li.has-sub { position: relative; }
+.menu-list li.has-sub > .menu-sublist { display: none; }
+.menu-list li.has-sub:hover > .menu-sublist,
+.menu-list li.has-sub:focus-within > .menu-sublist { display: block; }
+
 /* Anchored insert popovers (table / image): dropdown-class surfaces anchored
    under their ribbon button — OO-parity interaction shape (compact, in
    context) instead of a full-screen modal overlay. Positioned by

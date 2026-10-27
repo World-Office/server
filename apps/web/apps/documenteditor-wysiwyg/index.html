@@ -456,17 +456,83 @@
       <button type="button" id="btn-equation" data-i18n="Insert.Equation">Equation</button>
       <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Insert.EquationGallery">Symbols ▾</button>
       <ul class="menu-list" role="menu" hidden>
-        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="fractions" data-i18n="Insert.Eq.Fractions">Fractions</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="scripts" data-i18n="Insert.Eq.Scripts">Scripts</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="radicals" data-i18n="Insert.Eq.Radicals">Radicals</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="integrals" data-i18n="Insert.Eq.Integrals">Integrals</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="large-operators" data-i18n="Insert.Eq.LargeOperators">Large operators</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="brackets" data-i18n="Insert.Eq.Brackets">Brackets</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="functions" data-i18n="Insert.Eq.Functions">Functions</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="accents" data-i18n="Insert.Eq.Accents">Accents</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="limits-and-logarithms" data-i18n="Insert.Eq.Limits">Limits and logarithms</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="operators" data-i18n="Insert.Eq.Operators">Operators</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="matrices" data-i18n="Insert.Eq.Matrices">Matrices</button></li>
+        <li role="none" class="has-sub"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="fractions" data-i18n="Insert.Eq.Fractions">Fractions</button>
+          <ul class="menu-sublist" role="menu" aria-label="Fractions">
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="fractions:0" data-i18n-aria-label="Insert.Eq.Fractions">a/b</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="fractions:1" data-i18n-aria-label="Insert.Eq.Fractions">(x+1)/2</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="fractions:2" data-i18n-aria-label="Insert.Eq.Fractions">1/n</button></li>
+          </ul>
+        </li>
+        <li role="none" class="has-sub"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="scripts" data-i18n="Insert.Eq.Scripts">Scripts</button>
+          <ul class="menu-sublist" role="menu" aria-label="Scripts">
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="scripts:0" data-i18n-aria-label="Insert.Eq.Scripts">x²+x₁</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="scripts:1" data-i18n-aria-label="Insert.Eq.Scripts">eˣ</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="scripts:2" data-i18n-aria-label="Insert.Eq.Scripts">xᵃᵦ</button></li>
+          </ul>
+        </li>
+        <li role="none" class="has-sub"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="radicals" data-i18n="Insert.Eq.Radicals">Radicals</button>
+          <ul class="menu-sublist" role="menu" aria-label="Radicals">
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="radicals:0" data-i18n-aria-label="Insert.Eq.Radicals">√x</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="radicals:1" data-i18n-aria-label="Insert.Eq.Radicals">√(a+b)</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="radicals:2" data-i18n-aria-label="Insert.Eq.Radicals">√2</button></li>
+          </ul>
+        </li>
+        <li role="none" class="has-sub"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="integrals" data-i18n="Insert.Eq.Integrals">Integrals</button>
+          <ul class="menu-sublist" role="menu" aria-label="Integrals">
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="integrals:0" data-i18n-aria-label="Insert.Eq.Integrals">∫f(x)dx</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="integrals:1" data-i18n-aria-label="Insert.Eq.Integrals">∫ₐᵇf(x)dx</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="integrals:2" data-i18n-aria-label="Insert.Eq.Integrals">∫₀¹x dx</button></li>
+          </ul>
+        </li>
+        <li role="none" class="has-sub"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="large-operators" data-i18n="Insert.Eq.LargeOperators">Large operators</button>
+          <ul class="menu-sublist" role="menu" aria-label="Large operators">
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="large-operators:0" data-i18n-aria-label="Insert.Eq.LargeOperators">Σᵢ₌₁ⁿi</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="large-operators:1" data-i18n-aria-label="Insert.Eq.LargeOperators">Σₖ₌₀ᵐk²</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="large-operators:2" data-i18n-aria-label="Insert.Eq.LargeOperators">Σaᵢ</button></li>
+          </ul>
+        </li>
+        <li role="none" class="has-sub"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="brackets" data-i18n="Insert.Eq.Brackets">Brackets</button>
+          <ul class="menu-sublist" role="menu" aria-label="Brackets">
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="brackets:0" data-i18n-aria-label="Insert.Eq.Brackets">(a+b)·[c−d]</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="brackets:1" data-i18n-aria-label="Insert.Eq.Brackets">(x, y, z)</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="brackets:2" data-i18n-aria-label="Insert.Eq.Brackets">[0, 1]</button></li>
+          </ul>
+        </li>
+        <li role="none" class="has-sub"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="functions" data-i18n="Insert.Eq.Functions">Functions</button>
+          <ul class="menu-sublist" role="menu" aria-label="Functions">
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="functions:0" data-i18n-aria-label="Insert.Eq.Functions">sin x + cos x</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="functions:1" data-i18n-aria-label="Insert.Eq.Functions">log₂x</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="functions:2" data-i18n-aria-label="Insert.Eq.Functions">tan x</button></li>
+          </ul>
+        </li>
+        <li role="none" class="has-sub"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="accents" data-i18n="Insert.Eq.Accents">Accents</button>
+          <ul class="menu-sublist" role="menu" aria-label="Accents">
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="accents:0" data-i18n-aria-label="Insert.Eq.Accents">x̂</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="accents:1" data-i18n-aria-label="Insert.Eq.Accents">â²</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="accents:2" data-i18n-aria-label="Insert.Eq.Accents">f̂(x)</button></li>
+          </ul>
+        </li>
+        <li role="none" class="has-sub"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="limits-and-logarithms" data-i18n="Insert.Eq.Limits">Limits and logarithms</button>
+          <ul class="menu-sublist" role="menu" aria-label="Limits and logarithms">
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="limits-and-logarithms:0" data-i18n-aria-label="Insert.Eq.Limits">lim f(x)</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="limits-and-logarithms:1" data-i18n-aria-label="Insert.Eq.Limits">lim aₙ</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="limits-and-logarithms:2" data-i18n-aria-label="Insert.Eq.Limits">log₁₀x</button></li>
+          </ul>
+        </li>
+        <li role="none" class="has-sub"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="operators" data-i18n="Insert.Eq.Operators">Operators</button>
+          <ul class="menu-sublist" role="menu" aria-label="Operators">
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="operators:0" data-i18n-aria-label="Insert.Eq.Operators">a+b=c</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="operators:1" data-i18n-aria-label="Insert.Eq.Operators">x≤y</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="operators:2" data-i18n-aria-label="Insert.Eq.Operators">p±q</button></li>
+          </ul>
+        </li>
+        <li role="none" class="has-sub"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="matrices" data-i18n="Insert.Eq.Matrices">Matrices</button>
+          <ul class="menu-sublist" role="menu" aria-label="Matrices">
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="matrices:0" data-i18n-aria-label="Insert.Eq.Matrices">(a b; c d)</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="matrices:1" data-i18n-aria-label="Insert.Eq.Matrices">I₂</button></li>
+            <li role="none"><button type="button" role="menuitem" data-cmd="equationTemplate" data-value="matrices:2" data-i18n-aria-label="Insert.Eq.Matrices">(x y; z w)</button></li>
+          </ul>
+        </li>
       </ul>
     </span>
     <button id="btn-symbol" data-i18n-title="Toolbar.SymbolTitle" data-i18n-aria-label="Toolbar.SymbolTitle" title="Insert symbol" aria-label="Insert symbol">Ω</button>
@@ -535,6 +601,7 @@
     <span class="menu rb-menu" >
       <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Size">Size ▾</button>
       <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="last-custom" data-i18n="Layout.Size.LastCustom">Last Custom</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="Letter" data-i18n="Layout.Size.Letter">US Letter</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="Legal" data-i18n="Layout.Size.Legal">US Legal</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="applyPageSize" data-value="A4" data-i18n="Layout.Size.A4">A4</button></li>
@@ -1492,6 +1559,10 @@
         <option value="custom" data-i18n="TextToTable.Custom">Custom</option>
       </select>
       <input id="ttt-custom" type="text" maxlength="4" placeholder="," aria-label="Custom separator">
+    </div>
+    <div class="dialog-field">
+      <label for="ttt-cols" data-i18n="TextToTable.Columns">Number of columns</label>
+      <input id="ttt-cols" type="number" min="1" max="10" inputmode="numeric">
     </div>
     <div class="dialog-actions">
       <button id="btn-ttt-cancel" data-i18n="Dialog.Cancel">Cancel</button>

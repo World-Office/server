@@ -67,5 +67,27 @@ for (const key of ["Insert.Eq.Fractions", "Insert.Eq.Matrices", "Insert.Table.Dr
   if (hits < 2) { console.error("MISSING i18n x2 " + key + " (found " + hits + ")"); failed++; }
 }
 
+// 6. Gap blocks: >=3 equation templates per family (submenu flies out),
+// TTT column count, Last Custom page size, chart-element type gating.
+const EQ_FAMILIES = ["fractions", "scripts", "radicals", "integrals", "large-operators",
+  "brackets", "functions", "accents", "limits-and-logarithms", "operators", "matrices"];
+for (const fam of EQ_FAMILIES) {
+  pin("eq submenu " + fam, html, `data-value="${fam}:2"`);
+}
+pin("eq family:variant parse", js, 'String(family).split(":")');
+pin("ttt columns field", html, 'id="ttt-cols"');
+pin("ttt columns read", js, 'getElementById("ttt-cols")');
+pin("size last-custom menu", html, 'data-cmd="applyPageSize" data-value="last-custom"');
+pin("size last-custom apply", js, 'size === "last-custom"');
+pin("size last-custom store", js, "rememberCustomSize");
+pin("size last-custom storage key", js, "wo-last-custom-size");
+pin("chart element support map", js, "CHART_ELEMENT_SUPPORT");
+pin("chart element gate apply", js, "chartElementSupported(");
+pin("chart unavailable i18n", js, '"Chart.Elements.NotAvailableTitle"');
+for (const key of ["Layout.Size.LastCustom", "TextToTable.Columns", "Chart.Elements.NotAvailableTitle"]) {
+  const hits = i18n.split('"' + key + '"').length - 1;
+  if (hits < 2) { console.error("MISSING i18n x2 " + key + " (found " + hits + ")"); failed++; }
+}
+
 if (failed) { console.error("ledger-gaps gate: " + failed + " pin(s) missing"); process.exit(1); }
-console.log("ledger-gaps gate: ALL GREEN (" + "11 eq families + 3 table tools + 5 chart elements + hyp/last-custom pinned)");
+console.log("ledger-gaps gate: ALL GREEN (" + "11 eq families x3 variants + 3 table tools + 5 chart elements + hyp/last-custom + gap blocks pinned)");
