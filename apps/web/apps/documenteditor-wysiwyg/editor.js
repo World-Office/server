@@ -4502,15 +4502,6 @@
     ).forEach((el) => keep.add(el));
     const blocks = Array.from(editor.children).filter(
       (el) => !keep.has(el) && el.tagName !== "STYLE");
-    // A wiped/empty document must still render ONE page sheet: an empty
-    // contenteditable #editor is the "gray void" bug — typing lands directly
-    // in the gray backdrop outside any page (seen live on prod 2026-10-27
-    // after a collab wipe: text like 'the quick brown fox...' stranded in
-    // the gray area). Always emit at least one (empty) .wo-page.
-    if (blocks.length === 0) {
-      openPage();
-      return;
-    }
 
     const gs = document.documentElement.style;
     const pageW = parseFloat(gs.getPropertyValue("--wo-page-w")) || 794;
@@ -4527,6 +4518,15 @@
       cur.className = "wo-page";
       editor.appendChild(cur);
     };
+    // A wiped/empty document must still render ONE page sheet: an empty
+    // contenteditable #editor is the "gray void" bug — typing lands directly
+    // in the gray backdrop outside any page (seen live on prod 2026-10-27
+    // after a collab wipe: text like 'the quick brown fox...' stranded in
+    // the gray area). Always emit at least one (empty) .wo-page.
+    if (blocks.length === 0) {
+      openPage();
+      return;
+    }
     openPage();
     let used = 0;
     let prevBottom = 0; // previous block's bottom edge (page-relative)
