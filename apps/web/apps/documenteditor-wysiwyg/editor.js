@@ -7850,10 +7850,12 @@
     closeAllMenus();
     backstage.classList.add("open");
     if (fileTrigger) fileTrigger.setAttribute("aria-expanded", "true");
-    const target = pane || "info";
+    // CHROME4-BACKSTAGE-DEEP: Recent/Open is the OO default landing pane.
+    const target = pane || "open";
     showBackstagePane(target);
     const row = backstage.querySelector('.backstage-row[data-pane="' + target + '"]');
     if (row) row.focus();
+    bsHydratePanes();
   }
   function closeAllMenus() {
     // Closes every dropdown (export sublist, ribbon caret menus) and the
@@ -7863,6 +7865,130 @@
     const ucp = document.getElementById("user-chip-panel");
     if (ucp) ucp.hidden = true;
     hideBackstage();
+  }
+
+  // ------------------------------------------------------------------
+  // CHROME4-BACKSTAGE-DEEP: real backstage pane content. Recent/Open is
+  // fed by GET /api/documents (one fetch per session), Info by
+  // GET /api/documents/<DOC_ID> (degrades to DOC_NAME/DOC_FORMAT). Every
+  // fetch is guarded so the standalone serve (static files, no docserver)
+  // shows friendly empty/disabled states instead of crashing the overlay.
+  // ------------------------------------------------------------------
+  const BS_DOCS_LIST_URL = "/api/documents";
+  const BS_FETCH_TIMEOUT = 4000;
+  let bsDocsCache = null;
+  let bsDocsLoaded = false;
+  let bsMetaCache = null;
+  let bsMetaLoaded = false;
+
+  function bsCurrentLocale() {
+    return (t && t.lng) || (navigator.language || "en");
+  }
+  function bsFormatDate(value) {
+    if (value === null || value === undefined || value === "") return "";
+    const d = value instanceof Date ? value : new Date(typeof value === "number" ? value : String(value));
+    if (isNaN(d.getTime())) return "";
+    try { return d.toLocaleDateString(bsCurrentLocale()); } catch (_err) { return ""; }
+  }
+  function bsFormatSize(bytes) {
+    if (typeof bytes !== "number" || isNaN(bytes) || bytes < 0) return "";
+    if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + " MB";
+    if (bytes >= 1024) return Math.round(bytes / 1024) + " KB";
+    return bytes + " B";
+  }
+  // Editor URL for a stored id — only resolvable when this page was served
+  // from a /editors/document/<id> route (docserver boot); the standalone
+  // serve has no such route, so recent rows render disabled.
+  function bsEditorUrlFor(id) {
+    if (!id) return null;
+    const m = window.location.pathname.match(/^(.*\/editors\/document\/)([^/]*)$/);
+    if (!m) return null;
+    return m[1] + encodeURIComponent(id) + window.location.search;
+  }
+  function bsRenderRecent(docs) {
+    const host = document.getElementById("backstage-recent");
+    if (!host) return;
+    host.textContent = "";
+    if (!Array.isArray(docs) || docs.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "backstage-recent-empty";
+      empty.setAttribute("data-i18n", "FileScreen.NoDocuments");
+      empty.textContent = t("FileScreen.NoDocuments") || "No stored documents — standalone mode.";
+      host.appendChild(empty);
+      return;
+    }
+    for (const doc of docs.slice(0, 12)) {
+      const row = document.createElement("button");
+      row.type = "button";
+      row.className = "backstage-recent-row";
+      const name = document.createElement("span");
+      name.className = "bs-doc-name";
+      name.textContent = (doc && (doc.name || doc.base_file_name)) || (doc && doc.id) || "";
+      const meta = document.createElement("span");
+      meta.className = "bs-doc-meta";
+      meta.textContent = [bsFormatDate(doc && doc.updated_at), bsFormatSize(doc && doc.size)].filter(Boolean).join(" · ");
+      row.append(name, meta);
+      const url = bsEditorUrlFor(doc && doc.id);
+      if (!url) {
+        row.disabled = true;
+        row.title = t("FileScreen.StandaloneHint") || "Opening stored documents needs the docserver context.";
+        row.setAttribute("aria-disabled", "true");
+      } else {
+        row.addEventListener("click", () => window.location.assign(url));
+      }
+      host.appendChild(row);
+    }
+  }
+  async function bsLoadRecent() {
+    if (!bsDocsLoaded) {
+      bsDocsLoaded = true;
+      try {
+        const res = await fetch(BS_DOCS_LIST_URL, { signal: AbortSignal.timeout(BS_FETCH_TIMEOUT) });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const data = await res.json();
+        bsDocsCache = Array.isArray(data) ? data : [];
+      } catch (_err) {
+        bsDocsCache = [];
+      }
+    }
+    bsRenderRecent(bsDocsCache);
+  }
+  function bsRenderInfoMeta(meta) {
+    const grid = document.getElementById("backstage-info-meta");
+    if (!grid) return;
+    const rows = [
+      [t("FileScreen.MetaName") || "Name", (meta && (meta.name || meta.base_file_name)) || DOC_NAME],
+      [t("FileScreen.MetaFormat") || "Format", (meta && meta.format) || DOC_FORMAT],
+      [t("FileScreen.MetaSize") || "Size", (meta && bsFormatSize(meta.size)) || "—"],
+      [t("FileScreen.MetaUpdated") || "Updated", (meta && bsFormatDate(meta.updated_at)) || "—"],
+    ];
+    grid.textContent = "";
+    for (const pair of rows) {
+      const dt = document.createElement("div");
+      dt.className = "bs-meta-label";
+      dt.textContent = pair[0];
+      const dd = document.createElement("div");
+      dd.className = "bs-meta-value";
+      const value = pair[1];
+      dd.textContent = String(value === null || value === undefined || value === "" ? "—" : value);
+      grid.append(dt, dd);
+    }
+  }
+  async function bsLoadInfoMeta() {
+    if (!bsMetaLoaded) {
+      bsMetaLoaded = true;
+      try {
+        const res = await fetch("/api/documents/" + encodeURIComponent(DOC_ID), { signal: AbortSignal.timeout(BS_FETCH_TIMEOUT) });
+        if (res.ok) bsMetaCache = await res.json();
+      } catch (_err) {
+        bsMetaCache = null;
+      }
+    }
+    bsRenderInfoMeta(bsMetaCache);
+  }
+  function bsHydratePanes() {
+    bsLoadRecent();
+    bsLoadInfoMeta();
   }
 
   // Generic ribbon caret menus: trigger discloses, items dispatch commands
@@ -8870,9 +8996,16 @@
     const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
     const chars = (editor.innerText || "").replace(/\n/g, "").length;
     const el = document.getElementById("sb-word-count");
-    if (!el) return;
-    const tpl = t("Statusbar.WordsCount") || "Words: {n} · Characters: {c}";
-    el.textContent = tpl.replace("{n}", String(words)).replace("{c}", String(chars));
+    if (el) {
+      const tpl = t("Statusbar.WordsCount") || "Words: {n} · Characters: {c}";
+      el.textContent = tpl.replace("{n}", String(words)).replace("{c}", String(chars));
+    }
+    // CHROME4-BACKSTAGE-DEEP: the backstage Info pane counters read the
+    // same computation as the statusbar cluster.
+    const bsWords = document.getElementById("bs-info-words");
+    const bsChars = document.getElementById("bs-info-chars");
+    if (bsWords) bsWords.textContent = String(words);
+    if (bsChars) bsChars.textContent = String(chars);
   }
   function caretOffset(el) {
     const sel = window.getSelection();

@@ -1204,6 +1204,10 @@
       <div class="backstage-view" data-pane-view="open" hidden>
         <h2 data-i18n="FileScreen.TitleOpen">Open a document</h2>
         <p class="backstage-desc" data-i18n="FileScreen.DescOpen">Open a document from your files.</p>
+        <!-- CHROME4-BACKSTAGE-DEEP: Recent/Open list fed by GET /api/documents
+             (cached per session; rows disabled with a hint when the editor is
+             served standalone, friendly empty row on fetch failure). -->
+        <div id="backstage-recent" class="backstage-recent" aria-live="polite"></div>
         <button type="button" id="btn-open" class="backstage-primary" data-i18n="Menu.Open">Open…</button>
       </div>
       <div class="backstage-view" data-pane-view="save" hidden>
@@ -1225,6 +1229,17 @@
       <div class="backstage-view" data-pane-view="info" hidden>
         <h2 data-i18n="FileScreen.TitleInfo">Document info</h2>
         <p class="backstage-desc" data-i18n="FileScreen.DescInfo">See document details, statistics and language settings.</p>
+        <!-- CHROME4-BACKSTAGE-DEEP: live metadata (GET /api/documents/<DOC_ID>,
+             degraded to DOC_NAME/DOC_FORMAT standalone) + the same word/char
+             counters the statusbar cluster shows. -->
+        <div id="backstage-info-meta" class="backstage-meta"></div>
+        <h3 class="backstage-subhead" data-i18n="FileScreen.CountersTitle">Statistics</h3>
+        <div class="backstage-meta bs-counters">
+          <div class="bs-meta-label" data-i18n="FileScreen.CounterWords">Words</div>
+          <div class="bs-meta-value" id="bs-info-words">0</div>
+          <div class="bs-meta-label" data-i18n="FileScreen.CounterChars">Characters</div>
+          <div class="bs-meta-value" id="bs-info-chars">0</div>
+        </div>
         <button type="button" id="btn-fileinfo" class="backstage-primary" data-i18n="Menu.Info">Info…</button>
       </div>
       <div class="backstage-view" data-pane-view="history" hidden>
@@ -1255,6 +1270,36 @@
       <div class="backstage-view" data-pane-view="help" hidden>
         <h2 data-i18n="FileScreen.TitleHelp">Help &amp; about</h2>
         <p class="backstage-desc" data-i18n="FileScreen.DescHelp">Keyboard shortcuts, documentation and product info.</p>
+        <!-- CHROME4-BACKSTAGE-DEEP: shortcut table (data-key values mirror the
+             real editor.js bindings — pinned by backstage-deep-gate.test.mjs).
+        -->
+        <div id="backstage-shortcuts" class="backstage-shortcuts">
+          <div class="bs-shortcut-row" data-key="s">
+            <div class="bs-shortcut-keys"><kbd>Ctrl</kbd>+<kbd>S</kbd></div>
+            <div class="bs-shortcut-desc" data-i18n="FileScreen.ShortcutSave">Save</div>
+          </div>
+          <div class="bs-shortcut-row" data-key="z">
+            <div class="bs-shortcut-keys"><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Y</kbd></div>
+            <div class="bs-shortcut-desc" data-i18n="FileScreen.ShortcutUndoRedo">Undo / Redo</div>
+          </div>
+          <div class="bs-shortcut-row" data-key="b">
+            <div class="bs-shortcut-keys"><kbd>Ctrl</kbd>+<kbd>B</kbd> / <kbd>I</kbd> / <kbd>U</kbd></div>
+            <div class="bs-shortcut-desc" data-i18n="FileScreen.ShortcutFormat">Bold / Italic / Underline</div>
+          </div>
+          <div class="bs-shortcut-row" data-key="f">
+            <div class="bs-shortcut-keys"><kbd>Ctrl</kbd>+<kbd>F</kbd></div>
+            <div class="bs-shortcut-desc" data-i18n="FileScreen.ShortcutFind">Find</div>
+          </div>
+          <div class="bs-shortcut-row" data-key="h">
+            <div class="bs-shortcut-keys"><kbd>Ctrl</kbd>+<kbd>H</kbd></div>
+            <div class="bs-shortcut-desc" data-i18n="FileScreen.ShortcutReplace">Replace</div>
+          </div>
+          <div class="bs-shortcut-row" data-key="wheel">
+            <div class="bs-shortcut-keys"><kbd>Ctrl</kbd> + wheel</div>
+            <div class="bs-shortcut-desc" data-i18n="FileScreen.ShortcutZoom">Zoom page</div>
+          </div>
+        </div>
+        <p id="backstage-about" class="backstage-about" data-i18n="FileScreen.About">WorldOffice Document Editor</p>
         <button type="button" id="btn-filehelp" class="backstage-primary" data-i18n="Menu.Help">Help &amp; about</button>
       </div>
       <div class="backstage-view" data-pane-view="suggest" hidden>
