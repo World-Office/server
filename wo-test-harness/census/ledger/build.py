@@ -258,6 +258,26 @@ for it in (oo_deep.get("statusBar") or []):
         ledger[fid]["wo"] = {"match": w[0], "where": w[1]}
         ledger[fid]["level"] = 1
 
+# ------------------------------------------------- L2 merge (probe.cjs)
+# Contract: entries with ok=true applied a REAL document mutation in the
+# live editor (control executed, dialog applied, DOM marker verified);
+# entry.features lists ledger feature ids (matched by wo.match incl.
+# label aliases).
+pr_path = HERE / "probe-results.json"
+pr_merged = False
+if pr_path.exists():
+    pr = json.load(open(pr_path))
+    for entry in pr.get("entries", []):
+        if not entry.get("ok"):
+            continue
+        for fid in entry.get("features", []):
+            row = ledger.get(fid)
+            if row is not None:
+                row["level"] = max(row["level"], 2)
+                row["evidence"].append(
+                    f"L2 probe ok [{entry.get('key')}]: {str(entry.get('detail'))[:120]}")
+    pr_merged = True
+
 # ------------------------------------------------- L3 merge (roundtrip.cjs)
 # Contract: entries with ok=true survived html -> docx -> html; entry.features
 # lists ledger feature ids (matched by wo.match incl. label aliases).
@@ -295,14 +315,18 @@ json.dump({"version": 1, "generated": __import__("datetime").datetime.now().isof
 print(f"ledger: {len(ledger)} features across {len(by_cluster)} clusters")
 print(f"  L0 missing : {tot['L0']}")
 print(f"  L1 surface : {tot['L1']}  (the old census ceiling)")
+if pr_merged:
+    print(f"  L2 acts    : {tot['L2']}  (probe.cjs: {pr.get('passed', 0)}/{pr.get('probed', 0)} controls applied a real mutation)")
 if rt_merged:
     print(f"  L3 persists: {tot['L3']}  (roundtrip.cjs: {rt.get('survived', 0)}/{rt.get('probed', 0)} commands survived html->docx->html)")
 else:
-    print("  L2/L3/L4   : not yet probed (ledger/roundtrip.cjs fills L3)")
+    print("  L3/L4      : not yet probed (ledger/roundtrip.cjs fills L3)")
 
 # markdown report
 md = ["# Feature Ledger v1 — real completeness map", ""]
 md.append(f"Generated from: census-oo-deep + census-oo-dialogs + census-wo-deep. ")
+if pr_merged:
+    md.append(f"L2 layer: ledger/probe.cjs ({pr.get('passed', 0)}/{pr.get('probed', 0)} controls apply a real document mutation).")
 if rt_merged:
     md.append(f"L3 layer: ledger/roundtrip.cjs ({rt.get('survived', 0)}/{rt.get('probed', 0)} commands survive html->docx->html).")
 md.append("Levels: **L0** missing · **L1** surface exists (visual parity — the old")
@@ -312,7 +336,7 @@ md.append("")
 for cl in sorted(by_cluster, key=lambda c: by_cluster[c]["L0"], reverse=True):
     v = by_cluster[cl]
     n = len(v["rows"])
-    md.append(f"## {cl} — {n} features (L0:{v['L0']} L1:{v['L1']} L3:{v['L3']})")
+    md.append(f"## {cl} — {n} features (L0:{v['L0']} L1:{v['L1']} L2:{v['L2']} L3:{v['L3']})")
     for row in sorted(v["rows"], key=lambda r: r["level"]):
         icon = "❌" if row["level"] == 0 else "🔲" if row["level"] == 1 else "✅"
         wo = f"→ WO: {row['wo']['match']}" if row.get("wo") else ""
