@@ -67,7 +67,7 @@ assert.ok(pageActiveBlocks.some(b => /flex-wrap:\s*nowrap/.test(b)),
 assert.ok(/\.ribbon-row\s*\{[^}]*flex-wrap:\s*nowrap/.test(css), ".ribbon-row stays nowrap");
 assert.ok(!/\.ribbon-row\s*\{[^}]*overflow-x:\s*clip/.test(css),
   ".ribbon-row must not clip (transform scroll relies on the band clip)");
-assert.ok(/min-height:\s*84px/.test(css), "function band single-row min-height 84px");
+assert.ok(/min-height:\s*104px/.test(css), "function band two-row min-height 104px (CHROME2)");
 assert.ok(/--ribbon:\s*#f7f7f7/.test(css), "light theme --ribbon is OO classic-light gray");
 assert.ok(css.includes(".toolbar .rb-sep {") || css.includes(".toolbar .rb-sep{"),
   ".rb-sep separators still styled");
