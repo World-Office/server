@@ -2087,6 +2087,7 @@
     else if (sep === "comma") sep = ",";
     else if (sep === "tab") sep = "\t";
     else if (sep === "semicolon") sep = ";";
+    const colsWanted = parseInt((document.getElementById("ttt-cols") || {}).value, 10) || 0;
     closeTextToTableDialog();
     restoreTableSelection();
     editor.focus();
@@ -2114,9 +2115,10 @@
     };
     const rows = lines.map((l) => split(l).map((c) => c.trim()));
     if (!rows.length) { setStatus("Nothing to convert"); return; }
-    const cols = Math.max(...rows.map((r) => r.length));
+    const maxCols = Math.max(...rows.map((r) => r.length));
+    const cols = colsWanted > 0 ? colsWanted : maxCols;
     const html = "<table>" + rows.map((r) =>
-      "<tr>" + r.concat(Array(cols - r.length).fill("")).map((c) => "<td>" + _escXml(c) + "</td>").join("") + "</tr>"
+      "<tr>" + r.slice(0, cols).concat(Array(Math.max(0, cols - r.length)).fill("")).map((c) => "<td>" + _escXml(c) + "</td>").join("") + "</tr>"
     ).join("") + "</table>";
     if (range) range.deleteContents();
     document.execCommand("insertHTML", false, html);
@@ -2130,24 +2132,29 @@
 
   // LEDGER3: OO equation symbol-gallery families -> built-in linear
   // templates inserted straight into the document (same path as the
-  // equation dialog's OK).
+  // equation dialog's OK). OO ships multiple variants per family, so each
+  // family maps to an array of 3 templates; the family button inserts
+  // variant 0 and the gallery submenu items address variants by index
+  // ("family:i").
   const EQ_TEMPLATES = {
-    fractions: "\\frac{a}{b}",
-    scripts: "x^{2} + x_{1}",
-    radicals: "\\sqrt{x}",
-    integrals: "\\int f(x)dx",
-    "large-operators": "\\sum_{i=1}^{n} i",
-    brackets: "(a+b)·[c-d]",
-    functions: "sin x + cos x",
-    accents: "\\hat{x}",
-    "limits-and-logarithms": "\\lim_{x \\to 0} f(x)",
-    operators: "a + b = c",
-    matrices: "\\matrix{a b}{c d}",
+    fractions: ["\\frac{a}{b}", "\\frac{x+1}{2}", "\\frac{1}{n}"],
+    scripts: ["x^{2} + x_{1}", "e^{x}", "x^{a}_{b}"],
+    radicals: ["\\sqrt{x}", "\\sqrt{a+b}", "\\sqrt{2}"],
+    integrals: ["\\int f(x)dx", "\\int_a^b f(x)dx", "\\int_{0}^{1} x dx"],
+    "large-operators": ["\\sum_{i=1}^{n} i", "\\sum_{k=0}^{m} k^{2}", "\\sum a_{i}"],
+    brackets: ["(a+b)·[c-d]", "(x, y, z)", "[0, 1]"],
+    functions: ["sin x + cos x", "\\log_{2} x", "tan x"],
+    accents: ["\\hat{x}", "\\hat{a}^{2}", "\\hat{f}(x)"],
+    "limits-and-logarithms": ["\\lim_{x \\to 0} f(x)", "\\lim_{n} a_{n}", "\\log_{10} x"],
+    operators: ["a + b = c", "x ≤ y", "p ± q"],
+    matrices: ["\\matrix{a b}{c d}", "\\matrix{1 0}{0 1}", "\\matrix{x y}{z w}"],
   };
   function insertEquationTemplate(family) {
     closeAllMenus();
     if (READ_ONLY) return;
-    const text = EQ_TEMPLATES[family] || "x";
+    const [fam, idx] = String(family).split(":");
+    const arr = EQ_TEMPLATES[fam];
+    const text = (arr && arr[Number(idx) || 0]) || "x";
     const spec = { text, width: 260 };
     insertVectorObject(equationSVG(text), "equation", spec);
     setStatus("Inserted equation: " + family);
@@ -4926,12 +4933,29 @@
       ml: parseInt(m.getAttribute("data-margin-left"), 10) || 1440,
       mr: parseInt(m.getAttribute("data-margin-right"), 10) || 1440
     } : { w: 11906, h: 16838, orient: "portrait", mt: 1440, mb: 1440, ml: 1440, mr: 1440 };
-    const [w, h] = PS_SIZES[size] || PS_SIZES.A4;
+    let w, h;
+    if (size === "last-custom") {
+      const saved = readCustomSize();
+      if (!saved) { setStatus("No custom page size yet"); return; }
+      [w, h] = saved;
+    } else {
+      [w, h] = PS_SIZES[size] || PS_SIZES.A4;
+    }
     let finalW = w, finalH = h;
     if (current.orient === "landscape" && w <= h) { finalW = h; finalH = w; }
     else if (current.orient === "portrait" && w > h) { finalW = h; finalH = w; }
     writePageSetupMarker(finalW, finalH, current.orient,
                           current.mt, current.mb, current.ml, current.mr);
+  }
+
+  function rememberCustomSize(w, h) {
+    try { localStorage.setItem("wo-last-custom-size", JSON.stringify([Math.min(w, h), Math.max(w, h)])); } catch (e) {}
+  }
+  function readCustomSize() {
+    try {
+      const v = JSON.parse(localStorage.getItem("wo-last-custom-size") || "null");
+      return Array.isArray(v) && v.length === 2 && v[0] > 0 && v[1] > 0 ? v : null;
+    } catch (e) { return null; }
   }
 
   function applyPageOrientationPreset(orient) {
@@ -4997,6 +5021,7 @@
       const orient = (pageSetupDialog.querySelector('input[name="ps-orient"]:checked') || {}).value || "portrait";
       if (orient === "landscape" && w <= h) { const t = w; w = h; h = t; }
       if (orient === "portrait" && w > h) { const t = w; w = h; h = t; }
+      if (psSize.value === "custom") rememberCustomSize(w, h);
       const inches = (id) => Math.round((parseFloat(document.getElementById(id).value) || 1) * 1440);
       const mtCustom = inches("ps-mt"), mbCustom = inches("ps-mb"), mlCustom = inches("ps-ml"), mrCustom = inches("ps-mr");
       rememberCustomMargins(mtCustom, mbCustom, mlCustom, mrCustom);
@@ -10259,10 +10284,22 @@
     rerenderChart(img, spec);
     setStatus("Chart type: " + spec.type);
   }
+  // Chart elements only meaningful for certain chart types (OO parity):
+  // Up/Down Bars exist on line charts, Error Bars on bar/line/area. Others
+  // are type-agnostic.
+  const CHART_ELEMENT_SUPPORT = { upDownBars: ["line"], errorBars: ["bar", "line", "area"] };
+  function chartElementSupported(flag, spec) {
+    const types = CHART_ELEMENT_SUPPORT[String(flag)];
+    return !types || types.includes(String(spec.type || "bar"));
+  }
   function toggleChartElement(flag) {
     const img = selectedChart();
     if (!img || READ_ONLY) { setStatus(t("Status.NotAvailable") + " chartElement " + flag); return; }
     const spec = readChartSpec(img);
+    if (!chartElementSupported(flag, spec)) {
+      setStatus("Chart element " + flag + " not available for " + String(spec.type || "bar") + " charts");
+      return;
+    }
     const els = spec.elements || (spec.elements = {});
     els[String(flag)] = !els[String(flag)];
     rerenderChart(img, spec);
@@ -10323,6 +10360,17 @@
       const w = parseInt(img.style.width, 10) || spec.width || 420;
       if (wIn) wIn.value = String(w);
       if (hIn) hIn.value = String(spec.height || Math.round((w * natH) / natW));
+      // Disabled-with-tooltip: elements unsupported by the selected chart's
+      // type stay clickable-looking but marked unavailable (OO parity).
+      chartDesignPage.querySelectorAll('button[data-cmd="chartElement"]').forEach((b) => {
+        if (chartElementSupported(b.getAttribute("data-value"), spec)) {
+          b.removeAttribute("aria-disabled");
+          b.removeAttribute("title");
+        } else {
+          b.setAttribute("aria-disabled", "true");
+          b.setAttribute("title", t("Chart.Elements.NotAvailableTitle"));
+        }
+      });
     }
   }
   const chartWidthInput = document.getElementById("chart-width-input");
