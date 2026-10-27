@@ -14,6 +14,8 @@
   --ink: #1a1a1a;
   --hover: rgba(255, 255, 255, 0.08);
   --ribbon: #2a2a3a;
+  --ribbon-hover: rgba(255, 255, 255, 0.1);
+  --ribbon-active: rgba(255, 255, 255, 0.16);
   --titlebar: #2a2a3a;
   --tab-active-bg: #3a3a4e;
   --ruler-tick: #4a4a5e;
@@ -36,6 +38,8 @@ html.light {
   --ink: #1a1a1a;
   --hover: rgba(0, 0, 0, 0.06);
   --ribbon: #f7f7f7;   /* OO classic-light function band (light gray) */
+  --ribbon-hover: #e8e8e8;   /* OO group hover */
+  --ribbon-active: #d8d8d8;  /* OO group pressed */
   --titlebar: #f7f7f7; /* OO classic-light title row (same gray family) */
   --tab-active-bg: #ffffff; /* filled contrast pill for the active tab */
   --ruler-tick: #b9b9b9;
@@ -125,15 +129,15 @@ body {
 
 /* ---- toolbar ---- */
 /* CHROME1-TITLE-TAB-ROW: the tab strip lives in .titlebar now, so this
-   header is ONLY the function band: a light-gray (OO classic-light) single
-   84px row. */
-.toolbar {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  padding: 0 12px;
-  height: auto;
-  min-height: 84px;
+    header is ONLY the function band: a light-gray (OO classic-light) two-row
+    band (CHROME2: census y<90 / y>=90 row split). */
+ .toolbar {
+   display: flex;
+   flex-wrap: nowrap;
+   align-items: center;
+   padding: 0 12px;
+   height: auto;
+   min-height: 104px;
   /* clip (not hidden/auto): the active page is translated horizontally by
      the chevron scroll logic, so the band must clip the horizontal overflow
      while staying overflow-y: visible — a scroll container (auto) would force
@@ -154,15 +158,20 @@ body {
 
 /* Ribbon pages: one visible control group per tab (default Home).
    CHROME1-TITLE-TAB-ROW: single left-to-right flow — NO wrapping. Overflow
-   is scrolled via transform (editor.js rib scroll logic), never wrapped. */
-.ribbon-page { display: none; }
-.ribbon-page.active {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 2px;
-  width: 100%;
-}
+   is scrolled via transform (editor.js rib scroll logic), never wrapped.
+   CHROME2-TWO-ROW-RIBBON: the page stacks its two census rows vertically
+   (flex column), both rows sharing the band width; the horizontal overflow
+   of each row is still scrolled by the page transform, never wrapped. */
+ .ribbon-page { display: none; }
+ .ribbon-page.active {
+   display: flex;
+   flex-direction: column;
+   flex-wrap: nowrap;
+   justify-content: center;
+   align-items: stretch;
+   gap: 2px;
+   width: 100%;
+ }
 
 /* Home ribbon (single row): the row fills the 112px band below the 28px
    tab strip; its absolutely positioned controls use --rb-x slots and --rb-y
@@ -170,7 +179,7 @@ body {
    84px wrapped right-edge tools), now mapped into the 84px control band via
    calc(--rb-y * 0.72 + 28px): primary ~52px, wrapped ~88px — both fully
    under the strip. */
-.ribbon-row { display: flex; align-items: center; gap: 2px; }
+ .ribbon-row { display: flex; align-items: center; flex-wrap: nowrap; gap: 2px; }
 .ribbon-page.active .ribbon-row { width: 100%; align-self: stretch; }
 
 /* Title bar (band y0–32, CHROME1-TITLE-TAB-ROW): wordmark + ribbon tab
@@ -290,17 +299,17 @@ body {
 }
 .ruler-svg .ruler-handle { fill: #4a4a4a; }
 
-.toolbar button {
-  min-width: 34px;
-  height: 46px;
-  padding: 0 8px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text);
-  font-size: 14px;
-  cursor: pointer;
-}
+ .toolbar button {
+   min-width: 34px;
+   height: 34px;
+   padding: 0 8px;
+   border: 1px solid transparent;
+   border-radius: 5px;
+   background: transparent;
+   color: var(--text);
+   font-size: 13px;
+   cursor: pointer;
+ }
 
 .toolbar button:hover { background: var(--hover); }
 .toolbar button.active,
@@ -324,15 +333,15 @@ body {
 }
 
 /* ---- full-toolbar controls: selects, color pickers, icons ---- */
-.toolbar .toolbar-select {
-  height: 46px;
-  max-width: 110px;
-  padding: 0 6px;
-  border: 1px solid transparent; /* OO renders the font widgets borderless */
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--text);
-  font-size: 13px;
+ .toolbar .toolbar-select {
+   height: 34px;
+   max-width: 110px;
+   padding: 0 6px;
+   border: 1px solid transparent; /* OO renders the font widgets borderless */
+   border-radius: 6px;
+   background: var(--bg);
+   color: var(--text);
+   font-size: 13px;
   cursor: pointer;
 }
 
@@ -355,8 +364,8 @@ select option { background: var(--bg); color: var(--text); }
    span as before. Works at any viewport width; groups wrap on narrow ones. */
 .ribbon-row { position: relative; min-height: 24px; flex-wrap: nowrap; row-gap: 6px; }
 .ribbon-row[hidden] { display: none; }
-.toolbar .ribbon-page.active { align-self: stretch; height: 100%; align-content: center; }
-.ribbon-page.active { flex-wrap: nowrap; align-items: center; }
+.toolbar .ribbon-page.active { align-self: stretch; height: 100%; justify-content: center; }
+.ribbon-page.active { flex-wrap: nowrap; align-items: stretch; }
 .ribbon-page.active button { flex: 0 0 auto; }
 
 /* Overflow chevrons (CHROME1-TITLE-TAB-ROW): real <button>s edge-split at the
@@ -393,7 +402,18 @@ select option { background: var(--bg); color: var(--text); }
      show in the titlebar name slot. */
   .titlebar .doc-name { display: none; }
 }
-.ribbon-row .rb-group { display: flex; align-items: center; gap: 2px; flex: 0 0 auto; }
+.ribbon-row .rb-group {
+   display: flex;
+   align-items: center;
+   gap: 2px;
+   flex: 0 0 auto;
+   padding: 2px 4px;
+   border-radius: 5px;
+   transition: background-color 120ms ease;
+ }
+ /* OO group polish: the whole cluster lights on hover, darkens while pressed. */
+ .ribbon-row .rb-group:hover { background: var(--ribbon-hover); }
+ .ribbon-row .rb-group:active { background: var(--ribbon-active); }
 .toolbar .rb-sep {
   flex: 0 0 auto;
   width: 1px;
@@ -736,7 +756,7 @@ select option { background: var(--bg); color: var(--text); }
 /* Text-capable caret (change-case split): OO 40x24 — keep natural width. */
 .rb-grid .caret-btn.case-btn { width: auto; min-width: 30px; padding: 0 5px; font-size: 11px; gap: 2px; }
 /* OO group separators: 1px x ~56px with 5px gutters. */
-.ribbon-row .rb-sep { height: 56px; margin: 0 5px; }
+.ribbon-row .rb-sep { height: 40px; margin: 0 5px; align-self: center; }
 /* Style gallery (OO combo-styles): track of 110x46 cards + 30x46 toggle.
    CHROME1-TITLE-TAB-ROW: needs (0,3,0) specificity to beat .ribbon-row
    .rb-group's flex: 0 0 auto — the gallery is the Home row's release valve:

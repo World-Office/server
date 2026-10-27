@@ -7759,7 +7759,8 @@
   const rcBtn = document.getElementById("btn-ribbon-collapse");
   if (rcBtn) rcBtn.addEventListener("click", () => {
     // WO-RIBBON-FLEX: collapse hides the whole control band (tabs remain) —
-    // the old ribbon-row-2 target no longer exists in the single-row layout.
+    // CHROME2-TWO-ROW-RIBBON: the band is the two stacked .ribbon-row
+    // children, both hidden together with the band.
     const toolbar = document.querySelector(".toolbar");
     if (!toolbar) return;
     const hide = !toolbar.classList.contains("ribbon-collapsed");

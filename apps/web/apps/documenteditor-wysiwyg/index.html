@@ -210,37 +210,30 @@
     <!-- aria-pressed reflects the live on/off state (JS updateActiveStates);
          aria-keyshortcuts mirrors the keyboard shortcuts handled in editor.js. -->
     <div class="ribbon-page active" data-tab="home" role="group" aria-label="Home ribbon" data-i18n-aria-label="Toolbar.Region">
-    <!-- Home ribbon (WO-RIBBON-FLEX, 2026-10-22 redesign): one flex row of
-         .rb-group clusters separated by .rb-sep hairlines — Clipboard
-         (paste/cut/copy), Undo/Redo, Font (selects + character styles +
-         colors + clear), Paragraph (lists, indents, spacing, alignment),
-         case/code extras, More-formatting and Styles dropdowns, then the
-         right-edge tools (collapse/theme/find/fullscreen) pinned via
-         margin-left:auto. Every control keeps its id and data-cmd; caret
-         sub-buttons stay glued like OO split carets. -->
+    <!-- Home ribbon (CHROME2-TWO-ROW-RIBBON): OO 9.4 two-row geometry from
+         the OO census (y<90 → row 1, y>=90 → row 2). Row 1: clipboard quick
+         cluster, paste, Font family/size/±/case, Paragraph lists/indents/
+         spacing/direction, the styles gallery, and the right-edge tools.
+         Row 2: Font character styles (BIUS·scripts·colors·clear), Paragraph
+         alignment/nonprinting/shading/borders/more-formatting, Select all.
+         Every control keeps its id and data-cmd; caret sub-buttons stay
+         glued like OO split carets. -->
     <div class="ribbon-row">
-    <!-- Quick-access 2x2 panel (OO 9.4 .panel.static slot map: copy/undo /
-         cut/redo) + a lone paste button — OO hides paste at 1440 but our
-         paste reuses the F-063 rich paste path so it stays visible. -->
-    <div class="rb-quick" role="group" aria-label="Quick access">
-    <div class="elset-col">
+    <!-- Quick-access cluster flattened horizontal (copy·undo·cut·redo,
+         census x-order 95..) — the old 2x2 elset panel is gone. -->
+    <div class="rb-group" role="group" aria-label="Quick access">
     <button id="btn-copy" class="rb" title="Copy (Ctrl+C)" data-i18n-title="Toolbar.CopyTitle" aria-label="Copy" data-i18n-aria-label="Ctx.Copy" aria-keyshortcuts="Control+C"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="9" rx="1.5"/><path d="M10.5 5.5V3a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v7A1.5 1.5 0 0 0 4 11.5h1.5"/></svg></button>
     <button id="btn-undo" class="rb"  data-cmd="undo" title="Undo (Ctrl+Z)" data-i18n-title="Toolbar.UndoTitle" aria-label="Undo" data-i18n-aria-label="Toolbar.Undo" aria-keyshortcuts="Control+Z"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 7.5h6a3.5 3.5 0 1 1 0 7H6"/><path d="M6.5 4 3 7.5l3.5 3.5"/></svg></button>
-    </div>
-    <div class="elset-col">
     <button id="btn-cut" class="rb" title="Cut (Ctrl+X)" data-i18n-title="Toolbar.CutTitle" aria-label="Cut" data-i18n-aria-label="Ctx.Cut" aria-keyshortcuts="Control+X"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="4" cy="12.5" r="1.8"/><circle cx="12" cy="12.5" r="1.8"/><path d="M5.2 11 11 1.5M10.8 11 5 1.5"/></svg></button>
     <button id="btn-redo" class="rb"  data-cmd="redo" title="Redo (Ctrl+Y)" data-i18n-title="Toolbar.RedoTitle" aria-label="Redo" data-i18n-aria-label="Toolbar.Redo" aria-keyshortcuts="Control+Y Control+Shift+Z"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 7.5h-6a3.5 3.5 0 1 0 0 7H10"/><path d="M9.5 4 13 7.5 9.5 11"/></svg></button>
-    </div>
     </div>
     <span class="rb-sep" aria-hidden="true"></span>
     <div class="rb-group" role="group" aria-label="Clipboard">
     <button id="btn-paste" class="rb" title="Paste (Ctrl+V)" data-i18n-title="Toolbar.PasteTitle" aria-label="Paste" data-i18n-aria-label="Toolbar.Paste" aria-keyshortcuts="Control+V"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="8" height="10.5" rx="1.5"/><path d="M10 3.5V2a.9.9 0 0 0-.9-.9H4.9A.9.9 0 0 0 4 2v1.5M6 6h6M6 9h6M6 12h4"/></svg></button>
     </div>
     <span class="rb-sep" aria-hidden="true"></span>
-    <!-- Font group (OO 9.4 slot map): two 24px elset rows —
-         row1 family·size·±·case, row2 BIUS·scripts·colors·clear. -->
-    <div class="rb-group rb-grid" role="group" aria-label="Font">
-    <div class="elset-row">
+    <!-- Font group row 1 (census x-order): family·size·increment·decrement·case. -->
+    <div class="rb-group" role="group" aria-label="Font">
     <select id="font-family" class="toolbar-select rb bare"  title="Font family" data-i18n-title="Toolbar.FontFamilyTitle" aria-label="Font family">
       <option value="" selected>Default</option>
       <option value="Arial">Arial</option>
@@ -281,8 +274,8 @@
         <li role="none"><button type="button" role="menuitem" data-cmd="fontSize" data-value="7">36</button></li>
       </ul>
     </span>
-    <button class="rb" data-cmd="fontSizeDec" title="Decrease font size (Ctrl+[)" data-i18n-title="Home.FontDecTitle" aria-label="Decrease font size" data-i18n-aria-label="Home.FontDec" aria-keyshortcuts="Control+["><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M2.5 12.5h7M12 4.5 8.5 8l3.5 3.5"/></svg></button>
     <button class="rb" data-cmd="fontSizeInc" title="Increase font size (Ctrl+])" data-i18n-title="Home.FontIncTitle" aria-label="Increase font size" data-i18n-aria-label="Home.FontInc" aria-keyshortcuts="Control+]"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M2.5 12.5h7M8.5 4.5 12 8l-3.5 3.5"/></svg></button>
+    <button class="rb" data-cmd="fontSizeDec" title="Decrease font size (Ctrl+[)" data-i18n-title="Home.FontDecTitle" aria-label="Decrease font size" data-i18n-aria-label="Home.FontDec" aria-keyshortcuts="Control+["><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M2.5 12.5h7M12 4.5 8.5 8l3.5 3.5"/></svg></button>
     <span class="menu rb-menu">
       <button type="button" class="menu-trigger caret-btn case-btn" aria-haspopup="true" aria-expanded="false" aria-label="Change case" data-i18n-aria-label="Home.ChangeCase">Aa▾</button>
       <ul class="menu-list" role="menu" hidden>
@@ -293,35 +286,8 @@
       </ul>
     </span>
     </div>
-    <div class="elset-row">
-    <button class="rb" data-cmd="bold"  title="Bold (Ctrl+B)" data-i18n-title="Toolbar.BoldTitle" aria-label="Bold" data-i18n-aria-label="Toolbar.Bold" aria-pressed="false" aria-keyshortcuts="Control+B"><b>B</b></button>
-    <button class="rb" data-cmd="italic"  title="Italic (Ctrl+I)" data-i18n-title="Toolbar.ItalicTitle" aria-label="Italic" data-i18n-aria-label="Toolbar.Italic" aria-pressed="false" aria-keyshortcuts="Control+I"><i>I</i></button>
-    <button class="rb" data-cmd="underline"  title="Underline (Ctrl+U)" data-i18n-title="Toolbar.UnderlineTitle" aria-label="Underline" data-i18n-aria-label="Toolbar.Underline" aria-pressed="false" aria-keyshortcuts="Control+U"><u>U</u></button>
-    <button class="rb" data-cmd="strikeThrough"  title="Strikethrough" data-i18n-title="Toolbar.StrikethroughTitle" aria-label="Strikethrough" data-i18n-aria-label="Toolbar.Strikethrough" aria-pressed="false"><s>S</s></button>
-    <button class="rb ss-stack" data-cmd="superscript"  title="Superscript / Subscript" data-i18n-title="Toolbar.SuperscriptTitle" aria-label="Superscript" data-i18n-aria-label="Toolbar.Superscript" aria-pressed="false"><span aria-hidden="true">x&sup2;</span><span aria-hidden="true">x₂</span></button>
-    <span class="menu rb-menu" >
-      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" aria-label="Script options">▾</button>
-      <ul class="menu-list" role="menu" hidden>
-        <li role="none"><button type="button" role="menuitem" data-cmd="superscript" data-i18n="Toolbar.Superscript">Superscript</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="subscript" data-i18n="Toolbar.Subscript">Subscript</button></li>
-      </ul>
-    </span>
-    <!-- AF5-HOME-DIRECT: subscript promoted from the Script options caret (OO Home: Ctrl+.). -->
-    <button class="rb" data-cmd="subscript" title="Subscript (Ctrl+.)" data-i18n-title="Toolbar.SubscriptTitle" aria-label="Subscript" data-i18n-aria-label="Toolbar.Subscript" aria-pressed="false" aria-keyshortcuts="Control+."><span aria-hidden="true">x₂</span></button>
-    <label class="color-btn rb"  title="Highlight color" data-i18n-title="Toolbar.HighlightTitle">
-      <span class="color-key key-highlight" aria-hidden="true">A</span>
-      <input type="color" id="highlight-color" value="#ffe97a" aria-label="Highlight color">
-    </label>
-    <label class="color-btn rb"  title="Font color" data-i18n-title="Toolbar.FontColorTitle">
-      <span class="color-key" aria-hidden="true">A</span>
-      <input type="color" id="text-color" value="#333333" aria-label="Font color">
-    </label>
-    <button class="rb" data-cmd="removeFormat" data-i18n-title="Toolbar.ClearStyleTitle" data-i18n-aria-label="Toolbar.ClearStyleTitle"  title="Clear style" aria-label="Clear style">&#9001;&#9002;</button>
-    </div>
-    </div>
     <span class="rb-sep" aria-hidden="true"></span>
-    <div class="rb-group rb-grid" role="group" aria-label="Paragraph">
-    <div class="elset-row">
+    <div class="rb-group" role="group" aria-label="Paragraph">
     <button class="rb" data-cmd="insertUnorderedList"  title="Bullet list (Ctrl+Shift+8)" data-i18n-title="Toolbar.BulletListTitle" aria-label="Bullet list" data-i18n-aria-label="Toolbar.BulletList" aria-pressed="false" aria-keyshortcuts="Control+Shift+8"><svg viewBox="0 0 16 16" fill="currentColor" stroke="none" aria-hidden="true"><circle cx="4" cy="4" r="1.4"/><circle cx="4" cy="8" r="1.4"/><circle cx="4" cy="12" r="1.4"/><path d="M7 4h7M7 8h7M7 12h7" stroke="currentColor" stroke-width="1.75"/></svg></button>
     <span class="menu rb-menu" >
       <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" aria-label="Bullet style options">▾</button>
@@ -361,43 +327,6 @@
       </ul>
     </span>
     </div>
-    <div class="elset-row">
-    <button class="rb" data-cmd="justifyLeft"  title="Align left (Ctrl+Shift+L)" data-i18n-title="Toolbar.AlignLeftTitle" aria-label="Align left" data-i18n-aria-label="Toolbar.AlignLeft" aria-pressed="false" aria-keyshortcuts="Control+Shift+L"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M1.5 3.5h10M1.5 7h13M1.5 10.5h10M1.5 14h13"/></svg></button>
-    <button class="rb" data-cmd="justifyCenter"  title="Center (Ctrl+E)" data-i18n-title="Toolbar.AlignCenterTitle" aria-label="Center" data-i18n-aria-label="Toolbar.AlignCenter" aria-pressed="false" aria-keyshortcuts="Control+E"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M2.5 3.5h11M1.5 7h13M2.5 10.5h11M1.5 14h13"/></svg></button>
-    <button class="rb" data-cmd="justifyRight"  title="Align right (Ctrl+R)" data-i18n-title="Toolbar.AlignRightTitle" aria-label="Align right" data-i18n-aria-label="Toolbar.AlignRight" aria-pressed="false" aria-keyshortcuts="Control+R"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4.5 3.5h10M1.5 7h13M4.5 10.5h10M1.5 14h13"/></svg></button>
-    <button class="rb" data-cmd="justifyFull"  title="Justify (Ctrl+J)" data-i18n-title="Toolbar.AlignJustifyTitle" aria-label="Align just" data-i18n-aria-label="Toolbar.AlignJustify" aria-pressed="false" aria-keyshortcuts="Control+J"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M1.5 3.5h13M1.5 7h13M1.5 10.5h13M1.5 14h13"/></svg></button>
-    <!-- AF5-HOME-DIRECT: borders/shading/nonprinting promoted from the
-         More-formatting menu / View tab to direct OO-parity controls (menu
-         rows and the View-tab toggle stay). -->
-    <button class="rb" data-cmd="openBorders" title="Borders" data-i18n-title="Home.Borders" aria-label="Borders" data-i18n-aria-label="Home.Borders"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="1"/><path d="M2.5 8h11M8 2.5v11" stroke-dasharray="1.5 1.5"/></svg></button>
-    <label class="color-btn rb" title="Shading" data-i18n-title="Home.Shading">
-      <span class="color-key key-shading" aria-hidden="true">A</span>
-      <input type="color" id="shading-color" value="#f4f4f4" aria-label="Paragraph shading">
-    </label>
-    <button id="btn-home-formatmarks" class="rb" title="Nonprinting characters" data-i18n-title="Home.NonPrinting" aria-label="Nonprinting characters" data-i18n-aria-label="Home.NonPrinting" aria-pressed="false">¶</button>
-    <!-- OO 9.4 has no glyph-extras group on Home: paragraph style / small
-         caps / all caps / inline code live in the More menu (same data-cmd
-         wiring, keyboard paths unchanged). -->
-    <span class="menu rb-menu" >
-      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" aria-label="More formatting" data-i18n-aria-label="Home.MoreFormatting">▾</button>
-      <ul class="menu-list" role="menu" hidden>
-        <li role="none"><button type="button" role="menuitem" data-picker="highlight-color" data-i18n="Home.Highlight">Highlight color</button></li>
-        <li role="none"><button type="button" role="menuitem" data-picker="text-color" data-i18n="Home.FontColor">Font color</button></li>
-        <li role="none"><button type="button" role="menuitem" data-picker="shading-color" data-i18n="Home.Shading">Shading</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="openBorders" data-i18n="Home.Borders">Borders</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="underlineDouble" data-i18n="Toolbar.UnderlineDouble">Double underline</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="strikeDouble" data-i18n="Toolbar.StrikeDouble">Double strikethrough</button></li>
-        <li role="none" class="menu-sep" aria-hidden="true"></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="formatBlock" data-value="P" data-i18n="Toolbar.ParagraphTitle">Paragraph</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="smallCaps" data-i18n="Toolbar.SmallCaps">Small caps</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="allCaps" data-i18n="Toolbar.AllCaps">All caps</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="code" data-i18n="Toolbar.Code">Inline code</button></li>
-        <li role="none" class="menu-sep" aria-hidden="true"></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="multilevel" data-i18n="Home.Multilevel">Multilevel list</button></li>
-      </ul>
-    </span>
-    </div>
-    </div>
     <span class="rb-sep" aria-hidden="true"></span>
     <!-- Style gallery (OO 9.4 combo-styles port): 110x46 preview cards for
          the six common styles + the styles-trigger dropdown (same menu and
@@ -426,46 +355,88 @@
     </span>
     </div>
     <span class="rb-sep" aria-hidden="true"></span>
-    <div class="rb-group rb-edge rb-grid" role="group" aria-label="Toolbar tools">
-    <div class="elset-col">
+    <div class="rb-group rb-edge" role="group" aria-label="Toolbar tools">
     <button id="btn-find" class="rb"  title="Find and replace (Ctrl+F)" data-i18n-title="Toolbar.FindTitle" aria-label="Find and replace" data-i18n-aria-label="Toolbar.Find" aria-keyshortcuts="Control+F">⌕</button>
     <button id="btn-ribbon-collapse" class="rb rb-flat" title="Show fewer toolbar buttons" data-i18n-title="Toolbar.CollapseTitle" aria-label="Show fewer toolbar buttons" data-i18n-aria-label="Toolbar.CollapseTitle" aria-expanded="true"><svg viewBox="0 0 14 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5 7 6 12.5 1.5"/></svg></button>
-    </div>
-    <div class="elset-col">
     <button id="btn-fullscreen" data-i18n-title="View.FullscreenToggle" data-i18n-aria-label="View.FullscreenToggle" class="rb rb-flat"  title="Toggle fullscreen" aria-label="Toggle fullscreen"><svg viewBox="0 0 19 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="1.5" width="16" height="14" rx="1.5"/><path d="M7 5.5 11.5 10M11.5 6.5V10.5H7.5"/></svg></button>
     <button id="btn-theme" data-i18n-title="View.ThemeToggle" data-i18n-aria-label="View.ThemeToggle" class="rb"  title="Toggle dark/light theme" aria-label="Toggle theme" aria-pressed="false">☾</button>
-    </div>
-    <!-- AF5-HOME-DIRECT: replace/select-all promoted from the find dialog /
-         context menu to direct edge buttons (dialog + ctx-menu paths stay). -->
-    <div class="elset-col">
     <button id="btn-replace" class="rb" title="Replace (Ctrl+H)" data-i18n-title="Home.ReplaceTitle" aria-label="Replace" data-i18n-aria-label="Home.Replace" aria-keyshortcuts="Control+H"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6.5" cy="6.5" r="4"/><path d="m9.5 9.5 3.5 3.5M3 4h6M7.5 2.5 9 4 7.5 5.5" transform="translate(-0.5 0.5)"/></svg></button>
+    </div>
+    </div>
+    <div class="ribbon-row">
+    <div class="rb-group" role="group" aria-label="Font character styles">
+    <button class="rb" data-cmd="bold"  title="Bold (Ctrl+B)" data-i18n-title="Toolbar.BoldTitle" aria-label="Bold" data-i18n-aria-label="Toolbar.Bold" aria-pressed="false" aria-keyshortcuts="Control+B"><b>B</b></button>
+    <button class="rb" data-cmd="italic"  title="Italic (Ctrl+I)" data-i18n-title="Toolbar.ItalicTitle" aria-label="Italic" data-i18n-aria-label="Toolbar.Italic" aria-pressed="false" aria-keyshortcuts="Control+I"><i>I</i></button>
+    <button class="rb" data-cmd="underline"  title="Underline (Ctrl+U)" data-i18n-title="Toolbar.UnderlineTitle" aria-label="Underline" data-i18n-aria-label="Toolbar.Underline" aria-pressed="false" aria-keyshortcuts="Control+U"><u>U</u></button>
+    <button class="rb" data-cmd="strikeThrough"  title="Strikethrough" data-i18n-title="Toolbar.StrikethroughTitle" aria-label="Strikethrough" data-i18n-aria-label="Toolbar.Strikethrough" aria-pressed="false"><s>S</s></button>
+    <button class="rb ss-stack" data-cmd="superscript"  title="Superscript / Subscript" data-i18n-title="Toolbar.SuperscriptTitle" aria-label="Superscript" data-i18n-aria-label="Toolbar.Superscript" aria-pressed="false"><span aria-hidden="true">x&sup2;</span><span aria-hidden="true">x₂</span></button>
+    <span class="menu rb-menu" >
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" aria-label="Script options">▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-cmd="superscript" data-i18n="Toolbar.Superscript">Superscript</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="subscript" data-i18n="Toolbar.Subscript">Subscript</button></li>
+      </ul>
+    </span>
+    <!-- AF5-HOME-DIRECT: subscript promoted from the Script options caret (OO Home: Ctrl+.). -->
+    <button class="rb" data-cmd="subscript" title="Subscript (Ctrl+.)" data-i18n-title="Toolbar.SubscriptTitle" aria-label="Subscript" data-i18n-aria-label="Toolbar.Subscript" aria-pressed="false" aria-keyshortcuts="Control+."><span aria-hidden="true">x₂</span></button>
+    <label class="color-btn rb"  title="Highlight color" data-i18n-title="Toolbar.HighlightTitle">
+      <span class="color-key key-highlight" aria-hidden="true">A</span>
+      <input type="color" id="highlight-color" value="#ffe97a" aria-label="Highlight color">
+    </label>
+    <label class="color-btn rb"  title="Font color" data-i18n-title="Toolbar.FontColorTitle">
+      <span class="color-key" aria-hidden="true">A</span>
+      <input type="color" id="text-color" value="#333333" aria-label="Font color">
+    </label>
+    <button class="rb" data-cmd="removeFormat" data-i18n-title="Toolbar.ClearStyleTitle" data-i18n-aria-label="Toolbar.ClearStyleTitle"  title="Clear style" aria-label="Clear style">&#9001;&#9002;</button>
+    </div>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <div class="rb-group" role="group" aria-label="Paragraph">
+    <button class="rb" data-cmd="justifyLeft"  title="Align left (Ctrl+Shift+L)" data-i18n-title="Toolbar.AlignLeftTitle" aria-label="Align left" data-i18n-aria-label="Toolbar.AlignLeft" aria-pressed="false" aria-keyshortcuts="Control+Shift+L"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M1.5 3.5h10M1.5 7h13M1.5 10.5h10M1.5 14h13"/></svg></button>
+    <button class="rb" data-cmd="justifyCenter"  title="Center (Ctrl+E)" data-i18n-title="Toolbar.AlignCenterTitle" aria-label="Center" data-i18n-aria-label="Toolbar.AlignCenter" aria-pressed="false" aria-keyshortcuts="Control+E"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M2.5 3.5h11M1.5 7h13M2.5 10.5h11M1.5 14h13"/></svg></button>
+    <button class="rb" data-cmd="justifyRight"  title="Align right (Ctrl+R)" data-i18n-title="Toolbar.AlignRightTitle" aria-label="Align right" data-i18n-aria-label="Toolbar.AlignRight" aria-pressed="false" aria-keyshortcuts="Control+R"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4.5 3.5h10M1.5 7h13M4.5 10.5h10M1.5 14h13"/></svg></button>
+    <button class="rb" data-cmd="justifyFull"  title="Justify (Ctrl+J)" data-i18n-title="Toolbar.AlignJustifyTitle" aria-label="Align just" data-i18n-aria-label="Toolbar.AlignJustify" aria-pressed="false" aria-keyshortcuts="Control+J"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M1.5 3.5h13M1.5 7h13M1.5 10.5h13M1.5 14h13"/></svg></button>
+    <!-- AF5-HOME-DIRECT: borders/shading/nonprinting promoted from the
+         More-formatting menu / View tab to direct OO-parity controls (menu
+         rows and the View-tab toggle stay). -->
+    <!-- Census row-2 order: nonprinting(556)·shading(596)·borders(636). -->
+    <button id="btn-home-formatmarks" class="rb" title="Nonprinting characters" data-i18n-title="Home.NonPrinting" aria-label="Nonprinting characters" data-i18n-aria-label="Home.NonPrinting" aria-pressed="false">¶</button>
+    <label class="color-btn rb" title="Shading" data-i18n-title="Home.Shading">
+      <span class="color-key key-shading" aria-hidden="true">A</span>
+      <input type="color" id="shading-color" value="#f4f4f4" aria-label="Paragraph shading">
+    </label>
+    <button class="rb" data-cmd="openBorders" title="Borders" data-i18n-title="Home.Borders" aria-label="Borders" data-i18n-aria-label="Home.Borders"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="1"/><path d="M2.5 8h11M8 2.5v11" stroke-dasharray="1.5 1.5"/></svg></button>
+    <!-- OO 9.4 has no glyph-extras group on Home: paragraph style / small
+         caps / all caps / inline code live in the More menu (same data-cmd
+         wiring, keyboard paths unchanged). -->
+    <span class="menu rb-menu" >
+      <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" aria-label="More formatting" data-i18n-aria-label="Home.MoreFormatting">▾</button>
+      <ul class="menu-list" role="menu" hidden>
+        <li role="none"><button type="button" role="menuitem" data-picker="highlight-color" data-i18n="Home.Highlight">Highlight color</button></li>
+        <li role="none"><button type="button" role="menuitem" data-picker="text-color" data-i18n="Home.FontColor">Font color</button></li>
+        <li role="none"><button type="button" role="menuitem" data-picker="shading-color" data-i18n="Home.Shading">Shading</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="openBorders" data-i18n="Home.Borders">Borders</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="underlineDouble" data-i18n="Toolbar.UnderlineDouble">Double underline</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="strikeDouble" data-i18n="Toolbar.StrikeDouble">Double strikethrough</button></li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="formatBlock" data-value="P" data-i18n="Toolbar.ParagraphTitle">Paragraph</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="smallCaps" data-i18n="Toolbar.SmallCaps">Small caps</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="allCaps" data-i18n="Toolbar.AllCaps">All caps</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="code" data-i18n="Toolbar.Code">Inline code</button></li>
+        <li role="none" class="menu-sep" aria-hidden="true"></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="multilevel" data-i18n="Home.Multilevel">Multilevel list</button></li>
+      </ul>
+    </span>
+    </div>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <div class="rb-group rb-edge" role="group" aria-label="Selection">
     <button id="btn-select-all" class="rb" data-cmd="selectAll" title="Select all (Ctrl+A)" data-i18n-title="Home.SelectAllTitle" aria-label="Select all" data-i18n-aria-label="Home.SelectAll" aria-keyshortcuts="Control+A"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="1.5" stroke-dasharray="2.4 2"/><path d="M5.5 8h5M8 5.5v5"/></svg></button>
     </div>
     </div>
     </div>
-    </div>
     <div class="ribbon-page" data-tab="insert" role="group" aria-label="Insert ribbon">
-    <button id="btn-table" title="Insert table" data-i18n-title="Toolbar.InsertTableTitle" aria-label="Insert table" data-i18n-aria-label="Toolbar.InsertTable">▦</button>
-    <button id="btn-table-ops" data-i18n-title="Table.ActionsTitle" data-i18n-aria-label="Table.Actions" title="Table actions (rows, columns, merge)" aria-label="Table actions">▦✎</button>
-    <button id="btn-image" title="Insert image" data-i18n-title="Toolbar.InsertImageTitle" aria-label="Insert image" data-i18n-aria-label="Toolbar.InsertImageTitle"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><circle cx="5" cy="6" r="1.3"/><path d="M2.5 12.5 7 8l3 3 2-2 1.5 1.5"/></svg></button>
-    <button id="btn-link" data-i18n-title="Toolbar.InsertLinkTitle" data-i18n-aria-label="Toolbar.InsertLinkTitle" title="Insert link" aria-label="Insert link"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 9.5 9.5 6.5M5 11l-1.5 1.5a2.5 2.5 0 0 1-3.536-3.536L2.5 6.5M11 5l1.5-1.5a2.5 2.5 0 0 1 3.536 3.536L13.5 9.5" transform="translate(0.5 0)"/></svg></button>
-    <button id="btn-hr" data-i18n-title="Toolbar.HRTitle" data-i18n-aria-label="Toolbar.HRTitle" title="Insert horizontal rule" aria-label="Insert horizontal rule">─</button>
+    <div class="ribbon-row">
+    <!-- CHROME2 census mapping: census-oo-deep.json tab "ins" lists every control at y=68 (row 1, controls below in census x-order); WO-only extras moved to row 2 -->
     <button type="button" data-cmd="insertBlankPage" data-i18n="Insert.BlankPage" title="Insert blank page" aria-label="Insert blank page">Blank page</button>
-<button id="btn-object" data-i18n-title="Toolbar.ObjectTitle" data-i18n-aria-label="Toolbar.ObjectTitle" title="Insert object" aria-label="Insert object">▢</button>
-<button id="btn-bookmark" data-i18n-title="Toolbar.BookmarkTitle" data-i18n-aria-label="Toolbar.BookmarkTitle" title="Insert bookmark" aria-label="Insert bookmark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h9v13l-4.5-3.5-4.5 3.5z"/></svg></button>
-<button id="btn-crossref" data-i18n-title="Toolbar.CrossrefTitle" data-i18n-aria-label="Toolbar.CrossrefTitle" title="Insert cross-reference" aria-label="Insert cross-reference"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 14V8a3 3 0 0 1 3-3h9M10.5 1.5 14 5l-3.5 3.5"/></svg></button>
-<button id="btn-symbol" data-i18n-title="Toolbar.SymbolTitle" data-i18n-aria-label="Toolbar.SymbolTitle" title="Insert symbol" aria-label="Insert symbol">Ω</button>
-<button id="btn-datetime" title="Insert date" data-i18n-title="Toolbar.DateTimeTitle" aria-label="Insert date" data-i18n-aria-label="Toolbar.DateTimeTitle"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="12" rx="1"/><path d="M1.5 6h13M5 1v3M11 1v3"/></svg></button>
-<button id="btn-pagenumber" data-cmd="insertPageNumber" title="Insert page number field" data-i18n-title="Toolbar.PageNumberTitle" aria-label="Insert page number">#</button>
-<button id="btn-header" data-cmd="insertHeader" title="Insert page header" data-i18n-title="Toolbar.HeaderTitle" aria-label="Insert page header">▔</button>
-<button id="btn-footer" data-cmd="insertFooter" title="Insert page footer" data-i18n-title="Toolbar.FooterTitle" aria-label="Insert page footer">▁</button>
-    <button type="button" data-cmd="insertObject" data-value="shape" data-i18n="Insert.Shape">Shape</button>
-    <button type="button" data-cmd="insertObject" data-value="chart" data-i18n="Insert.Chart">Chart</button>
-    <button type="button" data-cmd="insertTextart" data-i18n="Insert.TextArt">TextArt</button>
-    <button type="button" data-cmd="toggleDropcap" data-i18n="Insert.DropCap">Drop cap</button>
-    <button type="button" data-cmd="insertTextbox" data-i18n="Insert.TextBox">Text box</button>
-    <button type="button" data-cmd="link" data-i18n="Insert.Hyperlink">Hyperlink</button>
-    <button type="button" data-cmd="insertComment" data-i18n="Insert.Comment" title="Insert comment" aria-label="Insert comment">Comment</button>
     <span class="menu rb-menu" >
       <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Breaks">Breaks ▾</button>
       <ul class="menu-list" role="menu" hidden>
@@ -474,13 +445,43 @@
         <li role="none"><button type="button" role="menuitem" data-cmd="insertSectionBreak" data-i18n="Layout.Breaks.Section">Insert section break</button></li>
       </ul>
     </span>
-    <button type="button" id="btn-textfile" data-i18n="Insert.TextFromFile">Text from File</button>
-    <button type="button" id="btn-addtext" data-i18n="Insert.AddText">Add text</button>
-    <button type="button" id="btn-field" data-i18n="Insert.Field">Field</button>
-    <button type="button" id="btn-contentcontrol" data-i18n="Insert.ContentControl">Content Controls</button>
-    <button type="button" id="btn-equation" data-i18n="Insert.Equation">Equation</button>
-    <button type="button" id="btn-headerfooter-combined" data-cmd="insertHeaderFooter" title="Header &amp; Footer" data-i18n-title="Toolbar.HeaderFooterTitle" aria-label="Header &amp; Footer" data-i18n-aria-label="Toolbar.HeaderFooter">&#9472;&#9472;</button>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <button id="btn-table" title="Insert table" data-i18n-title="Toolbar.InsertTableTitle" aria-label="Insert table" data-i18n-aria-label="Toolbar.InsertTable">▦</button>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <button id="btn-image" title="Insert image" data-i18n-title="Toolbar.InsertImageTitle" aria-label="Insert image" data-i18n-aria-label="Toolbar.InsertImageTitle"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><circle cx="5" cy="6" r="1.3"/><path d="M2.5 12.5 7 8l3 3 2-2 1.5 1.5"/></svg></button>
+    <button type="button" data-cmd="insertObject" data-value="shape" data-i18n="Insert.Shape">Shape</button>
     <button type="button" id="btn-smartart" data-i18n="Insert.SmartArt">SmartArt</button>
+    <button type="button" data-cmd="insertObject" data-value="chart" data-i18n="Insert.Chart">Chart</button>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <button type="button" data-cmd="insertComment" data-i18n="Insert.Comment" title="Insert comment" aria-label="Insert comment">Comment</button>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <button id="btn-link" data-i18n-title="Toolbar.InsertLinkTitle" data-i18n-aria-label="Toolbar.InsertLinkTitle" title="Insert link" aria-label="Insert link"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 9.5 9.5 6.5M5 11l-1.5 1.5a2.5 2.5 0 0 1-3.536-3.536L2.5 6.5M11 5l1.5-1.5a2.5 2.5 0 0 1 3.536 3.536L13.5 9.5" transform="translate(0.5 0)"/></svg></button>
+    <button type="button" data-cmd="link" data-i18n="Insert.Hyperlink">Hyperlink</button>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <button type="button" id="btn-headerfooter-combined" data-cmd="insertHeaderFooter" title="Header &amp; Footer" data-i18n-title="Toolbar.HeaderFooterTitle" aria-label="Header &amp; Footer" data-i18n-aria-label="Toolbar.HeaderFooter">&#9472;&#9472;</button>
+    <button id="btn-pagenumber" data-cmd="insertPageNumber" title="Insert page number field" data-i18n-title="Toolbar.PageNumberTitle" aria-label="Insert page number">#</button>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <button type="button" data-cmd="insertTextbox" data-i18n="Insert.TextBox">Text box</button>
+    <button type="button" data-cmd="insertTextart" data-i18n="Insert.TextArt">TextArt</button>
+    <button type="button" data-cmd="toggleDropcap" data-i18n="Insert.DropCap">Drop cap</button>
+    <button id="btn-datetime" title="Insert date" data-i18n-title="Toolbar.DateTimeTitle" aria-label="Insert date" data-i18n-aria-label="Toolbar.DateTimeTitle"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="12" rx="1"/><path d="M1.5 6h13M5 1v3M11 1v3"/></svg></button>
+    <button type="button" id="btn-textfile" data-i18n="Insert.TextFromFile">Text from File</button>
+    <button type="button" id="btn-field" data-i18n="Insert.Field">Field</button>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <button type="button" id="btn-equation" data-i18n="Insert.Equation">Equation</button>
+    <button id="btn-symbol" data-i18n-title="Toolbar.SymbolTitle" data-i18n-aria-label="Toolbar.SymbolTitle" title="Insert symbol" aria-label="Insert symbol">Ω</button>
+    <button type="button" id="btn-contentcontrol" data-i18n="Insert.ContentControl">Content Controls</button>
+    </div>
+    <div class="ribbon-row">
+    <!-- CHROME2: WO-only insert controls (absent from OO census), kept in their original relative order -->
+    <button id="btn-table-ops" data-i18n-title="Table.ActionsTitle" data-i18n-aria-label="Table.Actions" title="Table actions (rows, columns, merge)" aria-label="Table actions">▦✎</button>
+    <button id="btn-hr" data-i18n-title="Toolbar.HRTitle" data-i18n-aria-label="Toolbar.HRTitle" title="Insert horizontal rule" aria-label="Insert horizontal rule">─</button>
+    <button id="btn-object" data-i18n-title="Toolbar.ObjectTitle" data-i18n-aria-label="Toolbar.ObjectTitle" title="Insert object" aria-label="Insert object">▢</button>
+    <button id="btn-bookmark" data-i18n-title="Toolbar.BookmarkTitle" data-i18n-aria-label="Toolbar.BookmarkTitle" title="Insert bookmark" aria-label="Insert bookmark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h9v13l-4.5-3.5-4.5 3.5z"/></svg></button>
+    <button id="btn-crossref" data-i18n-title="Toolbar.CrossrefTitle" data-i18n-aria-label="Toolbar.CrossrefTitle" title="Insert cross-reference" aria-label="Insert cross-reference"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 14V8a3 3 0 0 1 3-3h9M10.5 1.5 14 5l-3.5 3.5"/></svg></button>
+    <button id="btn-header" data-cmd="insertHeader" title="Insert page header" data-i18n-title="Toolbar.HeaderTitle" aria-label="Insert page header">▔</button>
+    <button id="btn-footer" data-cmd="insertFooter" title="Insert page footer" data-i18n-title="Toolbar.FooterTitle" aria-label="Insert page footer">▁</button>
+    <button type="button" id="btn-addtext" data-i18n="Insert.AddText">Add text</button>
     <span class="menu rb-menu" >
       <button type="button" id="btn-insert-more" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Insert.More">Insert tools ▾</button>
       <ul class="menu-list" role="menu" hidden>
@@ -489,22 +490,30 @@
       </ul>
     </span>
     </div>
+    </div>
     <!-- OO-parity tab pages. Buttons for features WO lacks carry data-stub="<ref>":
          they are LOUD stubs — clicking reports the ref via setStatus — and the
          full list is pinned by tests/test_file_menu.py. Turn any stub into a
          real feature by giving it an id + a command handler. -->
     <div class="ribbon-page" data-tab="draw" role="group" aria-label="Draw ribbon" data-i18n-aria-label="Tab.Draw">
-    <button type="button" id="btn-ink-draw" data-cmd="inkMode" data-i18n="Draw.Mode" title="Toggle drawing mode" data-i18n-title="Draw.ModeTitle" aria-pressed="false">Draw</button>
+    <div class="ribbon-row">
+    <!-- CHROME2 census mapping: census-oo-deep.json tab "draw" lists Select + pen/highlighter/eraser stacks + Eraser at y=68 (row 1); WO-only mode/color/thickness/group controls moved to row 2 -->
     <button type="button" id="btn-ink-select" data-cmd="inkSelect" data-i18n="Draw.Select" title="Select" data-i18n-title="Draw.SelectTitle" aria-pressed="false">Select</button>
     <button type="button" id="btn-ink-pen" data-cmd="toggleInk" data-value="pen" data-i18n="Draw.Pen" title="Pen" data-i18n-title="Draw.PenTitle" aria-pressed="false">Pen</button>
     <button type="button" id="btn-ink-highlighter" data-cmd="toggleInk" data-value="highlighter" data-i18n="Draw.Highlighter" title="Highlighter" data-i18n-title="Draw.HighlighterTitle" aria-pressed="false">Highlighter</button>
     <button type="button" id="btn-ink-eraser" data-cmd="toggleInk" data-value="eraser" data-i18n="Draw.Eraser" title="Eraser" data-i18n-title="Draw.EraserTitle" aria-pressed="false">Eraser</button>
+    </div>
+    <div class="ribbon-row">
+    <button type="button" id="btn-ink-draw" data-cmd="inkMode" data-i18n="Draw.Mode" title="Toggle drawing mode" data-i18n-title="Draw.ModeTitle" aria-pressed="false">Draw</button>
     <button type="button" id="btn-ink-color" data-cmd="inkColor" data-i18n="Draw.Ink" title="Ink color" data-i18n-title="Draw.InkTitle">Ink color</button>
     <button type="button" id="btn-ink-thickness" data-cmd="inkThickness" data-i18n="Draw.InkThickness" title="Ink thickness" data-i18n-title="Draw.InkThicknessTitle">Ink thickness</button>
     <button type="button" id="btn-group" data-i18n="Draw.Group" title="Group selected strokes" aria-label="Group selected strokes">Group</button>
     <button type="button" id="btn-mergeshapes" data-i18n="Draw.Merge" title="Merge selected strokes into one" aria-label="Merge selected strokes">Merge shapes</button>
     </div>
+    </div>
     <div class="ribbon-page" data-tab="layout" role="group" aria-label="Layout ribbon">
+    <!-- CHROME2 census: tab 'layout' controls all y=68 (row 1); WO-only Page setup moved to row 2 -->
+    <div class="ribbon-row">
     <span class="menu rb-menu" >
       <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Margins">Margins ▾</button>
       <ul class="menu-list" role="menu" hidden>
@@ -560,6 +569,8 @@
         <li role="none"><button type="button" role="menuitem" data-cmd="insertSectionBreak" data-i18n="Layout.Breaks.Section">Insert section break</button></li>
       </ul>
     </span>
+    <button type="button" data-cmd="toggleLineNumbers" data-i18n="Layout.LineNumbers">Line numbers</button>
+    <button type="button" data-cmd="toggleHyphenation" data-i18n="Layout.Hyphenation">Hyphenation</button>
     <span class="menu rb-menu" >
       <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Wrapping">Wrapping ▾</button>
       <ul class="menu-list" role="menu" hidden>
@@ -590,9 +601,6 @@
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="merge-intersect" data-i18n="Layout.Merge.Intersect">Intersect</button></li>
       </ul>
     </span>
-    <button type="button" id="btn-page-setup" data-i18n="Layout.PageSetup">Page setup</button>
-    <button type="button" data-cmd="toggleHyphenation" data-i18n="Layout.Hyphenation">Hyphenation</button>
-    <button type="button" data-cmd="toggleLineNumbers" data-i18n="Layout.LineNumbers">Line numbers</button>
     <button type="button" data-cmd="toggleWatermark" data-i18n="Layout.Watermark">Watermark</button>
     <label class="ribbon-picker" title="Page color" data-i18n-title="Layout.PageColor">
       <input type="color" id="pagecolor" value="#ffffff" aria-label="Page color" data-i18n-aria-label="Layout.PageColor">
@@ -607,48 +615,69 @@
       </select>
     </label>
     </div>
+    <div class="ribbon-row">
+    <button type="button" id="btn-page-setup" data-i18n="Layout.PageSetup">Page setup</button>
+    </div>
+    </div>
     <div class="ribbon-page" data-tab="references" role="group" aria-label="References ribbon" data-i18n-aria-label="Tab.References">
+    <!-- CHROME2 census: tab 'links' row 1 = TOC/AddText/Footnote/Link/Bookmark/Caption/Crossref/TOF, row 2 = Update Table ×2 -->
+    <div class="ribbon-row">
     <button id="btn-toc" data-i18n-title="Toolbar.TocTitle" data-i18n-aria-label="Toolbar.TocTitle" title="Insert table of contents" aria-label="Insert table of contents">☰</button>
+    <button type="button" data-cmd="addText" data-i18n="Ref.AddText">Add Text</button>
     <button id="btn-footnote" data-cmd="insertFootnote" title="Insert footnote" data-i18n-title="Toolbar.FootnoteTitle" aria-label="Insert footnote">¹</button>
     <button id="btn-endnote" data-cmd="insertEndnote" title="Insert endnote" data-i18n-title="Toolbar.EndnoteTitle" aria-label="Insert endnote">ⁿ</button>
+    <button type="button" data-cmd="link" data-i18n="Ref.Link">Link</button>
+    <button type="button" data-cmd="bookmark" data-i18n="Ref.Bookmark">Bookmark</button>
     <button type="button" data-cmd="insertCaption" data-i18n="Ref.Caption">Caption</button>
     <button type="button" data-cmd="insertCitation" data-i18n="Ref.Citation">Citation</button>
     <button type="button" data-cmd="insertIndexEntry" data-i18n="Ref.Index">Index</button>
+    <button type="button" data-cmd="openCrossref" data-i18n="Ref.Crossref">Cross-reference</button>
+    <button type="button" data-cmd="insertToF" data-i18n="Ref.TableOfFigures">Table of figures</button>
+    </div>
+    <div class="ribbon-row">
     <button type="button" data-cmd="updateToc" data-i18n="Ref.UpdateToc">Update TOC</button>
     <button type="button" data-cmd="updateToc" data-i18n="Ref.UpdateTable">Update table</button>
-    <button type="button" data-cmd="insertToF" data-i18n="Ref.TableOfFigures">Table of figures</button>
-    <button type="button" data-cmd="openCrossref" data-i18n="Ref.Crossref">Cross-reference</button>
-    <button type="button" data-cmd="link" data-i18n="Ref.Link">Link</button>
-    <button type="button" data-cmd="bookmark" data-i18n="Ref.Bookmark">Bookmark</button>
-    <button type="button" data-cmd="addText" data-i18n="Ref.AddText">Add Text</button>
+    </div>
     </div>
     <div class="ribbon-page" data-tab="collaboration" role="group" aria-label="Collaboration ribbon" data-i18n-aria-label="Tab.Collaboration">
-    <button id="btn-track-changes" data-i18n-title="Statusbar.TrackChanges" data-i18n-aria-label="Statusbar.TrackChanges" title="Track changes" aria-label="Track changes" aria-pressed="false">✎</button>
-    <button id="btn-review-changes" data-i18n-title="Review.Changes" data-i18n-aria-label="Review.Changes" title="Review changes" aria-label="Review changes">✓</button>
-    <button id="btn-comment" data-i18n-title="Ctx.AddComment" data-i18n-aria-label="Ctx.AddComment" title="Add comment" aria-label="Add comment"><svg viewBox="0 0 18 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 2h14v8h-7.5L5 13v-3H2z"/></svg></button>
-    <button id="btn-comments" data-i18n-title="Comments.Show" data-i18n-aria-label="Comments.Show" title="Show comments" aria-label="Show comments">◫</button>
-    <button type="button" data-cmd="resolveComment" data-i18n="Collab.Resolve">Resolve</button>
-    <button type="button" data-cmd="deleteComment" data-i18n="Collab.Delete">Delete</button>
-    <button id="btn-chat-toggle" type="button" data-cmd="toggleChat" data-i18n="Collab.Chat" aria-expanded="false">Chat</button>
-    <button type="button" data-cmd="compareVersion" data-i18n="Collab.Compare">Compare</button>
-    <button type="button" data-cmd="combineRevisions" data-i18n="Collab.Combine">Combine</button>
-    <button type="button" data-cmd="displayMode" data-i18n="Collab.Display">Display mode</button>
+    <!-- CHROME2 census: tab 'review' row 1 = CoEditingMode/AddComment/Delete/Resolve/TrackChanges/DisplayMode/Prev/Next/Accept/Reject/Compare/Combine/Chat/MailMerge; WO-only review/comments → row 2 -->
+    <div class="ribbon-row">
     <label for="coedit-mode" data-i18n="Collab.CoEditMode">Co-editing mode</label>
     <select id="coedit-mode" title="Co-editing mode" aria-label="Co-editing mode">
       <option value="fast" data-i18n="Collab.CoEditFast">Fast</option>
       <option value="strict" data-i18n="Collab.CoEditStrict">Strict</option>
     </select>
+    <button id="btn-comment" data-i18n-title="Ctx.AddComment" data-i18n-aria-label="Ctx.AddComment" title="Add comment" aria-label="Add comment"><svg viewBox="0 0 18 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 2h14v8h-7.5L5 13v-3H2z"/></svg></button>
+    <button type="button" data-cmd="deleteComment" data-i18n="Collab.Delete">Delete</button>
+    <button type="button" data-cmd="resolveComment" data-i18n="Collab.Resolve">Resolve</button>
+    <button id="btn-track-changes" data-i18n-title="Statusbar.TrackChanges" data-i18n-aria-label="Statusbar.TrackChanges" title="Track changes" aria-label="Track changes" aria-pressed="false">✎</button>
+    <button type="button" data-cmd="displayMode" data-i18n="Collab.Display">Display mode</button>
     <button type="button" data-cmd="prevTrackedChange" data-i18n="Collab.PrevChange" title="Previous change" aria-label="Previous change">◀ change</button>
     <button type="button" data-cmd="nextTrackedChange" data-i18n="Collab.NextChange" title="Next change" aria-label="Next change">change ▶</button>
     <button type="button" data-cmd="acceptTrackedChange" data-i18n="Collab.Accept">Accept</button>
     <button type="button" data-cmd="rejectTrackedChange" data-i18n="Collab.Reject">Reject</button>
+    <button type="button" data-cmd="compareVersion" data-i18n="Collab.Compare">Compare</button>
+    <button type="button" data-cmd="combineRevisions" data-i18n="Collab.Combine">Combine</button>
+    <button id="btn-chat-toggle" type="button" data-cmd="toggleChat" data-i18n="Collab.Chat" aria-expanded="false">Chat</button>
     <button type="button" data-cmd="mailMerge" data-i18n="Collab.MailMerge">Mail Merge</button>
     </div>
+    <div class="ribbon-row">
+    <button id="btn-review-changes" data-i18n-title="Review.Changes" data-i18n-aria-label="Review.Changes" title="Review changes" aria-label="Review changes">✓</button>
+    <button id="btn-comments" data-i18n-title="Comments.Show" data-i18n-aria-label="Comments.Show" title="Show comments" aria-label="Show comments">◫</button>
+    </div>
+    </div>
     <div class="ribbon-page" data-tab="protection" role="group" aria-label="Protection ribbon" data-i18n-aria-label="Tab.Protection">
+    <!-- CHROME2 census: tab 'protect' is all y=68 (row 1); forced 1/1 split so both rows are non-empty -->
+    <div class="ribbon-row">
     <button type="button" data-cmd="protectDialog" data-i18n="Prot.Password">Encrypt</button>
+    </div>
+    <div class="ribbon-row">
     <button type="button" data-cmd="restrictEditing" data-i18n="Prot.Restrict">Protect Document</button>
     </div>
+    </div>
     <div class="ribbon-page" data-tab="view" role="group" aria-label="View ribbon" data-i18n-aria-label="Tab.View">
+    <!-- CHROME2 census: tab 'view' y68 row1 = Headings, FitToPage, Zoom100, InterfaceTheme, DarkDocument, Macros/Record; y>=90 row2 = FitToWidth, MultiplePages, PauseRecording (pause lives inside the Macros menu here). WO-only view toggles keep their head-of-row position. -->
+    <div class="ribbon-row">
     <button type="button" data-cmd="displayMode" data-i18n="View.Mode">Document view</button>
     <button id="btn-ruler-toggle" type="button" data-i18n="View.Ruler" aria-pressed="true">Ruler</button>
     <!-- Gridlines is wired directly (like the ruler toggle) instead of via
@@ -661,15 +690,14 @@
     <button id="btn-right-panel-toggle" type="button" data-cmd="toggleRightPanel" data-i18n="View.RightPanel" aria-pressed="false">Settings panel</button>
     <button id="btn-view-fullscreen" type="button" data-i18n="View.Fullscreen">Fullscreen</button>
     <button id="btn-view-theme" type="button" data-i18n="View.Theme" aria-pressed="false">Theme</button>
+    <button id="btn-view-headings" type="button" data-i18n="View.Headings" aria-pressed="false">Headings</button>
     <button id="btn-view-fit" type="button" data-i18n="View.Fit">Fit page</button>
     <!-- AF6-VIEW-GAPS (OO 9.4 View parity): fit/zoom reuse the statusbar
          zoom machinery (btn-zoom-fit / btn-zoom-reset -> applyZoom), the
          Headings/Multiple-pages toggles relay to their statusbar/nav
-         counterparts, the theme select reuses the wo-theme machinery. -->
-    <button id="btn-view-fit-width" type="button" data-i18n="View.FitWidth" aria-pressed="false">Fit width</button>
+         counterparts, the theme select reuses the wo-theme machinery.
+         CHROME2: census puts fit-width + multiple-pages on row 2. -->
     <button id="btn-view-zoom100" type="button" data-i18n="View.Zoom100">Zoom to 100%</button>
-    <button id="btn-view-headings" type="button" data-i18n="View.Headings" aria-pressed="false">Headings</button>
-    <button id="btn-view-multipages" type="button" data-i18n="View.MultiplePages" aria-pressed="false">Multiple pages</button>
     <label class="ribbon-picker" title="Interface theme" data-i18n-title="View.InterfaceTheme">
     <select id="view-theme-select" aria-label="Interface theme" data-i18n-aria-label="View.InterfaceTheme">
       <option value="light" data-i18n="View.ThemeLight">Light</option>
@@ -693,11 +721,16 @@
       </ul>
     </span>
     </div>
+    <div class="ribbon-row">
+    <button id="btn-view-fit-width" type="button" data-i18n="View.FitWidth" aria-pressed="false">Fit width</button>
+    <button id="btn-view-multipages" type="button" data-i18n="View.MultiplePages" aria-pressed="false">Multiple pages</button>
+    </div>
+    </div>
     <div class="ribbon-page" data-tab="plugins" role="group" aria-label="Plugins ribbon" data-i18n-aria-label="Tab.Plugins">
-    <button type="button" data-cmd="browsePlugins" data-i18n="Plugins.Browse">Browse plugins</button>
+    <!-- CHROME2 census: tab 'plugins' is all y=68 (row 1: PluginManager, BackgroundPlugins, PhotoEditor, YouTube, OCR, Translator, Mendeley, Thesaurus, HighlightCode, Zotero, Speech, SpeechInput). Census places OCR between the YouTube and Translator cards; it stays outside the fixed 8-card gallery (plugin-gallery contract) at its nearest adjacent slot. WO-only Browse plugins -> row 2 so both rows are non-empty. -->
+    <div class="ribbon-row">
     <button type="button" data-cmd="managePlugins" data-i18n="Plugins.Manage">Manage plugins</button>
     <button type="button" id="btn-bgplugins" data-i18n="Plugins.Background" aria-pressed="false">Background plugins</button>
-    <button type="button" id="btn-ocr" data-cmd="ocrRun" data-i18n="Plugins.Ocr">OCR</button>
     <button type="button" data-cmd="photoEditor" data-i18n="Plugins.PhotoEditor">Photo editor</button>
     <!-- AF13-PLUGIN-GALLERY: OO-plugins-tab parity gallery. Cards wired to a
          real command dispatch it (Translator/Speech/Speech input/Thesaurus/
@@ -714,16 +747,26 @@
     <button type="button" class="plugin-card" data-cmd="readAloud" data-i18n="Plugins.Speech">Speech</button>
     <button type="button" class="plugin-card" data-cmd="dictate" data-i18n="Plugins.SpeechInput">Speech input</button>
     </div>
+    <button type="button" id="btn-ocr" data-cmd="ocrRun" data-i18n="Plugins.Ocr">OCR</button>
+    </div>
+    <div class="ribbon-row">
+    <button type="button" data-cmd="browsePlugins" data-i18n="Plugins.Browse">Browse plugins</button>
+    </div>
     </div>
     <div class="ribbon-page" data-tab="ai" role="group" aria-label="AI ribbon" data-i18n-aria-label="Tab.AI">
-    <button id="btn-ai-review-tab" type="button" data-i18n="AI.ChangesTab">AI changes</button>
+    <!-- CHROME2 census: tab 8713d619 (OO AI tab) is all y=68: Settings, Chatbot, Summarization -> row 1. Chatbot maps to WO AI assistant; remaining WO-only AI controls -> row 2. -->
+    <div class="ribbon-row">
+    <button type="button" data-cmd="aiSettings" data-i18n="AI.Settings">Settings</button>
+    <button type="button" id="btn-ai-assistant" data-i18n="AI.Assistant">AI assistant</button>
     <button type="button" data-cmd="aiSummarize" data-i18n="AI.Summarize">Summarize</button>
+    </div>
+    <div class="ribbon-row">
+    <button id="btn-ai-review-tab" type="button" data-i18n="AI.ChangesTab">AI changes</button>
     <button type="button" data-cmd="aiTranslate" data-value="German" data-i18n="AI.Translate">Translate</button>
     <button type="button" data-cmd="aiRewrite" data-i18n="AI.Rewrite">Rewrite</button>
     <button type="button" id="btn-ai-grammar" data-i18n="AI.Grammar">Grammar</button>
-    <button type="button" id="btn-ai-assistant" data-i18n="AI.Assistant">AI assistant</button>
     <button type="button" id="btn-create-ai-assistant" data-cmd="createAiAssistant" data-i18n="AI.CreateAssistant">Create AI assistant</button>
-    <button type="button" data-cmd="aiSettings" data-i18n="AI.Settings">Settings</button>
+    </div>
     </div>
     <!-- Chart design (AF9-CHART-DESIGN, OO parity): contextual tab revealed
          by editor.js when a chart vector object is picked. 8 control groups
@@ -731,27 +774,8 @@
          with no chart selected the controls are aria-disabled no-ops (the
          marker ops still fire). -->
     <div class="ribbon-page" data-tab="chart-design" role="group" aria-label="Chart design ribbon" data-i18n-aria-label="Tab.ChartDesign">
+    <!-- CHROME2 census: tab 'charttab' row1 = Chart Elements, EditData, UpdateData, Chart type, Wrapping, Width/Height, 3D rotation; row2 (y>=90) = Advanced settings + Height. WO keeps the W/H inputs with their Apply button as one group on row 1; the Advanced settings group moves to row 2. -->
     <div class="ribbon-row">
-    <div class="rb-group" role="group" aria-label="Chart type">
-    <span class="menu rb-menu" >
-    <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Chart.Type">Chart type ▾</button>
-    <ul class="menu-list" role="menu" hidden>
-      <li role="none"><button type="button" role="menuitem" data-cmd="chartType" data-value="bar" data-i18n="Chart.Type.Bar">Bar</button></li>
-      <li role="none"><button type="button" role="menuitem" data-cmd="chartType" data-value="line" data-i18n="Chart.Type.Line">Line</button></li>
-      <li role="none"><button type="button" role="menuitem" data-cmd="chartType" data-value="pie" data-i18n="Chart.Type.Pie">Pie</button></li>
-      <li role="none"><button type="button" role="menuitem" data-cmd="chartType" data-value="area" data-i18n="Chart.Type.Area">Area</button></li>
-    </ul>
-    </span>
-    </div>
-    <span class="rb-sep" aria-hidden="true"></span>
-    <div class="rb-group" role="group" aria-label="Edit chart data">
-    <button type="button" data-cmd="chartEditData" data-i18n="Chart.EditData">Edit data</button>
-    </div>
-    <span class="rb-sep" aria-hidden="true"></span>
-    <div class="rb-group" role="group" aria-label="Update chart data">
-    <button type="button" data-cmd="chartUpdateData" data-i18n="Chart.UpdateData">Update data</button>
-    </div>
-    <span class="rb-sep" aria-hidden="true"></span>
     <div class="rb-group" role="group" aria-label="Chart elements">
     <span class="menu rb-menu" >
     <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Chart.Elements">Chart elements ▾</button>
@@ -764,8 +788,24 @@
     </span>
     </div>
     <span class="rb-sep" aria-hidden="true"></span>
-    <div class="rb-group" role="group" aria-label="Chart settings">
-    <button type="button" data-cmd="chartSettings" data-i18n="Chart.Settings">Advanced settings</button>
+    <div class="rb-group" role="group" aria-label="Edit chart data">
+    <button type="button" data-cmd="chartEditData" data-i18n="Chart.EditData">Edit data</button>
+    </div>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <div class="rb-group" role="group" aria-label="Update chart data">
+    <button type="button" data-cmd="chartUpdateData" data-i18n="Chart.UpdateData">Update data</button>
+    </div>
+    <span class="rb-sep" aria-hidden="true"></span>
+    <div class="rb-group" role="group" aria-label="Chart type">
+    <span class="menu rb-menu" >
+    <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Chart.Type">Chart type ▾</button>
+    <ul class="menu-list" role="menu" hidden>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartType" data-value="bar" data-i18n="Chart.Type.Bar">Bar</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartType" data-value="line" data-i18n="Chart.Type.Line">Line</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartType" data-value="pie" data-i18n="Chart.Type.Pie">Pie</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartType" data-value="area" data-i18n="Chart.Type.Area">Area</button></li>
+    </ul>
+    </span>
     </div>
     <span class="rb-sep" aria-hidden="true"></span>
     <div class="rb-group" role="group" aria-label="Chart wrapping">
@@ -791,18 +831,28 @@
     <button type="button" data-cmd="chart3d" data-i18n="Chart.Rotation3D">3D rotation</button>
     </div>
     </div>
+    <div class="ribbon-row">
+    <div class="rb-group" role="group" aria-label="Chart settings">
+    <button type="button" data-cmd="chartSettings" data-i18n="Chart.Settings">Advanced settings</button>
+    </div>
+    </div>
     </div>
     <div class="ribbon-page" data-tab="header-footer" role="group" aria-label="Header and Footer ribbon" data-i18n-aria-label="Tab.HeaderFooter">
-    <button id="btn-hf-close" type="button" data-i18n="HF.Close">Close Header &amp; Footer</button>
+    <!-- CHROME2 census: tab 'headerfooter' row1 = PageNumber, DateTime, Field, Image, Close (the unlabeled stacked carets in the census correspond to the five WO H/F toggles, kept together on row 2). -->
+    <div class="ribbon-row">
     <button id="btn-hf-pagenumber" type="button" data-i18n="HF.PageNumber">Page number</button>
     <button id="btn-hf-datetime" type="button" data-i18n="HF.DateTime">Date &amp; time</button>
     <button id="btn-hf-field" type="button" data-i18n="HF.Field">Field</button>
     <button id="btn-hf-image" type="button" data-i18n="HF.Image">Image</button>
+    <button id="btn-hf-close" type="button" data-i18n="HF.Close">Close Header &amp; Footer</button>
+    </div>
+    <div class="ribbon-row">
     <button type="button" data-cmd="toggleDifferentFirst" data-i18n="HF.DifferentFirst">Different First Page</button>
     <button type="button" data-cmd="toggleOddEven" data-i18n="HF.OddEven">Different Odd &amp; Even</button>
     <button type="button" data-cmd="toggleHeaderFromTop" data-i18n="HF.HeaderFromTop">Header from Top</button>
     <button type="button" data-cmd="toggleFooterFromBottom" data-i18n="HF.FooterFromBottom">Footer from Bottom</button>
     <button type="button" data-cmd="toggleSameAsPrev" data-i18n="HF.SameAsPrev">Same as previous</button>
+    </div>
     </div>
     <!-- Overflow chevrons (CHROME1-TITLE-TAB-ROW, OO/Word style): edge-split
          at the band's right edge; › shows while content overflows right, ‹
