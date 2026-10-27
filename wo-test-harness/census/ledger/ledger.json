@@ -1,0 +1,4668 @@
+{
+ "version": 1,
+ "generated": "2026-10-27T13:25:56.184695",
+ "levels": [
+  "L0 missing",
+  "L1 surface",
+  "L2 acts",
+  "L3 persists",
+  "L4 fidelity"
+ ],
+ "totals": {
+  "L0": 19,
+  "L1": 203,
+  "L2": 0,
+  "L3": 20,
+  "L4": 0
+ },
+ "features": [
+  {
+   "feature": "file.file",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:file",
+     "label": "File",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-textfile",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "file.home",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:file",
+     "label": "Home",
+     "enabled": true
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  },
+  {
+   "feature": "file.insert",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:file",
+     "label": "Insert",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "insertBlankPage",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "file.draw",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:file",
+     "label": "Draw",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "toggleInk",
+    "where": "tab:draw"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "file.layout",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:file",
+     "label": "Layout",
+     "enabled": true
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  },
+  {
+   "feature": "file.references",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:file",
+     "label": "References",
+     "enabled": true
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  },
+  {
+   "feature": "file.collaboration",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:file",
+     "label": "Collaboration",
+     "enabled": true
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  },
+  {
+   "feature": "file.protection",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:file",
+     "label": "Protection",
+     "enabled": true
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  },
+  {
+   "feature": "file.view",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:file",
+     "label": "View",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "displayMode",
+    "where": "tab:view"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "file.plugins",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:file",
+     "label": "Plugins",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "managePlugins",
+    "where": "tab:plugins"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "file.ai",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:file",
+     "label": "AI",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "AI changes",
+    "where": "backstage"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "file.editing",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:file",
+     "label": "Editing",
+     "enabled": false
+    }
+   ],
+   "wo": {
+    "match": "coedit-mode",
+    "where": "tab:collaboration"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "file.find-ctrl-f",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:file",
+     "label": "Find (Ctrl+F)",
+     "enabled": false
+    }
+   ],
+   "wo": {
+    "match": "btn-find",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "file.copy-ctrl-insert",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:file",
+     "label": "Copy (Ctrl+Insert)",
+     "enabled": false
+    }
+   ],
+   "wo": {
+    "match": "btn-copy",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "file.paste-ctrl-v",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:file",
+     "label": "Paste (Ctrl+V)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-paste",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "file.cut-ctrl-x",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:file",
+     "label": "Cut (Ctrl+X)",
+     "enabled": false
+    }
+   ],
+   "wo": {
+    "match": "btn-cut",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "file.copy-style-ctrl-alt-c",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:file",
+     "label": "Copy style (Ctrl+Alt+C)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-copy",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.font",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Font",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "font-family",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.font-size",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Font size",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "font-size",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.increment-font-size-ctrl",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Increment font size (Ctrl+])",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "font-size",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.decrement-font-size-ctrl",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Decrement font size (Ctrl+[)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "font-size",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.change-case",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Change case",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Change case",
+    "where": "tab:home"
+   },
+   "level": 3,
+   "evidence": [
+    "L3 roundtrip ok [changeCase]: marker /SENTINEL/ survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "formatting.bold-ctrl-b",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Bold (Ctrl+B)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "bold",
+    "where": "tab:home"
+   },
+   "level": 3,
+   "evidence": [
+    "L3 roundtrip ok [bold]: marker /<(b|strong)\\b|font-weight\\s*:\\s*(bold|[6-9]00)/ survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "formatting.italic-ctrl-i",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Italic (Ctrl+I)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "italic",
+    "where": "tab:home"
+   },
+   "level": 3,
+   "evidence": [
+    "L3 roundtrip ok [italic]: marker /<(i|em)\\b|font-style\\s*:\\s*italic/ survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "formatting.underline-ctrl-u",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Underline (Ctrl+U)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "underline",
+    "where": "tab:home"
+   },
+   "level": 3,
+   "evidence": [
+    "L3 roundtrip ok [underline]: marker /<u\\b|text-decoration[^>]*underline/ survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "formatting.strikethrough-ctrl-5",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Strikethrough (Ctrl+5)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "strikeThrough",
+    "where": "tab:home"
+   },
+   "level": 3,
+   "evidence": [
+    "L3 roundtrip ok [strikeThrough]: marker /<(s|strike|del)\\b|line-through/ survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "formatting.superscript-ctrl",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Superscript (Ctrl+,)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "superscript",
+    "where": "tab:home"
+   },
+   "level": 3,
+   "evidence": [
+    "L3 roundtrip ok [superscript]: marker /w:vertAlign[^>]*superscript/ preserved in docx word/document.xml; production docx->html decoder drops it on re-e"
+   ]
+  },
+  {
+   "feature": "formatting.subscript-ctrl",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Subscript (Ctrl+.)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "subscript",
+    "where": "tab:home"
+   },
+   "level": 3,
+   "evidence": [
+    "L3 roundtrip ok [subscript]: marker /w:vertAlign[^>]*subscript/ preserved in docx word/document.xml; production docx->html decoder drops it on re-emi"
+   ]
+  },
+  {
+   "feature": "formatting.highlight-color",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Highlight color",
+     "enabled": true
+    },
+    {
+     "surface": "tab:home",
+     "label": "Highlight color",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "highlight-color",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.font-color",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Font color",
+     "enabled": true
+    },
+    {
+     "surface": "tab:home",
+     "label": "Font color",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "text-color",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.clear-style",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Clear style",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "removeFormat",
+    "where": "tab:home"
+   },
+   "level": 3,
+   "evidence": [
+    "L3 roundtrip ok [removeFormat]: marker /sentinel/ survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "formatting.bullets",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Bullets",
+     "enabled": true
+    },
+    {
+     "surface": "tab:home",
+     "label": "Bullets",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "insertUnorderedList",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.numbering",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Numbering",
+     "enabled": true
+    },
+    {
+     "surface": "tab:home",
+     "label": "Numbering",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Numbering style options",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.multilevel-list",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Multilevel list",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "multilevel",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.decrease-indent-ctrl-shift-m",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Decrease indent (Ctrl+Shift+M)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "outdent",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.increase-indent-ctrl-m",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Increase indent (Ctrl+M)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "indent",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.paragraph-line-spacing",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Paragraph line spacing",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "line-spacing",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.text-direction",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Text direction",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "directionRtl",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.align-left-ctrl-l",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Align left (Ctrl+L)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "justifyLeft",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.align-center-ctrl-e",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Align center (Ctrl+E)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "justifyCenter",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.align-right-ctrl-r",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Align right (Ctrl+R)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "justifyRight",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.justified-ctrl-j",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Justified (Ctrl+J)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "justifyFull",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.nonprinting-characters-ctrl-shift-8",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Nonprinting characters (Ctrl+Shift+8)",
+     "enabled": true
+    },
+    {
+     "surface": "tab:home",
+     "label": "Nonprinting characters (Ctrl+Shift+8)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-home-formatmarks",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.shading",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Shading",
+     "enabled": true
+    },
+    {
+     "surface": "tab:home",
+     "label": "Shading",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Shading",
+    "where": "menu:More formatting"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.borders",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Borders",
+     "enabled": true
+    },
+    {
+     "surface": "tab:home",
+     "label": "Borders",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "openBorders",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.replace-ctrl-h",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Replace (Ctrl+H)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-replace",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "formatting.select-all-ctrl-a",
+   "cluster": "formatting",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:home",
+     "label": "Select all (Ctrl+A)",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "selectAll",
+    "where": "tab:home"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.blank-page",
+   "cluster": "insert",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Blank\nPage",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "insertBlankPage",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.breaks",
+   "cluster": "insert",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Breaks",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Breaks",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "table.table",
+   "cluster": "table",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Table",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Table ▾",
+    "where": "tab:insert"
+   },
+   "level": 3,
+   "evidence": [
+    "L3 roundtrip ok [btn-table]: marker /<table\\b/ survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "image.image",
+   "cluster": "image",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Image",
+     "enabled": true
+    },
+    {
+     "surface": "tab:headerfooter",
+     "label": "Image",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-hf-image",
+    "where": "tab:header-footer"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.shape",
+   "cluster": "insert",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Shape",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "insertObject",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.smartart",
+   "cluster": "insert",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "SmartArt",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-smartart",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.chart",
+   "cluster": "chart",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Chart",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "insertObject",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "review.comment",
+   "cluster": "review",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Comment",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "insertComment",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.link",
+   "cluster": "insert",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Link",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "link",
+    "where": "tab:references"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "headerfooter.header-footer",
+   "cluster": "headerfooter",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Header &\nFooter",
+     "enabled": true
+    },
+    {
+     "surface": "tab:headerfooter",
+     "label": "Header &\nFooter",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "insertHeaderFooter",
+    "where": "tab:insert"
+   },
+   "level": 3,
+   "evidence": [
+    "L3 roundtrip ok [insertHeaderFooter]: marker /page-header|page-footer|wo-hf/ survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "insert.page-number",
+   "cluster": "insert",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Page\nNumber",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-hf-pagenumber",
+    "where": "tab:header-footer"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.text-box",
+   "cluster": "insert",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Text\nBox",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "insertTextbox",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.text-art",
+   "cluster": "insert",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Text\nArt",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "insertTextart",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.drop-cap",
+   "cluster": "insert",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Drop\nCap",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "toggleDropcap",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.date-time",
+   "cluster": "insert",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Date &\nTime",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-datetime",
+    "where": "tab:insert"
+   },
+   "level": 3,
+   "evidence": [
+    "L3 roundtrip ok [btn-datetime]: marker \"2026-10-27\" survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "insert.text-from-file",
+   "cluster": "insert",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Text from\nFile",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-textfile",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.field",
+   "cluster": "insert",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Field",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-field",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.equation",
+   "cluster": "insert",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Equation",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-equation",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.symbol",
+   "cluster": "insert",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Symbol",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-symbol",
+    "where": "tab:insert"
+   },
+   "level": 3,
+   "evidence": [
+    "L3 roundtrip ok [btn-symbol]: marker \"§\" survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "insert.content-controls",
+   "cluster": "insert",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:ins",
+     "label": "Content\nControls",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-contentcontrol",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.select",
+   "cluster": "insert",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:draw",
+     "label": "Select",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "inkSelect",
+    "where": "tab:draw"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.eraser",
+   "cluster": "insert",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:draw",
+     "label": "Eraser",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "toggleInk",
+    "where": "tab:draw"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.margins",
+   "cluster": "page",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:layout",
+     "label": "Margins",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Margins",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.orientation",
+   "cluster": "page",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:layout",
+     "label": "Orientation",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Orientation",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.size",
+   "cluster": "page",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:layout",
+     "label": "Size",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Size",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.columns",
+   "cluster": "page",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:layout",
+     "label": "Columns",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Columns",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.breaks",
+   "cluster": "page",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:layout",
+     "label": "Breaks",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Breaks",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.line-numbers",
+   "cluster": "page",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:layout",
+     "label": "Line\nNumbers",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "toggleLineNumbers",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.hyphenation",
+   "cluster": "page",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:layout",
+     "label": "Hyphenation",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Hyphenation",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.wrapping",
+   "cluster": "page",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:layout",
+     "label": "Wrapping",
+     "enabled": false
+    }
+   ],
+   "wo": {
+    "match": "Wrapping",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.bring-forward",
+   "cluster": "page",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:layout",
+     "label": "Bring\nForward",
+     "enabled": false
+    }
+   ],
+   "wo": {
+    "match": "objectOp",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.send-backward",
+   "cluster": "page",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:layout",
+     "label": "Send\nBackward",
+     "enabled": false
+    }
+   ],
+   "wo": {
+    "match": "objectOp",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.align",
+   "cluster": "page",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:layout",
+     "label": "Align",
+     "enabled": false
+    }
+   ],
+   "wo": {
+    "match": "Align",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.group",
+   "cluster": "page",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:layout",
+     "label": "Group",
+     "enabled": false
+    }
+   ],
+   "wo": {
+    "match": "objectOp",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.merge-shapes",
+   "cluster": "page",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:layout",
+     "label": "Merge\nShapes",
+     "enabled": false
+    }
+   ],
+   "wo": {
+    "match": "btn-mergeshapes",
+    "where": "tab:draw"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.watermark",
+   "cluster": "page",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:layout",
+     "label": "Watermark",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "toggleWatermark",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.page-color",
+   "cluster": "page",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:layout",
+     "label": "Page\nColor",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "pagecolor",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.colors",
+   "cluster": "page",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:layout",
+     "label": "Colors",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "themecolors",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "table.table-of-contents",
+   "cluster": "table",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:links",
+     "label": "Table of\nContents",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-toc",
+    "where": "tab:references"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "references.add-text",
+   "cluster": "references",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:links",
+     "label": "Add Text",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-addtext",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "table.update-table",
+   "cluster": "table",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:links",
+     "label": "Update Table",
+     "enabled": true
+    },
+    {
+     "surface": "tab:links",
+     "label": "Update Table",
+     "enabled": false
+    }
+   ],
+   "wo": {
+    "match": "updateToc",
+    "where": "tab:references"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "references.footnote",
+   "cluster": "references",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:links",
+     "label": "Footnote",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "insertFootnote",
+    "where": "tab:references"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "references.link",
+   "cluster": "references",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:links",
+     "label": "Link",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "link",
+    "where": "tab:references"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "references.bookmark",
+   "cluster": "references",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:links",
+     "label": "Bookmark",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "bookmark",
+    "where": "tab:references"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "references.caption",
+   "cluster": "references",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:links",
+     "label": "Caption",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "insertCaption",
+    "where": "tab:references"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "references.cross-reference",
+   "cluster": "references",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:links",
+     "label": "Cross-reference",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "openCrossref",
+    "where": "tab:references"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "table.table-of-figures",
+   "cluster": "table",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:links",
+     "label": "Table of Figures",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "insertToF",
+    "where": "tab:references"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "review.co-editing-mode",
+   "cluster": "review",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:review",
+     "label": "Co-editing\nMode",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "coedit-mode",
+    "where": "tab:collaboration"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "review.add-comment",
+   "cluster": "review",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:review",
+     "label": "Add\nComment",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-comment",
+    "where": "tab:collaboration"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "review.delete",
+   "cluster": "review",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:review",
+     "label": "Delete",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "deleteComment",
+    "where": "tab:collaboration"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "review.resolve",
+   "cluster": "review",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:review",
+     "label": "Resolve",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "resolveComment",
+    "where": "tab:collaboration"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "review.track-changes",
+   "cluster": "review",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:review",
+     "label": "Track\nChanges",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-track-changes",
+    "where": "tab:collaboration"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "review.display-mode",
+   "cluster": "review",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:review",
+     "label": "Display\nMode",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "displayMode",
+    "where": "tab:collaboration"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "review.previous",
+   "cluster": "review",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:review",
+     "label": "Previous",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "prevTrackedChange",
+    "where": "tab:collaboration"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "review.next",
+   "cluster": "review",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:review",
+     "label": "Next",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "nextTrackedChange",
+    "where": "tab:collaboration"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "review.accept",
+   "cluster": "review",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:review",
+     "label": "Accept",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "acceptTrackedChange",
+    "where": "tab:collaboration"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "review.reject",
+   "cluster": "review",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:review",
+     "label": "Reject",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "rejectTrackedChange",
+    "where": "tab:collaboration"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "review.compare",
+   "cluster": "review",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:review",
+     "label": "Compare",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "compareVersion",
+    "where": "tab:collaboration"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "review.combine",
+   "cluster": "review",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:review",
+     "label": "Combine",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "combineRevisions",
+    "where": "tab:collaboration"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "review.chat",
+   "cluster": "review",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:review",
+     "label": "Chat",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "toggleChat",
+    "where": "tab:collaboration"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "file.mail-merge",
+   "cluster": "file",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:review",
+     "label": "Mail\nMerge",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "mailMerge",
+    "where": "tab:collaboration"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "protect.encrypt",
+   "cluster": "protect",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:protect",
+     "label": "Encrypt",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "protectDialog",
+    "where": "tab:protection"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "protect.protect-document",
+   "cluster": "protect",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:protect",
+     "label": "Protect\nDocument",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "restrictEditing",
+    "where": "tab:protection"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "view.headings",
+   "cluster": "view",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:view",
+     "label": "Headings",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-view-headings",
+    "where": "tab:view"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "view.fit-to-page",
+   "cluster": "view",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:view",
+     "label": "Fit To Page",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-view-fit",
+    "where": "tab:view"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "view.fit-to-width",
+   "cluster": "view",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:view",
+     "label": "Fit To Width",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-view-fit-width",
+    "where": "tab:view"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "view.zoom-to-100",
+   "cluster": "view",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:view",
+     "label": "Zoom to 100%",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-view-zoom100",
+    "where": "tab:view"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "view.multiple-pages",
+   "cluster": "view",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:view",
+     "label": "Multiple Pages",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-view-multipages",
+    "where": "tab:view"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "view.interface-theme",
+   "cluster": "view",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:view",
+     "label": "Interface\nTheme",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "view-theme-select",
+    "where": "tab:view"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "view.dark-document",
+   "cluster": "view",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:view",
+     "label": "Dark\nDocument",
+     "enabled": false
+    }
+   ],
+   "wo": {
+    "match": "btn-view-darkdoc",
+    "where": "tab:view"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "macros.macros",
+   "cluster": "macros",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:view",
+     "label": "Macros",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-macro-menu",
+    "where": "tab:view"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "macros.record-macro",
+   "cluster": "macros",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:view",
+     "label": "Record macro",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Record macro",
+    "where": "menu:btn-macro-menu"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "view.pause-recording",
+   "cluster": "view",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:view",
+     "label": "Pause recording",
+     "enabled": false
+    }
+   ],
+   "wo": {
+    "match": "Pause recording",
+    "where": "menu:btn-macro-menu"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "plugins.plugin-manager",
+   "cluster": "plugins",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:plugins",
+     "label": "Plugin\nManager",
+     "enabled": true
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  },
+  {
+   "feature": "plugins.background-plugins",
+   "cluster": "plugins",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:plugins",
+     "label": "Background\nplugins",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-bgplugins",
+    "where": "tab:plugins"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "image.photo-editor",
+   "cluster": "image",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:plugins",
+     "label": "Photo\nEditor",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "photoEditor",
+    "where": "tab:plugins"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "plugins.youtube",
+   "cluster": "plugins",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:plugins",
+     "label": "YouTube",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "pluginUnavailable",
+    "where": "tab:plugins"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "plugins.ocr",
+   "cluster": "plugins",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:plugins",
+     "label": "OCR",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "ocrRun",
+    "where": "tab:plugins"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "plugins.translator",
+   "cluster": "plugins",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:plugins",
+     "label": "Translator",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "aiTranslate",
+    "where": "tab:plugins"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "plugins.mendeley",
+   "cluster": "plugins",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:plugins",
+     "label": "Mendeley",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "pluginUnavailable",
+    "where": "tab:plugins"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "review.thesaurus",
+   "cluster": "review",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:plugins",
+     "label": "Thesaurus",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "aiRewrite",
+    "where": "tab:plugins"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "plugins.highlight-code",
+   "cluster": "plugins",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:plugins",
+     "label": "Highlight\ncode",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "code",
+    "where": "tab:plugins"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "plugins.zotero",
+   "cluster": "plugins",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:plugins",
+     "label": "Zotero",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "pluginUnavailable",
+    "where": "tab:plugins"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "plugins.speech",
+   "cluster": "plugins",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:plugins",
+     "label": "Speech",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-speech",
+    "where": "tab:view"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "plugins.speech-input",
+   "cluster": "plugins",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:plugins",
+     "label": "Speech\ninput",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "dictate",
+    "where": "tab:plugins"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "headerfooter.page-number",
+   "cluster": "headerfooter",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:headerfooter",
+     "label": "Page\nNumber",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-hf-pagenumber",
+    "where": "tab:header-footer"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "headerfooter.date-time",
+   "cluster": "headerfooter",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:headerfooter",
+     "label": "Date &\nTime",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-datetime",
+    "where": "tab:insert"
+   },
+   "level": 3,
+   "evidence": [
+    "L3 roundtrip ok [btn-datetime]: marker \"2026-10-27\" survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "headerfooter.field",
+   "cluster": "headerfooter",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:headerfooter",
+     "label": "Field",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-field",
+    "where": "tab:insert"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "headerfooter.close",
+   "cluster": "headerfooter",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:headerfooter",
+     "label": "Close",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-hf-close",
+    "where": "tab:header-footer"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "other.settings",
+   "cluster": "other",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:8713d619-4e06-ab2c-09da-f8ce4a3a70e0",
+     "label": "Settings",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "aiSettings",
+    "where": "tab:ai"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "other.chatbot",
+   "cluster": "other",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:8713d619-4e06-ab2c-09da-f8ce4a3a70e0",
+     "label": "Chatbot",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-ai-assistant",
+    "where": "tab:ai"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "other.summarization",
+   "cluster": "other",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:8713d619-4e06-ab2c-09da-f8ce4a3a70e0",
+     "label": "Summarization",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "aiSummarize",
+    "where": "tab:ai"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "other.translation",
+   "cluster": "other",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:8713d619-4e06-ab2c-09da-f8ce4a3a70e0",
+     "label": "Translation",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "aiTranslate",
+    "where": "tab:ai"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "review.grammar-spelling",
+   "cluster": "review",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:8713d619-4e06-ab2c-09da-f8ce4a3a70e0",
+     "label": "Grammar &\nSpelling",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-ai-grammar",
+    "where": "tab:ai"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "other.create-ai-assistant",
+   "cluster": "other",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:8713d619-4e06-ab2c-09da-f8ce4a3a70e0",
+     "label": "Create AI\nassistant",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "createAiAssistant",
+    "where": "tab:ai"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.chart-elements",
+   "cluster": "chart",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:charttab",
+     "label": "Chart\nElements",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Chart elements ▾",
+    "where": "tab:chart-design"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.edit-data",
+   "cluster": "chart",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:charttab",
+     "label": "Edit\nData",
+     "enabled": true
+    },
+    {
+     "surface": "tab:charttab",
+     "label": "Edit\nData",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "chartEditData",
+    "where": "tab:chart-design"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.update-data",
+   "cluster": "chart",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:charttab",
+     "label": "Update\nData",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "chartUpdateData",
+    "where": "tab:chart-design"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.chart-type",
+   "cluster": "chart",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:charttab",
+     "label": "Chart type",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Chart type ▾",
+    "where": "tab:chart-design"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.advanced-settings",
+   "cluster": "chart",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:charttab",
+     "label": "Advanced settings",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "chartSettings",
+    "where": "tab:chart-design"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.wrapping",
+   "cluster": "chart",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:charttab",
+     "label": "Wrapping",
+     "enabled": false
+    }
+   ],
+   "wo": {
+    "match": "Wrapping",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.width",
+   "cluster": "chart",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:charttab",
+     "label": "Width",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "chart-width-input",
+    "where": "tab:chart-design"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.height",
+   "cluster": "chart",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:charttab",
+     "label": "Height",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "chart-height-input",
+    "where": "tab:chart-design"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.3d-rotation",
+   "cluster": "chart",
+   "kind": "control",
+   "oo": [
+    {
+     "surface": "tab:charttab",
+     "label": "3D\nrotation",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "chart3d",
+    "where": "tab:chart-design"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.insert-page-break",
+   "cluster": "insert",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:breaks",
+     "label": "Insert page break",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Insert page break",
+    "where": "menu:Breaks"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.insert-column-break",
+   "cluster": "insert",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:breaks",
+     "label": "Insert column break",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Insert column break",
+    "where": "menu:Breaks"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.insert-section-break",
+   "cluster": "insert",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:breaks",
+     "label": "Insert section break",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Insert section break",
+    "where": "menu:Breaks"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "table.insert-custom-table",
+   "cluster": "table",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:table",
+     "label": "Insert custom table",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-table",
+    "where": "tab:insert"
+   },
+   "level": 3,
+   "evidence": [
+    "L3 roundtrip ok [btn-table]: marker /<table\\b/ survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "table.draw-table",
+   "cluster": "table",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:table",
+     "label": "Draw table",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Draw table",
+    "where": "menu:Table ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "table.erase-table",
+   "cluster": "table",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:table",
+     "label": "Erase table",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Erase table",
+    "where": "menu:Table ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "table.convert-text-to-table",
+   "cluster": "table",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:table",
+     "label": "Convert Text to Table",
+     "enabled": false
+    }
+   ],
+   "wo": {
+    "match": "Convert Text to Table…",
+    "where": "menu:Table ▾"
+   },
+   "level": 3,
+   "evidence": [
+    "L3 roundtrip ok [convertTextToTable]: marker /<table\\b/ survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "insert.insert-spreadsheet",
+   "cluster": "insert",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:table",
+     "label": "Insert Spreadsheet",
+     "enabled": true
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  },
+  {
+   "feature": "insert.more-symbols",
+   "cluster": "insert",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:equation\n\n \n \nsymbol",
+     "label": "More symbols",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Symbols ▾",
+    "where": "tab:insert"
+   },
+   "level": 3,
+   "evidence": [
+    "L3 roundtrip ok [btn-symbol]: marker \"§\" survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "insert.symbols",
+   "cluster": "insert",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:equation",
+     "label": "Symbols",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Symbols ▾",
+    "where": "tab:insert"
+   },
+   "level": 3,
+   "evidence": [
+    "L3 roundtrip ok [btn-symbol]: marker \"§\" survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "insert.fractions",
+   "cluster": "insert",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:equation",
+     "label": "Fractions",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Fractions",
+    "where": "menu:Symbols ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.scripts",
+   "cluster": "insert",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:equation",
+     "label": "Scripts",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Scripts",
+    "where": "menu:Symbols ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.radicals",
+   "cluster": "insert",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:equation",
+     "label": "Radicals",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Radicals",
+    "where": "menu:Symbols ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.integrals",
+   "cluster": "insert",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:equation",
+     "label": "Integrals",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Integrals",
+    "where": "menu:Symbols ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.large-operators",
+   "cluster": "insert",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:equation",
+     "label": "Large operators",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Large operators",
+    "where": "menu:Symbols ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.brackets",
+   "cluster": "insert",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:equation",
+     "label": "Brackets",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Brackets",
+    "where": "menu:Symbols ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.functions",
+   "cluster": "insert",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:equation",
+     "label": "Functions",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Functions",
+    "where": "menu:Symbols ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.accents",
+   "cluster": "insert",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:equation",
+     "label": "Accents",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Accents",
+    "where": "menu:Symbols ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.limits-and-logarithms",
+   "cluster": "insert",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:equation",
+     "label": "Limits and logarithms",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Limits and logarithms",
+    "where": "menu:Symbols ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.operators",
+   "cluster": "insert",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:equation",
+     "label": "Operators",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Operators",
+    "where": "menu:Symbols ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.matrices",
+   "cluster": "insert",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:equation",
+     "label": "Matrices",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Matrices",
+    "where": "menu:Symbols ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.last-custom",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:margins",
+     "label": "Last Custom",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Last Custom",
+    "where": "menu:Margins"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.normal",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:margins",
+     "label": "Normal",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Normal",
+    "where": "menu:Margins"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.narrow",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:margins",
+     "label": "Narrow",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Narrow",
+    "where": "menu:Margins"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.moderate",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:margins",
+     "label": "Moderate",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Moderate",
+    "where": "menu:Margins"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.wide",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:margins",
+     "label": "Wide",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Wide",
+    "where": "menu:Margins"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.custom-margins",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:margins",
+     "label": "Custom margins",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Custom margins",
+    "where": "menu:Margins"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.us-letter",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:size",
+     "label": "US Letter",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Letter",
+    "where": "menu:Size"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.us-legal",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:size",
+     "label": "US Legal",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Legal",
+    "where": "menu:Size"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.a4",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:size",
+     "label": "A4",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "A4",
+    "where": "menu:Size"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.a5",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:size",
+     "label": "A5",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "A5",
+    "where": "menu:Size"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.b5",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:size",
+     "label": "B5",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "B5",
+    "where": "menu:Size"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.envelope-10",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:size",
+     "label": "Envelope #10",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Envelope #10",
+    "where": "menu:Size"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.envelope-dl",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:size",
+     "label": "Envelope DL",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Envelope DL",
+    "where": "menu:Size"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.tabloid",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:size",
+     "label": "Tabloid",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Tabloid",
+    "where": "menu:Size"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.a3",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:size",
+     "label": "A3",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "A3",
+    "where": "menu:Size"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.tabloid-oversize",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:size",
+     "label": "Tabloid Oversize",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Tabloid Oversize",
+    "where": "menu:Size"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.roc-16k",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:size",
+     "label": "ROC 16K",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "ROC 16K",
+    "where": "menu:Size"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.envelope-choukei-3",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:size",
+     "label": "Envelope Choukei 3",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Envelope Choukei 3",
+    "where": "menu:Size"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.super-b-a3",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:size",
+     "label": "Super B/A3",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Super B/A3",
+    "where": "menu:Size"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.custom-page-size",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:size",
+     "label": "Custom page size",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Custom page size",
+    "where": "menu:Size"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.one",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:columns",
+     "label": "One",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "One",
+    "where": "menu:Columns"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.two",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:columns",
+     "label": "Two",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Two",
+    "where": "menu:Columns"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.three",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:columns",
+     "label": "Three",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Three",
+    "where": "menu:Columns"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.left",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:columns",
+     "label": "Left",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Left",
+    "where": "menu:Columns"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.right",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:columns",
+     "label": "Right",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Right",
+    "where": "menu:Columns"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.custom-columns",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:columns",
+     "label": "Custom columns",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Custom columns",
+    "where": "menu:Columns"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.none",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:hyphenation",
+     "label": "None",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "None",
+    "where": "menu:Hyphenation"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.automatic",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:hyphenation",
+     "label": "Automatic",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Automatic",
+    "where": "menu:Hyphenation"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "page.hyphenation-options",
+   "cluster": "page",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:hyphenation",
+     "label": "Hyphenation options",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Hyphenation options",
+    "where": "menu:Hyphenation"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.axes",
+   "cluster": "chart",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:chart\nelements",
+     "label": "Axes",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Axes",
+    "where": "menu:Chart elements ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.axis-titles",
+   "cluster": "chart",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:chart\nelements",
+     "label": "Axis Titles",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Axis Titles",
+    "where": "menu:Chart elements ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.chart-title",
+   "cluster": "chart",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:chart\nelements",
+     "label": "Chart title",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Chart title",
+    "where": "menu:Chart elements ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.data-labels",
+   "cluster": "chart",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:chart\nelements",
+     "label": "Data labels",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Data labels",
+    "where": "menu:Chart elements ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.error-bars",
+   "cluster": "chart",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:chart\nelements",
+     "label": "Error Bars",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Error Bars",
+    "where": "menu:Chart elements ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.gridlines",
+   "cluster": "chart",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:chart\nelements",
+     "label": "Gridlines",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "btn-gridlines",
+    "where": "tab:view"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.legend",
+   "cluster": "chart",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:chart\nelements",
+     "label": "Legend",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Legend",
+    "where": "menu:Chart elements ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.trendline",
+   "cluster": "chart",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:chart\nelements",
+     "label": "Trendline",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Trendline",
+    "where": "menu:Chart elements ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "chart.up-down-bars",
+   "cluster": "chart",
+   "kind": "menu-item",
+   "oo": [
+    {
+     "surface": "menu:chart\nelements",
+     "label": "Up/Down Bars",
+     "enabled": true
+    }
+   ],
+   "wo": {
+    "match": "Up/Down Bars",
+    "where": "menu:Chart elements ▾"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "insert.dlg-date-time",
+   "cluster": "insert",
+   "kind": "dialog",
+   "oo": [
+    {
+     "surface": "dialog:Date & time",
+     "trigger": "TextArt",
+     "label": "Date & time",
+     "fields": [
+      "Update automatically"
+     ],
+     "buttons": [
+      "Set as default",
+      "OK",
+      "Cancel"
+     ]
+    }
+   ],
+   "wo": {
+    "match": "btn-datetime",
+    "where": "tab:insert"
+   },
+   "level": 3,
+   "evidence": [
+    "1 OO fields: Update automatically",
+    "L3 roundtrip ok [btn-datetime]: marker \"2026-10-27\" survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "insert.dlg-symbol",
+   "cluster": "insert",
+   "kind": "dialog",
+   "oo": [
+    {
+     "surface": "dialog:Symbol",
+     "trigger": "menu-item:More symbols",
+     "label": "Symbol",
+     "fields": [
+      "Font",
+      "Range"
+     ],
+     "buttons": [
+      "Symbols",
+      "Special characters",
+      "Insert",
+      "Close"
+     ]
+    },
+    {
+     "surface": "dialog:Symbol",
+     "trigger": "menu-item:More symbols",
+     "label": "Symbol",
+     "fields": [
+      "Font",
+      "Range"
+     ],
+     "buttons": [
+      "Symbols",
+      "Special characters",
+      "Insert",
+      "Close"
+     ]
+    }
+   ],
+   "wo": {
+    "match": "btn-symbol",
+    "where": "tab:insert"
+   },
+   "level": 3,
+   "evidence": [
+    "2 OO fields: Font, Range",
+    "2 OO fields: Font, Range",
+    "L3 roundtrip ok [btn-symbol]: marker \"§\" survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "page.dlg-margins",
+   "cluster": "page",
+   "kind": "dialog",
+   "oo": [
+    {
+     "surface": "dialog:Margins",
+     "trigger": "menu-item:Custom margins",
+     "label": "Margins",
+     "fields": [
+      "Margins",
+      "Top",
+      "Bottom",
+      "Left",
+      "Right",
+      "Gutter position",
+      "Orientation",
+      "Multiple pages"
+     ],
+     "buttons": [
+      "OK",
+      "Cancel"
+     ]
+    },
+    {
+     "surface": "dialog:Margins",
+     "trigger": "menu-item:Custom margins",
+     "label": "Margins",
+     "fields": [
+      "Margins",
+      "Top",
+      "Bottom",
+      "Left",
+      "Right",
+      "Gutter position",
+      "Orientation",
+      "Multiple pages"
+     ],
+     "buttons": [
+      "OK",
+      "Cancel"
+     ]
+    }
+   ],
+   "wo": {
+    "match": "Margins",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": [
+    "8 OO fields: Margins, Top, Bottom, Left, Right, Gutter position, Orientation, Multiple pages",
+    "8 OO fields: Margins, Top, Bottom, Left, Right, Gutter position, Orientation, Multiple pages"
+   ]
+  },
+  {
+   "feature": "page.dlg-page-size",
+   "cluster": "page",
+   "kind": "dialog",
+   "oo": [
+    {
+     "surface": "dialog:Page size",
+     "trigger": "menu-item:Custom page size",
+     "label": "Page size",
+     "fields": [
+      "Preset",
+      "Width",
+      "Height"
+     ],
+     "buttons": [
+      "OK",
+      "Cancel"
+     ]
+    },
+    {
+     "surface": "dialog:Page size",
+     "trigger": "menu-item:Custom page size",
+     "label": "Page size",
+     "fields": [
+      "Preset",
+      "Width",
+      "Height"
+     ],
+     "buttons": [
+      "OK",
+      "Cancel"
+     ]
+    }
+   ],
+   "wo": {
+    "match": "Size",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": [
+    "3 OO fields: Preset, Width, Height",
+    "3 OO fields: Preset, Width, Height"
+   ]
+  },
+  {
+   "feature": "page.dlg-columns",
+   "cluster": "page",
+   "kind": "dialog",
+   "oo": [
+    {
+     "surface": "dialog:Columns",
+     "trigger": "menu-item:Custom columns",
+     "label": "Columns",
+     "fields": [
+      "Number of columns",
+      "1",
+      "2",
+      "Equal column width",
+      "Column divider"
+     ],
+     "buttons": [
+      "OK",
+      "Cancel"
+     ]
+    },
+    {
+     "surface": "dialog:Columns",
+     "trigger": "menu-item:Custom columns",
+     "label": "Columns",
+     "fields": [
+      "Number of columns",
+      "1",
+      "2",
+      "Equal column width",
+      "Column divider"
+     ],
+     "buttons": [
+      "OK",
+      "Cancel"
+     ]
+    }
+   ],
+   "wo": {
+    "match": "Columns",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": [
+    "5 OO fields: Number of columns, 1, 2, Equal column width, Column divider",
+    "5 OO fields: Number of columns, 1, 2, Equal column width, Column divider"
+   ]
+  },
+  {
+   "feature": "page.dlg-hyphenation",
+   "cluster": "page",
+   "kind": "dialog",
+   "oo": [
+    {
+     "surface": "dialog:Hyphenation",
+     "trigger": "menu-item:Hyphenation options",
+     "label": "Hyphenation",
+     "fields": [
+      "Automatically hyphenate document",
+      "Hyphenate words in CAPS"
+     ],
+     "buttons": [
+      "OK",
+      "Cancel"
+     ]
+    },
+    {
+     "surface": "dialog:Hyphenation",
+     "trigger": "menu-item:Hyphenation options",
+     "label": "Hyphenation",
+     "fields": [
+      "Automatically hyphenate document",
+      "Hyphenate words in CAPS"
+     ],
+     "buttons": [
+      "OK",
+      "Cancel"
+     ]
+    }
+   ],
+   "wo": {
+    "match": "Hyphenation",
+    "where": "tab:layout"
+   },
+   "level": 1,
+   "evidence": [
+    "2 OO fields: Automatically hyphenate document, Hyphenate words in CAPS",
+    "2 OO fields: Automatically hyphenate document, Hyphenate words in CAPS"
+   ]
+  },
+  {
+   "feature": "references.dlg-bookmarks",
+   "cluster": "references",
+   "kind": "dialog",
+   "oo": [
+    {
+     "surface": "dialog:Bookmarks",
+     "trigger": "Link",
+     "label": "Bookmarks",
+     "fields": [
+      "Sort by",
+      "Hidden bookmarks"
+     ],
+     "buttons": [
+      "Add",
+      "Go to",
+      "Get link",
+      "Delete",
+      "Close"
+     ]
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": [
+    "2 OO fields: Sort by, Hidden bookmarks"
+   ]
+  },
+  {
+   "feature": "references.dlg-insert-caption",
+   "cluster": "references",
+   "kind": "dialog",
+   "oo": [
+    {
+     "surface": "dialog:Insert caption",
+     "trigger": "Bookmark",
+     "label": "Insert caption",
+     "fields": [
+      "Caption",
+      "Insert",
+      "Label",
+      "Exclude label from caption",
+      "Numbering",
+      "Include chapter number",
+      "Chapter starts with style",
+      "Use separator"
+     ],
+     "buttons": [
+      "Add label",
+      "Delete label",
+      "OK",
+      "Cancel"
+     ]
+    }
+   ],
+   "wo": {
+    "match": "insertCaption",
+    "where": "tab:references"
+   },
+   "level": 1,
+   "evidence": [
+    "8 OO fields: Caption, Insert, Label, Exclude label from caption, Numbering, Include chapter number, Chapter starts with style, Use separator"
+   ]
+  },
+  {
+   "feature": "references.dlg-cross-reference",
+   "cluster": "references",
+   "kind": "dialog",
+   "oo": [
+    {
+     "surface": "dialog:Cross-reference",
+     "trigger": "Caption",
+     "label": "Cross-reference",
+     "fields": [
+      "Reference type",
+      "Insert reference to",
+      "Insert as link",
+      "Include above/below",
+      "Separate numbers with"
+     ],
+     "buttons": [
+      "Insert",
+      "Close"
+     ]
+    }
+   ],
+   "wo": {
+    "match": "openCrossref",
+    "where": "tab:references"
+   },
+   "level": 1,
+   "evidence": [
+    "5 OO fields: Reference type, Insert reference to, Insert as link, Include above/below, Separate numbers with"
+   ]
+  },
+  {
+   "feature": "table.dlg-table-of-figures",
+   "cluster": "table",
+   "kind": "dialog",
+   "oo": [
+    {
+     "surface": "dialog:Table of figures",
+     "trigger": "Cross-reference",
+     "label": "Table of figures",
+     "fields": [
+      "Show page numbers",
+      "Right align page numbers",
+      "Leader",
+      "Format table of figures as links",
+      "Build table of figures from",
+      "Include label and number",
+      "Styles"
+     ],
+     "buttons": [
+      "OK",
+      "Cancel"
+     ]
+    }
+   ],
+   "wo": {
+    "match": "insertToF",
+    "where": "tab:references"
+   },
+   "level": 1,
+   "evidence": [
+    "7 OO fields: Show page numbers, Right align page numbers, Leader, Format table of figures as links, Build table of figures from, Include label and number, Styles"
+   ]
+  },
+  {
+   "feature": "table.dlg-table-of-contents",
+   "cluster": "table",
+   "kind": "dialog",
+   "oo": [
+    {
+     "surface": "dialog:Table of contents",
+     "trigger": "menu-item:Settings",
+     "label": "Table of contents",
+     "fields": [
+      "Show page numbers",
+      "Right align page numbers",
+      "Leader",
+      "Format table of contents as links",
+      "Build table of contents from",
+      "Levels",
+      "Styles"
+     ],
+     "buttons": [
+      "OK",
+      "Cancel"
+     ]
+    }
+   ],
+   "wo": {
+    "match": "btn-toc",
+    "where": "tab:references"
+   },
+   "level": 1,
+   "evidence": [
+    "7 OO fields: Show page numbers, Right align page numbers, Leader, Format table of contents as links, Build table of contents from, Levels, Styles"
+   ]
+  },
+  {
+   "feature": "macros.dlg-macros",
+   "cluster": "macros",
+   "kind": "dialog",
+   "oo": [
+    {
+     "surface": "dialog:Macros",
+     "trigger": "Macros",
+     "label": "Macros",
+     "fields": [
+      "Autostart"
+     ],
+     "buttons": [
+      "Run",
+      "Debug",
+      "Copy",
+      "Rename",
+      "Delete",
+      "Save",
+      "Cancel"
+     ]
+    }
+   ],
+   "wo": {
+    "match": "btn-macro-menu",
+    "where": "tab:view"
+   },
+   "level": 1,
+   "evidence": [
+    "1 OO fields: Autostart"
+   ]
+  },
+  {
+   "feature": "headerfooter.dlg-date-time",
+   "cluster": "headerfooter",
+   "kind": "dialog",
+   "oo": [
+    {
+     "surface": "dialog:Date & time",
+     "trigger": "Date &Time",
+     "label": "Date & time",
+     "fields": [
+      "Update automatically"
+     ],
+     "buttons": [
+      "Set as default",
+      "OK",
+      "Cancel"
+     ]
+    }
+   ],
+   "wo": {
+    "match": "btn-datetime",
+    "where": "tab:insert"
+   },
+   "level": 3,
+   "evidence": [
+    "1 OO fields: Update automatically",
+    "L3 roundtrip ok [btn-datetime]: marker \"2026-10-27\" survived html->docx->html"
+   ]
+  },
+  {
+   "feature": "file.back",
+   "cluster": "file",
+   "kind": "backstage-item",
+   "oo": [
+    {
+     "surface": "backstage",
+     "label": "Back"
+    }
+   ],
+   "wo": {
+    "match": "Back",
+    "where": "backstage"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "file.save",
+   "cluster": "file",
+   "kind": "backstage-item",
+   "oo": [
+    {
+     "surface": "backstage",
+     "label": "Save"
+    }
+   ],
+   "wo": {
+    "match": "Save",
+    "where": "backstage"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "file.download-as",
+   "cluster": "file",
+   "kind": "backstage-item",
+   "oo": [
+    {
+     "surface": "backstage",
+     "label": "Download As"
+    }
+   ],
+   "wo": {
+    "match": "Download As",
+    "where": "backstage"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "file.protect",
+   "cluster": "file",
+   "kind": "backstage-item",
+   "oo": [
+    {
+     "surface": "backstage",
+     "label": "Protect"
+    }
+   ],
+   "wo": {
+    "match": "Protect",
+    "where": "backstage"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "file.advanced-settings",
+   "cluster": "file",
+   "kind": "backstage-item",
+   "oo": [
+    {
+     "surface": "backstage",
+     "label": "Advanced Settings"
+    }
+   ],
+   "wo": {
+    "match": "chartSettings",
+    "where": "tab:chart-design"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "file.suggest-a-feature",
+   "cluster": "file",
+   "kind": "backstage-item",
+   "oo": [
+    {
+     "surface": "backstage",
+     "label": "Suggest a Feature"
+    }
+   ],
+   "wo": {
+    "match": "Suggest a feature",
+    "where": "backstage"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "statusbar.word-count",
+   "cluster": "statusbar",
+   "kind": "statusbar-item",
+   "oo": [
+    {
+     "surface": "statusbar",
+     "label": "Word count"
+    },
+    {
+     "surface": "statusbar",
+     "label": "Word count"
+    },
+    {
+     "surface": "statusbar",
+     "label": "Word count"
+    },
+    {
+     "surface": "statusbar",
+     "label": "Word count"
+    }
+   ],
+   "wo": {
+    "match": "sb-word-count",
+    "where": "statusbar"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "statusbar.english-united-states",
+   "cluster": "statusbar",
+   "kind": "statusbar-item",
+   "oo": [
+    {
+     "surface": "statusbar",
+     "label": "English – United States"
+    },
+    {
+     "surface": "statusbar",
+     "label": "English – United States"
+    },
+    {
+     "surface": "statusbar",
+     "label": "English – United States"
+    },
+    {
+     "surface": "statusbar",
+     "label": "English – United States"
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  },
+  {
+   "feature": "statusbar.btn-doc-lang",
+   "cluster": "statusbar",
+   "kind": "statusbar-item",
+   "oo": [
+    {
+     "surface": "statusbar",
+     "label": "btn-doc-lang"
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  },
+  {
+   "feature": "statusbar.asc-gen991",
+   "cluster": "statusbar",
+   "kind": "statusbar-item",
+   "oo": [
+    {
+     "surface": "statusbar",
+     "label": "asc-gen991"
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  },
+  {
+   "feature": "statusbar.btn-doc-spell",
+   "cluster": "statusbar",
+   "kind": "statusbar-item",
+   "oo": [
+    {
+     "surface": "statusbar",
+     "label": "btn-doc-spell"
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  },
+  {
+   "feature": "statusbar.asc-gen989",
+   "cluster": "statusbar",
+   "kind": "statusbar-item",
+   "oo": [
+    {
+     "surface": "statusbar",
+     "label": "asc-gen989"
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  },
+  {
+   "feature": "statusbar.btn-doc-review",
+   "cluster": "statusbar",
+   "kind": "statusbar-item",
+   "oo": [
+    {
+     "surface": "statusbar",
+     "label": "btn-doc-review"
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  },
+  {
+   "feature": "statusbar.asc-gen987",
+   "cluster": "statusbar",
+   "kind": "statusbar-item",
+   "oo": [
+    {
+     "surface": "statusbar",
+     "label": "asc-gen987"
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  },
+  {
+   "feature": "statusbar.status-btn-multiple-pages",
+   "cluster": "statusbar",
+   "kind": "statusbar-item",
+   "oo": [
+    {
+     "surface": "statusbar",
+     "label": "status-btn-multiple-pages"
+    }
+   ],
+   "wo": {
+    "match": "btn-multipage",
+    "where": "statusbar"
+   },
+   "level": 1,
+   "evidence": []
+  },
+  {
+   "feature": "statusbar.btn-zoom-topage",
+   "cluster": "statusbar",
+   "kind": "statusbar-item",
+   "oo": [
+    {
+     "surface": "statusbar",
+     "label": "btn-zoom-topage"
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  },
+  {
+   "feature": "statusbar.btn-zoom-towidth",
+   "cluster": "statusbar",
+   "kind": "statusbar-item",
+   "oo": [
+    {
+     "surface": "statusbar",
+     "label": "btn-zoom-towidth"
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  },
+  {
+   "feature": "statusbar.btn-zoom-down",
+   "cluster": "statusbar",
+   "kind": "statusbar-item",
+   "oo": [
+    {
+     "surface": "statusbar",
+     "label": "btn-zoom-down"
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  },
+  {
+   "feature": "statusbar.btn-zoom-up",
+   "cluster": "statusbar",
+   "kind": "statusbar-item",
+   "oo": [
+    {
+     "surface": "statusbar",
+     "label": "btn-zoom-up"
+    }
+   ],
+   "wo": null,
+   "level": 0,
+   "evidence": []
+  }
+ ]
+}
