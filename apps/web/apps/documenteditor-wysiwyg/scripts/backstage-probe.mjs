@@ -54,7 +54,7 @@ check("(a) File click opens the full-screen backstage overlay", async (page) => 
       vw: window.innerWidth,
       vh: window.innerHeight,
       expanded: document.getElementById("btn-file").getAttribute("aria-expanded"),
-      infoActive: !!ov.querySelector('.backstage-row[data-pane="info"].active'),
+      openActive: !!ov.querySelector('.backstage-row[data-pane="open"].active'),
     };
   });
   if (!st.open) throw new Error("overlay did not open (.open missing)");
@@ -62,7 +62,7 @@ check("(a) File click opens the full-screen backstage overlay", async (page) => 
     throw new Error(`overlay ${st.w}x${st.h} not viewport ${st.vw}x${st.vh}`);
   }
   if (st.expanded !== "true") throw new Error("btn-file aria-expanded not true");
-  if (!st.infoActive) throw new Error("info rail row not active on open");
+  if (!st.openActive) throw new Error("open rail row not active on open (default pane flipped to Recent/Open in CHROME4)");
 });
 
 check("(b) legacy file-menu affordances all survive in the overlay", async (page) => {

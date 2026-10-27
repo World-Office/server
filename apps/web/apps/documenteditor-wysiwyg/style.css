@@ -2411,3 +2411,119 @@ html.light {
   margin: 0 2px;
 }
 
+/* CHROME4-BACKSTAGE-DEEP: real backstage pane content. */
+:root {
+  --bs-row-border: #c8c8d4;
+  --bs-row-hover: #f4f6ff;
+  --bs-row-bg: #ffffff;
+}
+html.light {
+  --bs-row-border: #d5d5de;
+  --bs-row-hover: #f4f6ff;
+  --bs-row-bg: #ffffff;
+}
+.backstage-recent {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 28px;
+  max-width: 620px;
+}
+.backstage-recent-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  background: var(--bs-row-bg);
+  border: 1px solid var(--bs-row-border);
+  border-radius: 4px;
+  font: inherit;
+  color: #22222a;
+  text-align: left;
+  cursor: pointer;
+}
+.backstage-recent-row:hover:not(:disabled),
+.backstage-recent-row:focus-visible {
+  background: var(--bs-row-hover);
+  border-color: var(--accent);
+}
+.backstage-recent-row:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.bs-doc-name {
+  font-weight: 600;
+}
+.bs-doc-meta {
+  color: #6a6a78;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.backstage-recent-empty {
+  color: #6a6a78;
+  margin: 0 0 28px;
+}
+.backstage-subhead {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f1f28;
+  margin: 28px 0 10px;
+}
+.backstage-meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 24px;
+  max-width: 560px;
+}
+.bs-meta-label {
+  color: #6a6a78;
+}
+.bs-meta-value {
+  font-weight: 600;
+  color: #1f1f28;
+}
+.bs-counters {
+  margin-bottom: 24px;
+}
+.backstage-shortcuts {
+  max-width: 560px;
+  border: 1px solid var(--bs-row-border);
+  border-radius: 4px;
+  background: var(--bs-row-bg);
+  overflow: hidden;
+}
+.bs-shortcut-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 9px 14px;
+  border-bottom: 1px solid #e2e2ea;
+}
+.bs-shortcut-row:last-child {
+  border-bottom: none;
+}
+.bs-shortcut-keys kbd {
+  display: inline-block;
+  border: 1px solid var(--bs-row-border);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font: inherit;
+  font-size: 12px;
+  background: #f6f6fa;
+  color: #22222a;
+}
+.bs-shortcut-desc {
+  color: #44444f;
+}
+.backstage-about {
+  margin: 20px 0 0;
+  color: #6a6a78;
+  font-size: 13px;
+}
+.backstage-view[data-pane-view="print"] .backstage-primary {
+  font-size: 17px;
+  padding: 16px 40px;
+}
+
