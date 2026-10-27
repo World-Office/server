@@ -137,32 +137,7 @@
          the 2 contextual ones (hidden until object selection). -->
     <div class="ribbon-tabs" role="tablist">
     <div class="menu ribbon-file">
-      <button type="button" id="btn-file" class="menu-trigger file-tab" aria-haspopup="true" aria-expanded="false" data-i18n="Menu.File">File</button>
-      <ul id="file-menu" class="menu-list" role="menu" aria-labelledby="btn-file" hidden>
-        <li role="none"><button type="button" role="menuitem" data-cmd="closeFileMenu" data-i18n="Menu.Back">Back</button></li>
-        <li role="none"><button type="button" id="btn-new" role="menuitem" data-i18n="Menu.New">New</button></li>
-        <li role="none"><button type="button" id="btn-open" role="menuitem" data-i18n="Menu.Open">Open…</button></li>
-        <li role="none"><button type="button" role="menuitem" data-cmd="saveDocument" data-i18n="Menu.Save">Save</button></li>
-        <li role="none" class="menu-item-export">
-          <button type="button" id="btn-export" role="menuitem" aria-haspopup="true" aria-expanded="false" data-i18n="Menu.Export">Export</button>
-          <ul class="menu-sublist" role="menu" aria-label="Export as" hidden>
-            <li role="none"><button type="button" role="menuitem" data-export="pdf" data-i18n="Menu.ExportPdf">PDF</button></li>
-            <li role="none"><button type="button" role="menuitem" data-export="odt" data-i18n="Menu.ExportOdt">ODT</button></li>
-            <li role="none"><button type="button" role="menuitem" data-export="html" data-i18n="Menu.ExportHtml">HTML</button></li>
-            <li role="none"><button type="button" role="menuitem" data-export="docx" data-i18n="Menu.ExportDocx">DOCX</button></li>
-          </ul>
-        </li>
-        <li role="none" class="menu-sep" aria-hidden="true"></li>
-        <li role="none"><button type="button" id="btn-print" role="menuitem" data-i18n="Menu.Print">Print</button></li>
-        <li role="none"><button type="button" id="btn-history" role="menuitem" data-i18n="Menu.History">History…</button></li>
-        <li role="none"><button type="button" id="btn-ai-review" data-i18n="AI.ChangesTab" role="menuitem">AI changes…</button></li>
-        <li role="none" class="menu-sep" aria-hidden="true"></li>
-        <li role="none"><button type="button" id="btn-fileinfo" role="menuitem" data-i18n="Menu.Info">Info…</button></li>
-        <li role="none"><button type="button" id="btn-fileprotect" role="menuitem" data-i18n="Menu.Protect">Protect document…</button></li>
-        <li role="none"><button type="button" id="btn-filesettings" role="menuitem" data-i18n="Menu.Settings">Settings…</button></li>
-        <li role="none"><button type="button" id="btn-filehelp" role="menuitem" data-i18n="Menu.Help">Help &amp; about</button></li>
-        <li role="none"><button type="button" id="btn-filesuggest" role="menuitem" data-i18n="Menu.Suggest">Suggest a feature…</button></li>
-      </ul>
+      <button type="button" id="btn-file" class="menu-trigger file-tab" aria-haspopup="dialog" aria-controls="backstage-overlay" aria-expanded="false" data-i18n="Menu.File">File</button>
     </div>
     <button type="button" class="ribbon-tab" data-tab="home" role="tab" aria-selected="true" data-i18n="Tab.Home">Home</button>
     <button type="button" class="ribbon-tab" data-tab="insert" role="tab" aria-selected="false" data-i18n="Tab.Insert">Insert</button>
@@ -1154,38 +1129,141 @@
        WO-RIBBON-FLEX). role=status + aria-live=polite: save/progress/error
        messages are announced to screen readers as they change. -->
   <footer class="statusbar">
-    <!-- Far-left: live word/character count (OO: 'Words: 0' far left). -->
-    <button type="button" id="sb-word-count" class="sb status-meta" role="status" aria-live="polite" aria-label="Word and character count — opens document info" title="Word count" data-i18n="Statusbar.Words" data-cmd="showWordCount">0 words</button>
+    <div class="sb-cluster sb-cluster-left">
+      <span id="sb-page-count" class="sb status-meta" role="status" aria-live="polite" aria-atomic="true" aria-label="Page count" data-i18n="Statusbar.PageOf">Page 1 of 0</span>
+      <button type="button" id="sb-word-count" class="sb status-meta" role="status" aria-live="polite" aria-label="Word and character count — opens document info" title="Word count" data-i18n="Statusbar.Words" data-cmd="showWordCount">0 words</button>
+    </div>
     <span id="status" class="status" role="status" aria-live="polite" data-i18n="Status.Ready">Ready</span>
     <!-- Offline indicator: shown (with the edit queue armed) whenever a save
          cannot reach the host; clears automatically on the next success. -->
     <span id="offline-indicator" class="offline-indicator" role="status" aria-live="polite" hidden data-i18n="Status.OfflineIndicator">Offline</span>
     <span class="spacer"></span>
-    <!-- Right cluster (WO-RIBBON-FLEX): flows after the spacer — page
-         indicator, document language, zoom cluster (− slider + fit %),
-         multipage. Order matches the old OO-golden left→right slots. -->
-    <span id="sb-page-count" class="sb status-meta" role="status" aria-live="polite" aria-atomic="true" aria-label="Page count" data-i18n="Statusbar.PageOf">Page 1 of 0</span>
-    <!-- Document language select: drives spellcheck + the editor lang attr. -->
-    <select id="doc-lang" class="sb" title="Document language" aria-label="Document language">
-      <option value="en-US" selected>English (United States)</option>
-      <option value="en-GB">English (United Kingdom)</option>
-      <option value="de-DE">Deutsch (Deutschland)</option>
-    </select>
-    <button class="sb menu-trigger caret-btn" id="doc-lang-caret" data-i18n-title="Menu.LanguageOptions" data-i18n-aria-label="Menu.LanguageOptions" title="Language options" aria-label="Language options">▾</button>
-    <!-- Zoom cluster: − / slider / + / fit / %. The slider is the live zoom
-         control (50%..200%, matches applyZoom). -->
-    <button class="sb" id="btn-zoom-out" data-i18n-title="View.ZoomOut" data-i18n-aria-label="View.ZoomOut" title="Zoom out" aria-label="Zoom out" aria-keyshortcuts="Control+Minus"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5M4.5 7h5"/></svg></button>
-    <span class="sb" id="zoom-wrap">
-    <input type="range" id="zoom-slider" class="zoom-slider" min="50" max="200" step="10" value="100"
-           title="Zoom" aria-label="Zoom level">
-    </span>
-    <button class="sb sb-boxed" id="btn-zoom-in" data-i18n-title="View.ZoomIn" data-i18n-aria-label="View.ZoomIn" title="Zoom in" aria-label="Zoom in" aria-keyshortcuts="Control+Plus"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5M4.5 7h5M7 4.5v5"/></svg></button>
-    <button class="sb" id="btn-zoom-fit" data-i18n-title="View.Fit" data-i18n-aria-label="View.Fit" title="Fit page width" aria-label="Fit page width">⤢</button>
-    <button class="sb" id="btn-zoom-reset" data-i18n-title="View.ZoomReset" data-i18n-aria-label="View.ZoomReset" title="Reset zoom" aria-label="Reset zoom" aria-keyshortcuts="Control+0">100%</button>
-    <span id="sb-zoom-label" class="sb status-meta" role="status" aria-live="polite" aria-label="Zoom percentage" data-i18n="Statusbar.Zoom">100%</span>
-    <button class="sb" id="btn-multipage" data-i18n-title="View.MultiplePages" data-i18n-aria-label="View.MultiplePages" title="Multiple pages view" aria-label="Multiple pages view" aria-pressed="false">▦</button>
-    <button id="sb-track-changes" class="sb" title="Toggle track changes" aria-label="Toggle track changes" aria-pressed="false" data-i18n="Statusbar.TrackChanges">Track Changes</button>
+    <div class="sb-cluster sb-cluster-right">
+      <!-- Language indicator (OO parity): mirrors the document/spellcheck
+           language; click opens the settings dialog language row. -->
+      <button type="button" id="sb-lang" class="sb status-meta" data-i18n-title="FileScreen.LangTitle" data-i18n-aria-label="FileScreen.LangAria" title="Document language" aria-label="Document language">English (United States)</button>
+      <!-- Document language select: drives spellcheck + the editor lang attr. -->
+      <select id="doc-lang" class="sb" title="Document language" aria-label="Document language">
+        <option value="en-US" selected>English (United States)</option>
+        <option value="en-GB">English (United Kingdom)</option>
+        <option value="de-DE">Deutsch (Deutschland)</option>
+      </select>
+      <button class="sb menu-trigger caret-btn" id="doc-lang-caret" data-i18n-title="Menu.LanguageOptions" data-i18n-aria-label="Menu.LanguageOptions" title="Language options" aria-label="Language options">▾</button>
+      <button class="sb" id="btn-multipage" data-i18n-title="View.MultiplePages" data-i18n-aria-label="View.MultiplePages" title="Multiple pages view" aria-label="Multiple pages view" aria-pressed="false">▦</button>
+      <button id="sb-track-changes" class="sb" title="Toggle track changes" aria-label="Toggle track changes" aria-pressed="false" data-i18n="Statusbar.TrackChanges">Track Changes</button>
+      <span class="sb-sep" aria-hidden="true"></span>
+      <!-- Zoom cluster: − / slider / + / fit / %. The slider is the live zoom
+           control (50%..200%, matches applyZoom). -->
+      <button class="sb" id="btn-zoom-out" data-i18n-title="View.ZoomOut" data-i18n-aria-label="View.ZoomOut" title="Zoom out" aria-label="Zoom out" aria-keyshortcuts="Control+Minus"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5M4.5 7h5"/></svg></button>
+      <span class="sb" id="zoom-wrap">
+      <input type="range" id="zoom-slider" class="zoom-slider" min="50" max="200" step="10" value="100"
+             title="Zoom" aria-label="Zoom level">
+      </span>
+      <button class="sb sb-boxed" id="btn-zoom-in" data-i18n-title="View.ZoomIn" data-i18n-aria-label="View.ZoomIn" title="Zoom in" aria-label="Zoom in" aria-keyshortcuts="Control+Plus"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5M4.5 7h5M7 4.5v5"/></svg></button>
+      <button class="sb" id="btn-zoom-fit" data-i18n-title="View.Fit" data-i18n-aria-label="View.Fit" title="Fit page width" aria-label="Fit page width">⤢</button>
+      <button class="sb" id="btn-zoom-reset" data-i18n-title="View.ZoomReset" data-i18n-aria-label="View.ZoomReset" title="Reset zoom" aria-label="Reset zoom" aria-keyshortcuts="Control+0">100%</button>
+      <span id="sb-zoom-label" class="sb status-meta" role="status" aria-live="polite" aria-label="Zoom percentage" data-i18n="Statusbar.Zoom">100%</span>
+    </div>
   </footer>
+
+  <!-- CHROME3-BACKSTAGE-STATUSBAR: OO-style full-screen backstage behind the
+       File tab. Left rail = navigation (same data-cmds/ids as the old
+       #file-menu items), right pane = per-item content with the original
+       buttons (ids preserved so all existing listeners keep working). Opens
+       with the .open class like the dialogs; Esc closes it via DIALOG_IDS. -->
+  <div id="backstage-overlay" class="backstage-overlay" role="dialog" aria-modal="true" aria-labelledby="backstage-title">
+    <aside class="backstage-rail">
+      <div class="backstage-brand" aria-hidden="true">World Office</div>
+      <nav class="backstage-nav" aria-label="File" data-i18n-aria-label="Menu.File">
+        <button type="button" class="backstage-row backstage-back" data-cmd="closeFileMenu" data-i18n="Menu.Back">Back</button>
+        <div class="backstage-group" data-i18n="FileScreen.GroupDoc">Document</div>
+        <button type="button" class="backstage-row" data-pane="new" data-i18n="Menu.New">New</button>
+        <button type="button" class="backstage-row" data-pane="open" data-i18n="Menu.Open">Open…</button>
+        <button type="button" class="backstage-row" data-pane="save" data-i18n="Menu.Save">Save</button>
+        <button type="button" class="backstage-row" data-pane="export" data-i18n="Menu.Export">Download As</button>
+        <div class="backstage-group" data-i18n="FileScreen.GroupInfo">Info</div>
+        <button type="button" class="backstage-row" data-pane="info" data-i18n="FileScreen.NavInfo">Info</button>
+        <button type="button" class="backstage-row" data-pane="history" data-i18n="FileScreen.NavHistory">History</button>
+        <button type="button" class="backstage-row" data-pane="ai" data-i18n="FileScreen.NavAI">AI changes</button>
+        <div class="backstage-group" data-i18n="FileScreen.GroupPrint">Print</div>
+        <button type="button" class="backstage-row" data-pane="print" data-i18n="Menu.Print">Print</button>
+        <div class="backstage-group" data-i18n="FileScreen.GroupHelp">Help &amp; about</div>
+        <button type="button" class="backstage-row" data-pane="settings" data-i18n="FileScreen.NavSettings">Settings</button>
+        <button type="button" class="backstage-row" data-pane="protect" data-i18n="FileScreen.NavProtect">Protect</button>
+        <button type="button" class="backstage-row" data-pane="help" data-i18n="FileScreen.NavHelp">Help &amp; about</button>
+        <button type="button" class="backstage-row" data-pane="suggest" data-i18n="FileScreen.NavSuggest">Suggest a feature</button>
+      </nav>
+    </aside>
+    <section class="backstage-pane">
+      <h1 id="backstage-title" class="visually-hidden" data-i18n="Menu.File">File</h1>
+      <div class="backstage-view" data-pane-view="new" hidden>
+        <h2 data-i18n="FileScreen.TitleNew">New document</h2>
+        <p class="backstage-desc" data-i18n="FileScreen.DescNew">Start over with a blank document.</p>
+        <button type="button" id="btn-new" class="backstage-primary" data-i18n="Menu.New">New</button>
+      </div>
+      <div class="backstage-view" data-pane-view="open" hidden>
+        <h2 data-i18n="FileScreen.TitleOpen">Open a document</h2>
+        <p class="backstage-desc" data-i18n="FileScreen.DescOpen">Open a document from your files.</p>
+        <button type="button" id="btn-open" class="backstage-primary" data-i18n="Menu.Open">Open…</button>
+      </div>
+      <div class="backstage-view" data-pane-view="save" hidden>
+        <h2 data-i18n="FileScreen.TitleSave">Save</h2>
+        <p class="backstage-desc" data-i18n="FileScreen.DescSave">Save your changes to the current document.</p>
+        <button type="button" class="backstage-primary" data-cmd="saveDocument" data-i18n="Menu.Save">Save</button>
+      </div>
+      <div class="backstage-view" data-pane-view="export" hidden>
+        <h2 data-i18n="FileScreen.TitleExport">Download as</h2>
+        <p class="backstage-desc" data-i18n="FileScreen.DescExport">Download a copy in another format.</p>
+        <button type="button" id="btn-export" class="backstage-primary" aria-haspopup="true" aria-expanded="false" data-i18n="Menu.Export">Download As</button>
+        <ul id="export-sub" class="menu-sublist" role="menu" aria-label="Export as">
+          <li role="none"><button type="button" role="menuitem" data-export="pdf" data-i18n="Menu.ExportPdf">PDF</button></li>
+          <li role="none"><button type="button" role="menuitem" data-export="odt" data-i18n="Menu.ExportOdt">ODT</button></li>
+          <li role="none"><button type="button" role="menuitem" data-export="html" data-i18n="Menu.ExportHtml">HTML</button></li>
+          <li role="none"><button type="button" role="menuitem" data-export="docx" data-i18n="Menu.ExportDocx">DOCX</button></li>
+        </ul>
+      </div>
+      <div class="backstage-view" data-pane-view="info" hidden>
+        <h2 data-i18n="FileScreen.TitleInfo">Document info</h2>
+        <p class="backstage-desc" data-i18n="FileScreen.DescInfo">See document details, statistics and language settings.</p>
+        <button type="button" id="btn-fileinfo" class="backstage-primary" data-i18n="Menu.Info">Info…</button>
+      </div>
+      <div class="backstage-view" data-pane-view="history" hidden>
+        <h2 data-i18n="FileScreen.TitleHistory">Version history</h2>
+        <p class="backstage-desc" data-i18n="FileScreen.DescHistory">Browse and restore earlier versions.</p>
+        <button type="button" id="btn-history" class="backstage-primary" data-i18n="Menu.History">History…</button>
+      </div>
+      <div class="backstage-view" data-pane-view="ai" hidden>
+        <h2 data-i18n="FileScreen.TitleAI">AI changes</h2>
+        <p class="backstage-desc" data-i18n="FileScreen.DescAI">Review AI-suggested edits to this document.</p>
+        <button type="button" id="btn-ai-review" class="backstage-primary" data-i18n="AI.ChangesTab">AI changes…</button>
+      </div>
+      <div class="backstage-view" data-pane-view="print" hidden>
+        <h2 data-i18n="FileScreen.TitlePrint">Print</h2>
+        <p class="backstage-desc" data-i18n="FileScreen.DescPrint">Print the current document or export it as PDF.</p>
+        <button type="button" id="btn-print" class="backstage-primary" data-i18n="Menu.Print">Print</button>
+      </div>
+      <div class="backstage-view" data-pane-view="settings" hidden>
+        <h2 data-i18n="FileScreen.TitleSettings">Settings</h2>
+        <p class="backstage-desc" data-i18n="FileScreen.DescSettings">Spellcheck, theme, language and zoom defaults.</p>
+        <button type="button" id="btn-filesettings" class="backstage-primary" data-i18n="Menu.Settings">Settings…</button>
+      </div>
+      <div class="backstage-view" data-pane-view="protect" hidden>
+        <h2 data-i18n="FileScreen.TitleProtect">Protect document</h2>
+        <p class="backstage-desc" data-i18n="FileScreen.DescProtect">Restrict editing and protect the document.</p>
+        <button type="button" id="btn-fileprotect" class="backstage-primary" data-i18n="Menu.Protect">Protect document…</button>
+      </div>
+      <div class="backstage-view" data-pane-view="help" hidden>
+        <h2 data-i18n="FileScreen.TitleHelp">Help &amp; about</h2>
+        <p class="backstage-desc" data-i18n="FileScreen.DescHelp">Keyboard shortcuts, documentation and product info.</p>
+        <button type="button" id="btn-filehelp" class="backstage-primary" data-i18n="Menu.Help">Help &amp; about</button>
+      </div>
+      <div class="backstage-view" data-pane-view="suggest" hidden>
+        <h2 data-i18n="FileScreen.TitleSuggest">Suggest a feature</h2>
+        <p class="backstage-desc" data-i18n="FileScreen.DescSuggest">Tell us which feature you are missing.</p>
+        <button type="button" id="btn-filesuggest" class="backstage-primary" data-i18n="Menu.Suggest">Suggest a feature…</button>
+      </div>
+    </section>
+  </div>
 
   <!-- Right-click context menu (OO parity geometry). Honest subset: only
        actions WO can really perform — OO's spellcheck/language/style/AI rows

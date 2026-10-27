@@ -1117,7 +1117,7 @@ select.sb#doc-lang {
   color: var(--text);
   cursor: pointer;
 }
-html.light .statusbar { background: #fdfdfd; }  /* OO golden: near-white bar */
+html.light .statusbar { background: #f3f2f1; }  /* OO parity: light-gray bar */
 .statusbar .spacer { flex: 1; }
 .statusbar #word-count.sb { white-space: nowrap; }
 .statusbar button {
@@ -2230,5 +2230,184 @@ main.rp-open { padding-right: 344px; }
   text-decoration-color: #e53e3e;
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
+}
+
+/* ------------------------------------------------------------------
+   CHROME3-BACKSTAGE-STATUSBAR
+   OO-style backstage behind the File tab + statusbar cluster layout.
+   ------------------------------------------------------------------ */
+:root {
+  --backstage-rail: #32324a;
+  --backstage-rail-text: #e8e8f0;
+  --backstage-rail-muted: #a2a2bd;
+}
+html.light {
+  --backstage-rail: #40404d;
+  --backstage-rail-text: #f2f2f8;
+  --backstage-rail-muted: #b6b6c8;
+}
+
+.backstage-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 95; /* below .dialog-overlay (100): pane buttons stack dialogs on top */
+  display: none;
+  background: var(--paper);
+  color: #22222a; /* pane stays paper-white with dark text in both themes (OO) */
+}
+.backstage-overlay.open { display: flex; }
+
+.backstage-rail {
+  width: 260px;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  background: var(--backstage-rail);
+  color: var(--backstage-rail-text);
+  padding: 16px 0 24px;
+  overflow-y: auto;
+}
+.backstage-brand {
+  padding: 4px 24px 14px;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #fff;
+}
+.backstage-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px;
+}
+.backstage-group {
+  margin: 14px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--backstage-rail-muted);
+}
+.backstage-row {
+  appearance: none;
+  border: none;
+  border-left: 3px solid transparent;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  padding: 9px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.backstage-row:hover,
+.backstage-row:focus-visible {
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+}
+.backstage-row.active {
+  background: rgba(255, 255, 255, 0.06);
+  border-left-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.backstage-back {
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.backstage-pane {
+  flex: 1;
+  overflow-y: auto;
+  padding: 44px 56px;
+}
+.backstage-view h2 {
+  margin: 0 0 10px;
+  font-size: 26px;
+  font-weight: 300;
+  color: #1f1f28;
+}
+.backstage-desc {
+  margin: 0 0 28px;
+  max-width: 560px;
+  color: #6a6a78;
+}
+.backstage-primary {
+  appearance: none;
+  font: inherit;
+  font-size: 15px;
+  padding: 12px 30px;
+  background: #fff;
+  color: #22222a;
+  border: 1px solid #c8c8d4;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.backstage-primary:hover,
+.backstage-primary:focus-visible {
+  border-color: var(--accent);
+  background: #f4f6ff;
+  outline: none;
+}
+
+/* Export formats render as a static row of buttons inside the pane —
+   must beat the author-level `.menu-sublist[hidden]` display:none. */
+.backstage-view .menu-sublist,
+.backstage-view .menu-sublist[hidden] {
+  position: static;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+  margin: 16px 0 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  z-index: auto;
+}
+.backstage-view .menu-sublist button {
+  display: inline-block;
+  width: auto;
+  padding: 10px 22px;
+  background: #fff;
+  color: #22222a;
+  border: 1px solid #c8c8d4;
+  border-radius: 4px;
+  font-size: 14px;
+}
+.backstage-view .menu-sublist button:hover,
+.backstage-view .menu-sublist button:focus-visible {
+  background: #f4f6ff;
+  color: #22222a;
+  border-color: var(--accent);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Statusbar OO cluster layout: page/word left, language + view + zoom right. */
+.statusbar .sb-cluster {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+#sb-lang {
+  cursor: pointer;
+}
+.sb-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  margin: 0 2px;
 }
 

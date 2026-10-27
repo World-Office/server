@@ -151,12 +151,12 @@ async function step(name, fn) {
   }
 }
 
-/** Dismiss any open menu/panel, then open the File menu fresh. */
+/** Dismiss any open menu/panel, then open the File backstage fresh. */
 async function openFileMenu(page) {
   await page.keyboard.press("Escape"); // Escape closes menus (document handler)
   await page.locator("#editor p").first().click(); // outside click closes menus
   await page.click("#btn-file");
-  await page.waitForSelector("#file-menu:not([hidden])", { timeout: 8000 });
+  await page.waitForSelector("#backstage-overlay.open", { timeout: 8000 });
 }
 
 const editorText = (page) => page.evaluate(() => document.getElementById("editor").innerText);
@@ -356,17 +356,16 @@ async function flowSaveExport(page) {
     { timeout: 8000 },
   );
 
-  // exports: reopen the File menu per format; the export submenu is revealed
-  // by HOVER (mouseenter) — clicking #btn-export would toggle it closed again.
+  // exports: reopen the backstage per format; the export formats live in the
+  // export pane (rail row "Export" shows it).
   const formats = ["docx", "odt", "html", "pdf"];
   for (const fmt of formats) {
     const before = await page.evaluate(
       () => window.__API_CALLS__.filter((c) => /\/export/.test(c.url)).length,
     );
     await openFileMenu(page);
-    await page.locator("#btn-export").hover();
-    await page.waitForSelector("#file-menu .menu-sublist:not([hidden])", { timeout: 8000 });
-    await page.click(`#file-menu button[data-export="${fmt}"]`, { timeout: 8000 });
+    await page.click(`.backstage-row[data-pane="export"]`, { timeout: 8000 });
+    await page.click(`#export-sub button[data-export="${fmt}"]`, { timeout: 8000 });
     await page.waitForFunction(
       (b) => window.__API_CALLS__.filter((c) => /\/export/.test(c.url)).length === b + 1,
       before,
@@ -389,6 +388,7 @@ async function flowSaveExport(page) {
 /** b) version history: list revisions, rollback restores exactly, semantics. */
 async function flowVersions(page) {
   await openFileMenu(page);
+  await page.click(`.backstage-row[data-pane="history"]`);
   await page.click("#btn-history");
   await page.waitForSelector("#version-history-dialog.open");
   await page.waitForSelector("#version-history-dialog .version-item");
