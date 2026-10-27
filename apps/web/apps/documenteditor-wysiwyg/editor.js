@@ -8655,7 +8655,11 @@
     if (node) r.setStart(node, Math.min(pos, node.textContent.length));
     else { r.selectNodeContents(editor); r.collapse(false); }
     r.collapse(true);
-    const rect = r.getClientRects()[0] || (node ? node.getBoundingClientRect() : r.getBoundingClientRect());
+    const rect = r.getClientRects()[0] ||
+      // Text nodes have no getBoundingClientRect — a collapsed range in an
+      // empty/hidden text node yields no rects; fall back to the text node's
+      // parent element (or the range container element) instead.
+      (node && node.parentElement ? node.parentElement.getBoundingClientRect() : r.getBoundingClientRect());
     const base = editor.parentElement.getBoundingClientRect();
     return { left: rect.left - base.left, top: rect.top - base.top, height: rect.height || 18 };
   }
