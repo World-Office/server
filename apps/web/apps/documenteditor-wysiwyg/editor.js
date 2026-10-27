@@ -7171,8 +7171,45 @@
       document.querySelectorAll(".ribbon-page").forEach((p) =>
         p.classList.toggle("active", p.dataset.tab === tab.dataset.tab));
       if (typeof closeAllMenus === "function") closeAllMenus();
+      updateRibbonScroll(true);
     });
   });
+
+  // --- ribbon overflow chevrons (CHROME1-TITLE-TAB-ROW, OO parity) -----
+  // The band is NOT a scroll container (overflow-x:auto would force
+  // overflow-y:auto and clip the absolutely-positioned .menu-list dropdowns
+  // that hang below the band). Overflow is scrolled by translating the
+  // active .ribbon-page; the band keeps clipping via overflow-x:clip.
+  // › shows while content overflows to the right, ‹ while offset > 0.
+  let ribOffset = 0;
+  const ribScrollLeftBtn = document.getElementById("rib-scroll-left");
+  const ribScrollRightBtn = document.getElementById("rib-scroll-right");
+  const ribBand = document.getElementById("toolbar");
+  function updateRibbonScroll(reset = false) {
+    const page = document.querySelector(".ribbon-page.active");
+    if (!page || !ribBand || ribBand.classList.contains("ribbon-collapsed")) return;
+    if (reset) ribOffset = 0;
+    const max = Math.max(0, page.scrollWidth - page.clientWidth);
+    ribOffset = Math.min(max, Math.max(0, ribOffset));
+    page.style.transform = ribOffset > 0 ? `translateX(${-ribOffset}px)` : "";
+    if (ribScrollLeftBtn) ribScrollLeftBtn.hidden = ribOffset <= 0;
+    if (ribScrollRightBtn) ribScrollRightBtn.hidden = ribOffset >= max;
+  }
+  function ribScrollStep(dir) {
+    if (!ribBand) return;
+    ribOffset += dir * ribBand.clientWidth * 0.8;
+    updateRibbonScroll();
+  }
+  if (ribScrollLeftBtn) ribScrollLeftBtn.addEventListener("click", () => ribScrollStep(-1));
+  if (ribScrollRightBtn) ribScrollRightBtn.addEventListener("click", () => ribScrollStep(1));
+  if (ribBand) ribBand.addEventListener("wheel", (ev) => {
+    if (ev.deltaY === 0) return;
+    ev.preventDefault();
+    ribOffset += ev.deltaY;
+    updateRibbonScroll();
+  }, { passive: false });
+  window.addEventListener("resize", () => updateRibbonScroll());
+  updateRibbonScroll();
 
   // --- contextual Header & Footer tab (OO parity) ---------------------
   // Double-clicking the page header/footer reveals the contextual tab at
