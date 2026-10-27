@@ -1370,6 +1370,7 @@ impl OoxmlParser {
                 comment_anchors: Vec::new(),
                 media: Vec::new(),
                 image_rels: Vec::new(),
+                hyperlink_rels: Vec::new(),
             },
         };
 
@@ -1438,8 +1439,15 @@ impl OoxmlParser {
         }
         if let Ok(rels_xml) = self.read_zip_entry(archive, "word/_rels/document.xml.rels") {
             if let Ok(rels) = self.parse_relationships(&rels_xml) {
-                body.image_rels
-                    .extend(rels.into_iter().filter(|r| r.rel_type.ends_with("/image")));
+                body.image_rels.extend(
+                    rels.iter()
+                        .filter(|r| r.rel_type.ends_with("/image"))
+                        .cloned(),
+                );
+                body.hyperlink_rels.extend(
+                    rels.into_iter()
+                        .filter(|r| r.rel_type.ends_with("/hyperlink")),
+                );
             }
         }
 
@@ -1471,40 +1479,48 @@ impl OoxmlParser {
             comment_anchors: Vec::new(),
             media: Vec::new(),
             image_rels: Vec::new(),
+            hyperlink_rels: Vec::new(),
         }
     }
 
     /// Parse comments from word/comments.xml and word/commentsExtended.xml
-    fn parse_comments(
-        &self,
-        archive: &mut zip::ZipArchive<Cursor<&[u8]>>,
-    ) -> Result<Vec<Comment>> {
+    fn parse_comments(&self, archive: &mut zip::ZipArchive<Cursor<&[u8]>>) -> Result<Vec<Comment>> {
         let mut comments: Vec<Comment> = Vec::new();
-        
+
         // Parse comments.xml
         if archive.by_name("word/comments.xml").is_ok() {
             if let Ok(comments_xml) = self.read_zip_entry(archive, "word/comments.xml") {
                 if let Ok(doc) = XmlDoc::parse(&comments_xml) {
                     for node in doc.descendants() {
-                        if node.has_tag_name("comment") && node.tag_name().namespace() == Some(Self::W_NS) {
-                            let id = node.attribute((Self::W_NS, "id"))
+                        if node.has_tag_name("comment")
+                            && node.tag_name().namespace() == Some(Self::W_NS)
+                        {
+                            let id = node
+                                .attribute((Self::W_NS, "id"))
                                 .or_else(|| node.attribute("id"))
-                                .unwrap_or("").to_string();
-                            let author = node.attribute((Self::W_NS, "author"))
+                                .unwrap_or("")
+                                .to_string();
+                            let author = node
+                                .attribute((Self::W_NS, "author"))
                                 .or_else(|| node.attribute("author"))
-                                .unwrap_or("").to_string();
-                            let date = node.attribute((Self::W_NS, "date"))
+                                .unwrap_or("")
+                                .to_string();
+                            let date = node
+                                .attribute((Self::W_NS, "date"))
                                 .or_else(|| node.attribute("date"))
-                                .unwrap_or("").to_string();
-                            
+                                .unwrap_or("")
+                                .to_string();
+
                             // Extract text from w:p/w:r/w:t
                             let mut text = String::new();
                             for p_node in node.descendants() {
-                                if p_node.has_tag_name("t") && p_node.tag_name().namespace() == Some(Self::W_NS) {
+                                if p_node.has_tag_name("t")
+                                    && p_node.tag_name().namespace() == Some(Self::W_NS)
+                                {
                                     text.push_str(p_node.text().unwrap_or(""));
                                 }
                             }
-                            
+
                             comments.push(Comment {
                                 id,
                                 author,
@@ -1518,24 +1534,31 @@ impl OoxmlParser {
                 }
             }
         }
-        
+
         // Parse commentsExtended.xml to get resolved flag and parent relationships
         if archive.by_name("word/commentsExtended.xml").is_ok() {
-            if let Ok(comments_ext_xml) = self.read_zip_entry(archive, "word/commentsExtended.xml") {
+            if let Ok(comments_ext_xml) = self.read_zip_entry(archive, "word/commentsExtended.xml")
+            {
                 if let Ok(doc) = XmlDoc::parse(&comments_ext_xml) {
                     for node in doc.descendants() {
-                        if node.has_tag_name("commentEx") && node.tag_name().namespace() == Some(Self::W15_NS) {
-                            let para_id = node.attribute((Self::W15_NS, "paraId"))
+                        if node.has_tag_name("commentEx")
+                            && node.tag_name().namespace() == Some(Self::W15_NS)
+                        {
+                            let para_id = node
+                                .attribute((Self::W15_NS, "paraId"))
                                 .or_else(|| node.attribute("paraId"))
-                                .unwrap_or("").to_string();
-                            let done = node.attribute((Self::W15_NS, "done"))
+                                .unwrap_or("")
+                                .to_string();
+                            let done = node
+                                .attribute((Self::W15_NS, "done"))
                                 .or_else(|| node.attribute("done"))
                                 .map(|v| v == "1" || v.to_lowercase() == "true")
                                 .unwrap_or(false);
-                            let parent_id = node.attribute((Self::W15_NS, "paraIdParent"))
+                            let parent_id = node
+                                .attribute((Self::W15_NS, "paraIdParent"))
                                 .or_else(|| node.attribute("paraIdParent"))
                                 .map(|s| s.to_string());
-                            
+
                             // Find the comment with matching id and update it
                             for comment in &mut comments {
                                 if comment.id == para_id {
@@ -1549,25 +1572,27 @@ impl OoxmlParser {
                 }
             }
         }
-        
+
         Ok(comments)
     }
 
     /// Parse comment anchors (commentRangeStart, commentRangeEnd, commentReference) from document.xml
     fn parse_comment_anchors(&self, document_xml: &str) -> Result<Vec<(String, String)>> {
         let mut anchors: Vec<(String, String)> = Vec::new();
-        
+
         if let Ok(doc) = XmlDoc::parse(document_xml) {
             for node in doc.descendants() {
                 let tag_name = node.tag_name().name();
                 let ns = node.tag_name().namespace();
-                
+
                 if ns == Some(Self::W_NS) {
                     match tag_name {
                         "commentRangeStart" | "commentRangeEnd" | "commentReference" => {
-                            let id = node.attribute((Self::W_NS, "id"))
+                            let id = node
+                                .attribute((Self::W_NS, "id"))
                                 .or_else(|| node.attribute("id"))
-                                .unwrap_or("").to_string();
+                                .unwrap_or("")
+                                .to_string();
                             let anchor_type = match tag_name {
                                 "commentRangeStart" => "start",
                                 "commentRangeEnd" => "end",
@@ -1735,6 +1760,28 @@ impl OoxmlParser {
                         _ => Some(TextAlignment::Left),
                     };
                 }
+                "numPr" => {
+                    // LEDGER2: list membership — ilvl + numId feed the
+                    // docx->html list grouping.
+                    for inner in child.children() {
+                        if !inner.is_element() {
+                            continue;
+                        }
+                        match inner.tag_name().name() {
+                            "ilvl" => {
+                                props.ilvl = self
+                                    .attr_ns(inner, "val")
+                                    .and_then(|v| v.parse::<u8>().ok())
+                            }
+                            "numId" => {
+                                props.num_id = self
+                                    .attr_ns(inner, "val")
+                                    .and_then(|v| v.parse::<u32>().ok())
+                            }
+                            _ => {}
+                        }
+                    }
+                }
                 "ind" => {
                     props.indent_left = self.attr_ns(child, "left").and_then(|v| v.parse().ok());
                     props.indent_right = self.attr_ns(child, "right").and_then(|v| v.parse().ok());
@@ -1784,20 +1831,33 @@ impl OoxmlParser {
                         }
                         let side_name = side_elem.tag_name().name();
                         let border = DocxBorder {
-                            style: self.attr_ns(side_elem, "val")
+                            style: self
+                                .attr_ns(side_elem, "val")
                                 .unwrap_or("single")
                                 .to_string(),
-                            size: self.attr_ns(side_elem, "sz")
-                                .and_then(|v| v.parse().ok()),
+                            size: self.attr_ns(side_elem, "sz").and_then(|v| v.parse().ok()),
                             color: self.attr_ns(side_elem, "color").map(|s| s.to_string()),
-                            space: self.attr_ns(side_elem, "space")
+                            space: self
+                                .attr_ns(side_elem, "space")
                                 .and_then(|v| v.parse().ok()),
                         };
                         match side_name {
-                            "top" => { borders.top = Some(border); found = true; }
-                            "bottom" => { borders.bottom = Some(border); found = true; }
-                            "left" => { borders.left = Some(border); found = true; }
-                            "right" => { borders.right = Some(border); found = true; }
+                            "top" => {
+                                borders.top = Some(border);
+                                found = true;
+                            }
+                            "bottom" => {
+                                borders.bottom = Some(border);
+                                found = true;
+                            }
+                            "left" => {
+                                borders.left = Some(border);
+                                found = true;
+                            }
+                            "right" => {
+                                borders.right = Some(border);
+                                found = true;
+                            }
                             _ => {}
                         }
                     }
@@ -4209,7 +4269,11 @@ mod tests {
     }
 
     /// Helper to build a docx with comments and commentsExtended
-    fn make_docx_with_comments(comments_xml: &str, comments_ext_xml: &str, document_xml: &str) -> Vec<u8> {
+    fn make_docx_with_comments(
+        comments_xml: &str,
+        comments_ext_xml: &str,
+        document_xml: &str,
+    ) -> Vec<u8> {
         let mut buf = Vec::new();
         {
             let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut buf));
@@ -4229,11 +4293,8 @@ mod tests {
 </Types>"#)
             .unwrap();
 
-            zip.start_file(
-                "_rels/.rels",
-                zip::write::SimpleFileOptions::default(),
-            )
-            .unwrap();
+            zip.start_file("_rels/.rels", zip::write::SimpleFileOptions::default())
+                .unwrap();
             zip.write_all(br#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
@@ -4264,16 +4325,25 @@ mod tests {
 </w:styles>"#)
             .unwrap();
 
-            zip.start_file("word/comments.xml", zip::write::SimpleFileOptions::default())
-                .unwrap();
+            zip.start_file(
+                "word/comments.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
             zip.write_all(comments_xml.as_bytes()).unwrap();
 
-            zip.start_file("word/commentsExtended.xml", zip::write::SimpleFileOptions::default())
-                .unwrap();
+            zip.start_file(
+                "word/commentsExtended.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
             zip.write_all(comments_ext_xml.as_bytes()).unwrap();
 
-            zip.start_file("word/document.xml", zip::write::SimpleFileOptions::default())
-                .unwrap();
+            zip.start_file(
+                "word/document.xml",
+                zip::write::SimpleFileOptions::default(),
+            )
+            .unwrap();
             zip.write_all(document_xml.as_bytes()).unwrap();
 
             zip.finish().unwrap();

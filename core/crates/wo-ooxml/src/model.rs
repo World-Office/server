@@ -501,6 +501,10 @@ pub struct DocxBody {
     /// Image relationships (rId -> word/media target) from document.xml.rels.
     #[serde(default)]
     pub image_rels: Vec<Relationship>,
+    /// Hyperlink relationships (rId -> external URL) from document.xml.rels
+    /// (LEDGER2: docx->html resolves run hyperlink_rid through these).
+    #[serde(default)]
+    pub hyperlink_rels: Vec<Relationship>,
     /// Verbatim `word/footnotes.xml` content captured at parse time,
     /// re-emitted unchanged so footnote bodies survive a round trip.
     #[serde(default)]
@@ -541,6 +545,7 @@ impl DocxBody {
             comment_anchors: Vec::new(),
             media: Vec::new(),
             image_rels: Vec::new(),
+            hyperlink_rels: Vec::new(),
         }
     }
 
@@ -560,6 +565,7 @@ impl DocxBody {
             footer: None,
             media: Vec::new(),
             image_rels: Vec::new(),
+            hyperlink_rels: Vec::new(),
         }
     }
 

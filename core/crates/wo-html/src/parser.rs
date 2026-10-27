@@ -66,6 +66,23 @@ fn block_direction(node: &roxmltree::Node) -> Option<String> {
 }
 
 /// F-040: paragraph background-color from `style="background-color: ..."`.
+/// Paragraph text alignment from `style="text-align: ..."` — the round-trip
+/// channel for OOXML w:jc.
+fn block_align(node: &roxmltree::Node) -> Option<String> {
+    let style = attr(node, "style")?;
+    for decl in style.split(';') {
+        if let Some((prop, val)) = decl.split_once(':') {
+            if prop.trim().eq_ignore_ascii_case("text-align") {
+                let v = val.trim();
+                if !v.is_empty() {
+                    return Some(v.to_string());
+                }
+            }
+        }
+    }
+    None
+}
+
 fn block_background(node: &roxmltree::Node) -> Option<String> {
     let style = attr(node, "style")?;
     for decl in style.split(';') {
@@ -295,31 +312,234 @@ impl HtmlParser {
         out
     }
 
+    /// HTML named entities roxmltree does not know (XML has only amp/lt/
+    /// gt/quot/apos + numeric refs). Named forms are rewritten to numeric
+    /// character references so `&nbsp;` and friends parse; unknown names
+    /// degrade to literal text instead of failing the whole parse.
+    fn html_entity_to_numeric(entity: &str) -> Option<String> {
+        const ENTITIES: &[(&str, char)] = &[
+            ("nbsp", '\u{a0}'),
+            ("iexcl", '\u{a1}'),
+            ("cent", '\u{a2}'),
+            ("pound", '\u{a3}'),
+            ("curren", '\u{a4}'),
+            ("yen", '\u{a5}'),
+            ("brvbar", '\u{a6}'),
+            ("sect", '\u{a7}'),
+            ("uml", '\u{a8}'),
+            ("copy", '\u{a9}'),
+            ("ordf", '\u{aa}'),
+            ("laquo", '\u{ab}'),
+            ("not", '\u{ac}'),
+            ("shy", '\u{ad}'),
+            ("reg", '\u{ae}'),
+            ("macr", '\u{af}'),
+            ("deg", '\u{b0}'),
+            ("plusmn", '\u{b1}'),
+            ("sup2", '\u{b2}'),
+            ("sup3", '\u{b3}'),
+            ("acute", '\u{b4}'),
+            ("micro", '\u{b5}'),
+            ("para", '\u{b6}'),
+            ("middot", '\u{b7}'),
+            ("cedil", '\u{b8}'),
+            ("sup1", '\u{b9}'),
+            ("ordm", '\u{ba}'),
+            ("raquo", '\u{bb}'),
+            ("frac14", '\u{bc}'),
+            ("frac12", '\u{bd}'),
+            ("frac34", '\u{be}'),
+            ("iquest", '\u{bf}'),
+            ("Agrave", '\u{c0}'),
+            ("Aacute", '\u{c1}'),
+            ("Acirc", '\u{c2}'),
+            ("Atilde", '\u{c3}'),
+            ("Auml", '\u{c4}'),
+            ("Aring", '\u{c5}'),
+            ("AElig", '\u{c6}'),
+            ("Ccedil", '\u{c7}'),
+            ("Egrave", '\u{c8}'),
+            ("Eacute", '\u{c9}'),
+            ("Ecirc", '\u{ca}'),
+            ("Euml", '\u{cb}'),
+            ("Igrave", '\u{cc}'),
+            ("Iacute", '\u{cd}'),
+            ("Icirc", '\u{ce}'),
+            ("Iuml", '\u{cf}'),
+            ("ETH", '\u{d0}'),
+            ("Ntilde", '\u{d1}'),
+            ("Ograve", '\u{d2}'),
+            ("Oacute", '\u{d3}'),
+            ("Ocirc", '\u{d4}'),
+            ("Otilde", '\u{d5}'),
+            ("Ouml", '\u{d6}'),
+            ("times", '\u{d7}'),
+            ("Oslash", '\u{d8}'),
+            ("Ugrave", '\u{d9}'),
+            ("Uacute", '\u{da}'),
+            ("Ucirc", '\u{db}'),
+            ("Uuml", '\u{dc}'),
+            ("Yacute", '\u{dd}'),
+            ("THORN", '\u{de}'),
+            ("szlig", '\u{df}'),
+            ("agrave", '\u{e0}'),
+            ("aacute", '\u{e1}'),
+            ("acirc", '\u{e2}'),
+            ("atilde", '\u{e3}'),
+            ("auml", '\u{e4}'),
+            ("aring", '\u{e5}'),
+            ("aelig", '\u{e6}'),
+            ("ccedil", '\u{e7}'),
+            ("egrave", '\u{e8}'),
+            ("eacute", '\u{e9}'),
+            ("ecirc", '\u{ea}'),
+            ("euml", '\u{eb}'),
+            ("igrave", '\u{ec}'),
+            ("iacute", '\u{ed}'),
+            ("icirc", '\u{ee}'),
+            ("iuml", '\u{ef}'),
+            ("eth", '\u{f0}'),
+            ("ntilde", '\u{f1}'),
+            ("ograve", '\u{f2}'),
+            ("oacute", '\u{f3}'),
+            ("ocirc", '\u{f4}'),
+            ("otilde", '\u{f5}'),
+            ("ouml", '\u{f6}'),
+            ("divide", '\u{f7}'),
+            ("oslash", '\u{f8}'),
+            ("ugrave", '\u{f9}'),
+            ("uacute", '\u{fa}'),
+            ("ucirc", '\u{fb}'),
+            ("uuml", '\u{fc}'),
+            ("yacute", '\u{fd}'),
+            ("thorn", '\u{fe}'),
+            ("yuml", '\u{ff}'),
+            ("OElig", '\u{152}'),
+            ("oelig", '\u{153}'),
+            ("Scaron", '\u{160}'),
+            ("scaron", '\u{161}'),
+            ("Yuml", '\u{178}'),
+            ("fnof", '\u{192}'),
+            ("circ", '\u{2c6}'),
+            ("tilde", '\u{2dc}'),
+            ("ensp", '\u{2002}'),
+            ("emsp", '\u{2003}'),
+            ("thinsp", '\u{2009}'),
+            ("zwnj", '\u{200c}'),
+            ("zwj", '\u{200d}'),
+            ("lrm", '\u{200e}'),
+            ("rlm", '\u{200f}'),
+            ("ndash", '\u{2013}'),
+            ("mdash", '\u{2014}'),
+            ("lsquo", '\u{2018}'),
+            ("rsquo", '\u{2019}'),
+            ("sbquo", '\u{201a}'),
+            ("ldquo", '\u{201c}'),
+            ("rdquo", '\u{201d}'),
+            ("bdquo", '\u{201e}'),
+            ("dagger", '\u{2020}'),
+            ("Dagger", '\u{2021}'),
+            ("bull", '\u{2022}'),
+            ("hellip", '\u{2026}'),
+            ("permil", '\u{2030}'),
+            ("prime", '\u{2032}'),
+            ("Prime", '\u{2033}'),
+            ("lsaquo", '\u{2039}'),
+            ("rsaquo", '\u{203a}'),
+            ("oline", '\u{203e}'),
+            ("frasl", '\u{2044}'),
+            ("euro", '\u{20ac}'),
+            ("trade", '\u{2122}'),
+            ("larr", '\u{2190}'),
+            ("uarr", '\u{2191}'),
+            ("rarr", '\u{2192}'),
+            ("darr", '\u{2193}'),
+            ("harr", '\u{2194}'),
+            ("minus", '\u{2212}'),
+            ("lowast", '\u{2217}'),
+            ("radic", '\u{221a}'),
+            ("prop", '\u{221d}'),
+            ("infin", '\u{221e}'),
+            ("ang", '\u{2220}'),
+            ("and", '\u{2227}'),
+            ("or", '\u{2228}'),
+            ("cap", '\u{2229}'),
+            ("cup", '\u{222a}'),
+            ("int", '\u{222b}'),
+            ("there4", '\u{2234}'),
+            ("sim", '\u{223c}'),
+            ("cong", '\u{2245}'),
+            ("asymp", '\u{2248}'),
+            ("ne", '\u{2260}'),
+            ("equiv", '\u{2261}'),
+            ("le", '\u{2264}'),
+            ("ge", '\u{2265}'),
+            ("larr", '\u{2190}'),
+            ("sub", '\u{2282}'),
+            ("sup", '\u{2283}'),
+            ("nsub", '\u{2284}'),
+            ("sube", '\u{2286}'),
+            ("supe", '\u{2287}'),
+            ("oplus", '\u{2295}'),
+            ("otimes", '\u{2297}'),
+            ("perp", '\u{22a5}'),
+            ("sdot", '\u{22c5}'),
+            ("lceil", '\u{2308}'),
+            ("rceil", '\u{2309}'),
+            ("lfloor", '\u{230a}'),
+            ("rfloor", '\u{230b}'),
+            ("lang", '\u{2329}'),
+            ("rang", '\u{232a}'),
+            ("loz", '\u{25ca}'),
+            ("spades", '\u{2660}'),
+            ("clubs", '\u{2663}'),
+            ("hearts", '\u{2665}'),
+            ("diams", '\u{2666}'),
+        ];
+        ENTITIES
+            .iter()
+            .find(|(name, _)| *name == entity)
+            .map(|(_, ch)| format!("&#{};", *ch as u32))
+    }
+
     fn escape_ampersands(html: &str) -> String {
+        // Byte-cursor walk so a rewritten entity can skip its whole `&name;`
+        // span (LEDGER2: the old char loop re-emitted the name after the
+        // replacement, turning &nbsp; into "\u{a0}nbsp;").
         let mut out = String::with_capacity(html.len());
-        let chars = html.char_indices();
-        for (i, c) in chars {
+        let mut i = 0usize;
+        while i < html.len() {
+            let c = html[i..].chars().next().unwrap();
             if c == '&' {
                 let rest = &html[i + 1..];
-                if rest.starts_with('#')
-                    && (rest[1..].starts_with(|c: char| c.is_ascii_digit())
-                        || rest[1..].starts_with(|c: char| ['x', 'X'].contains(&c)))
-                    && rest.contains(';')
-                {
+                // Numeric character references are already XML-safe — keep.
+                if rest.starts_with('#') {
                     out.push('&');
+                    i += 1;
                     continue;
                 }
-                if let Some(semicolon) = rest.find(';') {
-                    let entity = &rest[..semicolon];
+                if let Some(sem) = rest.find(';').filter(|&s| s <= 12) {
+                    let entity = &rest[..sem];
                     if !entity.is_empty() && entity.chars().all(|c| c.is_ascii_alphanumeric()) {
-                        out.push('&');
+                        if matches!(entity, "amp" | "lt" | "gt" | "quot" | "apos") {
+                            // XML's own five: keep the span verbatim.
+                            out.push_str(&html[i..i + 1 + sem + 1]);
+                        } else {
+                            match Self::html_entity_to_numeric(entity) {
+                                Some(numeric) => out.push_str(&numeric),
+                                None => out.push_str("&amp;"),
+                            }
+                        }
+                        i += 1 + sem + 1; // skip the full `&name;`
                         continue;
                     }
                 }
                 out.push_str("&amp;");
-            } else {
-                out.push(c);
+                i += 1;
+                continue;
             }
+            out.push(c);
+            i += c.len_utf8();
         }
         out
     }
@@ -383,6 +603,7 @@ impl HtmlParser {
                         }],
                         id: None,
                         dir: None,
+                        align: None,
                         background: None,
                         borders: None,
                         writing_mode: None,
@@ -412,6 +633,7 @@ impl HtmlParser {
                         content: self.parse_inline_elements(&ch),
                         id,
                         dir: block_direction(&ch),
+                        align: block_align(&ch),
                         background: block_background(&ch),
                         borders: block_borders(&ch),
                         writing_mode: block_writing_mode(&ch),

@@ -29,6 +29,29 @@ fn strip_hf_refs(sect_pr: &str) -> String {
     out
 }
 
+/// True when any paragraph (body or table cell) carries numPr — decides
+/// whether the serializer must emit word/numbering.xml and its rel.
+fn body_uses_numbering(body: &DocxBody) -> bool {
+    let paras = body.paragraphs();
+    if paras.iter().any(|p| p.properties.num_id.is_some()) {
+        return true;
+    }
+    for table in body.tables() {
+        for row in &table.rows {
+            for cell in &row.cells {
+                if cell
+                    .paragraphs
+                    .iter()
+                    .any(|p| p.properties.num_id.is_some())
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    false
+}
+
 impl OoxmlSerializer {
     pub fn new() -> Self {
         Self
@@ -88,6 +111,15 @@ impl OoxmlSerializer {
             for part in &body.media {
                 zip.start_file(&part.name, options)?;
                 zip.write_all(&part.bytes)?;
+            }
+        }
+
+        // 4e-2. word/numbering.xml — emitted only when a paragraph uses
+        // numPr, so documents without lists keep the exact old byte shape.
+        if let Some(ref body) = doc.docx_body {
+            if body_uses_numbering(body) {
+                zip.start_file("word/numbering.xml", options)?;
+                zip.write_all(self.build_numbering_xml().as_bytes())?;
             }
         }
 
@@ -1033,6 +1065,10 @@ impl OoxmlSerializer {
                 extra.push_str("\n  <Override PartName=\"/word/comments.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml\"/>");
                 extra.push_str("\n  <Override PartName=\"/word/commentsExtended.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.commentsExtended+xml\"/>");
             }
+            let uses_numbering = body_uses_numbering(body);
+            if uses_numbering {
+                extra.push_str("\n  <Override PartName=\"/word/numbering.xml\" ContentType=\"application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml\"/>");
+            }
             let mut exts: Vec<&str> = body
                 .media
                 .iter()
@@ -1102,10 +1138,24 @@ impl OoxmlSerializer {
                     "\n  <Relationship Id=\"rIdCmtEx\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/commentsExtended\" Target=\"commentsExtended.xml\"/>",
                 );
             }
+            if body_uses_numbering(body) {
+                extra.push_str(
+                    "\n  <Relationship Id=\"rIdNum\" Type=\"http://schemas.openxmlformats.org/officeDocument/2006/relationships/numbering\" Target=\"numbering.xml\"/>",
+                );
+            }
             for rel in &body.image_rels {
+                // TargetMode=\"External\" marks hyperlink rels (LEDGER2).
+                let mode = rel
+                    .target_mode
+                    .as_ref()
+                    .map(|m| format!(" TargetMode=\"{}\"", escape_xml(m)))
+                    .unwrap_or_default();
                 extra.push_str(&format!(
-                    "\n  <Relationship Id=\"{}\" Type=\"{}\" Target=\"{}\"/>",
-                    rel.id, rel.rel_type, rel.target
+                    "\n  <Relationship Id=\"{}\" Type=\"{}\" Target=\"{}\"{}/>",
+                    rel.id,
+                    rel.rel_type,
+                    escape_xml(&rel.target),
+                    mode
                 ));
             }
         }
@@ -1115,6 +1165,43 @@ impl OoxmlSerializer {
   <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>{}{}
 </Relationships>"#,
             extra, ""
+        )
+    }
+
+    /// Minimal numbering part: abstractNum 1 = bullet (•), abstractNum 2 =
+    /// decimal; num 1/2 map to them. Levels 0–5 each indent 360 twips more
+    /// (hanging 360). Covers the html->docx list emission (numId 1/2 at
+    /// level 0); hand-authored docx files may use ids not defined here —
+    /// Word tolerates unknown numIds by falling back to body text.
+    fn build_numbering_xml(&self) -> String {
+        let levels = |bullet: bool| -> String {
+            (0..6)
+                .map(|lvl| {
+                    let fmt = if bullet { "bullet" } else { "decimal" };
+                    let text = if bullet {
+                        "\u{2022}"
+                    } else {
+                        "%1."
+                    };
+                    format!(
+                        "        <w:lvl w:ilvl=\"{}\"><w:start w:val=\"1\"/><w:numFmt w:val=\"{}\"/><w:lvlText w:val=\"{}\"/><w:lvlJc w:val=\"left\"/><w:pPr><w:ind w:left=\"{}\" w:hanging=\"360\"/></w:pPr></w:lvl>\n",
+                        lvl, fmt, text, 720 + lvl * 360
+                    )
+                })
+                .collect()
+        };
+        format!(
+            r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:abstractNum w:abstractNumId="1">
+{}  </w:abstractNum>
+  <w:abstractNum w:abstractNumId="2">
+{}  </w:abstractNum>
+  <w:num w:numId="1"><w:abstractNumId w:val="1"/></w:num>
+  <w:num w:numId="2"><w:abstractNumId w:val="2"/></w:num>
+</w:numbering>"#,
+            levels(true),
+            levels(false)
         )
     }
 
@@ -1240,6 +1327,7 @@ impl OoxmlSerializer {
                 || para.properties.keep_next
                 || para.properties.page_break_before
                 || para.properties.bidi
+                || para.properties.num_id.is_some()
                 || para.properties.shading.is_some()
                 || para.properties.borders.is_some();
 
@@ -1260,6 +1348,13 @@ impl OoxmlSerializer {
                     xml.push_str("<w:jc w:val=\"");
                     xml.push_str(val);
                     xml.push_str("\"/>");
+                }
+                if let Some(nid) = para.properties.num_id {
+                    xml.push_str(&format!(
+                        "<w:numPr><w:ilvl w:val=\"{}\"/><w:numId w:val=\"{}\"/></w:numPr>",
+                        para.properties.ilvl.unwrap_or(0),
+                        nid
+                    ));
                 }
                 if let Some(il) = para.properties.indent_left {
                     xml.push_str(&format!("<w:ind w:left=\"{}\"", il));
@@ -1538,8 +1633,6 @@ impl OoxmlSerializer {
                 escape_xml(rid)
             ));
         }
-
-
 
         if !run.text.is_empty() {
             // \u{c} is the in-model page-break marker; XML forbids the raw
@@ -2807,6 +2900,7 @@ mod tests {
                 footnotes_raw: None,
                 media: vec![],
                 image_rels: vec![],
+                hyperlink_rels: vec![],
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
@@ -2942,6 +3036,7 @@ mod tests {
                 footnotes_raw: None,
                 media: vec![],
                 image_rels: vec![],
+                hyperlink_rels: vec![],
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
@@ -3058,6 +3153,7 @@ mod tests {
                 footnotes_raw: None,
                 media: vec![],
                 image_rels: vec![],
+                hyperlink_rels: vec![],
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
@@ -3195,6 +3291,7 @@ mod tests {
                 footnotes_raw: None,
                 media: vec![],
                 image_rels: vec![],
+                hyperlink_rels: vec![],
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
@@ -4246,6 +4343,7 @@ mod tests {
                 footnotes_raw: None,
                 media: vec![],
                 image_rels: vec![],
+                hyperlink_rels: vec![],
                 raw_sect_pr: None,
                 header: None,
                 footer: None,
@@ -4321,6 +4419,7 @@ mod tests {
                 footnotes_raw: None,
                 media: vec![],
                 image_rels: vec![],
+                hyperlink_rels: vec![],
             }),
         };
         let ser = OoxmlSerializer::new();

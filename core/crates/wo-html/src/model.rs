@@ -48,6 +48,10 @@ pub enum BlockElement {
         /// Block text direction from `dir` attr / `style="direction: rtl"`
         /// (F-041: survives HTML round trips, maps to OOXML w:bidi).
         dir: Option<String>,
+        /// Paragraph text alignment from `style="text-align: ..."`
+        /// (maps to OOXML w:jc; survives round trips).
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        align: Option<String>,
         /// Paragraph-level background color (F-040: style="background-color"
         /// on <p>, maps to OOXML w:shd).
         #[serde(default, skip_serializing_if = "Option::is_none")]

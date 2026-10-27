@@ -17,7 +17,7 @@ use crate::converter::FormatConverter;
 use crate::error::ConversionError;
 
 use wo_html::model::{
-    BlockElement, HtmlBody, HtmlDocument, HtmlHead, InlineElement, ParagraphBorder,
+    BlockElement, HtmlBody, HtmlDocument, HtmlHead, InlineElement, ListItem, ParagraphBorder,
     ParagraphBorders, TableCell, TableRow,
 };
 use wo_html::{HtmlParser, HtmlSerializer};
@@ -55,8 +55,8 @@ use wo_ooxml::model::{
     CoreProperties, DocxBody, DocxBorder, DocxParagraph, DocxParagraphBorders,
     DocxParagraphProperties, DocxRun, DocxTable, DocxTableCell, DocxTableRow, Fill, HeaderFooter,
     MediaPart, OoxmlDocument, OoxmlFormat, PictureShape, PptxPresentation, Relationship, Slide,
-    SlideShape, SlideSize, SlideTransition, TextBody as OoxmlTextBody, TextBoxShape,
-    TransitionEffect, UnderlineType,
+    SlideShape, SlideSize, SlideTransition, TextAlignment, TextBody as OoxmlTextBody, TextBoxShape,
+    TransitionEffect, UnderlineType, VerticalAlignment,
 };
 use wo_ooxml::model::{Comment, CommentAnchor};
 use wo_ooxml::{OoxmlParser, OoxmlSerializer};
@@ -196,6 +196,7 @@ impl FormatConverter for TxtToHtmlConverter {
                 }],
                 id: None,
                 dir: None,
+                align: None,
                 background: None,
                 borders: None,
 
@@ -314,6 +315,7 @@ fn wrap_furniture(doc: &OoxmlDocument, mut html: String) -> String {
                 footer: None,
                 media: Vec::new(),
                 image_rels: Vec::new(),
+                hyperlink_rels: Vec::new(),
                 footnotes_raw: None,
                 comments: Vec::new(),
                 comment_anchors: Vec::new(),
@@ -604,6 +606,7 @@ impl FormatConverter for EpubToHtmlConverter {
                         }],
                         id: None,
                         dir: None,
+                        align: None,
                         background: None,
                         borders: None,
 
@@ -1147,6 +1150,7 @@ impl FormatConverter for XpsToHtmlConverter {
                         content: page_inlines,
                         id: None,
                         dir: None,
+                        align: None,
                         background: None,
                         borders: None,
 
@@ -1278,6 +1282,7 @@ impl FormatConverter for OfdToHtmlConverter {
                         content: page_inlines,
                         id: None,
                         dir: None,
+                        align: None,
                         background: None,
                         borders: None,
 
@@ -2126,6 +2131,7 @@ fn rtf_blocks_to_html_blocks(blocks: &[RtfBlock]) -> Vec<BlockElement> {
                     content: inlines,
                     id: None,
                     dir: None,
+                    align: None,
                     background: None,
                     borders: None,
 
@@ -2588,6 +2594,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
             BlockElement::Paragraph {
                 content,
                 dir,
+                align,
                 background,
                 borders,
                 ..
@@ -2601,8 +2608,17 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                 if !runs.is_empty() {
                     // F-041: direction: rtl on the block -> w:bidi in DOCX
                     // F-040: background-color -> w:shd, border-* -> w:pBdr
+                    // LEDGER2: text-align -> w:jc
+                    let alignment = align.as_deref().and_then(|a| match a {
+                        "left" => Some(TextAlignment::Left),
+                        "center" => Some(TextAlignment::Center),
+                        "right" => Some(TextAlignment::Right),
+                        "justify" | "both" => Some(TextAlignment::Both),
+                        _ => None,
+                    });
                     let properties = DocxParagraphProperties {
                         bidi: dir.as_deref() == Some("rtl"),
+                        alignment,
                         shading: background.clone(),
                         borders: borders.as_ref().map(|b| DocxParagraphBorders {
                             top: b.top.as_ref().map(html_border_to_docx),
@@ -2622,64 +2638,55 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                 }
             }
             BlockElement::UnorderedList { items, .. } => {
+                // LEDGER2: real numPr lists (numId 1 = bullet) instead of
+                // literal "• text" paragraphs — survives the round trip and
+                // opens as a proper list in Word.
                 for item in items {
-                    let text = extract_html_text(&item.content);
+                    let runs = html_inlines_to_docx_runs(
+                        &item.content,
+                        &mut media,
+                        &mut image_rels,
+                        &mut comments,
+                    );
+                    if runs.is_empty() {
+                        continue;
+                    }
                     paragraphs.push(DocxParagraph {
-                        style_id: None,
+                        style_id: Some("ListParagraph".to_string()),
                         properties: DocxParagraphProperties {
-                            indent_left: Some(720),
+                            num_id: Some(1),
+                            ilvl: Some(0),
                             ..Default::default()
                         },
                         section_properties: None,
-                        runs: vec![DocxRun {
-                            text: format!("\u{2022} {}", text),
-                            bold: false,
-                            italic: false,
-                            underline: None,
-                            strikethrough: false,
-                            double_strikethrough: false,
-                            font: None,
-                            font_size: None,
-                            font_size_cs: None,
-                            color: None,
-                            highlight: None,
-                            vertical_alignment: None,
-                            small_caps: false,
-                            all_caps: false,
-                            ..Default::default()
-                        }],
+                        runs,
                         ..Default::default()
                     });
                 }
             }
             BlockElement::OrderedList { items, start, .. } => {
-                for (i, item) in items.iter().enumerate() {
-                    let num = start.unwrap_or(1) + i as u32;
-                    let text = extract_html_text(&item.content);
+                for item in items {
+                    // ponytail: a start value other than 1 is not emitted
+                    // (numbering.xml has no per-list start override here).
+                    let _ = start;
+                    let runs = html_inlines_to_docx_runs(
+                        &item.content,
+                        &mut media,
+                        &mut image_rels,
+                        &mut comments,
+                    );
+                    if runs.is_empty() {
+                        continue;
+                    }
                     paragraphs.push(DocxParagraph {
-                        style_id: None,
+                        style_id: Some("ListParagraph".to_string()),
                         properties: DocxParagraphProperties {
-                            indent_left: Some(720),
+                            num_id: Some(2),
+                            ilvl: Some(0),
                             ..Default::default()
                         },
                         section_properties: None,
-                        runs: vec![DocxRun {
-                            text: format!("{}. {}", num, text),
-                            bold: false,
-                            italic: false,
-                            underline: None,
-                            strikethrough: false,
-                            double_strikethrough: false,
-                            font: None,
-                            font_size: None,
-                            font_size_cs: None,
-                            color: None,
-                            highlight: None,
-                            vertical_alignment: None,
-                            small_caps: false,
-                            all_caps: false,
-                            ..Default::default()
-                        }],
+                        runs,
                         ..Default::default()
                     });
                 }
@@ -2869,6 +2876,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
             footer,
             media,
             image_rels,
+            hyperlink_rels: Vec::new(),
             comments: comments,
             comment_anchors: Vec::new(),
             footnotes_raw: None,
@@ -2969,6 +2977,84 @@ fn image_dimensions(bytes: &[u8]) -> Option<(u32, u32)> {
 
 /// F-040: convert HTML paragraph border (CSS) to OOXML border.
 /// CSS `1pt solid #000000` -> w:sz=8 (eighths of a point), w:val=single.
+/// LEDGER2: span style CSS -> run property fields. Maps font-family,
+/// font-size (pt/px), color (#hex/named), background-color (highlight) and
+/// vertical-align (super/sub). Anything else is ignored — the style string
+/// is never a parser error source.
+fn css_to_run_props(
+    style: &Option<String>,
+) -> (
+    Option<String>,
+    Option<u32>,
+    Option<String>,
+    Option<String>,
+    Option<VerticalAlignment>,
+) {
+    let mut font = None;
+    let mut size: Option<u32> = None;
+    let mut color = None;
+    let mut highlight = None;
+    let mut vert = None;
+    let Some(css) = style else {
+        return (font, size, color, highlight, vert);
+    };
+    for decl in css.split(';') {
+        let Some((prop, val)) = decl.split_once(':') else {
+            continue;
+        };
+        let prop = prop.trim().to_ascii_lowercase();
+        let val = val.trim();
+        if val.is_empty() {
+            continue;
+        }
+        match prop.as_str() {
+            "font-family" => {
+                font = Some(
+                    val.split(',')
+                        .next()
+                        .unwrap_or(val)
+                        .trim_matches('"')
+                        .to_string(),
+                )
+            }
+            "font-size" => {
+                // half-points: pt*2, px*1.5
+                if let Some(pt) = val
+                    .strip_suffix("pt")
+                    .and_then(|n| n.trim().parse::<f64>().ok())
+                {
+                    size = Some((pt * 2.0).round() as u32);
+                } else if let Some(px) = val
+                    .strip_suffix("px")
+                    .and_then(|n| n.trim().parse::<f64>().ok())
+                {
+                    size = Some((px * 1.5).round() as u32);
+                }
+            }
+            "color" => {
+                let v = val.strip_prefix('#').unwrap_or(val);
+                if v.len() == 6 && v.chars().all(|c| c.is_ascii_hexdigit()) {
+                    color = Some(v.to_ascii_uppercase());
+                }
+            }
+            "background-color" => highlight = Some(val.to_string()),
+            "vertical-align" => {
+                vert = match val {
+                    "super" | "superscript" | "top" | "text-top" => {
+                        Some(VerticalAlignment::Superscript)
+                    }
+                    "sub" | "subscript" | "bottom" | "text-bottom" => {
+                        Some(VerticalAlignment::Subscript)
+                    }
+                    _ => None,
+                };
+            }
+            _ => {}
+        }
+    }
+    (font, size, color, highlight, vert)
+}
+
 fn html_border_to_docx(b: &ParagraphBorder) -> DocxBorder {
     // CSS border-width "1pt" -> OOXML w:sz in eighths of a point
     let size = b
@@ -3119,8 +3205,11 @@ fn html_inlines_to_docx_runs(
                     });
                 }
             }
-            InlineElement::Text { text, .. } => {
+            InlineElement::Text { text, style } => {
                 if !text.is_empty() {
+                    // LEDGER2: span style CSS -> run properties so
+                    // font/size/color/highlight survive html -> docx.
+                    let (font, font_size, color, highlight, vert) = css_to_run_props(style);
                     runs.push(DocxRun {
                         text: text.clone(),
                         bold: false,
@@ -3128,12 +3217,12 @@ fn html_inlines_to_docx_runs(
                         underline: None,
                         strikethrough: false,
                         double_strikethrough: false,
-                        font: None,
-                        font_size: None,
+                        font,
+                        font_size,
                         font_size_cs: None,
-                        color: None,
-                        highlight: None,
-                        vertical_alignment: None,
+                        color,
+                        highlight,
+                        vertical_alignment: vert,
                         small_caps: false,
                         all_caps: false,
                         ..Default::default()
@@ -3141,113 +3230,49 @@ fn html_inlines_to_docx_runs(
                 }
             }
             InlineElement::Bold { content } => {
-                let text = extract_html_text(content);
-                if !text.is_empty() {
-                    runs.push(DocxRun {
-                        text,
-                        bold: true,
-                        italic: false,
-                        underline: None,
-                        strikethrough: false,
-                        double_strikethrough: false,
-                        font: None,
-                        font_size: None,
-                        font_size_cs: None,
-                        color: None,
-                        highlight: None,
-                        vertical_alignment: None,
-                        small_caps: false,
-                        all_caps: false,
-                        ..Default::default()
-                    });
+                // LEDGER2: recurse so nested styled spans keep their
+                // font/size/color/highlight props (old code flattened via
+                // extract_html_text and lost them).
+                for mut r in html_inlines_to_docx_runs(content, media, image_rels, comments) {
+                    r.bold = true;
+                    runs.push(r);
                 }
             }
             InlineElement::Italic { content } => {
-                let text = extract_html_text(content);
-                if !text.is_empty() {
-                    runs.push(DocxRun {
-                        text,
-                        bold: false,
-                        italic: true,
-                        underline: None,
-                        strikethrough: false,
-                        double_strikethrough: false,
-                        font: None,
-                        font_size: None,
-                        font_size_cs: None,
-                        color: None,
-                        highlight: None,
-                        vertical_alignment: None,
-                        small_caps: false,
-                        all_caps: false,
-                        ..Default::default()
-                    });
+                for mut r in html_inlines_to_docx_runs(content, media, image_rels, comments) {
+                    r.italic = true;
+                    runs.push(r);
                 }
             }
             InlineElement::Underline { content } => {
-                let text = extract_html_text(content);
-                if !text.is_empty() {
-                    runs.push(DocxRun {
-                        text,
-                        bold: false,
-                        italic: false,
-                        underline: Some(UnderlineType::Single),
-                        strikethrough: false,
-                        double_strikethrough: false,
-                        font: None,
-                        font_size: None,
-                        font_size_cs: None,
-                        color: None,
-                        highlight: None,
-                        vertical_alignment: None,
-                        small_caps: false,
-                        all_caps: false,
-                        ..Default::default()
-                    });
+                for mut r in html_inlines_to_docx_runs(content, media, image_rels, comments) {
+                    r.underline = Some(UnderlineType::Single);
+                    runs.push(r);
                 }
             }
             InlineElement::Strikethrough { content } => {
-                let text = extract_html_text(content);
-                if !text.is_empty() {
-                    runs.push(DocxRun {
-                        text,
-                        bold: false,
-                        italic: false,
-                        underline: None,
-                        strikethrough: true,
-                        double_strikethrough: false,
-                        font: None,
-                        font_size: None,
-                        font_size_cs: None,
-                        color: None,
-                        highlight: None,
-                        vertical_alignment: None,
-                        small_caps: false,
-                        all_caps: false,
-                        ..Default::default()
-                    });
+                for mut r in html_inlines_to_docx_runs(content, media, image_rels, comments) {
+                    r.strikethrough = true;
+                    runs.push(r);
                 }
             }
             InlineElement::Link { content, href, .. } => {
-                let text = extract_html_text(content);
-                if !text.is_empty() {
-                    runs.push(DocxRun {
-                        text: format!("{} ({})", text, href),
-                        bold: false,
-                        italic: false,
-                        underline: Some(UnderlineType::Single),
-                        strikethrough: false,
-                        double_strikethrough: false,
-                        font: None,
-                        font_size: None,
-                        font_size_cs: None,
-                        color: None,
-                        highlight: None,
-                        vertical_alignment: None,
-                        small_caps: false,
-                        all_caps: false,
-                        ..Default::default()
+                let mut inner = html_inlines_to_docx_runs(content, media, image_rels, comments);
+                if !inner.is_empty() {
+                    // LEDGER2: real hyperlink — one relationship, runs tagged
+                    // with hyperlink_rid; the serializer regroups consecutive
+                    // tagged runs into a single <w:hyperlink> wrapper.
+                    let rid = format!("rIdLnk{}", image_rels.len() + 1);
+                    image_rels.push(Relationship {
+                        id: rid.clone(),
+                        rel_type: "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink".to_string(),
+                        target: href.clone(),
+                        target_mode: Some("External".to_string()),
                     });
+                    for r in &mut inner {
+                        r.hyperlink_rid = Some(rid.clone());
+                    }
+                    runs.extend(inner);
                 }
             }
             InlineElement::Code { content } => {
@@ -3291,7 +3316,7 @@ fn html_inlines_to_docx_runs(
                         font_size_cs: None,
                         color: None,
                         highlight: None,
-                        vertical_alignment: Some(wo_ooxml::model::VerticalAlignment::Superscript),
+                        vertical_alignment: Some(VerticalAlignment::Superscript),
                         small_caps: false,
                         all_caps: false,
                         ..Default::default()
@@ -3741,6 +3766,9 @@ fn docx_runs_to_html_inlines(body: &DocxBody, runs: &[DocxRun]) -> Vec<InlineEle
     // (top entry) + child entries with parent_id == id (replies).
     let mut open_comment: Option<String> = None;
     let mut comment_buffer: Vec<InlineElement> = Vec::new();
+    // LEDGER2: hyperlink grouping state (see close_link below).
+    let mut link_open: Option<String> = None;
+    let mut link_buffer: Vec<InlineElement> = Vec::new();
     for run in runs {
         match &run.comment_anchor {
             Some(CommentAnchor::Start(id)) => {
@@ -3817,39 +3845,114 @@ fn docx_runs_to_html_inlines(body: &DocxBody, runs: &[DocxRun]) -> Vec<InlineEle
             continue;
         }
 
+        // LEDGER2 true gaps: run styling (font/size/color/highlight) and
+        // vertAlign survive the round trip — style rides the span style
+        // channel, sup/sub via the dedicated InlineElement wrappers.
+        let mut style_parts: Vec<String> = Vec::new();
+        if let Some(f) = &run.font {
+            style_parts.push(format!("font-family: {}", f));
+        }
+        if let Some(sz) = run.font_size {
+            style_parts.push(format!("font-size: {}pt", sz / 2));
+        }
+        if let Some(c) = &run.color {
+            style_parts.push(format!("color: #{}", c));
+        }
+        if let Some(h) = &run.highlight {
+            style_parts.push(format!("background-color: {}", h));
+        }
+        let style = if style_parts.is_empty() {
+            None
+        } else {
+            Some(style_parts.join("; "))
+        };
+        let styled = || InlineElement::Text {
+            text: text.clone(),
+            style: style.clone(),
+        };
+
         let element: InlineElement = if run.bold && run.italic {
             InlineElement::Bold {
                 content: vec![InlineElement::Italic {
-                    content: vec![InlineElement::Text { text, style: None }],
+                    content: vec![styled()],
                 }],
             }
         } else if run.bold {
             InlineElement::Bold {
-                content: vec![InlineElement::Text { text, style: None }],
+                content: vec![styled()],
             }
         } else if run.italic {
             InlineElement::Italic {
-                content: vec![InlineElement::Text { text, style: None }],
+                content: vec![styled()],
             }
         } else if run.strikethrough {
             InlineElement::Strikethrough {
-                content: vec![InlineElement::Text { text, style: None }],
+                content: vec![styled()],
             }
         } else if run.underline.is_some() {
             InlineElement::Underline {
-                content: vec![InlineElement::Text { text, style: None }],
+                content: vec![styled()],
             }
         } else {
-            InlineElement::Text { text, style: None }
+            styled()
+        };
+        let element = match run.vertical_alignment {
+            Some(VerticalAlignment::Superscript) => InlineElement::Superscript {
+                content: vec![element],
+            },
+            Some(VerticalAlignment::Subscript) => InlineElement::Subscript {
+                content: vec![element],
+            },
+            _ => element,
         };
 
-        if open_comment.is_some() {
-            comment_buffer.push(element);
+        // LEDGER2: runs tagged with a hyperlink r:id group into one
+        // InlineElement::Link (href resolved through body.hyperlink_rels).
+        if let Some(rid) = run.hyperlink_rid.clone() {
+            match link_open.as_deref() {
+                Some(open) if open == rid => link_buffer.push(element),
+                Some(_) | None => {
+                    close_link(&mut link_open, &mut link_buffer, &mut result, body);
+                    link_open = Some(rid);
+                    link_buffer = vec![element];
+                }
+            }
         } else {
-            result.push(element);
+            close_link(&mut link_open, &mut link_buffer, &mut result, body);
+            if open_comment.is_some() {
+                comment_buffer.push(element);
+            } else {
+                result.push(element);
+            }
         }
     }
+    close_link(&mut link_open, &mut link_buffer, &mut result, body);
     result
+}
+
+/// Flush an open hyperlink group into `result` as an InlineElement::Link.
+fn close_link(
+    link_open: &mut Option<String>,
+    link_buffer: &mut Vec<InlineElement>,
+    result: &mut Vec<InlineElement>,
+    body: &DocxBody,
+) {
+    if let Some(rid) = link_open.take() {
+        let href = body
+            .hyperlink_rels
+            .iter()
+            .find(|r| r.id == rid)
+            .map(|r| r.target.clone())
+            .unwrap_or_default();
+        if !link_buffer.is_empty() {
+            let content = std::mem::take(link_buffer);
+            result.push(InlineElement::Link {
+                href,
+                title: None,
+                content,
+            });
+        }
+    }
 }
 
 /// Convert an OOXML document body to HTML block elements.
@@ -3862,6 +3965,55 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
     };
 
     for para in body.paragraphs() {
+        // LEDGER2: list paragraphs (numPr) group into consecutive <ul>/<ol>
+        // blocks — numbered when the style says ListNumber, else bulleted.
+        // ponytail: list-type is style-name-based; a numbering.xml-aware
+        // mapping can refine later.
+        if para.properties.num_id.is_some() {
+            // numId 2 is our own ordered-list convention; hand-authored
+            // docx falls back to the ListNumber style heuristic.
+            let ordered = para.properties.num_id == Some(2)
+                || para
+                    .style_id
+                    .as_deref()
+                    .map(|s| s.contains("ListNumber"))
+                    .unwrap_or(false);
+            let ilvl = para.properties.ilvl.unwrap_or(0) as usize;
+            let inlines = docx_runs_to_html_inlines(body, &para.runs);
+            let item = ListItem { content: inlines };
+            // Flatten nesting: deep levels become items of the same list
+            // (indent depth is lost; ceiling noted).
+            if let Some(BlockElement::OrderedList { items, .. }) = result
+                .last_mut()
+                .filter(|b| matches!(b, BlockElement::OrderedList { .. }) && ordered)
+            {
+                items.push(item);
+                let _ = ilvl;
+                continue;
+            }
+            if let Some(BlockElement::UnorderedList { items, .. }) = result
+                .last_mut()
+                .filter(|b| matches!(b, BlockElement::UnorderedList { .. }) && !ordered)
+            {
+                items.push(item);
+                let _ = ilvl;
+                continue;
+            }
+            if ordered {
+                result.push(BlockElement::OrderedList {
+                    items: vec![item],
+                    id: None,
+                    start: None,
+                });
+            } else {
+                result.push(BlockElement::UnorderedList {
+                    items: vec![item],
+                    id: None,
+                });
+            }
+            continue;
+        }
+
         // Check for heading style
         let is_heading = para
             .style_id
@@ -3886,6 +4038,17 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
             right: b.right.as_ref().map(docx_border_to_html),
         });
 
+        let align = para
+            .properties
+            .alignment
+            .map(|a| match a {
+                TextAlignment::Left => "left",
+                TextAlignment::Center => "center",
+                TextAlignment::Right => "right",
+                TextAlignment::Both => "justify",
+            })
+            .map(String::from);
+
         let is_quote = para.style_id.as_deref() == Some("Quote");
         if is_heading {
             result.push(BlockElement::Heading {
@@ -3900,6 +4063,7 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
                     content: inlines,
                     id: None,
                     dir: None,
+                    align: align.clone(),
                     background: background.clone(),
                     borders: borders.clone(),
 
@@ -3914,6 +4078,7 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
                 content: inlines,
                 id: None,
                 dir: Some("rtl".to_string()),
+                align: align.clone(),
                 background: background.clone(),
                 borders: borders.clone(),
 
@@ -3924,6 +4089,7 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
                 content: inlines,
                 id: None,
                 dir: None,
+                align,
                 background,
                 borders,
 
@@ -4586,6 +4752,7 @@ fn odf_content_to_html_blocks(content: &OdfContent) -> Vec<BlockElement> {
                     content: inlines,
                     id: None,
                     dir: None,
+                    align: None,
                     background: None,
                     borders: None,
 
@@ -12857,8 +13024,11 @@ mod tests {
         let body = ooxml.docx_body.as_ref().unwrap();
         assert_eq!(body.paragraphs().len(), 3);
         assert!(body.paragraphs()[0].runs[0].text.contains("UL Item 1"));
-        assert!(body.paragraphs()[0].properties.indent_left == Some(720));
-        assert!(body.paragraphs()[2].runs[0].text.contains("5."));
+        // LEDGER2: lists are real numPr paragraphs now (numId 1 = bullet,
+        // 2 = ordered), not literal "\u{2022}" text with a manual indent.
+        assert!(body.paragraphs()[0].properties.num_id == Some(1));
+        assert!(body.paragraphs()[1].properties.num_id == Some(1));
+        assert!(body.paragraphs()[2].properties.num_id == Some(2));
     }
 
     #[test]
@@ -12877,6 +13047,7 @@ mod tests {
                             }],
                             id: None,
                             dir: None,
+                            align: None,
                             background: None,
                             borders: None,
 
@@ -12893,6 +13064,7 @@ mod tests {
                             }],
                             id: None,
                             dir: None,
+                            align: None,
                             background: None,
                             borders: None,
 
@@ -13053,7 +13225,11 @@ mod tests {
         );
         assert_eq!(runs[7].font, Some("Courier New".to_string()));
         assert!(runs[8].text.contains("link"));
-        assert!(runs[8].text.contains("https://example.com"));
+        // LEDGER2: links are real hyperlinks now — run carries the r:id and
+        // the relationship lands in the rels vec, not flattened into text.
+        assert!(runs[8].hyperlink_rid.is_some());
+        assert!(runs[8].text.contains("link"));
+        assert!(!runs[8].text.contains("https://example.com"));
         assert_eq!(runs[9].text, "[alt text]\n");
         assert!(runs[10].text.contains("end"));
     }
@@ -13140,6 +13316,7 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                align: None,
                 background: None,
                 borders: None,
 
@@ -13191,6 +13368,7 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    align: None,
                     background: None,
                     borders: None,
 
@@ -13207,6 +13385,7 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    align: None,
                     background: None,
                     borders: None,
 
@@ -13300,6 +13479,7 @@ mod tests {
             }],
             id: None,
             dir: None,
+            align: None,
             background: None,
             borders: None,
 
@@ -14025,6 +14205,7 @@ mod tests {
             content: vec![InlineElement::Bold { content: vec![] }],
             id: None,
             dir: None,
+            align: None,
             background: None,
             borders: None,
 
@@ -14052,6 +14233,7 @@ mod tests {
             }],
             id: None,
             dir: None,
+            align: None,
             background: None,
             borders: None,
 
@@ -14089,6 +14271,7 @@ mod tests {
             }],
             id: None,
             dir: None,
+            align: None,
             background: None,
             borders: None,
 
@@ -14110,6 +14293,7 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                align: None,
                 background: None,
                 borders: None,
 
@@ -14136,6 +14320,7 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                align: None,
                 background: None,
                 borders: None,
 
@@ -15065,6 +15250,7 @@ mod tests {
             content: vec![],
             id: None,
             dir: None,
+            align: None,
             background: None,
             borders: None,
 
@@ -15087,6 +15273,7 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    align: None,
                     background: None,
                     borders: None,
 
@@ -15103,6 +15290,7 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    align: None,
                     background: None,
                     borders: None,
 
@@ -15379,6 +15567,7 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                align: None,
                 background: None,
                 borders: None,
 
@@ -15392,6 +15581,7 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    align: None,
                     background: None,
                     borders: None,
 
@@ -15408,6 +15598,7 @@ mod tests {
                     }],
                     id: None,
                     dir: None,
+                    align: None,
                     background: None,
                     borders: None,
 
@@ -15517,6 +15708,7 @@ mod tests {
             ],
             id: None,
             dir: None,
+            align: None,
             background: None,
             borders: None,
 
@@ -15543,6 +15735,7 @@ mod tests {
             ],
             id: None,
             dir: None,
+            align: None,
             background: None,
             borders: None,
 
@@ -15687,6 +15880,7 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                align: None,
                 background: None,
                 borders: None,
 
@@ -15707,6 +15901,7 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                align: None,
                 background: None,
                 borders: None,
 
@@ -15729,6 +15924,7 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                align: None,
                 background: None,
                 borders: None,
 
@@ -15741,6 +15937,7 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                align: None,
                 background: None,
                 borders: None,
 
@@ -15788,6 +15985,7 @@ mod tests {
             }],
             id: None,
             dir: None,
+            align: None,
             background: None,
             borders: None,
 
@@ -15840,6 +16038,7 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                align: None,
                 background: None,
                 borders: None,
 
@@ -15859,6 +16058,7 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                align: None,
                 background: None,
                 borders: None,
 
@@ -17841,6 +18041,7 @@ mod tests {
             }],
             id: None,
             dir: None,
+            align: None,
             background: None,
             borders: None,
 
@@ -17867,6 +18068,7 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                align: None,
                 background: None,
                 borders: None,
 
@@ -17887,6 +18089,7 @@ mod tests {
                 }],
                 id: None,
                 dir: None,
+                align: None,
                 background: None,
                 borders: None,
 
