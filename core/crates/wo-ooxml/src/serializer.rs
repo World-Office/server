@@ -1833,6 +1833,17 @@ impl OoxmlSerializer {
       <w:sz w:val="36"/>
     </w:rPr>
   </w:style>
+  <w:style w:type="paragraph" w:styleId="ListParagraph">
+    <w:name w:val="List Paragraph"/>
+    <w:basedOn w:val="Normal"/>
+    <w:pPr>
+      <w:contextualSpacing/>
+    </w:pPr>
+  </w:style>
+  <w:style w:type="paragraph" w:styleId="ListNumber">
+    <w:name w:val="List Number"/>
+    <w:basedOn w:val="ListParagraph"/>
+  </w:style>
 </w:styles>"#
             .to_string()
     }
