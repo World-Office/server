@@ -35,6 +35,15 @@ const BINDS = {
   CopyrightSign:      'emitCommand("insertSymbol", "\\u00a9")',
   TrademarkSign:      'emitCommand("insertSymbol", "\\u2122")',
   RegisteredSign:     'emitCommand("insertSymbol", "\\u00ae")',
+  SaveAs:             'openBackstage("export")',
+  OpenCommentsPanel:  'openCommentsPanel()',
+  UnIndent:           'emitCommand("outdent")',
+  Indent:             'emitCommand("indent")',
+  InsertEquation:     'emitCommand("equationTemplate")',
+  UpdateFields:       'fieldOpAtSelection("update")',
+  OpenHelpMenu:       'openDlg("help-dialog")',
+  SpeechWorker:       'readAloud()',
+  HorizontalEllipsis: 'emitCommand("insertSymbol", "\\u2026")',
 };
 for (const [type, pin] of Object.entries(BINDS)) {
   assert.ok(src.includes(pin), `binding present: ${type}`);

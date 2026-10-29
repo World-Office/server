@@ -8421,22 +8421,51 @@
       if (k === "k") { ev.preventDefault(); emitCommand("smallCaps"); return; }
       // Column break: Ctrl+Shift+Enter (OO convention).
       if (k === "enter") { ev.preventDefault(); emitCommand("insertColumnBreak"); return; }
+      // Save As: Ctrl+Shift+S opens the Download As / export backstage pane.
+      if (k === "s") { ev.preventDefault(); openBackstage("export"); return; }
+      // Comments panel: Ctrl+Shift+H (OO convention).
+      if (k === "h") { ev.preventDefault(); openCommentsPanel(); return; }
+      // De-indent: Ctrl+Shift+M (OO convention; the Tab-in-list handler covers
+      // list outdenting, this is the paragraph-level command).
+      if (k === "m") { ev.preventDefault(); emitCommand("outdent"); return; }
     }
     if ((ev.ctrlKey || ev.metaKey) && ev.altKey) {
       const k = ev.key.toLowerCase();
       // Em dash: Ctrl+Alt+- (OO convention).
       if (ev.code === "Minus") { ev.preventDefault(); emitCommand("insertSymbol", "\u2014"); return; }
+      // Insert equation: Ctrl+Alt+= (OO convention; free in WO).
+      if (ev.code === "Equal") { ev.preventDefault(); emitCommand("equationTemplate"); return; }
       // Footnote now / Endnote now: Ctrl+Alt+F / Ctrl+Alt+D.
       if (k === "f") { ev.preventDefault(); emitCommand("insertFootnote"); return; }
       if (k === "d") { ev.preventDefault(); emitCommand("insertEndnote"); return; }
       // Chat/co-editing panel: Ctrl+Alt+Q (OO chat convention).
       if (k === "q") { ev.preventDefault(); emitCommand("toggleChat"); return; }
+      // Speech (read-aloud): Ctrl+Alt+Z (OO SpeechWorker — WO maps to TTS).
+      if (k === "z") { ev.preventDefault(); readAloud(); return; }
       // Symbol value inserts (OO conventions): Euro Ctrl+Alt+E, © Ctrl+Alt+G
       // (OO uses G — Ctrl+Alt+C is CopyFormat), ™ Ctrl+Alt+T, ® Ctrl+Alt+R.
       if (k === "e") { ev.preventDefault(); emitCommand("insertSymbol", "\u20ac"); return; }
       if (k === "g") { ev.preventDefault(); emitCommand("insertSymbol", "\u00a9"); return; }
       if (k === "t") { ev.preventDefault(); emitCommand("insertSymbol", "\u2122"); return; }
       if (k === "r") { ev.preventDefault(); emitCommand("insertSymbol", "\u00ae"); return; }
+    }
+    // Function keys (no ctrl required): F9 updates fields at selection
+    // (OO/Word convention); F1 opens Help (OO convention).
+    if (ev.key === "F9" && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey) {
+      ev.preventDefault();
+      fieldOpAtSelection("update");
+      return;
+    }
+    if (ev.key === "F1" && !ev.ctrlKey && !ev.metaKey && !ev.altKey && !ev.shiftKey) {
+      ev.preventDefault();
+      openDlg("help-dialog");
+      return;
+    }
+    // Alt+; inserts a horizontal ellipsis (OO convention; plain-Alt, no ctrl).
+    if (ev.altKey && !ev.ctrlKey && !ev.metaKey && !ev.shiftKey && ev.code === "Semicolon") {
+      ev.preventDefault();
+      emitCommand("insertSymbol", "\u2026");
+      return;
     }
     // ------------------------------------------------
     // Headings: Ctrl+Alt+1/2/3 -> H1/H2/H3, Ctrl+Alt+0 -> normal paragraph
@@ -8575,6 +8604,8 @@
       if (k === "enter" && !ev.shiftKey) { ev.preventDefault(); emitCommand("insertPageBreak"); return; }
       // Hyperlink: Ctrl+K (Word/LibreOffice convention).
       if (k === "k" && !ev.shiftKey) { ev.preventDefault(); emitCommand("link"); return; }
+      // Indent: Ctrl+M (OO convention; paragraph-level indent command).
+      if (k === "m" && !ev.shiftKey) { ev.preventDefault(); emitCommand("indent"); return; }
     }
     // Tab / Shift+Tab inside a list item indent / outdent the item (Word /
     // LibreOffice convention). execCommand("indent"/"outdent") nests or

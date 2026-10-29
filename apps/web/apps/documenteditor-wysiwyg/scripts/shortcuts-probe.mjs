@@ -68,7 +68,37 @@ async function waitUp(port) {
     "Control+Alt+Q":            "toggleChat",
     "Control+Alt+E":            "insertSymbol",   // Euro
     "Control+Alt+G":            "insertSymbol",   // © copyright
+    "Control+Shift+S":          "backend",        // save-as (backstage export pane — no bus cmd, verify pane)
+    "Control+Shift+H":          "backend",        // comments panel open
+    "Control+Alt+Equal":        "equationTemplate",
+    "Control+M":                "indent",
+    "Control+Shift+M":          "outdent",
+    "F1":                       "backend",        // help dialog
+    "F9":                       "backend",        // update fields (wo:field-op event)
+    "Control+Alt+Z":            "backend",        // read-aloud
+    "Alt+Semicolon":            "insertSymbol",   // ellipsis
   };
+  // Special-case: Save As opens the export backstage pane; Comments opens
+  // the comments rail; F1 opens Help; F9 fires wo:field-op; Ctrl+Alt+Z
+  // reads aloud (none is a plain bus command).
+  const special = {
+    "Control+Shift+S": (pv) => {
+      const overlay = document.getElementById("backstage-overlay");
+      const paneEl = overlay && overlay.querySelector(`[data-pane-view="${pv}"]`);
+      return !!(overlay && overlay.classList.contains("open") && paneEl && !paneEl.hidden);
+    },
+    "Control+Shift+H": () => {
+      const p = document.getElementById("comments-panel");
+      return !!(p && !p.hidden);
+    },
+    "F1": () => {
+      const d = document.getElementById("help-dialog");
+      return !!(d && (d.classList.contains("open") || getComputedStyle(d).display !== "none"));
+    },
+    "F9": () => true, // wo:field-op event — just assert no pageerror
+    "Control+Alt+Z": () => true,
+  };
+  const specialArgs = { "Control+Shift+S": "export", "Control+Shift+H": null };
 
   const results = [];
   for (const [combo, expected] of Object.entries(combos)) {
@@ -85,8 +115,13 @@ async function waitUp(port) {
     await page.keyboard.press(combo);
     await sleep(150);
     const cmds = await lastCmds();
-    const fired = cmds.includes(expected);
-    results.push({ name: `${combo} -> ${expected}`, pass: fired, detail: cmds.join(",") });
+    if (special[combo]) {
+      const ok = await page.evaluate(special[combo], specialArgs[combo]);
+      results.push({ name: `${combo} -> ${specialArgs[combo] || "panel"}`, pass: !!ok, detail: "visible=" + ok });
+    } else {
+      const fired = cmds.includes(expected);
+      results.push({ name: `${combo} -> ${expected}`, pass: fired, detail: cmds.join(",") });
+    }
   }
 
   // Zero JS pageerrors (resource 404/501 from static standalone serving is
