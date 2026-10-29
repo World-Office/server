@@ -8402,6 +8402,43 @@
   // Keyboard shortcuts
   // ------------------------------------------------------------------
   editor.addEventListener("keydown", (ev) => {
+    // ------------------------------------------------------------------
+    // C1 SHORTCUT PARITY (OO shortcut census, 2026-10-28). Dedicated block:
+    // runs BEFORE the ctrl/!altKey guard below so Alt-combos (em-dash,
+    // foot/endnote-now, chat, currency/symbol inserts) actually reach us —
+    // the guarded block would otherwise swallow them. Each binds a WO
+    // command target that already exists in runCommand()/emitCommand().
+    if ((ev.ctrlKey || ev.metaKey) && !ev.altKey && ev.key === " ") {
+      // Non-breaking space: Ctrl+Shift+Space (OO/Word convention).
+      if (ev.shiftKey) { ev.preventDefault(); emitCommand("insertSymbol", "\u00a0"); return; }
+    }
+    if ((ev.ctrlKey || ev.metaKey) && ev.shiftKey && !ev.altKey) {
+      const k = ev.key.toLowerCase();
+      // En dash: Ctrl+Shift+- (shifted minus; OO convention). Runs here so it
+      // takes precedence over zoom-out (Ctrl+-).
+      if (ev.code === "Minus") { ev.preventDefault(); emitCommand("insertSymbol", "\u2013"); return; }
+      // Small caps: Ctrl+Shift+K (Word/LibreOffice convention).
+      if (k === "k") { ev.preventDefault(); emitCommand("smallCaps"); return; }
+      // Column break: Ctrl+Shift+Enter (OO convention).
+      if (k === "enter") { ev.preventDefault(); emitCommand("insertColumnBreak"); return; }
+    }
+    if ((ev.ctrlKey || ev.metaKey) && ev.altKey) {
+      const k = ev.key.toLowerCase();
+      // Em dash: Ctrl+Alt+- (OO convention).
+      if (ev.code === "Minus") { ev.preventDefault(); emitCommand("insertSymbol", "\u2014"); return; }
+      // Footnote now / Endnote now: Ctrl+Alt+F / Ctrl+Alt+D.
+      if (k === "f") { ev.preventDefault(); emitCommand("insertFootnote"); return; }
+      if (k === "d") { ev.preventDefault(); emitCommand("insertEndnote"); return; }
+      // Chat/co-editing panel: Ctrl+Alt+Q (OO chat convention).
+      if (k === "q") { ev.preventDefault(); emitCommand("toggleChat"); return; }
+      // Symbol value inserts (OO conventions): Euro Ctrl+Alt+E, © Ctrl+Alt+G
+      // (OO uses G — Ctrl+Alt+C is CopyFormat), ™ Ctrl+Alt+T, ® Ctrl+Alt+R.
+      if (k === "e") { ev.preventDefault(); emitCommand("insertSymbol", "\u20ac"); return; }
+      if (k === "g") { ev.preventDefault(); emitCommand("insertSymbol", "\u00a9"); return; }
+      if (k === "t") { ev.preventDefault(); emitCommand("insertSymbol", "\u2122"); return; }
+      if (k === "r") { ev.preventDefault(); emitCommand("insertSymbol", "\u00ae"); return; }
+    }
+    // ------------------------------------------------
     // Headings: Ctrl+Alt+1/2/3 -> H1/H2/H3, Ctrl+Alt+0 -> normal paragraph
     // (Word / LibreOffice / Google Docs convention). Only plain digit keys
     // match, so layouts where Shift+digit yields a symbol are unaffected.
@@ -8506,9 +8543,11 @@
       // as declared via aria-keyshortcuts on #btn-zoom-out / #btn-zoom-in.
       // ev.code matches like the brackets above, so numeric-keypad and
       // non-US layouts resolve; applyZoom() clamps to 0.5–2.
+      // (Shift/Alt-minus variants are excluded here — they route to the dash
+      // inserts above; C1 em/en-dash parity.)
       if (
-        ev.code === "Minus" || ev.code === "Equal" ||
-        ev.code === "NumpadSubtract" || ev.code === "NumpadAdd" ||
+        (ev.code === "Minus" || ev.code === "NumpadSubtract") && !ev.shiftKey && !ev.altKey ||
+        (ev.code === "Equal" || ev.code === "NumpadAdd") ||
         k === "-" || k === "+" || k === "="
       ) {
         ev.preventDefault();
@@ -8526,6 +8565,16 @@
         applyZoom();
         return;
       }
+      // ------------------------------------------------------------------
+      // C1-SHORTCUT-PARITY (non-shift, non-alt combos — the shift/alt combos
+      // are handled in the dedicated block at the top of this handler).
+      // Superscript: Ctrl+, (OO convention).
+      if (k === "," && !ev.shiftKey) { ev.preventDefault(); emitCommand("superscript"); return; }
+      // Page break: plain Ctrl+Enter (OO convention; column break is the
+      // Ctrl+Shift+Enter variant, handled at the top).
+      if (k === "enter" && !ev.shiftKey) { ev.preventDefault(); emitCommand("insertPageBreak"); return; }
+      // Hyperlink: Ctrl+K (Word/LibreOffice convention).
+      if (k === "k" && !ev.shiftKey) { ev.preventDefault(); emitCommand("link"); return; }
     }
     // Tab / Shift+Tab inside a list item indent / outdent the item (Word /
     // LibreOffice convention). execCommand("indent"/"outdent") nests or
