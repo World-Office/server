@@ -44,6 +44,8 @@ const BINDS = {
   OpenHelpMenu:       'openDlg("help-dialog")',
   SpeechWorker:       'readAloud()',
   HorizontalEllipsis: 'emitCommand("insertSymbol", "\\u2026")',
+  CopyFormat:         'copyFormat()',
+  PasteFormat:        'pasteFormat()',
 };
 for (const [type, pin] of Object.entries(BINDS)) {
   assert.ok(src.includes(pin), `binding present: ${type}`);

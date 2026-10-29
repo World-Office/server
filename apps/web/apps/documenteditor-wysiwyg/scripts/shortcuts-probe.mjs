@@ -124,6 +124,97 @@ async function waitUp(port) {
     }
   }
 
+  // ---- Format painter behavioral check (real mutation, not just bus) ----
+  const paintCheck = async () => {
+    const html = () => page.evaluate(() => {
+      const ed = document.querySelector("[contenteditable='true']");
+      return ed ? ed.innerHTML : "";
+    });
+    // helper: locate the first real text node inside the editor paragraph
+    const nodes = () => page.evaluate(() => {
+      const ed = document.querySelector("[contenteditable='true']");
+      const out = [];
+      const w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT);
+      while (w.nextNode()) {
+        const n = w.currentNode;
+        if (n.textContent && n.textContent.trim().length) out.push(n.textContent);
+      }
+      return out;
+    });
+    // 1. clear and type XYZ into the focused editor
+    await page.evaluate(() => {
+      const ed = document.querySelector("[contenteditable='true']");
+      ed.focus();
+      const r = document.createRange(); r.selectNodeContents(ed);
+      const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      try { document.execCommand("delete"); } catch (_) {}
+    });
+    await page.keyboard.type("XYZ");
+    await sleep(100);
+    let html1 = await html();
+    if (!html1.includes("XYZ")) return { pass: false, detail: "typing failed: " + html1 };
+    // 2. bold just the first X: select first text node offset 0-1
+    const boldOk = await page.evaluate(() => {
+      const ed = document.querySelector("[contenteditable='true']");
+      const w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT);
+      while (w.nextNode()) {
+        const n = w.currentNode;
+        if (!n.textContent || !n.textContent.trim()) continue;
+        const r = document.createRange(); r.setStart(n, 0); r.setEnd(n, 1);
+        const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        try { document.execCommand("bold"); return true; } catch (_) { return false; }
+      }
+      return false;
+    });
+    await sleep(100);
+    if (!boldOk) return { pass: false, detail: "bold command failed" };
+    // 3. caret inside the bold run, copy format
+    const caretOk = await page.evaluate(() => {
+      const ed = document.querySelector("[contenteditable='true']");
+      const b = ed.querySelector("b, strong") || Array.from(ed.querySelectorAll("span")).find((s) => /font-weight:\s*700|font-weight:\s*bold/i.test(s.getAttribute("style") || ""));
+      if (!b) return false;
+      const t = b.firstChild;
+      if (!t) return false;
+      const r = document.createRange(); r.setStart(t, 0); r.collapse(true);
+      const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      return true;
+    });
+    if (!caretOk) return { pass: false, detail: "no bold element: " + await html() };
+    await page.keyboard.press("Control+Alt+C");
+    await sleep(100);
+    // 4. select "YZ" (text right after the bold element), paste format
+    const pasteOk = await page.evaluate(() => {
+      const ed = document.querySelector("[contenteditable='true']");
+      const b = ed.querySelector("b, strong") || Array.from(ed.querySelectorAll("span")).find((s) => /font-weight:\s*700|font-weight:\s*bold/i.test(s.getAttribute("style") || ""));
+      if (!b) return false;
+      const cand = [];
+      const w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT);
+      while (w.nextNode()) {
+        const n = w.currentNode;
+        if (n.textContent && n.textContent.trim() && !b.contains(n) && (n.textContent.includes("YZ") || n.textContent === "YZ")) cand.push(n);
+      }
+      const n = cand[0];
+      if (!n) return false;
+      const r = document.createRange(); r.setStart(n, 0); r.setEnd(n, n.textContent.length);
+      const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      return true;
+    });
+    if (!pasteOk) return { pass: false, detail: "no YZ text to select: " + await html() };
+    await page.keyboard.press("Control+Alt+V");
+    await sleep(150);
+    const after = await html();
+    const sem = (after.match(/<b[ >]|<strong[ >]/g) || []).length;
+    const painted = (after.match(/font-weight:\s*700|font-weight:\s*bold/gi) || []).length;
+    return { pass: after.includes("YZ") && (sem + painted) >= 2, detail: "semantic=" + sem + " font-weight markers=" + painted, after };
+  };
+
+  const paintState = await paintCheck();
+  results.push({
+    name: "format painter: bold copied + pasted onto plain",
+    pass: !!paintState.pass,
+    detail: paintState.detail || "fragment=" + (paintState.after || "").slice(0, 100),
+  });
+
   // Zero JS pageerrors (resource 404/501 from static standalone serving is
   // expected and not an editor defect; only real JS exceptions count).
   results.push({

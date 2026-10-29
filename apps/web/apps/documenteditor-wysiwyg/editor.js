@@ -827,6 +827,93 @@
     }
   }
 
+  // ------------------------------------------------------------------
+  // Format painter (OO Ctrl+Alt+C / Ctrl+Alt+V parity, C1). copyFormat()
+  // captures the explicit character formatting under the caret (inline
+  // styles + semantic b/i/u/s/sup/sub/mark tags); pasteFormat() re-applies
+  // it to the next selection with a single style span via the same
+  // insertHTML path as toggleInlineCSS, so it is undoable and round-trips
+  // like every other inline style.
+  const FMT_SEM_TAG = { b: "fontWeight", strong: "fontWeight", i: "fontStyle", em: "fontStyle", u: "textDecorationLine", s: "textDecorationLine", strike: "textDecorationLine", sup: "verticalAlign", sub: "verticalAlign", mark: "backgroundColor" };
+  const FMT_SEM_VAL = { b: "700", strong: "700", i: "italic", em: "italic", u: "underline", s: "line-through", strike: "line-through", sup: "super", sub: "sub", mark: "yellow" };
+  let paintedFormat = null;
+  function copyFormat() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    let node = sel.anchorNode;
+    if (!node) return;
+    if (node.nodeType === 3) node = node.parentElement;
+    const fmt = {};
+    let cur = node;
+    while (cur && cur !== editor && cur.nodeType === 1) {
+      const st = cur.style;
+      if (st.fontWeight && !fmt.fontWeight) fmt.fontWeight = st.fontWeight;
+      if (st.fontStyle && !fmt.fontStyle) fmt.fontStyle = st.fontStyle;
+      if (st.textDecorationLine && !fmt.textDecorationLine) fmt.textDecorationLine = st.textDecorationLine;
+      if (st.verticalAlign && !fmt.verticalAlign) fmt.verticalAlign = st.verticalAlign;
+      if (st.fontVariant && !fmt.fontVariant) fmt.fontVariant = st.fontVariant;
+      if (st.textTransform && !fmt.textTransform) fmt.textTransform = st.textTransform;
+      if (st.color && !fmt.color) fmt.color = st.color;
+      if (st.backgroundColor && !fmt.backgroundColor) fmt.backgroundColor = st.backgroundColor;
+      if (st.fontFamily && !fmt.fontFamily) fmt.fontFamily = st.fontFamily;
+      if (st.fontSize && !fmt.fontSize) fmt.fontSize = st.fontSize;
+      cur = cur.parentNode;
+    }
+    cur = node;
+    while (cur && cur !== editor && cur.nodeType === 1) {
+      const tag = cur.tagName.toLowerCase();
+      if (FMT_SEM_TAG[tag] && !fmt[FMT_SEM_TAG[tag]]) fmt[FMT_SEM_TAG[tag]] = FMT_SEM_VAL[tag];
+      cur = cur.parentNode;
+    }
+    paintedFormat = fmt;
+    setStatus(t("Status.FormatCopied"));
+  }
+  function hasExplicitFormat(node, prop, value) {
+    let cur = node;
+    while (cur && cur !== editor && cur.nodeType === 1) {
+      if (cur.style && cur.style[prop] === value) return true;
+      const tag = cur.tagName.toLowerCase();
+      if (FMT_SEM_TAG[tag] === prop && FMT_SEM_VAL[tag] === value) return true;
+      cur = cur.parentNode;
+    }
+    return false;
+  }
+  function paintFormatOnSelection(fmt) {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return false;
+    const range = sel.getRangeAt(0);
+    if (range.collapsed || range.toString() === "") return false;
+    try {
+      const frag = range.cloneContents();
+      const tmp = document.createElement("div");
+      tmp.appendChild(frag);
+      const inner = tmp.innerHTML;
+      const styleAttr = Object.entries(fmt)
+        .map(([p, v]) => `${p.replace(/([A-Z])/g, "-$1").toLowerCase()}:${v}`)
+        .join(";");
+      document.execCommand("insertHTML", false, `<span style="${styleAttr}">${inner}</span>`);
+      return true;
+    } catch (err) { return false; }
+  }
+  function pasteFormat() {
+    if (!paintedFormat) { setStatus(t("Status.NoFormatToPaste")); return; }
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) { setStatus(t("Status.NoSelection")); return; }
+    const range = sel.getRangeAt(0);
+    if (range.collapsed || range.toString() === "") { setStatus(t("Status.NoSelection")); return; }
+    let node = range.commonAncestorContainer;
+    if (node.nodeType === 3) node = node.parentElement;
+    const missing = Object.entries(paintedFormat).filter(([p, v]) => !hasExplicitFormat(node, p, v));
+    if (missing.length === 0) { setStatus(t("Status.FormatApplied")); return; }
+    if (paintFormatOnSelection(Object.fromEntries(missing))) {
+      markDirty();
+      captureHistory();
+      scheduleCollabSync();
+      notifyHost("editing");
+      setStatus(t("Status.FormatApplied"));
+    }
+  }
+
   function fontIsMono() {
     try {
       return /consolas|courier|mono/i.test(
@@ -8448,6 +8535,10 @@
       if (k === "g") { ev.preventDefault(); emitCommand("insertSymbol", "\u00a9"); return; }
       if (k === "t") { ev.preventDefault(); emitCommand("insertSymbol", "\u2122"); return; }
       if (k === "r") { ev.preventDefault(); emitCommand("insertSymbol", "\u00ae"); return; }
+      // Format painter: Ctrl+Alt+C copy format, Ctrl+Alt+V paste format
+      // (OO convention).
+      if (k === "c") { ev.preventDefault(); copyFormat(); return; }
+      if (k === "v") { ev.preventDefault(); pasteFormat(); return; }
     }
     // Function keys (no ctrl required): F9 updates fields at selection
     // (OO/Word convention); F1 opens Help (OO convention).
