@@ -144,6 +144,16 @@ assert.ok(
   "applyObjectOp must implement foreground/background/ungroup/actual-size/replace-image/save-as-picture",
 )
 assert.ok(
+  // CHROMIUM-SELECTION-FIX: browser selection never anchors on replaced
+  // elements, so object picks must be tracked on mousedown and used as a
+  // fallback in selectedObject (else every image/object op silently no-ops).
+  editorSrc.includes("let lastObjectPick = null;") &&
+    editorSrc.includes('editor.addEventListener("mousedown"') &&
+    editorSrc.includes('t.closest("img, div.object")') &&
+    editorSrc.includes("if (lastObjectPick && editor.contains(lastObjectPick)) return lastObjectPick;"),
+  "selectedObject must fall back to the mousedown object pick (Chromium never anchors selections on <img>)",
+)
+assert.ok(
   layoutHtml.includes('data-i18n="Layout.Wrapping"'),
   "Wrapping menu trigger must exist",
 )

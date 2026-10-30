@@ -2868,6 +2868,7 @@
   // floating object at the selection (img or div.object). Every op announces
   // itself on the wo:object-op bus (the observable contract agents wait on)
   // AND performs the real DOM mutation the obj-* class contract defines.
+  let lastObjectPick = null;
   function selectedObject() {
     const sel = window.getSelection();
     let node = null;
@@ -2876,6 +2877,10 @@
       const obj = node.closest("img, div.object");
       if (obj && editor.contains(obj)) return obj;
     }
+    // CHROMIUM-SELECTION-FIX: fall back to the most recent object mousedown
+    // (browser selection never anchors on replaced elements). Cleared on any
+    // non-object mousedown.
+    if (lastObjectPick && editor.contains(lastObjectPick)) return lastObjectPick;
     return null;
   }
   const OBJ_LAYOUT_CLASSES = ["obj-inline", "obj-square", "obj-right", "obj-behind", "obj-center"];
@@ -10929,6 +10934,17 @@
   // Selection wiring (header-footer precedent): clicking a chart reveals
   // and activates the contextual tab; clicking anywhere else in the
   // document drops the pick, disables the controls and hides the tab.
+  editor.addEventListener("mousedown", (ev) => {
+    // CHROMIUM-SELECTION-FIX: Chromium never sets the selection anchor on a
+    // replaced element (<img>) inside contenteditable (measured: anchor is
+    // always the containing block). selectedObject() therefore could never
+    // match a plain image, silently no-oping every image/object op (wrap,
+    // replace, crop, alt text, foreground/background, group). Track the pick
+    // on mousedown and fall back to it in selectedObject().
+    const t = ev.target;
+    const o = (t && t.closest && t !== editor) ? t.closest("img, div.object") : null;
+    lastObjectPick = (o && editor.contains(o)) ? o : null;
+  });
   editor.addEventListener("click", (ev) => {
     const img = ev.target.closest ? ev.target.closest("img.vector-object[data-kind='chart']") : null;
     if (img && !READ_ONLY) {
