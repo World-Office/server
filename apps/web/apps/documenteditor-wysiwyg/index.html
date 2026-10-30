@@ -2031,6 +2031,60 @@
           <option value="green-yellow">Green Yellow</option>
         </select>
       </div>
+      <div class="dialog-field">
+        <label>Paper color (background)</label>
+        <div class="color-swatches" id="colors-paper-swatches">
+          <button type="button" class="color-swatch sel" data-color="#ffffff" style="background:#ffffff" aria-label="White"></button>
+          <button type="button" class="color-swatch" data-color="#fdf8ec" style="background:#fdf8ec" aria-label="Cream"></button>
+          <button type="button" class="color-swatch" data-color="#f6faff" style="background:#f6faff" aria-label="Blue tint"></button>
+          <button type="button" class="color-swatch" data-color="#feffea" style="background:#feffea" aria-label="Green tint"></button>
+          <button type="button" class="color-swatch" data-color="#fff0f0" style="background:#fff0f0" aria-label="Red tint"></button>
+          <button type="button" class="color-swatch" data-color="#eef2fa" style="background:#eef2fa" aria-label="Slate"></button>
+        </div>
+      </div>
+      <div class="dialog-field">
+        <label for="colors-paper-custom">Custom paper color</label>
+        <input id="colors-paper-custom" type="color" value="#ffffff">
+      </div>
+      <div class="dialog-field">
+        <label for="colors-paper-hex">Paper HEX</label>
+        <input id="colors-paper-hex" type="text" value="#FFFFFF" maxlength="7" pattern="^#[0-9A-Fa-f]{6}$">
+      </div>
+      <div class="dialog-field" role="group" aria-label="Paper RGB">
+        <label for="colors-paper-red">R</label>
+        <input id="colors-paper-red" type="number" min="0" max="255" value="255">
+        <label for="colors-paper-green">G</label>
+        <input id="colors-paper-green" type="number" min="0" max="255" value="255">
+        <label for="colors-paper-blue">B</label>
+        <input id="colors-paper-blue" type="number" min="0" max="255" value="255">
+      </div>
+      <div class="dialog-field">
+        <label>Ink color (text)</label>
+        <div class="color-swatches" id="colors-ink-swatches">
+          <button type="button" class="color-swatch sel" data-color="#000000" style="background:#000000" aria-label="Black"></button>
+          <button type="button" class="color-swatch" data-color="#352a17" style="background:#352a17" aria-label="Dark brown"></button>
+          <button type="button" class="color-swatch" data-color="#1b2b3a" style="background:#1b2b3a" aria-label="Dark blue"></button>
+          <button type="button" class="color-swatch" data-color="#2a3314" style="background:#2a3314" aria-label="Dark green"></button>
+          <button type="button" class="color-swatch" data-color="#1a1a1a" style="background:#1a1a1a" aria-label="Dark gray"></button>
+          <button type="button" class="color-swatch" data-color="#800000" style="background:#800000" aria-label="Maroon"></button>
+        </div>
+      </div>
+      <div class="dialog-field">
+        <label for="colors-ink-custom">Custom ink color</label>
+        <input id="colors-ink-custom" type="color" value="#000000">
+      </div>
+      <div class="dialog-field">
+        <label for="colors-ink-hex">Ink HEX</label>
+        <input id="colors-ink-hex" type="text" value="#000000" maxlength="7" pattern="^#[0-9A-Fa-f]{6}$">
+      </div>
+      <div class="dialog-field" role="group" aria-label="Ink RGB">
+        <label for="colors-ink-red">R</label>
+        <input id="colors-ink-red" type="number" min="0" max="255" value="0">
+        <label for="colors-ink-green">G</label>
+        <input id="colors-ink-green" type="number" min="0" max="255" value="0">
+        <label for="colors-ink-blue">B</label>
+        <input id="colors-ink-blue" type="number" min="0" max="255" value="0">
+      </div>
       <div class="dialog-actions">
         <button id="btn-colors-close" data-i18n="Dialog.Cancel">Cancel</button>
         <button id="btn-colors-ok" data-i18n="Dialog.OK" class="primary">OK</button>
