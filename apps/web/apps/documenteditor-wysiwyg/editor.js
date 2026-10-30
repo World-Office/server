@@ -1480,12 +1480,6 @@
       console.info("wo: chart-3d requested", onChart ? "(on chart)" : "(no chart selected)");
       return;
     }
-    if (cmd === "hyphenationSet") {
-      if (READ_ONLY) return;
-      if (value === "none") { removeSectionMarker("hyphenation"); setStatus("Hyphenation off"); }
-      else { setSectionMarker("hyphenation", 'data-auto="1"'); setStatus("Hyphenation on"); }
-      return;
-    }
     if (cmd === "openTableDialog") { insertTable(); return; }
     if (cmd === "tableDrawMode") { toggleTableTool("draw"); return; }
     if (cmd === "tableEraseMode") { toggleTableTool("erase"); return; }
