@@ -7741,6 +7741,16 @@
   function openPageColorDialog() {
     closeAllMenus();
     pageColorPicked = null;
+    const pageColor = document.getElementById("pagecolor")
+    const color = (pageColor && pageColor.value) || "#ffffff"
+    setPageColorInputs(color)
+    // Select the matching swatch
+    const pageSwatches = document.getElementById("pagecolor-swatches")
+    if (pageSwatches) {
+      pageSwatches.querySelectorAll(".color-swatch").forEach((s) => {
+        s.classList.toggle("sel", (s.dataset.color || "#ffffff").toLowerCase() === color.toLowerCase())
+      })
+    }
     openOverlayDialog("pagecolor-dialog");
   }
   function confirmPageColorDialog() {
@@ -7828,6 +7838,69 @@
     const row = document.getElementById("wm-custom-row");
     if (row) row.hidden = wmMode.value !== "custom";
   });
+
+  // Page Color advanced controls — HEX / RGB helpers (WO-4)
+  function parseHexColor(hex) {
+    hex = hex?.trim()?.toUpperCase()
+    if (!hex || !/^#?[0-9A-F]{6}$/.test(hex)) return null
+    // Validate with match for OnlyOffice parity
+    if (!hex.match(/^#[0-9A-F]{6}$/i)) return null
+    hex = hex.startsWith("#") ? hex : "#" + hex
+    return { hex, r: parseInt(hex.slice(1, 3), 16), g: parseInt(hex.slice(3, 5), 16), b: parseInt(hex.slice(5), 16) }
+  }
+  function rgbToHex(r, g, b) {
+    r = Math.max(0, Math.min(255, Math.floor(r || 0)))
+    g = Math.max(0, Math.min(255, Math.floor(g || 0)))
+    b = Math.max(0, Math.min(255, Math.floor(b || 0)))
+    return "#" + [r, g, b].map((c) => c.toString(16).toUpperCase().padStart(2, "0")).join("")
+  }
+  function updatePageColorFromHex() {
+    const hexInput = document.getElementById("pagecolor-hex")
+    if (!hexInput) return
+    const parsed = parseHexColor(hexInput.value)
+    if (!parsed) return
+    const red = document.getElementById("pagecolor-red")
+    const green = document.getElementById("pagecolor-green")
+    const blue = document.getElementById("pagecolor-blue")
+    const custom = document.getElementById("pagecolor-custom")
+    if (red) red.value = parsed.r
+    if (green) green.value = parsed.g
+    if (blue) blue.value = parsed.b
+    if (custom) custom.value = parsed.hex
+    pageColorPicked = parsed.hex
+  }
+  function updatePageColorFromRgb() {
+    const red = document.getElementById("pagecolor-red")
+    const green = document.getElementById("pagecolor-green")
+    const blue = document.getElementById("pagecolor-blue")
+    if (!red || !green || !blue) return
+    const r = parseInt(red.value) || 0
+    const g = parseInt(green.value) || 0
+    const b = parseInt(blue.value) || 0
+    const hex = rgbToHex(r, g, b)
+    const hexInput = document.getElementById("pagecolor-hex")
+    const custom = document.getElementById("pagecolor-custom")
+    if (hexInput) hexInput.value = hex
+    if (custom) custom.value = hex
+    pageColorPicked = hex
+  }
+  function setPageColorInputs(color) {
+    const hex = color?.startsWith("#") ? color : "#" + color || "#FFFFFF"
+    const parsed = parseHexColor(hex)
+    if (!parsed) return
+    const hexInput = document.getElementById("pagecolor-hex")
+    const red = document.getElementById("pagecolor-red")
+    const green = document.getElementById("pagecolor-green")
+    const blue = document.getElementById("pagecolor-blue")
+    const custom = document.getElementById("pagecolor-custom")
+    if (hexInput) hexInput.value = parsed.hex
+    if (red) red.value = parsed.r
+    if (green) green.value = parsed.g
+    if (blue) blue.value = parsed.b
+    if (custom) custom.value = parsed.hex
+    pageColorPicked = parsed.hex
+  }
+
   const pageSwatches = document.getElementById("pagecolor-swatches");
   if (pageSwatches) pageSwatches.addEventListener("click", (ev) => {
     const btn = ev.target.closest && ev.target.closest(".color-swatch");
@@ -7836,7 +7909,22 @@
     pageSwatches.querySelectorAll(".color-swatch").forEach((s) => s.classList.toggle("sel", s === btn));
     const custom = document.getElementById("pagecolor-custom");
     if (custom && pageColorPicked && pageColorPicked.startsWith("#")) custom.value = pageColorPicked;
+    setPageColorInputs(pageColorPicked)
   });
+
+  // Page Color advanced inputs — HEX and RGB controls (WO-4)
+  const pagecolorHex = document.getElementById("pagecolor-hex")
+  if (pagecolorHex) pagecolorHex.addEventListener("input", () => { updatePageColorFromHex() })
+  const pagecolorRed = document.getElementById("pagecolor-red")
+  const pagecolorGreen = document.getElementById("pagecolor-green")
+  const pagecolorBlue = document.getElementById("pagecolor-blue")
+  if (pagecolorRed) pagecolorRed.addEventListener("input", () => { updatePageColorFromRgb() })
+  if (pagecolorGreen) pagecolorGreen.addEventListener("input", () => { updatePageColorFromRgb() })
+  if (pagecolorBlue) pagecolorBlue.addEventListener("input", () => { updatePageColorFromRgb() })
+  const pagecolorCustom = document.getElementById("pagecolor-custom")
+  if (pagecolorCustom) pagecolorCustom.addEventListener("input", () => {
+    setPageColorInputs(pagecolorCustom.value)
+  })
   // Note / page-field / header-footer authoring buttons (F-073/F-074/F-084/F-085):
   // these carry data-cmd in index.html and are wired once by the generic
   // data-cmd dispatcher above — a dedicated emitCommand listener here ran
