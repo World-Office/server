@@ -1974,7 +1974,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -7991,7 +7991,7 @@
   function openWatermarkDialog() { closeAllMenus(); openOverlayDialog("watermark-dialog"); }
 
   const ROUND2 = [
-    ["dropcap", confirmDropcapDialog], ["linenumbers", confirmLineNumbersDialog],
+    ["dropcap", confirmDropcapDialog], ["speech", confirmSpeechDialog], ["linenumbers", confirmLineNumbersDialog],
     ["hyphenation", confirmHyphenationDialog], ["watermark", confirmWatermarkDialog],
     ["pagecolor", confirmPageColorDialog], ["colors", confirmColorsDialog],
     ["addtext", null], ["updatetoc", confirmUpdateTocDialog],
@@ -8002,6 +8002,16 @@
     const close = document.getElementById("btn-" + name + "-close");
     if (ok && confirm) ok.addEventListener("click", () => { closeOverlayDialog(name + "-dialog"); confirm(); });
     if (close) close.addEventListener("click", () => closeOverlayDialog(name + "-dialog"));
+  }
+  const speechRate = document.getElementById("speech-rate");
+  const speechRateValue = document.getElementById("speech-rate-value");
+  if (speechRate && speechRateValue) {
+    speechRate.addEventListener("input", () => { speechRateValue.textContent = speechRate.value; });
+  }
+  const speechPitch = document.getElementById("speech-pitch");
+  const speechPitchValue = document.getElementById("speech-pitch-value");
+  if (speechPitch && speechPitchValue) {
+    speechPitch.addEventListener("input", () => { speechPitchValue.textContent = speechPitch.value; });
   }
   const wmMode = document.getElementById("wm-mode");
   if (wmMode) wmMode.addEventListener("change", () => {
@@ -10824,6 +10834,7 @@
 
   // View > Speech: read the selection/paragraph aloud (TTS) or dictate in (STT).
   // Native Web Speech APIs — no network, no server involvement.
+  let speechTextToRead = "";
   function readAloud() {
     if (!("speechSynthesis" in window)) { setStatus("Text-to-speech not supported in this browser", true); return; }
     const sel = window.getSelection();
@@ -10835,12 +10846,43 @@
       text = (p && p.innerText || "").trim();
     }
     if (!text) { setStatus("Nothing to read — select text or place the cursor in a paragraph", true); return; }
+    speechTextToRead = text;
+    openSpeechDialog();
+  }
+  function openSpeechDialog() {
+    closeAllMenus();
+    const voiceSelect = document.getElementById("speech-voice");
+    if (voiceSelect && speechSynthesis.onvoiceschanged !== undefined) {
+      const voices = speechSynthesis.getVoices();
+      voiceSelect.innerHTML = '<option value="" data-i18n="View.SpeechDefaultVoice">Default</option>';
+      voices.forEach(voice => {
+        const option = document.createElement("option");
+        option.value = voice.name;
+        option.textContent = `${voice.name} (${voice.lang})`;
+        voiceSelect.appendChild(option);
+      });
+    }
+    openOverlayDialog("speech-dialog");
+  }
+  function confirmSpeechDialog() {
+    const voiceName = (document.getElementById("speech-voice") || {}).value;
+    const rate = parseFloat((document.getElementById("speech-rate") || {}).value) || 1;
+    const pitch = parseFloat((document.getElementById("speech-pitch") || {}).value) || 1;
+    if (!speechTextToRead) return;
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
+    const u = new SpeechSynthesisUtterance(speechTextToRead);
     u.lang = editor.getAttribute("lang") || "en-US";
+    if (voiceName) {
+      const voices = speechSynthesis.getVoices();
+      const selectedVoice = voices.find(v => v.name === voiceName);
+      if (selectedVoice) u.voice = selectedVoice;
+    }
+    u.rate = Math.max(0.5, Math.min(2, rate));
+    u.pitch = Math.max(0.5, Math.min(2, pitch));
     u.onend = () => setStatus("Finished reading");
     speechSynthesis.speak(u);
     setStatus("Reading aloud…");
+    closeOverlayDialog("speech-dialog");
   }
   function dictate() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;

@@ -1908,6 +1908,32 @@
     </div>
   </div>
 
+  <div id="speech-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="speech-dialog-title">
+    <div class="dialog">
+      <h3 id="speech-dialog-title" data-i18n="View.SpeechSettings">Speech Settings</h3>
+      <div class="dialog-field">
+        <label for="speech-voice" data-i18n="View.SpeechVoice">Voice</label>
+        <select id="speech-voice" data-i18n="View.SpeechVoiceSelect">
+          <option value="" data-i18n="View.SpeechDefaultVoice">Default</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label for="speech-rate" data-i18n="View.SpeechRate">Speed</label>
+        <input id="speech-rate" type="range" min="0.5" max="2" step="0.1" value="1">
+        <span id="speech-rate-value">1</span>
+      </div>
+      <div class="dialog-field">
+        <label for="speech-pitch" data-i18n="View.SpeechPitch">Pitch</label>
+        <input id="speech-pitch" type="range" min="0.5" max="2" step="0.1" value="1">
+        <span id="speech-pitch-value">1</span>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-speech-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-speech-ok" data-i18n="Dialog.OK" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
   <div id="linenumbers-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="linenumbers-dialog-title">
     <div class="dialog">
       <h3 id="linenumbers-dialog-title">Line Numbers</h3>
