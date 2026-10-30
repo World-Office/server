@@ -1980,7 +1980,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "backstage-overlay"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -2425,6 +2425,38 @@
     ol.remove();
     markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing");
     setStatus(t("Status.NumberingContinued"));
+    return true;
+  }
+  // C4-1: paragraph settings — caret block gets text-align, indents,
+  // line-height + keep/break classes (renders now; DOCX p-margin round-trip
+  // is a converter ceiling, text-align/background already round-trip F-040).
+  function caretParagraph() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    let n = sel.anchorNode;
+    if (n && n.nodeType === 3) n = n.parentElement;
+    if (!n || !n.closest) return null;
+    return n.closest("p, div, li, h1, h2, h3, h4, h5, h6");
+  }
+  function applyParagraphSettings(p) {
+    if (!p) { setStatus(t("Status.NoListAtCaret")); return false; }
+    const al = document.getElementById("ps-align"); if (al) p.style.textAlign = al.value;
+    const il = document.getElementById("ps-indent-left");
+    const ir = document.getElementById("ps-indent-right");
+    const fl = document.getElementById("ps-first-line");
+    const sp = document.getElementById("ps-spacing");
+    if (il && Number(il.value) > 0) p.style.marginLeft = il.value + "px"; else p.style.removeProperty("margin-left");
+    if (ir && Number(ir.value) > 0) p.style.marginRight = ir.value + "px"; else p.style.removeProperty("margin-right");
+    if (fl && Number(fl.value) !== 0) p.style.textIndent = fl.value + "px"; else p.style.removeProperty("text-indent");
+    if (sp && Number(sp.value) > 1) p.style.lineHeight = sp.value; else p.style.removeProperty("line-height");
+    const kl = document.getElementById("ps-keep-lines");
+    const kn = document.getElementById("ps-keep-next");
+    const pb = document.getElementById("ps-page-break");
+    p.classList.toggle("keep-lines-together", !!(kl && kl.checked));
+    p.classList.toggle("keep-with-next", !!(kn && kn.checked));
+    p.classList.toggle("page-break-before", !!(pb && pb.checked));
+    markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing");
+    setStatus("Paragraph settings applied");
     return true;
   }
   // C2-2b: bullets-and-numbering — set the caret list's numbering format
@@ -4418,6 +4450,38 @@
   if (btnBnOk) btnBnOk.addEventListener("click", confirmBulletsNumberingDialog);
   if (btnBnClose) btnBnClose.addEventListener("click", () => {
     if (bulletsNumberingDialog) bulletsNumberingDialog.classList.remove("open");
+    restoreFocus();
+  });
+  const paragraphSettingsDialog = document.getElementById("paragraph-settings-dialog");
+  const openParagraphSettingsDialog = () => {
+    if (!paragraphSettingsDialog) return;
+    const p = caretParagraph();
+    if (!p) { setStatus(t("Status.NoListAtCaret")); return; }
+    const cs = window.getComputedStyle(p);
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    set("ps-align", p.style.textAlign || cs.textAlign || "left");
+    set("ps-indent-left", String(parseInt(p.style.marginLeft || cs.marginLeft || "0", 10) || 0));
+    set("ps-indent-right", String(parseInt(p.style.marginRight || cs.marginRight || "0", 10) || 0));
+    set("ps-first-line", String(parseInt(p.style.textIndent || cs.textIndent || "0", 10) || 0));
+    const lh = p.style.lineHeight || cs.lineHeight;
+    set("ps-spacing", (lh === "1.5" || lh === "2") ? lh : "1");
+    const ck = (id, on) => { const el = document.getElementById(id); if (el) el.checked = on; };
+    ck("ps-keep-lines", p.classList.contains("keep-lines-together"));
+    ck("ps-keep-next", p.classList.contains("keep-with-next"));
+    ck("ps-page-break", p.classList.contains("page-break-before"));
+    rememberFocus();
+    paragraphSettingsDialog.classList.add("open");
+  };
+  const confirmParagraphSettingsDialog = () => {
+    if (paragraphSettingsDialog) paragraphSettingsDialog.classList.remove("open");
+    restoreFocus();
+    applyParagraphSettings(caretParagraph());
+  };
+  const btnPsOk = document.getElementById("btn-ps-ok");
+  const btnPsClose = document.getElementById("btn-ps-close");
+  if (btnPsOk) btnPsOk.addEventListener("click", confirmParagraphSettingsDialog);
+  if (btnPsClose) btnPsClose.addEventListener("click", () => {
+    if (paragraphSettingsDialog) paragraphSettingsDialog.classList.remove("open");
     restoreFocus();
   });
   const openHrSettings = () => {
@@ -8271,8 +8335,7 @@
         window.dispatchEvent(new CustomEvent("wo:style-from-format", { detail: { source: "ctx-menu" } }));
         console.info("wo: style-from-format requested (ctx menu)");
       } else if (action === "ParagraphSettings") {
-        window.dispatchEvent(new CustomEvent("wo:open-paragraph-settings", { detail: { source: "ctx-menu" } }));
-        console.info("wo: open-paragraph-settings requested (ctx menu)");
+        openParagraphSettingsDialog();
       } else if (action === "TocSettings") {
         window.dispatchEvent(new CustomEvent("wo:toc-settings", { detail: { source: "ctx-menu" } }));
         console.info("wo: toc-settings requested (ctx menu)");

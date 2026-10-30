@@ -2627,3 +2627,7 @@ html.light {
 body.wo-table-draw #editor td, body.wo-table-draw #editor th { cursor: crosshair; }
 body.wo-table-erase #editor td, body.wo-table-erase #editor th { cursor: cell; }
 #text-to-table-dialog .dialog-field select { margin-right: 6px; }
+/* C4-1 paragraph settings: keep/break classes. */
+#editor .keep-lines-together { page-break-inside: avoid; break-inside: avoid; }
+#editor .keep-with-next { break-after: avoid; page-break-after: avoid; }
+#editor .page-break-before { break-before: page; page-break-before: always; }

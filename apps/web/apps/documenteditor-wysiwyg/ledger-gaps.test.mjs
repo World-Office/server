@@ -37,6 +37,13 @@ pin("convert-back menu", html, 'data-cmd="convertTableToText"');
 pin("convert-back dialog", html, 'id="table-to-text-dialog"');
 pin("convert-back confirm", js, "confirmTableToTextDialog");
 pin("convert-back row->paragraph", js, 'rows.map((cells) => cells.join(sep))');
+
+// 2b. C4-1 paragraph settings dialog.
+pin("ps dialog", html, 'id="paragraph-settings-dialog"');
+pin("ps opener", js, "openParagraphSettingsDialog");
+pin("ps apply indents", js, 'p.style.marginLeft = il.value + "px"');
+pin("ps keep class", js, "p.classList.toggle(\"keep-lines-together\"");
+pin("ps ctx wiring", js, 'action === "ParagraphSettings"');
 pin("draw handler", js, 'toggleTableTool("draw")');
 pin("erase handler", js, 'toggleTableTool("erase")');
 pin("draw body class", js, 'wo-table-draw');

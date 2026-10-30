@@ -1696,6 +1696,50 @@
     </div>
   </div>
 
+  <div id="paragraph-settings-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="paragraph-settings-title">
+    <div class="dialog">
+      <h3 id="paragraph-settings-title" data-i18n="Ctx.ParagraphSettings">Paragraph settings</h3>
+      <div class="dialog-field">
+        <label for="ps-align" data-i18n="ParagraphSettings.Alignment">Alignment</label>
+        <select id="ps-align">
+          <option value="left" data-i18n="ParagraphSettings.Left">Left</option>
+          <option value="center" data-i18n="ParagraphSettings.Center">Center</option>
+          <option value="right" data-i18n="ParagraphSettings.Right">Right</option>
+          <option value="justify" data-i18n="ParagraphSettings.Justify">Justify</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label for="ps-indent-left" data-i18n="ParagraphSettings.IndentLeft">Left indent</label>
+        <input id="ps-indent-left" type="number" min="0" max="500" value="0" />
+      </div>
+      <div class="dialog-field">
+        <label for="ps-indent-right" data-i18n="ParagraphSettings.IndentRight">Right indent</label>
+        <input id="ps-indent-right" type="number" min="0" max="500" value="0" />
+      </div>
+      <div class="dialog-field">
+        <label for="ps-first-line" data-i18n="ParagraphSettings.FirstLine">First line indent</label>
+        <input id="ps-first-line" type="number" min="-200" max="200" value="0" />
+      </div>
+      <div class="dialog-field">
+        <label for="ps-spacing" data-i18n="ParagraphSettings.Spacing">Line spacing</label>
+        <select id="ps-spacing">
+          <option value="1" data-i18n="ParagraphSettings.Single">Single</option>
+          <option value="1.5" data-i18n="ParagraphSettings.OneHalf">1.5 lines</option>
+          <option value="2" data-i18n="ParagraphSettings.Double">Double</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label><input type="checkbox" id="ps-keep-lines"> <span data-i18n="ParagraphSettings.KeepLines">Keep lines together</span></label>
+        <label><input type="checkbox" id="ps-keep-next"> <span data-i18n="ParagraphSettings.KeepNext">Keep with next</span></label>
+        <label><input type="checkbox" id="ps-page-break"> <span data-i18n="ParagraphSettings.PageBreak">Page break before</span></label>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-ps-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-ps-ok" data-i18n="Dialog.OK" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
   <div id="list-indents-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="list-indents-title">
     <div class="dialog">
       <h3 id="list-indents-title" data-i18n="Ctx.AdjustListIndents">Adjust list indents</h3>
