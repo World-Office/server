@@ -11049,6 +11049,8 @@
   if (btnAddText) btnAddText.addEventListener("click", () => { closeAllMenus(); openOverlayDialog("addtext-dialog"); });
   const btnAddTextOk = document.getElementById("btn-addtext-ok");
   if (btnAddTextOk) btnAddTextOk.addEventListener("click", () => { closeOverlayDialog("addtext-dialog"); confirmAddTextDialog(); });
+  const btnAddTextClose = document.getElementById("btn-addtext-close");
+  if (btnAddTextClose) btnAddTextClose.addEventListener("click", () => closeOverlayDialog("addtext-dialog"));
 
   // Statusbar > multiple pages view: show page-separator gutters in the flow
   // (CSS-only, nothing enters the document).
