@@ -7804,6 +7804,18 @@
       } else if (action === "ReplaceImage") {
         closeCtx();
         applyObjectOp("replace-image");
+      } else if (action === "Crop") {
+        const cropTarget = plainImageSelection();
+        closeCtx();
+        if (!cropTarget) { setStatus(t("Status.NoSelection")); return; }
+        // load the selected image into the photo editor for immediate crop
+        photoEditorImage = cropTarget;
+        if (photoEditorControls) photoEditorControls.hidden = false;
+        if (photoEditorEmpty) photoEditorEmpty.hidden = true;
+        if (photoEditorDialog) photoEditorDialog.classList.add("open");
+        rememberFocus();
+        photoEditorResetFilters();
+        setStatus(t("Status.CropHint"));
       } else if (action === "ActualSize") {
         closeCtx();
         applyObjectOp("actual-size");
@@ -9796,6 +9808,12 @@
     if (photoEditorSaturate) photoEditorSaturate.value = "100";
     const presets = document.querySelectorAll('input[name="photo-editor-preset"]');
     if (presets.length) presets[0].checked = true;
+    // T-002: reset also clears any active crop selection.
+    cropRect = null;
+    croppingActive = false;
+    const cropBtn = document.getElementById("btn-photo-editor-crop");
+    if (cropBtn) cropBtn.classList.remove("primary");
+    if (typeof photoEditorUpdateCropOverlay === "function") photoEditorUpdateCropOverlay();
     photoEditorDraw();
   }
   function onPhotoEditorFileChange() {
@@ -9831,6 +9849,107 @@
       closePhotoEditorDialog();
     }
   });
+
+  // --- T-002 crop tool (OO ctx Crop/Fill/Fit/Reset crop parity) ---------
+  // A selection rectangle over the canvas (CSS overlay; only the interior
+  // click-drag area commits). Apply bakes filters + crop into the doc image.
+  let croppingActive = false;
+  let cropRect = null; // {x,y,w,h} in canvas pixels, or null = no crop
+  let cropDrag = null;
+  const photoCropOverlay = document.getElementById("photo-crop-overlay");
+
+  function photoEditorCropCssCoords(ev) {
+    const r = photoEditorCanvas.getBoundingClientRect();
+    const sx = photoEditorCanvas.width / r.width;
+    const sy = photoEditorCanvas.height / r.height;
+    return { x: (ev.clientX - r.left) * sx, y: (ev.clientY - r.top) * sy };
+  }
+  function photoEditorUpdateCropOverlay() {
+    if (!photoCropOverlay) return;
+    photoCropOverlay.innerHTML = "";
+    photoCropOverlay.hidden = !croppingActive;
+    if (!croppingActive || !cropRect) return;
+    const box = document.createElement("div");
+    box.className = "photo-crop-box";
+    box.style.left = cropRect.x + "px";
+    box.style.top = cropRect.y + "px";
+    box.style.width = cropRect.w + "px";
+    box.style.height = cropRect.h + "px";
+    photoCropOverlay.appendChild(box);
+  }
+  const photoCropBtn = document.getElementById("btn-photo-editor-crop");
+  if (photoCropBtn) photoCropBtn.addEventListener("click", () => {
+    croppingActive = !croppingActive;
+    if (!croppingActive) cropRect = null;
+    photoCropBtn.classList.toggle("primary", croppingActive);
+    photoEditorUpdateCropOverlay();
+  });
+  if (photoCropOverlay) {
+    photoCropOverlay.addEventListener("mousedown", (ev) => {
+      if (!croppingActive) return;
+      ev.preventDefault();
+      const p = photoEditorCropCssCoords(ev);
+      cropDrag = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
+    });
+    window.addEventListener("mousemove", (ev) => {
+      if (!cropDrag) return;
+      const p = photoEditorCropCssCoords(ev);
+      cropDrag.x1 = Math.max(0, Math.min(photoEditorCanvas.width, p.x));
+      cropDrag.y1 = Math.max(0, Math.min(photoEditorCanvas.height, p.y));
+      cropRect = {
+        x: Math.min(cropDrag.x0, cropDrag.x1),
+        y: Math.min(cropDrag.y0, cropDrag.y1),
+        w: Math.abs(cropDrag.x1 - cropDrag.x0),
+        h: Math.abs(cropDrag.y1 - cropDrag.y0),
+      };
+      if (cropRect.w < 4 || cropRect.h < 4) cropRect = null;
+      photoEditorUpdateCropOverlay();
+    });
+    window.addEventListener("mouseup", () => { cropDrag = null; });
+  }
+  function photoEditorApply() {
+    if (!photoEditorImage) return;
+    const c = photoEditorCanvas;
+    const cx = c.getContext("2d");
+    const rect = cropRect;
+    const out = document.createElement("canvas");
+    out.width = rect ? rect.w : photoEditorImage.naturalWidth;
+    out.height = rect ? rect.h : photoEditorImage.naturalHeight;
+    const octx = out.getContext("2d");
+    octx.filter = photoEditorFilterString();
+    if (rect) {
+      // scale canvas coords -> natural px
+      const scx = photoEditorImage.naturalWidth / c.width;
+      const scy = photoEditorImage.naturalHeight / c.height;
+      octx.drawImage(photoEditorImage, rect.x * scx, rect.y * scy, rect.w * scx, rect.h * scy,
+        0, 0, out.width, out.height);
+    } else {
+      octx.drawImage(photoEditorImage, 0, 0);
+    }
+    const dataUrl = out.toDataURL("image/png");
+    if (photoEditorImage.src && photoEditorImage.src.indexOf("blob:") === 0) {
+      URL.revokeObjectURL(photoEditorImage.src);
+    }
+    const docImg = plainImageSelection();
+    if (docImg) {
+      docImg.setAttribute("src", dataUrl);
+      markDirty();
+      captureHistory();
+      scheduleCollabSync();
+      notifyHost("editing");
+      setStatus(t("Status.PhotoApplied"));
+      closePhotoEditorDialog();
+    } else {
+      document.execCommand("insertHTML", false,
+        '<img src="' + dataUrl + '" alt="image">');
+      clampImagesToPage(editor);
+      captureHistory();
+      setStatus(t("Status.PhotoApplied"));
+      closePhotoEditorDialog();
+    }
+  }
+  const photoApplyBtn = document.getElementById("btn-photo-editor-apply");
+  if (photoApplyBtn) photoApplyBtn.addEventListener("click", photoEditorApply);
 
   // --- plugins browser/manager dialogs (real plugin host) -----------
   // /api/plugins returns the installed catalog (ocr, photoeditor). Browse

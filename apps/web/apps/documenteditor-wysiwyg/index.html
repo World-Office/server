@@ -1527,6 +1527,7 @@
     <!-- OO object-parity ctx (T-002): replace/actual-size/save-as-picture are
          objectOps so they share one handler; image rows show for plain imgs. -->
     <button type="button" role="menuitem" data-ctx="ReplaceImage" data-showif="image" data-i18n="Ctx.ReplaceImage">Replace image…</button>
+    <button type="button" role="menuitem" data-ctx="Crop" data-showif="image" data-i18n="Ctx.Crop">Crop…</button>
     <button type="button" role="menuitem" data-ctx="ActualSize" data-showif="image" data-i18n="Ctx.ActualSize">Actual size</button>
     <button type="button" role="menuitem" data-ctx="SaveAsPicture" data-showif="image" data-i18n="Ctx.SaveAsPicture">Save as picture…</button>
     <button type="button" role="menuitem" data-ctx="CopyHyperlinkAddress" data-showif="link" data-i18n="Ctx.CopyHyperlinkAddress">Copy hyperlink address</button>
@@ -2298,6 +2299,7 @@
       </div>
       <div class="photo-editor-canvas-wrap">
         <canvas id="photo-editor-canvas" width="640" height="400"></canvas>
+        <div id="photo-crop-overlay" class="photo-crop-overlay" hidden></div>
         <p id="photo-editor-empty" class="photo-editor-empty" data-i18n="PhotoEditor.Empty">No image loaded</p>
       </div>
       <div id="photo-editor-controls" class="photo-editor-controls" hidden>
@@ -2317,8 +2319,10 @@
           <label><input type="radio" name="photo-editor-preset" value="blur(3px)" data-i18n="PhotoEditor.PresetBlur"> Blur</label>
         </div>
         <div class="dialog-actions">
+          <button id="btn-photo-editor-crop" data-i18n="PhotoEditor.Crop">Crop</button>
           <button id="btn-photo-editor-reset" data-i18n="PhotoEditor.Reset">Reset</button>
-          <button id="btn-photo-editor-cancel" class="primary" data-i18n="PhotoEditor.Close">Close</button>
+          <button id="btn-photo-editor-apply" class="primary" data-i18n="PhotoEditor.Apply">Apply</button>
+          <button id="btn-photo-editor-cancel" data-i18n="PhotoEditor.Close">Close</button>
         </div>
       </div>
     </div>
