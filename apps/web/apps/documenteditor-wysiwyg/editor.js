@@ -1974,7 +1974,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -7991,7 +7991,7 @@
   function openWatermarkDialog() { closeAllMenus(); openOverlayDialog("watermark-dialog"); }
 
   const ROUND2 = [
-    ["dropcap", confirmDropcapDialog], ["speech", confirmSpeechDialog], ["linenumbers", confirmLineNumbersDialog],
+    ["dropcap", confirmDropcapDialog], ["speech", confirmSpeechDialog], ["speechinput", confirmSpeechInputDialog], ["linenumbers", confirmLineNumbersDialog],
     ["hyphenation", confirmHyphenationDialog], ["watermark", confirmWatermarkDialog],
     ["pagecolor", confirmPageColorDialog], ["colors", confirmColorsDialog],
     ["addtext", null], ["updatetoc", confirmUpdateTocDialog],
@@ -10884,21 +10884,42 @@
     setStatus("Reading aloud…");
     closeOverlayDialog("speech-dialog");
   }
-  function dictate() {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  function openSpeechInputDialog() {
+    closeAllMenus()
+    const dialog = document.getElementById("speechinput-dialog")
+    if (!dialog) return
+    const langSelect = document.getElementById("speechinput-lang")
+    if (langSelect) {
+      const currentLang = editor.getAttribute("lang") || "en-US"
+      langSelect.value = currentLang
+    }
+    openOverlayDialog("speechinput-dialog")
+  }
+
+  function confirmSpeechInputDialog() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SR) { setStatus("Speech input not supported in this browser", true); return; }
-    const rec = new SR();
-    rec.lang = editor.getAttribute("lang") || "en-US";
-    rec.interimResults = false;
+    const langSelect = document.getElementById("speechinput-lang")
+    const interimCheckbox = document.getElementById("speechinput-interim")
+    const lang = langSelect ? langSelect.value : editor.getAttribute("lang") || "en-US"
+    const interimResults = interimCheckbox ? interimCheckbox.checked : false
+    const rec = new SR()
+    rec.lang = lang
+    rec.interimResults = interimResults
     rec.onresult = (ev) => {
-      const text = ev.results[0][0].transcript;
-      editor.focus();
-      document.execCommand("insertText", false, text);
-      setStatus("Dictated");
-    };
-    rec.onerror = (ev) => setStatus(`Dictation error: ${ev.error}`, true);
-    rec.start();
-    setStatus("Listening…");
+      const text = ev.results[0][0].transcript
+      editor.focus()
+      document.execCommand("insertText", false, text)
+      setStatus("Dictated")
+    }
+    rec.onerror = (ev) => setStatus(`Dictation error: ${ev.error}`, true)
+    rec.start()
+    setStatus("Listening…")
+    closeOverlayDialog("speechinput-dialog")
+  }
+
+  function dictate() {
+    openSpeechInputDialog()
   }
 
   // Insert > Text from File: txt/md/html/csv read directly; .docx goes through
