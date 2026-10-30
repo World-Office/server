@@ -1979,7 +1979,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "backstage-overlay"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "backstage-overlay"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -2319,6 +2319,54 @@
     cell.remove();
     if (!tr.cells.length && table.rows.length > 1 && tr.parentNode) tr.remove();
     finalizeTableChange();
+  }
+  // C2-1 list ops (native — the ctx rows used to dispatch a wo:list-settings
+  // host event that no listener ever handled, so restart/continue silently
+  // did nothing).
+  function currentListItem() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    let n = sel.anchorNode;
+    if (n && n.nodeType === 3) n = n.parentElement;
+    return n && n.closest ? n.closest("li") : null;
+  }
+  // "Set numbering value": split the <ol> at the caret item and restart the
+  // tail at N (n<=1 removes the start attr -> canonical <ol>).
+  function applyNumberingValue(n) {
+    const li = currentListItem();
+    if (!li) { setStatus(t("Status.NoListAtCaret")); return false; }
+    const ol = li.closest("ol");
+    if (!ol) { setStatus(t("Status.NotAvailable") + " list"); return false; }
+    const mover = [];
+    let cur = li;
+    while (cur) { mover.push(cur); cur = cur.nextElementSibling; }
+    mover.forEach((m) => m.remove());
+    const fresh = ol.cloneNode(false);
+    fresh.removeAttribute("start");
+    if (n > 1) fresh.setAttribute("start", String(n));
+    mover.forEach((m) => fresh.appendChild(m));
+    if (ol.parentNode) ol.parentNode.insertBefore(fresh, ol.nextSibling);
+    if (ol.querySelector("li") === null && ol.parentNode) ol.remove();
+    markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing");
+    setStatus(t("Status.NumberingRestarted").replace("{n}", String(n)));
+    return true;
+  }
+  // "Continue numbering": merge the current <ol> into the preceding <ol> so
+  // the sequence runs on (drops the tail's start attr).
+  function continueNumbering() {
+    const li = currentListItem();
+    if (!li) { setStatus(t("Status.NoListAtCaret")); return false; }
+    const ol = li.closest("ol");
+    if (!ol || !ol.previousElementSibling || ol.previousElementSibling.tagName !== "OL") {
+      setStatus(t("Status.NoPreviousList"));
+      return false;
+    }
+    const prev = ol.previousElementSibling;
+    Array.from(ol.children).forEach((x) => prev.appendChild(x));
+    ol.remove();
+    markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing");
+    setStatus(t("Status.NumberingContinued"));
+    return true;
   }
   function selectedCells(table) {
     const sel = window.getSelection();
@@ -4165,6 +4213,36 @@
   // Horizontal-line ctx insert.
   let hrPendingStyle = "";
   const hrDialog = document.getElementById("hr-settings-dialog");
+  const numberingValueDialog = document.getElementById("numbering-value-dialog");
+  const openNumberingValueDialog = () => {
+    if (!numberingValueDialog) return;
+    const li = currentListItem();
+    if (!li) { setStatus(t("Status.NoListAtCaret")); return; }
+    const ol = li.closest("ol");
+    if (!ol) { setStatus(t("Status.NotAvailable") + " list"); return; }
+    const start = parseInt(ol.getAttribute("start") || "1", 10);
+    let idx = 1;
+    let c = li;
+    while (c.previousElementSibling && c.previousElementSibling.tagName === "LI") { idx += 1; c = c.previousElementSibling; }
+    const input = document.getElementById("numbering-value");
+    if (input) input.value = String(start + idx - 1);
+    rememberFocus();
+    numberingValueDialog.classList.add("open");
+  };
+  const confirmNumberingValueDialog = () => {
+    const input = document.getElementById("numbering-value");
+    const n = Math.max(1, Math.min(1000, Number(input && input.value) || 1));
+    if (numberingValueDialog) numberingValueDialog.classList.remove("open");
+    restoreFocus();
+    applyNumberingValue(n);
+  };
+  const btnNumberingOk = document.getElementById("btn-numbering-ok");
+  const btnNumberingClose = document.getElementById("btn-numbering-close");
+  if (btnNumberingOk) btnNumberingOk.addEventListener("click", confirmNumberingValueDialog);
+  if (btnNumberingClose) btnNumberingClose.addEventListener("click", () => {
+    if (numberingValueDialog) numberingValueDialog.classList.remove("open");
+    restoreFocus();
+  });
   const openHrSettings = () => {
     if (!hrDialog) return;
     const sel = window.getSelection();
@@ -8005,11 +8083,9 @@
       } else if (action === "StartNewList") {
         emitCommand("insertUnorderedList");
       } else if (action === "ContinueNumbering") {
-        window.dispatchEvent(new CustomEvent("wo:list-settings", { detail: { op: "continue-numbering" } }));
-        console.info("wo: list-settings:", "continue-numbering");
+        continueNumbering();
       } else if (action === "SetNumberingValue") {
-        window.dispatchEvent(new CustomEvent("wo:list-settings", { detail: { op: "set-numbering-value" } }));
-        console.info("wo: list-settings:", "set-numbering-value");
+        openNumberingValueDialog();
       } else if (action === "AdjustListIndents") {
         window.dispatchEvent(new CustomEvent("wo:list-settings", { detail: { op: "adjust-list-indents" } }));
         console.info("wo: list-settings:", "adjust-list-indents");

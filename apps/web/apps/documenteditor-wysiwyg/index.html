@@ -1651,6 +1651,20 @@
        options dialog instead of silently toggling state. -->
   <!-- T-002: OO ctx "Horizontal line settings" — a styled-<hr> dialog whose
        Insert commits the same marker the ribbon/ctx plain insert uses. -->
+  <div id="numbering-value-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="numbering-value-title">
+    <div class="dialog">
+      <h3 id="numbering-value-title" data-i18n="List.NumberingValue">Set numbering value</h3>
+      <div class="dialog-field">
+        <label for="numbering-value">Start at</label>
+        <input id="numbering-value" type="number" min="1" max="1000" value="1" />
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-numbering-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-numbering-ok" data-i18n="Dialog.OK" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
   <div id="hr-settings-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="hr-settings-title">
     <div class="dialog">
       <h3 id="hr-settings-title" data-i18n="Ctx.HorizontalLineSettings">Horizontal line settings</h3>

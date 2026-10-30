@@ -173,4 +173,16 @@ assert.ok(
   "deleteTableCell must remove the td and drop the row when it empties",
 )
 
+// Test (6): C2-1 list ops are native — restart/continue/set-numbering-value
+// must have real helpers (the old host-only dispatch did nothing).
+assert.ok(
+  js.includes("function applyNumberingValue(") &&
+    js.includes('fresh.setAttribute("start", String(n))') &&
+    js.includes("function continueNumbering()") &&
+    js.includes("function currentListItem()") &&
+    js.includes("openNumberingValueDialog") &&
+    js.includes("numbering-value-dialog"),
+  "C2-1 list ops must be natively implemented (NumberingValueDialog + restart/continue)",
+)
+
 console.log("CTX-MENU-PASS")
