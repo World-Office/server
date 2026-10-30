@@ -212,6 +212,32 @@ fn c2_2_list_indent_default_clean() {
 }
 
 #[test]
+fn c2_2b_list_style_type_roundtrip() {
+    // C2-2b: <ol style="list-style-type:lower-roman"> -> number the
+    // paragraphs with numId 4 and round-trip back to the same css.
+    let html = "<html><body><ol style=\"list-style-type:lower-roman\"><li>i</li><li>ii</li></ol></body></html>";
+    let docx = HtmlToDocxConverter.convert(html.as_bytes()).unwrap();
+    let xml = docx_xml(&docx);
+    assert!(
+        xml.contains("<w:numId w:val=\"4\"/>"),
+        "lower-roman must map to numId 4"
+    );
+    let out = roundtrip(html);
+    assert!(
+        out.contains("list-style-type:lower-roman"),
+        "lower-roman lost in roundtrip: {}",
+        out
+    );
+    // Bullet formats use the bullet numIds (1 disc, 7 circle, 8 square).
+    let circle = "<html><body><ul style=\"list-style-type:circle\"><li>x</li></ul></body></html>";
+    let docx2 = HtmlToDocxConverter.convert(circle.as_bytes()).unwrap();
+    let xml2 = docx_xml(&docx2);
+    assert!(xml2.contains("<w:numId w:val=\"7\"/>"), "circle -> numId 7");
+    let out2 = roundtrip(circle);
+    assert!(out2.contains("list-style-type:circle"), "circle lost: {}", out2);
+}
+
+#[test]
 fn gap_no_numbering_part_without_lists() {
     let docx = HtmlToDocxConverter
         .convert("<html><body><p>plain</p></body></html>".as_bytes())

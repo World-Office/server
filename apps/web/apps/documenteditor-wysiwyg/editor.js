@@ -1979,7 +1979,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "backstage-overlay"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "backstage-overlay"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -2366,6 +2366,23 @@
     ol.remove();
     markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing");
     setStatus(t("Status.NumberingContinued"));
+    return true;
+  }
+  // C2-2b: bullets-and-numbering — set the caret list's numbering format
+  // css (list-style-type; round-trips as w:numFmt) and/or restart at N.
+  function applyListFormat(css, startAt) {
+    const li = currentListItem();
+    if (!li) { setStatus(t("Status.NoListAtCaret")); return false; }
+    const ol = li.closest("ol, ul");
+    if (!ol) { setStatus(t("Status.NoListAtCaret")); return false; }
+    ol.style.listStyleType = css;
+    if (startAt > 1) {
+      ol.setAttribute("start", String(startAt));
+    } else {
+      ol.removeAttribute("start");
+    }
+    markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing");
+    setStatus(t("Status.IndentsApplied"));
     return true;
   }
   // C2-2: list indents — read/apply margin-left + hanging (text-indent) on
@@ -4307,6 +4324,41 @@
   if (btnListIndentsOk) btnListIndentsOk.addEventListener("click", confirmListIndentsDialog);
   if (btnListIndentsClose) btnListIndentsClose.addEventListener("click", () => {
     if (listIndentsDialog) listIndentsDialog.classList.remove("open");
+    restoreFocus();
+  });
+  const bulletsNumberingDialog = document.getElementById("bullets-numbering-dialog");
+  const openBulletsNumberingDialog = () => {
+    if (!bulletsNumberingDialog) return;
+    const li = currentListItem();
+    if (!li) { setStatus(t("Status.NoListAtCaret")); return; }
+    const ol = li.closest("ol, ul");
+    if (!ol) { setStatus(t("Status.NoListAtCaret")); return; }
+    const sel = document.getElementById("bn-style-select");
+    const start = document.getElementById("bn-start-at");
+    if (sel) sel.value = ol.style.listStyleType || (ol.tagName === "OL" ? "decimal" : "disc");
+    if (start) {
+      let cur = 1;
+      let c = li;
+      while (c.previousElementSibling && c.previousElementSibling.tagName === "LI") { cur += 1; c = c.previousElementSibling; }
+      start.value = String((parseInt((ol.getAttribute("start") || "1"), 10) || 1) + cur - 1);
+    }
+    rememberFocus();
+    bulletsNumberingDialog.classList.add("open");
+  };
+  const confirmBulletsNumberingDialog = () => {
+    const sel = document.getElementById("bn-style-select");
+    const start = document.getElementById("bn-start-at");
+    const css = (sel && sel.value) || "decimal";
+    const at = Math.max(1, Math.min(1000, Number(start && start.value) || 1));
+    if (bulletsNumberingDialog) bulletsNumberingDialog.classList.remove("open");
+    restoreFocus();
+    applyListFormat(css, at);
+  };
+  const btnBnOk = document.getElementById("btn-bn-ok");
+  const btnBnClose = document.getElementById("btn-bn-close");
+  if (btnBnOk) btnBnOk.addEventListener("click", confirmBulletsNumberingDialog);
+  if (btnBnClose) btnBnClose.addEventListener("click", () => {
+    if (bulletsNumberingDialog) bulletsNumberingDialog.classList.remove("open");
     restoreFocus();
   });
   const openHrSettings = () => {
@@ -8154,6 +8206,8 @@
         openNumberingValueDialog();
       } else if (action === "AdjustListIndents") {
         openListIndentsDialog();
+      } else if (action === "BulletsAndNumbering") {
+        openBulletsNumberingDialog();
       } else if (action === "FormattingAsStyle") {
         window.dispatchEvent(new CustomEvent("wo:style-from-format", { detail: { source: "ctx-menu" } }));
         console.info("wo: style-from-format requested (ctx menu)");

@@ -196,4 +196,15 @@ assert.ok(
   "C2-2 list indents must be natively implemented (ListIndentsDialog + apply)",
 )
 
+// Test (8): C2-2b bullets-and-numbering dialog is native (row used to be
+// absent; now opens a real dialog writing list-style-type + start).
+assert.ok(
+  js.includes("function applyListFormat(") &&
+    js.includes("openBulletsNumberingDialog") &&
+    js.includes("bullets-numbering-dialog") &&
+    js.includes('ol.style.listStyleType = css') &&
+    html.includes('data-ctx="BulletsAndNumbering"'),
+  "C2-2b bullets-and-numbering must be natively implemented (dialog + list-style-type + start)",
+)
+
 console.log("CTX-MENU-PASS")

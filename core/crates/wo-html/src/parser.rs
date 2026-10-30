@@ -45,10 +45,12 @@ fn attr(node: &roxmltree::Node, name: &str) -> Option<String> {
 }
 
 /// C2-2: capture the <ol>/<ul> inline style (`margin-left`, `text-indent`)
-/// so list indents round-trip as w:ind left/hanging.
+/// so list indents round-trip as w:ind left/hanging. C2-2b adds
+/// `list-style-type` so numbering formats (decimal / lower-alpha / ...)
+/// survive as w:numFmt.
 fn list_style_attr(node: &roxmltree::Node) -> Option<String> {
     let style = attr(node, "style")?;
-    let interesting = ["margin-left", "text-indent"];
+    let interesting = ["margin-left", "text-indent", "list-style-type"];
     let picked: Vec<String> = style
         .split(';')
         .filter_map(|decl| {

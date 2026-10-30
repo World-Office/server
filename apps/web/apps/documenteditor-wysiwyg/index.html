@@ -1503,6 +1503,7 @@
     <button type="button" role="menuitem" data-ctx="ContinueNumbering" data-i18n="Ctx.ContinueNumbering">Continue numbering</button>
     <button type="button" role="menuitem" data-ctx="SetNumberingValue" data-i18n="Ctx.SetNumberingValue">Set numbering value</button>
     <button type="button" role="menuitem" data-ctx="AdjustListIndents" data-i18n="Ctx.AdjustListIndents">Adjust list indents</button>
+    <button type="button" role="menuitem" data-ctx="BulletsAndNumbering" data-i18n="Ctx.BulletsAndNumbering">Bullets and numbering…</button>
     <div class="ctx-sep" role="separator"></div>
     <!-- Insert block -->
     <button type="button" role="menuitem" data-ctx="HorizontalRule" data-i18n="Ctx.HorizontalRule">Horizontal line</button>
@@ -1651,6 +1652,33 @@
        options dialog instead of silently toggling state. -->
   <!-- T-002: OO ctx "Horizontal line settings" — a styled-<hr> dialog whose
        Insert commits the same marker the ribbon/ctx plain insert uses. -->
+  <div id="bullets-numbering-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="bullets-numbering-title">
+    <div class="dialog">
+      <h3 id="bullets-numbering-title" data-i18n="Ctx.BulletsAndNumbering">Bullets and numbering</h3>
+      <div class="dialog-field">
+        <label for="bn-style-select">Numbering style</label>
+        <select id="bn-style-select">
+          <option value="decimal" data-i18n="List.Decimal">Decimal</option>
+          <option value="lower-alpha" data-i18n="List.LowerAlpha">Lowercase letters</option>
+          <option value="upper-alpha" data-i18n="List.UpperAlpha">Uppercase letters</option>
+          <option value="lower-roman" data-i18n="List.LowerRoman">Lowercase Roman</option>
+          <option value="upper-roman" data-i18n="List.UpperRoman">Uppercase Roman</option>
+          <option value="disc" data-i18n="List.Disc">Bullet (filled)</option>
+          <option value="circle" data-i18n="List.Circle">Bullet (hollow)</option>
+          <option value="square" data-i18n="List.Square">Bullet (square)</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label for="bn-start-at">Start at</label>
+        <input id="bn-start-at" type="number" min="1" max="1000" value="1" />
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-bn-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-bn-ok" data-i18n="Dialog.OK" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
   <div id="list-indents-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="list-indents-title">
     <div class="dialog">
       <h3 id="list-indents-title" data-i18n="Ctx.AdjustListIndents">Adjust list indents</h3>

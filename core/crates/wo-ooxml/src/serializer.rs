@@ -1173,16 +1173,26 @@ impl OoxmlSerializer {
     /// (hanging 360). Covers the html->docx list emission (numId 1/2 at
     /// level 0); hand-authored docx files may use ids not defined here —
     /// Word tolerates unknown numIds by falling back to body text.
+    /// Numbering formats registry — ids 1..8 (wo-x2t keeps this in sync):
+    /// 1 bullet `•` (css disc), 2 decimal (css decimal), 3 lowerAlpha,
+    /// 4 lowerRoman, 5 upperAlpha, 6 upperRoman, 7 circle `◦`, 8 square `▪`.
+    /// Levels 0..5 indent 720+360*lvl with a hanging 360. Used by the
+    /// editor's Bullets and Numbering dialog via css list-style-type.
     fn build_numbering_xml(&self) -> String {
-        let levels = |bullet: bool| -> String {
+        let defs: Vec<(u32, bool, &str)> = vec![
+            (1, true, "\u{2022}"),
+            (2, false, "%1."),
+            (3, false, "%1."),
+            (4, false, "%1."),
+            (5, false, "%1."),
+            (6, false, "%1."),
+            (7, true, "\u{25E6}"),
+            (8, true, "\u{25AA}"),
+        ];
+        let levels = |bullet: bool, text: &str| -> String {
             (0..6)
                 .map(|lvl| {
                     let fmt = if bullet { "bullet" } else { "decimal" };
-                    let text = if bullet {
-                        "\u{2022}"
-                    } else {
-                        "%1."
-                    };
                     format!(
                         "        <w:lvl w:ilvl=\"{}\"><w:start w:val=\"1\"/><w:numFmt w:val=\"{}\"/><w:lvlText w:val=\"{}\"/><w:lvlJc w:val=\"left\"/><w:pPr><w:ind w:left=\"{}\" w:hanging=\"360\"/></w:pPr></w:lvl>\n",
                         lvl, fmt, text, 720 + lvl * 360
@@ -1190,19 +1200,26 @@ impl OoxmlSerializer {
                 })
                 .collect()
         };
-        format!(
+        let mut xml = String::from(
             r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:numbering xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:abstractNum w:abstractNumId="1">
-{}  </w:abstractNum>
-  <w:abstractNum w:abstractNumId="2">
-{}  </w:abstractNum>
-  <w:num w:numId="1"><w:abstractNumId w:val="1"/></w:num>
-  <w:num w:numId="2"><w:abstractNumId w:val="2"/></w:num>
-</w:numbering>"#,
-            levels(true),
-            levels(false)
-        )
+"#,
+        );
+        for (id, bullet, text) in &defs {
+            xml.push_str(&format!(
+                "  <w:abstractNum w:abstractNumId=\"{}\">\n{}\n  </w:abstractNum>\n",
+                id,
+                levels(*bullet, text)
+            ));
+        }
+        for (id, _b, _t) in &defs {
+            xml.push_str(&format!(
+                "  <w:num w:numId=\"{}\"><w:abstractNumId w:val=\"{}\"/></w:num>\n",
+                id, id
+            ));
+        }
+        xml.push_str("</w:numbering>");
+        xml
     }
 
     /// Serialize a header/footer part (w:hdr / w:ftr) reusing the body

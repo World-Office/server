@@ -2654,7 +2654,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                         continue;
                     }
                     let props = DocxParagraphProperties {
-                        num_id: Some(1),
+                        num_id: Some(num_id_for_css(style.as_deref(), false)),
                         ilvl: Some(0),
                         ..Default::default()
                     };
@@ -2685,7 +2685,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                         continue;
                     }
                     let props = DocxParagraphProperties {
-                        num_id: Some(2),
+                        num_id: Some(num_id_for_css(style.as_deref(), true)),
                         ilvl: Some(0),
                         start_value: if idx == 0 { list_start } else { None },
                         ..Default::default()
@@ -3136,6 +3136,66 @@ fn apply_indent(mut props: DocxParagraphProperties, ind: &ListInd) -> DocxParagr
     if let Some(f) = ind.first { props.indent_first_line = Some(f); }
     if let Some(h) = ind.hanging { props.indent_hanging = Some(h); }
     props
+}
+
+// C2-2b: css list-style-type <-> numId registry (kept in sync with
+// wo-ooxml build_numbering_xml): 1 disc/•, 2 decimal, 3 lower-alpha,
+// 4 lower-roman, 5 upper-alpha, 6 upper-roman, 7 circle, 8 square.
+fn css_list_style_type(style: Option<&str>) -> Option<String> {
+    let style = style?;
+    for decl in style.split(';') {
+        let (prop, val) = decl.split_once(':')?;
+        if prop.trim().eq_ignore_ascii_case("list-style-type") {
+            return Some(val.trim().to_ascii_lowercase());
+        }
+    }
+    None
+}
+
+fn num_id_for_css(style: Option<&str>, default_ordered: bool) -> u32 {
+    let css = css_list_style_type(style)
+        .unwrap_or_else(|| if default_ordered { "decimal".to_string() } else { "disc".to_string() });
+    match css.as_str() {
+        "disc" => 1,
+        "circle" => 7,
+        "square" => 8,
+        "decimal" => 2,
+        "lower-alpha" | "lower-latin" => 3,
+        "lower-roman" => 4,
+        "upper-alpha" | "upper-latin" => 5,
+        "upper-roman" => 6,
+        _ => {
+            if default_ordered { 2 } else { 1 }
+        }
+    }
+}
+
+/// Reverse: known numId -> css list-style-type (+ whether it renders as an
+/// ordered list). Unknown ids fall back to the old style-name heuristic.
+fn css_for_num_id(num_id: Option<u32>) -> Option<(&'static str, bool)> {
+    match num_id {
+        Some(1) => Some(("disc", false)),
+        Some(2) => Some(("decimal", true)),
+        Some(3) => Some(("lower-alpha", true)),
+        Some(4) => Some(("lower-roman", true)),
+        Some(5) => Some(("upper-alpha", true)),
+        Some(6) => Some(("upper-roman", true)),
+        Some(7) => Some(("circle", false)),
+        Some(8) => Some(("square", false)),
+        _ => None,
+    }
+}
+
+/// C2-2b: fold a known w:numFmt (via css list-style-type) into the list's
+/// inline style attr alongside any indent declarations.
+fn merge_list_style(base: Option<String>, style_type: Option<&str>) -> Option<String> {
+    let Some(css) = style_type else { return base; };
+    let mut parts = Vec::new();
+    parts.push(format!("list-style-type:{}", css));
+    if let Some(b) = base {
+        parts.push(b);
+    }
+    Some(parts.join(";"))
 }
 
 /// C2-2 reverse: w:ind left/hanging/firstLine -> <ol>/<ul> inline style.
@@ -4031,14 +4091,30 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
         // ponytail: list-type is style-name-based; a numbering.xml-aware
         // mapping can refine later.
         if para.properties.num_id.is_some() {
-            // numId 2 is our own ordered-list convention; hand-authored
-            // docx falls back to the ListNumber style heuristic.
-            let ordered = para.properties.num_id == Some(2)
-                || para
-                    .style_id
-                    .as_deref()
-                    .map(|s| s.contains("ListNumber"))
-                    .unwrap_or(false);
+            // Known numIds (1..8) keep their css list-style-type + ordered
+            // flag; hand-authored docx falls back to the ListNumber style
+            // heuristic (pre C2-2b convention).
+            let style_match = css_for_num_id(para.properties.num_id);
+            let (style_type, known_ordered) = match style_match {
+                Some((css, ord)) => (Some(css), Some(ord)),
+                None => (None, None),
+            };
+            let ordered = known_ordered
+                .unwrap_or_else(|| {
+                    para
+                        .style_id
+                        .as_deref()
+                        .map(|s| s.contains("ListNumber"))
+                        .unwrap_or(false)
+                });
+            // Don't restate the browser/Word default (decimal for ordered,
+            // disc for unordered) — canonical output stays style-free.
+            let style_type = match (style_type, known_ordered) {
+                (Some(css), Some(true)) if css == "decimal" => None,
+                (Some(css), Some(false)) if css == "disc" => None,
+                (Some(css), _) => Some(css),
+                (None, _) => None,
+            };
             let ilvl = para.properties.ilvl.unwrap_or(0) as usize;
             let inlines = docx_runs_to_html_inlines(body, &para.runs);
             let item = ListItem { content: inlines };
@@ -4063,18 +4139,19 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
             if ordered {
                 // C2-3: the group's first paragraph carries w:startValue ->
                 // <ol start="N"> (mid-list restarts stay merged; ceiling).
-                // C2-2: w:ind on the first paragraph -> <ol> inline style.
+                // C2-2: w:ind on the first paragraph -> <ol> inline style;
+                // C2-2b: known numId -> list-style-type.
                 result.push(BlockElement::OrderedList {
                     items: vec![item],
                     id: None,
                     start: para.properties.start_value,
-                    style: list_ind_to_style(&para.properties),
+                    style: merge_list_style(list_ind_to_style(&para.properties), style_type),
                 });
             } else {
                 result.push(BlockElement::UnorderedList {
                     items: vec![item],
                     id: None,
-                    style: list_ind_to_style(&para.properties),
+                    style: merge_list_style(list_ind_to_style(&para.properties), style_type),
                 });
             }
             continue;
