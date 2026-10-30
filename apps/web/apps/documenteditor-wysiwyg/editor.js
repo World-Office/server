@@ -7975,13 +7975,13 @@
   // Display mode (Collaboration / View) -> Markup / Original / Final choice.
   function openDisplayModeDialog() {
     closeAllMenus();
-    const sel = document.getElementById("viewmode");
-    if (sel) sel.value = editor.dataset.viewMode || "markup";
+    const sel = document.getElementById("displaymode-mode");
+    if (sel) sel.value = editor.dataset.displayMode || "view";
     openOverlayDialog("displaymode-dialog");
   }
   function confirmDisplayModeDialog() {
-    const mode = (document.getElementById("viewmode") || {}).value || "markup";
-    editor.dataset.viewMode = mode;
+    const mode = (document.getElementById("displaymode-mode") || {}).value || "view";
+    editor.dataset.displayMode = mode;
     setStatus("Display mode: " + mode);
   }
 
