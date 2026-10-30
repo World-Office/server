@@ -185,4 +185,15 @@ assert.ok(
   "C2-1 list ops must be natively implemented (NumberingValueDialog + restart/continue)",
 )
 
+// Test (7): C2-2 list indents are native (the old host-only dispatch did
+// nothing) and round-trip via w:ind left/hanging.
+assert.ok(
+  js.includes("function applyListIndents(") &&
+    js.includes("function currentListStyle(") &&
+    js.includes("openListIndentsDialog") &&
+    js.includes("list-indents-dialog") &&
+    js.includes('ol.style.marginLeft = String(left) + "px"'),
+  "C2-2 list indents must be natively implemented (ListIndentsDialog + apply)",
+)
+
 console.log("CTX-MENU-PASS")

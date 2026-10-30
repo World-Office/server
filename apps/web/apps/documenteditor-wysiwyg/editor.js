@@ -1979,7 +1979,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "backstage-overlay"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "backstage-overlay"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -2366,6 +2366,43 @@
     ol.remove();
     markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing");
     setStatus(t("Status.NumberingContinued"));
+    return true;
+  }
+  // C2-2: list indents — read/apply margin-left + hanging (text-indent) on
+  // the caret's <ol>/<ul>. Rounds to w:ind left/hanging via wo-x2t.
+  function currentListStyle(li) {
+    const ol = li.closest("ol, ul");
+    const out = { left: 40, hanging: 0 };
+    if (!ol) return out;
+    const st = (ol.getAttribute("style") || "").split(";").map((d) => d.trim()).filter(Boolean);
+    for (const d of st) {
+      if (!d.includes(":")) continue;
+      const [p, v] = d.split(":");
+      const num = parseInt(v, 10);
+      if (isNaN(num)) continue;
+      if (p.trim() === "margin-left") out.left = num;
+      else if (p.trim() === "text-indent") out.hanging = -num;
+    }
+    return out;
+  }
+  function applyListIndents(left, hanging) {
+    const li = currentListItem();
+    if (!li) { setStatus(t("Status.NoListAtCaret")); return false; }
+    const ol = li.closest("ol, ul");
+    if (!ol) { setStatus(t("Status.NoListAtCaret")); return false; }
+    if (hanging > 0) {
+      ol.style.marginLeft = String(left) + "px";
+      ol.style.textIndent = "-" + String(hanging) + "px";
+    } else if (left > 0) {
+      ol.style.marginLeft = String(left) + "px";
+      ol.style.removeProperty("text-indent");
+    } else {
+      ol.style.removeProperty("margin-left");
+      ol.style.removeProperty("text-indent");
+      if ((ol.getAttribute("style") || "").trim() === "") ol.removeAttribute("style");
+    }
+    markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing");
+    setStatus(t("Status.IndentsApplied"));
     return true;
   }
   function selectedCells(table) {
@@ -4241,6 +4278,35 @@
   if (btnNumberingOk) btnNumberingOk.addEventListener("click", confirmNumberingValueDialog);
   if (btnNumberingClose) btnNumberingClose.addEventListener("click", () => {
     if (numberingValueDialog) numberingValueDialog.classList.remove("open");
+    restoreFocus();
+  });
+  const listIndentsDialog = document.getElementById("list-indents-dialog");
+  const openListIndentsDialog = () => {
+    if (!listIndentsDialog) return;
+    const li = currentListItem();
+    if (!li) { setStatus(t("Status.NoListAtCaret")); return; }
+    const cur = currentListStyle(li);
+    const l = document.getElementById("list-indent-left");
+    const h = document.getElementById("list-indent-hanging");
+    if (l) l.value = String(cur.left);
+    if (h) h.value = String(cur.hanging);
+    rememberFocus();
+    listIndentsDialog.classList.add("open");
+  };
+  const confirmListIndentsDialog = () => {
+    const l = document.getElementById("list-indent-left");
+    const h = document.getElementById("list-indent-hanging");
+    const left = Math.max(0, Math.min(500, Number(l && l.value) || 0));
+    const hanging = Math.max(0, Math.min(300, Number(h && h.value) || 0));
+    if (listIndentsDialog) listIndentsDialog.classList.remove("open");
+    restoreFocus();
+    applyListIndents(left, hanging);
+  };
+  const btnListIndentsOk = document.getElementById("btn-list-indents-ok");
+  const btnListIndentsClose = document.getElementById("btn-list-indents-close");
+  if (btnListIndentsOk) btnListIndentsOk.addEventListener("click", confirmListIndentsDialog);
+  if (btnListIndentsClose) btnListIndentsClose.addEventListener("click", () => {
+    if (listIndentsDialog) listIndentsDialog.classList.remove("open");
     restoreFocus();
   });
   const openHrSettings = () => {
@@ -8087,8 +8153,7 @@
       } else if (action === "SetNumberingValue") {
         openNumberingValueDialog();
       } else if (action === "AdjustListIndents") {
-        window.dispatchEvent(new CustomEvent("wo:list-settings", { detail: { op: "adjust-list-indents" } }));
-        console.info("wo: list-settings:", "adjust-list-indents");
+        openListIndentsDialog();
       } else if (action === "FormattingAsStyle") {
         window.dispatchEvent(new CustomEvent("wo:style-from-format", { detail: { source: "ctx-menu" } }));
         console.info("wo: style-from-format requested (ctx menu)");

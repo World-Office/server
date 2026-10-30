@@ -173,6 +173,45 @@ fn c2_3_docx_start_value_parses_to_ol_start() {
 }
 
 #[test]
+fn c2_2_list_indent_roundtrip() {
+    // C2-2: <ol style="margin-left:...;text-indent:..."> must emit w:ind
+    // left/hanging and survive html -> docx -> html.
+    let html = "<html><body><ol style=\"margin-left:75px;text-indent:-25px\"><li>a</li><li>b</li></ol></body></html>";
+    let docx = HtmlToDocxConverter.convert(html.as_bytes()).unwrap();
+    let xml = docx_xml(&docx);
+    assert!(
+        xml.contains(r#"<w:ind w:left="1125""#),
+        "w:ind left missing (75px -> 1125 twips): {}",
+        &xml[xml.find("<w:ind").unwrap_or(xml.len().saturating_sub(200))..]
+            .chars()
+            .take(200)
+            .collect::<String>()
+    );
+    assert!(
+        xml.contains(r#"w:hanging="375""#),
+        "w:hanging missing (25px -> 375 twips)"
+    );
+    let out = roundtrip(html);
+    assert!(
+        out.contains("margin-left:75px") && out.contains("text-indent:-25px"),
+        "list indent lost in roundtrip: {}",
+        out
+    );
+}
+
+#[test]
+fn c2_2_list_indent_default_clean() {
+    // Plain lists must not suddenly gain style attributes.
+    let html = "<html><body><ul><li>x</li></ul></body></html>";
+    let out = roundtrip(html);
+    assert!(
+        !out.contains("<ul style=\""),
+        "plain ul gained stray style: {}",
+        out
+    );
+}
+
+#[test]
 fn gap_no_numbering_part_without_lists() {
     let docx = HtmlToDocxConverter
         .convert("<html><body><p>plain</p></body></html>".as_bytes())

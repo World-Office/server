@@ -225,10 +225,12 @@ impl HtmlSerializer {
                 out.push_str(&pad);
                 out.push_str("</div>\n");
             }
-            BlockElement::UnorderedList { items, id } => {
+            BlockElement::UnorderedList { items, id, style } => {
                 out.push_str(&pad);
                 if let Some(id_val) = id {
                     out.push_str(&format!("<ul id=\"{}\">\n", escape_attr(id_val)));
+                } else if let Some(st) = style {
+                    out.push_str(&format!("<ul style=\"{}\">\n", escape_attr(st)));
                 } else {
                     out.push_str("<ul>\n");
                 }
@@ -241,11 +243,14 @@ impl HtmlSerializer {
                 out.push_str(&pad);
                 out.push_str("</ul>\n");
             }
-            BlockElement::OrderedList { items, id, start } => {
+            BlockElement::OrderedList { items, id, start, style } => {
                 out.push_str(&pad);
                 out.push_str("<ol");
                 if let Some(id_val) = id {
                     out.push_str(&format!(" id=\"{}\"", escape_attr(id_val)));
+                }
+                if let Some(st) = style {
+                    out.push_str(&format!(" style=\"{}\"", escape_attr(st)));
                 }
                 if let Some(s) = start {
                     out.push_str(&format!(" start=\"{}\"", escape_attr(&s.to_string())));
@@ -997,6 +1002,7 @@ mod tests {
                         },
                     ],
                     id: Some("list1".into()),
+                    style: None,
                 }],
             },
         };
@@ -1023,6 +1029,7 @@ mod tests {
                         }],
                     }],
                     id: None,
+                    style: None,
                     start: Some(5),
                 }],
             },
@@ -1463,6 +1470,7 @@ mod tests {
                         }],
                     }],
                     id: None,
+                    style: None,
                 }],
             },
         };
@@ -1492,6 +1500,7 @@ mod tests {
                         }],
                     }],
                     id: Some("ol1".into()),
+                    style: None,
                     start: None,
                 }],
             },
@@ -1889,6 +1898,7 @@ mod tests {
                         }],
                     }],
                     id: None,
+                    style: None,
                     start: None,
                 }],
             },

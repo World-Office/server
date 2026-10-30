@@ -75,11 +75,19 @@ pub enum BlockElement {
     UnorderedList {
         items: Vec<ListItem>,
         id: Option<String>,
+        /// C2-2: inline style (e.g. margin-left/text-indent) carried through
+        /// the round trip as w:ind left/hanging.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        style: Option<String>,
     },
     OrderedList {
         items: Vec<ListItem>,
         id: Option<String>,
         start: Option<u32>,
+        /// C2-2: inline style (e.g. margin-left/text-indent) carried through
+        /// the round trip as w:ind left/hanging.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        style: Option<String>,
     },
     Table {
         rows: Vec<TableRow>,

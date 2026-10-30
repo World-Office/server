@@ -2637,10 +2637,12 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                     });
                 }
             }
-            BlockElement::UnorderedList { items, .. } => {
+            BlockElement::UnorderedList { items, style, .. } => {
                 // LEDGER2: real numPr lists (numId 1 = bullet) instead of
                 // literal "• text" paragraphs — survives the round trip and
                 // opens as a proper list in Word.
+                // C2-2: <ol>/<ul> inline margin-left/text-indent -> w:ind.
+                let ind = list_style_to_ind(style.as_deref());
                 for item in items {
                     let runs = html_inlines_to_docx_runs(
                         &item.content,
@@ -2651,23 +2653,27 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                     if runs.is_empty() {
                         continue;
                     }
+                    let props = DocxParagraphProperties {
+                        num_id: Some(1),
+                        ilvl: Some(0),
+                        ..Default::default()
+                    };
+                    let props = apply_indent(props, &ind);
                     paragraphs.push(DocxParagraph {
                         style_id: Some("ListParagraph".to_string()),
-                        properties: DocxParagraphProperties {
-                            num_id: Some(1),
-                            ilvl: Some(0),
-                            ..Default::default()
-                        },
+                        properties: props,
                         section_properties: None,
                         runs,
                         ..Default::default()
                     });
                 }
             }
-            BlockElement::OrderedList { items, start, .. } => {
+            BlockElement::OrderedList { items, start, style, .. } => {
                 // C2-3: <ol start="N"> becomes w:startValue on the FIRST
                 // list paragraph (Word restarts numbering at N there).
+                // C2-2: <ol>/<ul> inline margin-left/text-indent -> w:ind.
                 let list_start = start.filter(|v| *v != 1);
+                let ind = list_style_to_ind(style.as_deref());
                 for (idx, item) in items.iter().enumerate() {
                     let runs = html_inlines_to_docx_runs(
                         &item.content,
@@ -2678,14 +2684,16 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                     if runs.is_empty() {
                         continue;
                     }
+                    let props = DocxParagraphProperties {
+                        num_id: Some(2),
+                        ilvl: Some(0),
+                        start_value: if idx == 0 { list_start } else { None },
+                        ..Default::default()
+                    };
+                    let props = apply_indent(props, &ind);
                     paragraphs.push(DocxParagraph {
                         style_id: Some("ListParagraph".to_string()),
-                        properties: DocxParagraphProperties {
-                            num_id: Some(2),
-                            ilvl: Some(0),
-                            start_value: if idx == 0 { list_start } else { None },
-                            ..Default::default()
-                        },
+                        properties: props,
                         section_properties: None,
                         runs,
                         ..Default::default()
@@ -3091,6 +3099,58 @@ fn docx_border_to_html(b: &DocxBorder) -> ParagraphBorder {
         style: style.to_string(),
         color: b.color.clone().unwrap_or_else(|| "#000000".to_string()),
     }
+}
+
+/// C2-2: list indent carried in <ol>/<ul> inline style, split into
+/// w:ind fields (twips; 1px @96dpi = 15 twips).
+struct ListInd {
+    left: Option<i32>,
+    first: Option<i32>,
+    hanging: Option<i32>,
+}
+
+fn list_style_to_ind(style: Option<&str>) -> ListInd {
+    let mut ind = ListInd { left: None, first: None, hanging: None };
+    let Some(style) = style else { return ind; };
+    let px_of = |v: &str| -> Option<i32> {
+        let n = v.trim().trim_end_matches("px").trim().parse::<f32>().ok()?;
+        Some((n * 15.0).round() as i32)
+    };
+    for decl in style.split(';') {
+        let Some((prop, val)) = decl.split_once(':') else { continue; };
+        match prop.trim() {
+            "margin-left" => ind.left = px_of(val),
+            "text-indent" => {
+                if let Some(tw) = px_of(val) {
+                    if tw >= 0 { ind.first = Some(tw); } else { ind.hanging = Some(-tw); }
+                }
+            }
+            _ => {}
+        }
+    }
+    ind
+}
+
+fn apply_indent(mut props: DocxParagraphProperties, ind: &ListInd) -> DocxParagraphProperties {
+    if let Some(l) = ind.left { props.indent_left = Some(l); }
+    if let Some(f) = ind.first { props.indent_first_line = Some(f); }
+    if let Some(h) = ind.hanging { props.indent_hanging = Some(h); }
+    props
+}
+
+/// C2-2 reverse: w:ind left/hanging/firstLine -> <ol>/<ul> inline style.
+fn list_ind_to_style(props: &DocxParagraphProperties) -> Option<String> {
+    let mut parts = Vec::new();
+    if let Some(l) = props.indent_left {
+        parts.push(format!("margin-left:{}px", (l as f32 / 15.0).round() as i32));
+    }
+    if let Some(f) = props.indent_first_line {
+        parts.push(format!("text-indent:{}px", (f as f32 / 15.0).round() as i32));
+    }
+    if let Some(h) = props.indent_hanging {
+        parts.push(format!("text-indent:-{}px", (h as f32 / 15.0).round() as i32));
+    }
+    if parts.is_empty() { None } else { Some(parts.join(";")) }
 }
 
 fn html_inlines_to_docx_runs(
@@ -4003,15 +4063,18 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
             if ordered {
                 // C2-3: the group's first paragraph carries w:startValue ->
                 // <ol start="N"> (mid-list restarts stay merged; ceiling).
+                // C2-2: w:ind on the first paragraph -> <ol> inline style.
                 result.push(BlockElement::OrderedList {
                     items: vec![item],
                     id: None,
                     start: para.properties.start_value,
+                    style: list_ind_to_style(&para.properties),
                 });
             } else {
                 result.push(BlockElement::UnorderedList {
                     items: vec![item],
                     id: None,
+                    style: list_ind_to_style(&para.properties),
                 });
             }
             continue;
@@ -4791,10 +4854,15 @@ fn odf_content_to_html_blocks(content: &OdfContent) -> Vec<BlockElement> {
                             items,
                             id: None,
                             start: list.start_value,
+                            style: None,
                         });
                     }
                     wo_odf::model::OdfListType::Unordered => {
-                        result.push(BlockElement::UnorderedList { items, id: None });
+                        result.push(BlockElement::UnorderedList {
+                            items,
+                            id: None,
+                            style: None,
+                        });
                     }
                 }
             }
@@ -13009,6 +13077,7 @@ mod tests {
                             },
                         ],
                         id: None,
+                                        style: None,
                     },
                     BlockElement::OrderedList {
                         items: vec![ListItem {
@@ -13019,6 +13088,7 @@ mod tests {
                         }],
                         id: None,
                         start: Some(5),
+                                        style: None,
                     },
                 ],
             },
@@ -13333,6 +13403,7 @@ mod tests {
                     }],
                 }],
                 id: None,
+                        style: None,
             },
             BlockElement::OrderedList {
                 items: vec![ListItem {
@@ -13343,6 +13414,7 @@ mod tests {
                 }],
                 id: None,
                 start: None,
+                        style: None,
             },
             BlockElement::Table {
                 rows: vec![TableRow {
@@ -14380,6 +14452,7 @@ mod tests {
         let ul = html_elements_to_fb2(&[BlockElement::UnorderedList {
             items: items.clone(),
             id: None,
+                style: None,
         }]);
         assert_eq!(
             ul.len(),
@@ -14390,6 +14463,7 @@ mod tests {
             items,
             id: None,
             start: None,
+                style: None,
         }]);
         assert_eq!(ol.len(), 1);
         if let ContentElement::Paragraph { content, .. } = &ol[0] {
@@ -15323,6 +15397,7 @@ mod tests {
                 },
             ],
             id: None,
+                style: None,
         }]);
         assert_eq!(result.len(), 2);
         for block in &result {
@@ -15354,6 +15429,7 @@ mod tests {
             }],
             id: None,
             start: Some(5),
+                style: None,
         }]);
         assert_eq!(result.len(), 1);
         match &result[0] {
@@ -15617,6 +15693,7 @@ mod tests {
                     }],
                 }],
                 id: None,
+                        style: None,
             },
             BlockElement::OrderedList {
                 items: vec![wo_html::model::ListItem {
@@ -15627,6 +15704,7 @@ mod tests {
                 }],
                 id: None,
                 start: None,
+                        style: None,
             },
             BlockElement::Table {
                 rows: vec![wo_html::model::TableRow {
@@ -16005,6 +16083,7 @@ mod tests {
                 }],
             }],
             id: None,
+                style: None,
         });
         assert!(ul.contains("<ul>"), "unordered list should have ul tag");
 
@@ -16018,6 +16097,7 @@ mod tests {
             }],
             id: None,
             start: None,
+                style: None,
         });
         assert!(ol.contains("<ol>"), "ordered list should have ol tag");
 

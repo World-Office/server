@@ -44,6 +44,25 @@ fn attr(node: &roxmltree::Node, name: &str) -> Option<String> {
     node.attribute(name).map(|s| s.to_string())
 }
 
+/// C2-2: capture the <ol>/<ul> inline style (`margin-left`, `text-indent`)
+/// so list indents round-trip as w:ind left/hanging.
+fn list_style_attr(node: &roxmltree::Node) -> Option<String> {
+    let style = attr(node, "style")?;
+    let interesting = ["margin-left", "text-indent"];
+    let picked: Vec<String> = style
+        .split(';')
+        .filter_map(|decl| {
+            let (prop, val) = decl.split_once(':')?;
+            if interesting.iter().any(|k| prop.trim().eq_ignore_ascii_case(k)) {
+                Some(format!("{}:{}", prop.trim(), val.trim()))
+            } else {
+                None
+            }
+        })
+        .collect();
+    if picked.is_empty() { None } else { Some(picked.join(";")) }
+}
+
 /// F-041: block direction from `dir="rtl"` or `style="direction: rtl"`.
 fn block_direction(node: &roxmltree::Node) -> Option<String> {
     if let Some(d) = attr(node, "dir") {
@@ -650,6 +669,7 @@ impl HtmlParser {
                     elements.push(BlockElement::UnorderedList {
                         items: self.parse_list_items(&ch),
                         id,
+                        style: list_style_attr(&ch),
                     });
                 }
                 "ol" => {
@@ -658,6 +678,7 @@ impl HtmlParser {
                         items: self.parse_list_items(&ch),
                         id,
                         start,
+                        style: list_style_attr(&ch),
                     });
                 }
                 "table" => {

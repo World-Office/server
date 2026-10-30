@@ -1651,6 +1651,24 @@
        options dialog instead of silently toggling state. -->
   <!-- T-002: OO ctx "Horizontal line settings" — a styled-<hr> dialog whose
        Insert commits the same marker the ribbon/ctx plain insert uses. -->
+  <div id="list-indents-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="list-indents-title">
+    <div class="dialog">
+      <h3 id="list-indents-title" data-i18n="Ctx.AdjustListIndents">Adjust list indents</h3>
+      <div class="dialog-field">
+        <label for="list-indent-left">Left indent</label>
+        <input id="list-indent-left" type="number" min="0" max="500" value="40" />
+      </div>
+      <div class="dialog-field">
+        <label for="list-indent-hanging">Hanging indent</label>
+        <input id="list-indent-hanging" type="number" min="0" max="300" value="0" />
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-list-indents-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-list-indents-ok" data-i18n="Dialog.OK" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
   <div id="numbering-value-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="numbering-value-title">
     <div class="dialog">
       <h3 id="numbering-value-title" data-i18n="List.NumberingValue">Set numbering value</h3>
