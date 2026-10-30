@@ -10830,11 +10830,49 @@
     const type = (t && t.value) || "plain";
     const label = ((title && title.value.trim()) || "Content control");
     const esc = _escXml(label);
-    const html = `<span class="content-control" data-cc="${type}" title="${esc}" contenteditable="false">${type === "dropdown" ? "▾ " : ""}${esc}</span>`;
+    // C6-2: checkbox (click toggles), date picker (native <input type=date>),
+    // combo box (editable), picture (click opens the image dialog).
+    let html;
+    if (type === "checkbox") {
+      html = `<span class="content-control cc-inline cc-checkbox" data-cc="checkbox" title="${esc}" contenteditable="false" tabindex="0" role="checkbox" aria-checked="false"><span class="cc-box">☐</span> ${esc}</span>`;
+    } else if (type === "date") {
+      html = `<span class="content-control cc-inline cc-date" data-cc="date" title="${esc}" contenteditable="false"><input type="date" class="cc-date-input" aria-label="${esc}"> ${esc}</span>`;
+    } else if (type === "combo") {
+      html = `<span class="content-control cc-inline cc-combo" data-cc="combo" title="${esc}" contenteditable="true">▾ ${esc}</span>`;
+    } else if (type === "picture") {
+      html = `<span class="content-control cc-inline cc-picture" data-cc="picture" title="${esc}" contenteditable="false" tabindex="0" role="button">🖼 ${esc}</span>`;
+    } else if (type === "dropdown") {
+      html = `<span class="content-control cc-inline content-control" data-cc="dropdown" title="${esc}" contenteditable="false">▾ ${esc}</span>`;
+    } else {
+      html = `<span class="content-control" data-cc="${type}" title="${esc}" contenteditable="false">${esc}</span>`;
+    }
     editor.focus();
     document.execCommand("insertHTML", false, html);
+    if (type === "combo") {
+      const combos = editor.querySelectorAll('[data-cc="combo"]');
+      if (combos.length) combos[combos.length - 1].setAttribute("contenteditable", "true");
+    }
     closeDlg("cc-dialog");
     setStatus(`Inserted ${type} content control`);
+  });
+  // C6-2: interactive cc controls — checkbox toggle + picture -> image dialog.
+  if (editor) editor.addEventListener("click", (ev) => {
+    const box = ev.target.closest ? ev.target.closest(".cc-checkbox") : null;
+    if (box) {
+      const checked = box.getAttribute("aria-checked") !== "true";
+      box.setAttribute("aria-checked", String(checked));
+      box.setAttribute("data-checked", String(checked));
+      const glyph = box.querySelector(".cc-box");
+      if (glyph) glyph.textContent = checked ? "☑" : "☐";
+      markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing");
+      ev.preventDefault(); ev.stopPropagation();
+      return;
+    }
+    const pic = ev.target.closest ? ev.target.closest(".cc-picture") : null;
+    if (pic) {
+      ev.preventDefault(); ev.stopPropagation();
+      insertImage();
+    }
   });
 
   // -- Chart editor: type select + data grid -> live SVG preview -> image.
