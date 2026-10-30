@@ -7764,22 +7764,192 @@
   }
 
   // Theme colors (Layout) -> scheme dialog (native select replaced).
+  let paperColorPicked = null;
+  let inkColorPicked = null;
+
   function openColorsDialog() {
     closeAllMenus();
     const sel = document.getElementById("cs-scheme");
     const cur = document.getElementById("themecolors");
     if (sel && cur) sel.value = cur.value || "default";
+    const scheme = COLOR_SCHEMES[cur?.value || "default"] || {};
+    const paper = scheme["--paper"] || "#ffffff";
+    const ink = scheme["--ink"] || "#000000";
+    paperColorPicked = null;
+    inkColorPicked = null;
+    setPaperColorInputs(paper);
+    setInkColorInputs(ink);
+    // Select matching swatches
+    const paperSwatches = document.getElementById("colors-paper-swatches");
+    if (paperSwatches) {
+      paperSwatches.querySelectorAll(".color-swatch").forEach((s) => {
+        s.classList.toggle("sel", (s.dataset.color || "#ffffff").toLowerCase() === paper.toLowerCase())
+      })
+    }
+    const inkSwatches = document.getElementById("colors-ink-swatches");
+    if (inkSwatches) {
+      inkSwatches.querySelectorAll(".color-swatch").forEach((s) => {
+        s.classList.toggle("sel", (s.dataset.color || "#000000").toLowerCase() === ink.toLowerCase())
+      })
+    }
     openOverlayDialog("colors-dialog");
   }
   function confirmColorsDialog() {
     if (READ_ONLY) return;
-    const scheme = (document.getElementById("cs-scheme") || {}).value || "default";
+    const sel = document.getElementById("cs-scheme");
+    const scheme = (sel || {}).value || "default";
     const cur = document.getElementById("themecolors");
     if (cur) cur.value = scheme;
     const vars = COLOR_SCHEMES[scheme] || {};
-    for (const [k, v] of Object.entries(vars)) editor.style.setProperty(k, v);
+    const paperCustom = document.getElementById("colors-paper-custom");
+    const inkCustom = document.getElementById("colors-ink-custom");
+    const paper = paperColorPicked || (paperCustom && paperCustom.value) || vars["--paper"] || "#ffffff";
+    const ink = inkColorPicked || (inkCustom && inkCustom.value) || vars["--ink"] || "#000000";
+    editor.style.setProperty("--paper", paper);
+    editor.style.setProperty("--ink", ink);
     setStatus("Color scheme: " + scheme);
   }
+
+  function updatePaperColorFromHex() {
+    const hexInput = document.getElementById("colors-paper-hex")
+    if (!hexInput) return
+    const parsed = parseHexColor(hexInput.value)
+    if (!parsed) return
+    const red = document.getElementById("colors-paper-red")
+    const green = document.getElementById("colors-paper-green")
+    const blue = document.getElementById("colors-paper-blue")
+    const custom = document.getElementById("colors-paper-custom")
+    if (red) red.value = parsed.r
+    if (green) green.value = parsed.g
+    if (blue) blue.value = parsed.b
+    if (custom) custom.value = parsed.hex
+    paperColorPicked = parsed.hex
+  }
+  function updatePaperColorFromRgb() {
+    const red = document.getElementById("colors-paper-red")
+    const green = document.getElementById("colors-paper-green")
+    const blue = document.getElementById("colors-paper-blue")
+    if (!red || !green || !blue) return
+    const r = parseInt(red.value) || 0
+    const g = parseInt(green.value) || 0
+    const b = parseInt(blue.value) || 0
+    const hex = rgbToHex(r, g, b)
+    const hexInput = document.getElementById("colors-paper-hex")
+    const custom = document.getElementById("colors-paper-custom")
+    if (hexInput) hexInput.value = hex
+    if (custom) custom.value = hex
+    paperColorPicked = hex
+  }
+  function setPaperColorInputs(color) {
+    const hex = color?.startsWith("#") ? color : "#" + color || "#FFFFFF"
+    const parsed = parseHexColor(hex)
+    if (!parsed) return
+    const hexInput = document.getElementById("colors-paper-hex")
+    const red = document.getElementById("colors-paper-red")
+    const green = document.getElementById("colors-paper-green")
+    const blue = document.getElementById("colors-paper-blue")
+    const custom = document.getElementById("colors-paper-custom")
+    if (hexInput) hexInput.value = parsed.hex
+    if (red) red.value = parsed.r
+    if (green) green.value = parsed.g
+    if (blue) blue.value = parsed.b
+    if (custom) custom.value = parsed.hex
+    paperColorPicked = parsed.hex
+  }
+  function updateInkColorFromHex() {
+    const hexInput = document.getElementById("colors-ink-hex")
+    if (!hexInput) return
+    const parsed = parseHexColor(hexInput.value)
+    if (!parsed) return
+    const red = document.getElementById("colors-ink-red")
+    const green = document.getElementById("colors-ink-green")
+    const blue = document.getElementById("colors-ink-blue")
+    const custom = document.getElementById("colors-ink-custom")
+    if (red) red.value = parsed.r
+    if (green) green.value = parsed.g
+    if (blue) blue.value = parsed.b
+    if (custom) custom.value = parsed.hex
+    inkColorPicked = parsed.hex
+  }
+  function updateInkColorFromRgb() {
+    const red = document.getElementById("colors-ink-red")
+    const green = document.getElementById("colors-ink-green")
+    const blue = document.getElementById("colors-ink-blue")
+    if (!red || !green || !blue) return
+    const r = parseInt(red.value) || 0
+    const g = parseInt(green.value) || 0
+    const b = parseInt(blue.value) || 0
+    const hex = rgbToHex(r, g, b)
+    const hexInput = document.getElementById("colors-ink-hex")
+    const custom = document.getElementById("colors-ink-custom")
+    if (hexInput) hexInput.value = hex
+    if (custom) custom.value = hex
+    inkColorPicked = hex
+  }
+  function setInkColorInputs(color) {
+    const hex = color?.startsWith("#") ? color : "#" + color || "#000000"
+    const parsed = parseHexColor(hex)
+    if (!parsed) return
+    const hexInput = document.getElementById("colors-ink-hex")
+    const red = document.getElementById("colors-ink-red")
+    const green = document.getElementById("colors-ink-green")
+    const blue = document.getElementById("colors-ink-blue")
+    const custom = document.getElementById("colors-ink-custom")
+    if (hexInput) hexInput.value = parsed.hex
+    if (red) red.value = parsed.r
+    if (green) green.value = parsed.g
+    if (blue) blue.value = parsed.b
+    if (custom) custom.value = parsed.hex
+    inkColorPicked = parsed.hex
+  }
+
+  // Colors dialog swatches and inputs
+  const paperSwatches = document.getElementById("colors-paper-swatches");
+  if (paperSwatches) paperSwatches.addEventListener("click", (ev) => {
+    const btn = ev.target.closest && ev.target.closest(".color-swatch");
+    if (!btn) return;
+    paperColorPicked = btn.dataset.color || null;
+    paperSwatches.querySelectorAll(".color-swatch").forEach((s) => s.classList.toggle("sel", s === btn));
+    const custom = document.getElementById("colors-paper-custom");
+    if (custom && paperColorPicked && paperColorPicked.startsWith("#")) custom.value = paperColorPicked;
+    setPaperColorInputs(paperColorPicked)
+  });
+  const inkSwatches = document.getElementById("colors-ink-swatches");
+  if (inkSwatches) inkSwatches.addEventListener("click", (ev) => {
+    const btn = ev.target.closest && ev.target.closest(".color-swatch");
+    if (!btn) return;
+    inkColorPicked = btn.dataset.color || null;
+    inkSwatches.querySelectorAll(".color-swatch").forEach((s) => s.classList.toggle("sel", s === btn));
+    const custom = document.getElementById("colors-ink-custom");
+    if (custom && inkColorPicked && inkColorPicked.startsWith("#")) custom.value = inkColorPicked;
+    setInkColorInputs(inkColorPicked)
+  });
+
+  const colorsPaperHex = document.getElementById("colors-paper-hex")
+  if (colorsPaperHex) colorsPaperHex.addEventListener("input", () => { updatePaperColorFromHex() })
+  const colorsPaperRed = document.getElementById("colors-paper-red")
+  const colorsPaperGreen = document.getElementById("colors-paper-green")
+  const colorsPaperBlue = document.getElementById("colors-paper-blue")
+  if (colorsPaperRed) colorsPaperRed.addEventListener("input", () => { updatePaperColorFromRgb() })
+  if (colorsPaperGreen) colorsPaperGreen.addEventListener("input", () => { updatePaperColorFromRgb() })
+  if (colorsPaperBlue) colorsPaperBlue.addEventListener("input", () => { updatePaperColorFromRgb() })
+  const colorsPaperCustom = document.getElementById("colors-paper-custom")
+  if (colorsPaperCustom) colorsPaperCustom.addEventListener("input", () => {
+    setPaperColorInputs(colorsPaperCustom.value)
+  })
+
+  const colorsInkHex = document.getElementById("colors-ink-hex")
+  if (colorsInkHex) colorsInkHex.addEventListener("input", () => { updateInkColorFromHex() })
+  const colorsInkRed = document.getElementById("colors-ink-red")
+  const colorsInkGreen = document.getElementById("colors-ink-green")
+  const colorsInkBlue = document.getElementById("colors-ink-blue")
+  if (colorsInkRed) colorsInkRed.addEventListener("input", () => { updateInkColorFromRgb() })
+  if (colorsInkGreen) colorsInkGreen.addEventListener("input", () => { updateInkColorFromRgb() })
+  if (colorsInkBlue) colorsInkBlue.addEventListener("input", () => { updateInkColorFromRgb() })
+  const colorsInkCustom = document.getElementById("colors-ink-custom")
+  if (colorsInkCustom) colorsInkCustom.addEventListener("input", () => {
+    setInkColorInputs(colorsInkCustom.value)
+  })
 
   // Update TOC (References) -> whole-table vs page-numbers-only choice.
   function openUpdateTocDialog() {
