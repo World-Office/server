@@ -1381,7 +1381,7 @@
     if (cmd === "link") { insertLink(); return; }
     if (cmd === "bookmark") { openBookmarkDialog(); return; }
     if (cmd === "addText") { closeAllMenus(); openOverlayDialog("addtext-dialog"); return; }
-    if (cmd === "mailMerge") { closeAllMenus(); const mmIn = document.getElementById("mailmerge-csv"); if (mmIn) mmIn.click(); return; }
+    if (cmd === "mailMerge") { closeAllMenus(); openDlg("mailmerge-dialog"); return; }
     if (cmd === "toggleGridlines") { toggleGridlines(); return; }
     if (cmd === "toggleNavigation") { toggleNavigation(); return; }
     if (cmd === "toggleRightPanel") { toggleRightPanel(); return; }
@@ -10677,7 +10677,7 @@
   let mailMergeHeaders = [], mailMergeRows = [];
   const btnMailMerge = document.getElementById("btn-mailmerge");
   const mailCsvInput = document.getElementById("mailmerge-csv");
-  if (btnMailMerge && mailCsvInput) btnMailMerge.addEventListener("click", () => mailCsvInput.click());
+  if (btnMailMerge) btnMailMerge.addEventListener("click", () => openDlg("mailmerge-dialog"))
   const btnMailCsv = document.getElementById("btn-mailmerge-csv");
   if (btnMailCsv && mailCsvInput) btnMailCsv.addEventListener("click", () => mailCsvInput.click());
   if (mailCsvInput) mailCsvInput.addEventListener("change", () => {
