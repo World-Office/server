@@ -16,7 +16,7 @@ console.log("Running AF3-STATUSBAR tests...\n")
 
 // 1. Check all required statusbar elements exist in index.html
 console.log("Checking statusbar elements in index.html...")
-const requiredIds = ["sb-word-count", "sb-page-count", "sb-zoom-label", "sb-track-changes"]
+const requiredIds = ["sb-word-count", "sb-page-count", "sb-zoom-label", "sb-track-changes", "sb-doc-spell"]
 for (const id of requiredIds) {
   assert.ok(htmlSrc.includes(`id="${id}"`), `Statusbar element ${id} must exist in index.html`)
   const elementMatch = htmlSrc.match(new RegExp(`id="${id}"[^>]*data-i18n="([^"]*)"`))

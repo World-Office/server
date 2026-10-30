@@ -2707,6 +2707,22 @@
     const dims = [];
     if (wNum > 0) dims.push(" width=\"" + wNum + "\"");
     if (hNum > 0) dims.push(" height=\"" + hNum + "\"");
+    // REPLACE-IMAGE: when the restored selection is a plain <img>, replace
+    // its src/alt/dims in place (OO contextual "Replace image"). Marks the
+    // doc dirty so save/collab round-trip the new bytes.
+    const existing = plainImageSelection();
+    if (existing) {
+      existing.setAttribute("src", src);
+      existing.setAttribute("alt", alt);
+      if (wNum > 0) existing.style.width = wNum + "px";
+      if (hNum > 0) existing.style.height = hNum + "px";
+      clampImagesToPage(editor);
+      markDirty();
+      captureHistory();
+      scheduleCollabSync();
+      notifyHost("editing");
+      return;
+    }
     document.execCommand(
       "insertHTML",
       false,
@@ -2869,6 +2885,16 @@
     groupables.forEach((el) => group.appendChild(el));
     return true;
   }
+  function ungroupSelectedObjects(obj) {
+    // reverse of groupSelectedObjects: the group div is the selected node
+    const group = obj.matches && obj.matches(".object-group") ? obj :
+      (obj.parentNode && obj.parentNode.matches && obj.parentNode.matches(".object-group") ? obj.parentNode : null);
+    if (!group || !group.parentNode) return false;
+    const parent = group.parentNode;
+    Array.from(group.children).forEach((child) => parent.insertBefore(child, group));
+    parent.removeChild(group);
+    return true;
+  }
   function applyObjectOp(op) {
     const value = String(op || "");
     window.dispatchEvent(new CustomEvent("wo:object-op", { detail: { op: value } }));
@@ -2878,16 +2904,49 @@
       return;
     }
     let mutated = false;
-    if (value === "bring-forward" || value === "send-backward") {
+    if (value === "bring-forward" || value === "send-backward" ||
+        value === "bring-to-foreground" || value === "send-to-background") {
       obj.style.position = "relative";
-      obj.style.zIndex = String((parseInt(obj.style.zIndex, 10) || 0) +
-        (value === "bring-forward" ? 1 : -1));
+      if (value === "bring-to-foreground" || value === "send-to-background") {
+        // OO to-front/to-back are stacking ends; keep one layer outside the
+        // siblings' current range so relative order is preserved.
+        const zs = Array.from(editor.querySelectorAll("img, div.object")).map(
+          (el) => parseInt(el.style.zIndex, 10) || 0);
+        const max = zs.length ? Math.max(...zs) : 0;
+        const min = zs.length ? Math.min(...zs) : 0;
+        obj.style.zIndex = String(value === "bring-to-foreground" ? max + 1 : min - 1);
+      } else {
+        obj.style.zIndex = String((parseInt(obj.style.zIndex, 10) || 0) +
+          (value === "bring-forward" ? 1 : -1));
+      }
       mutated = true;
     } else if (value === "wrap-inline" || value === "wrap-square" || value === "wrap-behind") {
       OBJ_LAYOUT_CLASSES.forEach((c) => obj.classList.remove(c));
       obj.classList.add(value === "wrap-square" ? "obj-square"
         : value === "wrap-behind" ? "obj-behind" : "obj-inline");
       mutated = true;
+    } else if (value === "actual-size" && obj.matches && obj.matches("img")) {
+      // OO contextual "Actual size": reset to natural pixel size.
+      if (obj.naturalWidth > 0 && obj.naturalHeight > 0) {
+        obj.style.width = "";
+        obj.style.height = "";
+        obj.removeAttribute("width");
+        obj.removeAttribute("height");
+        mutated = true;
+      }
+    } else if (value === "replace-image" && obj.matches && obj.matches("img")) {
+      insertImage(); // dialog commits into the selection via confirmImageDialog
+      return; // no dirty marking here; the commit path handles it
+    } else if (value === "save-as-picture" && obj.matches && obj.matches("img")) {
+      // OO contextual "Save as picture": download the object's raster.
+      const a = document.createElement("a");
+      a.href = obj.currentSrc || obj.src;
+      a.download = "object.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setStatus(t("Status.ObjectSavedAsPicture"));
+      return;
     } else if (/^align-/.test(value)) {
       const dir = value.slice(6);
       OBJ_LAYOUT_CLASSES.forEach((c) => obj.classList.remove(c));
@@ -2898,6 +2957,8 @@
       mutated = true;
     } else if (value === "group") {
       mutated = groupSelectedObjects(obj);
+    } else if (value === "ungroup") {
+      mutated = ungroupSelectedObjects(obj);
     } else if (value === "merge-union" || value === "merge-subtract" || value === "merge-intersect") {
       obj.setAttribute("data-merge-op", value.slice(6));
       mutated = true;
@@ -7645,6 +7706,20 @@
       ctxMenu.querySelectorAll("[data-showif='object']").forEach((el) => {
         el.hidden = !hasObjectSel;
       });
+      // T-002 object ctx parity: link/field rows gate on the caret target.
+      let ctxAnchor = window.getSelection && window.getSelection().anchorNode
+        || e.target;
+      if (ctxAnchor && ctxAnchor.nodeType === 3) ctxAnchor = ctxAnchor.parentElement;
+      const atLink = ctxAnchor && ctxAnchor.closest
+        ? ctxAnchor.closest("#editor a[href]") : null;
+      const ctxNode = ctxAnchor && ctxAnchor.closest
+        ? ctxAnchor.closest("#editor .page-number, #editor [data-field]") : null;
+      ctxMenu.querySelectorAll("[data-showif='link']").forEach((el) => {
+        el.hidden = !atLink;
+      });
+      ctxMenu.querySelectorAll("[data-showif='field']").forEach((el) => {
+        el.hidden = !ctxNode;
+      });
       refreshSpellSuggestionRows(misspellSpan);
       collapseAllCtxSubmenus();
       ctxMenu.hidden = false;
@@ -7726,6 +7801,42 @@
         openCommentDialog();
       } else if (action === "Link") {
         insertLink();
+      } else if (action === "ReplaceImage") {
+        closeCtx();
+        applyObjectOp("replace-image");
+      } else if (action === "ActualSize") {
+        closeCtx();
+        applyObjectOp("actual-size");
+      } else if (action === "SaveAsPicture") {
+        closeCtx();
+        applyObjectOp("save-as-picture");
+      } else if (action === "CopyHyperlinkAddress") {
+        let linkNode = window.getSelection && window.getSelection().anchorNode;
+        if (linkNode && linkNode.nodeType === 3) linkNode = linkNode.parentElement;
+        const linkEl = linkNode && linkNode.closest
+          ? linkNode.closest("#editor a[href]") : null;
+        if (linkEl && linkEl.href) {
+          navigator.clipboard.writeText(linkEl.href)
+            .then(() => setStatus(t("Status.HyperlinkCopied")))
+            .catch(() => {});
+        } else {
+          setStatus(t("Status.NoLinkAtCaret"));
+        }
+      } else if (action === "ClearField") {
+        let fieldNode = window.getSelection && window.getSelection().anchorNode;
+        if (fieldNode && fieldNode.nodeType === 3) fieldNode = fieldNode.parentElement;
+        const fieldEl = fieldNode && fieldNode.closest
+          ? fieldNode.closest("#editor .page-number, #editor [data-field]") : null;
+        if (fieldEl) {
+          fieldEl.textContent = "";
+          markDirty();
+          captureHistory();
+          scheduleCollabSync();
+          notifyHost("editing");
+          setStatus(t("Status.FieldCleared"));
+        } else {
+          setStatus(t("Status.NoFieldAtCaret"));
+        }
       } else if (action === "UpdateTOC") {
         openUpdateTocDialog();
       } else if (action === "PageBreakBefore") {
@@ -8883,6 +8994,7 @@
       editor.setAttribute("spellcheck", "true");
       scheduleSpellCheck(); // debounced run unwraps all markers
     }
+    if (typeof updateSpellButtonCount === "function") updateSpellButtonCount();
   }
   function setSpellcheckLang(lang) {
     if (!lang || lang === spellState.lang) return;
@@ -8957,6 +9069,7 @@
     let n;
     while ((n = walker.nextNode())) nodes.push(n);
     for (const tn of nodes) wrapMisspellsInTextNode(tn, skipSet);
+    if (typeof updateSpellButtonCount === "function") updateSpellButtonCount();
   }
   let spellTimer = null;
   function scheduleSpellCheck() {
@@ -9348,6 +9461,43 @@
     afterTrackEdit();
     return true;
   }
+  // OO statusbar parity: `btn-doc-spell` — toggle the inline spellcheck
+  // engine from the status bar and surface the misspelled count in the
+  // button label (single source of truth is the settings-dialog checkbox
+  // and toggleSpellcheck()).
+  let lastMisspelledCount = 0;
+  function updateSpellButton() {
+    const b = document.getElementById("sb-doc-spell");
+    if (!b) return;
+    b.setAttribute("aria-pressed", String(spellState.enabled));
+    b.textContent = spellState.enabled
+      ? (lastMisspelledCount ? t("Statusbar.SpellOnCount").replace("{n}", String(lastMisspelledCount)) : t("Statusbar.SpellOn"))
+      : t("Statusbar.SpellOff");
+  }
+  const sbSpell = document.getElementById("sb-doc-spell");
+  if (sbSpell) sbSpell.addEventListener("click", () => {
+    toggleSpellcheck(!spellState.enabled);
+    if (spellState.enabled) {
+      // first misspelled word after enabling
+      const miss = editor.querySelector("span.wo-misspelled");
+      if (miss) {
+        const r = document.createRange(); r.selectNodeContents(miss);
+        const s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+        miss.scrollIntoView({ block: "center" });
+      }
+    }
+    updateSpellButton();
+    const ckb = document.getElementById("settings-spellcheck");
+    if (ckb) ckb.checked = spellState.enabled;
+  });
+  // misspelled count for the statusbar label (debounce-consumed by
+  // scheduleSpellCheck; cheap enough to count on each run)
+  function updateSpellButtonCount() {
+    lastMisspelledCount = editor.querySelectorAll("span.wo-misspelled").length;
+    updateSpellButton();
+  }
+  updateSpellButton();
+
   // Live word/character count for the status bar. Words are whitespace-
   // delimited runs; CJK/ligatures are approximated by character count too.
   function updateCounts() {

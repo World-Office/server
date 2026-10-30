@@ -123,12 +123,26 @@ const requiredObjectOps = [
   "align-left", "align-center", "align-right", "align-top", "align-middle", "align-bottom",
   "group", "merge-union", "merge-subtract", "merge-intersect",
 ]
-for (const op of requiredObjectOps) {
+// T-002 object-parity additions (2026-10-29): foreground/background stacking
+// ends + ungroup.
+const extraObjectOps = [
+  "bring-to-foreground", "send-to-background", "ungroup",
+]
+for (const op of requiredObjectOps.concat(extraObjectOps)) {
   assert.ok(
     objectOpValues.includes(op),
     `Object-op control for "${op}" must exist in the layout tab`,
   )
 }
+assert.ok(
+  // stacking-ends + ungroup have real handlers in applyObjectOp
+  editorSrc.includes("value === \"bring-to-foreground\" || value === \"send-to-background\"") &&
+    editorSrc.includes("ungroupSelectedObjects(obj)") &&
+    editorSrc.includes("actual-size") &&
+    editorSrc.includes("replace-image") &&
+    editorSrc.includes("save-as-picture"),
+  "applyObjectOp must implement foreground/background/ungroup/actual-size/replace-image/save-as-picture",
+)
 assert.ok(
   layoutHtml.includes('data-i18n="Layout.Wrapping"'),
   "Wrapping menu trigger must exist",

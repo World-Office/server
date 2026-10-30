@@ -655,7 +655,9 @@
       </ul>
     </span>
     <button type="button" data-cmd="objectOp" data-value="bring-forward" data-i18n="Layout.Object.BringForward">Bring forward</button>
+    <button type="button" data-cmd="objectOp" data-value="bring-to-foreground" data-i18n="Layout.Object.BringToForeground">Bring to foreground</button>
     <button type="button" data-cmd="objectOp" data-value="send-backward" data-i18n="Layout.Object.SendBackward">Send backward</button>
+    <button type="button" data-cmd="objectOp" data-value="send-to-background" data-i18n="Layout.Object.SendToBackground">Send to background</button>
     <span class="menu rb-menu" >
       <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.Align">Align ▾</button>
       <ul class="menu-list" role="menu" hidden>
@@ -668,6 +670,7 @@
       </ul>
     </span>
     <button type="button" data-cmd="objectOp" data-value="group" data-i18n="Layout.Object.Group">Group</button>
+    <button type="button" data-cmd="objectOp" data-value="ungroup" data-i18n="Layout.Object.Ungroup">Ungroup</button>
     <span class="menu rb-menu" >
       <button type="button" class="menu-trigger caret-btn" aria-haspopup="true" aria-expanded="false" data-i18n="Layout.MergeShapes">Merge shapes ▾</button>
       <ul class="menu-list" role="menu" hidden>
@@ -1237,6 +1240,7 @@
     <div class="sb-cluster sb-cluster-left">
       <span id="sb-page-count" class="sb status-meta" role="status" aria-live="polite" aria-atomic="true" aria-label="Page count" data-i18n="Statusbar.PageOf">Page 1 of 0</span>
       <button type="button" id="sb-word-count" class="sb status-meta" role="status" aria-live="polite" aria-label="Word and character count — opens document info" title="Word count" data-i18n="Statusbar.Words" data-cmd="showWordCount">0 words</button>
+      <button type="button" id="sb-doc-spell" class="sb status-meta" role="status" aria-pressed="false" title="Check spelling" aria-label="Check spelling" data-i18n="Statusbar.Spellcheck" data-i18n-title="Statusbar.Spellcheck" data-i18n-aria-label="Statusbar.Spellcheck">Spell</button>
     </div>
     <span id="status" class="status" role="status" aria-live="polite" data-i18n="Status.Ready">Ready</span>
     <!-- Offline indicator: shown (with the edit queue armed) whenever a save
@@ -1520,6 +1524,13 @@
     <button type="button" role="menuitem" data-ctx="WrapInline" data-showif="object" data-i18n="Ctx.WrapInline">Inline</button>
     <button type="button" role="menuitem" data-ctx="WrapSquare" data-showif="object" data-i18n="Ctx.WrapSquare">Square</button>
     <button type="button" role="menuitem" data-ctx="WrapBehind" data-showif="object" data-i18n="Ctx.WrapBehind">Behind text</button>
+    <!-- OO object-parity ctx (T-002): replace/actual-size/save-as-picture are
+         objectOps so they share one handler; image rows show for plain imgs. -->
+    <button type="button" role="menuitem" data-ctx="ReplaceImage" data-showif="image" data-i18n="Ctx.ReplaceImage">Replace image…</button>
+    <button type="button" role="menuitem" data-ctx="ActualSize" data-showif="image" data-i18n="Ctx.ActualSize">Actual size</button>
+    <button type="button" role="menuitem" data-ctx="SaveAsPicture" data-showif="image" data-i18n="Ctx.SaveAsPicture">Save as picture…</button>
+    <button type="button" role="menuitem" data-ctx="CopyHyperlinkAddress" data-showif="link" data-i18n="Ctx.CopyHyperlinkAddress">Copy hyperlink address</button>
+    <button type="button" role="menuitem" data-ctx="ClearField" data-showif="field" data-i18n="Ctx.ClearField">Clear field</button>
     <button type="button" role="menuitem" data-ctx="UpdateTOC" data-i18n="Ctx.UpdateTOC">Update table of contents</button>
     <button type="button" role="menuitem" data-ctx="TocSettings" data-i18n="Ctx.TocSettings">Table of contents settings</button>
     <button type="button" role="menuitem" data-ctx="UpdateField" data-i18n="Ctx.UpdateField">Update field</button>
