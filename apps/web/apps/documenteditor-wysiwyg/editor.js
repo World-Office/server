@@ -5961,11 +5961,12 @@
   });
   const rpAdvanced = document.getElementById("rp-advanced");
   if (rpAdvanced) rpAdvanced.addEventListener("click", () => {
-    // Marker for the host page / future advanced-settings dialog slice.
+    // C4-1: the right-panel "advanced" link opens the full paragraph dialog
+    // natively; the host event stays as a notification for host apps.
+    openParagraphSettingsDialog();
     window.dispatchEvent(new CustomEvent("wo:open-paragraph-settings", {
       detail: { source: "right-panel" },
     }));
-    console.info("wo: open-paragraph-settings requested (right panel)");
   });
 
   // ------------------------------------------------------------------
