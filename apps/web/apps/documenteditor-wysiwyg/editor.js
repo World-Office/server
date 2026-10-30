@@ -8820,6 +8820,21 @@
       if (k === "k" && !ev.shiftKey) { ev.preventDefault(); emitCommand("link"); return; }
       // Indent: Ctrl+M (OO convention; paragraph-level indent command).
       if (k === "m" && !ev.shiftKey) { ev.preventDefault(); emitCommand("indent"); return; }
+      // Paste text only: Ctrl+T (OO SpecialOptionsKeepTextOnly). Reads the
+      // clipboard as plain text and inserts unformatted (sanitizer-free
+      // plain path; a native rich paste is what "keep source format" = Ctrl+V
+      // already does, so no keep-source key is bound — the combo is OO's Ctrl+K
+      // hyperlink collision, recorded in the shortcut census).
+      if (k === "t" && !ev.shiftKey) {
+        ev.preventDefault();
+        navigator.clipboard.readText().then((text) => {
+          if (!text) return;
+          editorEl.focus();
+          document.execCommand("insertText", false, text);
+          setStatus(t("Status.PastedTextOnly"));
+        }).catch(() => setStatus(t("Status.ClipboardReadDenied")));
+        return;
+      }
     }
     // Tab / Shift+Tab inside a list item indent / outdent the item (Word /
     // LibreOffice convention). execCommand("indent"/"outdent") nests or
