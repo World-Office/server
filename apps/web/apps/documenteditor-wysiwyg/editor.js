@@ -6729,40 +6729,7 @@
     while ((n = walker.nextNode())) { if (n.data.trim()) return n; }
     return null;
   }
-  function toggleDropcap() {
-    editor.focus();
-    const sel = document.getSelection();
-    if (!sel || !sel.rangeCount) return;
-    const sc = sel.getRangeAt(0).startContainer;
-    let p = sc.nodeType === 1
-      ? (sc.closest ? sc.closest("p") : null)
-      : (sc.parentElement && sc.parentElement.closest("p"));
-    if (!p) {
-      // select-all / whole-editor selection: fall back to the first
-      // paragraph so dropcap still applies (parity with blocksUnderSelection).
-      if (editor.contains(sc)) p = editor.querySelector("p");
-      if (!p) return;
-    }
-    const existing = p.querySelector(":scope > span.dropcap");
-    if (existing) {
-      existing.remove();
-    } else {
-      const tn = firstTextNode(p);
-      if (!tn) return;
-      const ch = tn.data[0];
-      if (!ch || /\s/.test(ch)) return;
-      const span = document.createElement("span");
-      span.className = "dropcap";
-      span.textContent = ch;
-      tn.data = tn.data.slice(1);
-      tn.parentNode.insertBefore(span, tn);
-    }
-    captureHistory();
-    markDirty();
-    scheduleCollabSync();
-    notifyHost("editing");
-    updateActiveStates();
-  }
+
 
   // Borders: 4-side box painter for the current paragraph (w:pBdr / ODT
   // fo:border-* via inline border-* styles — WS-A byte contract).
@@ -7717,7 +7684,7 @@
     notifyHost("editing");
     updateActiveStates();
   }
-  function toggleDropcap() { applyDropcap({}); }
+  function toggleDropcap() { openDropcapDialog(); }
   function confirmDropcapDialog() {
     const pos = (document.getElementById("dropcap-position") || {}).value || "dropped";
     if (pos === "none") { if (!READ_ONLY) removeDropcapOnly(); return; }
