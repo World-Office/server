@@ -2679,6 +2679,37 @@
     </div>
   </div>
 
+  <!-- Insert > Text from File dialog: file selection with insertion options -->
+  <div id="textfromfile-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="textfromfile-dialog-title">
+    <div class="dialog">
+      <h3 id="textfromfile-dialog-title" data-i18n="Dialog.TextFromFileTitle">Insert text from file</h3>
+      <p class="dialog-hint">Select a file and choose insertion options.</p>
+      <div class="dialog-field">
+        <label for="textfromfile-input" data-i18n="Dialog.ChooseFile">Choose file…</label>
+        <input type="file" id="textfromfile-input" accept=".txt,.md,.html,.htm,.csv,.docx">
+      </div>
+      <div class="dialog-field">
+        <label>Insert mode</label>
+        <select id="textfromfile-mode">
+          <option value="insert" data-i18n="Dialog.InsertMode.Insert">Insert</option>
+          <option value="replace" data-i18n="Dialog.InsertMode.Replace">Replace selection</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label>Format</label>
+        <select id="textfromfile-format">
+          <option value="auto" selected>Auto-detect</option>
+          <option value="plain" data-i18n="Dialog.FormatMode.PlainText">Plain text</option>
+          <option value="html" data-i18n="Dialog.FormatMode.HTML">Keep formatting (HTML)</option>
+        </select>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-textfromfile-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-textfromfile-insert" data-i18n="Dialog.InsertFile" class="primary" disabled>Insert</button>
+      </div>
+    </div>
+  </div>
+
   <input type="file" id="textfile-input" accept=".txt,.md,.html,.htm,.csv,.docx" hidden>
   <input type="file" id="mailmerge-csv" accept=".csv,.txt" hidden>
 

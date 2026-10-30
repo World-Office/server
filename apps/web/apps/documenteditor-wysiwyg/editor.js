@@ -10609,35 +10609,105 @@
 
   // Insert > Text from File: txt/md/html/csv read directly; .docx goes through
   // the host converter (POST /api/documents/{id}/import-docx -> HTML).
+  // Now opens a dialog with file selection and insertion options.
   const btnTextFile = document.getElementById("btn-textfile");
-  const textFileInput = document.getElementById("textfile-input");
-  if (btnTextFile && textFileInput) btnTextFile.addEventListener("click", () => textFileInput.click());
-  if (textFileInput) textFileInput.addEventListener("change", async () => {
-    const file = textFileInput.files && textFileInput.files[0];
-    textFileInput.value = "";
-    if (!file) return;
-    const ext = (file.name.split(".").pop() || "").toLowerCase();
-    try {
-      let html;
-      if (ext === "docx") {
-        const fd = new FormData();
-        fd.append("file", file);
-        const resp = await fetch(`/api/documents/${encodeURIComponent(DOC_ID)}/import-docx`, { method: "POST", body: fd });
-        if (!resp.ok) throw new Error(((await resp.json()).error) || "conversion failed");
-        html = (await resp.json()).html;
-      } else {
-        const text = await file.text();
-        html = (ext === "html" || ext === "htm")
-          ? text
-          : text.split(/\r?\n/).map((l) => `<p>${_escHtml(l)}</p>`).join("");
+  if (btnTextFile) btnTextFile.addEventListener("click", () => openDlg("textfromfile-dialog"));
+
+  // Text from File dialog handlers
+  const textFromFileDlg = document.getElementById("textfromfile-dialog");
+  const textFromFileInput = document.getElementById("textfromfile-input");
+  const textFromFileMode = document.getElementById("textfromfile-mode");
+  const textFromFileFormat = document.getElementById("textfromfile-format");
+  const btnTextFromFileInsert = document.getElementById("btn-textfromfile-insert");
+  const btnTextFromFileCancel = document.getElementById("btn-textfromfile-cancel");
+  let textFromFileSelectedFile = null;
+
+  // When file is selected, enable the Insert button
+  if (textFromFileInput) {
+    textFromFileInput.addEventListener("change", () => {
+      const file = textFromFileInput.files && textFromFileInput.files[0];
+      textFromFileSelectedFile = file;
+      if (btnTextFromFileInsert) {
+        btnTextFromFileInsert.disabled = !file;
       }
-      editor.focus();
-      document.execCommand("insertHTML", false, html);
-      setStatus(`Inserted text from ${file.name}`);
-    } catch (err) {
-      setStatus(`Text from file failed: ${err.message}`, true);
-    }
-  });
+    });
+  }
+
+  // Insert button: process the selected file with chosen options
+  if (btnTextFromFileInsert) {
+    btnTextFromFileInsert.addEventListener("click", async () => {
+      const file = textFromFileSelectedFile;
+      if (!file) return;
+
+      const mode = (textFromFileMode && textFromFileMode.value) || "insert";
+      const format = (textFromFileFormat && textFromFileFormat.value) || "auto";
+      const ext = (file.name.split(".").pop() || "").toLowerCase();
+
+      try {
+        let html;
+        if (ext === "docx") {
+          const fd = new FormData();
+          fd.append("file", file);
+          const resp = await fetch(`/api/documents/${encodeURIComponent(DOC_ID)}/import-docx`, { method: "POST", body: fd });
+          if (!resp.ok) throw new Error(((await resp.json()).error) || "conversion failed");
+          html = (await resp.json()).html;
+        } else {
+          const text = await file.text();
+          if (ext === "html" || ext === "htm") {
+            // For HTML files, respect format option
+            if (format === "plain") {
+              html = _escHtml(text);
+            } else {
+              html = text;
+            }
+          } else {
+            // For text/md/csv files
+            if (format === "plain") {
+              html = _escHtml(text);
+            } else {
+              html = text.split(/\r?\n/).map((l) => `<p>${_escHtml(l)}</p>`).join("");
+            }
+          }
+        }
+
+        editor.focus();
+
+        // Handle insert/replace mode
+        if (mode === "replace") {
+          const sel = window.getSelection();
+          if (sel && !sel.isCollapsed && sel.rangeCount) {
+            const range = sel.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(range.createContextualFragment(html));
+          } else {
+            // No selection, just insert
+            document.execCommand("insertHTML", false, html);
+          }
+        } else {
+          document.execCommand("insertHTML", false, html);
+        }
+
+        setStatus(`Inserted text from ${file.name}`);
+        closeDlg("textfromfile-dialog");
+        // Reset for next use
+        if (textFromFileInput) textFromFileInput.value = "";
+        textFromFileSelectedFile = null;
+        if (btnTextFromFileInsert) btnTextFromFileInsert.disabled = true;
+      } catch (err) {
+        setStatus(`Text from file failed: ${err.message}`, true);
+      }
+    });
+  }
+
+  // Cancel button: close dialog and reset
+  if (btnTextFromFileCancel) {
+    btnTextFromFileCancel.addEventListener("click", () => {
+      closeDlg("textfromfile-dialog");
+      if (textFromFileInput) textFromFileInput.value = "";
+      textFromFileSelectedFile = null;
+      if (btnTextFromFileInsert) btnTextFromFileInsert.disabled = true;
+    });
+  }
 
   // Insert > Mail merge: CSV source (first row = fields) -> «Field» markers in
   // the document -> preview of the merged copies.
