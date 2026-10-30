@@ -1934,6 +1934,30 @@
     </div>
   </div>
 
+  <div id="speechinput-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="speechinput-dialog-title">
+    <div class="dialog">
+      <h3 id="speechinput-dialog-title" data-i18n="SpeechInput.Title">Speech Input Settings</h3>
+      <div class="dialog-field">
+        <label for="speechinput-lang" data-i18n="SpeechInput.Language">Language</label>
+        <select id="speechinput-lang">
+          <option value="en-US" data-i18n="SpeechInput.LangEnglishUS">English (United States)</option>
+          <option value="en-GB" data-i18n="SpeechInput.LangEnglishGB">English (United Kingdom)</option>
+          <option value="de-DE" data-i18n="SpeechInput.LangGerman">Deutsch (Deutschland)</option>
+          <option value="fr-FR" data-i18n="SpeechInput.LangFrench">Français (France)</option>
+          <option value="es-ES" data-i18n="SpeechInput.LangSpanish">Español (España)</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label for="speechinput-interim" data-i18n="SpeechInput.InterimResults">Interim results</label>
+        <input id="speechinput-interim" type="checkbox" checked>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-speechinput-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-speechinput-ok" data-i18n="Dialog.OK" class="primary">OK</button>
+      </div>
+    </div>
+  </div>
+
   <div id="linenumbers-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="linenumbers-dialog-title">
     <div class="dialog">
       <h3 id="linenumbers-dialog-title">Line Numbers</h3>
