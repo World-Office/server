@@ -1490,6 +1490,7 @@
     if (cmd === "tableDrawMode") { toggleTableTool("draw"); return; }
     if (cmd === "tableEraseMode") { toggleTableTool("erase"); return; }
     if (cmd === "convertTextToTable") { openTextToTableDialog(); return; }
+    if (cmd === "convertTableToText") { openTableToTextDialog(); return; }
     if (cmd === "equationTemplate") { insertEquationTemplate(value); return; }
     if (cmd === "openColumnsDialog") {
       openColumnsDialog();
@@ -2216,6 +2217,64 @@
   if (btnTttCancel) btnTttCancel.addEventListener("click", closeTextToTableDialog);
   const btnTttOk = document.getElementById("btn-ttt-ok");
   if (btnTttOk) btnTttOk.addEventListener("click", confirmTextToTableDialog);
+
+  // C5-2 (reverse): Convert Table to Text — each row becomes a paragraph,
+  // cells joined by the chosen separator (Word-compatible semantics).
+  function openTableToTextDialog() {
+    closeAllMenus();
+    if (READ_ONLY) return;
+    saveTableSelection();
+    rememberFocus();
+    const dialog = document.getElementById("table-to-text-dialog");
+    if (!dialog) return;
+    dialog.classList.add("open");
+    anchorInsertPop("table-to-text-dialog", "btn-table");
+  }
+  function closeTableToTextDialog() {
+    const dialog = document.getElementById("table-to-text-dialog");
+    if (dialog) dialog.classList.remove("open");
+    restoreFocus();
+  }
+  function confirmTableToTextDialog() {
+    const sepSel = document.getElementById("tt2-sep") || {};
+    const custom = (document.getElementById("tt2-custom") || {}).value || "";
+    let sep = sepSel.value || "tab";
+    if (sep === "custom") sep = custom || ",";
+    else if (sep === "comma") sep = ",";
+    else sep = "\t";
+    closeTableToTextDialog();
+    restoreTableSelection();
+    // table under the caret (or the first table in the editor)
+    const sel = window.getSelection();
+    let table = null;
+    if (sel && sel.rangeCount > 0) {
+      let n = sel.anchorNode;
+      if (n && n.nodeType === 3) n = n.parentElement;
+      if (n && n.closest) table = n.closest("table");
+    }
+    if (!table) {
+      table = editor.querySelector("table");
+      if (!table) { setStatus("No table at the cursor"); return; }
+    }
+    const rows = Array.from(table.querySelectorAll("tr")).map((tr) =>
+      Array.from(tr.querySelectorAll("td, th")).map((td) => (td.textContent || "").trim())
+    );
+    const paras = rows.map((cells) => cells.join(sep)).filter((x) => x.length > 0);
+    const html = paras.map((p) => "<p>" + _escXml(p) + "</p>").join("");
+    const range = document.createRange();
+    range.selectNode(table);
+    range.deleteContents();
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    Array.from(tmp.childNodes).reverse().forEach((nd) => range.insertNode(nd));
+    editor.focus();
+    markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing");
+    setStatus("Converted table to text: " + rows.length + " rows");
+  }
+  const btnTt2Cancel = document.getElementById("btn-tt2-cancel");
+  if (btnTt2Cancel) btnTt2Cancel.addEventListener("click", closeTableToTextDialog);
+  const btnTt2Ok = document.getElementById("btn-tt2-ok");
+  if (btnTt2Ok) btnTt2Ok.addEventListener("click", confirmTableToTextDialog);
 
   // LEDGER3: OO equation symbol-gallery families -> built-in linear
   // templates inserted straight into the document (same path as the

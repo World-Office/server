@@ -429,6 +429,7 @@
         <li role="none"><button type="button" role="menuitem" data-cmd="tableDrawMode" data-i18n="Insert.Table.Draw">Draw table</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="tableEraseMode" data-i18n="Insert.Table.Erase">Erase table</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="convertTextToTable" data-i18n="Insert.Table.Convert">Convert Text to Table…</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="convertTableToText" data-i18n="Insert.Table.ConvertBack">Convert Table to Text…</button></li>
       </ul>
     </span>
     <span class="rb-sep" aria-hidden="true"></span>
@@ -1582,6 +1583,22 @@
     <div class="dialog-actions">
       <button id="btn-ttt-cancel" data-i18n="Dialog.Cancel">Cancel</button>
       <button id="btn-ttt-ok" data-i18n="Dialog.Insert" class="primary">Insert</button>
+    </div>
+  </div>
+  <div id="table-to-text-dialog" class="insert-pop" role="dialog" aria-modal="false" aria-labelledby="ttt2-dialog-title">
+    <h3 id="ttt2-dialog-title" data-i18n="TableToText.Title">Convert Table to Text</h3>
+    <div class="dialog-field">
+      <label for="tt2-sep" data-i18n="TableToText.Separator">Separate cells with</label>
+      <select id="tt2-sep">
+        <option value="tab" data-i18n="TableToText.Tab">Tabs</option>
+        <option value="comma" data-i18n="TableToText.Comma">Commas</option>
+        <option value="custom" data-i18n="TableToText.Custom">Custom</option>
+      </select>
+      <input id="tt2-custom" type="text" maxlength="4" placeholder="," aria-label="Custom separator">
+    </div>
+    <div class="dialog-actions">
+      <button id="btn-tt2-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+      <button id="btn-tt2-ok" data-i18n="Dialog.OK" class="primary">OK</button>
     </div>
   </div>
   <div id="table-dialog" class="insert-pop" role="dialog" aria-modal="false" aria-labelledby="table-dialog-title">
