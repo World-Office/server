@@ -1999,6 +1999,18 @@
         <label for="pagecolor-custom">Custom color</label>
         <input id="pagecolor-custom" type="color" value="#ffffff">
       </div>
+      <div class="dialog-field">
+        <label for="pagecolor-hex">HEX</label>
+        <input id="pagecolor-hex" type="text" value="#FFFFFF" maxlength="7" pattern="^#[0-9A-Fa-f]{6}$">
+      </div>
+      <div class="dialog-field" role="group" aria-label="RGB">
+        <label for="pagecolor-red">R</label>
+        <input id="pagecolor-red" type="number" min="0" max="255" value="255">
+        <label for="pagecolor-green">G</label>
+        <input id="pagecolor-green" type="number" min="0" max="255" value="255">
+        <label for="pagecolor-blue">B</label>
+        <input id="pagecolor-blue" type="number" min="0" max="255" value="255">
+      </div>
       <div class="dialog-actions">
         <button id="btn-pagecolor-close" data-i18n="Dialog.Cancel">Cancel</button>
         <button id="btn-pagecolor-ok" data-i18n="Dialog.OK" class="primary">OK</button>
