@@ -8204,10 +8204,17 @@
   // OO's strip position; closing it (button, another tab, Escape, or a
   // double-click in the body) hides it again.
   let hfMode = false;
+  let hfHasUnsavedChanges = false;
   const hfTab = document.querySelector('.ribbon-tab[data-tab="header-footer"]');
-  function exitHFMode() {
+  function exitHFMode(skipConfirm) {
     if (!hfMode || !hfTab) return;
+    // asc-gen673: OnlyOffice parity - show confirmation if there are unsaved changes
+    if (hfHasUnsavedChanges && !skipConfirm) {
+      openOverlayDialog("hf-close-confirm-dialog");
+      return;
+    }
     hfMode = false;
+    hfHasUnsavedChanges = false;
     hfTab.hidden = true;
     hfTab.classList.remove("contextual");
     document.querySelector('.ribbon-tab[data-tab="home"]')?.click();
@@ -8215,6 +8222,7 @@
   function enterHFMode() {
     if (!hfTab) return;
     hfMode = true;
+    hfHasUnsavedChanges = false;
     hfTab.hidden = false;
     hfTab.classList.add("contextual");
     hfTab.click();
@@ -8222,33 +8230,36 @@
   document.getElementById("editor")?.addEventListener("dblclick", (ev) => {
     const inHF = ev.target.closest && ev.target.closest(".page-header, .page-footer");
     if (inHF) enterHFMode();
-    else if (hfMode) exitHFMode();
+    else if (hfMode) exitHFMode(false);
   });
   document.querySelectorAll(".ribbon-tab").forEach((tab) => {
     if (tab === hfTab) return;
-    tab.addEventListener("click", () => { if (hfMode) { hfMode = false; hfTab.hidden = true; hfTab.classList.remove("contextual"); } });
+    tab.addEventListener("click", () => { if (hfMode) { exitHFMode(false); } });
   });
   document.addEventListener("keydown", (ev) => {
-    if (ev.key === "Escape" && hfMode) { ev.preventDefault(); exitHFMode(); }
+    if (ev.key === "Escape" && hfMode) { ev.preventDefault(); exitHFMode(false); }
   });
   const hfClose = document.getElementById("btn-hf-close");
-  if (hfClose) hfClose.addEventListener("click", exitHFMode);
+  if (hfClose) hfClose.addEventListener("click", () => exitHFMode(false));
+  // asc-gen673: confirmation dialog handlers
+  const hfConfirmCancel = document.getElementById("btn-hf-confirm-cancel");
+  if (hfConfirmCancel) hfConfirmCancel.addEventListener("click", () => closeOverlayDialog("hf-close-confirm-dialog"));
+  const hfConfirmDiscard = document.getElementById("btn-hf-confirm-discard");
+  if (hfConfirmDiscard) hfConfirmDiscard.addEventListener("click", () => { closeOverlayDialog("hf-close-confirm-dialog"); exitHFMode(true); });
+  const hfConfirmSave = document.getElementById("btn-hf-confirm-save");
+  if (hfConfirmSave) hfConfirmSave.addEventListener("click", () => { closeOverlayDialog("hf-close-confirm-dialog"); saveDocument(); exitHFMode(true); });
   const hfPageNumber = document.getElementById("btn-hf-pagenumber");
-  if (hfPageNumber) hfPageNumber.addEventListener("click", () => emitCommand("insertPageNumber"));
+  if (hfPageNumber) hfPageNumber.addEventListener("click", () => { hfHasUnsavedChanges = true; emitCommand("insertPageNumber"); });
   const hfDateTime = document.getElementById("btn-hf-datetime");
-  if (hfDateTime) hfDateTime.addEventListener("click", () => emitCommand("insertDate"));
+  if (hfDateTime) hfDateTime.addEventListener("click", () => { hfHasUnsavedChanges = true; emitCommand("insertDate"); });
   // AF12-LABEL-PARITY: header/footer Field & Image placement buttons. The
   // field/image dialogs insert at the main-surface caret, not inside the HF
   // container, so these fire the established marker pattern (CustomEvent +
   // console.info) rather than pretending to insert into the header/footer.
   const hfField = document.getElementById("btn-hf-field");
-  if (hfField) hfField.addEventListener("click", () => {
-    window.dispatchEvent(new CustomEvent("wo:header-field", { detail: {} }));
-    console.info("wo:header-field: requested");
-    setStatus("Header/footer field requested (marker only)");
-  });
+  if (hfField) hfField.addEventListener("click", () => { hfHasUnsavedChanges = true; window.dispatchEvent(new CustomEvent("wo:header-field", { detail: {} })); console.info("wo:header-field: requested"); setStatus("Header/footer field requested (marker only)"); });
   const hfImage = document.getElementById("btn-hf-image");
-  if (hfImage) hfImage.addEventListener("click", insertImage);
+  if (hfImage) hfImage.addEventListener("click", () => { hfHasUnsavedChanges = true; insertImage(); });
 
   // --- right-click context menu on the editing surface ----------------
   // OO parity: same geometry (210px, 26px rows) and item order as OO's
@@ -9857,6 +9868,8 @@
     setStatus(t("Status.Unsaved"));
     clearTimeout(saveTimer);
     saveTimer = setTimeout(saveDocument, 30000);
+    // asc-gen673: track unsaved changes in header/footer mode
+    if (hfMode) hfHasUnsavedChanges = true;
     // Structural edits (insertHeader/Footer, notes) mutate the DOM without
     // an input event, so this — not the input handler — is the single
     // place that arms the collab poll's active-typist guard.
