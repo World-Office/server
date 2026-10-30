@@ -1143,7 +1143,7 @@
       // The trailing <p> is the target block for whatever the user types or
       // inserts next (Word keeps a paragraph after a page break too).
       const html = cmd === "insertHR"
-        ? "<hr/>"
+        ? (hrPendingStyle ? "<hr style=\"" + hrPendingStyle + "\"/>" : "<hr/>")
         : '<div class="page-break"><br></div><p><br></p>';
       try { document.execCommand("insertHTML", false, html); } catch (err) {}
       moveCaretPastStructuralMarkers();
@@ -1979,7 +1979,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "backstage-overlay"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "smartart-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "backstage-overlay"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -2263,31 +2263,37 @@
     Array.from(table.rows).forEach((r) => { max = Math.max(max, r.cells.length); });
     return max;
   }
-  function insertTableRow(above) {
-    const cell = currentTableCell(); if (!cell) return;
-    const tr = cell.closest("tr");
-    const table = tr.closest("table");
-    const newTr = document.createElement("tr");
-    const width = tableGridCols(table);
-    for (let i = 0; i < width; i++) {
-      const td = document.createElement("td");
-      td.innerHTML = "<br>";
-      newTr.appendChild(td);
+  function insertTableRow(above, count) {
+    const n = Math.min(20, Math.max(1, Number(count) || 1));
+    for (let k = 0; k < n; k++) {
+      const cell = currentTableCell(); if (!cell) return;
+      const tr = cell.closest("tr");
+      const table = tr.closest("table");
+      const newTr = document.createElement("tr");
+      const width = tableGridCols(table);
+      for (let i = 0; i < width; i++) {
+        const td = document.createElement("td");
+        td.innerHTML = "<br>";
+        newTr.appendChild(td);
+      }
+      if (above) tr.parentNode.insertBefore(newTr, tr);
+      else tr.parentNode.insertBefore(newTr, tr.nextSibling);
     }
-    if (above) tr.parentNode.insertBefore(newTr, tr);
-    else tr.parentNode.insertBefore(newTr, tr.nextSibling);
     finalizeTableChange();
   }
-  function insertTableCol(left) {
-    const cell = currentTableCell(); if (!cell) return;
-    const table = cell.closest("table");
-    const idx = cell.cellIndex;
-    Array.from(table.rows).forEach((r) => {
-      const td = document.createElement("td");
-      td.innerHTML = "<br>";
-      const target = Math.min(left ? idx : idx + 1, r.cells.length);
-      r.insertBefore(td, r.cells[target] || null);
-    });
+  function insertTableCol(left, count) {
+    const n = Math.min(20, Math.max(1, Number(count) || 1));
+    for (let k = 0; k < n; k++) {
+      const cell = currentTableCell(); if (!cell) return;
+      const table = cell.closest("table");
+      const idx = cell.cellIndex;
+      Array.from(table.rows).forEach((r) => {
+        const td = document.createElement("td");
+        td.innerHTML = "<br>";
+        const target = Math.min(left ? idx : idx + 1, r.cells.length);
+        r.insertBefore(td, r.cells[target] || null);
+      });
+    }
     finalizeTableChange();
   }
   function deleteTableRow() {
@@ -4129,6 +4135,76 @@
     const btn = document.getElementById(id);
     if (btn) btn.addEventListener("click", () => { tableOps[id](); closeTableOpsDialog(); });
   });
+  // T-002: OO "Insert several rows/columns" — batch inserts using the count
+  // input on the table-ops dialog.
+  const opInsertCount = document.getElementById("op-insert-count");
+  const opApplyRows = document.getElementById("op-apply-rows");
+  const opApplyCols = document.getElementById("op-apply-cols");
+  const severalCount = () => Math.max(1, Math.min(20, Number(opInsertCount && opInsertCount.value) || 1));
+  if (opApplyRows) opApplyRows.addEventListener("click", () => { insertTableRow(false, severalCount()); closeTableOpsDialog(); });
+  if (opApplyCols) opApplyCols.addEventListener("click", () => { insertTableCol(false, severalCount()); closeTableOpsDialog(); });
+
+  // T-002: OO ctx "Horizontal line settings". The dialog edits the existing
+  // <hr> at the caret, or stages a style used by the NEXT insertHR / plain
+  // Horizontal-line ctx insert.
+  let hrPendingStyle = "";
+  const hrDialog = document.getElementById("hr-settings-dialog");
+  const openHrSettings = () => {
+    if (!hrDialog) return;
+    const sel = window.getSelection();
+    let node = sel && sel.anchorNode;
+    if (node && node.nodeType === 3) node = node.parentElement;
+    const hr = node && node.closest ? node.closest("#editor hr") : null;
+    const w = document.getElementById("hr-width");
+    const h = document.getElementById("hr-height");
+    const c = document.getElementById("hr-color");
+    const a = document.getElementById("hr-align");
+    if (hr) {
+      if (w) w.value = String(parseFloat(hr.style.width) || 100);
+      if (h) h.value = String(parseFloat(hr.style.height) || 2);
+      if (c) c.value = (hr.style.backgroundColor || hr.style.background || "#000000").replace("#","") || "#000000";
+      if (c && c.value[0] !== "#") c.value = "#" + c.value;
+      if (a) a.value = hr.style.marginLeft === "0px" ? "left" : hr.style.marginRight === "0px" ? "right" : "center";
+    }
+    rememberFocus();
+    hrDialog.classList.add("open");
+  };
+  const commitHrSettings = (insert) => {
+    if (!hrDialog) return;
+    const sel = window.getSelection();
+    let node = sel && sel.anchorNode;
+    if (node && node.nodeType === 3) node = node.parentElement;
+    const hr = node && node.closest ? node.closest("#editor hr") : null;
+    const w = document.getElementById("hr-width");
+    const h = document.getElementById("hr-height");
+    const c = document.getElementById("hr-color");
+    const a = document.getElementById("hr-align");
+    const width = Math.max(1, Math.min(100, Number(w && w.value) || 100));
+    const height = Math.max(1, Math.min(50, Number(h && h.value) || 2));
+    const color = (c && c.value) || "#000000";
+    const align = (a && a.value) || "center";
+    hrPendingStyle = "width:" + width + "%;height:" + height + "px;background-color:" + color +
+      (align === "center" ? ";margin-left:auto;margin-right:auto"
+       : align === "right" ? ";margin-left:auto;margin-right:0"
+       : ";margin-left:0;margin-right:auto");
+    if (!insert && hr) {
+      hr.removeAttribute("style");
+      hr.setAttribute("style", hrPendingStyle);
+    }
+    const dlg = hrDialog;
+    dlg.classList.remove("open");
+    restoreFocus();
+    if (insert) {
+      emitCommand("insertHR", hrPendingStyle);
+    } else if (hr) {
+      markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing");
+    }
+  };
+  const hrOpenBtn = null; // opened via ctx row
+  const btnHrInsert = document.getElementById("btn-hr-insert");
+  const btnHrClose = document.getElementById("btn-hr-close");
+  if (btnHrInsert) btnHrInsert.addEventListener("click", () => commitHrSettings(true));
+  if (btnHrClose) btnHrClose.addEventListener("click", () => { hrDialog.classList.remove("open"); restoreFocus(); });
   // BUG8-STATE-CONSISTENCY: the table-ops dialog owns the same border and
   // background surfaces as the right panel; both funnel through
   // applyTableBorder/applyTableBackground so the mutations converge.
@@ -7784,6 +7860,9 @@
         // Insert
       } else if (action === "HorizontalRule") {
         emitCommand("insertHR");
+      } else if (action === "HorizontalLineSettings") {
+        closeCtx();
+        openHrSettings();
       } else if (action === "Caption") {
         emitCommand("insertCaption");
       } else if (action === "Footnote") {
@@ -10647,13 +10726,23 @@
     }
     if (showLegend) {
       let lx = 14;
-      const ly = H - 4;
+      const ly = H - 4 - (showDataTable ? dataTableH : 0);
       rows.forEach((r, i) => {
         const label = r[0] || "Item " + (i + 1);
         body += `<rect x="${lx}" y="${ly - 8}" width="9" height="9" fill="${colors[i % colors.length]}"/>`;
         body += `<text x="${lx + 13}" y="${ly}" font-size="9" font-family="sans-serif" fill="#333">${_escXml(label)}</text>`;
         lx += 26 + label.length * 5.2;
       });
+    }
+    if (showDataTable) {
+      const ty = H - dataTableH + 6;
+      body += `<rect x="${M}" y="${H - dataTableH}" width="${W - 2 * M}" height="${dataTableH}" fill="#fafafa" stroke="#d9d9d9"/>`;
+      body += `<text x="${M + 6}" y="${ty}" font-size="10" font-family="sans-serif" font-weight="bold">Data</text>`;
+      tableRows.forEach((r, i) => {
+        body += `<text x="${M + 6}" y="${ty + (i + 1) * 13}" font-size="10" font-family="sans-serif">${_escXml(r[0] || "")}</text>`;
+        body += `<text x="${W / 2 + 20}" y="${ty + (i + 1) * 13}" font-size="10" font-family="sans-serif">${_escXml(String(r[1] ?? ""))}</text>`;
+      });
+      if (rows.length > 6) body += `<text x="${M + 6}" y="${ty + 7 * 13}" font-size="10" font-family="sans-serif" fill="#888">...</text>`;
     }
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="100%" height="100%" fill="#ffffff"/>${body}</svg>`;
   }

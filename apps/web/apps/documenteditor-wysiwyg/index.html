@@ -1505,6 +1505,7 @@
     <div class="ctx-sep" role="separator"></div>
     <!-- Insert block -->
     <button type="button" role="menuitem" data-ctx="HorizontalRule" data-i18n="Ctx.HorizontalRule">Horizontal line</button>
+    <button type="button" role="menuitem" data-ctx="HorizontalLineSettings" data-i18n="Ctx.HorizontalLineSettings">Horizontal line settings…</button>
     <button type="button" role="menuitem" data-ctx="Caption" data-i18n="Ctx.Caption">Caption</button>
     <button type="button" role="menuitem" data-ctx="Footnote" data-i18n="Ctx.Footnote">Footnote</button>
     <button type="button" role="menuitem" data-ctx="Endnote" data-i18n="Ctx.Endnote">Endnote</button>
@@ -1614,6 +1615,12 @@
         <button id="op-merge" data-i18n="Table.MergeCells">Merge cells</button>
         <button id="op-split" data-i18n="Table.SplitCell">Split cell</button>
       </div>
+      <div class="dialog-row table-ops-several">
+        <label for="op-insert-count" data-i18n="Table.InsertSeveral">Insert</label>
+        <input id="op-insert-count" type="number" min="1" max="20" value="1" aria-label="Insert" data-i18n-aria-label="Table.InsertSeveral">
+        <button id="op-apply-rows" data-i18n="Table.InsertSeveralRows">rows</button>
+        <button id="op-apply-cols" data-i18n="Table.InsertSeveralCols">columns</button>
+      </div>
       <div class="dialog-field table-ops-style">
         <label for="table-ops-border-style" data-i18n="RightPanel.BorderStyle">Border style</label>
         <select id="table-ops-border-style">
@@ -1641,6 +1648,37 @@
        the note / page-number / header-footer buttons open an options dialog
        before invoking their existing commands, and Track Changes opens an
        options dialog instead of silently toggling state. -->
+  <!-- T-002: OO ctx "Horizontal line settings" — a styled-<hr> dialog whose
+       Insert commits the same marker the ribbon/ctx plain insert uses. -->
+  <div id="hr-settings-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="hr-settings-title">
+    <div class="dialog">
+      <h3 id="hr-settings-title" data-i18n="Ctx.HorizontalLineSettings">Horizontal line settings</h3>
+      <div class="dialog-field">
+        <label for="hr-width" data-i18n="Hr.Width">Width (% of page)</label>
+        <input id="hr-width" type="number" min="1" max="100" value="100">
+      </div>
+      <div class="dialog-field">
+        <label for="hr-height" data-i18n="Hr.Height">Height (px)</label>
+        <input id="hr-height" type="number" min="1" max="50" value="2">
+      </div>
+      <div class="dialog-field">
+        <label for="hr-color" data-i18n="RightPanel.LineColor">Color</label>
+        <input type="color" id="hr-color" value="#000000">
+      </div>
+      <div class="dialog-field">
+        <label for="hr-align" data-i18n="Hr.Align">Alignment</label>
+        <select id="hr-align">
+          <option value="center" data-i18n="Hr.AlignCenter">Center</option>
+          <option value="left" data-i18n="Hr.AlignLeft">Left</option>
+          <option value="right" data-i18n="Hr.AlignRight">Right</option>
+        </select>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-hr-insert" class="primary" data-i18n="Hr.Insert">Insert</button>
+        <button id="btn-hr-close" data-i18n="Dialog.Close">Close</button>
+      </div>
+    </div>
+  </div>
   <div id="notes-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="notes-dialog-title">
     <div class="dialog">
       <h3 id="notes-dialog-title">Footnote and Endnote</h3>
