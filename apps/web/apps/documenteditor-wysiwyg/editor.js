@@ -10955,19 +10955,20 @@
     const esc = _escXml(label);
     // C6-2: checkbox (click toggles), date picker (native <input type=date>),
     // combo box (editable), picture (click opens the image dialog).
+    // WO-2: dropdown opens cc-dialog, all cc types have tabindex for keyboard nav.
     let html;
     if (type === "checkbox") {
       html = `<span class="content-control cc-inline cc-checkbox" data-cc="checkbox" title="${esc}" contenteditable="false" tabindex="0" role="checkbox" aria-checked="false"><span class="cc-box">☐</span> ${esc}</span>`;
     } else if (type === "date") {
-      html = `<span class="content-control cc-inline cc-date" data-cc="date" title="${esc}" contenteditable="false"><input type="date" class="cc-date-input" aria-label="${esc}"> ${esc}</span>`;
+      html = `<span class="content-control cc-inline cc-date" data-cc="date" title="${esc}" contenteditable="false" tabindex="0"><input type="date" class="cc-date-input" aria-label="${esc}" tabindex="0"> ${esc}</span>`;
     } else if (type === "combo") {
-      html = `<span class="content-control cc-inline cc-combo" data-cc="combo" title="${esc}" contenteditable="true">▾ ${esc}</span>`;
+      html = `<span class="content-control cc-inline cc-combo" data-cc="combo" title="${esc}" contenteditable="true" tabindex="0">▾ ${esc}</span>`;
     } else if (type === "picture") {
       html = `<span class="content-control cc-inline cc-picture" data-cc="picture" title="${esc}" contenteditable="false" tabindex="0" role="button">🖼 ${esc}</span>`;
     } else if (type === "dropdown") {
-      html = `<span class="content-control cc-inline content-control" data-cc="dropdown" title="${esc}" contenteditable="false">▾ ${esc}</span>`;
+      html = `<span class="content-control cc-inline cc-dropdown" data-cc="dropdown" title="${esc}" contenteditable="false" tabindex="0" role="button">▾ ${esc}</span>`;
     } else {
-      html = `<span class="content-control" data-cc="${type}" title="${esc}" contenteditable="false">${esc}</span>`;
+      html = `<span class="content-control" data-cc="${type}" title="${esc}" contenteditable="false" tabindex="0">${esc}</span>`;
     }
     editor.focus();
     document.execCommand("insertHTML", false, html);
@@ -10978,7 +10979,8 @@
     closeDlg("cc-dialog");
     setStatus(`Inserted ${type} content control`);
   });
-  // C6-2: interactive cc controls — checkbox toggle + picture -> image dialog.
+  // C6-2 + WO-2: interactive cc controls — checkbox toggle, picture -> image dialog,
+  // dropdown -> cc-dialog for editing.
   if (editor) editor.addEventListener("click", (ev) => {
     const box = ev.target.closest ? ev.target.closest(".cc-checkbox") : null;
     if (box) {
@@ -10995,6 +10997,20 @@
     if (pic) {
       ev.preventDefault(); ev.stopPropagation();
       insertImage();
+      return;
+    }
+    // WO-2: dropdown content control opens cc-dialog for editing
+    const dropdown = ev.target.closest ? ev.target.closest(".cc-dropdown") : null;
+    if (dropdown) {
+      ev.preventDefault(); ev.stopPropagation();
+      if (READ_ONLY) return;
+      // Pre-fill the dialog with the dropdown's type and title
+      const typeSel = document.getElementById("cc-type");
+      const titleInp = document.getElementById("cc-title");
+      if (typeSel) typeSel.value = "dropdown";
+      if (titleInp) titleInp.value = dropdown.getAttribute("title") || "";
+      openDlg("cc-dialog");
+      return;
     }
   });
 
