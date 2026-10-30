@@ -8247,11 +8247,7 @@
     setStatus("Header/footer field requested (marker only)");
   });
   const hfImage = document.getElementById("btn-hf-image");
-  if (hfImage) hfImage.addEventListener("click", () => {
-    window.dispatchEvent(new CustomEvent("wo:header-image", { detail: {} }));
-    console.info("wo:header-image: requested");
-    setStatus("Header/footer image requested (marker only)");
-  });
+  if (hfImage) hfImage.addEventListener("click", insertImage);
 
   // --- right-click context menu on the editing surface ----------------
   // OO parity: same geometry (210px, 26px rows) and item order as OO's
