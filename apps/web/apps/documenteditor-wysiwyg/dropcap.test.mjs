@@ -51,6 +51,12 @@ assert.ok(
   "openDropcapDialog must open the dropcap-dialog overlay",
 )
 
+// The toggleDropcap function itself must also open the dialog (not a direct toggle)
+assert.ok(
+  editorSrc.includes("function toggleDropcap()") && editorSrc.includes("openDropcapDialog()"),
+  "toggleDropcap function must call openDropcapDialog, not perform direct toggle",
+)
+
 // -- Dialog structure: must have styling options --
 
 // The dialog must exist
