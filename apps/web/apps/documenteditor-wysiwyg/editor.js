@@ -1974,7 +1974,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -2001,6 +2001,7 @@
     "plugins-dialog": closePluginsDialog,
     "toc-dialog": closeTocDialog,
     "backstage-overlay": closeBackstage,
+    "background-plugins-dialog": closeBackgroundPluginsDialog,
   };
   document.addEventListener("keydown", (ev) => {
     if (ev.key !== "Escape") return;
@@ -10710,6 +10711,132 @@
   const pluginsCloseBtn = document.getElementById("btn-plugins-close");
   if (pluginsCloseBtn) pluginsCloseBtn.addEventListener("click", closePluginsDialog);
 
+  // Background plugins dialog: modal to view/enable/disable plugins running in background
+  const backgroundPluginsDialog = document.getElementById("background-plugins-dialog");
+  const backgroundPluginsList = document.getElementById("background-plugins-list");
+
+  function closeBackgroundPluginsDialog() {
+    if (backgroundPluginsDialog) backgroundPluginsDialog.classList.remove("open");
+    restoreFocus();
+  }
+
+  function openBackgroundPluginsDialog() {
+    if (READ_ONLY) return;
+    rememberFocus();
+    _renderBackgroundPluginsDialog();
+    if (backgroundPluginsDialog) backgroundPluginsDialog.classList.add("open");
+    setStatus("Background plugins: managing");
+  }
+
+  function _renderBackgroundPluginsDialog() {
+    if (!backgroundPluginsList) return;
+    backgroundPluginsList.innerHTML = "";
+    // Load enabled/disabled state from localStorage
+    let enabled = {};
+    try {
+      enabled = JSON.parse(localStorage.getItem("wo.plugins.enabled") || "{}") || {};
+    } catch (err) { /* default: all enabled */ }
+    // Load background mode state from localStorage
+    let bgEnabled = {};
+    try {
+      bgEnabled = JSON.parse(localStorage.getItem("wo.plugins.background") || "{}") || {};
+    } catch (err) { /* default: none in background */ }
+
+    // Create list item for each plugin with background toggle
+    for (const p of _cachedPlugins || []) {
+      const li = document.createElement("li");
+      li.className = "plugins-item";
+      const head = document.createElement("div");
+      head.className = "plugins-head";
+      const name = document.createElement("span");
+      name.className = "plugins-name";
+      name.textContent = p.name || p.id || "?";
+      head.appendChild(name);
+      if (p.version) {
+        const ver = document.createElement("span");
+        ver.className = "plugins-version";
+        ver.textContent = "v" + p.version;
+        head.appendChild(ver);
+      }
+      li.appendChild(head);
+
+      // Background mode toggle
+      const bgLabel = document.createElement("label");
+      bgLabel.className = "plugins-toggle";
+      const bgBox = document.createElement("input");
+      bgBox.type = "checkbox";
+      bgBox.dataset.plugin = p.id || p.name || "";
+      bgBox.checked = bgEnabled[bgBox.dataset.plugin] === true;
+      bgBox.addEventListener("change", (ev) => {
+        try {
+          const map = JSON.parse(localStorage.getItem("wo.plugins.background") || "{}") || {};
+          map[ev.target.dataset.plugin] = ev.target.checked;
+          localStorage.setItem("wo.plugins.background", JSON.stringify(map));
+          // Toggle the bg-plugins class on body if any plugin has background mode enabled
+          const allBg = JSON.parse(localStorage.getItem("wo.plugins.background") || "{}") || {};
+          const anyBg = Object.values(allBg).some(v => v === true);
+          document.body.classList.toggle("bg-plugins", anyBg);
+          if (btnBgPlugins) btnBgPlugins.setAttribute("aria-pressed", String(anyBg));
+        } catch (err) {}
+        setStatus(`Plugin ${ev.target.dataset.plugin} background mode ${ev.target.checked ? "on" : "off"}`);
+      });
+      bgLabel.appendChild(bgBox);
+      bgLabel.appendChild(document.createTextNode(" background mode"));
+      li.appendChild(bgLabel);
+
+      // Also show enabled toggle (same as manage plugins)
+      const label = document.createElement("label");
+      label.className = "plugins-toggle";
+      const box = document.createElement("input");
+      box.type = "checkbox";
+      box.dataset.plugin = p.id || p.name || "";
+      box.checked = enabled[box.dataset.plugin] !== false;
+      box.addEventListener("change", (ev) => {
+        try {
+          const map = JSON.parse(localStorage.getItem("wo.plugins.enabled") || "{}") || {};
+          map[ev.target.dataset.plugin] = ev.target.checked;
+          localStorage.setItem("wo.plugins.enabled", JSON.stringify(map));
+        } catch (err) {}
+        setStatus(`Plugin ${ev.target.dataset.plugin} ${ev.target.checked ? "enabled" : "disabled"}`);
+      });
+      label.appendChild(box);
+      label.appendChild(document.createTextNode(" enabled"));
+      li.appendChild(label);
+
+      if (p.description) {
+        const desc = document.createElement("p");
+        desc.className = "plugins-desc";
+        desc.textContent = p.description;
+        li.appendChild(desc);
+      }
+      backgroundPluginsList.appendChild(li);
+    }
+  }
+
+  // Cache plugins for background dialog
+  let _cachedPlugins = [];
+
+  async function openBackgroundPluginsDialogAsync() {
+    if (READ_ONLY) return;
+    rememberFocus();
+    try {
+      _cachedPlugins = await _fetchPlugins();
+    } catch (err) {
+      _cachedPlugins = [];
+    }
+    _renderBackgroundPluginsDialog();
+    if (backgroundPluginsDialog) backgroundPluginsDialog.classList.add("open");
+    try {
+      const plugins = await _fetchPlugins();
+      setStatus(`Background plugins: managing ${plugins.length} installed`);
+    } catch {
+      setStatus("Background plugins: managing");
+    }
+  }
+
+  const bgPluginsCloseBtn = document.getElementById("btn-background-plugins-close");
+  if (bgPluginsCloseBtn) bgPluginsCloseBtn.addEventListener("click", closeBackgroundPluginsDialog);
+
   // AF13-PLUGIN-GALLERY: gallery cards for third-party plugins without a
   // backend in this build open this info dialog instead of faking features.
   function openPluginUnavailable(name) {
@@ -11130,15 +11257,16 @@
 
   // Plugins > background mode: run plugins without a foreground panel.
   const btnBgPlugins = document.getElementById("btn-bgplugins");
-  if (btnBgPlugins) btnBgPlugins.addEventListener("click", async () => {
-    const on = !document.body.classList.contains("bg-plugins");
-    document.body.classList.toggle("bg-plugins", on);
-    btnBgPlugins.setAttribute("aria-pressed", String(on));
+  if (btnBgPlugins) btnBgPlugins.addEventListener("click", openBackgroundPluginsDialogAsync);
+  // Initialize bg-plugins state from localStorage
+  (function initBgPluginsState() {
     try {
-      const plugins = await _fetchPlugins();
-      setStatus(on ? `Background plugins on (${plugins.length} installed)` : "Background plugins off");
-    } catch { setStatus(on ? "Background plugins on" : "Background plugins off"); }
-  });
+      const bgEnabled = JSON.parse(localStorage.getItem("wo.plugins.background") || "{}") || {};
+      const anyBg = Object.values(bgEnabled).some(v => v === true);
+      document.body.classList.toggle("bg-plugins", anyBg);
+      if (btnBgPlugins) btnBgPlugins.setAttribute("aria-pressed", String(anyBg));
+    } catch (err) {}
+  })();
 
   // ------------------------------------------------------------------
   // Wave G2 — fields, content controls, chart editor, equation, SmartArt,
