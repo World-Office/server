@@ -2133,13 +2133,14 @@
 
   <div id="displaymode-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="displaymode-dialog-title">
     <div class="dialog">
-      <h3 id="displaymode-dialog-title">Display Mode</h3>
+      <h3 id="displaymode-dialog-title" data-i18n="DisplayMode.Title">Display Mode</h3>
       <div class="dialog-field">
-        <label for="viewmode">View</label>
-        <select id="viewmode">
-          <option value="markup" selected>Markup</option>
-          <option value="original">Original</option>
-          <option value="final">Final</option>
+        <label for="displaymode-mode" data-i18n="DisplayMode.Mode">Mode</label>
+        <select id="displaymode-mode">
+          <option value="view" selected data-i18n="DisplayMode.View">View</option>
+          <option value="comment" data-i18n="DisplayMode.Comment">Comment</option>
+          <option value="review" data-i18n="DisplayMode.Review">Review</option>
+          <option value="edit" data-i18n="DisplayMode.Edit">Edit</option>
         </select>
       </div>
       <div class="dialog-actions">
