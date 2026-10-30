@@ -160,4 +160,17 @@ for (const action of ctxActions) {
   )
 }
 
+// Test (5): OO "Delete cell(s)" parity — the action routes to a real helper
+// with row-cleanup, not a no-op.
+assert.ok(
+  ctxActions.includes("TableDeleteCell"),
+  "TableDeleteCell ctx row must exist",
+)
+assert.ok(
+  js.includes("function deleteTableCell()") &&
+    js.includes("cell.remove()") &&
+    js.includes("!tr.cells.length"),
+  "deleteTableCell must remove the td and drop the row when it empties",
+)
+
 console.log("CTX-MENU-PASS")

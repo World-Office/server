@@ -2309,6 +2309,17 @@
     Array.from(table.rows).forEach((r) => { if (!r.cells.length) r.remove(); });
     finalizeTableChange();
   }
+  // OO "Delete cell(s)" parity (T-002): remove the one cell (shift left) and
+  // drop the row only when it empties. Round-trips as a ragged table, which
+  // DOCX tolerates.
+  function deleteTableCell() {
+    const cell = currentTableCell(); if (!cell) return;
+    const tr = cell.closest("tr");
+    const table = tr.closest("table");
+    cell.remove();
+    if (!tr.cells.length && table.rows.length > 1 && tr.parentNode) tr.remove();
+    finalizeTableChange();
+  }
   function selectedCells(table) {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return [];
@@ -7958,6 +7969,9 @@
       } else if (action === "TableDeleteCol") {
         closeCtx();
         deleteTableCol();
+      } else if (action === "TableDeleteCell") {
+        closeCtx();
+        deleteTableCell();
       } else if (action === "TableMergeCells") {
         closeCtx();
         mergeTableCells();
