@@ -2665,10 +2665,10 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                 }
             }
             BlockElement::OrderedList { items, start, .. } => {
-                for item in items {
-                    // ponytail: a start value other than 1 is not emitted
-                    // (numbering.xml has no per-list start override here).
-                    let _ = start;
+                // C2-3: <ol start="N"> becomes w:startValue on the FIRST
+                // list paragraph (Word restarts numbering at N there).
+                let list_start = start.filter(|v| *v != 1);
+                for (idx, item) in items.iter().enumerate() {
                     let runs = html_inlines_to_docx_runs(
                         &item.content,
                         &mut media,
@@ -2683,6 +2683,7 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                         properties: DocxParagraphProperties {
                             num_id: Some(2),
                             ilvl: Some(0),
+                            start_value: if idx == 0 { list_start } else { None },
                             ..Default::default()
                         },
                         section_properties: None,
@@ -4000,10 +4001,12 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
                 continue;
             }
             if ordered {
+                // C2-3: the group's first paragraph carries w:startValue ->
+                // <ol start="N"> (mid-list restarts stay merged; ceiling).
                 result.push(BlockElement::OrderedList {
                     items: vec![item],
                     id: None,
-                    start: None,
+                    start: para.properties.start_value,
                 });
             } else {
                 result.push(BlockElement::UnorderedList {
@@ -4787,7 +4790,7 @@ fn odf_content_to_html_blocks(content: &OdfContent) -> Vec<BlockElement> {
                         result.push(BlockElement::OrderedList {
                             items,
                             id: None,
-                            start: None,
+                            start: list.start_value,
                         });
                     }
                     wo_odf::model::OdfListType::Unordered => {

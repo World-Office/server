@@ -714,6 +714,10 @@ pub struct DocxParagraphProperties {
     /// List/numbering properties
     pub num_id: Option<u32>,
     pub ilvl: Option<u8>,
+    /// C2-3: w:startValue — numbering restarts at this value for the
+    /// paragraph (the first <li> of an <ol start="N"> carries it).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub start_value: Option<u32>,
     /// Text direction (left-to-right, right-to-left).
     /// OOXML w:bidi (right-to-left) as a bool.
     pub bidi: bool,

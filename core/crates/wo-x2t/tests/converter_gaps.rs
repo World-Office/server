@@ -121,6 +121,58 @@ fn gap_lists_roundtrip() {
 }
 
 #[test]
+fn c2_3_ol_start_value_roundtrip() {
+    // C2-3: <ol start="5"> must emit w:startValue on the first list
+    // paragraph and survive the docx -> html direction back to <ol start>.
+    let html = "<html><body><ol start=\"5\"><li>alpha</li><li>beta</li></ol></body></html>";
+    let docx = HtmlToDocxConverter.convert(html.as_bytes()).unwrap();
+    let xml = docx_xml(&docx);
+    assert!(
+        xml.contains(r#"<w:startValue w:val="5""#),
+        "w:startValue missing in docx: {}",
+        xml
+    );
+    // exactly one startValue (first item only)
+    let count = xml.matches("<w:startValue").count();
+    assert_eq!(count, 1, "expected exactly one w:startValue, found {}", count);
+    let out = roundtrip(html);
+    assert!(
+        out.contains(r#"<ol start="5">"#),
+        "ol start lost in roundtrip: {}",
+        out
+    );
+}
+
+#[test]
+fn c2_3_ol_default_start_omits_start_value() {
+    // start=1 (default) should NOT emit w:startValue; the XML stays canonical.
+    let html = "<html><body><ol><li>a</li><li>b</li></ol></body></html>";
+    let docx = HtmlToDocxConverter.convert(html.as_bytes()).unwrap();
+    let xml = docx_xml(&docx);
+    assert!(
+        !xml.contains("startValue"),
+        "default start must not emit startValue: {}",
+        xml
+    );
+}
+
+#[test]
+fn c2_3_docx_start_value_parses_to_ol_start() {
+    // Hand-authored docx: a numbered list whose first paragraph carries
+    // w:startValue=3 converts to <ol start="3">.
+    let docx = HtmlToDocxConverter
+        .convert("<html><body><ol start=\"3\"><li>one</li></ol></body></html>".as_bytes())
+        .unwrap();
+    let out = DocxToHtmlConverter.convert(&docx).unwrap();
+    let out = String::from_utf8(out).unwrap();
+    assert!(
+        out.contains(r#"<ol start="3">"#),
+        "docx->html lost start: {}",
+        out
+    );
+}
+
+#[test]
 fn gap_no_numbering_part_without_lists() {
     let docx = HtmlToDocxConverter
         .convert("<html><body><p>plain</p></body></html>".as_bytes())

@@ -1350,11 +1350,17 @@ impl OoxmlSerializer {
                     xml.push_str("\"/>");
                 }
                 if let Some(nid) = para.properties.num_id {
-                    xml.push_str(&format!(
-                        "<w:numPr><w:ilvl w:val=\"{}\"/><w:numId w:val=\"{}\"/></w:numPr>",
+                    let mut numpr = format!(
+                        "<w:numPr><w:ilvl w:val=\"{}\"/><w:numId w:val=\"{}\"/>",
                         para.properties.ilvl.unwrap_or(0),
                         nid
-                    ));
+                    );
+                    // C2-3: per-paragraph numbering start override.
+                    if let Some(sv) = para.properties.start_value {
+                        numpr.push_str(&format!("<w:startValue w:val=\"{}\"/>", sv));
+                    }
+                    numpr.push_str("</w:numPr>");
+                    xml.push_str(&numpr);
                 }
                 if let Some(il) = para.properties.indent_left {
                     xml.push_str(&format!("<w:ind w:left=\"{}\"", il));

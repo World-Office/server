@@ -1778,6 +1778,11 @@ impl OoxmlParser {
                                     .attr_ns(inner, "val")
                                     .and_then(|v| v.parse::<u32>().ok())
                             }
+                            "startValue" => {
+                                props.start_value = self
+                                    .attr_ns(inner, "val")
+                                    .and_then(|v| v.parse::<u32>().ok())
+                            }
                             _ => {}
                         }
                     }
