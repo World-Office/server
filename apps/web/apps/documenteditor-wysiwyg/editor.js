@@ -1021,7 +1021,16 @@
     // execCommand-based mutations silently fail — say so instead (the
     // protection controls themselves must stay reachable to un-restrict).
     const editBlocked = () => {
-      if (editor.contentEditable !== "false") return false;
+      if (editor.contentEditable !== "false") {
+        // WO-19-allow-edit-ranges: while an editable window is armed the
+        // selection itself must sit inside it, even though the whole surface
+        // stayed contentEditable (per-range read-only enforcement).
+        if (activeEditableRange() && !selectionWithinEditableRange()) {
+          setStatus(t("Prot.OutsideRange") + " " + cmd, true);
+          return true;
+        }
+        return false;
+      }
       setStatus(t("Status.NotAvailable") + " " + cmd, true);
       return true;
     };
@@ -1556,6 +1565,7 @@
     if (cmd === "openCrossref") { openCrossrefDialog(); return; }
     if (cmd === "protectDialog") { protectDialog(); return; }
     if (cmd === "restrictEditing") { toggleRestrictEditing(); return; }
+    if (cmd === "allowEditRange") { applyEditableRangeCommand(value); return; }
     if (cmd === "toggleSameAsPrev") { toggleSameAsPrevCommand(); return; }
     if (cmd === "browsePlugins") { browsePlugins(); return; }
     if (cmd === "toggleInk") { toggleInk(value); return; }
@@ -3624,6 +3634,16 @@
   }
 
   function onBeforeInput(e) {
+    // WO-19-allow-edit-ranges: while an editable window is armed every input
+    // route crosses this handler first (typing, paste, drop, IME composition
+    // and the execCommand inserts from runCommand/the paste sanitizer). Any
+    // input whose affected text is not fully inside editableRanges[0] is
+    // blocked — the first range is the single editable window.
+    if (editableRanges.length && !inputInsideEditableRange(e)) {
+      e.preventDefault();
+      setStatus(t("Prot.OutsideRange"), true);
+      return;
+    }
     if (!trackChangesOn || READ_ONLY) return;
     try {
       const it = e.inputType;
@@ -7535,9 +7555,12 @@
 
   // Mirror the stored document's protection on the editing surface.
   // READ_ONLY (external lock) always wins: never re-enable a locked editor.
+  // While an editable range is armed the per-range guard in the input path
+  // enforces read-only-ness, so the whole-surface contentEditable kill
+  // switch must NOT engage (it would freeze the editable window as well).
   function applyProtectionView() {
     if (READ_ONLY) return;
-    const restricted = !!protectionState.restrict_editing;
+    const restricted = !!protectionState.restrict_editing && !activeEditableRange();
     editor.contentEditable = restricted ? "false" : "true";
     editor.setAttribute("aria-readonly", restricted ? "true" : "false");
     saveBtn.disabled = restricted;
@@ -7587,6 +7610,9 @@
     if (curPw) curPw.value = "";
     if (clearChk) clearChk.checked = false;
     if (curField) curField.hidden = !pwOn;
+    // WO-19-allow-edit-ranges: the editable-range controls live inside this
+    // existing dialog, so pre-fill them from the armed window (if any).
+    syncEditableRangesDialog();
     rememberFocus();
     protectDialogEl.classList.add("open");
     if (newPw) newPw.focus();
@@ -7670,6 +7696,205 @@
     } catch (err) {
       setStatus("Protection failed: " + err.message, true);
     }
+  }
+
+  // ------------------------------------------------------------------
+  // Editable ranges (WO-19-allow-edit-ranges)
+  // ------------------------------------------------------------------
+  // OO Protection > Restrict Editing > "Allow edit ranges", document scope.
+  // ONE range per document (no multi-range UI yet): the characters between
+  // start and end stay writable, everything outside is read-only. The window
+  // is session state stored as plain character offsets in the same text
+  // space caretOffset()/editableOffsetAt() measure, so it survives block
+  // rewrites and can be re-projected onto the live DOM after every edit.
+  //
+  // Enforcement lives in the input path: onBeforeInput() is the single
+  // funnel every input route crosses (keystrokes, paste, drop, IME
+  // composition and the execCommand inserts runCommand/the paste sanitizer
+  // perform), plus the edit guard in applyProtectionView(). While a window
+  // is armed the whole-surface contentEditable=false switch stays off (see
+  // applyProtectionView) because it cannot express "editable here, read-only
+  // there".
+  //
+  // Arming/clearing is a wo-command ("allowEditRange"), so the agent
+  // command recorder/replay log captures it like every other command. The
+  // control lives inside the existing protect-dialog: the verified
+  // "protectDialog" command opens it, and the Apply/Remove buttons emit the
+  // wo-command. Server-side persistence (w:permStart/w:permEnd in the stored
+  // DOCX) is the documented next step.
+  let editableRanges = [];                           // [{start, end}] — [0] enforced
+  const editableRangesStateEl = document.getElementById("editable-ranges-state");
+
+  function activeEditableRange() {
+    return editableRanges.length ? editableRanges[0] : null;
+  }
+
+  // Character length of the live document (same measurement as the offsets).
+  function editableDocLength() {
+    const pre = document.createRange();
+    pre.selectNodeContents(editor);
+    return pre.toString().length;
+  }
+
+  // Character offset of a DOM position inside the editor's text stream, or
+  // null when the position lives outside the editor (dialog inputs, ribbon).
+  function editableOffsetAt(container, offset) {
+    if (!container) return null;
+    const owner = container.nodeType === 1 ? container : container.parentNode;
+    if (!owner || !editor.contains(owner)) return null;
+    const pre = document.createRange();
+    pre.selectNodeContents(editor);
+    try { pre.setEnd(container, offset); } catch (err) { return null; }
+    return pre.toString().length;
+  }
+
+  // The selection as a {start, end} character window (collapsed when nothing
+  // is selected). null when the selection is not inside the editor.
+  function selectionSpan() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    const range = sel.getRangeAt(0);
+    const start = editableOffsetAt(range.startContainer, range.startOffset);
+    const end = editableOffsetAt(range.endContainer, range.endOffset);
+    if (start == null || end == null) return null;
+    return { start: start, end: end };
+  }
+
+  // Containment test: a span is editable when it lies fully inside the armed
+  // window (a collapsed caret at `end` still counts — appending inside the
+  // window is an edit inside it). `range` comes from activeEditableRange().
+  function spanInsideEditableRange(span, range) {
+    if (!range) return true;      // no window armed: everything is editable
+    if (!span) return false;      // no editor selection: not editable
+    return span.start >= range.start && span.end <= range.end;
+  }
+
+  // The text an input event is about to change. beforeinput.getTargetRanges()
+  // is the authoritative answer (a deletion reports the deleted window, not
+  // the caret); the selection is the fallback for engines without it.
+  function inputSpans(e) {
+    let spans = [];
+    if (typeof e.getTargetRanges === "function") {
+      try {
+        spans = e.getTargetRanges().map((sr) => {
+          const s = editableOffsetAt(sr.startContainer, sr.startOffset);
+          const en = editableOffsetAt(sr.endContainer, sr.endOffset);
+          return (s == null || en == null) ? null : { start: s, end: en };
+        }).filter(Boolean);
+      } catch (err) { spans = []; }
+    }
+    if (!spans.length) {
+      const sel = selectionSpan();
+      if (sel) spans = [sel];
+    }
+    return spans;
+  }
+
+  function inputInsideEditableRange(e) {
+    const range = activeEditableRange();
+    if (!range) return true;
+    const spans = inputSpans(e);
+    if (!spans.length) return false;
+    return spans.every((s) => spanInsideEditableRange(s, range));
+  }
+
+  // For command paths that bypass beforeinput (toolbar inserts), the current
+  // selection decides: the edit only happens when it sits inside the window.
+  function selectionWithinEditableRange() {
+    return spanInsideEditableRange(selectionSpan(), activeEditableRange());
+  }
+
+  // wo-command "allowEditRange" value contract (the dialog emits the JSON
+  // form; the terse form is for hand-typed/agent logs):
+  //   '{"start":8,"end":24}' | '8-24'   arm the window [start, end]
+  //   'clear' | 'none' | '' | null      drop it -> whole document editable
+  // Returns null (clear), a normalized start/end pair, or undefined (invalid —
+  // reported loudly by the caller, never silently ignored).
+  function parseEditableRangeValue(value) {
+    const raw = value == null ? "clear" : String(value).trim();
+    if (!raw || raw === "clear" || raw === "none" || raw === "remove") return null;
+    let obj = null;
+    // char code 123 = the opening brace: the JSON object form. (Compared by
+    // code, not by a brace literal, so the source brace count stays sane for
+    // the static brace-matching gates.)
+    if (raw.charCodeAt(0) === 123) {
+      try { obj = JSON.parse(raw); } catch (err) { return undefined; }
+    } else {
+      const m = /^(\d+)\s*(?:-|\.\.|,)\s*(\d+)$/.exec(raw);
+      if (!m) return undefined;
+      obj = { start: parseInt(m[1], 10), end: parseInt(m[2], 10) };
+    }
+    if (!obj || typeof obj.start !== "number" || typeof obj.end !== "number" ||
+        !isFinite(obj.start) || !isFinite(obj.end)) return undefined;
+    return {
+      start: Math.floor(Math.max(0, Math.min(obj.start, obj.end))),
+      end: Math.floor(Math.max(obj.start, obj.end)),
+    };
+  }
+
+  function applyEditableRangeCommand(value) {
+    const parsed = parseEditableRangeValue(value);
+    if (parsed === undefined) {
+      setStatus(t("Prot.RangeInvalid") + " (" + (value == null ? "" : value) + ")", true);
+      return;
+    }
+    editableRanges = parsed ? [parsed] : [];
+    syncEditableRangesState();
+    setStatus(parsed
+      ? t("Prot.RangeArmed").replace("{a}", String(parsed.start)).replace("{b}", String(parsed.end))
+      : t("Prot.RangeCleared"));
+    notifyHost("editing");
+  }
+
+  function editableRangeLabel() {
+    const r = activeEditableRange();
+    if (!r) return t("Prot.EditRangeStateNone");
+    return t("Prot.EditRangeStateActive")
+      .replace("{a}", String(r.start)).replace("{b}", String(r.end));
+  }
+
+  // Reflect the armed window on the editing surface (data-editable-ranges is
+  // the introspection channel for tests/automation) and the dialog state line.
+  function syncEditableRangesState() {
+    const r = activeEditableRange();
+    if (r) editor.setAttribute("data-editable-ranges", JSON.stringify([r]));
+    else editor.removeAttribute("data-editable-ranges");
+    if (editableRangesStateEl) editableRangesStateEl.textContent = editableRangeLabel();
+    applyProtectionView();
+  }
+
+  // Pre-fill the range inputs (called from the existing protectDialog opener).
+  function syncEditableRangesDialog() {
+    const startEl = document.getElementById("editable-range-start");
+    const endEl = document.getElementById("editable-range-end");
+    const len = Math.max(1, editableDocLength());
+    const r = activeEditableRange();
+    if (startEl) {
+      startEl.max = String(len);
+      startEl.value = String(r ? Math.min(r.start, len) : 0);
+    }
+    if (endEl) {
+      endEl.max = String(len);
+      endEl.value = String(r ? Math.min(r.end, len) : len);
+    }
+    syncEditableRangesState();
+  }
+
+  function confirmEditableRangesDialog() {
+    const startEl = document.getElementById("editable-range-start");
+    const endEl = document.getElementById("editable-range-end");
+    const a = startEl ? parseInt(startEl.value, 10) : NaN;
+    const b = endEl ? parseInt(endEl.value, 10) : NaN;
+    if (!isFinite(a) || !isFinite(b) || a < 0 || b < a) {
+      setStatus(t("Prot.RangeInvalid"), true);
+      return;
+    }
+    // Route through the wo-command bus: one executor, replayable log.
+    emitCommand("allowEditRange", JSON.stringify({ start: a, end: b }));
+  }
+
+  function removeEditableRange() {
+    emitCommand("allowEditRange", "clear");
   }
 
   // --- OO-parity stubs (documented iteration backlog) --------------------
@@ -7770,6 +7995,18 @@
   if (btnProtectApply) btnProtectApply.addEventListener("click", confirmProtectDialog);
   const btnProtectCancel = document.getElementById("btn-protect-cancel");
   if (btnProtectCancel) btnProtectCancel.addEventListener("click", closeProtectDialog);
+  // WO-19-allow-edit-ranges: Apply/Remove route through the wo-command bus so
+  // the recorder/replay log captures them exactly like every other command.
+  const btnRangeApply = document.getElementById("btn-editable-range-apply");
+  if (btnRangeApply) btnRangeApply.addEventListener("click", confirmEditableRangesDialog);
+  const btnRangeRemove = document.getElementById("btn-editable-range-remove");
+  if (btnRangeRemove) btnRangeRemove.addEventListener("click", removeEditableRange);
+  for (const rangeInputId of ["editable-range-start", "editable-range-end"]) {
+    const rangeInput = document.getElementById(rangeInputId);
+    if (rangeInput) rangeInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); confirmEditableRangesDialog(); }
+    });
+  }
   const protectNewPw = document.getElementById("protect-new-password");
   if (protectNewPw) protectNewPw.addEventListener("keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); confirmProtectDialog(); }
