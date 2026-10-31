@@ -1571,6 +1571,7 @@
     // instead of faking.
     if (cmd === "pluginUnavailable") { openPluginUnavailable(value); return; }
     if (cmd === "photoEditor") { openPhotoEditorDialog(); return; }
+    if (cmd === "editPhoto") { openPhotoEditorDialog(); return; }
     const isBlock =
       cmd === "formatBlock" && /^(H[1-6]|P|BLOCKQUOTE)$/i.test(String(value || ""));
     // Font size/family and color have no semantic tags (the sanitizer strips
