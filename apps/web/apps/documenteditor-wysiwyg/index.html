@@ -853,7 +853,9 @@
     <!-- CHROME2 census: tab 8713d619 (OO AI tab) is all y=68: Settings, Chatbot, Summarization -> row 1. Chatbot maps to WO AI assistant; remaining WO-only AI controls -> row 2. -->
     <div class="ribbon-row">
     <button type="button" data-cmd="aiSettings" data-i18n="AI.Settings">Settings</button>
-    <button type="button" id="btn-ai-assistant" data-i18n="AI.Assistant">AI assistant</button>
+    <span data-wo-id="btn-ai-assistant" data-wo-cmd="btn-ai-assistant" data-wo-interact="opens:modal">
+      <button type="button" id="btn-ai-assistant" data-i18n="AI.Assistant">AI assistant</button>
+    </span>
     <button type="button" data-cmd="aiSummarize" data-i18n="AI.Summarize">Summarize</button>
     </div>
     <div class="ribbon-row">
