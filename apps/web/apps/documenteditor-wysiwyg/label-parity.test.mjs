@@ -106,7 +106,6 @@ const insertMoreList = sliceBetween(
 const promoted = [
   ["btn-textfile", "Insert.TextFromFile"],
   ["btn-addtext", "Insert.AddText"],
-  ["btn-field", "Insert.Field"],
   ["btn-contentcontrol", "Insert.ContentControl"],
   ["btn-equation", "Insert.Equation"],
   ["btn-smartart", "Insert.SmartArt"],
@@ -138,6 +137,14 @@ const referencesPage = sliceBetween(
   '<div class="ribbon-page" data-tab="references"',
   '<div class="ribbon-page" data-tab="collaboration"',
 )
+// AF conflict (batch 19/20): btn-field lives on the REFERENCES tab (its
+// census home + asc-gen887/889/891 contract), not the insert page.
+const refField = `<button type="button" id="btn-field" data-i18n="Insert.Field">`
+assert.ok(referencesPage.includes(refField),
+  "btn-field must be a top-level button on the references ribbon-page")
+assert.ok(!referencesPage.includes('id="btn-mailmerge"') &&
+  !referencesPage.includes('id="btn-chart"'),
+  "btn-field must not be inside the insert-more dropdown")
 for (const [cmd, marker] of [
   ["link", "Ref.Link"],
   ["bookmark", "Ref.Bookmark"],

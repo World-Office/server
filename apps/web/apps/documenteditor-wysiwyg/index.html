@@ -717,7 +717,7 @@
     <button id="btn-endnote" data-cmd="insertEndnote" title="Insert endnote" data-i18n-title="Toolbar.EndnoteTitle" aria-label="Insert endnote">ⁿ</button>
     <button type="button" data-cmd="link" data-i18n="Ref.Link">Link</button>
     <span data-wo-id="btn-bookmark" data-wo-cmd="btn-bookmark" data-wo-interact="opens:modal">
-      <button id="btn-bookmark" data-i18n-title="Toolbar.BookmarkTitle" data-i18n-aria-label="Toolbar.BookmarkTitle" title="Insert bookmark" aria-label="Insert bookmark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h9v13l-4.5-3.5-4.5 3.5z"/></svg></button>
+      <button id="btn-bookmark" data-cmd="bookmark" data-i18n="Ref.Bookmark" data-i18n-title="Toolbar.BookmarkTitle" data-i18n-aria-label="Toolbar.BookmarkTitle" title="Insert bookmark" aria-label="Insert bookmark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h9v13l-4.5-3.5-4.5 3.5z"/></svg></button>
     </span>
     <span data-wo-id="btn-field" data-wo-cmd="btn-field" data-wo-interact="opens:modal">
       <button type="button" id="btn-field" data-i18n="Insert.Field">Field</button>
@@ -891,6 +891,7 @@
       <li role="none"><button type="button" role="menuitem" data-cmd="chartElement" data-value="trendline" data-i18n="Chart.Elements.Trendline">Trendline</button></li>
       <li role="none"><button type="button" role="menuitem" data-cmd="chartElement" data-value="errorBars" data-i18n="Chart.Elements.ErrorBars">Error Bars</button></li>
       <li role="none"><button type="button" role="menuitem" data-cmd="chartElement" data-value="upDownBars" data-i18n="Chart.Elements.UpDownBars">Up/Down Bars</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="chartElement" data-value="dataTable" data-i18n="Chart.Elements.DataTable">Data Table</button></li>
     </ul>
     </span>
     </div>
@@ -2318,8 +2319,8 @@
       <div class="dialog-field">
         <label for="tof-style" data-i18n="TableOfFigures.Style">Style</label>
         <select id="tof-style">
-          <option value="formal" selected data-i18n="TableOfFigures формальный">Formal</option>
-          <option value="simple" data-i18n="TableOfFigures.Простой">Simple</option>
+          <option value="formal" selected data-i18n="TableOfFigures.Formal">Formal</option>
+          <option value="simple" data-i18n="TableOfFigures.Simple">Simple</option>
         </select>
       </div>
       <div class="dialog-actions">
@@ -2518,16 +2519,16 @@
       <div class="dialog-field shape-grid">
         <label>Select a shape</label>
         <div class="shape-options">
-          <button type="button" data-shape-type="rectangle" class="shape-option" title="Rectangle" aria-label="Rectangle">
+          <button type="button" data-shape-type="rectangle" class="shape-option" title="Rectangle" aria-label="Rectangle" data-i18n="Shape.Rectangle">
             <svg viewBox="0 0 100 60" width="40" height="24"><rect x="10" y="15" width="80" height="30" stroke="#000" fill="none" stroke-width="2"/></svg>
           </button>
-          <button type="button" data-shape-type="circle" class="shape-option" title="Circle" aria-label="Circle">
+          <button type="button" data-shape-type="circle" class="shape-option" title="Circle" aria-label="Circle" data-i18n="Shape.Circle">
             <svg viewBox="0 0 60 60" width="40" height="24"><circle cx="30" cy="30" r="25" stroke="#000" fill="none" stroke-width="2"/></svg>
           </button>
-          <button type="button" data-shape-type="triangle" class="shape-option" title="Triangle" aria-label="Triangle">
+          <button type="button" data-shape-type="triangle" class="shape-option" title="Triangle" aria-label="Triangle" data-i18n="Shape.Triangle">
             <svg viewBox="0 0 60 60" width="40" height="24"><polygon points="30,10 50,50 10,50" stroke="#000" fill="none" stroke-width="2"/></svg>
           </button>
-          <button type="button" data-shape-type="rounded-rectangle" class="shape-option" title="Rounded Rectangle" aria-label="Rounded Rectangle">
+          <button type="button" data-shape-type="rounded-rectangle" class="shape-option" title="Rounded Rectangle" aria-label="Rounded Rectangle" data-i18n="Shape.RoundedRectangle">
             <svg viewBox="0 0 100 60" width="40" height="24"><rect x="10" y="15" width="80" height="30" rx="10" ry="10" stroke="#000" fill="none" stroke-width="2"/></svg>
           </button>
         </div>
@@ -2669,7 +2670,7 @@
       </div>
       <div class="dialog-actions">
         <button id="btn-ocr-cancel" data-i18n="Dialog.Cancel">Cancel</button>
-        <button id="btn-ocr-ok" data-i18n="Dialog.Ok" class="primary">OK</button>
+        <button id="btn-ocr-ok" data-i18n="Dialog.OK" class="primary">OK</button>
       </div>
     </div>
   </div>

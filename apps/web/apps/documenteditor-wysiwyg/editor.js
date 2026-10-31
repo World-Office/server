@@ -1560,7 +1560,6 @@
     if (cmd === "toggleDropcap") { openDropcapDialog(); return; }
     if (cmd === "openBorders") { openBordersDialog(); return; }
     if (cmd === "multilevel") { multilevelItem(); return; }
-    if (cmd === "insertToF") { insertToFCommand(); return; }
     if (cmd === "insertTableOfFigures") { insertTableOfFiguresCommand(); return; }
     if (cmd === "pageColorNone") { clearPageColor(); return; }
     if (cmd === "pageColorAutomatic") { applyPageColorAutomatic(); return; }
@@ -2033,7 +2032,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "compare-dialog", "combine-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "compare-dialog", "combine-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "ocr-dialog", "shape-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "tableoffigures-dialog", "image-alt-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -7164,7 +7163,7 @@
 
   // Table of figures: a toc-marker nav whose live preview lists figcaption
   // entries (the converter persists it as a plain TOC marker + title).
-  function insertToFCommand() {
+  function insertTableOfFiguresCommand() {
     editor.focus();
     document.execCommand("insertHTML", false,
       '<nav class="toc" data-kind="figures" data-title="List of Figures"></nav><p><br></p>');
@@ -12454,6 +12453,12 @@
     const showTrend = els.trendline === true;
     const showErr = els.errorBars === true;
     const showUD = els.upDownBars === true;
+    // DATATABLE-PAGEERROR (census 2026-10-31): the data-table block at the
+    // bottom uses these but they were never declared — any chart with legend
+    // enabled threw ReferenceError. Declare them here.
+    const showDataTable = els.dataTable === true;
+    const tableRows = rows.slice(0, 8);
+    const dataTableH = showDataTable ? (Math.min(rows.length, 8) + 1) * 13 + 6 : 0;
     const legendH = showLegend ? 16 : 0;
     const axisTitleH = showAxisTitles ? 14 : 0;
     const vals = rows.map((r) => parseFloat(r[1])).filter((v) => !isNaN(v));

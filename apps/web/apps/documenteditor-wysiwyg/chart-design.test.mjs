@@ -50,7 +50,7 @@ assert.deepEqual(typeValues.sort(), ["area", "bar", "line", "pie"],
   "Chart type menu must offer exactly the chartSVG types (bar/line/pie/area)")
 
 const elementValues = [...pageHtml.matchAll(/data-cmd="chartElement" data-value="([^"]+)"/g)].map((m) => m[1])
-for (const flag of ["title", "legend", "gridlines", "dataLabels"]) {
+for (const flag of ["title", "legend", "gridlines", "dataLabels", "dataTable"]) {
   assert.ok(elementValues.includes(flag), `Chart elements menu must have a "${flag}" toggle`)
 }
 assert.ok(pageHtml.includes('data-cmd="chartEditData"'), "Edit data control must exist")
@@ -91,9 +91,16 @@ for (const cmd of cmds) {
 
 // --- (c) chartSVG honors spec.elements flags ----------------------------
 const chartSvgBody = extractFunction(editorSrc, "chartSVG")
-for (const flag of ["legend", "title", "gridlines", "dataLabels"]) {
+for (const flag of ["legend", "title", "gridlines", "dataLabels", "dataTable"]) {
   assert.ok(chartSvgBody.includes(`els.${flag}`),
     `chartSVG must read the spec.elements.${flag} flag`)
+}
+// DATATABLE-PAGEERROR (found 2026-10-31 census): the data-table SVG block
+// referenced showDataTable/dataTableH/tableRows without declarations, so any
+// chart with legend enabled threw ReferenceError. They must be declared.
+for (const v of ["showDataTable", "dataTableH", "tableRows"]) {
+  assert.ok(chartSvgBody.includes("const " + v + " ="),
+    `chartSVG must declare ${v} (ReferenceError fix)`)
 }
 assert.ok(chartSvgBody.includes("showLegend") && chartSvgBody.includes("showGrid"),
   "chartSVG must render legend/gridlines from the flags")
