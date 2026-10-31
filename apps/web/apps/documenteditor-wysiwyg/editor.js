@@ -1979,7 +1979,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -11461,6 +11461,168 @@
   });
 
   // -- Insert > Content control (plain / rich / dropdown marker boxes).
+  // C7-1: autocorrect — replace-as-you-type table + smart quotes + auto
+  // lists. Config persisted in localStorage; engine hooks beforeinput/input
+  // and never rewrites inside contentEditable=offscreen controls.
+  const AC_DEFAULT_TABLE = {
+    "(c)": "©", "(r)": "®", "(tm)": "™", "(e)": "€",
+    "(p)": "§", "(C)": "©", "(R)": "®",
+    "---": "—", "--": "–", "<->": "↔", "<=>": "⇔",
+    "->": "→", "<-": "←", "<=": "≤", ">=": "≥", "!=": "≠",
+    "+/-": "±", "1/2": "½", "1/4": "¼", "3/4": "¾",
+  };
+  let acCfg = { on: true, quotes: true, dashes: true, bullets: true, numbers: true, table: {} };
+  try {
+    const saved = JSON.parse(localStorage.getItem("wo.ac") || "{}");
+    acCfg = Object.assign(acCfg, saved);
+    acCfg.table = Object.assign({}, AC_DEFAULT_TABLE, saved.table || {});
+  } catch { acCfg.table = Object.assign({}, AC_DEFAULT_TABLE); }
+  const acTable = () => Object.assign({}, AC_DEFAULT_TABLE, acCfg.table);
+  const acPersist = () => { try { localStorage.setItem("wo.ac", JSON.stringify(acCfg)); } catch {} };
+  function acTextBeforeCaret() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return "";
+    const r = sel.getRangeAt(0);
+    const n = r.endContainer;
+    if (n.nodeType === Node.TEXT_NODE && r.collapsed) return n.textContent.slice(0, r.endOffset);
+    return "";
+  }
+  function acInsertAtCaret(text) {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const r = sel.getRangeAt(0);
+    if (!r.collapsed) r.deleteContents();
+    const node = document.createTextNode(text);
+    r.insertNode(node);
+    r.setStartAfter(node); r.collapse(true);
+    sel.removeAllRanges(); sel.addRange(r);
+  }
+  function acApplyReplace() {
+    if (!acCfg.on) return;
+    const before = acTextBeforeCaret();
+    if (!before) return;
+    const table = acTable();
+    let hit = null, hitKey = "";
+    for (const k of Object.keys(table)) {
+      if (before.endsWith(k) && k.length > (hitKey.length || 0)) { hit = table[k]; hitKey = k; }
+    }
+    if (!hit) return;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
+    const r = sel.getRangeAt(0);
+    const n = r.endContainer;
+    if (n.nodeType !== Node.TEXT_NODE) return;
+    if (n.closest && n.closest("#editor input, #editor textarea, [contenteditable='true'] [contenteditable='false']")) return;
+    if (n.parentElement && n.parentElement.closest && n.parentElement.closest(".cc-date, .cc-checkbox, .cc-picture")) return;
+    r.setStart(n, r.endOffset - hitKey.length);
+    r.deleteContents();
+    acInsertAtCaret(hit);
+    markDirty(); captureHistory();
+  }
+  function acAutoList(ev) {
+    if (!acCfg.bullets && !acCfg.numbers) return null;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    let node = sel.anchorNode;
+    if (!node) return null;
+    if (node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+    const blk = node && node.closest ? node.closest("p, div, li, h1, h2, h3") : null;
+    if (!blk || !editor.contains(blk)) return null;
+    if (blk.closest("#editor li")) return null;
+    const txt = (blk.textContent || "").replace(/\u00a0/g, " ");
+    if (acCfg.numbers && /^\s*\d+[.)]-?$/.test(txt)) {
+      ev.preventDefault();
+      blk.textContent = "";
+      const r0 = document.createRange(); r0.selectNodeContents(blk); r0.collapse(true);
+      const s0 = window.getSelection(); s0.removeAllRanges(); s0.addRange(r0);
+      editor.focus();
+      emitCommand("insertOrderedList");
+      return;
+    }
+    if (acCfg.bullets && /^\s*-\s?-?$/.test(txt)) {
+      ev.preventDefault();
+      blk.textContent = "";
+      const r0 = document.createRange(); r0.selectNodeContents(blk); r0.collapse(true);
+      const s0 = window.getSelection(); s0.removeAllRanges(); s0.addRange(r0);
+      editor.focus();
+      emitCommand("insertUnorderedList");
+      return;
+    }
+    return null;
+  }
+  function acSmartQuotes(ev) {
+    if (!acCfg.quotes || !ev.data || ev.data.length !== 1) return false;
+    const ch = ev.data;
+    if (ch !== '"' && ch !== "'") return false;
+    const before = acTextBeforeCaret();
+    const opening = !before || /\s|[([«–—]$/.test(before);
+    const map = { '"': opening ? "\u201C" : "\u201D", "'": opening ? "\u2018" : "\u2019" };
+    ev.preventDefault();
+    acInsertAtCaret(map[ch]);
+    markDirty(); captureHistory();
+    return true;
+  }
+  editor.addEventListener("beforeinput", (ev) => {
+    if (READ_ONLY || ev.isComposing) return;
+    if (ev.inputType === "insertText" && acCfg.bullets && ev.data === " " && acAutoList(ev) !== null) return;
+    if (ev.inputType === "insertText" && acSmartQuotes(ev)) return;
+  });
+  editor.addEventListener("input", (ev) => {
+    if (READ_ONLY || ev.isComposing) return;
+    if (ev.inputType !== "insertText") return;
+    const before = acTextBeforeCaret();
+    if (acCfg.dashes && before.endsWith("--") && !before.endsWith("---")) {
+      acApplyReplace();
+    } else if (acCfg.on) {
+      // tab keys are checked after each typed token so "->" etc. swap in.
+      acApplyReplace();
+    }
+  });
+
+  // C7-1 dialog wiring.
+  const acTableEl = document.getElementById("ac-table");
+  const acDialog = document.getElementById("autocorrect-dialog");
+  const openAutocorrectDialog = () => {
+    if (!acDialog) return;
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.checked = v; };
+    set("ac-replace", acCfg.on); set("ac-quotes", acCfg.quotes); set("ac-dashes", acCfg.dashes);
+    set("ac-bullets", acCfg.bullets); set("ac-numbers", acCfg.numbers);
+    if (acTableEl) acTableEl.value = Object.entries(acTable())
+      .map(([k, v]) => k + "=" + v).join("\n");
+    rememberFocus();
+    acDialog.classList.add("open");
+  };
+  const confirmAutocorrectDialog = () => {
+    if (acDialog) acDialog.classList.remove("open");
+    restoreFocus();
+    const get = document.getElementById.bind(document);
+    const on = (id, d) => { const el = get(id); return el ? el.checked : d; };
+    acCfg.on = on("ac-replace", true);
+    acCfg.quotes = on("ac-quotes", true);
+    acCfg.dashes = on("ac-dashes", true);
+    acCfg.bullets = on("ac-bullets", true);
+    acCfg.numbers = on("ac-numbers", true);
+    if (acTableEl) {
+      const t = {};
+      acTableEl.value.split(/\n/).forEach((line) => {
+        const m = /^([^=]+)=([^=]*)$/.exec(line.trim());
+        if (m && m[1]) t[m[1].trim()] = m[2];
+      });
+      acCfg.table = t;
+    }
+    acPersist();
+    setStatus("Autocorrect options saved");
+  };
+  const btnAcOk = document.getElementById("btn-ac-ok");
+  const btnAcCancel = document.getElementById("btn-ac-cancel");
+  if (btnAcOk) btnAcOk.addEventListener("click", confirmAutocorrectDialog);
+  if (btnAcCancel) btnAcCancel.addEventListener("click", () => {
+    if (acDialog) acDialog.classList.remove("open");
+    restoreFocus();
+  });
+  const btnSettingsAc = document.getElementById("btn-settings-autocorrect");
+  if (btnSettingsAc) btnSettingsAc.addEventListener("click", () => { openAutocorrectDialog(); });
+
   // C6/cc edit mode: when ccEditTarget is set, the cc dialog edits that
   // control instead of inserting a new one.
   let ccEditTarget = null;

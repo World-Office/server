@@ -2753,9 +2753,33 @@
         <label for="settings-zoom">Zoom (%)</label>
         <input id="settings-zoom" type="number" min="50" max="200" step="10">
       </div>
+      <div class="dialog-field">
+        <button type="button" id="btn-settings-autocorrect" data-i18n="Settings.AutoCorrectOptions">Autocorrect options…</button>
+      </div>
       <div class="dialog-actions">
         <button id="btn-settings-cancel" data-i18n="Dialog.Cancel">Cancel</button>
         <button id="btn-settings-ok" data-i18n="Dialog.Apply" class="primary">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="autocorrect-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="autocorrect-dialog-title">
+    <div class="dialog">
+      <h3 id="autocorrect-dialog-title" data-i18n="Autocorrect.Title">Autocorrect options</h3>
+      <div class="dialog-field">
+        <label><input type="checkbox" id="ac-replace" checked> <span data-i18n="Autocorrect.ReplaceAsYouType">Replace while typing</span></label>
+        <label><input type="checkbox" id="ac-quotes" checked> <span data-i18n="Autocorrect.SmartQuotes">Smart quotes (curly)</span></label>
+        <label><input type="checkbox" id="ac-dashes" checked> <span data-i18n="Autocorrect.Dashes">Replace -- with – and --- with —</span></label>
+        <label><input type="checkbox" id="ac-bullets" checked> <span data-i18n="Autocorrect.AutoBullets">Automatic bulleted lists (type - )</span></label>
+        <label><input type="checkbox" id="ac-numbers" checked> <span data-i18n="Autocorrect.AutoNumbers">Automatic numbered lists (type 1. )</span></label>
+      </div>
+      <div class="dialog-field">
+        <label for="ac-table" data-i18n="Autocorrect.ReplaceTable">Replacements (from=to, one per line)</label>
+        <textarea id="ac-table" rows="6" spellcheck="false"></textarea>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-ac-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-ac-ok" data-i18n="Dialog.Apply" class="primary">Apply</button>
       </div>
     </div>
   </div>
