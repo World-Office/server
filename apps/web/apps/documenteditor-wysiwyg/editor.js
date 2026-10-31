@@ -1293,6 +1293,13 @@
     if (cmd === "insertTextbox") { openObjectDialog("textbox"); return; }
     if (cmd === "insertTextart") { openObjectDialog("textart"); return; }
     if (cmd === "insertComment") { openCommentDialog(); return; }
+    // WO-9-CHART: insertChart opens the chart type picker dialog with default data
+    if (cmd === "insertChart") {
+      if (READ_ONLY) return
+      openDlg("chart-dialog")
+      renderChartPreview()
+      return
+    }
     // Paragraph pagination (OO Paragraph > Line and Page Breaks > Keep
     // lines together): toggle the keep-lines class on the block(s) touched
     // by the selection and announce it on the wo:keep-lines bus.
