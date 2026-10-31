@@ -1562,6 +1562,7 @@
     if (cmd === "multilevel") { multilevelItem(); return; }
     if (cmd === "insertToF") { insertToFCommand(); return; }
     if (cmd === "insertTableOfFigures") { insertTableOfFiguresCommand(); return; }
+    if (cmd === "pageColorNone") { clearPageColor(); return; }
     if (cmd === "openCrossref") { openCrossrefDialog(); return; }
     if (cmd === "protectDialog") { protectDialog(); return; }
     if (cmd === "restrictEditing") { toggleRestrictEditing(); return; }
@@ -8394,6 +8395,16 @@
     if (pageColor) pageColor.value = color.toLowerCase();
     setStatus("Page color set");
   }
+  // OO-parity "No Color": clears the page-background override (removes the
+  // --paper inline style) so the page renders with default white paper.
+  function clearPageColor() {
+    if (READ_ONLY) return;
+    editor.style.removeProperty("--paper");
+    const pageColor = document.getElementById("pagecolor");
+    if (pageColor) pageColor.value = "#ffffff";
+    setStatus("Page color set to No Color");
+    markDirty();
+  }
 
   // Theme colors (Layout) -> scheme dialog (native select replaced).
   let paperColorPicked = null;
@@ -8722,6 +8733,15 @@
     const custom = document.getElementById("pagecolor-custom");
     if (custom && pageColorPicked && pageColorPicked.startsWith("#")) custom.value = pageColorPicked;
     setPageColorInputs(pageColorPicked)
+  });
+
+  // OO-parity "No Color": runs through the wo-command bus so the action is
+  // replayable/recorded like every other formatting edit, then closes the
+  // dialog (a definitive selection, unlike the OK-confirmed color pick).
+  const btnPageColorNone = document.getElementById("btn-pagecolor-none");
+  if (btnPageColorNone) btnPageColorNone.addEventListener("click", () => {
+    emitCommand("pageColorNone");
+    closeOverlayDialog("pagecolor-dialog");
   });
 
   // Page Color advanced inputs — HEX and RGB controls (WO-4)

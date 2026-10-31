@@ -86,6 +86,14 @@ export const insertTableOfFigures: WordCommand = {
 }
 
 /**
+ * Command to clear the Page Color (OO "No Color"): removes the --paper
+ * override so the page renders with default white paper.
+ */
+export const pageColorNone: WordCommand = {
+  name: "pageColorNone",
+}
+
+/**
  * All Word command names
  */
 export const WORD_COMMANDS = [
@@ -97,6 +105,7 @@ export const WORD_COMMANDS = [
   "prevTrackedChange",
   "nextTrackedChange",
   "insertTableOfFigures",
+  "pageColorNone",
 ] as const
 
 /**
