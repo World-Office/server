@@ -1457,7 +1457,13 @@
           </div>
         </div>
         <p id="backstage-about" class="backstage-about" data-i18n="FileScreen.About">WorldOffice Document Editor</p>
-        <button type="button" id="btn-filehelp" class="backstage-primary" data-i18n="Menu.Help">Help &amp; about</button>
+        <!-- Interact census row (backstage/help): OO's Help & about control
+             (fm-btn-help / Help about) opens the help-and-about modal, so the
+             parity token is opens:modal; the wo_cmd is the existing
+             btn-filehelp opener that shows #help-dialog. -->
+        <span data-wo-id="btn-filehelp" data-wo-cmd="btn-filehelp" data-wo-interact="opens:modal">
+          <button type="button" id="btn-filehelp" class="backstage-primary" data-i18n="Menu.Help">Help &amp; about</button>
+        </span>
       </div>
       <div class="backstage-view" data-pane-view="suggest" hidden>
         <h2 data-i18n="FileScreen.TitleSuggest">Suggest a feature</h2>
