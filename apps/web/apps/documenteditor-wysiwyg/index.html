@@ -1335,7 +1335,9 @@
       <div class="backstage-view" data-pane-view="new" hidden>
         <h2 data-i18n="FileScreen.TitleNew">New document</h2>
         <p class="backstage-desc" data-i18n="FileScreen.DescNew">Start over with a blank document.</p>
-        <button type="button" id="btn-new" class="backstage-primary" data-i18n="Menu.New">New</button>
+        <span data-wo-id="btn-new" data-wo-cmd="newDocument" data-wo-interact="opens:modal">
+          <button type="button" id="btn-new" class="backstage-primary" data-i18n="Menu.New">New</button>
+        </span>
       </div>
       <div class="backstage-view" data-pane-view="open" hidden>
         <h2 data-i18n="FileScreen.TitleOpen">Open a document</h2>
