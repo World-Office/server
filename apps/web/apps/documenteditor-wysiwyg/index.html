@@ -704,7 +704,7 @@
     <button type="button" data-cmd="insertCitation" data-i18n="Ref.Citation">Citation</button>
     <button type="button" data-cmd="insertIndexEntry" data-i18n="Ref.Index">Index</button>
     <button type="button" data-cmd="openCrossref" data-i18n="Ref.Crossref">Cross-reference</button>
-    <button type="button" data-cmd="insertToF" data-i18n="Ref.TableOfFigures">Table of figures</button>
+    <button type="button" data-cmd="insertTableOfFigures" data-i18n="Ref.TableOfFigures">Table of figures</button>
     </div>
     <div class="ribbon-row">
     <button type="button" data-cmd="updateToc" data-i18n="Ref.UpdateToc">Update TOC</button>
@@ -2228,6 +2228,27 @@
       <div class="dialog-actions">
         <button id="btn-updatetoc-close" data-i18n="Dialog.Cancel">Cancel</button>
         <button id="btn-updatetoc-ok" data-i18n="Dialog.Update" class="primary">Update</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tableoffigures-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="tableoffigures-dialog-title">
+    <div class="dialog">
+      <h3 id="tableoffigures-dialog-title" data-i18n="TableOfFigures.Title">Insert Table of Figures</h3>
+      <div class="dialog-field">
+        <label for="tof-title" data-i18n="TableOfFigures.Label">Label</label>
+        <input id="tof-title" type="text" value="List of Figures" data-i18n-placeholder="TableOfFigures.DefaultTitle">
+      </div>
+      <div class="dialog-field">
+        <label for="tof-style" data-i18n="TableOfFigures.Style">Style</label>
+        <select id="tof-style">
+          <option value="formal" selected data-i18n="TableOfFigures формальный">Formal</option>
+          <option value="simple" data-i18n="TableOfFigures.Простой">Simple</option>
+        </select>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-tof-close" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-tof-ok" data-i18n="Dialog.Insert" class="primary">Insert</button>
       </div>
     </div>
   </div>

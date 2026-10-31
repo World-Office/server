@@ -79,6 +79,13 @@ export const rejectAllTrackedChanges: WordCommand = {
 }
 
 /**
+ * Command to insert a Table of Figures
+ */
+export const insertTableOfFigures: WordCommand = {
+  name: "insertTableOfFigures",
+}
+
+/**
  * All Word command names
  */
 export const WORD_COMMANDS = [
@@ -89,6 +96,7 @@ export const WORD_COMMANDS = [
   "rejectTrackedChange",
   "prevTrackedChange",
   "nextTrackedChange",
+  "insertTableOfFigures",
 ] as const
 
 /**
