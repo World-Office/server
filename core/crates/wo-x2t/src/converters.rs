@@ -2752,27 +2752,29 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                 });
             }
             BlockElement::HorizontalRule => {
+                // T-006: persist <hr> as a border-only paragraph (OO convention:
+                // w:pBdr all four sides, no text). The docx->html reader maps
+                // that shape back to <hr/> — roundtrip probe insertHR. (Before
+                // this, saving injected a 24-char ── garbage run.)
+                let side = DocxBorder {
+                    style: "single".to_string(),
+                    size: Some(8),
+                    color: Some("auto".to_string()),
+                    space: Some(1),
+                };
                 paragraphs.push(DocxParagraph {
                     style_id: None,
-                    properties: DocxParagraphProperties::default(),
-                    section_properties: None,
-                    runs: vec![DocxRun {
-                        text: "\u{2500}".repeat(24),
-                        bold: false,
-                        italic: false,
-                        underline: None,
-                        strikethrough: false,
-                        double_strikethrough: false,
-                        font: None,
-                        font_size: None,
-                        font_size_cs: None,
-                        color: None,
-                        highlight: None,
-                        vertical_alignment: None,
-                        small_caps: false,
-                        all_caps: false,
+                    properties: DocxParagraphProperties {
+                        borders: Some(DocxParagraphBorders {
+                            top: Some(side.clone()),
+                            bottom: Some(side.clone()),
+                            left: Some(side.clone()),
+                            right: Some(side),
+                        }),
                         ..Default::default()
-                    }],
+                    },
+                    section_properties: None,
+                    runs: vec![],
                     ..Default::default()
                 });
             }
@@ -4154,6 +4156,18 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
                     style: merge_list_style(list_ind_to_style(&para.properties), style_type),
                 });
             }
+            continue;
+        }
+
+        // T-006: an empty paragraph whose border set is all four sides is the
+        // persisted horizontal rule (<hr/> emitted by html->docx as a
+        // border-only paragraph, OO convention).
+        let is_hr = para.runs.is_empty()
+            && para.properties.borders.as_ref().is_some_and(|b| {
+                b.top.is_some() && b.bottom.is_some() && b.left.is_some() && b.right.is_some()
+            });
+        if is_hr {
+            result.push(BlockElement::HorizontalRule);
             continue;
         }
 
@@ -10586,6 +10600,52 @@ mod tests {
         );
     }
 
+    /// T-006: <hr> survives the FULL editor save path as a border-only
+    /// paragraph (w:pBdr all four sides, no text) — no garbage ── run, and
+    /// docx -> html maps the shape back to <hr/>.
+    // T-006
+    #[test]
+    fn test_horizontal_rule_survives_editor_save_cycle_t006() {
+        let editor_html = br##"<html><body><p>before</p><hr><p>after</p></body></html>"##;
+
+        // save: html -> docx
+        let docx = HtmlToDocxConverter
+            .convert(editor_html)
+            .expect("html -> docx");
+        let docx_str = extract_docx_document_xml_f041(&docx);
+        assert!(
+            docx_str.contains("<w:pBdr>"),
+            "saved DOCX must carry w:pBdr for <hr>, got: {docx_str}"
+        );
+        assert!(
+            !docx_str.contains('\u{2500}'),
+            "no box-drawing garbage may be injected for <hr>, got: {docx_str}"
+        );
+
+        // load: docx -> html re-emits <hr/>
+        let html = DocxToHtmlConverter.convert(&docx).expect("docx -> html");
+        let html_str = String::from_utf8_lossy(&html).to_string();
+        assert!(
+            html_str.contains("<hr"),
+            "reloaded HTML must contain <hr>, got: {html_str}"
+        );
+        assert!(
+            html_str.contains("before") && html_str.contains("after"),
+            "sibling paragraphs must survive, got: {html_str}"
+        );
+
+        // re-save: html -> docx -> html still an <hr>
+        let docx2 = HtmlToDocxConverter
+            .convert(&html)
+            .expect("html -> docx (2)");
+        let html2 = DocxToHtmlConverter.convert(&docx2).expect("docx -> html (2)");
+        let html2_str = String::from_utf8_lossy(&html2).to_string();
+        assert!(
+            html2_str.contains("<hr"),
+            "second cycle must still carry <hr>, got: {html2_str}"
+        );
+    }
+
     /// F-051: block quote survives the FULL editor save path:
     /// <blockquote> -> DOCX pStyle Quote -> <blockquote>.
     // F-051
@@ -13253,11 +13313,15 @@ mod tests {
         assert_eq!(body.paragraphs().len(), 3);
         assert_eq!(body.paragraphs()[0].runs[0].text, "pre line 1");
         assert_eq!(body.paragraphs()[1].runs[0].text, "pre line 2");
-        assert_eq!(body.paragraphs()[2].runs[0].text.len(), 72);
-        assert_eq!(
-            body.paragraphs()[2].runs[0].text.chars().next().unwrap(),
-            '\u{2500}'
-        );
+        // T-006: <hr> is a border-only paragraph now (w:pBdr all four sides),
+        // NOT a 72-box-drawing-character garbage run.
+        let hr_para = &body.paragraphs()[2];
+        assert!(hr_para.runs.is_empty(), "HR must have no text runs");
+        let borders = hr_para.properties.borders.as_ref().expect("HR must carry w:pBdr");
+        assert!(borders.top.is_some() && borders.bottom.is_some()
+            && borders.left.is_some() && borders.right.is_some(),
+            "HR must carry all four sides of w:pBdr");
+        assert_eq!(borders.top.as_ref().unwrap().style, "single");
     }
 
     #[test]

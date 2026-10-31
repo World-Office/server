@@ -4,6 +4,15 @@ use wo_common::{CoreError, Document, DocumentMetadata, Result};
 
 use crate::model::*;
 
+fn is_block_tag(tag: &str) -> bool {
+    matches!(
+        tag,
+        "ul" | "ol" | "table" | "div" | "blockquote" | "pre" | "hr" | "p"
+            | "h1" | "h2" | "h3" | "h4" | "h5" | "h6"
+            | "section" | "article" | "main" | "nav" | "aside"
+    )
+}
+
 fn node_text(node: &roxmltree::Node) -> String {
     let mut result = String::new();
     for descendant in node.descendants() {
@@ -637,20 +646,57 @@ impl HtmlParser {
                 continue;
             }
 
-            let tag = ch.tag_name().name();
-            let id = attr(&ch, "id");
+            elements.extend(self.parse_block_child(&ch));
+        }
 
-            match tag {
+        elements
+    }
+
+    /// Parses one block-level element into the BlockElement(s) it represents.
+    /// Returns a Vec because the HTML5-engineered `<p>` hoist can expand one
+    /// `<p>` node into several elements (paragraph runs + sibling blocks).
+    fn parse_block_child(&self, ch: &roxmltree::Node) -> Vec<BlockElement> {
+        let tag = ch.tag_name().name();
+        let id = attr(ch, "id");
+
+        if tag == "p" {
+            // HTML5 hoisting: a block element nested inside <p> implicitly
+            // CLOSES the paragraph and is parsed as a sibling block. Without
+            // this the html->docx pipeline DROPPED the whole <p> (data loss)
+            // when it contained <ul>/<ol> — caught by roundtrip probe
+            // insertUnorderedList/insertOrderedList (editor emits
+            // `<p><ol><li>...` after insert list).
+            let mut out: Vec<BlockElement> = Vec::new();
+            let mut run: Vec<roxmltree::Node> = Vec::new();
+            for c in ch.children() {
+                if c.is_element() && is_block_tag(c.tag_name().name()) {
+                    if !run.is_empty() {
+                        out.push(self.block_paragraph(self.parse_inline_nodes(&run), id.clone(), ch));
+                        run.clear();
+                    }
+                    out.extend(self.parse_block_child(&c));
+                } else {
+                    run.push(c);
+                }
+            }
+            if out.is_empty() || !run.is_empty() {
+                out.push(self.block_paragraph(self.parse_inline_nodes(&run), id, ch));
+            }
+            return out;
+        }
+
+        match tag {
+
                 "h1" | "h2" | "h3" | "h4" | "h5" | "h6" => {
                     let level: u8 = tag[1..].parse().unwrap_or(1);
-                    elements.push(BlockElement::Heading {
+                    return vec![BlockElement::Heading {
                         level,
                         content: self.parse_inline_elements(&ch),
                         id,
-                    });
+                    }];
                 }
                 "p" => {
-                    elements.push(BlockElement::Paragraph {
+                    return vec![BlockElement::Paragraph {
                         content: self.parse_inline_elements(&ch),
                         id,
                         dir: block_direction(&ch),
@@ -658,49 +704,49 @@ impl HtmlParser {
                         background: block_background(&ch),
                         borders: block_borders(&ch),
                         writing_mode: block_writing_mode(&ch),
-                    });
+                    }];
                 }
                 "div" => {
-                    elements.push(BlockElement::Div {
+                    return vec![BlockElement::Div {
                         elements: self.parse_block_elements(&ch),
                         id,
                         class: attr(&ch, "class"),
-                    });
+                    }];
                 }
                 "ul" => {
-                    elements.push(BlockElement::UnorderedList {
+                    return vec![BlockElement::UnorderedList {
                         items: self.parse_list_items(&ch),
                         id,
                         style: list_style_attr(&ch),
-                    });
+                    }];
                 }
                 "ol" => {
                     let start = attr(&ch, "start").and_then(|s| s.parse().ok());
-                    elements.push(BlockElement::OrderedList {
+                    return vec![BlockElement::OrderedList {
                         items: self.parse_list_items(&ch),
                         id,
                         start,
                         style: list_style_attr(&ch),
-                    });
+                    }];
                 }
                 "table" => {
-                    elements.push(BlockElement::Table {
+                    return vec![BlockElement::Table {
                         rows: self.parse_table(&ch),
                         id,
-                    });
+                    }];
                 }
                 "blockquote" => {
-                    elements.push(BlockElement::Blockquote {
+                    return vec![BlockElement::Blockquote {
                         elements: self.parse_block_elements(&ch),
                         id,
-                    });
+                    }];
                 }
                 "pre" => {
                     let content = node_text(&ch);
-                    elements.push(BlockElement::Pre { content, id });
+                    return vec![BlockElement::Pre { content, id }];
                 }
                 "hr" => {
-                    elements.push(BlockElement::HorizontalRule);
+                    return vec![BlockElement::HorizontalRule];
                 }
                 "section" | "article" | "main" | "header" | "footer" | "nav" | "aside" => {
                     // BUG9-CONVERTER-CONTRACT: for semantic containers (nav/
@@ -718,31 +764,45 @@ impl HtmlParser {
                             None => Some(tag.to_string()),
                         }
                     };
-                    elements.push(BlockElement::Div {
+                    return vec![BlockElement::Div {
                         elements: self.parse_block_elements(&ch),
                         id,
                         class,
-                    });
+                    }];
                 }
                 _ => {
                     let text = node_text(&ch);
                     if !text.is_empty() {
-                        elements.push(BlockElement::RawHtml {
+                        return vec![BlockElement::RawHtml {
                             tag: tag.to_string(),
                             content: text,
-                        });
+                        }];
                     }
+                    vec![]
                 }
-            }
-        }
 
-        elements
+
+        }
     }
 
-    fn parse_inline_elements(&self, node: &roxmltree::Node) -> Vec<InlineElement> {
+    fn block_paragraph(&self, content: Vec<InlineElement>, id: Option<String>, ch: &roxmltree::Node) -> BlockElement {
+        BlockElement::Paragraph {
+            content,
+            id,
+            dir: block_direction(ch),
+            align: block_align(ch),
+            background: block_background(ch),
+            borders: block_borders(ch),
+            writing_mode: block_writing_mode(ch),
+        }
+    }
+
+    /// Parse a <p>-style inline run from an explicit node slice (used by the
+    /// HTML5 `<p>` hoist, which splits a paragraph around nested blocks).
+    fn parse_inline_nodes(&self, nodes: &[roxmltree::Node]) -> Vec<InlineElement> {
         let mut elements = Vec::new();
 
-        for ch in node.children() {
+        for ch in nodes.iter().copied() {
             if ch.is_text() {
                 if let Some(text) = ch.text() {
                     if !text.is_empty() {
@@ -936,6 +996,11 @@ impl HtmlParser {
         elements
     }
 
+    fn parse_inline_elements(&self, node: &roxmltree::Node) -> Vec<InlineElement> {
+        let nodes: Vec<roxmltree::Node> = node.children().collect();
+        self.parse_inline_nodes(&nodes)
+    }
+
     fn parse_list_items(&self, node: &roxmltree::Node) -> Vec<ListItem> {
         let mut items = Vec::new();
         for li in children_with_tag(node, "li") {
@@ -1092,6 +1157,30 @@ impl Default for HtmlParser {
 mod tests {
     use super::*;
     use crate::is_html_file;
+
+    #[test]
+    fn test_parse_p_nested_block_hoist() {
+        // HTML5 hoisting: `<p><ol><li>..</li></ol></p>` must NOT lose the
+        // paragraph/block (roundtrip probe insertUnorderedList caught the
+        // whole <p> being DROPPED before this hoist existed).
+        let html = b"<html><body><p><ol><li>ALPHA one</li></ol></p><p>tail</p></body></html>";
+        let parser = HtmlParser::new();
+        let doc = parser.parse(html).unwrap();
+        assert_eq!(doc.body.elements.len(), 2, "hoisted list + tail paragraph");
+        assert!(
+            matches!(&doc.body.elements[0], BlockElement::OrderedList { items, .. } if items.len() == 1),
+            "first element must be the hoisted ordered list"
+        );
+        assert!(
+            matches!(&doc.body.elements[1], BlockElement::Paragraph { content, .. }
+                if content.iter().any(|n| matches!(n, InlineElement::Text { text, .. } if text == "tail"))),
+            "trailing text must survive as its own paragraph"
+        );
+        // text before the nested block stays in a leading paragraph
+        let html2 = b"<html><body><p>before<ul><li>x</li></ul>after</p></body></html>";
+        let doc2 = parser.parse(html2).unwrap();
+        assert_eq!(doc2.body.elements.len(), 3, "before-para + list + after-para");
+    }
 
     #[test]
     fn test_parse_pagebreak_marker_roundtrip() {
