@@ -1411,7 +1411,13 @@
       <div class="backstage-view" data-pane-view="protect" hidden>
         <h2 data-i18n="FileScreen.TitleProtect">Protect document</h2>
         <p class="backstage-desc" data-i18n="FileScreen.DescProtect">Restrict editing and protect the document.</p>
-        <button type="button" id="btn-fileprotect" class="backstage-primary" data-i18n="Menu.Protect">Protect document…</button>
+        <!-- Interact census row (backstage/protect): the parity contract maps
+             token 'protect' (OO fm-btn-protect) to WO btn-fileprotect with a
+             dialog-visible assertion on #protect-dialog, so the token is
+             opens:modal and the command is the existing protectDialog one. -->
+        <span data-wo-id="btn-fileprotect" data-wo-cmd="protectDialog" data-wo-interact="opens:modal">
+          <button type="button" id="btn-fileprotect" class="backstage-primary" data-i18n="Menu.Protect">Protect document…</button>
+        </span>
       </div>
       <div class="backstage-view" data-pane-view="help" hidden>
         <h2 data-i18n="FileScreen.TitleHelp">Help &amp; about</h2>
