@@ -63,8 +63,8 @@ pin("chart trendline dash", js, 'stroke-dasharray="6 4"');
 pin("chart axis line", js, 'stroke="#555" stroke-width="1.4"');
 
 // 4. Hyphenation quick items + Last Custom margins.
-pin("hyp auto", html, 'data-cmd="hyphenationSet" data-value="auto"');
-pin("hyp none", html, 'data-cmd="hyphenationSet" data-value="none"');
+pin("hyp auto", html, '<option value="auto" selected>Automatic</option>');
+pin("hyp none", html, '<option value="none">None</option>');
 pin("hyp auto handler", js, 'setSectionMarker("hyphenation", \'data-auto="1"\')');
 pin("margins last-custom menu", html, 'data-value="last-custom"');
 pin("margins last-custom store", js, "wo-last-custom-margins");

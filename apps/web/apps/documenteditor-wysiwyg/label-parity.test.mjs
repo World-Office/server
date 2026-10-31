@@ -186,12 +186,13 @@ assert.ok(editorSrc.includes('getElementById("btn-hf-image")'),
   "btn-hf-image must be wired in editor.js")
 assert.ok(editorSrc.includes('CustomEvent("wo:header-field"'),
   "btn-hf-field must dispatch the wo:header-field marker event")
-assert.ok(editorSrc.includes('CustomEvent("wo:header-image"'),
-  "btn-hf-image must dispatch the wo:header-image marker event")
+// Current contract (image.test): btn-hf-image is wired to insertImage()
+// natively; the old marker-only wo:header-image event is deliberately gone.
+assert.ok(editorSrc.includes('getElementById("btn-hf-image")') &&
+  editorSrc.includes('insertImage();'),
+  "btn-hf-image must be wired to insertImage natively")
 assert.ok(editorSrc.includes('console.info("wo:header-field'),
   "btn-hf-field must log the established console.info marker")
-assert.ok(editorSrc.includes('console.info("wo:header-image'),
-  "btn-hf-image must log the established console.info marker")
 console.log("Header-footer Field/Image wired\n")
 
 // ── (e) Macros caret-menu with three rows ────────────────────────────

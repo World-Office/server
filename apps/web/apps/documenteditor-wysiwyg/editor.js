@@ -1469,15 +1469,20 @@
       return;
     }
     if (cmd === "chartSettings") {
-      const onChart = !!selectedChart();
-      window.dispatchEvent(new CustomEvent("wo:chart-settings", { detail: { onChart } }));
-      console.info("wo: chart-settings requested", onChart ? "(on chart)" : "(no chart selected)");
+      const chartImg = selectedChart();
+      if (chartImg) {
+        let spec = {};
+        try { spec = JSON.parse(chartImg.dataset.spec || "{}"); } catch { spec = {}; }
+        openVectorEditor("chart", spec, chartImg);
+      } else {
+        setStatus(t("Status.NoChartSelected"));
+      }
+      window.dispatchEvent(new CustomEvent("wo:chart-settings", { detail: { onChart: !!chartImg } }));
       return;
     }
     if (cmd === "chart3d") {
-      const onChart = !!selectedChart();
-      window.dispatchEvent(new CustomEvent("wo:chart-3d", { detail: { onChart } }));
-      console.info("wo: chart-3d requested", onChart ? "(on chart)" : "(no chart selected)");
+      setStatus(t("Status.Chart3DUnsupported"));
+      window.dispatchEvent(new CustomEvent("wo:chart-3d", { detail: { onChart: !!selectedChart() } }));
       return;
     }
     if (cmd === "openTableDialog") { insertTable(); return; }
@@ -1974,7 +1979,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -8575,8 +8580,8 @@
       } else if (action === "ParagraphSettings") {
         openParagraphSettingsDialog();
       } else if (action === "TocSettings") {
+        openUpdateTocDialog();
         window.dispatchEvent(new CustomEvent("wo:toc-settings", { detail: { source: "ctx-menu" } }));
-        console.info("wo: toc-settings requested (ctx menu)");
       } else if (action === "UpdateField") {
         fieldOpAtSelection("update");
       } else if (action === "EditField") {
@@ -8590,8 +8595,17 @@
       } else if (action === "DropcapSettings") {
         openDropcapDialog();
       } else if (action === "FrameSettings") {
+        const fobj = vectorObjectAtSelection();
+        if (fobj) {
+          let spec = {};
+          try { spec = JSON.parse(fobj.dataset.spec || "{}"); } catch { spec = {}; }
+          openVectorEditor(fobj.dataset.kind || "shape", spec, fobj);
+        } else if (selectedImageObject && selectedImageObject()) {
+          openImageAltDialog();
+        } else {
+          setStatus(t("Status.NoObjectSelected"));
+        }
         window.dispatchEvent(new CustomEvent("wo:frame-settings", { detail: { source: "ctx-menu" } }));
-        console.info("wo: frame-settings requested (ctx menu)");
       } else if (action === "EquationSettings") {
         const img = vectorObjectAtSelection();
         if (img) {
@@ -8599,12 +8613,26 @@
           try { spec = JSON.parse(img.dataset.spec || "{}"); } catch { spec = {}; }
           openVectorEditor("equation", spec, img);
         } else {
+          setStatus(t("Status.NoEquationSelected"));
           window.dispatchEvent(new CustomEvent("wo:equation-settings", { detail: { source: "ctx-menu" } }));
-          console.info("wo: equation-settings requested (ctx menu)");
         }
       } else if (action === "ContentControlSettings") {
-        window.dispatchEvent(new CustomEvent("wo:content-control-settings", { detail: { source: "ctx-menu", onControl: !!contentControlAtSelection() } }));
-        console.info("wo: content-control-settings requested (ctx menu)");
+        const cc = contentControlAtSelection();
+        window.dispatchEvent(new CustomEvent("wo:content-control-settings", { detail: { source: "ctx-menu", onControl: !!cc } }));
+        if (!cc) { setStatus(t("Status.NoContentControl")); return; }
+        ccEditTarget = cc;
+        const ccTypeSel = document.getElementById("cc-type");
+        const ccTitleIn = document.getElementById("cc-title");
+        if (ccTypeSel) {
+          const ccTypes = ["plain", "rich", "dropdown", "checkbox", "date", "combo", "picture"];
+          const cur = cc.dataset.cc || "plain";
+          ccTypeSel.value = ccTypes.includes(cur) ? cur : "plain";
+        }
+        if (ccTitleIn) {
+          const raw = (cc.textContent || "").replace(/^[▾☐☑🖼 ]+/, "").trim();
+          ccTitleIn.value = raw === "Content control" ? "" : raw;
+        }
+        openDlg("cc-dialog");
       } else if (action === "RemoveContentControl") {
         const cc = contentControlAtSelection();
         if (cc && cc.parentNode) {
@@ -11433,8 +11461,11 @@
   });
 
   // -- Insert > Content control (plain / rich / dropdown marker boxes).
+  // C6/cc edit mode: when ccEditTarget is set, the cc dialog edits that
+  // control instead of inserting a new one.
+  let ccEditTarget = null;
   const btnCc = document.getElementById("btn-contentcontrol");
-  if (btnCc) btnCc.addEventListener("click", () => { if (READ_ONLY) return; openDlg("cc-dialog"); });
+  if (btnCc) btnCc.addEventListener("click", () => { if (READ_ONLY) return; ccEditTarget = null; openDlg("cc-dialog"); });
   const btnCcCancel = document.getElementById("btn-cc-cancel");
   if (btnCcCancel) btnCcCancel.addEventListener("click", () => closeDlg("cc-dialog"));
   const btnCcOk = document.getElementById("btn-cc-ok");
@@ -11444,6 +11475,54 @@
     const type = (t && t.value) || "plain";
     const label = ((title && title.value.trim()) || "Content control");
     const esc = _escXml(label);
+    if (ccEditTarget) {
+      // edit mode: refresh the existing control's type + label, keeping
+      // interactive state (checked box / chosen date) where it applies.
+      const cc = ccEditTarget;
+      ccEditTarget = null;
+      if (type === "checkbox") {
+        const checked = cc.getAttribute("data-checked") === "true";
+        cc.className = "content-control cc-inline cc-checkbox";
+        cc.setAttribute("data-cc", "checkbox");
+        cc.setAttribute("role", "checkbox");
+        cc.setAttribute("aria-checked", String(checked));
+        cc.setAttribute("contenteditable", "false");
+        cc.innerHTML = `<span class="cc-box">${checked ? "☑" : "☐"}</span> ${esc}`;
+      } else if (type === "date") {
+        const val = (cc.querySelector("input") && cc.querySelector("input").value) || "";
+        cc.className = "content-control cc-inline cc-date";
+        cc.setAttribute("data-cc", "date");
+        cc.setAttribute("contenteditable", "false");
+        cc.innerHTML = `<input type="date" class="cc-date-input" aria-label="${esc}" value="${val}"> ${esc}`;
+      } else if (type === "combo") {
+        cc.className = "content-control cc-inline cc-combo";
+        cc.setAttribute("data-cc", "combo");
+        cc.setAttribute("contenteditable", "true");
+        cc.textContent = "▾ " + label;
+      } else if (type === "picture") {
+        cc.className = "content-control cc-inline cc-picture";
+        cc.setAttribute("data-cc", "picture");
+        cc.setAttribute("contenteditable", "false");
+        cc.setAttribute("role", "button");
+        cc.setAttribute("tabindex", "0");
+        cc.textContent = "🖼 " + label;
+      } else if (type === "dropdown") {
+        cc.className = "content-control cc-inline content-control";
+        cc.setAttribute("data-cc", "dropdown");
+        cc.setAttribute("contenteditable", "false");
+        cc.textContent = "▾ " + label;
+      } else {
+        cc.className = "content-control";
+        cc.setAttribute("data-cc", type);
+        cc.setAttribute("contenteditable", "false");
+        cc.textContent = label;
+      }
+      cc.setAttribute("title", esc);
+      markDirty(); captureHistory(); scheduleCollabSync(); notifyHost("editing");
+      closeDlg("cc-dialog");
+      setStatus("Updated content control");
+      return;
+    }
     // C6-2: checkbox (click toggles), date picker (native <input type=date>),
     // combo box (editable), picture (click opens the image dialog).
     // WO-2: dropdown opens cc-dialog, all cc types have tabindex for keyboard nav.
