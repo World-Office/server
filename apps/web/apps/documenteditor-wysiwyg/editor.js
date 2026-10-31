@@ -1462,11 +1462,7 @@
       }
       return;
     }
-    if (cmd === "combineRevisions") {
-      window.dispatchEvent(new CustomEvent("wo:combine-revisions", { detail: { source: "ribbon" } }));
-      console.info("wo: combine-revisions: requested");
-      return;
-    }
+    if (cmd === "combineRevisions") { openCombineView(); return; }
     if (cmd === "toggleHyphenation") { openHyphenationDialog(); return; }
     if (cmd === "toggleLineNumbers") { openLineNumbersDialog(); return; }
     if (cmd === "toggleWatermark") { openWatermarkDialog(); return; }
@@ -2024,7 +2020,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "compare-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "compare-dialog", "combine-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -2047,6 +2043,7 @@
     "columns-dialog": closeColumnsDialog,
     "comment-dialog": closeCommentDialog,
     "compare-dialog": closeCompareDialog,
+    "combine-dialog": closeCombineDialog,
     "crossref-dialog": closeCrossrefDialog,
     "object-dialog": closeObjectDialog,
     "plugins-dialog": closePluginsDialog,
@@ -6993,6 +6990,84 @@
 
   if (btnCompareCancel) btnCompareCancel.addEventListener("click", closeCompareDialog)
   if (btnCompareApply) btnCompareApply.addEventListener("click", compareDocuments)
+
+  // Combine dialog elements
+  const combineDialog = document.getElementById("combine-dialog")
+  const combineDocumentSelect = document.getElementById("combine-document-select")
+  const combineError = document.getElementById("combine-error")
+  const btnCombineCancel = document.getElementById("btn-combine-cancel")
+  const btnCombineApply = document.getElementById("btn-combine-apply")
+
+  function openCombineView() {
+    closeAllMenus()
+    openCombineDialog()
+  }
+
+  function openCombineDialog() {
+    if (combineError) combineError.textContent = ""
+    if (combineDialog) {
+      rememberFocus()
+      combineDialog.classList.add("open")
+      loadCombineDocuments()
+    }
+  }
+
+  function closeCombineDialog() {
+    if (combineDialog) combineDialog.classList.remove("open")
+    restoreFocus()
+  }
+
+  async function loadCombineDocuments() {
+    if (!combineDocumentSelect) return
+    combineDocumentSelect.innerHTML = '<option value="" disabled data-i18n="Combine.SelectOption">-- Select documents --</option>'
+    try {
+      const res = await fetch("/api/documents")
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to load documents")
+      const docs = data.documents || []
+      docs.forEach((doc) => {
+        if (doc.id !== DOC_ID) {
+          const option = document.createElement("option")
+          option.value = doc.id
+          option.textContent = doc.name || doc.id
+          combineDocumentSelect.appendChild(option)
+        }
+      })
+    } catch (err) {
+      if (combineError) combineError.textContent = t("Combine.LoadError") + err.message
+      setStatus(t("Combine.LoadError") + err.message, true)
+    }
+  }
+
+  async function combineDocuments() {
+    if (!combineDocumentSelect) return
+    const selectedOptions = Array.from(combineDocumentSelect.selectedOptions).map(o => o.value)
+    if (!selectedOptions || selectedOptions.length === 0) {
+      if (combineError) combineError.textContent = t("Combine.NoDocumentSelected")
+      return
+    }
+    if (btnCombineApply) btnCombineApply.disabled = true
+    try {
+      closeCombineDialog()
+      const params = selectedOptions.map(id => 'docs=' + encodeURIComponent(id)).join('&')
+      const res = await fetch(api("combine?" + params))
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Combine failed")
+      if (data.html) {
+        await loadDocumentHTML(data.html, true)
+      } else {
+        setStatus(t("Combine.NoDiff"), false)
+      }
+    } catch (err) {
+      setStatus(t("Combine.Error") + err.message, true)
+      if (combineError) combineError.textContent = t("Combine.Error") + err.message
+    } finally {
+      if (btnCombineApply) btnCombineApply.disabled = false
+    }
+  }
+
+  if (btnCombineCancel) btnCombineCancel.addEventListener("click", closeCombineDialog)
+  if (btnCombineApply) btnCombineApply.addEventListener("click", combineDocuments)
 
   // Drop cap: wrap the paragraph's first character in <span class="dropcap">
   // (serializes via w:framePr w:dropCap — WS-A byte contract); toggles off.
