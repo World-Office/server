@@ -2032,7 +2032,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "compare-dialog", "combine-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "ocr-dialog", "shape-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "tableoffigures-dialog", "image-alt-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "compare-dialog", "combine-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "ocr-dialog", "shape-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "tableoffigures-dialog", "formula-dialog", "image-alt-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -2434,6 +2434,103 @@
     if (!tr.cells.length && table.rows.length > 1 && tr.parentNode) tr.remove();
     finalizeTableChange();
   }
+  // C5-3 TABLE FORMULAS: OO documented `=SUM(ABOVE)` engine slice (no census
+  // row — OO keeps it deep in its dialogs). Formula lives on the td/th as
+  // data-formula; the visible text is its last computed result. recalc runs
+  // from finalizeTableChange so row/col/merge ops update results live.
+  // ponytail: SUM scans the FULL direction range (first number token per
+  // cell, nested formula results included); OO stops at blank cells — add the
+  // stop-at-blank rule if spreadsheets-style behavior is ever required.
+  const TABLE_FUNCS = { SUM: 1, AVERAGE: 1, COUNT: 1, MAX: 1, MIN: 1 };
+  const TABLE_DIRS = ["ABOVE", "BELOW", "LEFT", "RIGHT"];
+  function formulaCellValue(cell) {
+    if (!cell) return null;
+    const t = (cell.textContent || "").replace(/[^\d.\-]/g, "");
+    const m = t.match(/-?\d+(\.\d+)?/);
+    return m ? parseFloat(m[0]) : null;
+  }
+  function collectCells(cell, dir) {
+    const table = cell.closest("table"); if (!table) return [];
+    const tr = cell.closest("tr");
+    const out = [];
+    if (dir === "ABOVE" || dir === "BELOW") {
+      const idx = cell.cellIndex;
+      const rows = Array.from(table.rows);
+      const i0 = rows.indexOf(tr);
+      for (let i = dir === "ABOVE" ? i0 - 1 : i0 + 1;
+           dir === "ABOVE" ? i >= 0 : i < rows.length;
+           dir === "ABOVE" ? i-- : i++) {
+        if (rows[i] && rows[i].cells[idx]) out.push(rows[i].cells[idx]);
+      }
+    } else {
+      const idx = cell.cellIndex;
+      const row = Array.from(tr.cells);
+      for (let i = dir === "LEFT" ? 0 : idx + 1; i < (dir === "LEFT" ? idx : row.length); i++) {
+        if (row[i]) out.push(row[i]);
+      }
+    }
+    return out;
+  }
+  function evalFormula(cell) {
+    const f = (cell.getAttribute("data-formula") || "").trim();
+    const m = f.match(/^=([A-Z]+)\(([A-Z]+)\)$/i);
+    if (!m) return null;
+    const fn = m[1].toUpperCase();
+    const dir = m[2].toUpperCase();
+    if (!(fn in TABLE_FUNCS) || !TABLE_DIRS.includes(dir)) return null;
+    const vals = collectCells(cell, dir)
+      .map(formulaCellValue)
+      .filter((v) => v !== null);
+    if (fn === "COUNT") return String(vals.length);
+    if (!vals.length) return "0";
+    const num = fn === "SUM" ? vals.reduce((a, b) => a + b, 0)
+      : fn === "AVERAGE" ? vals.reduce((a, b) => a + b, 0) / vals.length
+      : fn === "MAX" ? Math.max.apply(null, vals)
+      : fn === "MIN" ? Math.min.apply(null, vals) : 0;
+    return String(Math.round(num * 100) / 100);
+  }
+  function renderFormulaCell(cell) {
+    const r = evalFormula(cell);
+    if (r === null) return;
+    const span = document.createElement("span");
+    span.className = "table-formula";
+    span.textContent = r;
+    cell.textContent = "";
+    cell.appendChild(span);
+  }
+  function recalcTableFormulas(table) {
+    if (!table) return;
+    table.querySelectorAll("td[data-formula], th[data-formula]").forEach(renderFormulaCell);
+  }
+  function openFormulaDialog() {
+    if (!currentTableCell()) {
+      setStatus(t("Status.NoTableCell"));
+      return;
+    }
+    closeAllMenus();
+    openDlg("formula-dialog");
+    updateFormulaPreview();
+  }
+  function updateFormulaPreview() {
+    const fn = document.getElementById("formula-func");
+    const dir = document.getElementById("formula-dir");
+    const pv = document.getElementById("formula-preview");
+    if (fn && dir && pv) pv.value = "=" + fn.value + "(" + dir.value + ")";
+  }
+  function applyFormulaToCell() {
+    const cell = currentTableCell(); if (!cell) return;
+    const fn = document.getElementById("formula-func");
+    const dir = document.getElementById("formula-dir");
+    cell.setAttribute("data-formula", "=" + fn.value + "(" + dir.value + ")");
+    renderFormulaCell(cell);
+    captureHistory();
+    markDirty();
+    scheduleCollabSync();
+    notifyHost("editing");
+    recalcTableFormulas(cell.closest("table"));
+    closeDlg("formula-dialog");
+    updateActiveStates();
+  }
   // C2-1 list ops (native — the ctx rows used to dispatch a wo:list-settings
   // host event that no listener ever handled, so restart/continue silently
   // did nothing).
@@ -2637,6 +2734,7 @@
     finalizeTableChange();
   }
   function finalizeTableChange() {
+    recalcTableFormulas(currentTableCell() && currentTableCell().closest("table"));
     captureHistory();
     markDirty();
     scheduleCollabSync();
@@ -4481,6 +4579,7 @@
     "op-del-col": deleteTableCol,
     "op-merge": mergeTableCells,
     "op-split": splitTableCell,
+    "op-formula": () => { closeTableOpsDialog(); openFormulaDialog(); },
   };
   Object.keys(tableOps).forEach((id) => {
     const btn = document.getElementById(id);
@@ -4775,6 +4874,25 @@
   });
   const tableOpsClose = document.getElementById("btn-table-ops-close");
   if (tableOpsClose) tableOpsClose.addEventListener("click", closeTableOpsDialog);
+  // C5-3 formula dialog: selects drive the preview, OK applies to the cell.
+  const formulaFunc = document.getElementById("formula-func");
+  const formulaDir = document.getElementById("formula-dir");
+  if (formulaFunc) formulaFunc.addEventListener("change", updateFormulaPreview);
+  if (formulaDir) formulaDir.addEventListener("change", updateFormulaPreview);
+  const opFormulaOk = document.getElementById("op-formula-ok");
+  const opFormulaCancel = document.getElementById("op-formula-cancel");
+  if (opFormulaOk) opFormulaOk.addEventListener("click", applyFormulaToCell);
+  if (opFormulaCancel) opFormulaCancel.addEventListener("click", () => closeDlg("formula-dialog"));
+  editor.addEventListener("input", (ev) => {
+    const td = ev.target && ev.target.closest ? ev.target.closest("td[data-formula], th[data-formula]") : null;
+    if (td && !td.querySelector(".table-formula")) {
+      td.removeAttribute("data-formula");
+    }
+    const table = ev.target && ev.target.closest ? ev.target.closest("table") : null;
+    if (table && table.querySelector("td[data-formula], th[data-formula]")) {
+      recalcTableFormulas(table);
+    }
+  });
   document.getElementById("btn-image").addEventListener("click", insertImage);
   const linkBtn = document.getElementById("btn-link");
   if (linkBtn) linkBtn.addEventListener("click", insertLink);

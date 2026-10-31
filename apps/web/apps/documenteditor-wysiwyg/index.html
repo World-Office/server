@@ -1690,6 +1690,7 @@
         <button id="op-del-col" data-i18n="Table.DeleteCol">Delete column</button>
         <button id="op-merge" data-i18n="Table.MergeCells">Merge cells</button>
         <button id="op-split" data-i18n="Table.SplitCell">Split cell</button>
+        <button id="op-formula" data-i18n="Table.Formula">Formula…</button>
       </div>
       <div class="dialog-row table-ops-several">
         <label for="op-insert-count" data-i18n="Table.InsertSeveral">Insert</label>
@@ -1715,6 +1716,40 @@
       </div>
       <div class="dialog-actions">
         <button id="btn-table-ops-close" data-i18n="Dialog.Close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- C5-3: table formula field =SUM(ABOVE) (OO documented feature) -->
+  <div id="formula-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="formula-dialog-title">
+    <div class="dialog">
+      <h3 id="formula-dialog-title" data-i18n="Formula.Title">Table formula</h3>
+      <div class="dialog-field">
+        <label for="formula-func" data-i18n="Formula.Function">Function</label>
+        <select id="formula-func">
+          <option value="SUM" data-i18n="Formula.SUM">SUM — sum of numbers</option>
+          <option value="AVERAGE" data-i18n="Formula.AVERAGE">AVERAGE — average of numbers</option>
+          <option value="COUNT" data-i18n="Formula.COUNT">COUNT — count of numeric cells</option>
+          <option value="MAX" data-i18n="Formula.MAX">MAX — largest number</option>
+          <option value="MIN" data-i18n="Formula.MIN">MIN — smallest number</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label for="formula-dir" data-i18n="Formula.Direction">Direction</label>
+        <select id="formula-dir">
+          <option value="ABOVE" data-i18n="Formula.ABOVE">Above</option>
+          <option value="BELOW" data-i18n="Formula.BELOW">Below</option>
+          <option value="LEFT" data-i18n="Formula.LEFT">Left</option>
+          <option value="RIGHT" data-i18n="Formula.RIGHT">Right</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label for="formula-preview" data-i18n="Formula.Preview">Formula</label>
+        <input id="formula-preview" type="text" value="=SUM(ABOVE)" readonly aria-label="Formula">
+      </div>
+      <div class="dialog-actions">
+        <button id="op-formula-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="op-formula-ok" data-i18n="Dialog.Insert" class="primary">Insert</button>
       </div>
     </div>
   </div>
