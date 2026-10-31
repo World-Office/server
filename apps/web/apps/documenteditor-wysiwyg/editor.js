@@ -7685,14 +7685,16 @@
   const hfOk = document.getElementById("btn-headerfooter-ok");
   if (hfOk) hfOk.addEventListener("click", () => {
     closeOverlayDialog("headerfooter-dialog");
+    const hfType = (document.querySelector("input[name='hf-type']:checked") || {}).value || "both";
     const diffFirst = !!(document.getElementById("hf-different-first") || {}).checked;
     const dist = parseFloat((document.getElementById("hf-distance") || {}).value) || 12.5;
-    for (const tag of ["header", "footer"]) {
+    const types = hfType === "both" ? ["header", "footer"] : [hfType];
+    for (const tag of types) {
       const existing = editor.querySelector(":scope > " + tag + ".page-" + tag);
       if (existing) continue;
       emitCommand("insert" + (tag === "header" ? "Header" : "Footer"));
     }
-    for (const tag of ["header", "footer"]) {
+    for (const tag of types) {
       const el = editor.querySelector(":scope > " + tag + ".page-" + tag);
       if (!el) continue;
       if (diffFirst) el.dataset.differentFirst = "true";

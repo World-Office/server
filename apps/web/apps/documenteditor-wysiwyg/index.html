@@ -1871,6 +1871,23 @@
     <div class="dialog">
       <h3 id="headerfooter-dialog-title">Header and Footer</h3>
       <div class="dialog-field">
+        <fieldset id="hf-type">
+          <legend data-i18n="HF.Type">Type</legend>
+          <div class="dialog-field">
+            <input type="radio" id="hf-type-header" name="hf-type" value="header" checked>
+            <label for="hf-type-header" data-i18n="HF.Header">Header</label>
+          </div>
+          <div class="dialog-field">
+            <input type="radio" id="hf-type-footer" name="hf-type" value="footer">
+            <label for="hf-type-footer" data-i18n="HF.Footer">Footer</label>
+          </div>
+          <div class="dialog-field">
+            <input type="radio" id="hf-type-both" name="hf-type" value="both">
+            <label for="hf-type-both" data-i18n="HF.Both">Both</label>
+          </div>
+        </fieldset>
+      </div>
+      <div class="dialog-field">
         <label for="hf-different-first">Different first page</label>
         <input id="hf-different-first" type="checkbox">
       </div>
