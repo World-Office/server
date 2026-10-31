@@ -1346,7 +1346,11 @@
              (cached per session; rows disabled with a hint when the editor is
              served standalone, friendly empty row on fetch failure). -->
         <div id="backstage-recent" class="backstage-recent" aria-live="polite"></div>
-        <button type="button" id="btn-open" class="backstage-primary" data-i18n="Menu.Open">Open…</button>
+        <!-- Interact census row (backstage/recent): OO's "Open Recent" control
+             opens a backstage panel, so the parity token is opens:panel. -->
+        <span data-wo-id="btn-open" data-wo-cmd="btn-open" data-wo-interact="opens:panel">
+          <button type="button" id="btn-open" class="backstage-primary" data-i18n="Menu.Open">Open…</button>
+        </span>
       </div>
       <div class="backstage-view" data-pane-view="save" hidden>
         <h2 data-i18n="FileScreen.TitleSave">Save</h2>
