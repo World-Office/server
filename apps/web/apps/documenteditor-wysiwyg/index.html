@@ -841,7 +841,9 @@
     <button type="button" class="plugin-card" data-cmd="readAloud" data-i18n="Plugins.Speech">Speech</button>
     <button type="button" class="plugin-card" data-cmd="dictate" data-i18n="Plugins.SpeechInput">Speech input</button>
     </div>
-    <button type="button" id="btn-ocr" data-cmd="ocrRun" data-i18n="Plugins.Ocr">OCR</button>
+    <span data-wo-id="btn-ocr" data-wo-cmd="btn-ocr" data-wo-interact="opens:modal">
+      <button type="button" id="btn-ocr" data-cmd="ocrRun" data-i18n="Plugins.Ocr">OCR</button>
+    </span>
     </div>
     <div class="ribbon-row">
     <button type="button" data-cmd="browsePlugins" data-i18n="Plugins.Browse">Browse plugins</button>
@@ -2614,6 +2616,19 @@
       <div class="dialog-actions">
         <button id="btn-ai-propose-cancel" data-i18n="Dialog.Cancel">Cancel</button>
         <button id="btn-ai-propose-run" data-i18n="Dialog.Propose" class="primary">Propose</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ocr-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="ocr-dialog-title">
+    <div class="dialog">
+      <h3 id="ocr-dialog-title" data-i18n="Plugins.Ocr">OCR</h3>
+      <div class="dialog-field">
+        <p>Perform OCR on the document to extract text.</p>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-ocr-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-ocr-ok" data-i18n="Dialog.Ok" class="primary">OK</button>
       </div>
     </div>
   </div>

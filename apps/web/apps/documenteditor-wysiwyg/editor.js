@@ -11688,6 +11688,13 @@
   // Plugins > background mode: run plugins without a foreground panel.
   const btnBgPlugins = document.getElementById("btn-bgplugins");
   if (btnBgPlugins) btnBgPlugins.addEventListener("click", openBackgroundPluginsDialogAsync);
+  // Plugins > OCR: open OCR dialog
+  const btnOcr = document.getElementById("btn-ocr");
+  if (btnOcr) btnOcr.addEventListener("click", () => { closeAllMenus(); openDlg("ocr-dialog"); });
+  const btnOcrOk = document.getElementById("btn-ocr-ok");
+  if (btnOcrOk) btnOcrOk.addEventListener("click", () => { closeDlg("ocr-dialog"); openAiPropose("Perform OCR on the document, extract all text, and return it as plain text."); });
+  const btnOcrCancel = document.getElementById("btn-ocr-cancel");
+  if (btnOcrCancel) btnOcrCancel.addEventListener("click", () => closeDlg("ocr-dialog"));
   // Initialize bg-plugins state from localStorage
   (function initBgPluginsState() {
     try {
