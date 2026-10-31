@@ -1979,7 +1979,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -4484,6 +4484,79 @@
     if (paragraphSettingsDialog) paragraphSettingsDialog.classList.remove("open");
     restoreFocus();
   });
+
+  // C4-2: Tabs dialog — per-paragraph tab stops. CSS only renders a single
+  // equal tab width (tab-size); arbitrary per-position stops are stored in
+  // data-tabstops for round-trip/future rendering. ponytail: per-position
+  // stop rendering would need a custom layout pass — add when a renderer shows up.
+  const tabsDialog = document.getElementById("tabs-dialog");
+  const tabsList = document.getElementById("tabs-list");
+  const tabsDefault = document.getElementById("tabs-default");
+  const TAB_ALIGNS = ["left", "center", "right", "decimal"];
+  const TAB_LEADERS = ["none", "dots", "hyphens", "underline"];
+  const addTabRow = (pos, align, leader) => {
+    if (!tabsList) return;
+    const row = document.createElement("div");
+    row.className = "tabs-row";
+    const p = document.createElement("input"); p.type = "number"; p.min = "0"; p.max = "2000"; p.value = pos == null ? "" : pos;
+    p.placeholder = t("Tabs.Position");
+    const a = document.createElement("select");
+    TAB_ALIGNS.forEach((v) => { const o = document.createElement("option"); o.value = v; o.textContent = t("Tabs.Align." + v[0].toUpperCase() + v.slice(1)); a.appendChild(o); });
+    a.value = align || "left";
+    const l = document.createElement("select");
+    TAB_LEADERS.forEach((v) => { const o = document.createElement("option"); o.value = v; o.textContent = t("Tabs.Leader." + v[0].toUpperCase() + v.slice(1)); l.appendChild(o); });
+    l.value = leader || "none";
+    const rm = document.createElement("button"); rm.type = "button"; rm.textContent = t("Tabs.Remove");
+    rm.className = "tabs-remove";
+    rm.addEventListener("click", () => row.remove());
+    row.append(p, a, l, rm);
+    tabsList.appendChild(row);
+  };
+  const openTabsDialog = () => {
+    if (!tabsDialog) return;
+    const p = caretParagraph();
+    let stops = [];
+    if (p) { try { stops = JSON.parse(p.getAttribute("data-tabstops") || "[]"); } catch { stops = []; } }
+    if (tabsList) tabsList.innerHTML = "";
+    const cur = p && parseFloat(p.style.tabSize) || 48;
+    if (tabsDefault) tabsDefault.value = String(cur || 48);
+    (stops.length ? stops : [{}]).forEach((s) => addTabRow(s.p, s.a, s.l));
+    rememberFocus();
+    tabsDialog.classList.add("open");
+  };
+  const confirmTabsDialog = () => {
+    if (tabsDialog) tabsDialog.classList.remove("open");
+    restoreFocus();
+    const p = caretParagraph();
+    if (!p) { setStatus(t("Status.NoParagraph")); return; }
+    const width = parseInt(String(tabsDefault && tabsDefault.value || "48"), 10) || 48;
+    const stops = [];
+    if (tabsList) {
+      tabsList.querySelectorAll(".tabs-row").forEach((row) => {
+        const inp = row.querySelector("input");
+        const selA = row.querySelectorAll("select")[0];
+        const selL = row.querySelectorAll("select")[1];
+        const pos = parseInt(inp && inp.value || "0", 10);
+        stops.push({ p: pos, a: selA ? selA.value : "left", l: selL ? selL.value : "none" });
+      });
+    }
+    p.style.tabSize = width + "px";
+    if (stops.length) p.setAttribute("data-tabstops", JSON.stringify(stops));
+    else p.removeAttribute("data-tabstops");
+    markDirty(); captureHistory();
+    setStatus("Tab settings applied");
+  };
+  const btnTabsAdd = document.getElementById("btn-tabs-add");
+  const btnTabsOk = document.getElementById("btn-tabs-ok");
+  const btnTabsCancel = document.getElementById("btn-tabs-cancel");
+  const btnPsTabs = document.getElementById("btn-ps-tabs");
+  if (btnTabsAdd) btnTabsAdd.addEventListener("click", () => addTabRow());
+  if (btnTabsOk) btnTabsOk.addEventListener("click", confirmTabsDialog);
+  if (btnTabsCancel) btnTabsCancel.addEventListener("click", () => {
+    if (tabsDialog) tabsDialog.classList.remove("open");
+    restoreFocus();
+  });
+  if (btnPsTabs) btnPsTabs.addEventListener("click", openTabsDialog);
   const openHrSettings = () => {
     if (!hrDialog) return;
     const sel = window.getSelection();
