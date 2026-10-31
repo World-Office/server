@@ -1411,7 +1411,13 @@
       <div class="backstage-view" data-pane-view="settings" hidden>
         <h2 data-i18n="FileScreen.TitleSettings">Settings</h2>
         <p class="backstage-desc" data-i18n="FileScreen.DescSettings">Spellcheck, theme, language and zoom defaults.</p>
-        <button type="button" id="btn-filesettings" class="backstage-primary" data-i18n="Menu.Settings">Settings…</button>
+        <!-- Interact census row (backstage/settings): OO's Settings control
+             opens a panel, so the parity token is opens:panel. The button
+             below is already wired in editor.js to openDlg("settings-dialog"),
+             an existing dialog opener (no editor change needed). -->
+        <span data-wo-id="btn-filesettings" data-wo-cmd="btn-filesettings" data-wo-interact="opens:panel">
+          <button type="button" id="btn-filesettings" class="backstage-primary" data-i18n="Menu.Settings">Settings…</button>
+        </span>
       </div>
       <div class="backstage-view" data-pane-view="protect" hidden>
         <h2 data-i18n="FileScreen.TitleProtect">Protect document</h2>
