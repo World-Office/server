@@ -1360,7 +1360,12 @@
       <div class="backstage-view" data-pane-view="export" hidden>
         <h2 data-i18n="FileScreen.TitleExport">Download as</h2>
         <p class="backstage-desc" data-i18n="FileScreen.DescExport">Download a copy in another format.</p>
-        <button type="button" id="btn-export" class="backstage-primary" aria-haspopup="true" aria-expanded="false" data-i18n="Menu.Export">Download As</button>
+        <!-- Interact census row (backstage/download): OO's Download-As button
+             discloses the export format list (opens:menu); the export-sub
+             list below is that menu's content. -->
+        <span data-wo-id="btn-export" data-wo-cmd="btn-export" data-wo-interact="opens:menu">
+          <button type="button" id="btn-export" class="backstage-primary" aria-haspopup="true" aria-expanded="false" data-i18n="Menu.Export">Download As</button>
+        </span>
         <ul id="export-sub" class="menu-sublist" role="menu" aria-label="Export as">
           <li role="none"><button type="button" role="menuitem" data-export="pdf" data-i18n="Menu.ExportPdf">PDF</button></li>
           <li role="none"><button type="button" role="menuitem" data-export="odt" data-i18n="Menu.ExportOdt">ODT</button></li>
