@@ -190,6 +190,18 @@
             html: '<p>Compared result with <ins class="track-insert">tracked insertions</ins> and <del class="track-delete">deletions</del>.</p>',
           });
         }
+        if (ep === "combine") {
+          const params = new URL(url, location.origin).searchParams;
+          const docIds = params.getAll("docs");
+          if (!docIds || docIds.length === 0) return jres({ error: "missing document ids" }, 400);
+          // Result with tracked changes from multiple documents.
+          // Simulate a successful combine returning HTML with tracked changes from all.
+          // In production this calls the docserver to merge multiple documents.
+          const inserts = docIds.map(id => `<ins class="track-insert">changes from ${id}</ins>`).join(" ");
+          return jres({
+            html: `<p>Combined result with ${inserts} and <del class="track-delete">merged deletions</del>.</p>`,
+          });
+        }
         // collab/* passes through to the hub: the old stub (fake empty state)
         // existed because OpenCloud file ids ($...!) were rejected by
         // valid_doc_id, so every real call 400'd. Ids are legal now — live

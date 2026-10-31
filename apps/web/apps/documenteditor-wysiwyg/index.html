@@ -2564,6 +2564,26 @@
     </div>
   </div>
 
+  <!-- Combine documents dialog: select multiple documents to merge revisions.
+       WO-17-combine OnlyOffice parity (slugs:combine). Opens from Collab.Combine button,
+       calls docserver /combine endpoint to merge multiple documents with tracked changes. -->
+  <div id="combine-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="combine-dialog-title">
+    <div class="dialog">
+      <h3 id="combine-dialog-title" data-i18n="Combine.Title">Combine Documents</h3>
+      <div class="dialog-field">
+        <label for="combine-document-select" data-i18n="Combine.SelectDocuments">Select documents to combine</label>
+        <select id="combine-document-select" multiple aria-label="Select documents to combine">
+          <option value="" disabled data-i18n="Combine.SelectOption">-- Select documents --</option>
+        </select>
+      </div>
+      <div id="combine-error" class="version-error" role="alert"></div>
+      <div class="dialog-actions">
+        <button id="btn-combine-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-combine-apply" class="primary" data-i18n="Combine.Apply">Combine</button>
+      </div>
+    </div>
+  </div>
+
   <!-- AI review dialog: the op-stream diff of agent edits. Agents edit
        through the same CRDT pipeline as humans, and their ops carry an
        "agent=<name>" site, so each row is one attributable op with a Reject
