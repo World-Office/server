@@ -529,6 +529,35 @@
     }
   }
 
+  async function loadDocumentHTML(html, isCompare) {
+    setStatus(isCompare ? t("Compare.Comparing") : t("Status.Loading"));
+    try {
+      // Anchor: an empty/blank document still needs a block element so
+      // typing produces <p>…</p> (bare text would be lost in DOCX conversion).
+      editor.innerHTML = html || "<p><br></p>";
+      if (isCompare) {
+        // For compare results, ensure tracked changes are visible
+        openReviewPanel();
+        afterTrackEdit();
+      }
+      // Page-width image fit (UI-IMG-FIT): existing oversized <img>s get
+      // width/height attributes clamped to the content column, and not yet
+      // decoded images are fixed up the moment their natural size arrives.
+      clampImagesToPage(editor);
+      hydrateVectorObjects();
+      refreshToc();
+      paginateQuiet();  // paginate the flow into LO/OO-style sheets
+      applyPageView();  // map the page-setup marker (if any) to the canvas
+      refreshProtectionState();  // reflect protect.* state (real gate is server-side)
+      setStatus(t("Compare.Complete"), false);
+      updateCounts();
+      updatePageIndicator();
+    } catch (err) {
+      editor.innerHTML = "<p><em>" + t("Status.LoadFailed") + err.message + "</em></p>";
+      setStatus(t("Status.LoadFailed") + err.message, true);
+    }
+  }
+
   // ------------------------------------------------------------------
   // Offline queue
   // ------------------------------------------------------------------
@@ -1995,7 +2024,7 @@
   // absent (see anchorInsertPop above): table/image insert pops, and
   // #objlayout-pop which combines .insert-pop + .dialog-overlay purely for
   // styling (aria-modal="false", hidden-toggle instead of .open).
-  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
+  const DIALOG_IDS = ["find-dialog", "link-dialog", "symbol-dialog", "table-ops-dialog", "version-history-dialog", "compare-dialog", "ai-review-dialog", "ai-propose-dialog", "page-setup-dialog", "borders-dialog", "protect-dialog", "photo-editor-dialog", "notes-dialog", "pagenumber-dialog", "headerfooter-dialog", "trackchanges-dialog", "dropcap-dialog", "speech-dialog", "speechinput-dialog", "linenumbers-dialog", "hyphenation-dialog", "watermark-dialog", "pagecolor-dialog", "colors-dialog", "addtext-dialog", "updatetoc-dialog", "displaymode-dialog", "bookmark-dialog", "cc-dialog", "chart-dialog", "columns-dialog", "comment-dialog", "crossref-dialog", "equation-dialog", "field-dialog", "help-dialog", "info-dialog", "mailmerge-dialog", "object-dialog", "plugin-unavailable-dialog", "plugins-dialog", "settings-dialog", "suggest-dialog", "toc-dialog", "image-alt-dialog", "hr-settings-dialog", "hr-settings-dialog", "numbering-value-dialog", "list-indents-dialog", "bullets-numbering-dialog", "paragraph-settings-dialog", "backstage-overlay", "background-plugins-dialog", "hf-close-confirm-dialog", "textfromfile-dialog", "autocorrect-dialog", "tabs-dialog"];
   function getOpenDialog() {
     for (let i = 0; i < DIALOG_IDS.length; i++) {
       const d = document.getElementById(DIALOG_IDS[i]);
@@ -2017,6 +2046,7 @@
     "bookmark-dialog": closeBookmarkDialog,
     "columns-dialog": closeColumnsDialog,
     "comment-dialog": closeCommentDialog,
+    "compare-dialog": closeCompareDialog,
     "crossref-dialog": closeCrossrefDialog,
     "object-dialog": closeObjectDialog,
     "plugins-dialog": closePluginsDialog,
@@ -6882,10 +6912,81 @@
       setStatus("Compare error: " + err.message, true);
     }
   }
+  const compareDialog = document.getElementById("compare-dialog")
+  const compareDocumentSelect = document.getElementById("compare-document-select")
+  const compareError = document.getElementById("compare-error")
+  const btnCompareCancel = document.getElementById("btn-compare-cancel")
+  const btnCompareApply = document.getElementById("btn-compare-apply")
+
   function openCompareView() {
-    closeAllMenus();
-    openVersionHistory();
+    closeAllMenus()
+    openCompareDialog()
   }
+
+  function openCompareDialog() {
+    if (compareError) compareError.textContent = ""
+    if (compareDialog) {
+      rememberFocus()
+      compareDialog.classList.add("open")
+      loadCompareDocuments()
+    }
+  }
+
+  function closeCompareDialog() {
+    if (compareDialog) compareDialog.classList.remove("open")
+    restoreFocus()
+  }
+
+  async function loadCompareDocuments() {
+    if (!compareDocumentSelect) return
+    compareDocumentSelect.innerHTML = '<option value="" data-i18n="Compare.SelectOption">-- Select a document --</option>'
+    try {
+      const res = await fetch("/api/documents")
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Failed to load documents")
+      const docs = data.documents || []
+      docs.forEach((doc) => {
+        if (doc.id !== DOC_ID) {
+          const option = document.createElement("option")
+          option.value = doc.id
+          option.textContent = doc.name || doc.id
+          compareDocumentSelect.appendChild(option)
+        }
+      })
+    } catch (err) {
+      if (compareError) compareError.textContent = t("Compare.LoadError") + err.message
+      setStatus(t("Compare.LoadError") + err.message, true)
+    }
+  }
+
+  async function compareDocuments() {
+    if (!compareDocumentSelect) return
+    const selectedId = compareDocumentSelect.value
+    if (!selectedId) {
+      if (compareError) compareError.textContent = t("Compare.NoDocumentSelected")
+      return
+    }
+    if (btnCompareApply) btnCompareApply.disabled = true
+    try {
+      closeCompareDialog()
+      const res = await fetch(api("compare?other=" + encodeURIComponent(selectedId)))
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Compare failed")
+      if (data.html) {
+        await loadDocumentHTML(data.html, true)
+      } else {
+        setStatus(t("Compare.NoDiff"), false)
+      }
+    } catch (err) {
+      setStatus(t("Compare.Error") + err.message, true)
+      if (compareError) compareError.textContent = t("Compare.Error") + err.message
+    } finally {
+      if (btnCompareApply) btnCompareApply.disabled = false
+    }
+  }
+
+  if (btnCompareCancel) btnCompareCancel.addEventListener("click", closeCompareDialog)
+  if (btnCompareApply) btnCompareApply.addEventListener("click", compareDocuments)
 
   // Drop cap: wrap the paragraph's first character in <span class="dropcap">
   // (serializes via w:framePr w:dropCap — WS-A byte contract); toggles off.

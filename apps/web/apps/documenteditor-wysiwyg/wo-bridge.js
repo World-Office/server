@@ -178,6 +178,18 @@
         if (ep === "versions") return jres({ versions: [] });
         if (ep === "unlock") return new Response(null, { status: 204 });
         if (ep === "protect") return jres({ restrict_editing: false, password_set: false });
+        if (ep === "compare") {
+          const params = new URL(url, location.origin).searchParams;
+          const otherId = params.get("other");
+          if (!otherId) return jres({ error: "missing other document id" }, 400);
+          // Result with tracked changes: wrap differing content in ins/del spans
+          // like applyTrackedDiff does. Here we simulate a successful compare
+          // returning HTML with tracked changes.
+          // In production this calls the docserver to merge two documents.
+          return jres({
+            html: '<p>Compared result with <ins class="track-insert">tracked insertions</ins> and <del class="track-delete">deletions</del>.</p>',
+          });
+        }
         // collab/* passes through to the hub: the old stub (fake empty state)
         // existed because OpenCloud file ids ($...!) were rejected by
         // valid_doc_id, so every real call 400'd. Ids are legal now — live
