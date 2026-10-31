@@ -2719,6 +2719,22 @@
         <label class="protect-check"><input id="protect-check-clear" type="checkbox"><span data-i18n="Prot.RemovePassword">Remove password</span></label>
       </div>
       <p class="protect-hint" data-i18n="Prot.Hint">Setting a password enforces the editing restriction.</p>
+      <div class="dialog-field" id="editable-ranges-field">
+        <span class="protect-sec-label" data-i18n="Prot.EditRangesTitle">Allow edit range</span>
+        <p id="editable-ranges-state" class="protect-state" data-i18n="Prot.EditRangeStateNone">No editable range — the whole document is editable.</p>
+        <div class="edit-range-row">
+          <label for="editable-range-start" data-i18n="Prot.EditRangeStart">Start (characters)</label>
+          <input id="editable-range-start" type="number" min="0" step="1" value="0">
+          <span class="edit-range-sep">–</span>
+          <label for="editable-range-end" data-i18n="Prot.EditRangeEnd">End (characters)</label>
+          <input id="editable-range-end" type="number" min="0" step="1">
+        </div>
+        <p class="protect-hint" data-i18n="Prot.EditRangeHint">Only the characters from start to end stay editable; the rest of the document becomes read-only. One range per document.</p>
+        <div class="dialog-actions">
+          <button id="btn-editable-range-remove" data-i18n="Prot.EditRangeRemove">Remove range</button>
+          <button id="btn-editable-range-apply" class="primary" data-i18n="Prot.EditRangeApply">Allow range</button>
+        </div>
+      </div>
       <div class="dialog-actions">
         <button id="btn-protect-cancel" data-i18n="Prot.Cancel">Cancel</button>
         <button id="btn-protect-apply" class="primary" data-i18n="Prot.Apply">Apply</button>
