@@ -1382,7 +1382,11 @@
           <div class="bs-meta-label" data-i18n="FileScreen.CounterChars">Characters</div>
           <div class="bs-meta-value" id="bs-info-chars">0</div>
         </div>
-        <button type="button" id="btn-fileinfo" class="backstage-primary" data-i18n="Menu.Info">Info…</button>
+        <!-- Interact census row (backstage/info): OO's "Document info" control
+             opens a panel, so the parity token is opens:panel. -->
+        <span data-wo-id="btn-fileinfo" data-wo-cmd="btn-fileinfo" data-wo-interact="opens:panel">
+          <button type="button" id="btn-fileinfo" class="backstage-primary" data-i18n="Menu.Info">Info…</button>
+        </span>
       </div>
       <div class="backstage-view" data-pane-view="history" hidden>
         <h2 data-i18n="FileScreen.TitleHistory">Version history</h2>
