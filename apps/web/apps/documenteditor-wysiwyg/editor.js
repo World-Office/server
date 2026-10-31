@@ -5754,6 +5754,12 @@
       rememberFocus();
       pageSetupDialog.classList.add("open");
     });
+    const columnsDialog = document.getElementById("columns-dialog");
+    if (columnsDialog) {
+      document.getElementById("btn-columns").addEventListener("click", () => {
+        openColumnsDialog();
+      });
+    }
     psSize.addEventListener("change", () => {
       if (psSize.value !== "custom") {
         const [w, h] = PS_SIZES[psSize.value];
