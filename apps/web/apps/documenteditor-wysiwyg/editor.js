@@ -1286,7 +1286,14 @@
     // does not fire an `input` event on every engine. The captureHistory()
     // html===lastSnapshot guard keeps this a no-op when the event already ran.
     // --- WS-B promoted commands -------------------------------------
-    if (cmd === "insertObject") { openObjectDialog(String(value || "shape")); return; }
+    if (cmd === "insertObject") {
+      const objType = String(value || "shape");
+      // WO-10-shape: when object type is shape, use the dedicated shape picker
+      if (objType === "shape") { openShapePicker(); } else { openObjectDialog(objType); }
+      return;
+    }
+    // WO-10-shape: insertShape opens the shape picker dialog
+    if (cmd === "insertShape") { openShapePicker(); return; }
     // AF8-INSERT-CTX-CLEANUP: dedicated insert-page controls. Text box and
     // text art reuse the object-insert machinery (same dialog the
     // btn-object flow drives); Comment reuses the ctx-menu AddComment path.
@@ -3277,6 +3284,83 @@
     notifyHost("editing");
     updateActiveStates();
     updateUndoRedoState();
+  }
+
+  // --- shape picker (WO-10-shape) ----------
+  // Track the currently selected shape type in the picker
+  let selectedShapeType = null;
+  function openShapePicker() {
+    if (READ_ONLY) return;
+    const dialog = document.getElementById("shape-dialog");
+    if (!dialog) return;
+    selectedShapeType = null;
+    // Clear any previously selected shape buttons
+    const options = dialog.querySelectorAll(".shape-option.selected");
+    options.forEach((el) => el.classList.remove("selected"));
+    // Disable the Insert button until a shape is selected
+    const insertBtn = document.getElementById("btn-shape-ok");
+    if (insertBtn) insertBtn.disabled = true;
+    rememberFocus();
+    dialog.classList.add("open");
+  }
+  function closeShapePicker() {
+    const dialog = document.getElementById("shape-dialog");
+    if (dialog) dialog.classList.remove("open");
+    restoreFocus();
+    selectedShapeType = null;
+  }
+  function selectShape(type) {
+    selectedShapeType = type;
+    const dialog = document.getElementById("shape-dialog");
+    if (!dialog) return;
+    // Update selected state on shape buttons
+    const options = dialog.querySelectorAll(".shape-option");
+    options.forEach((el) => {
+      if (el.dataset.shapeType === type) el.classList.add("selected");
+      else el.classList.remove("selected");
+    });
+    // Enable the Insert button
+    const insertBtn = document.getElementById("btn-shape-ok");
+    if (insertBtn) insertBtn.disabled = !type;
+  }
+  function confirmShapePicker() {
+    if (!selectedShapeType) return;
+    closeShapePicker();
+    editor.focus();
+    // Insert the shape as an SVG drawing object
+    const svg = createShapeSvg(selectedShapeType);
+    const wrapper = '<div class="object drawing-shape" data-type="shape" data-shape="' + escapeAttr(selectedShapeType) + '">'
+      + svg + '</div><p><br></p>';
+    document.execCommand("insertHTML", false, wrapper);
+    moveCaretPastStructuralMarkers();
+    captureHistory();
+    markDirty();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
+    updateUndoRedoState();
+  }
+  function createShapeSvg(type) {
+    const width = 100, height = 60;
+    const stroke = "#4472c4", strokeWidth = 2, fill = "none";
+    let svgContent = "";
+    switch (type) {
+      case "rectangle":
+        svgContent = '<rect x="10" y="15" width="80" height="30" stroke="' + stroke + '" fill="' + fill + '" stroke-width="' + strokeWidth + '"/>';
+        break;
+      case "circle":
+        svgContent = '<circle cx="50" cy="30" r="25" stroke="' + stroke + '" fill="' + fill + '" stroke-width="' + strokeWidth + '"/>';
+        break;
+      case "triangle":
+        svgContent = '<polygon points="50,15 90,45 10,45" stroke="' + stroke + '" fill="' + fill + '" stroke-width="' + strokeWidth + '"/>';
+        break;
+      case "rounded-rectangle":
+        svgContent = '<rect x="10" y="15" width="80" height="30" rx="10" ry="10" stroke="' + stroke + '" fill="' + fill + '" stroke-width="' + strokeWidth + '"/>';
+        break;
+      default:
+        svgContent = '<rect x="10" y="15" width="80" height="30" stroke="' + stroke + '" fill="' + fill + '" stroke-width="' + strokeWidth + '"/>';
+    }
+    return '<svg viewBox="0 0 ' + width + ' ' + height + '" width="' + width + '" height="' + height + '" xmlns="http://www.w3.org/2000/svg">' + svgContent + '</svg>';
   }
 
   function openBookmarkDialog() {
@@ -7473,6 +7557,21 @@
   if (objOk) objOk.addEventListener("click", confirmObjectDialog);
   const objCancel = document.getElementById("btn-object-cancel");
   if (objCancel) objCancel.addEventListener("click", closeObjectDialog);
+  // WO-10-shape: wire shape picker dialog
+  const shapeOk = document.getElementById("btn-shape-ok");
+  if (shapeOk) shapeOk.addEventListener("click", confirmShapePicker);
+  const shapeCancel = document.getElementById("btn-shape-cancel");
+  if (shapeCancel) shapeCancel.addEventListener("click", closeShapePicker);
+  // Wire shape option buttons
+  const shapeDialog = document.getElementById("shape-dialog");
+  if (shapeDialog) {
+    const shapeOptions = shapeDialog.querySelectorAll(".shape-option");
+    shapeOptions.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        selectShape(btn.dataset.shapeType);
+      });
+    });
+  }
   const bmBtn = document.getElementById("btn-bookmark");
   if (bmBtn) bmBtn.addEventListener("click", openBookmarkDialog);
   const bmOk = document.getElementById("btn-bookmark-ok");

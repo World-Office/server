@@ -2435,6 +2435,34 @@
     </div>
   </div>
 
+  <!-- Shape picker dialog (WO-10-shape) -->
+  <div id="shape-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="shape-dialog-title">
+    <div class="dialog">
+      <h3 id="shape-dialog-title" data-i18n="Insert.Shape">Shape</h3>
+      <div class="dialog-field shape-grid">
+        <label>Select a shape</label>
+        <div class="shape-options">
+          <button type="button" data-shape-type="rectangle" class="shape-option" title="Rectangle" aria-label="Rectangle">
+            <svg viewBox="0 0 100 60" width="40" height="24"><rect x="10" y="15" width="80" height="30" stroke="#000" fill="none" stroke-width="2"/></svg>
+          </button>
+          <button type="button" data-shape-type="circle" class="shape-option" title="Circle" aria-label="Circle">
+            <svg viewBox="0 0 60 60" width="40" height="24"><circle cx="30" cy="30" r="25" stroke="#000" fill="none" stroke-width="2"/></svg>
+          </button>
+          <button type="button" data-shape-type="triangle" class="shape-option" title="Triangle" aria-label="Triangle">
+            <svg viewBox="0 0 60 60" width="40" height="24"><polygon points="30,10 50,50 10,50" stroke="#000" fill="none" stroke-width="2"/></svg>
+          </button>
+          <button type="button" data-shape-type="rounded-rectangle" class="shape-option" title="Rounded Rectangle" aria-label="Rounded Rectangle">
+            <svg viewBox="0 0 100 60" width="40" height="24"><rect x="10" y="15" width="80" height="30" rx="10" ry="10" stroke="#000" fill="none" stroke-width="2"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button id="btn-shape-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-shape-ok" data-i18n="Dialog.Insert" class="primary" disabled>Insert</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Bookmark dialog -->
   <div id="bookmark-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="bookmark-dialog-title">
     <div class="dialog">

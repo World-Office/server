@@ -2631,3 +2631,19 @@ body.wo-table-erase #editor td, body.wo-table-erase #editor th { cursor: cell; }
 #editor .keep-lines-together { page-break-inside: avoid; break-inside: avoid; }
 #editor .keep-with-next { break-after: avoid; page-break-after: avoid; }
 #editor .page-break-before { break-before: page; page-break-before: always; }
+/* WO-10-shape: shape picker dialog */
+#shape-dialog .shape-grid { display: block; }
+#shape-dialog .shape-options { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+#shape-dialog .shape-option { 
+  background: transparent; 
+  border: 1px solid transparent; 
+  padding: 4px; 
+  cursor: pointer;
+  border-radius: 4px;
+}
+#shape-dialog .shape-option:hover { background: var(--hover-bg); }
+#shape-dialog .shape-option.selected { 
+  border-color: var(--selection-bg); 
+  background: var(--selection-bg-lite);
+}
+#shape-dialog .shape-option svg { display: block; }
