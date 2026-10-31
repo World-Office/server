@@ -1392,6 +1392,7 @@
     if (cmd === "compareVersion") { openCompareView(); return; }
     if (cmd === "prevTrackedChange") { prevTrackedChange(); return; }
     if (cmd === "nextTrackedChange") { nextTrackedChange(); return; }
+    if (cmd === "toggleTrackChanges") { setTrackChanges(!trackChangesOn); return; }
     if (cmd === "acceptTrackedChange") { trackedChangeAtSelection("accept"); return; }
     if (cmd === "rejectTrackedChange") { trackedChangeAtSelection("reject"); return; }
     if (cmd === "resolveComment") {
@@ -7424,7 +7425,7 @@
   const xrefCancel = document.getElementById("btn-crossref-cancel");
   if (xrefCancel) xrefCancel.addEventListener("click", closeCrossrefDialog);
   const tcBtn = document.getElementById("btn-track-changes");
-  if (tcBtn) tcBtn.addEventListener("click", () => { const cb = document.getElementById("tc-enabled"); if (cb) cb.checked = !trackChangesOn; openOverlayDialog("trackchanges-dialog"); });
+  if (tcBtn) tcBtn.addEventListener("click", () => { emitCommand("toggleTrackChanges"); const cb = document.getElementById("tc-enabled"); if (cb) cb.checked = !trackChangesOn; openOverlayDialog("trackchanges-dialog"); });
   const revBtn = document.getElementById("btn-review-changes");
   if (revBtn) revBtn.addEventListener("click", openReviewPanel);
   const revClose = document.getElementById("btn-review-close");
