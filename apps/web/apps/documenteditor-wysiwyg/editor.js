@@ -1563,6 +1563,7 @@
     if (cmd === "insertToF") { insertToFCommand(); return; }
     if (cmd === "insertTableOfFigures") { insertTableOfFiguresCommand(); return; }
     if (cmd === "pageColorNone") { clearPageColor(); return; }
+    if (cmd === "pageColorAutomatic") { applyPageColorAutomatic(); return; }
     if (cmd === "openCrossref") { openCrossrefDialog(); return; }
     if (cmd === "protectDialog") { protectDialog(); return; }
     if (cmd === "restrictEditing") { toggleRestrictEditing(); return; }
@@ -8371,23 +8372,31 @@
 
   // Page Color (Layout) -> paper swatch palette (native picker replaced).
   let pageColorPicked = null;
+  let pageColorAutomatic = false;
   function openPageColorDialog() {
     closeAllMenus();
     pageColorPicked = null;
     const pageColor = document.getElementById("pagecolor")
+    const hasPaper = editor.style.getPropertyValue("--paper") !== ""
     const color = (pageColor && pageColor.value) || "#ffffff"
+    pageColorAutomatic = !hasPaper
     setPageColorInputs(color)
-    // Select the matching swatch
+    // Select the matching swatch, or Automatic as the current value when the
+    // paper override is unset (default white page background).
     const pageSwatches = document.getElementById("pagecolor-swatches")
     if (pageSwatches) {
       pageSwatches.querySelectorAll(".color-swatch").forEach((s) => {
-        s.classList.toggle("sel", (s.dataset.color || "#ffffff").toLowerCase() === color.toLowerCase())
+        const isMatch = !pageColorAutomatic && (s.dataset.color || "#ffffff").toLowerCase() === color.toLowerCase()
+        s.classList.toggle("sel", isMatch)
       })
     }
+    const autoBtn = document.getElementById("btn-pagecolor-automatic")
+    if (autoBtn) autoBtn.classList.toggle("sel", pageColorAutomatic)
     openOverlayDialog("pagecolor-dialog");
   }
   function confirmPageColorDialog() {
     if (READ_ONLY) return;
+    if (pageColorAutomatic) { applyPageColorAutomatic(); return; }
     const custom = document.getElementById("pagecolor-custom");
     const color = pageColorPicked || (custom && custom.value) || "#ffffff";
     editor.style.setProperty("--paper", color);
@@ -8403,6 +8412,25 @@
     const pageColor = document.getElementById("pagecolor");
     if (pageColor) pageColor.value = "#ffffff";
     setStatus("Page color set to No Color");
+    markDirty();
+  }
+  // OO-parity "Automatic": resets the page background to the default
+  // (white/automatic — removes the --paper override) and keeps the page-color
+  // dialog in sync by reflecting Automatic as the current value.
+  function applyPageColorAutomatic() {
+    if (READ_ONLY) return;
+    editor.style.removeProperty("--paper");
+    const pageColor = document.getElementById("pagecolor");
+    if (pageColor) pageColor.value = "#ffffff";
+    pageColorAutomatic = true;
+    setPageColorInputs("#ffffff");
+    const autoBtn = document.getElementById("btn-pagecolor-automatic");
+    if (autoBtn) autoBtn.classList.add("sel");
+    const pageSwatches = document.getElementById("pagecolor-swatches");
+    if (pageSwatches) {
+      pageSwatches.querySelectorAll(".color-swatch").forEach((s) => s.classList.remove("sel"))
+    }
+    setStatus("Page color set to Automatic");
     markDirty();
   }
 
@@ -8691,6 +8719,7 @@
     if (blue) blue.value = parsed.b
     if (custom) custom.value = parsed.hex
     pageColorPicked = parsed.hex
+    pageColorAutomatic = false
   }
   function updatePageColorFromRgb() {
     const red = document.getElementById("pagecolor-red")
@@ -8706,6 +8735,7 @@
     if (hexInput) hexInput.value = hex
     if (custom) custom.value = hex
     pageColorPicked = hex
+    pageColorAutomatic = false
   }
   function setPageColorInputs(color) {
     const hex = color?.startsWith("#") ? color : "#" + color || "#FFFFFF"
@@ -8729,6 +8759,9 @@
     const btn = ev.target.closest && ev.target.closest(".color-swatch");
     if (!btn) return;
     pageColorPicked = btn.dataset.color || null;
+    pageColorAutomatic = false;
+    const autoBtn = document.getElementById("btn-pagecolor-automatic");
+    if (autoBtn) autoBtn.classList.remove("sel");
     pageSwatches.querySelectorAll(".color-swatch").forEach((s) => s.classList.toggle("sel", s === btn));
     const custom = document.getElementById("pagecolor-custom");
     if (custom && pageColorPicked && pageColorPicked.startsWith("#")) custom.value = pageColorPicked;
@@ -8741,6 +8774,15 @@
   const btnPageColorNone = document.getElementById("btn-pagecolor-none");
   if (btnPageColorNone) btnPageColorNone.addEventListener("click", () => {
     emitCommand("pageColorNone");
+    closeOverlayDialog("pagecolor-dialog");
+  });
+
+  // OO-parity "Automatic": same bus wiring — resets the page background to
+  // the default white paper and keeps the dialog in sync (Automatic shown as
+  // the current value), then closes the dialog.
+  const btnPageColorAutomatic = document.getElementById("btn-pagecolor-automatic");
+  if (btnPageColorAutomatic) btnPageColorAutomatic.addEventListener("click", () => {
+    emitCommand("pageColorAutomatic");
     closeOverlayDialog("pagecolor-dialog");
   });
 
