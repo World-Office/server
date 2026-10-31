@@ -7778,6 +7778,7 @@
   if (pnOk) pnOk.addEventListener("click", () => {
     closeOverlayDialog("pagenumber-dialog");
     const pos = (document.getElementById("pagenumber-position") || {}).value || "body";
+    const fmt = (document.getElementById("pagenumber-format") || {}).value || "decimal";
     const align = (document.getElementById("pagenumber-align") || {}).value || "center";
     if (pos === "top") emitCommand("insertHeader");
     else if (pos === "bottom") emitCommand("insertFooter");
@@ -7787,6 +7788,7 @@
       if (host) {
         const span = document.createElement("span");
         span.className = "page-number";
+        span.setAttribute("data-format", fmt);
         span.style.display = "block";
         span.style.textAlign = align;
         host.textContent = "";
@@ -7801,7 +7803,7 @@
     }
     emitCommand("insertPageNumber");
     const span = editor.querySelector("span.page-number:last-of-type");
-    if (span) { span.style.display = "block"; span.style.textAlign = align; }
+    if (span) { span.style.display = "block"; span.style.textAlign = align; span.setAttribute("data-format", fmt); }
   });
   const hfOk = document.getElementById("btn-headerfooter-ok");
   if (hfOk) hfOk.addEventListener("click", () => {
@@ -8458,7 +8460,7 @@
   const hfConfirmSave = document.getElementById("btn-hf-confirm-save");
   if (hfConfirmSave) hfConfirmSave.addEventListener("click", () => { closeOverlayDialog("hf-close-confirm-dialog"); saveDocument(); exitHFMode(true); });
   const hfPageNumber = document.getElementById("btn-hf-pagenumber");
-  if (hfPageNumber) hfPageNumber.addEventListener("click", () => { hfHasUnsavedChanges = true; emitCommand("insertPageNumber"); });
+  if (hfPageNumber) hfPageNumber.addEventListener("click", () => { hfHasUnsavedChanges = true; openOverlayDialog("pagenumber-dialog"); });
   const hfDateTime = document.getElementById("btn-hf-datetime");
   if (hfDateTime) hfDateTime.addEventListener("click", () => { hfHasUnsavedChanges = true; emitCommand("insertDate"); });
   // AF12-LABEL-PARITY: header/footer Field & Image placement buttons. The

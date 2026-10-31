@@ -1843,21 +1843,32 @@
 
   <div id="pagenumber-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="pagenumber-dialog-title">
     <div class="dialog">
-      <h3 id="pagenumber-dialog-title">Page Number</h3>
+      <h3 id="pagenumber-dialog-title" data-i18n="Dialog.PageNumberTitle">Page Number</h3>
       <div class="dialog-field">
-        <label for="pagenumber-position">Position</label>
+        <label for="pagenumber-position" data-i18n="Dialog.Position">Position</label>
         <select id="pagenumber-position">
-          <option value="top">Top of page (header)</option>
-          <option value="body">At cursor</option>
-          <option value="bottom">Bottom of page (footer)</option>
+          <option value="top" data-i18n="PageNumber.Position.Top">Top of page (header)</option>
+          <option value="body" data-i18n="PageNumber.Position.Body">At cursor</option>
+          <option value="bottom" data-i18n="PageNumber.Position.Bottom">Bottom of page (footer)</option>
         </select>
       </div>
       <div class="dialog-field">
-        <label for="pagenumber-align">Alignment</label>
+        <label for="pagenumber-format" data-i18n="Dialog.Format">Format</label>
+        <select id="pagenumber-format">
+          <option value="decimal" data-i18n="PageNumber.Format.Decimal">1, 2, 3</option>
+          <option value="decimalZero" data-i18n="PageNumber.Format.DecimalZero">0, 1, 2</option>
+          <option value="upperRoman" data-i18n="PageNumber.Format.UpperRoman">I, II, III</option>
+          <option value="lowerRoman" data-i18n="PageNumber.Format.LowerRoman">i, ii, iii</option>
+          <option value="upperLetter" data-i18n="PageNumber.Format.UpperLetter">A, B, C</option>
+          <option value="lowerLetter" data-i18n="PageNumber.Format.LowerLetter">a, b, c</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label for="pagenumber-align" data-i18n="Dialog.Alignment">Alignment</label>
         <select id="pagenumber-align">
-          <option value="left">Left</option>
-          <option value="center">Center</option>
-          <option value="right">Right</option>
+          <option value="left" data-i18n="Backstage.ObjLayout.AlignLeft">Left</option>
+          <option value="center" data-i18n="Backstage.ObjLayout.AlignCenter">Center</option>
+          <option value="right" data-i18n="Backstage.ObjLayout.AlignRight">Right</option>
         </select>
       </div>
       <div class="dialog-actions">
