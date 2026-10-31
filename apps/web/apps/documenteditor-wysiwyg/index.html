@@ -556,7 +556,6 @@
     <button id="btn-table-ops" data-i18n-title="Table.ActionsTitle" data-i18n-aria-label="Table.Actions" title="Table actions (rows, columns, merge)" aria-label="Table actions">▦✎</button>
     <button id="btn-hr" data-i18n-title="Toolbar.HRTitle" data-i18n-aria-label="Toolbar.HRTitle" title="Insert horizontal rule" aria-label="Insert horizontal rule">─</button>
     <button id="btn-object" data-i18n-title="Toolbar.ObjectTitle" data-i18n-aria-label="Toolbar.ObjectTitle" title="Insert object" aria-label="Insert object">▢</button>
-    <button id="btn-bookmark" data-i18n-title="Toolbar.BookmarkTitle" data-i18n-aria-label="Toolbar.BookmarkTitle" title="Insert bookmark" aria-label="Insert bookmark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h9v13l-4.5-3.5-4.5 3.5z"/></svg></button>
     <button id="btn-crossref" data-i18n-title="Toolbar.CrossrefTitle" data-i18n-aria-label="Toolbar.CrossrefTitle" title="Insert cross-reference" aria-label="Insert cross-reference"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 14V8a3 3 0 0 1 3-3h9M10.5 1.5 14 5l-3.5 3.5"/></svg></button>
     <button id="btn-header" data-cmd="insertHeader" title="Insert page header" data-i18n-title="Toolbar.HeaderTitle" aria-label="Insert page header">▔</button>
     <button id="btn-footer" data-cmd="insertFooter" title="Insert page footer" data-i18n-title="Toolbar.FooterTitle" aria-label="Insert page footer">▁</button>
@@ -720,7 +719,9 @@
     </span>
     <button id="btn-endnote" data-cmd="insertEndnote" title="Insert endnote" data-i18n-title="Toolbar.EndnoteTitle" aria-label="Insert endnote">ⁿ</button>
     <button type="button" data-cmd="link" data-i18n="Ref.Link">Link</button>
-    <button type="button" data-cmd="bookmark" data-i18n="Ref.Bookmark">Bookmark</button>
+    <span data-wo-id="btn-bookmark" data-wo-cmd="btn-bookmark" data-wo-interact="opens:modal">
+      <button id="btn-bookmark" data-i18n-title="Toolbar.BookmarkTitle" data-i18n-aria-label="Toolbar.BookmarkTitle" title="Insert bookmark" aria-label="Insert bookmark"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 1.5h9v13l-4.5-3.5-4.5 3.5z"/></svg></button>
+    </span>
     <button type="button" data-cmd="insertCaption" data-i18n="Ref.Caption">Caption</button>
     <button type="button" data-cmd="insertCitation" data-i18n="Ref.Citation">Citation</button>
     <button type="button" data-cmd="insertIndexEntry" data-i18n="Ref.Index">Index</button>
