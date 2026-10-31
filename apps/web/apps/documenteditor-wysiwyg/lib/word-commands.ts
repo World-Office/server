@@ -94,6 +94,15 @@ export const pageColorNone: WordCommand = {
 }
 
 /**
+ * Command to reset the Page Color to default white paper (OO "Automatic"):
+ * removes the --paper override so the page renders with the Automatic
+ * (default white) page background.
+ */
+export const pageColorAutomatic: WordCommand = {
+  name: "pageColorAutomatic",
+}
+
+/**
  * All Word command names
  */
 export const WORD_COMMANDS = [
@@ -106,6 +115,7 @@ export const WORD_COMMANDS = [
   "nextTrackedChange",
   "insertTableOfFigures",
   "pageColorNone",
+  "pageColorAutomatic",
 ] as const
 
 /**
