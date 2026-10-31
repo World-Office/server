@@ -1520,6 +1520,7 @@
     if (cmd === "openBorders") { openBordersDialog(); return; }
     if (cmd === "multilevel") { multilevelItem(); return; }
     if (cmd === "insertToF") { insertToFCommand(); return; }
+    if (cmd === "insertTableOfFigures") { insertTableOfFiguresCommand(); return; }
     if (cmd === "openCrossref") { openCrossrefDialog(); return; }
     if (cmd === "protectDialog") { protectDialog(); return; }
     if (cmd === "restrictEditing") { toggleRestrictEditing(); return; }
@@ -6883,6 +6884,10 @@
     captureHistory(); markDirty(); scheduleCollabSync(); notifyHost("editing");
     updateActiveStates(); updateUndoRedoState();
   }
+  function insertTableOfFiguresCommand() {
+    closeAllMenus()
+    openOverlayDialog("tableoffigures-dialog")
+  }
   // Header/footer 'same as previous': single-section docs have no previous
   // section to inherit, so this is a live affordance + attribute only —
   // serialization is a no-op (ponytail: honest marking, per-section header
@@ -7652,6 +7657,23 @@
       sup.dataset.format = fmt;
       sup.textContent = "[" + (fmt === "a" ? "a" : fmt === "i" ? "i" : "1") + "]";
     }
+  });
+  const tofOk = document.getElementById("btn-tof-ok");
+  const tofClose = document.getElementById("btn-tof-close");
+  if (tofOk) tofOk.addEventListener("click", () => {
+    closeOverlayDialog("tableoffigures-dialog");
+    const titleInput = document.getElementById("tof-title");
+    const title = titleInput ? titleInput.value : "List of Figures";
+    editor.focus();
+    document.execCommand("insertHTML", false,
+      '<nav class="toc" data-kind="figures" data-title="' + escapeAttr(title) + '"></nav><p><br></p>');
+    moveCaretPastStructuralMarkers();
+    refreshToc();
+    captureHistory(); markDirty(); scheduleCollabSync(); notifyHost("editing");
+    updateActiveStates(); updateUndoRedoState();
+  });
+  if (tofClose) tofClose.addEventListener("click", () => {
+    closeOverlayDialog("tableoffigures-dialog");
   });
   const pnOk = document.getElementById("btn-pagenumber-ok");
   if (pnOk) pnOk.addEventListener("click", () => {
