@@ -2522,6 +2522,26 @@
     </div>
   </div>
 
+  <!-- Compare documents dialog: select a second document to compare with the current one.
+       F-103 OnlyOffice parity (slugs:compare). Opens from Collab.Compare button,
+       calls docserver /compare endpoint to merge two documents with tracked changes. -->
+  <div id="compare-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="compare-dialog-title">
+    <div class="dialog">
+      <h3 id="compare-dialog-title" data-i18n="Compare.Title">Compare Documents</h3>
+      <div class="dialog-field">
+        <label for="compare-document-select" data-i18n="Compare.SelectDocument">Select document to compare</label>
+        <select id="compare-document-select" aria-label="Select document to compare">
+          <option value="" data-i18n="Compare.SelectOption">-- Select a document --</option>
+        </select>
+      </div>
+      <div id="compare-error" class="version-error" role="alert"></div>
+      <div class="dialog-actions">
+        <button id="btn-compare-cancel" data-i18n="Dialog.Cancel">Cancel</button>
+        <button id="btn-compare-apply" class="primary" data-i18n="Compare.Apply">Compare</button>
+      </div>
+    </div>
+  </div>
+
   <!-- AI review dialog: the op-stream diff of agent edits. Agents edit
        through the same CRDT pipeline as humans, and their ops carry an
        "agent=<name>" site, so each row is one attributable op with a Reject
