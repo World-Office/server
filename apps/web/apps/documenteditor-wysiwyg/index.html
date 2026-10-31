@@ -711,7 +711,9 @@
     <div class="ribbon-page" data-tab="references" role="group" aria-label="References ribbon" data-i18n-aria-label="Tab.References">
     <!-- CHROME2 census: tab 'links' row 1 = TOC/AddText/Footnote/Link/Bookmark/Caption/Crossref/TOF, row 2 = Update Table ×2 -->
     <div class="ribbon-row">
-    <button id="btn-toc" data-i18n-title="Toolbar.TocTitle" data-i18n-aria-label="Toolbar.TocTitle" title="Insert table of contents" aria-label="Insert table of contents">☰</button>
+    <span data-wo-id="btn-toc" data-wo-cmd="btn-toc" data-wo-interact="opens:modal">
+      <button id="btn-toc" data-i18n-title="Toolbar.TocTitle" data-i18n-aria-label="Toolbar.TocTitle" title="Insert table of contents" aria-label="Insert table of contents">☰</button>
+    </span>
     <button type="button" data-cmd="addText" data-i18n="Ref.AddText">Add Text</button>
     <button id="btn-footnote" data-cmd="insertFootnote" title="Insert footnote" data-i18n-title="Toolbar.FootnoteTitle" aria-label="Insert footnote">¹</button>
     <button id="btn-endnote" data-cmd="insertEndnote" title="Insert endnote" data-i18n-title="Toolbar.EndnoteTitle" aria-label="Insert endnote">ⁿ</button>
