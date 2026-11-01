@@ -1615,6 +1615,15 @@
          cannot flow "through" a box; we approximate OO's Through as an
          above-text transparent layer, see editor.js + style.css). -->
     <button type="button" role="menuitem" data-ctx="WrapThrough" data-showif="object" data-i18n="Ctx.WrapThrough">Through</button>
+    <!-- WO-22-ctx-edit-wrap-boundary: OO's "Edit wrap boundary" opens the
+         vector contour editor for the wrap polygon around a wrapped object.
+         PARKED divergence (registered loud, same absence as the planned
+         ctx-edit-points): WO objects are rectangular placeholders — there
+         is no vector contour / wrap-polygon model to edit, so the row keeps
+         the OO menu geometry but honestly reports unavailability
+         (editor.js reportEditWrapBoundaryUnavailable) and only emits the
+         passive wo:edit-wrap-boundary marker for agents/E2E. -->
+    <button type="button" role="menuitem" data-ctx="EditWrapBoundary" data-showif="object" data-i18n="Ctx.EditWrapBoundary">Edit wrap boundary…</button>
     <!-- WO-21-ctx-edit-object: OO's OLE/drawing-object "Edit object" row.
          Runs only on div.object placeholders (editor.js additionally hides
          it for plain imgs) and reopens the insert-object dialog in edit

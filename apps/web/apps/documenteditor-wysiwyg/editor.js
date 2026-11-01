@@ -3717,6 +3717,26 @@
     openObjectDialog(null, obj);
     return true;
   }
+  // WO-22-ctx-edit-wrap-boundary: OO's "Edit wrap boundary" opens the vector
+  // contour editor for the wrap polygon around a wrapped object (the vertex
+  // editor that reshapes the text-flow boundary). PARKED divergence,
+  // registered loud: WO objects are rectangular placeholders and the editor
+  // has NO vector contour / wrap-polygon model — nothing stores, renders or
+  // round-trips per-vertex contour geometry, so a fake editor would invent
+  // data that silently dies on save (same absence as the planned
+  // ctx-edit-points). Parked until a real contour model exists; meanwhile
+  // the ctx row keeps the OO menu geometry, reports the absence through the
+  // established Status.NotAvailable channel and emits the passive
+  // wo:edit-wrap-boundary CustomEvent marker so agents/E2E can observe the
+  // request. This path never mutates the document.
+  function reportEditWrapBoundaryUnavailable() {
+    const obj = selectedObject();
+    window.dispatchEvent(new CustomEvent("wo:edit-wrap-boundary", {
+      detail: { source: "ctx-menu", onObject: !!obj, available: false },
+    }));
+    console.info("wo:edit-wrap-boundary requested (ctx menu; no vector contour model)");
+    setStatus(t("Status.NotAvailable") + " editWrapBoundary");
+  }
   // Rewrite an existing placeholder from the dialog values: the element is
   // KEPT (same node, same position) and only attributes + inner content are
   // updated, so a data-type change swaps the object's rendering in place.
@@ -9812,6 +9832,9 @@
         closeCtx();
         applyObjectOp("wrap-through");
         syncRightPanelControls();
+      } else if (action === "EditWrapBoundary") {
+        closeCtx();
+        reportEditWrapBoundaryUnavailable();
       } else if (action === "ConvertToShape") {
         closeCtx();
         const obj = selectedObject();
