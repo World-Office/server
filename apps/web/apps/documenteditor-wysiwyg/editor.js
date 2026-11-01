@@ -2375,6 +2375,12 @@
     const cell = node.closest ? node.closest("td, th") : null;
     return cell && editor.contains(cell) ? cell : null;
   }
+
+  // Table under the caret (or under a multi-cell selection).
+  function tableTarget() {
+    const cell = currentTableCell();
+    return cell ? cell.closest("table") : null;
+  }
   function tableGridCols(table) {
     let max = 1;
     Array.from(table.rows).forEach((r) => { max = Math.max(max, r.cells.length); });
@@ -2743,6 +2749,91 @@
     scheduleCollabSync();
     notifyHost("editing");
     updateActiveStates();
+  }
+
+  // WO-21-CTX-DISTRIBUTE-COLUMNS: OO "Distribute columns/rows equally".
+  // Equalize the widths of the selected columns (or all columns when the
+  // caret is in a table) / the heights of the selected rows (or all rows).
+  // Widths go through the same per-cell channel the table size controls use
+  // (cell.style.width / tr.style.height), so the operation visibly
+  // equalizes the columns and round-trips with the table model. Total width
+  // is preserved: the equal width is the average of the target columns'
+  // rendered widths. Applied instantly (no animation); finalized through
+  // finalizeTableChange (captureHistory/markDirty/schedCollabSync/notify).
+  function tableZoomFactor() {
+    return parseFloat(editor.style.zoom) || 1;
+  }
+  // Column indices the distribution targets: the distinct columns spanned
+  // by the current selection when it covers more than one column, otherwise
+  // every column in the table (caret-in-table behavior).
+  function distributeTargetColumns(table) {
+    const cells = selectedCells(table);
+    const cols = new Set();
+    cells.forEach((c) => cols.add(c.cellIndex));
+    if (cols.size > 1) return Array.from(cols).sort((a, b) => a - b);
+    return Array.from({ length: tableGridCols(table) }, (_, i) => i);
+  }
+  // Rendered (unzoomed px) width of the column at `idx`, taken from the
+  // first row that has that cell; falls back to its style width.
+  function columnRenderedWidth(table, idx) {
+    for (let r = 0; r < table.rows.length; r++) {
+      const cell = table.rows[r].cells[idx];
+      if (!cell) continue;
+      const w = cell.getBoundingClientRect().width / tableZoomFactor();
+      if (w > 0) return w;
+      return parseFloat(cell.style.width) || 0;
+    }
+    return 0;
+  }
+  function distributeTableColumns() {
+    const table = tableTarget();
+    if (!table || READ_ONLY) return;
+    const cols = distributeTargetColumns(table);
+    let total = 0;
+    cols.forEach((c) => { total += columnRenderedWidth(table, c); });
+    if (!cols.length || !(total > 0)) return;
+    const each = Math.round(total / cols.length);
+    cols.forEach((c) => {
+      Array.from(table.rows).forEach((r) => {
+        const cell = r.cells[c];
+        if (cell) cell.style.width = each + "px";
+      });
+    });
+    finalizeTableChange();
+    setStatus("Table columns distributed equally: " + each + "px each");
+  }
+  // Row indices the distribution targets: the distinct rows spanned by the
+  // current selection when it covers more than one row, otherwise every row.
+  function distributeTargetRows(table) {
+    const cells = selectedCells(table);
+    const rows = new Set();
+    cells.forEach((c) => {
+      rows.add(Array.from(table.rows).indexOf(c.closest("tr")));
+    });
+    if (rows.size > 1) return Array.from(rows).sort((a, b) => a - b);
+    return Array.from({ length: table.rows.length }, (_, i) => i);
+  }
+  // Rendered (unzoomed px) height of the row at `idx`.
+  function rowRenderedHeight(table, idx) {
+    const tr = table.rows[idx];
+    if (!tr) return 0;
+    const h = tr.getBoundingClientRect().height / tableZoomFactor();
+    return h > 0 ? h : (parseFloat(tr.style.height) || 0);
+  }
+  function distributeTableRows() {
+    const table = tableTarget();
+    if (!table || READ_ONLY) return;
+    const rows = distributeTargetRows(table);
+    let total = 0;
+    rows.forEach((r) => { total += rowRenderedHeight(table, r); });
+    if (!rows.length || !(total > 0)) return;
+    const each = Math.round(total / rows.length);
+    rows.forEach((r) => {
+      const tr = table.rows[r];
+      if (tr) tr.style.height = each + "px";
+    });
+    finalizeTableChange();
+    setStatus("Table rows distributed equally: " + each + "px each");
   }
   function closeTableOpsDialog() {
     const dialog = document.getElementById("table-ops-dialog");
@@ -9348,6 +9439,12 @@
       } else if (action === "TableSplitCell") {
         closeCtx();
         splitTableCell();
+      } else if (action === "DistributeColumns") {
+        closeCtx();
+        distributeTableColumns();
+      } else if (action === "DistributeRows") {
+        closeCtx();
+        distributeTableRows();
       } else if (action === "EditAltText") {
         closeCtx();
         openImageAltDialog();
