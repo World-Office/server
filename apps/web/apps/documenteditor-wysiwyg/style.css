@@ -1949,6 +1949,11 @@ div.object {
   display: inline-block;
   min-width: 80px;
 }
+#editor .obj-selected {
+  outline: 2px solid #1565c0;
+  outline-offset: 2px;
+  background: #e3f2fd;
+}
 
 span.bookmark {
   border-bottom: 1px dashed #b8860b;
