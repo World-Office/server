@@ -140,6 +140,8 @@ const SHORTCUT_HANDLING = {
   "Control+Shift+7": 'Digit7',
   "Control+Shift+8": 'Digit8',
   "Control+Shift+L": 'k === "l"',
+  "Control+Shift+X": 'k === "x"',
+  "Meta+Shift+X": 'k === "x"',
   "Control+E": 'k === "e"',
   "Control+R": 'k === "r"',
   "Control+J": 'k === "j"',
