@@ -551,6 +551,7 @@ fn ctrl_home_end_without_layout_resolves_through_block_paths() {
         footnotes_raw: None,
         header: None,
         footer: None,
+        ..Default::default()
     };
     let h = inject(9312, body);
     set_cursor(

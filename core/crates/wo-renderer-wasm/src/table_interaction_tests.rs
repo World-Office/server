@@ -68,6 +68,7 @@ fn table_doc() -> DocxBody {
         footnotes_raw: None,
         header: None,
         footer: None,
+        ..Default::default()
     }
 }
 
