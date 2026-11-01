@@ -10695,6 +10695,80 @@
   });
 
   // ------------------------------------------------------------------
+  // Unicode escape → symbol (OO Alt+Meta+X / Ctrl+Alt+X, C1): converts a
+  // typed \uXXXX or \u{...} escape immediately under/left of the caret
+  // into the character it denotes. Works both with a collapsed caret behind
+  // the escape and with the escape itself selected.
+  // ------------------------------------------------------------------
+  const UNICODE_ESCAPE_ANY = /^\\(?:u\{([0-9a-fA-F]{1,6})\}|u([0-9a-fA-F]{4}))$/;
+  const UNICODE_ESCAPE_LEFT = /\\(?:u\{([0-9a-fA-F]{1,6})\}|u([0-9a-fA-F]{4}))$/;
+  function replaceUnicodeEscape() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || !editor.contains(sel.anchorNode)) {
+      setStatus(t("Status.NoUnicodeEscape"));
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    // A selection that covers exactly one escape token converts that token.
+    if (!range.collapsed) {
+      const selText = String(range.toString());
+      const full = UNICODE_ESCAPE_ANY.exec(selText);
+      if (full) {
+        replaceUnicodeToken(
+          sel, range.startContainer, range.startOffset,
+          range.endContainer, range.endOffset, full[1] || full[2],
+        );
+        return;
+      }
+    }
+    // Otherwise scan for an escape immediately left of the selection start
+    // (the caret case: the token must end exactly where the caret sits).
+    const node = range.startContainer;
+    if (node && node.nodeType === 3 && typeof range.startOffset === "number") {
+      const before = (node.textContent || "").slice(0, range.startOffset);
+      const m = UNICODE_ESCAPE_LEFT.exec(before);
+      if (m) {
+        replaceUnicodeToken(sel, node, range.startOffset - m[0].length, node, range.startOffset, m[1] || m[2]);
+        return;
+      }
+    }
+    setStatus(t("Status.NoUnicodeEscape"));
+  }
+  function replaceUnicodeToken(sel, startNode, startOff, endNode, endOff, hex) {
+    const cp = Number.parseInt(hex, 16);
+    if (Number.isNaN(cp) || cp > 0x10ffff) {
+      setStatus(t("Status.UnicodeEscapeInvalid"), true);
+      return;
+    }
+    let chr;
+    try {
+      chr = String.fromCodePoint(cp);
+    } catch (err) {
+      setStatus(t("Status.UnicodeEscapeInvalid"), true);
+      return;
+    }
+    const targetRange = document.createRange();
+    targetRange.setStart(startNode, startOff);
+    targetRange.setEnd(endNode, endOff);
+    targetRange.deleteContents();
+    const charNode = document.createTextNode(chr);
+    targetRange.insertNode(charNode);
+    // Keep the caret right after the inserted character.
+    const caret = document.createRange();
+    caret.setStart(charNode, charNode.textContent.length);
+    caret.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(caret);
+    setStatus(t("Status.UnicodeEscapeInserted"));
+    markDirty();
+    captureHistory();
+    scheduleCollabSync();
+    notifyHost("editing");
+    updateActiveStates();
+    updateUndoRedoState();
+  }
+
+  // ------------------------------------------------------------------
   // Keyboard shortcuts
   // ------------------------------------------------------------------
   editor.addEventListener("keydown", (ev) => {
@@ -10757,6 +10831,11 @@
       // (OO convention).
       if (k === "c") { ev.preventDefault(); copyFormat(); return; }
       if (k === "v") { ev.preventDefault(); pasteFormat(); return; }
+      // Unicode escape → symbol: Alt+Meta+X (Mac Opt+Cmd+X) / Ctrl+Alt+X
+      // (PC) converts a typed \uXXXX or \u{...} escape immediately left of
+      // the caret into the character it denotes (OO parity,
+      // WO-22-shortcut-replaceunicodetosymbol).
+      if (k === "x") { ev.preventDefault(); replaceUnicodeEscape(); return; }
       // Insert comment at the caret: Alt+Meta+A (OO; Mac Opt+Cmd+A).
       // Meta+Alt only — the !ev.ctrlKey guard keeps it free of the
       // Ctrl+Alt combinations above. Opens the comment field dialog.
