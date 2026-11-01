@@ -3320,6 +3320,28 @@
   // itself on the wo:object-op bus (the observable contract agents wait on)
   // AND performs the real DOM mutation the obj-* class contract defines.
   let lastObjectPick = null;
+  // WO-21-ctx-distribute-horizontally: multi-object selection for Arrange operations
+  let selectedObjects = [];
+  function clearMultiSelection() {
+    selectedObjects.forEach((obj) => {
+      obj.classList.remove("obj-selected");
+    });
+    selectedObjects = [];
+  }
+  function addToMultiSelection(obj) {
+    if (!obj || !editor.contains(obj)) return;
+    if (!selectedObjects.includes(obj)) {
+      selectedObjects.push(obj);
+      obj.classList.add("obj-selected");
+    }
+  }
+  function removeFromMultiSelection(obj) {
+    const idx = selectedObjects.indexOf(obj);
+    if (idx !== -1) {
+      selectedObjects.splice(idx, 1);
+      obj.classList.remove("obj-selected");
+    }
+  }
   function selectedObject() {
     const sel = window.getSelection();
     let node = null;
@@ -3355,6 +3377,60 @@
     const parent = group.parentNode;
     Array.from(group.children).forEach((child) => parent.insertBefore(child, group));
     parent.removeChild(group);
+    return true;
+  }
+  // WO-21-ctx-distribute-horizontally: Distribute selected objects horizontally with equal spacing
+  function distributeObjectsHorizontally() {
+    if (selectedObjects.length < 2) {
+      setStatus(t("Status.DistributeNeedsTwoObjects"));
+      return false;
+    }
+    // Get bounding rects of all selected objects
+    const rects = selectedObjects.map((obj) => {
+      const r = obj.getBoundingClientRect();
+      return {
+        element: obj,
+        left: r.left,
+        right: r.right,
+        width: r.width,
+        top: r.top,
+        bottom: r.bottom,
+      };
+    });
+    // Sort by left position
+    rects.sort((a, b) => a.left - b.left);
+    // Calculate total width of all objects
+    const totalWidth = rects.reduce((sum, r) => sum + r.width, 0);
+    // Calculate available space between first and last object
+    const first = rects[0];
+    const last = rects[rects.length - 1];
+    const availableSpace = last.left - first.left + last.width - first.width;
+    // Calculate gaps: (availableSpace - totalWidth) / (n - 1)
+    const gap = (availableSpace - totalWidth) / (rects.length - 1);
+    // Position objects with equal spacing
+    let currentLeft = first.left;
+    for (let i = 0; i < rects.length; i++) {
+      const rect = rects[i];
+      const obj = rect.element;
+      // Calculate the editor-relative position
+      const editorRect = editor.getBoundingClientRect();
+      const leftRelativeToEditor = currentLeft - editorRect.left;
+      // Set the position preserving width
+      obj.style.position = "absolute";
+      obj.style.left = leftRelativeToEditor + "px";
+      // Preserve width if it was explicitly set
+      if (!obj.style.width) {
+        obj.style.width = rect.width + "px";
+      }
+      currentLeft += rect.width + gap;
+    }
+    // Clear multi-selection and continue with standard dirty chain
+    clearMultiSelection();
+    captureHistory();
+    markDirty();
+    scheduleCollabSync();
+    notifyHost("editing");
+    setStatus(t("Status.DistributedHorizontally"));
     return true;
   }
   function applyObjectOp(op) {
@@ -9255,10 +9331,15 @@
       // BUG8-STATE-CONSISTENCY: data-showif="object" gates the wrap rows on
       // any selected object (image, chart, shape) so the ctx surface converges
       // with the Layout menu and the right-panel wrapping select.
-      const hasObjectSel = !!ctxImageSel;
+      const hasObjectSel = !!ctxImageSel || selectedObjects.length > 0;
       ctxMenu.querySelectorAll("[data-showif='object']").forEach((el) => {
         el.hidden = !hasObjectSel;
       });
+      // WO-21-ctx-distribute-horizontally: show DistributeHorizontally when >=2 objects selected
+      const distributeBtn = ctxMenu.querySelector('button[data-ctx="DistributeHorizontally"]');
+      if (distributeBtn) {
+        distributeBtn.hidden = selectedObjects.length < 2;
+      }
       // T-002 object ctx parity: link/field rows gate on the caret target.
       let ctxAnchor = window.getSelection && window.getSelection().anchorNode
         || e.target;
@@ -9460,6 +9541,21 @@
         closeCtx();
         applyObjectOp("wrap-behind");
         syncRightPanelControls();
+      } else if (action === "DistributeHorizontally") {
+        closeCtx();
+        if (selectedObjects.length >= 2) {
+          distributeObjectsHorizontally();
+        } else {
+          // Try with single selected object - select it first
+          const obj = selectedObject();
+          if (obj) {
+            clearMultiSelection();
+            addToMultiSelection(obj);
+            setStatus(t("Status.SelectAnotherObject"));
+          } else {
+            setStatus(t("Status.NoObjectsSelected"));
+          }
+        }
         // AF8-INSERT-CTX-CLEANUP: OO-parity completion rows. Real DOM ops
         // where they exist (links, lists, tracked changes), wo: marker
         // events where a dialog slice is the follow-up (loud-stub contract).
@@ -12983,6 +13079,21 @@
     const t = ev.target;
     const o = (t && t.closest && t !== editor) ? t.closest("img, div.object") : null;
     lastObjectPick = (o && editor.contains(o)) ? o : null;
+    // WO-21-ctx-distribute-horizontally: Shift+click for multi-select
+    if (ev.shiftKey && o) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (selectedObjects.includes(o)) {
+        removeFromMultiSelection(o);
+      } else {
+        addToMultiSelection(o);
+      }
+      return;
+    }
+    // Clear multi-selection on regular click
+    if (!ev.shiftKey && o) {
+      clearMultiSelection();
+    }
   });
   editor.addEventListener("click", (ev) => {
     const img = ev.target.closest ? ev.target.closest("img.vector-object[data-kind='chart']") : null;
