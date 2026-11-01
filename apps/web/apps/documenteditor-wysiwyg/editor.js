@@ -10734,8 +10734,10 @@
       if (ev.code === "Minus") { ev.preventDefault(); emitCommand("insertSymbol", "\u2014"); return; }
       // Insert equation: Ctrl+Alt+= (OO convention; free in WO).
       if (ev.code === "Equal") { ev.preventDefault(); emitCommand("equationTemplate"); return; }
-      // Footnote now / Endnote now: Ctrl+Alt+F / Ctrl+Alt+D.
-      if (k === "f") { ev.preventDefault(); emitCommand("insertFootnote"); return; }
+      // File/navigation panel: Ctrl+Alt+F (OO parity) focuses the Recent/Open
+      // backstage pane and the recent-files list.
+      if (k === "f" && !ev.shiftKey) { ev.preventDefault(); openBackstage("open"); const rec = document.getElementById("backstage-recent"); if (rec) rec.focus(); return; }
+      // Endnote now: Ctrl+Alt+D.
       if (k === "d") { ev.preventDefault(); emitCommand("insertEndnote"); return; }
       // Chat/co-editing panel: Ctrl+Alt+Q (OO chat convention).
       if (k === "q") { ev.preventDefault(); emitCommand("toggleChat"); return; }
