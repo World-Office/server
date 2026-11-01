@@ -97,6 +97,21 @@ assert.ok(
   !columnsBody.includes("requestAnimationFrame(") && !columnsBody.includes("setTimeout("),
   "distributeTableColumns must apply instantly (no animation scheduling)",
 )
+// Test (4b): on colgroup'd tables the equal width must also reach the
+// <col> elements (the colgroup/table-width machinery the editor uses for
+// column layout), so the operation stays visibly equal even though <col>
+// widths would otherwise override the per-cell styles.
+assert.ok(
+  editorSrc.includes("function applyEqualColgroupWidths(") &&
+    editorSrc.includes('colgroup.querySelectorAll("col")') &&
+    editorSrc.includes('col.setAttribute("width", String(widthPx))'),
+  "distributeTableColumns must equalize explicit colgroup <col> widths too",
+)
+assert.ok(
+  columnsBody.includes("applyEqualColgroupWidths(table, cols, each)"),
+  "distributeTableColumns must drive the colgroup equalizer with the equal width",
+)
+console.log("ok 4b colgroup <col> widths are equalized alongside the cells")
 console.log("ok 4 distributeTableColumns is a real equal-width op")
 
 // Test (5): DistributeRows is a real layout op through tr.style.height.
