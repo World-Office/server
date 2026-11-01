@@ -1334,7 +1334,7 @@
       return;
     }
     // WO-10-shape: insertShape opens the shape picker dialog
-    if (cmd === "insertShape") { openShapePicker(); return; }
+    if (cmd === "insertShape") { openShapePicker(null); return; }
     // AF8-INSERT-CTX-CLEANUP: dedicated insert-page controls. Text box and
     // text art reuse the object-insert machinery (same dialog the
     // btn-object flow drives); Comment reuses the ctx-menu AddComment path.
@@ -3673,11 +3673,14 @@
   // --- shape picker (WO-10-shape) ----------
   // Track the currently selected shape type in the picker
   let selectedShapeType = null;
-  function openShapePicker() {
+  // Track if we're converting an object to a shape (WO-21-ctx-convert-to-shape)
+  let shapeConvertTarget = null;
+  function openShapePicker(target) {
     if (READ_ONLY) return;
     const dialog = document.getElementById("shape-dialog");
     if (!dialog) return;
     selectedShapeType = null;
+    shapeConvertTarget = target || null;
     // Clear any previously selected shape buttons
     const options = dialog.querySelectorAll(".shape-option.selected");
     options.forEach((el) => el.classList.remove("selected"));
@@ -3692,6 +3695,7 @@
     if (dialog) dialog.classList.remove("open");
     restoreFocus();
     selectedShapeType = null;
+    shapeConvertTarget = null;
   }
   function selectShape(type) {
     selectedShapeType = type;
@@ -3710,13 +3714,41 @@
   function confirmShapePicker() {
     if (!selectedShapeType) return;
     closeShapePicker();
-    editor.focus();
-    // Insert the shape as an SVG drawing object
-    const svg = createShapeSvg(selectedShapeType);
-    const wrapper = '<div class="object drawing-shape" data-type="shape" data-shape="' + escapeAttr(selectedShapeType) + '">'
-      + svg + '</div><p><br></p>';
-    document.execCommand("insertHTML", false, wrapper);
-    moveCaretPastStructuralMarkers();
+    // WO-21-ctx-convert-to-shape: if converting an object, replace it; otherwise insert
+    if (shapeConvertTarget && editor.contains(shapeConvertTarget)) {
+      const svg = createShapeSvg(selectedShapeType);
+      const newShape = document.createElement("div");
+      newShape.className = "object drawing-shape";
+      newShape.setAttribute("data-type", "shape");
+      newShape.setAttribute("data-shape", selectedShapeType);
+      newShape.innerHTML = svg;
+      // Preserve position if the original was positioned
+      if (shapeConvertTarget.style.position) {
+        newShape.style.position = shapeConvertTarget.style.position;
+      }
+      if (shapeConvertTarget.style.left) {
+        newShape.style.left = shapeConvertTarget.style.left;
+      }
+      if (shapeConvertTarget.style.top) {
+        newShape.style.top = shapeConvertTarget.style.top;
+      }
+      if (shapeConvertTarget.style.zIndex) {
+        newShape.style.zIndex = shapeConvertTarget.style.zIndex;
+      }
+      // Replace the target with the new shape
+      shapeConvertTarget.parentNode.insertBefore(newShape, shapeConvertTarget);
+      shapeConvertTarget.remove();
+      // Clear selection state
+      shapeConvertTarget = null;
+    } else {
+      editor.focus();
+      // Insert the shape as an SVG drawing object
+      const svg = createShapeSvg(selectedShapeType);
+      const wrapper = '<div class="object drawing-shape" data-type="shape" data-shape="' + escapeAttr(selectedShapeType) + '">'
+        + svg + '</div><p><br></p>';
+      document.execCommand("insertHTML", false, wrapper);
+      moveCaretPastStructuralMarkers();
+    }
     captureHistory();
     markDirty();
     scheduleCollabSync();
@@ -9623,6 +9655,14 @@
         closeCtx();
         applyObjectOp("wrap-behind");
         syncRightPanelControls();
+      } else if (action === "ConvertToShape") {
+        closeCtx();
+        const obj = selectedObject();
+        if (obj) {
+          openShapePicker(obj);
+        } else {
+          setStatus(t("Status.NoSelection"));
+        }
       } else if (action === "DistributeHorizontally") {
         closeCtx();
         if (selectedObjects.length >= 2) {
