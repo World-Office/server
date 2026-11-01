@@ -1327,6 +1327,9 @@
     if (cmd === "insertObject") {
       const objType = String(value || "shape");
       // WO-10-shape: when object type is shape, use the dedicated shape picker
+      // WO-21-insert-spreadsheet: every other preset — textbox, chart, equation,
+      // textart, spreadsheet (OLE embedded table) — rides the generic object
+      // dialog/insert machinery, so the preset only has to exist in #object-type.
       if (objType === "shape") { openShapePicker(); } else { openObjectDialog(objType); }
       return;
     }
