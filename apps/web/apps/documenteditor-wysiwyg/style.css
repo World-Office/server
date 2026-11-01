@@ -2183,7 +2183,8 @@ body.multi-page-view #editor .page-break br { display: none; }
 
 /* Text-flow floats (object-layout popup + DOCX anchored drawings). The
    classes are the canonical round-trip contract: obj-square=wrapSquare,
-   obj-right=right-aligned float, obj-behind=wrapBehind, obj-center=block. */
+   obj-right=right-aligned float, obj-behind=wrapBehind, obj-front=wrapFront,
+   obj-center=block. */
 /* Image-fit safety net (UI-IMG-FIT): content images never overflow the
    page column, even before the JS clamp has run (e.g. slow img decode). */
 #editor img { max-width: 100%; height: auto; }
@@ -2192,6 +2193,13 @@ body.multi-page-view #editor .page-break br { display: none; }
 #editor img.obj-square.obj-right { float: right; margin: 4px 0 6px 12px; }
 #editor img.obj-behind { float: none; display: block; margin: 0 auto;
   position: relative; z-index: -1; opacity: .92; }
+/* WO-21-ctx-in-front-of-text: OO wrap "In front of text" (wrapFront).
+   Honest rendering: the web text does NOT reflow around the object — like
+   obj-behind it detaches from the text flow (float:none) and layers purely
+   by z-index, except ABOVE the page text instead of below it. Size and
+   position are kept; only the stacking changes. */
+#editor img.obj-front { float: none; display: block; margin: 0 auto;
+  position: relative; z-index: 1; }
 #editor img.obj-center { display: block; margin: 4px auto; }
 
 /* WO-RIBBON-FLEX: the old right-edge calc(100% - X) pin overrides are gone —
