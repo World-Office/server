@@ -3629,7 +3629,38 @@
   }
 
   // --- insert object (shape / text box / chart / equation) ----------
-  function openObjectDialog(preset) {
+  // WO-21-ctx-edit-object: the insert dialog doubles as the object EDITOR.
+  // openObjectDialog(preset, target) keeps the single-dialog contract: with
+  // a target div.object the very same dialog opens PRE-FILLED from the
+  // placeholder's own data-type / data-label / content and
+  // confirmObjectDialog() rewrites that element IN PLACE instead of
+  // inserting a new one (the old flow was delete + re-insert).
+  let objectEditTarget = null;
+  // Content channel: insert writes the escaped text as the placeholder's
+  // inner HTML, so editing reads it back from textContent. Placeholders that
+  // additionally carry data-content (the spec's optional attribute) win, so
+  // round-tripping never desyncs the two.
+  function objectPlaceholderLabel(el) {
+    return String(el.getAttribute("data-label") || "").trim();
+  }
+  function objectPlaceholderContent(el) {
+    const stored = el.getAttribute("data-content");
+    if (stored !== null) return stored;
+    return el.textContent || "";
+  }
+  function isEditableObject(el) {
+    return !!(el && el.matches && el.matches("div.object") && editor.contains(el));
+  }
+  function syncObjectDialogMode() {
+    const dialog = document.getElementById("object-dialog");
+    const title = document.getElementById("object-dialog-title");
+    const ok = document.getElementById("btn-object-ok");
+    const editing = isEditableObject(objectEditTarget);
+    if (dialog) dialog.setAttribute("data-mode", editing ? "edit" : "insert");
+    if (title) title.textContent = t(editing ? "Dialog.EditObjectTitle" : "Dialog.InsertObjectTitle");
+    if (ok) ok.textContent = t(editing ? "Dialog.Save" : "Dialog.Insert");
+  }
+  function openObjectDialog(preset, target) {
     if (READ_ONLY) return;
     const dialog = document.getElementById("object-dialog");
     const type = document.getElementById("object-type");
@@ -3637,18 +3668,61 @@
     const content = document.getElementById("object-content");
     if (!dialog) return;
     const presets = type ? Array.from(type.options).map((o) => o.value) : [];
-    if (preset && presets.includes(preset)) {
+    const editing = isEditableObject(target);
+    // Editing mode always preselects the object's CURRENT type (spec); a
+    // preset passed alongside a target is ignored for the type select.
+    const currentType = editing ? target.getAttribute("data-type") || "" : "";
+    if (editing && presets.includes(currentType)) {
+      if (type) type.value = currentType;
+    } else if (preset && presets.includes(preset)) {
       if (type) type.value = preset;
     } else if (type) type.value = "shape";
-    if (label) label.value = "";
-    if (content) content.value = "";
+    if (label) label.value = editing ? objectPlaceholderLabel(target) : "";
+    if (content) content.value = editing ? objectPlaceholderContent(target) : "";
+    objectEditTarget = editing ? target : null;
+    syncObjectDialogMode();
     rememberFocus();
     dialog.classList.add("open");
     if (type) type.focus();
   }
+  // WO-21-ctx-edit-object: ctx "Edit object" arm. Runs ONLY for div.object
+  // placeholders (OO's OLE/drawing objects); plain images carry no
+  // placeholder payload, so the row stays inert for them.
+  function editSelectedObject() {
+    const obj = selectedObject();
+    if (!isEditableObject(obj)) {
+      setStatus(t("Status.NotAvailable") + " editObject");
+      return false;
+    }
+    openObjectDialog(null, obj);
+    return true;
+  }
+  // Rewrite an existing placeholder from the dialog values: the element is
+  // KEPT (same node, same position) and only attributes + inner content are
+  // updated, so a data-type change swaps the object's rendering in place.
+  function applyObjectToPlaceholder(el, typ, lbl, c) {
+    const safe = String(c == null ? "" : c);
+    el.setAttribute("data-type", typ);
+    if (lbl) el.setAttribute("data-label", lbl);
+    else el.removeAttribute("data-label");
+    // A shape-picker drawing keeps its vector SVG while it stays a shape with
+    // no text content; any other combination is plain placeholder text.
+    const keepDrawing = typ === "shape" && el.classList.contains("drawing-shape") && !safe.trim();
+    if (!keepDrawing) {
+      el.classList.remove("drawing-shape");
+      el.removeAttribute("data-shape");
+    }
+    if (el.hasAttribute("data-content")) el.setAttribute("data-content", safe);
+    if (!keepDrawing) el.textContent = safe;
+    return el;
+  }
   function closeObjectDialog() {
     const dialog = document.getElementById("object-dialog");
     if (dialog) dialog.classList.remove("open");
+    // Cancel = no edit: drop the captured target so a later Insert (ribbon
+    // button) inserts instead of rewriting the old selection.
+    objectEditTarget = null;
+    syncObjectDialogMode();
     restoreFocus();
   }
   function confirmObjectDialog() {
@@ -3660,8 +3734,33 @@
     const lbl = (label && label.value || "").trim();
     const c = (content && content.value) || "";
     if (dialog) dialog.classList.remove("open");
+    const target = isEditableObject(objectEditTarget) ? objectEditTarget : null;
+    objectEditTarget = null;
+    syncObjectDialogMode();
     restoreFocus();
     editor.focus();
+    if (target) {
+      // WO-21-ctx-edit-object: update the EXISTING placeholder in place
+      // (no insertHTML — the element, its position and its wrapping/layout
+      // classes survive; only the object payload changes).
+      applyObjectToPlaceholder(target, typ, lbl, c);
+      try {
+        const sel = window.getSelection();
+        const r = document.createRange();
+        r.selectNodeContents(target);
+        sel.removeAllRanges();
+        sel.addRange(r);
+      } catch (err) { /* detached node: leave the selection alone */ }
+      lastObjectPick = target;
+      captureHistory();
+      markDirty();
+      scheduleCollabSync();
+      notifyHost("editing");
+      updateActiveStates();
+      updateUndoRedoState();
+      setStatus(t("Status.ObjectUpdated"));
+      return;
+    }
     let html = '<div class="object" data-type="' + escapeAttr(typ) + '"';
     if (lbl) html += ' data-label="' + escapeAttr(lbl) + '"';
     const safe = String(c).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -9462,6 +9561,13 @@
       if (distributeVertBtn) {
         distributeVertBtn.hidden = selectedObjects.length < 2;
       }
+      // WO-21-ctx-edit-object: OO's "Edit object" is the OLE/drawing-object
+      // command. It applies to div.object placeholders only — a plain img
+      // has no placeholder payload to edit, so the row stays hidden for it.
+      const editObjBtn = ctxMenu.querySelector('button[data-ctx="EditObject"]');
+      if (editObjBtn) {
+        editObjBtn.hidden = !isEditableObject(ctxImageSel);
+      }
       // T-002 object ctx parity: link/field rows gate on the caret target.
       let ctxAnchor = window.getSelection && window.getSelection().anchorNode
         || e.target;
@@ -9651,6 +9757,9 @@
       } else if (action === "EditAltText") {
         closeCtx();
         openImageAltDialog();
+      } else if (action === "EditObject") {
+        closeCtx();
+        editSelectedObject();
       } else if (action === "WrapInline") {
         closeCtx();
         applyObjectOp("wrap-inline");

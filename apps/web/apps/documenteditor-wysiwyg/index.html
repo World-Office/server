@@ -1596,6 +1596,11 @@
     <button type="button" role="menuitem" data-ctx="WrapSquare" data-showif="object" data-i18n="Ctx.WrapSquare">Square</button>
     <button type="button" role="menuitem" data-ctx="WrapBehind" data-showif="object" data-i18n="Ctx.WrapBehind">Behind text</button>
     <button type="button" role="menuitem" data-ctx="WrapFront" data-showif="object" data-i18n="Ctx.WrapFront">In front of text</button>
+    <!-- WO-21-ctx-edit-object: OO's OLE/drawing-object "Edit object" row.
+         Runs only on div.object placeholders (editor.js additionally hides
+         it for plain imgs) and reopens the insert-object dialog in edit
+         mode so the placeholder is rewritten in place. -->
+    <button type="button" role="menuitem" data-ctx="EditObject" data-showif="object" data-i18n="Ctx.EditObject">Edit object</button>
     <button type="button" role="menuitem" data-ctx="ConvertToShape" data-showif="object" data-i18n="Ctx.ConvertToShape">Convert to shape</button>
     <button type="button" role="menuitem" data-ctx="ResizeToCell" data-showif="object" data-i18n="Ctx.ResizeToCell">Resize to cell</button>
     <div class="ctx-sep" data-showif="object" role="separator"></div>
