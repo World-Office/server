@@ -654,6 +654,7 @@
       <ul class="menu-list" role="menu" hidden>
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-inline" data-i18n="Layout.Wrapping.Inline">Inline</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-square" data-i18n="Layout.Wrapping.Square">Square</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-tight" data-i18n="Layout.Wrapping.Tight">Tight</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-behind" data-i18n="Layout.Wrapping.Behind">Behind text</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-front" data-i18n="Layout.Wrapping.Front">In front of text</button></li>
       </ul>
@@ -924,6 +925,7 @@
     <ul class="menu-list" role="menu" hidden>
       <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-inline" data-i18n="Layout.Wrapping.Inline">Inline</button></li>
       <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-square" data-i18n="Layout.Wrapping.Square">Square</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-tight" data-i18n="Layout.Wrapping.Tight">Tight</button></li>
       <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-behind" data-i18n="Layout.Wrapping.Behind">Behind text</button></li>
       <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-front" data-i18n="Layout.Wrapping.Front">In front of text</button></li>
     </ul>
@@ -1184,6 +1186,7 @@
             <select id="rp-image-wrap">
               <option value="wrap-inline" data-i18n="RightPanel.WrapInline">Inline</option>
               <option value="wrap-square" data-i18n="RightPanel.WrapSquare">Square</option>
+              <option value="wrap-tight" data-i18n="RightPanel.WrapTight">Tight</option>
               <option value="wrap-behind" data-i18n="RightPanel.WrapBehind">Behind text</option>
               <option value="wrap-front" data-i18n="RightPanel.WrapFront">In front of text</option>
             </select>
@@ -1226,6 +1229,7 @@
             <select id="rp-chart-wrap">
               <option value="wrap-inline" data-i18n="RightPanel.WrapInline">Inline</option>
               <option value="wrap-square" data-i18n="RightPanel.WrapSquare">Square</option>
+              <option value="wrap-tight" data-i18n="RightPanel.WrapTight">Tight</option>
               <option value="wrap-behind" data-i18n="RightPanel.WrapBehind">Behind text</option>
               <option value="wrap-front" data-i18n="RightPanel.WrapFront">In front of text</option>
             </select>
@@ -1594,6 +1598,11 @@
     <div class="ctx-sep" data-showif="object" role="separator"></div>
     <button type="button" role="menuitem" data-ctx="WrapInline" data-showif="object" data-i18n="Ctx.WrapInline">Inline</button>
     <button type="button" role="menuitem" data-ctx="WrapSquare" data-showif="object" data-i18n="Ctx.WrapSquare">Square</button>
+    <!-- WO-21-ctx-tight: OO "Tight" wrap. WO placeholders are rectangular
+         (no vector contour) and OO aliases tight to square for rectangles,
+         so the row applies the obj-square flow while data-wrap="tight"
+         records the user's explicit wrap choice (editor.js applyObjectOp). -->
+    <button type="button" role="menuitem" data-ctx="WrapTight" data-showif="object" data-i18n="Ctx.WrapTight">Tight</button>
     <button type="button" role="menuitem" data-ctx="WrapBehind" data-showif="object" data-i18n="Ctx.WrapBehind">Behind text</button>
     <button type="button" role="menuitem" data-ctx="WrapFront" data-showif="object" data-i18n="Ctx.WrapFront">In front of text</button>
     <!-- WO-21-ctx-edit-object: OO's OLE/drawing-object "Edit object" row.
@@ -3296,6 +3305,7 @@
       <div class="objlayout-row"><span>Wrap</span>
         <button type="button" id="btn-wrap-inline" data-i18n="Layout.Wrapping.Inline" data-objwrap="inline" class="primary-sm">Inline</button>
         <button type="button" id="btn-wrap-square" data-i18n="Layout.Wrapping.Square" data-objwrap="square">Square</button>
+        <button type="button" id="btn-wrap-tight" data-i18n="Layout.Wrapping.Tight" data-objwrap="tight">Tight</button>
         <button type="button" id="btn-wrap-behind" data-i18n="Layout.Wrapping.Behind" data-objwrap="behind">Behind</button>
         <button type="button" id="btn-wrap-front" data-i18n="Layout.Wrapping.Front" data-objwrap="front">In front</button>
       </div>

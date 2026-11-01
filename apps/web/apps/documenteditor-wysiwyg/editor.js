@@ -3540,11 +3540,19 @@
       }
       mutated = true;
     } else if (value === "wrap-inline" || value === "wrap-square" ||
-               value === "wrap-behind" || value === "wrap-front") {
+               value === "wrap-tight" || value === "wrap-behind" || value === "wrap-front") {
       OBJ_LAYOUT_CLASSES.forEach((c) => obj.classList.remove(c));
-      obj.classList.add(value === "wrap-square" ? "obj-square"
+      // WO-21-ctx-tight: OO "Tight" wraps text closely around the shape
+      // contour, but WO placeholder objects are rectangular (no vector
+      // contour) — and OO itself aliases tight to square for rectangles.
+      // So the honest web equivalent IS the obj-square flow: tight==square
+      // for rectangular placeholders until a real vector contour exists.
+      // data-wrap="tight" still records the user's explicit wrap choice so
+      // the ctx menu, Layout wrapping menus and right-panel stay in sync.
+      obj.classList.add(value === "wrap-square" || value === "wrap-tight" ? "obj-square"
         : value === "wrap-behind" ? "obj-behind"
         : value === "wrap-front" ? "obj-front" : "obj-inline");
+      obj.setAttribute("data-wrap", value.slice(5));
       mutated = true;
     } else if (value === "actual-size" && obj.matches && obj.matches("img")) {
       // OO contextual "Actual size": reset to natural pixel size.
@@ -3575,6 +3583,9 @@
       else if (dir === "right") obj.classList.add("obj-square", "obj-right");
       else if (dir === "center") obj.classList.add("obj-center");
       else obj.style.verticalAlign = dir === "top" ? "top" : dir === "bottom" ? "bottom" : "middle";
+      // Align re-floats the object, so a previous wrap marker (e.g. tight)
+      // would otherwise lie about the active wrap.
+      obj.removeAttribute("data-wrap");
       mutated = true;
     } else if (value === "group") {
       mutated = groupSelectedObjects(obj);
@@ -6993,7 +7004,10 @@
     }
     const wrapSel = document.getElementById("rp-image-wrap");
     if (wrapSel) {
-      wrapSel.value = obj.classList.contains("obj-square") ? "wrap-square"
+      // The data-wrap marker wins over the layout class so an explicit
+      // "tight" choice (rendered as obj-square) round-trips as wrap-tight.
+      wrapSel.value = obj.getAttribute("data-wrap") === "tight" ? "wrap-tight"
+        : obj.classList.contains("obj-square") ? "wrap-square"
         : obj.classList.contains("obj-behind") ? "wrap-behind"
         : obj.classList.contains("obj-front") ? "wrap-front" : "wrap-inline";
     }
@@ -7023,7 +7037,10 @@
     if (hIn) hIn.value = String(readChartSpec(img).height || "");
     const wrapSel = document.getElementById("rp-chart-wrap");
     if (wrapSel) {
-      wrapSel.value = img.classList.contains("obj-square") ? "wrap-square"
+      // Same marker-first rule as the image panel: tight renders as
+      // obj-square but must come back as wrap-tight.
+      wrapSel.value = img.getAttribute("data-wrap") === "tight" ? "wrap-tight"
+        : img.classList.contains("obj-square") ? "wrap-square"
         : img.classList.contains("obj-behind") ? "wrap-behind"
         : img.classList.contains("obj-front") ? "wrap-front" : "wrap-inline";
     }
@@ -9767,6 +9784,10 @@
       } else if (action === "WrapSquare") {
         closeCtx();
         applyObjectOp("wrap-square");
+        syncRightPanelControls();
+      } else if (action === "WrapTight") {
+        closeCtx();
+        applyObjectOp("wrap-tight");
         syncRightPanelControls();
       } else if (action === "WrapBehind") {
         closeCtx();
@@ -13634,15 +13655,19 @@
     if (attr === "wrap") {
       floatImg.classList.remove("obj-inline", "obj-square", "obj-right", "obj-behind", "obj-front", "obj-center");
       floatImg.style.position = ""; floatImg.style.zIndex = "";
-      if (value === "square") floatImg.classList.add("obj-square");
+      // WO-21-ctx-tight: tight==square for the rectangular placeholders the
+      // popup works on (no vector contour yet); the marker keeps the choice.
+      if (value === "square" || value === "tight") floatImg.classList.add("obj-square");
       else if (value === "behind") floatImg.classList.add("obj-behind");
       else if (value === "front") floatImg.classList.add("obj-front");
       else floatImg.classList.add("obj-inline");
+      floatImg.setAttribute("data-wrap", value);
     } else if (attr === "align") {
       floatImg.classList.remove("obj-inline", "obj-square", "obj-right", "obj-behind", "obj-front", "obj-center");
       if (value === "left") floatImg.classList.add("obj-square");
       else if (value === "right") floatImg.classList.add("obj-square", "obj-right");
       else floatImg.classList.add("obj-center");
+      floatImg.removeAttribute("data-wrap");
     } else if (attr === "layer") {
       floatImg.style.position = "relative";
       floatImg.style.zIndex = String((parseFloat(floatImg.style.zIndex) || 0) + (value === "back" ? -1 : 1));
