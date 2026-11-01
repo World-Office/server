@@ -1591,6 +1591,11 @@
     <button type="button" role="menuitem" data-ctx="WrapInline" data-showif="object" data-i18n="Ctx.WrapInline">Inline</button>
     <button type="button" role="menuitem" data-ctx="WrapSquare" data-showif="object" data-i18n="Ctx.WrapSquare">Square</button>
     <button type="button" role="menuitem" data-ctx="WrapBehind" data-showif="object" data-i18n="Ctx.WrapBehind">Behind text</button>
+    <!-- WO-21-ctx-edit-object: OO's OLE/drawing-object "Edit object" row.
+         Runs only on div.object placeholders (editor.js additionally hides
+         it for plain imgs) and reopens the insert-object dialog in edit
+         mode so the placeholder is rewritten in place. -->
+    <button type="button" role="menuitem" data-ctx="EditObject" data-showif="object" data-i18n="Ctx.EditObject">Edit object</button>
     <button type="button" role="menuitem" data-ctx="ConvertToShape" data-showif="object" data-i18n="Ctx.ConvertToShape">Convert to shape</button>
     <div class="ctx-sep" data-showif="object" role="separator"></div>
     <button type="button" role="menuitem" data-ctx="DistributeHorizontally" data-showif="object" data-i18n="Ctx.DistributeHorizontally">Distribute horizontally</button>

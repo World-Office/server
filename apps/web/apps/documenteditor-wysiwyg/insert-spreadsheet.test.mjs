@@ -95,7 +95,11 @@ assert.ok(
 )
 
 // openObjectDialog preselects the preset when #object-type offers it
-const openDialogMatch = editorSrc.match(/function openObjectDialog\(preset\) \{[\s\S]*?\n {2}\}/)
+// (WO-21-ctx-edit-object added the optional second `target` param for
+// in-place editing; the preset preselection contract is unchanged).
+const openDialogMatch = editorSrc.match(
+  /function openObjectDialog\(preset(?:, target)?\) \{[\s\S]*?\n {2}\}/,
+)
 assert.ok(openDialogMatch, "WO-21: openObjectDialog must exist in editor.js")
 assert.ok(
   openDialogMatch[0].includes("presets.includes(preset)") &&
