@@ -657,6 +657,7 @@
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-tight" data-i18n="Layout.Wrapping.Tight">Tight</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-behind" data-i18n="Layout.Wrapping.Behind">Behind text</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-front" data-i18n="Layout.Wrapping.Front">In front of text</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-through" data-i18n="Layout.Wrapping.Through">Through</button></li>
       </ul>
     </span>
     <button type="button" data-cmd="objectOp" data-value="bring-forward" data-i18n="Layout.Object.BringForward">Bring forward</button>
@@ -928,6 +929,7 @@
       <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-tight" data-i18n="Layout.Wrapping.Tight">Tight</button></li>
       <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-behind" data-i18n="Layout.Wrapping.Behind">Behind text</button></li>
       <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-front" data-i18n="Layout.Wrapping.Front">In front of text</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-through" data-i18n="Layout.Wrapping.Through">Through</button></li>
     </ul>
     </span>
     </div>
@@ -1189,6 +1191,7 @@
               <option value="wrap-tight" data-i18n="RightPanel.WrapTight">Tight</option>
               <option value="wrap-behind" data-i18n="RightPanel.WrapBehind">Behind text</option>
               <option value="wrap-front" data-i18n="RightPanel.WrapFront">In front of text</option>
+              <option value="wrap-through" data-i18n="RightPanel.WrapThrough">Through</option>
             </select>
           </div>
           <div class="rp-group">
@@ -1232,6 +1235,7 @@
               <option value="wrap-tight" data-i18n="RightPanel.WrapTight">Tight</option>
               <option value="wrap-behind" data-i18n="RightPanel.WrapBehind">Behind text</option>
               <option value="wrap-front" data-i18n="RightPanel.WrapFront">In front of text</option>
+              <option value="wrap-through" data-i18n="RightPanel.WrapThrough">Through</option>
             </select>
           </div>
           <div class="rp-group">
@@ -1605,6 +1609,12 @@
     <button type="button" role="menuitem" data-ctx="WrapTight" data-showif="object" data-i18n="Ctx.WrapTight">Tight</button>
     <button type="button" role="menuitem" data-ctx="WrapBehind" data-showif="object" data-i18n="Ctx.WrapBehind">Behind text</button>
     <button type="button" role="menuitem" data-ctx="WrapFront" data-showif="object" data-i18n="Ctx.WrapFront">In front of text</button>
+    <!-- WO-21-ctx-through: OO "Through" wrap. Same above-text layering as
+         obj-front, but the shape is rendered as a transparent layer so the
+         text visually crosses the placeholder box (no reflow — web text
+         cannot flow "through" a box; we approximate OO's Through as an
+         above-text transparent layer, see editor.js + style.css). -->
+    <button type="button" role="menuitem" data-ctx="WrapThrough" data-showif="object" data-i18n="Ctx.WrapThrough">Through</button>
     <!-- WO-21-ctx-edit-object: OO's OLE/drawing-object "Edit object" row.
          Runs only on div.object placeholders (editor.js additionally hides
          it for plain imgs) and reopens the insert-object dialog in edit
@@ -3308,6 +3318,7 @@
         <button type="button" id="btn-wrap-tight" data-i18n="Layout.Wrapping.Tight" data-objwrap="tight">Tight</button>
         <button type="button" id="btn-wrap-behind" data-i18n="Layout.Wrapping.Behind" data-objwrap="behind">Behind</button>
         <button type="button" id="btn-wrap-front" data-i18n="Layout.Wrapping.Front" data-objwrap="front">In front</button>
+        <button type="button" id="btn-wrap-through" data-i18n="Layout.Wrapping.Through" data-objwrap="through">Through</button>
       </div>
       <div class="objlayout-row"><span>Align</span>
         <button type="button" id="btn-align-left" data-i18n="Backstage.ObjLayout.AlignLeft" data-objalign="left">Left</button>
