@@ -2799,8 +2799,33 @@
         if (cell) cell.style.width = each + "px";
       });
     });
+    applyEqualColgroupWidths(table, cols, each);
     finalizeTableChange();
     setStatus("Table columns distributed equally: " + each + "px each");
+  }
+  // Equalize an explicit <colgroup> alongside the per-cell widths, because
+  // on colgroup'd tables (imported HTML, page-split continuations) the
+  // <col> widths drive the rendered column widths and would otherwise
+  // override the cell styles. Only the <col> elements that map to a target
+  // column are touched; unrelated columns keep their width.
+  function applyEqualColgroupWidths(table, targetCols, widthPx) {
+    const colgroup = table.querySelector("colgroup");
+    if (!colgroup) return;
+    const colEls = Array.from(colgroup.querySelectorAll("col"));
+    if (!colEls.length) return;
+    if (colEls.length === tableGridCols(table)) {
+      colEls.forEach((col, i) => {
+        if (targetCols.includes(i)) {
+          col.setAttribute("width", String(widthPx));
+          col.style.width = widthPx + "px";
+        }
+      });
+    } else if (colEls.length === targetCols.length) {
+      colEls.forEach((col) => {
+        col.setAttribute("width", String(widthPx));
+        col.style.width = widthPx + "px";
+      });
+    }
   }
   // Row indices the distribution targets: the distinct rows spanned by the
   // current selection when it covers more than one row, otherwise every row.
