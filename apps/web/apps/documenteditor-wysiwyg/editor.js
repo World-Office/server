@@ -10722,6 +10722,11 @@
       if (ev.code === "Minus") { ev.preventDefault(); emitCommand("insertSymbol", "\u2011"); return; }
       // Small caps: Ctrl+Shift+K (Word/LibreOffice convention).
       if (k === "k") { ev.preventDefault(); emitCommand("smallCaps"); return; }
+      // Strikethrough: Ctrl/Cmd+Shift+X (OO convention — Shift+Meta+X on
+      // Mac, Ctrl+Shift+X PC variant; one binding covers both). Toggles the
+      // existing strikeThrough command, same as the toolbar button and the
+      // ctx-menu StrikeThrough arm.
+      if (k === "x") { ev.preventDefault(); emitCommand("strikeThrough"); return; }
       // Column break: Ctrl+Shift+Enter (OO convention).
       if (k === "enter") { ev.preventDefault(); emitCommand("insertColumnBreak"); return; }
       // Save As: Ctrl+Shift+S opens the Download As / export backstage pane.
