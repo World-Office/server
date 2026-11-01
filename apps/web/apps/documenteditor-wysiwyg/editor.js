@@ -10752,6 +10752,19 @@
         saveDocument();
         return;
       }
+      // Close document: Ctrl+W (OO parity, WO-22-shortcut-closefile).
+      // Check dirty state via status element (Status.Saved vs Status.Unsaved),
+      // emit wo:close-document event with dirty detail, notify host to close.
+      if (k === "w") {
+        ev.preventDefault();
+        const isDirty = status.textContent !== t("Status.Saved");
+        if (isDirty && !window.confirm(t("HF.CloseConfirmmsg"))) return;
+        window.dispatchEvent(new CustomEvent("wo:close-document", {
+          detail: { dirty: isDirty },
+        }));
+        notifyHost("close");
+        return;
+      }
       // Undo: Ctrl+Z. Redo: Ctrl+Y (Windows/Linux) or Ctrl+Shift+Z (macOS).
       // Routed through runCommand() so button states and the dirty/autosave
       // status stay consistent with the toolbar.
