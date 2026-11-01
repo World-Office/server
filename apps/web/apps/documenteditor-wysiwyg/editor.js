@@ -10108,11 +10108,14 @@
       // Non-breaking space: Ctrl+Shift+Space (OO/Word convention).
       if (ev.shiftKey) { ev.preventDefault(); emitCommand("insertSymbol", "\u00a0"); return; }
     }
+    if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && !ev.altKey) {
+      // En dash: Ctrl+Minus (OO convention; takes precedence over browser zoom-out).
+      if (ev.code === "Minus") { ev.preventDefault(); emitCommand("insertSymbol", "\u2013"); return; }
+    }
     if ((ev.ctrlKey || ev.metaKey) && ev.shiftKey && !ev.altKey) {
       const k = ev.key.toLowerCase();
-      // En dash: Ctrl+Shift+- (shifted minus; OO convention). Runs here so it
-      // takes precedence over zoom-out (Ctrl+-).
-      if (ev.code === "Minus") { ev.preventDefault(); emitCommand("insertSymbol", "\u2013"); return; }
+      // Non-breaking hyphen: Ctrl+Shift+Minus (OO convention).
+      if (ev.code === "Minus") { ev.preventDefault(); emitCommand("insertSymbol", "\u2011"); return; }
       // Small caps: Ctrl+Shift+K (Word/LibreOffice convention).
       if (k === "k") { ev.preventDefault(); emitCommand("smallCaps"); return; }
       // Column break: Ctrl+Shift+Enter (OO convention).
