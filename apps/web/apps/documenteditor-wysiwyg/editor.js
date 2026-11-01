@@ -10711,6 +10711,10 @@
     if ((ev.ctrlKey || ev.metaKey) && !ev.shiftKey && !ev.altKey) {
       // En dash: Ctrl+Minus (OO convention; takes precedence over browser zoom-out).
       if (ev.code === "Minus") { ev.preventDefault(); emitCommand("insertSymbol", "\u2013"); return; }
+      // Open existing file: Ctrl/Cmd+O (OO parity, WO-22-shortcut-openexistingfile).
+      // Overrides the browser's native file-open dialog and lands on the
+      // backstage Open/Recent pane — the standard web Open flow.
+      if (ev.key === "o" || ev.key === "O") { ev.preventDefault(); openBackstage("open"); return; }
     }
     if ((ev.ctrlKey || ev.metaKey) && ev.shiftKey && !ev.altKey) {
       const k = ev.key.toLowerCase();
