@@ -53,22 +53,34 @@ assert.ok(
 // ━━━━━━━━━━━━━ editor.js wrap machinery ━━━━━━━━━━━━━
 
 // OBJ_LAYOUT_CLASSES must include the new obj-front entry so every wrap/align
-// switch strips it like the other layout classes
+// switch strips it like the other layout classes. (Parallel merges may add
+// further layout classes such as obj-through, so pin the line by prefix and
+// require obj-front within it rather than an exact whole-line match.)
+const layoutLine = editorSrc
+  .split("\n")
+  .find((l) => l.includes("const OBJ_LAYOUT_CLASSES ="))
 assert.ok(
-  editorSrc.includes(
-    'const OBJ_LAYOUT_CLASSES = ["obj-inline", "obj-square", "obj-right", "obj-behind", "obj-front", "obj-center"];',
-  ),
+  !!layoutLine && layoutLine.includes('"obj-front"'),
   'editor.js: OBJ_LAYOUT_CLASSES must include "obj-front"',
 )
 
 // The applyObjectOp wrap branch must accept the wrap-front value
+// (siblings wrap-tight/wrap-through may reorder the OR chain — pin by line
+// and require wrap-front, not an exact whole-branch match).
+const wrapBranchLine = editorSrc
+  .split("\n")
+  .find((l) => l.includes("wrap-front") && l.includes("||"))
 assert.ok(
-  editorSrc.includes('value === "wrap-behind" || value === "wrap-front")'),
+  !!wrapBranchLine && wrapBranchLine.includes('value === "wrap-front"'),
   'editor.js: applyObjectOp wrap branch must accept "wrap-front"',
 )
-// ...and map it onto the obj-front class (via the same classList.add chain)
+// ...and map it onto the obj-front class (via the same classList.add chain);
+// the ternary grew wrap-tight/wrap-through siblings — pin this mapping line
+// by prefix and require the front arm rather than an exact whole-line match.
 assert.ok(
-  editorSrc.includes('value === "wrap-front" ? "obj-front" : "obj-inline")'),
+  editorSrc
+    .split("\n")
+    .some((l) => l.trim().startsWith(': value === "wrap-front"') && l.includes('"obj-front"')),
   'editor.js: wrap-front must add the "obj-front" layout class',
 )
 
@@ -103,10 +115,13 @@ assert.ok(
   editorSrc.includes('else if (value === "front") floatImg.classList.add("obj-front");'),
   'editor.js: applyObjLayout must map the popup "front" value to obj-front',
 )
+// The remove call also gained obj-through (parallel wrap merges) — pin the
+// layout-strip line by prefix and require obj-front among the removed classes.
+const stripLine = editorSrc
+  .split("\n")
+  .find((l) => l.includes('floatImg.classList.remove("obj-inline"'))
 assert.ok(
-  editorSrc.includes(
-    'floatImg.classList.remove("obj-inline", "obj-square", "obj-right", "obj-behind", "obj-front", "obj-center");',
-  ),
+  !!stripLine && stripLine.includes('"obj-front"'),
   "editor.js: applyObjLayout must strip obj-front when switching wrap/align",
 )
 

@@ -44,10 +44,13 @@ assert.ok(
 )
 assert.ok(xLine.includes("return"), "Alt+X handler must return so no later rule claims the combo")
 
-// No conflicting second Alt+X handler in the same block.
+// No conflicting second Alt+X handler in the same block: strikeout's x lives
+// in the ctrl+shift block, this one in the alt block — count within the alt
+// slice only (the scoped xIdx above already located it), not the whole C1.
+const altSlice = c1.slice(altCombo)
 assert.ok(
-  (c1.match(/k === "x"/g) || []).length === 1,
-  "exactly one Alt+X handler may exist in the C1 block",
+  (altSlice.match(/k === "x"/g) || []).length === 1,
+  "exactly one Alt+X handler may exist in the C1 alt block",
 )
 
 // --- The helper wiring must exist (real command, not a stub) -----------

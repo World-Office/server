@@ -64,10 +64,12 @@ assert.ok(
   "shift-group must lower-case the key so both x and X are covered",
 )
 
-// Exactly one "x" key handler lives in the C1 block (no duplicates that
-// could shadow or conflict with the strikeout binding).
-const xCount = (c1.match(/k === "x"/g) || []).length
-assert.ok(xCount === 1, "exactly one x binding in the C1 block (no conflicting duplicates)")
+// Exactly one "x" key handler lives in the SHIFT group (no duplicates that
+// could shadow or conflict with the strikeout binding). The C1 block also
+// carries an Alt+X handler for unicode-escape replacement in the alt block —
+// a different modifier set, so count within the shift slice only.
+const xCount = (shiftGroup.match(/k === "x"/g) || []).length
+assert.ok(xCount === 1, "exactly one x binding in the C1 shift block (no conflicting duplicates)")
 
 // --- strikeThrough must be a real, existing command --------------------
 // The ctx-menu arm routes the same command, and runCommand arms
