@@ -10757,6 +10757,10 @@
       // (OO convention).
       if (k === "c") { ev.preventDefault(); copyFormat(); return; }
       if (k === "v") { ev.preventDefault(); pasteFormat(); return; }
+      // Insert comment at the caret: Alt+Meta+A (OO; Mac Opt+Cmd+A).
+      // Meta+Alt only — the !ev.ctrlKey guard keeps it free of the
+      // Ctrl+Alt combinations above. Opens the comment field dialog.
+      if (!ev.ctrlKey && k === "a") { ev.preventDefault(); openCommentDialog(); return; }
     }
     // Function keys (no ctrl required): F9 updates fields at selection
     // (OO/Word convention); F1 opens Help (OO convention).
