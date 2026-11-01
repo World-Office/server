@@ -2200,6 +2200,17 @@ body.multi-page-view #editor .page-break br { display: none; }
    position are kept; only the stacking changes. */
 #editor img.obj-front { float: none; display: block; margin: 0 auto;
   position: relative; z-index: 1; }
+/* WO-21-ctx-through: OO wrap "Through" (wrapThrough). Same detached
+   above-text layering as obj-front (float:none, z-index above the text),
+   but the box is kept transparent so the text visually crosses it — OO
+   lays the shape above the text and lets the text pass "through" an
+   unfilled shape. Honest rendering: web text cannot flow "through" a box;
+   we approximate OO's Through as an above-text transparent layer (no
+   reflow). The placeholder keeps its content; only the background shows
+   the text beneath (mirrors obj-front, adds background: transparent). */
+#editor img.obj-through,
+#editor div.object.obj-through { float: none; display: block; margin: 0 auto;
+  position: relative; z-index: 1; background: transparent; }
 #editor img.obj-center { display: block; margin: 4px auto; }
 
 /* WO-RIBBON-FLEX: the old right-edge calc(100% - X) pin overrides are gone —

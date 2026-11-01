@@ -3385,7 +3385,11 @@
   // Honest rendering: web text does not reflow around the object — like
   // obj-behind it detaches from the text flow (float:none) and layers by
   // z-index, only ABOVE the page text instead of below (see style.css).
-  const OBJ_LAYOUT_CLASSES = ["obj-inline", "obj-square", "obj-right", "obj-behind", "obj-front", "obj-center"];
+  // WO-21-ctx-through: obj-through = OO wrap "Through" — same above-text
+  // detachment as obj-front, but the box is rendered transparent so the
+  // text visually crosses it. Honest: web text cannot flow "through" a
+  // box; we approximate OO's Through as an above-text transparent layer.
+  const OBJ_LAYOUT_CLASSES = ["obj-inline", "obj-square", "obj-right", "obj-behind", "obj-front", "obj-through", "obj-center"];
   function groupSelectedObjects(obj) {
     const parent = obj.parentNode;
     if (!parent || parent === editor) return false;
@@ -3540,7 +3544,7 @@
       }
       mutated = true;
     } else if (value === "wrap-inline" || value === "wrap-square" ||
-               value === "wrap-tight" || value === "wrap-behind" || value === "wrap-front") {
+               value === "wrap-tight" || value === "wrap-behind" || value === "wrap-front" || value === "wrap-through") {
       OBJ_LAYOUT_CLASSES.forEach((c) => obj.classList.remove(c));
       // WO-21-ctx-tight: OO "Tight" wraps text closely around the shape
       // contour, but WO placeholder objects are rectangular (no vector
@@ -3549,9 +3553,14 @@
       // for rectangular placeholders until a real vector contour exists.
       // data-wrap="tight" still records the user's explicit wrap choice so
       // the ctx menu, Layout wrapping menus and right-panel stay in sync.
+      // WO-21-ctx-through: wrap-through layers ABOVE the text (obj-through,
+      // same z-index as obj-front) but keeps a transparent box so the text
+      // visually crosses it — web text cannot flow "through" a box, so this
+      // is the honest approximation of OO's Through (see style.css).
       obj.classList.add(value === "wrap-square" || value === "wrap-tight" ? "obj-square"
         : value === "wrap-behind" ? "obj-behind"
-        : value === "wrap-front" ? "obj-front" : "obj-inline");
+        : value === "wrap-front" ? "obj-front"
+        : value === "wrap-through" ? "obj-through" : "obj-inline");
       obj.setAttribute("data-wrap", value.slice(5));
       mutated = true;
     } else if (value === "actual-size" && obj.matches && obj.matches("img")) {
@@ -7009,7 +7018,8 @@
       wrapSel.value = obj.getAttribute("data-wrap") === "tight" ? "wrap-tight"
         : obj.classList.contains("obj-square") ? "wrap-square"
         : obj.classList.contains("obj-behind") ? "wrap-behind"
-        : obj.classList.contains("obj-front") ? "wrap-front" : "wrap-inline";
+        : obj.classList.contains("obj-front") ? "wrap-front"
+        : obj.classList.contains("obj-through") ? "wrap-through" : "wrap-inline";
     }
     const cs = window.getComputedStyle(obj);
     const fillIn = document.getElementById("rp-image-fill");
@@ -7042,7 +7052,8 @@
       wrapSel.value = img.getAttribute("data-wrap") === "tight" ? "wrap-tight"
         : img.classList.contains("obj-square") ? "wrap-square"
         : img.classList.contains("obj-behind") ? "wrap-behind"
-        : img.classList.contains("obj-front") ? "wrap-front" : "wrap-inline";
+        : img.classList.contains("obj-front") ? "wrap-front"
+        : img.classList.contains("obj-through") ? "wrap-through" : "wrap-inline";
     }
     const spec = readChartSpec(img);
     const typeSel = document.getElementById("rp-chart-type");
@@ -9796,6 +9807,10 @@
       } else if (action === "WrapFront") {
         closeCtx();
         applyObjectOp("wrap-front");
+        syncRightPanelControls();
+      } else if (action === "WrapThrough") {
+        closeCtx();
+        applyObjectOp("wrap-through");
         syncRightPanelControls();
       } else if (action === "ConvertToShape") {
         closeCtx();
@@ -13653,17 +13668,20 @@
   function applyObjLayout(attr, value) {
     if (!floatImg) return;
     if (attr === "wrap") {
-      floatImg.classList.remove("obj-inline", "obj-square", "obj-right", "obj-behind", "obj-front", "obj-center");
+      floatImg.classList.remove("obj-inline", "obj-square", "obj-right", "obj-behind", "obj-front", "obj-through", "obj-center");
       floatImg.style.position = ""; floatImg.style.zIndex = "";
       // WO-21-ctx-tight: tight==square for the rectangular placeholders the
       // popup works on (no vector contour yet); the marker keeps the choice.
+      // WO-21-ctx-through: "through" is the obj-through above-text
+      // transparent layer — same detachment as front, transparent box.
       if (value === "square" || value === "tight") floatImg.classList.add("obj-square");
       else if (value === "behind") floatImg.classList.add("obj-behind");
       else if (value === "front") floatImg.classList.add("obj-front");
+      else if (value === "through") floatImg.classList.add("obj-through");
       else floatImg.classList.add("obj-inline");
       floatImg.setAttribute("data-wrap", value);
     } else if (attr === "align") {
-      floatImg.classList.remove("obj-inline", "obj-square", "obj-right", "obj-behind", "obj-front", "obj-center");
+      floatImg.classList.remove("obj-inline", "obj-square", "obj-right", "obj-behind", "obj-front", "obj-through", "obj-center");
       if (value === "left") floatImg.classList.add("obj-square");
       else if (value === "right") floatImg.classList.add("obj-square", "obj-right");
       else floatImg.classList.add("obj-center");
