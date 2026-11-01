@@ -3458,6 +3458,58 @@
     setStatus(t("Status.DistributedHorizontally"));
     return true;
   }
+  // WO-21-ctx-distribute-vertically: Distribute selected objects vertically with equal spacing
+  function distributeObjectsVertically() {
+    if (selectedObjects.length < 2) {
+      setStatus(t("Status.DistributeNeedsTwoObjects"));
+      return false;
+    }
+    // Get bounding rects of all selected objects
+    const rects = selectedObjects.map((obj) => {
+      const r = obj.getBoundingClientRect();
+      return {
+        element: obj,
+        top: r.top,
+        bottom: r.bottom,
+        height: r.height,
+      };
+    });
+    // Sort by top position
+    rects.sort((a, b) => a.top - b.top);
+    // Calculate total height of all objects
+    const totalHeight = rects.reduce((sum, r) => sum + r.height, 0);
+    // Calculate available space between first and last object
+    const first = rects[0];
+    const last = rects[rects.length - 1];
+    const availableSpace = last.top - first.top + last.height - first.height;
+    // Calculate gaps: (availableSpace - totalHeight) / (n - 1)
+    const gap = (availableSpace - totalHeight) / (rects.length - 1);
+    // Position objects with equal spacing
+    let currentTop = first.top;
+    for (let i = 0; i < rects.length; i++) {
+      const rect = rects[i];
+      const obj = rect.element;
+      // Calculate the editor-relative position
+      const editorRect = editor.getBoundingClientRect();
+      const topRelativeToEditor = currentTop - editorRect.top;
+      // Set the position preserving height
+      obj.style.position = "absolute";
+      obj.style.top = topRelativeToEditor + "px";
+      // Preserve height if it was explicitly set
+      if (!obj.style.height) {
+        obj.style.height = rect.height + "px";
+      }
+      currentTop += rect.height + gap;
+    }
+    // Clear multi-selection and continue with standard dirty chain
+    clearMultiSelection();
+    captureHistory();
+    markDirty();
+    scheduleCollabSync();
+    notifyHost("editing");
+    setStatus(t("Status.DistributedVertically"));
+    return true;
+  }
   function applyObjectOp(op) {
     const value = String(op || "");
     window.dispatchEvent(new CustomEvent("wo:object-op", { detail: { op: value } }));
@@ -9365,6 +9417,11 @@
       if (distributeBtn) {
         distributeBtn.hidden = selectedObjects.length < 2;
       }
+      // WO-21-ctx-distribute-vertically: show DistributeVertically when >=2 objects selected
+      const distributeVertBtn = ctxMenu.querySelector('button[data-ctx="DistributeVertically"]');
+      if (distributeVertBtn) {
+        distributeVertBtn.hidden = selectedObjects.length < 2;
+      }
       // T-002 object ctx parity: link/field rows gate on the caret target.
       let ctxAnchor = window.getSelection && window.getSelection().anchorNode
         || e.target;
@@ -9584,6 +9641,21 @@
         // AF8-INSERT-CTX-CLEANUP: OO-parity completion rows. Real DOM ops
         // where they exist (links, lists, tracked changes), wo: marker
         // events where a dialog slice is the follow-up (loud-stub contract).
+      } else if (action === "DistributeVertically") {
+        closeCtx();
+        if (selectedObjects.length >= 2) {
+          distributeObjectsVertically();
+        } else {
+          // Try with single selected object - select it first
+          const obj = selectedObject();
+          if (obj) {
+            clearMultiSelection();
+            addToMultiSelection(obj);
+            setStatus(t("Status.SelectAnotherObject"));
+          } else {
+            setStatus(t("Status.NoObjectsSelected"));
+          }
+        }
       } else if (action === "EditLink") {
         editLinkAtSelection();
       } else if (action === "RemoveLink") {
