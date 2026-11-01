@@ -655,6 +655,7 @@
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-inline" data-i18n="Layout.Wrapping.Inline">Inline</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-square" data-i18n="Layout.Wrapping.Square">Square</button></li>
         <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-behind" data-i18n="Layout.Wrapping.Behind">Behind text</button></li>
+        <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-front" data-i18n="Layout.Wrapping.Front">In front of text</button></li>
       </ul>
     </span>
     <button type="button" data-cmd="objectOp" data-value="bring-forward" data-i18n="Layout.Object.BringForward">Bring forward</button>
@@ -924,6 +925,7 @@
       <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-inline" data-i18n="Layout.Wrapping.Inline">Inline</button></li>
       <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-square" data-i18n="Layout.Wrapping.Square">Square</button></li>
       <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-behind" data-i18n="Layout.Wrapping.Behind">Behind text</button></li>
+      <li role="none"><button type="button" role="menuitem" data-cmd="objectOp" data-value="wrap-front" data-i18n="Layout.Wrapping.Front">In front of text</button></li>
     </ul>
     </span>
     </div>
@@ -1183,6 +1185,7 @@
               <option value="wrap-inline" data-i18n="RightPanel.WrapInline">Inline</option>
               <option value="wrap-square" data-i18n="RightPanel.WrapSquare">Square</option>
               <option value="wrap-behind" data-i18n="RightPanel.WrapBehind">Behind text</option>
+              <option value="wrap-front" data-i18n="RightPanel.WrapFront">In front of text</option>
             </select>
           </div>
           <div class="rp-group">
@@ -1224,6 +1227,7 @@
               <option value="wrap-inline" data-i18n="RightPanel.WrapInline">Inline</option>
               <option value="wrap-square" data-i18n="RightPanel.WrapSquare">Square</option>
               <option value="wrap-behind" data-i18n="RightPanel.WrapBehind">Behind text</option>
+              <option value="wrap-front" data-i18n="RightPanel.WrapFront">In front of text</option>
             </select>
           </div>
           <div class="rp-group">
@@ -1591,6 +1595,7 @@
     <button type="button" role="menuitem" data-ctx="WrapInline" data-showif="object" data-i18n="Ctx.WrapInline">Inline</button>
     <button type="button" role="menuitem" data-ctx="WrapSquare" data-showif="object" data-i18n="Ctx.WrapSquare">Square</button>
     <button type="button" role="menuitem" data-ctx="WrapBehind" data-showif="object" data-i18n="Ctx.WrapBehind">Behind text</button>
+    <button type="button" role="menuitem" data-ctx="WrapFront" data-showif="object" data-i18n="Ctx.WrapFront">In front of text</button>
     <button type="button" role="menuitem" data-ctx="ConvertToShape" data-showif="object" data-i18n="Ctx.ConvertToShape">Convert to shape</button>
     <div class="ctx-sep" data-showif="object" role="separator"></div>
     <button type="button" role="menuitem" data-ctx="DistributeHorizontally" data-showif="object" data-i18n="Ctx.DistributeHorizontally">Distribute horizontally</button>
@@ -3286,6 +3291,7 @@
         <button type="button" id="btn-wrap-inline" data-i18n="Layout.Wrapping.Inline" data-objwrap="inline" class="primary-sm">Inline</button>
         <button type="button" id="btn-wrap-square" data-i18n="Layout.Wrapping.Square" data-objwrap="square">Square</button>
         <button type="button" id="btn-wrap-behind" data-i18n="Layout.Wrapping.Behind" data-objwrap="behind">Behind</button>
+        <button type="button" id="btn-wrap-front" data-i18n="Layout.Wrapping.Front" data-objwrap="front">In front</button>
       </div>
       <div class="objlayout-row"><span>Align</span>
         <button type="button" id="btn-align-left" data-i18n="Backstage.ObjLayout.AlignLeft" data-objalign="left">Left</button>

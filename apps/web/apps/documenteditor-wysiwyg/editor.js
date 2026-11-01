@@ -3381,7 +3381,11 @@
     if (lastObjectPick && editor.contains(lastObjectPick)) return lastObjectPick;
     return null;
   }
-  const OBJ_LAYOUT_CLASSES = ["obj-inline", "obj-square", "obj-right", "obj-behind", "obj-center"];
+  // WO-21-ctx-in-front-of-text: obj-front = OO wrap "In front of text".
+  // Honest rendering: web text does not reflow around the object — like
+  // obj-behind it detaches from the text flow (float:none) and layers by
+  // z-index, only ABOVE the page text instead of below (see style.css).
+  const OBJ_LAYOUT_CLASSES = ["obj-inline", "obj-square", "obj-right", "obj-behind", "obj-front", "obj-center"];
   function groupSelectedObjects(obj) {
     const parent = obj.parentNode;
     if (!parent || parent === editor) return false;
@@ -3535,10 +3539,12 @@
           (value === "bring-forward" ? 1 : -1));
       }
       mutated = true;
-    } else if (value === "wrap-inline" || value === "wrap-square" || value === "wrap-behind") {
+    } else if (value === "wrap-inline" || value === "wrap-square" ||
+               value === "wrap-behind" || value === "wrap-front") {
       OBJ_LAYOUT_CLASSES.forEach((c) => obj.classList.remove(c));
       obj.classList.add(value === "wrap-square" ? "obj-square"
-        : value === "wrap-behind" ? "obj-behind" : "obj-inline");
+        : value === "wrap-behind" ? "obj-behind"
+        : value === "wrap-front" ? "obj-front" : "obj-inline");
       mutated = true;
     } else if (value === "actual-size" && obj.matches && obj.matches("img")) {
       // OO contextual "Actual size": reset to natural pixel size.
@@ -6889,7 +6895,8 @@
     const wrapSel = document.getElementById("rp-image-wrap");
     if (wrapSel) {
       wrapSel.value = obj.classList.contains("obj-square") ? "wrap-square"
-        : obj.classList.contains("obj-behind") ? "wrap-behind" : "wrap-inline";
+        : obj.classList.contains("obj-behind") ? "wrap-behind"
+        : obj.classList.contains("obj-front") ? "wrap-front" : "wrap-inline";
     }
     const cs = window.getComputedStyle(obj);
     const fillIn = document.getElementById("rp-image-fill");
@@ -6918,7 +6925,8 @@
     const wrapSel = document.getElementById("rp-chart-wrap");
     if (wrapSel) {
       wrapSel.value = img.classList.contains("obj-square") ? "wrap-square"
-        : img.classList.contains("obj-behind") ? "wrap-behind" : "wrap-inline";
+        : img.classList.contains("obj-behind") ? "wrap-behind"
+        : img.classList.contains("obj-front") ? "wrap-front" : "wrap-inline";
     }
     const spec = readChartSpec(img);
     const typeSel = document.getElementById("rp-chart-type");
@@ -9654,6 +9662,10 @@
       } else if (action === "WrapBehind") {
         closeCtx();
         applyObjectOp("wrap-behind");
+        syncRightPanelControls();
+      } else if (action === "WrapFront") {
+        closeCtx();
+        applyObjectOp("wrap-front");
         syncRightPanelControls();
       } else if (action === "ConvertToShape") {
         closeCtx();
@@ -13435,13 +13447,14 @@
   function applyObjLayout(attr, value) {
     if (!floatImg) return;
     if (attr === "wrap") {
-      floatImg.classList.remove("obj-inline", "obj-square", "obj-right", "obj-behind", "obj-center");
+      floatImg.classList.remove("obj-inline", "obj-square", "obj-right", "obj-behind", "obj-front", "obj-center");
       floatImg.style.position = ""; floatImg.style.zIndex = "";
       if (value === "square") floatImg.classList.add("obj-square");
       else if (value === "behind") floatImg.classList.add("obj-behind");
+      else if (value === "front") floatImg.classList.add("obj-front");
       else floatImg.classList.add("obj-inline");
     } else if (attr === "align") {
-      floatImg.classList.remove("obj-inline", "obj-square", "obj-right", "obj-behind", "obj-center");
+      floatImg.classList.remove("obj-inline", "obj-square", "obj-right", "obj-behind", "obj-front", "obj-center");
       if (value === "left") floatImg.classList.add("obj-square");
       else if (value === "right") floatImg.classList.add("obj-square", "obj-right");
       else floatImg.classList.add("obj-center");
