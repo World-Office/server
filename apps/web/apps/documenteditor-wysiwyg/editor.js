@@ -9663,6 +9663,82 @@
         } else {
           setStatus(t("Status.NoSelection"));
         }
+      } else if (action === "ResizeToCell") {
+        closeCtx();
+        const obj = selectedObject();
+        if (!obj) {
+          setStatus(t("Status.NoSelection"));
+          return;
+        }
+        // Find the nearest td ancestor
+        const cell = obj.closest("td");
+        if (!cell) {
+          setStatus(t("Status.ResizeToCellNoTable"));
+          return;
+        }
+        // Compute cell's content box (clientWidth/Height minus padding)
+        const cellStyle = window.getComputedStyle(cell);
+        const cellWidth = cell.clientWidth -
+          parseFloat(cellStyle.paddingLeft) -
+          parseFloat(cellStyle.paddingRight);
+        const cellHeight = cell.clientHeight -
+          parseFloat(cellStyle.paddingTop) -
+          parseFloat(cellStyle.paddingBottom);
+        
+        // Check if object has intrinsic aspect ratio
+        let hasIntrinsicRatio = false;
+        let ratio = 1;
+        if (obj.matches("img") && obj.naturalWidth > 0 && obj.naturalHeight > 0) {
+          hasIntrinsicRatio = true;
+          ratio = obj.naturalWidth / obj.naturalHeight;
+        } else if (obj.hasAttribute("data-ratio")) {
+          // Check for data-ratio attribute (format: "width:height")
+          const ratioParts = obj.getAttribute("data-ratio").split(":");
+          if (ratioParts.length === 2) {
+            const rw = parseFloat(ratioParts[0]);
+            const rh = parseFloat(ratioParts[1]);
+            if (rw > 0 && rh > 0) {
+              hasIntrinsicRatio = true;
+              ratio = rw / rh;
+            }
+          }
+        }
+        
+        // Set object width/height
+        if (hasIntrinsicRatio) {
+          // Preserve aspect ratio: fit within cell
+          let newWidth = cellWidth;
+          let newHeight = cellWidth / ratio;
+          if (newHeight > cellHeight) {
+            newHeight = cellHeight;
+            newWidth = cellHeight * ratio;
+          }
+          if (obj.matches("img")) {
+            obj.setAttribute("width", String(Math.round(newWidth)));
+            obj.setAttribute("height", String(Math.round(newHeight)));
+            obj.style.width = "";
+            obj.style.height = "";
+          } else {
+            obj.style.width = Math.round(newWidth) + "px";
+            obj.style.height = Math.round(newHeight) + "px";
+          }
+        } else {
+          // No intrinsic ratio: fill the cell content box
+          if (obj.matches("img")) {
+            obj.setAttribute("width", String(Math.round(cellWidth)));
+            obj.setAttribute("height", String(Math.round(cellHeight)));
+            obj.style.width = "";
+            obj.style.height = "";
+          } else {
+            obj.style.width = Math.round(cellWidth) + "px";
+            obj.style.height = Math.round(cellHeight) + "px";
+          }
+        }
+        captureHistory();
+        markDirty();
+        scheduleCollabSync();
+        notifyHost("editing");
+        setStatus(t("Status.ObjectResizedToCell"));
       } else if (action === "DistributeHorizontally") {
         closeCtx();
         if (selectedObjects.length >= 2) {
