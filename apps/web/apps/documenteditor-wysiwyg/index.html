@@ -1630,6 +1630,13 @@
          mode so the placeholder is rewritten in place. -->
     <button type="button" role="menuitem" data-ctx="EditObject" data-showif="object" data-i18n="Ctx.EditObject">Edit object</button>
     <button type="button" role="menuitem" data-ctx="ConvertToShape" data-showif="object" data-i18n="Ctx.ConvertToShape">Convert to shape</button>
+    <!-- WO-22-ctx-edit-points: OO's vector-only "Edit points" row. The web
+         editor has no vector path/contour model (shapes are CSS/SVG
+         placeholders with no editable geometry), so a real bezier-point
+         editor is a new subsystem — a loud-limited divergence. The handler
+         reports unavailability via setStatus and emits a passive
+         wo:edit-points CustomEvent marker; no silent no-op, no fake editor. -->
+    <button type="button" role="menuitem" data-ctx="EditPoints" data-showif="object" data-i18n="Ctx.EditPoints">Edit points…</button>
     <button type="button" role="menuitem" data-ctx="ResizeToCell" data-showif="object" data-i18n="Ctx.ResizeToCell">Resize to cell</button>
     <div class="ctx-sep" data-showif="object" role="separator"></div>
     <button type="button" role="menuitem" data-ctx="DistributeHorizontally" data-showif="object" data-i18n="Ctx.DistributeHorizontally">Distribute horizontally</button>

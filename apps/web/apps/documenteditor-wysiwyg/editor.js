@@ -9843,6 +9843,17 @@
         } else {
           setStatus(t("Status.NoSelection"));
         }
+      } else if (action === "EditPoints") {
+        // WO-22-ctx-edit-points: honest loud-limited divergence. OO opens an
+        // interactive bezier-point editor here, but the web editor has no
+        // vector path/contour model (shapes are CSS/SVG placeholders with no
+        // editable geometry), so a real editor is a new subsystem. Report
+        // unavailability via setStatus and emit a passive marker — no silent
+        // no-op, no fake editor.
+        closeCtx();
+        window.dispatchEvent(new CustomEvent("wo:edit-points", { detail: {} }));
+        console.info("wo: edit-points: shape contour editing is not available (marker only)");
+        setStatus(t("Status.NotAvailable") + " Edit points: shape contour editing is not available in the web editor", true);
       } else if (action === "ResizeToCell") {
         closeCtx();
         const obj = selectedObject();
