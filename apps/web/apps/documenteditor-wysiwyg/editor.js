@@ -5905,7 +5905,7 @@
     const tw = document.createTreeWalker(blk, NodeFilter.SHOW_TEXT);
     let tn, total = 0;
     while ((tn = tw.nextNode())) { texts.push({ node: tn, start: total }); total += tn.data.length; }
-    if (total < 2) return null;
+    if (total < 2 && blk.querySelectorAll("br").length === 0) return null;
     // line boxes of the whole block (viewport px, zoom-scaled)
     const r = document.createRange();
     r.selectNodeContents(blk);
@@ -5939,17 +5939,63 @@
       for (let i = 0; i < lineMap.length; i++) if (Math.abs(lineMap[i].top - t) < 1.5) return i;
       return -1;
     };
-    let lo = 0, hi = total - 1, splitAt = -1; // first char on line `fit`
-    while (lo <= hi) {
-      const mid = (lo + hi) >> 1;
-      if (lineOf(mid) >= fit) { splitAt = mid; hi = mid - 1; } else lo = mid + 1;
+    // Split point = first DOM position on line `fit`. Two shapes:
+    // (a) a child (text node, <br> or inline element) OPENS a line at/after
+    //     `fit` → split before that child. <br>-only soft-break lines
+    //     (Shift+Enter padding — BHV-002) carry no text chars, so the char
+    //     search in (b) cannot see them; without this walk those blocks
+    //     read as unsplittable and their soft lines bled past the sheet
+    //     onto the gray backdrop. NOTE: range rects are EMPTY for <br> —
+    //     element children report via getBoundingClientRect instead.
+    // (b) a child WRAPS across line `fit` (starts before, ends after) →
+    //     split inside it at the first char on/after `fit` (the original
+    //     char binary search, which only handles this shape).
+    const lineIdxAt = (v, edge) => {
+      for (let j = 0; j < lineMap.length; j++)
+        if (Math.abs(lineMap[j][edge] - v) < 1.5) return j;
+      return -1;
+    };
+    const childLineSpan = (ch) => {
+      let top = null, bottom = null;
+      if (ch.nodeType === 1) {
+        const b = ch.getBoundingClientRect();
+        if (b.width || b.height) { top = b.top / zoom; bottom = b.bottom / zoom; }
+      } else {
+        r.selectNodeContents(ch);
+        const rects = r.getClientRects();
+        if (rects.length) {
+          top = rects[0].top / zoom;
+          bottom = rects[rects.length - 1].bottom / zoom;
+        }
+      }
+      if (top == null) return null;
+      return { first: lineIdxAt(top, "top"), last: lineIdxAt(bottom, "bottom") };
+    };
+    let boundary = null, spanning = false;
+    for (let i = 0; i < blk.childNodes.length; i++) {
+      const span = childLineSpan(blk.childNodes[i]);
+      if (!span || span.first < 0) continue;
+      if (span.first >= fit) { boundary = blk.childNodes[i]; break; }
+      if (span.last >= fit) { spanning = true; break; }
     }
-    if (splitAt <= 0) return null;
-    const sp = at(splitAt);
-    r.setStart(sp.node, sp.off);
+    if (boundary) {
+      r.setStartBefore(boundary);
+    } else if (spanning) {
+      let lo = 0, hi = total - 1, splitAt = -1; // first char on line `fit`
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (lineOf(mid) >= fit) { splitAt = mid; hi = mid - 1; } else lo = mid + 1;
+      }
+      if (splitAt <= 0) return null;
+      const sp = at(splitAt);
+      r.setStart(sp.node, sp.off);
+    } else {
+      return null;
+    }
     r.setEndAfter(blk.lastChild);
     const frag = r.extractContents();
-    if (!frag.textContent.trim() && !frag.querySelector("img")) {
+    if (!frag.textContent.trim() && !frag.querySelector("img") &&
+        !frag.querySelector("br")) {
       blk.appendChild(frag); // nothing to move — restore
       return null;
     }
