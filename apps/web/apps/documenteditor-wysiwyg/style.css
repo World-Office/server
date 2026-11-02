@@ -1006,6 +1006,14 @@ select option { background: var(--bg); color: var(--text); }
   z-index: 50;
 }
 
+/* VIS-001: right-edge ribbon menus — anchor from the trigger's RIGHT edge
+   when left-anchoring would push the list past .toolbar's overflow-x: clip
+   edge (list opened entirely off-screen / sliced at the ribbon–ruler band
+   boundary). setMenu() in editor.js adds .flip-right on open; the flyout
+   sublists of a flipped list open LEFT for the same reason. */
+.rb-menu .menu-list.flip-right { left: auto; right: 0; }
+.menu-list.flip-right .menu-sublist { left: auto; right: 100%; margin: 0 4px 0 0; }
+
 .menu-sublist {
   top: 0;
   left: 100%;

@@ -10317,6 +10317,16 @@
     if (!menu) return;
     menu.hidden = !open;
     if (trigger) trigger.setAttribute("aria-expanded", String(open));
+    // VIS-001: right-anchored flip — a left-anchored .menu-list under a
+    // right-edge trigger extends past .toolbar's overflow-x: clip edge and
+    // opens entirely off-screen ("cut" at the ribbon/ruler band boundary).
+    if (open) {
+      menu.classList.remove("flip-right");
+      const tb = document.getElementById("toolbar");
+      if (tb && menu.getBoundingClientRect().right > tb.getBoundingClientRect().right + 0.5) {
+        menu.classList.add("flip-right");
+      }
+    }
   }
   function isBackstageOpen() {
     return !!(backstage && backstage.classList.contains("open"));

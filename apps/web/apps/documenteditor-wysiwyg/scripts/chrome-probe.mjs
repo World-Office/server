@@ -165,6 +165,54 @@ check("(e) 900px: dropdown opens fully visible below the band", async (page) => 
   await page.keyboard.press("Escape");
 });
 
+check("(e2) VIS-001: right-edge dropdown flips inside the band (ruler no longer cuts it)", async (page) => {
+  await page.evaluate(() => document.querySelector('.ribbon-tab[data-tab="view"]').click());
+  await sleep(150);
+  // ribbon may overflow at 900px — drive the › chevron until the trigger
+  // is inside the viewport (what a user does), like check (c)
+  for (let i = 0; i < 12; i++) {
+    const inside = await page.evaluate(() => {
+      const t = document.getElementById("btn-macro-menu");
+      if (!t) return false;
+      const r = t.getBoundingClientRect();
+      return r.left >= 0 && r.right <= window.innerWidth;
+    });
+    if (inside) break;
+    const more = await page.evaluate(() => {
+      const b = document.getElementById("rib-scroll-right");
+      if (b && !b.hidden) { b.click(); return true; }
+      return false;
+    });
+    if (!more) break;
+    await sleep(120);
+  }
+  const opened = await page.evaluate(() => {
+    const trig = document.getElementById("btn-macro-menu");
+    if (!trig) return false;
+    trig.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, cancelable: true }));
+    trig.click();
+    const list = trig.closest(".rb-menu").querySelector(".menu-list");
+    return !!list && !list.hidden;
+  });
+  if (!opened) throw new Error("Macros dropdown did not open on View at 900px");
+  const fit = await page.evaluate(() => {
+    const list = document.querySelector('.ribbon-page.active .rb-menu .menu-list:not([hidden])');
+    const tb = document.getElementById("toolbar").getBoundingClientRect();
+    const lr = list.getBoundingClientRect();
+    const rr = document.querySelector(".ruler").getBoundingClientRect();
+    // hit-test the mid-ruler band under the list: the list must paint ON TOP
+    const y = (rr.top + rr.bottom) / 2;
+    const x = Math.min(Math.max(lr.left + lr.width / 2, 0), window.innerWidth - 1);
+    const el = y >= lr.top && y <= lr.bottom ? document.elementFromPoint(x, y) : null;
+    return { l: lr.left, r: lr.right, tbR: tb.right, onTop: el ? list.contains(el) : true, h: lr.height };
+  });
+  if (fit.h <= 0) throw new Error("dropdown has zero height");
+  if (fit.r > fit.tbR + 0.5) throw new Error(`dropdown right ${fit.r} past toolbar clip edge ${fit.tbR} — cut off`);
+  if (!fit.onTop) throw new Error("dropdown does not paint above the ruler band");
+  await page.keyboard.press("Escape");
+  await page.evaluate(() => document.querySelector('.ribbon-tab[data-tab="home"]').click());
+});
+
 check("(g) zero pageerrors", async (_page, errors) => {
   if (errors.length > 0) throw new Error(`${errors.length} pageerror(s): ${errors[0]}`);
 });
