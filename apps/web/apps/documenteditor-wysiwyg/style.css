@@ -928,14 +928,24 @@ select option { background: var(--bg); color: var(--text); }
   font-size: 12px;
   cursor: pointer;
 }
-.ribbon-tab:hover { color: var(--text); background: var(--hover); }
-/* Active tab: filled contrast pill (white in light theme, OO style) —
-   CHROME1-TITLE-TAB-ROW replaced the accent underline. */
-.ribbon-tab[aria-selected="true"] {
+/* (RIB-001: the tab hover face moved below the contextual rules — it needs
+   (0,4,1) to beat both .titlebar button:hover and the contextual tint.) */
+/* RIB-001 (visual): the active tab is a folder tab — it grows onto the
+   titlebar's bottom edge and squares its bottom corners so its face SEAMS
+   into the function band it opens (classic ribbon affordance: the tab
+   belongs to the band). 30px = 28px strip + the 2px strip margin; the
+   .titlebar . prefix lifts specificity (0,3,0) above .titlebar
+   button.ribbon-tab's height: 28px. border-bottom: none lets the face
+   reach the edge; an ACTIVE contextual tab re-adds its 2px accent
+   underline (0,3,1) — it lands exactly on the seam, Fluent-style. */
+.titlebar .ribbon-tab[aria-selected="true"] {
+  height: 30px;
+  align-self: flex-end;
+  margin-bottom: -2px;
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
   color: var(--text);
   background: var(--tab-active-bg);
-  border-bottom-color: transparent;
-  border-radius: 4px;
   font-weight: 500;
 }
 /* CHROME5-POLISH-ACCENTS: contextual tabs (Chart design, Draw, Header &
@@ -948,6 +958,16 @@ select option { background: var(--bg); color: var(--text); }
 .titlebar button.ribbon-tab.contextual:not([aria-selected="true"]) {
   background: var(--ctx-tab-tint);
   color: var(--text);
+}
+/* RIB-001 (visual): dedicated inactive-tab hover face. var(--hover) is
+   near-invisible on the titlebar in light theme (0.06 black over #f7f7f7);
+   --ribbon-hover is the OO group-hover gray, readable in both themes.
+   Needs (0,4,1) to beat .titlebar button:hover AND (placed after) the
+   contextual tint; :not(active) keeps the seamed pill face on hover.
+   The contextual accent underline survives the hover override. */
+.titlebar button.ribbon-tab:not([aria-selected="true"]):hover {
+  color: var(--text);
+  background: var(--ribbon-hover);
 }
 
 .menu { position: relative; }
