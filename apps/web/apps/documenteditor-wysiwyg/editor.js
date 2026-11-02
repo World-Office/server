@@ -9430,16 +9430,45 @@
     applyTheme();
   }
   // --- ribbon tabs: switch the visible control group ----------------
+  function syncRibbonTabindex() {
+    // Roving tabindex (WAI-ARIA tabs): only the selected tab is tab stops.
+    document.querySelectorAll(".ribbon-tab").forEach((t) =>
+      t.setAttribute("tabindex", t.getAttribute("aria-selected") === "true" ? "0" : "-1"));
+  }
   document.querySelectorAll(".ribbon-tab").forEach((tab) => {
     tab.addEventListener("click", () => {
       document.querySelectorAll(".ribbon-tab").forEach((t) =>
         t.setAttribute("aria-selected", String(t === tab)));
       document.querySelectorAll(".ribbon-page").forEach((p) =>
         p.classList.toggle("active", p.dataset.tab === tab.dataset.tab));
+      syncRibbonTabindex();
       if (typeof closeAllMenus === "function") closeAllMenus();
       updateRibbonScroll(true);
     });
   });
+
+  // --- ribbon tab keyboard navigation (WAI-ARIA tabs, automatic activation)
+  // ArrowLeft/ArrowRight step (wrapping) between the VISIBLE tabs, Home/End
+  // jump to first/last. Focus moves AND activates via the same click wiring
+  // above. Hidden contextual tabs are skipped; #btn-file lives in the strip
+  // but is a menu trigger, not a tab, so it never participates.
+  const ribbonTablist = document.querySelector('.ribbon-tabs[role="tablist"]');
+  if (ribbonTablist) {
+    ribbonTablist.addEventListener("keydown", (ev) => {
+      const tabs = [...document.querySelectorAll(".ribbon-tab")].filter((t) => !t.hidden);
+      const idx = tabs.indexOf(document.activeElement);
+      let next = -1;
+      if (ev.key === "ArrowRight") next = (idx + 1) % tabs.length;
+      else if (ev.key === "ArrowLeft") next = (idx - 1 + tabs.length) % tabs.length;
+      else if (ev.key === "Home") next = 0;
+      else if (ev.key === "End") next = tabs.length - 1;
+      if (next === -1 || idx === -1) return;
+      ev.preventDefault();
+      tabs[next].focus();
+      tabs[next].click();
+    });
+    syncRibbonTabindex();
+  }
 
   // --- ribbon overflow chevrons (CHROME1-TITLE-TAB-ROW, OO parity) -----
   // The band is NOT a scroll container (overflow-x:auto would force
