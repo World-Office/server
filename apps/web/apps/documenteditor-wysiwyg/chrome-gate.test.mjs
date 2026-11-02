@@ -90,4 +90,18 @@ for (const needle of [
   assert.ok(editorJs.includes(needle), `editor.js must reference ${needle}`);
 }
 
+// --- VIS-001: ribbon sub-menus must stack above the ruler ---------------------
+// Dropdowns (.menu-list/.menu-sublist, z-index 50) hang below the toolbar band
+// into the ruler strip; they paint over it via #toolbar's stacking context.
+// Pin the sibling ordering so a future z-index on .ruler cannot cut them.
+const rulerBlock = css.match(/\.ruler\s*\{[^}]*\}/)?.[0] ?? "";
+const toolbarBlock = css.match(/\.toolbar\s*\{[^}]*\}/)?.[0] ?? "";
+assert.ok(/z-index:\s*\d/.test(rulerBlock), ".ruler must declare an explicit z-index");
+assert.ok(/z-index:\s*(\d+)/.test(toolbarBlock), ".toolbar must declare an explicit z-index");
+assert.ok(Number(rulerBlock.match(/z-index:\s*(\d+)/)[1]) <
+  Number(toolbarBlock.match(/z-index:\s*(\d+)/)[1]),
+  "ruler z-index must be BELOW toolbar z-index (ribbon sub-menus hang over the ruler)");
+assert.ok(/\.menu-list,\s*\.menu-sublist\s*\{[^}]*z-index:\s*50/.test(css),
+  ".menu-list/.menu-sublist keep z-index 50 inside the toolbar context");
+
 console.log("chrome-gate: title/tab row, chevrons, i18n en+de, nowrap band OK");

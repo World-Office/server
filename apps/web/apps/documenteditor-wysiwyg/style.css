@@ -315,12 +315,19 @@ body {
 
 /* Ruler (band y138–172): cm ticks over the page width, backdrop elsewhere.
    Decorative visual-parity strip. */
+/* VIS-001: ribbon sub-menus vs the ruler. The dropdowns (.menu-list /
+   .menu-sublist, z-index 50) live inside #toolbar's stacking context
+   (z-index 10) and hang BELOW the band into the ruler strip — they must
+   paint over it. Pinned explicitly: ruler z-index 1 < toolbar 10, so a
+   future z-index on the ruler can never silently cut the sub-menus
+   (chrome-gate.test.mjs asserts the ordering). */
 .ruler {
   flex: 0 0 auto;
   height: 32px;
   background: var(--bg);
   border-top: 1px solid var(--border);
   position: relative;
+  z-index: 1;
 }
 .ruler-track {
   position: absolute;
