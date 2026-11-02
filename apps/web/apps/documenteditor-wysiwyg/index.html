@@ -2871,6 +2871,38 @@
   <div id="symbol-dialog" class="dialog-overlay" role="dialog" aria-modal="true" aria-labelledby="symbol-dialog-title">
     <div class="dialog">
       <h3 id="symbol-dialog-title">Insert symbol</h3>
+      <div class="dialog-field">
+        <label for="symbol-font">Font</label>
+        <select id="symbol-font">
+          <option value="">Default</option>
+          <option>Arial</option>
+          <option>Times New Roman</option>
+          <option>Courier New</option>
+          <option>Georgia</option>
+          <option>Verdana</option>
+          <option>Trebuchet MS</option>
+          <option>Comic Sans MS</option>
+          <option>Impact</option>
+          <option>Palatino Linotype</option>
+          <option>Tahoma</option>
+        </select>
+      </div>
+      <div class="dialog-field">
+        <label for="symbol-range">Range</label>
+        <select id="symbol-range">
+          <option value="21-7e">Basic Latin</option>
+          <option value="a1-ff">Latin-1 Supplement</option>
+          <option value="100-17f">Latin Extended-A</option>
+          <option value="391-3ce">Greek</option>
+          <option value="401-45f">Cyrillic</option>
+          <option value="2013-203a">General Punctuation</option>
+          <option value="20a0-20bd">Currency Symbols</option>
+          <option value="2190-21d2">Arrows</option>
+          <option value="2200-2261">Math Operators</option>
+          <option value="25a0-25ff">Geometric Shapes</option>
+          <option value="2701-27be">Dingbats</option>
+        </select>
+      </div>
       <div id="symbol-grid" class="symbol-grid" role="listbox" aria-label="Symbols"></div>
       <div class="dialog-actions">
         <button id="btn-symbol-close" data-i18n="Dialog.Close">Close</button>

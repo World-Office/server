@@ -8650,35 +8650,51 @@
   if (docLangCaret && docLang) docLangCaret.addEventListener("click", () => {
     try { docLang.showPicker(); } catch (err) { docLang.focus(); }
   });
-  const SYMBOLS = ["§", "¶", "°", "±", "×", "÷", "≈", "≠", "≤", "≥", "∞", "√",
-                   "€", "£", "¥", "¢", "©", "®", "™", "→", "←", "↑", "↓", "•",
-                   "–", "—", "…", "«", "»", "½", "¼", "¾", "α", "β", "μ", "π",
-                   "Ω", "∆", "∑", "♥", "★", "☺", "☎", "✂", "☞", "†"];
+  // Symbol picker — OO's dialog contract is Font + Range over a glyph grid;
+  // both filters are real: font-family renders the grid in that font, range
+  // selects the Unicode block (hex bounds live in the <option> values).
+  const SYMBOL_INVISIBLE = (cp) => cp === 0xa0 || cp === 0xad ||
+    (cp >= 0x2000 && cp <= 0x200f) || (cp >= 0x2028 && cp <= 0x202f);
   let symbolGridBuilt = false;
+  function rebuildSymbolGrid() {
+    const dialog = document.getElementById("symbol-dialog");
+    const grid = document.getElementById("symbol-grid");
+    const fontSel = document.getElementById("symbol-font");
+    const rangeSel = document.getElementById("symbol-range");
+    if (!dialog || !grid || !fontSel || !rangeSel) return;
+    if (!symbolGridBuilt) {
+      fontSel.addEventListener("change", rebuildSymbolGrid);
+      rangeSel.addEventListener("change", rebuildSymbolGrid);
+      symbolGridBuilt = true;
+    }
+    grid.textContent = "";
+    grid.style.fontFamily = fontSel.value ? '"' + fontSel.value + '", serif' : "";
+    const parts = (rangeSel.value || "21-7e").split("-");
+    const lo = parseInt(parts[0], 16), hi = parseInt(parts[1], 16);
+    for (let cp = lo; cp <= hi; cp++) {
+      if (SYMBOL_INVISIBLE(cp)) continue;
+      const sym = String.fromCodePoint(cp);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "symbol-btn";
+      btn.textContent = sym;
+      btn.setAttribute("aria-label", "Insert " + sym);
+      btn.addEventListener("click", () => {
+        dialog.classList.remove("open");
+        restoreFocus();
+        emitCommand("insertSymbol", sym);
+      });
+      grid.appendChild(btn);
+    }
+  }
   function openSymbolDialog() {
     if (READ_ONLY) return;
     const dialog = document.getElementById("symbol-dialog");
-    const grid = document.getElementById("symbol-grid");
-    if (!dialog || !grid) return;
-    if (!symbolGridBuilt) {
-      SYMBOLS.forEach((sym) => {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "symbol-btn";
-        btn.textContent = sym;
-        btn.setAttribute("aria-label", "Insert " + sym);
-        btn.addEventListener("click", () => {
-          dialog.classList.remove("open");
-          restoreFocus();
-          emitCommand("insertSymbol", sym);
-        });
-        grid.appendChild(btn);
-      });
-      symbolGridBuilt = true;
-    }
+    if (!dialog) return;
+    rebuildSymbolGrid();
     rememberFocus();
     dialog.classList.add("open");
-    const first = grid.querySelector(".symbol-btn");
+    const first = dialog.querySelector(".symbol-btn");
     if (first) first.focus();
   }
   const symbolBtn = document.getElementById("btn-symbol");
