@@ -2929,13 +2929,23 @@
     editingAnchor = null;
     rememberFocus();
     urlInput.value = "";
+    // OO Hyperlink window pre-fills "Text to display" with the selection.
+    const textInput = document.getElementById("link-text");
+    if (textInput) {
+      const sel = window.getSelection();
+      const node = sel && sel.anchorNode;
+      textInput.value = node && editor.contains(node)
+        ? sel.toString().replace(/\s+/g, " ").trim() : "";
+    }
     dialog.classList.add("open");
     urlInput.focus();
   }
   function confirmLinkDialog() {
     const urlInput = document.getElementById("link-url");
+    const textInput = document.getElementById("link-text");
     const dialog = document.getElementById("link-dialog");
     const url = (urlInput && urlInput.value || "").trim();
+    const text = (textInput && textInput.value || "").replace(/\s+/g, " ").trim();
     if (dialog) dialog.classList.remove("open");
     restoreFocus();
     if (!url) { editingAnchor = null; return; }
@@ -2943,6 +2953,7 @@
     // inserting a new one (the selection was not captured for the edit).
     if (editingAnchor && editor.contains(editingAnchor)) {
       editingAnchor.setAttribute("href", url);
+      if (text) editingAnchor.textContent = text;
       editingAnchor = null;
       captureHistory();
       markDirty();
@@ -2952,7 +2963,12 @@
     }
     editor.focus();
     const sel = window.getSelection();
-    if (sel && sel.toString().trim() !== "") {
+    if (text) {
+      // OO "Text to display": the typed text becomes the anchor text
+      // (replacing the selection; empty falls back to selection/URL).
+      document.execCommand("insertHTML", false,
+        '<a href="' + escapeAttr(url) + '">' + escapeAttr(text) + "</a>");
+    } else if (sel && sel.toString().trim() !== "") {
       document.execCommand("createLink", false, url);
     } else {
       document.execCommand("insertHTML", false,
@@ -2990,6 +3006,8 @@
     if (!dialog || !urlInput) return;
     editingAnchor = a;
     urlInput.value = a.getAttribute("href") || "";
+    const textInput = document.getElementById("link-text");
+    if (textInput) textInput.value = (a.textContent || "").replace(/\s+/g, " ").trim();
     rememberFocus();
     dialog.classList.add("open");
     urlInput.focus();
