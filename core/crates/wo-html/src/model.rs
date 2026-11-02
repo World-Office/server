@@ -187,6 +187,14 @@ pub enum InlineElement {
         title: Option<String>,
         content: Vec<InlineElement>,
     },
+    /// A document field (editor dialect `<span class="page-number">`):
+    /// serializes back to that empty marker span and converts to a real
+    /// OOXML PAGE field for docx export (see wo-x2t). The editor's body
+    /// page-number placeholder carries no instr text; docx->html derives
+    /// instr from the captured fldSimple.
+    Field {
+        instr: String,
+    },
 }
 
 /// One reply inside a comment thread (F-102).

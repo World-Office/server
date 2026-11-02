@@ -134,7 +134,11 @@ fn c2_3_ol_start_value_roundtrip() {
     );
     // exactly one startValue (first item only)
     let count = xml.matches("<w:startValue").count();
-    assert_eq!(count, 1, "expected exactly one w:startValue, found {}", count);
+    assert_eq!(
+        count, 1,
+        "expected exactly one w:startValue, found {}",
+        count
+    );
     let out = roundtrip(html);
     assert!(
         out.contains(r#"<ol start="5">"#),
@@ -234,7 +238,11 @@ fn c2_2b_list_style_type_roundtrip() {
     let xml2 = docx_xml(&docx2);
     assert!(xml2.contains("<w:numId w:val=\"7\"/>"), "circle -> numId 7");
     let out2 = roundtrip(circle);
-    assert!(out2.contains("list-style-type:circle"), "circle lost: {}", out2);
+    assert!(
+        out2.contains("list-style-type:circle"),
+        "circle lost: {}",
+        out2
+    );
 }
 
 #[test]
@@ -273,4 +281,28 @@ fn gap_run_styling_survives_bold_nesting() {
         "color lost in nesting: {}",
         out
     );
+}
+
+#[test]
+fn page_number_span_becomes_docx_page_field_and_back() {
+    // The editor's flat HTML puts an empty class-only page-number span next
+    // to body paragraphs. It must convert to a real w:fldSimple PAGE field
+    // in the docx and survive back to the same dialect marker.
+    let html = "<span class=\"page-number\"></span><p>Sentinel paragraph here.</p>";
+    let docx = HtmlToDocxConverter.convert(html.as_bytes()).unwrap();
+    let xml = docx_xml(&docx);
+    assert!(
+        xml.contains("fldSimple") && xml.contains("PAGE"),
+        "docx must carry a PAGE field, got: {}",
+        xml
+    );
+    let out = DocxToHtmlConverter.convert(&docx).unwrap();
+    let out = String::from_utf8(out).unwrap();
+    assert!(
+        out.contains("class=\"page-number\""),
+        "page-number marker must survive the round trip: {}",
+        out
+    );
+    // and the text next to it is untouched
+    assert!(out.contains("Sentinel paragraph here."), "{}", out);
 }

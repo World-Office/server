@@ -1949,6 +1949,7 @@ fn inline_elements_to_formatting(elements: &[InlineElement]) -> Vec<Formatting> 
                 }
             }
             InlineElement::LineBreak => {}
+            InlineElement::Field { .. } => {}
         }
     }
     result
@@ -1994,6 +1995,7 @@ fn extract_inline_text(elements: &[InlineElement]) -> String {
                 }
             }
             InlineElement::LineBreak => result.push(' '),
+            InlineElement::Field { .. } => {}
         }
     }
     result
@@ -2262,6 +2264,7 @@ fn html_inlines_to_rtf_inlines(inlines: &[InlineElement]) -> Vec<RtfInline> {
             InlineElement::LineBreak => {
                 result.push(RtfInline::LineBreak);
             }
+            InlineElement::Field { .. } => {}
         }
     }
     result
@@ -2435,6 +2438,7 @@ fn extract_html_text(inlines: &[InlineElement]) -> String {
                     result.push_str(&r.text);
                 }
             }
+            InlineElement::Field { .. } => {}
         }
     }
     result
@@ -2605,7 +2609,35 @@ fn html_to_ooxml(html_doc: &HtmlDocument) -> OoxmlDocument {
                 // it, DOCX output cannot represent it).
                 let runs =
                     html_inlines_to_docx_runs(content, &mut media, &mut image_rels, &mut comments);
-                if !runs.is_empty() {
+                // Page-number field -> a real PAGE field in the docx (a
+                // fldSimple with an empty result run, re-played verbatim by
+                // the OOXML serializer; PAGE fields round-trip natively).
+                let field_raw = content.iter().find_map(|i| match i {
+                    InlineElement::Field { instr } => Some(format!(
+                        r#"<w:fldSimple w:instr=" {instr} "><w:r><w:t xml:space="preserve"></w:t></w:r></w:fldSimple>"#
+                    )),
+                    _ => None,
+                });
+                if let Some(fld) = field_raw {
+                    paragraphs.push(DocxParagraph {
+                        style_id: None,
+                        properties: DocxParagraphProperties {
+                            bidi: dir.as_deref() == Some("rtl"),
+                            alignment: align.as_deref().and_then(|a| match a {
+                                "left" => Some(TextAlignment::Left),
+                                "center" => Some(TextAlignment::Center),
+                                "right" => Some(TextAlignment::Right),
+                                "justify" | "both" => Some(TextAlignment::Both),
+                                _ => None,
+                            }),
+                            ..Default::default()
+                        },
+                        section_properties: None,
+                        runs,
+                        raw_flds: vec![fld],
+                        ..Default::default()
+                    });
+                } else if !runs.is_empty() {
                     // F-041: direction: rtl on the block -> w:bidi in DOCX
                     // F-040: background-color -> w:shd, border-* -> w:pBdr
                     // LEDGER2: text-align -> w:jc
@@ -3328,6 +3360,10 @@ fn html_inlines_to_docx_runs(
                     });
                 }
             }
+            // Page-number field: emits no text run — the paragraph arm
+            // turns it into a verbatim w:fldSimple PAGE so the docx carries
+            // a real page field (insert-page-number round-trip probe).
+            InlineElement::Field { .. } => {}
             InlineElement::Text { text, style } => {
                 if !text.is_empty() {
                     // LEDGER2: span style CSS -> run properties so
@@ -3793,6 +3829,7 @@ fn html_inlines_to_odf_spans(inlines: &[InlineElement]) -> Vec<TextSpan> {
                     });
                 }
             }
+            InlineElement::Field { .. } => {}
         }
     }
     spans
@@ -4185,6 +4222,23 @@ fn docx_body_to_html_blocks(doc: &OoxmlDocument) -> Vec<BlockElement> {
             .unwrap_or(1);
 
         let inlines = docx_runs_to_html_inlines(body, &para.runs);
+
+        // A captured w:fldSimple (PAGE, NUMPAGES, ...) becomes the editor's
+        // page-number dialect marker so the field survives docx -> html ->
+        // flatHtml (insert-page-number round-trip probe). The verbatim field
+        // subtree carries w:instr; prepend the marker to the paragraph.
+        let mut inlines = inlines;
+        if !para.raw_flds.is_empty() {
+            if let Some(instr) = para.raw_flds.iter().find_map(|raw| {
+                let lo = raw.find("instr=")?;
+                let start = raw[lo..].find('"').map(|j| lo + j + 1)?;
+                let end = raw[start..].find('"')?;
+                let v = raw[start..start + end].trim();
+                if v.is_empty() { None } else { Some(v.to_string()) }
+            }) {
+                inlines.insert(0, InlineElement::Field { instr });
+            }
+        }
 
         // F-040: map paragraph shading and borders to HTML
         let background = para.properties.shading.clone();

@@ -771,6 +771,25 @@ impl HtmlParser {
                     }];
                 }
                 _ => {
+                    // A bare body-level page-number span (the editor's flat
+                    // HTML puts `<span class="page-number"></span>` next to
+                    // the paragraphs) must become a paragraph around the field
+                    // inline so html->docx keeps it instead of the empty-node
+                    // drop below. parse_inline_elements recurses into the
+                    // span's CHILDREN (an empty placeholder produces nothing),
+                    // so parse the span node itself (as the <p> hoist does).
+                    if ch.is_element()
+                        && ch.tag_name().name() == "span"
+                        && attr(&ch, "class")
+                            .map(|c| c.split_whitespace().any(|t| t == "page-number"))
+                            .unwrap_or(false)
+                    {
+                        return vec![self.block_paragraph(
+                            self.parse_inline_nodes(&[ch.clone()]),
+                            id,
+                            ch,
+                        )];
+                    }
                     let text = node_text(&ch);
                     if !text.is_empty() {
                         return vec![BlockElement::RawHtml {
@@ -946,6 +965,21 @@ impl HtmlParser {
                         elements.push(InlineElement::Text {
                             text: "\u{c}".to_string(),
                             style: None,
+                        });
+                        continue;
+                    }
+                    // A page-number field (editor dialect span.page-number):
+                    // the editor's placeholder is an empty span whose class is
+                    // the whole contract. data-field carries the instr when
+                    // present (docx->html round-trip); body placeholders
+                    // default to PAGE.
+                    if attr(&ch, "class")
+                        .map(|c| c.split_whitespace().any(|t| t == "page-number"))
+                        .unwrap_or(false)
+                    {
+                        elements.push(InlineElement::Field {
+                            instr: attr(&ch, "data-field")
+                                .unwrap_or_else(|| "PAGE".to_string()),
                         });
                         continue;
                     }
@@ -1141,6 +1175,7 @@ impl HtmlParser {
                 InlineElement::ContentControl { content, .. } => {
                     count += self.count_words_in_inline(content);
                 }
+                InlineElement::Field { .. } => {}
             }
         }
         count
@@ -2178,5 +2213,18 @@ mod tests {
             // Should not panic on any truncation point
             let _ = parser.parse(truncated);
         }
+    }
+
+    #[test]
+    fn page_number_span_parses_and_serializes() {
+        let html =
+            "<span class=\"page-number\"></span><p>Sentinel paragraph here.</p>";
+        let doc = crate::HtmlParser::new().parse(html.as_bytes()).unwrap();
+        let out = crate::HtmlSerializer::new().serialize(&doc);
+        assert!(
+            out.contains("class=\"page-number\""),
+            "body page-number span must round-trip, got: {}",
+            out
+        );
     }
 }

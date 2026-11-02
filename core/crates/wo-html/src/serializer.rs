@@ -474,6 +474,16 @@ impl HtmlSerializer {
                     out.push_str(&self.serialize_inline(content));
                     out.push_str("</span>");
                 }
+                InlineElement::Field { instr } => {
+                    // Editor dialect page-number placeholder: empty class-only
+                    // span (matches editor.js flatHtml emission byte-for-byte
+                    // for PAGE). data-field keeps non-PAGE instrs intact.
+                    out.push_str("<span class=\"page-number\"");
+                    if instr != "PAGE" && !instr.is_empty() {
+                        out.push_str(&format!(" data-field=\"{}\"", escape_attr(instr)));
+                    }
+                    out.push_str("></span>");
+                }
             }
         }
         out
