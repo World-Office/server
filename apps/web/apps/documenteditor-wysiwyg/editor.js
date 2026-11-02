@@ -6026,6 +6026,29 @@
       if (firstBlock) editor.insertBefore(hdrSrc, firstBlock);
     }
     if (ftrSrc) editor.appendChild(ftrSrc);
+    // Bare root text (select-all + type leaves text nodes directly in
+    // #editor — Chrome's replaceAll) is not an element child, so pagination
+    // would strand it in the gray backdrop next to an EMPTY sheet. Wrap each
+    // stray text/br run into a <p> so the flow paginates as a block. Moving
+    // (not cloning) the nodes keeps scheduleReflow's saved selection valid.
+    {
+      let run = [];
+      const flush = (before) => {
+        if (!run.length) return;
+        const p = document.createElement("p");
+        editor.insertBefore(p, before);
+        run.forEach((n) => p.appendChild(n));
+        run = [];
+      };
+      for (const n of Array.from(editor.childNodes)) {
+        if (n.nodeType === 3 && n.nodeValue.trim() || n.nodeType === 1 && n.tagName === "BR") {
+          run.push(n);
+        } else {
+          flush(n);
+        }
+      }
+      flush(ftrSrc || null);
+    }
     const keep = new Set();
     editor.querySelectorAll(
       ":scope > div.page-setup, :scope > div.hyphenation, :scope > div.line-numbers, " +
