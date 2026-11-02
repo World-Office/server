@@ -129,6 +129,10 @@ assert.ok(
   cssSrc.includes("main.rp-open"),
   "AF7: main.rp-open canvas-shrink rule must exist in style.css",
 )
+assert.ok(
+  cssSrc.includes("#right-panel[hidden]"),
+  "VIS-002: #right-panel[hidden]{display:none} must exist — #right-panel's display:flex (author rule) overrides the UA [hidden] rule, so without this the panel never collapses and shows at page load",
+)
 
 // ── (d) ARIA contract: pressed states wired both sides ───────────────
 

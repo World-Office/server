@@ -2246,6 +2246,13 @@ main.rp-open { padding-right: 344px; }
   box-shadow: -2px 0 6px rgba(0, 0, 0, 0.08);
 }
 
+/* VIS-002: the display:flex above is an author rule, which overrides the
+   UA stylesheet's [hidden]{display:none} — without this rule the panel
+   rendered VISIBLE at page load and no amount of toggling collapsed it
+   (toggleRightPanel flips .hidden + main.rp-open only). Same pattern as
+   .side-panel[hidden] / #ctx-menu[hidden]. */
+#right-panel[hidden] { display: none; }
+
 #right-rail {
   width: 48px;
   display: flex;
