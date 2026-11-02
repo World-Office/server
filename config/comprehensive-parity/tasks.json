@@ -1,0 +1,24 @@
+{
+  "campaign": "comprehensive-parity",
+  "goal": "Close all open parity gaps",
+  "max_parallel": 10,
+  "policy": {"no_change_is_not_success": false},
+  "tasks": [
+    {
+      "id": "VIS-001",
+      "title": "Fix ribbon sub-menu z-index cut by ruler",
+      "description": "Ribbon sub-menus are cut by the ruler element due to wrong z-index. In apps/web/apps/documenteditor-wysiwyg/style.css, find .dropdown-menu or .menu classes and ensure their z-index exceeds the ruler element z-index. Find .hr-ruler and set its z-index lower than dropdown menus. Commit.",
+      "repo": "/home/weiss/git/World-Office/server",
+      "accept": "cd /home/weiss/git/World-Office/server && grep -c 'z-index' apps/web/apps/documenteditor-wysiwyg/style.css && echo OK || echo FAIL",
+      "timeout": "10m"
+    },
+    {
+      "id": "VIS-002",
+      "title": "Fix right menu not reducible",
+      "description": "The right-side menu cannot be reduced/minimized. In apps/web/apps/documenteditor-wysiwyg/editor.js, find the right sidebar toggle handler (search for 'right', 'sidebar', 'toggle', 'collapse'). The click handler should toggle visibility or width. Test toggle works. Commit.",
+      "repo": "/home/weiss/git/World-Office/server",
+      "accept": "cd /home/weiss/git/World-Office/server && grep -c 'sidebar' apps/web/apps/documenteditor-wysiwyg/editor.js && echo OK || echo FAIL",
+      "timeout": "10m"
+    }
+  ]
+}
