@@ -13679,6 +13679,21 @@
       clearMultiSelection();
     }
   });
+  // RIB-003: contextual auto-hide. Clicking elsewhere already drops the
+  // tab, but the chart can vanish without a click (Delete/Backspace, Ctrl+X,
+  // undo, the context-menu objectOp delete). One MutationObserver covers
+  // every removal path; rerenders only touch attributes, so a childList-
+  // only observer stays quiet while the chart lives.
+  function hideChartDesignTab() {
+    lastChartPick = null;
+    updateChartDesignState();
+    if (!chartDesignTab) return;
+    chartDesignTab.hidden = true;
+    chartDesignTab.classList.remove("contextual");
+    if (chartDesignTab.getAttribute("aria-selected") === "true") {
+      document.querySelector('.ribbon-tab[data-tab="home"]')?.click();
+    }
+  }
   editor.addEventListener("click", (ev) => {
     const img = ev.target.closest ? ev.target.closest("img.vector-object[data-kind='chart']") : null;
     if (img && !READ_ONLY) {
@@ -13691,18 +13706,15 @@
       }
     } else if (!READ_ONLY) {
       if (lastChartPick || (chartDesignTab && !chartDesignTab.hidden)) {
-        lastChartPick = null;
-        updateChartDesignState();
-        if (chartDesignTab) {
-          chartDesignTab.hidden = true;
-          chartDesignTab.classList.remove("contextual");
-          if (chartDesignTab.getAttribute("aria-selected") === "true") {
-            document.querySelector('.ribbon-tab[data-tab="home"]')?.click();
-          }
-        }
+        hideChartDesignTab();
       }
     }
   });
+  if (chartDesignTab && typeof MutationObserver !== "undefined") {
+    new MutationObserver(() => {
+      if (!chartDesignTab.hidden && !selectedChart()) hideChartDesignTab();
+    }).observe(editor, { childList: true, subtree: true });
+  }
   updateChartDesignState();
 
   // -- Equation: linear notation -> SVG (sup/sub/sqrt, symbol passthrough).
