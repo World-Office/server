@@ -37,9 +37,9 @@ jobs:
           cache: 'pnpm'
       - name: Build core
         run: cargo build --workspace --exclude wo-pdf --exclude wo-webdav
+      - uses: taiki-e/install-action@wasm-pack
       - name: Build frontend
         run: |-
-          cd apps/web
           pnpm install --frozen-lockfile
           pnpm build --filter='!@world-office/tauri-poc'
 
