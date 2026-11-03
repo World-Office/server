@@ -163,6 +163,20 @@ assert.ok(
   "btn-pagenumber must be wired to open pagenumber-dialog",
 )
 
+// dual-fire guard: the toolbar button must NOT carry data-cmd="insertPageNumber",
+// otherwise one click both plants a stray inline span.page-number AND opens the
+// dialog. The dialog is the only insertion path from this button.
+assert.ok(
+  !htmlSrc.includes('<button id="btn-pagenumber" data-cmd="insertPageNumber"'),
+  "btn-pagenumber must not have data-cmd (dual-fire guard: dialog is the only insertion path)",
+)
+
+// The button keeps its i18n title binding
+assert.ok(
+  htmlSrc.includes('id="btn-pagenumber"') && htmlSrc.includes('data-i18n-title="Toolbar.PageNumberTitle"'),
+  "btn-pagenumber must keep its data-i18n-title",
+)
+
 // ── i18n translations ──────────────────────────────────────────────
 
 // English translations for dialog
