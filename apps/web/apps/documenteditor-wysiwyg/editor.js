@@ -6917,6 +6917,16 @@
     syncRightPanelControls();
     setStatus(on ? "Table banded rows on" : "Table banded rows off");
   }
+  // Banded columns (OO tableStylerColumns parity): alternating column
+  // shading via a table-level class, mirroring the banded rows toggle.
+  function applyTableBandedCols(on) {
+    const table = selectedTable();
+    if (!table || READ_ONLY) { setStatus(t("Status.NotAvailable") + " tableBandedCols"); return; }
+    table.classList.toggle("table-banded-cols", !!on);
+    markObjectMutation();
+    syncRightPanelControls();
+    setStatus(on ? "Table banded columns on" : "Table banded columns off");
+  }
   // No per-row/col resize machinery exists (table ops only insert/delete),
   // so the size inputs apply to the whole selected table (closest table).
   function applyTableRowHeight(pt) {
@@ -6962,6 +6972,8 @@
     if (cs && bgIn && csToHex(cs.backgroundColor)) bgIn.value = csToHex(cs.backgroundColor);
     const bandedIn = document.getElementById("rp-table-banded");
     if (bandedIn) bandedIn.checked = table.classList.contains("table-banded");
+    const bandedColsIn = document.getElementById("rp-table-banded-cols");
+    if (bandedColsIn) bandedColsIn.checked = table.classList.contains("table-banded-cols");
     const rowIn = document.getElementById("rp-table-row-height");
     if (rowIn && table.rows && table.rows.length) {
       const h = table.rows[0].getBoundingClientRect().height;
@@ -7227,6 +7239,11 @@
   if (rpTableBanded) rpTableBanded.addEventListener("change", () => {
     if (READ_ONLY) return;
     applyTableBanded(rpTableBanded.checked);
+  });
+  const rpTableBandedCols = document.getElementById("rp-table-banded-cols");
+  if (rpTableBandedCols) rpTableBandedCols.addEventListener("change", () => {
+    if (READ_ONLY) return;
+    applyTableBandedCols(rpTableBandedCols.checked);
   });
   const rpTableRowHeight = document.getElementById("rp-table-row-height");
   if (rpTableRowHeight) rpTableRowHeight.addEventListener("change", () => {
