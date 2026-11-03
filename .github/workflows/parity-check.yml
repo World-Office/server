@@ -1,0 +1,190 @@
+name: Parity Check
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - 'apps/web/apps/documenteditor-wysiwyg/**'
+      - 'core/crates/wo-**'
+      - '.github/workflows/parity-check.yml'
+  workflow_dispatch:
+    inputs:
+      full_test:
+        description: 'Run full parity test suite'
+        required: false
+        default: 'false'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+      - name: Build core
+        run: cargo build --workspace --exclude wo-pdf --exclude wo-webdav
+      - name: Build frontend
+        run: |-
+          cd server/apps/web
+          pnpm install --frozen-lockfile
+          pnpm build --filter='!@world-office/tauri-poc'
+
+  test-core:
+    name: Core Tests
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - name: Run tests
+        run: cargo test --workspace --lib -- --test-threads=1 --exclude wo-pdf --exclude wo-webdav
+
+  ledger-build:
+    name: Ledger Build
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: server
+      - uses: actions/checkout@v4
+        with:
+          repository: weiss/wo-test-harness
+          path: wo-test-harness
+          ref: main
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build ledger
+        run: |
+          cd wo-test-harness/census/ledger
+          /usr/bin/python3 build.py
+      - name: Upload ledger report
+        uses: actions/upload-artifact@v4
+        with:
+          name: ledger-report
+          path: wo-test-harness/census/ledger/ledger.json
+
+  visual-diff:
+    name: Visual Diff
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: inputs.full_test == 'true' || github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: server
+      - uses: actions/checkout@v4
+        with:
+          repository: weiss/wo-test-harness
+          path: wo-test-harness
+          ref: main
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: |
+          cd wo-test-harness
+          npm install pixelmatch pngjs @playwright/test
+      - name: Run visual diff
+        run: |
+          cd wo-test-harness/census/visual
+          node diff.js
+        continue-on-error: true
+
+  performance:
+    name: Performance Benchmark
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: inputs.full_test == 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: server
+      - uses: actions/checkout@v4
+        with:
+          repository: weiss/wo-test-harness
+          path: wo-test-harness
+          ref: main
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run benchmarks
+        run: |
+          cd wo-test-harness/census/performance
+          node benchmark.js > results.json
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: wo-test-harness/census/performance/results.json
+
+  report:
+    name: Generate Parity Report
+    needs: [ledger-build, visual-diff, performance]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: server
+      - uses: actions/checkout@v4
+        with:
+          repository: weiss/wo-test-harness
+          path: wo-test-harness
+          ref: main
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+      - name: Generate report
+        run: |
+          cd wo-test-harness
+          cat > census/PARITY-REPORT.md << 'EOF'
+# Parity Report
+
+Generated: $(date)
+
+## Summary
+
+| Category | Status | Details |
+|----------|--------|---------|
+| Build | ${{ needs.build.result }} | Core compilation |
+| Tests | ${{ needs.test-core.result }} | Unit tests |
+| Ledger | ${{ needs.ledger-build.result }} | Feature tracking |
+| Visual | ${{ needs.visual-diff.result }} | Screenshot comparison |
+| Performance | ${{ needs.performance.result }} | Benchmark results |
+
+## Detailed Results
+
+### Ledger
+EOF
+          cat census/ledger/ledger.json | head -20 >> census/PARITY-REPORT.md
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: parity-report
+          path: wo-test-harness/census/PARITY-REPORT.md
