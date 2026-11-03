@@ -56,7 +56,7 @@ jobs:
           toolchain: nightly
           override: true
       - name: Run tests
-        run: cargo test --workspace --lib -- --test-threads=1 --exclude wo-pdf --exclude wo-webdav
+        run: cargo test --workspace --lib --exclude wo-pdf --exclude wo-webdav -- --test-threads=1
 
   ledger-build:
     name: Ledger Build
@@ -69,7 +69,7 @@ jobs:
           path: server
       - uses: actions/checkout@v4
         with:
-          repository: weiss/wo-test-harness
+          repository: World-Office/wo-test-harness
           path: wo-test-harness
           ref: main
       - name: Install Python
@@ -98,7 +98,7 @@ jobs:
           path: server
       - uses: actions/checkout@v4
         with:
-          repository: weiss/wo-test-harness
+          repository: World-Office/wo-test-harness
           path: wo-test-harness
           ref: main
       - name: Install Node
@@ -127,7 +127,7 @@ jobs:
           path: server
       - uses: actions/checkout@v4
         with:
-          repository: weiss/wo-test-harness
+          repository: World-Office/wo-test-harness
           path: wo-test-harness
           ref: main
       - name: Install Node
@@ -155,7 +155,7 @@ jobs:
           path: server
       - uses: actions/checkout@v4
         with:
-          repository: weiss/wo-test-harness
+          repository: World-Office/wo-test-harness
           path: wo-test-harness
           ref: main
       - name: Download artifacts
@@ -163,26 +163,26 @@ jobs:
       - name: Generate report
         run: |
           cd wo-test-harness
-          cat > census/PARITY-REPORT.md << 'EOF'
-# Parity Report
-
-Generated: $(date)
-
-## Summary
-
-| Category | Status | Details |
-|----------|--------|---------|
-| Build | ${{ needs.build.result }} | Core compilation |
-| Tests | ${{ needs.test-core.result }} | Unit tests |
-| Ledger | ${{ needs.ledger-build.result }} | Feature tracking |
-| Visual | ${{ needs.visual-diff.result }} | Screenshot comparison |
-| Performance | ${{ needs.performance.result }} | Benchmark results |
-
-## Detailed Results
-
-### Ledger
-EOF
-          cat census/ledger/ledger.json | head -20 >> census/PARITY-REPORT.md
+          {
+            echo "# Parity Report"
+            echo
+            echo "Generated: $(date)"
+            echo
+            echo "## Summary"
+            echo
+            echo "| Category | Status | Details |"
+            echo "|----------|--------|---------|"
+            echo "| Build | ${{ needs.build.result }} | Core compilation |"
+            echo "| Tests | ${{ needs.test-core.result }} | Unit tests |"
+            echo "| Ledger | ${{ needs.ledger-build.result }} | Feature tracking |"
+            echo "| Visual | ${{ needs.visual-diff.result }} | Screenshot comparison |"
+            echo "| Performance | ${{ needs.performance.result }} | Benchmark results |"
+            echo
+            echo "## Detailed Results"
+            echo
+            echo "### Ledger"
+          } > census/PARITY-REPORT.md
+          head -20 census/ledger/ledger.json >> census/PARITY-REPORT.md
       - name: Upload report
         uses: actions/upload-artifact@v4
         with:
