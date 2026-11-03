@@ -1464,6 +1464,11 @@ main {
 #editor table.table-banded > thead + tbody > tr:nth-child(even) > td {
   background-color: #f2f2f2;
 }
+/* Banded columns (OO tableStylerColumns parity): even columns shaded,
+   mirroring the banded rows toggle. */
+#editor table.table-banded-cols td:nth-child(even) {
+  background-color: #f2f2f2;
+}
 
 /* ---- insert-table dialog ---- */
 .color-swatches { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
