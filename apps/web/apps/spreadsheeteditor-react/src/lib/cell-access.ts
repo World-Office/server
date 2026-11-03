@@ -10,7 +10,11 @@
  * to a no-op instead of throwing (the pattern used by univer-command.ts).
  */
 
-import { getActiveUniverAPI, getUniverSnapshot } from "./univer-command";
+import {
+	getActiveUniverAPI,
+	getUniverSnapshot,
+	type UniverWorkbookFacade,
+} from "./univer-command";
 
 /** A text-bearing cell located in the active workbook. */
 export interface SheetCell {
@@ -24,6 +28,15 @@ export interface SheetCell {
 	ref: string;
 	/** Displayed text of the cell ("" when empty). */
 	value: string;
+}
+
+/** Minimal shape a facade sheet needs for cell navigation/writes. */
+interface WorksheetLike {
+	getRange(
+		row: number,
+		col: number,
+	): { activate?(): unknown; setValue?(value: string): unknown } | null;
+	setActiveRange?(range: unknown): unknown;
 }
 
 interface SnapshotCell {
@@ -138,7 +151,7 @@ export function getActiveSheetName(): string | null {
 export function activateCell(cell: SheetCell): boolean {
 	const api = getActiveUniverAPI();
 	const workbook = api?.getActiveWorkbook() as
-		| (ReturnType<NonNullable<typeof getActiveUniverAPI>["getActiveWorkbook"]> & {
+		| (UniverWorkbookFacade & {
 				getSheetBySheetId?: (id: string) => unknown;
 		  })
 		| null;
@@ -175,7 +188,7 @@ export function activateCell(cell: SheetCell): boolean {
 export function setCellValue(cell: SheetCell, value: string): boolean {
 	const api = getActiveUniverAPI();
 	const workbook = api?.getActiveWorkbook() as
-		| (ReturnType<NonNullable<typeof getActiveUniverAPI>["getActiveWorkbook"]> & {
+		| (UniverWorkbookFacade & {
 				getSheetBySheetId?: (id: string) => unknown;
 		  })
 		| null;
